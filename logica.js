@@ -2,7 +2,7 @@
 //  LOGICA  ·  date, settimana di paga, prezzi e piano delle pulizie
 //  Funzioni "pure": prendono dati, restituiscono risultati. Niente rete.
 // ============================================================================
-import { TIPI_PULIZIA, REGOLE_BASE, LISTINO_BASE } from "./regole.js";
+import { TIPI_PULIZIA, REGOLE_BASE, LISTINO_BASE, VOTI_BASE } from "./regole.js";
 
 export const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
 export const GIORNI = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
@@ -69,7 +69,7 @@ export function listinoCompleto(l) {
   const out = { ...base, ...l };
   out.totale = { ...base.totale, ...(l.totale || {}) };
   out.ripasso = { ...base.ripasso, ...(l.ripasso || {}) };
-  out.taglia = { ...(l.taglia || {}) };
+  out.taglia = { ...base.taglia, ...(l.taglia || {}) };
   return out;
 }
 export function tagliaCamera(listino, cameraId) { return listino?.taglia?.[cameraId] === "P" ? "P" : "G"; }
@@ -121,6 +121,7 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
     arrivo: !!arrivaIl(soggiorni, camera.id, iso),
     istruzioni: [chi?.nota || "", ...notePubbliche].filter(Boolean).join(" · "),
     persone: chi?.persone || null,
+    supplemento: Number(chi?.supplemento || 0),
   };
 }
 
@@ -137,7 +138,7 @@ export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [
         tipo: p.tipo, titolo: p.titolo, passi: p.passi,
         ospite: p.ospite, soggiorno: p.soggiorno, partenza: p.partenza, arrivo: p.arrivo,
         istruzioni: p.istruzioni, persone: p.persone,
-        importo: prezzoPulizia(listino, c, p.tipo),
+        importo: prezzoPulizia(listino, c, p.tipo) + Number(p.supplemento || 0),
         origine: "auto",
       });
     }
@@ -170,23 +171,41 @@ export function differenzePiano(attese, esistenti) {
   return { crea, aggiorna, cancella };
 }
 
+// ---- Voto delle pulizie e importo finale -----------------------------------
+export function votiCompleti(regole) { return { ...VOTI_BASE, ...((regole && regole.voti) || {}) }; }
+export function fasciaVoto(regole, voto) {
+  const v = votiCompleti(regole);
+  if (voto == null || voto === "") return null;
+  const n = Number(voto);
+  if (n >= v.ottimo.daVoto) return { ...v.ottimo, chiave: "ottimo" };
+  if (n >= v.normale.daVoto) return { ...v.normale, chiave: "normale" };
+  if (n >= v.scarso.daVoto) return { ...v.scarso, chiave: "scarso" };
+  return { ...v.pessimo, chiave: "pessimo" };
+}
+// L'importo che la signora prende davvero: prezzo base, cambiato dal voto (se c'è)
+export function importoFinale(p, regole) {
+  const base = Number(p.importo || 0);
+  const f = fasciaVoto(regole, p.voto);
+  return f ? Math.round(base * f.perc) / 100 : base;
+}
+
 // ---- Conti ------------------------------------------------------------------
-export function pulizieFatte(pulizie) {
-  return Object.values(pulizie).filter(p => p.stato === "fatta").map(p => ({ ...p, settimana: p.settimana || chiaveSettimana(p.ora || p.data + "T12:00:00") }));
+export function pulizieFatte(pulizie, regole) {
+  return Object.values(pulizie).filter(p => p.stato === "fatta").map(p => ({ ...p, settimana: p.settimana || chiaveSettimana(p.ora || p.data + "T12:00:00"), finale: importoFinale(p, regole) }));
 }
-export function totaleSettimana(pulizie, zona, chiave) {
-  const l = pulizieFatte(pulizie).filter(p => p.zona === zona && p.settimana === chiave);
-  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), totale: l.reduce((s, p) => s + Number(p.importo || 0), 0) };
+export function totaleSettimana(pulizie, zona, chiave, regole) {
+  const l = pulizieFatte(pulizie, regole).filter(p => p.zona === zona && p.settimana === chiave);
+  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), totale: l.reduce((s, p) => s + p.finale, 0) };
 }
-export function storicoMensile(pulizie, zona) {
+export function storicoMensile(pulizie, zona, regole) {
   const mesi = {};
-  for (const p of pulizieFatte(pulizie)) {
+  for (const p of pulizieFatte(pulizie, regole)) {
     if (p.zona !== zona) continue;
     const m = (p.ora ? partiRoma(p.ora) : null);
     const k = m ? `${m.y}-${String(m.m).padStart(2, "0")}` : meseDi(p.data);
     mesi[k] = mesi[k] || { totale: 0, n: 0, settimane: {} };
-    mesi[k].totale += Number(p.importo || 0); mesi[k].n++;
-    mesi[k].settimane[p.settimana] = (mesi[k].settimane[p.settimana] || 0) + Number(p.importo || 0);
+    mesi[k].totale += p.finale; mesi[k].n++;
+    mesi[k].settimane[p.settimana] = (mesi[k].settimane[p.settimana] || 0) + p.finale;
   }
   return mesi;
 }

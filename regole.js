@@ -92,12 +92,26 @@ export const TIPI_PULIZIA = {
 // ---- Prezzi di partenza (si cambiano dal Listino nell'app) -----------------
 // G = camera grande, P = camera piccola. taglia: quali camere sono piccole.
 export const LISTINO_BASE = {
-  totale:      { G: 15, P: 10 },   // pulizia totale del venerdì
-  ripasso:     { G: 15, P: 10 },   // ripasso veloce del mercoledì
+  totale:      { G: 15, P: 10 },   // pulizia totale (cambio completo): camera grande / piccola
+  ripasso:     { G: 5, P: 5 },     // ripasso veloce del mercoledì: prezzo base
   casa:        15,                 // pulizia casa del martedì
   totale_casa: 15,                 // pulizia totale casa del venerdì
   extra:       0,                  // i lavori extra hanno il prezzo scritto a mano
-  taglia:      {},                 // es. { lella: "P", nicole: "P" }
+  // Camere piccole (P). Tutte le altre sono grandi (G).
+  taglia:      { michele: "P", aurora: "P", tramonto: "P", passerella: "P" },
+};
+
+// ---- Il voto delle pulizie (controlli tra colleghe) --------------------------
+// Quando una collega "controllatrice" dà il voto a una camera, la paga di quella
+// pulizia cambia così (percentuale del prezzo base). Si cambia dall'app (Regole).
+export const VOTI_BASE = {
+  ottimo:  { daVoto: 9, perc: 120, nome: "Voto 9–10" },              // es. 10 € → 12 €
+  normale: { daVoto: 6, perc: 100, nome: "Voto 6–8" },
+  scarso:  { daVoto: 5, perc: 80,  nome: "Voto 5" },                 // es. 10 € → 8 €
+  pessimo: { daVoto: 0, perc: 50,  nome: "Voto 1–4", richiamo: true }, // es. 10 € → 5 € + richiamo
+  bonusControllatrice: 5,   // € a settimana a chi fa i controlli, se i voti reggono al controllo di Michele
+  scartoMassimo: 2,         // se il voto di Michele differisce di più di così, il controllo "non corrisponde"
+  richiamoDopo: 3,          // al terzo controllo che non corrisponde, richiamo anche alla controllatrice
 };
 
 // ---- Calendario rifiuti di Lesina (utenza domestica) ------------------------
