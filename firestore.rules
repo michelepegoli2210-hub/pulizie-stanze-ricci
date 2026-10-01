@@ -5,7 +5,7 @@ rules_version = '2';
 //
 //  In parole semplici:
 //   - chi non è entrato non vede niente;
-//   - il ruolo di ognuno sta nella raccolta "utenti" (lo scrivono solo i proprietari);
+//   - il ruolo di ognuno sta nella raccolta "ruoli" (un documento per email; lo scrivono solo i proprietari);
 //   - le SIGNORE vedono solo le pulizie e i pagamenti della LORO zona e possono
 //     cambiare SOLO lo stato di una pulizia (fatta / non fatta / problema + nota);
 //   - i PROPRIETARI possono leggere e scrivere tutto;
@@ -14,18 +14,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
 
-    function entrato() { return request.auth != null; }
-    function haScheda() { return entrato() && exists(/databases/$(db)/documents/utenti/$(request.auth.uid)); }
-    function scheda() { return get(/databases/$(db)/documents/utenti/$(request.auth.uid)).data; }
-    function ruolo() { return haScheda() ? scheda().ruolo : ""; }
+    function entrato() { return request.auth != null && request.auth.token.email != null; }
+    function email() { return request.auth.token.email.lower(); }
+    // Proprietari "di sicurezza": entrano sempre, anche se la raccolta "ruoli" fosse vuota
+    function proprietarioBase() {
+      return entrato() && email() in [
+        "michele@stanzericci.app", "papa@stanzericci.app", "mamma@stanzericci.app", "michelesantucci@stanzericci.app"
+      ];
+    }
+    function haScheda() { return entrato() && exists(/databases/$(db)/documents/ruoli/$(email())); }
+    function scheda() { return get(/databases/$(db)/documents/ruoli/$(email())).data; }
+    function ruolo() { return haScheda() ? scheda().ruolo : (proprietarioBase() ? "proprietario" : ""); }
     function proprietario() { return ruolo() == "proprietario"; }
     function puoLeggereTutto() { return ruolo() == "proprietario" || ruolo() == "lettura"; }
     function addetta() { return ruolo() == "addetta"; }
     function miaZona() { return scheda().zona; }
 
-    // Chi è chi (nome, ruolo, zona). Ognuno legge la propria scheda; i proprietari tutte.
-    match /utenti/{uid} {
-      allow read: if entrato() && (request.auth.uid == uid || puoLeggereTutto());
+    // Chi è chi (nome, ruolo, zona): un documento per indirizzo email.
+    // Ognuno legge la propria scheda; i proprietari leggono e scrivono tutte.
+    match /ruoli/{indirizzo} {
+      allow read: if entrato() && (indirizzo == email() || puoLeggereTutto());
       allow write: if proprietario();
     }
 

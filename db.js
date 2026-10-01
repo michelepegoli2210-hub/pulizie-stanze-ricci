@@ -56,14 +56,19 @@ async function dbFirebase(config) {
       return fb.onAuthStateChanged(auth, (u) => {
         if (stopDoc) { stopDoc(); stopDoc = null; }
         if (!u) { db.utenteCorrente = null; cb(null); return; }
-        // Il ruolo sta nella raccolta "utenti": lo ascoltiamo, così se cambia si aggiorna
-        stopDoc = fb.onSnapshot(ref("utenti", u.uid), (snap) => {
+        const email = (u.email || "").toLowerCase();
+        const login = email.split("@")[0];
+        const dominio = (window.DOMINIO_ACCESSO || "stanzericci.app").toLowerCase();
+        const proprietarioBase = (window.PROPRIETARI_BASE || []).includes(login) && email.endsWith("@" + dominio);
+        // Il ruolo sta nella raccolta "ruoli", un documento per indirizzo: lo ascoltiamo, così se cambia si aggiorna
+        stopDoc = fb.onSnapshot(ref("ruoli", email), (snap) => {
           const dati = snap.exists() ? snap.data() : {};
-          db.utenteCorrente = { uid: u.uid, email: u.email || "", nome: dati.nome || "", ruolo: dati.ruolo || null, zona: dati.zona || null, attivo: snap.exists() };
+          const ruolo = dati.ruolo || (proprietarioBase ? "proprietario" : null);
+          db.utenteCorrente = { uid: u.uid, email, login, nome: dati.nome || (proprietarioBase ? login : ""), ruolo, zona: dati.zona || null, attivo: snap.exists() || proprietarioBase, senzaScheda: !snap.exists() };
           cb(db.utenteCorrente);
         }, (err) => {
-          console.error("utenti", err);
-          db.utenteCorrente = { uid: u.uid, email: u.email || "", nome: "", ruolo: null, zona: null, attivo: false, errore: err.code };
+          console.error("ruoli", err);
+          db.utenteCorrente = { uid: u.uid, email, login, nome: proprietarioBase ? login : "", ruolo: proprietarioBase ? "proprietario" : null, zona: null, attivo: proprietarioBase, errore: err.code };
           cb(db.utenteCorrente);
         });
       });
@@ -194,6 +199,6 @@ function dbProva() {
       const id = `es_${i}_${camera}`;
       soggiorni[id] = { camera, inizio, fine, nome, tipo, persone: 1, origine: "esempio", dubbio: tipo === "unk" };
     });
-    return { soggiorni, pulizie: {}, pagamenti: {}, impostazioni: {}, note: {}, utenti: {} };
+    return { soggiorni, pulizie: {}, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {} };
   }
 }

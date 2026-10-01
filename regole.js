@@ -114,6 +114,19 @@ export const VOTI_BASE = {
   richiamoDopo: 3,          // al terzo controllo che non corrisponde, richiamo anche alla controllatrice
 };
 
+// ---- Le persone che entrano nell'app (nome per entrare → chi è) ----------
+// Il nome per entrare diventa un indirizzo: "michele" → michele@stanzericci.app
+// ruolo: "proprietario" (fa tutto), "addetta" (solo la sua zona), "lettura" (guarda e basta)
+export const PERSONE_BASE = [
+  { login: "michele",         nome: "Michele",              ruolo: "proprietario" },
+  { login: "papa",            nome: "Papà",                 ruolo: "proprietario" },
+  { login: "mamma",           nome: "Mamma",                ruolo: "proprietario" },
+  { login: "michelesantucci", nome: "Michele Santucci",     ruolo: "proprietario" },
+  { login: "primopiano",      nome: "Signora 1° piano",     ruolo: "addetta", zona: "p1" },
+  { login: "secondopiano",    nome: "Signora 2° piano",     ruolo: "addetta", zona: "p2" },
+  { login: "appartamenti",    nome: "Signora appartamenti", ruolo: "addetta", zona: "ap" },
+];
+
 // ---- Calendario rifiuti di Lesina (utenza domestica) ------------------------
 // Si espone la sera prima. giorno = giorno del RITIRO.
 export const RIFIUTI = [

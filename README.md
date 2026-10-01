@@ -43,9 +43,12 @@ salvati solo sul telefono che li usa. Si può forzare anche dopo aprendo il link
 
 ## Ruoli
 
-- **proprietario**: vede e cambia tutto (prospetto, pulizie, paghe, listino, note, utenti).
+- **proprietario**: vede e cambia tutto (prospetto, pulizie, paghe, listino, note, persone e accessi).
 - **addetta**: vede solo la sua zona e i suoi soldi; può solo premere Fatta / Non fatta / Problema.
 - **lettura**: vede tutto, non cambia niente.
 
-Il ruolo si scrive nella raccolta `utenti` di Firestore, in un documento che ha come nome l'**UID** dell'account
-(lo si copia da Authentication). Campi: `nome`, `ruolo`, `zona` (per le signore: `p1`, `p2` oppure `ap`).
+Il ruolo sta nella raccolta `ruoli` di Firestore, in un documento che ha come nome l'**email** della persona
+(es. `primopiano@stanzericci.app`). Campi: `login`, `nome`, `ruolo`, `zona` (per le signore: `p1`, `p2` oppure `ap`).
+Si gestisce dall'app: ⋯ → **Persone e accessi**. La password invece si crea nella console Firebase
+(Authentication → Utenti → Aggiungi utente) con la stessa email.
+I quattro proprietari di base (`michele`, `papa`, `mamma`, `michelesantucci`) entrano sempre, anche se la raccolta fosse vuota.

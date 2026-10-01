@@ -1,22 +1,24 @@
 // ============================================================================
-//  CONFIGURAZIONE FIREBASE
-//  Qui si incollano i dati del progetto Firebase "stanze-ricci" (Passo 2).
-//  Sono dati PUBBLICI (vanno in ogni app web): la sicurezza la fanno le
-//  regole di Firestore, non questi numeri.
+//  CONFIGURAZIONE FIREBASE  ·  progetto "LE STANZE DI RICCI" (le-stanze-di-ricci)
+//  Questi dati sono PUBBLICI (stanno in ogni app web): la sicurezza la fanno
+//  le regole di Firestore (file firestore.rules), non questi numeri.
 //
-//  Finché FIREBASE_CONFIG resta null l'app parte in MODALITÀ PROVA:
-//  dati di esempio, salvati solo sul telefono che li usa.
+//  Se si mette FIREBASE_CONFIG = null l'app torna in MODALITÀ PROVA
+//  (dati di esempio, solo sul telefono). Si può forzare anche con ?prova=1.
 // ============================================================================
-window.FIREBASE_CONFIG = null;
-// Esempio di come sarà dopo il Passo 2:
-// window.FIREBASE_CONFIG = {
-//   apiKey: "AIza....",
-//   authDomain: "stanze-ricci.firebaseapp.com",
-//   projectId: "stanze-ricci",
-//   storageBucket: "stanze-ricci.appspot.com",
-//   messagingSenderId: "1234567890",
-//   appId: "1:1234567890:web:abcdef123456"
-// };
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCK5MoCmQ5va1eJIvn4ZvAzCexGo0xFvLc",
+  authDomain: "le-stanze-di-ricci.firebaseapp.com",
+  projectId: "le-stanze-di-ricci",
+  storageBucket: "le-stanze-di-ricci.firebasestorage.app",
+  messagingSenderId: "795231354902",
+  appId: "1:795231354902:web:3f87025b8ea03004203537",
+};
 
-// Per entrare basta il nome: "lella" diventa lella@stanzericci.app
+// Per entrare basta il nome: "michele" diventa michele@stanzericci.app
 window.DOMINIO_ACCESSO = "stanzericci.app";
+
+// I proprietari "di sicurezza": anche se nella raccolta "ruoli" non ci fosse
+// ancora niente, questi nomi entrano sempre come proprietari (stessa lista
+// scritta dentro firestore.rules).
+window.PROPRIETARI_BASE = ["michele", "papa", "mamma", "michelesantucci"];
