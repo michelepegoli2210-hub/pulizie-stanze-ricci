@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pulizie · Stanze di Ricci</title>
+<meta name="description" content="Pulizie, prospetto e paghe de Le Stanze di Ricci (Lesina).">
+<meta name="theme-color" content="#0c4a55">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pulizie Ricci">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>Stanze di Ricci <span class="fl">·</span> Pulizie<small id="sub">Laguna di Lesina</small></h1>
+    <div class="topbtn"><button class="who" id="menuBtn" hidden title="Altro" aria-label="Altro">⋯</button><button class="who" id="whoBtn" hidden title="Torna a oggi">oggi</button></div>
+  </div>
+  <div class="days" id="days" hidden></div>
+  <svg class="waves" viewBox="0 0 400 18" preserveAspectRatio="none" aria-hidden="true"><path d="M0 10 C 25 2, 50 2, 75 10 S 125 18, 150 10 S 200 2, 225 10 S 275 18, 300 10 S 350 2, 375 10 S 400 14, 400 14 L400 18 L0 18 Z"/></svg>
+</header>
+<main id="app"><section class="card center"><p class="muted">Un attimo…</p></section></main>
+<noscript><p style="padding:16px">Questa app ha bisogno di JavaScript. Apri le impostazioni del browser e attivalo.</p></noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+rules_version = '2';
+// ============================================================================
+//  REGOLE DI SICUREZZA  ·  Le Stanze di Ricci · Pulizie
+//  Si incollano nella console Firebase: Firestore Database → Regole → Pubblica.
+//
+//  In parole semplici:
+//   - chi non è entrato non vede niente;
+//   - il ruolo di ognuno sta nella raccolta "utenti" (lo scrivono solo i proprietari);
+//   - le SIGNORE vedono solo le pulizie e i pagamenti della LORO zona e possono
+//     cambiare SOLO lo stato di una pulizia (fatta / non fatta / problema + nota);
+//   - i PROPRIETARI possono leggere e scrivere tutto;
+//   - "lettura" vede tutto ma non cambia niente.
+// ============================================================================
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function entrato() { return request.auth != null; }
+    function haScheda() { return entrato() && exists(/databases/$(db)/documents/utenti/$(request.auth.uid)); }
+    function scheda() { return get(/databases/$(db)/documents/utenti/$(request.auth.uid)).data; }
+    function ruolo() { return haScheda() ? scheda().ruolo : ""; }
+    function proprietario() { return ruolo() == "proprietario"; }
+    function puoLeggereTutto() { return ruolo() == "proprietario" || ruolo() == "lettura"; }
+    function addetta() { return ruolo() == "addetta"; }
+    function miaZona() { return scheda().zona; }
+
+    // Chi è chi (nome, ruolo, zona). Ognuno legge la propria scheda; i proprietari tutte.
+    match /utenti/{uid} {
+      allow read: if entrato() && (request.auth.uid == uid || puoLeggereTutto());
+      allow write: if proprietario();
+    }
+
+    // Impostazioni: camere e regole le leggono tutti quelli entrati; il listino solo proprietari/lettura.
+    match /impostazioni/{doc} {
+      allow read: if entrato() && (doc != "listino" || puoLeggereTutto());
+      allow write: if proprietario();
+    }
+
+    // Prospetto (chi dorme dove) e note: solo proprietari (e lettura).
+    match /soggiorni/{id} {
+      allow read: if puoLeggereTutto();
+      allow write: if proprietario();
+    }
+    match /note/{id} {
+      allow read: if puoLeggereTutto();
+      allow write: if proprietario();
+    }
+    match /importazioni/{id} {
+      allow read, write: if proprietario();
+    }
+
+    // Pagamenti: le signore vedono solo quelli della loro zona.
+    match /pagamenti/{id} {
+      allow read: if puoLeggereTutto() || (addetta() && resource.data.zona == miaZona());
+      allow write: if proprietario();
+    }
+
+    // Pulizie: le signore vedono la loro zona e cambiano SOLO stato, ora, nota, settimana, segnatoDa.
+    match /pulizie/{id} {
+      allow read: if puoLeggereTutto() || (addetta() && resource.data.zona == miaZona());
+      allow create, delete: if proprietario();
+      allow update: if proprietario()
+        || (addetta()
+            && resource.data.zona == miaZona()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "nota", "settimana", "segnatoDa"])
+            && request.resource.data.stato in ["da_fare", "fatta", "non_fatta", "problema"]);
+    }
+
+    // Tutto il resto: chiuso.
+    match /{altro=**} {
+      allow read, write: if false;
+    }
+  }
+}

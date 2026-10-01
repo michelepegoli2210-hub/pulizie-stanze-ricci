@@ -1,0 +1,166 @@
+// ============================================================================
+//  REGOLE FISSE DELL'APP  ·  Le Stanze di Ricci
+//  Questo file è il "dizionario" dell'app: camere, zone, regole delle pulizie,
+//  cosa fare in ogni tipo di pulizia, prezzi di partenza e le regole con cui
+//  si legge il foglio Excel di papà. Niente intelligenza artificiale: solo regole.
+//
+//  I proprietari possono cambiare prezzi e regole anche dall'app (Listino e
+//  Impostazioni): quello che è salvato nell'app vince su questo file.
+//  Questo file resta la base di partenza e il "ripristino" se serve.
+// ============================================================================
+
+// ---- Le zone (una signora per zona) ----------------------------------------
+export const ZONE = {
+  p1: { nome: "1° piano + Lella", breve: "1° piano", ordine: 1 },
+  p2: { nome: "2° piano + Nicole", breve: "2° piano", ordine: 2 },
+  ap: { nome: "Appartamenti", breve: "Appartamenti", ordine: 3 },
+};
+
+// ---- Le camere e le case ----------------------------------------------------
+// tipo: "camera" (si pulisce mercoledì + venerdì) oppure "casa" (martedì + venerdì)
+// lato: dove sta nella piantina. L = sinistra del corridoio, R = destra, S = via Nazario Sauro
+// posti: letti disponibili (serve per il quadro, non per le pulizie)
+export const CAMERE = [
+  { id: "salvatore",   nome: "Salvatore",             zona: "p1", tipo: "camera", lato: "L", ordine: 1,  posti: 2 },
+  { id: "aurora",      nome: "Aurora",                zona: "p1", tipo: "camera", lato: "R", ordine: 2,  posti: 2 },
+  { id: "michele",     nome: "Michele",               zona: "p1", tipo: "camera", lato: "L", ordine: 3,  posti: 2 },
+  { id: "antonio",     nome: "Antonio",               zona: "p1", tipo: "camera", lato: "R", ordine: 4,  posti: 2 },
+  { id: "lella",       nome: "Lella",                 zona: "p1", tipo: "camera", lato: "S", ordine: 5,  posti: 1, via: "via Nazario Sauro" },
+  { id: "alba",        nome: "Alba",                  zona: "p2", tipo: "camera", lato: "L", ordine: 6,  posti: 2 },
+  { id: "tramonto",    nome: "Tramonto",              zona: "p2", tipo: "camera", lato: "R", ordine: 7,  posti: 2 },
+  { id: "passerella",  nome: "Passerella",            zona: "p2", tipo: "camera", lato: "L", ordine: 8,  posti: 2 },
+  { id: "fenicotteri", nome: "Fenicotteri",           zona: "p2", tipo: "camera", lato: "R", ordine: 9,  posti: 2 },
+  { id: "nicole",      nome: "Nicole",                zona: "p2", tipo: "camera", lato: "S", ordine: 10, posti: 1, via: "via Nazario Sauro" },
+  { id: "zarapt",      nome: "Via Zara · piano terra", zona: "ap", tipo: "casa", lato: "A", ordine: 11, posti: 4 },
+  { id: "zara1",       nome: "Via Zara · 1° piano",   zona: "ap", tipo: "casa",   lato: "A", ordine: 12, posti: 4 },
+  { id: "trento",      nome: "Via Trento 47",         zona: "ap", tipo: "casa",   lato: "A", ordine: 13, posti: 4 },
+];
+
+// Appoggio esterno: compare nel foglio di papà ma NON ha pulizie nostre.
+export const APPOGGIO_ESTERNO = [
+  { id: "liu",         nome: "Liù",          camere: 6 },
+  { id: "mariagrazia", nome: "Maria Grazia", camere: 2 },
+  { id: "ancona",      nome: "Via Ancona",   camere: 1 },
+];
+
+// ---- Quando si pulisce ------------------------------------------------------
+// giorno: 0 = domenica, 1 = lunedì, 2 = martedì, 3 = mercoledì, 4 = giovedì, 5 = venerdì, 6 = sabato
+export const REGOLE_BASE = {
+  camera: [
+    { giorno: 3, tipo: "ripasso" },      // mercoledì: ripasso veloce
+    { giorno: 5, tipo: "totale" },       // venerdì: pulizia totale
+  ],
+  casa: [
+    { giorno: 2, tipo: "casa" },         // martedì: pulizia casa
+    { giorno: 5, tipo: "totale_casa" },  // venerdì: pulizia totale casa
+  ],
+  // Il giorno in cui l'ospite parte si fa comunque la pulizia totale
+  // (così la camera è pronta per chi arriva). Mettere false per spegnere la regola.
+  totaleAllaPartenza: true,
+  // Quanti giorni avanti l'app prepara le pulizie, e quanti indietro le tiene aggiornate
+  giorniAvanti: 14,
+  giorniIndietro: 3,
+  // La settimana di paga chiude il sabato alle 13:00 (ora di Lesina)
+  chiusuraPaga: { giorno: 6, ora: 13 },
+};
+
+// ---- Cosa si fa in ogni tipo di pulizia ------------------------------------
+// prezzo: quale voce del listino si usa
+export const TIPI_PULIZIA = {
+  ripasso: {
+    titolo: "Ripasso veloce", breve: "RIP", prezzo: "ripasso",
+    passi: ["Bagno veloce", "Spazzare", "Svuotare i cestini"],
+  },
+  totale: {
+    titolo: "Pulizia totale", breve: "TOT", prezzo: "totale",
+    passi: ["Cambio lenzuola", "Asciugamani (doppi per tecnici e operai)", "Bagno completo", "Pavimenti", "Cestini"],
+  },
+  casa: {
+    titolo: "Pulizia casa", breve: "CASA", prezzo: "casa",
+    passi: ["Bagno e cucina (padelle e piatti sporchi NON si lavano)", "Pavimenti", "Cestini e bidoni"],
+  },
+  totale_casa: {
+    titolo: "Pulizia totale casa", breve: "TOT", prezzo: "totale_casa",
+    passi: ["Cambio lenzuola", "Asciugamani doppi", "Bagno e cucina", "Pavimenti", "Cestini e bidoni"],
+  },
+  extra: {
+    titolo: "Lavoro extra", breve: "EXTRA", prezzo: "extra",
+    passi: [],
+  },
+};
+
+// ---- Prezzi di partenza (si cambiano dal Listino nell'app) -----------------
+// G = camera grande, P = camera piccola. taglia: quali camere sono piccole.
+export const LISTINO_BASE = {
+  totale:      { G: 15, P: 10 },   // pulizia totale del venerdì
+  ripasso:     { G: 15, P: 10 },   // ripasso veloce del mercoledì
+  casa:        15,                 // pulizia casa del martedì
+  totale_casa: 15,                 // pulizia totale casa del venerdì
+  extra:       0,                  // i lavori extra hanno il prezzo scritto a mano
+  taglia:      {},                 // es. { lella: "P", nicole: "P" }
+};
+
+// ---- Calendario rifiuti di Lesina (utenza domestica) ------------------------
+// Si espone la sera prima. giorno = giorno del RITIRO.
+export const RIFIUTI = [
+  { giorno: 1, cosa: "Umido" },
+  { giorno: 2, cosa: "Plastica" },
+  { giorno: 3, cosa: "Umido + indifferenziato" },
+  { giorno: 4, cosa: "Carta" },
+  { giorno: 5, cosa: "Vetro" },
+  { giorno: 6, cosa: "Umido" },
+];
+
+// ---- Tipi di ospite (colori del tabellone) --------------------------------
+export const TIPI_OSPITE = {
+  ferr:  { nome: "Tecnici settimanali", colore: "var(--c-ferr)" },
+  fond:  { nome: "Fondamenta",          colore: "var(--c-fond)" },
+  dago:  { nome: "D'Agostino",          colore: "var(--c-dago)" },
+  altro: { nome: "Altro ospite",        colore: "var(--c-altro)" },
+  unk:   { nome: "Da chiarire (?)",     colore: "var(--c-unk)" },
+};
+
+// ---- Dizionario per leggere il foglio Excel di papà ------------------------
+// Si usa nel Passo 5 (importazione). Le regole sono fisse: niente IA.
+export const DIZIONARIO_EXCEL = {
+  // Nomi che, scritti a inizio mese, occupano TUTTO il mese
+  ditteMensili: ["fondamenta", "fondam", "fondame", "fondament"],
+  // Come riconoscere il tipo di ospite dal nome scritto nella cella
+  tipi: [
+    { contiene: ["fondam"],             tipo: "fond" },
+    { contiene: ["d'agostino", "dagostino", "d agostino", "agostino"], tipo: "dago" },
+  ],
+  // Parole che rendono una nota PRIVATA (non si mostra alle signore)
+  parolePrivate: ["tel", "cell", "€", "euro", "prezzo", "chiuso", "paga", "pagato", "acconto"],
+  // Parole che non sono nomi di ospiti (vanno ignorate come nome)
+  nonNomi: ["libera", "libero", "vuota", "chiusa", "x", "-", "—", "?"],
+  // Settimanali: nome scritto domenica o lunedì = resta fino al venerdì
+  settimanale: { arrivoGiorni: [0, 1], partenzaGiorno: 5 },
+};
+
+// ---- Dati di esempio per la modalità PROVA (senza Firebase) ----------------
+// Servono solo per vedere l'app funzionare prima di collegare i dati veri.
+export const SOGGIORNI_ESEMPIO = [
+  // camera, inizio (ISO), fine = giorno di PARTENZA (quella notte non si conta), nome, tipo
+  ["salvatore",   "2026-09-27", "2026-10-02", "Manna",             "ferr"],
+  ["aurora",      "2026-09-28", "2026-10-02", "Palazzo",           "ferr"],
+  ["michele",     "2026-09-27", "2026-10-02", "Pignatelli",        "ferr"],
+  ["antonio",     "2026-09-27", "2026-10-02", "Rega Enzo",         "ferr"],
+  ["lella",       "2026-09-28", "2026-10-02", "Rahhal",            "ferr"],
+  ["alba",        "2026-10-01", "2026-11-01", "Fondamenta",        "fond"],
+  ["tramonto",    "2026-10-01", "2026-11-01", "Fondamenta",        "fond"],
+  ["passerella",  "2026-09-28", "2026-10-02", "Francesco",         "ferr"],
+  ["fenicotteri", "2026-09-28", "2026-10-02", "Salerno",           "ferr"],
+  ["nicole",      "2026-09-28", "2026-10-02", "Castaldi",          "ferr"],
+  ["zarapt",      "2026-09-27", "2026-10-10", "Rega Ugo · 1 tecnico", "ferr"],
+  ["zara1",       "2026-09-28", "2026-10-10", "D'Agostino · 1 operaio", "dago"],
+  ["trento",      "2026-10-01", "2026-11-01", "Fondamenta",        "fond"],
+  ["salvatore",   "2026-10-04", "2026-10-09", "Manna",             "ferr"],
+  ["aurora",      "2026-10-05", "2026-10-09", "Palazzo",           "ferr"],
+  ["michele",     "2026-10-04", "2026-10-09", "Pignatelli",        "ferr"],
+  ["antonio",     "2026-10-04", "2026-10-09", "Rega Enzo",         "ferr"],
+  ["lella",       "2026-10-05", "2026-10-09", "Rahhal",            "ferr"],
+  ["passerella",  "2026-10-05", "2026-10-09", "Francesco",         "ferr"],
+  ["fenicotteri", "2026-10-05", "2026-10-09", "Salerno",           "ferr"],
+  ["nicole",      "2026-10-05", "2026-10-09", "?",                 "unk"],
+];
