@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.4.0";
+export const VERSIONE = "0.4.1";
 
 // ---------------------------------------------------------------------------
 //  Stato dell'app (tutto quello che serve per disegnare le schermate)
@@ -202,7 +202,7 @@ function vistaAccesso() {
   }
   return `<section class="card"><h2>Entra</h2>
     <form id="formAccesso" autocomplete="on">
-      <div class="campo"><label for="inNome">Il tuo nome (o la tua email)</label><input id="inNome" type="text" autocapitalize="none" autocomplete="username" placeholder="es. michele oppure primopiano" required></div>
+      <div class="campo"><label for="inNome">Il tuo nome (o la tua email)</label><input id="inNome" type="text" autocapitalize="none" autocomplete="username" placeholder="es. michele oppure primopiano" value="${esc(S.nomeAccesso || "")}" required></div>
       <div class="campo"><label for="inPass">Password</label><input id="inPass" type="password" autocomplete="current-password" required></div>
       ${S.erroreAccesso ? `<div class="errore">${esc(S.erroreAccesso)}</div>` : ""}
       <button class="big main" type="submit" ${S.attesa ? "disabled" : ""}>${S.attesa ? "Un attimo…" : "Entra"}</button>
@@ -576,6 +576,7 @@ function collega() {
   if (form) form.onsubmit = async (e) => {
     e.preventDefault();
     let nome = $("#inNome").value.trim().toLowerCase(), pass = $("#inPass").value;
+    S.nomeAccesso = nome;
     if (!nome.includes("@")) nome = nome.replace(/\s+/g, "") + "@" + (window.DOMINIO_ACCESSO || "stanzericci.app");
     S.attesa = true; S.erroreAccesso = ""; disegna();
     try { await S.db.entra(nome, pass); }
