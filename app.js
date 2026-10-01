@@ -6,8 +6,9 @@
 import { ZONE, CAMERE, REGOLE_BASE, TIPI_PULIZIA, TIPI_OSPITE, RIFIUTI, APPOGGIO_ESTERNO } from "./regole.js";
 import * as L from "./logica.js";
 import { apriDb } from "./db.js";
+import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.1.0";
+export const VERSIONE = "0.2.0";
 
 // ---------------------------------------------------------------------------
 //  Stato dell'app (tutto quello che serve per disegnare le schermate)
@@ -76,7 +77,8 @@ function avviaAscolto() {
   S.stop.push(db.ascolta("pagamenti", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.pagamenti = m; disegna(); }, mostraErrore));
   if (!addetta()) {
     S.stop.push(db.ascolta("soggiorni", { where: [["fine", ">=", da]] }, (m) => { S.soggiorni = m; S.caricati.soggiorni = true; disegna(); pianifica(); }, mostraErrore));
-    S.stop.push(db.ascolta("note", { where: [["data", ">=", da]] }, (m) => { S.note = m; disegna(); }, mostraErrore));
+    S.stop.push(db.ascolta("note", { where: [["data", ">=", da]] }, (m) => { S.note = m; disegna(); pianifica(); }, mostraErrore));
+  S.stop.push(db.ascoltaDoc("impostazioni", "foglio", d => { S.foglioInfo = d; disegna(); }));
   }
 }
 
@@ -104,7 +106,7 @@ async function eseguiPiano() {
     const oggi = L.oggiISO();
     const da = L.aggiungiGiorni(oggi, -(S.regole.giorniIndietro ?? 3));
     const a = L.aggiungiGiorni(oggi, S.regole.giorniAvanti ?? 14);
-    const attese = L.pianoPulizie(S.camere, soggiorniLista(), S.regole, S.listino, da, a);
+    const attese = L.pianoPulizie(S.camere, soggiorniLista(), S.regole, S.listino, da, a, Object.values(S.note));
     const esistenti = {};
     for (const [id, p] of Object.entries(S.pulizie)) if (p.data >= da && p.data <= a) esistenti[id] = p;
     const diff = L.differenzePiano(attese, esistenti);
@@ -257,6 +259,7 @@ function vistaProprietario() {
   else if (v === "piantine") corpo = zoneOrdinate().map(z => vistaPiantina(z.id, false)).join("");
   else if (v === "paghe") corpo = vistaPaghe();
   else if (v === "altro") corpo = vistaAltro();
+  else if (v === "foglio") corpo = vistaFoglio();
   else corpo = vistaOggiGestione();
   return tabs + corpo;
 }
@@ -365,7 +368,10 @@ function vistaAltro() {
       <div class="row"><span>Pulizie preparate in anticipo</span><span class="s">${r.giorniAvanti ?? 14} giorni</span></div>
     </div><p class="muted small" style="margin:10px 0 0">I giorni si cambiano nel file regole.js (o chiedi a Michele).</p></section>
   <section class="card"><h2>Aspetto</h2><div class="seg"><button aria-pressed="${S.tema === "auto"}" data-tema="auto">Come il telefono</button><button aria-pressed="${S.tema === "light"}" data-tema="light">Chiaro</button><button aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div></section>
-  <section class="card"><h2>Foglio di papà</h2><p class="muted" style="margin:0">L'importazione del foglio Excel arriva nel Passo 5. Intanto il prospetto si compila toccando le caselle nel Tabellone.</p></section>
+  <section class="card"><h2>Foglio di papà</h2>
+    ${S.foglioInfo ? `<p class="muted small" style="margin:0 0 8px">Ultimo foglio: <b>${esc(S.foglioInfo.nome || "")}</b> · ${esc(S.foglioInfo.quando || "")} · ${esc((S.foglioInfo.mesi || []).join(", "))}</p>` : `<p class="muted small" style="margin:0 0 8px">Nessun foglio caricato finora.</p>`}
+    ${puoModificare() ? `<label class="big main" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">📄 Carica il foglio di papà<input id="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><p class="muted small" style="margin:8px 0 0">Legge il file Excel con regole fisse e ti fa controllare prima di salvare. Niente viene cambiato finché non premi "Salva nel prospetto".</p>` : ""}
+  </section>
   <div class="menu">
     <button data-esporta="json">Esporta tutto (copia di sicurezza)<span>Scarica un file con prospetto, pulizie, pagamenti e listino</span></button>
     ${S.db.modalita === "prova" ? `<button data-azzera-prova>Azzera i dati di prova<span>Ricomincia con gli esempi puliti</span></button>` : ""}
@@ -497,6 +503,12 @@ function collega() {
   document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { S.tema = b.dataset.tema; localStorage.setItem("ricci_tema", S.tema); applicaTema(); disegna(); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = () => { if (confirm("Vuoi uscire dall'app? Per rientrare servirà la password.")) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = esportaTutto);
+  const ff = $("#fileFoglio");
+  if (ff) ff.onchange = () => { if (ff.files && ff.files[0]) leggiFileExcel(ff.files[0]); };
+  document.querySelectorAll("[data-scelta]").forEach(c => c.onchange = () => { const s = S.importazione?.ris.soggiorni[Number(c.dataset.scelta)]; if (s) { s.scelto = c.checked; disegna(); } });
+  const sm = $("#sostMano"); if (sm) sm.onchange = () => { S.importazione.sostituisciMano = sm.checked; };
+  document.querySelectorAll("[data-salva-foglio]").forEach(b => b.onclick = salvaImportazione);
+  document.querySelectorAll("[data-annulla-foglio]").forEach(b => b.onclick = () => { S.importazione = null; S.vista = "altro"; disegna(); });
   document.querySelectorAll("[data-azzera-prova]").forEach(b => b.onclick = () => { if (confirm("Azzero i dati di prova?")) S.db.azzeraProva(); });
 }
 
@@ -636,6 +648,102 @@ async function esportaTutto() {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `stanze-ricci-copia-${L.oggiISO()}.json`; document.body.appendChild(a); a.click(); a.remove();
     toast("Copia di sicurezza scaricata");
   } catch (e) { erroreScrittura(e); }
+}
+
+// ---------------------------------------------------------------------------
+//  Foglio di papà: lettura dell'Excel con regole fisse, anteprima, salvataggio
+// ---------------------------------------------------------------------------
+let XLSXlib = null;
+function caricaXLSX() {
+  if (XLSXlib) return Promise.resolve(XLSXlib);
+  if (window.XLSX) return Promise.resolve(XLSXlib = window.XLSX);
+  return new Promise((ok, ko) => {
+    const sc = document.createElement("script"); sc.src = "xlsx.min.js";
+    sc.onload = () => ok(XLSXlib = window.XLSX); sc.onerror = () => ko(new Error("Non riesco a caricare il lettore Excel (xlsx.min.js)."));
+    document.head.appendChild(sc);
+  });
+}
+
+async function leggiFileExcel(file) {
+  toast("Leggo il foglio…");
+  try {
+    const XLSX = await caricaXLSX();
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array", cellStyles: true, cellFormula: true });
+    const ris = leggiProspetto(daSheetJS(XLSX, wb), {});
+    if (!ris.mesi.length) { toast("In questo file non trovo fogli con il nome di un mese (es. 'settembre')."); return; }
+    // conflitti con quello che c'è già nell'app (soggiorni scritti a mano)
+    const esistenti = soggiorniLista();
+    ris.soggiorni.forEach((s, i) => {
+      s.scelto = !s.nonCreare;
+      s.conflitti = esistenti.filter(e => e.camera === s.camera && (e.origine || "mano") !== "excel" && e.inizio < s.fine && s.inizio < e.fine).map(e => ({ id: e.id, nome: e.nome, inizio: e.inizio, fine: e.fine }));
+    });
+    S.importazione = { nomeFile: file.name, ris, sostituisciMano: true };
+    S.vista = "foglio"; disegna(); window.scrollTo(0, 0);
+  } catch (e) { console.error(e); toast("Non sono riuscito a leggere il file: " + (e.message || e)); }
+}
+
+function vistaFoglio() {
+  const imp = S.importazione;
+  if (!imp) return `<section class="card"><h2>Foglio di papà</h2><p class="muted">Nessun foglio in lettura.</p><button class="big undo" data-vista="altro">Torna indietro</button></section>`;
+  const r = imp.ris;
+  const dubbi = r.soggiorni.filter(s => s.dubbio);
+  const sicuri = r.soggiorni.filter(s => !s.dubbio);
+  const conflitti = r.soggiorni.filter(s => s.scelto && s.conflitti.length);
+  const scelti = r.soggiorni.filter(s => s.scelto).length;
+  const rigaSog = (s, i) => `<label class="row" style="grid-template-columns:auto 1fr;cursor:pointer;align-items:start"><input type="checkbox" data-scelta="${i}" ${s.scelto ? "checked" : ""} style="width:24px;height:24px;margin-top:2px">
+      <span><b>${esc(camera(s.camera).nome)}</b> · ${esc(s.nome)}${s.persone ? ` · ${s.persone} ${s.persone === 1 ? "persona" : "persone"}` : ""} <span class="chip">${esc(TIPI_OSPITE[s.tipo]?.nome || s.tipo)}</span><br>
+      <span class="muted">${esc(L.dataMedia(s.inizio))} → parte ${esc(L.dataMedia(s.fine))} (${L.giorniTra(s.inizio, s.fine)} notti)</span>
+      ${s.nota ? `<br><span class="muted">📝 per le signore: ${esc(s.nota)}</span>` : ""}${s.notaPrivata ? `<br><span class="muted">🔒 ${esc(s.notaPrivata)}</span>` : ""}
+      ${s.motivi.length ? `<br><span style="color:var(--todo);font-weight:700">? ${esc(s.motivi.join(" · "))}</span>` : ""}
+      ${s.conflitti.length ? `<br><span style="color:var(--warn)">Nell'app c'è già: ${esc(s.conflitti.map(c => `${c.nome} (${L.dataMedia(c.inizio)}→${L.dataMedia(c.fine)})`).join(", "))}</span>` : ""}
+      <br><span class="muted small">nel foglio: ${esc(s.testoOriginale || "(solo colore)")}</span></span></label>`;
+  const indice = s => r.soggiorni.indexOf(s);
+  return `<section class="card flat"><h2 style="margin:0">Foglio di papà · ${esc(imp.nomeFile)}</h2><p class="muted small" style="margin:0">${esc(r.mesi.map(m => m.nome).join(" e "))}. Controlla, togli la spunta a quello che non va, poi salva.</p></section>
+  <section class="card"><div class="stats"><div class="stat"><b>${r.soggiorni.length}</b><span>soggiorni letti</span></div><div class="stat"><b style="color:var(--todo)">${dubbi.length}</b><span>da controllare</span></div><div class="stat"><b>${r.note.length}</b><span>note</span></div><div class="stat"><b>${scelti}</b><span>da salvare</span></div></div></section>
+  ${r.avvisi.length || r.colonneIgnorate.length ? `<section class="card"><div class="avviso">${esc([...r.avvisi, ...(r.colonneIgnorate.length ? ["Colonne non riconosciute: " + r.colonneIgnorate.join(", ")] : [])].join(" "))}</div></section>` : ""}
+  ${dubbi.length ? `<section class="card"><h2 style="color:var(--todo)">Da controllare (?)</h2><p class="muted small" style="margin:0 0 8px">Qui l'app non è sicura: decidi tu. Spunta = lo salvo così com'è.</p><div class="rows">${dubbi.map(s => rigaSog(s, indice(s))).join("")}</div></section>` : ""}
+  ${conflitti.length ? `<section class="card"><h2 style="color:var(--warn)">Già presenti nell'app</h2><p class="muted small">Per questi giorni nell'app c'era già qualcosa scritto a mano.</p><label class="row" style="grid-template-columns:auto 1fr;cursor:pointer"><input type="checkbox" id="sostMano" ${imp.sostituisciMano ? "checked" : ""} style="width:24px;height:24px"><span>Il foglio di papà vince: sostituisci quello scritto a mano</span></label></section>` : ""}
+  <section class="card"><h2>Cosa ho letto</h2><div class="rows">${sicuri.map(s => rigaSog(s, indice(s))).join("")}</div></section>
+  <section class="card"><details><summary>Note trovate nel foglio (${r.note.length})</summary><div class="rows">${r.note.map(n => `<div class="row"><span><b>${esc(L.dataMedia(n.data))}</b> · ${esc(n.camera ? camera(n.camera).nome : n.esterno || "")}<br>${esc(n.testo)}</span>${n.privata ? `<span class="pill priv">privata</span>` : `<span class="pill paid">per le signore</span>`}</div>`).join("") || `<p class="muted">Nessuna</p>`}</div></details>
+  <details><summary>Appoggio esterno · senza pulizie (${r.esterni.filter(e => e.strisce.length).length})</summary><div class="rows">${r.esterni.filter(e => e.strisce.length).map(e => `<div class="row one"><span><b>${esc(e.etichetta)}</b> <span class="muted small">(${esc(e.foglio)})</span><br><span class="muted">${esc(e.strisce.map(x => `${L.dataMedia(x.inizio)}→${L.dataMedia(x.fine)}: ${x.testo}`).join(" · "))}</span></span></div>`).join("")}</div></details></section>
+  <section class="card flat"><button class="big main" data-salva-foglio ${S.attesa ? "disabled" : ""}>${S.attesa ? "Salvo…" : `Salva nel prospetto (${scelti})`}</button><button class="big undo" data-annulla-foglio>Annulla, non salvare niente</button></section>`;
+}
+
+async function salvaImportazione() {
+  const imp = S.importazione; if (!imp || S.attesa) return;
+  const r = imp.ris;
+  const scelti = r.soggiorni.filter(s => s.scelto);
+  if (!scelti.length && !r.note.length) { toast("Non c'è niente da salvare."); return; }
+  S.attesa = true; disegna();
+  try {
+    const ops = [];
+    const da = r.mesi.map(m => m.da).sort()[0], a = L.aggiungiGiorni(r.mesi.map(m => m.a).sort().slice(-1)[0], 1);
+    // 1) via i soggiorni venuti da un foglio precedente in questi mesi (verranno riscritti)
+    const vecchi = await S.db.leggiTutti("soggiorni", { where: [["fine", ">", da]] });
+    for (const v of Object.values(vecchi)) if ((v.origine === "excel") && v.inizio < a) ops.push({ tipo: "cancella", coll: "soggiorni", id: v.id });
+    // 2) quelli scritti a mano che si sovrappongono, se il foglio vince
+    if (imp.sostituisciMano) for (const s of scelti) for (const c of s.conflitti) ops.push({ tipo: "cancella", coll: "soggiorni", id: c.id });
+    // 3) i nuovi soggiorni
+    for (const s of scelti) {
+      const id = `xl_${s.camera}_${s.inizio}`;
+      ops.push({ tipo: "salva", coll: "soggiorni", id, merge: false, dati: { camera: s.camera, inizio: s.inizio, fine: s.fine, nome: s.nome, tipo: s.tipo, persone: s.persone || 1, nota: s.nota || "", notaPrivata: s.notaPrivata || "", dubbio: !!s.dubbio, motivi: s.motivi || [], testoOriginale: s.testoOriginale || "", origine: "excel", foglio: imp.nomeFile, mesi: mesiCoperti(s.inizio, s.fine), modificato: S.db.adesso(), da: S.utente.nome || "" } });
+    }
+    // 4) le note (stesso nome = stessa nota: ricaricare il foglio non le raddoppia)
+    r.note.forEach((n, i) => {
+      const id = `xl_${n.camera || n.esterno || "gen"}_${n.data}_${i}`;
+      ops.push({ tipo: "salva", coll: "note", id, merge: false, dati: { data: n.data, camera: n.camera || null, testo: n.testo, privata: !!n.privata, origine: "excel", foglio: imp.nomeFile, da: S.utente.nome || "" } });
+    });
+    const quando = new Date().toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
+    ops.push({ tipo: "salva", coll: "impostazioni", id: "foglio", merge: false, dati: { nome: imp.nomeFile, quando, mesi: r.mesi.map(m => m.nome), letti: r.soggiorni.length, salvati: scelti.length, dubbi: r.soggiorni.filter(s => s.dubbio).length, da: S.utente.nome || "" } });
+    ops.push({ tipo: "salva", coll: "importazioni", id: new Date().toISOString().replace(/[:.]/g, "-"), merge: false, dati: { nome: imp.nomeFile, quando, mesi: r.mesi, letti: r.soggiorni.length, salvati: scelti.length, esterni: r.esterni, da: S.utente.nome || "" } });
+    // nei mesi letti il foglio di papà è la verità: via anche le note "excel" vecchie di quei mesi
+    const vecchieNote = await S.db.leggiTutti("note", { where: [["data", ">=", da]] });
+    for (const n of Object.values(vecchieNote)) if (n.origine === "excel" && n.data < a && !ops.some(o => o.coll === "note" && o.id === n.id)) ops.push({ tipo: "cancella", coll: "note", id: n.id });
+    await S.db.scrivi(ops);
+    S.importazione = null; S.attesa = false; S.vista = "prospetto"; S.board = { modo: "mese", inizio: L.primoDelMese(L.oggiISO()) }; disegna();
+    toast(`Foglio salvato: ${scelti.length} soggiorni e ${r.note.length} note nel prospetto.`);
+  } catch (e) { S.attesa = false; disegna(); erroreScrittura(e); }
 }
 
 // ---------------------------------------------------------------------------

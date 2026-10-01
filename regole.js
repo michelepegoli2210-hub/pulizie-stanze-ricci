@@ -123,19 +123,34 @@ export const TIPI_OSPITE = {
 // ---- Dizionario per leggere il foglio Excel di papà ------------------------
 // Si usa nel Passo 5 (importazione). Le regole sono fisse: niente IA.
 export const DIZIONARIO_EXCEL = {
-  // Nomi che, scritti a inizio mese, occupano TUTTO il mese
-  ditteMensili: ["fondamenta", "fondam", "fondame", "fondament"],
-  // Come riconoscere il tipo di ospite dal nome scritto nella cella
+  // Come riconoscere il tipo di ospite dal testo scritto nella cella (e il nome pulito da mostrare)
   tipi: [
-    { contiene: ["fondam"],             tipo: "fond" },
-    { contiene: ["d'agostino", "dagostino", "d agostino", "agostino"], tipo: "dago" },
+    { contiene: ["fondam"],                                   tipo: "fond", nome: "Fondamenta" },
+    { contiene: ["d'agostin", "dagostin", "d agostin", "agostin"], tipo: "dago", nome: "D'Agostino" },
   ],
-  // Parole che rendono una nota PRIVATA (non si mostra alle signore)
-  parolePrivate: ["tel", "cell", "€", "euro", "prezzo", "chiuso", "paga", "pagato", "acconto"],
-  // Parole che non sono nomi di ospiti (vanno ignorate come nome)
-  nonNomi: ["libera", "libero", "vuota", "chiusa", "x", "-", "—", "?"],
-  // Settimanali: nome scritto domenica o lunedì = resta fino al venerdì
-  settimanale: { arrivoGiorni: [0, 1], partenzaGiorno: 5 },
+  // Se nella cella c'è una di queste parole, quel giorno NON c'è nessuno (va in "Da controllare")
+  negazioni: ["non viene", "non vengono", "non e venuto", "non è venuto", "non sono venuti", "disdett", "annullat", "cancellat"],
+  // Parole che rendono una nota PRIVATA (non si mostra alle signore). I numeri di telefono sono privati sempre.
+  parolePrivate: ["tel", "cell", "euro", "prezzo", "prezzi", "chiuso", "paga", "pagato", "pagano", "acconto", "contanti", "fattura", "malattia", "malato"],
+  // Parole che fanno capire che il testo è un'ISTRUZIONE per le signore (si mostra a loro)
+  paroleIstruzioni: ["cambiare", "cambia", "aggiungere", "aggiungi", "aggiunto", "lettino", "culla", "lenzuola", "asciugamani", "pulire", "rimettere", "mettere", "portare", "lavare", "togliere", "stanza piccola", "stanza grande"],
+  // Parole da commento: se un testo le contiene è una nota di papà, non un nuovo ospite (resta privata)
+  paroleCommento: ["partiti", "partito", "partita", "partite", "partono", "parte", "arrivano", "arrivati", "arrivato", "arriva", "circa", "alle", "ore", "stamattina", "stasera", "domani", "ieri", "telefonato", "chiamato", "avvisato", "detto"],
+  // Dopo queste parole finisce il nome e comincia un commento (va nella nota privata)
+  paroleStop: ["che", "stava", "stavano", "non", "per", "x", "segnato", "segnata", "nuovo", "nuova", "vedi", "forse"],
+  // Testi che non sono nomi di ospiti
+  nonNomi: ["libera", "libero", "vuota", "vuoto", "chiusa", "chiuso", "x", "-", "—", "?", "no", "si", "sì", "ok"],
+};
+
+// Come si chiamano le colonne nel foglio di papà (riga 2, oppure riga 1) → camera dell'app.
+// Scritte in minuscolo, senza accenti e simboli: l'app confronta così.
+export const COLONNE_EXCEL = {
+  "salvatore": "salvatore", "aurora": "aurora", "michele": "michele", "antonio": "antonio",
+  "alba": "alba", "tramonto": "tramonto", "passerella": "passerella", "fenicotteri": "fenicotteri",
+  "lella": "lella", "nicole": "nicole",
+  "via zara piano terra": "zarapt", "via zara pt": "zarapt", "zara piano terra": "zarapt", "zara pt": "zarapt",
+  "via zara 1 piano": "zara1", "via zara 1piano": "zara1", "via zara primo piano": "zara1", "zara 1 piano": "zara1", "via zara 1": "zara1",
+  "via trento 47": "trento", "via trento": "trento", "trento 47": "trento", "trento": "trento",
 };
 
 // ---- Dati di esempio per la modalità PROVA (senza Firebase) ----------------

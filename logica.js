@@ -98,7 +98,7 @@ export function arrivaIl(soggiorni, cameraId, iso) {
 // ---- Piano delle pulizie ---------------------------------------------------
 // Decide che pulizia va fatta in una camera in un certo giorno, secondo le regole.
 // Restituisce null se quel giorno non c'è niente da fare.
-export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE) {
+export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, note = []) {
   const r = { ...REGOLE_BASE, ...(regole || {}) };
   const occ = ospiteIl(soggiorni, camera.id, iso);
   const parte = parteIl(soggiorni, camera.id, iso);
@@ -110,6 +110,7 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE) {
   if (parte && r.totaleAllaPartenza) tipo = camera.tipo === "casa" ? "totale_casa" : "totale";
   if (!tipo) return null;
   const chi = occ || parte;
+  const notePubbliche = note.filter(n => n.camera === camera.id && n.data === iso && !n.privata).map(n => n.testo);
   return {
     tipo,
     titolo: TIPI_PULIZIA[tipo]?.titolo || tipo,
@@ -118,17 +119,17 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE) {
     soggiorno: chi?.id || null,
     partenza: !!parte,
     arrivo: !!arrivaIl(soggiorni, camera.id, iso),
-    istruzioni: chi?.nota || "",
+    istruzioni: [chi?.nota || "", ...notePubbliche].filter(Boolean).join(" · "),
     persone: chi?.persone || null,
   };
 }
 
 // Costruisce l'elenco completo delle pulizie "attese" in un intervallo di giorni.
-export function pianoPulizie(camere, soggiorni, regole, listino, da, a) {
+export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = []) {
   const out = [];
   for (let iso = da; iso <= a; iso = aggiungiGiorni(iso, 1)) {
     for (const c of camere) {
-      const p = pulizia_prevista(c, iso, soggiorni, regole);
+      const p = pulizia_prevista(c, iso, soggiorni, regole, note);
       if (!p) continue;
       out.push({
         id: `${iso}_${c.id}`,
