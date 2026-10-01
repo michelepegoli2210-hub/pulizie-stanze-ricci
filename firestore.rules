@@ -29,6 +29,12 @@ service cloud.firestore {
     function puoLeggereTutto() { return ruolo() == "proprietario" || ruolo() == "lettura"; }
     function addetta() { return ruolo() == "addetta"; }
     function miaZona() { return scheda().zona; }
+    // La controllatrice di turno (scritta dai proprietari in impostazioni/controlli)
+    function sonoControllatrice() {
+      return addetta()
+        && exists(/databases/$(db)/documents/impostazioni/controlli)
+        && get(/databases/$(db)/documents/impostazioni/controlli).data.attuale == miaZona();
+    }
 
     // Chi è chi (nome, ruolo, zona): un documento per indirizzo email.
     // Ognuno legge la propria scheda; i proprietari leggono e scrivono tutte.
@@ -62,15 +68,43 @@ service cloud.firestore {
       allow write: if proprietario();
     }
 
-    // Pulizie: le signore vedono la loro zona e cambiano SOLO stato, ora, nota, settimana, segnatoDa.
+    // Pulizie: le signore vedono la loro zona e cambiano SOLO stato, ora, nota, settimana, segnatoDa, foto.
+    // La controllatrice di turno vede anche le camere FATTE dalle colleghe (per dare il voto).
     match /pulizie/{id} {
-      allow read: if puoLeggereTutto() || (addetta() && resource.data.zona == miaZona());
+      allow read: if puoLeggereTutto()
+        || (addetta() && resource.data.zona == miaZona())
+        || (resource.data.stato == "fatta" && sonoControllatrice());
       allow create, delete: if proprietario();
       allow update: if proprietario()
         || (addetta()
             && resource.data.zona == miaZona()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "nota", "settimana", "segnatoDa"])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "nota", "settimana", "segnatoDa", "foto"])
             && request.resource.data.stato in ["da_fare", "fatta", "non_fatta", "problema"]);
+    }
+
+    // Controlli tra colleghe: la controllatrice dà il voto alle camere delle ALTRE zone;
+    // i proprietari aggiungono il loro controllo. Ognuna vede i voti che riguardano la sua zona.
+    match /controlli/{id} {
+      allow read: if puoLeggereTutto()
+        || (addetta() && (resource.data.zonaControllata == miaZona() || resource.data.zonaControllatrice == miaZona()));
+      allow create: if proprietario()
+        || (sonoControllatrice()
+            && request.resource.data.zonaControllatrice == miaZona()
+            && request.resource.data.zonaControllata != miaZona()
+            && !("votoProprietario" in request.resource.data));
+      allow update: if proprietario()
+        || (sonoControllatrice()
+            && resource.data.zonaControllatrice == miaZona()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["voto", "punti", "nota", "ora", "controllatrice", "settimana"]));
+      allow delete: if proprietario();
+    }
+
+    // Foto dei problemi (piccole, dentro al database): le signore ne aggiungono solo per la loro zona.
+    match /foto/{id} {
+      allow read: if puoLeggereTutto() || (addetta() && resource.data.zona == miaZona());
+      allow create, update: if proprietario()
+        || (addetta() && request.resource.data.zona == miaZona() && request.resource.data.dati is string && request.resource.data.dati.size() < 400000);
+      allow delete: if proprietario();
     }
 
     // Tutto il resto: chiuso.

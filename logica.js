@@ -189,17 +189,78 @@ export function importoFinale(p, regole) {
   return f ? Math.round(base * f.perc) / 100 : base;
 }
 
+// ---- Controlli tra colleghe -------------------------------------------------
+export const PUNTI_CONTROLLO = [
+  { id: "letto",     testo: "Letto rifatto bene (lenzuola tese, cuscini a posto)" },
+  { id: "bagno",     testo: "Bagno pulito (sanitari, doccia, specchio)" },
+  { id: "pavimento", testo: "Pavimento pulito, anche sotto il letto" },
+  { id: "polvere",   testo: "Niente polvere (mobili, TV, comodini)" },
+  { id: "cestini",   testo: "Cestini vuoti con sacchetto nuovo" },
+  { id: "dotazioni", testo: "Asciugamani e dotazioni giuste per le persone" },
+  { id: "ordine",    testo: "Tutto in ordine, niente dimenticato" },
+  { id: "aria",      testo: "Buon odore, camera arieggiata" },
+];
+// Il voto nasce dai punti: tutti e 8 a posto = 10; ogni punto mancante toglie 1 (minimo 2)
+export function votoDaiPunti(punti) { const ok = PUNTI_CONTROLLO.filter(p => punti && punti[p.id]).length; return Math.max(2, 2 + ok); }
+// Chi fa i controlli questa settimana: la zona scelta dai proprietari, altrimenti a turno
+export function zonaControllatrice(impostazioniControlli, chiave, zone) {
+  const scelta = impostazioniControlli?.settimane?.[chiave];
+  if (scelta) return scelta;
+  const rot = (impostazioniControlli?.rotazione && impostazioniControlli.rotazione.length) ? impostazioniControlli.rotazione : zone;
+  if (!rot.length) return null;
+  const n = Math.floor(daISO(chiave).getTime() / 864e5 / 7);
+  return rot[((n % rot.length) + rot.length) % rot.length];
+}
+// Il voto che conta per la paga: prima quello del proprietario, altrimenti quello della collega
+export function votoCheConta(controllo) {
+  if (!controllo) return null;
+  if (controllo.votoProprietario != null) return Number(controllo.votoProprietario);
+  if (controllo.voto != null) return Number(controllo.voto);
+  return null;
+}
+export function controlloNonCorrisponde(controllo, regole) {
+  if (!controllo || controllo.voto == null || controllo.votoProprietario == null) return false;
+  return Math.abs(Number(controllo.voto) - Number(controllo.votoProprietario)) > (votiCompleti(regole).scartoMassimo ?? 2);
+}
+// Bonus della controllatrice in una settimana di paga: almeno un controllo fatto e nessuno "che non corrisponde"
+export function bonusControllatrice(controlli, zona, chiave, regole) {
+  const miei = Object.values(controlli || {}).filter(c => c.zonaControllatrice === zona && c.voto != null && (c.settimana || chiaveSettimana(c.ora || c.data + "T12:00:00")) === chiave);
+  if (!miei.length) return { importo: 0, n: 0, perso: false };
+  const perso = miei.some(c => controlloNonCorrisponde(c, regole));
+  return { importo: perso ? 0 : Number(votiCompleti(regole).bonusControllatrice || 0), n: miei.length, perso };
+}
+// Richiami: alla signora controllata per voti bassi; alla controllatrice dopo N controlli che non corrispondono
+export function richiami(controlli, regole) {
+  const v = votiCompleti(regole), out = { controllate: {}, controllatrici: {} };
+  for (const c of Object.values(controlli || {})) {
+    const voto = votoCheConta(c);
+    const f = voto != null ? fasciaVoto(regole, voto) : null;
+    if (f?.richiamo) (out.controllate[c.zonaControllata] = out.controllate[c.zonaControllata] || []).push(c);
+    if (controlloNonCorrisponde(c, regole)) (out.controllatrici[c.zonaControllatrice] = out.controllatrici[c.zonaControllatrice] || []).push(c);
+  }
+  out.soglia = v.richiamoDopo ?? 3;
+  return out;
+}
+
 // ---- Conti ------------------------------------------------------------------
-export function pulizieFatte(pulizie, regole) {
-  return Object.values(pulizie).filter(p => p.stato === "fatta").map(p => ({ ...p, settimana: p.settimana || chiaveSettimana(p.ora || p.data + "T12:00:00"), finale: importoFinale(p, regole) }));
+export function pulizieFatte(pulizie, regole, controlli) {
+  return Object.values(pulizie).filter(p => p.stato === "fatta").map(p => {
+    const c = controlli ? controlli[p.id] : null;
+    const voto = votoCheConta(c);
+    const pp = { ...p, voto: voto != null ? voto : (p.voto ?? null), settimana: p.settimana || chiaveSettimana(p.ora || p.data + "T12:00:00") };
+    pp.finale = importoFinale(pp, regole);
+    return pp;
+  });
 }
-export function totaleSettimana(pulizie, zona, chiave, regole) {
-  const l = pulizieFatte(pulizie, regole).filter(p => p.zona === zona && p.settimana === chiave);
-  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), totale: l.reduce((s, p) => s + p.finale, 0) };
+export function totaleSettimana(pulizie, zona, chiave, regole, controlli) {
+  const l = pulizieFatte(pulizie, regole, controlli).filter(p => p.zona === zona && p.settimana === chiave);
+  const bonus = bonusControllatrice(controlli, zona, chiave, regole);
+  const pulizieTot = l.reduce((s, p) => s + p.finale, 0);
+  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), pulizie: pulizieTot, bonus, totale: pulizieTot + bonus.importo };
 }
-export function storicoMensile(pulizie, zona, regole) {
+export function storicoMensile(pulizie, zona, regole, controlli) {
   const mesi = {};
-  for (const p of pulizieFatte(pulizie, regole)) {
+  for (const p of pulizieFatte(pulizie, regole, controlli)) {
     if (p.zona !== zona) continue;
     const m = (p.ora ? partiRoma(p.ora) : null);
     const k = m ? `${m.y}-${String(m.m).padStart(2, "0")}` : meseDi(p.data);
@@ -207,5 +268,7 @@ export function storicoMensile(pulizie, zona, regole) {
     mesi[k].totale += p.finale; mesi[k].n++;
     mesi[k].settimane[p.settimana] = (mesi[k].settimane[p.settimana] || 0) + p.finale;
   }
+  // bonus controllatrice per settimana
+  for (const k of Object.keys(mesi)) for (const sk of Object.keys(mesi[k].settimane)) { const b = bonusControllatrice(controlli, zona, sk, regole); if (b.importo) { mesi[k].settimane[sk] += b.importo; mesi[k].totale += b.importo; } }
   return mesi;
 }
