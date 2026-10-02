@@ -8,7 +8,33 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.6.0";
+export const VERSIONE = "0.7.0";
+
+// Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
+const ICONE_SVG = {
+  letto: '<path d="M3 18V8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10"/><path d="M3 14h18"/><path d="M7 10h4v4H7z"/>',
+  scopa: '<path d="M14 3l7 7"/><path d="M10 7l7 7"/><path d="M4 20c0-4 2-6 6-6l4 4c0 4-2 6-6 6H4z"/>',
+  euro: '<path d="M17 6a7 7 0 1 0 0 12"/><path d="M5 10h9"/><path d="M5 14h9"/>',
+  spunta: '<path d="M20 6L9 17l-5-5"/>',
+  lista: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  orologio: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  esci: '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/>',
+  entra: '<path d="M14 7l5 5-5 5"/><path d="M19 12H7"/><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/>',
+  persona: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  nota: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>',
+  avviso: '<path d="M12 3l10 18H2z"/><path d="M12 10v4"/><path d="M12 17.5v.5"/>',
+  gioca: '<path d="M6 4l14 8-14 8z"/>',
+  calendario: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  bidone: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3"/>',
+  indietro: '<path d="M15 6l-6 6 6 6"/>',
+};
+const ICONA = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONE_SVG[n] || ""}</svg>`;
+const STATI = {
+  da_fare: { testo: "DA PULIRE", cls: "todo" }, in_corso: { testo: "IN CORSO", cls: "wip" }, fatta: { testo: "PULITA", cls: "done" },
+  problema: { testo: "PROBLEMA", cls: "warn" }, non_fatta: { testo: "NON FATTA", cls: "skip" },
+};
+const BADGE = (p) => { const st = STATI[p.stato] || STATI.da_fare; return `<span class="badge ${st.cls}">${st.testo}</span>`; };
 
 // ---------------------------------------------------------------------------
 //  Stato dell'app (tutto quello che serve per disegnare le schermate)
@@ -36,8 +62,10 @@ function puoModificare() { return proprietario(); }
 function soggiorniLista() { return Object.values(S.soggiorni); }
 function pulizieDelGiorno(iso, zona) { return Object.values(S.pulizie).filter(p => p.data === iso && (!zona || p.zona === zona)).sort((a, b) => ordineCamera(a.camera) - ordineCamera(b.camera)); }
 function ordineCamera(id) { return camera(id).ordine || 99; }
-function statoClasse(p) { return !p ? "" : p.stato === "fatta" ? "done" : p.stato === "problema" ? "warn" : p.stato === "non_fatta" ? "skip" : "todo"; }
-function statoTesto(p) { return p.stato === "fatta" ? `✓ Fatta ${L.oraBreve(p.ora)}` : p.stato === "problema" ? "! Problema" : p.stato === "non_fatta" ? "Non fatta" : p.titolo; }
+function statoClasse(p) { return !p ? "" : (STATI[p.stato] || STATI.da_fare).cls; }
+function statoTesto(p) { return p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : p.stato === "in_corso" ? `In corso da ${L.oraBreve(p.inizio)}` : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? "Non fatta" : p.titolo; }
+function minutiPulizia(p) { if (!p.inizio || !p.ora) return null; const m = Math.round((new Date(p.ora) - new Date(p.inizio)) / 60000); return m >= 0 && m < 600 ? m : null; }
+function titoloLavoro(p) { return p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : p.titolo; }
 function applicaTema() { if (S.tema === "dark") document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme"); }
 
 // ---------------------------------------------------------------------------
@@ -218,7 +246,7 @@ function vistaNonAttivo() {
 function vistaAddetta() {
   const z = S.utente.zona;
   const ctrl = sonoControllatrice();
-  const nav = `<nav class="barra"><button aria-pressed="${S.vista === "oggi" || S.vista === "settimana"}" data-vista="oggi"><i>🧹</i>Camere</button><button aria-pressed="${S.vista === "soldi"}" data-vista="soldi"><i>💶</i>I miei soldi</button>${ctrl ? `<button aria-pressed="${S.vista === "controlli"}" data-vista="controlli"><i>✅</i>Controlli</button>` : ""}</nav>`;
+  const nav = `<nav class="barra"><button aria-pressed="${S.vista === "oggi" || S.vista === "settimana"}" data-vista="oggi">${ICONA("letto")}<span>Camere</span></button><button aria-pressed="${S.vista === "soldi"}" data-vista="soldi">${ICONA("euro")}<span>I miei soldi</span></button>${ctrl ? `<button aria-pressed="${S.vista === "controlli"}" data-vista="controlli">${ICONA("lista")}<span>Controlli</span></button>` : ""}</nav>`;
   let corpo;
   if (S.vista === "soldi") corpo = vistaSoldi(z) + `<section class="card center"><button class="big undo" data-esci>Esci dall'app (poi serve di nuovo la password)</button></section>`;
   else if (S.vista === "controlli" && ctrl) corpo = vistaControlliCollega(z);
@@ -226,35 +254,44 @@ function vistaAddetta() {
   return corpo + nav;
 }
 
-// La giornata della signora: una camera per riga, scritte grandi, un solo bottone grande.
+// La giornata della signora: una camera per riga, stato chiaro, INIZIA → FINITA.
 function vistaNonnaOggi(z) {
   const iso = S.giorno, oggi = L.oggiISO();
   const lavori = pulizieDelGiorno(iso, z);
-  const daFare = lavori.filter(p => p.stato === "da_fare"), finiti = lavori.filter(p => p.stato !== "da_fare");
+  const n = (st) => lavori.filter(p => p.stato === st).length;
+  const pulite = n("fatta"), inCorso = n("in_corso"), daFare = n("da_fare");
   const quando = iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, 1) ? "Domani" : iso === L.aggiungiGiorni(oggi, -1) ? "Ieri" : L.GIORNI[L.giornoSettimana(iso)].replace(/^./, c => c.toUpperCase());
-  const testata = `<section class="nonna-testa"><div class="nonna-ciao">${esc(quando)}, ${esc(L.dataLunga(iso))}</div>
-    <div class="nonna-conta">${lavori.length ? `${finiti.length} su ${lavori.length} ${lavori.length === 1 ? "camera fatta" : "camere fatte"}` : "Niente da pulire"}</div>
-    ${lavori.length ? `<div class="bar big"><i style="width:${Math.round(finiti.length / lavori.length * 100)}%"></i></div>` : ""}
-    <button class="nonna-giorni" data-altri-giorni>${S.mostraGiorni ? "Nascondi gli altri giorni" : "Vedi gli altri giorni"}</button></section>`;
+  const testata = `<section class="pro-testa">
+    <div class="pro-data">${ICONA("calendario")}<span>${esc(quando)} · ${esc(L.dataLunga(iso))}</span></div>
+    <div class="pro-riepilogo"><div class="pro-num"><b>${lavori.length}</b><span>camere</span></div><div class="pro-num done"><b>${pulite}</b><span>pulite</span></div><div class="pro-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="pro-num todo"><b>${daFare}</b><span>da pulire</span></div></div>
+    ${lavori.length ? `<div class="bar big"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
+    <button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi gli altri giorni" : "Vedi gli altri giorni"}</button></section>`;
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
-  const bidoni = rif && z === "ap" ? `<div class="nonna-nota">🗑 Stasera fuori i bidoni: <b>${esc(rif.cosa.toUpperCase())}</b></div>` : "";
+  const bidoni = rif && z === "ap" ? `<div class="pro-nota">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.toUpperCase())}</b></span></div>` : "";
+  const richiediInizio = S.regole.richiediInizio !== false;
   const scheda = (p) => {
     const c = camera(p.camera), cls = statoClasse(p);
-    const titolo = p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : p.titolo;
-    const avvisi = [p.partenza ? "L'ospite parte" : "", p.arrivo ? "Arriva un ospite" : ""].filter(Boolean).join(" · ");
-    const azioni = p.stato === "da_fare" ? `<button class="nonna-fatta" data-fatta="${esc(p.id)}">✓ FATTA</button><button class="nonna-prob" data-problema="${esc(p.id)}">C'è un problema</button>`
-      : p.stato === "fatta" ? `<div class="nonna-stato done">✓ FATTA ${p.ora ? "alle " + L.oraBreve(p.ora) : ""}</div><button class="nonna-link" data-stato-diretto="${esc(p.id)}|da_fare">Ho sbagliato, non è fatta</button>`
-      : p.stato === "problema" ? `<div class="nonna-stato warn">⚠ PROBLEMA SEGNALATO${p.nota ? "<br><span>" + esc(p.nota) + "</span>" : ""}</div><button class="nonna-fatta" data-fatta="${esc(p.id)}">✓ Adesso è FATTA</button>`
-      : `<div class="nonna-stato skip">NON FATTA${p.nota ? "<br><span>" + esc(p.nota) + "</span>" : ""}</div><button class="nonna-fatta" data-fatta="${esc(p.id)}">✓ Adesso è FATTA</button>`;
-    return `<section class="nonna-card ${cls}"><div class="nonna-camera">${esc(c.nome)}</div>
-      <div class="nonna-lavoro">${esc(titolo)}${p.persone ? ` · ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""}</div>
-      ${p.ospite ? `<div class="nonna-ospite">Ospite: ${esc(p.ospite)}</div>` : ""}
-      ${avvisi ? `<div class="nonna-avviso">${esc(avvisi)}</div>` : ""}
-      ${p.istruzioni ? `<div class="nonna-nota">📝 ${esc(p.istruzioni)}</div>` : ""}
-      <button class="nonna-link" data-pul="${esc(p.id)}">Cosa devo fare esattamente?</button>
-      ${azioni}</section>`;
+    const min = minutiPulizia(p);
+    let azioni = "";
+    if (p.stato === "da_fare") azioni = richiediInizio
+      ? `<button class="pro-btn blu" data-inizia="${esc(p.id)}">${ICONA("gioca")}<span>INIZIA LA PULIZIA</span></button>`
+      : `<button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>PULIZIA FINITA</span></button>`;
+    else if (p.stato === "in_corso") azioni = `<div class="pro-tempo">${ICONA("orologio")}<span>Iniziata alle <b>${L.oraBreve(p.inizio)}</b></span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>PULIZIA FINITA</span></button>`;
+    else if (p.stato === "fatta") azioni = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${p.inizio ? ` · iniziata alle ${L.oraBreve(p.inizio)}` : ""}${min != null ? ` · ${min} min` : ""}</span></div><button class="nonna-link" data-stato-diretto="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>`;
+    else if (p.stato === "problema") azioni = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>`;
+    else azioni = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>`;
+    const secondari = (p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link" data-pul="${esc(p.id)}">${ICONA("lista")}Dettagli</button><button class="nonna-link rosso" data-problema="${esc(p.id)}">${ICONA("avviso")}Problema</button></div>` : "";
+    return `<section class="pro-card ${cls}">
+      <div class="pro-riga1"><div class="pro-camera">${esc(c.nome)}</div>${BADGE(p)}</div>
+      <div class="pro-lavoro">${ICONA("scopa")}<span>${esc(titoloLavoro(p))}${p.persone ? ` · ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""}</span></div>
+      ${p.ospite ? `<div class="pro-info">${ICONA("persona")}<span>${esc(p.ospite)}</span></div>` : ""}
+      ${p.partenza || p.arrivo ? `<div class="pro-flag">${p.partenza ? `<span class="flag out">${ICONA("esci")}PARTENZA</span>` : ""}${p.arrivo ? `<span class="flag in">${ICONA("entra")}ARRIVO</span>` : ""}</div>` : ""}
+      ${p.istruzioni ? `<div class="pro-nota">${ICONA("nota")}<span>${esc(p.istruzioni)}</span></div>` : ""}
+      ${azioni}${secondari}</section>`;
   };
-  const lista = lavori.length ? daFare.map(scheda).join("") + finiti.map(scheda).join("") : `<section class="nonna-card idle"><div class="nonna-camera">Riposo 🙂</div><div class="nonna-lavoro">${iso === oggi ? "Oggi" : "Questo giorno"} non c'è nessuna camera da pulire.</div></section>`;
+  const ordine = { in_corso: 0, da_fare: 1, problema: 2, non_fatta: 3, fatta: 4 };
+  const ordinati = lavori.slice().sort((a, b) => (ordine[a.stato] ?? 9) - (ordine[b.stato] ?? 9) || ordineCamera(a.camera) - ordineCamera(b.camera));
+  const lista = lavori.length ? ordinati.map(scheda).join("") : `<section class="pro-card idle"><div class="pro-camera">Nessuna camera</div><div class="pro-lavoro"><span>${iso === oggi ? "Oggi" : "Questo giorno"} non c'è niente da pulire.</span></div></section>`;
   return testata + bidoni + lista;
 }
 
@@ -374,7 +411,7 @@ function vistaOggiGestione() {
     if (!ls.length) return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><span class="muted">niente</span></div></section>`;
     const f = ls.filter(p => p.stato === "fatta").length;
     return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><b>${f}/${ls.length}</b></div><div class="bar"><i style="width:${Math.round(f / ls.length * 100)}%"></i></div>
-      <div class="rows">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(p.titolo)}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span><span class="s ${statoClasse(p)}">${p.stato === "fatta" ? "✓ " + L.oraBreve(p.ora) : p.stato === "problema" ? "! problema" : p.stato === "non_fatta" ? "non fatta" : "da fare"}</span></button>`).join("")}</div></section>`;
+      <div class="rows">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""}</span>` : p.stato === "in_corso" ? `<br><span class="muted">dalle ${L.oraBreve(p.inizio)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div></section>`;
   }).join("");
   const problemi = Object.values(S.pulizie).filter(p => p.stato === "problema" && p.data >= L.aggiungiGiorni(L.oggiISO(), -7));
   const avviso = problemi.length ? `<section class="card"><h2 style="color:var(--warn)">Problemi segnalati (ultimi 7 giorni)</h2><div class="rows">${problemi.sort((a, b) => a.data < b.data ? 1 : -1).map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(L.dataBreve(p.data))}<br><span class="muted">${esc(p.nota || "")}</span></span><span class="s warn">!</span></button>`).join("")}</div></section>` : "";
@@ -474,6 +511,7 @@ function vistaAltro() {
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Pulizia totale anche il giorno in cui l'ospite parte</span><span class="seg"><button aria-pressed="${!!r.totaleAllaPartenza}" data-regola="totaleAllaPartenza|1" ${puoModificare() ? "" : "disabled"}>Sì</button><button aria-pressed="${!r.totaleAllaPartenza}" data-regola="totaleAllaPartenza|0" ${puoModificare() ? "" : "disabled"}>No</button></span></div>
+      <div class="row"><span>Le signore premono prima INIZIA e poi PULIZIA FINITA (così si vede quanto ci mettono)</span><span class="seg"><button aria-pressed="${r.richiediInizio !== false}" data-regola="richiediInizio|1" ${puoModificare() ? "" : "disabled"}>Sì</button><button aria-pressed="${r.richiediInizio === false}" data-regola="richiediInizio|0" ${puoModificare() ? "" : "disabled"}>No</button></span></div>
       <div class="row"><span>Pulizie preparate in anticipo</span><span class="s">${r.giorniAvanti ?? 14} giorni</span></div>
     </div><p class="muted small" style="margin:10px 0 0">I giorni si cambiano nel file regole.js (o chiedi a Michele).</p></section>
   <section class="card"><h2>Voto delle pulizie</h2><p class="muted small" style="margin:0 0 10px">Quando una collega controllatrice dà il voto a una camera, la paga di quella pulizia diventa questa percentuale del prezzo. (I controlli arrivano in un passo successivo: qui intanto si fissano le regole.)</p>
@@ -527,7 +565,12 @@ function foglioPulizia(f) {
   if (p.stato === "fatta") stato = `<div class="note done">✓ Fatta ${p.ora ? "alle " + L.oraBreve(p.ora) : ""} · ${eur(p.importo)} ${addetta() ? "nei tuoi soldi" : ""}</div>${mod ? `<button class="big undo" data-stato="da_fare">Mi sono sbagliata, non è fatta</button>` : ""}`;
   else if (p.stato === "problema") stato = `<div class="note warn">Problema: ${esc(p.nota || "")}</div>${mod ? `<button class="big ok" data-stato="fatta">✓ Adesso è FATTA</button><button class="big undo" data-stato="da_fare">Togli il problema</button>` : ""}`;
   else if (p.stato === "non_fatta") stato = `<div class="note skip">Non fatta${p.nota ? ": " + esc(p.nota) : ""}</div>${mod ? `<button class="big ok" data-stato="fatta">✓ Adesso è FATTA</button><button class="big undo" data-stato="da_fare">Rimetti da fare</button>` : ""}`;
-  else if (mod) stato = `<button class="big ok" data-stato="fatta">✓ FATTA</button>
+  else if (p.stato === "in_corso") stato = `<div class="note info">In corso da ${esc(L.oraBreve(p.inizio))}</div>${mod ? `<button class="big ok" data-stato="fatta">✓ PULIZIA FINITA</button>
+    <div class="due"><button class="big skip" data-apri="non_fatta">Non fatta</button><button class="big ko" data-apri="problema">Problema</button></div>
+    <div id="boxMotivo" hidden style="margin-top:10px"><div class="scelte" id="scelteMotivo"></div><label for="nota" class="muted" style="display:block;margin:6px 0 4px">Scrivi due parole (puoi usare il microfono della tastiera)</label><textarea id="nota"></textarea>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="btnsm ghost" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Aggiungi una foto<input id="fotoInput" type="file" accept="image/*" capture="environment" hidden></label><span id="fotoAnteprima" class="muted small"></span></div>
+      <button class="big ko" id="confermaMotivo">Conferma</button></div>` : ""}`;
+  else if (mod) stato = `${S.regole.richiediInizio !== false && addetta() ? `<button class="big main" data-stato="in_corso">▶ INIZIA LA PULIZIA</button>` : `<button class="big ok" data-stato="fatta">✓ PULIZIA FINITA</button>`}
     <div class="due"><button class="big skip" data-apri="non_fatta">Non fatta</button><button class="big ko" data-apri="problema">Problema</button></div>
     <div id="boxMotivo" hidden style="margin-top:10px">
       <div class="scelte" id="scelteMotivo"></div>
@@ -621,8 +664,9 @@ function collega() {
   document.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { S.giorno = b.dataset.g; disegna(); });
   document.querySelectorAll("[data-sett]").forEach(b => b.onclick = () => { S.settimana = L.aggiungiGiorni(S.settimana, 7 * Number(b.dataset.sett)); S.giorno = S.settimana; disegna(); });
   document.querySelectorAll("[data-pul]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.pul }));
-  document.querySelectorAll("[data-fatta]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.fatta]; if (!p) return; const prima = p.stato; cambiaStato(p, "fatta", ""); toast(`${camera(p.camera).nome}: FATTA ✓`, { testo: "Ho sbagliato", fai: () => { cambiaStato(S.pulizie[p.id], prima === "fatta" ? "da_fare" : prima, ""); const t = $(".toast"); if (t) t.remove(); } }); setTimeout(() => { const t = $(".toast"); if (t && /FATTA/.test(t.textContent)) t.remove(); }, 8000); });
+  document.querySelectorAll("[data-fatta]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.fatta]; if (!p) return; const prima = p.stato; cambiaStato(p, "fatta", ""); toast(`${camera(p.camera).nome}: PULITA ✓`, { testo: "Ho sbagliato", fai: () => { cambiaStato(S.pulizie[p.id], prima === "fatta" ? "da_fare" : prima, ""); const t = $(".toast"); if (t) t.remove(); } }); setTimeout(() => { const t = $(".toast"); if (t && /PULITA/.test(t.textContent)) t.remove(); }, 8000); });
   document.querySelectorAll("[data-problema]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.problema, apriMotivo: "problema" }));
+  document.querySelectorAll("[data-inizia]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.inizia]; if (p) cambiaStato(p, "in_corso", ""); });
   document.querySelectorAll("[data-stato-diretto]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoDiretto.split("|"); const p = S.pulizie[id]; if (p) cambiaStato(p, st, ""); });
   document.querySelectorAll("[data-altri-giorni]").forEach(b => b.onclick = () => { S.mostraGiorni = !S.mostraGiorni; if (!S.mostraGiorni) { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); } disegna(); });
   document.querySelectorAll("[data-controlla]").forEach(b => b.onclick = () => apriFoglio({ tipo: "controllo", id: b.dataset.controlla, modo: "collega" }));
@@ -722,7 +766,10 @@ function testoErroreAccesso(err) {
 
 let fotoPending = null;
 async function cambiaStato(p, stato, nota) {
-  const patch = { stato, nota: nota || "", ora: stato === "da_fare" ? null : S.db.adesso(), segnatoDa: S.utente.nome || S.utente.email || S.utente.uid };
+  const adesso = S.db.adesso();
+  const patch = { stato, nota: nota || "", ora: (stato === "da_fare" || stato === "in_corso") ? null : adesso, segnatoDa: S.utente.nome || S.utente.email || S.utente.uid };
+  if (stato === "in_corso") patch.inizio = adesso;
+  if (stato === "da_fare") patch.inizio = null;
   if (stato === "fatta") patch.settimana = L.chiaveSettimana(new Date(), S.regole.chiusuraPaga);
   else patch.settimana = null;
   const foto = fotoPending; fotoPending = null;

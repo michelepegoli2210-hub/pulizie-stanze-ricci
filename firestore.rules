@@ -78,8 +78,8 @@ service cloud.firestore {
       allow update: if proprietario()
         || (addetta()
             && resource.data.zona == miaZona()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "nota", "settimana", "segnatoDa", "foto"])
-            && request.resource.data.stato in ["da_fare", "fatta", "non_fatta", "problema"]);
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "inizio", "nota", "settimana", "segnatoDa", "foto"])
+            && request.resource.data.stato in ["da_fare", "in_corso", "fatta", "non_fatta", "problema"]);
     }
 
     // Controlli tra colleghe: la controllatrice dà il voto alle camere delle ALTRE zone;

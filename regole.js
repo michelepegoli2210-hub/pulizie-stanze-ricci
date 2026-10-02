@@ -57,6 +57,8 @@ export const REGOLE_BASE = {
   // Il giorno in cui l'ospite parte si fa comunque la pulizia totale
   // (così la camera è pronta per chi arriva). Mettere false per spegnere la regola.
   totaleAllaPartenza: true,
+  // Le signore premono prima "Inizia la pulizia" e poi "Pulizia finita" (si vede quanto ci mettono)
+  richiediInizio: true,
   // Quanti giorni avanti l'app prepara le pulizie, e quanti indietro le tiene aggiornate
   giorniAvanti: 14,
   giorniIndietro: 3,
