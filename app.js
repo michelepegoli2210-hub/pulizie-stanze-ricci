@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.7.0";
+export const VERSIONE = "0.8.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -36,6 +36,59 @@ const STATI = {
 };
 const BADGE = (p) => { const st = STATI[p.stato] || STATI.da_fare; return `<span class="badge ${st.cls}">${st.testo}</span>`; };
 
+// Donnine delle pulizie stilizzate (disegni nostri, SVG). Varianti: scopa, festa, secchio, saluto.
+const STELLA = (x, y, r, col = "#FFC83D") => `<path d="M${x} ${y - r} L${x + r * .28} ${y - r * .28} L${x + r} ${y} L${x + r * .28} ${y + r * .28} L${x} ${y + r} L${x - r * .28} ${y + r * .28} L${x - r} ${y} L${x - r * .28} ${y - r * .28}Z" fill="${col}"/>`;
+function DONNINA(v = "scopa", cls = "") {
+  const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = "#6B4226";
+  const vestito = { scopa: "#4F7BE8", festa: "#EF6F7B", secchio: "#23B5A3", saluto: "#9A6BF2" }[v] || "#4F7BE8";
+  const braccio = (d) => `<path d="${d}" stroke="${pelle}" stroke-width="7.5" fill="none" stroke-linecap="round"/>`;
+  const mano = (x, y) => `<circle cx="${x}" cy="${y}" r="4.6" fill="${pelle}"/>`;
+  let dietro = "", davanti = "", bracciaSx = "", bracciaDx = "", bocca = `<path d="M53 52 Q60 59 67 52" stroke="#A64B52" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  if (v === "scopa") {
+    dietro = `<path d="M97 34 L101 112" stroke="#B57A33" stroke-width="5" stroke-linecap="round"/><path d="M90 106 L112 108 L120 134 L82 134Z" fill="#E9B949"/><path d="M90 116 L116 118 M88 124 L118 126" stroke="#C9952B" stroke-width="2"/><rect x="92" y="104" width="18" height="6" rx="2" fill="#8A5A2B"/>`;
+    bracciaSx = braccio("M44 72 Q30 84 38 96") + mano(39, 97); bracciaDx = braccio("M76 72 Q92 78 96 90") + mano(97, 92);
+    davanti = STELLA(18, 40, 7) + STELLA(30, 22, 4.5) + STELLA(110, 58, 5);
+  } else if (v === "festa") {
+    bracciaSx = braccio("M44 72 Q30 58 32 42") + mano(31, 40); bracciaDx = braccio("M76 72 Q90 58 88 42") + mano(89, 40);
+    bocca = `<path d="M52 51 Q60 62 68 51Z" fill="#A64B52"/>`;
+    davanti = STELLA(16, 30, 7) + STELLA(104, 26, 7) + STELLA(24, 70, 4.5) + STELLA(100, 72, 4.5) + STELLA(60, 10, 5, "#FF8FA3");
+  } else if (v === "secchio") {
+    dietro = `<path d="M24 102 H56 L52 128 H28Z" fill="#6FA8F5"/><path d="M40 102 H56 L52 128 H40Z" fill="rgba(0,0,0,.12)"/><rect x="21" y="98" width="38" height="7" rx="3" fill="#3F6FD8"/><path d="M27 99 Q40 80 53 99" stroke="#8A8F9A" stroke-width="3" fill="none"/><circle cx="34" cy="90" r="3" fill="#CFE6FF"/><circle cx="46" cy="84" r="2.2" fill="#CFE6FF"/>`;
+    bracciaSx = braccio("M44 72 Q34 86 38 100") + mano(38, 101); bracciaDx = braccio("M76 72 Q94 70 92 56") + mano(92, 55);
+    davanti = `<rect x="84" y="40" width="18" height="12" rx="3" fill="#FFD54F"/><rect x="84" y="40" width="18" height="5" rx="2" fill="#5CC07A"/>` + STELLA(110, 30, 5) + STELLA(18, 60, 4.5);
+  } else {
+    dietro = `<path d="M34 98 L26 70" stroke="#B57A33" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="62" r="7" fill="#F48FB1"/><circle cx="18" cy="68" r="6" fill="#F8BBD0"/><circle cx="30" cy="56" r="6" fill="#F8BBD0"/><circle cx="29" cy="68" r="5" fill="#F48FB1"/>`;
+    bracciaSx = braccio("M44 72 Q32 86 36 98") + mano(36, 99); bracciaDx = braccio("M76 72 Q92 64 94 46") + mano(95, 44);
+    davanti = STELLA(108, 36, 5) + STELLA(100, 20, 4);
+  }
+  return `<svg class="donnina ${cls}" viewBox="0 0 124 140" aria-hidden="true">
+    <ellipse cx="62" cy="133" rx="36" ry="5.5" fill="rgba(15,23,42,.14)"/>
+    ${dietro}
+    <ellipse cx="51" cy="128" rx="7.5" ry="4.2" fill="#3B3B4F"/><ellipse cx="69" cy="128" rx="7.5" ry="4.2" fill="#3B3B4F"/>
+    <rect x="47" y="112" width="8" height="14" fill="${pelle2}"/><rect x="65" y="112" width="8" height="14" fill="${pelle2}"/>
+    <path d="M44 66 Q60 58 76 66 L88 120 Q60 127 32 120Z" fill="${vestito}"/>
+    <path d="M60 62 Q70 61 76 66 L88 120 Q74 124 60 124Z" fill="rgba(0,0,0,.13)"/>
+    <path d="M47 78 H73 L79 118 H41Z" fill="#FFFFFF"/><path d="M60 78 H73 L79 118 H60Z" fill="rgba(15,23,42,.06)"/>
+    <rect x="53" y="98" width="14" height="10" rx="2.5" fill="#E4EAF5"/>
+    <path d="M52 64 L60 73 L68 64 Q60 60 52 64Z" fill="#FFFFFF"/>
+    ${bracciaSx}${bracciaDx}
+    <rect x="55" y="56" width="10" height="9" rx="3" fill="${pelle2}"/>
+    <circle cx="60" cy="42" r="19.5" fill="${pelle}"/>
+    <path d="M40.5 40 a19.5 19.5 0 0 1 39 0 Q60 32 40.5 40Z" fill="${capelli}"/>
+    <circle cx="81" cy="31" r="7.5" fill="${capelli}"/>
+    <path d="M39 37 Q60 12 81 37 L79 43 Q60 29 41 43Z" fill="#E04E5C"/>
+    <path d="M41 42 L30 36 L35 46Z" fill="#E04E5C"/>
+    <path d="M44 33 Q60 20 76 33" stroke="rgba(255,255,255,.35)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="53" cy="45" r="2.4" fill="#2B2B2B"/><circle cx="67" cy="45" r="2.4" fill="#2B2B2B"/>
+    <circle cx="54" cy="44" r=".8" fill="#fff"/><circle cx="68" cy="44" r=".8" fill="#fff"/>
+    <circle cx="48" cy="51" r="3.4" fill="#F7A1A6" opacity=".6"/><circle cx="72" cy="51" r="3.4" fill="#F7A1A6" opacity=".6"/>
+    ${bocca}
+    ${davanti}
+  </svg>`;
+}
+function saluto() { const h = Number(new Date().toLocaleString("it-IT", { hour: "2-digit", hour12: false, timeZone: "Europe/Rome" })); return h < 13 ? "Buongiorno" : h < 18 ? "Buon pomeriggio" : "Buonasera"; }
+function nomeSignora() { const u = S.utente; return u?.nome && !/^signora/i.test(u.nome) ? u.nome : `Signora ${S.zone[u?.zona]?.breve || ""}`.trim(); }
+
 // ---------------------------------------------------------------------------
 //  Stato dell'app (tutto quello che serve per disegnare le schermate)
 // ---------------------------------------------------------------------------
@@ -44,7 +97,7 @@ const S = {
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
   board: { modo: "settimana", inizio: L.lunediDi(L.oggiISO()) },
   camere: CAMERE.slice(), zone: ZONE, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
-  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null,
+  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {},
   caricati: { pulizie: false, soggiorni: false, ruoli: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
   stop: [], tema: localStorage.getItem("ricci_tema") || "light",
@@ -74,6 +127,7 @@ function applicaTema() { if (S.tema === "dark") document.documentElement.setAttr
 async function avvia() {
   applicaTema();
   S.db = await apriDb(window.FIREBASE_CONFIG || null);
+  if (S.db.modalita === "prova") window.__prova = { S, disegna, db: S.db }; // solo per le prove automatiche
   window.addEventListener("online", () => { S.online = true; disegna(); });
   window.addEventListener("offline", () => { S.online = false; disegna(); });
   S.db.onUtente((u) => {
@@ -90,7 +144,7 @@ async function avvia() {
   disegna();
 }
 
-function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; }
+function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; S.messaggi = {}; }
 let stopAltrui = null;
 function sonoControllatrice() { return addetta() && S.impControlli?.attuale && S.impControlli.attuale === S.utente.zona; }
 // La controllatrice vede le camere FATTE dalle colleghe degli ultimi giorni (solo quelle, solo mentre è di turno)
@@ -127,6 +181,8 @@ function avviaAscolto() {
     S.stop.push(db.ascolta("controlli", { where: [["data", ">=", da]] }, (m) => { S.controlli = m; disegna(); }, mostraErrore));
   }
   S.stop.push(db.ascoltaDoc("impostazioni", "regole", d => { S.regole = { ...REGOLE_BASE, ...(d || {}) }; delete S.regole.id; disegna(); pianifica(); }));
+  // messaggi del giorno dei proprietari alle signore (un documento, una voce per giorno)
+  S.stop.push(db.ascoltaDoc("impostazioni", "messaggi", d => { S.messaggi = { ...(d || {}) }; delete S.messaggi.id; disegna(); }));
   if (!addetta()) S.stop.push(db.ascoltaDoc("impostazioni", "listino", d => { S.listino = L.listinoCompleto(d); disegna(); pianifica(); }));
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
@@ -225,11 +281,11 @@ function disegnaTestata() {
 // ---- accesso ----------------------------------------------------------------
 function vistaAccesso() {
   if (S.db.modalita === "prova") {
-    return `<section class="card"><h2>Chi sei?</h2><p class="muted" style="margin:0">Modalità prova: scegli una volta sola, il telefono se lo ricorda.</p></section>
+    return `<section class="card accesso"><div class="accesso-testa"><div><h2 style="margin:0 0 4px">Ciao! Chi sei?</h2><p class="muted" style="margin:0">Modalità prova: scegli una volta sola, il telefono se lo ricorda.</p></div>${DONNINA("saluto", "media")}</div></section>
     <div class="pick">${zoneOrdinate().map(z => `<button data-prova="addetta|${z.id}|">Signora ${esc(z.breve)}<span>${camereZona(z.id).map(c => c.nome).join(", ")}</span></button>`).join("")}
     <button class="gest" data-prova="proprietario||Michele">Gestione<span>Prospetto, quadro delle signore e paghe</span></button></div>`;
   }
-  return `<section class="card"><h2>Entra</h2>
+  return `<section class="card accesso"><div class="accesso-testa"><div><h2 style="margin:0 0 4px">Ciao! Entra</h2><p class="muted" style="margin:0">Scrivi il tuo nome e la password, poi il telefono se lo ricorda.</p></div>${DONNINA("saluto", "media")}</div>
     <form id="formAccesso" autocomplete="on">
       <div class="campo"><label for="inNome">Il tuo nome (o la tua email)</label><input id="inNome" type="text" autocapitalize="none" autocomplete="username" placeholder="es. michele oppure primopiano" value="${esc(S.nomeAccesso || "")}" required></div>
       <div class="campo"><label for="inPass">Password</label><input id="inPass" type="password" autocomplete="current-password" required></div>
@@ -254,18 +310,31 @@ function vistaAddetta() {
   return corpo + nav;
 }
 
-// La giornata della signora: una camera per riga, stato chiaro, INIZIA → FINITA.
+// Messaggio del giorno scritto dai proprietari (impostazioni/messaggi: una voce per giorno)
+function messaggioDelGiorno(iso) { const m = S.messaggi?.[iso]; return m && m.testo ? m : null; }
+function quandoEtichetta(iso) { const oggi = L.oggiISO(); return iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, 1) ? "Domani" : iso === L.aggiungiGiorni(oggi, -1) ? "Ieri" : L.GIORNI[L.giornoSettimana(iso)].replace(/^./, c => c.toUpperCase()); }
+
+// La giornata della signora: saluto, numeri grandi, una camera per riquadro, INIZIA → HO FINITO.
 function vistaNonnaOggi(z) {
   const iso = S.giorno, oggi = L.oggiISO();
   const lavori = pulizieDelGiorno(iso, z);
   const n = (st) => lavori.filter(p => p.stato === st).length;
   const pulite = n("fatta"), inCorso = n("in_corso"), daFare = n("da_fare");
-  const quando = iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, 1) ? "Domani" : iso === L.aggiungiGiorni(oggi, -1) ? "Ieri" : L.GIORNI[L.giornoSettimana(iso)].replace(/^./, c => c.toUpperCase());
+  const quando = quandoEtichetta(iso);
+  const tutteFatte = lavori.length > 0 && pulite === lavori.length;
+  let frase, variante;
+  if (!lavori.length) { frase = iso === oggi ? "Oggi nessuna camera per te: goditi la giornata!" : "Per questo giorno non c'è niente in programma."; variante = "saluto"; }
+  else if (tutteFatte) { frase = "Tutto pulito! Sei stata bravissima."; variante = "festa"; }
+  else if (!pulite && !inCorso) { frase = `${iso === oggi ? "Oggi hai" : "Ci sono"} ${lavori.length === 1 ? "una camera" : lavori.length + " camere"}. Una alla volta e si fa tutto!`; variante = "scopa"; }
+  else { const resto = lavori.length - pulite; frase = resto === 1 ? "Ne manca una sola. Forza, ci sei quasi!" : `Ne mancano ${resto}. Forza, stai andando benissimo!`; variante = "secchio"; }
   const testata = `<section class="pro-testa">
+    <div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">${esc(saluto())}, ${esc(nomeSignora())}!</div><div class="pro-frase">${esc(frase)}</div></div>${DONNINA(variante, "grande")}</div>
     <div class="pro-data">${ICONA("calendario")}<span>${esc(quando)} · ${esc(L.dataLunga(iso))}</span></div>
     <div class="pro-riepilogo"><div class="pro-num"><b>${lavori.length}</b><span>camere</span></div><div class="pro-num done"><b>${pulite}</b><span>pulite</span></div><div class="pro-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="pro-num todo"><b>${daFare}</b><span>da pulire</span></div></div>
-    ${lavori.length ? `<div class="bar big"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
+    ${lavori.length ? `<div class="bar bar-grande"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
     <button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi gli altri giorni" : "Vedi gli altri giorni"}</button></section>`;
+  const msg = messaggioDelGiorno(iso);
+  const messaggio = msg ? `<section class="pro-msg"><div class="pro-msg-t">${ICONA("nota")}<span>Messaggio di ${esc(msg.da || "Michele")} per ${esc(quando.toLowerCase())}</span></div><div class="pro-msg-x">${esc(msg.testo)}</div></section>` : "";
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
   const bidoni = rif && z === "ap" ? `<div class="pro-nota">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.toUpperCase())}</b></span></div>` : "";
   const richiediInizio = S.regole.richiediInizio !== false;
@@ -275,24 +344,63 @@ function vistaNonnaOggi(z) {
     let azioni = "";
     if (p.stato === "da_fare") azioni = richiediInizio
       ? `<button class="pro-btn blu" data-inizia="${esc(p.id)}">${ICONA("gioca")}<span>INIZIA LA PULIZIA</span></button>`
-      : `<button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>PULIZIA FINITA</span></button>`;
-    else if (p.stato === "in_corso") azioni = `<div class="pro-tempo">${ICONA("orologio")}<span>Iniziata alle <b>${L.oraBreve(p.inizio)}</b></span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>PULIZIA FINITA</span></button>`;
-    else if (p.stato === "fatta") azioni = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${p.inizio ? ` · iniziata alle ${L.oraBreve(p.inizio)}` : ""}${min != null ? ` · ${min} min` : ""}</span></div><button class="nonna-link" data-stato-diretto="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>`;
+      : `<button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
+    else if (p.stato === "in_corso") azioni = `<div class="pro-tempo">${ICONA("orologio")}<span>Iniziata alle <b>${L.oraBreve(p.inizio)}</b> · buon lavoro!</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
+    else if (p.stato === "fatta") azioni = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${min != null ? ` · ${min} min` : ""} · brava!</span></div><button class="nonna-link" data-stato-diretto="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>`;
     else if (p.stato === "problema") azioni = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>`;
     else azioni = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>`;
-    const secondari = (p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link" data-pul="${esc(p.id)}">${ICONA("lista")}Dettagli</button><button class="nonna-link rosso" data-problema="${esc(p.id)}">${ICONA("avviso")}Problema</button></div>` : "";
+    const aperta = p.stato === "da_fare" || p.stato === "in_corso";
+    const secondari = aperta ? `<div class="pro-sec"><button class="nonna-link" data-dettagli="${esc(p.id)}">${ICONA("lista")}Vedi in grande</button><button class="nonna-link rosso" data-problema="${esc(p.id)}">${ICONA("avviso")}Problema</button></div>` : "";
     return `<section class="pro-card ${cls}">
       <div class="pro-riga1"><div class="pro-camera">${esc(c.nome)}</div>${BADGE(p)}</div>
       <div class="pro-lavoro">${ICONA("scopa")}<span>${esc(titoloLavoro(p))}${p.persone ? ` · ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""}</span></div>
       ${p.ospite ? `<div class="pro-info">${ICONA("persona")}<span>${esc(p.ospite)}</span></div>` : ""}
       ${p.partenza || p.arrivo ? `<div class="pro-flag">${p.partenza ? `<span class="flag out">${ICONA("esci")}PARTENZA</span>` : ""}${p.arrivo ? `<span class="flag in">${ICONA("entra")}ARRIVO</span>` : ""}</div>` : ""}
-      ${p.istruzioni ? `<div class="pro-nota">${ICONA("nota")}<span>${esc(p.istruzioni)}</span></div>` : ""}
+      ${p.dettagli && aperta ? `<div class="pro-dett"><div class="pro-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div><div class="pro-dett-x">${esc(p.dettagli)}</div></div>` : ""}
+      ${p.istruzioni && aperta ? `<div class="pro-nota">${ICONA("nota")}<span>${esc(p.istruzioni)}</span></div>` : ""}
       ${azioni}${secondari}</section>`;
   };
   const ordine = { in_corso: 0, da_fare: 1, problema: 2, non_fatta: 3, fatta: 4 };
   const ordinati = lavori.slice().sort((a, b) => (ordine[a.stato] ?? 9) - (ordine[b.stato] ?? 9) || ordineCamera(a.camera) - ordineCamera(b.camera));
-  const lista = lavori.length ? ordinati.map(scheda).join("") : `<section class="pro-card idle"><div class="pro-camera">Nessuna camera</div><div class="pro-lavoro"><span>${iso === oggi ? "Oggi" : "Questo giorno"} non c'è niente da pulire.</span></div></section>`;
-  return testata + bidoni + lista;
+  const lista = lavori.length ? ordinati.map(scheda).join("") : `<section class="pro-card idle"><div class="pro-camera">Nessuna camera</div><div class="pro-lavoro"><span>${iso === oggi ? "Niente da pulire oggi. Buona giornata!" : "Se cambia qualcosa, comparirà qui da sola."}</span></div></section>`;
+  return testata + messaggio + bidoni + lista;
+}
+
+// Schermata grande che si apre quando la signora preme INIZIA: tutti i dettagli a caratteri enormi.
+function foglioInizio(f) {
+  const p = S.pulizie[f.id];
+  if (!p) return `<div class="inizio"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Indietro</span></button></div><h3>Lavoro non trovato</h3><p class="muted">Forse è stato tolto dal prospetto.</p></div>`;
+  const c = camera(p.camera);
+  const passi = (p.passi && p.passi.length ? p.passi : TIPI_PULIZIA[p.tipo]?.passi || []);
+  const msg = messaggioDelGiorno(p.data);
+  const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(p.data) + 1) % 7);
+  const haDett = !!(p.dettagli || p.istruzioni || msg);
+  let bottone = "";
+  if (p.stato === "da_fare") bottone = S.regole.richiediInizio !== false && addetta()
+    ? `<button class="pro-btn blu gigante" data-comincia="${esc(p.id)}">${ICONA("gioca")}<span>HO CAPITO, COMINCIO!</span></button>`
+    : `<button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
+  else if (p.stato === "in_corso") bottone = `<div class="pro-tempo">${ICONA("orologio")}<span>Iniziata alle <b>${L.oraBreve(p.inizio)}</b></span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
+  const aperta = p.stato === "da_fare" || p.stato === "in_corso";
+  return `<div class="inizio">
+    <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Indietro</span></button>${BADGE(p)}</div>
+    <div class="inizio-testa"><div><div class="inizio-camera">${esc(c.nome)}</div><div class="inizio-lavoro">${esc(titoloLavoro(p))}</div></div>${DONNINA(p.tipo === "ripasso" ? "saluto" : "secchio", "media")}</div>
+    <div class="inizio-righe">
+      ${p.ospite ? `<div class="inizio-riga">${ICONA("persona")}<span>${esc(p.ospite)}${p.persone ? ` · <b>${p.persone} ${p.persone === 1 ? "persona" : "persone"}</b>` : ""}</span></div>` : (p.persone ? `<div class="inizio-riga">${ICONA("persona")}<span><b>${p.persone} ${p.persone === 1 ? "persona" : "persone"}</b></span></div>` : "")}
+      ${p.partenza ? `<div class="inizio-riga out">${ICONA("esci")}<span><b>PARTENZA</b> · l'ospite va via</span></div>` : ""}
+      ${p.arrivo ? `<div class="inizio-riga in">${ICONA("entra")}<span><b>ARRIVO</b> · arriva un ospite nuovo</span></div>` : ""}
+    </div>
+    <div class="inizio-dett ${haDett ? "" : "vuoto"}">
+      <div class="inizio-dett-t">${ICONA("nota")}<span>DETTAGLI DI OGGI</span></div>
+      ${p.dettagli ? `<div class="inizio-dett-x">${esc(p.dettagli)}</div>` : ""}
+      ${p.istruzioni ? `<div class="inizio-dett-i">${esc(p.istruzioni)}</div>` : ""}
+      ${msg ? `<div class="inizio-dett-m"><b>${esc(msg.da || "Michele")} dice:</b> ${esc(msg.testo)}</div>` : ""}
+      ${haDett ? "" : `<div class="inizio-dett-x">Nessun dettaglio particolare: pulizia normale!</div>`}
+    </div>
+    ${rif && c.tipo === "casa" ? `<div class="pro-nota">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.toUpperCase())}</b></span></div>` : ""}
+    ${passi.length ? `<div class="inizio-passi-t">Cosa si fa</div><ol class="steps grandi">${passi.map((x, i) => `<li><b>${i + 1}</b><span>${esc(x)}</span></li>`).join("")}</ol>` : ""}
+    ${bottone}
+    ${aperta && addetta() ? `<div class="pro-sec"><button class="nonna-link" data-apri-motivo="${esc(p.id)}|non_fatta">Non la posso fare</button><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}
+  </div>`;
 }
 
 function tesseraCamera(c, iso, conPrezzo) {
@@ -411,12 +519,15 @@ function vistaOggiGestione() {
     if (!ls.length) return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><span class="muted">niente</span></div></section>`;
     const f = ls.filter(p => p.stato === "fatta").length;
     return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><b>${f}/${ls.length}</b></div><div class="bar"><i style="width:${Math.round(f / ls.length * 100)}%"></i></div>
-      <div class="rows">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""}</span>` : p.stato === "in_corso" ? `<br><span class="muted">dalle ${L.oraBreve(p.inizio)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div></section>`;
+      <div class="rows">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""}</span>` : p.stato === "in_corso" ? `<br><span class="muted">dalle ${L.oraBreve(p.inizio)}</span>` : ""}${p.dettagli ? `<br><span class="dett-mini">${ICONA("nota")}${esc(p.dettagli)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div></section>`;
   }).join("");
   const problemi = Object.values(S.pulizie).filter(p => p.stato === "problema" && p.data >= L.aggiungiGiorni(L.oggiISO(), -7));
   const avviso = problemi.length ? `<section class="card"><h2 style="color:var(--warn)">Problemi segnalati (ultimi 7 giorni)</h2><div class="rows">${problemi.sort((a, b) => a.data < b.data ? 1 : -1).map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(L.dataBreve(p.data))}<br><span class="muted">${esc(p.nota || "")}</span></span><span class="s warn">!</span></button>`).join("")}</div></section>` : "";
   const bottone = puoModificare() ? `<section class="card flat"><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button></section>` : "";
-  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + avviso + blocchi + bottone;
+  const msg = messaggioDelGiorno(iso);
+  const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
+    ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
+  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- tabellone (prospetto) ---------------------------------------------------------
@@ -544,14 +655,35 @@ function disegnaFoglio() {
   const s = elFoglio();
   let html = "";
   if (f.tipo === "pulizia") html = foglioPulizia(f);
+  else if (f.tipo === "inizio") html = foglioInizio(f);
+  else if (f.tipo === "messaggio") html = foglioMessaggio(f);
   else if (f.tipo === "controllo") html = foglioControllo(f);
   else if (f.tipo === "soggiorno") html = foglioSoggiorno(f);
   else if (f.tipo === "nota") html = foglioNota(f);
   else if (f.tipo === "nuovoLavoro") html = foglioNuovoLavoro(f);
   else if (f.tipo === "info") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><div class="note info">${esc(f.testo)}</div>`;
   else if (f.tipo === "foto") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><img src="${f.dati}" alt="Foto" style="width:100%;border-radius:14px;margin-top:10px">`;
-  s.innerHTML = `<div class="panel" role="dialog"><div class="grip"></div>${html}<button class="big close" data-chiudi>Chiudi</button></div>`;
+  // Se la persona sta scrivendo e arriva un aggiornamento, il testo non deve sparire
+  const attivo = document.activeElement, idAttivo = s.contains(attivo) && attivo.id ? attivo.id : null;
+  const valori = {}; s.querySelectorAll("textarea[id],input[id]").forEach(e => { if (e.type !== "file") valori[e.id] = { v: e.value, s: e.selectionStart, e: e.selectionEnd }; });
+  const pieno = f.tipo === "inizio";
+  s.classList.toggle("pieno", pieno);
+  const scroll = pieno ? 0 : (s.querySelector(".panel")?.scrollTop || 0);
+  s.innerHTML = `<div class="panel ${pieno ? "pieno" : ""}" role="dialog">${pieno ? "" : `<div class="grip"></div>`}${html}${pieno ? "" : `<button class="big close" data-chiudi>Chiudi</button>`}</div>`;
+  for (const [id, x] of Object.entries(valori)) { const e = s.querySelector("#" + CSS.escape(id)); if (e && e.hasAttribute("data-keep")) { e.value = x.v; } }
+  if (idAttivo) { const e = s.querySelector("#" + CSS.escape(idAttivo)); if (e) { try { e.focus({ preventScroll: true }); if (valori[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(valori[idAttivo].s, valori[idAttivo].e); } catch (err) {} } }
+  if (scroll) { const pn = s.querySelector(".panel"); if (pn) pn.scrollTop = scroll; }
   collegaFoglio();
+}
+
+// Messaggio del giorno alle signore (lo scrivono i proprietari dalla schermata "Oggi")
+function foglioMessaggio(f) {
+  const m = S.messaggi[f.giorno];
+  return `<h3>Messaggio alle signore</h3><div class="muted">${esc(quandoEtichetta(f.giorno))} · ${esc(L.dataLunga(f.giorno))} · lo vedono in cima alla loro schermata e quando aprono una camera</div>
+    <div class="campo"><label for="msgTesto">Cosa vuoi dire</label><textarea id="msgTesto" data-keep placeholder="es. Oggi arrivano i Castaldi alle 15: Salvatore pronta per le 14. Grazie!" style="min-height:120px">${esc(f.testo ?? m?.testo ?? "")}</textarea></div>
+    <div class="scelte">${["Grazie di tutto!", "Oggi arrivano ospiti nel pomeriggio", "Lasciate le chiavi sul tavolo", "Asciugamani doppi per gli operai", "Controllate i frigoriferi"].map(t => `<button type="button" data-chip-testo="msgTesto|${esc(t)}">${esc(t)}</button>`).join("")}</div>
+    <button class="big main" data-salva-msg>Manda alle signore</button>
+    ${m ? `<button class="big undo" data-togli-msg>Togli il messaggio</button><p class="muted small" style="margin-top:8px">Scritto da ${esc(m.da || "")}${m.ora ? " alle " + L.oraBreve(m.ora) : ""}</p>` : ""}`;
 }
 
 function foglioPulizia(f) {
@@ -565,19 +697,27 @@ function foglioPulizia(f) {
   if (p.stato === "fatta") stato = `<div class="note done">✓ Fatta ${p.ora ? "alle " + L.oraBreve(p.ora) : ""} · ${eur(p.importo)} ${addetta() ? "nei tuoi soldi" : ""}</div>${mod ? `<button class="big undo" data-stato="da_fare">Mi sono sbagliata, non è fatta</button>` : ""}`;
   else if (p.stato === "problema") stato = `<div class="note warn">Problema: ${esc(p.nota || "")}</div>${mod ? `<button class="big ok" data-stato="fatta">✓ Adesso è FATTA</button><button class="big undo" data-stato="da_fare">Togli il problema</button>` : ""}`;
   else if (p.stato === "non_fatta") stato = `<div class="note skip">Non fatta${p.nota ? ": " + esc(p.nota) : ""}</div>${mod ? `<button class="big ok" data-stato="fatta">✓ Adesso è FATTA</button><button class="big undo" data-stato="da_fare">Rimetti da fare</button>` : ""}`;
-  else if (p.stato === "in_corso") stato = `<div class="note info">In corso da ${esc(L.oraBreve(p.inizio))}</div>${mod ? `<button class="big ok" data-stato="fatta">✓ PULIZIA FINITA</button>
+  else if (p.stato === "in_corso") stato = `<div class="note info">In corso da ${esc(L.oraBreve(p.inizio))}</div>${mod ? `<button class="big ok" data-stato="fatta">✓ HO FINITO, È PULITA</button>
     <div class="due"><button class="big skip" data-apri="non_fatta">Non fatta</button><button class="big ko" data-apri="problema">Problema</button></div>
-    <div id="boxMotivo" hidden style="margin-top:10px"><div class="scelte" id="scelteMotivo"></div><label for="nota" class="muted" style="display:block;margin:6px 0 4px">Scrivi due parole (puoi usare il microfono della tastiera)</label><textarea id="nota"></textarea>
+    <div id="boxMotivo" hidden style="margin-top:10px"><div class="scelte" id="scelteMotivo"></div><label for="nota" class="muted" style="display:block;margin:6px 0 4px">Scrivi due parole (puoi usare il microfono della tastiera)</label><textarea id="nota" data-keep></textarea>
       <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="btnsm ghost" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Aggiungi una foto<input id="fotoInput" type="file" accept="image/*" capture="environment" hidden></label><span id="fotoAnteprima" class="muted small"></span></div>
       <button class="big ko" id="confermaMotivo">Conferma</button></div>` : ""}`;
-  else if (mod) stato = `${S.regole.richiediInizio !== false && addetta() ? `<button class="big main" data-stato="in_corso">▶ INIZIA LA PULIZIA</button>` : `<button class="big ok" data-stato="fatta">✓ PULIZIA FINITA</button>`}
+  else if (mod) stato = `${S.regole.richiediInizio !== false && addetta() ? `<button class="big main" data-vai-inizio="${esc(p.id)}">▶ INIZIA LA PULIZIA</button>` : `<button class="big ok" data-stato="fatta">✓ HO FINITO, È PULITA</button>`}
     <div class="due"><button class="big skip" data-apri="non_fatta">Non fatta</button><button class="big ko" data-apri="problema">Problema</button></div>
     <div id="boxMotivo" hidden style="margin-top:10px">
       <div class="scelte" id="scelteMotivo"></div>
-      <label for="nota" class="muted" style="display:block;margin:6px 0 4px">Scrivi due parole (puoi usare il microfono della tastiera)</label><textarea id="nota"></textarea>
+      <label for="nota" class="muted" style="display:block;margin:6px 0 4px">Scrivi due parole (puoi usare il microfono della tastiera)</label><textarea id="nota" data-keep></textarea>
       <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="btnsm ghost" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Aggiungi una foto<input id="fotoInput" type="file" accept="image/*" capture="environment" hidden></label><span id="fotoAnteprima" class="muted small"></span></div>
       <button class="big ko" id="confermaMotivo">Conferma</button></div>`;
   const chiPuo = (proprietario() && p.origine === "mano" ? `<button class="big undo" data-cancella-pul>Elimina questo lavoro</button>` : "") + (p.foto ? `<button class="big undo" data-vedi-foto>📷 Vedi la foto</button>` : "");
+  // Dettagli del giorno per la signora: li scrivono i proprietari (anche ogni mattina), lei li vede grandissimi
+  const dettagli = proprietario()
+    ? `<div class="floorlabel" style="margin-top:14px">Dettagli per la signora</div>
+      <p class="muted small" style="margin:0 0 6px">Li vede in grande quando apre la camera. Puoi cambiarli quando vuoi, anche ogni mattina.${p.dettagliDa ? ` Ultimi scritti da ${esc(p.dettagliDa)}${p.dettagliOra ? " alle " + L.oraBreve(p.dettagliOra) : ""}.` : ""}</p>
+      <textarea id="dettagli" data-keep placeholder="es. Asciugamani doppi, controlla il frigo, lascia la chiave sul tavolo">${esc(p.dettagli || "")}</textarea>
+      <div class="scelte">${["Asciugamani doppi", "Cambia anche le coperte", "Controlla il frigo", "Lettino in più", "Pulisci il balcone", "Lascia la chiave sul tavolo", "Attenta: ospite in camera"].map(t => `<button type="button" data-chip-testo="dettagli|${esc(t)}">${esc(t)}</button>`).join("")}</div>
+      <button class="big main" data-salva-dettagli>Salva i dettagli</button>${p.dettagli ? `<button class="big undo" data-togli-dettagli>Togli i dettagli</button>` : ""}`
+    : (p.dettagli ? `<div class="pro-dett"><div class="pro-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div><div class="pro-dett-x">${esc(p.dettagli)}</div></div>` : "");
   const ctrl = S.controlli[p.id];
   let controllo = "";
   if (p.stato === "fatta") {
@@ -594,6 +734,7 @@ function foglioPulizia(f) {
   }
   return `<h3>${esc(c.nome)}</h3><div class="muted">${esc(L.dataLunga(p.data))}${p.ospite ? " · " + esc(p.ospite) : ""}${p.persone ? ` · ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""}</div>
     <span class="kind">${esc(p.titolo)}</span>${p.partenza ? `<span class="kind arrivo">Parte oggi</span>` : ""}${p.arrivo ? `<span class="kind arrivo">Arriva oggi</span>` : ""}${!addetta() || p.stato === "fatta" ? `<span class="kind money">${eur(p.importo)}</span>` : ""}
+    ${dettagli}
     ${p.istruzioni ? `<div class="note">${esc(p.istruzioni)}</div>` : ""}
     ${rif && c.tipo === "casa" ? `<div class="note">🗑 Stasera fuori: ${esc(rif.cosa.toUpperCase())}</div>` : ""}
     ${passi.length ? `<ol class="steps">${passi.map((x, i) => `<li><b>${i + 1}</b><span>${esc(x)}</span></li>`).join("")}</ol>` : ""}
@@ -664,9 +805,11 @@ function collega() {
   document.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { S.giorno = b.dataset.g; disegna(); });
   document.querySelectorAll("[data-sett]").forEach(b => b.onclick = () => { S.settimana = L.aggiungiGiorni(S.settimana, 7 * Number(b.dataset.sett)); S.giorno = S.settimana; disegna(); });
   document.querySelectorAll("[data-pul]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.pul }));
-  document.querySelectorAll("[data-fatta]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.fatta]; if (!p) return; const prima = p.stato; cambiaStato(p, "fatta", ""); toast(`${camera(p.camera).nome}: PULITA ✓`, { testo: "Ho sbagliato", fai: () => { cambiaStato(S.pulizie[p.id], prima === "fatta" ? "da_fare" : prima, ""); const t = $(".toast"); if (t) t.remove(); } }); setTimeout(() => { const t = $(".toast"); if (t && /PULITA/.test(t.textContent)) t.remove(); }, 8000); });
+  document.querySelectorAll("[data-fatta]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fatta));
   document.querySelectorAll("[data-problema]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.problema, apriMotivo: "problema" }));
-  document.querySelectorAll("[data-inizia]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.inizia]; if (p) cambiaStato(p, "in_corso", ""); });
+  // INIZIA apre la schermata grande con tutti i dettagli; da lì si preme "HO CAPITO, COMINCIO!"
+  document.querySelectorAll("[data-inizia],[data-dettagli]").forEach(b => b.onclick = () => { const id = b.dataset.inizia || b.dataset.dettagli; if (S.pulizie[id]) apriFoglio({ tipo: "inizio", id }); });
+  document.querySelectorAll("[data-msg-giorno]").forEach(b => b.onclick = () => apriFoglio({ tipo: "messaggio", giorno: b.dataset.msgGiorno }));
   document.querySelectorAll("[data-stato-diretto]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoDiretto.split("|"); const p = S.pulizie[id]; if (p) cambiaStato(p, st, ""); });
   document.querySelectorAll("[data-altri-giorni]").forEach(b => b.onclick = () => { S.mostraGiorni = !S.mostraGiorni; if (!S.mostraGiorni) { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); } disegna(); });
   document.querySelectorAll("[data-controlla]").forEach(b => b.onclick = () => apriFoglio({ tipo: "controllo", id: b.dataset.controlla, modo: "collega" }));
@@ -707,23 +850,43 @@ function collegaFoglio() {
   }
   document.querySelectorAll("[data-controlla]").forEach(b => b.onclick = () => apriFoglio({ tipo: "controllo", id: b.dataset.controlla, modo: "collega" }));
   document.querySelectorAll("[data-controlla-prop]").forEach(b => b.onclick = () => apriFoglio({ tipo: "controllo", id: b.dataset.controllaProp, modo: "proprietario" }));
+  // frasi pronte: toccandole si aggiungono alla casella di testo indicata
+  document.querySelectorAll("[data-chip-testo]").forEach(b => b.onclick = () => { const [id, testo] = b.dataset.chipTesto.split("|"); const t = document.getElementById(id); if (!t) return; t.value = (t.value.trim() ? t.value.replace(/\s+$/, "") + (/[.!?]$/.test(t.value.trim()) ? " " : ". ") : "") + testo; t.focus(); t.setSelectionRange(t.value.length, t.value.length); });
+  if (f.tipo === "inizio") {
+    const p = S.pulizie[f.id];
+    document.querySelectorAll("[data-comincia]").forEach(b => b.onclick = () => { if (!p) return; cambiaStato(p, "in_corso", ""); toast(`Buon lavoro! Quando hai finito ${camera(p.camera).nome}, premi HO FINITO.`); });
+    document.querySelectorAll("[data-fatta-foglio]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fattaFoglio));
+    document.querySelectorAll("[data-apri-motivo]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.apriMotivo.split("|"); apriFoglio({ tipo: "pulizia", id, apriMotivo: st }); });
+    return;
+  }
+  if (f.tipo === "messaggio") {
+    document.querySelectorAll("[data-salva-msg]").forEach(b => b.onclick = () => salvaMessaggio(f.giorno, $("#msgTesto").value.trim()));
+    document.querySelectorAll("[data-togli-msg]").forEach(b => b.onclick = async () => { if (await chiedi("Tolgo il messaggio di questo giorno?", { si: "Sì, togli", pericolo: true })) salvaMessaggio(f.giorno, ""); });
+    return;
+  }
   if (f.tipo === "pulizia") {
     const p = S.pulizie[f.id];
     document.querySelectorAll("[data-stato]").forEach(b => b.onclick = () => cambiaStato(p, b.dataset.stato, ""));
-    document.querySelectorAll("[data-apri]").forEach(b => b.onclick = () => {
-      const box = $("#boxMotivo"); box.hidden = false; box.dataset.stato = b.dataset.apri;
-      const scelte = b.dataset.apri === "problema" ? ["Guasto", "Manca materiale", "Ospite in camera", "Camera molto sporca"] : ["Ospite in camera", "Camera chiusa", "Non serviva", "Non ho fatto in tempo"];
+    document.querySelectorAll("[data-vai-inizio]").forEach(b => b.onclick = () => apriFoglio({ tipo: "inizio", id: b.dataset.vaiInizio }));
+    const apriMotivo = (tipoMotivo, conFocus) => {
+      const box = $("#boxMotivo"); if (!box) return; box.hidden = false; box.dataset.stato = tipoMotivo; f.motivoAperto = tipoMotivo;
+      const scelte = tipoMotivo === "problema" ? ["Guasto", "Manca materiale", "Ospite in camera", "Camera molto sporca"] : ["Ospite in camera", "Camera chiusa", "Non serviva", "Non ho fatto in tempo"];
       $("#scelteMotivo").innerHTML = scelte.map(s => `<button type="button" data-motivo="${esc(s)}">${esc(s)}</button>`).join("");
-      document.querySelectorAll("[data-motivo]").forEach(m => m.onclick = () => { const t = $("#nota"); t.value = (t.value ? t.value + " · " : "") + m.dataset.motivo; document.querySelectorAll("[data-motivo]").forEach(x => x.setAttribute("aria-pressed", x === m ? "true" : "false")); });
-      $("#confermaMotivo").textContent = b.dataset.apri === "problema" ? "Segnala il problema" : "Conferma: non fatta";
-      $("#confermaMotivo").className = "big " + (b.dataset.apri === "problema" ? "ko" : "skip");
-      $("#nota").focus();
-    });
-    if (f.apriMotivo) { const b = document.querySelector(`[data-apri='${f.apriMotivo}']`); if (b) { b.click(); } f.apriMotivo = null; }
+      document.querySelectorAll("[data-motivo]").forEach(m => m.onclick = () => { const t = $("#nota"); t.value = (t.value.trim() ? t.value.replace(/\s+$/, "") + " · " : "") + m.dataset.motivo + " "; document.querySelectorAll("[data-motivo]").forEach(x => x.setAttribute("aria-pressed", x === m ? "true" : "false")); t.focus(); t.setSelectionRange(t.value.length, t.value.length); });
+      $("#confermaMotivo").textContent = tipoMotivo === "problema" ? "Segnala il problema" : "Conferma: non fatta";
+      $("#confermaMotivo").className = "big " + (tipoMotivo === "problema" ? "ko" : "skip");
+      if (fotoPending && $("#fotoAnteprima")) $("#fotoAnteprima").innerHTML = `<img src="${fotoPending}" alt="" style="height:56px;border-radius:8px;vertical-align:middle"> pronta`;
+      if (conFocus) $("#nota").focus();
+    };
+    document.querySelectorAll("[data-apri]").forEach(b => b.onclick = () => apriMotivo(b.dataset.apri, true));
+    if (f.apriMotivo) { apriMotivo(f.apriMotivo, true); f.apriMotivo = null; }
+    else if (f.motivoAperto) apriMotivo(f.motivoAperto, false); // ridisegno: la casella resta aperta
     const conf = $("#confermaMotivo");
     if (conf) conf.onclick = () => { const st = $("#boxMotivo").dataset.stato; const nota = $("#nota").value.trim(); if (st === "problema" && nota.length < 2 && !fotoPending) { $("#nota").focus(); return; } cambiaStato(p, st, nota); };
     const fi = $("#fotoInput");
     if (fi) fi.onchange = async () => { const file = fi.files && fi.files[0]; if (!file) return; $("#fotoAnteprima").textContent = "Preparo la foto…"; try { fotoPending = await rimpicciolisciFoto(file); $("#fotoAnteprima").innerHTML = `<img src="${fotoPending}" alt="" style="height:56px;border-radius:8px;vertical-align:middle"> pronta`; } catch (e) { console.error(e); $("#fotoAnteprima").textContent = "Non riesco a leggere la foto."; fotoPending = null; } };
+    document.querySelectorAll("[data-salva-dettagli]").forEach(b => b.onclick = () => salvaDettagli(p, $("#dettagli").value.trim()));
+    document.querySelectorAll("[data-togli-dettagli]").forEach(b => b.onclick = () => salvaDettagli(p, ""));
     document.querySelectorAll("[data-vedi-foto]").forEach(b => b.onclick = async () => { b.textContent = "Carico…"; try { const f = await S.db.leggi("foto", p.id); if (!f) { toast("Foto non trovata"); return; } apriFoglio({ tipo: "foto", id: p.id, dati: f.dati, titolo: camera(p.camera).nome, sotto: `${L.dataLunga(p.data)}${f.ora ? " · " + L.oraBreve(f.ora) : ""}` }); } catch (e) { erroreScrittura(e); } });
     document.querySelectorAll("[data-cancella-pul]").forEach(b => b.onclick = async () => { if (await chiedi("Elimino questo lavoro?", { si: "Sì, elimina", pericolo: true })) S.db.cancella("pulizie", p.id).then(chiudiFoglio).catch(erroreScrittura); });
   }
@@ -765,6 +928,33 @@ function testoErroreAccesso(err) {
 }
 
 let fotoPending = null;
+// "HO FINITO": segna PULITA con avviso simpatico e il bottone "Ho sbagliato" per tornare indietro
+function segnaFatta(id) {
+  const p = S.pulizie[id]; if (!p) return;
+  const prima = p.stato;
+  cambiaStato(p, "fatta", "");
+  const frasi = ["Bravissima!", "Ottimo lavoro!", "Grande!", "Perfetto!"];
+  toast(`${frasi[Math.floor(Math.random() * frasi.length)]} ${camera(p.camera).nome}: PULITA ✓`, { testo: "Ho sbagliato", fai: () => { cambiaStato(S.pulizie[p.id], prima === "fatta" ? "da_fare" : prima, ""); const t = $(".toast"); if (t) t.remove(); } });
+  setTimeout(() => { const t = $(".toast"); if (t && /PULITA/.test(t.textContent)) t.remove(); }, 8000);
+}
+// Dettagli del giorno di una camera (solo proprietari): restano sulla pulizia, il piano automatico non li tocca
+async function salvaDettagli(p, testo) {
+  if (!p || !proprietario()) return;
+  const patch = { dettagli: testo, dettagliDa: S.utente.nome || S.utente.login || "", dettagliOra: S.db.adesso() };
+  Object.assign(S.pulizie[p.id], patch); disegna();
+  try { await S.db.aggiorna("pulizie", p.id, patch); chiudiFoglio(); toast(testo ? `Dettagli salvati: la signora li vede subito.` : "Dettagli tolti"); }
+  catch (e) { erroreScrittura(e); }
+}
+// Messaggio del giorno alle signore (impostazioni/messaggi): una voce per giorno, si tengono gli ultimi 60 giorni
+async function salvaMessaggio(giorno, testo) {
+  if (!proprietario()) return;
+  const nuovo = {}; const limite = L.aggiungiGiorni(L.oggiISO(), -60);
+  for (const [k, v] of Object.entries(S.messaggi || {})) if (k >= limite && v && typeof v === "object") nuovo[k] = v;
+  if (testo) nuovo[giorno] = { testo, da: S.utente.nome || S.utente.login || "", ora: S.db.adesso() }; else delete nuovo[giorno];
+  S.messaggi = nuovo; disegna();
+  try { await S.db.salva("impostazioni", "messaggi", nuovo, false); chiudiFoglio(); toast(testo ? "Messaggio mandato alle signore" : "Messaggio tolto"); }
+  catch (e) { erroreScrittura(e); }
+}
 async function cambiaStato(p, stato, nota) {
   const adesso = S.db.adesso();
   const patch = { stato, nota: nota || "", ora: (stato === "da_fare" || stato === "in_corso") ? null : adesso, segnatoDa: S.utente.nome || S.utente.email || S.utente.uid };

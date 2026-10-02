@@ -52,3 +52,13 @@ Il ruolo sta nella raccolta `ruoli` di Firestore, in un documento che ha come no
 Si gestisce dall'app: ⋯ → **Persone e accessi**. La password invece si crea nella console Firebase
 (Authentication → Utenti → Aggiungi utente) con la stessa email.
 I quattro proprietari di base (`michele`, `papa`, `mamma`, `michelesantucci`) entrano sempre, anche se la raccolta fosse vuota.
+
+## Dettagli del giorno e messaggio alle signore (dalla versione 0.8)
+
+- **Dettagli di una camera**: in Gestione → Oggi si tocca la camera e si scrivono i "Dettagli per la signora"
+  (anche ogni mattina). Restano scritti sulla pulizia di quel giorno (campo `dettagli` in `pulizie`); il piano
+  automatico non li tocca. La signora li vede nel riquadro giallo e, grandissimi, nella schermata che si apre con
+  **INIZIA LA PULIZIA** (bottone "HO CAPITO, COMINCIO!").
+- **Messaggio del giorno**: in Gestione → Oggi, riquadro "Messaggio alle signore" → Scrivi. Sta in
+  `impostazioni/messaggi` (una voce per giorno, si tengono gli ultimi 60 giorni). Lo vedono tutte le signore in cima
+  alla loro schermata e nella schermata grande.
