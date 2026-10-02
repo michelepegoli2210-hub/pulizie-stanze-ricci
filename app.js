@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.5.0";
+export const VERSIONE = "0.5.1";
 
 // ---------------------------------------------------------------------------
 //  Stato dell'app (tutto quello che serve per disegnare le schermate)
@@ -641,7 +641,7 @@ function collega() {
   document.querySelectorAll("[data-voto]").forEach(i => i.onchange = () => { const v = L.votiCompleti(S.regole); const k = i.dataset.voto; const n = Math.max(0, Number(i.value) || 0); const nuovi = JSON.parse(JSON.stringify(v)); if (k === "bonusControllatrice") nuovi.bonusControllatrice = n; else nuovi[k].perc = n; const r = { ...S.regole, voti: nuovi }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-regola]").forEach(b => b.onclick = () => { const [k, v] = b.dataset.regola.split("|"); const r = { ...S.regole, [k]: v === "1" }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { S.tema = b.dataset.tema; localStorage.setItem("ricci_tema", S.tema); applicaTema(); disegna(); });
-  document.querySelectorAll("[data-esci]").forEach(b => b.onclick = () => { if (confirm("Vuoi uscire dall'app? Per rientrare servirà la password.")) S.db.esci(); });
+  document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
   const ff = $("#fileFoglio");
   if (ff) ff.onchange = () => { if (ff.files && ff.files[0]) leggiFileExcel(ff.files[0]); };
@@ -650,7 +650,7 @@ function collega() {
   document.querySelectorAll("[data-salva-foglio]").forEach(b => b.onclick = salvaImportazione);
   collegaPersone();
   document.querySelectorAll("[data-annulla-foglio]").forEach(b => b.onclick = () => { S.importazione = null; S.vista = "altro"; disegna(); });
-  document.querySelectorAll("[data-azzera-prova]").forEach(b => b.onclick = () => { if (confirm("Azzero i dati di prova?")) S.db.azzeraProva(); });
+  document.querySelectorAll("[data-azzera-prova]").forEach(b => b.onclick = async () => { if (await chiedi("Azzero i dati di prova?", { si: "Sì, azzera", pericolo: true })) S.db.azzeraProva(); });
 }
 
 function collegaFoglio() {
@@ -681,7 +681,7 @@ function collegaFoglio() {
     const fi = $("#fotoInput");
     if (fi) fi.onchange = async () => { const file = fi.files && fi.files[0]; if (!file) return; $("#fotoAnteprima").textContent = "Preparo la foto…"; try { fotoPending = await rimpicciolisciFoto(file); $("#fotoAnteprima").innerHTML = `<img src="${fotoPending}" alt="" style="height:56px;border-radius:8px;vertical-align:middle"> pronta`; } catch (e) { console.error(e); $("#fotoAnteprima").textContent = "Non riesco a leggere la foto."; fotoPending = null; } };
     document.querySelectorAll("[data-vedi-foto]").forEach(b => b.onclick = async () => { b.textContent = "Carico…"; try { const f = await S.db.leggi("foto", p.id); if (!f) { toast("Foto non trovata"); return; } apriFoglio({ tipo: "foto", id: p.id, dati: f.dati, titolo: camera(p.camera).nome, sotto: `${L.dataLunga(p.data)}${f.ora ? " · " + L.oraBreve(f.ora) : ""}` }); } catch (e) { erroreScrittura(e); } });
-    document.querySelectorAll("[data-cancella-pul]").forEach(b => b.onclick = () => { if (confirm("Elimino questo lavoro?")) S.db.cancella("pulizie", p.id).then(chiudiFoglio).catch(erroreScrittura); });
+    document.querySelectorAll("[data-cancella-pul]").forEach(b => b.onclick = async () => { if (await chiedi("Elimino questo lavoro?", { si: "Sì, elimina", pericolo: true })) S.db.cancella("pulizie", p.id).then(chiudiFoglio).catch(erroreScrittura); });
   }
   if (f.tipo === "soggiorno") {
     const form = $("#formSog");
@@ -693,7 +693,7 @@ function collegaFoglio() {
     document.querySelectorAll("[data-priv]").forEach(b => b.onclick = () => { priv = b.dataset.priv === "1"; document.querySelectorAll("[data-priv]").forEach(x => x.setAttribute("aria-pressed", (x.dataset.priv === "1") === priv ? "true" : "false")); });
     const form = $("#formNota");
     if (form) form.onsubmit = (e) => { e.preventDefault(); const d = { data: $("#nData").value, camera: $("#nCam").value || null, testo: $("#nTesto").value.trim(), privata: priv, da: S.utente.nome || S.utente.email || "" }; const id = f.id || `${d.data}_${Date.now().toString(36)}`; S.db.salva("note", id, d).then(() => { chiudiFoglio(); toast("Nota salvata"); }).catch(erroreScrittura); };
-    document.querySelectorAll("[data-nota-elimina]").forEach(b => b.onclick = () => { if (confirm("Elimino la nota?")) S.db.cancella("note", f.id).then(chiudiFoglio).catch(erroreScrittura); });
+    document.querySelectorAll("[data-nota-elimina]").forEach(b => b.onclick = async () => { if (await chiedi("Elimino la nota?", { si: "Sì, elimina", pericolo: true })) S.db.cancella("note", f.id).then(chiudiFoglio).catch(erroreScrittura); });
   }
   if (f.tipo === "nuovoLavoro") {
     const form = $("#formLavoro");
@@ -759,10 +759,10 @@ async function segnaPagata(zona, chiave, si) {
   try {
     if (si) {
       const { lista, totale } = L.totaleSettimana(S.pulizie, zona, chiave, S.regole, S.controlli);
-      if (!confirm(`Segno come pagata la settimana ${L.etichettaSettimana(chiave)} della signora ${S.zone[zona]?.breve || zona}: ${eur(totale)} per ${lista.length} pulizie?`)) return;
+      if (!await chiedi(`Segno come pagata la settimana ${L.etichettaSettimana(chiave)} della signora ${S.zone[zona]?.breve || zona}: ${eur(totale)} per ${lista.length} pulizie?`, { si: "Sì, pagata" })) return;
       await S.db.salva("pagamenti", id, { zona, settimana: chiave, importo: totale, pulizie: lista.length, quando: new Date().toLocaleDateString("it-IT", { day: "numeric", month: "short", timeZone: "Europe/Rome" }), istante: S.db.adesso(), da: S.utente.nome || S.utente.email || "" }, false);
       toast("Segnata come pagata");
-    } else { if (!confirm("Annullo il pagamento segnato?")) return; await S.db.cancella("pagamenti", id); }
+    } else { if (!await chiedi("Annullo il pagamento segnato?", { si: "Sì, annulla", pericolo: true })) return; await S.db.cancella("pagamenti", id); }
   } catch (e) { erroreScrittura(e); }
 }
 
@@ -775,10 +775,10 @@ async function salvaListino(l) {
 async function salvaSoggiorno(f) {
   const nome = $("#sNome").value.trim(), inizio = $("#sInizio").value, fine = $("#sFine").value;
   if (!nome || !inizio || !fine) return;
-  if (fine <= inizio) { alert("Il giorno di partenza deve venire dopo l'arrivo."); return; }
+  if (fine <= inizio) { toast("Il giorno di partenza deve venire dopo l'arrivo."); return; }
   const cam = f.id ? S.soggiorni[f.id].camera : f.camera;
   const altri = soggiorniLista().filter(s => s.camera === cam && s.id !== f.id && s.inizio < fine && inizio < s.fine);
-  if (altri.length && !confirm(`In ${camera(cam).nome} in quei giorni c'è già ${altri.map(a => a.nome).join(", ")}. Salvo lo stesso?`)) return;
+  if (altri.length && !await chiedi(`In ${camera(cam).nome} in quei giorni c'è già ${altri.map(a => a.nome).join(", ")}. Salvo lo stesso?`, { si: "Sì, salva lo stesso" })) return;
   const d = { camera: cam, inizio, fine, nome, tipo: $("#sTipo").value, persone: Number($("#sPers").value) || 1, supplemento: Math.max(0, Number($("#sSup").value) || 0), nota: $("#sNota").value.trim(), notaPrivata: $("#sPriv").value.trim(), dubbio: $("#sTipo").value === "unk", origine: f.id ? (S.soggiorni[f.id].origine || "mano") : "mano", mesi: mesiCoperti(inizio, fine), modificato: S.db.adesso(), da: S.utente.nome || "" };
   const id = f.id || `${inizio}_${cam}_${Date.now().toString(36)}`;
   try { await S.db.salva("soggiorni", id, d); chiudiFoglio(); toast("Prospetto aggiornato"); }
@@ -789,8 +789,8 @@ function mesiCoperti(inizio, fine) { const out = []; for (let m = L.primoDelMese
 async function azioneSoggiorno(f, azione) {
   const s = S.soggiorni[f.id]; if (!s) return;
   try {
-    if (azione === "elimina") { if (!confirm(`Tolgo ${s.nome} da ${camera(s.camera).nome}?`)) return; await S.db.cancella("soggiorni", f.id); }
-    if (azione === "parteoggi") { const oggi = L.oggiISO(); if (oggi <= s.inizio) { alert("Non può partire prima di arrivare."); return; } await S.db.aggiorna("soggiorni", f.id, { fine: oggi, modificato: S.db.adesso() }); }
+    if (azione === "elimina") { if (!await chiedi(`Tolgo ${s.nome} da ${camera(s.camera).nome}?`, { si: "Sì, togli", pericolo: true })) return; await S.db.cancella("soggiorni", f.id); }
+    if (azione === "parteoggi") { const oggi = L.oggiISO(); if (oggi <= s.inizio) { toast("Non può partire prima di arrivare."); return; } await S.db.aggiorna("soggiorni", f.id, { fine: oggi, modificato: S.db.adesso() }); }
     chiudiFoglio(); toast("Prospetto aggiornato");
   } catch (e) { erroreScrittura(e); }
 }
@@ -873,7 +873,7 @@ function collegaPersone() {
   document.querySelectorAll("[data-ruolo-sel]").forEach(e => e.onchange = () => salvaCampo(e.dataset.ruoloSel, { ruolo: e.value, zona: e.value === "addetta" ? (S.ruoli[e.dataset.ruoloSel]?.zona || null) : null }));
   document.querySelectorAll("[data-zona-sel]").forEach(e => e.onchange = () => salvaCampo(e.dataset.zonaSel, { zona: e.value || null }));
   document.querySelectorAll("[data-nome-sel]").forEach(e => e.onchange = () => salvaCampo(e.dataset.nomeSel, { nome: e.value.trim() }));
-  document.querySelectorAll("[data-ruolo-del]").forEach(b => b.onclick = () => { const r = S.ruoli[b.dataset.ruoloDel]; if (r && confirm(`Tolgo l'accesso a ${r.nome || r.login}? (L'account in Firebase resta, ma non vedrà più niente.)`)) S.db.cancella("ruoli", b.dataset.ruoloDel).then(() => toast("Tolto")).catch(erroreScrittura); });
+  document.querySelectorAll("[data-ruolo-del]").forEach(b => b.onclick = async () => { const r = S.ruoli[b.dataset.ruoloDel]; if (r && await chiedi(`Tolgo l'accesso a ${r.nome || r.login}? (L'account in Firebase resta, ma non vedrà più niente.)`, { si: "Sì, togli", pericolo: true })) S.db.cancella("ruoli", b.dataset.ruoloDel).then(() => toast("Tolto")).catch(erroreScrittura); });
   const fp = $("#formPersona");
   if (fp) fp.onsubmit = (e) => { e.preventDefault(); const login = $("#pLogin").value.trim().toLowerCase().replace(/\s+/g, ""); if (!login) return; const ruolo = $("#pRuolo").value; S.db.salva("ruoli", emailDi(login), { login, nome: $("#pNome").value.trim(), ruolo, zona: ruolo === "addetta" ? ($("#pZona").value || null) : null, creato: S.db.adesso() }, false).then(() => toast(`Aggiunta: ${login}`)).catch(erroreScrittura); };
 }
@@ -972,6 +972,19 @@ async function salvaImportazione() {
     S.importazione = null; S.attesa = false; S.vista = "prospetto"; S.board = { modo: "mese", inizio: L.primoDelMese(L.oggiISO()) }; disegna();
     toast(`Foglio salvato: ${scelti.length} soggiorni e ${r.note.length} note nel prospetto.`);
   } catch (e) { S.attesa = false; disegna(); erroreScrittura(e); }
+}
+
+// Domanda sì/no con due bottoni grandi (al posto della finestrina piccola del browser)
+function chiedi(testo, opz = {}) {
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box" role="dialog"><p>${esc(testo)}</p><button class="big ${opz.pericolo ? "ko" : "main"}" data-si>${esc(opz.si || "Sì")}</button><button class="big undo" data-no>${esc(opz.no || "No, lascia stare")}</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("[data-si]").onclick = () => { el.remove(); ok(true); };
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(false); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(false); } };
+  });
 }
 
 // ---------------------------------------------------------------------------

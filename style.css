@@ -279,3 +279,7 @@ body.nonna .toast{font-size:20px;padding:16px 20px}
 body.nonna .toast button{font-size:18px;padding:10px 14px}
 body.nonna .toast{bottom:calc(100px + env(safe-area-inset-bottom,0px));width:calc(100% - 32px);max-width:560px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
 body.nonna .toast button{flex:0 0 auto;min-height:48px}
+.conferma{position:fixed;inset:0;background:rgba(4,25,30,.6);display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+.conferma-box{background:var(--card);border-radius:22px;padding:22px 18px;max-width:420px;width:100%;box-shadow:var(--shadow)}
+.conferma-box p{font:700 20px/1.35 var(--f-body);margin:0 0 6px}
+body.nonna .conferma-box p{font-size:23px}
