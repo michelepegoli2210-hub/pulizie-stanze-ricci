@@ -227,3 +227,55 @@ details[open] summary::before{content:"▾ "}
 .spazio{height:8px}
 @media (prefers-reduced-motion:no-preference){.room{transition:transform .12s}.room:active{transform:scale(.97)}}
 @media (min-width:700px){.apts{grid-template-columns:repeat(3,1fr)}}
+
+/* ==========================================================================
+   Vista delle signore "a prova di nonna": scritte grandi, una camera per riga,
+   un solo bottone grande per camera, barra in basso con 2-3 tasti enormi.
+   ========================================================================== */
+body.nonna{font-size:20px;line-height:1.35}
+body.nonna main{padding-bottom:120px;gap:14px}
+body.nonna h1{font-size:20px}
+.nonna-testa{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:18px 16px}
+.nonna-ciao{font:800 24px/1.2 var(--f-display);text-transform:none}
+.nonna-ciao::first-letter{text-transform:uppercase}
+.nonna-conta{font:700 20px var(--f-body);color:var(--muted);margin-top:6px}
+.bar.big{height:14px;margin-top:10px}
+.nonna-giorni{margin-top:12px;border:1px solid var(--line);background:transparent;border-radius:12px;padding:10px 14px;font:700 16px var(--f-body);color:var(--muted);cursor:pointer;min-height:44px}
+.nonna-card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:18px 16px;border-left:10px solid var(--todo)}
+.nonna-card.done{border-left-color:var(--done);background:var(--done-bg)}
+.nonna-card.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.nonna-card.skip{border-left-color:var(--skip);background:var(--skip-bg)}
+.nonna-card.idle{border-left-color:var(--line)}
+.nonna-camera{font:800 32px/1.1 var(--f-display);letter-spacing:-.01em}
+.nonna-lavoro{font:700 22px var(--f-body);margin-top:6px}
+.nonna-ospite{font-size:19px;color:var(--muted);margin-top:4px}
+.nonna-avviso{display:inline-block;margin-top:8px;background:#cfe9f3;color:#0d5c6e;border-radius:10px;padding:4px 10px;font-weight:700;font-size:17px}
+.nonna-nota{background:#fff3c4;color:#5a4300;border-radius:12px;padding:10px 12px;margin-top:10px;font-size:19px;font-weight:700}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nonna-nota{background:#4a3a0a;color:#ffe9a8}}
+:root[data-theme="dark"] .nonna-nota{background:#4a3a0a;color:#ffe9a8}
+.nonna-fatta{display:block;width:100%;border:0;border-radius:18px;background:var(--done);color:#fff;font:800 28px var(--f-display);min-height:76px;margin-top:14px;cursor:pointer;box-shadow:0 6px 16px -6px rgba(43,138,90,.6)}
+.nonna-fatta:active{transform:scale(.98)}
+.nonna-prob{display:block;width:100%;border:2px solid var(--warn);border-radius:16px;background:transparent;color:var(--warn);font:800 20px var(--f-body);min-height:60px;margin-top:10px;cursor:pointer}
+.nonna-link{display:inline-block;border:0;background:transparent;color:var(--accent);font:700 17px var(--f-body);text-decoration:underline;padding:8px 0;margin-top:6px;cursor:pointer;min-height:40px}
+.nonna-stato{font:800 24px var(--f-display);margin-top:12px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.55)}
+.nonna-stato span{display:block;font:400 18px var(--f-body);margin-top:4px}
+.nonna-stato.done{color:var(--done)} .nonna-stato.warn{color:var(--warn)} .nonna-stato.skip{color:var(--skip)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nonna-stato{background:rgba(0,0,0,.25)}}
+:root[data-theme="dark"] .nonna-stato{background:rgba(0,0,0,.25)}
+.barra{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:var(--card);box-shadow:0 -6px 18px rgba(0,0,0,.15);z-index:15}
+.barra button{flex:1 1 0;border:0;border-radius:16px;background:transparent;color:var(--muted);font:800 17px var(--f-body);min-height:72px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.barra button i{font-style:normal;font-size:26px;line-height:1}
+.barra button[aria-pressed="true"]{background:var(--band);color:var(--band-fg)}
+body.nonna .sheet .panel{font-size:20px}
+body.nonna .sheet h3{font-size:30px}
+body.nonna .steps li{font-size:20px;padding:12px 14px}
+body.nonna .big.ok{min-height:76px;font-size:28px}
+body.nonna .big.ko,body.nonna .big.skip{min-height:64px;font-size:21px}
+body.nonna .scelte button{font-size:18px;min-height:48px;padding:10px 14px}
+body.nonna textarea{font-size:20px}
+body.nonna .wallet .amt{font-size:56px}
+body.nonna .row{font-size:19px;padding:14px}
+body.nonna .toast{font-size:20px;padding:16px 20px}
+body.nonna .toast button{font-size:18px;padding:10px 14px}
+body.nonna .toast{bottom:calc(100px + env(safe-area-inset-bottom,0px));width:calc(100% - 32px);max-width:560px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
+body.nonna .toast button{flex:0 0 auto;min-height:48px}

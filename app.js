@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.4.1";
+export const VERSIONE = "0.5.0";
 
 // ---------------------------------------------------------------------------
 //  Stato dell'app (tutto quello che serve per disegnare le schermate)
@@ -157,6 +157,7 @@ function disegna() {
   const app = $("#app");
   if (!app) return;
   disegnaTestata();
+  document.body.classList.toggle("nonna", !!(S.utente && addetta()));
   let corpo = "";
   if (!S.pronto) corpo = `<section class="card center"><p class="muted">Un attimo…</p></section>`;
   else if (!S.utente) corpo = vistaAccesso();
@@ -182,7 +183,7 @@ function disegnaTestata() {
   who.className = "who" + (S.online ? "" : " off");
   // striscia dei giorni
   const el = $("#days");
-  const mostra = u && u.ruolo && (["oggi", "piantine", "settimana"].includes(S.vista));
+  const mostra = u && u.ruolo && (["oggi", "piantine", "settimana"].includes(S.vista)) && (!addetta() || S.mostraGiorni);
   el.hidden = !mostra;
   if (!mostra) return;
   const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(S.settimana, i));
@@ -217,11 +218,44 @@ function vistaNonAttivo() {
 function vistaAddetta() {
   const z = S.utente.zona;
   const ctrl = sonoControllatrice();
-  const tabs = `<div class="tabs"><button aria-pressed="${S.vista === "oggi"}" data-vista="oggi">Camere</button><button aria-pressed="${S.vista === "settimana"}" data-vista="settimana">Settimana</button><button aria-pressed="${S.vista === "soldi"}" data-vista="soldi">Soldi</button>${ctrl ? `<button aria-pressed="${S.vista === "controlli"}" data-vista="controlli">Controlli</button>` : ""}</div>`;
-  if (S.vista === "soldi") return tabs + vistaSoldi(z) + `<section class="card center"><button class="big undo" data-esci>Esci dall'app (serve di nuovo la password)</button></section>`;
-  if (S.vista === "settimana") return tabs + vistaSettimanaLista(z);
-  if (S.vista === "controlli" && ctrl) return tabs + vistaControlliCollega(z);
-  return tabs + vistaPiantina(z, true);
+  const nav = `<nav class="barra"><button aria-pressed="${S.vista === "oggi" || S.vista === "settimana"}" data-vista="oggi"><i>🧹</i>Camere</button><button aria-pressed="${S.vista === "soldi"}" data-vista="soldi"><i>💶</i>I miei soldi</button>${ctrl ? `<button aria-pressed="${S.vista === "controlli"}" data-vista="controlli"><i>✅</i>Controlli</button>` : ""}</nav>`;
+  let corpo;
+  if (S.vista === "soldi") corpo = vistaSoldi(z) + `<section class="card center"><button class="big undo" data-esci>Esci dall'app (poi serve di nuovo la password)</button></section>`;
+  else if (S.vista === "controlli" && ctrl) corpo = vistaControlliCollega(z);
+  else corpo = vistaNonnaOggi(z);
+  return corpo + nav;
+}
+
+// La giornata della signora: una camera per riga, scritte grandi, un solo bottone grande.
+function vistaNonnaOggi(z) {
+  const iso = S.giorno, oggi = L.oggiISO();
+  const lavori = pulizieDelGiorno(iso, z);
+  const daFare = lavori.filter(p => p.stato === "da_fare"), finiti = lavori.filter(p => p.stato !== "da_fare");
+  const quando = iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, 1) ? "Domani" : iso === L.aggiungiGiorni(oggi, -1) ? "Ieri" : L.GIORNI[L.giornoSettimana(iso)].replace(/^./, c => c.toUpperCase());
+  const testata = `<section class="nonna-testa"><div class="nonna-ciao">${esc(quando)}, ${esc(L.dataLunga(iso))}</div>
+    <div class="nonna-conta">${lavori.length ? `${finiti.length} su ${lavori.length} ${lavori.length === 1 ? "camera fatta" : "camere fatte"}` : "Niente da pulire"}</div>
+    ${lavori.length ? `<div class="bar big"><i style="width:${Math.round(finiti.length / lavori.length * 100)}%"></i></div>` : ""}
+    <button class="nonna-giorni" data-altri-giorni>${S.mostraGiorni ? "Nascondi gli altri giorni" : "Vedi gli altri giorni"}</button></section>`;
+  const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
+  const bidoni = rif && z === "ap" ? `<div class="nonna-nota">🗑 Stasera fuori i bidoni: <b>${esc(rif.cosa.toUpperCase())}</b></div>` : "";
+  const scheda = (p) => {
+    const c = camera(p.camera), cls = statoClasse(p);
+    const titolo = p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : p.titolo;
+    const avvisi = [p.partenza ? "L'ospite parte" : "", p.arrivo ? "Arriva un ospite" : ""].filter(Boolean).join(" · ");
+    const azioni = p.stato === "da_fare" ? `<button class="nonna-fatta" data-fatta="${esc(p.id)}">✓ FATTA</button><button class="nonna-prob" data-problema="${esc(p.id)}">C'è un problema</button>`
+      : p.stato === "fatta" ? `<div class="nonna-stato done">✓ FATTA ${p.ora ? "alle " + L.oraBreve(p.ora) : ""}</div><button class="nonna-link" data-stato-diretto="${esc(p.id)}|da_fare">Ho sbagliato, non è fatta</button>`
+      : p.stato === "problema" ? `<div class="nonna-stato warn">⚠ PROBLEMA SEGNALATO${p.nota ? "<br><span>" + esc(p.nota) + "</span>" : ""}</div><button class="nonna-fatta" data-fatta="${esc(p.id)}">✓ Adesso è FATTA</button>`
+      : `<div class="nonna-stato skip">NON FATTA${p.nota ? "<br><span>" + esc(p.nota) + "</span>" : ""}</div><button class="nonna-fatta" data-fatta="${esc(p.id)}">✓ Adesso è FATTA</button>`;
+    return `<section class="nonna-card ${cls}"><div class="nonna-camera">${esc(c.nome)}</div>
+      <div class="nonna-lavoro">${esc(titolo)}${p.persone ? ` · ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""}</div>
+      ${p.ospite ? `<div class="nonna-ospite">Ospite: ${esc(p.ospite)}</div>` : ""}
+      ${avvisi ? `<div class="nonna-avviso">${esc(avvisi)}</div>` : ""}
+      ${p.istruzioni ? `<div class="nonna-nota">📝 ${esc(p.istruzioni)}</div>` : ""}
+      <button class="nonna-link" data-pul="${esc(p.id)}">Cosa devo fare esattamente?</button>
+      ${azioni}</section>`;
+  };
+  const lista = lavori.length ? daFare.map(scheda).join("") + finiti.map(scheda).join("") : `<section class="nonna-card idle"><div class="nonna-camera">Riposo 🙂</div><div class="nonna-lavoro">${iso === oggi ? "Oggi" : "Questo giorno"} non c'è nessuna camera da pulire.</div></section>`;
+  return testata + bidoni + lista;
 }
 
 function tesseraCamera(c, iso, conPrezzo) {
@@ -587,6 +621,10 @@ function collega() {
   document.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { S.giorno = b.dataset.g; disegna(); });
   document.querySelectorAll("[data-sett]").forEach(b => b.onclick = () => { S.settimana = L.aggiungiGiorni(S.settimana, 7 * Number(b.dataset.sett)); S.giorno = S.settimana; disegna(); });
   document.querySelectorAll("[data-pul]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.pul }));
+  document.querySelectorAll("[data-fatta]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.fatta]; if (!p) return; const prima = p.stato; cambiaStato(p, "fatta", ""); toast(`${camera(p.camera).nome}: FATTA ✓`, { testo: "Ho sbagliato", fai: () => { cambiaStato(S.pulizie[p.id], prima === "fatta" ? "da_fare" : prima, ""); const t = $(".toast"); if (t) t.remove(); } }); setTimeout(() => { const t = $(".toast"); if (t && /FATTA/.test(t.textContent)) t.remove(); }, 8000); });
+  document.querySelectorAll("[data-problema]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.problema, apriMotivo: "problema" }));
+  document.querySelectorAll("[data-stato-diretto]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoDiretto.split("|"); const p = S.pulizie[id]; if (p) cambiaStato(p, st, ""); });
+  document.querySelectorAll("[data-altri-giorni]").forEach(b => b.onclick = () => { S.mostraGiorni = !S.mostraGiorni; if (!S.mostraGiorni) { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); } disegna(); });
   document.querySelectorAll("[data-controlla]").forEach(b => b.onclick = () => apriFoglio({ tipo: "controllo", id: b.dataset.controlla, modo: "collega" }));
   document.querySelectorAll("[data-controllatrice-sel]").forEach(e => e.onchange = () => { const chiave = L.settimanaCorrente(); const imp = { ...(S.impControlli || {}) }; imp.settimane = { ...(imp.settimane || {}), [chiave]: e.value }; imp.attuale = e.value; imp.settimana = chiave; S.db.salva("impostazioni", "controlli", imp).then(() => toast("Controllatrice cambiata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-sog]").forEach(b => b.onclick = () => apriFoglio({ tipo: "soggiorno", id: b.dataset.sog }));
@@ -637,6 +675,7 @@ function collegaFoglio() {
       $("#confermaMotivo").className = "big " + (b.dataset.apri === "problema" ? "ko" : "skip");
       $("#nota").focus();
     });
+    if (f.apriMotivo) { const b = document.querySelector(`[data-apri='${f.apriMotivo}']`); if (b) { b.click(); } f.apriMotivo = null; }
     const conf = $("#confermaMotivo");
     if (conf) conf.onclick = () => { const st = $("#boxMotivo").dataset.stato; const nota = $("#nota").value.trim(); if (st === "problema" && nota.length < 2 && !fotoPending) { $("#nota").focus(); return; } cambiaStato(p, st, nota); };
     const fi = $("#fotoInput");
