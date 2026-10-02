@@ -64,3 +64,6 @@ I quattro proprietari di base (`michele`, `papa`, `mamma`, `michelesantucci`) en
   alla loro schermata e nella schermata grande.
 - **Sfondo**: dietro a tutto c'è la laguna di Lesina disegnata in `sfondo-laguna.svg` (cielo, Gargano, acqua, canne,
   fenicotteri). Per cambiarla basta sostituire quel file (stesso nome) nel repository.
+- **Piantina** (dalla 0.10): la schermata delle signore è la piantina del loro piano (camere a sinistra e a destra del
+  corridoio, poi via Nazario Sauro; per gli appartamenti le tre case). Ogni camera è un riquadro colorato per stato; si
+  tocca e si apre la schermata grande. La posizione delle camere si cambia in `regole.js` (campo `lato`: L, R, S, A).

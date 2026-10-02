@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.9.1";
+export const VERSIONE = "0.10.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -327,43 +327,45 @@ function vistaNonnaOggi(z) {
   else if (tutteFatte) { frase = "Tutto pulito! Sei stata bravissima."; variante = "festa"; }
   else if (!pulite && !inCorso) { frase = `${iso === oggi ? "Oggi hai" : "Ci sono"} ${lavori.length === 1 ? "una camera" : lavori.length + " camere"}. Una alla volta e si fa tutto!`; variante = "scopa"; }
   else { const resto = lavori.length - pulite; frase = resto === 1 ? "Ne manca una sola. Forza, ci sei quasi!" : `Ne mancano ${resto}. Forza, stai andando benissimo!`; variante = "secchio"; }
+  const msg = messaggioDelGiorno(iso);
+  const messaggio = msg ? `<div class="pro-msg dentro"><div class="pro-msg-t">${ICONA("nota")}<span>Messaggio di ${esc(msg.da || "Michele")} per ${esc(quando.toLowerCase())}</span></div><div class="pro-msg-x">${esc(msg.testo)}</div></div>` : "";
+  // Testata compatta: saluto, numeri, barra, giorno; subito sotto la piantina (è lei la cosa importante)
   const testata = `<section class="pro-testa">
-    <div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">${esc(saluto())}, ${esc(nomeSignora())}!</div><div class="pro-frase">${esc(frase)}</div></div>${DONNINA(variante, "grande")}</div>
-    <div class="pro-data">${ICONA("calendario")}<span>${esc(quando)} · ${esc(L.dataLunga(iso))}</span></div>
+    <div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">${esc(saluto())}, ${esc(nomeSignora())}!</div><div class="pro-frase">${esc(frase)}</div></div>${DONNINA(variante, "media")}</div>
     <div class="pro-riepilogo"><div class="pro-num"><b>${lavori.length}</b><span>camere</span></div><div class="pro-num done"><b>${pulite}</b><span>pulite</span></div><div class="pro-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="pro-num todo"><b>${daFare}</b><span>da pulire</span></div></div>
     ${lavori.length ? `<div class="bar bar-grande"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
-    <button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi gli altri giorni" : "Vedi gli altri giorni"}</button></section>`;
-  const msg = messaggioDelGiorno(iso);
-  const messaggio = msg ? `<section class="pro-msg"><div class="pro-msg-t">${ICONA("nota")}<span>Messaggio di ${esc(msg.da || "Michele")} per ${esc(quando.toLowerCase())}</span></div><div class="pro-msg-x">${esc(msg.testo)}</div></section>` : "";
+    <div class="pro-data-riga"><div class="pro-data">${ICONA("calendario")}<span>${esc(quando)} · ${esc(L.dataLunga(iso))}</span></div><button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi" : "Altri giorni"}</button></div>
+    ${messaggio}</section>`;
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
   const bidoni = rif && z === "ap" ? `<div class="pro-nota">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.toUpperCase())}</b></span></div>` : "";
-  const richiediInizio = S.regole.richiediInizio !== false;
-  const scheda = (p) => {
-    const c = camera(p.camera), cls = statoClasse(p);
-    const min = minutiPulizia(p);
-    let azioni = "";
-    if (p.stato === "da_fare") azioni = richiediInizio
-      ? `<button class="pro-btn blu" data-inizia="${esc(p.id)}">${ICONA("gioca")}<span>INIZIA LA PULIZIA</span></button>`
-      : `<button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
-    else if (p.stato === "in_corso") azioni = `<div class="pro-tempo">${ICONA("orologio")}<span>Iniziata alle <b>${L.oraBreve(p.inizio)}</b> · buon lavoro!</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
-    else if (p.stato === "fatta") azioni = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${min != null ? ` · ${min} min` : ""} · brava!</span></div><button class="nonna-link" data-stato-diretto="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>`;
-    else if (p.stato === "problema") azioni = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>`;
-    else azioni = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde" data-fatta="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>`;
-    const aperta = p.stato === "da_fare" || p.stato === "in_corso";
-    const secondari = aperta ? `<div class="pro-sec"><button class="nonna-link" data-dettagli="${esc(p.id)}">${ICONA("lista")}Vedi in grande</button><button class="nonna-link rosso" data-problema="${esc(p.id)}">${ICONA("avviso")}Problema</button></div>` : "";
-    return `<section class="pro-card ${cls}">
-      <div class="pro-riga1"><div class="pro-camera">${esc(c.nome)}</div>${BADGE(p)}</div>
-      <div class="pro-lavoro">${ICONA("scopa")}<span>${esc(titoloLavoro(p))}${p.persone ? ` · ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""}</span></div>
-      ${p.ospite ? `<div class="pro-info">${ICONA("persona")}<span>${esc(p.ospite)}</span></div>` : ""}
-      ${p.partenza || p.arrivo ? `<div class="pro-flag">${p.partenza ? `<span class="flag out">${ICONA("esci")}PARTENZA</span>` : ""}${p.arrivo ? `<span class="flag in">${ICONA("entra")}ARRIVO</span>` : ""}</div>` : ""}
-      ${p.dettagli && aperta ? `<div class="pro-dett"><div class="pro-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div><div class="pro-dett-x">${esc(p.dettagli)}</div></div>` : ""}
-      ${p.istruzioni && aperta ? `<div class="pro-nota">${ICONA("nota")}<span>${esc(p.istruzioni)}</span></div>` : ""}
-      ${azioni}${secondari}</section>`;
-  };
-  const ordine = { in_corso: 0, da_fare: 1, problema: 2, non_fatta: 3, fatta: 4 };
-  const ordinati = lavori.slice().sort((a, b) => (ordine[a.stato] ?? 9) - (ordine[b.stato] ?? 9) || ordineCamera(a.camera) - ordineCamera(b.camera));
-  const lista = lavori.length ? ordinati.map(scheda).join("") : `<section class="pro-card idle"><div class="pro-camera">Nessuna camera</div><div class="pro-lavoro"><span>${iso === oggi ? "Niente da pulire oggi. Buona giornata!" : "Se cambia qualcosa, comparirà qui da sola."}</span></div></section>`;
-  return testata + messaggio + bidoni + lista;
+  // La piantina: le camere al loro posto (sinistra/destra del corridoio, poi via Nazario Sauro); si tocca una camera
+  const legenda = `<div class="legenda"><span><i class="todo"></i>Da pulire</span><span><i class="wip"></i>In corso</span><span><i class="done"></i>Pulita</span><span><i class="warn"></i>Problema</span></div>`;
+  const piantina = `<section class="card piantina-card">${piantinaZona(z, iso, true)}${legenda}${lavori.length ? `<p class="piantina-aiuto">Tocca una camera: si apre in grande con tutti i dettagli e il bottone per iniziare.</p>` : ""}</section>`;
+  return testata + bidoni + piantina;
+}
+
+// Un riquadro-camera della piantina (per le signore e per le piantine della gestione)
+function tesseraGrande(c, iso, perSignora) {
+  const p = S.pulizie[`${iso}_${c.id}`] || pulizieDelGiorno(iso).find(x => x.camera === c.id);
+  const osp = !perSignora ? L.ospiteIl(soggiorniLista(), c.id, iso) : null;
+  if (!p) return `<div class="tess idle"><span class="tess-nome">${esc(c.nome)}</span>${osp ? `<span class="tess-osp">${esc(osp.nome)}</span>` : ""}<span class="tess-stato-idle">Niente da fare</span></div>`;
+  const cls = statoClasse(p);
+  const chi = p.ospite ? `${esc(p.ospite)}${p.persone ? ` · ${p.persone}` : ""}` : (p.persone ? `${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : "");
+  const flag = p.partenza ? `<span class="tess-flag out">${ICONA("esci")}PARTENZA</span>` : p.arrivo ? `<span class="tess-flag in">${ICONA("entra")}ARRIVO</span>` : "";
+  const stato = p.stato === "fatta" ? `PULITA ${L.oraBreve(p.ora)}` : (STATI[p.stato] || STATI.da_fare).testo;
+  const azione = perSignora ? (p.stato === "da_fare" ? "Tocca per iniziare" : p.stato === "in_corso" ? "Tocca quando hai finito" : (p.stato === "problema" || p.stato === "non_fatta") ? "Tocca per cambiare" : "") : "";
+  const dett = p.dettagli ? `<span class="tess-dett">${ICONA("nota")}Dettagli</span>` : "";
+  const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
+  const prezzo = !perSignora ? `<span class="tess-pr">${eur(p.importo)}</span>` : "";
+  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="tess-nome">${esc(c.nome)}</span><span class="tess-lavoro">${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
+}
+function piantinaZona(z, iso, perSignora) {
+  const rs = camereZona(z);
+  const tile = c => tesseraGrande(c, iso, perSignora);
+  if (rs.every(c => c.lato === "A")) return `<div class="piano-eti">${esc(S.zone[z]?.nome || z)}</div><div class="tess-griglia">${rs.map(tile).join("")}</div>`;
+  const Lc = rs.filter(c => c.lato === "L"), Rc = rs.filter(c => c.lato === "R"), Sc = rs.filter(c => c.lato !== "L" && c.lato !== "R");
+  return `<div class="piano-eti">${esc(S.zone[z]?.breve || z)}</div><div class="corridoio"><div class="lato">${Lc.map(tile).join("")}</div><div class="lato">${Rc.map(tile).join("")}</div></div>` +
+    (Sc.length ? `<div class="piano-eti" style="margin-top:14px">${esc(Sc[0].via || "Altre")}</div><div class="tess-griglia">${Sc.map(tile).join("")}</div>` : "");
 }
 
 // Schermata grande che si apre quando la signora preme INIZIA: tutti i dettagli a caratteri enormi.
@@ -380,6 +382,9 @@ function foglioInizio(f) {
     ? `<button class="pro-btn blu gigante" data-comincia="${esc(p.id)}">${ICONA("gioca")}<span>HO CAPITO, COMINCIO!</span></button>`
     : `<button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
   else if (p.stato === "in_corso") bottone = `<div class="pro-tempo">${ICONA("orologio")}<span>Iniziata alle <b>${L.oraBreve(p.inizio)}</b></span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>HO FINITO, È PULITA</span></button>`;
+  else if (p.stato === "fatta") bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${minutiPulizia(p) != null ? ` · ${minutiPulizia(p)} min` : ""} · brava!</span></div>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>` : ""}`;
+  else if (p.stato === "problema") bottone = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Togli il problema, rimetti da pulire</button>` : ""}`;
+  else if (p.stato === "non_fatta") bottone = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>ADESSO È PULITA</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Rimetti da pulire</button>` : ""}`;
   const aperta = p.stato === "da_fare" || p.stato === "in_corso";
   return `<div class="inizio">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Indietro</span></button>${BADGE(p)}</div>
@@ -403,35 +408,16 @@ function foglioInizio(f) {
   </div>`;
 }
 
-function tesseraCamera(c, iso, conPrezzo) {
-  const p = S.pulizie[`${iso}_${c.id}`] || pulizieDelGiorno(iso).find(x => x.camera === c.id);
-  const osp = addetta() ? null : L.ospiteIl(soggiorniLista(), c.id, iso);
-  const nomeOsp = p?.ospite || osp?.nome || "";
-  if (!p) return `<div class="room idle"><span class="riga1"><span class="rn">${esc(c.nome)}</span></span><span class="gn">${esc(addetta() ? "" : (nomeOsp || "libera"))}</span><span class="st">Niente da fare</span></div>`;
-  const cls = statoClasse(p);
-  const tag = p.partenza ? `<span class="tag">PARTE</span>` : p.arrivo ? `<span class="tag arr">ARRIVA</span>` : "";
-  const prezzo = conPrezzo ? `<span class="pr">${eur(p.importo)}</span>` : "";
-  return `<button class="room ${cls}" data-pul="${esc(p.id)}"><span class="riga1"><span class="rn">${esc(c.nome)}</span>${tag}</span><span class="gn">${esc(nomeOsp)}</span><span class="st">${esc(statoTesto(p))}${prezzo}</span></button>`;
-}
-
 function vistaPiantina(z, perSignora) {
   const iso = S.giorno;
-  const rs = camereZona(z), lavori = pulizieDelGiorno(iso, z), finiti = lavori.filter(p => p.stato !== "da_fare").length;
-  const conPrezzo = !perSignora;
-  let piantina;
-  if (rs.every(c => c.lato === "A")) piantina = `<div class="apts">${rs.map(c => tesseraCamera(c, iso, conPrezzo)).join("")}</div>`;
-  else {
-    const Lc = rs.filter(c => c.lato === "L"), Rc = rs.filter(c => c.lato === "R"), Sc = rs.filter(c => c.lato !== "L" && c.lato !== "R");
-    piantina = `<div class="floorlabel">${esc(S.zone[z]?.breve || z)}</div><div class="corridor"><div class="plan">${Lc.map(c => tesseraCamera(c, iso, conPrezzo)).join("")}</div><div class="plan">${Rc.map(c => tesseraCamera(c, iso, conPrezzo)).join("")}</div></div>` +
-      (Sc.length ? `<div class="floorlabel">${esc(Sc[0].via || "Altre")}</div><div class="apts">${Sc.map(c => tesseraCamera(c, iso, conPrezzo)).join("")}</div>` : "");
-  }
+  const lavori = pulizieDelGiorno(iso, z), finiti = lavori.filter(p => p.stato !== "da_fare").length;
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
   const titolo = lavori.length ? `${iso === L.oggiISO() ? "Oggi" : L.dataBreve(iso)}: ${finiti} su ${lavori.length} ${finiti === 1 ? "fatta" : "fatte"}` : `${iso === L.oggiISO() ? "Oggi" : L.dataBreve(iso)} niente da pulire qui`;
-  return `<section class="card"><h2>${titolo}</h2>
-    <p class="muted" style="margin:0 0 12px">${L.dataLunga(iso)} · tocca una camera per vedere cosa fare</p>
-    ${rif && z === "ap" ? `<div class="note">🗑 Stasera fuori: ${esc(rif.cosa.toUpperCase())}</div>` : ""}
-    ${piantina}
-    <div class="legend" style="margin-top:14px"><span><i style="background:var(--todo-bg);border:1px solid var(--todo)"></i>Da fare</span><span><i style="background:var(--done-bg);border:1px solid var(--done)"></i>Fatta</span><span><i style="background:var(--skip-bg);border:1px solid var(--skip)"></i>Non fatta</span><span><i style="background:var(--warn-bg);border:1px solid var(--warn)"></i>Problema</span></div></section>`;
+  return `<section class="card piantina-card"><h2 style="margin:0 2px 2px">${titolo}</h2>
+    <p class="muted small" style="margin:0 2px 12px">${L.dataLunga(iso)} · tocca una camera per vedere cosa fare</p>
+    ${rif && z === "ap" ? `<div class="pro-nota" style="margin:0 0 10px">${ICONA("bidone")}<span>Stasera fuori: <b>${esc(rif.cosa.toUpperCase())}</b></span></div>` : ""}
+    ${piantinaZona(z, iso, perSignora)}
+    <div class="legenda"><span><i class="todo"></i>Da fare</span><span><i class="wip"></i>In corso</span><span><i class="done"></i>Fatta</span><span><i class="skip"></i>Non fatta</span><span><i class="warn"></i>Problema</span></div></section>`;
 }
 
 function vistaSettimanaLista(z) {
@@ -856,6 +842,7 @@ function collegaFoglio() {
     const p = S.pulizie[f.id];
     document.querySelectorAll("[data-comincia]").forEach(b => b.onclick = () => { if (!p) return; cambiaStato(p, "in_corso", ""); toast(`Buon lavoro! Quando hai finito ${camera(p.camera).nome}, premi HO FINITO.`); });
     document.querySelectorAll("[data-fatta-foglio]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fattaFoglio));
+    document.querySelectorAll("[data-stato-foglio]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoFoglio.split("|"); const q = S.pulizie[id]; if (q) cambiaStato(q, st, ""); });
     document.querySelectorAll("[data-apri-motivo]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.apriMotivo.split("|"); apriFoglio({ tipo: "pulizia", id, apriMotivo: st }); });
     return;
   }
