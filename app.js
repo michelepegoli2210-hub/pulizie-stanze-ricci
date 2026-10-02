@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.8.0";
+export const VERSIONE = "0.8.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1239,12 +1239,16 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
       const reg = await navigator.serviceWorker.register("./sw.js");
-      reg.addEventListener("updatefound", () => {
-        const nuovo = reg.installing;
-        nuovo?.addEventListener("statechange", () => {
-          if (nuovo.state === "installed" && navigator.serviceWorker.controller) toast("C'è una versione nuova dell'app.", { testo: "Aggiorna", fai: () => { nuovo.postMessage({ tipo: "attiva" }); } });
-        });
-      });
+      const proponi = (nuovo) => { if (navigator.serviceWorker.controller) toast("C'è una versione nuova dell'app.", { testo: "Aggiorna", fai: () => { nuovo.postMessage({ tipo: "attiva" }); } }); };
+      const segui = (nuovo) => { if (!nuovo) return; if (nuovo.state === "installed") proponi(nuovo); else nuovo.addEventListener("statechange", () => { if (nuovo.state === "installed") proponi(nuovo); }); };
+      // versione nuova già scaricata (in attesa) o in arrivo: lo dico subito
+      if (reg.waiting) segui(reg.waiting);
+      if (reg.installing) segui(reg.installing);
+      reg.addEventListener("updatefound", () => segui(reg.installing));
+      // ogni tanto (e quando si torna sull'app) controllo se c'è una versione nuova
+      const controlla = () => { reg.update().catch(() => {}); };
+      setInterval(controlla, 60 * 60 * 1000);
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") controlla(); });
       // Ricarico solo quando cambia una versione già installata (non alla prima apertura)
       const avevaControllo = !!navigator.serviceWorker.controller;
       let ricaricato = false;
