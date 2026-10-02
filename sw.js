@@ -3,11 +3,11 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "0.8.1";
+const VERSIONE = "0.9.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
-  "./excel.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json",
+  "./excel.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png",
 ];
 

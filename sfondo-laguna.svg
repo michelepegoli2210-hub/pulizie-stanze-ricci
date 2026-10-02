@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <!-- La laguna di Lesina, disegnata morbida e sfumata: cielo, Gargano lontano, acqua, canne, fenicotteri, una barca. -->
+  <defs>
+    <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D5E7F8"/>
+      <stop offset=".40" stop-color="#E6F0FA"/>
+      <stop offset=".58" stop-color="#F6E9DC"/>
+      <stop offset=".68" stop-color="#F3DCCB"/>
+    </linearGradient>
+    <linearGradient id="acqua" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C9E3EC"/>
+      <stop offset=".35" stop-color="#A8CFDF"/>
+      <stop offset="1" stop-color="#7FB3C9"/>
+    </linearGradient>
+    <radialGradient id="sole" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#FFF4DA" stop-opacity=".95"/>
+      <stop offset=".6" stop-color="#FFE7BF" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#FFE3B8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="softer" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="softest" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="10"/></filter>
+  </defs>
+
+  <rect width="390" height="844" fill="url(#cielo)"/>
+  <g transform="translate(0 -44)">
+  <!-- nuvole leggere -->
+  <g fill="#FFFFFF" opacity=".55" filter="url(#softest)">
+    <ellipse cx="80" cy="330" rx="70" ry="16"/>
+    <ellipse cx="300" cy="400" rx="90" ry="18"/>
+    <ellipse cx="190" cy="470" rx="60" ry="12"/>
+  </g>
+  <!-- sole basso sull'acqua -->
+  <circle cx="290" cy="580" r="110" fill="url(#sole)"/>
+  <circle cx="290" cy="580" r="26" fill="#FFF1CF" opacity=".9" filter="url(#soft)"/>
+
+  <!-- il Gargano lontano -->
+  <path d="M-10 596 C50 572 110 586 170 578 C230 570 280 556 330 568 C360 575 380 580 400 586 L400 612 L-10 612 Z" fill="#B9C9DC" opacity=".75" filter="url(#softer)"/>
+  <path d="M-10 604 C60 590 120 598 190 592 C260 586 320 582 400 596 L400 614 L-10 614 Z" fill="#A9BED3" opacity=".6" filter="url(#soft)"/>
+
+  <!-- acqua -->
+  <rect y="606" width="390" height="290" fill="url(#acqua)"/>
+  <!-- riflesso del sole -->
+  <path d="M255 608 L325 608 L350 900 L230 900 Z" fill="#FFF0CF" opacity=".28" filter="url(#softest)"/>
+  <!-- riflessi -->
+  <g stroke="#FFFFFF" stroke-linecap="round" opacity=".55" filter="url(#soft)">
+    <path d="M30 640 H110" stroke-width="2.5"/>
+    <path d="M150 652 H200" stroke-width="2"/>
+    <path d="M250 634 H330" stroke-width="2.5"/>
+    <path d="M70 690 H130" stroke-width="3"/>
+    <path d="M220 700 H300" stroke-width="3"/>
+    <path d="M300 740 H370" stroke-width="3.5"/>
+    <path d="M20 760 H90" stroke-width="3.5"/>
+    <path d="M150 790 H260" stroke-width="4"/>
+  </g>
+  <!-- isolotto con canneto lontano -->
+  <path d="M-10 612 Q40 600 95 608 T190 612 L190 620 L-10 620 Z" fill="#A6BF9C" opacity=".8" filter="url(#soft)"/>
+  <path d="M-10 620 Q60 616 190 620 L190 626 L-10 626Z" fill="#8FB0C0" opacity=".5"/>
+
+  <!-- barca piatta della laguna -->
+  <g filter="url(#soft)" opacity=".9">
+    <path d="M232 662 L298 662 L290 673 L242 673 Z" fill="#5C6B7A"/>
+    <path d="M264 646 L268 646 L268 662 L264 662 Z" fill="#5C6B7A"/>
+    <path d="M238 676 L292 676 L286 684 L246 684 Z" fill="#5C6B7A" opacity=".25"/>
+  </g>
+
+  <!-- fenicotteri -->
+  <g opacity=".92">
+    <g transform="translate(120 668)">
+      <path d="M0 0 C-6 -8 -4 -16 4 -18 C10 -20 16 -16 15 -8" stroke="#F1A3B2" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="2" cy="4" rx="12" ry="7" fill="#F4A9B7"/>
+      <path d="M14 -8 L19 -5 L16 -3 Z" fill="#3B3B4F"/>
+      <path d="M-2 10 V26 M6 10 V26" stroke="#E68A9C" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="2" cy="30" rx="12" ry="3" fill="#F4A9B7" opacity=".35"/>
+    </g>
+    <g transform="translate(150 676) scale(.8)">
+      <path d="M0 0 C-6 -8 -4 -16 4 -18 C10 -20 16 -16 15 -8" stroke="#F1A3B2" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="2" cy="4" rx="12" ry="7" fill="#F4A9B7"/>
+      <path d="M14 -8 L19 -5 L16 -3 Z" fill="#3B3B4F"/>
+      <path d="M-2 10 V26 M6 10 V26" stroke="#E68A9C" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="2" cy="30" rx="12" ry="3" fill="#F4A9B7" opacity=".35"/>
+    </g>
+  </g>
+
+  <!-- canne in primo piano (un po' sfocate) -->
+  <g stroke="#7FA86A" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85" filter="url(#soft)">
+    <path d="M18 884 C14 780 24 730 16 690"/>
+    <path d="M34 884 C36 790 30 760 40 720"/>
+    <path d="M54 884 C50 800 58 770 52 740"/>
+    <path d="M372 884 C376 780 366 740 374 700"/>
+    <path d="M356 884 C352 800 360 770 350 745"/>
+    <path d="M340 884 C342 810 336 790 344 770"/>
+  </g>
+  <g fill="#8A5A3C" opacity=".85" filter="url(#soft)">
+    <ellipse cx="16" cy="686" rx="4" ry="14"/>
+    <ellipse cx="40" cy="716" rx="4" ry="13"/>
+    <ellipse cx="374" cy="696" rx="4" ry="14"/>
+    <ellipse cx="350" cy="741" rx="3.5" ry="12"/>
+  </g>
+  <g stroke="#9DBF86" stroke-width="2" stroke-linecap="round" fill="none" opacity=".8" filter="url(#soft)">
+    <path d="M8 760 C20 745 30 740 44 742"/>
+    <path d="M48 790 C40 778 36 766 38 752"/>
+    <path d="M382 770 C370 756 362 752 348 756"/>
+    <path d="M336 800 C344 788 348 776 346 762"/>
+  </g>
+  </g>
+</svg>

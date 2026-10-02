@@ -62,3 +62,5 @@ I quattro proprietari di base (`michele`, `papa`, `mamma`, `michelesantucci`) en
 - **Messaggio del giorno**: in Gestione → Oggi, riquadro "Messaggio alle signore" → Scrivi. Sta in
   `impostazioni/messaggi` (una voce per giorno, si tengono gli ultimi 60 giorni). Lo vedono tutte le signore in cima
   alla loro schermata e nella schermata grande.
+- **Sfondo**: dietro a tutto c'è la laguna di Lesina disegnata in `sfondo-laguna.svg` (cielo, Gargano, acqua, canne,
+  fenicotteri). Per cambiarla basta sostituire quel file (stesso nome) nel repository.
