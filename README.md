@@ -67,3 +67,9 @@ I quattro proprietari di base (`michele`, `papa`, `mamma`, `michelesantucci`) en
 - **Piantina** (dalla 0.10): la schermata delle signore è la piantina del loro piano (camere a sinistra e a destra del
   corridoio, poi via Nazario Sauro; per gli appartamenti le tre case). Ogni camera è un riquadro colorato per stato; si
   tocca e si apre la schermata grande. La posizione delle camere si cambia in `regole.js` (campo `lato`: L, R, S, A).
+- **Avvisi alle signore** (dalla 0.12): su **WhatsApp** l'app prepara il testo (piano del giorno, dettagli di una
+  camera, messaggio del giorno) e apre WhatsApp: si sceglie il gruppo e si preme Invia (WhatsApp non permette invii
+  automatici gratuiti). Su **Telegram** gli avvisi partono da soli: in ⋯ → "Avvisi alle signore" si mettono il token
+  del bot (da @BotFather) e il gruppo ("Cerca il gruppo da solo"), più il nome Telegram di ogni signora per taggarla.
+  Tutto sta in `impostazioni/avvisi`. Il piano del mattino parte la prima volta che un proprietario apre l'app dopo
+  l'ora scelta (campo `ultimoPiano` per non mandarlo due volte).

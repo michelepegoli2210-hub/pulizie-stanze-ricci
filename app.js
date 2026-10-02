@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.11.0";
+export const VERSIONE = "0.12.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -97,7 +97,7 @@ const S = {
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
   board: { modo: "settimana", inizio: L.lunediDi(L.oggiISO()) },
   camere: CAMERE.slice(), zone: ZONE, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
-  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {},
+  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null,
   caricati: { pulizie: false, soggiorni: false, ruoli: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
   stop: [], tema: localStorage.getItem("ricci_tema") || "light",
@@ -144,7 +144,7 @@ async function avvia() {
   disegna();
 }
 
-function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; S.messaggi = {}; }
+function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; S.messaggi = {}; S.avvisi = null; }
 let stopAltrui = null;
 function sonoControllatrice() { return addetta() && S.impControlli?.attuale && S.impControlli.attuale === S.utente.zona; }
 // La controllatrice vede le camere FATTE dalle colleghe degli ultimi giorni (solo quelle, solo mentre è di turno)
@@ -183,11 +183,13 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "regole", d => { S.regole = { ...REGOLE_BASE, ...(d || {}) }; delete S.regole.id; disegna(); pianifica(); }));
   // messaggi del giorno dei proprietari alle signore (un documento, una voce per giorno)
   S.stop.push(db.ascoltaDoc("impostazioni", "messaggi", d => { S.messaggi = { ...(d || {}) }; delete S.messaggi.id; disegna(); }));
+  // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
+  S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; disegna(); pianoDelMattino(); }));
   if (!addetta()) S.stop.push(db.ascoltaDoc("impostazioni", "listino", d => { S.listino = L.listinoCompleto(d); disegna(); pianifica(); }));
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
   if (addetta()) wherePul.push(["zona", "==", u.zona]);
-  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); }, mostraErrore));
+  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); }, mostraErrore));
   // pagamenti
   S.stop.push(db.ascolta("pagamenti", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.pagamenti = m; disegna(); }, mostraErrore));
   if (!addetta()) {
@@ -249,7 +251,12 @@ function disegna() {
   else if (addetta()) corpo = vistaAddetta();
   else corpo = vistaProprietario();
   const sx = $(".board-wrap")?.scrollLeft, sy = $(".board-wrap")?.scrollTop;
+  // se si sta scrivendo in una casella e arriva un aggiornamento, il testo non deve sparire
+  const attivo = document.activeElement, idAttivo = app.contains(attivo) && attivo.id ? attivo.id : null;
+  const tenuti = {}; app.querySelectorAll("[data-keep][id]").forEach(e => { tenuti[e.id] = { v: e.value, s: e.selectionStart, e: e.selectionEnd }; });
   app.innerHTML = (S.db?.modalita === "prova" && S.utente ? `<div class="banner info">PROVA · dati di esempio, solo su questo telefono</div>` : "") + corpo;
+  for (const [id, x] of Object.entries(tenuti)) { const e = document.getElementById(id); if (e && e.hasAttribute("data-keep")) e.value = x.v; }
+  if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
   collega();
   if (S.foglio) disegnaFoglio();
@@ -509,7 +516,7 @@ function vistaOggiGestione() {
   }).join("");
   const problemi = Object.values(S.pulizie).filter(p => p.stato === "problema" && p.data >= L.aggiungiGiorni(L.oggiISO(), -7));
   const avviso = problemi.length ? `<section class="card"><h2 style="color:var(--warn)">Problemi segnalati (ultimi 7 giorni)</h2><div class="rows">${problemi.sort((a, b) => a.data < b.data ? 1 : -1).map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(L.dataBreve(p.data))}<br><span class="muted">${esc(p.nota || "")}</span></span><span class="s warn">!</span></button>`).join("")}</div></section>` : "";
-  const bottone = puoModificare() ? `<section class="card flat"><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button></section>` : "";
+  const bottone = puoModificare() ? `<section class="card flat"><button class="big undo" data-whatsapp-piano="${iso}">Manda il piano di ${esc(quandoEtichetta(iso).toLowerCase())} su WhatsApp</button><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button></section>` : "";
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
@@ -614,6 +621,7 @@ function vistaAltro() {
   <section class="card"><h2>Voto delle pulizie</h2><p class="muted small" style="margin:0 0 10px">Quando una collega controllatrice dà il voto a una camera, la paga di quella pulizia diventa questa percentuale del prezzo. (I controlli arrivano in un passo successivo: qui intanto si fissano le regole.)</p>
     <div class="listino">${Object.entries(L.votiCompleti(S.regole)).filter(([k, v]) => v && typeof v === "object").map(([k, v]) => `<label for="v_${k}">${esc(v.nome)}${v.richiamo ? " · con richiamo" : ""}</label><input id="v_${k}" type="number" min="0" max="200" step="5" value="${v.perc}" data-voto="${k}" ${puoModificare() ? "" : "disabled"}>`).join("")}
       <label for="v_bonus">Bonus controllatrice (€ a settimana)</label><input id="v_bonus" type="number" min="0" step="1" value="${L.votiCompleti(S.regole).bonusControllatrice}" data-voto="bonusControllatrice" ${puoModificare() ? "" : "disabled"}></div></section>
+  ${vistaAvvisi()}
   <section class="card"><h2>Aspetto</h2><div class="seg"><button aria-pressed="${S.tema !== "dark"}" data-tema="light">Chiaro</button><button aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div></section>
   <section class="card"><h2>Foglio di papà</h2>
     ${S.foglioInfo ? `<p class="muted small" style="margin:0 0 8px">Ultimo foglio: <b>${esc(S.foglioInfo.nome || "")}</b> · ${esc(S.foglioInfo.quando || "")} · ${esc((S.foglioInfo.mesi || []).join(", "))}</p>` : `<p class="muted small" style="margin:0 0 8px">Nessun foglio caricato finora.</p>`}
@@ -627,6 +635,24 @@ function vistaAltro() {
     <button data-esci>Esci<span>${esc(S.utente.email || S.utente.nome || "")}</span></button>
   </div>
   <p class="muted small center">Le Stanze di Ricci · Pulizie · versione ${VERSIONE} · ${S.db.modalita === "firebase" ? "dati condivisi" : "modalità prova"}</p>`;
+}
+
+function vistaAvvisi() {
+  const a = S.avvisi || {}, mod = puoModificare();
+  const attivo = !!(a.token && a.chat);
+  const sw = (k, testo, def = true) => `<label class="row" style="grid-template-columns:1fr auto;cursor:pointer"><span>${testo}</span><input type="checkbox" id="av_${k}" ${(a[k] ?? def) ? "checked" : ""} ${mod ? "" : "disabled"} style="width:24px;height:24px"></label>`;
+  return `<section class="card"><h2>Avvisi alle signore</h2>
+    <p class="muted small" style="margin:0 0 10px"><b>WhatsApp</b>: non permette a un'app di scrivere da sola in un gruppo (serve il servizio a pagamento per aziende). Qui il messaggio arriva già scritto: in <b>Oggi</b> premi "Manda il piano su WhatsApp", scegli il gruppo Pulizie e premi Invia. Lo stesso dalla scheda di una camera e dal messaggio del giorno.</p>
+    <p class="muted small" style="margin:0 0 10px"><b>Telegram</b> invece è gratis e automatico: crea un bot con @BotFather, mettilo nel gruppo delle signore e scrivi qui il token e il numero del gruppo. Da quel momento l'app scrive da sola nel gruppo e tagga la signora della zona. ${attivo ? `<b style="color:var(--done)">Attivo.</b>` : `<b>Non ancora attivo.</b>`}</p>
+    <div class="campo"><label for="avToken">Token del bot (da @BotFather)</label><input id="avToken" type="text" autocapitalize="none" data-keep value="${esc(a.token || "")}" placeholder="123456789:AAH…" ${mod ? "" : "disabled"}></div>
+    <div class="due"><div class="campo"><label for="avChat">Numero del gruppo (chat id)</label><input id="avChat" type="text" data-keep value="${esc(a.chat || "")}" placeholder="-100123456789" ${mod ? "" : "disabled"}></div><div class="campo"><label for="avOra">Piano del mattino dalle ore</label><input id="avOra" type="number" min="0" max="23" value="${a.oraPiano ?? 7}" ${mod ? "" : "disabled"}></div></div>
+    ${mod ? `<button class="big undo" data-cerca-gruppo>Cerca il gruppo da solo (dopo aver messo il bot nel gruppo)</button><div id="gruppiTrovati" class="scelte"></div>` : ""}
+    <div class="floorlabel">Chi taggare (nome Telegram con @)</div>
+    <div class="due">${zoneOrdinate().map(z => `<div class="campo"><label for="avTag_${z.id}">Signora ${esc(z.breve)}</label><input id="avTag_${z.id}" type="text" autocapitalize="none" data-keep value="${esc((a.tag || {})[z.id] || "")}" placeholder="@nome" ${mod ? "" : "disabled"}></div>`).join("")}</div>
+    <div class="floorlabel" style="margin-top:8px">Cosa mandare da solo</div>
+    <div class="rows">${sw("pianoMattina", "Il piano della giornata, al mattino (la prima volta che un proprietario apre l'app)")}${sw("messaggio", "Il messaggio del giorno, appena lo scrivi")}${sw("dettagli", "I dettagli di una camera, appena li salvi")}${sw("problema", "Quando una signora segnala un problema o una camera non fatta")}${sw("pulita", "Quando una camera viene segnata pulita", false)}</div>
+    ${mod ? `<button class="big main" data-salva-avvisi>Salva</button><div class="due"><button class="big undo" data-prova-telegram>Prova: manda un saluto</button><button class="big undo" data-prova-piano>Prova: manda il piano di oggi</button></div>` : ""}
+  </section>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -669,7 +695,9 @@ function foglioMessaggio(f) {
     <div class="campo"><label for="msgTesto">Cosa vuoi dire</label><textarea id="msgTesto" data-keep placeholder="es. Oggi arrivano i Castaldi alle 15: Salvatore pronta per le 14. Grazie!" style="min-height:120px">${esc(f.testo ?? m?.testo ?? "")}</textarea></div>
     <div class="scelte">${["Grazie di tutto!", "Oggi arrivano ospiti nel pomeriggio", "Lasciate le chiavi sul tavolo", "Asciugamani doppi per gli operai", "Controllate i frigoriferi"].map(t => `<button type="button" data-chip-testo="msgTesto|${esc(t)}">${esc(t)}</button>`).join("")}</div>
     <button class="big main" data-salva-msg>Manda alle signore</button>
-    ${m ? `<button class="big undo" data-togli-msg>Togli il messaggio</button><p class="muted small" style="margin-top:8px">Scritto da ${esc(m.da || "")}${m.ora ? " alle " + L.oraBreve(m.ora) : ""}</p>` : ""}`;
+    <button class="big undo" data-whatsapp-msg>Manda anche su WhatsApp</button>
+    ${m ? `<button class="big undo" data-togli-msg>Togli il messaggio</button><p class="muted small" style="margin-top:8px">Scritto da ${esc(m.da || "")}${m.ora ? " alle " + L.oraBreve(m.ora) : ""}</p>` : ""}
+    ${S.avvisi?.token && S.avvisi?.chat && S.avvisi?.messaggio !== false ? `<p class="muted small" style="margin-top:6px">Con "Manda alle signore" parte anche l'avviso automatico su Telegram.</p>` : ""}`;
 }
 
 function foglioPulizia(f) {
@@ -702,7 +730,7 @@ function foglioPulizia(f) {
       <p class="muted small" style="margin:0 0 6px">Li vede in grande quando apre la camera. Puoi cambiarli quando vuoi, anche ogni mattina.${p.dettagliDa ? ` Ultimi scritti da ${esc(p.dettagliDa)}${p.dettagliOra ? " alle " + L.oraBreve(p.dettagliOra) : ""}.` : ""}</p>
       <textarea id="dettagli" data-keep placeholder="es. Asciugamani doppi, controlla il frigo, lascia la chiave sul tavolo">${esc(p.dettagli || "")}</textarea>
       <div class="scelte">${["Asciugamani doppi", "Cambia anche le coperte", "Controlla il frigo", "Lettino in più", "Pulisci il balcone", "Lascia la chiave sul tavolo", "Attenta: ospite in camera"].map(t => `<button type="button" data-chip-testo="dettagli|${esc(t)}">${esc(t)}</button>`).join("")}</div>
-      <button class="big main" data-salva-dettagli>Salva i dettagli</button>${p.dettagli ? `<button class="big undo" data-togli-dettagli>Togli i dettagli</button>` : ""}`
+      <button class="big main" data-salva-dettagli>Salva i dettagli</button><div class="due">${p.dettagli ? `<button class="big undo" data-togli-dettagli>Togli i dettagli</button>` : `<span></span>`}<button class="big undo" data-whatsapp-cam="${esc(p.id)}">Manda su WhatsApp</button></div>`
     : (p.dettagli ? `<div class="pro-dett"><div class="pro-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div><div class="pro-dett-x">${esc(p.dettagli)}</div></div>` : "");
   const ctrl = S.controlli[p.id];
   let controllo = "";
@@ -796,6 +824,11 @@ function collega() {
   // INIZIA apre la schermata grande con tutti i dettagli; da lì si preme "HO CAPITO, COMINCIO!"
   document.querySelectorAll("[data-inizia],[data-dettagli]").forEach(b => b.onclick = () => { const id = b.dataset.inizia || b.dataset.dettagli; if (S.pulizie[id]) apriFoglio({ tipo: "inizio", id }); });
   document.querySelectorAll("[data-msg-giorno]").forEach(b => b.onclick = () => apriFoglio({ tipo: "messaggio", giorno: b.dataset.msgGiorno }));
+  document.querySelectorAll("[data-whatsapp-piano]").forEach(b => b.onclick = () => apriWhatsApp(testoPianoGiorno(b.dataset.whatsappPiano)));
+  document.querySelectorAll("[data-salva-avvisi]").forEach(b => b.onclick = salvaAvvisi);
+  document.querySelectorAll("[data-cerca-gruppo]").forEach(b => b.onclick = cercaGruppoTelegram);
+  document.querySelectorAll("[data-prova-telegram]").forEach(b => b.onclick = async () => { await salvaAvvisi(); inviaTelegram(`✅ Prova riuscita: gli avvisi delle pulizie arrivano qui.\n${zoneOrdinate().map(z => tagZona(z.id)).join(" · ")}`, null, { manuale: true }); });
+  document.querySelectorAll("[data-prova-piano]").forEach(b => b.onclick = async () => { await salvaAvvisi(); inviaTelegram(testoPianoGiorno(L.oggiISO()), null, { manuale: true }); });
   document.querySelectorAll("[data-stato-diretto]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoDiretto.split("|"); const p = S.pulizie[id]; if (p) cambiaStato(p, st, ""); });
   document.querySelectorAll("[data-altri-giorni]").forEach(b => b.onclick = () => { S.mostraGiorni = !S.mostraGiorni; if (!S.mostraGiorni) { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); } disegna(); });
   document.querySelectorAll("[data-controlla]").forEach(b => b.onclick = () => apriFoglio({ tipo: "controllo", id: b.dataset.controlla, modo: "collega" }));
@@ -848,6 +881,7 @@ function collegaFoglio() {
   }
   if (f.tipo === "messaggio") {
     document.querySelectorAll("[data-salva-msg]").forEach(b => b.onclick = () => salvaMessaggio(f.giorno, $("#msgTesto").value.trim()));
+    document.querySelectorAll("[data-whatsapp-msg]").forEach(b => b.onclick = () => { const t = $("#msgTesto").value.trim(); if (!t) { $("#msgTesto").focus(); return; } apriWhatsApp(testoMessaggioGiorno(f.giorno, t)); });
     document.querySelectorAll("[data-togli-msg]").forEach(b => b.onclick = async () => { if (await chiedi("Tolgo il messaggio di questo giorno?", { si: "Sì, togli", pericolo: true })) salvaMessaggio(f.giorno, ""); });
     return;
   }
@@ -873,6 +907,7 @@ function collegaFoglio() {
     const fi = $("#fotoInput");
     if (fi) fi.onchange = async () => { const file = fi.files && fi.files[0]; if (!file) return; $("#fotoAnteprima").textContent = "Preparo la foto…"; try { fotoPending = await rimpicciolisciFoto(file); $("#fotoAnteprima").innerHTML = `<img src="${fotoPending}" alt="" style="height:56px;border-radius:8px;vertical-align:middle"> pronta`; } catch (e) { console.error(e); $("#fotoAnteprima").textContent = "Non riesco a leggere la foto."; fotoPending = null; } };
     document.querySelectorAll("[data-salva-dettagli]").forEach(b => b.onclick = () => salvaDettagli(p, $("#dettagli").value.trim()));
+    document.querySelectorAll("[data-whatsapp-cam]").forEach(b => b.onclick = () => apriWhatsApp(`📝 ${testoDettagliCamera({ ...p, dettagli: ($("#dettagli")?.value || p.dettagli || "").trim() })}`));
     document.querySelectorAll("[data-togli-dettagli]").forEach(b => b.onclick = () => salvaDettagli(p, ""));
     document.querySelectorAll("[data-vedi-foto]").forEach(b => b.onclick = async () => { b.textContent = "Carico…"; try { const f = await S.db.leggi("foto", p.id); if (!f) { toast("Foto non trovata"); return; } apriFoglio({ tipo: "foto", id: p.id, dati: f.dati, titolo: camera(p.camera).nome, sotto: `${L.dataLunga(p.data)}${f.ora ? " · " + L.oraBreve(f.ora) : ""}` }); } catch (e) { erroreScrittura(e); } });
     document.querySelectorAll("[data-cancella-pul]").forEach(b => b.onclick = async () => { if (await chiedi("Elimino questo lavoro?", { si: "Sì, elimina", pericolo: true })) S.db.cancella("pulizie", p.id).then(chiudiFoglio).catch(erroreScrittura); });
@@ -899,6 +934,95 @@ function collegaFoglio() {
       S.db.salva("pulizie", id, d, false).then(() => { chiudiFoglio(); toast("Lavoro aggiunto"); }).catch(erroreScrittura);
     };
   }
+}
+
+// ---------------------------------------------------------------------------
+//  Avvisi alle signore: WhatsApp (testo pronto, un tocco) e Telegram (automatico)
+//  WhatsApp non permette a un'app di scrivere da sola in un gruppo (serve il servizio
+//  a pagamento per aziende): qui il messaggio arriva già scritto, tu scegli il gruppo e premi Invia.
+//  Telegram invece ha i "bot" gratuiti: se in ⋯ → Avvisi si mettono il token e il gruppo,
+//  l'app scrive da sola nel gruppo e tagga la signora della zona.
+// ---------------------------------------------------------------------------
+function tagZona(z) { const t = (S.avvisi?.tag || {})[z]; return t ? (t.startsWith("@") ? t : "@" + t) : `Signora ${S.zone[z]?.breve || z}`; }
+function rigaCameraAvviso(p) {
+  const c = camera(p.camera);
+  let r = `• ${c.nome} — ${titoloLavoro(p)}`;
+  if (p.ospite) r += ` (${p.ospite}${p.persone ? `, ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""})`;
+  if (p.partenza) r += " · PARTENZA"; if (p.arrivo) r += " · ARRIVO";
+  if (p.dettagli) r += `\n   ↳ ${p.dettagli}`;
+  if (p.istruzioni) r += `\n   ↳ ${p.istruzioni}`;
+  return r;
+}
+function testoPianoGiorno(iso) {
+  const righe = [`🧹 Pulizie · ${L.dataLunga(iso)}`];
+  const msg = messaggioDelGiorno(iso);
+  if (msg) righe.push(`📣 ${msg.testo}`);
+  for (const z of zoneOrdinate()) {
+    const ls = pulizieDelGiorno(iso, z.id).filter(p => p.stato !== "fatta");
+    if (!ls.length) continue;
+    righe.push("", `${tagZona(z.id)} · ${ls.length} ${ls.length === 1 ? "camera" : "camere"}`);
+    ls.forEach(p => righe.push(rigaCameraAvviso(p)));
+  }
+  return righe.join("\n");
+}
+function testoDettagliCamera(p) { return `${tagZona(p.zona)} · ${L.dataLunga(p.data)}\n${rigaCameraAvviso(p)}`; }
+function testoMessaggioGiorno(iso, testo) { return `📣 ${L.dataLunga(iso)} · per tutte le signore\n${testo}`; }
+function apriWhatsApp(testo) {
+  const url = "https://wa.me/?text=" + encodeURIComponent(testo);
+  const w = window.open(url, "_blank", "noopener");
+  if (!w) location.href = url;
+}
+// Telegram: manda un messaggio al gruppo (se configurato). Non blocca mai l'app se qualcosa va storto.
+async function inviaTelegram(testo, tipo, { manuale = false } = {}) {
+  const a = S.avvisi;
+  if (!a || !a.token || !a.chat) { if (manuale) toast("Prima compila token e gruppo in ⋯ → Avvisi automatici."); return false; }
+  if (!manuale && tipo && a[tipo] === false) return false;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${encodeURIComponent(a.token)}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: a.chat, text: testo, disable_web_page_preview: true }) });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) { console.warn("telegram", j); if (manuale) toast("Telegram ha risposto: " + (j.description || "errore")); return false; }
+    if (manuale) toast("Avviso mandato su Telegram ✓");
+    return true;
+  } catch (e) { console.warn("telegram", e); if (manuale) toast("Non riesco a raggiungere Telegram (rete?)."); return false; }
+}
+// Il piano del mattino: la prima volta che un proprietario apre l'app dopo le 7, parte da solo (se attivo)
+let pianoMattinoInCorso = false;
+async function pianoDelMattino() {
+  const a = S.avvisi; const oggi = L.oggiISO();
+  if (!a || !a.token || !a.chat || a.pianoMattina === false || !proprietario() || !S.caricati.pulizie || pianoMattinoInCorso) return;
+  if (a.ultimoPiano === oggi) return;
+  const ora = Number(new Date().toLocaleString("it-IT", { hour: "2-digit", hour12: false, timeZone: "Europe/Rome" }));
+  if (ora < (Number(a.oraPiano) || 7)) return;
+  if (!pulizieDelGiorno(oggi).length) return;
+  pianoMattinoInCorso = true;
+  try {
+    await S.db.salva("impostazioni", "avvisi", { ultimoPiano: oggi }, true); // segno prima, così due telefoni non lo mandano due volte
+    await inviaTelegram(testoPianoGiorno(oggi), "pianoMattina");
+  } catch (e) { console.warn(e); } finally { pianoMattinoInCorso = false; }
+}
+// Chiede a Telegram in quali gruppi è stato messo il bot e fa scegliere quello giusto
+async function cercaGruppoTelegram() {
+  const token = ($("#avToken")?.value || "").trim(); const box = $("#gruppiTrovati");
+  if (!token) { toast("Prima incolla il token del bot."); $("#avToken")?.focus(); return; }
+  if (box) box.innerHTML = `<span class="muted small">Cerco…</span>`;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${encodeURIComponent(token)}/getUpdates`);
+    const j = await r.json();
+    if (!j.ok) { if (box) box.innerHTML = `<span class="muted small">Telegram dice: ${esc(j.description || "token non valido")}</span>`; return; }
+    const trovati = {};
+    for (const u of j.result || []) { const ch = u.message?.chat || u.my_chat_member?.chat || u.channel_post?.chat || u.edited_message?.chat; if (ch && ch.type !== "private") trovati[ch.id] = ch.title || String(ch.id); }
+    const voci = Object.entries(trovati);
+    if (!voci.length) { if (box) box.innerHTML = `<span class="muted small">Non vedo ancora gruppi: aggiungi il bot al gruppo delle signore (o scrivi un messaggio lì) e ripremi.</span>`; return; }
+    if (voci.length === 1) { $("#avChat").value = voci[0][0]; toast(`Trovato: ${voci[0][1]}`); if (box) box.innerHTML = `<span class="muted small">Gruppo scelto: <b>${esc(voci[0][1])}</b>. Ora premi Salva.</span>`; return; }
+    if (box) { box.innerHTML = voci.map(([id, t]) => `<button type="button" data-gruppo="${esc(id)}">${esc(t)}</button>`).join(""); box.querySelectorAll("[data-gruppo]").forEach(bt => bt.onclick = () => { $("#avChat").value = bt.dataset.gruppo; box.querySelectorAll("[data-gruppo]").forEach(x => x.setAttribute("aria-pressed", x === bt ? "true" : "false")); toast("Gruppo scelto: ora premi Salva"); }); }
+  } catch (e) { console.warn(e); if (box) box.innerHTML = `<span class="muted small">Non riesco a raggiungere Telegram (rete?).</span>`; }
+}
+async function salvaAvvisi() {
+  const v = id => ($("#" + id)?.value || "").trim();
+  const dati = { ...(S.avvisi || {}), token: v("avToken"), chat: v("avChat"), oraPiano: Number(v("avOra")) || 7, tag: { ...(S.avvisi?.tag || {}) } };
+  zoneOrdinate().forEach(z => { dati.tag[z.id] = v("avTag_" + z.id); });
+  ["pianoMattina", "messaggio", "dettagli", "problema", "pulita"].forEach(k => { const el = $("#av_" + k); if (el) dati[k] = el.checked; });
+  try { await S.db.salva("impostazioni", "avvisi", dati, false); toast("Avvisi salvati"); } catch (e) { erroreScrittura(e); }
 }
 
 // ---------------------------------------------------------------------------
@@ -929,7 +1053,7 @@ async function salvaDettagli(p, testo) {
   if (!p || !proprietario()) return;
   const patch = { dettagli: testo, dettagliDa: S.utente.nome || S.utente.login || "", dettagliOra: S.db.adesso() };
   Object.assign(S.pulizie[p.id], patch); disegna();
-  try { await S.db.aggiorna("pulizie", p.id, patch); chiudiFoglio(); toast(testo ? `Dettagli salvati: la signora li vede subito.` : "Dettagli tolti"); }
+  try { await S.db.aggiorna("pulizie", p.id, patch); chiudiFoglio(); toast(testo ? `Dettagli salvati: la signora li vede subito.` : "Dettagli tolti"); if (testo) inviaTelegram(`📝 ${testoDettagliCamera({ ...p, ...patch })}`, "dettagli"); }
   catch (e) { erroreScrittura(e); }
 }
 // Messaggio del giorno alle signore (impostazioni/messaggi): una voce per giorno, si tengono gli ultimi 60 giorni
@@ -939,7 +1063,7 @@ async function salvaMessaggio(giorno, testo) {
   for (const [k, v] of Object.entries(S.messaggi || {})) if (k >= limite && v && typeof v === "object") nuovo[k] = v;
   if (testo) nuovo[giorno] = { testo, da: S.utente.nome || S.utente.login || "", ora: S.db.adesso() }; else delete nuovo[giorno];
   S.messaggi = nuovo; disegna();
-  try { await S.db.salva("impostazioni", "messaggi", nuovo, false); chiudiFoglio(); toast(testo ? "Messaggio mandato alle signore" : "Messaggio tolto"); }
+  try { await S.db.salva("impostazioni", "messaggi", nuovo, false); chiudiFoglio(); toast(testo ? "Messaggio mandato alle signore" : "Messaggio tolto"); if (testo) inviaTelegram(testoMessaggioGiorno(giorno, testo), "messaggio"); }
   catch (e) { erroreScrittura(e); }
 }
 async function cambiaStato(p, stato, nota) {
@@ -957,6 +1081,11 @@ async function cambiaStato(p, stato, nota) {
   try {
     if (foto) await S.db.salva("foto", p.id, { pulizia: p.id, camera: p.camera, zona: p.zona, data: p.data, dati: foto, ora: S.db.adesso(), da: S.utente.nome || S.utente.email || "" }, false);
     await S.db.aggiorna("pulizie", p.id, patch);
+    // avvisi automatici (Telegram), se configurati
+    const chi = S.utente.nome || tagZona(p.zona);
+    if (stato === "problema") inviaTelegram(`⚠️ Problema in ${camera(p.camera).nome} (${chi}): ${nota || "senza dettagli"}${foto ? " · c'è una foto nell'app" : ""}`, "problema");
+    else if (stato === "non_fatta") inviaTelegram(`⛔ ${camera(p.camera).nome} non fatta (${chi}): ${nota || "senza motivo"}`, "problema");
+    else if (stato === "fatta") inviaTelegram(`✅ ${camera(p.camera).nome} pulita alle ${L.oraBreve(adesso)} (${chi})`, "pulita");
   }
   catch (e) { erroreScrittura(e); }
 }

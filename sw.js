@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "0.11.0";
+const VERSIONE = "0.12.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
