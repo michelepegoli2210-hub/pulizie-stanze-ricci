@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-  <!-- La laguna di Lesina, disegnata morbida e sfumata: cielo, Gargano lontano, acqua, canne, fenicotteri, una barca. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 844" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <!-- La laguna di Lesina, disegnata morbida e sfumata: cielo, Gargano lontano, acqua, canne, fenicotteri, una barca.
+       Larga 1200: sul telefono si vede la parte centrale, sul computer tutta. -->
   <defs>
     <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#D5E7F8"/>
-      <stop offset=".40" stop-color="#E6F0FA"/>
-      <stop offset=".58" stop-color="#F6E9DC"/>
-      <stop offset=".68" stop-color="#F3DCCB"/>
+      <stop offset=".38" stop-color="#E6F0FA"/>
+      <stop offset=".54" stop-color="#F6E9DC"/>
+      <stop offset=".64" stop-color="#F3DCCB"/>
     </linearGradient>
     <linearGradient id="acqua" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#C9E3EC"/>
@@ -20,88 +21,105 @@
     <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
     <filter id="softer" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
     <filter id="softest" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="10"/></filter>
+    <!-- un fenicottero, da riusare -->
+    <g id="fenicottero">
+      <path d="M0 0 C-6 -8 -4 -16 4 -18 C10 -20 16 -16 15 -8" stroke="#F1A3B2" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="2" cy="4" rx="12" ry="7" fill="#F4A9B7"/>
+      <path d="M14 -8 L19 -5 L16 -3 Z" fill="#3B3B4F"/>
+      <path d="M-2 10 V26 M6 10 V26" stroke="#E68A9C" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="2" cy="30" rx="12" ry="3" fill="#F4A9B7" opacity=".35"/>
+    </g>
+    <!-- un ciuffo di canne, da riusare -->
+    <g id="canne">
+      <g stroke="#7FA86A" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85">
+        <path d="M18 240 C14 176 24 126 16 86"/>
+        <path d="M34 240 C36 186 30 156 40 116"/>
+        <path d="M54 240 C50 196 58 166 52 136"/>
+      </g>
+      <g fill="#8A5A3C" opacity=".85">
+        <ellipse cx="16" cy="82" rx="4" ry="14"/>
+        <ellipse cx="40" cy="112" rx="4" ry="13"/>
+      </g>
+      <g stroke="#9DBF86" stroke-width="2" stroke-linecap="round" fill="none" opacity=".8">
+        <path d="M8 156 C20 141 30 136 44 138"/>
+        <path d="M48 186 C40 174 36 162 38 148"/>
+      </g>
+    </g>
   </defs>
 
-  <rect width="390" height="844" fill="url(#cielo)"/>
-  <g transform="translate(0 -44)">
+  <rect width="1200" height="844" fill="url(#cielo)"/>
   <!-- nuvole leggere -->
   <g fill="#FFFFFF" opacity=".55" filter="url(#softest)">
-    <ellipse cx="80" cy="330" rx="70" ry="16"/>
-    <ellipse cx="300" cy="400" rx="90" ry="18"/>
-    <ellipse cx="190" cy="470" rx="60" ry="12"/>
+    <ellipse cx="485" cy="286" rx="70" ry="16"/>
+    <ellipse cx="705" cy="356" rx="90" ry="18"/>
+    <ellipse cx="595" cy="426" rx="60" ry="12"/>
+    <ellipse cx="160" cy="320" rx="90" ry="16"/>
+    <ellipse cx="1030" cy="300" rx="80" ry="15"/>
+    <ellipse cx="260" cy="440" rx="70" ry="12"/>
+    <ellipse cx="960" cy="450" rx="75" ry="13"/>
   </g>
   <!-- sole basso sull'acqua -->
-  <circle cx="290" cy="580" r="110" fill="url(#sole)"/>
-  <circle cx="290" cy="580" r="26" fill="#FFF1CF" opacity=".9" filter="url(#soft)"/>
+  <circle cx="695" cy="536" r="110" fill="url(#sole)"/>
+  <circle cx="695" cy="536" r="26" fill="#FFF1CF" opacity=".9" filter="url(#soft)"/>
 
   <!-- il Gargano lontano -->
-  <path d="M-10 596 C50 572 110 586 170 578 C230 570 280 556 330 568 C360 575 380 580 400 586 L400 612 L-10 612 Z" fill="#B9C9DC" opacity=".75" filter="url(#softer)"/>
-  <path d="M-10 604 C60 590 120 598 190 592 C260 586 320 582 400 596 L400 614 L-10 614 Z" fill="#A9BED3" opacity=".6" filter="url(#soft)"/>
+  <path d="M-10 552 C120 522 260 540 400 536 C520 532 580 514 680 524 C780 534 900 522 1010 536 C1090 546 1150 548 1210 552 L1210 570 L-10 570 Z" fill="#B9C9DC" opacity=".75" filter="url(#softer)"/>
+  <path d="M-10 560 C150 546 320 554 500 548 C660 542 820 540 1000 552 C1090 558 1150 558 1210 562 L1210 572 L-10 572 Z" fill="#A9BED3" opacity=".6" filter="url(#soft)"/>
 
   <!-- acqua -->
-  <rect y="606" width="390" height="290" fill="url(#acqua)"/>
+  <rect y="562" width="1200" height="290" fill="url(#acqua)"/>
   <!-- riflesso del sole -->
-  <path d="M255 608 L325 608 L350 900 L230 900 Z" fill="#FFF0CF" opacity=".28" filter="url(#softest)"/>
+  <path d="M660 564 L730 564 L755 900 L635 900 Z" fill="#FFF0CF" opacity=".28" filter="url(#softest)"/>
   <!-- riflessi -->
   <g stroke="#FFFFFF" stroke-linecap="round" opacity=".55" filter="url(#soft)">
-    <path d="M30 640 H110" stroke-width="2.5"/>
-    <path d="M150 652 H200" stroke-width="2"/>
-    <path d="M250 634 H330" stroke-width="2.5"/>
-    <path d="M70 690 H130" stroke-width="3"/>
-    <path d="M220 700 H300" stroke-width="3"/>
-    <path d="M300 740 H370" stroke-width="3.5"/>
-    <path d="M20 760 H90" stroke-width="3.5"/>
-    <path d="M150 790 H260" stroke-width="4"/>
+    <path d="M435 596 H515" stroke-width="2.5"/>
+    <path d="M555 608 H605" stroke-width="2"/>
+    <path d="M655 590 H735" stroke-width="2.5"/>
+    <path d="M475 646 H535" stroke-width="3"/>
+    <path d="M625 656 H705" stroke-width="3"/>
+    <path d="M705 696 H775" stroke-width="3.5"/>
+    <path d="M425 716 H495" stroke-width="3.5"/>
+    <path d="M555 746 H665" stroke-width="4"/>
+    <path d="M80 600 H190" stroke-width="2.5"/>
+    <path d="M240 650 H330" stroke-width="3"/>
+    <path d="M120 720 H230" stroke-width="3.5"/>
+    <path d="M300 780 H420" stroke-width="4"/>
+    <path d="M880 604 H980" stroke-width="2.5"/>
+    <path d="M1000 660 H1090" stroke-width="3"/>
+    <path d="M860 730 H960" stroke-width="3.5"/>
+    <path d="M980 790 H1120" stroke-width="4"/>
   </g>
-  <!-- isolotto con canneto lontano -->
-  <path d="M-10 612 Q40 600 95 608 T190 612 L190 620 L-10 620 Z" fill="#A6BF9C" opacity=".8" filter="url(#soft)"/>
-  <path d="M-10 620 Q60 616 190 620 L190 626 L-10 626Z" fill="#8FB0C0" opacity=".5"/>
+  <!-- isolotti con canneto lontano -->
+  <path d="M395 568 Q445 556 500 564 T595 568 L595 576 L395 576 Z" fill="#A6BF9C" opacity=".8" filter="url(#soft)"/>
+  <path d="M395 576 Q465 572 595 576 L595 582 L395 582Z" fill="#8FB0C0" opacity=".5"/>
+  <path d="M-10 570 Q60 558 130 566 T260 570 L260 578 L-10 578 Z" fill="#A6BF9C" opacity=".75" filter="url(#soft)"/>
+  <path d="M900 566 Q980 556 1060 564 T1210 568 L1210 578 L900 578 Z" fill="#A6BF9C" opacity=".75" filter="url(#soft)"/>
 
-  <!-- barca piatta della laguna -->
+  <!-- barche piatte della laguna -->
   <g filter="url(#soft)" opacity=".9">
-    <path d="M232 662 L298 662 L290 673 L242 673 Z" fill="#5C6B7A"/>
-    <path d="M264 646 L268 646 L268 662 L264 662 Z" fill="#5C6B7A"/>
-    <path d="M238 676 L292 676 L286 684 L246 684 Z" fill="#5C6B7A" opacity=".25"/>
+    <path d="M637 618 L703 618 L695 629 L647 629 Z" fill="#5C6B7A"/>
+    <path d="M669 602 L673 602 L673 618 L669 618 Z" fill="#5C6B7A"/>
+    <path d="M643 632 L697 632 L691 640 L651 640 Z" fill="#5C6B7A" opacity=".25"/>
+    <path d="M980 640 L1040 640 L1033 650 L989 650 Z" fill="#5C6B7A" opacity=".8"/>
+    <path d="M985 653 L1035 653 L1030 660 L992 660 Z" fill="#5C6B7A" opacity=".2"/>
   </g>
 
   <!-- fenicotteri -->
   <g opacity=".92">
-    <g transform="translate(120 668)">
-      <path d="M0 0 C-6 -8 -4 -16 4 -18 C10 -20 16 -16 15 -8" stroke="#F1A3B2" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-      <ellipse cx="2" cy="4" rx="12" ry="7" fill="#F4A9B7"/>
-      <path d="M14 -8 L19 -5 L16 -3 Z" fill="#3B3B4F"/>
-      <path d="M-2 10 V26 M6 10 V26" stroke="#E68A9C" stroke-width="2" stroke-linecap="round"/>
-      <ellipse cx="2" cy="30" rx="12" ry="3" fill="#F4A9B7" opacity=".35"/>
-    </g>
-    <g transform="translate(150 676) scale(.8)">
-      <path d="M0 0 C-6 -8 -4 -16 4 -18 C10 -20 16 -16 15 -8" stroke="#F1A3B2" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-      <ellipse cx="2" cy="4" rx="12" ry="7" fill="#F4A9B7"/>
-      <path d="M14 -8 L19 -5 L16 -3 Z" fill="#3B3B4F"/>
-      <path d="M-2 10 V26 M6 10 V26" stroke="#E68A9C" stroke-width="2" stroke-linecap="round"/>
-      <ellipse cx="2" cy="30" rx="12" ry="3" fill="#F4A9B7" opacity=".35"/>
-    </g>
+    <use href="#fenicottero" x="525" y="624"/>
+    <use href="#fenicottero" transform="translate(555 632) scale(.8)"/>
+    <use href="#fenicottero" transform="translate(215 640) scale(.9)"/>
+    <use href="#fenicottero" transform="translate(245 646) scale(.7)"/>
+    <use href="#fenicottero" transform="translate(1090 628) scale(.85)"/>
   </g>
 
-  <!-- canne in primo piano (un po' sfocate) -->
-  <g stroke="#7FA86A" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85" filter="url(#soft)">
-    <path d="M18 884 C14 780 24 730 16 690"/>
-    <path d="M34 884 C36 790 30 760 40 720"/>
-    <path d="M54 884 C50 800 58 770 52 740"/>
-    <path d="M372 884 C376 780 366 740 374 700"/>
-    <path d="M356 884 C352 800 360 770 350 745"/>
-    <path d="M340 884 C342 810 336 790 344 770"/>
-  </g>
-  <g fill="#8A5A3C" opacity=".85" filter="url(#soft)">
-    <ellipse cx="16" cy="686" rx="4" ry="14"/>
-    <ellipse cx="40" cy="716" rx="4" ry="13"/>
-    <ellipse cx="374" cy="696" rx="4" ry="14"/>
-    <ellipse cx="350" cy="741" rx="3.5" ry="12"/>
-  </g>
-  <g stroke="#9DBF86" stroke-width="2" stroke-linecap="round" fill="none" opacity=".8" filter="url(#soft)">
-    <path d="M8 760 C20 745 30 740 44 742"/>
-    <path d="M48 790 C40 778 36 766 38 752"/>
-    <path d="M382 770 C370 756 362 752 348 756"/>
-    <path d="M336 800 C344 788 348 776 346 762"/>
-  </g>
+  <!-- canne in primo piano (un po' sfocate): ai bordi del telefono e ai bordi del computer -->
+  <g filter="url(#soft)">
+    <use href="#canne" x="405" y="604"/>
+    <use href="#canne" transform="translate(795 604) scale(-1 1)"/>
+    <use href="#canne" x="-6" y="604"/>
+    <use href="#canne" transform="translate(1206 604) scale(-1 1)"/>
+    <use href="#canne" transform="translate(300 644) scale(.7)"/>
+    <use href="#canne" transform="translate(920 644) scale(-.7 .7)"/>
   </g>
 </svg>
