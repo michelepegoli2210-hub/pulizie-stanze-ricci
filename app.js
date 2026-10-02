@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.5.1";
+export const VERSIONE = "0.6.0";
 
 // ---------------------------------------------------------------------------
 //  Stato dell'app (tutto quello che serve per disegnare le schermate)
@@ -21,7 +21,7 @@ const S = {
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null,
   caricati: { pulizie: false, soggiorni: false, ruoli: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
-  stop: [], tema: localStorage.getItem("ricci_tema") || "auto",
+  stop: [], tema: localStorage.getItem("ricci_tema") || "light",
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -38,7 +38,7 @@ function pulizieDelGiorno(iso, zona) { return Object.values(S.pulizie).filter(p 
 function ordineCamera(id) { return camera(id).ordine || 99; }
 function statoClasse(p) { return !p ? "" : p.stato === "fatta" ? "done" : p.stato === "problema" ? "warn" : p.stato === "non_fatta" ? "skip" : "todo"; }
 function statoTesto(p) { return p.stato === "fatta" ? `✓ Fatta ${L.oraBreve(p.ora)}` : p.stato === "problema" ? "! Problema" : p.stato === "non_fatta" ? "Non fatta" : p.titolo; }
-function applicaTema() { document.documentElement.setAttribute("data-theme", S.tema === "auto" ? "" : S.tema); if (S.tema === "auto") document.documentElement.removeAttribute("data-theme"); }
+function applicaTema() { if (S.tema === "dark") document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme"); }
 
 // ---------------------------------------------------------------------------
 //  Avvio
@@ -173,7 +173,7 @@ function disegna() {
 
 function disegnaTestata() {
   const u = S.utente;
-  const sub = !u ? "Laguna di Lesina" : addetta() ? `Signora ${S.zone[u.zona]?.breve || ""}${u.nome ? " · " + u.nome : ""}` : (u.ruolo === "lettura" ? "Solo lettura" : "Gestione") + (u.nome ? " · " + u.nome : "");
+  const sub = !u ? "Pulizie" : addetta() ? `Signora ${S.zone[u.zona]?.breve || ""}` : (u.ruolo === "lettura" ? "Solo lettura" : "Gestione") + (u.nome ? " · " + u.nome : "");
   $("#sub").textContent = sub;
   const who = $("#whoBtn");
   who.hidden = !u;
@@ -479,7 +479,7 @@ function vistaAltro() {
   <section class="card"><h2>Voto delle pulizie</h2><p class="muted small" style="margin:0 0 10px">Quando una collega controllatrice dà il voto a una camera, la paga di quella pulizia diventa questa percentuale del prezzo. (I controlli arrivano in un passo successivo: qui intanto si fissano le regole.)</p>
     <div class="listino">${Object.entries(L.votiCompleti(S.regole)).filter(([k, v]) => v && typeof v === "object").map(([k, v]) => `<label for="v_${k}">${esc(v.nome)}${v.richiamo ? " · con richiamo" : ""}</label><input id="v_${k}" type="number" min="0" max="200" step="5" value="${v.perc}" data-voto="${k}" ${puoModificare() ? "" : "disabled"}>`).join("")}
       <label for="v_bonus">Bonus controllatrice (€ a settimana)</label><input id="v_bonus" type="number" min="0" step="1" value="${L.votiCompleti(S.regole).bonusControllatrice}" data-voto="bonusControllatrice" ${puoModificare() ? "" : "disabled"}></div></section>
-  <section class="card"><h2>Aspetto</h2><div class="seg"><button aria-pressed="${S.tema === "auto"}" data-tema="auto">Come il telefono</button><button aria-pressed="${S.tema === "light"}" data-tema="light">Chiaro</button><button aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div></section>
+  <section class="card"><h2>Aspetto</h2><div class="seg"><button aria-pressed="${S.tema !== "dark"}" data-tema="light">Chiaro</button><button aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div></section>
   <section class="card"><h2>Foglio di papà</h2>
     ${S.foglioInfo ? `<p class="muted small" style="margin:0 0 8px">Ultimo foglio: <b>${esc(S.foglioInfo.nome || "")}</b> · ${esc(S.foglioInfo.quando || "")} · ${esc((S.foglioInfo.mesi || []).join(", "))}</p>` : `<p class="muted small" style="margin:0 0 8px">Nessun foglio caricato finora.</p>`}
     ${puoModificare() ? `<label class="big main" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">📄 Carica il foglio di papà<input id="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><p class="muted small" style="margin:8px 0 0">Legge il file Excel con regole fisse e ti fa controllare prima di salvare. Niente viene cambiato finché non premi "Salva nel prospetto".</p>` : ""}
