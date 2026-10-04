@@ -21,7 +21,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.04),0 10px 30px -14px rgba(0,0,0,.18);
   --shadow2:0 2px 6px rgba(0,0,0,.05),0 18px 40px -20px rgba(0,0,0,.22);
   --vetro:rgba(255,255,255,.74);
-  --velo:linear-gradient(180deg,rgba(255,255,255,.66) 0%,rgba(255,255,255,.38) 45%,rgba(255,255,255,.46) 100%);
+  --velo:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.22) 45%,rgba(255,255,255,.3) 100%);
   --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
   --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
   --band:rgba(245,245,247,.8); --band-fg:#1D1D1F;
@@ -57,7 +57,7 @@ img{max-width:100%}
 [hidden]{display:none!important}
 a{color:var(--accent);text-decoration:none}
 /* La laguna di Lesina dietro a tutto (sfondo-laguna.svg), con un velo bianco satinato sopra */
-.laguna{position:fixed;inset:0;z-index:-1;background:#E6F0FA url(sfondo-laguna.svg) center bottom/cover no-repeat;pointer-events:none;filter:saturate(.82)}
+.laguna{position:fixed;inset:0;z-index:-1;background:#E6F0FA url(sfondo-laguna.svg) center bottom/cover no-repeat;pointer-events:none;filter:saturate(1.15)}
 .laguna::after{content:"";position:absolute;inset:0;background:var(--velo)}
 :root[data-theme="dark"] .laguna{filter:brightness(.5) saturate(.6)}
 
@@ -384,44 +384,45 @@ button.row .badge{grid-column:2}
 .corridoio::before{content:"corridoio";position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);writing-mode:vertical-rl;font:600 9px var(--f-body);letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;z-index:1;text-shadow:0 1px 1px rgba(0,0,0,.4)}
 .lato{display:grid;gap:10px;align-content:start;position:relative;z-index:1}
 .tess-griglia{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-/* la piastra: sfumatura diagonale + righe sottilissime (spazzolato) + bordo lucido sopra e ombra sotto */
+/* la piastra: sfumatura diagonale + righe sottilissime (spazzolato) + bordo lucido sopra e ombra sotto.
+   Colori come le finiture dell'iPhone: bordeaux = da pulire, oro = in corso, verde = pulita, rosso = problema. */
 .tess{--al1:#FCFCFD;--al2:#E7E8EC;--al3:#F6F6F8;--al4:#D6D7DD;--al5:#EFEFF2;
-  position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;width:100%;min-width:0;min-height:134px;padding:13px 12px 12px;border:1px solid rgba(0,0,0,.11);border-radius:18px;color:var(--fg);cursor:pointer;font:inherit;transition:transform .08s,filter .08s;letter-spacing:-.01em;
-  background:repeating-linear-gradient(180deg,rgba(255,255,255,.26) 0 1px,rgba(255,255,255,0) 1px 2px,rgba(0,0,0,.028) 2px 3px),linear-gradient(135deg,var(--al1) 0%,var(--al2) 36%,var(--al3) 50%,var(--al4) 76%,var(--al5) 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.09),inset 1px 0 0 rgba(255,255,255,.55),0 1px 2px rgba(0,0,0,.1),0 14px 26px -16px rgba(0,0,0,.4)}
+  --tx:#1D1D1F;--tx2:rgba(29,29,31,.66);--pill:rgba(255,255,255,.74);--pilltx:#1D1D1F;--dot:#8E8E93;--inciso:0 1px 0 rgba(255,255,255,.85);--bordo:rgba(0,0,0,.11);--luce:rgba(255,255,255,.95);
+  position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;width:100%;min-width:0;min-height:134px;padding:13px 12px 12px;border:1px solid var(--bordo);border-radius:18px;color:var(--tx);cursor:pointer;font:inherit;transition:transform .08s,filter .08s;letter-spacing:-.01em;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.22) 0 1px,rgba(255,255,255,0) 1px 2px,rgba(0,0,0,.05) 2px 3px),linear-gradient(135deg,var(--al1) 0%,var(--al2) 36%,var(--al3) 50%,var(--al4) 76%,var(--al5) 100%);
+  box-shadow:inset 0 1px 0 var(--luce),inset 0 -1px 0 rgba(0,0,0,.14),inset 1px 0 0 rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.12),0 14px 26px -16px rgba(0,0,0,.45)}
 .tess:active{transform:scale(.98);filter:brightness(.97)}
-.tess.wip{--al1:#FBF4E4;--al2:#EADDBF;--al3:#F7EED9;--al4:#D9C79E;--al5:#EFE2C4}
-.tess.done{--al1:#EFF8F1;--al2:#D2E6D8;--al3:#E6F2E9;--al4:#BBD6C4;--al5:#DAEADF}
-.tess.warn{--al1:#FBEDED;--al2:#EACFCF;--al3:#F6E3E3;--al4:#DDBBBB;--al5:#EFD6D6}
-.tess.skip{--al1:#EEEEF1;--al2:#D9DADF;--al3:#E7E7EB;--al4:#C8C9CF;--al5:#DFDFE4}
-.tess.idle{--al1:#E6E7EB;--al2:#D7D8DD;--al3:#E0E1E5;--al4:#CBCCD2;--al5:#D9DADF;color:var(--muted);cursor:default;min-height:92px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.06)}
-:root[data-theme="dark"] .tess{--al1:#3C3C40;--al2:#2A2A2E;--al3:#35353A;--al4:#222226;--al5:#2E2E33;border-color:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.5),0 14px 26px -16px rgba(0,0,0,.8)}
-:root[data-theme="dark"] .tess.wip{--al1:#4A3E22;--al2:#3A2F16;--al3:#44381E;--al4:#2E2410;--al5:#3D3119}
-:root[data-theme="dark"] .tess.done{--al1:#1E3D2A;--al2:#15301F;--al3:#1A3826;--al4:#102517;--al5:#17331F}
-:root[data-theme="dark"] .tess.warn{--al1:#4A2322;--al2:#3A1A19;--al3:#44201F;--al4:#2E1312;--al5:#3D1C1B}
-:root[data-theme="dark"] .tess.skip,:root[data-theme="dark"] .tess.idle{--al1:#2C2C30;--al2:#222226;--al3:#28282C;--al4:#1B1B1F;--al5:#242428}
-.tess-nome{font:600 20px/1.1 var(--f-display);letter-spacing:-.025em;word-break:break-word;text-shadow:0 1px 0 rgba(255,255,255,.85)}
-:root[data-theme="dark"] .tess-nome{text-shadow:0 1px 0 rgba(0,0,0,.6)}
-.tess-lavoro{font:600 15px/1.2 var(--f-body);color:var(--fg)}
-.tess.idle .tess-lavoro{color:var(--muted)}
-.tess-osp{font:400 14px/1.2 var(--f-body);color:var(--muted)}
-:root[data-theme="dark"] .tess-osp{color:var(--muted)}
-.tess-flag{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);padding:3px 8px 3px 6px;border-radius:999px;margin-top:2px;background:rgba(255,255,255,.62);color:var(--fg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
-:root[data-theme="dark"] .tess-flag{background:rgba(255,255,255,.1)}
-.tess-flag .ic{width:14px;height:14px;color:var(--muted)}
-.tess-flag.out .ic{color:var(--wip-dot)} .tess-flag.in .ic{color:var(--accent)}
-.tess-dett{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);color:var(--accent);background:rgba(255,255,255,.72);border-radius:999px;padding:3px 8px 3px 6px;margin-top:2px;box-shadow:inset 0 0 0 1px rgba(0,102,204,.18)}
-:root[data-theme="dark"] .tess-dett{background:rgba(41,151,255,.14)}
+/* da pulire: bordeaux satinato (come l'iPhone), scritte chiare */
+.tess.todo{--al1:#9A3A58;--al2:#6E1F3B;--al3:#862E4C;--al4:#561431;--al5:#73233F;--tx:#FFFFFF;--tx2:rgba(255,255,255,.78);--pill:rgba(255,255,255,.2);--pilltx:#FFFFFF;--dot:#FFB3C6;--inciso:0 1px 1px rgba(0,0,0,.4);--bordo:rgba(0,0,0,.25);--luce:rgba(255,255,255,.35)}
+/* in corso: oro champagne */
+.tess.wip{--al1:#F3D785;--al2:#D8AE45;--al3:#EACA66;--al4:#C2962F;--al5:#DDB752;--tx:#3A2600;--tx2:rgba(58,38,0,.72);--pill:rgba(255,255,255,.55);--pilltx:#3A2600;--dot:#B2660A;--inciso:0 1px 0 rgba(255,255,255,.55);--bordo:rgba(120,80,0,.3);--luce:rgba(255,255,255,.7)}
+/* pulita: verde */
+.tess.done{--al1:#86D8A1;--al2:#4EB070;--al3:#6EC78C;--al4:#3A9A5A;--al5:#5CBB78;--tx:#0B2E18;--tx2:rgba(11,46,24,.72);--pill:rgba(255,255,255,.6);--pilltx:#0B2E18;--dot:#1F8A45;--inciso:0 1px 0 rgba(255,255,255,.45);--bordo:rgba(0,80,30,.3);--luce:rgba(255,255,255,.6)}
+/* problema: rosso acceso, scritte chiare */
+.tess.warn{--al1:#F4806F;--al2:#DE4B3B;--al3:#EB6654;--al4:#C73A2C;--al5:#E25244;--tx:#FFFFFF;--tx2:rgba(255,255,255,.82);--pill:rgba(255,255,255,.24);--pilltx:#FFFFFF;--dot:#FFD3CC;--inciso:0 1px 1px rgba(0,0,0,.35);--bordo:rgba(120,0,0,.3);--luce:rgba(255,255,255,.45)}
+/* non fatta: grafite */
+.tess.skip{--al1:#9A9CA4;--al2:#6E7079;--al3:#8A8C94;--al4:#5A5C64;--al5:#767880;--tx:#FFFFFF;--tx2:rgba(255,255,255,.78);--pill:rgba(255,255,255,.2);--pilltx:#FFFFFF;--dot:#E5E5EA;--inciso:0 1px 1px rgba(0,0,0,.35);--bordo:rgba(0,0,0,.25);--luce:rgba(255,255,255,.4)}
+/* niente da fare: argento spento */
+.tess.idle{--al1:#E6E7EB;--al2:#D7D8DD;--al3:#E0E1E5;--al4:#CBCCD2;--al5:#D9DADF;--tx:#6E6E73;--tx2:#86868B;cursor:default;min-height:92px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.06)}
+:root[data-theme="dark"] .tess{--al1:#3C3C40;--al2:#2A2A2E;--al3:#35353A;--al4:#222226;--al5:#2E2E33;--tx:#F5F5F7;--tx2:rgba(245,245,247,.7);--pill:rgba(255,255,255,.12);--pilltx:#F5F5F7;--inciso:0 1px 1px rgba(0,0,0,.6);--bordo:rgba(255,255,255,.1);--luce:rgba(255,255,255,.14)}
+:root[data-theme="dark"] .tess.idle{--tx:#A1A1A6;--tx2:#8E8E93}
+.tess-nome{font:600 20px/1.1 var(--f-display);letter-spacing:-.025em;word-break:break-word;color:var(--tx);text-shadow:var(--inciso)}
+.tess-lavoro{font:600 15px/1.2 var(--f-body);color:var(--tx)}
+.tess.idle .tess-lavoro{color:var(--tx2)}
+.tess-osp{font:400 14px/1.2 var(--f-body);color:var(--tx2)}
+.tess-flag{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);padding:3px 8px 3px 6px;border-radius:999px;margin-top:2px;background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+.tess-flag .ic{width:14px;height:14px;color:var(--pilltx);opacity:.85}
+.tess-dett{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);color:var(--pilltx);background:var(--pill);border-radius:999px;padding:3px 8px 3px 6px;margin-top:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
 .tess-dett .ic{width:14px;height:14px}
 .tess-stato{margin-top:auto;padding-top:4px}
-.badge.tess-stato{margin-top:auto;font-size:12px;padding:4px 10px 4px 8px;background:rgba(255,255,255,.8);color:var(--fg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.07)}
-:root[data-theme="dark"] .badge.tess-stato{background:rgba(255,255,255,.1);color:var(--fg)}
-.tess-stato-idle{margin-top:auto;font:500 14px var(--f-body);color:var(--muted)}
-.tess-az{font:400 12px/1.2 var(--f-body);color:var(--muted)}
-.tess-pr{position:absolute;top:12px;right:12px;font:600 12px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
+.badge.tess-stato{margin-top:auto;font-size:12px;padding:4px 10px 4px 8px;background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+.badge.tess-stato::before{background:var(--dot)}
+.tess-az{font:400 12px/1.2 var(--f-body);color:var(--tx2)}
+.tess-pr{position:absolute;top:12px;right:12px;font:600 12px var(--f-body);color:var(--tx2);font-variant-numeric:tabular-nums}
+.tess-stato-idle{margin-top:auto;font:500 14px var(--f-body);color:var(--tx2)}
 .legenda{display:flex;flex-wrap:wrap;gap:8px 14px;font:500 13px var(--f-body);color:var(--muted);margin-top:14px;padding:0 4px}
 .legenda i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
-.legenda i.todo{background:var(--todo-dot)} .legenda i.wip{background:var(--wip-dot)} .legenda i.done{background:var(--done-dot)} .legenda i.warn{background:var(--warn-dot)} .legenda i.skip{background:var(--skip-dot)}
+.legenda i.todo{background:#7A2544} .legenda i.wip{background:var(--wip-dot)} .legenda i.done{background:var(--done-dot)} .legenda i.warn{background:var(--warn-dot)} .legenda i.skip{background:var(--skip-dot)}
 .piantina-aiuto{font:400 15px/1.35 var(--f-body);color:var(--muted);margin:10px 4px 0}
 body.nonna .tess{min-height:150px;padding:14px 12px 14px}
 body.nonna .tess-nome{font-size:22px}
