@@ -389,45 +389,47 @@ button.row .badge{grid-column:2}
 .tess{--al1:#FCFCFD;--al2:#E7E8EC;--al3:#F6F6F8;--al4:#D6D7DD;--al5:#EFEFF2;
   --tx:#1D1D1F;--tx2:rgba(29,29,31,.66);--pill:rgba(255,255,255,.74);--pilltx:#1D1D1F;--dot:#8E8E93;--inciso:0 1px 0 rgba(255,255,255,.85);--bordo:rgba(0,0,0,.11);--luce:rgba(255,255,255,.95);
   position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;width:100%;min-width:0;min-height:134px;padding:13px 12px 12px;border:1px solid var(--bordo);border-radius:18px;color:var(--tx);cursor:pointer;font:inherit;transition:transform .08s,filter .08s;letter-spacing:-.01em;
-  background:repeating-linear-gradient(180deg,rgba(255,255,255,.22) 0 1px,rgba(255,255,255,0) 1px 2px,rgba(0,0,0,.05) 2px 3px),linear-gradient(135deg,var(--al1) 0%,var(--al2) 36%,var(--al3) 50%,var(--al4) 76%,var(--al5) 100%);
-  box-shadow:inset 0 1px 0 var(--luce),inset 0 -1px 0 rgba(0,0,0,.14),inset 1px 0 0 rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.12),0 14px 26px -16px rgba(0,0,0,.45)}
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.11) 0 1px,rgba(255,255,255,0) 1px 2px,rgba(0,0,0,.03) 2px 3px),linear-gradient(135deg,var(--al1) 0%,var(--al2) 36%,var(--al3) 50%,var(--al4) 76%,var(--al5) 100%);
+  box-shadow:inset 0 1px 0 var(--luce),inset 0 -1px 0 rgba(0,0,0,.16),inset 1px 0 0 rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.12),0 14px 26px -16px rgba(0,0,0,.45)}
+.tess::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(118deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.14) 26%,rgba(255,255,255,0) 48%,rgba(255,255,255,.06) 72%,rgba(255,255,255,.26) 100%)}
+.tess>*{position:relative;z-index:1}
 .tess:active{transform:scale(.98);filter:brightness(.97)}
 /* da pulire: bordeaux satinato (come l'iPhone), scritte chiare */
-.tess.todo{--al1:#9A3A58;--al2:#6E1F3B;--al3:#862E4C;--al4:#561431;--al5:#73233F;--tx:#FFFFFF;--tx2:rgba(255,255,255,.78);--pill:rgba(255,255,255,.2);--pilltx:#FFFFFF;--dot:#FFB3C6;--inciso:0 1px 1px rgba(0,0,0,.4);--bordo:rgba(0,0,0,.25);--luce:rgba(255,255,255,.35)}
+.tess.todo{--al1:#C4506F;--al2:#962B4C;--al3:#B13E5E;--al4:#7E1F40;--al5:#9E3051;--tx:#FFFFFF;--tx2:rgba(255,255,255,.93);--pill:rgba(255,255,255,.3);--pilltx:#FFFFFF;--dot:#FFC2D2;--inciso:0 1px 2px rgba(0,0,0,.5);--bordo:rgba(0,0,0,.25);--luce:rgba(255,255,255,.5)}
 /* in corso: oro champagne */
-.tess.wip{--al1:#F3D785;--al2:#D8AE45;--al3:#EACA66;--al4:#C2962F;--al5:#DDB752;--tx:#3A2600;--tx2:rgba(58,38,0,.72);--pill:rgba(255,255,255,.55);--pilltx:#3A2600;--dot:#B2660A;--inciso:0 1px 0 rgba(255,255,255,.55);--bordo:rgba(120,80,0,.3);--luce:rgba(255,255,255,.7)}
+.tess.wip{--al1:#FFE690;--al2:#E9BF4C;--al3:#F7D86F;--al4:#D5AA3A;--al5:#ECC75B;--tx:#2E1E00;--tx2:rgba(46,30,0,.85);--pill:rgba(255,255,255,.72);--pilltx:#2E1E00;--dot:#B2660A;--inciso:0 1px 0 rgba(255,255,255,.6);--bordo:rgba(120,80,0,.3);--luce:rgba(255,255,255,.8)}
 /* pulita: verde */
-.tess.done{--al1:#86D8A1;--al2:#4EB070;--al3:#6EC78C;--al4:#3A9A5A;--al5:#5CBB78;--tx:#0B2E18;--tx2:rgba(11,46,24,.72);--pill:rgba(255,255,255,.6);--pilltx:#0B2E18;--dot:#1F8A45;--inciso:0 1px 0 rgba(255,255,255,.45);--bordo:rgba(0,80,30,.3);--luce:rgba(255,255,255,.6)}
+.tess.done{--al1:#95E8AC;--al2:#58C57D;--al3:#7AD897;--al4:#44AF67;--al5:#68CE86;--tx:#07290F;--tx2:rgba(7,41,15,.85);--pill:rgba(255,255,255,.74);--pilltx:#07290F;--dot:#1F8A45;--inciso:0 1px 0 rgba(255,255,255,.5);--bordo:rgba(0,80,30,.3);--luce:rgba(255,255,255,.7)}
 /* problema: rosso acceso, scritte chiare */
-.tess.warn{--al1:#F4806F;--al2:#DE4B3B;--al3:#EB6654;--al4:#C73A2C;--al5:#E25244;--tx:#FFFFFF;--tx2:rgba(255,255,255,.82);--pill:rgba(255,255,255,.24);--pilltx:#FFFFFF;--dot:#FFD3CC;--inciso:0 1px 1px rgba(0,0,0,.35);--bordo:rgba(120,0,0,.3);--luce:rgba(255,255,255,.45)}
+.tess.warn{--al1:#FF9080;--al2:#F0574B;--al3:#FA7363;--al4:#DC4638;--al5:#F36253;--tx:#FFFFFF;--tx2:rgba(255,255,255,.94);--pill:rgba(255,255,255,.3);--pilltx:#FFFFFF;--dot:#FFE0DA;--inciso:0 1px 2px rgba(0,0,0,.45);--bordo:rgba(120,0,0,.3);--luce:rgba(255,255,255,.55)}
 /* non fatta: grafite */
-.tess.skip{--al1:#9A9CA4;--al2:#6E7079;--al3:#8A8C94;--al4:#5A5C64;--al5:#767880;--tx:#FFFFFF;--tx2:rgba(255,255,255,.78);--pill:rgba(255,255,255,.2);--pilltx:#FFFFFF;--dot:#E5E5EA;--inciso:0 1px 1px rgba(0,0,0,.35);--bordo:rgba(0,0,0,.25);--luce:rgba(255,255,255,.4)}
+.tess.skip{--al1:#A9ABB3;--al2:#7A7C85;--al3:#979AA2;--al4:#64666E;--al5:#83858D;--tx:#FFFFFF;--tx2:rgba(255,255,255,.92);--pill:rgba(255,255,255,.26);--pilltx:#FFFFFF;--dot:#F2F2F7;--inciso:0 1px 2px rgba(0,0,0,.45);--bordo:rgba(0,0,0,.25);--luce:rgba(255,255,255,.5)}
 /* niente da fare: argento spento */
 .tess.idle{--al1:#E6E7EB;--al2:#D7D8DD;--al3:#E0E1E5;--al4:#CBCCD2;--al5:#D9DADF;--tx:#6E6E73;--tx2:#86868B;cursor:default;min-height:92px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.06)}
 :root[data-theme="dark"] .tess{--al1:#3C3C40;--al2:#2A2A2E;--al3:#35353A;--al4:#222226;--al5:#2E2E33;--tx:#F5F5F7;--tx2:rgba(245,245,247,.7);--pill:rgba(255,255,255,.12);--pilltx:#F5F5F7;--inciso:0 1px 1px rgba(0,0,0,.6);--bordo:rgba(255,255,255,.1);--luce:rgba(255,255,255,.14)}
 :root[data-theme="dark"] .tess.idle{--tx:#A1A1A6;--tx2:#8E8E93}
-.tess-nome{font:600 20px/1.1 var(--f-display);letter-spacing:-.025em;word-break:break-word;color:var(--tx);text-shadow:var(--inciso)}
-.tess-lavoro{font:600 15px/1.2 var(--f-body);color:var(--tx)}
+.tess-nome{font:700 22px/1.1 var(--f-display);letter-spacing:-.02em;word-break:break-word;color:var(--tx);text-shadow:var(--inciso)}
+.tess-lavoro{font:700 15px/1.2 var(--f-body);color:var(--tx);text-shadow:var(--inciso)}
 .tess.idle .tess-lavoro{color:var(--tx2)}
-.tess-osp{font:400 14px/1.2 var(--f-body);color:var(--tx2)}
-.tess-flag{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);padding:3px 8px 3px 6px;border-radius:999px;margin-top:2px;background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
-.tess-flag .ic{width:14px;height:14px;color:var(--pilltx);opacity:.85}
-.tess-dett{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);color:var(--pilltx);background:var(--pill);border-radius:999px;padding:3px 8px 3px 6px;margin-top:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+.tess-osp{font:600 14px/1.2 var(--f-body);color:var(--tx2);text-shadow:var(--inciso)}
+.tess-flag{display:inline-flex;align-items:center;gap:4px;font:700 12px var(--f-body);padding:4px 9px 4px 7px;border-radius:999px;margin-top:2px;background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);text-shadow:var(--inciso)}
+.tess-flag .ic{width:14px;height:14px;color:var(--pilltx)}
+.tess-dett{display:inline-flex;align-items:center;gap:4px;font:700 12px var(--f-body);color:var(--pilltx);background:var(--pill);border-radius:999px;padding:4px 9px 4px 7px;margin-top:2px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);text-shadow:var(--inciso)}
 .tess-dett .ic{width:14px;height:14px}
 .tess-stato{margin-top:auto;padding-top:4px}
-.badge.tess-stato{margin-top:auto;font-size:12px;padding:4px 10px 4px 8px;background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
-.badge.tess-stato::before{background:var(--dot)}
-.tess-az{font:400 12px/1.2 var(--f-body);color:var(--tx2)}
+.badge.tess-stato{margin-top:auto;font:700 13px/1.2 var(--f-body);padding:5px 11px 5px 9px;background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);text-shadow:var(--inciso)}
+.badge.tess-stato::before{background:var(--dot);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.tess-az{font:600 13px/1.2 var(--f-body);color:var(--tx2);text-shadow:var(--inciso)}
 .tess-pr{position:absolute;top:12px;right:12px;font:600 12px var(--f-body);color:var(--tx2);font-variant-numeric:tabular-nums}
 .tess-stato-idle{margin-top:auto;font:500 14px var(--f-body);color:var(--tx2)}
 .legenda{display:flex;flex-wrap:wrap;gap:8px 14px;font:500 13px var(--f-body);color:var(--muted);margin-top:14px;padding:0 4px}
 .legenda i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
-.legenda i.todo{background:#7A2544} .legenda i.wip{background:var(--wip-dot)} .legenda i.done{background:var(--done-dot)} .legenda i.warn{background:var(--warn-dot)} .legenda i.skip{background:var(--skip-dot)}
+.legenda i.todo{background:#A3315A} .legenda i.wip{background:var(--wip-dot)} .legenda i.done{background:var(--done-dot)} .legenda i.warn{background:var(--warn-dot)} .legenda i.skip{background:var(--skip-dot)}
 .piantina-aiuto{font:400 15px/1.35 var(--f-body);color:var(--muted);margin:10px 4px 0}
 body.nonna .tess{min-height:150px;padding:14px 12px 14px}
-body.nonna .tess-nome{font-size:22px}
-body.nonna .tess-lavoro{font-size:16px}
-body.nonna .tess-osp{font-size:15px}
-body.nonna .badge.tess-stato{font-size:13px;padding:5px 11px 5px 9px}
-body.nonna .tess-az{font-size:13px}
+body.nonna .tess-nome{font-size:24px}
+body.nonna .tess-lavoro{font-size:17px}
+body.nonna .tess-osp{font-size:16px}
+body.nonna .badge.tess-stato{font-size:14px;padding:6px 12px 6px 10px}
+body.nonna .tess-az{font-size:14px}
 body.nonna .legenda{font-size:14px}
