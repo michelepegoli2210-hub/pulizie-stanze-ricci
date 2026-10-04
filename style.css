@@ -372,34 +372,50 @@ button.row .badge{grid-column:2}
 .inizio .pro-sec{margin-top:14px;justify-content:space-around}
 
 /* ==========================================================================
-   Piantina: le camere al loro posto, un riquadro-bottone per camera
+   Piantina: le camere come piastre di alluminio satinato (bianco, oro, verde,
+   rosa a seconda dello stato), posate su un piano chiaro; il corridoio è una
+   barra di grafite tra le due file.
    ========================================================================== */
-.piantina-card{padding:14px 12px 12px}
+.piantina-card{padding:14px 12px 12px;background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(228,229,234,.82));box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.9)}
+:root[data-theme="dark"] .piantina-card{background:linear-gradient(180deg,rgba(44,44,46,.92),rgba(28,28,30,.95))}
 .piano-eti{font:600 13px var(--f-body);color:var(--muted);margin:4px 4px 8px;letter-spacing:.01em}
-.corridoio{display:grid;grid-template-columns:1fr 1fr;column-gap:28px;row-gap:10px;position:relative}
-.corridoio::before{content:"corridoio";position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);writing-mode:vertical-rl;font:600 10px var(--f-body);letter-spacing:.22em;text-transform:uppercase;color:var(--muted2);display:flex;align-items:center;justify-content:center}
-.lato{display:grid;gap:10px;align-content:start}
+.corridoio{display:grid;grid-template-columns:1fr 1fr;column-gap:34px;row-gap:10px;position:relative}
+.corridoio::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:18px;transform:translateX(-50%);border-radius:9px;background:linear-gradient(90deg,#55585F 0%,#8B8E96 42%,#73767D 58%,#4A4D54 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 3px 8px rgba(0,0,0,.28);z-index:0}
+.corridoio::before{content:"corridoio";position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);writing-mode:vertical-rl;font:600 9px var(--f-body);letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;z-index:1;text-shadow:0 1px 1px rgba(0,0,0,.4)}
+.lato{display:grid;gap:10px;align-content:start;position:relative;z-index:1}
 .tess-griglia{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.tess{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;width:100%;min-width:0;min-height:134px;padding:13px 12px 12px;border:0;border-radius:18px;background:var(--card-pieno);color:var(--fg);cursor:pointer;box-shadow:var(--shadow);font:inherit;transition:transform .08s,filter .08s;letter-spacing:-.01em}
+/* la piastra: sfumatura diagonale + righe sottilissime (spazzolato) + bordo lucido sopra e ombra sotto */
+.tess{--al1:#FCFCFD;--al2:#E7E8EC;--al3:#F6F6F8;--al4:#D6D7DD;--al5:#EFEFF2;
+  position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;width:100%;min-width:0;min-height:134px;padding:13px 12px 12px;border:1px solid rgba(0,0,0,.11);border-radius:18px;color:var(--fg);cursor:pointer;font:inherit;transition:transform .08s,filter .08s;letter-spacing:-.01em;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.26) 0 1px,rgba(255,255,255,0) 1px 2px,rgba(0,0,0,.028) 2px 3px),linear-gradient(135deg,var(--al1) 0%,var(--al2) 36%,var(--al3) 50%,var(--al4) 76%,var(--al5) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.09),inset 1px 0 0 rgba(255,255,255,.55),0 1px 2px rgba(0,0,0,.1),0 14px 26px -16px rgba(0,0,0,.4)}
 .tess:active{transform:scale(.98);filter:brightness(.97)}
-.tess.wip{background:linear-gradient(180deg,#FFFAF0,#FFF3DE)}
-.tess.done{background:linear-gradient(180deg,#F2FBF4,#E6F7EA)}
-.tess.warn{background:linear-gradient(180deg,#FFF4F3,#FDE8E6)}
-.tess.skip{background:linear-gradient(180deg,#F7F7F9,#EFEFF3)}
-.tess.idle{background:rgba(255,255,255,.45);color:var(--muted);cursor:default;box-shadow:none;min-height:92px}
-:root[data-theme="dark"] .tess{background:var(--card-pieno)}
-:root[data-theme="dark"] .tess.wip{background:#3A2A10} :root[data-theme="dark"] .tess.done{background:#0E2F1A} :root[data-theme="dark"] .tess.warn{background:#3A1412} :root[data-theme="dark"] .tess.skip{background:#2C2C2E} :root[data-theme="dark"] .tess.idle{background:rgba(255,255,255,.05)}
-.tess-nome{font:600 20px/1.1 var(--f-display);letter-spacing:-.025em;word-break:break-word}
+.tess.wip{--al1:#FBF4E4;--al2:#EADDBF;--al3:#F7EED9;--al4:#D9C79E;--al5:#EFE2C4}
+.tess.done{--al1:#EFF8F1;--al2:#D2E6D8;--al3:#E6F2E9;--al4:#BBD6C4;--al5:#DAEADF}
+.tess.warn{--al1:#FBEDED;--al2:#EACFCF;--al3:#F6E3E3;--al4:#DDBBBB;--al5:#EFD6D6}
+.tess.skip{--al1:#EEEEF1;--al2:#D9DADF;--al3:#E7E7EB;--al4:#C8C9CF;--al5:#DFDFE4}
+.tess.idle{--al1:#E6E7EB;--al2:#D7D8DD;--al3:#E0E1E5;--al4:#CBCCD2;--al5:#D9DADF;color:var(--muted);cursor:default;min-height:92px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.06)}
+:root[data-theme="dark"] .tess{--al1:#3C3C40;--al2:#2A2A2E;--al3:#35353A;--al4:#222226;--al5:#2E2E33;border-color:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.5),0 14px 26px -16px rgba(0,0,0,.8)}
+:root[data-theme="dark"] .tess.wip{--al1:#4A3E22;--al2:#3A2F16;--al3:#44381E;--al4:#2E2410;--al5:#3D3119}
+:root[data-theme="dark"] .tess.done{--al1:#1E3D2A;--al2:#15301F;--al3:#1A3826;--al4:#102517;--al5:#17331F}
+:root[data-theme="dark"] .tess.warn{--al1:#4A2322;--al2:#3A1A19;--al3:#44201F;--al4:#2E1312;--al5:#3D1C1B}
+:root[data-theme="dark"] .tess.skip,:root[data-theme="dark"] .tess.idle{--al1:#2C2C30;--al2:#222226;--al3:#28282C;--al4:#1B1B1F;--al5:#242428}
+.tess-nome{font:600 20px/1.1 var(--f-display);letter-spacing:-.025em;word-break:break-word;text-shadow:0 1px 0 rgba(255,255,255,.85)}
+:root[data-theme="dark"] .tess-nome{text-shadow:0 1px 0 rgba(0,0,0,.6)}
 .tess-lavoro{font:600 15px/1.2 var(--f-body);color:var(--fg)}
 .tess.idle .tess-lavoro{color:var(--muted)}
 .tess-osp{font:400 14px/1.2 var(--f-body);color:var(--muted)}
-.tess-flag{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);padding:3px 8px 3px 6px;border-radius:999px;margin-top:2px;background:var(--campo);color:var(--fg)}
+:root[data-theme="dark"] .tess-osp{color:var(--muted)}
+.tess-flag{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);padding:3px 8px 3px 6px;border-radius:999px;margin-top:2px;background:rgba(255,255,255,.62);color:var(--fg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+:root[data-theme="dark"] .tess-flag{background:rgba(255,255,255,.1)}
 .tess-flag .ic{width:14px;height:14px;color:var(--muted)}
 .tess-flag.out .ic{color:var(--wip-dot)} .tess-flag.in .ic{color:var(--accent)}
-.tess-dett{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);color:var(--accent);background:var(--accent-bg);border-radius:999px;padding:3px 8px 3px 6px;margin-top:2px}
+.tess-dett{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--f-body);color:var(--accent);background:rgba(255,255,255,.72);border-radius:999px;padding:3px 8px 3px 6px;margin-top:2px;box-shadow:inset 0 0 0 1px rgba(0,102,204,.18)}
+:root[data-theme="dark"] .tess-dett{background:rgba(41,151,255,.14)}
 .tess-dett .ic{width:14px;height:14px}
 .tess-stato{margin-top:auto;padding-top:4px}
-.badge.tess-stato{margin-top:auto;font-size:12px;padding:4px 10px 4px 8px}
+.badge.tess-stato{margin-top:auto;font-size:12px;padding:4px 10px 4px 8px;background:rgba(255,255,255,.8);color:var(--fg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.07)}
+:root[data-theme="dark"] .badge.tess-stato{background:rgba(255,255,255,.1);color:var(--fg)}
 .tess-stato-idle{margin-top:auto;font:500 14px var(--f-body);color:var(--muted)}
 .tess-az{font:400 12px/1.2 var(--f-body);color:var(--muted)}
 .tess-pr{position:absolute;top:12px;right:12px;font:600 12px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
