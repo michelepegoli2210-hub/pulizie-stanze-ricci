@@ -115,7 +115,7 @@ async function dbFirebase(config) {
 //  PROVA  (senza Firebase: dati di esempio, salvati solo su questo telefono)
 // ---------------------------------------------------------------------------
 function dbProva() {
-  const CHIAVE = "ricci_prova_db_v1";
+  const CHIAVE = "ricci_prova_db_v2";
   let dati = null;
   try { dati = JSON.parse(localStorage.getItem(CHIAVE) || "null"); } catch (e) { dati = null; }
   if (!dati || !dati.soggiorni) dati = datiIniziali();
@@ -193,11 +193,18 @@ function dbProva() {
   };
   return db;
 
+  // Gli esempi sono scritti sulla settimana del 28 settembre 2026: li sposto di settimane intere
+  // fino alla settimana di oggi, così la prova ha sempre camere piene (stessi giorni della settimana).
   function datiIniziali() {
+    const oggi = new Date(); const wd = (oggi.getDay() + 6) % 7;
+    const lunedi = new Date(Date.UTC(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() - wd));
+    const base = Date.UTC(2026, 8, 28);
+    const settimane = Math.round((lunedi - base) / (7 * 864e5));
+    const sposta = (iso) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + settimane * 7); return d.toISOString().slice(0, 10); };
     const soggiorni = {};
     SOGGIORNI_ESEMPIO.forEach(([camera, inizio, fine, nome, tipo], i) => {
       const id = `es_${i}_${camera}`;
-      soggiorni[id] = { camera, inizio, fine, nome, tipo, persone: 1, origine: "esempio", dubbio: tipo === "unk" };
+      soggiorni[id] = { camera, inizio: sposta(inizio), fine: sposta(fine), nome, tipo, persone: 1, origine: "esempio", dubbio: tipo === "unk" };
     });
     return { soggiorni, pulizie: {}, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {} };
   }

@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.13.2";
+export const VERSIONE = "0.14.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -341,7 +341,7 @@ function vistaNonnaOggi(z) {
     <div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">${esc(saluto())}, ${esc(nomeSignora())}!</div><div class="pro-frase">${esc(frase)}</div></div>${DONNINA(variante, "media")}</div>
     <div class="pro-riepilogo"><div class="pro-num"><b>${lavori.length}</b><span>camere</span></div><div class="pro-num done"><b>${pulite}</b><span>pulite</span></div><div class="pro-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="pro-num todo"><b>${daFare}</b><span>da pulire</span></div></div>
     ${lavori.length ? `<div class="bar bar-grande"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
-    <div class="pro-data-riga"><div class="pro-data">${ICONA("calendario")}<span>${esc(quando)} · ${esc(L.dataLunga(iso))}</span></div><button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi" : "Altri giorni"}</button></div>
+    <div class="pro-data-riga"><div class="pro-data">${ICONA("calendario")}<span>${["Oggi", "Domani", "Ieri"].includes(quando) ? esc(quando) + " · " + esc(L.dataLunga(iso)) : esc(L.dataLunga(iso).replace(/^./, ch => ch.toUpperCase()))}</span></div><button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi" : "Altri giorni"}</button></div>
     ${messaggio}</section>`;
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
   const bidoni = rif && z === "ap" ? `<div class="pro-nota">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.replace(/^./, c => c.toUpperCase()))}</b></span></div>` : "";
@@ -355,7 +355,8 @@ function vistaNonnaOggi(z) {
 function tesseraGrande(c, iso, perSignora) {
   const p = S.pulizie[`${iso}_${c.id}`] || pulizieDelGiorno(iso).find(x => x.camera === c.id);
   const osp = !perSignora ? L.ospiteIl(soggiorniLista(), c.id, iso) : null;
-  if (!p) return `<div class="tess idle"><span class="tess-nome">${esc(c.nome)}</span>${osp ? `<span class="tess-osp">${esc(osp.nome)}</span>` : ""}<span class="tess-stato-idle">Niente da fare</span></div>`;
+  const clsNome = "tess-nome" + (c.nome.replace(/[^A-Za-zÀ-ÿ]/g, " ").split(" ").some(w => w.length > 8) ? " lungo" : "");
+  if (!p) return `<div class="tess idle"><span class="${clsNome}">${esc(c.nome)}</span>${osp ? `<span class="tess-osp">${esc(osp.nome)}</span>` : ""}<span class="tess-stato-idle">Niente da fare</span></div>`;
   const cls = statoClasse(p);
   const chi = p.ospite ? `${esc(p.ospite)}${p.persone ? ` · ${p.persone}` : ""}` : (p.persone ? `${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : "");
   const flag = p.partenza ? `<span class="tess-flag out">${ICONA("esci")}Partenza</span>` : p.arrivo ? `<span class="tess-flag in">${ICONA("entra")}Arrivo</span>` : "";
@@ -364,7 +365,7 @@ function tesseraGrande(c, iso, perSignora) {
   const dett = p.dettagli ? `<span class="tess-dett">${ICONA("nota")}Dettagli</span>` : "";
   const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
   const prezzo = !perSignora ? `<span class="tess-pr">${eur(p.importo)}</span>` : "";
-  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="tess-nome">${esc(c.nome)}</span><span class="tess-lavoro">${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
+  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="${clsNome}">${esc(c.nome)}</span><span class="tess-lavoro">${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
 }
 function piantinaZona(z, iso, perSignora) {
   const rs = camereZona(z);
