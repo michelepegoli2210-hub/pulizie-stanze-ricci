@@ -18,9 +18,9 @@
       <stop offset=".6" stop-color="#FFE7BF" stop-opacity=".45"/>
       <stop offset="1" stop-color="#FFE3B8" stop-opacity="0"/>
     </radialGradient>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
-    <filter id="softer" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="softest" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="10"/></filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0.4"/></filter>
+    <filter id="softer" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="1.6"/></filter>
+    <filter id="softest" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="5"/></filter>
     <!-- un fenicottero, da riusare -->
     <g id="fenicottero">
       <path d="M0 0 C-6 -8 -4 -16 4 -18 C10 -20 16 -16 15 -8" stroke="#F1A3B2" stroke-width="3.5" fill="none" stroke-linecap="round"/>
@@ -69,9 +69,9 @@
   <!-- acqua -->
   <rect y="562" width="1200" height="290" fill="url(#acqua)"/>
   <!-- riflesso del sole -->
-  <path d="M660 564 L730 564 L755 900 L635 900 Z" fill="#FFF0CF" opacity=".28" filter="url(#softest)"/>
+  <path d="M668 564 L722 564 L748 900 L642 900 Z" fill="#FFF0CF" opacity=".3" filter="url(#softer)"/>
   <!-- riflessi -->
-  <g stroke="#FFFFFF" stroke-linecap="round" opacity=".55" filter="url(#soft)">
+  <g stroke="#FFFFFF" stroke-linecap="round" opacity=".6">
     <path d="M435 596 H515" stroke-width="2.5"/>
     <path d="M555 608 H605" stroke-width="2"/>
     <path d="M655 590 H735" stroke-width="2.5"/>
@@ -90,13 +90,13 @@
     <path d="M980 790 H1120" stroke-width="4"/>
   </g>
   <!-- isolotti con canneto lontano -->
-  <path d="M395 568 Q445 556 500 564 T595 568 L595 576 L395 576 Z" fill="#A6BF9C" opacity=".8" filter="url(#soft)"/>
+  <path d="M395 568 Q445 556 500 564 T595 568 L595 576 L395 576 Z" fill="#9DBA92" opacity=".95"/>
   <path d="M395 576 Q465 572 595 576 L595 582 L395 582Z" fill="#8FB0C0" opacity=".5"/>
-  <path d="M-10 570 Q60 558 130 566 T260 570 L260 578 L-10 578 Z" fill="#A6BF9C" opacity=".75" filter="url(#soft)"/>
-  <path d="M900 566 Q980 556 1060 564 T1210 568 L1210 578 L900 578 Z" fill="#A6BF9C" opacity=".75" filter="url(#soft)"/>
+  <path d="M-10 570 Q60 558 130 566 T260 570 L260 578 L-10 578 Z" fill="#9DBA92" opacity=".9"/>
+  <path d="M900 566 Q980 556 1060 564 T1210 568 L1210 578 L900 578 Z" fill="#9DBA92" opacity=".9"/>
 
   <!-- barche piatte della laguna -->
-  <g filter="url(#soft)" opacity=".9">
+  <g opacity=".95">
     <path d="M637 618 L703 618 L695 629 L647 629 Z" fill="#5C6B7A"/>
     <path d="M669 602 L673 602 L673 618 L669 618 Z" fill="#5C6B7A"/>
     <path d="M643 632 L697 632 L691 640 L651 640 Z" fill="#5C6B7A" opacity=".25"/>
@@ -114,7 +114,7 @@
   </g>
 
   <!-- canne in primo piano (un po' sfocate): ai bordi del telefono e ai bordi del computer -->
-  <g filter="url(#soft)">
+  <g>
     <use href="#canne" x="405" y="604"/>
     <use href="#canne" transform="translate(795 604) scale(-1 1)"/>
     <use href="#canne" x="-6" y="604"/>
