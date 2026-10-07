@@ -8,7 +8,7 @@ import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 
-export const VERSIONE = "0.15.1";
+export const VERSIONE = "0.16.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -153,7 +153,7 @@ function aggiornaAscoltoAltrui() {
   if (!serve && stopAltrui) { stopAltrui(); stopAltrui = null; S.fattiAltrui = {}; disegna(); }
   if (serve && !stopAltrui) {
     const oggi = L.oggiISO();
-    stopAltrui = S.db.ascolta("pulizie", { where: [["stato", "==", "fatta"], ["__id__", ">=", L.aggiungiGiorni(oggi, -3)], ["__id__", "<", L.aggiungiGiorni(oggi, 2)]] }, (m) => { S.fattiAltrui = m; disegna(); }, mostraErrore);
+    stopAltrui = S.db.ascolta("pulizie", { where: [["stato", "==", "fatta"], ["__id__", ">=", L.aggiungiGiorni(oggi, -3)], ["__id__", "<", L.aggiungiGiorni(oggi, 3)]] }, (m) => { S.fattiAltrui = m; disegna(); }, mostraErrore);
   }
 }
 // I proprietari tengono aggiornato chi è la controllatrice della settimana (a turno, salvo scelta diversa)
@@ -342,7 +342,7 @@ function vistaNonnaOggi(z) {
     <div class="pro-riepilogo"><div class="pro-num"><b>${lavori.length}</b><span>camere</span></div><div class="pro-num done"><b>${pulite}</b><span>pulite</span></div><div class="pro-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="pro-num todo"><b>${daFare}</b><span>da pulire</span></div></div>
     ${lavori.length ? `<div class="bar bar-grande"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
     <div class="pro-data-riga"><div class="pro-data">${ICONA("calendario")}<span>${["Oggi", "Domani", "Ieri"].includes(quando) ? esc(quando) + " · " + esc(L.dataLunga(iso)) : esc(L.dataLunga(iso).replace(/^./, ch => ch.toUpperCase()))}</span></div><button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi" : "Altri giorni"}</button></div>
-    ${messaggio}</section>`;
+    ${messaggio}${tutteFatte && numeroWhatsApp() ? `<button class="pro-btn verde" style="margin-top:12px;min-height:56px;font-size:15px" data-whatsapp-finito="${iso}">${ICONA("spunta")}<span>Avvisa su WhatsApp che hai finito</span></button>` : ""}</section>`;
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
   const bidoni = rif && z === "ap" ? `<div class="pro-nota">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.replace(/^./, c => c.toUpperCase()))}</b></span></div>` : "";
   // La piantina: le camere al loro posto (sinistra/destra del corridoio, poi via Nazario Sauro); si tocca una camera
@@ -445,7 +445,7 @@ function vistaSoldi(z) {
   const pagato = S.pagamenti[`${z}_${chiave}`];
   const wallet = `<section class="wallet"><div class="lbl">Questa settimana · ${L.etichettaSettimana(chiave)}</div><div class="amt">${eur(totale)}</div>
     <div>${lista.length} ${lista.length === 1 ? "pulizia fatta" : "pulizie fatte"}${bonus.n ? ` · ${bonus.perso ? "bonus controlli perso" : "bonus controlli " + eur(bonus.importo)}` : ""} · ${pagato ? `<span class="pill paid">✓ Pagata ${esc(pagato.quando || "")}</span>` : `<span class="pill open">Si paga sabato alle 13</span>`}</div></section>`;
-  const elenco = `<section class="card"><h2>Cosa hai fatto questa settimana</h2>${lista.length ? `<div class="rows">${lista.map(p => `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(p.titolo)}<br><span class="muted">${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span></span><span class="s done">${eur(p.finale)}${p.voto != null ? `<br><span class="muted small">voto ${esc(p.voto)}</span>` : ""}</span></div>`).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. Ogni camera che segni pulita compare qui con il suo importo.</p>`}</section>`;
+  const elenco = `<section class="card"><h2>Cosa hai fatto questa settimana</h2>${lista.length ? `<div class="rows">${lista.map(p => `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(p.titolo)}<br><span class="muted">${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span></span><span class="s done">${eur(p.finale)}${p.voto != null ? `<br><span class="muted small">voto ${esc(p.voto)}</span>` : ""}</span>${(S.controlli[p.id]?.nonFatteProprietario?.length ? S.controlli[p.id].nonFatteProprietario : S.controlli[p.id]?.nonFatte || []).length ? `<span class="muted small" style="grid-column:1/-1">Non fatto: ${esc((S.controlli[p.id].nonFatteProprietario?.length ? S.controlli[p.id].nonFatteProprietario : S.controlli[p.id].nonFatte).join(", "))} → pagata meno</span>` : ""}</div>`).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. Ogni camera che segni pulita compare qui con il suo importo.</p>`}</section>`;
   return wallet + elenco + vistaStorico(z);
 }
 function vistaStorico(z) {
@@ -469,24 +469,34 @@ function foglioControllo(f) {
   const daProprietario = f.modo === "proprietario";
   const punti = f.punti || (daProprietario ? (c.puntiProprietario || {}) : (c.punti || {}));
   f.punti = punti;
-  const voto = L.votoDaiPunti(punti);
+  const lista = L.puntiControlloPer(p), standard = lista.filter(x => !x.richiesta), richieste = lista.filter(x => x.richiesta);
+  const voto = L.votoDaiPunti(punti, lista, S.regole);
+  const nonFatte = L.richiesteNonFatte(punti, lista);
+  const fascia = L.fasciaVoto(S.regole, voto);
+  const pen = Number(L.votiCompleti(S.regole).penalitaRichiesta ?? 3);
   const cam = camera(p.camera);
+  const riga = (x) => `<button class="row" data-punto="${x.id}" aria-pressed="${punti[x.id] ? "true" : "false"}" style="grid-template-columns:auto 1fr;${punti[x.id] ? "background:var(--done-bg)" : (x.richiesta ? "background:var(--wip-bg)" : "")}"><span style="font-size:22px;width:28px;text-align:center">${punti[x.id] ? "✅" : "⬜"}</span><span>${esc(x.testo)}${x.richiesta && !punti[x.id] ? ` <span class="muted small">· non fatto: −${pen} punti</span>` : ""}</span></button>`;
   return `<h3>${esc(cam.nome)}</h3><div class="muted">${esc(L.dataLunga(p.data))} · ${esc(p.titolo)} · Signora ${esc(S.zone[p.zona]?.breve || p.zona)}</div>
-    ${daProprietario && c.voto != null ? `<div class="note info">Voto della controllatrice (Signora ${esc(S.zone[c.zonaControllatrice]?.breve || "")}): <b>${c.voto}</b>${c.nota ? " · " + esc(c.nota) : ""}</div>` : ""}
-    <p class="muted small" style="margin:10px 0 4px">Spunta quello che è a posto. Il voto si calcola da solo.</p>
-    <div class="rows">${L.PUNTI_CONTROLLO.map(x => `<button class="row" data-punto="${x.id}" aria-pressed="${punti[x.id] ? "true" : "false"}" style="grid-template-columns:auto 1fr;${punti[x.id] ? "background:var(--done-bg)" : ""}"><span style="font-size:22px;width:28px;text-align:center">${punti[x.id] ? "✅" : "⬜"}</span><span>${esc(x.testo)}</span></button>`).join("")}</div>
-    <div class="stat" style="margin-top:12px;text-align:center"><b style="font-size:34px;color:${voto >= 9 ? "var(--done)" : voto >= 6 ? "var(--fg)" : "var(--warn)"}">${voto}</b><span>voto${voto <= 4 ? " · con richiamo" : voto >= 9 ? " · ottimo" : ""}</span></div>
-    <div class="campo"><label for="cNota">Due parole (facoltative)</label><input id="cNota" type="text" value="${esc(daProprietario ? (c.notaProprietario || "") : (c.nota || ""))}"></div>
+    ${daProprietario && c.voto != null ? `<div class="note info">Voto della controllatrice (Signora ${esc(S.zone[c.zonaControllatrice]?.breve || "")}): <b>${c.voto}</b>${c.nota ? " · " + esc(c.nota) : ""}${c.nonFatte?.length ? `<br>Non fatto: ${esc(c.nonFatte.join(", "))}` : ""}</div>` : ""}
+    ${richieste.length ? `<div class="floorlabel" style="margin-top:10px">Richiesto oggi per questa camera</div><p class="muted small" style="margin:0 0 4px">Le cose scritte da ${esc(p.dettagliDa || "Michele")} nei dettagli (e le istruzioni dell'ospite). Spunta solo quelle fatte davvero: ognuna non fatta toglie ${pen} punti e la pulizia si paga meno.</p>
+    <div class="rows">${richieste.map(riga).join("")}</div>` : ""}
+    <div class="floorlabel" style="margin-top:10px">Controllo generale</div><p class="muted small" style="margin:0 0 4px">Spunta quello che è a posto. Il voto si calcola da solo.</p>
+    <div class="rows">${standard.map(riga).join("")}</div>
+    <div class="stat" style="margin-top:12px;text-align:center"><b style="font-size:34px;color:${voto >= 9 ? "var(--done)" : voto >= 6 ? "var(--fg)" : "var(--warn)"}">${voto}</b><span>voto${voto <= 4 ? " · con richiamo" : voto >= 9 ? " · ottimo" : ""}${fascia ? ` · paga al ${fascia.perc}%` : ""}${nonFatte.length ? `<br>non fatto: ${esc(nonFatte.join(", "))}` : ""}</span></div>
+    <div class="campo"><label for="cNota">Due parole (facoltative)</label><input id="cNota" type="text" data-keep value="${esc(daProprietario ? (c.notaProprietario || "") : (c.nota || ""))}"></div>
     <button class="big ok" id="salvaControllo">Conferma il voto ${voto}</button>`;
 }
 async function salvaControllo(f) {
   const p = S.pulizie[f.id] || S.fattiAltrui[f.id]; if (!p) return;
-  const punti = f.punti || {}, voto = L.votoDaiPunti(punti), nota = ($("#cNota")?.value || "").trim();
+  const lista = L.puntiControlloPer(p);
+  const punti = f.punti || {}, voto = L.votoDaiPunti(punti, lista, S.regole), nota = ($("#cNota")?.value || "").trim();
+  const nonFatte = L.richiesteNonFatte(punti, lista);
+  const richieste = lista.filter(x => x.richiesta).map(x => x.testo);
   const c = S.controlli[f.id] || {};
-  const base = { pulizia: p.id, camera: p.camera, data: p.data, zonaControllata: p.zona };
+  const base = { pulizia: p.id, camera: p.camera, data: p.data, zonaControllata: p.zona, richieste };
   let dati;
-  if (f.modo === "proprietario") dati = { ...base, zonaControllatrice: c.zonaControllatrice || "proprietario", votoProprietario: voto, puntiProprietario: punti, notaProprietario: nota, proprietario: S.utente.nome || S.utente.login || "", oraProprietario: S.db.adesso() };
-  else dati = { ...base, zonaControllatrice: S.utente.zona, controllatrice: S.utente.nome || S.utente.login || "", voto, punti, nota, ora: S.db.adesso(), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga) };
+  if (f.modo === "proprietario") dati = { ...base, zonaControllatrice: c.zonaControllatrice || "proprietario", votoProprietario: voto, puntiProprietario: punti, nonFatteProprietario: nonFatte, notaProprietario: nota, proprietario: S.utente.nome || S.utente.login || "", oraProprietario: S.db.adesso() };
+  else dati = { ...base, zonaControllatrice: S.utente.zona, controllatrice: S.utente.nome || S.utente.login || "", voto, punti, nonFatte, nota, ora: S.db.adesso(), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga) };
   try { await S.db.salva("controlli", f.id, dati, true); chiudiFoglio(); toast(`Voto ${voto} salvato`); }
   catch (e) { erroreScrittura(e); }
 }
@@ -621,7 +631,9 @@ function vistaAltro() {
     </div><p class="muted small" style="margin:10px 0 0">I giorni si cambiano nel file regole.js (o chiedi a Michele).</p></section>
   <section class="card"><h2>Voto delle pulizie</h2><p class="muted small" style="margin:0 0 10px">Quando una collega controllatrice dà il voto a una camera, la paga di quella pulizia diventa questa percentuale del prezzo. (I controlli arrivano in un passo successivo: qui intanto si fissano le regole.)</p>
     <div class="listino">${Object.entries(L.votiCompleti(S.regole)).filter(([k, v]) => v && typeof v === "object").map(([k, v]) => `<label for="v_${k}">${esc(v.nome)}${v.richiamo ? " · con richiamo" : ""}</label><input id="v_${k}" type="number" min="0" max="200" step="5" value="${v.perc}" data-voto="${k}" ${puoModificare() ? "" : "disabled"}>`).join("")}
-      <label for="v_bonus">Bonus controllatrice (€ a settimana)</label><input id="v_bonus" type="number" min="0" step="1" value="${L.votiCompleti(S.regole).bonusControllatrice}" data-voto="bonusControllatrice" ${puoModificare() ? "" : "disabled"}></div></section>
+      <label for="v_bonus">Bonus controllatrice (€ a settimana)</label><input id="v_bonus" type="number" min="0" step="1" value="${L.votiCompleti(S.regole).bonusControllatrice}" data-voto="bonusControllatrice" ${puoModificare() ? "" : "disabled"}>
+      <label for="v_pen">Punti tolti per ogni richiesta del giorno non fatta (es. "frigorifero", "doccia muffa")</label><input id="v_pen" type="number" min="0" max="10" step="1" value="${L.votiCompleti(S.regole).penalitaRichiesta ?? 3}" data-voto="penalitaRichiesta" ${puoModificare() ? "" : "disabled"}></div>
+    <p class="muted small" style="margin:8px 0 0">Esempio: 8 punti a posto ma "frigorifero" non fatto → voto 7, paga al 100% senza bonus; due richieste non fatte → voto 4, paga al 50% e richiamo.</p></section>
   ${vistaAvvisi()}
   <section class="card"><h2>Aspetto</h2><div class="seg"><button aria-pressed="${S.tema !== "dark"}" data-tema="light">Chiaro</button><button aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div></section>
   <section class="card"><h2>Foglio di papà</h2>
@@ -645,6 +657,7 @@ function vistaAvvisi() {
   return `<section class="card"><h2>Avvisi alle signore</h2>
     <p class="muted small" style="margin:0 0 10px"><b>WhatsApp</b>: non permette a un'app di scrivere da sola in un gruppo (serve il servizio a pagamento per aziende). Qui il messaggio arriva già scritto: in <b>Oggi</b> premi "Manda il piano su WhatsApp", scegli il gruppo Pulizie e premi Invia. Lo stesso dalla scheda di una camera e dal messaggio del giorno.</p>
     <p class="muted small" style="margin:0 0 10px"><b>Telegram</b> invece è gratis e automatico: crea un bot con @BotFather, mettilo nel gruppo delle signore e scrivi qui il token e il numero del gruppo. Da quel momento l'app scrive da sola nel gruppo e tagga la signora della zona. ${attivo ? `<b style="color:var(--done)">Attivo.</b>` : `<b>Non ancora attivo.</b>`}</p>
+    <div class="campo"><label for="avWa">Numero WhatsApp che riceve gli avvisi delle signore (es. 39333 1234567)</label><input id="avWa" type="tel" data-keep value="${esc(a.whatsapp || "")}" placeholder="39…" ${mod ? "" : "disabled"}><p class="muted small" style="margin:4px 0 0">Con questo numero, quando una signora segnala un problema o finisce tutte le camere le compare il bottone "Avvisa su WhatsApp": si apre WhatsApp con il messaggio pronto verso di te, lei preme Invia.</p></div>
     <div class="campo"><label for="avToken">Token del bot (da @BotFather)</label><input id="avToken" type="text" autocapitalize="none" data-keep value="${esc(a.token || "")}" placeholder="123456789:AAH…" ${mod ? "" : "disabled"}></div>
     <div class="due"><div class="campo"><label for="avChat">Numero del gruppo (chat id)</label><input id="avChat" type="text" data-keep value="${esc(a.chat || "")}" placeholder="-100123456789" ${mod ? "" : "disabled"}></div><div class="campo"><label for="avOra">Piano del mattino dalle ore</label><input id="avOra" type="number" min="0" max="23" value="${a.oraPiano ?? 7}" ${mod ? "" : "disabled"}></div></div>
     ${mod ? `<button class="big undo" data-cerca-gruppo>Cerca il gruppo da solo (dopo aver messo il bot nel gruppo)</button><div id="gruppiTrovati" class="scelte"></div>` : ""}
@@ -737,8 +750,8 @@ function foglioPulizia(f) {
   let controllo = "";
   if (p.stato === "fatta") {
     const righeVoto = [];
-    if (ctrl?.voto != null) righeVoto.push(`Voto della controllatrice${ctrl.zonaControllatrice && ctrl.zonaControllatrice !== "proprietario" ? ` (Signora ${esc(S.zone[ctrl.zonaControllatrice]?.breve || "")})` : ""}: <b>${ctrl.voto}</b>${ctrl.nota ? " · " + esc(ctrl.nota) : ""}`);
-    if (ctrl?.votoProprietario != null) righeVoto.push(`Controllo di ${esc(ctrl.proprietario || "proprietario")}: <b>${ctrl.votoProprietario}</b>${ctrl.notaProprietario ? " · " + esc(ctrl.notaProprietario) : ""}`);
+    if (ctrl?.voto != null) righeVoto.push(`Voto della controllatrice${ctrl.zonaControllatrice && ctrl.zonaControllatrice !== "proprietario" ? ` (Signora ${esc(S.zone[ctrl.zonaControllatrice]?.breve || "")})` : ""}: <b>${ctrl.voto}</b>${ctrl.nota ? " · " + esc(ctrl.nota) : ""}${ctrl.nonFatte?.length ? ` · non fatto: ${esc(ctrl.nonFatte.join(", "))}` : ""}`);
+    if (ctrl?.votoProprietario != null) righeVoto.push(`Controllo di ${esc(ctrl.proprietario || "proprietario")}: <b>${ctrl.votoProprietario}</b>${ctrl.notaProprietario ? " · " + esc(ctrl.notaProprietario) : ""}${ctrl.nonFatteProprietario?.length ? ` · non fatto: ${esc(ctrl.nonFatteProprietario.join(", "))}` : ""}`);
     const nonCorr = L.controlloNonCorrisponde(ctrl, S.regole);
     const votoFinale = L.votoCheConta(ctrl);
     const fascia = votoFinale != null ? L.fasciaVoto(S.regole, votoFinale) : null;
@@ -826,6 +839,7 @@ function collega() {
   document.querySelectorAll("[data-inizia],[data-dettagli]").forEach(b => b.onclick = () => { const id = b.dataset.inizia || b.dataset.dettagli; if (S.pulizie[id]) apriFoglio({ tipo: "inizio", id }); });
   document.querySelectorAll("[data-msg-giorno]").forEach(b => b.onclick = () => apriFoglio({ tipo: "messaggio", giorno: b.dataset.msgGiorno }));
   document.querySelectorAll("[data-whatsapp-piano]").forEach(b => b.onclick = () => apriWhatsApp(testoPianoGiorno(b.dataset.whatsappPiano)));
+  document.querySelectorAll("[data-whatsapp-finito]").forEach(b => b.onclick = () => { const iso = b.dataset.whatsappFinito; const n = pulizieDelGiorno(iso, S.utente.zona).length; apriWhatsApp(`✅ ${S.utente.nome || tagZona(S.utente.zona)}: tutte le camere di ${quandoEtichetta(iso).toLowerCase()} sono pulite (${n}/${n}).`, numeroWhatsApp()); });
   document.querySelectorAll("[data-salva-avvisi]").forEach(b => b.onclick = salvaAvvisi);
   document.querySelectorAll("[data-cerca-gruppo]").forEach(b => b.onclick = cercaGruppoTelegram);
   document.querySelectorAll("[data-prova-telegram]").forEach(b => b.onclick = async () => { await salvaAvvisi(); inviaTelegram(`✅ Prova riuscita: gli avvisi delle pulizie arrivano qui.\n${zoneOrdinate().map(z => tagZona(z.id)).join(" · ")}`, null, { manuale: true }); });
@@ -845,7 +859,7 @@ function collega() {
   document.querySelectorAll("[data-unpay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.unpay.split("|"); segnaPagata(z, k, false); });
   document.querySelectorAll("[data-taglia]").forEach(b => b.onclick = () => { const [cam, t] = b.dataset.taglia.split("|"); const l = JSON.parse(JSON.stringify(S.listino)); l.taglia[cam] = t; salvaListino(l); });
   document.querySelectorAll("[data-listino]").forEach(i => i.onchange = () => { const l = JSON.parse(JSON.stringify(S.listino)); const v = Math.max(0, Number(i.value) || 0); const [a, b] = i.dataset.listino.split("."); if (b) l[a][b] = v; else l[a] = v; salvaListino(l); });
-  document.querySelectorAll("[data-voto]").forEach(i => i.onchange = () => { const v = L.votiCompleti(S.regole); const k = i.dataset.voto; const n = Math.max(0, Number(i.value) || 0); const nuovi = JSON.parse(JSON.stringify(v)); if (k === "bonusControllatrice") nuovi.bonusControllatrice = n; else nuovi[k].perc = n; const r = { ...S.regole, voti: nuovi }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
+  document.querySelectorAll("[data-voto]").forEach(i => i.onchange = () => { const v = L.votiCompleti(S.regole); const k = i.dataset.voto; const n = Math.max(0, Number(i.value) || 0); const nuovi = JSON.parse(JSON.stringify(v)); if (k === "bonusControllatrice" || k === "penalitaRichiesta") nuovi[k] = n; else nuovi[k].perc = n; const r = { ...S.regole, voti: nuovi }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-regola]").forEach(b => b.onclick = () => { const [k, v] = b.dataset.regola.split("|"); const r = { ...S.regole, [k]: v === "1" }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { S.tema = b.dataset.tema; localStorage.setItem("ricci_tema", S.tema); applicaTema(); disegna(); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
@@ -968,8 +982,10 @@ function testoPianoGiorno(iso) {
 }
 function testoDettagliCamera(p) { return `${tagZona(p.zona)} · ${L.dataLunga(p.data)}\n${rigaCameraAvviso(p)}`; }
 function testoMessaggioGiorno(iso, testo) { return `📣 ${L.dataLunga(iso)} · per tutte le signore\n${testo}`; }
-function apriWhatsApp(testo) {
-  const url = "https://wa.me/?text=" + encodeURIComponent(testo);
+function numeroWhatsApp() { return String(S.avvisi?.whatsapp || "").replace(/[^0-9]/g, ""); }
+function apriWhatsApp(testo, numero) {
+  const n = numero === undefined ? "" : String(numero || "").replace(/[^0-9]/g, "");
+  const url = "https://wa.me/" + n + "?text=" + encodeURIComponent(testo);
   const w = window.open(url, "_blank", "noopener");
   if (!w) location.href = url;
 }
@@ -1020,7 +1036,7 @@ async function cercaGruppoTelegram() {
 }
 async function salvaAvvisi() {
   const v = id => ($("#" + id)?.value || "").trim();
-  const dati = { ...(S.avvisi || {}), token: v("avToken"), chat: v("avChat"), oraPiano: Number(v("avOra")) || 7, tag: { ...(S.avvisi?.tag || {}) } };
+  const dati = { ...(S.avvisi || {}), token: v("avToken"), chat: v("avChat"), whatsapp: v("avWa").replace(/[^0-9]/g, ""), oraPiano: Number(v("avOra")) || 7, tag: { ...(S.avvisi?.tag || {}) } };
   zoneOrdinate().forEach(z => { dati.tag[z.id] = v("avTag_" + z.id); });
   ["pianoMattina", "messaggio", "dettagli", "problema", "pulita"].forEach(k => { const el = $("#av_" + k); if (el) dati[k] = el.checked; });
   try { await S.db.salva("impostazioni", "avvisi", dati, false); toast("Avvisi salvati"); } catch (e) { erroreScrittura(e); }
@@ -1084,9 +1100,11 @@ async function cambiaStato(p, stato, nota) {
     await S.db.aggiorna("pulizie", p.id, patch);
     // avvisi automatici (Telegram), se configurati
     const chi = S.utente.nome || tagZona(p.zona);
-    if (stato === "problema") inviaTelegram(`⚠️ Problema in ${camera(p.camera).nome} (${chi}): ${nota || "senza dettagli"}${foto ? " · c'è una foto nell'app" : ""}`, "problema");
-    else if (stato === "non_fatta") inviaTelegram(`⛔ ${camera(p.camera).nome} non fatta (${chi}): ${nota || "senza motivo"}`, "problema");
+    let testoWa = "";
+    if (stato === "problema") { testoWa = `⚠️ Problema in ${camera(p.camera).nome} (${chi}): ${nota || "senza dettagli"}${foto ? " · c'è una foto nell'app" : ""}`; inviaTelegram(testoWa, "problema"); }
+    else if (stato === "non_fatta") { testoWa = `⛔ ${camera(p.camera).nome} non fatta (${chi}): ${nota || "senza motivo"}`; inviaTelegram(testoWa, "problema"); }
     else if (stato === "fatta") inviaTelegram(`✅ ${camera(p.camera).nome} pulita alle ${L.oraBreve(adesso)} (${chi})`, "pulita");
+    if (testoWa && addetta() && numeroWhatsApp()) { toast("Vuoi avvisare anche su WhatsApp?", { testo: "Avvisa", fai: () => { apriWhatsApp(testoWa, numeroWhatsApp()); const t = $(".toast"); if (t) t.remove(); } }); setTimeout(() => { const t = $(".toast"); if (t && /WhatsApp/.test(t.textContent)) t.remove(); }, 15000); }
   }
   catch (e) { erroreScrittura(e); }
 }

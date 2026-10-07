@@ -73,3 +73,10 @@ I quattro proprietari di base (`michele`, `papa`, `mamma`, `michelesantucci`) en
   del bot (da @BotFather) e il gruppo ("Cerca il gruppo da solo"), più il nome Telegram di ogni signora per taggarla.
   Tutto sta in `impostazioni/avvisi`. Il piano del mattino parte la prima volta che un proprietario apre l'app dopo
   l'ora scelta (campo `ultimoPiano` per non mandarlo due volte).
+- **Richieste del giorno nel controllo** (dalla 0.16): i dettagli scritti per una camera ("frigorifero, doccia
+  muffa") e le istruzioni dell'ospite diventano caselle da verificare nella scheda del controllo (controllatrice e
+  proprietari). Ogni richiesta non spuntata toglie punti al voto (regola "penalitaRichiesta", di base 3) e quindi la
+  pulizia si paga meno (voto 7 → 100% senza bonus, voto 4 → 50% + richiamo). Nel controllo si salvano `richieste`
+  e `nonFatte` (regole di sicurezza aggiornate di conseguenza).
+- **WhatsApp per le signore**: in ⋯ → Avvisi si mette il numero che riceve gli avvisi; alla signora compare "Avvisa su
+  WhatsApp" dopo un problema / camera non fatta e quando ha finito tutte le camere.

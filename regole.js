@@ -114,6 +114,7 @@ export const VOTI_BASE = {
   bonusControllatrice: 5,   // € a settimana a chi fa i controlli, se i voti reggono al controllo di Michele
   scartoMassimo: 2,         // se il voto di Michele differisce di più di così, il controllo "non corrisponde"
   richiamoDopo: 3,          // al terzo controllo che non corrisponde, richiamo anche alla controllatrice
+  penalitaRichiesta: 3,     // punti tolti al voto per ogni richiesta del giorno (dettagli) non fatta
 };
 
 // ---- Le persone che entrano nell'app (nome per entrare → chi è) ----------

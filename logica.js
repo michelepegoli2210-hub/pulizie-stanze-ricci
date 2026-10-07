@@ -200,8 +200,26 @@ export const PUNTI_CONTROLLO = [
   { id: "ordine",    testo: "Tutto in ordine, niente dimenticato" },
   { id: "aria",      testo: "Buon odore, camera arieggiata" },
 ];
-// Il voto nasce dai punti: tutti e 8 a posto = 10; ogni punto mancante toglie 1 (minimo 2)
-export function votoDaiPunti(punti) { const ok = PUNTI_CONTROLLO.filter(p => punti && punti[p.id]).length; return Math.max(2, 2 + ok); }
+// Le richieste del giorno (dettagli scritti dai proprietari e istruzioni dell'ospite) diventano punti da
+// verificare: "frigorifero, doccia muffa" → due caselle. Al massimo 6, per non allungare troppo la lista.
+export function richiesteDaVerificare(p) {
+  const testi = [p?.dettagli || "", p?.istruzioni || ""].filter(Boolean).join(" · ");
+  if (!testi.trim()) return [];
+  const pezzi = testi.split(/\s*(?:·|,|;|\n|\.\s|\s-\s|\se\s|\s\+\s)\s*/i).map(t => t.trim().replace(/^[-•]\s*/, "")).filter(t => t.length >= 3);
+  const visti = new Set(); const out = [];
+  for (const t of pezzi) { const k = t.toLowerCase(); if (visti.has(k)) continue; visti.add(k); out.push({ id: "r" + out.length, testo: t.replace(/^./, c => c.toUpperCase()), richiesta: true }); if (out.length >= 6) break; }
+  return out;
+}
+export function puntiControlloPer(p) { return [...PUNTI_CONTROLLO, ...richiesteDaVerificare(p)]; }
+// Il voto nasce dai punti: tutti e 8 a posto = 10; ogni punto mancante toglie 1 (minimo 2).
+// Ogni richiesta del giorno NON fatta toglie altri punti (penalitaRichiesta, di base 3): così si paga meno.
+export function votoDaiPunti(punti, lista = PUNTI_CONTROLLO, regole = null) {
+  const ok = lista.filter(x => !x.richiesta && punti && punti[x.id]).length;
+  const mancanti = lista.filter(x => x.richiesta && !(punti && punti[x.id])).length;
+  const pen = Number(votiCompleti(regole).penalitaRichiesta ?? 3);
+  return Math.max(1, Math.min(10, 2 + ok - mancanti * pen));
+}
+export function richiesteNonFatte(punti, lista) { return lista.filter(x => x.richiesta && !(punti && punti[x.id])).map(x => x.testo); }
 // Chi fa i controlli questa settimana: la zona scelta dai proprietari, altrimenti a turno
 export function zonaControllatrice(impostazioniControlli, chiave, zone) {
   const scelta = impostazioniControlli?.settimane?.[chiave];

@@ -95,7 +95,7 @@ service cloud.firestore {
       allow update: if proprietario()
         || (sonoControllatrice()
             && resource.data.zonaControllatrice == miaZona()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["voto", "punti", "nota", "ora", "controllatrice", "settimana"]));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["voto", "punti", "nota", "ora", "controllatrice", "settimana", "richieste", "nonFatte"]));
       allow delete: if proprietario();
     }
 
