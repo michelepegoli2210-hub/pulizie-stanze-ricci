@@ -80,3 +80,25 @@ I quattro proprietari di base (`michele`, `papa`, `mamma`, `michelesantucci`) en
   e `nonFatte` (regole di sicurezza aggiornate di conseguenza).
 - **WhatsApp per le signore**: in ⋯ → Avvisi si mette il numero che riceve gli avvisi; alla signora compare "Avvisa su
   WhatsApp" dopo un problema / camera non fatta e quando ha finito tutte le camere.
+
+## Compilare il prospetto in un attimo (dalla versione 0.17)
+
+In Gestione → Prospetto (e in Oggi) ci sono tre modi veloci, tutti senza intelligenza artificiale:
+
+- **🗣️ Dimmi il prospetto**: si scrive o si detta (microfono della tastiera, o il bottone "Parla" dove il telefono lo
+  permette) chi arriva, in quale camera e quando, **una riga per camera**. Il file `dettatura.js` capisce le frasi con
+  regole fisse e fa vedere l'anteprima ("Ho capito così") prima di salvare. Esempi: `Salvatore: Manna, 2 persone, da
+  lunedì a venerdì` · `Aurora: Palazzo dal 12 al 16 ottobre` · `Alba: Fondamenta tutto novembre` · `Michele: libera`
+  (toglie chi c'era) · `Nicole: Castaldi parte giovedì` (accorcia) · `Lella: Rahhal resta fino a domenica` (allunga) ·
+  `Fenicotteri come la settimana scorsa` · `settimana prossima` da sola in una riga. Se mancano i giorni mette da lunedì
+  a venerdì; se manca il nome mette l'ultimo ospite di quella camera (sempre segnalato in arancione nell'anteprima).
+  In alto si sceglie la settimana di cui si parla (questa / prossima / quella dopo); di venerdì, sabato e domenica
+  è già selezionata la prossima. I soggiorni salvati così hanno `origine: "dettatura"`.
+- **📄 Foglio di papà**: il file Excel letto con le regole di `excel.js` (come prima, ora anche dal Prospetto).
+- **🔁 Come la settimana scorsa**: per le camere ancora vuote ripropone l'ospite della settimana prima spostato di
+  7 giorni (solo soggiorni corti; i mensili restano). Si toglie la spunta a chi non torna e si salva (`origine: "copia"`).
+- **Foto del prospetto**: dentro "Dimmi il prospetto" c'è "Copia la richiesta per l'IA": si incolla in un'IA gratuita
+  (Claude, ChatGPT, Gemini) insieme alla foto del foglio; la risposta arriva già nel formato "Camera: Nome, N persone,
+  dal GG mese al GG mese" e si incolla nell'app. L'app non chiama nessuna IA: è solo un aiuto esterno per leggere la foto.
+
+Dopo il salvataggio le pulizie dei prossimi 14 giorni si ricalcolano da sole (come sempre).

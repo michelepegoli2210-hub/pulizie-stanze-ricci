@@ -7,8 +7,9 @@ import { ZONE, CAMERE, REGOLE_BASE, TIPI_PULIZIA, TIPI_OSPITE, RIFIUTI, APPOGGIO
 import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
+import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 
-export const VERSIONE = "0.16.0";
+export const VERSIONE = "0.17.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -527,7 +528,7 @@ function vistaOggiGestione() {
   }).join("");
   const problemi = Object.values(S.pulizie).filter(p => p.stato === "problema" && p.data >= L.aggiungiGiorni(L.oggiISO(), -7));
   const avviso = problemi.length ? `<section class="card"><h2 style="color:var(--warn)">Problemi segnalati (ultimi 7 giorni)</h2><div class="rows">${problemi.sort((a, b) => a.data < b.data ? 1 : -1).map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(L.dataBreve(p.data))}<br><span class="muted">${esc(p.nota || "")}</span></span><span class="s warn">!</span></button>`).join("")}</div></section>` : "";
-  const bottone = puoModificare() ? `<section class="card flat"><button class="big undo" data-whatsapp-piano="${iso}">Manda il piano di ${esc(quandoEtichetta(iso).toLowerCase())} su WhatsApp</button><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button></section>` : "";
+  const bottone = puoModificare() ? `<section class="card flat"><button class="big undo" data-whatsapp-piano="${iso}">Manda il piano di ${esc(quandoEtichetta(iso).toLowerCase())} su WhatsApp</button><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button><button class="big undo" data-dettatura>🗣️ Dimmi il prospetto (scrivi o detta chi arriva)</button></section>` : "";
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
@@ -583,7 +584,7 @@ function vistaTabellone() {
   return `<div class="tabs"><button aria-pressed="${sett}" data-board="settimana">Settimana</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
   <section class="card flat"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
   <div class="stats"><div class="stat"><b>${occOggi}/${S.camere.length}</b><span>camere occupate oggi</span></div><div class="stat"><b>${notti}</b><span>notti nel periodo</span></div>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<div class="stat"><b style="color:${TIPI_OSPITE[k]?.colore || "inherit"}">${v}</b><span>notti ${esc(TIPI_OSPITE[k]?.nome || k)}</span></div>`).join("")}</div></section>
-  ${puoModificare() ? `<p class="muted small" style="margin:-6px 0 0">Tocca una casella vuota per segnare un arrivo, tocca una striscia per cambiarla.</p>` : ""}
+  ${puoModificare() ? bottoniProspetto() : ""}
   <section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>
   ${dubbi.length ? `<section class="card"><h2 style="color:var(--todo)">Da controllare (?)</h2><div class="rows">${dubbi.map(s => `<button class="row" data-sog="${esc(s.id)}"><span><b>${esc(camera(s.camera).nome)}</b> · ${esc(s.nome)}<br><span class="muted">${esc(L.dataMedia(s.inizio))} → ${esc(L.dataMedia(s.fine))}${s.notaPrivata ? " · " + esc(s.notaPrivata) : ""}</span></span><span class="s todo">?</span></button>`).join("")}</div></section>` : ""}
@@ -687,6 +688,7 @@ function disegnaFoglio() {
   else if (f.tipo === "soggiorno") html = foglioSoggiorno(f);
   else if (f.tipo === "nota") html = foglioNota(f);
   else if (f.tipo === "nuovoLavoro") html = foglioNuovoLavoro(f);
+  else if (f.tipo === "dettatura") html = foglioDettatura(f);
   else if (f.tipo === "info") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><div class="note info">${esc(f.testo)}</div>`;
   else if (f.tipo === "foto") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><img src="${f.dati}" alt="Foto" style="width:100%;border-radius:14px;margin-top:10px">`;
   // Se la persona sta scrivendo e arriva un aggiornamento, il testo non deve sparire
@@ -789,6 +791,168 @@ function foglioSoggiorno(f) {
     ${s && mod ? `<div class="due" style="margin-top:10px"><button class="big undo" data-sog-azione="parteoggi">Parte oggi</button><button class="big undo" data-sog-azione="elimina">Non è venuto (elimina)</button></div>` : ""}`;
 }
 
+// ---------------------------------------------------------------------------
+//  "Dimmi il prospetto": si scrive o si detta chi arriva, l'app capisce con regole fisse
+//  e fa controllare tutto prima di salvare. Niente intelligenza artificiale.
+// ---------------------------------------------------------------------------
+function bottoniProspetto() {
+  return `<section class="card dt-pulsanti"><h2 style="margin:0">Compila il prospetto in un attimo</h2><p class="muted small" style="margin:4px 0 0">Scrivi (o detta col microfono della tastiera) chi arriva e quando, carica il file Excel di papà, oppure ripeti la settimana scorsa. Le pulizie si creano da sole.</p>
+    <button class="big main" data-dettatura>🗣️ Dimmi il prospetto</button>
+    <div class="due" style="margin-top:0"><label class="big undo" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:10px">📄 Foglio di papà<input class="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><button class="big undo" data-dettatura-copia>🔁 Come la settimana scorsa</button></div>
+    <p class="muted small" style="margin:10px 0 0">Oppure tocca una casella vuota del tabellone per segnare un arrivo, tocca una striscia per cambiarla.</p></section>`;
+}
+function statoDettatura() {
+  if (!S.dett) S.dett = { testo: "", base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {} };
+  return S.dett;
+}
+function analizzaDettatura(f) {
+  const d = statoDettatura();
+  const ctx = { oggi: L.oggiISO(), base: d.base, soggiorni: soggiorniLista() };
+  let ris;
+  if (f.copia) ris = { righe: copiaSettimanaScorsa(ctx), nonCapito: [], base: d.base };
+  else ris = capisciProspetto(d.testo, ctx);
+  for (const r of ris.righe) {
+    if (d.scelte[r.firma] != null) r.scelto = d.scelte[r.firma];
+    if (d.comportamenti[r.firma]) r.comportamento = d.comportamenti[r.firma];
+  }
+  return ris;
+}
+function testoAzioneRiga(r) {
+  const n = (a, b) => L.giorniTra(a, b);
+  const periodo = (a, b) => `${L.dataMedia(a)} → ${L.dataMedia(b)} (${n(a, b)} ${n(a, b) === 1 ? "notte" : "notti"})`;
+  if (r.azione === "togli") return `Tolgo ${r.esistenti.map(e => `${e.nome} (${L.dataMedia(e.inizio)} → ${L.dataMedia(e.fine)})`).join(", ")}`;
+  if (r.azione === "accorcia") return `Parte prima: ${L.dataMedia(r.fine)} invece di ${L.dataMedia(r.esistente.fine)}`;
+  if (r.azione === "prolunga") return `Resta fino a ${L.dataMedia(r.fine)} (prima partiva ${L.dataMedia(r.esistente.fine)})`;
+  if (r.azione === "aggiorna") return `Cambio: ${periodo(r.esistente.inizio, r.esistente.fine)} diventa ${periodo(r.inizio, r.fine)}`;
+  if (r.azione === "niente") return "Niente da cambiare";
+  return `Arriva ${L.dataMedia(r.inizio)} → parte ${L.dataMedia(r.fine)} (${n(r.inizio, r.fine)} ${n(r.inizio, r.fine) === 1 ? "notte" : "notti"})`;
+}
+function anteprimaDettatura(ris, f) {
+  const righe = ris.righe, scelte = righe.filter(r => r.scelto && r.azione !== "niente").length;
+  if (!righe.length && !ris.nonCapito.length) return `<p class="muted" style="margin:8px 0 0">${f.copia ? "Non c'è niente da copiare: le camere della settimana scelta sono già segnate (o la settimana scorsa erano vuote)." : "Appena scrivi, qui ti faccio vedere cosa ho capito."}</p>`;
+  const riga = (r) => {
+    const cls = r.azione === "niente" ? "off" : (r.dubbio || (r.motivi && r.motivi.length) ? "warn" : r.azione === "togli" ? "ko" : "ok");
+    const persone = r.azione === "togli" || r.azione === "niente" ? "" : ` · ${r.persone} ${r.persone === 1 ? "persona" : "persone"}`;
+    const tipo = r.azione === "togli" || r.azione === "niente" ? "" : ` <span class="chip">${esc(TIPI_OSPITE[r.tipo]?.nome || r.tipo)}</span>`;
+    const confl = r.conflitti && r.conflitti.length && r.azione === "nuovo" ? `<br><span style="color:var(--warn)">In ${esc(camera(r.camera).nome)} c'è già ${esc(r.conflitti.map(c => `${c.nome} (${L.dataMedia(c.inizio)} → ${L.dataMedia(c.fine)})`).join(", "))}:</span> <select data-dett-comp="${esc(r.firma)}" style="min-height:36px;padding:4px 8px"><option value="sostituisci" ${r.comportamento === "sostituisci" ? "selected" : ""}>metto ${esc(r.nome)} al suo posto</option><option value="insieme" ${r.comportamento === "insieme" ? "selected" : ""}>li lascio tutti e due</option></select>` : "";
+    return `<label class="row dt-riga ${cls}" style="grid-template-columns:auto 1fr;cursor:pointer;align-items:start"><input type="checkbox" data-dett-scelta="${esc(r.firma)}" ${r.scelto ? "checked" : ""} ${r.azione === "niente" ? "disabled" : ""} style="width:24px;height:24px;margin-top:2px">
+      <span><b>${esc(camera(r.camera).nome)}</b>${r.azione === "togli" ? "" : ` · <b>${esc(r.nome)}</b>`}${persone}${tipo}
+      <br><span class="${r.azione === "togli" ? "" : "muted"}">${esc(testoAzioneRiga(r))}</span>
+      ${(r.assunti || []).map(a => `<br><span style="color:var(--wip);font-weight:600">${esc(a)}</span>`).join("")}
+      ${(r.motivi || []).map(m => `<br><span style="color:var(--todo);font-weight:700">? ${esc(m)}</span>`).join("")}
+      ${confl}
+      ${r.nota ? `<br><span class="muted">📝 per le signore: ${esc(r.nota)}</span>` : ""}${r.notaPrivata ? `<br><span class="muted">🔒 ${esc(r.notaPrivata)}</span>` : ""}
+      ${f.copia ? "" : `<br><span class="muted small">hai scritto: «${esc(r.testo)}»</span>`}</span></label>`;
+  };
+  return `<div class="floorlabel" style="margin-top:12px">${f.copia ? "Ti propongo" : "Ho capito così"} <span>${scelte} da salvare</span></div>
+    <div class="rows">${righe.map(riga).join("")}</div>
+    ${ris.nonCapito.length ? `<div class="avviso" style="margin-top:10px">Non ho capito queste righe (manca il nome della camera?):<br>${ris.nonCapito.map(t => `«${esc(t)}»`).join("<br>")}</div>` : ""}`;
+}
+function foglioDettatura(f) {
+  const d = statoDettatura();
+  const oggi = L.oggiISO(), questa = L.lunediDi(oggi), prossima = L.aggiungiGiorni(questa, 7), dopo = L.aggiungiGiorni(questa, 14);
+  const etich = (b) => `${L.giornoDelMese(b)}–${L.giornoDelMese(L.aggiungiGiorni(b, 6))} ${L.MESI[L.daISO(L.aggiungiGiorni(b, 6)).getUTCMonth()].slice(0, 3)}`;
+  const chip = (b, nome) => `<button type="button" aria-pressed="${d.base === b}" data-dett-base="${b}">${nome}<small>${etich(b)}</small></button>`;
+  const ris = analizzaDettatura(f);
+  const scelte = ris.righe.filter(r => r.scelto && r.azione !== "niente").length;
+  const parla = ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) ? `<button type="button" class="btnsm ghost" data-dett-parla>🎤 Parla</button>` : "";
+  return `<h3>${f.copia ? "Come la settimana scorsa" : "Dimmi il prospetto"}</h3>
+    <div class="muted">${f.copia ? "Per le camere ancora vuote ripeto l'ospite della settimana prima, spostato di una settimana. Togli la spunta a chi non torna." : "Scrivi o detta chi arriva, in quale camera e quando: una riga per camera. Io capisco e ti faccio controllare prima di salvare."}</div>
+    <div class="floorlabel" style="margin-top:10px">Di che settimana parliamo?</div>
+    <div class="dt-sett">${chip(questa, "Questa")}${chip(prossima, "Prossima")}${chip(dopo, "Quella dopo")}</div>
+    ${f.copia ? "" : `<div class="campo"><label for="dtTesto">Cosa mi dici</label><textarea id="dtTesto" data-keep rows="5" placeholder="Salvatore: Manna, 2 persone, da lunedì a venerdì
+Aurora: Palazzo dal 12 al 16
+Alba: Fondamenta tutto novembre
+Michele: libera
+Nicole: Castaldi parte giovedì">${esc(d.testo)}</textarea></div>
+    <div class="dt-azioni">${parla}<button type="button" class="btnsm ghost" data-dett-incolla>📋 Incolla</button><button type="button" class="btnsm ghost" data-dett-pulisci>Pulisci</button></div>
+    <p class="muted small" style="margin:6px 0 0">Sul telefono: tocca la casella e poi il microfono 🎤 della tastiera, e parla come parleresti a papà.</p>`}
+    <div id="dtAnteprima">${anteprimaDettatura(ris, f)}</div>
+    <button class="big main" data-dett-salva ${scelte && !S.attesa ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : `Salva nel prospetto (${scelte})`}</button>
+    ${f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Manna, 2 persone, da lunedì a venerdì
+Aurora: Palazzo dal 12 al 16 ottobre
+Alba: Fondamenta tutto novembre
+Lella: Rahhal da domenica sera a venerdì (asciugamani doppi)
+Michele: libera   → tolgo chi c'era quella settimana
+Nicole: Castaldi parte giovedì   → accorcio il soggiorno
+Tramonto: resta fino a domenica   → allungo il soggiorno
+Fenicotteri: come la settimana scorsa
+Via Zara piano terra: D'Agostino, 3 operai, tutto il mese
+Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ultimo ospite di quella camera. Controlla sempre l'anteprima.</div></details>
+    <details style="margin-top:8px"><summary>Hai una foto del prospetto di papà? Fattela leggere da un'intelligenza artificiale gratuita</summary><div class="note info" style="margin-top:6px">1) Tocca <b>Copia la richiesta</b>. 2) Apri Claude (gratis, app o claude.ai) oppure ChatGPT o Gemini, incolla la richiesta e aggiungi la <b>foto</b> del prospetto. 3) Copia la risposta e incollala qui sopra con <b>Incolla</b>: l'app la capisce da sola. L'app resta gratuita e non dipende da nessuna IA: è solo un aiuto per leggere la foto.</div><button class="big undo" data-dett-copia-ia>Copia la richiesta per l'IA</button></details>`}`;
+}
+function aggiornaAnteprimaDettatura(f) {
+  const box = $("#dtAnteprima"); if (!box) return;
+  const ris = analizzaDettatura(f);
+  box.innerHTML = anteprimaDettatura(ris, f);
+  const scelte = ris.righe.filter(r => r.scelto && r.azione !== "niente").length;
+  const b = $("[data-dett-salva]"); if (b) { b.textContent = `Salva nel prospetto (${scelte})`; b.disabled = !scelte; b.style.opacity = scelte ? "" : ".5"; }
+  collegaAnteprimaDettatura(f);
+}
+function collegaAnteprimaDettatura(f) {
+  const d = statoDettatura();
+  document.querySelectorAll("[data-dett-scelta]").forEach(c => c.onchange = () => { d.scelte[c.dataset.dettScelta] = c.checked; aggiornaAnteprimaDettatura(f); });
+  document.querySelectorAll("[data-dett-comp]").forEach(s => s.onchange = () => { d.comportamenti[s.dataset.dettComp] = s.value; });
+}
+function aggiungiTestoDettatura(f, testo) {
+  const d = statoDettatura(); const t = $("#dtTesto");
+  const attuale = (t ? t.value : d.testo).replace(/\s+$/, "");
+  d.testo = (attuale ? attuale + "\n" : "") + String(testo || "").trim();
+  if (t) { t.value = d.testo; t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+  aggiornaAnteprimaDettatura(f);
+}
+let riconoscimento = null;
+function parlaDettatura(f) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const b = $("[data-dett-parla]");
+  if (!SR) { toast("Tocca la casella e usa il microfono 🎤 della tastiera."); return; }
+  if (riconoscimento) { try { riconoscimento.stop(); } catch (e) {} riconoscimento = null; return; }
+  try {
+    const rec = new SR(); riconoscimento = rec;
+    rec.lang = "it-IT"; rec.interimResults = false; rec.maxAlternatives = 1; rec.continuous = false;
+    if (b) { b.textContent = "🎙️ Ti ascolto… parla"; b.classList.add("rec"); }
+    rec.onresult = (e) => { const t = Array.from(e.results).map(r => r[0].transcript).join(" "); if (t) aggiungiTestoDettatura(f, t); };
+    rec.onerror = () => toast("Non riesco a sentirti da qui: tocca la casella e usa il microfono 🎤 della tastiera.");
+    rec.onend = () => { riconoscimento = null; const bb = $("[data-dett-parla]"); if (bb) { bb.textContent = "🎤 Parla"; bb.classList.remove("rec"); } };
+    rec.start();
+  } catch (e) { riconoscimento = null; toast("Tocca la casella e usa il microfono 🎤 della tastiera."); }
+}
+async function incollaDettatura(f) {
+  try { const t = await navigator.clipboard.readText(); if (t && t.trim()) { aggiungiTestoDettatura(f, t); return; } toast("Negli appunti non c'è niente da incollare."); }
+  catch (e) { toast("Tieni premuto dentro la casella e scegli «Incolla»."); $("#dtTesto")?.focus(); }
+}
+async function copiaRichiestaIA() {
+  const testo = richiestaPerIA();
+  try { await navigator.clipboard.writeText(testo); toast("Richiesta copiata: incollala in Claude (o ChatGPT) insieme alla foto."); }
+  catch (e) { apriFoglio({ tipo: "info", titolo: "Richiesta per l'IA", sotto: "Copiala a mano e incollala insieme alla foto", testo }); }
+}
+async function salvaDettatura(f) {
+  if (S.attesa) return;
+  const ris = analizzaDettatura(f);
+  const righe = ris.righe.filter(r => r.scelto && r.azione !== "niente");
+  if (!righe.length) { toast("Non c'è niente da salvare."); return; }
+  S.attesa = true; disegnaFoglio();
+  try {
+    const ops = [], adesso = S.db.adesso(), da = S.utente.nome || "";
+    let n = 0;
+    righe.forEach((r, i) => {
+      if (r.azione === "togli") { for (const e of r.esistenti) ops.push({ tipo: "cancella", coll: "soggiorni", id: e.id }); n += r.esistenti.length; return; }
+      if (r.azione === "accorcia" || r.azione === "prolunga") { ops.push({ tipo: "aggiorna", coll: "soggiorni", id: r.esistente.id, dati: { fine: r.fine, mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } }); n++; return; }
+      if (r.azione === "aggiorna") { ops.push({ tipo: "aggiorna", coll: "soggiorni", id: r.esistente.id, dati: { inizio: r.inizio, fine: r.fine, persone: r.persone || 1, tipo: r.tipo, ...(r.nota ? { nota: r.nota } : {}), ...(r.notaPrivata ? { notaPrivata: r.notaPrivata } : {}), mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } }); n++; return; }
+      if (r.conflitti && r.comportamento === "sostituisci") for (const c of r.conflitti) ops.push({ tipo: "cancella", coll: "soggiorni", id: c.id });
+      const id = `dt_${r.camera}_${r.inizio}_${Date.now().toString(36)}${i}`;
+      ops.push({ tipo: "salva", coll: "soggiorni", id, merge: false, dati: { camera: r.camera, inizio: r.inizio, fine: r.fine, nome: r.nome, tipo: r.tipo, persone: r.persone || 1, supplemento: 0, nota: r.nota || "", notaPrivata: r.notaPrivata || "", dubbio: !!r.dubbio, motivi: r.motivi || [], testoOriginale: r.testo || "", origine: r.copia ? "copia" : "dettatura", mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } });
+      n++;
+    });
+    await S.db.scrivi(ops);
+    const base = ris.base || statoDettatura().base;
+    S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
+    S.attesa = false; chiudiFoglio();
+    S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
+    toast(`Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}. Le pulizie si aggiornano da sole.`);
+  } catch (e) { S.attesa = false; disegnaFoglio(); erroreScrittura(e); }
+}
+
 function foglioNota(f) {
   const n = f.id ? S.note[f.id] : null;
   const mod = puoModificare();
@@ -864,8 +1028,9 @@ function collega() {
   document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { S.tema = b.dataset.tema; localStorage.setItem("ricci_tema", S.tema); applicaTema(); disegna(); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
-  const ff = $("#fileFoglio");
-  if (ff) ff.onchange = () => { if (ff.files && ff.files[0]) leggiFileExcel(ff.files[0]); };
+  document.querySelectorAll("#fileFoglio, .fileFoglio").forEach(ff => ff.onchange = () => { if (ff.files && ff.files[0]) leggiFileExcel(ff.files[0]); });
+  document.querySelectorAll("[data-dettatura]").forEach(b => b.onclick = () => { if (!puoModificare()) return; apriFoglio({ tipo: "dettatura" }); setTimeout(() => $("#dtTesto")?.focus(), 50); });
+  document.querySelectorAll("[data-dettatura-copia]").forEach(b => b.onclick = () => { if (!puoModificare()) return; const d = statoDettatura(); d.scelte = {}; d.comportamenti = {}; apriFoglio({ tipo: "dettatura", copia: true }); });
   document.querySelectorAll("[data-scelta]").forEach(c => c.onchange = () => { const s = S.importazione?.ris.soggiorni[Number(c.dataset.scelta)]; if (s) { s.scelto = c.checked; disegna(); } });
   const sm = $("#sostMano"); if (sm) sm.onchange = () => { S.importazione.sostituisciMano = sm.checked; };
   document.querySelectorAll("[data-salva-foglio]").forEach(b => b.onclick = salvaImportazione);
@@ -892,6 +1057,20 @@ function collegaFoglio() {
     document.querySelectorAll("[data-fatta-foglio]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fattaFoglio));
     document.querySelectorAll("[data-stato-foglio]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoFoglio.split("|"); const q = S.pulizie[id]; if (q) cambiaStato(q, st, ""); });
     document.querySelectorAll("[data-apri-motivo]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.apriMotivo.split("|"); apriFoglio({ tipo: "pulizia", id, apriMotivo: st }); });
+    return;
+  }
+  if (f.tipo === "dettatura") {
+    const d = statoDettatura();
+    const t = $("#dtTesto");
+    let timer = null;
+    if (t) t.oninput = () => { d.testo = t.value; clearTimeout(timer); timer = setTimeout(() => aggiornaAnteprimaDettatura(f), 250); };
+    document.querySelectorAll("[data-dett-base]").forEach(b => b.onclick = () => { d.base = b.dataset.dettBase; d.scelte = {}; d.comportamenti = {}; disegnaFoglio(); });
+    document.querySelectorAll("[data-dett-parla]").forEach(b => b.onclick = () => parlaDettatura(f));
+    document.querySelectorAll("[data-dett-incolla]").forEach(b => b.onclick = () => incollaDettatura(f));
+    document.querySelectorAll("[data-dett-pulisci]").forEach(b => b.onclick = () => { d.testo = ""; d.scelte = {}; d.comportamenti = {}; if (t) { t.value = ""; t.focus(); } aggiornaAnteprimaDettatura(f); });
+    document.querySelectorAll("[data-dett-copia-ia]").forEach(b => b.onclick = copiaRichiestaIA);
+    document.querySelectorAll("[data-dett-salva]").forEach(b => b.onclick = () => salvaDettatura(f));
+    collegaAnteprimaDettatura(f);
     return;
   }
   if (f.tipo === "messaggio") {
