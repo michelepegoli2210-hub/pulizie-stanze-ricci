@@ -264,7 +264,7 @@ function capisciRiga(seg, ctx) {
 function completa(r, ctx) {
   const oggi = ctx.oggi, base = r.base;
   const sog = (ctx.soggiorni || []).filter(s => s.camera === r.camera);
-  const inSettimana = sog.filter(s => s.inizio < L.aggiungiGiorni(base, 7) && base < s.fine);
+  const inSettimana = sog.filter(s => s.inizio < L.aggiungiGiorni(base, 6) && base < s.fine); // le notti da lunedì a sabato: chi arriva domenica sera è già della settimana dopo
   const stessoNome = (s) => r.nome && s.nome && normalizzaAllineato(s.nome).trim() === normalizzaAllineato(r.nome).trim();
   const notti = (a, b) => L.giorniTra(a, b);
 
