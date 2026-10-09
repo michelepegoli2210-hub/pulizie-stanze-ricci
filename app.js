@@ -9,7 +9,7 @@ import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 
-export const VERSIONE = "0.17.1";
+export const VERSIONE = "0.18.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -96,9 +96,9 @@ function nomeSignora() { const u = S.utente; return u?.nome && !/^signora/i.test
 const S = {
   db: null, utente: null, pronto: false,
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
-  board: { modo: "settimana", inizio: L.lunediDi(L.oggiISO()) },
+  board: { modo: "elenco", inizio: L.lunediDi(L.oggiISO()) },
   camere: CAMERE.slice(), zone: ZONE, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
-  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null,
+  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   caricati: { pulizie: false, soggiorni: false, ruoli: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
   stop: [], tema: localStorage.getItem("ricci_tema") || "light",
@@ -120,6 +120,10 @@ function statoClasse(p) { return !p ? "" : (STATI[p.stato] || STATI.da_fare).cls
 function statoTesto(p) { return p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : p.stato === "in_corso" ? `In corso da ${L.oraBreve(p.inizio)}` : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? "Non fatta" : p.titolo; }
 function minutiPulizia(p) { if (!p.inizio || !p.ora) return null; const m = Math.round((new Date(p.ora) - new Date(p.inizio)) / 60000); return m >= 0 && m < 600 ? m : null; }
 function titoloLavoro(p) { return p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : p.titolo; }
+// Le cose "da fare sempre" in una camera (le scrivono i proprietari in ⋯ o nella scheda della camera): es. Salvatore → "Balcone"
+function promemoriaCamera(id) { return L.spezzaRichieste(S.promemoria?.[id] || ""); }
+// "venerdì 16 ott", con "oggi"/"domani" davanti quando serve
+function giornoParlato(iso) { const oggi = L.oggiISO(); const d = L.giorniTra(oggi, iso); const t = L.dataGiornoLungo(iso); return d === 0 ? `oggi, ${t}` : d === 1 ? `domani, ${t}` : d === -1 ? `ieri, ${t}` : t; }
 function applicaTema() { if (S.tema === "dark") document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme"); }
 
 // ---------------------------------------------------------------------------
@@ -132,9 +136,10 @@ async function avvia() {
   window.addEventListener("online", () => { S.online = true; disegna(); });
   window.addEventListener("offline", () => { S.online = false; disegna(); });
   S.db.onUtente((u) => {
-    const prima = S.utente;
+    const prima = S.veroUtente || S.utente;
     const stessaPersona = prima && u && prima.uid === u.uid && prima.ruolo === u.ruolo && prima.zona === u.zona;
-    S.utente = u;
+    if (S.veroUtente && stessaPersona) { S.veroUtente = u; S.pronto = true; disegna(); return; } // sto guardando come la signora: resto lì
+    S.veroUtente = null; S.utente = u;
     S.pronto = true;
     if (!stessaPersona) {
       fermaAscolto();
@@ -145,7 +150,21 @@ async function avvia() {
   disegna();
 }
 
-function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; S.messaggi = {}; S.avvisi = null; }
+// Un proprietario può guardare (e usare) l'app come una signora: stessi dati veri, stessa schermata.
+function entraComeSignora(zona) {
+  if (!proprietario() || !S.zone[zona]) return;
+  S.veroUtente = S.utente;
+  S.utente = { ...S.utente, ruolo: "addetta", zona, nome: `Signora ${S.zone[zona].breve}`, finta: true };
+  S.vista = "oggi"; S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); S.mostraGiorni = false; chiudiFoglio();
+  aggiornaAscoltoAltrui(); disegna();
+  window.scrollTo(0, 0);
+}
+function esciComeSignora() {
+  if (!S.veroUtente) return;
+  S.utente = S.veroUtente; S.veroUtente = null; S.vista = "altro"; chiudiFoglio();
+  aggiornaAscoltoAltrui(); disegna();
+}
+function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; S.messaggi = {}; S.avvisi = null; S.promemoria = {}; }
 let stopAltrui = null;
 function sonoControllatrice() { return addetta() && S.impControlli?.attuale && S.impControlli.attuale === S.utente.zona; }
 // La controllatrice vede le camere FATTE dalle colleghe degli ultimi giorni (solo quelle, solo mentre è di turno)
@@ -184,6 +203,8 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "regole", d => { S.regole = { ...REGOLE_BASE, ...(d || {}) }; delete S.regole.id; disegna(); pianifica(); }));
   // messaggi del giorno dei proprietari alle signore (un documento, una voce per giorno)
   S.stop.push(db.ascoltaDoc("impostazioni", "messaggi", d => { S.messaggi = { ...(d || {}) }; delete S.messaggi.id; disegna(); }));
+  // cose da fare sempre, camera per camera (es. Salvatore: balcone)
+  S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; disegna(); pianoDelMattino(); }));
   if (!addetta()) S.stop.push(db.ascoltaDoc("impostazioni", "listino", d => { S.listino = L.listinoCompleto(d); disegna(); pianifica(); }));
@@ -255,7 +276,7 @@ function disegna() {
   // se si sta scrivendo in una casella e arriva un aggiornamento, il testo non deve sparire
   const attivo = document.activeElement, idAttivo = app.contains(attivo) && attivo.id ? attivo.id : null;
   const tenuti = {}; app.querySelectorAll("[data-keep][id]").forEach(e => { tenuti[e.id] = { v: e.value, s: e.selectionStart, e: e.selectionEnd }; });
-  app.innerHTML = (S.db?.modalita === "prova" && S.utente ? `<div class="banner info">PROVA · dati di esempio, solo su questo telefono</div>` : "") + corpo;
+  app.innerHTML = (S.utente?.finta ? `<div class="banner finta"><span>Stai guardando l'app come la <b>${esc(S.utente.nome)}</b> (dati veri)</span><button class="btnsm" data-torna-gestione>Torna alla gestione</button></div>` : "") + (S.db?.modalita === "prova" && S.utente ? `<div class="banner info">PROVA · dati di esempio, solo su questo telefono</div>` : "") + corpo;
   for (const [id, x] of Object.entries(tenuti)) { const e = document.getElementById(id); if (e && e.hasAttribute("data-keep")) e.value = x.v; }
   if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
@@ -360,7 +381,8 @@ function tesseraGrande(c, iso, perSignora) {
   if (!p) return `<div class="tess idle"><span class="${clsNome}">${esc(c.nome)}</span>${osp ? `<span class="tess-osp">${esc(osp.nome)}</span>` : ""}<span class="tess-stato-idle">Niente da fare</span></div>`;
   const cls = statoClasse(p);
   const chi = p.ospite ? `${esc(p.ospite)}${p.persone ? ` · ${p.persone}` : ""}` : (p.persone ? `${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : "");
-  const flag = p.partenza ? `<span class="tess-flag out">${ICONA("esci")}Partenza</span>` : p.arrivo ? `<span class="tess-flag in">${ICONA("entra")}Arrivo</span>` : "";
+  const g = iso === L.oggiISO() ? "oggi" : L.GIORNI[L.giornoSettimana(iso)];
+  const flag = p.partenza ? `<span class="tess-flag out">${ICONA("esci")}Parte ${g}</span>` : p.arrivo ? `<span class="tess-flag in">${ICONA("entra")}Arriva ${g}</span>` : "";
   const stato = p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : (STATI[p.stato] || STATI.da_fare).testo;
   const azione = perSignora ? (p.stato === "da_fare" ? "Tocca per iniziare" : p.stato === "in_corso" ? "Tocca quando hai finito" : (p.stato === "problema" || p.stato === "non_fatta") ? "Tocca per cambiare" : "") : "";
   const dett = p.dettagli ? `<span class="tess-dett">${ICONA("nota")}Dettagli</span>` : "";
@@ -385,7 +407,8 @@ function foglioInizio(f) {
   const passi = (p.passi && p.passi.length ? p.passi : TIPI_PULIZIA[p.tipo]?.passi || []);
   const msg = messaggioDelGiorno(p.data);
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(p.data) + 1) % 7);
-  const haDett = !!(p.dettagli || p.istruzioni || msg);
+  const sempre = promemoriaCamera(p.camera);
+  const haDett = !!(p.dettagli || p.istruzioni || msg || sempre.length);
   let bottone = "";
   if (p.stato === "da_fare") bottone = S.regole.richiediInizio !== false && addetta()
     ? `<button class="pro-btn blu gigante" data-comincia="${esc(p.id)}">${ICONA("gioca")}<span>Ho capito, comincio</span></button>`
@@ -400,11 +423,12 @@ function foglioInizio(f) {
     <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(c.nome)}</div><div class="inizio-lavoro">${esc(titoloLavoro(p))}</div></div>${DONNINA(p.tipo === "ripasso" ? "saluto" : "secchio", "media")}</div>
     <div class="inizio-righe">
       ${p.ospite ? `<div class="inizio-riga">${ICONA("persona")}<span>${esc(p.ospite)}${p.persone ? ` · <b>${p.persone} ${p.persone === 1 ? "persona" : "persone"}</b>` : ""}</span></div>` : (p.persone ? `<div class="inizio-riga">${ICONA("persona")}<span><b>${p.persone} ${p.persone === 1 ? "persona" : "persone"}</b></span></div>` : "")}
-      ${p.partenza ? `<div class="inizio-riga out">${ICONA("esci")}<span><b>Partenza</b> · l'ospite va via</span></div>` : ""}
-      ${p.arrivo ? `<div class="inizio-riga in">${ICONA("entra")}<span><b>Arrivo</b> · arriva un ospite nuovo</span></div>` : ""}
+      ${p.partenza ? `<div class="inizio-riga out">${ICONA("esci")}<span><b>Partenza ${esc(giornoParlato(p.data))}</b> · l'ospite va via</span></div>` : (p.parteIl && p.parteIl > p.data ? `<div class="inizio-riga">${ICONA("calendario")}<span>Resta fino a <b>${esc(giornoParlato(p.parteIl))}</b> (quel giorno parte)</span></div>` : "")}
+      ${p.arrivo ? `<div class="inizio-riga in">${ICONA("entra")}<span><b>Arrivo ${esc(giornoParlato(p.data))}</b> · arriva un ospite nuovo${p.ospite ? ` (${esc(p.ospite)})` : ""}</span></div>` : (p.prossimoArrivo ? `<div class="inizio-riga in">${ICONA("entra")}<span>Prossimo arrivo <b>${esc(giornoParlato(p.prossimoArrivo))}</b>${p.prossimoNome ? ` · ${esc(p.prossimoNome)}${p.prossimoPersone ? `, ${p.prossimoPersone} ${p.prossimoPersone === 1 ? "persona" : "persone"}` : ""}` : ""}</span></div>` : "")}
     </div>
     <div class="inizio-dett ${haDett ? "" : "vuoto"}">
       <div class="inizio-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div>
+      ${sempre.length ? `<div class="inizio-dett-s"><b>Sempre in ${esc(c.nome)}:</b> ${esc(sempre.join(" · "))}</div>` : ""}
       ${p.dettagli ? `<div class="inizio-dett-x">${esc(p.dettagli)}</div>` : ""}
       ${p.istruzioni ? `<div class="inizio-dett-i">${esc(p.istruzioni)}</div>` : ""}
       ${msg ? `<div class="inizio-dett-m"><b>${esc(msg.da || "Michele")} dice:</b> ${esc(msg.testo)}</div>` : ""}
@@ -470,7 +494,7 @@ function foglioControllo(f) {
   const daProprietario = f.modo === "proprietario";
   const punti = f.punti || (daProprietario ? (c.puntiProprietario || {}) : (c.punti || {}));
   f.punti = punti;
-  const lista = L.puntiControlloPer(p), standard = lista.filter(x => !x.richiesta), richieste = lista.filter(x => x.richiesta);
+  const lista = L.puntiControlloPer(p, promemoriaCamera(p.camera)), standard = lista.filter(x => !x.richiesta), richieste = lista.filter(x => x.richiesta);
   const voto = L.votoDaiPunti(punti, lista, S.regole);
   const nonFatte = L.richiesteNonFatte(punti, lista);
   const fascia = L.fasciaVoto(S.regole, voto);
@@ -489,7 +513,7 @@ function foglioControllo(f) {
 }
 async function salvaControllo(f) {
   const p = S.pulizie[f.id] || S.fattiAltrui[f.id]; if (!p) return;
-  const lista = L.puntiControlloPer(p);
+  const lista = L.puntiControlloPer(p, promemoriaCamera(p.camera));
   const punti = f.punti || {}, voto = L.votoDaiPunti(punti, lista, S.regole), nota = ($("#cNota")?.value || "").trim();
   const nonFatte = L.richiesteNonFatte(punti, lista);
   const richieste = lista.filter(x => x.richiesta).map(x => x.testo);
@@ -537,12 +561,12 @@ function vistaOggiGestione() {
 
 // ---- tabellone (prospetto) ---------------------------------------------------------
 function intervalloBoard() {
-  if (S.board.modo === "settimana") return [S.board.inizio, L.aggiungiGiorni(S.board.inizio, 7)];
+  if (S.board.modo !== "mese") return [S.board.inizio, L.aggiungiGiorni(S.board.inizio, 7)];
   const p = L.primoDelMese(S.board.inizio); return [p, L.aggiungiGiorni(L.ultimoDelMese(p), 1)];
 }
 function vistaTabellone() {
   const [da, a] = intervalloBoard();
-  const N = L.giorniTra(da, a), sett = S.board.modo === "settimana", cw = sett ? 88 : 36;
+  const N = L.giorniTra(da, a), sett = S.board.modo !== "mese", elenco = S.board.modo === "elenco", cw = sett ? 88 : 36;
   const oggi = L.oggiISO();
   const sog = soggiorniLista();
   let html = `<div class="board" style="grid-template-columns:132px repeat(${N},${cw}px)">`;
@@ -579,16 +603,53 @@ function vistaTabellone() {
   for (const s of sog) { const i0 = Math.max(0, L.giorniTra(da, s.inizio)), i1 = Math.min(N, L.giorniTra(da, s.fine)); if (i1 > i0) { notti += i1 - i0; perTipo[s.tipo] = (perTipo[s.tipo] || 0) + (i1 - i0); } }
   const occOggi = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length;
   const dubbi = sog.filter(s => (s.tipo === "unk" || s.dubbio) && s.fine >= da && s.inizio < a);
-  const titolo = sett ? `${L.dataMedia(da)} – ${L.dataMedia(L.aggiungiGiorni(a, -1))}` : L.meseLungo(da);
+  const titolo = sett ? `${L.dataLunga(da)} – ${L.dataLunga(L.aggiungiGiorni(a, -1))}` : L.meseLungo(da);
   const noteP = Object.values(S.note).filter(n => n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
-  return `<div class="tabs"><button aria-pressed="${sett}" data-board="settimana">Settimana</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
+  const corpoBoard = elenco ? elencoProspetto(da, a) : `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
+    <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
+  return `<div class="tabs"><button aria-pressed="${elenco}" data-board="elenco">Elenco</button><button aria-pressed="${sett && !elenco}" data-board="settimana">Tabellone</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
   <section class="card flat"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
   <div class="stats"><div class="stat"><b>${occOggi}/${S.camere.length}</b><span>camere occupate oggi</span></div><div class="stat"><b>${notti}</b><span>notti nel periodo</span></div>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<div class="stat"><b style="color:${TIPI_OSPITE[k]?.colore || "inherit"}">${v}</b><span>notti ${esc(TIPI_OSPITE[k]?.nome || k)}</span></div>`).join("")}</div></section>
   ${puoModificare() ? bottoniProspetto() : ""}
-  <section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
-    <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>
+  ${corpoBoard}
   ${dubbi.length ? `<section class="card"><h2 style="color:var(--todo)">Da controllare (?)</h2><div class="rows">${dubbi.map(s => `<button class="row" data-sog="${esc(s.id)}"><span><b>${esc(camera(s.camera).nome)}</b> · ${esc(s.nome)}<br><span class="muted">${esc(L.dataMedia(s.inizio))} → ${esc(L.dataMedia(s.fine))}${s.notaPrivata ? " · " + esc(s.notaPrivata) : ""}</span></span><span class="s todo">?</span></button>`).join("")}</div></section>` : ""}
   <section class="card"><h2>Note del periodo</h2>${noteP.length ? `<div class="notes">${noteP.map(n => `<button class="row" data-nota="${esc(n.id)}"><span><b>${esc(L.dataMedia(n.data))}</b> · ${esc(n.camera ? camera(n.camera).nome : "Generale")}<br>${esc(n.testo)}</span>${n.privata ? `<span class="pill priv">privata</span>` : ""}</button>`).join("")}</div>` : `<p class="muted" style="margin:0">Nessuna nota in questo periodo.</p>`}${puoModificare() ? `<button class="big undo" data-nuova-nota>+ Scrivi una nota</button>` : ""}</section>`;
+}
+
+// Prospetto a elenco: una riga per camera, con chi c'è, quando arriva e quando parte (giorno della settimana per esteso)
+function elencoProspetto(da, a) {
+  const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), G = L.dataGiornoLungo;
+  const sog = soggiorniLista();
+  const pillola = (s) => {
+    if (s.fine === oggi) return `<span class="el-pill out">parte oggi</span>`;
+    if (s.inizio === oggi) return `<span class="el-pill in">arriva oggi</span>`;
+    if (s.fine === domani) return `<span class="el-pill out">parte domani</span>`;
+    if (s.inizio === domani) return `<span class="el-pill in">arriva domani</span>`;
+    if (s.inizio <= oggi && oggi < s.fine) return `<span class="el-pill now">in camera</span>`;
+    return "";
+  };
+  return zoneOrdinate().map(z => {
+    const cam = camereZona(z.id);
+    let occupate = 0;
+    const righe = cam.map(c => {
+      const miei = sog.filter(s => s.camera === c.id && s.inizio < a && da < s.fine).sort((x, y) => x.inizio < y.inizio ? -1 : 1);
+      const noteCam = Object.values(S.note).filter(n => n.camera === c.id && n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
+      const pul = Object.values(S.pulizie).filter(p => p.camera === c.id && p.data >= da && p.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
+      const pulTxt = pul.length ? `<span class="muted small">Pulizie: ${pul.map(p => `${L.GG[L.giornoSettimana(p.data)]} ${TIPI_PULIZIA[p.tipo]?.breve || "LAV"}${p.stato === "fatta" ? " ✓" : p.stato === "problema" ? " !" : ""}`).join(" · ")}</span>` : "";
+      const noteTxt = noteCam.map(nn => `<br><button class="el-nota" data-nota="${esc(nn.id)}">! ${esc(L.dataGiornoLungo(nn.data))}: ${esc(nn.testo)}</button>`).join("");
+      if (!miei.length) return `<div class="row el-riga vuota"><span><b class="el-camera">${esc(c.nome)}</b><br><span class="muted">Libera tutta la settimana</span>${pulTxt ? "<br>" + pulTxt : ""}${noteTxt}</span>${puoModificare() ? `<button class="btnsm ghost" data-cella="${esc(c.id)}|${da}">+ Arrivo</button>` : ""}</div>`;
+      occupate++;
+      return miei.map((s, i) => {
+        const col = TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore, q = s.tipo === "unk" || s.dubbio;
+        const notti = L.giorniTra(s.inizio, s.fine);
+        return `<button class="row el-riga ${q ? "q" : ""}" data-sog="${esc(s.id)}"><span>${i === 0 ? `<b class="el-camera">${esc(c.nome)}</b>` : `<span class="el-camera-ancora">${esc(c.nome)} · poi</span>`}<br>
+          <span class="el-chi"><i style="background:${q ? "transparent" : col};${q ? "border:2px dashed var(--c-unk)" : ""}"></i>${esc(s.nome)}${s.persone > 1 ? ` · ${s.persone} persone` : ""}${q ? ` <span class="chip">da controllare</span>` : ""}</span><br>
+          <span class="el-quando">Arriva <b>${esc(G(s.inizio))}</b> → parte <b>${esc(G(s.fine))}</b> · ${notti} ${notti === 1 ? "notte" : "notti"}</span>
+          ${s.nota ? `<br><span class="muted small">📝 ${esc(s.nota)}</span>` : ""}${i === miei.length - 1 && pulTxt ? "<br>" + pulTxt : ""}${i === miei.length - 1 ? noteTxt : ""}</span>${pillola(s)}</button>`;
+      }).join("");
+    }).join("");
+    return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><span class="muted">${occupate}/${cam.length} occupate</span></div><div class="rows">${righe}</div></section>`;
+  }).join("");
 }
 
 // ---- paghe e listino -----------------------------------------------------------
@@ -635,6 +696,12 @@ function vistaAltro() {
       <label for="v_bonus">Bonus controllatrice (€ a settimana)</label><input id="v_bonus" type="number" min="0" step="1" value="${L.votiCompleti(S.regole).bonusControllatrice}" data-voto="bonusControllatrice" ${puoModificare() ? "" : "disabled"}>
       <label for="v_pen">Punti tolti per ogni richiesta del giorno non fatta (es. "frigorifero", "doccia muffa")</label><input id="v_pen" type="number" min="0" max="10" step="1" value="${L.votiCompleti(S.regole).penalitaRichiesta ?? 3}" data-voto="penalitaRichiesta" ${puoModificare() ? "" : "disabled"}></div>
     <p class="muted small" style="margin:8px 0 0">Esempio: 8 punti a posto ma "frigorifero" non fatto → voto 7, paga al 100% senza bonus; due richieste non fatte → voto 4, paga al 50% e richiamo.</p></section>
+  <section class="card"><h2>Da fare sempre, camera per camera</h2><p class="muted small" style="margin:0 0 8px">Quello che in una camera va fatto a ogni pulizia (es. Salvatore: balcone). La signora lo vede quando apre la camera e deve spuntarlo prima di chiudere; la controllatrice lo verifica e, se manca, il voto scende.</p>
+    <div class="rows">${S.camere.map(c => `<div class="row one"><span><b>${esc(c.nome)}</b><br><input type="text" data-keep id="pm_${esc(c.id)}" data-promemoria="${esc(c.id)}" value="${esc(S.promemoria?.[c.id] || "")}" placeholder="niente di particolare" ${puoModificare() ? "" : "disabled"} style="margin-top:4px"></span></div>`).join("")}</div>
+    <p class="muted small" style="margin:8px 0 0">Si salva da solo quando esci dalla casella. Più cose: separale con una virgola.</p></section>
+  <section class="card"><h2>Guarda l'app come la vedono le signore</h2><p class="muted small" style="margin:0 0 8px">Per provare la loro parte sul tuo telefono, con i dati veri. Attenzione: quello che tocchi lì vale davvero (una camera segnata pulita resta pulita; c'è sempre "Ho sbagliato").</p>
+    <div class="pick">${zoneOrdinate().map(z => `<button class="big undo" data-come-signora="${z.id}">👩‍🔧 Signora ${esc(z.breve)}</button>`).join("")}</div>
+    <p class="muted small" style="margin:8px 0 0">Per giocare senza toccare niente di vero c'è la modalità prova: apri il link dell'app con <b>?prova=1</b> alla fine.</p></section>
   ${vistaAvvisi()}
   <section class="card"><h2>Aspetto</h2><div class="seg"><button aria-pressed="${S.tema !== "dark"}" data-tema="light">Chiaro</button><button aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div></section>
   <section class="card"><h2>Foglio di papà</h2>
@@ -746,7 +813,11 @@ function foglioPulizia(f) {
       <p class="muted small" style="margin:0 0 6px">Li vede in grande quando apre la camera. Puoi cambiarli quando vuoi, anche ogni mattina.${p.dettagliDa ? ` Ultimi scritti da ${esc(p.dettagliDa)}${p.dettagliOra ? " alle " + L.oraBreve(p.dettagliOra) : ""}.` : ""}</p>
       <textarea id="dettagli" data-keep placeholder="es. Asciugamani doppi, controlla il frigo, lascia la chiave sul tavolo">${esc(p.dettagli || "")}</textarea>
       <div class="scelte">${["Asciugamani doppi", "Cambia anche le coperte", "Controlla il frigo", "Lettino in più", "Pulisci il balcone", "Lascia la chiave sul tavolo", "Attenta: ospite in camera"].map(t => `<button type="button" data-chip-testo="dettagli|${esc(t)}">${esc(t)}</button>`).join("")}</div>
-      <button class="big main" data-salva-dettagli>Salva i dettagli</button><div class="due">${p.dettagli ? `<button class="big undo" data-togli-dettagli>Togli i dettagli</button>` : `<span></span>`}<button class="big undo" data-whatsapp-cam="${esc(p.id)}">Manda su WhatsApp</button></div>`
+      <button class="big main" data-salva-dettagli>Salva i dettagli</button><div class="due">${p.dettagli ? `<button class="big undo" data-togli-dettagli>Togli i dettagli</button>` : `<span></span>`}<button class="big undo" data-whatsapp-cam="${esc(p.id)}">Manda su WhatsApp</button></div>
+      <div class="floorlabel" style="margin-top:14px">Da fare sempre in ${esc(c.nome)}</div>
+      <p class="muted small" style="margin:0 0 6px">Vale per tutte le pulizie di questa camera, non solo oggi (es. "balcone"). La signora lo vede ogni volta e deve spuntarlo prima di chiudere; la controllatrice lo verifica.</p>
+      <input id="promemoriaCam" type="text" data-keep value="${esc(S.promemoria?.[p.camera] || "")}" placeholder="es. Balcone, dietro la TV">
+      <button class="big undo" data-salva-promemoria="${esc(p.camera)}">Salva «da fare sempre»</button>`
     : (p.dettagli ? `<div class="pro-dett"><div class="pro-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div><div class="pro-dett-x">${esc(p.dettagli)}</div></div>` : "");
   const ctrl = S.controlli[p.id];
   let controllo = "";
@@ -763,7 +834,9 @@ function foglioPulizia(f) {
       ${sonoControllatrice() && p.zona !== S.utente.zona ? `<button class="big undo" data-controlla="${esc(p.id)}">${ctrl?.voto != null ? "Cambia il voto" : "Dai il voto a questa camera"}</button>` : ""}`;
   }
   return `<h3>${esc(c.nome)}</h3><div class="muted">${esc(L.dataLunga(p.data))}${p.ospite ? " · " + esc(p.ospite) : ""}${p.persone ? ` · ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""}</div>
-    <span class="kind">${esc(p.titolo)}</span>${p.partenza ? `<span class="kind arrivo">Parte oggi</span>` : ""}${p.arrivo ? `<span class="kind arrivo">Arriva oggi</span>` : ""}${!addetta() || p.stato === "fatta" ? `<span class="kind money">${eur(p.importo)}</span>` : ""}
+    <span class="kind">${esc(p.titolo)}</span>${p.partenza ? `<span class="kind arrivo">Parte ${esc(L.GIORNI[L.giornoSettimana(p.data)])} ${L.giornoDelMese(p.data)}</span>` : ""}${p.arrivo ? `<span class="kind arrivo">Arriva ${esc(L.GIORNI[L.giornoSettimana(p.data)])} ${L.giornoDelMese(p.data)}</span>` : ""}${!addetta() || p.stato === "fatta" ? `<span class="kind money">${eur(p.importo)}</span>` : ""}
+    ${(!p.partenza && p.parteIl && p.parteIl > p.data) || (!p.arrivo && p.prossimoArrivo) ? `<p class="muted small" style="margin:6px 0 0">${!p.partenza && p.parteIl && p.parteIl > p.data ? `Resta fino a <b>${esc(giornoParlato(p.parteIl))}</b>` : ""}${!p.partenza && p.parteIl && p.parteIl > p.data && !p.arrivo && p.prossimoArrivo ? " · " : ""}${!p.arrivo && p.prossimoArrivo ? `Prossimo arrivo <b>${esc(giornoParlato(p.prossimoArrivo))}</b>${p.prossimoNome ? ` (${esc(p.prossimoNome)})` : ""}` : ""}</p>` : ""}
+    ${promemoriaCamera(p.camera).length && !proprietario() ? `<div class="note info">Sempre in ${esc(c.nome)}: <b>${esc(promemoriaCamera(p.camera).join(" · "))}</b></div>` : ""}
     ${dettagli}
     ${p.istruzioni ? `<div class="note">${esc(p.istruzioni)}</div>` : ""}
     ${rif && c.tipo === "casa" ? `<div class="note">🗑 Stasera fuori: ${esc(rif.cosa.toUpperCase())}</div>` : ""}
@@ -819,13 +892,14 @@ function analizzaDettatura(f) {
 }
 function testoAzioneRiga(r) {
   const n = (a, b) => L.giorniTra(a, b);
-  const periodo = (a, b) => `${L.dataMedia(a)} → ${L.dataMedia(b)} (${n(a, b)} ${n(a, b) === 1 ? "notte" : "notti"})`;
-  if (r.azione === "togli") return `Tolgo ${r.esistenti.map(e => `${e.nome} (${L.dataMedia(e.inizio)} → ${L.dataMedia(e.fine)})`).join(", ")}`;
-  if (r.azione === "accorcia") return `Parte prima: ${L.dataMedia(r.fine)} invece di ${L.dataMedia(r.esistente.fine)}`;
-  if (r.azione === "prolunga") return `Resta fino a ${L.dataMedia(r.fine)} (prima partiva ${L.dataMedia(r.esistente.fine)})`;
+  const G = L.dataGiornoLungo;
+  const periodo = (a, b) => `${G(a)} → ${G(b)} (${n(a, b)} ${n(a, b) === 1 ? "notte" : "notti"})`;
+  if (r.azione === "togli") return `Tolgo ${r.esistenti.map(e => `${e.nome} (${G(e.inizio)} → ${G(e.fine)})`).join(", ")}`;
+  if (r.azione === "accorcia") return `Parte prima: ${G(r.fine)} invece di ${G(r.esistente.fine)}`;
+  if (r.azione === "prolunga") return `Resta fino a ${G(r.fine)} (prima partiva ${G(r.esistente.fine)})`;
   if (r.azione === "aggiorna") return `Cambio: ${periodo(r.esistente.inizio, r.esistente.fine)} diventa ${periodo(r.inizio, r.fine)}`;
   if (r.azione === "niente") return "Niente da cambiare";
-  return `Arriva ${L.dataMedia(r.inizio)} → parte ${L.dataMedia(r.fine)} (${n(r.inizio, r.fine)} ${n(r.inizio, r.fine) === 1 ? "notte" : "notti"})`;
+  return `Arriva ${G(r.inizio)} → parte ${G(r.fine)} (${n(r.inizio, r.fine)} ${n(r.inizio, r.fine) === 1 ? "notte" : "notti"})`;
 }
 function anteprimaDettatura(ris, f) {
   const righe = ris.righe, scelte = righe.filter(r => r.scelto && r.azione !== "niente").length;
@@ -1008,7 +1082,7 @@ function collega() {
   document.querySelectorAll("[data-cerca-gruppo]").forEach(b => b.onclick = cercaGruppoTelegram);
   document.querySelectorAll("[data-prova-telegram]").forEach(b => b.onclick = async () => { await salvaAvvisi(); inviaTelegram(`✅ Prova riuscita: gli avvisi delle pulizie arrivano qui.\n${zoneOrdinate().map(z => tagZona(z.id)).join(" · ")}`, null, { manuale: true }); });
   document.querySelectorAll("[data-prova-piano]").forEach(b => b.onclick = async () => { await salvaAvvisi(); inviaTelegram(testoPianoGiorno(L.oggiISO()), null, { manuale: true }); });
-  document.querySelectorAll("[data-stato-diretto]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoDiretto.split("|"); const p = S.pulizie[id]; if (p) cambiaStato(p, st, ""); });
+  document.querySelectorAll("[data-stato-diretto]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoDiretto.split("|"); const p = S.pulizie[id]; if (!p) return; if (st === "fatta") segnaFatta(id); else cambiaStato(p, st, ""); });
   document.querySelectorAll("[data-altri-giorni]").forEach(b => b.onclick = () => { S.mostraGiorni = !S.mostraGiorni; if (!S.mostraGiorni) { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); } disegna(); });
   document.querySelectorAll("[data-controlla]").forEach(b => b.onclick = () => apriFoglio({ tipo: "controllo", id: b.dataset.controlla, modo: "collega" }));
   document.querySelectorAll("[data-controllatrice-sel]").forEach(e => e.onchange = () => { const chiave = L.settimanaCorrente(); const imp = { ...(S.impControlli || {}) }; imp.settimane = { ...(imp.settimane || {}), [chiave]: e.value }; imp.attuale = e.value; imp.settimana = chiave; S.db.salva("impostazioni", "controlli", imp).then(() => toast("Controllatrice cambiata")).catch(erroreScrittura); });
@@ -1017,8 +1091,8 @@ function collega() {
   document.querySelectorAll("[data-nota]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nota", id: b.dataset.nota }));
   document.querySelectorAll("[data-nuova-nota]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nota", giorno: L.oggiISO() }));
   document.querySelectorAll("[data-nuovo-lavoro]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovoLavoro", giorno: S.giorno }));
-  document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo === "settimana") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
-  document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo === "settimana") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
+  document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
+  document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
   document.querySelectorAll("[data-unpay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.unpay.split("|"); segnaPagata(z, k, false); });
   document.querySelectorAll("[data-taglia]").forEach(b => b.onclick = () => { const [cam, t] = b.dataset.taglia.split("|"); const l = JSON.parse(JSON.stringify(S.listino)); l.taglia[cam] = t; salvaListino(l); });
@@ -1028,6 +1102,9 @@ function collega() {
   document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { S.tema = b.dataset.tema; localStorage.setItem("ricci_tema", S.tema); applicaTema(); disegna(); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
+  document.querySelectorAll("[data-promemoria]").forEach(i => i.onchange = () => salvaPromemoria(i.dataset.promemoria, i.value));
+  document.querySelectorAll("[data-come-signora]").forEach(b => b.onclick = () => entraComeSignora(b.dataset.comeSignora));
+  document.querySelectorAll("[data-torna-gestione]").forEach(b => b.onclick = esciComeSignora);
   document.querySelectorAll("#fileFoglio, .fileFoglio").forEach(ff => ff.onchange = () => { if (ff.files && ff.files[0]) leggiFileExcel(ff.files[0]); });
   document.querySelectorAll("[data-dettatura]").forEach(b => b.onclick = () => { if (!puoModificare()) return; apriFoglio({ tipo: "dettatura" }); setTimeout(() => $("#dtTesto")?.focus(), 50); });
   document.querySelectorAll("[data-dettatura-copia]").forEach(b => b.onclick = () => { if (!puoModificare()) return; const d = statoDettatura(); d.scelte = {}; d.comportamenti = {}; apriFoglio({ tipo: "dettatura", copia: true }); });
@@ -1081,7 +1158,7 @@ function collegaFoglio() {
   }
   if (f.tipo === "pulizia") {
     const p = S.pulizie[f.id];
-    document.querySelectorAll("[data-stato]").forEach(b => b.onclick = () => cambiaStato(p, b.dataset.stato, ""));
+    document.querySelectorAll("[data-stato]").forEach(b => b.onclick = () => b.dataset.stato === "fatta" ? segnaFatta(p.id) : cambiaStato(p, b.dataset.stato, ""));
     document.querySelectorAll("[data-vai-inizio]").forEach(b => b.onclick = () => apriFoglio({ tipo: "inizio", id: b.dataset.vaiInizio }));
     const apriMotivo = (tipoMotivo, conFocus) => {
       const box = $("#boxMotivo"); if (!box) return; box.hidden = false; box.dataset.stato = tipoMotivo; f.motivoAperto = tipoMotivo;
@@ -1101,6 +1178,7 @@ function collegaFoglio() {
     const fi = $("#fotoInput");
     if (fi) fi.onchange = async () => { const file = fi.files && fi.files[0]; if (!file) return; $("#fotoAnteprima").textContent = "Preparo la foto…"; try { fotoPending = await rimpicciolisciFoto(file); $("#fotoAnteprima").innerHTML = `<img src="${fotoPending}" alt="" style="height:56px;border-radius:8px;vertical-align:middle"> pronta`; } catch (e) { console.error(e); $("#fotoAnteprima").textContent = "Non riesco a leggere la foto."; fotoPending = null; } };
     document.querySelectorAll("[data-salva-dettagli]").forEach(b => b.onclick = () => salvaDettagli(p, $("#dettagli").value.trim()));
+    document.querySelectorAll("[data-salva-promemoria]").forEach(b => b.onclick = () => salvaPromemoria(b.dataset.salvaPromemoria, $("#promemoriaCam")?.value || ""));
     document.querySelectorAll("[data-whatsapp-cam]").forEach(b => b.onclick = () => apriWhatsApp(`📝 ${testoDettagliCamera({ ...p, dettagli: ($("#dettagli")?.value || p.dettagli || "").trim() })}`));
     document.querySelectorAll("[data-togli-dettagli]").forEach(b => b.onclick = () => salvaDettagli(p, ""));
     document.querySelectorAll("[data-vedi-foto]").forEach(b => b.onclick = async () => { b.textContent = "Carico…"; try { const f = await S.db.leggi("foto", p.id); if (!f) { toast("Foto non trovata"); return; } apriFoglio({ tipo: "foto", id: p.id, dati: f.dati, titolo: camera(p.camera).nome, sotto: `${L.dataLunga(p.data)}${f.ora ? " · " + L.oraBreve(f.ora) : ""}` }); } catch (e) { erroreScrittura(e); } });
@@ -1142,7 +1220,9 @@ function rigaCameraAvviso(p) {
   const c = camera(p.camera);
   let r = `• ${c.nome} — ${titoloLavoro(p)}`;
   if (p.ospite) r += ` (${p.ospite}${p.persone ? `, ${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : ""})`;
-  if (p.partenza) r += " · PARTENZA"; if (p.arrivo) r += " · ARRIVO";
+  if (p.partenza) r += ` · PARTE ${L.GIORNI[L.giornoSettimana(p.data)].toUpperCase()}`; if (p.arrivo) r += ` · ARRIVA ${L.GIORNI[L.giornoSettimana(p.data)].toUpperCase()}`;
+  if (!p.arrivo && p.prossimoArrivo) r += ` · prossimo arrivo ${L.dataGiornoLungo(p.prossimoArrivo)}`;
+  const sempre = promemoriaCamera(p.camera); if (sempre.length) r += `\n   ↳ sempre: ${sempre.join(", ")}`;
   if (p.dettagli) r += `\n   ↳ ${p.dettagli}`;
   if (p.istruzioni) r += `\n   ↳ ${p.istruzioni}`;
   return r;
@@ -1236,13 +1316,42 @@ function testoErroreAccesso(err) {
 
 let fotoPending = null;
 // "HO FINITO": segna PULITA con avviso simpatico e il bottone "Ho sbagliato" per tornare indietro
-function segnaFatta(id) {
+async function segnaFatta(id) {
   const p = S.pulizie[id]; if (!p) return;
   const prima = p.stato;
+  if (addetta() && !await confermaFinito(p)) return;
   cambiaStato(p, "fatta", "");
   const frasi = ["Bravissima!", "Ottimo lavoro!", "Grande!", "Perfetto!"];
   toast(`${frasi[Math.floor(Math.random() * frasi.length)]} ${camera(p.camera).nome} è pulita ✓`, { testo: "Ho sbagliato", fai: () => { cambiaStato(S.pulizie[p.id], prima === "fatta" ? "da_fare" : prima, ""); const t = $(".toast"); if (t) t.remove(); } });
   setTimeout(() => { const t = $(".toast"); if (t && /è pulita/.test(t.textContent)) t.remove(); }, 8000);
+}
+// "Sei sicura che tutto sia stato fatto al meglio?": le cose da fare sempre in quella camera + i dettagli di oggi,
+// da spuntare una per una prima di chiudere la camera. Senza cose particolari resta solo la domanda.
+function confermaFinito(p) {
+  const c = camera(p.camera);
+  const voci = L.richiesteDaVerificare(p, promemoriaCamera(p.camera));
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box chiusura" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>Sei sicura che in <b>${esc(c.nome)}</b> tutto sia stato fatto al meglio?</span></div>
+      ${voci.length ? `<p class="muted" style="margin:0 0 6px">Spunta una per una:</p><div class="chiusura-voci">${voci.map(v => `<label class="chiusura-voce"><input type="checkbox" data-voce="${esc(v.id)}"><span>${esc(v.testo)}${v.fissa ? ` <small>sempre in ${esc(c.nome)}</small>` : ` <small>oggi</small>`}</span></label>`).join("")}</div>` : ""}
+      <button class="big ok" data-si ${voci.length ? "disabled" : ""}>${voci.length ? "Sì, ho fatto tutto ✓" : "Sì, è tutta a posto ✓"}</button><button class="big undo" data-no>Aspetta, controllo</button></div>`;
+    document.body.appendChild(el);
+    const bSi = el.querySelector("[data-si]");
+    const aggiorna = () => { const tutte = [...el.querySelectorAll("[data-voce]")].every(x => x.checked); bSi.disabled = !tutte; bSi.style.opacity = tutte ? "" : ".55"; };
+    el.querySelectorAll("[data-voce]").forEach(x => x.onchange = aggiorna); aggiorna();
+    bSi.onclick = () => { if (bSi.disabled) return; el.remove(); ok(true); };
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(false); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(false); } };
+  });
+}
+// Cose da fare sempre in una camera (solo proprietari): impostazioni/promemoria = { camera: "balcone, dietro la TV" }
+async function salvaPromemoria(cameraId, testo) {
+  if (!proprietario()) return;
+  const nuovo = { ...(S.promemoria || {}) }; if (testo.trim()) nuovo[cameraId] = testo.trim(); else delete nuovo[cameraId];
+  S.promemoria = nuovo; disegna();
+  try { await S.db.salva("impostazioni", "promemoria", nuovo); toast(testo.trim() ? `Salvato: in ${camera(cameraId).nome} si fa sempre anche «${testo.trim()}».` : `Tolto il promemoria di ${camera(cameraId).nome}`); }
+  catch (e) { erroreScrittura(e); }
 }
 // Dettagli del giorno di una camera (solo proprietari): restano sulla pulizia, il piano automatico non li tocca
 async function salvaDettagli(p, testo) {

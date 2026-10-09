@@ -29,6 +29,8 @@ export function giorniTra(a, b) { return Math.round((daISO(b) - daISO(a)) / 864e
 export function dataBreve(iso) { return `${GG[giornoSettimana(iso)]} ${giornoDelMese(iso)}`; }
 export function dataLunga(iso) { const d = daISO(iso); return `${GIORNI[d.getUTCDay()]} ${d.getUTCDate()} ${MESI[d.getUTCMonth()]}`; }
 export function dataMedia(iso) { const d = daISO(iso); return `${GG[d.getUTCDay()]} ${d.getUTCDate()} ${MESI[d.getUTCMonth()].slice(0, 3)}`; }
+// "venerdì 16 ott": il giorno della settimana per esteso, perché è quello che conta (arrivi e partenze)
+export function dataGiornoLungo(iso) { const d = daISO(iso); return `${GIORNI[d.getUTCDay()]} ${d.getUTCDate()} ${MESI[d.getUTCMonth()].slice(0, 3)}`; }
 export function meseLungo(iso) { const d = daISO(iso); return `${MESI[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
 export function oraBreve(isoOra) {
   try { return new Date(isoOra).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: FUSO }); } catch (e) { return ""; }
@@ -111,6 +113,8 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
   if (!tipo) return null;
   const chi = occ || parte;
   const notePubbliche = note.filter(n => n.camera === camera.id && n.data === iso && !n.privata).map(n => n.testo);
+  // il prossimo che arriva in questa camera (da oggi in poi, escluso chi c'è già)
+  const prossimo = soggiorni.filter(s => s.camera === camera.id && s.inizio >= iso && (!occ || s.id !== occ.id)).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0] || null;
   return {
     tipo,
     titolo: TIPI_PULIZIA[tipo]?.titolo || tipo,
@@ -119,6 +123,10 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
     soggiorno: chi?.id || null,
     partenza: !!parte,
     arrivo: !!arrivaIl(soggiorni, camera.id, iso),
+    parteIl: occ ? occ.fine : (parte ? iso : null),
+    prossimoArrivo: prossimo ? prossimo.inizio : null,
+    prossimoNome: prossimo ? (prossimo.nome || "") : "",
+    prossimoPersone: prossimo ? (prossimo.persone || null) : null,
     istruzioni: [chi?.nota || "", ...notePubbliche].filter(Boolean).join(" · "),
     persone: chi?.persone || null,
     supplemento: Number(chi?.supplemento || 0),
@@ -137,6 +145,7 @@ export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [
         data: iso, camera: c.id, zona: c.zona,
         tipo: p.tipo, titolo: p.titolo, passi: p.passi,
         ospite: p.ospite, soggiorno: p.soggiorno, partenza: p.partenza, arrivo: p.arrivo,
+        parteIl: p.parteIl, prossimoArrivo: p.prossimoArrivo, prossimoNome: p.prossimoNome, prossimoPersone: p.prossimoPersone,
         istruzioni: p.istruzioni, persone: p.persone,
         importo: prezzoPulizia(listino, c, p.tipo) + Number(p.supplemento || 0),
         origine: "auto",
@@ -156,7 +165,7 @@ export function differenzePiano(attese, esistenti) {
     const e = esistenti[a.id];
     if (!e) { crea.push({ ...a, stato: "da_fare" }); continue; }
     if (e.origine !== "auto" || e.stato !== "da_fare") continue;
-    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","istruzioni","importo","zona","persone"];
+    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","zona","persone"];
     const patch = {};
     for (const k of campi) {
       const va = a[k] ?? null, ve = e[k] ?? null;
@@ -202,15 +211,24 @@ export const PUNTI_CONTROLLO = [
 ];
 // Le richieste del giorno (dettagli scritti dai proprietari e istruzioni dell'ospite) diventano punti da
 // verificare: "frigorifero, doccia muffa" → due caselle. Al massimo 6, per non allungare troppo la lista.
-export function richiesteDaVerificare(p) {
-  const testi = [p?.dettagli || "", p?.istruzioni || ""].filter(Boolean).join(" · ");
-  if (!testi.trim()) return [];
-  const pezzi = testi.split(/\s*(?:·|,|;|\n|\.\s|\s-\s|\se\s|\s\+\s)\s*/i).map(t => t.trim().replace(/^[-•]\s*/, "")).filter(t => t.length >= 3);
+// Spezza un testo libero ("frigorifero, doccia muffa e balcone") nelle singole cose da fare.
+export function spezzaRichieste(testo, max = 8) {
+  if (!testo || !String(testo).trim()) return [];
+  const pezzi = String(testo).split(/\s*(?:·|,|;|\n|\.\s|\s-\s|\se\s|\s\+\s)\s*/i).map(t => t.trim().replace(/^[-•]\s*/, "")).filter(t => t.length >= 3);
   const visti = new Set(); const out = [];
-  for (const t of pezzi) { const k = t.toLowerCase(); if (visti.has(k)) continue; visti.add(k); out.push({ id: "r" + out.length, testo: t.replace(/^./, c => c.toUpperCase()), richiesta: true }); if (out.length >= 6) break; }
+  for (const t of pezzi) { const k = t.toLowerCase(); if (visti.has(k)) continue; visti.add(k); out.push(t.replace(/^./, c => c.toUpperCase())); if (out.length >= max) break; }
   return out;
 }
-export function puntiControlloPer(p) { return [...PUNTI_CONTROLLO, ...richiesteDaVerificare(p)]; }
+// Le richieste del giorno (dettagli + istruzioni dell'ospite) e le cose "da fare sempre" in quella camera (sempre = testo o elenco)
+export function richiesteDaVerificare(p, sempre = []) {
+  const fisse = Array.isArray(sempre) ? sempre : spezzaRichieste(sempre);
+  const giorno = spezzaRichieste([p?.dettagli || "", p?.istruzioni || ""].filter(Boolean).join(" · "), 6);
+  const out = []; const visti = new Set();
+  for (const t of fisse) { const k = t.toLowerCase(); if (visti.has(k)) continue; visti.add(k); out.push({ id: "s" + out.length, testo: t, richiesta: true, fissa: true }); }
+  for (const t of giorno) { const k = t.toLowerCase(); if (visti.has(k)) continue; visti.add(k); out.push({ id: "r" + out.length, testo: t, richiesta: true }); }
+  return out;
+}
+export function puntiControlloPer(p, sempre = []) { return [...PUNTI_CONTROLLO, ...richiesteDaVerificare(p, sempre)]; }
 // Il voto nasce dai punti: tutti e 8 a posto = 10; ogni punto mancante toglie 1 (minimo 2).
 // Ogni richiesta del giorno NON fatta toglie altri punti (penalitaRichiesta, di base 3): così si paga meno.
 export function votoDaiPunti(punti, lista = PUNTI_CONTROLLO, regole = null) {

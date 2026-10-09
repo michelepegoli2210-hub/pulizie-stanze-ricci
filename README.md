@@ -102,3 +102,23 @@ In Gestione → Prospetto (e in Oggi) ci sono tre modi veloci, tutti senza intel
   dal GG mese al GG mese" e si incolla nell'app. L'app non chiama nessuna IA: è solo un aiuto esterno per leggere la foto.
 
 Dopo il salvataggio le pulizie dei prossimi 14 giorni si ricalcolano da sole (come sempre).
+
+## Giorni per esteso, "da fare sempre" e domanda di chiusura (dalla versione 0.18)
+
+- **Prospetto a elenco**: in Gestione → Prospetto la vista predefinita è ora **Elenco**: una riga per camera con chi c'è,
+  "Arriva venerdì 16 ott → parte domenica 18 ott · 2 notti", le etichette *parte oggi / arriva domani / in camera*, le note
+  e le pulizie della settimana. Il tabellone a griglia resta nelle linguette **Tabellone** e **Mese**.
+- **Giorno della settimana sempre scritto**: arrivi e partenze compaiono ovunque con il giorno per esteso (riquadri delle
+  signore, schermata grande, scheda della camera, avvisi WhatsApp/Telegram, anteprima di "Dimmi il prospetto"). Le pulizie
+  portano con sé anche `parteIl` (quando parte l'ospite) e `prossimoArrivo/prossimoNome/prossimoPersone` (chi arriva dopo),
+  così le signore li vedono senza avere accesso al prospetto.
+- **Da fare sempre, camera per camera** (`impostazioni/promemoria`, es. `{ salvatore: "Balcone" }`): si scrive in ⋯ oppure
+  nella scheda della camera. La signora lo vede in grande quando apre la camera ("Sempre in Salvatore: Balcone"), nella
+  domanda di chiusura e la controllatrice lo trova tra le cose da verificare (punti `s0, s1…`; ogni cosa non spuntata
+  toglie i punti della regola "penalitaRichiesta").
+- **Domanda di chiusura**: quando una signora preme "Ho finito" compare "Sei sicura che in Salvatore tutto sia stato fatto
+  al meglio?" con le cose da spuntare una per una (quelle fisse della camera + i dettagli del giorno + le istruzioni
+  dell'ospite). Il bottone verde si accende solo dopo tutte le spunte; senza cose particolari resta solo la domanda.
+- **Guarda l'app come la vedono le signore**: in ⋯ i proprietari possono aprire l'app come "Signora 1° piano / 2° piano /
+  appartamenti" con i dati veri (banner nero in alto, "Torna alla gestione"). Per giocare senza toccare dati veri c'è sempre
+  la modalità prova (`?prova=1`).
