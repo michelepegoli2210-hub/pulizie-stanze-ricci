@@ -115,7 +115,7 @@ async function dbFirebase(config) {
 //  PROVA  (senza Firebase: dati di esempio, salvati solo su questo telefono)
 // ---------------------------------------------------------------------------
 function dbProva() {
-  const CHIAVE = "ricci_prova_db_v2";
+  const CHIAVE = "ricci_prova_db_v3";
   let dati = null;
   try { dati = JSON.parse(localStorage.getItem(CHIAVE) || "null"); } catch (e) { dati = null; }
   if (!dati || !dati.soggiorni) dati = datiIniziali();
@@ -214,6 +214,21 @@ function dbProva() {
       const id = `es_${i}_${camera}`;
       soggiorni[id] = { camera, inizio: sposta(inizio), fine: sposta(fine), nome, tipo, persone: 1, origine: "esempio", dubbio: tipo === "unk" };
     });
+    // Così la prova ha sempre qualcosa da fare OGGI, qualunque giorno sia: in ogni zona un ospite del weekend
+    // che parte stamattina (= cambio completo) in una camera libera la notte scorsa, più uno che arriva oggi.
+    const isoOggi = new Date(Date.UTC(oggi.getFullYear(), oggi.getMonth(), oggi.getDate())).toISOString().slice(0, 10);
+    const isoIeri = new Date(Date.UTC(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() - 1)).toISOString().slice(0, 10);
+    const isoDomani = new Date(Date.UTC(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() + 1)).toISOString().slice(0, 10);
+    const occupata = (camera, notte) => Object.values(soggiorni).some(s => s.camera === camera && s.inizio <= notte && notte < s.fine);
+    const extra = [["p1", ["aurora", "michele", "salvatore", "antonio", "lella"], "Famiglia Bianchi", 2], ["p2", ["tramonto", "passerella", "alba", "fenicotteri", "nicole"], "Coppia Verdi", 2], ["ap", ["zarapt", "trento", "zara1"], "Sig. Esposito", 3]];
+    const CAM = { aurora: "p1", michele: "p1", salvatore: "p1", antonio: "p1", lella: "p1", tramonto: "p2", passerella: "p2", alba: "p2", fenicotteri: "p2", nicole: "p2", zarapt: "ap", trento: "ap", zara1: "ap" };
+    extra.forEach(([zona, camere, nome, persone], k) => {
+      const libera = camere.find(c => !occupata(c, isoIeri));
+      if (libera) soggiorni[`oggi_${k}_${libera}`] = { camera: libera, inizio: isoIeri, fine: isoOggi, nome, tipo: "altro", persone, origine: "esempio", nota: k === 0 ? "Asciugamani doppi, controlla il frigo" : "" };
+      const arrivo = camere.find(c => c !== libera && !occupata(c, isoOggi));
+      if (arrivo) soggiorni[`arrivo_${k}_${arrivo}`] = { camera: arrivo, inizio: isoOggi, fine: isoDomani, nome: "Sig.ra Russo", tipo: "altro", persone: 1, origine: "esempio" };
+    });
+    void CAM;
     return { soggiorni, pulizie: {}, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {} };
   }
 }
