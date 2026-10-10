@@ -129,8 +129,6 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .big.ko{background:var(--warn-bg);color:var(--warn);font-size:17px;padding:13px}
 .big.skip{background:var(--campo);color:var(--fg);font-size:17px;padding:13px}
 .big.undo{background:var(--campo);color:var(--fg);font-size:15px;padding:11px;min-height:46px}
-.big.close{background:transparent;color:var(--accent);font-size:16px;padding:10px;min-height:44px}
-.big.close:active{transform:none;filter:none}
 .big.flam{background:var(--accent);color:#fff}
 .due{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .scelte{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
@@ -295,12 +293,12 @@ button.row .badge{grid-column:2}
    (in corso), il rubino (da pulire), il verde (pulita) e il blu dei bottoni principali.
    Superficie liscia, bordi molto stondati, spessore sotto come un tasto vero.
    ========================================================================== */
-.tess,.pro-testa,.pro-num,.pro-msg,.pro-btn,.inizio-testa,.inizio-riga,.inizio-dett,.steps.grandi li,.barra,.day,.tabs,.wallet,.big.main,.big.ok,.big.undo,.big.skip,.big.ko,.btnsm,.pick button,.pro-nota,.pro-tempo,.pro-dett,.piastra,.scelte button,.seg,.navmese button,.dt-sett button{
+.tess,.pro-testa,.pro-num,.pro-msg,.pro-btn,.inizio-testa,.inizio-riga,.inizio-dett,.steps.grandi li,.barra,.day,.tabs,.wallet,.big.main,.big.ok,.big.undo,.big.skip,.big.ko,.big.close,.btnsm,.pick button,.pro-nota,.pro-tempo,.pro-dett,.piastra,.scelte button,.seg,.navmese button,.dt-sett button{
   --gloss:.16;--al1:#E4E4E2;--al2:#B6B7B5;--al3:#CDCECC;--al4:#959694;--al5:#C0C1BF;--tx:#141416;--tx2:rgba(20,20,22,.76);--pill:rgba(255,255,255,.66);--pilltx:#141416;--dot:#4A4E57;--inciso:0 1px 0 rgba(255,255,255,.75);--bordo:rgba(0,0,0,.22);--luce:rgba(255,255,255,.85);--metal:linear-gradient(180deg,#3A3A40,#141416 55%,#000);--rilievo:drop-shadow(0 1px 0 rgba(255,255,255,.8));--lucido:.18;--ombra:rgba(0,0,0,.45);--sp:#86878A;
   position:relative;isolation:isolate;color:var(--tx);border:1px solid var(--bordo);
   background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.05) 36%,rgba(0,0,0,0) 58%,rgba(0,0,0,.16) 100%),linear-gradient(135deg,var(--al1) 0%,var(--al3) 40%,var(--al2) 68%,var(--al4) 100%);
   box-shadow:inset 0 1px 0 var(--luce),inset 0 -2px 0 rgba(0,0,0,.2),inset 1px 0 0 rgba(255,255,255,.16),inset -1px 0 0 rgba(0,0,0,.12),0 3px 0 var(--sp),0 4px 1px rgba(0,0,0,.16),0 16px 28px -12px var(--ombra)}
-.tess::before,.pro-testa::before,.pro-num::before,.pro-msg::before,.pro-btn::before,.inizio-testa::before,.inizio-riga::before,.inizio-dett::before,.steps.grandi li::before,.barra::before,.day::before,.tabs::before,.wallet::before,.big.main::before,.big.ok::before,.big.undo::before,.big.skip::before,.big.ko::before,.btnsm::before,.pick button::before,.pro-nota::before,.pro-tempo::before,.pro-dett::before,.piastra::before,.scelte button::before,.seg::before,.navmese button::before,.dt-sett button::before{
+.tess::before,.pro-testa::before,.pro-num::before,.pro-msg::before,.pro-btn::before,.inizio-testa::before,.inizio-riga::before,.inizio-dett::before,.steps.grandi li::before,.barra::before,.day::before,.tabs::before,.wallet::before,.big.main::before,.big.ok::before,.big.undo::before,.big.skip::before,.big.ko::before,.big.close::before,.btnsm::before,.pick button::before,.pro-nota::before,.pro-tempo::before,.pro-dett::before,.piastra::before,.scelte button::before,.seg::before,.navmese button::before,.dt-sett button::before{
   content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;--g:var(--gloss,.16);
   background:linear-gradient(180deg,rgba(255,255,255,calc(var(--g) * .55)) 0%,rgba(255,255,255,calc(var(--g) * .25)) 28%,rgba(255,255,255,0) 52%,rgba(255,255,255,0) 86%,rgba(255,255,255,calc(var(--g) * .18)) 100%),linear-gradient(112deg,rgba(255,255,255,0) 30%,rgba(255,255,255,calc(var(--g) * .22)) 46%,rgba(214,236,255,calc(var(--g) * .14)) 50%,rgba(255,236,214,calc(var(--g) * .08)) 54%,rgba(255,255,255,0) 68%),radial-gradient(95% 70% at 50% 112%,rgba(255,255,255,calc(var(--g) * .3)) 0%,rgba(226,240,255,calc(var(--g) * .1)) 40%,rgba(255,255,255,0) 65%),radial-gradient(140% 100% at 16% 0%,rgba(255,255,255,calc(var(--g) * 1.2)) 0%,rgba(255,255,255,calc(var(--g) * .35)) 34%,rgba(255,255,255,0) 62%),linear-gradient(118deg,rgba(255,255,255,var(--lucido)) 0%,rgba(255,255,255,calc(var(--lucido) * .3)) 34%,rgba(255,255,255,0) 58%,rgba(0,0,0,.06) 84%,rgba(255,255,255,calc(var(--lucido) * .3)) 100%)}
 /* finiture */
@@ -350,8 +348,8 @@ button.row .badge{grid-column:2}
 .pro-btn:active{transform:scale(.985);filter:brightness(.95)}
 .pro-btn .ic{width:26px;height:26px}
 .pro-btn.gigante{min-height:78px;font-size:21px}
-.big.main,.big.ok,.big.undo,.big.skip,.big.ko{color:var(--tx);font:800 16px var(--f-display);letter-spacing:.04em;text-transform:uppercase;text-shadow:var(--inciso);border-radius:999px}
-.big.undo{font-size:13px;letter-spacing:.05em}
+.big.main,.big.ok,.big.undo,.big.skip,.big.ko,.big.close{color:var(--tx);font:800 16px var(--f-display);letter-spacing:.04em;text-transform:uppercase;text-shadow:var(--inciso);border-radius:999px}
+.big.undo,.big.close{font-size:13px;letter-spacing:.05em;padding:11px;min-height:46px}
 .big.ko,.big.skip{font-size:14px}
 .big.ok{font-size:17px;min-height:58px}
 body.nonna .big.ok{min-height:70px;font-size:20px}
@@ -501,4 +499,78 @@ body.nonna .chiusura-voce{font-size:22px}
 .el-nota{border:0;background:var(--wip-bg);color:var(--wip);border-radius:8px;padding:3px 8px;font:600 13px var(--f-body);margin-top:4px;text-align:left;cursor:pointer}
 
 /* ---- tasto premuto: si abbassa sullo spessore ---- */
-.tess:active,.pro-btn:active,.big.main:active,.big.ok:active,.big.undo:active,.big.skip:active,.big.ko:active,.btnsm:active,.day:active,.pick button:active,.scelte button:active,.navmese button:active,.dt-sett button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 var(--luce),inset 0 -2px 0 rgba(0,0,0,.18),0 1px 0 var(--sp),0 6px 14px -8px var(--ombra);filter:brightness(.97)}
+.tess:active,.pro-btn:active,.big.main:active,.big.ok:active,.big.undo:active,.big.skip:active,.big.ko:active,.big.close:active,.btnsm:active,.day:active,.pick button:active,.scelte button:active,.navmese button:active,.dt-sett button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 var(--luce),inset 0 -2px 0 rgba(0,0,0,.18),0 1px 0 var(--sp),0 6px 14px -8px var(--ombra);filter:brightness(.97)}
+
+/* ==========================================================================
+   FINITURA SATINATA ANCHE SUL RESTO — niente più pezzi "piatti"
+   Riquadri bianchi satinati, mini-piastre per etichette di stato, pillole,
+   chip, bottoni-testo e tasti in alto; campi di testo incavati; barre del
+   tabellone in rilievo. Stessi colori delle piastre grandi.
+   ========================================================================== */
+/* riquadri bianchi (Silver/bianco dell'iPhone): sfumatura morbida, filo di luce sopra, spessore sotto */
+.card,.conferma-box,.menu,.rows,.board-wrap{background:linear-gradient(180deg,rgba(255,255,255,.97) 0%,rgba(248,248,250,.95) 55%,rgba(240,241,245,.95) 100%);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(0,0,0,.05),0 2px 0 rgba(200,202,210,.9),0 16px 30px -18px rgba(0,0,0,.35)}
+.rows,.board-wrap{box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(0,0,0,.06),0 1px 0 rgba(200,202,210,.8)}
+.card.flat{background:transparent;box-shadow:none}
+.sheet .panel{background:linear-gradient(180deg,#FFFFFF 0%,#F6F6F9 100%);box-shadow:inset 0 1px 0 #fff,0 -10px 40px rgba(0,0,0,.18)}
+.sheet .panel.pieno{background:transparent;box-shadow:none}
+:root[data-theme="dark"] .card,:root[data-theme="dark"] .conferma-box,:root[data-theme="dark"] .menu,:root[data-theme="dark"] .rows,:root[data-theme="dark"] .board-wrap{background:linear-gradient(180deg,rgba(38,38,42,.97),rgba(26,26,29,.97));box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 2px 0 #050506,0 16px 30px -18px rgba(0,0,0,.9)}
+:root[data-theme="dark"] .card.flat{background:transparent;box-shadow:none}
+:root[data-theme="dark"] .sheet .panel{background:linear-gradient(180deg,#232327,#19191C);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 -10px 40px rgba(0,0,0,.6)}
+:root[data-theme="dark"] .sheet .panel.pieno{background:transparent;box-shadow:none}
+/* riquadri dei numeri (prospetto, import, voto) */
+.stat{border-radius:18px;background:linear-gradient(180deg,#FFFFFF 0%,#F1F2F5 100%);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(0,0,0,.06),0 2px 0 #D5D6DB,0 8px 16px -10px rgba(0,0,0,.3)}
+:root[data-theme="dark"] .stat{background:linear-gradient(180deg,#2C2C30,#202024);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 0 #0A0A0C}
+/* campi di testo: incavati nel metallo */
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],input[type=time],select,textarea{background:linear-gradient(180deg,#ECEDF1 0%,#F6F6F9 100%);box-shadow:inset 0 2px 3px rgba(0,0,0,.1),inset 0 0 0 1px rgba(0,0,0,.08),0 1px 0 rgba(255,255,255,.9)}
+:root[data-theme="dark"] input[type=text],:root[data-theme="dark"] input[type=email],:root[data-theme="dark"] input[type=password],:root[data-theme="dark"] input[type=number],:root[data-theme="dark"] input[type=date],:root[data-theme="dark"] input[type=time],:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:linear-gradient(180deg,#19191C,#242428);box-shadow:inset 0 2px 3px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.08)}
+/* mini-piastre: etichette di stato, pillole, chip, bottoni-testo, tasti in alto, passi */
+.badge,.el-pill,.pill,.kind,.chip,.who,.nonna-link,.inizio-indietro,.toast button,.steps li,.dett-mini{
+  --m1:var(--mn1);--m2:var(--mn2);--m3:var(--mn3);--m4:var(--mn4);--mtx:var(--mntx);--msp:var(--mnsp);--minc:var(--mninc);--mdot:#4A4E57;--mbordo:var(--mnbordo);
+  color:var(--mtx);text-shadow:var(--minc);border:1px solid var(--mbordo);
+  background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 50%,rgba(0,0,0,.12) 100%),linear-gradient(135deg,var(--m1) 0%,var(--m3) 40%,var(--m2) 70%,var(--m4) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.12),0 2px 0 var(--msp),0 3px 6px -2px rgba(0,0,0,.3)}
+.badge::before{background:var(--mdot);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.badge.tess-stato{border:0}
+/* rosso Ferrari: da pulire */
+.badge.todo{--m1:#A8201B;--m2:#6A0000;--m3:#8A0808;--m4:#3E0000;--mtx:#FFFFFF;--msp:#240000;--minc:0 1px 1px rgba(0,0,0,.8);--mdot:#FFC2D2;--mbordo:rgba(0,0,0,.35)}
+/* arancio: in corso */
+.badge.wip{--m1:#D9782C;--m2:#984409;--m3:#B85912;--m4:#6A2C03;--mtx:#FFFFFF;--msp:#4E2002;--minc:0 1px 1px rgba(0,0,0,.75);--mdot:#FFE0C2;--mbordo:rgba(90,35,0,.45)}
+/* verde: pulita, pagato, arriva, soldi */
+.badge.done,.pill.paid,.el-pill.in,.kind.money{--m1:#4DBC6C;--m2:#1A7B3B;--m3:#2B9B4D;--m4:#0B5024;--mtx:#FFFFFF;--msp:#08431F;--minc:0 1px 1px rgba(0,0,0,.75);--mdot:#CFF5DA;--mbordo:rgba(0,60,20,.4)}
+/* Burgundy: problema, parte, privato */
+.badge.warn,.pill.priv,.el-pill.out,.nonna-link.rosso,.who.off{--m1:#7C3A46;--m2:#412329;--m3:#5B2E37;--m4:#281418;--mtx:#FFFFFF;--msp:#170A0B;--minc:0 1px 1px rgba(0,0,0,.8);--mdot:#FFE0DA;--mbordo:rgba(60,0,0,.35)}
+/* azzurro: non fatta, resta, informazioni */
+.badge.skip,.el-pill.now,.kind.info,.chip,.dett-mini{--m1:#B0BDD0;--m2:#7A889D;--m3:#95A3B7;--m4:#5A6980;--mtx:#121822;--msp:#4B586A;--minc:0 1px 0 rgba(255,255,255,.55);--mdot:#2A3546;--mbordo:rgba(30,45,70,.3)}
+/* blu: collegamenti-bottone, "Aggiorna", arrivo/partenza nella scheda */
+.kind.arrivo,.pro-data-riga .nonna-link,.toast button,#menuBtn[aria-pressed="true"]{--m1:#5A8AD6;--m2:#143880;--m3:#2A56A6;--m4:#0A2252;--mtx:#FFFFFF;--msp:#081C54;--minc:0 1px 1px rgba(0,0,0,.8);--mdot:#fff;--mbordo:rgba(0,10,40,.5)}
+#menuBtn[aria-pressed="true"]{background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 50%,rgba(0,0,0,.12) 100%),linear-gradient(135deg,var(--m1) 0%,var(--m3) 40%,var(--m2) 70%,var(--m4) 100%);color:#fff}
+/* misure delle mini-piastre */
+.who{padding:7px 13px;font:700 13px var(--f-display);letter-spacing:.02em}
+#menuBtn{font-size:18px;padding:4px 12px}
+.nonna-link{border-radius:999px;padding:9px 15px;margin-top:6px;font:700 15px var(--f-body);display:inline-flex;align-items:center;gap:6px;min-height:42px}
+.pro-sec .nonna-link{flex:1 1 0;justify-content:center;white-space:nowrap;padding:9px 10px;font-size:14px;margin-top:8px}
+.pro-data-riga .nonna-link{margin:0 0 0 8px;padding:6px 11px;min-height:32px;font:800 11px var(--f-display);letter-spacing:.05em;white-space:nowrap;flex:0 0 auto}
+.pro-data-riga{flex-wrap:wrap;row-gap:8px}
+.pro-data-riga .pro-data{font-size:14px;flex:1 1 auto}
+.pro-data-riga .nonna-link{margin-left:auto}
+.nonna-link .ic{width:20px;height:20px}
+.inizio-indietro{border-radius:999px;padding:8px 14px 8px 8px;min-height:40px;font:700 16px var(--f-body);color:var(--mtx)}
+.toast button{margin-left:10px;padding:9px 16px;font:800 13px var(--f-display);letter-spacing:.05em;text-transform:uppercase}
+.chip{border-radius:999px;padding:2px 9px;font:700 11px var(--f-display);letter-spacing:.04em;text-transform:uppercase}
+.dett-mini{border-radius:999px;padding:3px 9px}
+.kind{font:700 13px var(--f-body)}
+.pill{font:700 13px var(--f-body)}
+.el-pill{font:800 11px var(--f-display);letter-spacing:.05em}
+.steps li b{color:var(--accent);text-shadow:none}
+.steps.grandi li b{color:#fff}
+/* tabellone: barre dei soggiorni in rilievo */
+.stay:not(.q){box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.25)}
+/* colori neutri delle mini-piastre (argento chiaro; grafite nel modo scuro) */
+:root{--mn1:#E4E4E2;--mn2:#B6B7B5;--mn3:#CDCECC;--mn4:#959694;--mntx:#141416;--mnsp:#86878A;--mninc:0 1px 0 rgba(255,255,255,.75);--mnbordo:rgba(0,0,0,.18)}
+:root[data-theme="dark"]{--mn1:#3C3C40;--mn2:#2A2A2E;--mn3:#35353A;--mn4:#222226;--mntx:#F5F5F7;--mnsp:#0A0A0C;--mninc:0 1px 1px rgba(0,0,0,.6);--mnbordo:rgba(255,255,255,.1)}
+/* le varianti colorate ribadiscono sfondo e colore (vincono sulle vecchie regole piatte) */
+.badge.todo,.badge.wip,.badge.done,.badge.warn,.badge.skip,.pill.paid,.pill.open,.pill.priv,.pill.grey,.el-pill.in,.el-pill.out,.el-pill.now,.kind.money,.kind.info,.kind.arrivo,.nonna-link.rosso,.who.off{color:var(--mtx);text-shadow:var(--minc);border-color:var(--mbordo);background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 50%,rgba(0,0,0,.12) 100%),linear-gradient(135deg,var(--m1) 0%,var(--m3) 40%,var(--m2) 70%,var(--m4) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(0,0,0,.14),0 2px 0 var(--msp),0 3px 6px -2px rgba(0,0,0,.3)}
+.badge.todo::before,.badge.wip::before,.badge.done::before,.badge.warn::before,.badge.skip::before{background:var(--mdot)}
+/* dentro le piastre delle camere l'etichetta resta la pillola chiara trasparente */
+.badge.tess-stato{background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);text-shadow:var(--inciso);border:0}
+.badge.tess-stato::before{background:var(--dot);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
