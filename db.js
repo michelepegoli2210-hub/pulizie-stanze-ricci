@@ -5,7 +5,8 @@
 //   - "prova":    dati di esempio salvati solo su questo telefono (senza Firebase)
 //  L'app usa sempre e solo le funzioni qui sotto: così il resto non cambia.
 // ============================================================================
-import { SOGGIORNI_ESEMPIO } from "./regole.js";
+import { SOGGIORNI_ESEMPIO, CAMERE, REGOLE_BASE, TIPI_PULIZIA } from "./regole.js";
+import { pianoPulizie, listinoCompleto, prezzoPulizia, aggiungiGiorni, ospiteIl } from "./logica.js";
 
 export async function apriDb(config) {
   const url = new URL(location.href);
@@ -115,7 +116,7 @@ async function dbFirebase(config) {
 //  PROVA  (senza Firebase: dati di esempio, salvati solo su questo telefono)
 // ---------------------------------------------------------------------------
 function dbProva() {
-  const CHIAVE = "ricci_prova_db_v3";
+  const CHIAVE = "ricci_prova_db_v4";
   let dati = null;
   try { dati = JSON.parse(localStorage.getItem(CHIAVE) || "null"); } catch (e) { dati = null; }
   if (!dati || !dati.soggiorni) dati = datiIniziali();
@@ -222,13 +223,32 @@ function dbProva() {
     const occupata = (camera, notte) => Object.values(soggiorni).some(s => s.camera === camera && s.inizio <= notte && notte < s.fine);
     const extra = [["p1", ["aurora", "michele", "salvatore", "antonio", "lella"], "Famiglia Bianchi", 2], ["p2", ["tramonto", "passerella", "alba", "fenicotteri", "nicole"], "Coppia Verdi", 2], ["ap", ["zarapt", "trento", "zara1"], "Sig. Esposito", 3]];
     const CAM = { aurora: "p1", michele: "p1", salvatore: "p1", antonio: "p1", lella: "p1", tramonto: "p2", passerella: "p2", alba: "p2", fenicotteri: "p2", nicole: "p2", zarapt: "ap", trento: "ap", zara1: "ap" };
+    const NOMI2 = ["Sposi Marino", "Famiglia Conte", "Sig. Greco"];
     extra.forEach(([zona, camere, nome, persone], k) => {
-      const libera = camere.find(c => !occupata(c, isoIeri));
-      if (libera) soggiorni[`oggi_${k}_${libera}`] = { camera: libera, inizio: isoIeri, fine: isoOggi, nome, tipo: "altro", persone, origine: "esempio", nota: k === 0 ? "Asciugamani doppi, controlla il frigo" : "" };
-      const arrivo = camere.find(c => c !== libera && !occupata(c, isoOggi));
+      const libere = camere.filter(c => !occupata(c, isoIeri)).slice(0, 2);
+      libere.forEach((cam, j) => { soggiorni[`oggi_${k}_${cam}`] = { camera: cam, inizio: j === 0 ? isoIeri : aggiungiGiorni(isoOggi, -2), fine: isoOggi, nome: j === 0 ? nome : NOMI2[k], tipo: "altro", persone: j === 0 ? persone : 2, origine: "esempio", nota: k === 0 && j === 0 ? "Asciugamani doppi, controlla il frigo" : "" }; });
+      const arrivo = camere.find(c => !libere.includes(c) && !occupata(c, isoOggi));
       if (arrivo) soggiorni[`arrivo_${k}_${arrivo}`] = { camera: arrivo, inizio: isoOggi, fine: isoDomani, nome: "Sig.ra Russo", tipo: "altro", persone: 1, origine: "esempio" };
     });
     void CAM;
-    return { soggiorni, pulizie: {}, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {} };
+    // Le pulizie dei prossimi giorni le preparo subito (di solito le fa il proprietario quando apre l'app):
+    // così anche chi entra direttamente come signora trova le camere da fare e può toccarle.
+    const sog = Object.entries(soggiorni).map(([id, x]) => ({ id, ...x }));
+    const listino = listinoCompleto(null);
+    const pulizie = {};
+    for (const p of pianoPulizie(CAMERE, sog, REGOLE_BASE, listino, aggiungiGiorni(isoOggi, -3), aggiungiGiorni(isoOggi, 14), [])) pulizie[p.id] = { ...p, stato: "da_fare", creato: new Date().toISOString() };
+    // e oggi almeno tre camere per zona, così si vede una giornata vera (ripassi aggiunti "a mano" nelle camere occupate)
+    for (const z of ["p1", "p2", "ap"]) {
+      let n = Object.values(pulizie).filter(p => p.data === isoOggi && p.zona === z).length;
+      for (const c of CAMERE.filter(c => c.zona === z)) {
+        if (n >= 3) break;
+        const id = `${isoOggi}_${c.id}`; if (pulizie[id]) continue;
+        const occ = ospiteIl(sog, c.id, isoOggi); if (!occ) continue;
+        const tipo = c.tipo === "casa" ? "casa" : "ripasso";
+        pulizie[id] = { id, data: isoOggi, camera: c.id, zona: z, tipo, titolo: TIPI_PULIZIA[tipo].titolo, passi: TIPI_PULIZIA[tipo].passi || [], ospite: occ.nome || "", soggiorno: occ.id, partenza: false, arrivo: false, parteIl: occ.fine, prossimoArrivo: null, prossimoNome: "", prossimoPersone: null, istruzioni: occ.nota || "", persone: occ.persone || null, importo: prezzoPulizia(listino, c, tipo), origine: "mano", stato: "da_fare", creato: new Date().toISOString() };
+        n++;
+      }
+    }
+    return { soggiorni, pulizie, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {} };
   }
 }
