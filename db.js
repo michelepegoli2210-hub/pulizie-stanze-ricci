@@ -124,6 +124,14 @@ function dbProva() {
   const avvisa = () => { for (const a of [...ascoltatori]) { try { a(); } catch (e) { console.error(e); } } };
   let utente = null;
   try { utente = JSON.parse(localStorage.getItem("ricci_prova_utente") || "null"); } catch (e) {}
+  // Link diretto: ?prova=1&signora=1 (1° piano), 2 (2° piano), 3 (appartamenti) oppure &gestione=1 → si entra subito, senza scegliere
+  try {
+    const q = new URL(location.href).searchParams;
+    const SIG = { "1": ["p1", "Signora 1° piano"], "2": ["p2", "Signora 2° piano"], "3": ["ap", "Signora appartamenti"], "p1": ["p1", "Signora 1° piano"], "p2": ["p2", "Signora 2° piano"], "ap": ["ap", "Signora appartamenti"] };
+    const sig = q.get("signora");
+    if (sig && SIG[sig]) { const [zona, nome] = SIG[sig]; utente = { uid: "prova_" + zona, email: "", nome, ruolo: "addetta", zona, attivo: true }; localStorage.setItem("ricci_prova_utente", JSON.stringify(utente)); }
+    else if (q.get("gestione") === "1") { utente = { uid: "prova_proprietario", email: "", nome: "Michele", ruolo: "proprietario", zona: null, attivo: true }; localStorage.setItem("ricci_prova_utente", JSON.stringify(utente)); }
+  } catch (e) {}
   const cbUtente = new Set();
 
   function filtra(coll, opz = {}) {
