@@ -11,7 +11,7 @@
 @font-face{font-family:"Montserrat";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/montserrat-latin-700-normal.woff2) format("woff2")}
 @font-face{font-family:"Montserrat";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/montserrat-latin-800-normal.woff2) format("woff2")}
 :root{
-  --bg:#F5F5F7; --card:rgba(255,255,255,.86); --card-pieno:#FFFFFF; --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.06);
+  --bg:#F4F1EA; --card:rgba(252,250,245,.9); --card-pieno:#FBF8F2; --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.06);
   --fg:#1D1D1F; --muted:#6E6E73; --muted2:#86868B;
   --accent:#0066CC; --accent-bg:#EAF3FD;
   --primary:#0071E3; --primary-chiaro:#2B8DF0; --primary-scuro:#0062C4; --primary-border:#0071E3; --primary-fg:#FFFFFF;
@@ -21,7 +21,7 @@
   --todo:#3A3A3C; --todo-dot:#8E8E93; --todo-bg:#F2F2F7;
   --wip:#9A4A00; --wip-dot:#FF9F0A; --wip-bg:#FFF4E5;
   --skip:#6E6E73; --skip-dot:#C7C7CC; --skip-bg:#F2F2F7;
-  --idle:#F5F5F7; --campo:#F2F2F7;
+  --idle:#F3F0E9; --campo:#EFEBE3;
   --c-fond:#0A84FF; --c-dago:#FF9F0A; --c-ferr:#34C759; --c-altro:#AF52DE; --c-unk:#AEAEB2;
   --shadow:0 1px 2px rgba(0,0,0,.08),0 8px 18px -10px rgba(0,0,0,.2);
   --shadow2:0 2px 4px rgba(0,0,0,.08),0 12px 24px -14px rgba(0,0,0,.25);
@@ -29,7 +29,7 @@
   --velo:linear-gradient(180deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.1) 45%,rgba(255,255,255,.18) 100%);
   --f-display:"Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
   --f-body:"Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
-  --band:rgba(248,248,250,.94); --band-fg:#1D1D1F;
+  --band:rgba(250,247,241,.94); --band-fg:#1D1D1F;
   --r:20px; --r2:16px; --r3:12px;
   color-scheme:light;
 }
@@ -152,7 +152,7 @@ button.row{grid-template-columns:1fr auto auto}
 .s.done{color:var(--done)} .s.todo{color:var(--todo)} .s.warn{color:var(--warn)} .s.skip{color:var(--skip)}
 /* linguette: controllo segmentato */
 .banner{font-size:14px;border-radius:var(--r3);padding:10px 12px;background:var(--warn-bg);color:var(--warn)}
-.banner.info{background:rgba(255,255,255,.55);color:var(--muted);padding:6px 12px;text-align:center;font-weight:600;font-size:13px}
+.banner.info{background:rgba(252,250,245,.6);color:var(--muted);padding:6px 12px;text-align:center;font-weight:600;font-size:13px}
 :root[data-theme="dark"] .banner.info{background:rgba(255,255,255,.08)}
 
 /* soldi */
@@ -175,7 +175,7 @@ details[open] summary::before{content:"▾ "}
 .bh{position:sticky;top:0;background:var(--idle);z-index:2;text-align:center;padding:6px 0;font:600 11px var(--f-body);color:var(--muted);border-bottom:1px solid var(--line2)}
 .bh b{display:block;font:600 15px var(--f-display);color:var(--fg)}
 .bh.today{color:var(--accent)} .bh.today b{color:var(--accent)}
-.bh.we{background:#EBEBEF}
+.bh.we{background:#EAE6DE}
 :root[data-theme="dark"] .bh.we{background:#2C2C2E}
 .rl{position:sticky;left:0;z-index:3;background:var(--card-pieno);padding:8px 10px;font:600 14px var(--f-display);border-bottom:1px solid var(--line2);display:flex;flex-direction:column;justify-content:center;box-shadow:4px 0 8px -6px rgba(0,0,0,.15)}
 .rl span{font:400 11px var(--f-body);color:var(--muted)}
@@ -270,7 +270,7 @@ button.row .badge{grid-column:2}
 .msg-card .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 
 /* schermata grande "Inizia": tutti i dettagli a caratteri enormi, sopra la laguna velata */
-.sheet.pieno{align-items:stretch;background:rgba(243,244,247,.95)}
+.sheet.pieno{align-items:stretch;background:rgba(246,243,237,.95)}
 :root[data-theme="dark"] .sheet.pieno{background:rgba(0,0,0,.94)}
 .sheet .panel.pieno{max-width:none;max-height:none;height:100dvh;border-radius:0;padding:calc(10px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px));background:transparent;box-shadow:none}
 .inizio{max-width:600px;margin:0 auto}
@@ -303,12 +303,12 @@ button.row .badge{grid-column:2}
   background:linear-gradient(180deg,rgba(255,255,255,calc(var(--g) * .55)) 0%,rgba(255,255,255,calc(var(--g) * .25)) 28%,rgba(255,255,255,0) 52%,rgba(255,255,255,0) 86%,rgba(255,255,255,calc(var(--g) * .18)) 100%),linear-gradient(112deg,rgba(255,255,255,0) 30%,rgba(255,255,255,calc(var(--g) * .22)) 46%,rgba(214,236,255,calc(var(--g) * .14)) 50%,rgba(255,236,214,calc(var(--g) * .08)) 54%,rgba(255,255,255,0) 68%),radial-gradient(95% 70% at 50% 112%,rgba(255,255,255,calc(var(--g) * .3)) 0%,rgba(226,240,255,calc(var(--g) * .1)) 40%,rgba(255,255,255,0) 65%),radial-gradient(140% 100% at 16% 0%,rgba(255,255,255,calc(var(--g) * 1.2)) 0%,rgba(255,255,255,calc(var(--g) * .35)) 34%,rgba(255,255,255,0) 62%),linear-gradient(118deg,rgba(255,255,255,var(--lucido)) 0%,rgba(255,255,255,calc(var(--lucido) * .3)) 34%,rgba(255,255,255,0) 58%,rgba(0,0,0,.06) 84%,rgba(255,255,255,calc(var(--lucido) * .3)) 100%)}
 /* finiture */
 .tess.todo,.p-bordeaux,.inizio-testa.todo,.pro-num.todo{--gloss:.18;--lucido:.14;--al1:#A8201B;--al2:#6A0000;--al3:#8A0808;--al4:#3E0000;--al5:#780202;--ombra:rgba(80,0,0,.6);--sp:#240000;--tx:#FFFFFF;--tx2:rgba(255,255,255,.95);--pill:rgba(255,255,255,.28);--pilltx:#FFFFFF;--dot:#FFC2D2;--inciso:0 1px 1px rgba(0,0,0,.8),0 0 4px rgba(0,0,0,.4);--bordo:rgba(0,0,0,.35);--luce:rgba(255,255,255,.3);--metal:linear-gradient(180deg,#FFFFFF 0%,#F4F4F7 48%,#D6D8DF 100%);--rilievo:drop-shadow(0 2px 1px rgba(0,0,0,.7)) drop-shadow(0 0 2px rgba(0,0,0,.4))}
-.tess.wip,.p-oro,.p-arancio,.inizio-testa.wip,.pro-num.wip,.wallet{--gloss:.18;--lucido:.14;--al1:#D9782C;--al2:#984409;--al3:#B85912;--al4:#6A2C03;--al5:#A64D0D;--tx:#FFFFFF;--tx2:rgba(255,255,255,.94);--pill:rgba(255,255,255,.28);--pilltx:#FFFFFF;--dot:#FFE0C2;--inciso:0 1px 1px rgba(0,0,0,.8),0 0 4px rgba(0,0,0,.4);--bordo:rgba(90,35,0,.45);--luce:rgba(255,255,255,.35);--metal:linear-gradient(180deg,#FFFFFF 0%,#F4F4F7 48%,#D6D8DF 100%);--rilievo:drop-shadow(0 2px 1px rgba(0,0,0,.7)) drop-shadow(0 0 2px rgba(0,0,0,.4));--ombra:rgba(150,65,10,.55);--sp:#4E2002}
+.tess.wip,.p-oro,.p-arancio,.inizio-testa.wip,.pro-num.wip,.wallet{--gloss:.3;--lucido:.3;--al1:#FFA054;--al2:#E7650F;--al3:#F57F27;--al4:#C9500A;--al5:#EE7119;--tx:#2A1200;--tx2:rgba(42,18,0,.9);--pill:rgba(255,255,255,.62);--pilltx:#2A1200;--dot:#7A2E00;--inciso:0 1px 0 rgba(255,255,255,.5);--bordo:rgba(120,50,0,.45);--luce:rgba(255,255,255,.7);--metal:linear-gradient(180deg,#4A2A10 0%,#2A1200 55%,#120600 100%);--rilievo:drop-shadow(0 1px 0 rgba(255,255,255,.6));--ombra:rgba(220,100,20,.6);--sp:#9A3E05}
 .tess.done,.p-verde,.inizio-testa.done,.pro-num.done,.pro-btn.verde,.pro-tempo.done{--gloss:.18;--lucido:.14;--al1:#4DBC6C;--al2:#1A7B3B;--al3:#2B9B4D;--al4:#0B5024;--al5:#228A44;--ombra:rgba(20,120,55,.5);--sp:#08431F;--tx:#FFFFFF;--tx2:rgba(255,255,255,.94);--pill:rgba(255,255,255,.28);--pilltx:#FFFFFF;--dot:#CFF5DA;--inciso:0 1px 1px rgba(0,0,0,.8),0 0 4px rgba(0,0,0,.4);--bordo:rgba(0,60,20,.4);--luce:rgba(255,255,255,.35);--metal:linear-gradient(180deg,#FFFFFF 0%,#F4F4F7 48%,#D6D8DF 100%);--rilievo:drop-shadow(0 2px 1px rgba(0,0,0,.7)) drop-shadow(0 0 2px rgba(0,0,0,.4))}
 .tess.warn,.p-rosso,.inizio-testa.warn,.pro-tempo.warn,.big.ko,.day[aria-pressed="true"]{--gloss:.16;--lucido:.12;--al1:#7C3A46;--al2:#412329;--al3:#5B2E37;--al4:#281418;--al5:#4C2A31;--ombra:rgba(60,30,36,.65);--sp:#170A0B;--tx:#FFFFFF;--tx2:rgba(255,255,255,.95);--pill:rgba(255,255,255,.28);--pilltx:#FFFFFF;--dot:#FFE0DA;--inciso:0 1px 1px rgba(0,0,0,.8),0 0 4px rgba(0,0,0,.4);--bordo:rgba(60,0,0,.35);--luce:rgba(255,255,255,.35);--metal:linear-gradient(180deg,#FFFFFF 0%,#F4F4F7 48%,#D6D8DF 100%);--rilievo:drop-shadow(0 2px 1px rgba(0,0,0,.7)) drop-shadow(0 0 2px rgba(0,0,0,.4))}
 .tess.skip,.p-grafite,.inizio-testa.skip,.pro-msg,.barra,.tabs,.pro-tempo.skip,.day,.big.skip,.seg,.dt-sett button{--gloss:.16;--lucido:.22;--al1:#B0BDD0;--al2:#7A889D;--al3:#95A3B7;--al4:#5A6980;--al5:#8593A7;--ombra:rgba(70,85,110,.5);--sp:#4B586A;--tx:#121822;--tx2:rgba(18,24,34,.78);--pill:rgba(255,255,255,.5);--pilltx:#121822;--dot:#2A3546;--inciso:0 1px 0 rgba(255,255,255,.55);--bordo:rgba(30,45,70,.3);--luce:rgba(255,255,255,.75);--metal:linear-gradient(180deg,#2E3A4C,#121822 55%,#000);--rilievo:drop-shadow(0 1px 0 rgba(255,255,255,.7))}
 .p-blu,.pro-btn.blu,.big.main,.big.ok,.btnsm,.day.oggi:not([aria-pressed="true"]),.scelte button[aria-pressed="true"],.dt-sett button[aria-pressed="true"]{--gloss:.18;--lucido:.2;--al1:#5A8AD6;--al2:#143880;--al3:#2A56A6;--al4:#0A2252;--al5:#1E458D;--tx:#FFFFFF;--tx2:rgba(255,255,255,.92);--pill:rgba(255,255,255,.2);--pilltx:#FFFFFF;--inciso:0 1px 1px rgba(0,0,0,.8),0 0 4px rgba(0,0,0,.4);--bordo:rgba(0,10,40,.5);--luce:rgba(255,255,255,.35);--ombra:rgba(18,50,140,.6);--sp:#081C54}
-.tess.idle{--al1:#ECECEA;--al2:#CBCBC9;--al3:#DEDEDC;--al4:#B8B8B6;--al5:#D2D2D0;--tx:#4A4A50;--tx2:#6B6B72;--sp:#9A9B99;--metal:linear-gradient(180deg,#9A9AA0,#6E6E73);--rilievo:drop-shadow(0 1px 0 rgba(255,255,255,.9));cursor:default;min-height:92px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.06)}
+.tess.idle{--al1:#F4F1EB;--al2:#D9D4CA;--al3:#E9E5DD;--al4:#CBC5B9;--al5:#DFDACF;--tx:#4A4A50;--tx2:#6B6B72;--sp:#B3AC9F;--metal:linear-gradient(180deg,#9A9AA0,#6E6E73);--rilievo:drop-shadow(0 1px 0 rgba(255,255,255,.9));cursor:default;min-height:92px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.06)}
 .btnsm.ghost{--gloss:.16;--al1:#E4E4E2;--al2:#B6B7B5;--al3:#CDCECC;--al4:#959694;--al5:#C0C1BF;--tx:#141416;--inciso:0 1px 0 rgba(255,255,255,.8);--bordo:rgba(0,0,0,.18);--luce:rgba(255,255,255,.95);--ombra:rgba(0,0,0,.4);--sp:#86878A}
 :root[data-theme="dark"] .tess,:root[data-theme="dark"] .pro-testa,:root[data-theme="dark"] .inizio-riga,:root[data-theme="dark"] .inizio-dett,:root[data-theme="dark"] .steps.grandi li,:root[data-theme="dark"] .day,:root[data-theme="dark"] .pick button,:root[data-theme="dark"] .pro-nota,:root[data-theme="dark"] .pro-tempo,:root[data-theme="dark"] .pro-dett,:root[data-theme="dark"] .pro-num,:root[data-theme="dark"] .piastra{--al1:#3C3C40;--al2:#2A2A2E;--al3:#35353A;--al4:#222226;--al5:#2E2E33;--tx:#F5F5F7;--tx2:rgba(245,245,247,.72);--pill:rgba(255,255,255,.12);--pilltx:#F5F5F7;--inciso:0 1px 1px rgba(0,0,0,.6);--bordo:rgba(255,255,255,.1);--luce:rgba(255,255,255,.14);--metal:linear-gradient(180deg,#FFFFFF,#C9CBD3);--rilievo:drop-shadow(0 2px 0 rgba(0,0,0,.6));--lucido:.12;--sp:#0A0A0C;--ombra:rgba(0,0,0,.8)}
 
@@ -378,7 +378,7 @@ body.nonna .big.ko,body.nonna .big.skip{min-height:60px;font-size:20px}
 .tabs{display:flex;gap:3px;border-radius:14px;padding:4px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{flex:1 1 auto;border:0;background:transparent;border-radius:11px;padding:10px 6px;font:800 11.5px var(--f-display);letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);cursor:pointer;min-height:42px;white-space:nowrap;min-width:0;text-shadow:var(--inciso)}
-.tabs button[aria-pressed="true"]{background:linear-gradient(135deg,#FCFCFD,#E7E8EC 40%,#F6F6F8 55%,#D6D7DD);color:#1D1D1F;text-shadow:0 1px 0 rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 2px 4px rgba(0,0,0,.35)}
+.tabs button[aria-pressed="true"]{background:linear-gradient(135deg,#FDFBF7,#EAE5DC 40%,#F7F4EE 55%,#DCD5C9);color:#1D1D1F;text-shadow:0 1px 0 rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 2px 4px rgba(0,0,0,.35)}
 
 /* --- barra in basso (piastra grafite) --- */
 .barra{position:fixed;left:0;right:0;bottom:0;display:flex;gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:15;border-radius:18px 18px 0 0;border-bottom:0;box-shadow:inset 0 1px 0 var(--luce),0 -8px 24px -12px rgba(0,0,0,.5)}
@@ -446,7 +446,7 @@ body.nonna .barra button{min-height:64px}
 .tess-pr{position:absolute;top:12px;right:12px;font:700 12px var(--f-display);color:var(--tx2);font-variant-numeric:tabular-nums}
 .legenda{display:flex;flex-wrap:wrap;gap:8px 14px;font:700 11px var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:14px;padding:0 4px}
 .legenda i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 1px rgba(0,0,0,.25)}
-.legenda i.todo{background:#6A0000} .legenda i.wip{background:#A64D0D} .legenda i.done{background:#1A7B3B} .legenda i.warn{background:#4C2A31} .legenda i.skip{background:#7A889D}
+.legenda i.todo{background:#6A0000} .legenda i.wip{background:#EE7119} .legenda i.done{background:#1A7B3B} .legenda i.warn{background:#4C2A31} .legenda i.skip{background:#7A889D}
 .piantina-aiuto{font:500 14px/1.35 var(--f-body);color:var(--muted);margin:10px 4px 0}
 body.nonna .tess{min-height:150px;padding:14px 12px 14px}
 body.nonna .tess-nome{font-size:19px}
@@ -508,20 +508,20 @@ body.nonna .chiusura-voce{font-size:22px}
    tabellone in rilievo. Stessi colori delle piastre grandi.
    ========================================================================== */
 /* riquadri bianchi (Silver/bianco dell'iPhone): sfumatura morbida, filo di luce sopra, spessore sotto */
-.card,.conferma-box,.menu,.rows,.board-wrap{background:linear-gradient(180deg,rgba(255,255,255,.97) 0%,rgba(248,248,250,.95) 55%,rgba(240,241,245,.95) 100%);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(0,0,0,.05),0 2px 0 rgba(200,202,210,.9),0 16px 30px -18px rgba(0,0,0,.35)}
-.rows,.board-wrap{box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(0,0,0,.06),0 1px 0 rgba(200,202,210,.8)}
+.card,.conferma-box,.menu,.rows,.board-wrap{background:linear-gradient(180deg,rgba(253,251,247,.97) 0%,rgba(247,243,236,.95) 55%,rgba(240,235,226,.95) 100%);box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 1px rgba(60,40,10,.05),0 2px 0 rgba(214,207,194,.9),0 16px 30px -18px rgba(0,0,0,.35)}
+.rows,.board-wrap{box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 1px rgba(60,40,10,.06),0 1px 0 rgba(214,207,194,.8)}
 .card.flat{background:transparent;box-shadow:none}
-.sheet .panel{background:linear-gradient(180deg,#FFFFFF 0%,#F6F6F9 100%);box-shadow:inset 0 1px 0 #fff,0 -10px 40px rgba(0,0,0,.18)}
+.sheet .panel{background:linear-gradient(180deg,#FDFBF7 0%,#F5F1EA 100%);box-shadow:inset 0 1px 0 #FFFDF9,0 -10px 40px rgba(0,0,0,.18)}
 .sheet .panel.pieno{background:transparent;box-shadow:none}
 :root[data-theme="dark"] .card,:root[data-theme="dark"] .conferma-box,:root[data-theme="dark"] .menu,:root[data-theme="dark"] .rows,:root[data-theme="dark"] .board-wrap{background:linear-gradient(180deg,rgba(38,38,42,.97),rgba(26,26,29,.97));box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 2px 0 #050506,0 16px 30px -18px rgba(0,0,0,.9)}
 :root[data-theme="dark"] .card.flat{background:transparent;box-shadow:none}
 :root[data-theme="dark"] .sheet .panel{background:linear-gradient(180deg,#232327,#19191C);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 -10px 40px rgba(0,0,0,.6)}
 :root[data-theme="dark"] .sheet .panel.pieno{background:transparent;box-shadow:none}
 /* riquadri dei numeri (prospetto, import, voto) */
-.stat{border-radius:18px;background:linear-gradient(180deg,#FFFFFF 0%,#F1F2F5 100%);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(0,0,0,.06),0 2px 0 #D5D6DB,0 8px 16px -10px rgba(0,0,0,.3)}
+.stat{border-radius:18px;background:linear-gradient(180deg,#FDFBF7 0%,#F2EEE6 100%);box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 1px rgba(60,40,10,.06),0 2px 0 #D8D1C4,0 8px 16px -10px rgba(0,0,0,.3)}
 :root[data-theme="dark"] .stat{background:linear-gradient(180deg,#2C2C30,#202024);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 0 #0A0A0C}
 /* campi di testo: incavati nel metallo */
-input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],input[type=time],select,textarea{background:linear-gradient(180deg,#ECEDF1 0%,#F6F6F9 100%);box-shadow:inset 0 2px 3px rgba(0,0,0,.1),inset 0 0 0 1px rgba(0,0,0,.08),0 1px 0 rgba(255,255,255,.9)}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],input[type=time],select,textarea{background:linear-gradient(180deg,#EDE8DF 0%,#F8F5EF 100%);box-shadow:inset 0 2px 3px rgba(0,0,0,.1),inset 0 0 0 1px rgba(60,40,10,.08),0 1px 0 rgba(255,255,255,.9)}
 :root[data-theme="dark"] input[type=text],:root[data-theme="dark"] input[type=email],:root[data-theme="dark"] input[type=password],:root[data-theme="dark"] input[type=number],:root[data-theme="dark"] input[type=date],:root[data-theme="dark"] input[type=time],:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:linear-gradient(180deg,#19191C,#242428);box-shadow:inset 0 2px 3px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.08)}
 /* mini-piastre: etichette di stato, pillole, chip, bottoni-testo, tasti in alto, passi */
 .badge,.el-pill,.pill,.kind,.chip,.who,.nonna-link,.inizio-indietro,.toast button,.steps li,.dett-mini{
@@ -534,7 +534,7 @@ input[type=text],input[type=email],input[type=password],input[type=number],input
 /* rosso Ferrari: da pulire */
 .badge.todo{--m1:#A8201B;--m2:#6A0000;--m3:#8A0808;--m4:#3E0000;--mtx:#FFFFFF;--msp:#240000;--minc:0 1px 1px rgba(0,0,0,.8);--mdot:#FFC2D2;--mbordo:rgba(0,0,0,.35)}
 /* arancio: in corso */
-.badge.wip{--m1:#D9782C;--m2:#984409;--m3:#B85912;--m4:#6A2C03;--mtx:#FFFFFF;--msp:#4E2002;--minc:0 1px 1px rgba(0,0,0,.75);--mdot:#FFE0C2;--mbordo:rgba(90,35,0,.45)}
+.badge.wip{--m1:#FFA054;--m2:#E7650F;--m3:#F57F27;--m4:#C9500A;--mtx:#2A1200;--msp:#9A3E05;--minc:0 1px 0 rgba(255,255,255,.5);--mdot:#7A2E00;--mbordo:rgba(120,50,0,.45)}
 /* verde: pulita, pagato, arriva, soldi */
 .badge.done,.pill.paid,.el-pill.in,.kind.money{--m1:#4DBC6C;--m2:#1A7B3B;--m3:#2B9B4D;--m4:#0B5024;--mtx:#FFFFFF;--msp:#08431F;--minc:0 1px 1px rgba(0,0,0,.75);--mdot:#CFF5DA;--mbordo:rgba(0,60,20,.4)}
 /* Burgundy: problema, parte, privato */
@@ -574,3 +574,21 @@ input[type=text],input[type=email],input[type=password],input[type=number],input
 /* dentro le piastre delle camere l'etichetta resta la pillola chiara trasparente */
 .badge.tess-stato{background:var(--pill);color:var(--pilltx);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);text-shadow:var(--inciso);border:0}
 .badge.tess-stato::before{background:var(--dot);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+
+/* ==========================================================================
+   LED FLUO — una camera con un problema lampeggia, non si può non vedere
+   ========================================================================== */
+@keyframes led-alone{0%,100%{box-shadow:0 0 0 3px rgba(255,23,68,.95),0 0 16px 6px rgba(255,23,68,.8),0 0 44px 16px rgba(255,23,68,.4)}50%{box-shadow:0 0 0 3px rgba(255,23,68,.25),0 0 4px 1px rgba(255,23,68,.15),0 0 0 0 rgba(255,23,68,0)}}
+@keyframes led-alone-piccolo{0%,100%{box-shadow:0 0 0 2px rgba(255,23,68,.95),0 0 10px 4px rgba(255,23,68,.75)}50%{box-shadow:0 0 0 2px rgba(255,23,68,.2),0 0 2px 0 rgba(255,23,68,.1)}}
+@keyframes led-punto{0%,100%{opacity:1;box-shadow:0 0 6px 2px rgba(255,23,68,.95),0 0 14px 6px rgba(255,23,68,.55)}50%{opacity:.3;box-shadow:0 0 0 0 rgba(255,23,68,0)}}
+@keyframes led-riga{0%,100%{background-color:rgba(255,23,68,.22);box-shadow:inset 6px 0 0 #FF1744,inset 0 0 0 1px rgba(255,23,68,.55)}50%{background-color:rgba(255,23,68,.04);box-shadow:inset 6px 0 0 rgba(255,23,68,.35),inset 0 0 0 1px rgba(255,23,68,.1)}}
+.tess.warn::after,.inizio-testa.warn::after,.pro-tempo.warn::after,.card.problemi::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;animation:led-alone 1s ease-in-out infinite}
+.card.problemi{position:relative}
+.day.problema::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;animation:led-alone-piccolo 1s ease-in-out infinite}
+.row.problema{animation:led-riga 1s ease-in-out infinite}
+.badge.warn::before,.day.problema .dot,.led{background:#FF1744!important;animation:led-punto 1s ease-in-out infinite}
+.day.problema .dot{opacity:1;width:7px;height:7px}
+.led{display:inline-block;width:13px;height:13px;border-radius:50%;margin:0 8px 0 0;vertical-align:-1px;flex:0 0 auto}
+h2 .led{margin:0 0 0 10px}
+.card.problemi h2 .led{margin:0 10px 0 0}
+@media (prefers-reduced-motion:reduce){.tess.warn::after,.inizio-testa.warn::after,.pro-tempo.warn::after,.card.problemi::after,.day.problema::after,.row.problema,.badge.warn::before,.day.problema .dot,.led{animation-duration:2.4s}}
