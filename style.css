@@ -622,3 +622,51 @@ body.vista-signora .laguna::before{content:"";position:absolute;inset:0;backgrou
 .sig-giorno.oggi{box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 2px rgba(20,56,128,.55),0 2px 0 rgba(214,207,194,.9),0 16px 30px -18px rgba(0,0,0,.35)}
 .sig-giorno.passato h2{color:var(--muted)}
 .navmese b{text-transform:none}
+
+/* ==========================================================================
+   LA GOVERNANTE — card in Oggi, consigli, calendario del pulito, regole
+   ========================================================================== */
+.gov-plate{display:flex;align-items:center;gap:12px;border-radius:24px;padding:10px 16px 10px 12px;cursor:pointer;min-height:76px;text-align:left;width:100%}
+.gov-plate .donnina{width:50px;height:56px}
+.gov-plate .led{margin:0}
+.gov-testa .pro-saluto{font-size:23px}
+.gov-testa .donnina{width:84px;height:95px}
+.gov-seg button{flex:1 1 0}
+.gov-card .head h2,.gov-ritardo h2{display:flex;align-items:center}
+.gov-riga{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line2)}
+.gov-riga:first-of-type{border-top:0}
+.gov-ic{flex:0 0 auto;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#B0BDD0,#7A889D 70%,#5A6980);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 0 #4B586A}
+.gov-ic .ic{width:26px;height:26px}
+.gov-ic.grande{background:linear-gradient(135deg,#A8201B,#6A0000 70%,#3E0000);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 0 #240000}
+.gov-ic.mini{width:30px;height:30px;border-radius:9px;margin-right:8px}
+.gov-ic.mini .ic{width:18px;height:18px}
+.gov-corpo{flex:1 1 auto;min-width:0}
+.gov-cosa{font:700 17px/1.25 var(--f-display);letter-spacing:-.01em}
+.gov-cosa .el-pill{vertical-align:2px;margin-left:4px}
+.gov-dove{font:500 14px/1.35 var(--f-body);margin-top:3px}
+.gov-perche{font:500 13px/1.35 var(--f-body);color:var(--muted);margin-top:3px}
+.gov-tasti{display:grid;grid-template-columns:1.25fr 1.25fr .8fr;gap:8px;margin-top:10px}
+.gov-tasti .btnsm{min-height:40px;padding:9px 6px;font-size:12px;white-space:nowrap}
+.pall{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:-1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 1px rgba(0,0,0,.25);margin-right:2px}
+.pall.verde{background:#1A7B3B}.pall.giallo{background:#E6A700}.pall.rosso{background:#C8102E}
+.cal-palle{display:inline-flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.cal-palle .pall{width:10px;height:10px}
+.gov-pm{display:inline-flex;align-items:center;gap:8px;margin-top:6px}
+.gov-pm b{min-width:120px;text-align:center;font:700 13px var(--f-display)}
+.gov-pm .btnsm{min-width:40px;padding:6px 10px;font-size:17px;line-height:1}
+.gov-regola{display:grid;gap:4px;min-width:0}
+.row.gov-regola>span{min-width:0}
+.gov-regola.spenta .gov-regola-testa b,.gov-regola.spenta .gov-regola-dove{opacity:.5}
+.gov-regola-testa{display:flex;align-items:center;gap:4px;min-width:0}
+.gov-regola-testa .seg{flex:0 0 auto}
+.gov-regola-testa b{font:700 15px/1.25 var(--f-display);flex:1 1 auto;min-width:0}
+.gov-regola .seg button{min-height:32px;padding:5px 10px;font-size:11px}
+/* lavori a fondo nelle schermate delle signore */
+.tess.fondo .tess-lavoro{font-weight:800}
+.inizio-fondo{margin-top:8px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+:root[data-theme="dark"] .inizio-fondo{background:rgba(255,255,255,.08)}
+.inizio-fondo-t{display:flex;align-items:center;gap:6px;font:800 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);margin-bottom:4px}
+.inizio-fondo-t .ic{width:18px;height:18px;color:#C9900A}
+.inizio-fondo-voce summary{font:700 17px/1.3 var(--f-display);color:var(--tx);padding:4px 0}
+.inizio-fondo-voce summary small{font:600 13px var(--f-body);color:var(--tx2)}
+.inizio-fondo-voce div{font:500 15px/1.4 var(--f-body);padding:2px 0 6px 18px}

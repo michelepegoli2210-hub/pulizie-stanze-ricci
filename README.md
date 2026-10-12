@@ -143,3 +143,24 @@ Dopo il salvataggio le pulizie dei prossimi 14 giorni si ricalcolano da sole (co
   tutto quello che fa e deve fare nella settimana (giorno per giorno, con stato, orari, paga della settimana, problemi),
   con i bottoni "Mandale il piano della settimana su WhatsApp", "Aggiungi un lavoro extra" e "Guarda l'app come la vede lei".
   Sfondo: laguna + bolle di sapone (`sfondo-bolle.svg`).
+
+## La governante (dalla versione 0.21)
+
+Una governante come in un hotel di lusso, **senza intelligenza artificiale**: regole + calendario + registro "ultima volta fatto".
+- **Le regole** stanno in `governante.js` (`REGOLE_GOVERNANTE`, una per riga: cosa, come si fa, dove, ogni quanto, minuti,
+  quando, priorità, prezzo, stagione). Le modifiche fatte dall'app (frequenze con + e −, interruttori, soglie, regole nuove,
+  "più avanti"/"no") stanno in `impostazioni/governante`. Le zone comuni (corridoi, terrazzo, lavanderia…) sono in `LUOGHI_COMUNI`.
+- **Il registro** è la raccolta `governante_registro` (una voce per lavoro+posto: `ultima`, `da`, `n`). Lo scrive chi segna
+  "fatto": la signora per la sua zona, i proprietari per tutto (anche a mano dal Calendario del pulito).
+- **I consigli della settimana** (`proposteSettimana`): massimo 8, al massimo N minuti al giorno per signora (soglia), N camere
+  a fondo completa a settimana, mai di domenica; le grosse solo a camera vuota (tra una partenza e l'arrivo dopo; sabato
+  mattina per le camere dei tecnici); appartamenti nei giorni di pulizia; dopo un soggiorno di 2+ settimane la fondo completa
+  è obbligatoria; priorità igiene › quello che si vede › quello che non si vede. Da sabato alle 13 prepara la settimana dopo.
+- **"Va bene"** crea una pulizia `tipo: "fondo"`, `origine: "governante"` (con `regola`, `come`, `minuti`, `importo`): la signora la
+  vede tra i "⭐ Lavori in più", legge "come si fa", la fa, la chiude; va nel piano WhatsApp e nella paga della settimana.
+  **Automatico** acceso = le piccole entrano da sole, le grosse chiedono. "Più avanti" = 10 giorni, "No" = 3 mesi.
+- **Le piccole cose** (`quando: "ripasso"` e `"cambio"`) non sono consigli: si attaccano alla pulizia normale della camera
+  ("A fondo questa volta", entro `minutiRoutine`), entrano nella domanda di chiusura e nella checklist della controllatrice.
+- **Calendario del pulito** (`calendarioPulito`): per ogni posto, ogni regola con ultima volta e colore (verde/giallo/rosso),
+  ordinato dal più indietro.
+- Passi successivi previsti: meteo di Lesina (pioggia, freddo, umidità), listino della governante nelle Paghe, pagella del sabato.

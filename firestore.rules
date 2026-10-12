@@ -108,6 +108,14 @@ service cloud.firestore {
       allow update, delete: if proprietario();
     }
 
+    // Registro della governante ("ultima volta fatto", una voce per lavoro+posto): le signore lo aggiornano
+    // per la loro zona quando segnano fatto; i proprietari tutto.
+    match /governante_registro/{id} {
+      allow read: if puoLeggereTutto() || (addetta() && resource.data.zona == miaZona());
+      allow create, update: if proprietario() || (addetta() && request.resource.data.zona == miaZona());
+      allow delete: if proprietario();
+    }
+
     // Foto dei problemi (piccole, dentro al database): le signore ne aggiungono solo per la loro zona.
     match /foto/{id} {
       allow read: if puoLeggereTutto() || (addetta() && resource.data.zona == miaZona());
