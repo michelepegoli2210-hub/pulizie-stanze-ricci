@@ -10,7 +10,7 @@ import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 import * as G from "./governante.js";
 
-export const VERSIONE = "0.23.0";
+export const VERSIONE = "0.24.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -124,7 +124,7 @@ const S = {
   camere: CAMERE.slice(), zone: ZONE, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
-  gov: null, registro: {}, govSett: G.settimanaGovernante(), govTab: "consigli",
+  gov: null, registro: {}, govSett: G.settimanaGovernante(), govTab: "consigli", tab: { vista: "posti", zona: "", regola: "", soloRosse: false, prova: false },
   caricati: { pulizie: false, soggiorni: false, ruoli: false, manutenzione: false, gov: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
   stop: [], tema: localStorage.getItem("ricci_tema") || "light",
@@ -252,7 +252,7 @@ function avviaAscolto() {
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
-  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteAutomatica(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteAutomatica(); segnaInizioGovernante(); }));
   S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; for (const r of Object.values(m)) S.registro[G.chiaveRegistro(r.regola, r.luogo)] = r; disegna(); governanteAutomatica(); }, mostraErrore));
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; disegna(); pianoDelMattino(); }));
@@ -502,8 +502,8 @@ function foglioInizio(f) {
       <div class="inizio-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div>
       ${fondo ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("stella")}<span>Rifinitura a camera libera${p.perche?.length ? ` · ${esc(p.perche[0])}` : ""}</span></div><div class="inizio-dett-x">${esc(p.come || "")}</div></div>` : ""}
       ${sempre.length ? `<div class="inizio-dett-s"><b>Sempre in ${esc(c.nome)}:</b> ${esc(sempre.join(" · "))}</div>` : ""}
-      ${rifDue.length ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("stella")}<span>Rifiniture di oggi · ${minRif} min</span></div>${rifDue.map(r => `<div class="rif-voce"><div class="rif-testa"><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.nome)}</b><span class="rif-min">${r.minuti} min</span></div><div class="rif-come">${esc(r.come)}</div><div class="rif-sotto"><span class="muted small">${esc((r.perche || []).join(" · "))}${r.comune ? ` · ${esc(r.luogoNome)}` : ""}</span>${aperta && addetta() ? `<button class="nonna-link rif-no" data-rif-no="${esc(p.id)}|${esc(r.regola)}|${esc(r.luogo || p.camera)}">Non posso</button>` : ""}</div></div>`).join("")}</div>` : ""}
-      ${rifSempre.length ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("spunta")}<span>Come sempre</span></div>${rifSempre.map(r => `<details class="inizio-fondo-voce"><summary>${esc(r.nome)}${r.comune ? ` <small>· ${esc(r.luogoNome)}</small>` : ""}</summary><div class="muted">${esc(r.come)}</div></details>`).join("")}</div>` : ""}
+      ${rifDue.length ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("stella")}<span>Rifiniture di oggi · ${minRif} min</span></div>${rifDue.map(r => `<div class="rif-voce"><div class="rif-testa"><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.nome)}</b><span class="rif-min">${r.minuti} min</span></div><div class="rif-come">${esc(r.come)}</div>${r.prodotto ? `<div class="rif-prodotto"><b>Prodotto:</b> ${esc(r.prodotto)}</div>` : ""}${r.note ? `<div class="rif-nota">⚠ ${esc(r.note)}</div>` : ""}<div class="rif-sotto"><span class="muted small">${esc((r.perche || []).join(" · "))}${r.comune ? ` · ${esc(r.luogoNome)}` : ""}</span>${aperta && addetta() ? `<button class="nonna-link rif-no" data-rif-no="${esc(p.id)}|${esc(r.regola)}|${esc(r.luogo || p.camera)}">Non posso</button>` : ""}</div></div>`).join("")}</div>` : ""}
+      ${rifSempre.length ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("spunta")}<span>Come sempre</span></div>${rifSempre.map(r => `<details class="inizio-fondo-voce"><summary>${esc(r.nome)}${r.comune ? ` <small>· ${esc(r.luogoNome)}</small>` : ""}</summary><div class="muted">${esc(r.come)}${r.prodotto && !/^nessuno/.test(r.prodotto) ? ` <b>Prodotto:</b> ${esc(r.prodotto)}.` : ""}${r.note ? ` ⚠ ${esc(r.note)}` : ""}</div></details>`).join("")}</div>` : ""}
       ${p.dettagli ? `<div class="inizio-dett-x">${esc(p.dettagli)}</div>` : ""}
       ${p.istruzioni ? `<div class="inizio-dett-i">${esc(p.istruzioni)}</div>` : ""}
       ${msg ? `<div class="inizio-dett-m"><b>${esc(msg.da || "Michele")} dice:</b> ${esc(msg.testo)}</div>` : ""}
@@ -734,13 +734,14 @@ function testoPianoSettimana(z, lun) {
 function regoleGov() { return G.regoleAttive(S.gov); }
 function soglieGov() { return G.soglie(S.gov); }
 function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {}, frigo: (S.gov && S.gov.frigo) || {} }; }
-function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov() }; }
+function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov(), inizio: (S.gov && S.gov.inizio) || null }; }
 let memoProposte = new Map(), memoRif = new Map();
 function proposteGov(lun) { const k = lun || S.govSett; if (!memoProposte.has(k)) memoProposte.set(k, G.proposteSettimana(ctxGov(k))); return memoProposte.get(k); }
 // le rifiniture dentro una pulizia normale (per la signora, per la controllatrice e per la paga)
 function rifinitureDi(p) { if (!p || p.origine === "governante" || p.tipo === "extra") return []; const k = `${p.zona}|${p.data}`; if (!memoRif.has(k)) memoRif.set(k, G.rifinitureDelGiorno(p.zona, p.data, ctxGov())); return memoRif.get(k)[p.id] || []; }
 function routineDi(p) { return rifinitureDi(p); }
-function sempreDi(p) { return [...promemoriaCamera(p.camera), ...rifinitureDi(p).map(r => `⭐ ${r.nome}`)]; }
+// nella domanda finale e nella lista della controllatrice: le istruzioni fisse, le rifiniture a ritmo e le poche cose "sempre" segnate per la domanda
+function sempreDi(p) { return [...promemoriaCamera(p.camera), ...rifinitureDi(p).filter(r => !r.sempre || r.domanda).map(r => `⭐ ${r.nome}`)]; }
 function testoRifiniture(p) { const rf = rifinitureDi(p).filter(r => !r.sempre); return rf.length ? `+${rf.length} ${rf.length === 1 ? "rifinitura" : "rifiniture"} · ${rf.reduce((n, r) => n + r.minuti, 0)} min` : ""; }
 function idPuliziaGov(c) { return `${c.data}_${c.luogo}_g_${c.regola}`; }
 function haProposteNuove() { try { return localStorage.getItem("ricci_gov_visto") !== S.govSett; } catch (e) { return true; } }
@@ -779,10 +780,19 @@ async function registraFatto(regola, luogo, zona, data) {
   S.registro[k] = voce;
   try { await S.db.salva("governante_registro", `${regola}_${luogo}`, voce, true); } catch (e) { console.warn("registro", e?.code || e); }
 }
+// Il giorno in cui la governante è partita (serve per dare un ordine alle cose mai registrate): si scrive una volta sola
+let inizioSegnato = false;
+function segnaInizioGovernante() { if (inizioSegnato || !proprietario() || S.utente?.finta || !S.caricati.gov || (S.gov && S.gov.inizio)) return; inizioSegnato = true; salvaGov({ inizio: L.oggiISO() }); }
 let rifiniturePending = null;
 function registraPuliziaFatta(p) {
   if (!p) return;
-  if (p.origine === "governante" && p.regola) { registraFatto(p.regola, p.camera, p.zona, p.data); return; }
+  if (p.origine === "governante" && p.regola) {
+    registraFatto(p.regola, p.camera, p.zona, p.data);
+    // la pulizia a fondo completa fa tutto il catalogo della camera: segna fatte tutte le sue regole
+    const r = regoleGov().find(x => x.id === p.regola);
+    if (r && r.grande) { const l = camera(p.camera); for (const id of G.regoleDellaFondoCompleta(l, { ...ctxGov(), oggi: p.data })) registraFatto(id, p.camera, p.zona, p.data); }
+    return;
+  }
   const rf = rifinitureDi(p);
   for (const r of rf) registraFatto(r.regola, r.luogo || p.camera, p.zona, p.data);
   const pagate = rf.filter(r => !r.sempre && r.euro);
@@ -813,8 +823,9 @@ function vistaGovernante() {
   const tab = S.govTab;
   const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button></section>
   <section class="pro-testa gov-testa"><div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">La governante</div><div class="pro-frase">Guarda il prospetto, il calendario e il registro, e decide cosa va fatto a fondo oltre alle pulizie normali.</div></div>${DONNINA("governante", "media")}</div>
-    <div class="seg gov-seg" style="margin-top:12px;display:flex"><button aria-pressed="${tab === "consigli"}" data-gov-tab="consigli">Consigli</button><button aria-pressed="${tab === "calendario"}" data-gov-tab="calendario">Calendario</button><button aria-pressed="${tab === "regole"}" data-gov-tab="regole">Regole</button><button aria-pressed="${tab === "mappa"}" data-gov-tab="mappa">Mappa</button></div></section>`;
+    <div class="seg gov-seg" style="margin-top:12px;display:flex"><button aria-pressed="${tab === "consigli"}" data-gov-tab="consigli">Consigli</button><button aria-pressed="${tab === "calendario"}" data-gov-tab="calendario">Calendario</button><button aria-pressed="${tab === "tabellone"}" data-gov-tab="tabellone">Tabellone</button><button aria-pressed="${tab === "regole"}" data-gov-tab="regole">Regole</button><button aria-pressed="${tab === "mappa"}" data-gov-tab="mappa">Mappa</button></div></section>`;
   if (tab === "calendario") return testa + vistaCalendarioPulito();
+  if (tab === "tabellone") return testa + vistaTabelloneCopertura();
   if (tab === "regole") return testa + vistaRegoleGov();
   if (tab === "mappa") return testa + vistaMappaSuperfici();
   return testa + vistaConsigliGov();
@@ -867,6 +878,68 @@ function foglioLuogoPulito(f) {
 const GRUPPI_GOV = G.GRUPPI;
 
 // ============================================================================
+//  TABELLONE DI COPERTURA (prova 2) + PROVA DEI 90 GIORNI (prova 3)
+// ============================================================================
+let memoTab = { chiave: "", valore: null };
+function tabellone() {
+  const chiave = JSON.stringify([S.gov?.regole, S.gov?.soglie, S.gov?.personali, S.gov?.balconi, S.gov?.strada, S.gov?.frigo, S.gov?.inizio, Object.keys(S.registro).length, Object.values(S.registro).map(r => r.ultima).join(","), L.oggiISO(), Object.keys(S.pulizie).length, Object.values(S.pulizie).filter(p => p.origine === "governante").length, soggiorniLista().length]);
+  if (memoTab.chiave !== chiave) { let v = null; try { v = G.tabellone(ctxGov(L.lunediDi(L.oggiISO()))); } catch (e) { console.warn("tabellone", e); } memoTab = { chiave, valore: v }; }
+  return memoTab.valore;
+}
+const COLORE_PEGGIO = g => g.rosse ? "rosso" : g.gialle ? "giallo" : g.grigie ? "grigio" : "verde";
+const SIGLA_GRUPPO = { camera: "Cam", bagno: "Bag", cucina: "Cuc", balcone: "Bal", stagioni: "Stag", comuni: "Com", lavanderia: "Lav", P: "Tue" };
+function vistaTabelloneCopertura() {
+  const t = tabellone(); const f = S.tab, mod = puoModificare();
+  if (!t) return `<section class="card"><h2 style="margin:0">Tabellone</h2><p class="muted">Un attimo…</p></section>`;
+  const sg = soglieGov(), b = t.bilancio;
+  const testa = `<section class="card"><div class="buchi ${t.buchi ? "rossi" : "zero"}"><div class="buchi-due"><b>Copertura: ${t.copertura}%</b><b>Buchi: ${t.buchi}</b></div><span>${t.celle.length} celle (posti × regole) · ${t.buchi ? "le celle rosse non hanno nessuno che ci arrivi nelle prossime " + t.settimane + " settimane" : "ogni cosa è fatta o in programma"}</span></div>
+    <p class="muted small" style="margin:10px 0 0"><span class="pall verde"></span> fatta, in regola · <span class="pall giallo"></span> quasi scaduta, o scaduta ma in programma · <span class="pall grigio"></span> mai fatta, in programma (si sa quando) · <span class="pall rosso"></span> buco: scaduta o mai fatta, e nessuno ci arriva. Il tabellone ripete le pulizie di questa settimana per ${t.settimane} settimane, con le soglie di adesso.</p></section>`;
+  const conto = t.sim ? `<section class="card"><h2 style="margin:0 0 4px">Il conto</h2><p class="muted small" style="margin:0">Ai ritmi scritti nel catalogo, le rifiniture a ritmo chiedono circa <b>${b.domanda} minuti a settimana per signora</b>${b.perZona ? ` (${zoneOrdinate().map(z => `${S.zone[z.id]?.breve || z.id}: ${b.perZona[z.id]?.domanda || 0}′`).join(", ")})` : ""}. Con le soglie di adesso (${sg.minutiGiorno}′ al giorno, ${sg.rifiniturePerPulizia} rifiniture da ${sg.minutiRifiniture}′ per pulizia) la governante ne può piazzare al massimo <b>${b.capacita} a settimana</b> (${b.rifiniture}′ dentro le pulizie normali + ${b.fondo}′ con le ${sg.camereSettimana} pulizie a fondo complete, quando la camera è libera): quindi tiene in regola circa <b>${b.possibile}%</b> del catalogo. Le cose più urgenti e l'igiene passano avanti, il resto slitta.</p>
+    <p class="muted small" style="margin:8px 0 0">Tre leve: più minuti al giorno (in Regole), togliere le regole che non ti servono, oppure mettere le cose settimanali di camera e bagno <b>dentro la pulizia totale del venerdì</b> (fanno parte del lavoro, senza extra).</p>
+    ${mod ? `<div class="scelte" style="margin-top:8px"><button type="button" data-gov-tab="regole">Alza i minuti</button><button type="button" data-gov-totale-tutte="1">Metti le settimanali dentro la totale</button>${regoleGov().some(r => r.dentroTotale) ? `<button type="button" data-gov-totale-tutte="0">Rimettile come rifiniture</button>` : ""}</div>` : ""}</section>` : `<section class="card"><h2 style="margin:0 0 4px">Il conto</h2><p class="muted small" style="margin:0">Questa settimana non ci sono pulizie in programma: il tabellone non sa su cosa contare. Appena c'è il prospetto, qui compaiono i numeri.</p></section>`;
+  const prova = t.prova ? `<section class="card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Prova la governante per 90 giorni</h2><button class="btnsm ${f.prova ? "ghost" : ""}" data-gov-prova90>${f.prova ? "Chiudi" : "Prova"}</button></div>${f.prova ? `<p class="muted small" style="margin:4px 0 8px">Ripetendo le pulizie di questa settimana e il prospetto di adesso per ${t.settimane} settimane, con tutti i consigli accettati:</p><ol class="prova90">${t.prova.righe.map(r => `<li>${esc(r)}</li>`).join("")}</ol>` : `<p class="muted small" style="margin:4px 0 0">Cinque righe: quante rifiniture, quanti minuti al giorno (mai sopra i ${sg.minutiGiorno}, mai di domenica), cosa entra a camera libera, a quanto arriva il catalogo e cosa resta indietro.</p>`}</section>` : "";
+  const zone = zoneOrdinate();
+  const filtri = `<section class="card flat"><div class="seg tab-seg" style="display:flex"><button aria-pressed="${f.vista === "posti"}" data-tab-vista="posti">Per posto</button><button aria-pressed="${f.vista === "regole"}" data-tab-vista="regole">Per regola</button><button aria-pressed="${f.vista === "buchi"}" data-tab-vista="buchi">I buchi</button></div>
+    <div class="scelte tab-zone" style="margin-top:8px"><button type="button" aria-pressed="${!f.zona}" data-tab-zona="">Tutte</button>${zone.map(z => `<button type="button" aria-pressed="${f.zona === z.id}" data-tab-zona="${z.id}">${esc(nomeZonaBreve(z.id))}</button>`).join("")}<button type="button" aria-pressed="${!!f.soloRosse}" data-tab-rosse="${f.soloRosse ? 0 : 1}">Solo rosse</button></div></section>`;
+  let corpo = "";
+  if (f.vista === "posti") {
+    const righe = t.perLuogo.filter(l => !f.zona || l.zona === f.zona).filter(l => !f.soloRosse || l.rosse).map(l => `<button class="row tab-riga" data-tab-luogo="${esc(l.luogo)}"><span><b>${esc(l.nome)}</b> <span class="muted">· ${esc(nomeZonaBreve(l.zona))}</span><br><span class="tab-celle">${Object.entries(GRUPPI_GOV).filter(([g]) => l.gruppi[g]).map(([g, nome]) => `<i class="tab-cella ${COLORE_PEGGIO(l.gruppi[g])}" title="${esc(nome)}"><small>${esc(SIGLA_GRUPPO[g] || nome.slice(0, 3))}</small><b>${l.gruppi[g].rosse || "✓"}</b></i>`).join("")}</span></span><span class="s ${l.rosse ? "warn" : l.gialle ? "wip" : "done"}">${l.rosse ? `${l.rosse} rosse` : l.grigie ? `${l.grigie} in programma` : "ok"}</span></button>`).join("");
+    corpo = `<section class="card"><p class="muted small" style="margin:0 0 8px">Una riga per posto, un quadratino per gruppo di regole (${Object.values(GRUPPI_GOV).filter(x => x !== "Le tue regole").join(", ")}): il colore è il peggiore del gruppo, il numero sono le rosse. Tocca per vedere regola per regola.</p><div class="rows">${righe || `<div class="row"><span class="muted">Niente da mostrare con questi filtri.</span></div>`}</div></section>`;
+  } else if (f.vista === "regole") {
+    const regole = regoleGov().filter(r => !r.evento);
+    const rosseDi = {}; for (const c of t.celle) if (c.colore === "rosso") rosseDi[c.regola] = (rosseDi[c.regola] || 0) + 1;
+    const scelta = f.regola && regole.some(r => r.id === f.regola) ? f.regola : (t.celle.find(c => c.colore === "rosso")?.regola || regole[0]?.id);
+    const sel = `<div class="campo"><label for="tabRegola">Regola</label><select id="tabRegola" data-tab-regola>${Object.entries(GRUPPI_GOV).map(([g, nome]) => { const rr = regole.filter(r => r.gruppo === g); return rr.length ? `<optgroup label="${esc(nome)}">${rr.map(r => `<option value="${esc(r.id)}" ${r.id === scelta ? "selected" : ""}>${esc(r.nome)}${rosseDi[r.id] ? ` · ${rosseDi[r.id]} rosse` : ""}</option>`).join("")}</optgroup>` : ""; }).join("")}</select></div>`;
+    const celle = t.celle.filter(c => c.regola === scelta).filter(c => !f.zona || c.zona === f.zona).filter(c => !f.soloRosse || c.colore === "rosso");
+    const r = regole.find(x => x.id === scelta);
+    corpo = `<section class="card">${sel}${r ? `<p class="muted small" style="margin:0 0 8px">${esc(G.etichettaOgni(r.ogni))} · ${esc(G.QUANDO_TESTO[r.quando] || r.quando)} · ${r.minuti} min${r.prodotto ? ` · ${esc(r.prodotto)}` : ""}</p>` : ""}<div class="rows">${celle.map(c => rigaCella(c, true)).join("") || `<div class="row"><span class="muted">Niente da mostrare con questi filtri.</span></div>`}</div></section>`;
+  } else {
+    const motivi = t.motivi.map(m => { const celle = t.celle.filter(c => c.colore === "rosso" && c.motivo === m.motivo && (!f.zona || c.zona === f.zona)); if (!celle.length) return ""; const perRegola = {}; for (const c of celle) perRegola[c.regola] = (perRegola[c.regola] || { nome: c.nome, n: 0 }), perRegola[c.regola].n++;
+      return `<section class="card gov-ritardo"><h2 style="margin:0 0 6px;display:flex;gap:8px;align-items:flex-start"><span class="led" style="margin:7px 0 0" aria-hidden="true"></span><span>${esc(m.motivo.charAt(0).toUpperCase() + m.motivo.slice(1))}</span></h2><p class="muted small" style="margin:0 0 8px"><b>${celle.length}</b> ${celle.length === 1 ? "cella" : "celle"}${f.zona ? ` da ${esc(nomeZonaBreve(f.zona))}` : ""}.</p><div class="scelte">${Object.entries(perRegola).sort((a, b) => b[1].n - a[1].n).slice(0, 12).map(([id, x]) => `<button type="button" data-tab-apri-regola="${esc(id)}">${esc(x.nome)} · ${x.n}</button>`).join("")}${Object.keys(perRegola).length > 12 ? `<span class="muted small">e altre ${Object.keys(perRegola).length - 12} regole</span>` : ""}</div></section>`; }).join("");
+    corpo = motivi || `<section class="card"><h2 style="margin:0">Nessun buco</h2><p class="muted" style="margin:6px 0 0">Ogni cosa del catalogo è fatta o ha una data in programma.</p></section>`;
+  }
+  return testa + conto + prova + filtri + corpo;
+}
+function rigaCella(c, conLuogo) {
+  const prog = c.programmata ? `in programma ${esc(L.dataGiornoLungo(c.programmata))}` : "";
+  return `<div class="row tab-cella-riga"><span><span class="pall ${c.colore}"></span> <b>${esc(conLuogo ? c.luogoNome : c.nome)}</b>${conLuogo ? ` <span class="muted">· ${esc(nomeZonaBreve(c.zona))}</span>` : c.codice ? ` <span class="el-pill out gov-codice">${esc(c.codice)}</span>` : ""}<br><span class="muted small">${c.ogni ? `ultima volta: <b>${esc(c.testo)}</b>${c.da ? ` (${esc(c.da)})` : ""}` : (c.quando === "cambio" ? "a ogni cambio completo" : "a ogni pulizia")}${prog ? ` · ${prog}` : ""}</span>${c.motivo ? `<br><span class="small" style="color:var(--warn)">● ${esc(c.motivo)}</span>` : ""}</span>${puoModificare() && c.colore !== "verde" && c.ogni ? `<button class="btnsm ghost" data-gov-fatto="${esc(c.regola)}|${esc(c.luogo)}|${esc(c.zona)}" aria-label="segna fatta oggi">✓</button>` : ""}</div>`;
+}
+function foglioTabLuogo(f) {
+  const t = tabellone(); if (!t) return `<h3>Posto</h3>`;
+  const l = t.perLuogo.find(x => x.luogo === f.luogo); if (!l) return `<h3>Posto</h3>`;
+  const celle = t.celle.filter(c => c.luogo === f.luogo);
+  const gruppi = Object.entries(GRUPPI_GOV).map(([g, nome]) => { const cc = celle.filter(c => c.gruppo === g); if (!cc.length) return ""; return `<h2 style="margin:12px 0 6px">${esc(nome)} <span class="muted small">· ${cc.filter(c => c.colore === "rosso").length} rosse su ${cc.length}</span></h2><div class="rows">${cc.sort((a, b) => ({ rosso: 0, giallo: 1, grigio: 2, verde: 3 }[a.colore] - { rosso: 0, giallo: 1, grigio: 2, verde: 3 }[b.colore])).map(c => rigaCella(c, false)).join("")}</div>`; }).join("");
+  return `<h3>${esc(l.nome)}</h3><div class="muted">${esc(nomeZonaBreve(l.zona))} · ${l.verdi} verdi · ${l.gialle} gialle · ${l.grigie} in programma · <b>${l.rosse} rosse</b></div>${gruppi}${puoModificare() ? `<p class="muted small" style="margin:10px 0 0">✓ = l'hai fatta tu oggi (o l'hai vista fatta): va nel registro.</p>` : ""}`;
+}
+// Le regole settimanali di camera e bagno dentro la pulizia totale del venerdì (senza extra), e viceversa
+async function mettiDentroTotale(ids, dentro) {
+  const regole = { ...(S.gov?.regole || {}) };
+  for (const id of ids) { const m = { ...(regole[id] || {}) }; if (dentro) { m.quando = "cambio"; m.ogni = 0; m.euro = 0; m.dentroTotale = true; } else { delete m.quando; delete m.ogni; delete m.euro; delete m.dentroTotale; } regole[id] = m; }
+  await salvaGov({ regole });
+}
+function regoleSettimanali() { return G.CATALOGO.filter(r => r.ogni > 0 && r.ogni <= 7 && (r.quando === "ripasso" || r.quando === "cambio") && !r.evento && (r.gruppo === "camera" || r.gruppo === "bagno" || r.gruppo === "cucina" || r.gruppo === "balcone")).map(r => r.id); }
+
+// ============================================================================
 //  MAPPA DELLE SUPERFICI (prova di completezza) e GIRO CON LA MAMMA
 // ============================================================================
 function mappaGov() { return G.mappaSuperfici(regoleGov(), (S.gov && S.gov.superficiExtra) || {}); }
@@ -884,7 +957,7 @@ function foglioSuperficie(f) {
   const m = mappaGov(); const t = m.tipi[f.tipoSup]; const x = t && t.oggetti.flatMap(o => o.superfici.map(s => ({ ...s, oggetto: o.o }))).find(s => s.id === f.id);
   if (!x) return `<h3>Superficie</h3>`;
   return `<h3>${esc(x.nome)}</h3><div class="muted">${esc(t.nome)} · ${esc(x.oggetto)}</div>
-    ${x.regole.length ? `<div class="rows" style="margin-top:10px">${x.regole.map(r => `<div class="row"><span><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.nome)}</b><br><span class="muted small">${esc(G.etichettaOgni(r.ogni))} · ${esc(G.QUANDO_TESTO[r.quando] || r.quando)} · ${r.minuti} min</span><br><span class="muted small">${esc(r.come)}</span></span></div>`).join("")}</div>` : `<div class="note warn" style="margin-top:10px">${x.opz ? "Vale solo se c'è: nessuna regola attiva." : "Buco: nessuna regola copre questa superficie."}</div>`}
+    ${x.regole.length ? `<div class="rows" style="margin-top:10px">${x.regole.map(r => `<div class="row"><span><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.nome)}</b><br><span class="muted small">${esc(G.etichettaOgni(r.ogni))} · ${esc(G.QUANDO_TESTO[r.quando] || r.quando)} · ${r.minuti} min${r.prodotto ? ` · ${esc(r.prodotto)}` : ""}</span><br><span class="muted small">${esc(r.come)}</span>${r.note ? `<br><span class="small" style="color:var(--warn)">⚠ ${esc(r.note)}</span>` : ""}</span></div>`).join("")}</div>` : `<div class="note warn" style="margin-top:10px">${x.opz ? "Vale solo se c'è: nessuna regola attiva." : "Buco: nessuna regola copre questa superficie."}</div>`}
     ${puoModificare() ? `<button class="big main" data-gov-regola-superficie="${esc(f.tipoSup)}|${esc(f.id)}|${esc(x.oggetto)}|${esc(x.nome)}">+ Regola per questa superficie</button>` : ""}`;
 }
 // --- il giro ---
@@ -954,10 +1027,13 @@ function vistaRegoleGov() {
   const copertura = cop ? `<div class="note ${cop.percento >= 80 ? "done" : cop.percento >= 55 ? "info" : "warn"}" style="margin:8px 0 0"><b>Con queste soglie</b>, ripetendo le pulizie di questa settimana per ${cop.settimane} settimane, il catalogo resta in regola al <b>${cop.percento}%</b> (${cop.inRegola} cose su ${cop.voci}; ${cop.mai} mai toccate). Servono circa <b>${cop.minutiSettimanaSignora} minuti</b> di rifiniture a settimana per signora. Alza i minuti al giorno e le rifiniture per pulizia per salire.</div>` : "";
   const soglie = `<section class="card"><h2 style="margin:0 0 6px">Quanto può chiedere</h2><div class="rows">${sogliaRiga("minutiGiorno", "Minuti al giorno di rifiniture per signora (tutto compreso)", 10, 20, 180, "′")}${sogliaRiga("rifiniturePerPulizia", "Rifiniture per ogni pulizia normale", 1, 1, 4, "")}${sogliaRiga("minutiRifiniture", "Minuti di rifiniture dentro una pulizia normale", 5, 5, 40, "′")}${sogliaRiga("camereSettimana", "Pulizie a fondo complete a settimana (mezza giornata)", 1, 1, 5, "")}${sogliaRiga("freddoGradi", "Freddo in arrivo sotto i", 1, 5, 18, "°")}</div>${copertura}</section>`;
   const gruppi = Object.entries(GRUPPI_GOV).map(([g, nome]) => { const rr = tutte.filter(r => r.gruppo === g); if (!rr.length) return "";
-    return `<section class="card"><h2 style="margin:0 0 6px">${esc(nome)}</h2><div class="rows">${rr.map(r => `<div class="row one gov-regola ${r.attiva === false ? "spenta" : ""}"><span class="gov-regola-testa"><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.cosa)}</b><span class="seg" style="margin-left:auto"><button aria-pressed="${r.attiva !== false}" data-gov-attiva="${esc(r.id)}|1" ${mod ? "" : "disabled"}>Sì</button><button aria-pressed="${r.attiva === false}" data-gov-attiva="${esc(r.id)}|0" ${mod ? "" : "disabled"}>No</button></span></span>
-      <span class="muted small gov-regola-dove">${esc(doveTesto(r))} · ${r.minuti} min${r.euro ? ` · ${eur(r.euro)}` : ""} · ${esc(G.QUANDO_TESTO[r.quando] || r.quando)}${stagioneTesto(r)}${r.meteo ? " · il meteo la anticipa" : ""}${r.soloFissi ? " · solo con ospite fisso" : ""}</span>
+    return `<section class="card"><h2 style="margin:0 0 6px">${esc(nome)}</h2><div class="rows">${rr.map(r => `<div class="row one gov-regola ${r.attiva === false ? "spenta" : ""}"><span class="gov-regola-testa"><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.nome || r.cosa)}</b>${r.codice ? `<span class="el-pill out gov-codice">${esc(r.codice)}</span>` : ""}<span class="seg" style="margin-left:auto"><button aria-pressed="${r.attiva !== false}" data-gov-attiva="${esc(r.id)}|1" ${mod ? "" : "disabled"}>Sì</button><button aria-pressed="${r.attiva === false}" data-gov-attiva="${esc(r.id)}|0" ${mod ? "" : "disabled"}>No</button></span></span>
+      <span class="muted small gov-regola-dove">${esc(doveTesto(r))} · ${r.minuti} min${r.euro ? ` · ${eur(r.euro)}` : ""} · ${esc(G.QUANDO_TESTO[r.quando] || r.quando)}${stagioneTesto(r)}${r.meteo ? " · il meteo la anticipa" : ""}${r.soloFissi ? " · solo con ospite fisso" : ""} · ${esc(G.PRIORITA_TESTO[r.priorita] || "")}</span>
+      ${r.prodotto ? `<span class="muted small gov-regola-prod"><b>Prodotto:</b> ${esc(r.prodotto)}</span>` : ""}
       ${r.controllo ? `<span class="muted small gov-regola-ctrl">${ICONA("lente")} ${esc(r.controllo)}</span>` : ""}
-      ${r.ogni && !r.evento ? `<span class="gov-pm"><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|-1" ${mod ? "" : "disabled"} aria-label="meno spesso">−</button><b>${esc(G.etichettaOgni(r.ogni))}${r.ogniMezza ? ` <small>(mezze stagioni: ${esc(G.etichettaOgni(r.ogniMezza))})</small>` : ""}</b><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|1" ${mod ? "" : "disabled"} aria-label="più spesso">+</button></span>` : r.evento ? `<span class="muted small">solo per un motivo: soggiorno lungo, cambio stagione, camera molto indietro</span>` : `<span class="muted small">${r.quando === "cambio" ? "sempre, a ogni cambio completo" : "sempre, a ogni pulizia"}</span>`}
+      ${r.note ? `<span class="small gov-regola-nota">⚠ ${esc(r.note)}</span>` : ""}
+      ${r.ogni && !r.evento ? `<span class="gov-pm"><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|-1" ${mod ? "" : "disabled"} aria-label="meno spesso">−</button><b>${esc(G.etichettaOgni(r.ogni))}${r.ogniMezza ? ` <small>(mezze stagioni: ${esc(G.etichettaOgni(r.ogniMezza))})</small>` : ""}</b><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|1" ${mod ? "" : "disabled"} aria-label="più spesso">+</button></span>` : r.evento ? `<span class="muted small">solo per un motivo: ${r.evento === "arrivo" ? "camera rimasta vuota 2+ giorni prima di un arrivo" : "soggiorno lungo, troppo tempo dall'ultima, camera molto indietro"}</span>` : `<span class="muted small">${r.dentroTotale ? "dentro la pulizia totale del venerdì, senza extra" : r.quando === "cambio" ? "sempre, a ogni cambio completo" : "sempre, a ogni pulizia"}</span>`}
+      ${mod && !r.personale && !r.evento && (r.dentroTotale || (r.ogni > 0 && r.ogni <= 14 && (r.quando === "ripasso" || r.quando === "cambio") && r.gruppo !== "comuni" && r.gruppo !== "lavanderia")) ? `<button class="nonna-link gov-totale" data-gov-totale="${esc(r.id)}|${r.dentroTotale ? 0 : 1}">${r.dentroTotale ? "Rimettila come rifinitura a parte" : "Mettila dentro la totale del venerdì (senza extra)"}</button>` : ""}
       ${r.personale && mod ? `<button class="nonna-link" style="min-height:0;padding:4px 10px;margin:4px 0 0" data-gov-cancella-regola="${esc(r.id)}">Cancella questa regola</button>` : ""}</div>`).join("")}</div></section>`; }).join("");
   const nuova = mod ? `<section class="card flat"><button class="big main" data-gov-nuova-regola>+ Nuova regola</button><p class="muted small center" style="margin:6px 0 0">Le signore non possono toccare le regole.</p></section>` : "";
   return soglie + gruppi + nuova + fisse + camereFlag;
@@ -1193,6 +1269,7 @@ function disegnaFoglio() {
   else if (f.tipo === "manutenzione") html = foglioManutenzione(f);
   else if (f.tipo === "nuovoMan") html = foglioNuovoLavoroMan(f);
   else if (f.tipo === "luogoPulito") html = foglioLuogoPulito(f);
+  else if (f.tipo === "tabLuogo") html = foglioTabLuogo(f);
   else if (f.tipo === "nuovaRegola") html = foglioNuovaRegola(f);
   else if (f.tipo === "superficie") html = foglioSuperficie(f);
   else if (f.tipo === "giro") html = foglioGiro(f);
@@ -1554,6 +1631,16 @@ function collega() {
   document.querySelectorAll("[data-gov-nuova-regola]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovaRegola" }));
   document.querySelectorAll("[data-gov-flag]").forEach(b => b.onclick = () => { const [k, cam, v] = b.dataset.govFlag.split("|"); const f = { ...(flagsGov()[k] || {}) }; if (v === "1") f[cam] = true; else delete f[cam]; salvaGov({ [k]: f }); });
   document.querySelectorAll("[data-gov-luogo]").forEach(b => b.onclick = () => apriFoglio({ tipo: "luogoPulito", luogo: b.dataset.govLuogo }));
+  document.querySelectorAll("[data-gov-totale]").forEach(b => b.onclick = () => { const [id, v] = b.dataset.govTotale.split("|"); mettiDentroTotale([id], v === "1"); });
+  document.querySelectorAll("[data-gov-totale-tutte]").forEach(b => b.onclick = async () => { const dentro = b.dataset.govTotaleTutte === "1"; const ids = dentro ? regoleSettimanali().filter(id => !regoleGov().find(r => r.id === id)?.dentroTotale) : regoleGov().filter(r => r.dentroTotale).map(r => r.id); if (!ids.length) { toast("Niente da cambiare"); return; } if (await chiedi(dentro ? `Metto ${ids.length} regole settimanali di camera, bagno e cucina dentro la pulizia totale del venerdì? Le signore le vedono come "come sempre", senza extra. Si può tornare indietro.` : `Rimetto ${ids.length} regole come rifiniture a parte, con il loro ritmo e il loro extra?`, { si: dentro ? "Sì, dentro la totale" : "Sì, rimettile" })) { await mettiDentroTotale(ids, dentro); toast(dentro ? "Fatto: ora sono dentro la totale del venerdì" : "Fatto: sono di nuovo rifiniture a parte"); } });
+  document.querySelectorAll("[data-gov-prova90]").forEach(b => b.onclick = () => { S.tab.prova = !S.tab.prova; disegna(); });
+  document.querySelectorAll("[data-tab-vista]").forEach(b => b.onclick = () => { S.tab.vista = b.dataset.tabVista; disegna(); });
+  document.querySelectorAll("[data-tab-zona]").forEach(b => b.onclick = () => { S.tab.zona = b.dataset.tabZona; disegna(); });
+  document.querySelectorAll("[data-tab-rosse]").forEach(b => b.onclick = () => { S.tab.soloRosse = b.dataset.tabRosse === "1"; disegna(); });
+  document.querySelectorAll("[data-tab-regola]").forEach(sel => sel.onchange = () => { S.tab.regola = sel.value; disegna(); });
+  document.querySelectorAll("[data-tab-apri-regola]").forEach(b => b.onclick = () => { S.tab.regola = b.dataset.tabApriRegola; S.tab.vista = "regole"; S.tab.soloRosse = true; disegna(); window.scrollTo(0, 0); });
+  document.querySelectorAll("[data-tab-luogo]").forEach(b => b.onclick = () => apriFoglio({ tipo: "tabLuogo", luogo: b.dataset.tabLuogo }));
+  document.querySelectorAll("#app [data-gov-fatto]").forEach(b => b.onclick = async () => { const [regola, luogo, zona] = b.dataset.govFatto.split("|"); await registraFatto(regola, luogo, zona, L.oggiISO()); toast("Segnato come fatto oggi"); disegna(); });
   document.querySelectorAll("[data-superficie]").forEach(b => b.onclick = () => apriFoglio({ tipo: "superficie", id: b.dataset.superficie, tipoSup: b.dataset.tipo }));
   document.querySelectorAll("[data-giro-scegli]").forEach(b => b.onclick = () => apriFoglio({ tipo: "giroScegli" }));
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
@@ -1596,7 +1683,7 @@ function collegaFoglio() {
   }
   if (f.tipo === "superficie") document.querySelectorAll("[data-gov-regola-superficie]").forEach(b => b.onclick = () => { const [tipo, sid, oggetto, nome] = b.dataset.govRegolaSuperficie.split("|"); apriFoglio({ tipo: "nuovaRegola", superficie: sid, tipoSup: tipo, oggetto, nomeSup: nome }); });
   if (f.tipo === "nuovaRegola") { const fr = $("#formRegola"); if (fr) fr.onsubmit = (e) => { e.preventDefault(); salvaNuovaRegola(); }; }
-  if (f.tipo === "luogoPulito") document.querySelectorAll("[data-gov-fatto]").forEach(b => b.onclick = async () => { const [regola, luogo, zona] = b.dataset.govFatto.split("|"); await registraFatto(regola, luogo, zona, L.oggiISO()); toast("Segnato come fatto oggi"); disegnaFoglio(); });
+  if (f.tipo === "luogoPulito" || f.tipo === "tabLuogo") document.querySelectorAll("[data-gov-fatto]").forEach(b => b.onclick = async () => { const [regola, luogo, zona] = b.dataset.govFatto.split("|"); await registraFatto(regola, luogo, zona, L.oggiISO()); toast("Segnato come fatto oggi"); disegna(); disegnaFoglio(); });
   if (f.tipo === "manutenzione" || f.tipo === "nuovoMan") {
     const fm = $("#formMan"); if (fm) fm.onsubmit = (e) => { e.preventDefault(); salvaNuovoLavoroMan(); };
     document.querySelectorAll("[data-man-riparato]").forEach(b => b.onclick = () => { aggiornaManutenzione(b.dataset.manRiparato, { stato: "fatto", fatto: S.db.adesso(), fattoDa: S.utente.nome || "", nota: $("#manNota")?.value.trim() ?? S.manutenzione[b.dataset.manRiparato]?.nota ?? "" }, "Segnato come fatto"); chiudiFoglio(); });

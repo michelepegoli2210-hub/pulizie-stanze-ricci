@@ -147,7 +147,7 @@ Dopo il salvataggio le pulizie dei prossimi 14 giorni si ricalcolano da sole (co
 ## La governante (dalla versione 0.21, rifatta nella 0.22)
 
 Una governante come in un hotel di lusso, **senza intelligenza artificiale**: catalogo + calendario + registro "ultima volta fatto".
-- **Il catalogo** sta in `governante.js` (`CATALOGO`): una riga per ogni singola cosa (84 voci), con nome preciso, dove, ogni quanto,
+- **Il catalogo** sta in `governante.js` (`CATALOGO`): una riga per ogni singola cosa (168 voci nella 0.24), con nome preciso, dove, ogni quanto,
   quando (`ripasso` = durante qualunque pulizia, `cambio` = solo nel cambio completo, `libera` = a camera libera, `giornata` = zona
   comune alla prima pulizia del giorno, `giorno` = lavoro a sé), minuti, prezzo, "come si fa" in 3 righe con prodotto e colore del
   panno, "come si controlla" per la controllatrice, stagione/meteo. Le zone comuni sono in `LUOGHI_COMUNI`. Le modifiche fatte
@@ -174,5 +174,31 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   sulla card della governante). Le regole personali possono agganciarsi a una superficie (`superfici: [id]`).
   **Giro con la mamma**: si sceglie un posto, si gira superficie per superficie ("C'è" / "Manca qualcosa"); quello che manca diventa
   una regola personale e una superficie nuova della mappa (`impostazioni/governante.superficiExtra`, `giri`).
-- Passi successivi previsti: tabellone di copertura (posti × regole) con filtri, simulazione di 90 giorni, materiali per posto e
-  "Rivedi con la mamma" sui "come si fa", ritmi che imparano dai controlli, meteo di Lesina, pagella del sabato, voce con Gemini.
+- **Dalla 0.24 — catalogo con prodotto e avvertenze, tabellone di copertura, prova dei 90 giorni.**
+  Ogni regola ha `prodotto` (se non è scritto a mano lo ricava dal "come si fa": `prodottoDa`), `note` (avvertenze e scatti: "Mai
+  acidi sul marmo", "Dopo un vento forte controlla anche se non è scaduta", "Entra nella domanda finale"…), `codice` (il numero della
+  riga nella tabella di Michele, quando c'è) e `domanda: true` per le poche cose "sempre" che entrano nella domanda finale della
+  signora. Le righe a più ritmi della tabella sono spezzate in regole sorelle (porte: ditate a ogni pulizia + lavate ogni 2
+  settimane; comodini: sopra sempre + dentro/dietro ogni 2 settimane; frigo in camera: dentro a ogni partenza + guarnizione + retro;
+  box doccia: tergivetro sempre + anticalcare ogni settimana + fuori ogni 2; lavastoviglie e frigo degli appartamenti a ogni
+  partenza + a fondo). Regole nuove: aria e odori, luci e lampadine, dotazioni del bagno, asciugamani alla luce, scarico a
+  pavimento, odori dagli scarichi, inventario stoviglie, bidoni col calendario di Lesina, luci esterne, scope e mop, spugne, guanti,
+  biancheria di scorta, controllo alla piegatura, ferro da stiro, condizionatori a maggio e ottobre, soglie delle coperte (M01) nelle
+  note, "camera ferma da 2+ giorni: rinfresco prima dell'arrivo" (evento `arrivo`), fondo completa anche ogni 6 mesi (`ogniEvento`).
+  La **partenza grigia**: una cosa mai registrata vale come fatta il giorno in cui la governante è partita (`impostazioni/
+  governante.inizio`, `inizioGovernante`), così le cose a ritmo corto passano avanti e quelle a ritmo lungo aspettano; l'urgenza pesa
+  la priorità (igiene 1,5 · ospite 1 · nascosto 0,6). La pulizia a fondo completa segna fatte tutte le regole della camera
+  (`regoleDellaFondoCompleta`). I consigli accettati occupano il budget dei minuti del giorno della signora.
+  **Tabellone di copertura** (`tabellone`, scheda Tabellone): una cella per ogni posto × regola; verde fatta e in regola, giallo quasi
+  scaduta o scaduta ma in programma, grigio mai fatta ma in programma (con la data), rosso = buco: nessuno ci arriva nelle prossime
+  13 settimane, con il motivo (non entra nei minuti, solo al cambio e niente cambi, camera mai libera, dura più dei minuti per
+  pulizia, in coda nei consigli…). In cima **Copertura %** e **Buchi**; "Il conto" dice quanti minuti a settimana chiede il catalogo
+  per signora e quanti ne danno le soglie (rifiniture + pulizie a fondo complete). Filtri grandi: per posto (un quadratino per gruppo),
+  per regola, i buchi raggruppati per motivo, per signora, solo rosse; ✓ segna una cosa fatta oggi. Il tasto "Metti le settimanali
+  dentro la totale" sposta le regole di camera/bagno/cucina con ritmo ≤ 7 giorni dentro la pulizia totale del venerdì (senza extra:
+  `dentroTotale` in `impostazioni/governante.regole`), e si può tornare indietro; nelle Regole c'è lo stesso tasto regola per regola.
+  **Prova la governante per 90 giorni** (`simulaGovernante` + `prova90`): ripete le pulizie di questa settimana e il prospetto per 13
+  settimane con tutti i consigli accettati e risponde in 5 righe (rifiniture, minuti al giorno mai sopra il limite e mai di domenica,
+  cosa entra a camera libera, a quanto arriva il catalogo, cosa resta indietro).
+- Passi successivi previsti: la tabella completa di Michele riga per riga (codici C01…O03), materiali per posto e "Rivedi con la
+  mamma" sui "come si fa", ritmi che imparano dai controlli, meteo di Lesina, pagella del sabato, voce con Gemini.

@@ -26,6 +26,9 @@
 //    icona     disegno accanto alla riga
 //    come      "come si fa" in 3 righe semplici, col prodotto e il colore del panno
 //    controllo "come si controlla che sia fatta bene" (una riga per la controllatrice)
+//    prodotto  il prodotto da usare (se non è scritto, lo ricava dal "come si fa")
+//    note      avvertenze e scatti: "Mai acidi sul marmo", "Dopo un vento forte controlla anche se non è scaduta"…
+//    codice    il numero della riga nella tabella di Michele (C01… B01… K01… E01… Z01… L01… M01… O01…), quando c'è
 //    uso       true = il ritmo dipende da quanto è occupata la camera (passo 3)
 //    strada    true = ritmo dimezzato nelle camere sulla strada
 //    stagione  { da: "MM-GG", a: "MM-GG" } (o un elenco) = solo in quel periodo
@@ -47,7 +50,24 @@ export const LUOGHI_COMUNI = [
 
 export const PANNI = "Colori dei panni: ROSSO solo WC · GIALLO resto del bagno · BLU camera · VERDE cucina. Mai lo stesso panno dal bagno alla camera.";
 
-const R = (id, gruppo, nome, dove, ogni, quando, minuti, euro, priorita, icona, come, controllo, extra = {}) => ({ id, gruppo, nome, dove, ogni, quando, minuti, euro, priorita, icona, come, controllo, ...extra });
+// Il prodotto si ricava dal "come si fa" (il primo che compare), più il colore del panno. Si può scrivere a mano con { prodotto: "…" }.
+const FAMIGLIE_PRODOTTO = [
+  [/anti-?muffa/i, "antimuffa"], [/anticalcare/i, "anticalcare"], [/sgrassatore per forni/i, "sgrassatore per forni"], [/sgrassatore/i, "sgrassatore delicato"],
+  [/detergente vetri/i, "detergente vetri"], [/disinfettante/i, "disinfettante"], [/candeggina/i, "candeggina"], [/pulitore per lavatrice/i, "pulitore per lavatrice"],
+  [/spugna magica/i, "spugna magica"], [/bicarbonato/i, "bicarbonato e aceto"], [/aceto/i, "aceto"], [/multiuso/i, "multiuso"], [/detersivo per fughe/i, "detersivo per fughe"],
+  [/detersivo per pavimenti/i, "detersivo per pavimenti"], [/detersivo per piatti/i, "acqua e detersivo per piatti"], [/acqua bollente/i, "acqua bollente"], [/acqua saponata|acqua e sapone/i, "acqua e sapone"],
+  [/spray igienizzante/i, "spray igienizzante"], [/limone/i, "acqua e limone"], [/lavatrice a \d+°|in lavatrice/i, "lavaggio in lavatrice"], [/sapone antitarme/i, "sapone antitarme"], [/goccia d'olio/i, "una goccia d'olio"],
+];
+export function prodottoDa(come = "", prodotto) {
+  if (prodotto) return prodotto;
+  const t = [];
+  for (const [re, nome] of FAMIGLIE_PRODOTTO) { if (!re.test(come)) continue; if (nome === "aceto" && t.includes("bicarbonato e aceto")) continue; if (nome === "sgrassatore delicato" && t.includes("sgrassatore per forni")) continue; if (!t.includes(nome)) t.push(nome); if (t.length === 2) break; }
+  const panno = (come.match(/panno (ROSSO|GIALLO|BLU|VERDE)/) || [])[1];
+  const base = t.length ? t.join(" e ") : /panno|microfibra|aspira|scopa|spazzol/i.test(come) ? "nessuno (solo panno o aspirapolvere)" : "nessuno";
+  return panno ? `${base} · panno ${panno}` : base;
+}
+export const PRIORITA_TESTO = { 1: "igiene", 2: "lo vede l'ospite", 3: "nascosto" };
+const R = (id, gruppo, nome, dove, ogni, quando, minuti, euro, priorita, icona, come, controllo, extra = {}) => ({ id, gruppo, nome, dove, ogni, quando, minuti, euro, priorita, icona, come, controllo, ...extra, prodotto: prodottoDa(come, extra.prodotto) });
 
 export const CATALOGO = [
   // ---- CAMERA --------------------------------------------------------------------------------
@@ -56,7 +76,7 @@ export const CATALOGO = [
   R("davanzali", "camera", "Davanzali interni e polvere sulle finestre", "stanza", 7, "ripasso", 5, 1, 2, "finestra",
     "Panno BLU umido con il multiuso sui davanzali interni e sul bordo del telaio, poi asciuga. Togli briciole e insetti dagli angoli.", "Passa un dito sul davanzale: deve restare pulito."),
   R("telai_binari", "camera", "Telai e binari delle finestre", "stanza", 14, "ripasso", 10, 2, 2, "finestra",
-    "Aspira i binari con la bocchetta sottile, poi passa uno spazzolino vecchio con il multiuso negli angoli e asciuga. Sgrassa il telaio con il panno BLU.", "Apri la finestra e guarda i binari: niente sabbia né terra negli angoli.", { strada: true, meteo: "vento" }),
+    "Aspira i binari con la bocchetta sottile, poi passa uno spazzolino vecchio con il multiuso negli angoli e asciuga. Sgrassa il telaio con il panno BLU.", "Apri la finestra e guarda i binari: niente sabbia né terra negli angoli.", { strada: true, meteo: "vento", note: "Dopo un vento forte: controlla anche se non è scaduta." }),
   R("vetri_interni", "camera", "Vetri interni lavati bene", "stanza", 14, "ripasso", 10, 2, 2, "finestra",
     "Detergente vetri e tergivetro dall'alto in basso, bordi asciugati con un panno asciutto. (Ditate e macchie si tolgono a ogni pulizia, qui si lava tutto il vetro.)", "Controluce dall'interno: niente righe né aloni."),
   R("vetri_esterni", "camera", "Vetri esterni", "stanza", 30, "ripasso", 15, 3, 2, "finestra",
@@ -71,8 +91,10 @@ export const CATALOGO = [
     "Con la scaletta: panno BLU umido sopra l'armadio (negli appartamenti anche sopra pensili e frigo), poi asciuga. Togli le cose dimenticate.", "Passa un dito sopra l'armadio: deve restare pulito."),
   R("battiscopa", "camera", "Battiscopa", "stanza", 14, "ripasso", 5, 1, 3, "armadio",
     "Panno BLU umido lungo tutti i battiscopa, anche dietro la porta e sotto il letto dove arrivi.", "Dito sul battiscopa dietro la porta: pulito."),
-  R("porte", "camera", "Porte (davanti, dietro, bordo sopra) e maniglie", "stanza", 14, "ripasso", 5, 1, 2, "porta",
-    "Panno BLU umido con il multiuso su tutte e due le facce della porta, sul bordo sopra e intorno alla maniglia (ditate). Maniglie disinfettate.", "Bordo sopra la porta e zona maniglia: niente polvere né ditate."),
+  R("porte_ditate", "camera", "Ditate sulla porta e intorno alla maniglia", "stanza", 0, "ripasso", 1, 0, 2, "porta",
+    "A ogni pulizia: panno BLU umido sulle ditate intorno alla maniglia e sulla porta all'altezza delle mani, dentro e fuori.", "Zona della maniglia senza ditate.", { codice: "C18" }),
+  R("porte", "camera", "Porte lavate (davanti, dietro, bordo sopra)", "stanza", 14, "ripasso", 5, 1, 2, "porta",
+    "Panno BLU umido con il multiuso su tutte e due le facce della porta, sul bordo sopra e intorno alla maniglia. Maniglie disinfettate.", "Bordo sopra la porta e zona maniglia: niente polvere né ditate.", { codice: "C18" }),
   R("lampade", "camera", "Lampade e abat-jour", "stanza", 14, "ripasso", 5, 1, 3, "finestra",
     "Luce spenta e fredda: panno BLU asciutto sui paralumi e sulle lampadine, umido sulle basi.", "Accendi la lampada: niente polvere che si vede sul paralume."),
   R("pareti_ditate", "camera", "Ditate e segni sulle pareti", "stanza", 14, "ripasso", 5, 1, 2, "porta",
@@ -90,11 +112,15 @@ export const CATALOGO = [
   R("coprimaterasso_cambio", "camera", "Coprimaterasso e copricuscini puliti", "stanza", 0, "cambio", 5, 0, 1, "letto",
     "A ogni partenza si cambiano coprimaterasso e copricuscini (il copripiumino va con le lenzuola). Sempre, se macchiati.", "Solleva il lenzuolo: coprimaterasso senza macchie, angoli tesi."),
   R("coprimaterasso_fissi", "camera", "Coprimaterasso e copricuscini (ospite fisso)", "stanza", 21, "ripasso", 10, 2, 1, "letto",
-    "Con gli ospiti che restano settimane: cambia coprimaterasso e copricuscini durante il ripasso, rifai il letto con le stesse lenzuola se sono pulite.", "Solleva il lenzuolo: coprimaterasso pulito.", { soloFissi: true }),
+    "Con gli ospiti che restano settimane: cambia coprimaterasso e copricuscini durante il ripasso, rifai il letto con le stesse lenzuola se sono pulite.", "Solleva il lenzuolo: coprimaterasso pulito.", { soloFissi: true, codice: "O03", note: "Con i tecnici fissi: nel weekend. Mai toccare la roba lasciata in camera; a volte tornano la domenica sera, quindi entro il sabato." }),
   R("coperta_scorta", "camera", "Coperta di scorta pulita nell'armadio", "stanza", 0, "cambio", 2, 0, 2, "coperta",
     "Controlla che nell'armadio ci sia una coperta di scorta pulita e piegata nel sacco.", "Apri l'armadio: coperta piegata e pulita."),
   R("controllo_lusso", "camera", "Controllo di lusso (5 minuti)", "stanza", 0, "cambio", 5, 0, 1, "lente",
-    "A ogni cambio completo, prima di chiudere: sotto il letto, dentro cassetti e armadio, dietro la porta, dietro il WC, capelli negli scarichi, cestini lavati, telecomando-interruttori-maniglie disinfettati.", "Apri un cassetto a caso e guarda dietro il WC: come nuovi."),
+    "A ogni cambio completo, prima di chiudere: sotto il letto, dentro cassetti e armadio, dietro la porta, dietro il WC, capelli negli scarichi, cestini lavati, telecomando-interruttori-maniglie disinfettati.", "Apri un cassetto a caso e guarda dietro il WC: come nuovi.", { domanda: true, note: "Standard di lusso: a ogni partenza. Entra nella domanda finale della signora." }),
+  R("aria_odori", "camera", "Aria e odori", "stanza", 0, "ripasso", 2, 0, 2, "aria",
+    "Finestra aperta mentre pulisci. Annusa cestini, scarichi e tessuti: a fine pulizia la camera deve sapere di pulito, non di profumo. Chiudi solo alla fine.", "Entra a camera chiusa: nessun odore di chiuso, fumo o fogna.", { codice: "C54", note: "Odore di chiuso o di fumo che non va via: segnalalo come problema → sanificazione (Lavori di manutenzione)." }),
+  R("luci_lampadine", "camera", "Luci e lampadine", "stanza", 0, "ripasso", 1, 0, 2, "finestra",
+    "Accendi tutte le luci: plafoniera, abat-jour, specchio, bagno, lampada del balcone. Tutte devono funzionare. Spegni e via.", "Accendi tutto: nessuna lampadina spenta o che sfarfalla.", { codice: "C55", note: "Lampadina fulminata: segnala il problema, la cambia la manutenzione. Mai lasciare una camera con una luce che non va." }),
   R("dentro_armadi", "camera", "Dentro armadi, comodini e cassetti (ripiani, asta, grucce, guide)", "stanza", 14, "cambio", 10, 2, 2, "armadio",
     "Solo a camera libera (mai toccare la roba degli ospiti): svuota, aspira le briciole, panno BLU umido dentro, sui ripiani e nelle guide dei cassetti, asciuga, rimetti grucce e carta; anche dentro i comodini e il mobile della TV.", "Apri due cassetti e l'armadio: niente briciole né capelli."),
   R("materasso_aspirato", "camera", "Materasso aspirato", "stanza", 30, "cambio", 10, 2, 1, "letto",
@@ -124,8 +150,10 @@ export const CATALOGO = [
     "Materasso sollevato di lato: aspira le doghe e il telaio, controlla che nessuna doga sia rotta.", "Doghe senza polvere, nessuna rotta."),
   R("copriletto", "camera", "Copriletto lavato", "stanza", 30, "cambio", 5, 2, 2, "coperta",
     "Copriletto in lavatrice secondo l'etichetta e rimesso solo asciutto; se macchiato, subito.", "Copriletto senza macchie né odori."),
-  R("comodini", "camera", "Comodini sopra e abat-jour", "stanza", 7, "ripasso", 3, 1, 2, "armadio",
-    "Panno BLU umido sopra i comodini (sposta le cose dell'ospite e rimettile uguali), base dell'abat-jour, interruttore disinfettato.", "Sopra il comodino: niente aloni di bicchieri."),
+  R("comodini", "camera", "Comodini sopra e abat-jour", "stanza", 0, "ripasso", 2, 0, 2, "armadio",
+    "A ogni pulizia: panno BLU umido sopra i comodini (sposta le cose dell'ospite e rimettile uguali), base dell'abat-jour, interruttore disinfettato.", "Sopra il comodino: niente aloni di bicchieri.", { codice: "C35" }),
+  R("comodini_dentro", "camera", "Comodini dentro e dietro", "stanza", 14, "cambio", 3, 1, 3, "armadio",
+    "A camera libera: cassetto e vano del comodino svuotati e passati con il panno BLU umido, poi asciugati; comodino scostato e aspirato dietro.", "Apri il cassetto del comodino: niente briciole né capelli.", { codice: "C35" }),
   R("armadio_ante", "camera", "Ante dell'armadio fuori e maniglie", "stanza", 14, "ripasso", 5, 1, 2, "armadio",
     "Panno BLU umido con il multiuso sulle ante fuori (ditate intorno alle maniglie), maniglie disinfettate; per il legno solo panno appena umido.", "Zona delle maniglie senza ditate."),
   R("sotto_mobili", "camera", "Sotto armadio, cassettiera e scrivania", "stanza", 30, "ripasso", 5, 1, 3, "armadio",
@@ -134,8 +162,12 @@ export const CATALOGO = [
     "Piano della scrivania passato (sposta e rimetti le cose dell'ospite), sedie: seduta, schienale e gambe con il panno BLU.", "Piano e sedie senza polvere né briciole."),
   R("tv_schermo", "camera", "Schermo della TV", "stanza", 7, "ripasso", 2, 0.5, 2, "finestra",
     "TV spenta e fredda: panno in microfibra asciutto, movimenti leggeri, mai spruzzare sullo schermo.", "Schermo spento senza ditate né aloni."),
-  R("minibar", "camera", "Frigo in camera dentro e guarnizione", "camera", 30, "cambio", 5, 1, 1, "frigo",
-    "Se la camera ha il frigo: dentro con acqua e bicarbonato, guarnizione, sopra e dietro con il panno asciutto. Vale solo per le camere segnate con il frigo (in Regole).", "Frigo che non puzza, guarnizione bianca.", { soloFrigo: true }),
+  R("minibar", "camera", "Frigo in camera dentro, a ogni partenza", "camera", 0, "cambio", 3, 0, 1, "frigo",
+    "A ogni partenza: cibi lasciati via, dentro con acqua e bicarbonato, asciugato, porta chiusa bene. Vale solo per le camere segnate con il frigo (in Regole).", "Frigo che non puzza, niente briciole sul ripiano.", { soloFrigo: true, codice: "C45" }),
+  R("minibar_guarnizione", "camera", "Frigo in camera: guarnizione", "camera", 14, "ripasso", 2, 0.5, 1, "frigo",
+    "Spazzolino con acqua e bicarbonato nelle pieghe della guarnizione, asciuga; controlla che la porta chiuda bene.", "Pieghe della guarnizione bianche.", { soloFrigo: true, codice: "C45" }),
+  R("minibar_retro", "camera", "Frigo in camera: retro e sotto", "camera", 90, "ripasso", 5, 1, 3, "frigo",
+    "Frigo staccato e scostato: griglia dietro aspirata, pavimento sotto passato, rimesso a posto e riacceso.", "Torcia dietro il frigo: niente polvere sulla griglia.", { soloFrigo: true, codice: "C45" }),
   R("bollitore", "camera", "Bollitore e tazze", "stanza", 7, "ripasso", 3, 1, 1, "cucina",
     "Bollitore sciacquato dentro e passato fuori, tazze e cucchiaini lavati, bustine controllate.", "Dentro il bollitore: niente residui."),
   R("bollitore_calcare", "camera", "Bollitore decalcificato", "stanza", 30, "ripasso", 5, 1, 1, "cucina",
@@ -147,7 +179,7 @@ export const CATALOGO = [
   R("pavimento_angoli", "camera", "Angoli del pavimento e dietro la porta", "stanza", 7, "ripasso", 3, 1, 2, "scopa",
     "Bocchetta piatta negli angoli, dietro la porta e lungo i battiscopa dove la scopa non arriva.", "Angoli senza righe di polvere."),
   R("pavimento_fughe", "camera", "Fughe del pavimento", "stanza", 90, "ripasso", 15, 3, 3, "scopa",
-    "Spazzolone con detersivo per fughe (o bicarbonato e acqua calda), strofina lungo le fughe, risciacqua. Sul marmo niente acidi.", "Fughe dello stesso colore ovunque."),
+    "Spazzolone con detersivo per fughe (o bicarbonato e acqua calda), strofina lungo le fughe, risciacqua. Sul marmo niente acidi.", "Fughe dello stesso colore ovunque.", { prodotto: "detersivo per fughe (o bicarbonato e acqua calda)", note: "Mai acidi (anticalcare, aceto) sul marmo: lo macchiano per sempre." }),
   R("zerbino_camera", "camera", "Zerbino della camera", "stanza", 14, "ripasso", 2, 0.5, 3, "porta",
     "Zerbino davanti alla porta sbattuto e aspirato sotto.", "Sotto lo zerbino: niente sabbia."),
   R("targhette", "camera", "Cartelli, targhette e numero della camera", "stanza", 30, "ripasso", 2, 0.5, 3, "porta",
@@ -157,7 +189,7 @@ export const CATALOGO = [
   R("porta_stipite", "camera", "Stipite, cardini e serratura della porta", "stanza", 30, "ripasso", 3, 1, 3, "porta",
     "Panno umido sullo stipite e sul bordo della porta, cardini spolverati, serratura passata (una goccia d'olio se cigola).", "Stipite in alto senza polvere, porta che non cigola."),
   R("davanzale_esterno", "camera", "Davanzale esterno", "stanza", 14, "ripasso", 3, 1, 2, "finestra",
-    "Finestra aperta: spazzola via sabbia e foglie, panno umido sul davanzale esterno.", "Davanzale fuori senza sabbia né escrementi di uccelli."),
+    "Finestra aperta: spazzola via sabbia e foglie, panno umido sul davanzale esterno.", "Davanzale fuori senza sabbia né escrementi di uccelli.", { meteo: "vento", note: "Dopo un vento forte: controlla anche se non è scaduta." }),
   R("tapparelle", "camera", "Tapparelle: stecche e cinghia", "stanza", 30, "ripasso", 10, 2, 2, "finestra",
     "Tapparella abbassata a metà: panno umido sulle stecche dentro e, dalla finestra, fuori dove arrivi; prova la cinghia.", "Stecche senza polvere grigia, cinghia che scorre."),
   R("tapparelle_cassonetto", "camera", "Cassonetto della tapparella aspirato", "stanza", 180, "ripasso", 5, 1, 3, "finestra",
@@ -168,11 +200,21 @@ export const CATALOGO = [
     "Con la scaletta: panno asciutto sul bastone o nel binario delle tende e sugli anelli.", "Dito sul bastone: pulito."),
   R("termosifone_polvere", "camera", "Termosifone spolverato (davanti, dietro, sopra)", "stanza", 14, "ripasso", 3, 1, 2, "termo",
     "Spazzola lunga tra gli elementi, panno umido sopra e davanti; dietro con la spazzola piatta.", "Dietro il termosifone: niente polvere grigia.", { stagione: { da: "10-01", a: "04-30" } }),
-  R("biancheria_luce", "camera", "Biancheria controllata alla luce", "stanza", 0, "cambio", 3, 0, 1, "lente",
-    "Prima di mettere lenzuola e asciugamani puliti: guardali alla luce della finestra (macchie, pelucchi, capelli) e annusali. Se c'è un dubbio, cambia.", "Lenzuola e asciugamani: bianchi, senza pelucchi, profumati."),
+  R("biancheria_luce", "camera", "Lenzuola controllate alla luce", "stanza", 0, "cambio", 2, 0, 1, "lente",
+    "Prima di fare il letto: lenzuola, federe e copripiumino guardati alla luce della finestra (macchie, pelucchi, capelli) e annusati. Se c'è un dubbio, cambia.", "Lenzuola: bianche, senza pelucchi, profumate."),
+  R("arrivo_ferma", "camera", "Camera ferma da 2+ giorni: rinfresco prima dell'arrivo", "stanza", 0, "giorno", 10, 2, 2, "porta",
+    "Quando una camera resta vuota 2 o più giorni e arriva un ospite: finestra aperta 10 minuti, acqua fatta scorrere in tutti gli scarichi (lavandino, doccia, bidet, WC), polvere a vista, letto e asciugamani controllati, luci provate.", "Scarichi senza odore, niente polvere sul comodino, aria fresca.", { evento: "arrivo", codice: "O02", note: "Vale solo per le camere che restano vuote 2 o più giorni tra una partenza e un arrivo." }),
   // --- aggiunte per la mappa delle superfici (bagno) ---
   R("bagno_base", "bagno", "Pulizia normale del bagno", "bagno", 0, "ripasso", 0, 0, 1, "doccia",
-    "Quello che si fa a ogni pulizia: lavandino, WC, bidet, doccia, specchio, mensole, pavimento, asciugamani. (È la pulizia pagata come camera.)", "Bagno a vista: lucido, asciutto, senza capelli."),
+    "Quello che si fa a ogni pulizia: lavandino, WC, bidet, doccia, specchio, mensole, pavimento, asciugamani. (È la pulizia pagata come camera.)", "Bagno a vista: lucido, asciutto, senza capelli.", { note: "Panno ROSSO solo per il WC. Mop del bagno diverso da quello della camera." }),
+  R("dotazioni_bagno", "bagno", "Dotazioni del bagno complete", "bagno", 0, "ripasso", 2, 0, 2, "lista",
+    "A ogni pulizia: carta igienica (più un rotolo di scorta), sapone e doccia-shampoo, bicchieri puliti, asciugamani del numero giusto, phon, sacchetti igienici, carta del bidet.", "Apri il mobiletto: c'è la scorta di carta e sapone.", { codice: "B38", domanda: true, note: "Entra nella domanda finale della signora." }),
+  R("asciugamani_luce", "bagno", "Asciugamani controllati alla luce", "bagno", 0, "cambio", 2, 0, 1, "lente",
+    "Prima di appenderli: ogni asciugamano guardato alla luce (macchie, pelucchi, capelli, orli sfilacciati) e annusato. Se c'è un dubbio, cambia.", "Asciugamani: bianchi, soffici, senza pelucchi.", { codice: "B37" }),
+  R("scarico_pavimento", "bagno", "Scarico a pavimento (piletta del bagno)", "bagno", 7, "ripasso", 3, 1, 1, "doccia",
+    "Alza la griglia: capelli e sporco via con la pinzetta, spazzolino con bicarbonato e poco aceto, un bollitore d'acqua bollente, griglia lavata e rimessa.", "Griglia alzata: niente capelli né nero; niente odore.", { codice: "B35" }),
+  R("scarichi_odori", "bagno", "Odori dagli scarichi", "bagno", 14, "ripasso", 3, 1, 1, "doccia",
+    "Mezzo bicchiere di bicarbonato e uno di aceto in ogni scarico (lavandino, bidet, doccia), 10 minuti, poi acqua calda. Se puzza di fogna, segnalalo.", "Naso sopra gli scarichi: nessun odore.", { codice: "B36", note: "Camera vuota da 2 o più giorni: prima dell'arrivo fai scorrere l'acqua in tutti gli scarichi (i sifoni asciutti puzzano)." }),
   R("soffitto_bagno_muffa", "bagno", "Soffitto del bagno: angoli e muffa", "bagno", 14, "ripasso", 3, 1, 1, "doccia",
     "Guarda gli angoli del soffitto sopra la doccia: se ci sono puntini neri, anti-muffa sul panno (non spruzzare in alto), lascia agire, asciuga.", "Angoli del soffitto bianchi."),
   R("aspiratore", "bagno", "Griglia dell'aspiratore", "bagno", 30, "ripasso", 3, 1, 2, "aria",
@@ -195,8 +237,12 @@ export const CATALOGO = [
     "Sopra e dietro la cassetta con il panno ROSSO umido, pulsante disinfettato.", "Sopra la cassetta: niente polvere."),
   R("accessori_bagno", "bagno", "Portarotolo, portasciugamani e ganci", "bagno", 7, "ripasso", 3, 1, 2, "doccia",
     "Portarotolo, portasciugamani, ganci e maniglioni passati con il panno GIALLO e disinfettati.", "Portarotolo senza polvere sopra."),
-  R("box_doccia_vetro", "bagno", "Vetri del box doccia dentro e fuori", "bagno", 7, "ripasso", 5, 1, 2, "doccia",
-    "Anticalcare sul vetro, 5 minuti, spugna non graffiante, tergivetro, panno asciutto. Mai abrasivi sul vetro.", "Vetro del box trasparente controluce."),
+  R("box_doccia_tergivetro", "bagno", "Box doccia: tergivetro a ogni pulizia", "bagno", 0, "ripasso", 1, 0, 2, "doccia",
+    "A ogni pulizia: tergivetro sui vetri del box dall'alto in basso dopo aver sciacquato, così il calcare non si attacca. Panno GIALLO sui bordi.", "Vetro del box senza gocce secche.", { codice: "B24" }),
+  R("box_doccia_vetro", "bagno", "Box doccia: vetri dentro con l'anticalcare", "bagno", 7, "ripasso", 5, 1, 2, "doccia",
+    "Anticalcare sul vetro dentro, 5 minuti, spugna non graffiante, tergivetro, panno asciutto. Mai abrasivi sul vetro.", "Vetro del box trasparente controluce.", { codice: "B24", note: "Mai spugne abrasive sul vetro: lo rigano." }),
+  R("box_doccia_fuori", "bagno", "Box doccia: vetri fuori e maniglia", "bagno", 14, "ripasso", 3, 1, 2, "doccia",
+    "Detergente vetri sul panno, vetri del box fuori, maniglia e cerniere lucidate con il panno GIALLO asciutto.", "Fuori del box senza ditate né aloni.", { codice: "B24" }),
   R("box_doccia_binari", "bagno", "Profili e binari del box doccia", "bagno", 14, "ripasso", 5, 1, 2, "doccia",
     "Spazzolino con anticalcare nei binari delle ante e sui profili di alluminio, sciacqua, asciuga.", "Binari delle ante senza calcare né nero."),
   R("tenda_doccia", "bagno", "Tenda della doccia lavata", "bagno", 30, "ripasso", 10, 2, 1, "doccia",
@@ -214,10 +260,18 @@ export const CATALOGO = [
     "Griglie e spartifiamma in ammollo con sgrassatore, manopole sfilate e lavate, piano sotto le griglie sgrassato, tutto asciugato e rimontato.", "Spartifiamma senza incrostazioni, fiamma blu e regolare."),
   R("sotto_lavello", "cucina", "Sotto il lavello e sifone", "cucina", 30, "ripasso", 5, 1, 3, "cucina",
     "Mobile sotto il lavello svuotato, panno VERDE umido dentro, sifone controllato che non goccioli.", "Sotto il lavello: asciutto e pulito."),
+  R("lavastoviglie_partenza", "cucina", "Lavastoviglie a ogni partenza", "cucina", 0, "cambio", 3, 0, 1, "cucina",
+    "A ogni partenza: svuotata, filtro sciacquato sotto l'acqua, guarnizione passata, sportello lasciato aperto a fessura.", "Dentro vuota e asciutta, filtro pulito.", { codice: "K07" }),
   R("lavastoviglie_esterno", "cucina", "Lavastoviglie: guarnizione, cestelli, esterno", "cucina", 14, "ripasso", 5, 1, 1, "cucina",
-    "Guarnizione dello sportello passata, cestelli sciacquati, esterno e maniglia sgrassati.", "Guarnizione senza nero, sportello che non puzza."),
+    "Guarnizione dello sportello passata, cestelli sciacquati, esterno e maniglia sgrassati.", "Guarnizione senza nero, sportello che non puzza.", { codice: "K07" }),
+  R("frigo_partenza", "cucina", "Frigo a ogni partenza", "cucina", 0, "cambio", 3, 0, 1, "frigo",
+    "A ogni partenza: cibi degli ospiti via, ripiani passati con il panno VERDE umido, odori controllati, porta chiusa bene. (Il lavaggio completo è un'altra regola.)", "Frigo vuoto e senza odore.", { codice: "K08" }),
   R("frigo_ripiani", "cucina", "Frigo: ripiani e cassetti lavati", "cucina", 14, "cambio", 10, 2, 1, "frigo",
-    "Ad appartamento libero: cibi lasciati via, ripiani e cassetti lavati con acqua e bicarbonato, asciugati.", "Frigo vuoto, pulito e senza odori."),
+    "Ad appartamento libero: cibi lasciati via, ripiani e cassetti lavati con acqua e bicarbonato, asciugati.", "Frigo vuoto, pulito e senza odori.", { codice: "K08" }),
+  R("inventario_stoviglie", "cucina", "Inventario delle stoviglie a ogni partenza", "cucina", 0, "cambio", 5, 0, 2, "lista",
+    "A ogni partenza: conta piatti, bicchieri, posate, pentole e tazze secondo la lista dell'appartamento; segna cosa manca o è rotto nella nota della pulizia.", "Confronta con la lista: tutto c'è, niente di sbeccato.", { codice: "K15", domanda: true, note: "Entra nella domanda finale della signora." }),
+  R("bidoni_calendario", "cucina", "Bidoni fuori secondo il calendario di Lesina", "cucina", 0, "ripasso", 2, 0, 1, "bidone",
+    "A ogni pulizia: bidoni svuotati con il sacchetto nuovo, differenziata giusta, e il bidone del giorno messo fuori secondo il calendario di Lesina (lo vedi in alto nel foglio della pulizia).", "Bidone giusto fuori, gli altri vuoti e con il sacchetto.", { codice: "K12", note: "Le signore mettono fuori i bidoni secondo il calendario di Lesina." }),
   R("microonde_fondo", "cucina", "Microonde a fondo: piatto e dentro", "cucina", 14, "ripasso", 5, 1, 1, "cucina",
     "Una tazza d'acqua con limone 3 minuti al massimo, poi panno VERDE dentro; piatto girevole lavato.", "Dentro il microonde: niente schizzi secchi."),
   R("moka", "cucina", "Moka e bollitore dell'appartamento", "cucina", 14, "ripasso", 5, 1, 2, "cucina",
@@ -227,7 +281,7 @@ export const CATALOGO = [
   R("bidoni_cucina", "cucina", "Bidoni della differenziata lavati a fondo", "cucina", 14, "ripasso", 5, 1, 1, "bidone",
     "Bidoni e coperchi lavati dentro e fuori con sgrassatore, asciugati aperti.", "Bidoni aperti che non puzzano."),
   R("fondo_completa", "camera", "Pulizia a fondo completa", "stanza", 0, "libera", 180, 40, 1, "stella",
-    "Mezza giornata a camera libera: tutte le rifiniture del catalogo in una volta, letto e mobili spostati, materasso girato, cuscini e piumone lavati, armadi dentro e sopra, vetri dentro e fuori, pareti lavate dove serve.", "Fai il giro con la lista del catalogo: ogni voce deve essere a posto.", { evento: true, grande: true }),
+    "Mezza giornata a camera libera: tutte le rifiniture del catalogo in una volta, letto e mobili spostati, materasso girato, cuscini e piumone lavati, armadi dentro e sopra, vetri dentro e fuori, pareti lavate dove serve.", "Fai il giro con la lista del catalogo: ogni voce deve essere a posto.", { evento: true, grande: true, ogniEvento: 180, codice: "C57", note: "Ogni 6 mesi, oppure dopo un soggiorno di 2 o più settimane, oppure quando la camera è molto indietro." }),
 
   // ---- BAGNO ----------------------------------------------------------------------------------
   R("doccia_muffa", "bagno", "Doccia e silicone anti-muffa", "bagno", 3.5, "ripasso", 5, 1, 1, "doccia",
@@ -243,7 +297,7 @@ export const CATALOGO = [
   R("piastrelle_doccia", "bagno", "Piastrelle e piatto della doccia", "bagno", 7, "ripasso", 5, 1, 1, "doccia",
     "Anticalcare spruzzato su piastrelle e piatto della doccia, 5 minuti, spugna non graffiante, sciacqua e asciuga con il panno GIALLO.", "Passa la mano sulle piastrelle bagnate: lisce, non ruvide di calcare."),
   R("fughe", "bagno", "Fughe delle piastrelle del bagno", "bagno", 30, "ripasso", 10, 2, 2, "doccia",
-    "Spazzolino con pasta di bicarbonato e poco anticalcare sulle fughe scure, lascia 5 minuti, strofina, sciacqua.", "Fughe dello stesso colore ovunque, niente righe nere."),
+    "Spazzolino con pasta di bicarbonato e poco anticalcare sulle fughe scure, lascia 5 minuti, strofina, sciacqua.", "Fughe dello stesso colore ovunque, niente righe nere.", { note: "Mai candeggina sulle fughe colorate: le sbiadisce." }),
   R("soffione_rubinetti", "bagno", "Soffione, flessibile, miscelatore e rubinetti decalcificati (con il filtrino)", "bagno", 30, "ripasso", 10, 2, 2, "doccia",
     "Sacchetto con aceto o anticalcare sul soffione per 15 minuti, poi sciacqua; filtrino del rubinetto svitato e messo nell'aceto; anticalcare su miscelatore, flessibile e rubinetti, spugna, asciuga e lucida con il panno GIALLO asciutto.", "Tutti i fori del soffione buttano acqua dritta; rubinetti lucidi."),
   R("sotto_lavandini", "bagno", "Dietro e sotto i lavandini e i tubi", "bagno", 30, "ripasso", 5, 1, 3, "doccia",
@@ -283,11 +337,11 @@ export const CATALOGO = [
 
   // ---- STAGIONI -------------------------------------------------------------------------------
   R("coperte_autunno", "stagioni", "Coperte e piumoni lavati e pronti nell'armadio", "stanza", 365, "giorno", 30, 6, 2, "coperta",
-    "Prima del freddo: coperte e piumoni in lavatrice (leggi l'etichetta), asciugati bene, piegati nei sacchi nell'armadio. Le coperte si mettono sui letti solo lavate.", "Apri l'armadio: coperte nei sacchi, profumo di pulito.", { stagione: { da: "10-01", a: "11-30" }, meteo: "freddo" }),
+    "Prima del freddo: coperte e piumoni in lavatrice (leggi l'etichetta), asciugati bene, piegati nei sacchi nell'armadio. Le coperte si mettono sui letti solo lavate.", "Apri l'armadio: coperte nei sacchi, profumo di pulito.", { stagione: { da: "10-01", a: "11-30" }, meteo: "freddo", codice: "M01", note: "Coperte sui letti dal 1° ottobre, o prima se per una settimana le notti scendono sotto i 15°. Due notti sotto i 12°: trapuntina. Sotto gli 8°: coperta pesante." }),
   R("coperte_primavera", "stagioni", "Coperte tolte, lavate e riposte", "stanza", 365, "giorno", 30, 6, 2, "coperta",
-    "A primavera: via le coperte dai letti, lavate, asciugate al sole, riposte nei sacchi chiusi con un sapone antitarme.", "Letti senza coperte pesanti; sacchi chiusi nell'armadio.", { stagione: { da: "05-01", a: "06-15" }, meteo: "caldo" }),
-  R("condizionatori_maggio", "stagioni", "Condizionatori pronti per l'estate", "stanza", 365, "ripasso", 30, 6, 1, "aria",
-    "Filtri lavati e asciugati, griglie pulite, spray igienizzante nelle alette, prova di accensione 10 minuti.", "Griglia aperta: filtri bianchi; aria senza odore di chiuso.", { stagione: { da: "05-01", a: "06-10" } }),
+    "A primavera: via le coperte dai letti, lavate, asciugate al sole, riposte nei sacchi chiusi con un sapone antitarme.", "Letti senza coperte pesanti; sacchi chiusi nell'armadio.", { stagione: { da: "05-01", a: "06-15" }, meteo: "caldo", codice: "M01", note: "Sette notti sopra i 15°: via le coperte. Sopra i 20°: solo il lenzuolo." }),
+  R("condizionatori_maggio", "stagioni", "Condizionatori: pulizia di inizio e fine stagione", "stanza", 150, "ripasso", 30, 6, 1, "aria",
+    "A maggio e a ottobre: filtri lavati e asciugati, griglie pulite, spray igienizzante nelle alette, vaschetta della condensa controllata, prova di accensione 10 minuti.", "Griglia aperta: filtri bianchi; aria senza odore di chiuso.", { stagione: [{ da: "05-01", a: "06-10" }, { da: "10-01", a: "10-31" }], note: "A maggio e a ottobre sempre." }),
   R("condizionatore_filtri", "stagioni", "Filtri del condizionatore", "stanza", 14, "ripasso", 10, 2, 1, "aria",
     "Apri la griglia, sfila i filtri, sciacquali sotto l'acqua tiepida, asciugali all'ombra, rimontali. In piena estate ogni 2 settimane, nelle mezze stagioni ogni mese.", "Filtri sfilati: niente strato grigio.", { stagione: [{ da: "06-11", a: "09-15" }], ogniMezza: 30, stagioneMezza: [{ da: "04-15", a: "06-10" }, { da: "09-16", a: "10-31" }] }),
   R("condizionatore_griglie", "stagioni", "Griglie e alette del condizionatore", "stanza", 30, "ripasso", 5, 1, 2, "aria",
@@ -301,13 +355,13 @@ export const CATALOGO = [
   R("corridoio_passata", "comuni", "Passata veloce del corridoio", ["corridoio_p1", "corridoio_p2"], 1, "giornata", 5, 0, 2, "scopa",
     "Ogni giorno di lavoro: scopa veloce o aspirapolvere nel corridoio, cestino comune svuotato, un'occhiata a luci e porte.", "Corridoio senza briciole né cartacce."),
   R("corridoio_fondo", "comuni", "Corridoio a fondo: battiscopa, plafoniere, porte comuni, segni", ["corridoio_p1", "corridoio_p2"], 7, "giornata", 20, 4, 2, "scopa",
-    "Pavimento lavato, battiscopa con il panno umido, plafoniere spolverate, porte comuni e maniglie sgrassate, segni sulle pareti con la spugna magica.", "Battiscopa e maniglie delle porte comuni: puliti al tatto."),
+    "Pavimento lavato, battiscopa con il panno umido, plafoniere spolverate, porte comuni e maniglie sgrassate, segni sulle pareti con la spugna magica.", "Battiscopa e maniglie delle porte comuni: puliti al tatto.", { codice: "Z03", meteo: "pioggia", note: "Con la pioggia: pavimento lavato 2 volte a settimana." }),
   R("corridoio_quadri_estintore", "comuni", "Quadri, estintore e cartelli del corridoio", ["corridoio_p1", "corridoio_p2"], 30, "giornata", 5, 1, 3, "finestra",
     "Cornici e vetri dei quadri con il panno asciutto, estintore spolverato (guarda che il cartellino sia in regola), cartelli e targhette passati.", "Dito sopra la cornice e sull'estintore: pulito."),
   R("scale_scopate", "comuni", "Scale di servizio scopate", "scale", 3.5, "giornata", 10, 2, 2, "scopa",
     "Scopa dall'alto in basso, gradino per gradino, angoli compresi; raccogli con la paletta.", "Angoli dei gradini senza polvere."),
   R("scale_lavate", "comuni", "Scale di servizio lavate", "scale", 7, "giornata", 15, 3, 2, "scopa",
-    "Dopo averle scopate: secchio con detersivo per pavimenti, dall'alto in basso, strizza bene lo straccio (gradini scivolosi = pericolo). Cartello 'bagnato'.", "Gradini asciutti e senza aloni."),
+    "Dopo averle scopate: secchio con detersivo per pavimenti, dall'alto in basso, strizza bene lo straccio (gradini scivolosi = pericolo). Cartello 'bagnato'.", "Gradini asciutti e senza aloni.", { codice: "Z03", meteo: "pioggia", note: "Con la pioggia: 2 volte a settimana." }),
   R("scale_corrimano", "comuni", "Corrimano, ringhiera e battiscopa delle scale", "scale", 14, "giornata", 10, 2, 2, "scopa",
     "Corrimano sgrassato e disinfettato per tutta la lunghezza, ringhiera passata, battiscopa dei gradini con il panno umido.", "Mano sul corrimano: pulito, non appiccicoso."),
   R("scale_pareti_luci", "comuni", "Pareti e plafoniere delle scale", "scale", 30, "giornata", 15, 3, 2, "finestra",
@@ -326,6 +380,8 @@ export const CATALOGO = [
     "Fili e struttura degli stendini passati con il panno umido e sgrassatore (altrimenti sporcano la biancheria pulita).", "Dito sui fili dello stendino: pulito."),
   R("bidoni", "comuni", "Bidoni dei rifiuti lavati", "ingresso", 14, "giornata", 10, 2, 1, "bidone",
     "Bidoni svuotati, lavati dentro e fuori con acqua e sgrassatore, asciugati aperti al sole.", "Bidone aperto: non puzza, fondo pulito."),
+  R("luci_esterne", "comuni", "Luci esterne provate e pulite", ["ingresso", "terrazzo", "scale"], 7, "giornata", 3, 1, 2, "finestra",
+    "Accendi le luci del portone, delle scale e del terrazzo: tutte devono funzionare. Vetri delle lampade passati con il panno umido, ragnatele via.", "Di sera: tutte le luci esterne accese e pulite.", { codice: "Z12", note: "Lampadina fulminata: segnala il problema (Lavori di manutenzione)." }),
 
   // ---- LAVANDERIA, ATTREZZI E SCORTE -----------------------------------------------------------
   R("lavatrice_cassetto", "lavanderia", "Cassetto del detersivo e guarnizione dell'oblò", "lavanderia", 7, "giornata", 5, 1, 1, "lavatrice",
@@ -348,12 +404,24 @@ export const CATALOGO = [
     "Mappine e stracci da terra si lavano a 60° ogni giorno che si usano e si asciugano stesi, mai bagnati nel secchio (è per questo che puzzano). Ogni 4-6 settimane si buttano e si prendono nuovi.", "Annusa la mappina asciutta: nessun odore."),
   R("microfibra", "lavanderia", "Panni in microfibra nuovi", "lavanderia", 75, "giornata", 5, 0, 1, "secchio",
     "I panni in microfibra si lavano a 60° senza ammorbidente e si cambiano ogni 2-3 mesi. " + PANNI, "Panni dei quattro colori presenti e non sfilacciati."),
-  R("carrello", "lavanderia", "Carrello, secchi e scope lavati", "lavanderia", 7, "giornata", 10, 2, 2, "secchio",
-    "Carrello, secchi e scope lavati con sgrassatore e lasciati asciugare capovolti.", "Secchi asciutti e senza fondo scuro."),
+  R("carrello", "lavanderia", "Carrello e secchi lavati", "lavanderia", 7, "giornata", 5, 1, 2, "secchio",
+    "Carrello e secchi lavati con sgrassatore e lasciati asciugare capovolti.", "Secchi asciutti e senza fondo scuro."),
+  R("scope", "lavanderia", "Scope, spazzoloni e mop lavati e controllati", "lavanderia", 7, "giornata", 5, 1, 1, "secchio",
+    "Setole delle scope sciacquate e liberate dai capelli, spazzoloni lavati, mop in lavatrice a 60° e stesi. Il mop del bagno è diverso da quello della camera: etichetta colorata sul manico.", "Mop asciutti, senza odore; etichette dei mop al posto giusto.", { codice: "L17", prodotto: "sgrassatore delicato · mop in lavatrice a 60°", note: "Mop del bagno diverso da quello della camera." }),
+  R("spugne", "lavanderia", "Spugne nuove", "lavanderia", 14, "giornata", 2, 0, 1, "secchio",
+    "Ogni 2 settimane spugne nuove per bagni e cucine (quella del WC ogni settimana e si butta). Mai la stessa spugna tra bagno e cucina: colori diversi.", "Spugne senza odore, nessuna sfaldata.", { codice: "L16" }),
+  R("guanti", "lavanderia", "Guanti controllati e cambiati", "lavanderia", 14, "giornata", 2, 0, 1, "secchio",
+    "Un paio di guanti per il bagno (rossi) e uno per il resto. Bucati o puzzolenti: via, paio nuovo. Lavati fuori e dentro a fine giornata e asciugati capovolti.", "Due paia per signora, interi e asciutti.", { codice: "L19" }),
   R("aspirapolvere", "lavanderia", "Aspirapolvere: sacco e filtri", "lavanderia", 14, "giornata", 10, 2, 2, "secchio",
     "Sacco cambiato, filtri battuti o lavati e asciugati, spazzola liberata dai capelli con le forbici.", "Aspirapolvere che tira forte e non puzza."),
-  R("scorte", "lavanderia", "Controllo prodotti e biancheria", "lavanderia", 7, "giornata", 10, 0, 2, "lista",
-    "Conta prodotti e biancheria: almeno un ricambio pulito completo per ogni camera sempre pronto. Scrivi a Michele cosa manca.", "Scaffale con un set completo per camera."),
+  R("scorte", "lavanderia", "Controllo dei prodotti", "lavanderia", 7, "giornata", 5, 0, 2, "lista",
+    "Conta i prodotti: ogni carrello ha tutto per una settimana (sgrassatore, anticalcare, antimuffa, detergente vetri, disinfettante, sacchetti, carta). Scrivi a Michele cosa manca.", "Scaffale dei prodotti con la scorta per una settimana."),
+  R("biancheria_scorta", "lavanderia", "Biancheria di scorta: un set per camera", "lavanderia", 7, "giornata", 5, 0, 1, "coperta",
+    "Un set completo pulito per ogni camera sempre pronto sullo scaffale: lenzuola, federe, copripiumino, asciugamani grandi e piccoli, tappetino. Scrivi a Michele cosa manca.", "Scaffale con un set completo per camera, piegato.", { codice: "L21" }),
+  R("controllo_piegatura", "lavanderia", "Controllo alla luce alla piegatura", "lavanderia", 7, "giornata", 5, 1, 1, "lente",
+    "Ogni pezzo che esce dall'asciugatura si guarda alla luce mentre si piega: macchie, strappi, pelucchi, elastici molli. Quello rovinato va nella cesta 'da sostituire', non sullo scaffale.", "Cesta 'da sostituire' usata; niente pezzi macchiati sugli scaffali.", { codice: "L22" }),
+  R("ferro_stiro", "lavanderia", "Ferro da stiro e asse", "lavanderia", 30, "giornata", 5, 1, 3, "secchio",
+    "Ferro freddo e staccato: piastra passata con il panno umido (bicarbonato se è macchiata), serbatoio svuotato, telo dell'asse lavato se è macchiato.", "Piastra lucida, serbatoio vuoto.", { codice: "L23" }),
 ];
 // (nome vecchio: lo usano ancora alcune schermate)
 export const REGOLE_GOVERNANTE = CATALOGO;
@@ -406,6 +474,14 @@ export function luoghiDi(regola, camere, luoghi = LUOGHI_COMUNI, flags = {}) {
   const l = luoghi.find(x => x.id === d); return l ? [l] : [];
 }
 export function trovaLuogo(id, camere, luoghi = LUOGHI_COMUNI) { return camere.find(c => c.id === id) || luoghi.find(l => l.id === id) || null; }
+// "La regola copre questo posto?" con una memoria per elenco di regole (la simulazione lo chiede migliaia di volte)
+const memoCopre = new WeakMap();
+function copre(regole, r, l, camere, luoghi, flags) {
+  let m = memoCopre.get(regole); if (!m) { m = new Map(); memoCopre.set(regole, m); }
+  const k = `${r.id}|${l.id}`; let v = m.get(k);
+  if (v === undefined) { v = luoghiDi(r, camere, luoghi, flags).some(x => x.id === l.id); m.set(k, v); }
+  return v;
+}
 
 // È dentro la stagione? (stagione: {da,a} oppure un elenco di finestre)
 function inFinestra(f, iso) { const mg = iso.slice(5); return f.da <= f.a ? (mg >= f.da && mg <= f.a) : (mg >= f.da || mg <= f.a); }
@@ -422,6 +498,11 @@ export function ogniAttuale(regola, iso, luogo, flags = {}) {
   return g;
 }
 
+// La pulizia a fondo completa fa tutto il catalogo della camera in una volta: queste sono le regole che segna fatte
+export function regoleDellaFondoCompleta(luogo, ctx) {
+  const { camere } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(null), flags = ctx.flags || {}, oggi = ctx.oggi;
+  return regole.filter(r => !r.evento && r.ogni > 0 && (r.quando === "ripasso" || r.quando === "cambio" || r.quando === "libera") && copre(regole, r, luogo, camere, luoghi, flags) && inStagione(r, oggi)).map(r => r.id);
+}
 // Quanto è "scaduto" un lavoro: 0 = appena fatto, 1 = scaduto adesso, >1 = in ritardo. Infinity = mai fatto.
 export function rapportoScadenza(regola, ultima, oggi, ogni) {
   const g = ogni ?? regola.ogni;
@@ -441,11 +522,30 @@ export function testoUltima(ultima, oggi) {
 
 // Registro: { "regola|luogo": { ultima: "AAAA-MM-GG", da, n, saltata, motivo } }
 export function chiaveRegistro(regola, luogo) { return `${regola}|${luogo}`; }
+// Da quando lavora la governante: serve per dare un'urgenza alle cose "mai registrate" (partenza grigia).
+// Una cosa mai fatta vale come se fosse stata fatta il giorno in cui la governante è partita: così le cose
+// a ritmo corto (settimanali) vengono prima, quelle a ritmo lungo (ogni 3-6 mesi) aspettano il loro turno.
+export function inizioGovernante(ctx) {
+  if (ctx.inizio) return ctx.inizio;
+  const date = Object.values(ctx.registro || {}).map(v => v && v.ultima).filter(Boolean).sort();
+  return date[0] || ctx.oggi;
+}
+// L'urgenza con cui una cosa chiede di essere fatta (più alta = prima). 99 = "a ogni pulizia".
+// La priorità pesa: l'igiene (1) passa avanti, quello che non si vede (3) aspetta di più.
+const PESO_PRIORITA = { 1: 1.5, 2: 1, 3: 0.6 };
+function urgenza(ogni, ultima, oggi, inizio, priorita = 2) {
+  if (!ogni) return 99;
+  const peso = PESO_PRIORITA[priorita] || 1;
+  if (ultima) return giorniTra(ultima, oggi) / ogni * peso;
+  return (1 + Math.max(0, giorniTra(inizio, oggi)) / ogni) * peso;
+}
 export function ultimaVolta(registro, regola, luogo) { return (registro && registro[chiaveRegistro(regola, luogo)]) || null; }
 
 // --- la stanza è libera quella notte? -------------------------------------------------------------
 function liberaLaNotte(soggiorni, camera, iso) { return !soggiorni.some(s => s.camera === camera && soggiornoCopre(s, iso)); }
 function nottiDiFila(soggiorni, camera, iso) { const s = soggiorni.find(x => x.camera === camera && soggiornoCopre(x, iso)); return s ? giorniTra(s.inizio, iso) : 0; }
+// Quante notti di fila la camera è rimasta vuota prima del giorno "iso" (massimo 60)
+function nottiVuotePrima(soggiorni, camera, iso) { let n = 0; while (n < 60 && liberaLaNotte(soggiorni, camera, aggiungiGiorni(iso, -(n + 1)))) n++; return n; }
 const CAMBIO = p => p.tipo === "totale" || p.tipo === "totale_casa";
 const NORMALE = p => p && p.origine !== "governante" && p.tipo !== "extra" && p.tipo !== "fondo";
 
@@ -480,10 +580,12 @@ function cambiDelGiorno(pulizie, zona, iso) { return Object.values(pulizie).filt
 // ============================================================================
 export function rifinitureDelGiorno(zona, iso, ctx) {
   const { camere, registro, soggiorni = [] } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(null), sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) }, flags = ctx.flags || {};
+  const inizio = inizioGovernante(ctx);
   const pulizie = Object.values(ctx.pulizie || {}).filter(p => p.data === iso && p.zona === zona && NORMALE(p) && p.stato !== "non_fatta")
     .sort((a, b) => ((camere.find(c => c.id === a.camera) || {}).ordine || 99) - ((camere.find(c => c.id === b.camera) || {}).ordine || 99));
   const out = {}; if (!pulizie.length) return out;
-  let minutiGiorno = 0;
+  // i lavori della governante già messi in quel giorno per quella signora (consigli accettati) occupano il budget; la fondo completa (mezza giornata) no
+  let minutiGiorno = Object.values(ctx.pulizie || {}).filter(p => p.data === iso && p.zona === zona && p.origine === "governante" && p.stato !== "non_fatta" && (p.minuti || 0) < 120).reduce((s, p) => s + (p.minuti || 0), 0);
   // 1) camera per camera
   for (const p of pulizie) {
     const l = trovaLuogo(p.camera, camere, luoghi); if (!l) continue;
@@ -492,7 +594,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
     for (const r of regole) {
       if (r.quando !== "ripasso" && r.quando !== "cambio") continue;
       if (r.evento) continue;
-      if (!luoghiDi(r, camere, luoghi, flags).some(x => x.id === l.id)) continue;
+      if (!copre(regole, r, l, camere, luoghi, flags)) continue;
       if (!inStagione(r, p.data)) continue;
       if (r.quando === "cambio" && !cambio) continue;
       if (r.soloFissi && !fisso) continue;
@@ -500,10 +602,10 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       if (reg?.saltata === p.data && reg?.saltataPer === p.id) continue; // "non la posso fare" oggi: alla pulizia dopo
       const ogni = ogniAttuale(r, p.data, l, flags);
       const rapporto = ogni ? rapportoScadenza(r, reg?.ultima || null, p.data, ogni) : Infinity;
-      if (ogni && rapporto < 0.9) continue;
-      cand.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, sempre: !ogni, ogni, rapporto, ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, perche: perche(r, reg, p.data, ogni) });
+      if (ogni && reg?.ultima && rapporto < 0.9) continue;
+      cand.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", codice: r.codice || "", icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, domanda: !!r.domanda, sempre: !ogni, ogni, rapporto, urgenza: urgenza(ogni, reg?.ultima || null, p.data, inizio, r.priorita), ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, perche: perche(r, reg, p.data, ogni) });
     }
-    cand.sort((a, b) => (b.sempre - a.sempre) || (b.rapporto - a.rapporto) || (a.priorita - b.priorita));
+    cand.sort((a, b) => (b.sempre - a.sempre) || (b.urgenza - a.urgenza) || (a.priorita - b.priorita));
     const scelte = []; let min = 0, n = 0;
     for (const c of cand) {
       if (c.sempre) { scelte.push(c); continue; }
@@ -526,12 +628,12 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       if (reg?.saltata === iso) continue;
       const ogni = ogniAttuale(r, iso, l, flags);
       const rapporto = ogni ? rapportoScadenza(r, reg?.ultima || null, iso, ogni) : Infinity;
-      if (ogni > 1 && rapporto < 0.9) continue;
+      if (ogni > 1 && reg?.ultima && rapporto < 0.9) continue;
       if (ogni <= 1 && reg?.ultima === iso) continue;
-      comuni.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, sempre: ogni <= 1, ogni, rapporto, ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, comune: true, perche: perche(r, reg, iso, ogni) });
+      comuni.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", codice: r.codice || "", icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, domanda: !!r.domanda, sempre: ogni <= 1, ogni, rapporto, urgenza: urgenza(ogni > 1 ? ogni : 0, reg?.ultima || null, iso, inizio, r.priorita), ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, comune: true, perche: perche(r, reg, iso, ogni) });
     }
   }
-  comuni.sort((a, b) => (b.sempre - a.sempre) || (b.rapporto - a.rapporto) || (a.priorita - b.priorita));
+  comuni.sort((a, b) => (b.sempre - a.sempre) || (b.urgenza - a.urgenza) || (a.priorita - b.priorita));
   const sceltiComuni = []; let n = 0;
   for (const c of comuni) { if (c.sempre) { sceltiComuni.push(c); continue; } if (n >= 1 || minutiGiorno + c.minuti > sg.minutiGiorno) continue; sceltiComuni.push(c); minutiGiorno += c.minuti; n++; }
   if (sceltiComuni.length) out[prima.id] = [...(out[prima.id] || []), ...sceltiComuni];
@@ -553,7 +655,7 @@ function perche(r, reg, oggi, ogni) {
 export function proposteSettimana(ctx) {
   const { lun, oggi, camere, soggiorni, pulizie, registro, rinvii = {} } = ctx;
   const luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(null), sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) }, flags = ctx.flags || {};
-  const fine = aggiungiGiorni(lun, 6);
+  const fine = aggiungiGiorni(lun, 6), inizio = inizioGovernante(ctx);
   const giorniLavoro = []; for (let i = 0; i < 7; i++) { const g = aggiungiGiorni(lun, i); if (g >= oggi && giornoSettimana(g) !== 0) giorniLavoro.push(g); }
   const candidati = [];
   // minuti già impegnati dalle rifiniture dentro le pulizie, per signora e giorno
@@ -569,19 +671,35 @@ export function proposteSettimana(ctx) {
       const giaInProgramma = Object.values(pulizie).some(p => p.origine === "governante" && p.regola === r.id && p.camera === l.id && p.stato !== "fatta" && p.data >= aggiungiGiorni(oggi, -14));
       if (giaInProgramma) continue;
       const rinvio = rinvii[k]; if (rinvio && rinvio.fino > fine) continue;
+      // evento "arrivo": camera rimasta vuota 2+ notti e un ospite che arriva in settimana → rinfresco il giorno dell'arrivo
+      if (r.evento === "arrivo") {
+        if (l.tipo === "comune") continue;
+        const da = lun > oggi ? lun : oggi;
+        for (const s of soggiorni.filter(s => s.camera === l.id && s.inizio >= da && s.inizio <= fine).sort((a, b) => a.inizio < b.inizio ? -1 : 1)) {
+          const vuote = nottiVuotePrima(soggiorni, l.id, s.inizio); if (vuote < 2) continue;
+          if (Object.values(pulizie).some(p => p.camera === l.id && p.data === s.inizio && NORMALE(p))) continue; // quel giorno c'è già una pulizia
+          let data = s.inizio; if (giornoSettimana(data) === 0) data = aggiungiGiorni(data, -1);
+          if (data < oggi || (ult && ult >= data)) continue;
+          candidati.push({ id: `${r.id}|${l.id}|${data}`, regola: r.id, nome: r.nome, cosa: r.nome, icona: r.icona, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", luogo: l.id, luogoNome: l.nome, luogoTipo: l.tipo, zona: l.zona, data, minuti: r.minuti, euro: r.euro || 0, grande: false, libera: false, priorita: 1, perche: [vuote >= 60 ? "camera ferma da più di 2 mesi" : `camera ferma da ${vuote} notti`, `arriva ${s.nome || "un ospite"} ${data === s.inizio ? "quel giorno" : "il giorno dopo"}`], rapporto: 60, chiave: k });
+          break;
+        }
+        continue;
+      }
       const ogni = ogniAttuale(r, fine, l, flags);
       let rapporto = r.evento ? 0 : rapportoScadenza(r, ult, fine, ogni);
       if (r.stagione && ult && inStagione(r, ult) && giorniTra(ult, fine) < 300) continue;
       const perche = [];
-      // gli eventi: soggiorno lungo che finisce questa settimana, oppure camera molto indietro
+      // gli eventi: soggiorno lungo che finisce questa settimana, camera molto indietro, oppure è passato troppo tempo (ogniEvento)
       let lungo = null, indietro = 0;
       if (r.evento) {
         lungo = soggiorni.find(s => s.camera === l.id && s.fine >= (lun > oggi ? lun : oggi) && s.fine <= fine && giorniTra(s.inizio, s.fine) >= 14) || null;
-        indietro = regole.filter(x => !x.evento && x.ogni && (x.quando === "ripasso" || x.quando === "cambio" || x.quando === "libera") && luoghiDi(x, camere, luoghi, flags).some(y => y.id === l.id) && inStagione(x, oggi))
+        indietro = regole.filter(x => !x.evento && x.ogni && (x.quando === "ripasso" || x.quando === "cambio" || x.quando === "libera") && copre(regole, x, l, camere, luoghi, flags) && inStagione(x, oggi))
           .filter(x => { const u = registro?.[chiaveRegistro(x.id, l.id)]?.ultima || null; const rp = rapportoScadenza(x, u, oggi, ogniAttuale(x, oggi, l, flags)); return rp !== Infinity && rp >= 2; }).length;
-        if (!lungo && indietro < 6) continue;
+        const vecchia = !!(r.ogniEvento && ult && giorniTra(ult, fine) >= r.ogniEvento);
+        if (!lungo && indietro < 6 && !vecchia) continue;
         if (lungo) perche.push(`${lungo.nome || "l'ospite"} ha dormito qui ${giorniTra(lungo.inizio, lungo.fine)} notti`);
         if (indietro >= 6) perche.push(`${indietro} rifiniture molto in ritardo`);
+        if (vecchia) perche.push(`l'ultima volta ${testoUltima(ult, oggi)}`);
         rapporto = 99;
       } else {
         const prossima = ult && ogni ? aggiungiGiorni(ult, Math.round(ogni)) : null;
@@ -603,7 +721,7 @@ export function proposteSettimana(ctx) {
       }
       if (!r.evento) perche.unshift(ult ? `${etichettaOgni(ogni)} · ultima volta ${testoUltima(ult, oggi)}` : `${etichettaOgni(ogni)} · mai registrata`);
       if (r.stagione) perche.push("è il periodo giusto");
-      candidati.push({ id: `${r.id}|${l.id}|${data}`, regola: r.id, nome: r.nome, cosa: r.nome, icona: r.icona, come: r.come, controllo: r.controllo || "", luogo: l.id, luogoNome: l.nome, luogoTipo: l.tipo, zona: l.zona, data, minuti: r.minuti, euro: r.euro || 0, grande: !!r.grande, libera: r.quando === "libera", priorita: r.priorita || 2, perche, rapporto: rapporto === Infinity ? 50 : rapporto, chiave: k });
+      candidati.push({ id: `${r.id}|${l.id}|${data}`, regola: r.id, nome: r.nome, cosa: r.nome, icona: r.icona, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", luogo: l.id, luogoNome: l.nome, luogoTipo: l.tipo, zona: l.zona, data, minuti: r.minuti, euro: r.euro || 0, grande: !!r.grande, libera: r.quando === "libera", priorita: r.priorita || 2, perche, rapporto: r.evento ? 99 : urgenza(ogni, ult, fine, inizio, r.priorita), chiave: k });
     }
   }
   candidati.sort((a, b) => (b.rapporto - a.rapporto) || (a.priorita - b.priorita) || (a.data < b.data ? -1 : 1));
@@ -640,10 +758,11 @@ export const routinePer = rifiniturePer;
 // ============================================================================
 export function calendarioPulito(ctx) {
   const { camere, registro, oggi } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, flags = ctx.flags || {};
-  const regole = (ctx.regole || regoleAttive(null)).filter(r => r.ogni > 1 && !r.evento);
+  const tutte = ctx.regole || regoleAttive(null);
+  const regole = tutte.filter(r => r.ogni > 1 && !r.evento);
   const tutti = [...camere, ...luoghi];
   return tutti.map(l => {
-    const voci = regole.filter(r => luoghiDi(r, camere, luoghi, flags).some(x => x.id === l.id) && inStagione(r, oggi)).map(r => {
+    const voci = regole.filter(r => copre(tutte, r, l, camere, luoghi, flags) && inStagione(r, oggi)).map(r => {
       const reg = registro?.[chiaveRegistro(r.id, l.id)] || null; const ogni = ogniAttuale(r, oggi, l, flags); const rapporto = rapportoScadenza(r, reg?.ultima || null, oggi, ogni);
       return { regola: r.id, nome: r.nome, cosa: r.nome, icona: r.icona, ogni, quando: r.quando, ultima: reg?.ultima || null, da: reg?.da || "", rapporto, colore: coloreScadenza(rapporto), testo: testoUltima(reg?.ultima || null, oggi) };
     }).sort((a, b) => (b.rapporto === Infinity ? 99 : b.rapporto) - (a.rapporto === Infinity ? 99 : a.rapporto));
@@ -668,26 +787,149 @@ export function settimanaGovernante(adesso = new Date()) {
 //  rifiniture come farebbe la governante, e conta quante voci restano in regola alla fine.
 //  Serve a dire la verità: "con 60 minuti al giorno arrivi al 40%, con 120 al 65%".
 // ============================================================================
-export function simulaCopertura(ctx, settimane = 8) {
-  const { camere, soggiorni = [] } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(null), flags = ctx.flags || {};
+// Il "modello" della settimana: le pulizie normali in programma questa settimana (si ripetono per N settimane)
+function modelloSettimana(ctx, lun) {
+  return Object.values(ctx.pulizie || {}).filter(p => p.data >= lun && p.data < aggiungiGiorni(lun, 7) && (p.origine === "auto" || p.origine === "mano" || !p.origine) && p.tipo !== "fondo" && p.tipo !== "extra" && p.stato !== "non_fatta");
+}
+// La simulazione vera e propria: N settimane come questa, con le rifiniture dentro le pulizie e i consigli
+// a camera libera tutti accettati. Parte dal registro vero (o da zero con daZero). Ritorna il registro finale,
+// la prima data in cui ogni cosa verrebbe fatta, i minuti per signora e giorno, e i consigli accettati.
+export function simulaGovernante(ctx, settimane = 13, opz = {}) {
+  const { camere, soggiorni = [] } = ctx; const regole = ctx.regole || regoleAttive(null);
   const lun = ctx.lun || lunediDi(ctx.oggi);
-  // le pulizie della settimana in corso, ripetute (stesso giorno della settimana) per N settimane
-  const modello = Object.values(ctx.pulizie || {}).filter(p => p.data >= lun && p.data < aggiungiGiorni(lun, 7) && (p.origine === "auto" || p.origine === "mano" || !p.origine) && p.tipo !== "fondo");
+  const modello = modelloSettimana(ctx, lun);
   if (!modello.length) return null;
-  const registro = {}; let minuti = 0, n = 0;
-  const zone = [...new Set(camere.map(c => c.zona))];
-  for (let w = 0; w < settimane; w++) for (let d = 0; d < 7; d++) {
-    const iso = aggiungiGiorni(lun, w * 7 + d);
-    const pul = {}; for (const p of modello) if (giornoSettimana(p.data) === giornoSettimana(iso)) { const id = `${iso}_${p.camera}`; pul[id] = { ...p, id, data: iso, stato: "da_fare" }; }
-    if (!Object.keys(pul).length) continue;
+  const registro = {};
+  if (!opz.daZero) for (const [k, v] of Object.entries(ctx.registro || {})) if (v && v.ultima) registro[k] = { ultima: v.ultima };
+  const prima = {}, minuti = {}, zone = [...new Set(camere.map(c => c.zona))], accettate = []; let nRif = 0;
+  const base = { ...ctx, regole, registro, rinvii: {}, inizio: inizioGovernante(ctx) };
+  for (let w = 0; w < settimane; w++) {
+    const lunW = aggiungiGiorni(lun, w * 7);
     const sog = soggiorni.map(s => ({ ...s, inizio: aggiungiGiorni(s.inizio, w * 7), fine: aggiungiGiorni(s.fine, w * 7) }));
-    for (const z of zone) { const m = rifinitureDelGiorno(z, iso, { ...ctx, oggi: iso, pulizie: pul, soggiorni: sog, registro }); for (const rf of Object.values(m)) for (const r of rf) { registro[chiaveRegistro(r.regola, r.luogo)] = { ultima: iso }; if (!r.sempre) { minuti += r.minuti; n++; } } }
+    const pul = {}; for (const p of modello) { const iso = aggiungiGiorni(p.data, w * 7); const id = `${iso}_${p.camera}`; pul[id] = { ...p, id, data: iso, stato: "da_fare" }; }
+    const c2 = { ...base, lun: lunW, oggi: lunW, pulizie: pul, soggiorni: sog };
+    // lunedì mattina: i consigli della settimana, tutti accettati
+    const pr = proposteSettimana(c2);
+    for (const c of pr.proposte) { accettate.push({ ...c, settimana: w }); const k = chiaveRegistro(c.regola, c.luogo); if (!prima[k]) prima[k] = c.data; pul[`${c.data}_${c.luogo}_g_${c.regola}`] = { id: `${c.data}_${c.luogo}_g_${c.regola}`, data: c.data, camera: c.luogo, zona: c.zona, tipo: "fondo", origine: "governante", regola: c.regola, minuti: c.minuti, stato: "da_fare" }; }
+    for (let d = 0; d < 7; d++) {
+      const iso = aggiungiGiorni(lunW, d);
+      for (const z of zone) {
+        const m = rifinitureDelGiorno(z, iso, { ...c2, oggi: iso });
+        for (const rf of Object.values(m)) for (const r of rf) { const k = chiaveRegistro(r.regola, r.luogo); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; if (!r.sempre) { nRif++; minuti[`${z}|${iso}`] = (minuti[`${z}|${iso}`] || 0) + r.minuti; } }
+      }
+      for (const c of pr.proposte) if (c.data === iso) {
+        registro[chiaveRegistro(c.regola, c.luogo)] = { ultima: iso };
+        if (c.grande) { const l = trovaLuogo(c.luogo, camere, ctx.luoghi || LUOGHI_COMUNI); if (l) for (const id of regoleDellaFondoCompleta(l, { ...c2, oggi: iso })) { const k = chiaveRegistro(id, c.luogo); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; } }
+        else minuti[`${c.zona}|${iso}`] = (minuti[`${c.zona}|${iso}`] || 0) + c.minuti;
+      }
+    }
   }
-  const fine = aggiungiGiorni(lun, settimane * 7 - 1);
-  const cal = calendarioPulito({ ...ctx, oggi: fine, registro });
+  return { settimane, lun, fine: aggiungiGiorni(lun, settimane * 7 - 1), registro, prima, minuti, rifiniture: nRif, proposte: accettate, modello, zone };
+}
+// Quanto del catalogo si riesce a tenere in regola con le soglie attuali, partendo da zero (per la scheda Regole)
+export function simulaCopertura(ctx, settimane = 8) {
+  const sim = simulaGovernante(ctx, settimane, { daZero: true });
+  if (!sim) return null;
+  const cal = calendarioPulito({ ...ctx, oggi: sim.fine, registro: sim.registro });
   const voci = cal.flatMap(c => c.voci).filter(v => v.quando === "ripasso" || v.quando === "cambio" || v.quando === "giornata");
   const inRegola = voci.filter(v => v.colore !== "rosso").length;
-  return { settimane, voci: voci.length, inRegola, mai: voci.filter(v => !v.ultima).length, percento: voci.length ? Math.round(inRegola / voci.length * 100) : 0, minutiSettimanaSignora: Math.round(minuti / settimane / zone.length), rifinitureSettimana: Math.round(n / settimane) };
+  const minuti = Object.values(sim.minuti).reduce((s, m) => s + m, 0);
+  return { settimane, voci: voci.length, inRegola, mai: voci.filter(v => !v.ultima).length, percento: voci.length ? Math.round(inRegola / voci.length * 100) : 0, minutiSettimanaSignora: Math.round(minuti / settimane / sim.zone.length), rifinitureSettimana: Math.round(sim.rifiniture / settimane) };
+}
+
+// ============================================================================
+//  IL TABELLONE DI COPERTURA (prova 2) e LA PROVA DEI 90 GIORNI (prova 3)
+//  Una cella per ogni posto × regola che vale per quel posto. Colore:
+//    verde   fatta ed è in regola
+//    giallo  quasi scaduta, oppure scaduta ma già in programma (si sa quando)
+//    grigio  mai fatta, ma in programma: si sa quando
+//    rosso   BUCO: scaduta o mai fatta, e nelle prossime N settimane nessuno ci arriva (con un motivo)
+//  Copertura = celle non rosse / tutte. Buchi = celle rosse.
+// ============================================================================
+export function tabellone(ctx, settimane = 13) {
+  const { camere, oggi, soggiorni = [] } = ctx; const registro = ctx.registro || {}, luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(null), flags = ctx.flags || {}, sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) };
+  const sim = simulaGovernante(ctx, settimane);
+  const modello = sim ? sim.modello : [];
+  const lun = ctx.lun || lunediDi(oggi);
+  const programmati = Object.values(ctx.pulizie || {}).filter(p => p.origine === "governante" && p.stato !== "fatta" && p.data >= oggi);
+  const haPulizia = l => modello.some(p => p.camera === l.id), haCambio = l => modello.some(p => p.camera === l.id && CAMBIO(p)), haGiornata = l => modello.some(p => p.zona === l.zona);
+  const maiLibera = l => { for (let w = 0; w < settimane; w++) for (let d = 0; d < 7; d++) { const iso = aggiungiGiorni(lun, w * 7 + d); if (giornoSettimana(iso) !== 0 && !soggiorni.some(s => s.camera === l.id && soggiornoCopre({ ...s, inizio: aggiungiGiorni(s.inizio, w * 7), fine: aggiungiGiorni(s.fine, w * 7) }, iso))) return false; } return true; };
+  const motivoDi = (r, l) => {
+    if (!sim) return "nessuna pulizia in programma questa settimana: il tabellone non sa su cosa contare";
+    if (l.tipo === "comune") return haGiornata(l) ? `non entra nei ${sg.minutiGiorno} minuti al giorno della signora (zona comune: una cosa a ritmo al giorno)` : "la signora di questa zona non ha pulizie in programma questa settimana";
+    if (!haPulizia(l)) return "nessuna pulizia in programma per questo posto questa settimana (camera vuota?)";
+    if (r.quando === "cambio" && !haCambio(l)) return "solo al cambio completo: nessun cambio in programma per questo posto";
+    if (r.quando === "libera") return maiLibera(l) ? "solo a camera libera: nel prospetto questa camera non è mai libera" : "a camera libera: in coda nei consigli (massimo 8 a settimana)";
+    if (r.quando === "giorno") return "lavoro a sé: in coda nei consigli (massimo 8 a settimana)";
+    if (r.minuti > sg.minutiRifiniture) return `dura ${r.minuti} minuti, più dei ${sg.minutiRifiniture} di rifiniture per pulizia: alza i minuti per pulizia in Regole, oppure falla a camera libera`;
+    return `non entra nei ${sg.minutiGiorno} minuti al giorno e ${sg.rifiniturePerPulizia} rifiniture a pulizia: alza le soglie in Regole o spegni la regola`;
+  };
+  const celle = [];
+  for (const l of [...camere, ...luoghi]) {
+    const fisso = l.tipo !== "comune" && nottiDiFila(soggiorni, l.id, oggi) >= 14;
+    for (const r of regole) {
+      if (r.evento) continue;
+      if (!copre(regole, r, l, camere, luoghi, flags)) continue;
+      if (!inStagione(r, oggi)) continue;
+      if (r.soloFissi && !fisso) continue;
+      const k = chiaveRegistro(r.id, l.id), reg = registro[k] || null, ult = reg?.ultima || null;
+      const ogni = ogniAttuale(r, oggi, l, flags);
+      const rapporto = ogni ? rapportoScadenza(r, ult, oggi, ogni) : null;
+      const doc = programmati.find(p => p.regola === r.id && p.camera === l.id);
+      const programmata = doc ? doc.data : (sim && sim.prima[k]) || null;
+      let colore;
+      if (!ogni) colore = programmata || ult ? "verde" : "rosso";
+      else { const c = coloreScadenza(rapporto); colore = c === "verde" ? "verde" : c === "giallo" ? (programmata ? "giallo" : "rosso") : programmata ? (ult ? "giallo" : "grigio") : "rosso"; }
+      celle.push({ luogo: l.id, luogoNome: l.nome, zona: l.zona, tipo: l.tipo, regola: r.id, nome: r.nome, gruppo: r.gruppo, codice: r.codice || "", quando: r.quando, ogni, ultima: ult, testo: testoUltima(ult, oggi), da: reg?.da || "", rapporto, colore, programmata, motivo: colore === "rosso" ? motivoDi(r, l) : "" });
+    }
+  }
+  const rosse = celle.filter(c => c.colore === "rosso");
+  // per posto: il peggio per gruppo
+  const perLuogo = [...camere, ...luoghi].map(l => {
+    const mie = celle.filter(c => c.luogo === l.id); const gruppi = {};
+    for (const c of mie) { const g = gruppi[c.gruppo] = gruppi[c.gruppo] || { rosse: 0, gialle: 0, grigie: 0, verdi: 0, n: 0 }; g.n++; g[c.colore === "rosso" ? "rosse" : c.colore === "giallo" ? "gialle" : c.colore === "grigio" ? "grigie" : "verdi"]++; }
+    return { luogo: l.id, nome: l.nome, zona: l.zona, tipo: l.tipo, n: mie.length, rosse: mie.filter(c => c.colore === "rosso").length, gialle: mie.filter(c => c.colore === "giallo").length, grigie: mie.filter(c => c.colore === "grigio").length, verdi: mie.filter(c => c.colore === "verde").length, gruppi };
+  });
+  // i motivi dei buchi, raggruppati, con le regole che ci cascano
+  const motivi = Object.values(rosse.reduce((m, c) => { const x = m[c.motivo] = m[c.motivo] || { motivo: c.motivo, n: 0, regole: {} }; x.n++; x.regole[c.regola] = x.regole[c.regola] || { regola: c.regola, nome: c.nome, n: 0 }; x.regole[c.regola].n++; return m; }, {}))
+    .map(x => ({ ...x, regole: Object.values(x.regole).sort((a, b) => b.n - a.n) })).sort((a, b) => b.n - a.n);
+  const copertura = celle.length ? Math.round((celle.length - rosse.length) / celle.length * 100) : 100;
+  // il bilancio: quanti minuti a settimana chiede il catalogo (per signora) e quanti ne danno le soglie
+  const zone = [...new Set(camere.map(c => c.zona))]; const perZona = {};
+  for (const z of zone) {
+    const posti = camere.filter(c => c.zona === z); let domanda = 0;
+    for (const c of celle) if (c.zona === z && c.ogni > 0 && (c.quando === "ripasso" || c.quando === "cambio" || c.quando === "giornata")) domanda += (regole.find(r => r.id === c.regola)?.minuti || 0) * 7 / c.ogni;
+    let capacita = 0; for (let d = 0; d < 7; d++) { const n = modello.filter(p => p.zona === z && giornoSettimana(p.data) === d).length; if (n) capacita += Math.min(sg.minutiGiorno, n * sg.minutiRifiniture); }
+    perZona[z] = { domanda: Math.round(domanda), capacita, posti: posti.length, pulizie: modello.filter(p => p.zona === z).length };
+  }
+  const domanda = Math.round(Object.values(perZona).reduce((s, x) => s + x.domanda, 0) / Math.max(1, zone.length)), rifiniture = Math.round(Object.values(perZona).reduce((s, x) => s + x.capacita, 0) / Math.max(1, zone.length));
+  // le pulizie a fondo complete (mezza giornata, al massimo N a settimana) valgono come capacità in più, divisa tra le signore
+  const fondo = Math.round(sg.camereSettimana * 180 / Math.max(1, zone.length)), capacita = rifiniture + fondo;
+  const bilancio = { domanda, capacita, rifiniture, fondo, perZona, possibile: domanda ? Math.min(100, Math.round(capacita / domanda * 100)) : 100 };
+  return { celle, perLuogo, motivi, copertura, buchi: rosse.length, settimane, sim, bilancio, prova: sim ? prova90(ctx, sim, regole) : null };
+}
+// La prova dei 90 giorni: 5 righe oneste su cosa succederebbe
+function prova90(ctx, sim, regole) {
+  const { camere, oggi } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, flags = ctx.flags || {}, sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) };
+  const giorni = Object.entries(sim.minuti); const max = giorni.reduce((m, [k, v]) => v > m.v ? { k, v } : m, { k: "", v: 0 });
+  const giorniLavoro = new Set(sim.modello.map(p => giornoSettimana(p.data))).size;
+  const mediaGiorno = giorni.length ? Math.round(giorni.reduce((s, [, v]) => s + v, 0) / giorni.length) : 0;
+  const domeniche = giorni.filter(([k]) => giornoSettimana(k.split("|")[1]) === 0).length;
+  const grandi = sim.proposte.filter(c => c.grande).length, libere = sim.proposte.filter(c => c.libera && !c.grande).length, lavori = sim.proposte.filter(c => !c.libera && !c.grande).length;
+  // alla fine: quanto è in regola (tutte le regole a ritmo, anche quelle a camera libera)
+  const cal = calendarioPulito({ ...ctx, oggi: sim.fine, registro: sim.registro, regole });
+  const voci = cal.flatMap(c => c.voci); const inRegola = voci.filter(v => v.colore !== "rosso").length;
+  const fuori = Object.values(voci.filter(v => v.colore === "rosso").reduce((m, v) => { m[v.regola] = m[v.regola] || { nome: v.cosa, n: 0 }; m[v.regola].n++; return m; }, {})).sort((a, b) => b.n - a.n);
+  const perSett = Math.round(sim.rifiniture / sim.settimane), perSignora = Math.round(perSett / Math.max(1, sim.zone.length));
+  const minutiSett = Math.round(giorni.reduce((s, [, v]) => s + v, 0) / sim.settimane / Math.max(1, sim.zone.length));
+  const righe = [
+    `In ${sim.settimane} settimane le signore farebbero ${sim.rifiniture} rifiniture dentro le pulizie normali: circa ${perSett} a settimana, ${perSignora} a testa, ${minutiSett} minuti a settimana per signora.`,
+    `Mai più di ${max.v} minuti di rifiniture in un giorno per signora (limite ${sg.minutiGiorno}), in media ${mediaGiorno} nei giorni in cui ci sono; di domenica ${domeniche ? domeniche + " volte" : "mai"}.`,
+    `A camera libera: ${libere} rifiniture entrerebbero nei consigli${grandi ? `, più ${grandi} pulizie a fondo complete (massimo ${sg.camereSettimana} a settimana)` : ""}${lavori ? `, e ${lavori} lavori a sé (coperte, rinfreschi prima di un arrivo)` : ""}.`,
+    `Alla fine dei ${sim.settimane * 7} giorni il catalogo sarebbe in regola al ${voci.length ? Math.round(inRegola / voci.length * 100) : 0}% (${inRegola} cose su ${voci.length}).`,
+    fuori.length ? `Resterebbero indietro: ${fuori.slice(0, 5).map(f => `${f.nome} (${f.n} posti)`).join(", ")}${fuori.length > 5 ? ` e altre ${fuori.length - 5}` : ""}. Per salire: più minuti al giorno in Regole, oppure spegni quello che non ti serve.` : "Niente resterebbe indietro.",
+  ];
+  return { righe, percento: voci.length ? Math.round(inRegola / voci.length * 100) : 0, maxMinuti: max.v, rifiniture: sim.rifiniture, proposte: sim.proposte.length, fuori, giorniLavoro };
 }
 
 // ============================================================================
@@ -699,45 +941,46 @@ export function simulaCopertura(ctx, settimane = 8) {
 // ============================================================================
 export const SUPERFICI = {
   camera: { nome: "Camera", oggetti: [
-    { o: "Soffitto e luci", s: [["Soffitto e angoli", ["plafoniere"]], ["Plafoniera o lampadario", ["plafoniere", "lampadari"]]] },
+    { o: "Soffitto e luci", s: [["Soffitto e angoli", ["plafoniere"]], ["Plafoniera o lampadario", ["plafoniere", "lampadari"]], ["Luci e lampadine (funzionano?)", ["luci_lampadine"]]] },
+    { o: "Aria", s: [["Aria e odori", ["aria_odori"]]] },
     { o: "Condizionatore", s: [["Griglia", ["condizionatore_griglie", "condizionatori_maggio"]], ["Filtri", ["condizionatore_filtri", "condizionatori_maggio"]], ["Alette", ["condizionatore_griglie"]], ["Telecomando", ["contatti"]]] },
     { o: "Pareti", s: [["Pareti (ditate e segni)", ["pareti_ditate", "fondo_completa"]], ["Interruttori e prese", ["contatti", "prese_ciabatte"]]] },
     { o: "Quadri", s: [["Cornice", ["quadri"]], ["Vetro", ["quadri"]], ["Retro", ["quadri_retro"]]] },
     { o: "Termosifone", s: [["Davanti", ["termosifone_polvere", "termosifoni"]], ["Dietro", ["termosifone_polvere", "termosifoni"]], ["Sopra", ["termosifone_polvere"]]] },
     { o: "Battiscopa", s: [["Battiscopa", ["battiscopa"]]] },
-    { o: "Porta", s: [["Davanti", ["porte"]], ["Dietro", ["porte"]], ["Bordo sopra", ["porte"]], ["Maniglie dei due lati", ["porte", "contatti"]], ["Serratura", ["porta_stipite"]], ["Stipite", ["porta_stipite"]], ["Cardini", ["porta_stipite"]]] },
+    { o: "Porta", s: [["Davanti", ["porte", "porte_ditate"]], ["Dietro", ["porte", "porte_ditate"]], ["Bordo sopra", ["porte"]], ["Maniglie dei due lati", ["porte", "porte_ditate", "contatti"]], ["Serratura", ["porta_stipite"]], ["Stipite", ["porta_stipite"]], ["Cardini", ["porta_stipite"]]] },
     { o: "Finestra", s: [["Vetro dentro", ["vetri_interni"]], ["Vetro fuori", ["vetri_esterni"]], ["Telaio", ["telai_binari"]], ["Binari", ["telai_binari"]], ["Maniglia", ["contatti"]], ["Davanzale dentro", ["davanzali"]], ["Davanzale fuori", ["davanzale_esterno"]]] },
     { o: "Tapparella", s: [["Stecche", ["tapparelle"]], ["Cassonetto", ["tapparelle_cassonetto"]], ["Cinghia", ["tapparelle"]]] },
     { o: "Zanzariera", s: [["Rete", ["zanzariere"]], ["Telaio", ["zanzariere"]]] },
     { o: "Tende", s: [["Tessuto", ["tende_aspirate", "tende_lavate"]], ["Bastone o binario", ["tende_bastone"]]] },
-    { o: "Letto", s: [["Testiera davanti", ["testiera"]], ["Testiera dietro", ["letto_spostato"]], ["Struttura e piedini", ["struttura_letto"]], ["Sotto il letto", ["sotto_letto"]], ["Doghe", ["doghe"]], ["Materasso sopra", ["materasso_aspirato"]], ["Materasso sotto", ["materasso_girato"]], ["Materasso bordi", ["materasso_aspirato"]], ["Coprimaterasso", ["coprimaterasso_cambio", "coprimaterasso_fissi"]], ["Cuscini", ["cuscini_piumoni", "controllo_materassi"]], ["Copricuscini", ["coprimaterasso_cambio", "coprimaterasso_fissi"]], ["Piumino", ["cuscini_piumoni"]], ["Coperte", ["coperte_autunno", "coperte_primavera", "coperta_scorta"]], ["Copriletto", ["copriletto"]], ["Lenzuola e asciugamani alla luce", ["biancheria_luce"]]] },
-    { o: "Comodini", s: [["Sopra", ["comodini"]], ["Dentro", ["dentro_armadi"]], ["Dietro", ["dietro_mobili"]], ["Sotto", ["sotto_letto"]]] },
+    { o: "Letto", s: [["Testiera davanti", ["testiera"]], ["Testiera dietro", ["letto_spostato"]], ["Struttura e piedini", ["struttura_letto"]], ["Sotto il letto", ["sotto_letto"]], ["Doghe", ["doghe"]], ["Materasso sopra", ["materasso_aspirato"]], ["Materasso sotto", ["materasso_girato"]], ["Materasso bordi", ["materasso_aspirato"]], ["Coprimaterasso", ["coprimaterasso_cambio", "coprimaterasso_fissi"]], ["Cuscini", ["cuscini_piumoni", "controllo_materassi"]], ["Copricuscini", ["coprimaterasso_cambio", "coprimaterasso_fissi"]], ["Piumino", ["cuscini_piumoni"]], ["Coperte", ["coperte_autunno", "coperte_primavera", "coperta_scorta"]], ["Copriletto", ["copriletto"]], ["Lenzuola alla luce", ["biancheria_luce"]]] },
+    { o: "Comodini", s: [["Sopra", ["comodini"]], ["Dentro", ["comodini_dentro", "dentro_armadi"]], ["Dietro", ["comodini_dentro", "dietro_mobili"]], ["Sotto", ["sotto_letto"]]] },
     { o: "Abat-jour", s: [["Paralume", ["lampade"]], ["Base", ["lampade", "comodini"]], ["Interruttore", ["contatti", "comodini"]]] },
     { o: "Armadio", s: [["Sopra", ["sopra_armadi"]], ["Ante fuori", ["armadio_ante"]], ["Ante dentro", ["dentro_armadi"]], ["Maniglie", ["armadio_ante", "contatti"]], ["Ripiani", ["dentro_armadi"]], ["Asta e grucce", ["dentro_armadi"]], ["Cassetti dentro e guide", ["dentro_armadi"]], ["Sotto", ["sotto_mobili"]], ["Dietro", ["dietro_armadi"]]] },
     { o: "Scrivania e sedie", s: [["Piano", ["scrivania"]], ["Gambe", ["scrivania"]], ["Sotto", ["sotto_mobili"]], ["Seduta e schienale", ["scrivania"]]] },
     { o: "TV", s: [["Schermo", ["tv_schermo"]], ["Retro e cavi", ["dietro_tv"]], ["Telecomando", ["contatti"]], ["Mobile sopra", ["dietro_tv", "scrivania"]], ["Mobile dentro", ["dentro_armadi"]], ["Mobile dietro", ["dietro_tv"]], ["Ciabatta", ["prese_ciabatte"]]] },
-    { o: "Frigo in camera (se c'è)", opz: true, s: [["Dentro", ["minibar"]], ["Guarnizione", ["minibar"]], ["Retro e sotto", ["minibar", "dietro_mobili"]]] },
+    { o: "Frigo in camera (se c'è)", opz: true, s: [["Dentro, a ogni partenza", ["minibar"]], ["Guarnizione", ["minibar_guarnizione"]], ["Retro e sotto", ["minibar_retro", "dietro_mobili"]]] },
     { o: "Specchio", s: [["Vetro", ["specchi"]], ["Cornice", ["quadri"]], ["Retro", ["quadri_retro"]]] },
     { o: "Piccoli elettrodomestici", s: [["Phon: filtro", ["phon_filtro"]], ["Phon: impugnatura", ["contatti"]], ["Bollitore", ["bollitore", "bollitore_calcare"]], ["Ventilatore: pale e griglia", ["ventilatore"]]] },
     { o: "Appendiabiti e cestino", s: [["Appendiabiti e ganci", ["appendiabiti"]], ["Cestino dentro", ["cestini_lavati"]], ["Cestino fuori", ["cestini_lavati"]]] },
     { o: "Pavimento", s: [["Pavimento", ["camera_base"]], ["Fughe", ["pavimento_fughe"]], ["Angoli", ["pavimento_angoli"]], ["Sotto i mobili", ["sotto_mobili", "sotto_letto"]], ["Zerbino", ["zerbino_camera"]]] },
     { o: "Cartelli e chiavi", s: [["Cartelli e targhette", ["targhette"]], ["Portachiavi", ["contatti", "appendiabiti"]]] },
-    { o: "Prima di chiudere la camera", s: [["Giro di controllo di 5 minuti", ["controllo_lusso"]]] },
+    { o: "Prima di chiudere la camera", s: [["Giro di controllo di 5 minuti", ["controllo_lusso"]], ["Camera ferma da 2+ giorni prima di un arrivo", ["arrivo_ferma"]]] },
   ] },
   bagno: { nome: "Bagno", oggetti: [
-    { o: "Soffitto e luci", s: [["Soffitto e angoli (muffa)", ["soffitto_bagno_muffa", "plafoniere"]], ["Plafoniera", ["plafoniere"]], ["Aspiratore: griglia", ["aspiratore"]]] },
+    { o: "Soffitto e luci", s: [["Soffitto e angoli (muffa)", ["soffitto_bagno_muffa", "plafoniere"]], ["Plafoniera", ["plafoniere"]], ["Luci del bagno (funzionano?)", ["luci_lampadine"]], ["Aspiratore: griglia", ["aspiratore"]]] },
     { o: "Finestra del bagno", s: [["Vetro dentro", ["vetri_interni"]], ["Vetro fuori", ["vetri_esterni"]], ["Telaio e binari", ["telai_binari"]], ["Maniglia", ["contatti"]], ["Davanzale", ["davanzali"]]] },
     { o: "Scaldasalviette", s: [["Tubi davanti e dietro", ["scaldasalviette"]]] },
     { o: "Pareti", s: [["Piastrelle", ["piastrelle_pareti"]], ["Fughe", ["fughe"]], ["Silicone", ["doccia_muffa"]], ["Angoli", ["soffitto_bagno_muffa", "pavimento_angoli"]]] },
     { o: "Porta", s: [["Davanti e dietro", ["porte"]], ["Bordo sopra", ["porte"]], ["Maniglie", ["porte", "contatti"]], ["Stipite, cardini, serratura", ["porta_stipite"]]] },
     { o: "Interruttori e prese", s: [["Interruttori e prese", ["contatti"]]] },
     { o: "Specchio", s: [["Vetro", ["specchi"]], ["Cornice", ["specchi"]], ["Luce", ["lampade"]]] },
-    { o: "Lavandino", s: [["Vasca", ["bagno_base"]], ["Troppopieno", ["troppopieno"]], ["Piletta", ["troppopieno", "scarichi"]], ["Rubinetto, base e filtrino del calcare", ["soffione_rubinetti", "contatti"]], ["Sotto", ["sotto_lavandini"]], ["Sifone e tubi", ["sotto_lavandini"]], ["Mobiletto dentro e fuori", ["mobiletto_bagno"]], ["Mensola", ["mobiletto_bagno", "bagno_base"]], ["Dispenser", ["dispenser"]], ["Bicchiere e portaspazzolino", ["dispenser"]]] },
+    { o: "Lavandino", s: [["Vasca", ["bagno_base"]], ["Troppopieno", ["troppopieno"]], ["Piletta", ["troppopieno", "scarichi", "scarichi_odori"]], ["Rubinetto, base e filtrino del calcare", ["soffione_rubinetti", "contatti"]], ["Sotto", ["sotto_lavandini"]], ["Sifone e tubi", ["sotto_lavandini"]], ["Mobiletto dentro e fuori", ["mobiletto_bagno"]], ["Mensola", ["mobiletto_bagno", "bagno_base"]], ["Dispenser", ["dispenser"]], ["Bicchiere e portaspazzolino", ["dispenser"]]] },
     { o: "WC", s: [["Tavoletta sopra, sotto, cerniere", ["wc_tavoletta"]], ["Bordo interno", ["wc_sotto_bordo"]], ["Sotto il bordo", ["wc_sotto_bordo"]], ["Base al pavimento", ["dietro_wc"]], ["Dietro", ["dietro_wc"]], ["Cassetta sopra e pulsante", ["wc_cassetta", "contatti"]], ["Tubo", ["dietro_wc"]], ["Scopino e portascopino", ["spazzolino_wc", "scopino_nuovo"]], ["Portarotolo", ["accessori_bagno"]]] },
     { o: "Bidet", s: [["Rubinetto", ["soffione_rubinetti", "bagno_base"]], ["Scarico", ["scarichi"]], ["Sotto", ["dietro_wc"]], ["Dietro", ["dietro_wc"]]] },
-    { o: "Doccia", s: [["Piatto", ["piastrelle_doccia"]], ["Piletta e capelli", ["scarichi"]], ["Box vetro dentro", ["box_doccia_vetro"]], ["Box vetro fuori", ["box_doccia_vetro"]], ["Profili", ["box_doccia_binari"]], ["Binari delle ante", ["box_doccia_binari"]], ["Guarnizioni", ["doccia_muffa", "box_doccia_binari"]], ["Soffione", ["soffione_rubinetti"]], ["Flessibile", ["soffione_rubinetti"]], ["Miscelatore", ["soffione_rubinetti", "contatti"]], ["Mensola", ["bagno_base", "piastrelle_doccia"]], ["Tenda (se c'è)", ["tenda_doccia"], true], ["Silicone", ["doccia_muffa"]], ["Fughe", ["fughe"]], ["Tappetino antiscivolo sotto", ["tappetino_doccia"]]] },
-    { o: "Accessori", s: [["Portasciugamani e ganci", ["accessori_bagno"]], ["Bidoncino dentro, fuori, coperchio", ["cestini_lavati"]], ["Tappetino", ["tappetini_bagno"]]] },
-    { o: "Pavimento", s: [["Pavimento", ["bagno_base"]], ["Fughe", ["pavimento_fughe"]], ["Angoli", ["pavimento_angoli"]], ["Dietro la porta", ["pavimento_angoli"]]] },
+    { o: "Doccia", s: [["Piatto", ["piastrelle_doccia"]], ["Piletta e capelli", ["scarichi", "scarichi_odori"]], ["Box vetro dentro", ["box_doccia_vetro", "box_doccia_tergivetro"]], ["Box vetro fuori", ["box_doccia_fuori"]], ["Profili", ["box_doccia_binari"]], ["Binari delle ante", ["box_doccia_binari"]], ["Guarnizioni", ["doccia_muffa", "box_doccia_binari"]], ["Soffione", ["soffione_rubinetti"]], ["Flessibile", ["soffione_rubinetti"]], ["Miscelatore", ["soffione_rubinetti", "contatti"]], ["Mensola", ["bagno_base", "piastrelle_doccia"]], ["Tenda (se c'è)", ["tenda_doccia"], true], ["Silicone", ["doccia_muffa"]], ["Fughe", ["fughe"]], ["Tappetino antiscivolo sotto", ["tappetino_doccia"]]] },
+    { o: "Accessori", s: [["Portasciugamani e ganci", ["accessori_bagno"]], ["Bidoncino dentro, fuori, coperchio", ["cestini_lavati"]], ["Tappetino", ["tappetini_bagno"]], ["Asciugamani alla luce", ["asciugamani_luce"]], ["Dotazioni: carta, sapone, bicchieri, phon", ["dotazioni_bagno"]]] },
+    { o: "Pavimento", s: [["Pavimento", ["bagno_base"]], ["Fughe", ["pavimento_fughe"]], ["Angoli", ["pavimento_angoli"]], ["Dietro la porta", ["pavimento_angoli"]], ["Scarico a pavimento", ["scarico_pavimento"]]] },
   ] },
   cucina: { nome: "Cucina (appartamenti)", oggetti: [
     { o: "Pensili", s: [["Sopra", ["sopra_armadi"]], ["Ante fuori e maniglie", ["pensili_ante"]], ["Ante dentro e ripiani", ["pensili"]]] },
@@ -746,12 +989,13 @@ export const SUPERFICI = {
     { o: "Forno", s: [["Dentro", ["forno"]], ["Porta e vetro", ["forno"]], ["Guarnizione", ["forno"]], ["Teglie", ["forno"]], ["Sopra", ["forno"]]] },
     { o: "Piano di lavoro", s: [["Piano di lavoro", ["cucina_base"]], ["Paraschizzi", ["dietro_fornelli"]]] },
     { o: "Lavello", s: [["Vasca", ["cucina_base"]], ["Scarico", ["scarichi"]], ["Rubinetto", ["cucina_base", "contatti", "soffione_rubinetti"]], ["Sifone", ["sotto_lavello"]], ["Sotto", ["sotto_lavello"]]] },
-    { o: "Lavastoviglie", s: [["Filtro", ["lavastoviglie_filtro"]], ["Guarnizione", ["lavastoviglie_esterno"]], ["Cestelli", ["lavastoviglie_esterno"]], ["Esterno", ["lavastoviglie_esterno"]]] },
-    { o: "Frigo e freezer", s: [["Ripiani", ["frigo_ripiani"]], ["Cassetti", ["frigo_ripiani"]], ["Guarnizioni", ["guarnizioni_frigo"]], ["Sopra", ["sopra_armadi"]], ["Griglia dietro", ["dietro_frigo"]], ["Sotto", ["dietro_frigo"]], ["Sbrinare", ["frigo_sbrinato"]]] },
+    { o: "Lavastoviglie", s: [["A ogni partenza", ["lavastoviglie_partenza"]], ["Filtro", ["lavastoviglie_filtro", "lavastoviglie_partenza"]], ["Guarnizione", ["lavastoviglie_esterno"]], ["Cestelli", ["lavastoviglie_esterno"]], ["Esterno", ["lavastoviglie_esterno"]]] },
+    { o: "Frigo e freezer", s: [["A ogni partenza", ["frigo_partenza"]], ["Ripiani", ["frigo_ripiani", "frigo_partenza"]], ["Cassetti", ["frigo_ripiani"]], ["Guarnizioni", ["guarnizioni_frigo"]], ["Sopra", ["sopra_armadi"]], ["Griglia dietro", ["dietro_frigo"]], ["Sotto", ["dietro_frigo"]], ["Sbrinare", ["frigo_sbrinato"]]] },
+    { o: "Stoviglie", s: [["Inventario a ogni partenza", ["inventario_stoviglie"]]] },
     { o: "Microonde", s: [["Dentro", ["microonde_fondo", "cucina_base"]], ["Piatto", ["microonde_fondo"]], ["Esterno", ["cucina_base"]]] },
     { o: "Bollitore e moka", s: [["Bollitore", ["moka", "bollitore_calcare"]], ["Moka", ["moka"]]] },
     { o: "Tavolo e sedie", s: [["Tavolo", ["tavolo_sedie"]], ["Sedie", ["tavolo_sedie"]]] },
-    { o: "Bidoni della differenziata", s: [["Dentro", ["cucina_base", "bidoni_cucina"]], ["Fuori", ["bidoni_cucina"]], ["Coperchi", ["bidoni_cucina"]]] },
+    { o: "Bidoni della differenziata", s: [["Dentro", ["cucina_base", "bidoni_cucina", "bidoni_calendario"]], ["Fuori", ["bidoni_cucina"]], ["Coperchi", ["bidoni_cucina"]], ["Fuori in strada secondo il calendario", ["bidoni_calendario"]]] },
     { o: "Pavimento", s: [["Pavimento", ["camera_base"]], ["Sotto frigo e cucina", ["dietro_frigo"]], ["Fughe", ["pavimento_fughe"]]] },
     { o: "Prese e finestra", s: [["Prese e interruttori", ["contatti"]], ["Finestra", ["vetri_interni", "telai_binari", "davanzali"]]] },
   ] },
@@ -759,24 +1003,24 @@ export const SUPERFICI = {
     { o: "Balcone", s: [["Pavimento", ["balcone_scopa", "balcone_lavato"]], ["Scarico", ["balcone_fondo", "balcone_scopa"]], ["Ringhiera", ["balcone_fondo"]], ["Muretto", ["balcone_fondo"]], ["Mobili", ["balcone_lavato"]], ["Lampada", ["balcone_fondo"]], ["Soglia", ["balcone_lavato"]]] },
   ] },
   ingresso: { nome: "Ingresso", oggetti: [
-    { o: "Ingresso", s: [["Portone", ["ingresso"]], ["Maniglione", ["ingresso"]], ["Citofono", ["ingresso"]], ["Cassetta della posta", ["ingresso"]], ["Targhe", ["ingresso"]], ["Zerbino", ["ingresso", "zerbini_lavati"]], ["Bidoni dei rifiuti", ["bidoni"]]] },
+    { o: "Ingresso", s: [["Portone", ["ingresso"]], ["Maniglione", ["ingresso"]], ["Citofono", ["ingresso"]], ["Cassetta della posta", ["ingresso"]], ["Targhe", ["ingresso"]], ["Zerbino", ["ingresso", "zerbini_lavati"]], ["Bidoni dei rifiuti", ["bidoni"]], ["Luci esterne", ["luci_esterne"]]] },
   ] },
   scale: { nome: "Scale di servizio", oggetti: [
-    { o: "Scale", s: [["Gradini", ["scale_scopate", "scale_lavate"]], ["Alzate", ["scale_lavate"]], ["Battiscopa", ["scale_corrimano"]], ["Corrimano", ["scale_corrimano"]], ["Ringhiera", ["scale_corrimano"]], ["Pianerottoli", ["scale_lavate"]], ["Plafoniere", ["scale_pareti_luci"]], ["Finestre", ["vetri_scale"]], ["Pareti", ["scale_pareti_luci"]]] },
+    { o: "Scale", s: [["Gradini", ["scale_scopate", "scale_lavate"]], ["Alzate", ["scale_lavate"]], ["Battiscopa", ["scale_corrimano"]], ["Corrimano", ["scale_corrimano"]], ["Ringhiera", ["scale_corrimano"]], ["Pianerottoli", ["scale_lavate"]], ["Plafoniere", ["scale_pareti_luci", "luci_esterne"]], ["Finestre", ["vetri_scale"]], ["Pareti", ["scale_pareti_luci"]]] },
   ] },
   corridoio: { nome: "Corridoi", oggetti: [
     { o: "Corridoio", s: [["Pavimento", ["corridoio_passata", "corridoio_fondo"]], ["Battiscopa", ["corridoio_fondo"]], ["Porte comuni", ["corridoio_fondo"]], ["Quadri", ["corridoio_quadri_estintore"]], ["Estintore", ["corridoio_quadri_estintore"]], ["Luci", ["corridoio_fondo"]], ["Pareti", ["corridoio_fondo"]], ["Cestino comune", ["corridoio_passata"]]] },
   ] },
   terrazzo: { nome: "Terrazzo", oggetti: [
-    { o: "Terrazzo", s: [["Pavimento", ["terrazzo_scopa", "terrazzo_fondo"]], ["Scarichi", ["terrazzo_fondo", "scarichi_terrazzo"]], ["Ringhiere", ["terrazzo_fondo"]], ["Muretti", ["terrazzo_fondo"]], ["Mobili", ["terrazzo_scopa", "terrazzo_fondo"]], ["Stendini", ["stendini"]], ["Lampade", ["terrazzo_fondo"]]] },
+    { o: "Terrazzo", s: [["Pavimento", ["terrazzo_scopa", "terrazzo_fondo"]], ["Scarichi", ["terrazzo_fondo", "scarichi_terrazzo"]], ["Ringhiere", ["terrazzo_fondo"]], ["Muretti", ["terrazzo_fondo"]], ["Mobili", ["terrazzo_scopa", "terrazzo_fondo"]], ["Stendini", ["stendini"]], ["Lampade", ["terrazzo_fondo", "luci_esterne"]]] },
   ] },
   lavanderia: { nome: "Lavanderia, magazzino e ripostiglio", oggetti: [
     { o: "Lavatrice", s: [["Cassetto", ["lavatrice_cassetto"]], ["Guarnizione", ["lavatrice_cassetto"]], ["Filtro", ["lavatrice_vuoto"]], ["Cestello", ["lavatrice_vuoto"]], ["Esterno", ["lavatrice_zona"]]] },
     { o: "Asciugatrice (se c'è)", opz: true, s: [["Filtro", ["asciugatrice", "lavatrice_zona"]], ["Serbatoio e condensatore", ["asciugatrice"]]] },
     { o: "Lavatoio", s: [["Vasca e rubinetto", ["lavatoio"]]] },
-    { o: "Magazzino biancheria", s: [["Scaffali", ["scaffali_lavanderia", "scorte"]], ["Cestoni", ["scaffali_lavanderia"]], ["Pavimento", ["lavatrice_zona"]]] },
-    { o: "Lavanderia", s: [["Pavimento", ["lavatrice_zona"]], ["Scalinata", ["scalinata_lavanderia"]], ["Stendini", ["stendini"]]] },
-    { o: "Attrezzi", s: [["Carrello", ["carrello"]], ["Aspirapolvere", ["aspirapolvere"]], ["Scope", ["carrello"]], ["Secchi", ["carrello"]], ["Mappine", ["mappine"]], ["Panni", ["microfibra"]]] },
+    { o: "Magazzino biancheria", s: [["Scaffali", ["scaffali_lavanderia", "biancheria_scorta"]], ["Set di scorta per ogni camera", ["biancheria_scorta"]], ["Controllo alla luce alla piegatura", ["controllo_piegatura"]], ["Cestoni", ["scaffali_lavanderia"]], ["Pavimento", ["lavatrice_zona"]]] },
+    { o: "Lavanderia", s: [["Pavimento", ["lavatrice_zona"]], ["Scalinata", ["scalinata_lavanderia"]], ["Stendini", ["stendini"]], ["Ferro da stiro e asse", ["ferro_stiro"]]] },
+    { o: "Attrezzi", s: [["Carrello", ["carrello"]], ["Aspirapolvere", ["aspirapolvere"]], ["Scope, spazzoloni e mop", ["scope"]], ["Secchi", ["carrello"]], ["Mappine", ["mappine"]], ["Panni", ["microfibra"]], ["Spugne", ["spugne"]], ["Guanti", ["guanti"]]] },
     { o: "Ripostiglio dei prodotti", s: [["Scaffale dei prodotti", ["ripostiglio_prodotti", "scorte"]], ["Pavimento", ["ripostiglio_prodotti"]]] },
   ] },
 };
