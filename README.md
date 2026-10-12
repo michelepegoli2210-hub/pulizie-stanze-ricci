@@ -168,5 +168,11 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
 - **Copertura** (`simulaCopertura`): in Regole, con le soglie attuali, quanto del catalogo resta in regola ripetendo per 8 settimane
   le pulizie di questa settimana. È il modo onesto di vedere se le soglie bastano per il ritmo scritto nel catalogo.
 - **Calendario del pulito** (`calendarioPulito`): per ogni posto, ogni voce con ultima volta e colore (verde/giallo/rosso).
-- Passi successivi previsti: avvio in grigio col piano di 8 settimane e il "perché" con le notti occupate, ritmi che imparano dai
-  controlli, meteo di Lesina, "Rivedi con la mamma", pagella del sabato, voce con Gemini.
+- **Mappa delle superfici** (dalla 0.23, `SUPERFICI` in `governante.js`): per ogni tipo di posto (camera, bagno, cucina, balcone,
+  ingresso, scale, corridoi, terrazzo, lavanderia) tutte le superfici nell'ordine in cui si gira la stanza, ognuna collegata alle
+  regole del catalogo che la coprono (`mappaSuperfici`). Una superficie senza regola attiva è un BUCO (rosso, contato in cima e
+  sulla card della governante). Le regole personali possono agganciarsi a una superficie (`superfici: [id]`).
+  **Giro con la mamma**: si sceglie un posto, si gira superficie per superficie ("C'è" / "Manca qualcosa"); quello che manca diventa
+  una regola personale e una superficie nuova della mappa (`impostazioni/governante.superficiExtra`, `giri`).
+- Passi successivi previsti: tabellone di copertura (posti × regole) con filtri, simulazione di 90 giorni, materiali per posto e
+  "Rivedi con la mamma" sui "come si fa", ritmi che imparano dai controlli, meteo di Lesina, pagella del sabato, voce con Gemini.

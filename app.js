@@ -10,7 +10,7 @@ import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 import * as G from "./governante.js";
 
-export const VERSIONE = "0.22.0";
+export const VERSIONE = "0.23.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -733,7 +733,7 @@ function testoPianoSettimana(z, lun) {
 // ============================================================================
 function regoleGov() { return G.regoleAttive(S.gov); }
 function soglieGov() { return G.soglie(S.gov); }
-function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {} }; }
+function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {}, frigo: (S.gov && S.gov.frigo) || {} }; }
 function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov() }; }
 let memoProposte = new Map(), memoRif = new Map();
 function proposteGov(lun) { const k = lun || S.govSett; if (!memoProposte.has(k)) memoProposte.set(k, G.proposteSettimana(ctxGov(k))); return memoProposte.get(k); }
@@ -744,7 +744,7 @@ function sempreDi(p) { return [...promemoriaCamera(p.camera), ...rifinitureDi(p)
 function testoRifiniture(p) { const rf = rifinitureDi(p).filter(r => !r.sempre); return rf.length ? `+${rf.length} ${rf.length === 1 ? "rifinitura" : "rifiniture"} · ${rf.reduce((n, r) => n + r.minuti, 0)} min` : ""; }
 function idPuliziaGov(c) { return `${c.data}_${c.luogo}_g_${c.regola}`; }
 function haProposteNuove() { try { return localStorage.getItem("ricci_gov_visto") !== S.govSett; } catch (e) { return true; } }
-function ledGovernante() { if (!proprietario()) return false; const r = proposteGov(G.settimanaGovernante()); return r.inRitardo.length > 0 || (r.proposte.length > 0 && haProposteNuove()); }
+function ledGovernante() { if (!proprietario()) return false; const r = proposteGov(G.settimanaGovernante()); return r.inRitardo.length > 0 || (r.proposte.length > 0 && haProposteNuove()) || mappaGov().buchi > 0; }
 async function salvaGov(patch) {
   const nuovo = { ...(S.gov || {}), ...patch }; S.gov = nuovo; disegna();
   try { await S.db.salva("impostazioni", "governante", nuovo, false); } catch (e) { erroreScrittura(e); }
@@ -803,7 +803,8 @@ function nomeZonaBreve(z) { return `Signora ${S.zone[z]?.breve || z}`; }
 function plateGovernante() {
   const r = proposteGov(G.settimanaGovernante());
   const n = r.proposte.length, rit = r.inRitardo.length;
-  const sotto = rit ? `${rit} in ritardo${n ? ` · ${n} consigli` : ""}` : n ? `${n} consigli per ${G.settimanaGovernante() === L.lunediDi(L.oggiISO()) ? "questa settimana" : "la settimana prossima"}` : "tutto in ordine";
+  const buchi = mappaGov().buchi;
+  const sotto = buchi ? `${buchi} ${buchi === 1 ? "buco nella mappa" : "buchi nella mappa"}${rit ? ` · ${rit} in ritardo` : ""}` : rit ? `${rit} in ritardo${n ? ` · ${n} consigli` : ""}` : n ? `${n} consigli per ${G.settimanaGovernante() === L.lunediDi(L.oggiISO()) ? "questa settimana" : "la settimana prossima"}` : "tutto in ordine";
   return `<button class="piastra gov-plate" data-vista="governante">${DONNINA("governante", "piccola")}<span class="man-testo"><b>Governante</b><span>${esc(sotto)}</span></span>${ledGovernante() ? `<span class="led" role="img" aria-label="novità"></span>` : ""}<span class="man-freccia">›</span></button>`;
 }
 
@@ -812,9 +813,10 @@ function vistaGovernante() {
   const tab = S.govTab;
   const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button></section>
   <section class="pro-testa gov-testa"><div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">La governante</div><div class="pro-frase">Guarda il prospetto, il calendario e il registro, e decide cosa va fatto a fondo oltre alle pulizie normali.</div></div>${DONNINA("governante", "media")}</div>
-    <div class="seg gov-seg" style="margin-top:12px;display:flex"><button aria-pressed="${tab === "consigli"}" data-gov-tab="consigli">Consigli</button><button aria-pressed="${tab === "calendario"}" data-gov-tab="calendario">Calendario</button><button aria-pressed="${tab === "regole"}" data-gov-tab="regole">Regole</button></div></section>`;
+    <div class="seg gov-seg" style="margin-top:12px;display:flex"><button aria-pressed="${tab === "consigli"}" data-gov-tab="consigli">Consigli</button><button aria-pressed="${tab === "calendario"}" data-gov-tab="calendario">Calendario</button><button aria-pressed="${tab === "regole"}" data-gov-tab="regole">Regole</button><button aria-pressed="${tab === "mappa"}" data-gov-tab="mappa">Mappa</button></div></section>`;
   if (tab === "calendario") return testa + vistaCalendarioPulito();
   if (tab === "regole") return testa + vistaRegoleGov();
+  if (tab === "mappa") return testa + vistaMappaSuperfici();
   return testa + vistaConsigliGov();
 }
 function rigaProposta(c, conTasti = true) {
@@ -863,12 +865,88 @@ function foglioLuogoPulito(f) {
     ${puoModificare() ? `<p class="muted small" style="margin:10px 0 0">Per segnare a mano una cosa come fatta oggi (es. l'hai fatta tu), tocca qui sotto.</p><div class="scelte">${cal.voci.filter(v => v.colore !== "verde").slice(0, 8).map(v => `<button type="button" data-gov-fatto="${esc(v.regola)}|${esc(cal.luogo)}|${esc(cal.zona)}">✓ ${esc(v.cosa)}</button>`).join("")}</div>` : ""}`;
 }
 const GRUPPI_GOV = G.GRUPPI;
+
+// ============================================================================
+//  MAPPA DELLE SUPERFICI (prova di completezza) e GIRO CON LA MAMMA
+// ============================================================================
+function mappaGov() { return G.mappaSuperfici(regoleGov(), (S.gov && S.gov.superficiExtra) || {}); }
+function vistaMappaSuperfici() {
+  const m = mappaGov(), giri = (S.gov && S.gov.giri) || [];
+  const testa = `<section class="card"><div class="buchi ${m.buchi ? "rossi" : "zero"}"><b>Buchi: ${m.buchi}</b><span>${m.superfici} superfici in ${Object.keys(m.tipi).length} tipi di posto · ${m.buchi ? "le superfici in rosso non hanno nessuna regola attiva" : "ogni superficie ha almeno una regola del catalogo"}</span></div>
+    <p class="muted small" style="margin:10px 0 0">Per ogni tipo di posto, tutte le superfici nell'ordine in cui si gira la stanza: in senso orario, dall'alto in basso, e per ogni oggetto sopra / davanti / dentro / dietro / sotto. Tocca una superficie per vedere le regole che la coprono o per aggiungerne una. Se spegni una regola e una superficie resta scoperta, qui diventa rossa.</p>
+    ${puoModificare() ? `<button class="big main" data-giro-scegli>${ICONA("lente")} Giro con la mamma</button><p class="muted small" style="margin:6px 0 0">Si gira un posto vero, una superficie per volta: "C'è" oppure "Manca qualcosa", e quello che manca diventa una regola al volo.</p>` : ""}
+    ${giri.length ? `<div class="rows" style="margin-top:10px">${giri.slice(-5).reverse().map(g => `<div class="row"><span><b>Giro fatto in ${esc(camera(g.luogo).nome)}</b> il ${esc(L.dataGiornoLungo(g.data))}<br><span class="muted small">${g.viste} superfici viste · ${g.aggiunte} aggiunte${g.nomi?.length ? ": " + esc(g.nomi.join(", ")) : ""}</span></span></div>`).join("")}</div>` : ""}</section>`;
+  const tipi = Object.values(m.tipi).map(t => `<section class="card"><details ${t.buchi ? "open" : ""}><summary style="display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--fg)"><span><b style="font:700 18px var(--f-display)">${esc(t.nome)}</b><br><span class="muted small">${t.superfici} superfici</span></span><span class="badge ${t.buchi ? "warn" : "done"}">${t.buchi ? `${t.buchi} buchi` : "0 buchi"}</span></summary>
+    ${t.oggetti.map(o => `<div class="mappa-ogg"><div class="mappa-ogg-t">${esc(o.o)}</div>${o.superfici.map(x => `<button class="row mappa-sup ${x.buco ? "buco" : ""}" data-superficie="${esc(x.id)}" data-tipo="${esc(t.tipo)}"><span>${esc(x.nome)}${x.aggiunta ? ` <span class="el-pill now">aggiunta</span>` : ""}<br><span class="muted small">${x.buco ? `<b style="color:var(--warn)">nessuna regola</b>` : x.opz && !x.regole.length ? "se c'è" : esc(x.regole.slice(0, 2).map(r => r.nome).join(" · ")) + (x.regole.length > 2 ? ` · +${x.regole.length - 2}` : "")}</span></span><span class="pall ${x.buco ? "rosso" : x.regole.length ? "verde" : "grigio"}"></span></button>`).join("")}</div>`).join("")}</details></section>`).join("");
+  return testa + tipi;
+}
+function foglioSuperficie(f) {
+  const m = mappaGov(); const t = m.tipi[f.tipoSup]; const x = t && t.oggetti.flatMap(o => o.superfici.map(s => ({ ...s, oggetto: o.o }))).find(s => s.id === f.id);
+  if (!x) return `<h3>Superficie</h3>`;
+  return `<h3>${esc(x.nome)}</h3><div class="muted">${esc(t.nome)} · ${esc(x.oggetto)}</div>
+    ${x.regole.length ? `<div class="rows" style="margin-top:10px">${x.regole.map(r => `<div class="row"><span><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.nome)}</b><br><span class="muted small">${esc(G.etichettaOgni(r.ogni))} · ${esc(G.QUANDO_TESTO[r.quando] || r.quando)} · ${r.minuti} min</span><br><span class="muted small">${esc(r.come)}</span></span></div>`).join("")}</div>` : `<div class="note warn" style="margin-top:10px">${x.opz ? "Vale solo se c'è: nessuna regola attiva." : "Buco: nessuna regola copre questa superficie."}</div>`}
+    ${puoModificare() ? `<button class="big main" data-gov-regola-superficie="${esc(f.tipoSup)}|${esc(f.id)}|${esc(x.oggetto)}|${esc(x.nome)}">+ Regola per questa superficie</button>` : ""}`;
+}
+// --- il giro ---
+function doveDaTipo(tipo, luogo) { return tipo === "camera" ? "stanza" : tipo === "bagno" ? "bagno" : tipo === "cucina" ? "cucina" : tipo === "balcone" ? "balcone" : tipo === "corridoio" ? ["corridoio_p1", "corridoio_p2"] : (luogo?.id || tipo); }
+function iniziaGiro(luogoId) {
+  const l = camera(luogoId); const tipi = G.tipiDiLuogo(l, flagsGov()); const m = mappaGov();
+  const lista = tipi.flatMap(t => (m.tipi[t]?.oggetti || []).flatMap(o => o.superfici.map(x => ({ tipo: t, tipoNome: m.tipi[t].nome, oggetto: o.o, ...x }))));
+  S.giro = { luogo: luogoId, tipi, lista, i: 0, aggiunte: [], viste: 0, manca: false };
+  apriFoglio({ tipo: "giro" });
+}
+function foglioGiro(f) {
+  const g = S.giro; if (!g) return "";
+  const l = camera(g.luogo);
+  if (g.i >= g.lista.length) {
+    return `<div class="inizio"><div class="inizio-top"><button class="inizio-indietro" data-giro-fine>${ICONA("indietro")}<span>Chiudi</span></button></div>
+      <div class="inizio-testa done"><div><div class="inizio-camera">Giro fatto</div><div class="inizio-lavoro">${esc(l.nome)} · ${esc(L.dataGiornoLungo(L.oggiISO()))}</div></div>${DONNINA("festa", "media")}</div>
+      <div class="inizio-dett"><div class="inizio-dett-t">${ICONA("lente")}<span>Risultato</span></div><div class="inizio-dett-x">${g.viste} superfici viste · <b>${g.aggiunte.length} aggiunte</b></div>${g.aggiunte.length ? `<div class="inizio-dett-i">${esc(g.aggiunte.join(" · "))}</div>` : `<div class="inizio-dett-i">Niente da aggiungere: la mappa copre tutto quello che la mamma ha trovato. Ripeti il giro tra qualche mese.</div>`}</div>
+      <button class="pro-btn blu gigante" data-giro-fine>${ICONA("spunta")}<span>Chiudi</span></button></div>`;
+  }
+  const x = g.lista[g.i];
+  const form = g.manca ? `<div class="inizio-dett"><div class="inizio-dett-t">${ICONA("stella")}<span>Cosa manca qui?</span></div>
+      <div class="campo"><label for="giCosa">Cosa si deve fare (puoi dettarlo col microfono della tastiera)</label><input id="giCosa" type="text" data-keep placeholder="es. Lavare il copriletto" autocomplete="off"></div>
+      <div class="due"><div class="campo"><label for="giOgni">Ogni quanto</label><select id="giOgni">${G.SCALA_OGNI.filter(v => v >= 3.5).map(v => `<option value="${v}" ${v === 30 ? "selected" : ""}>${esc(G.etichettaOgni(v))}</option>`).join("")}</select></div><div class="campo"><label for="giMin">Minuti</label><input id="giMin" type="number" min="1" max="120" value="5"></div></div>
+      <div class="campo"><label for="giQuando">Quando</label><select id="giQuando"><option value="ripasso">Durante la pulizia normale</option><option value="cambio">Durante il cambio completo</option><option value="libera">Solo a camera libera</option>${x.tipo === "camera" || x.tipo === "bagno" || x.tipo === "cucina" || x.tipo === "balcone" ? "" : `<option value="giornata" selected>Nella giornata di lavoro</option>`}</select></div>
+      <div class="campo"><label for="giCome">Come si fa (il trucco della mamma, 2 righe)</label><textarea id="giCome" data-keep placeholder="es. Panno umido e poi asciutto, mai il detersivo sul legno"></textarea></div>
+      <button class="pro-btn verde" data-giro-aggiungi>${ICONA("spunta")}<span>Aggiungi e avanti</span></button><button class="nonna-link" data-giro-annulla-manca>Lascia stare</button></div>`
+    : `<button class="pro-btn blu gigante" data-giro-ce>${ICONA("spunta")}<span>C'è</span></button><button class="pro-btn verde" data-giro-manca>${ICONA("stella")}<span>Manca qualcosa</span></button>`;
+  return `<div class="inizio"><div class="inizio-top"><button class="inizio-indietro" data-giro-fine>${ICONA("indietro")}<span>Interrompi</span></button><span class="badge skip">${g.i + 1} / ${g.lista.length}</span></div>
+    <div class="inizio-testa skip"><div><div class="inizio-camera">${esc(x.oggetto)}</div><div class="inizio-lavoro">${esc(x.nome)}</div></div>${DONNINA("governante", "media")}</div>
+    <div class="muted small" style="margin:6px 2px 0">${esc(l.nome)} · ${esc(x.tipoNome)}</div>
+    <div class="inizio-dett"><div class="inizio-dett-t">${ICONA("lista")}<span>${x.regole.length ? "Chi se ne occupa" : "Nessuna regola"}</span></div>${x.regole.length ? x.regole.map(r => `<div class="inizio-dett-x" style="font-size:18px"><b>${esc(r.nome)}</b> <span class="muted">· ${esc(G.etichettaOgni(r.ogni))}</span></div>`).join("") : `<div class="inizio-dett-x" style="color:var(--warn)">${x.opz ? "Vale solo se c'è." : "Buco: aggiungi una regola."}</div>`}</div>
+    ${form}
+    <div class="pro-sec"><button class="nonna-link" data-giro-salta-oggetto>Salta "${esc(x.oggetto)}"</button></div></div>`;
+}
+async function giroAggiungi() {
+  const g = S.giro; if (!g) return; const x = g.lista[g.i];
+  const cosa = ($("#giCosa")?.value || "").trim(); if (!cosa) { $("#giCosa")?.focus(); return; }
+  const l = camera(g.luogo); const id = "p_" + Date.now().toString(36);
+  const quando = $("#giQuando")?.value || "ripasso";
+  // la cosa che manca diventa una superficie nuova della mappa (sotto lo stesso oggetto) con la sua regola
+  const sid = `${x.tipo}:x:${id}`;
+  const r = { id, cosa, nome: cosa, dove: doveDaTipo(x.tipo, l), ogni: Number($("#giOgni")?.value) || 30, minuti: Number($("#giMin")?.value) || 5, quando, euro: 1, come: ($("#giCome")?.value || "").trim(), controllo: "", icona: "stella", priorita: 2, gruppo: "P", superfici: [sid, x.id], daGiro: { luogo: g.luogo, data: L.oggiISO() } };
+  const personali = { ...(S.gov?.personali || {}), [id]: r };
+  const superficiExtra = { ...((S.gov && S.gov.superficiExtra) || {}) }; superficiExtra[x.tipo] = [...(superficiExtra[x.tipo] || []), { id: sid, nome: cosa, oggetto: x.oggetto, luogo: g.luogo, data: L.oggiISO() }];
+  g.aggiunte.push(cosa); g.manca = false; g.viste++; g.i++;
+  await salvaGov({ personali, superficiExtra });
+  g.lista[g.i - 1] = { ...x, regole: [...x.regole, r], buco: false };
+  disegnaFoglio();
+}
+async function giroFine() {
+  const g = S.giro; if (!g) { chiudiFoglio(); return; }
+  if (g.viste > 0 || g.i >= g.lista.length) {
+    const giri = [...((S.gov && S.gov.giri) || []).slice(-19), { luogo: g.luogo, data: L.oggiISO(), viste: g.viste, aggiunte: g.aggiunte.length, nomi: g.aggiunte.slice(0, 6), completo: g.i >= g.lista.length }];
+    S.giro = null; chiudiFoglio(); await salvaGov({ giri });
+  } else { S.giro = null; chiudiFoglio(); }
+}
 function vistaRegoleGov() {
   const sg = soglieGov(), mod = puoModificare();
   const tutte = [...G.CATALOGO.map(r => ({ ...r, ...((S.gov?.regole || {})[r.id] || {}) })), ...Object.values(S.gov?.personali || {}).map(r => ({ gruppo: "P", quando: "ripasso", priorita: 2, euro: 0, ...r, personale: true, ...((S.gov?.regole || {})[r.id] || {}) }))];
   const fl = flagsGov();
   const segCam = (k, titolo, testo) => `<section class="card"><h2 style="margin:0 0 4px">${titolo}</h2><p class="muted small" style="margin:0 0 8px">${testo}</p><div class="rows">${S.camere.filter(c => c.tipo !== "casa").map(c => `<div class="row"><span>${esc(c.nome)}</span><span class="seg"><button aria-pressed="${!!(fl[k] || {})[c.id]}" data-gov-flag="${k}|${c.id}|1" ${mod ? "" : "disabled"}>Sì</button><button aria-pressed="${!(fl[k] || {})[c.id]}" data-gov-flag="${k}|${c.id}|0" ${mod ? "" : "disabled"}>No</button></span></div>`).join("")}</div></section>`;
-  const camereFlag = segCam("balconi", "Camere con il balcone", "Le regole del balcone valgono solo per queste.") + segCam("strada", "Camere sulla strada", "Telai e binari delle finestre ogni settimana invece che ogni due.");
+  const camereFlag = segCam("balconi", "Camere con il balcone", "Le regole del balcone valgono solo per queste.") + segCam("strada", "Camere sulla strada", "Telai e binari delle finestre ogni settimana invece che ogni due.") + segCam("frigo", "Camere con il frigo", "La regola del frigo in camera vale solo per queste.");
   const fisse = `<section class="card"><h2 style="margin:0 0 4px">Istruzioni fisse delle camere</h2><p class="muted small" style="margin:0 0 8px">Quello che in una camera va fatto a ogni pulizia (es. Salvatore: balcone). La signora lo vede quando apre la camera, lo spunta prima di chiudere e la controllatrice lo verifica.</p>
     <div class="rows">${S.camere.map(c => `<div class="row one"><span><b>${esc(c.nome)}</b><br><input type="text" data-keep id="pmg_${esc(c.id)}" data-promemoria="${esc(c.id)}" value="${esc(S.promemoria?.[c.id] || "")}" placeholder="niente di particolare" ${mod ? "" : "disabled"} style="margin-top:4px"></span></div>`).join("")}</div><p class="muted small" style="margin:8px 0 0">Si salva da solo quando esci dalla casella. Più cose: separale con una virgola.</p></section>`;
   const sogliaRiga = (k, testo, step, min, max, unita) => `<div class="row"><span>${testo}</span><span class="gov-pm"><button class="btnsm ghost" data-gov-soglia="${k}|${-step}" ${mod ? "" : "disabled"} aria-label="meno">−</button><b>${sg[k]}${unita}</b><button class="btnsm ghost" data-gov-soglia="${k}|${step}" ${mod ? "" : "disabled"} aria-label="più">+</button></span></div>`;
@@ -885,13 +963,14 @@ function vistaRegoleGov() {
   return soglie + gruppi + nuova + fisse + camereFlag;
 }
 function stagioneTesto(r) { const f = r.stagione ? (Array.isArray(r.stagione) ? r.stagione : [r.stagione]) : []; if (!f.length) return ""; const gm = x => `${x.slice(3)}/${x.slice(0, 2)}`; return " · " + f.map(x => `dal ${gm(x.da)} al ${gm(x.a)}`).join(" e "); }
-function doveTesto(r) { const d = r.dove; if (d === "camera" || d === "camere") return "tutte le camere"; if (d === "cucina" || d === "case") return "gli appartamenti"; if (d === "bagno") return "tutti i bagni"; if (d === "balcone") return "camere con il balcone"; if (d === "stanza" || d === "stanze" || d === "tutte") return "camere e appartamenti"; if (d?.startsWith("zona:")) return nomeZonaBreve(d.slice(5)); if (d?.startsWith("camera:")) return camera(d.slice(7)).nome; return camera(d).nome; }
+function doveTesto(r) { const d = r.dove; if (Array.isArray(d)) return d.map(x => doveTesto({ dove: x })).join(" e "); if (r.soloFrigo) return "camere con il frigo"; if (d === "camera" || d === "camere") return "tutte le camere"; if (d === "cucina" || d === "case") return "gli appartamenti"; if (d === "bagno") return "tutti i bagni"; if (d === "balcone") return "camere con il balcone"; if (d === "stanza" || d === "stanze" || d === "tutte") return "camere e appartamenti"; if (d?.startsWith("zona:")) return nomeZonaBreve(d.slice(5)); if (d?.startsWith("camera:")) return camera(d.slice(7)).nome; return camera(d).nome; }
 function foglioNuovaRegola(f) {
   const dove = [["stanza", "Camere e appartamenti"], ["camera", "Solo le camere"], ["bagno", "Tutti i bagni"], ["cucina", "Solo gli appartamenti (cucina)"], ["balcone", "Camere con il balcone"], ...G.LUOGHI_COMUNI.map(l => [l.id, l.nome]), ...S.camere.map(c => ["camera:" + c.id, "Solo " + c.nome])];
-  return `<h3>Nuova regola</h3><div class="muted">Sei cose semplici. La governante la mette in programma da sola.</div>
+  const doveDef = f.tipoSup ? (Array.isArray(doveDaTipo(f.tipoSup, null)) ? "corridoio_p1" : doveDaTipo(f.tipoSup, null)) : "stanza";
+  return `<h3>Nuova regola</h3><div class="muted">${f.superficie ? `Per la superficie <b>${esc(f.nomeSup || "")}</b> (${esc(f.oggetto || "")}).` : "Sei cose semplici. La governante la mette in programma da sola."}</div>
     <form id="formRegola">
       <div class="campo"><label for="rgCosa">Cosa</label><input id="rgCosa" type="text" placeholder="es. Lavare le tende" required></div>
-      <div class="campo"><label for="rgDove">Dove</label><select id="rgDove">${dove.map(([v, n]) => `<option value="${esc(v)}">${esc(n)}</option>`).join("")}</select></div>
+      <div class="campo"><label for="rgDove">Dove</label><select id="rgDove">${dove.map(([v, n]) => `<option value="${esc(v)}" ${v === doveDef ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>
       <div class="due"><div class="campo"><label for="rgOgni">Ogni quanto</label><select id="rgOgni">${G.SCALA_OGNI.map(g => `<option value="${g}" ${g === 30 ? "selected" : ""}>${esc(G.etichettaOgni(g))}</option>`).join("")}</select></div><div class="campo"><label for="rgMin">Minuti</label><input id="rgMin" type="number" min="5" max="480" step="5" value="30"></div></div>
       <div class="due"><div class="campo"><label for="rgQuando">Quando</label><select id="rgQuando"><option value="ripasso">Durante la pulizia normale</option><option value="cambio">Durante il cambio completo</option><option value="libera">Solo a camera libera</option><option value="giornata">Zona comune, nella giornata</option><option value="giorno">Lavoro a sé, in un giorno</option></select></div><div class="campo"><label for="rgEuro">Compenso (€)</label><input id="rgEuro" type="number" min="0" step="0.5" value="2"></div></div>
       <div class="campo"><label for="rgCome">Come si fa (lo legge la signora)</label><textarea id="rgCome" placeholder="es. Tende staccate, lavate a 40°, riappese umide. Panno BLU."></textarea></div>
@@ -903,9 +982,11 @@ function foglioNuovaRegola(f) {
 async function salvaNuovaRegola() {
   const cosa = $("#rgCosa").value.trim(); if (!cosa) return;
   const id = "p_" + Date.now().toString(36);
+  const sup = S.foglio?.superficie;
   const gm = (v) => { const m = String(v || "").trim().match(/^(\d{2})\/(\d{2})$/); return m ? `${m[2]}-${m[1]}` : null; };
   const da = gm($("#rgDa").value), a = gm($("#rgA").value);
   const r = { id, cosa, nome: cosa, dove: $("#rgDove").value, ogni: Number($("#rgOgni").value) || 30, minuti: Number($("#rgMin").value) || 30, quando: $("#rgQuando").value, euro: Number($("#rgEuro").value) || 0, come: $("#rgCome").value.trim(), controllo: $("#rgCtrl").value.trim(), icona: "stella", priorita: 2, gruppo: "P" };
+  if (sup) r.superfici = [sup];
   if (r.quando === "cambio") r.ogni = 0;
   if (da && a) r.stagione = { da, a };
   chiudiFoglio();
@@ -1113,12 +1194,15 @@ function disegnaFoglio() {
   else if (f.tipo === "nuovoMan") html = foglioNuovoLavoroMan(f);
   else if (f.tipo === "luogoPulito") html = foglioLuogoPulito(f);
   else if (f.tipo === "nuovaRegola") html = foglioNuovaRegola(f);
+  else if (f.tipo === "superficie") html = foglioSuperficie(f);
+  else if (f.tipo === "giro") html = foglioGiro(f);
+  else if (f.tipo === "giroScegli") html = `<h3>Giro con la mamma</h3><div class="muted">Scegli il posto che girate insieme, superficie per superficie.</div><div class="pick" style="margin-top:10px">${[...S.camere, ...G.LUOGHI_COMUNI].map(l => `<button class="big undo" data-giro-inizia="${esc(l.id)}">${esc(l.nome)}</button>`).join("")}</div>`;
   else if (f.tipo === "info") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><div class="note info">${esc(f.testo)}</div>`;
   else if (f.tipo === "foto") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><img src="${f.dati}" alt="Foto" style="width:100%;border-radius:14px;margin-top:10px">`;
   // Se la persona sta scrivendo e arriva un aggiornamento, il testo non deve sparire
   const attivo = document.activeElement, idAttivo = s.contains(attivo) && attivo.id ? attivo.id : null;
   const valori = {}; s.querySelectorAll("textarea[id],input[id]").forEach(e => { if (e.type !== "file") valori[e.id] = { v: e.value, s: e.selectionStart, e: e.selectionEnd }; });
-  const pieno = f.tipo === "inizio";
+  const pieno = f.tipo === "inizio" || f.tipo === "giro";
   s.classList.toggle("pieno", pieno);
   const scroll = pieno ? 0 : (s.querySelector(".panel")?.scrollTop || 0);
   s.innerHTML = `<div class="panel ${pieno ? "pieno" : ""}" role="dialog">${pieno ? "" : `<div class="grip"></div>`}${html}${pieno ? "" : `<button class="big close" data-chiudi>Chiudi</button>`}</div>`;
@@ -1470,6 +1554,8 @@ function collega() {
   document.querySelectorAll("[data-gov-nuova-regola]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovaRegola" }));
   document.querySelectorAll("[data-gov-flag]").forEach(b => b.onclick = () => { const [k, cam, v] = b.dataset.govFlag.split("|"); const f = { ...(flagsGov()[k] || {}) }; if (v === "1") f[cam] = true; else delete f[cam]; salvaGov({ [k]: f }); });
   document.querySelectorAll("[data-gov-luogo]").forEach(b => b.onclick = () => apriFoglio({ tipo: "luogoPulito", luogo: b.dataset.govLuogo }));
+  document.querySelectorAll("[data-superficie]").forEach(b => b.onclick = () => apriFoglio({ tipo: "superficie", id: b.dataset.superficie, tipoSup: b.dataset.tipo }));
+  document.querySelectorAll("[data-giro-scegli]").forEach(b => b.onclick = () => apriFoglio({ tipo: "giroScegli" }));
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
@@ -1499,6 +1585,16 @@ function collegaFoglio() {
   const f = S.foglio; if (!f) return;
   document.querySelectorAll("[data-chiudi]").forEach(b => b.onclick = chiudiFoglio);
   document.querySelectorAll("[data-rif-no]").forEach(b => b.onclick = async () => { const [id, regola, luogo] = b.dataset.rifNo.split("|"); const p = S.pulizie[id]; if (!p) return; const motivo = await scegliMotivoRifinitura(); if (motivo) saltaRifinitura(p, regola, luogo, motivo); });
+  document.querySelectorAll("[data-giro-inizia]").forEach(b => b.onclick = () => iniziaGiro(b.dataset.giroInizia));
+  if (f.tipo === "giro") {
+    document.querySelectorAll("[data-giro-ce]").forEach(b => b.onclick = () => { S.giro.viste++; S.giro.i++; S.giro.manca = false; disegnaFoglio(); });
+    document.querySelectorAll("[data-giro-manca]").forEach(b => b.onclick = () => { S.giro.manca = true; disegnaFoglio(); setTimeout(() => $("#giCosa")?.focus(), 50); });
+    document.querySelectorAll("[data-giro-annulla-manca]").forEach(b => b.onclick = () => { S.giro.manca = false; disegnaFoglio(); });
+    document.querySelectorAll("[data-giro-aggiungi]").forEach(b => b.onclick = giroAggiungi);
+    document.querySelectorAll("[data-giro-salta-oggetto]").forEach(b => b.onclick = () => { const g = S.giro; const o = g.lista[g.i].oggetto, t = g.lista[g.i].tipo; while (g.i < g.lista.length && g.lista[g.i].oggetto === o && g.lista[g.i].tipo === t) g.i++; g.manca = false; disegnaFoglio(); });
+    document.querySelectorAll("[data-giro-fine]").forEach(b => b.onclick = giroFine);
+  }
+  if (f.tipo === "superficie") document.querySelectorAll("[data-gov-regola-superficie]").forEach(b => b.onclick = () => { const [tipo, sid, oggetto, nome] = b.dataset.govRegolaSuperficie.split("|"); apriFoglio({ tipo: "nuovaRegola", superficie: sid, tipoSup: tipo, oggetto, nomeSup: nome }); });
   if (f.tipo === "nuovaRegola") { const fr = $("#formRegola"); if (fr) fr.onsubmit = (e) => { e.preventDefault(); salvaNuovaRegola(); }; }
   if (f.tipo === "luogoPulito") document.querySelectorAll("[data-gov-fatto]").forEach(b => b.onclick = async () => { const [regola, luogo, zona] = b.dataset.govFatto.split("|"); await registraFatto(regola, luogo, zona, L.oggiISO()); toast("Segnato come fatto oggi"); disegnaFoglio(); });
   if (f.tipo === "manutenzione" || f.tipo === "nuovoMan") {

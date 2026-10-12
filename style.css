@@ -689,3 +689,15 @@ body.vista-signora .laguna::before{content:"";position:absolute;inset:0;backgrou
 .conferma-box{max-height:92dvh;overflow:auto;overscroll-behavior:contain}
 .conferma-box.chiusura .big{position:sticky;bottom:0}
 .conferma-box.chiusura .big.ok{bottom:52px}
+
+/* mappa delle superfici */
+.buchi{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:18px;color:#fff;background:linear-gradient(135deg,#4DBC6C,#1A7B3B 70%,#0B5024);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 0 #08431F,0 10px 20px -12px rgba(0,0,0,.5);text-shadow:0 1px 1px rgba(0,0,0,.6)}
+.buchi.rossi{background:linear-gradient(135deg,#A8201B,#6A0000 70%,#3E0000);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 0 #240000,0 10px 20px -12px rgba(0,0,0,.5)}
+.buchi b{font:800 30px/1 var(--f-display);letter-spacing:-.01em}
+.buchi span{font:600 13px/1.35 var(--f-body);opacity:.95}
+.mappa-ogg{margin-top:10px}
+.mappa-ogg-t{font:800 11px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 2px 4px}
+.mappa-sup{min-height:44px;padding:8px 12px}
+.mappa-sup.buco{background:rgba(200,16,46,.06)}
+.pall.grigio{background:#B9B4A8}
+details > summary::-webkit-details-marker{display:none}
