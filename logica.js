@@ -193,7 +193,8 @@ export function fasciaVoto(regole, voto) {
 }
 // L'importo che la signora prende davvero: prezzo base, cambiato dal voto (se c'è)
 export function importoFinale(p, regole) {
-  const base = Number(p.importo || 0);
+  // prezzo della camera + le rifiniture fatte quel giorno (prezzo piccolo per ognuna); il voto pesa su tutto
+  const base = Number(p.importo || 0) + Number(p.extraRifiniture || 0);
   const f = fasciaVoto(regole, p.voto);
   return f ? Math.round(base * f.perc) / 100 : base;
 }

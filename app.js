@@ -10,7 +10,7 @@ import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 import * as G from "./governante.js";
 
-export const VERSIONE = "0.21.0";
+export const VERSIONE = "0.22.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -315,6 +315,7 @@ async function eseguiPiano() {
 function disegna() {
   const app = $("#app");
   if (!app) return;
+  memoProposte = new Map(); memoRif = new Map();
   disegnaTestata();
   document.body.classList.toggle("nonna", !!(S.utente && addetta()));
   document.body.classList.toggle("vista-manutenzione", !!(S.utente && !addetta() && S.vista === "manutenzione"));
@@ -441,7 +442,7 @@ function tesseraGrande(c, iso, perSignora) {
   const dett = p.dettagli ? `<span class="tess-dett">${ICONA("nota")}Dettagli</span>` : "";
   const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
   const prezzo = !perSignora ? `<span class="tess-pr">${eur(p.importo)}</span>` : "";
-  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="${clsNome}">${esc(c.nome)}</span><span class="tess-lavoro">${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
+  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="${clsNome}">${esc(c.nome)}</span><span class="tess-lavoro">${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${testoRifiniture(p) ? `<span class="tess-rif">⭐ ${esc(testoRifiniture(p))}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
 }
 // Lavori del giorno che non stanno in una casella della piantina (lavori extra e lavori della governante)
 function lavoriInPiu(z, iso) {
@@ -453,13 +454,13 @@ function tesseraLavoro(p, perSignora) {
   const stato = p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : (STATI[p.stato] || STATI.da_fare).testo;
   const azione = perSignora ? (p.stato === "da_fare" ? "Tocca per iniziare" : p.stato === "in_corso" ? "Tocca quando hai finito" : "") : "";
   const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
-  return `<button class="tess ${cls} ${fondo ? "fondo" : ""}" ${attr}>${!perSignora ? `<span class="tess-pr">${eur(p.importo)}</span>` : ""}<span class="tess-nome">${esc(c.nome)}</span><span class="tess-lavoro">${fondo ? "⭐ " : ""}${esc(p.titolo)}</span>${p.minuti ? `<span class="tess-osp">${p.minuti} min</span>` : ""}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
+  return `<button class="tess ${cls} ${fondo ? "fondo" : ""}" ${attr}>${!perSignora ? `<span class="tess-pr">${eur(p.importo)}</span>` : ""}<span class="tess-nome">${esc(c.nome)}</span><span class="tess-lavoro">${fondo ? "⭐ Rifinitura · " : ""}${esc(p.titolo)}</span>${p.minuti ? `<span class="tess-osp">${p.minuti} min</span>` : ""}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
 }
 function piantinaZona(z, iso, perSignora) {
   const rs = camereZona(z);
   const tile = c => tesseraGrande(c, iso, perSignora);
   const extra = lavoriInPiu(z, iso);
-  const inPiu = extra.length ? `<div class="piano-eti" style="margin-top:14px">⭐ Lavori in più</div><div class="tess-griglia">${extra.map(p => tesseraLavoro(p, perSignora)).join("")}</div>` : "";
+  const inPiu = extra.length ? `<div class="piano-eti" style="margin-top:14px">⭐ Rifiniture a camera libera e lavori extra</div><div class="tess-griglia">${extra.map(p => tesseraLavoro(p, perSignora)).join("")}</div>` : "";
   if (rs.every(c => c.lato === "A")) return `<div class="piano-eti">${esc(S.zone[z]?.nome || z)}</div><div class="tess-griglia">${rs.map(tile).join("")}</div>` + inPiu;
   const Lc = rs.filter(c => c.lato === "L"), Rc = rs.filter(c => c.lato === "R"), Sc = rs.filter(c => c.lato !== "L" && c.lato !== "R");
   return `<div class="piano-eti">${esc(S.zone[z]?.breve || z)}</div><div class="corridoio"><div class="lato">${Lc.map(tile).join("")}</div><div class="lato">${Rc.map(tile).join("")}</div></div>` +
@@ -476,8 +477,11 @@ function foglioInizio(f) {
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(p.data) + 1) % 7);
   const sempre = promemoriaCamera(p.camera);
   const fondo = p.origine === "governante";
-  const routine = fondo ? [] : routineDi(p);
+  const routine = fondo ? [] : rifinitureDi(p);
+  const rifDue = routine.filter(r => !r.sempre), rifSempre = routine.filter(r => r.sempre);
+  const minRif = rifDue.reduce((n, r) => n + r.minuti, 0);
   const haDett = !!(p.dettagli || p.istruzioni || msg || sempre.length || routine.length || fondo);
+  const aperta = p.stato === "da_fare" || p.stato === "in_corso";
   let bottone = "";
   if (p.stato === "da_fare") bottone = S.regole.richiediInizio !== false && addetta()
     ? `<button class="pro-btn blu gigante" data-comincia="${esc(p.id)}">${ICONA("gioca")}<span>Ho capito, comincio</span></button>`
@@ -486,10 +490,9 @@ function foglioInizio(f) {
   else if (p.stato === "fatta") bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${minutiPulizia(p) != null ? ` · ${minutiPulizia(p)} min` : ""} · brava!</span></div>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>` : ""}`;
   else if (p.stato === "problema") bottone = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Togli il problema, rimetti da pulire</button>` : ""}`;
   else if (p.stato === "non_fatta") bottone = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Rimetti da pulire</button>` : ""}`;
-  const aperta = p.stato === "da_fare" || p.stato === "in_corso";
   return `<div class="inizio">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Indietro</span></button>${BADGE(p)}</div>
-    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(c.nome)}</div><div class="inizio-lavoro">${fondo ? "⭐ " : ""}${esc(titoloLavoro(p))}${fondo && p.minuti ? ` · ${p.minuti} min` : ""}</div></div>${DONNINA(fondo ? "governante" : p.tipo === "ripasso" ? "saluto" : "secchio", "media")}</div>
+    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(c.nome)}</div><div class="inizio-lavoro">${fondo ? "⭐ Rifinitura · " : ""}${esc(titoloLavoro(p))}${fondo && p.minuti ? ` · ${p.minuti} min` : ""}${rifDue.length ? ` + ${rifDue.length} ${rifDue.length === 1 ? "rifinitura" : "rifiniture"}` : ""}</div></div>${DONNINA(fondo ? "governante" : p.tipo === "ripasso" ? "saluto" : "secchio", "media")}</div>
     <div class="inizio-righe">
       ${p.ospite ? `<div class="inizio-riga">${ICONA("persona")}<span>${esc(p.ospite)}${p.persone ? ` · <b>${p.persone} ${p.persone === 1 ? "persona" : "persone"}</b>` : ""}</span></div>` : (p.persone ? `<div class="inizio-riga">${ICONA("persona")}<span><b>${p.persone} ${p.persone === 1 ? "persona" : "persone"}</b></span></div>` : "")}
       ${p.partenza ? `<div class="inizio-riga out">${ICONA("esci")}<span><b>Partenza ${esc(giornoParlato(p.data))}</b> · l'ospite va via</span></div>` : (p.parteIl && p.parteIl > p.data ? `<div class="inizio-riga">${ICONA("calendario")}<span>Resta fino a <b>${esc(giornoParlato(p.parteIl))}</b> (quel giorno parte)</span></div>` : "")}
@@ -497,9 +500,10 @@ function foglioInizio(f) {
     </div>
     <div class="inizio-dett ${haDett ? "" : "vuoto"}">
       <div class="inizio-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div>
-      ${fondo ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("stella")}<span>Lavoro a fondo chiesto dalla governante${p.perche?.length ? ` · ${esc(p.perche[0])}` : ""}</span></div><div class="inizio-dett-x">${esc(p.come || "")}</div></div>` : ""}
+      ${fondo ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("stella")}<span>Rifinitura a camera libera${p.perche?.length ? ` · ${esc(p.perche[0])}` : ""}</span></div><div class="inizio-dett-x">${esc(p.come || "")}</div></div>` : ""}
       ${sempre.length ? `<div class="inizio-dett-s"><b>Sempre in ${esc(c.nome)}:</b> ${esc(sempre.join(" · "))}</div>` : ""}
-      ${routine.length ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("stella")}<span>A fondo questa volta (${routine.reduce((n, r) => n + (r.sempre ? 0 : r.minuti), 0) || routine.reduce((n, r) => n + r.minuti, 0)} min in più)</span></div>${routine.map(r => `<details class="inizio-fondo-voce"><summary>${esc(r.cosa)}${r.sempre ? "" : ` <small>· ${esc(G.testoUltima(r.ultima, L.oggiISO()))}</small>`}</summary><div class="muted">${esc(r.come)}</div></details>`).join("")}</div>` : ""}
+      ${rifDue.length ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("stella")}<span>Rifiniture di oggi · ${minRif} min</span></div>${rifDue.map(r => `<div class="rif-voce"><div class="rif-testa"><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.nome)}</b><span class="rif-min">${r.minuti} min</span></div><div class="rif-come">${esc(r.come)}</div><div class="rif-sotto"><span class="muted small">${esc((r.perche || []).join(" · "))}${r.comune ? ` · ${esc(r.luogoNome)}` : ""}</span>${aperta && addetta() ? `<button class="nonna-link rif-no" data-rif-no="${esc(p.id)}|${esc(r.regola)}|${esc(r.luogo || p.camera)}">Non posso</button>` : ""}</div></div>`).join("")}</div>` : ""}
+      ${rifSempre.length ? `<div class="inizio-fondo"><div class="inizio-fondo-t">${ICONA("spunta")}<span>Come sempre</span></div>${rifSempre.map(r => `<details class="inizio-fondo-voce"><summary>${esc(r.nome)}${r.comune ? ` <small>· ${esc(r.luogoNome)}</small>` : ""}</summary><div class="muted">${esc(r.come)}</div></details>`).join("")}</div>` : ""}
       ${p.dettagli ? `<div class="inizio-dett-x">${esc(p.dettagli)}</div>` : ""}
       ${p.istruzioni ? `<div class="inizio-dett-i">${esc(p.istruzioni)}</div>` : ""}
       ${msg ? `<div class="inizio-dett-m"><b>${esc(msg.da || "Michele")} dice:</b> ${esc(msg.testo)}</div>` : ""}
@@ -541,7 +545,7 @@ function vistaSoldi(z) {
   const pagato = S.pagamenti[`${z}_${chiave}`];
   const wallet = `<section class="wallet"><div class="lbl">Questa settimana · ${L.etichettaSettimana(chiave)}</div><div class="amt">${eur(totale)}</div>
     <div>${lista.length} ${lista.length === 1 ? "pulizia fatta" : "pulizie fatte"}${bonus.n ? ` · ${bonus.perso ? "bonus controlli perso" : "bonus controlli " + eur(bonus.importo)}` : ""} · ${pagato ? `<span class="pill paid">✓ Pagata ${esc(pagato.quando || "")}</span>` : `<span class="pill open">Si paga sabato alle 13</span>`}</div></section>`;
-  const elenco = `<section class="card"><h2>Cosa hai fatto questa settimana</h2>${lista.length ? `<div class="rows">${lista.map(p => `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(p.titolo)}<br><span class="muted">${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span></span><span class="s done">${eur(p.finale)}${p.voto != null ? `<br><span class="muted small">voto ${esc(p.voto)}</span>` : ""}</span>${(S.controlli[p.id]?.nonFatteProprietario?.length ? S.controlli[p.id].nonFatteProprietario : S.controlli[p.id]?.nonFatte || []).length ? `<span class="muted small" style="grid-column:1/-1">Non fatto: ${esc((S.controlli[p.id].nonFatteProprietario?.length ? S.controlli[p.id].nonFatteProprietario : S.controlli[p.id].nonFatte).join(", "))} → pagata meno</span>` : ""}</div>`).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. Ogni camera che segni pulita compare qui con il suo importo.</p>`}</section>`;
+  const elenco = `<section class="card"><h2>Cosa hai fatto questa settimana</h2>${lista.length ? `<div class="rows">${lista.map(p => `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(p.titolo)}${p.extraRifiniture ? `<br><span class="muted">${eur(p.importo)} + ${(p.rifiniture || []).filter(r => r.euro).length} rifiniture ${eur(p.extraRifiniture)}</span>` : ""}<br><span class="muted">${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span></span><span class="s done">${eur(p.finale)}${p.voto != null ? `<br><span class="muted small">voto ${esc(p.voto)}</span>` : ""}</span>${(S.controlli[p.id]?.nonFatteProprietario?.length ? S.controlli[p.id].nonFatteProprietario : S.controlli[p.id]?.nonFatte || []).length ? `<span class="muted small" style="grid-column:1/-1">Non fatto: ${esc((S.controlli[p.id].nonFatteProprietario?.length ? S.controlli[p.id].nonFatteProprietario : S.controlli[p.id].nonFatte).join(", "))} → pagata meno</span>` : ""}</div>`).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. Ogni camera che segni pulita compare qui con il suo importo.</p>`}</section>`;
   return wallet + elenco + vistaStorico(z);
 }
 function vistaStorico(z) {
@@ -708,7 +712,7 @@ function vistaSignora(z) {
   const giornoCard = (g) => { const ls = pulizieDelGiorno(g, z); const msg = messaggioDelGiorno(g); const et = quandoEtichetta(g);
     return `<section class="card sig-giorno ${g === oggi ? "oggi" : ""} ${g < oggi ? "passato" : ""}"><div class="head" style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0">${esc(L.dataLunga(g).replace(/^./, ch => ch.toUpperCase()))}${["Oggi", "Domani", "Ieri"].includes(et) ? ` <span class="muted">· ${et.toLowerCase()}</span>` : ""}</h2>${ls.length ? `<b>${ls.filter(p => p.stato === "fatta").length}/${ls.length}</b>` : `<span class="muted">niente</span>`}</div>
       ${msg ? `<div class="note info" style="margin:8px 0 0">📣 ${esc(msg.testo)}</div>` : ""}
-      ${ls.length ? `<div class="rows" style="margin-top:8px">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}${p.minuti && p.origine === "governante" ? ` <span class="muted">· ${p.minuti} min</span>` : ""}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.partenza ? ` <span class="el-pill out">parte</span>` : ""}${p.arrivo ? ` <span class="el-pill in">arriva</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">alle ${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""} · ${eur(p.importo)}</span>` : ""}${p.dettagli ? `<br><span class="dett-mini">${ICONA("nota")}${esc(p.dettagli)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div>` : ""}</section>`; };
+      ${ls.length ? `<div class="rows" style="margin-top:8px">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}${p.minuti && p.origine === "governante" ? ` <span class="muted">· ${p.minuti} min</span>` : ""}${p.stato !== "fatta" && testoRifiniture(p) ? ` <span class="muted">· ${esc(testoRifiniture(p))}</span>` : p.rifiniture?.length ? ` <span class="muted">· ${p.rifiniture.filter(r => r.euro).length || p.rifiniture.length} rifiniture</span>` : ""}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.partenza ? ` <span class="el-pill out">parte</span>` : ""}${p.arrivo ? ` <span class="el-pill in">arriva</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">alle ${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""} · ${eur(p.importo)}</span>` : ""}${p.dettagli ? `<br><span class="dett-mini">${ICONA("nota")}${esc(p.dettagli)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div>` : ""}</section>`; };
   return `<section class="card flat"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button></section>
   <section class="pro-testa sig-testa"><div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">Signora ${esc(zona.breve)}</div><div class="pro-frase">${esc(camere)}${ctrl ? `<br>Questa settimana è lei la controllatrice.` : ""}</div></div>${avatarZona(z, "media")}</div>
     <div class="pro-riepilogo"><div class="pro-num">${"<b>" + tutte.length + "</b>"}<span>camere</span></div><div class="pro-num done"><b>${fatte}</b><span>pulite</span></div><div class="pro-num todo"><b>${tutte.length - fatte}</b><span>da fare</span></div><div class="pro-num ${problemi ? "warn" : ""}"><b>${problemi}</b><span>problemi</span></div></div>
@@ -729,11 +733,15 @@ function testoPianoSettimana(z, lun) {
 // ============================================================================
 function regoleGov() { return G.regoleAttive(S.gov); }
 function soglieGov() { return G.soglie(S.gov); }
-function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {} }; }
-function proposteGov(lun) { return G.proposteSettimana(ctxGov(lun)); }
-// le piccole cose "a fondo" attaccate a una pulizia normale (per la signora e per la controllatrice)
-function routineDi(p) { return G.routinePer(p, ctxGov()); }
-function sempreDi(p) { return [...promemoriaCamera(p.camera), ...routineDi(p).map(r => `⭐ ${r.cosa}`)]; }
+function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {} }; }
+function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov() }; }
+let memoProposte = new Map(), memoRif = new Map();
+function proposteGov(lun) { const k = lun || S.govSett; if (!memoProposte.has(k)) memoProposte.set(k, G.proposteSettimana(ctxGov(k))); return memoProposte.get(k); }
+// le rifiniture dentro una pulizia normale (per la signora, per la controllatrice e per la paga)
+function rifinitureDi(p) { if (!p || p.origine === "governante" || p.tipo === "extra") return []; const k = `${p.zona}|${p.data}`; if (!memoRif.has(k)) memoRif.set(k, G.rifinitureDelGiorno(p.zona, p.data, ctxGov())); return memoRif.get(k)[p.id] || []; }
+function routineDi(p) { return rifinitureDi(p); }
+function sempreDi(p) { return [...promemoriaCamera(p.camera), ...rifinitureDi(p).map(r => `⭐ ${r.nome}`)]; }
+function testoRifiniture(p) { const rf = rifinitureDi(p).filter(r => !r.sempre); return rf.length ? `+${rf.length} ${rf.length === 1 ? "rifinitura" : "rifiniture"} · ${rf.reduce((n, r) => n + r.minuti, 0)} min` : ""; }
 function idPuliziaGov(c) { return `${c.data}_${c.luogo}_g_${c.regola}`; }
 function haProposteNuove() { try { return localStorage.getItem("ricci_gov_visto") !== S.govSett; } catch (e) { return true; } }
 function ledGovernante() { if (!proprietario()) return false; const r = proposteGov(G.settimanaGovernante()); return r.inRitardo.length > 0 || (r.proposte.length > 0 && haProposteNuove()); }
@@ -771,10 +779,22 @@ async function registraFatto(regola, luogo, zona, data) {
   S.registro[k] = voce;
   try { await S.db.salva("governante_registro", `${regola}_${luogo}`, voce, true); } catch (e) { console.warn("registro", e?.code || e); }
 }
+let rifiniturePending = null;
 function registraPuliziaFatta(p) {
   if (!p) return;
-  if (p.origine === "governante" && p.regola) registraFatto(p.regola, p.camera, p.zona, p.data);
-  else for (const r of routineDi(p)) registraFatto(r.regola, p.camera, p.zona, p.data);
+  if (p.origine === "governante" && p.regola) { registraFatto(p.regola, p.camera, p.zona, p.data); return; }
+  const rf = rifinitureDi(p);
+  for (const r of rf) registraFatto(r.regola, r.luogo || p.camera, p.zona, p.data);
+  const pagate = rf.filter(r => !r.sempre && r.euro);
+  rifiniturePending = { rifiniture: rf.map(r => ({ regola: r.regola, nome: r.nome, minuti: r.minuti, euro: r.sempre ? 0 : r.euro, luogo: r.luogo || p.camera })), extraRifiniture: Math.round(pagate.reduce((n, r) => n + r.euro, 0) * 100) / 100 };
+}
+// "Non la posso fare" su una rifinitura: motivo con un tocco, la governante la rimette alla pulizia dopo
+async function saltaRifinitura(p, regola, luogo, motivo) {
+  const k = G.chiaveRegistro(regola, luogo), prev = S.registro[k] || {};
+  const voce = { ...prev, regola, luogo, zona: p.zona, saltata: p.data, saltataPer: p.id, motivo, saltataDa: S.utente.nome || "" };
+  if (!voce.ultima) voce.ultima = null;
+  S.registro[k] = voce; disegna(); if (S.foglio) disegnaFoglio();
+  try { await S.db.salva("governante_registro", `${regola}_${luogo}`, voce, true); } catch (e) { console.warn("registro", e?.code || e); }
 }
 function etichettaSettimanaLun(lun) { return L.etichettaSettimana(L.aggiungiGiorni(lun, 6)); }
 function nomeZonaBreve(z) { return `Signora ${S.zone[z]?.breve || z}`; }
@@ -800,7 +820,7 @@ function vistaGovernante() {
 function rigaProposta(c, conTasti = true) {
   return `<div class="gov-riga" data-gov-riga="${esc(c.id)}">
     <div class="gov-ic ${c.grande ? "grande" : ""}">${ICONA(c.icona || "stella")}</div>
-    <div class="gov-corpo"><div class="gov-cosa">${esc(c.cosa)}${c.grande ? ` <span class="el-pill out">a camera vuota</span>` : ""}</div>
+    <div class="gov-corpo"><div class="gov-cosa">${esc(c.cosa)}${c.grande ? ` <span class="el-pill out">mezza giornata</span>` : c.libera ? ` <span class="el-pill now">a camera libera</span>` : ""}</div>
       <div class="gov-dove"><b>${esc(c.luogoNome)}</b> · ${esc(nomeZonaBreve(c.zona))} · <b>${esc(L.dataGiornoLungo(c.data))}</b> · ${c.minuti >= 60 ? `${Math.round(c.minuti / 60 * 10) / 10} ore`.replace(".", ",") : `${c.minuti} min`}${c.euro ? ` · ${eur(c.euro)}` : ""}</div>
       <div class="gov-perche">${esc((c.perche || []).join(" · "))}</div>
       ${conTasti && puoModificare() ? `<div class="gov-tasti"><button class="btnsm" data-gov-ok="${esc(c.id)}">Va bene</button><button class="btnsm ghost" data-gov-dopo="${esc(c.id)}">Più avanti</button><button class="btnsm ghost" data-gov-no="${esc(c.id)}">No</button></div>` : ""}</div></div>`;
@@ -812,17 +832,28 @@ function vistaConsigliGov() {
   const ritardo = r.inRitardo.length ? `<section class="card gov-ritardo"><h2 style="margin:0 0 6px;color:var(--warn)"><span class="led" role="img" aria-label="in ritardo"></span>In ritardo · ${r.inRitardo.length}</h2><p class="muted small" style="margin:0 0 8px">Dovevano essere fatti e non risultano fatti. Tocca per aprire.</p><div class="rows">${r.inRitardo.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ⭐ ${esc(p.titolo)}<br><span class="muted">${esc(nomeZonaBreve(p.zona))} · era per ${esc(L.dataGiornoLungo(p.data))}</span></span>${BADGE(p)}</button>`).join("")}</div></section>` : "";
   const auto = `<section class="card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><h2 style="margin:0">Automatico</h2><p class="muted small" style="margin:2px 0 0">${sg.automatico ? "Acceso: i lavori piccoli entrano da soli nelle settimane delle signore; ti chiedo solo per quelli grossi (più di un'ora o a camera vuota)." : "Spento: ti propongo tutto e decidi tu con \"Va bene\". Accendilo quando ti fidi."}</p></div><span class="seg"><button aria-pressed="${!!sg.automatico}" data-gov-auto="1" ${puoModificare() ? "" : "disabled"}>Sì</button><button aria-pressed="${!sg.automatico}" data-gov-auto="0" ${puoModificare() ? "" : "disabled"}>No</button></span></div></section>`;
   const programmati = Object.values(S.pulizie).filter(p => p.origine === "governante" && p.data >= lun && p.data <= L.aggiungiGiorni(lun, 6)).sort((a, b) => a.data < b.data ? -1 : 1);
-  const lista = r.proposte.length ? `<section class="card gov-card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Ti consiglio · ${r.proposte.length}</h2>${puoModificare() && r.proposte.length > 1 ? `<button class="btnsm" data-gov-tutto>Va bene a tutto</button>` : ""}</div><p class="muted small" style="margin:4px 0 10px">Massimo 8 cose a settimana, al massimo ${sg.minutiGiorno} minuti al giorno per signora, ${sg.camereSettimana} camere a fondo a settimana, mai di domenica.${r.scartate ? ` Altre ${r.scartate} aspettano il loro turno.` : ""}</p>${r.proposte.map(c => rigaProposta(c)).join("")}</section>`
-    : `<section class="card gov-card"><h2 style="margin:0">Niente da consigliare per questa settimana</h2><p class="muted" style="margin:6px 0 0">${programmati.length ? "I lavori a fondo sono già nelle settimane delle signore (qui sotto)." : "Tutto in ordine secondo il registro. Guarda il Calendario del pulito per i dettagli."}</p></section>`;
+  const lista = r.proposte.length ? `<section class="card gov-card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Ti consiglio · ${r.proposte.length}</h2>${puoModificare() && r.proposte.length > 1 ? `<button class="btnsm" data-gov-tutto>Va bene a tutto</button>` : ""}</div><p class="muted small" style="margin:4px 0 10px">Qui solo le cose a camera libera e i lavori a sé: le rifiniture piccole stanno già dentro le pulizie normali (sotto). Massimo 8 a settimana e ${sg.minutiGiorno} minuti al giorno per signora, rifiniture comprese, mai di domenica. Fa eccezione la pulizia a fondo completa: mezza giornata, al massimo ${sg.camereSettimana} a settimana.${r.scartate ? ` Altre ${r.scartate} aspettano il loro turno.` : ""}</p>${r.proposte.map(c => rigaProposta(c)).join("")}</section>`
+    : `<section class="card gov-card"><h2 style="margin:0">Niente a camera libera da consigliare</h2><p class="muted" style="margin:6px 0 0">${programmati.length ? "Le rifiniture a camera libera sono già nelle settimane delle signore (qui sotto)." : "Le rifiniture di questa settimana sono dentro le pulizie normali (qui sotto)."}</p></section>`;
+  const rifSett = cardRifinitureSettimana(lun);
   const prog = programmati.length ? `<section class="card"><h2 style="margin:0 0 8px">Già nelle settimane delle signore · ${programmati.length}</h2><div class="rows">${programmati.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ⭐ ${esc(p.titolo)}<br><span class="muted">${esc(nomeZonaBreve(p.zona))} · ${esc(L.dataGiornoLungo(p.data))}${p.minuti ? ` · ${p.minuti} min` : ""}</span></span>${BADGE(p)}</button>`).join("")}</div></section>` : "";
-  return nav + ritardo + lista + prog + auto;
+  return nav + ritardo + lista + rifSett + prog + auto;
+}
+// Le rifiniture che la governante ha già messo dentro le pulizie normali della settimana, signora per signora
+function cardRifinitureSettimana(lun) {
+  const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(lun, i));
+  const righe = zoneOrdinate().map(z => {
+    let n = 0, min = 0, pulizie = 0; const perGiorno = [];
+    for (const g of giorni) { const m = G.rifinitureDelGiorno(z.id, g, ctxGov()); const rf = Object.values(m).flat().filter(r => !r.sempre); const k = Object.keys(m).length; if (rf.length) perGiorno.push(`${L.GG[L.giornoSettimana(g)]} ${rf.reduce((s, r) => s + r.minuti, 0)}′`); n += rf.length; min += rf.reduce((s, r) => s + r.minuti, 0); pulizie += k; }
+    return `<button class="row" data-signora="${z.id}"><span><b>${esc(nomeZonaBreve(z.id))}</b><br><span class="muted small">${n ? `${n} rifiniture in ${pulizie} pulizie · ${perGiorno.join(" · ")}` : "nessuna pulizia in programma"}</span></span><span class="s">${min ? `${min} min` : "—"}</span></button>`;
+  }).join("");
+  return `<section class="card"><h2 style="margin:0 0 4px">Rifiniture dentro le pulizie</h2><p class="muted small" style="margin:0 0 8px">A ogni pulizia normale la governante aggiunge 1-2 rifiniture da 5-10 minuti, le più in ritardo per quella camera; le zone comuni vanno alla prima pulizia del giorno. Tocca una signora per vederle giorno per giorno.</p><div class="rows">${righe}</div></section>`;
 }
 function vistaCalendarioPulito() {
   const cal = G.calendarioPulito(ctxGov()), oggi = L.oggiISO();
   const peggio = cal[0];
   const testa = `<section class="card"><h2 style="margin:0">Calendario del pulito</h2><p class="muted small" style="margin:4px 0 0">Per ogni posto, quando è stata fatta l'ultima volta ogni cosa a fondo. <span class="pall verde"></span> fresco · <span class="pall giallo"></span> quasi scaduto · <span class="pall rosso"></span> scaduto o mai fatto.</p>
-    ${peggio ? `<div class="note warn" style="margin:10px 0 0">La più indietro: <b>${esc(peggio.nome)}</b> · ${peggio.fondo ? `a fondo completa: ${esc(peggio.fondo.testo)}` : esc(peggio.peggio?.cosa || "")} · ${peggio.rossi} cose scadute</div>` : ""}</section>`;
-  const righe = cal.map(c => `<button class="row cal-riga" data-gov-luogo="${esc(c.luogo)}"><span><b>${esc(c.nome)}</b> <span class="muted">· ${esc(nomeZonaBreve(c.zona))}</span><br><span class="muted small">${c.fondo ? `a fondo completa: <b>${esc(c.fondo.testo)}</b>` : `più indietro: ${esc(c.peggio?.cosa || "")} (${esc(c.peggio?.testo || "")})`}</span><br><span class="cal-palle">${c.voci.map(v => `<i class="pall ${v.colore}" title="${esc(v.cosa)}"></i>`).join("")}</span></span><span class="s ${c.rossi ? "warn" : c.gialli ? "wip" : "done"}">${c.rossi ? `${c.rossi} rosse` : c.gialli ? `${c.gialli} gialle` : "ok"}</span></button>`).join("");
+    ${peggio ? `<div class="note warn" style="margin:10px 0 0">La più indietro: <b>${esc(peggio.nome)}</b> · ${esc(peggio.peggio?.nome || "")} (${esc(peggio.peggio?.testo || "")}) · ${peggio.rossi} rifiniture scadute</div>` : ""}</section>`;
+  const righe = cal.map(c => `<button class="row cal-riga" data-gov-luogo="${esc(c.luogo)}"><span><b>${esc(c.nome)}</b> <span class="muted">· ${esc(nomeZonaBreve(c.zona))}</span><br><span class="muted small">più indietro: ${esc(c.peggio?.nome || "")} (${esc(c.peggio?.testo || "")})${c.mai ? ` · ${c.mai} mai registrate` : ""}</span><br><span class="cal-palle">${c.voci.map(v => `<i class="pall ${v.colore}" title="${esc(v.cosa)}"></i>`).join("")}</span></span><span class="s ${c.rossi ? "warn" : c.gialli ? "wip" : "done"}">${c.rossi ? `${c.rossi} rosse` : c.gialli ? `${c.gialli} gialle` : "ok"}</span></button>`).join("");
   return testa + `<section class="card"><div class="rows">${righe}</div></section>`;
 }
 function foglioLuogoPulito(f) {
@@ -831,30 +862,40 @@ function foglioLuogoPulito(f) {
     <div class="rows" style="margin-top:10px">${cal.voci.map(v => `<div class="row"><span><span class="pall ${v.colore}"></span> <b>${esc(v.cosa)}</b><br><span class="muted small">${esc(G.etichettaOgni(v.ogni))} · ultima volta: <b>${esc(v.testo)}</b>${v.da ? ` (${esc(v.da)})` : ""}</span></span></div>`).join("")}</div>
     ${puoModificare() ? `<p class="muted small" style="margin:10px 0 0">Per segnare a mano una cosa come fatta oggi (es. l'hai fatta tu), tocca qui sotto.</p><div class="scelte">${cal.voci.filter(v => v.colore !== "verde").slice(0, 8).map(v => `<button type="button" data-gov-fatto="${esc(v.regola)}|${esc(cal.luogo)}|${esc(cal.zona)}">✓ ${esc(v.cosa)}</button>`).join("")}</div>` : ""}`;
 }
-const GRUPPI_GOV = { A: "Legate al prospetto", B: "Stagioni e meteo", C: "Camere e bagni", D: "Appartamenti con cucina", E: "Zone comuni", F: "Lavanderia, attrezzi e scorte", P: "Le tue regole" };
+const GRUPPI_GOV = G.GRUPPI;
 function vistaRegoleGov() {
   const sg = soglieGov(), mod = puoModificare();
-  const tutte = [...G.REGOLE_GOVERNANTE.map(r => ({ ...r, ...((S.gov?.regole || {})[r.id] || {}) })), ...Object.values(S.gov?.personali || {}).map(r => ({ gruppo: "P", quando: "giorno", priorita: 2, euro: 0, ...r, personale: true, ...((S.gov?.regole || {})[r.id] || {}) }))];
+  const tutte = [...G.CATALOGO.map(r => ({ ...r, ...((S.gov?.regole || {})[r.id] || {}) })), ...Object.values(S.gov?.personali || {}).map(r => ({ gruppo: "P", quando: "ripasso", priorita: 2, euro: 0, ...r, personale: true, ...((S.gov?.regole || {})[r.id] || {}) }))];
+  const fl = flagsGov();
+  const segCam = (k, titolo, testo) => `<section class="card"><h2 style="margin:0 0 4px">${titolo}</h2><p class="muted small" style="margin:0 0 8px">${testo}</p><div class="rows">${S.camere.filter(c => c.tipo !== "casa").map(c => `<div class="row"><span>${esc(c.nome)}</span><span class="seg"><button aria-pressed="${!!(fl[k] || {})[c.id]}" data-gov-flag="${k}|${c.id}|1" ${mod ? "" : "disabled"}>Sì</button><button aria-pressed="${!(fl[k] || {})[c.id]}" data-gov-flag="${k}|${c.id}|0" ${mod ? "" : "disabled"}>No</button></span></div>`).join("")}</div></section>`;
+  const camereFlag = segCam("balconi", "Camere con il balcone", "Le regole del balcone valgono solo per queste.") + segCam("strada", "Camere sulla strada", "Telai e binari delle finestre ogni settimana invece che ogni due.");
+  const fisse = `<section class="card"><h2 style="margin:0 0 4px">Istruzioni fisse delle camere</h2><p class="muted small" style="margin:0 0 8px">Quello che in una camera va fatto a ogni pulizia (es. Salvatore: balcone). La signora lo vede quando apre la camera, lo spunta prima di chiudere e la controllatrice lo verifica.</p>
+    <div class="rows">${S.camere.map(c => `<div class="row one"><span><b>${esc(c.nome)}</b><br><input type="text" data-keep id="pmg_${esc(c.id)}" data-promemoria="${esc(c.id)}" value="${esc(S.promemoria?.[c.id] || "")}" placeholder="niente di particolare" ${mod ? "" : "disabled"} style="margin-top:4px"></span></div>`).join("")}</div><p class="muted small" style="margin:8px 0 0">Si salva da solo quando esci dalla casella. Più cose: separale con una virgola.</p></section>`;
   const sogliaRiga = (k, testo, step, min, max, unita) => `<div class="row"><span>${testo}</span><span class="gov-pm"><button class="btnsm ghost" data-gov-soglia="${k}|${-step}" ${mod ? "" : "disabled"} aria-label="meno">−</button><b>${sg[k]}${unita}</b><button class="btnsm ghost" data-gov-soglia="${k}|${step}" ${mod ? "" : "disabled"} aria-label="più">+</button></span></div>`;
-  const soglie = `<section class="card"><h2 style="margin:0 0 6px">Quanto può chiedere</h2><div class="rows">${sogliaRiga("minutiGiorno", "Minuti al giorno di lavori a fondo per signora", 10, 20, 180, "′")}${sogliaRiga("camereSettimana", "Camere a fondo completa a settimana", 1, 1, 5, "")}${sogliaRiga("minutiRoutine", "Minuti di cose a fondo dentro una pulizia normale", 5, 5, 40, "′")}${sogliaRiga("freddoGradi", "Freddo in arrivo sotto i", 1, 5, 18, "°")}</div></section>`;
+  const cop = (() => { try { return G.simulaCopertura(ctxGov(L.lunediDi(L.oggiISO()))); } catch (e) { console.warn(e); return null; } })();
+  const copertura = cop ? `<div class="note ${cop.percento >= 80 ? "done" : cop.percento >= 55 ? "info" : "warn"}" style="margin:8px 0 0"><b>Con queste soglie</b>, ripetendo le pulizie di questa settimana per ${cop.settimane} settimane, il catalogo resta in regola al <b>${cop.percento}%</b> (${cop.inRegola} cose su ${cop.voci}; ${cop.mai} mai toccate). Servono circa <b>${cop.minutiSettimanaSignora} minuti</b> di rifiniture a settimana per signora. Alza i minuti al giorno e le rifiniture per pulizia per salire.</div>` : "";
+  const soglie = `<section class="card"><h2 style="margin:0 0 6px">Quanto può chiedere</h2><div class="rows">${sogliaRiga("minutiGiorno", "Minuti al giorno di rifiniture per signora (tutto compreso)", 10, 20, 180, "′")}${sogliaRiga("rifiniturePerPulizia", "Rifiniture per ogni pulizia normale", 1, 1, 4, "")}${sogliaRiga("minutiRifiniture", "Minuti di rifiniture dentro una pulizia normale", 5, 5, 40, "′")}${sogliaRiga("camereSettimana", "Pulizie a fondo complete a settimana (mezza giornata)", 1, 1, 5, "")}${sogliaRiga("freddoGradi", "Freddo in arrivo sotto i", 1, 5, 18, "°")}</div>${copertura}</section>`;
   const gruppi = Object.entries(GRUPPI_GOV).map(([g, nome]) => { const rr = tutte.filter(r => r.gruppo === g); if (!rr.length) return "";
     return `<section class="card"><h2 style="margin:0 0 6px">${esc(nome)}</h2><div class="rows">${rr.map(r => `<div class="row one gov-regola ${r.attiva === false ? "spenta" : ""}"><span class="gov-regola-testa"><span class="gov-ic mini">${ICONA(r.icona || "stella")}</span><b>${esc(r.cosa)}</b><span class="seg" style="margin-left:auto"><button aria-pressed="${r.attiva !== false}" data-gov-attiva="${esc(r.id)}|1" ${mod ? "" : "disabled"}>Sì</button><button aria-pressed="${r.attiva === false}" data-gov-attiva="${esc(r.id)}|0" ${mod ? "" : "disabled"}>No</button></span></span>
-      <span class="muted small gov-regola-dove">${esc(doveTesto(r))} · ${r.minuti} min${r.euro ? ` · ${eur(r.euro)}` : ""}${r.stagione ? ` · dal ${r.stagione.da.slice(3)}/${r.stagione.da.slice(0, 2)} al ${r.stagione.a.slice(3)}/${r.stagione.a.slice(0, 2)}` : ""}${r.meteo ? " · scatta col meteo" : ""}${r.quando === "ripasso" ? " · durante la pulizia normale" : r.quando === "cambio" ? " · a ogni cambio completo" : r.quando === "vuota" ? " · a camera vuota" : ""}</span>
-      ${r.ogni ? `<span class="gov-pm"><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|-1" ${mod ? "" : "disabled"} aria-label="meno spesso">−</button><b>${esc(G.etichettaOgni(r.ogni))}</b><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|1" ${mod ? "" : "disabled"} aria-label="più spesso">+</button></span>` : `<span class="muted small">sempre, a ogni cambio completo</span>`}
+      <span class="muted small gov-regola-dove">${esc(doveTesto(r))} · ${r.minuti} min${r.euro ? ` · ${eur(r.euro)}` : ""} · ${esc(G.QUANDO_TESTO[r.quando] || r.quando)}${stagioneTesto(r)}${r.meteo ? " · il meteo la anticipa" : ""}${r.soloFissi ? " · solo con ospite fisso" : ""}</span>
+      ${r.controllo ? `<span class="muted small gov-regola-ctrl">${ICONA("lente")} ${esc(r.controllo)}</span>` : ""}
+      ${r.ogni && !r.evento ? `<span class="gov-pm"><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|-1" ${mod ? "" : "disabled"} aria-label="meno spesso">−</button><b>${esc(G.etichettaOgni(r.ogni))}${r.ogniMezza ? ` <small>(mezze stagioni: ${esc(G.etichettaOgni(r.ogniMezza))})</small>` : ""}</b><button class="btnsm ghost" data-gov-ogni="${esc(r.id)}|1" ${mod ? "" : "disabled"} aria-label="più spesso">+</button></span>` : r.evento ? `<span class="muted small">solo per un motivo: soggiorno lungo, cambio stagione, camera molto indietro</span>` : `<span class="muted small">${r.quando === "cambio" ? "sempre, a ogni cambio completo" : "sempre, a ogni pulizia"}</span>`}
       ${r.personale && mod ? `<button class="nonna-link" style="min-height:0;padding:4px 10px;margin:4px 0 0" data-gov-cancella-regola="${esc(r.id)}">Cancella questa regola</button>` : ""}</div>`).join("")}</div></section>`; }).join("");
-  const nuova = mod ? `<section class="card flat"><button class="big main" data-gov-nuova-regola>+ Nuova regola</button><p class="muted small center" style="margin:6px 0 0">Le signore non possono toccare le regole. Le cose fisse delle camere ("Salvatore: sempre anche il balcone") stanno in ⋯ → Da fare sempre.</p></section>` : "";
-  return soglie + gruppi + nuova;
+  const nuova = mod ? `<section class="card flat"><button class="big main" data-gov-nuova-regola>+ Nuova regola</button><p class="muted small center" style="margin:6px 0 0">Le signore non possono toccare le regole.</p></section>` : "";
+  return soglie + gruppi + nuova + fisse + camereFlag;
 }
-function doveTesto(r) { const d = r.dove; if (d === "camere") return "tutte le camere"; if (d === "case") return "gli appartamenti"; if (d === "stanze" || d === "tutte") return "camere e appartamenti"; if (d?.startsWith("zona:")) return nomeZonaBreve(d.slice(5)); if (d?.startsWith("camera:")) return camera(d.slice(7)).nome; return camera(d).nome; }
+function stagioneTesto(r) { const f = r.stagione ? (Array.isArray(r.stagione) ? r.stagione : [r.stagione]) : []; if (!f.length) return ""; const gm = x => `${x.slice(3)}/${x.slice(0, 2)}`; return " · " + f.map(x => `dal ${gm(x.da)} al ${gm(x.a)}`).join(" e "); }
+function doveTesto(r) { const d = r.dove; if (d === "camera" || d === "camere") return "tutte le camere"; if (d === "cucina" || d === "case") return "gli appartamenti"; if (d === "bagno") return "tutti i bagni"; if (d === "balcone") return "camere con il balcone"; if (d === "stanza" || d === "stanze" || d === "tutte") return "camere e appartamenti"; if (d?.startsWith("zona:")) return nomeZonaBreve(d.slice(5)); if (d?.startsWith("camera:")) return camera(d.slice(7)).nome; return camera(d).nome; }
 function foglioNuovaRegola(f) {
-  const dove = [["stanze", "Camere e appartamenti"], ["camere", "Solo le camere"], ["case", "Solo gli appartamenti"], ...G.LUOGHI_COMUNI.map(l => [l.id, l.nome]), ...S.camere.map(c => ["camera:" + c.id, "Solo " + c.nome])];
+  const dove = [["stanza", "Camere e appartamenti"], ["camera", "Solo le camere"], ["bagno", "Tutti i bagni"], ["cucina", "Solo gli appartamenti (cucina)"], ["balcone", "Camere con il balcone"], ...G.LUOGHI_COMUNI.map(l => [l.id, l.nome]), ...S.camere.map(c => ["camera:" + c.id, "Solo " + c.nome])];
   return `<h3>Nuova regola</h3><div class="muted">Sei cose semplici. La governante la mette in programma da sola.</div>
     <form id="formRegola">
       <div class="campo"><label for="rgCosa">Cosa</label><input id="rgCosa" type="text" placeholder="es. Lavare le tende" required></div>
       <div class="campo"><label for="rgDove">Dove</label><select id="rgDove">${dove.map(([v, n]) => `<option value="${esc(v)}">${esc(n)}</option>`).join("")}</select></div>
       <div class="due"><div class="campo"><label for="rgOgni">Ogni quanto</label><select id="rgOgni">${G.SCALA_OGNI.map(g => `<option value="${g}" ${g === 30 ? "selected" : ""}>${esc(G.etichettaOgni(g))}</option>`).join("")}</select></div><div class="campo"><label for="rgMin">Minuti</label><input id="rgMin" type="number" min="5" max="480" step="5" value="30"></div></div>
-      <div class="due"><div class="campo"><label for="rgQuando">Quando</label><select id="rgQuando"><option value="giorno">In un giorno di lavoro</option><option value="vuota">Solo a camera vuota</option><option value="ripasso">Durante la pulizia normale</option><option value="cambio">A ogni cambio completo</option></select></div><div class="campo"><label for="rgEuro">Compenso (€)</label><input id="rgEuro" type="number" min="0" step="0.5" value="5"></div></div>
+      <div class="due"><div class="campo"><label for="rgQuando">Quando</label><select id="rgQuando"><option value="ripasso">Durante la pulizia normale</option><option value="cambio">Durante il cambio completo</option><option value="libera">Solo a camera libera</option><option value="giornata">Zona comune, nella giornata</option><option value="giorno">Lavoro a sé, in un giorno</option></select></div><div class="campo"><label for="rgEuro">Compenso (€)</label><input id="rgEuro" type="number" min="0" step="0.5" value="2"></div></div>
       <div class="campo"><label for="rgCome">Come si fa (lo legge la signora)</label><textarea id="rgCome" placeholder="es. Tende staccate, lavate a 40°, riappese umide. Panno BLU."></textarea></div>
+      <div class="campo"><label for="rgCtrl">Come si controlla (lo legge la controllatrice)</label><input id="rgCtrl" type="text" placeholder="es. Tende controluce: niente aloni"></div>
       <div class="due"><div class="campo"><label for="rgDa">Solo dal (giorno/mese, facoltativo)</label><input id="rgDa" type="text" placeholder="es. 01/10" pattern="\\d{2}/\\d{2}"></div><div class="campo"><label for="rgA">al</label><input id="rgA" type="text" placeholder="es. 30/11" pattern="\\d{2}/\\d{2}"></div></div>
       <button class="big main" type="submit">Aggiungi la regola</button>
     </form>`;
@@ -864,7 +905,7 @@ async function salvaNuovaRegola() {
   const id = "p_" + Date.now().toString(36);
   const gm = (v) => { const m = String(v || "").trim().match(/^(\d{2})\/(\d{2})$/); return m ? `${m[2]}-${m[1]}` : null; };
   const da = gm($("#rgDa").value), a = gm($("#rgA").value);
-  const r = { id, cosa, dove: $("#rgDove").value, ogni: Number($("#rgOgni").value) || 30, minuti: Number($("#rgMin").value) || 30, quando: $("#rgQuando").value, euro: Number($("#rgEuro").value) || 0, come: $("#rgCome").value.trim(), icona: "stella", priorita: 2, gruppo: "P" };
+  const r = { id, cosa, nome: cosa, dove: $("#rgDove").value, ogni: Number($("#rgOgni").value) || 30, minuti: Number($("#rgMin").value) || 30, quando: $("#rgQuando").value, euro: Number($("#rgEuro").value) || 0, come: $("#rgCome").value.trim(), controllo: $("#rgCtrl").value.trim(), icona: "stella", priorita: 2, gruppo: "P" };
   if (r.quando === "cambio") r.ogni = 0;
   if (da && a) r.stagione = { da, a };
   chiudiFoglio();
@@ -975,7 +1016,7 @@ function vistaPaghe() {
       <div class="muted">${lista.length} pulizie · settimana ${L.etichettaSettimana(chiave)}${(() => { const b = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli).bonus; return b.n ? (b.perso ? " · bonus controlli perso" : " · bonus controlli " + eur(b.importo)) : ""; })()}</div>
       <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${puoModificare() ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : puoModificare() ? `<button class="btnsm" data-pay="${z.id}|${chiave}" ${totale ? "" : "disabled style='opacity:.5'"}>Segna come pagata</button>` : `<span class="pill open">da pagare</span>`}</div>
       ${tp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(tp.totale)} ancora da pagare ${puoModificare() ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
-      <details><summary>Dettaglio e storico</summary>${lista.length ? `<div class="rows">${lista.map(p => `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(p.titolo)}<br><span class="muted">${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span></span><span class="s done">${eur(p.finale)}${p.voto != null ? `<br><span class="muted small">voto ${esc(p.voto)}</span>` : ""}</span></div>`).join("")}</div>` : ""}${vistaStorico(z.id)}</details></section>`;
+      <details><summary>Dettaglio e storico</summary>${lista.length ? `<div class="rows">${lista.map(p => `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(p.titolo)}${p.extraRifiniture ? ` <span class="muted">${eur(p.importo)} + ${(p.rifiniture || []).filter(r => r.euro).length} rifiniture ${eur(p.extraRifiniture)}</span>` : ""}<br><span class="muted">${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span></span><span class="s done">${eur(p.finale)}${p.voto != null ? `<br><span class="muted small">voto ${esc(p.voto)}</span>` : ""}</span></div>`).join("")}</div>` : ""}${vistaStorico(z.id)}</details></section>`;
   }).join("");
   const chiaveCtrl = L.settimanaCorrente(), zonaCtrl = L.zonaControllatrice(S.impControlli, chiaveCtrl, zoneOrdinate().map(z => z.id));
   const rich = L.richiami(S.controlli, S.regole);
@@ -1422,11 +1463,12 @@ function collega() {
   document.querySelectorAll("[data-gov-dopo]").forEach(b => b.onclick = () => { const c = trovaProposta(b.dataset.govDopo); if (c) rinviaProposta(c, "dopo"); });
   document.querySelectorAll("[data-gov-no]").forEach(b => b.onclick = () => { const c = trovaProposta(b.dataset.govNo); if (c) rinviaProposta(c, "no"); });
   document.querySelectorAll("[data-gov-auto]").forEach(b => b.onclick = () => salvaGov({ soglie: { ...soglieGov(), automatico: b.dataset.govAuto === "1" } }).then(() => { autoFatto = ""; governanteAutomatica(); }));
-  document.querySelectorAll("[data-gov-soglia]").forEach(b => b.onclick = () => { const [k, d] = b.dataset.govSoglia.split("|"); const sg = soglieGov(); const lim = { minutiGiorno: [20, 180], camereSettimana: [1, 5], minutiRoutine: [5, 40], freddoGradi: [5, 18] }[k]; const v = Math.min(lim[1], Math.max(lim[0], (sg[k] || 0) + Number(d))); salvaGov({ soglie: { ...sg, [k]: v } }); });
+  document.querySelectorAll("[data-gov-soglia]").forEach(b => b.onclick = () => { const [k, d] = b.dataset.govSoglia.split("|"); const sg = soglieGov(); const lim = { minutiGiorno: [20, 300], camereSettimana: [1, 5], minutiRifiniture: [5, 60], rifiniturePerPulizia: [1, 8], freddoGradi: [5, 18] }[k]; const v = Math.min(lim[1], Math.max(lim[0], (sg[k] || 0) + Number(d))); salvaGov({ soglie: { ...sg, [k]: v } }); });
   document.querySelectorAll("[data-gov-attiva]").forEach(b => b.onclick = () => { const [id, v] = b.dataset.govAttiva.split("|"); const regole = { ...(S.gov?.regole || {}) }; regole[id] = { ...(regole[id] || {}), attiva: v === "1" }; salvaGov({ regole }); });
-  document.querySelectorAll("[data-gov-ogni]").forEach(b => b.onclick = () => { const [id, d] = b.dataset.govOgni.split("|"); const r = regoleGov().find(x => x.id === id) || G.REGOLE_GOVERNANTE.find(x => x.id === id); if (!r) return; const sc = G.SCALA_OGNI; let i = sc.findIndex(x => x >= r.ogni); if (i < 0) i = sc.length - 1; i = Math.min(sc.length - 1, Math.max(0, i - Number(d))); const regole = { ...(S.gov?.regole || {}) }; regole[id] = { ...(regole[id] || {}), ogni: sc[i] }; salvaGov({ regole }); });
+  document.querySelectorAll("[data-gov-ogni]").forEach(b => b.onclick = () => { const [id, d] = b.dataset.govOgni.split("|"); const r = regoleGov().find(x => x.id === id) || G.CATALOGO.find(x => x.id === id) || (S.gov?.personali || {})[id]; if (!r) return; const sc = G.SCALA_OGNI.filter(x => x >= 3.5); let i = sc.findIndex(x => x >= r.ogni); if (i < 0) i = sc.length - 1; i = Math.min(sc.length - 1, Math.max(0, i - Number(d))); const regole = { ...(S.gov?.regole || {}) }; regole[id] = { ...(regole[id] || {}), ogni: sc[i] }; salvaGov({ regole }); });
   document.querySelectorAll("[data-gov-cancella-regola]").forEach(b => b.onclick = async () => { const id = b.dataset.govCancellaRegola; if (await chiedi("Cancello questa regola?", { si: "Sì, cancella", pericolo: true })) { const personali = { ...(S.gov?.personali || {}) }; delete personali[id]; salvaGov({ personali }); } });
   document.querySelectorAll("[data-gov-nuova-regola]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovaRegola" }));
+  document.querySelectorAll("[data-gov-flag]").forEach(b => b.onclick = () => { const [k, cam, v] = b.dataset.govFlag.split("|"); const f = { ...(flagsGov()[k] || {}) }; if (v === "1") f[cam] = true; else delete f[cam]; salvaGov({ [k]: f }); });
   document.querySelectorAll("[data-gov-luogo]").forEach(b => b.onclick = () => apriFoglio({ tipo: "luogoPulito", luogo: b.dataset.govLuogo }));
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
@@ -1456,6 +1498,7 @@ function collega() {
 function collegaFoglio() {
   const f = S.foglio; if (!f) return;
   document.querySelectorAll("[data-chiudi]").forEach(b => b.onclick = chiudiFoglio);
+  document.querySelectorAll("[data-rif-no]").forEach(b => b.onclick = async () => { const [id, regola, luogo] = b.dataset.rifNo.split("|"); const p = S.pulizie[id]; if (!p) return; const motivo = await scegliMotivoRifinitura(); if (motivo) saltaRifinitura(p, regola, luogo, motivo); });
   if (f.tipo === "nuovaRegola") { const fr = $("#formRegola"); if (fr) fr.onsubmit = (e) => { e.preventDefault(); salvaNuovaRegola(); }; }
   if (f.tipo === "luogoPulito") document.querySelectorAll("[data-gov-fatto]").forEach(b => b.onclick = async () => { const [regola, luogo, zona] = b.dataset.govFatto.split("|"); await registraFatto(regola, luogo, zona, L.oggiISO()); toast("Segnato come fatto oggi"); disegnaFoglio(); });
   if (f.tipo === "manutenzione" || f.tipo === "nuovoMan") {
@@ -1683,7 +1726,7 @@ function confermaFinito(p) {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
     const el = document.createElement("div"); el.className = "conferma";
     el.innerHTML = `<div class="conferma-box chiusura" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>Sei sicura che in <b>${esc(c.nome)}</b> tutto sia stato fatto al meglio?</span></div>
-      ${voci.length ? `<p class="muted" style="margin:0 0 6px">Spunta una per una:</p><div class="chiusura-voci">${voci.map(v => `<label class="chiusura-voce"><input type="checkbox" data-voce="${esc(v.id)}"><span>${esc(v.testo)}${/^⭐/.test(v.testo) ? ` <small>a fondo</small>` : v.fissa ? ` <small>sempre in ${esc(c.nome)}</small>` : ` <small>oggi</small>`}</span></label>`).join("")}</div>` : ""}
+      ${voci.length ? `<p class="muted" style="margin:0 0 6px">Spunta una per una:</p><div class="chiusura-voci">${voci.map(v => `<label class="chiusura-voce"><input type="checkbox" data-voce="${esc(v.id)}"><span>${esc(v.testo)}${/^⭐/.test(v.testo) ? ` <small>rifinitura</small>` : v.fissa ? ` <small>sempre in ${esc(c.nome)}</small>` : ` <small>oggi</small>`}</span></label>`).join("")}</div>` : ""}
       <button class="big ok" data-si ${voci.length ? "disabled" : ""}>${voci.length ? "Sì, ho fatto tutto ✓" : "Sì, è tutta a posto ✓"}</button><button class="big undo" data-no>Aspetta, controllo</button></div>`;
     document.body.appendChild(el);
     const bSi = el.querySelector("[data-si]");
@@ -1729,6 +1772,9 @@ async function cambiaStato(p, stato, nota) {
   else patch.settimana = null;
   const foto = fotoPending; fotoPending = null;
   if (foto) patch.foto = true;
+  if (stato === "fatta" && rifiniturePending) { patch.rifiniture = rifiniturePending.rifiniture; patch.extraRifiniture = rifiniturePending.extraRifiniture; }
+  if (stato !== "fatta") { patch.rifiniture = []; patch.extraRifiniture = 0; }
+  rifiniturePending = null;
   // aggiorno subito sullo schermo, poi salvo (così funziona anche senza rete)
   Object.assign(S.pulizie[p.id], patch);
   chiudiFoglio(); disegna();
@@ -1986,6 +2032,18 @@ async function salvaImportazione() {
 }
 
 // Domanda sì/no con due bottoni grandi (al posto della finestrina piccola del browser)
+// Motivo con un tocco per una rifinitura che non si può fare
+function scegliMotivoRifinitura() {
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box" role="dialog"><p>Perché non la puoi fare?</p>${["Manca il prodotto", "C'è l'ospite", "Non c'è tempo"].map(m => `<button class="big undo" data-m="${esc(m)}">${esc(m)}</button>`).join("")}<button class="big close" data-no>Lascia stare</button></div>`;
+    document.body.appendChild(el);
+    el.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { el.remove(); ok(b.dataset.m); });
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
+  });
+}
 function chiedi(testo, opz = {}) {
   return new Promise((ok) => {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();

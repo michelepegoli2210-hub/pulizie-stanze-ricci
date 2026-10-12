@@ -144,23 +144,29 @@ Dopo il salvataggio le pulizie dei prossimi 14 giorni si ricalcolano da sole (co
   con i bottoni "Mandale il piano della settimana su WhatsApp", "Aggiungi un lavoro extra" e "Guarda l'app come la vede lei".
   Sfondo: laguna + bolle di sapone (`sfondo-bolle.svg`).
 
-## La governante (dalla versione 0.21)
+## La governante (dalla versione 0.21, rifatta nella 0.22)
 
-Una governante come in un hotel di lusso, **senza intelligenza artificiale**: regole + calendario + registro "ultima volta fatto".
-- **Le regole** stanno in `governante.js` (`REGOLE_GOVERNANTE`, una per riga: cosa, come si fa, dove, ogni quanto, minuti,
-  quando, priorità, prezzo, stagione). Le modifiche fatte dall'app (frequenze con + e −, interruttori, soglie, regole nuove,
-  "più avanti"/"no") stanno in `impostazioni/governante`. Le zone comuni (corridoi, terrazzo, lavanderia…) sono in `LUOGHI_COMUNI`.
-- **Il registro** è la raccolta `governante_registro` (una voce per lavoro+posto: `ultima`, `da`, `n`). Lo scrive chi segna
-  "fatto": la signora per la sua zona, i proprietari per tutto (anche a mano dal Calendario del pulito).
-- **I consigli della settimana** (`proposteSettimana`): massimo 8, al massimo N minuti al giorno per signora (soglia), N camere
-  a fondo completa a settimana, mai di domenica; le grosse solo a camera vuota (tra una partenza e l'arrivo dopo; sabato
-  mattina per le camere dei tecnici); appartamenti nei giorni di pulizia; dopo un soggiorno di 2+ settimane la fondo completa
-  è obbligatoria; priorità igiene › quello che si vede › quello che non si vede. Da sabato alle 13 prepara la settimana dopo.
-- **"Va bene"** crea una pulizia `tipo: "fondo"`, `origine: "governante"` (con `regola`, `come`, `minuti`, `importo`): la signora la
-  vede tra i "⭐ Lavori in più", legge "come si fa", la fa, la chiude; va nel piano WhatsApp e nella paga della settimana.
-  **Automatico** acceso = le piccole entrano da sole, le grosse chiedono. "Più avanti" = 10 giorni, "No" = 3 mesi.
-- **Le piccole cose** (`quando: "ripasso"` e `"cambio"`) non sono consigli: si attaccano alla pulizia normale della camera
-  ("A fondo questa volta", entro `minutiRoutine`), entrano nella domanda di chiusura e nella checklist della controllatrice.
-- **Calendario del pulito** (`calendarioPulito`): per ogni posto, ogni regola con ultima volta e colore (verde/giallo/rosso),
-  ordinato dal più indietro.
-- Passi successivi previsti: meteo di Lesina (pioggia, freddo, umidità), listino della governante nelle Paghe, pagella del sabato.
+Una governante come in un hotel di lusso, **senza intelligenza artificiale**: catalogo + calendario + registro "ultima volta fatto".
+- **Il catalogo** sta in `governante.js` (`CATALOGO`): una riga per ogni singola cosa (84 voci), con nome preciso, dove, ogni quanto,
+  quando (`ripasso` = durante qualunque pulizia, `cambio` = solo nel cambio completo, `libera` = a camera libera, `giornata` = zona
+  comune alla prima pulizia del giorno, `giorno` = lavoro a sé), minuti, prezzo, "come si fa" in 3 righe con prodotto e colore del
+  panno, "come si controlla" per la controllatrice, stagione/meteo. Le zone comuni sono in `LUOGHI_COMUNI`. Le modifiche fatte
+  dall'app (ritmi con + e −, interruttori, soglie, regole nuove, camere con balcone/sulla strada, "più avanti"/"no") stanno in
+  `impostazioni/governante`.
+- **Il metodo: le RIFINITURE dentro le pulizie normali** (`rifinitureDelGiorno`). A ogni pulizia normale la governante aggiunge le
+  cose "a ogni pulizia" più 1-2 rifiniture da 5-10 minuti scelte tra le più in ritardo per quella camera, entro le soglie (minuti per
+  pulizia, rifiniture per pulizia, minuti al giorno per signora). Le zone comuni vanno alla prima pulizia del giorno. La signora le
+  vede nella tessera ("+2 rifiniture · 10 min"), nella schermata grande (nome, minuti, come si fa, "Non posso" con motivo), nella
+  domanda finale; la controllatrice le trova nella checklist. Ogni rifinitura ha un prezzo piccolo che si somma alla camera
+  (`rifiniture`, `extraRifiniture` sulla pulizia; `importoFinale` li conta).
+- **Il registro** è la raccolta `governante_registro` (una voce per cosa+posto: `ultima`, `da`, `n`, e `saltata`/`motivo` per il
+  "Non posso"). Lo scrive chi segna "fatto"; i proprietari anche a mano dal Calendario del pulito.
+- **I consigli della settimana** (`proposteSettimana`): solo le cose a camera libera, i lavori a sé e gli eventi (pulizia a fondo
+  completa dopo un soggiorno di 2+ settimane o per una camera molto indietro). Massimo 8, al massimo 2 per posto e 3 per regola,
+  entro i minuti al giorno rifiniture comprese; la fondo completa fa eccezione (mezza giornata, N a settimana). "Va bene" crea una
+  pulizia `tipo: "fondo"`, `origine: "governante"`. Automatico acceso = le piccole entrano da sole.
+- **Copertura** (`simulaCopertura`): in Regole, con le soglie attuali, quanto del catalogo resta in regola ripetendo per 8 settimane
+  le pulizie di questa settimana. È il modo onesto di vedere se le soglie bastano per il ritmo scritto nel catalogo.
+- **Calendario del pulito** (`calendarioPulito`): per ogni posto, ogni voce con ultima volta e colore (verde/giallo/rosso).
+- Passi successivi previsti: avvio in grigio col piano di 8 settimane e il "perché" con le notti occupate, ritmi che imparano dai
+  controlli, meteo di Lesina, "Rivedi con la mamma", pagella del sabato, voce con Gemini.
