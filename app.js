@@ -9,7 +9,7 @@ import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 
-export const VERSIONE = "0.19.5";
+export const VERSIONE = "0.20.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -29,6 +29,9 @@ const ICONE_SVG = {
   bidone: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>',
   camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3"/>',
   indietro: '<path d="M15 6l-6 6 6 6"/>',
+  attrezzi: '<path d="M14.7 6.3a4 4 0 0 0 5 5L9 22l-3-3 10.7-10.7z"/><path d="M14.7 6.3L17 4l3 3-2.3 2.3"/><path d="M4 5l4 4"/><path d="M3 9l5-5"/>',
+  bolle: '<circle cx="9" cy="10" r="6"/><circle cx="17.5" cy="6.5" r="2.5"/><circle cx="17" cy="16" r="3.5"/>',
+  settimana: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h3M14 14h3M7 18h3"/>',
 };
 const ICONA = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONE_SVG[n] || ""}</svg>`;
 const STATI = {
@@ -99,7 +102,8 @@ const S = {
   board: { modo: "elenco", inizio: L.lunediDi(L.oggiISO()) },
   camere: CAMERE.slice(), zone: ZONE, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
-  caricati: { pulizie: false, soggiorni: false, ruoli: false },
+  manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
+  caricati: { pulizie: false, soggiorni: false, ruoli: false, manutenzione: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
   stop: [], tema: localStorage.getItem("ricci_tema") || "light",
 };
@@ -120,6 +124,26 @@ function statoClasse(p) { return !p ? "" : (STATI[p.stato] || STATI.da_fare).cls
 function statoTesto(p) { return p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : p.stato === "in_corso" ? `In corso da ${L.oraBreve(p.inizio)}` : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? "Non fatta" : p.titolo; }
 function minutiPulizia(p) { if (!p.inizio || !p.ora) return null; const m = Math.round((new Date(p.ora) - new Date(p.inizio)) / 60000); return m >= 0 && m < 600 ? m : null; }
 function titoloLavoro(p) { return p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : p.titolo; }
+// Un problema "aperto": la camera è in stato problema e nessuno ha ancora segnato il lavoro come fatto in Manutenzione
+function problemaAperto(p) { return !!p && p.stato === "problema" && S.manutenzione[`pul_${p.id}`]?.stato !== "fatto"; }
+function lavoriAperti() { return Object.values(S.manutenzione).filter(m => m.stato !== "fatto").sort((a, b) => (a.data || "") < (b.data || "") ? 1 : -1); }
+function lavoriFatti() { return Object.values(S.manutenzione).filter(m => m.stato === "fatto").sort((a, b) => (a.fatto || "") < (b.fatto || "") ? 1 : -1); }
+// Avatar della signora (le donnine: una diversa per zona)
+function avatarZona(z, cls = "piccola") { const v = ["scopa", "secchio", "saluto", "festa"][zoneOrdinate().findIndex(x => x.id === z)] || "scopa"; return DONNINA(v, cls); }
+// Ogni problema segnalato finisce nell'elenco dei lavori di manutenzione (che resta anche dopo che la camera viene ripulita)
+function vocePerProblema(p) {
+  const chi = p.segnatoDa && !/^prova_|@/.test(p.segnatoDa) ? p.segnatoDa : `Signora ${S.zone[p.zona]?.breve || p.zona}`;
+  return { pulizia: p.id, camera: p.camera, zona: p.zona, data: p.data, titolo: p.nota || "Problema segnalato", nota: "", da: chi, fonte: "signora", foto: !!p.foto, stato: "aperto", creato: S.db.adesso(), fatto: null, fattoDa: "" };
+}
+const allineati = new Set();
+async function allineaManutenzione() {
+  if (!proprietario() || S.utente?.finta || !S.caricati.pulizie || !S.caricati.manutenzione) return;
+  const mancanti = Object.values(S.pulizie).filter(p => p.stato === "problema" && !S.manutenzione[`pul_${p.id}`] && !allineati.has(p.id));
+  if (!mancanti.length) return;
+  mancanti.forEach(p => allineati.add(p.id));
+  try { await S.db.scrivi(mancanti.map(p => ({ tipo: "salva", coll: "manutenzione", id: `pul_${p.id}`, dati: vocePerProblema(p) }))); }
+  catch (e) { console.error("manutenzione", e); }
+}
 // Le cose "da fare sempre" in una camera (le scrivono i proprietari in ⋯ o nella scheda della camera): es. Salvatore → "Balcone"
 function promemoriaCamera(id) { return L.spezzaRichieste(S.promemoria?.[id] || ""); }
 // "venerdì 16 ott", con "oggi"/"domani" davanti quando serve
@@ -211,13 +235,15 @@ function avviaAscolto() {
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
   if (addetta()) wherePul.push(["zona", "==", u.zona]);
-  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); }, mostraErrore));
+  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); allineaManutenzione(); }, mostraErrore));
   // pagamenti
   S.stop.push(db.ascolta("pagamenti", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.pagamenti = m; disegna(); }, mostraErrore));
   if (!addetta()) {
     S.stop.push(db.ascolta("soggiorni", { where: [["fine", ">=", da]] }, (m) => { S.soggiorni = m; S.caricati.soggiorni = true; disegna(); pianifica(); }, mostraErrore));
     S.stop.push(db.ascolta("note", { where: [["data", ">=", da]] }, (m) => { S.note = m; disegna(); pianifica(); }, mostraErrore));
   S.stop.push(db.ascoltaDoc("impostazioni", "foglio", d => { S.foglioInfo = d; disegna(); }));
+    // lavori di manutenzione (problemi segnalati + lavori aggiunti a mano)
+    S.stop.push(db.ascolta("manutenzione", {}, (m) => { S.manutenzione = m; S.caricati.manutenzione = true; disegna(); allineaManutenzione(); }, mostraErrore));
   }
 }
 
@@ -266,6 +292,8 @@ function disegna() {
   if (!app) return;
   disegnaTestata();
   document.body.classList.toggle("nonna", !!(S.utente && addetta()));
+  document.body.classList.toggle("vista-manutenzione", !!(S.utente && !addetta() && S.vista === "manutenzione"));
+  document.body.classList.toggle("vista-signora", !!(S.utente && !addetta() && S.vista === "signora"));
   let corpo = "";
   if (!S.pronto) corpo = `<section class="card center"><p class="muted">Un attimo…</p></section>`;
   else if (!S.utente) corpo = vistaAccesso();
@@ -302,7 +330,7 @@ function disegnaTestata() {
   const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(S.settimana, i));
   const oggi = L.oggiISO();
   el.innerHTML = `<button class="day arrow" data-sett="-1" aria-label="Settimana prima">‹</button>` +
-    giorni.map(g => { const del = pulizieDelGiorno(g, addetta() ? u.zona : null); const has = del.length > 0; const prob = del.some(p => p.stato === "problema");
+    giorni.map(g => { const del = pulizieDelGiorno(g, addetta() ? u.zona : null); const has = del.length > 0; const prob = del.some(p => problemaAperto(p));
       return `<button class="day ${has ? "has" : ""} ${prob ? "problema" : ""} ${g === oggi ? "oggi" : ""}" aria-pressed="${g === S.giorno}" data-g="${g}">${L.GG[L.giornoSettimana(g)]}<b>${L.giornoDelMese(g)}</b><span class="dot"></span></button>`; }).join("") +
     `<button class="day arrow" data-sett="1" aria-label="Settimana dopo">›</button>`;
 }
@@ -537,6 +565,8 @@ function vistaProprietario() {
   else if (v === "paghe") corpo = vistaPaghe();
   else if (v === "altro") corpo = vistaAltro();
   else if (v === "foglio") corpo = vistaFoglio();
+  else if (v === "manutenzione") corpo = vistaManutenzione();
+  else if (v === "signora") corpo = vistaSignora(S.sigZona || zoneOrdinate()[0].id);
   else corpo = vistaOggiGestione();
   return tabs + corpo;
 }
@@ -547,16 +577,106 @@ function vistaOggiGestione() {
     const ls = pulizieDelGiorno(iso, z.id);
     if (!ls.length) return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><span class="muted">niente</span></div></section>`;
     const f = ls.filter(p => p.stato === "fatta").length;
-    return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}${ls.some(p => p.stato === "problema") ? `<span class="led" role="img" aria-label="c'è un problema"></span>` : ""}</h2><b>${f}/${ls.length}</b></div><div class="bar"><i style="width:${Math.round(f / ls.length * 100)}%"></i></div>
-      <div class="rows">${ls.map(p => `<button class="row ${p.stato === "problema" ? "problema" : ""}" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""}</span>` : p.stato === "in_corso" ? `<br><span class="muted">dalle ${L.oraBreve(p.inizio)}</span>` : ""}${p.dettagli ? `<br><span class="dett-mini">${ICONA("nota")}${esc(p.dettagli)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div></section>`;
+    return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}${ls.some(p => problemaAperto(p)) ? `<span class="led" role="img" aria-label="c'è un problema"></span>` : ""}</h2><b>${f}/${ls.length}</b></div><div class="bar"><i style="width:${Math.round(f / ls.length * 100)}%"></i></div>
+      <div class="rows">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""}</span>` : p.stato === "in_corso" ? `<br><span class="muted">dalle ${L.oraBreve(p.inizio)}</span>` : ""}${p.dettagli ? `<br><span class="dett-mini">${ICONA("nota")}${esc(p.dettagli)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div></section>`;
   }).join("");
-  const problemi = Object.values(S.pulizie).filter(p => p.stato === "problema" && p.data >= L.aggiungiGiorni(L.oggiISO(), -7));
-  const avviso = problemi.length ? `<section class="card problemi"><h2 style="color:var(--warn)"><span class="led" role="img" aria-label="attenzione"></span>Problemi segnalati (ultimi 7 giorni)</h2><div class="rows">${problemi.sort((a, b) => a.data < b.data ? 1 : -1).map(p => `<button class="row problema" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(L.dataBreve(p.data))}<br><span class="muted">${esc(p.nota || "")}</span></span><span class="s warn">!</span></button>`).join("")}</div></section>` : "";
+  const avviso = bloccoSignoreELavori(iso);
   const bottone = puoModificare() ? `<section class="card flat"><button class="big undo" data-whatsapp-piano="${iso}">Manda il piano di ${esc(quandoEtichetta(iso).toLowerCase())} su WhatsApp</button><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button><button class="big undo" data-dettatura>🗣️ Dimmi il prospetto (scrivi o detta chi arriva)</button></section>` : "";
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
   return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + messaggio + avviso + blocchi + bottone;
+}
+
+// ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
+function bloccoSignoreELavori(iso) {
+  const aperti = lavoriAperti();
+  const signore = zoneOrdinate().map(z => {
+    const ls = pulizieDelGiorno(iso, z.id), f = ls.filter(p => p.stato === "fatta").length;
+    const prob = ls.some(p => problemaAperto(p)) || aperti.some(m => m.zona === z.id && m.fonte === "signora" && m.data >= L.aggiungiGiorni(L.oggiISO(), -7));
+    return `<button class="piastra sig-plate" data-signora="${z.id}" aria-label="Signora ${esc(z.breve)}: cosa fa questa settimana">${avatarZona(z.id, "piccola")}<span class="sig-nome">${esc(z.breve)}</span><span class="sig-sotto">${ls.length ? `${f}/${ls.length} ${quandoEtichetta(iso) === "Oggi" ? "oggi" : L.dataBreve(iso)}` : "libera"}${prob ? `<span class="led mini" role="img" aria-label="problema"></span>` : ""}</span></button>`;
+  }).join("");
+  return `<section class="card flat sig-blocco"><div class="sig-griglia">${signore}</div>
+    <button class="piastra p-grafite man-plate" data-vista="manutenzione">${ICONA("attrezzi")}<span class="man-testo"><b>Lavori di manutenzione</b><span>${aperti.length ? `${aperti.length} da fare` : "niente in sospeso"}</span></span>${aperti.length ? `<span class="led" role="img" aria-label="lavori da fare"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
+}
+
+// ---- Manutenzione: tutti i problemi e i lavori da fare, in un posto solo -----------------
+function vistaManutenzione() {
+  const aperti = lavoriAperti(), fatti = lavoriFatti();
+  const riga = (m) => { const c = m.camera ? camera(m.camera) : null; const p = m.pulizia ? S.pulizie[m.pulizia] : null;
+    return `<button class="row man-riga" data-man="${esc(m.id)}"><span>${c ? `<b>${esc(c.nome)}</b> · ` : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<br><span class="muted">${esc(m.nota)}</span>` : ""}<br><span class="muted small">${m.stato === "fatto" ? `Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""} · ` : ""}segnalato ${esc(L.dataGiornoLungo(m.data || m.creato?.slice(0, 10) || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}${m.foto ? " · 📷 foto" : ""}${p && p.stato !== "problema" ? " · camera poi ripulita" : ""}</span></span>${m.stato === "fatto" ? `<span class="badge done">Fatto</span>` : `<span class="badge warn">Da fare</span>`}</button>`; };
+  return `<section class="card flat man-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><h2 style="margin:8px 0 0">${ICONA("attrezzi")} Lavori di manutenzione</h2><p class="muted small" style="margin:2px 0 0">Qui finisce tutto quello che si rompe o va sistemato: i problemi che segnalano le signore (restano anche dopo che la camera è stata ripulita) e i lavori che aggiungi tu. Tocca una riga per i dettagli e per segnarla fatta.</p></section>
+  <section class="card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">${aperti.length ? `<span class="led" role="img" aria-label="da fare"></span>` : ""}Da fare <span class="muted">· ${aperti.length}</span></h2>${puoModificare() ? `<button class="btnsm" data-nuovo-man>+ Lavoro</button>` : ""}</div>
+    ${aperti.length ? `<div class="rows" style="margin-top:10px">${aperti.map(riga).join("")}</div>` : `<p class="muted" style="margin:10px 0 0">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
+  ${fatti.length ? `<section class="card"><details><summary>Fatti (${fatti.length})</summary><div class="rows" style="margin-top:8px">${fatti.slice(0, 40).map(riga).join("")}</div></details></section>` : ""}`;
+}
+function foglioManutenzione(f) {
+  const m = S.manutenzione[f.id]; if (!m) return `<h3>Lavoro</h3><p class="muted">Non c'è più.</p>`;
+  const c = m.camera ? camera(m.camera) : null, p = m.pulizia ? S.pulizie[m.pulizia] : null;
+  const foto = f.foto === undefined && m.foto && m.pulizia ? (caricaFotoManutenzione(f), `<p class="muted small">Carico la foto…</p>`) : f.foto ? `<img src="${f.foto}" alt="Foto del problema" style="width:100%;border-radius:14px;margin:8px 0">` : "";
+  return `<h3>${c ? esc(c.nome) : "Lavoro"}</h3><div class="muted">${esc(m.titolo || "")}</div>
+    <div class="kind ${m.stato === "fatto" ? "money" : ""}">${m.stato === "fatto" ? `✓ Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""}` : "Da fare"}</div><span class="kind info">segnalato ${esc(L.dataGiornoLungo(m.data || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}</span>
+    ${p ? `<p class="muted small" style="margin:8px 0 0">Camera ${p.stato === "problema" ? "ancora ferma sul problema" : "poi ripulita (" + esc(statoTesto(p)) + ")"} · <button class="nonna-link" style="min-height:0;padding:4px 10px;margin:0" data-pul="${esc(p.id)}">apri la pulizia</button></p>` : ""}
+    ${foto}
+    <div class="campo"><label for="manNota">Note (cosa serve, chi chiamare, cosa hai fatto)</label><textarea id="manNota" data-keep placeholder="es. chiamato l'idraulico, viene martedì">${esc(m.nota || "")}</textarea></div>
+    ${puoModificare() ? `<button class="big undo" data-man-salva-nota="${esc(m.id)}">Salva le note</button>
+    ${m.stato === "fatto" ? `<button class="big skip" data-man-riapri="${esc(m.id)}">Riapri: non è a posto</button>` : `<button class="big ok" data-man-riparato="${esc(m.id)}">${ICONA("spunta")} Fatto, sistemato</button>`}
+    <button class="big undo" data-man-cancella="${esc(m.id)}">Cancella questa voce</button>` : ""}`;
+}
+async function caricaFotoManutenzione(f) {
+  try { const d = await S.db.leggi("foto", S.manutenzione[f.id]?.pulizia); f.foto = d?.dati || ""; } catch (e) { f.foto = ""; }
+  if (S.foglio === f) disegnaFoglio();
+}
+function foglioNuovoLavoroMan(f) {
+  return `<h3>Nuovo lavoro di manutenzione</h3><div class="muted">Qualcosa da riparare o sistemare (non una pulizia: per quelle c'è "lavoro extra").</div>
+    <form id="formMan">
+      <div class="campo"><label for="mTit">Cosa c'è da fare</label><input id="mTit" type="text" placeholder="es. Cambiare la lampadina del bagno" required></div>
+      <div class="campo"><label for="mCam">Dove</label><select id="mCam"><option value="">— nessuna camera in particolare —</option>${S.camere.map(c => `<option value="${c.id}" ${f.camera === c.id ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</select></div>
+      <div class="campo"><label for="mNota">Note</label><textarea id="mNota" placeholder="facoltative"></textarea></div>
+      <button class="big main" type="submit">Aggiungi</button>
+    </form>`;
+}
+async function salvaNuovoLavoroMan() {
+  const titolo = $("#mTit").value.trim(); if (!titolo) return;
+  const cam = $("#mCam").value; const c = cam ? camera(cam) : null;
+  const id = `man_${Date.now()}`;
+  const voce = { pulizia: null, camera: cam || null, zona: c ? c.zona : null, data: L.oggiISO(), titolo, nota: $("#mNota").value.trim(), da: S.utente.nome || "", fonte: "mano", foto: false, stato: "aperto", creato: S.db.adesso(), fatto: null, fattoDa: "" };
+  chiudiFoglio();
+  try { await S.db.salva("manutenzione", id, voce, false); toast("Lavoro aggiunto"); } catch (e) { erroreScrittura(e); }
+}
+async function aggiornaManutenzione(id, patch, msg) {
+  if (!S.manutenzione[id]) return;
+  Object.assign(S.manutenzione[id], patch); disegna();
+  try { await S.db.aggiorna("manutenzione", id, patch); if (msg) toast(msg); } catch (e) { erroreScrittura(e); }
+}
+
+// ---- La signora: cosa fa e cosa deve fare questa settimana ------------------------------
+function vistaSignora(z) {
+  const zona = S.zone[z] || { nome: z, breve: z }; const lun = S.sigSett; const oggi = L.oggiISO();
+  const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(lun, i));
+  const tutte = giorni.flatMap(g => pulizieDelGiorno(g, z));
+  const fatte = tutte.filter(p => p.stato === "fatta").length, problemi = tutte.filter(p => problemaAperto(p)).length;
+  const chiavePaga = L.chiaveSettimana(new Date(giorni[3] + "T12:00:00"), S.regole.chiusuraPaga);
+  const paga = L.totaleSettimana(S.pulizie, z, chiavePaga, S.regole, S.controlli);
+  const ctrl = L.zonaControllatrice(S.impControlli, chiavePaga, zoneOrdinate().map(x => x.id)) === z;
+  const camere = camereZona(z).map(c => c.nome).join(", ");
+  const giornoCard = (g) => { const ls = pulizieDelGiorno(g, z); const msg = messaggioDelGiorno(g); const et = quandoEtichetta(g);
+    return `<section class="card sig-giorno ${g === oggi ? "oggi" : ""} ${g < oggi ? "passato" : ""}"><div class="head" style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0">${esc(L.dataLunga(g).replace(/^./, ch => ch.toUpperCase()))}${["Oggi", "Domani", "Ieri"].includes(et) ? ` <span class="muted">· ${et.toLowerCase()}</span>` : ""}</h2>${ls.length ? `<b>${ls.filter(p => p.stato === "fatta").length}/${ls.length}</b>` : `<span class="muted">niente</span>`}</div>
+      ${msg ? `<div class="note info" style="margin:8px 0 0">📣 ${esc(msg.testo)}</div>` : ""}
+      ${ls.length ? `<div class="rows" style="margin-top:8px">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.partenza ? ` <span class="el-pill out">parte</span>` : ""}${p.arrivo ? ` <span class="el-pill in">arriva</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">alle ${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""} · ${eur(p.importo)}</span>` : ""}${p.dettagli ? `<br><span class="dett-mini">${ICONA("nota")}${esc(p.dettagli)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div>` : ""}</section>`; };
+  return `<section class="card flat"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button></section>
+  <section class="pro-testa sig-testa"><div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">Signora ${esc(zona.breve)}</div><div class="pro-frase">${esc(camere)}${ctrl ? `<br>Questa settimana è lei la controllatrice.` : ""}</div></div>${avatarZona(z, "media")}</div>
+    <div class="pro-riepilogo"><div class="pro-num">${"<b>" + tutte.length + "</b>"}<span>camere</span></div><div class="pro-num done"><b>${fatte}</b><span>pulite</span></div><div class="pro-num todo"><b>${tutte.length - fatte}</b><span>da fare</span></div><div class="pro-num ${problemi ? "warn" : ""}"><b>${problemi}</b><span>problemi</span></div></div>
+    <div class="pro-data-riga"><div class="pro-data">${ICONA("euro")}<span>Paga della settimana: <b>${eur(paga.totale)}</b>${paga.bonus?.importo ? ` (con bonus controlli)` : ""}</span></div></div></section>
+  <section class="card flat"><div class="navmese"><button data-sig-sett="-1" aria-label="Settimana prima">‹</button><b style="text-transform:none">${esc(L.etichettaSettimana(L.aggiungiGiorni(lun, 6)))}</b><button data-sig-sett="1" aria-label="Settimana dopo">›</button></div></section>
+  ${giorni.map(giornoCard).join("")}
+  ${puoModificare() ? `<section class="card flat"><button class="big main" data-whatsapp-settimana="${z}">Mandale il piano della settimana su WhatsApp</button><button class="big undo" data-nuovo-lavoro-zona="${z}">+ Aggiungi un lavoro extra</button><button class="big undo" data-come-signora="${z}">👩‍🔧 Guarda l'app come la vede lei</button></section>` : ""}`;
+}
+function testoPianoSettimana(z, lun) {
+  const righe = [`🧹 Piano della settimana ${L.etichettaSettimana(L.aggiungiGiorni(lun, 6))} · ${tagZona(z)}`];
+  for (let i = 0; i < 7; i++) { const g = L.aggiungiGiorni(lun, i); const ls = pulizieDelGiorno(g, z); if (!ls.length) continue; righe.push("", `📅 ${L.dataLunga(g)}`); const msg = messaggioDelGiorno(g); if (msg) righe.push(`📣 ${msg.testo}`); ls.forEach(p => righe.push(rigaCameraAvviso(p))); }
+  if (righe.length === 1) righe.push("", "Nessuna pulizia in programma.");
+  return righe.join("\n");
 }
 
 // ---- tabellone (prospetto) ---------------------------------------------------------
@@ -756,6 +876,8 @@ function disegnaFoglio() {
   else if (f.tipo === "nota") html = foglioNota(f);
   else if (f.tipo === "nuovoLavoro") html = foglioNuovoLavoro(f);
   else if (f.tipo === "dettatura") html = foglioDettatura(f);
+  else if (f.tipo === "manutenzione") html = foglioManutenzione(f);
+  else if (f.tipo === "nuovoMan") html = foglioNuovoLavoroMan(f);
   else if (f.tipo === "info") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><div class="note info">${esc(f.testo)}</div>`;
   else if (f.tipo === "foto") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><img src="${f.dati}" alt="Foto" style="width:100%;border-radius:14px;margin-top:10px">`;
   // Se la persona sta scrivendo e arriva un aggiornamento, il testo non deve sparire
@@ -1067,7 +1189,7 @@ function collega() {
     catch (err) { S.erroreAccesso = testoErroreAccesso(err); }
     S.attesa = false; disegna();
   };
-  document.querySelectorAll("[data-vista]").forEach(b => b.onclick = () => { S.vista = b.dataset.vista; disegna(); });
+  document.querySelectorAll("[data-vista]").forEach(b => b.onclick = () => { S.vista = b.dataset.vista; if (b.classList.contains("man-plate") || b.classList.contains("nonna-link")) window.scrollTo(0, 0); disegna(); });
   document.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { S.giorno = b.dataset.g; disegna(); });
   document.querySelectorAll("[data-sett]").forEach(b => b.onclick = () => { S.settimana = L.aggiungiGiorni(S.settimana, 7 * Number(b.dataset.sett)); S.giorno = S.settimana; disegna(); });
   document.querySelectorAll("[data-pul]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.pul }));
@@ -1091,6 +1213,12 @@ function collega() {
   document.querySelectorAll("[data-nota]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nota", id: b.dataset.nota }));
   document.querySelectorAll("[data-nuova-nota]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nota", giorno: L.oggiISO() }));
   document.querySelectorAll("[data-nuovo-lavoro]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovoLavoro", giorno: S.giorno }));
+  document.querySelectorAll("[data-nuovo-lavoro-zona]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovoLavoro", giorno: S.giorno < S.sigSett || S.giorno > L.aggiungiGiorni(S.sigSett, 6) ? S.sigSett : S.giorno, camera: camereZona(b.dataset.nuovoLavoroZona)[0]?.id }));
+  document.querySelectorAll("[data-signora]").forEach(b => b.onclick = () => { S.sigZona = b.dataset.signora; S.sigSett = L.lunediDi(S.giorno); S.vista = "signora"; window.scrollTo(0, 0); disegna(); });
+  document.querySelectorAll("[data-sig-sett]").forEach(b => b.onclick = () => { S.sigSett = L.aggiungiGiorni(S.sigSett, 7 * Number(b.dataset.sigSett)); disegna(); });
+  document.querySelectorAll("[data-whatsapp-settimana]").forEach(b => b.onclick = () => apriWhatsApp(testoPianoSettimana(b.dataset.whatsappSettimana, S.sigSett)));
+  document.querySelectorAll("[data-man]").forEach(b => b.onclick = () => apriFoglio({ tipo: "manutenzione", id: b.dataset.man }));
+  document.querySelectorAll("[data-nuovo-man]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovoMan" }));
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
@@ -1119,6 +1247,14 @@ function collega() {
 function collegaFoglio() {
   const f = S.foglio; if (!f) return;
   document.querySelectorAll("[data-chiudi]").forEach(b => b.onclick = chiudiFoglio);
+  if (f.tipo === "manutenzione" || f.tipo === "nuovoMan") {
+    const fm = $("#formMan"); if (fm) fm.onsubmit = (e) => { e.preventDefault(); salvaNuovoLavoroMan(); };
+    document.querySelectorAll("[data-man-riparato]").forEach(b => b.onclick = () => { aggiornaManutenzione(b.dataset.manRiparato, { stato: "fatto", fatto: S.db.adesso(), fattoDa: S.utente.nome || "", nota: $("#manNota")?.value.trim() ?? S.manutenzione[b.dataset.manRiparato]?.nota ?? "" }, "Segnato come fatto"); chiudiFoglio(); });
+    document.querySelectorAll("[data-man-riapri]").forEach(b => b.onclick = () => { aggiornaManutenzione(b.dataset.manRiapri, { stato: "aperto", fatto: null, fattoDa: "" }, "Riaperto"); chiudiFoglio(); });
+    document.querySelectorAll("[data-man-salva-nota]").forEach(b => b.onclick = () => aggiornaManutenzione(b.dataset.manSalvaNota, { nota: $("#manNota")?.value.trim() || "" }, "Note salvate"));
+    document.querySelectorAll("[data-man-cancella]").forEach(b => b.onclick = async () => { const id = b.dataset.manCancella; if (await chiedi("Cancello questa voce dai lavori? (La pulizia e la foto restano.)", { si: "Sì, cancella", pericolo: true })) { delete S.manutenzione[id]; chiudiFoglio(); disegna(); try { await S.db.cancella("manutenzione", id); } catch (e) { erroreScrittura(e); } } });
+    document.querySelectorAll(".sheet [data-pul]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.pul }));
+  }
   if (f.tipo === "controllo") {
     document.querySelectorAll("[data-punto]").forEach(b => b.onclick = () => { f.punti = { ...(f.punti || {}) }; f.punti[b.dataset.punto] = !f.punti[b.dataset.punto]; const nota = $("#cNota")?.value; disegnaFoglio(); if (nota != null && $("#cNota")) $("#cNota").value = nota; });
     const sc = $("#salvaControllo"); if (sc) sc.onclick = () => salvaControllo(f);
@@ -1386,6 +1522,8 @@ async function cambiaStato(p, stato, nota) {
   try {
     if (foto) await S.db.salva("foto", p.id, { pulizia: p.id, camera: p.camera, zona: p.zona, data: p.data, dati: foto, ora: S.db.adesso(), da: S.utente.nome || S.utente.email || "" }, false);
     await S.db.aggiorna("pulizie", p.id, patch);
+    // il problema finisce anche nei lavori di manutenzione del proprietario (se la voce esiste già non si tocca)
+    if (stato === "problema") { try { await S.db.salva("manutenzione", `pul_${p.id}`, vocePerProblema({ ...p, ...patch, foto: !!foto || !!p.foto }), false); } catch (e) { console.warn("manutenzione", e?.code || e); } }
     // avvisi automatici (Telegram), se configurati
     const chi = S.utente.nome || tagZona(p.zona);
     let testoWa = "";

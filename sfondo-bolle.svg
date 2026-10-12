@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+  <!-- Bolle di sapone trasparenti (disegno nostro): si posano sopra la laguna nella sezione delle signore -->
+  <defs>
+    <radialGradient id="b" cx=".35" cy=".3" r=".75">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/>
+      <stop offset=".55" stop-color="#DDF2FF" stop-opacity=".12"/>
+      <stop offset=".92" stop-color="#FFFFFF" stop-opacity=".05"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".5"/>
+    </radialGradient>
+    <g id="bolla">
+      <circle r="40" fill="url(#b)" stroke="#FFFFFF" stroke-opacity=".85" stroke-width="1.8"/>
+      <ellipse cx="-14" cy="-16" rx="9" ry="5" transform="rotate(-35)" fill="#FFFFFF" fill-opacity=".8"/>
+      <path d="M24 10 a26 26 0 0 1 -14 22" fill="none" stroke="#C7E8FF" stroke-opacity=".7" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <g transform="translate(80 120)"><use href="#bolla"/></g>
+  <g transform="translate(520 60) scale(.55)"><use href="#bolla"/></g>
+  <g transform="translate(470 230) scale(.8)"><use href="#bolla"/></g>
+  <g transform="translate(140 360) scale(.45)"><use href="#bolla"/></g>
+  <g transform="translate(330 300) scale(1.25)"><use href="#bolla"/></g>
+  <g transform="translate(60 560) scale(.7)"><use href="#bolla"/></g>
+  <g transform="translate(520 520) scale(.5)"><use href="#bolla"/></g>
+  <g transform="translate(260 650) scale(.9)"><use href="#bolla"/></g>
+  <g transform="translate(450 760) scale(1.1)"><use href="#bolla"/></g>
+  <g transform="translate(120 820) scale(.4)"><use href="#bolla"/></g>
+  <g transform="translate(560 880) scale(.6)"><use href="#bolla"/></g>
+  <g transform="translate(300 60) scale(.35)"><use href="#bolla"/></g>
+</svg>

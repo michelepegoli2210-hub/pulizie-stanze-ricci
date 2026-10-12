@@ -99,6 +99,15 @@ service cloud.firestore {
       allow delete: if proprietario();
     }
 
+    // Lavori di manutenzione (problemi segnalati + lavori aggiunti a mano): li vedono e li chiudono i proprietari;
+    // le signore possono solo AGGIUNGERE una voce per la loro zona (succede da sola quando segnalano un problema).
+    match /manutenzione/{id} {
+      allow read: if puoLeggereTutto();
+      allow create: if proprietario()
+        || (addetta() && request.resource.data.zona == miaZona() && request.resource.data.stato == "aperto");
+      allow update, delete: if proprietario();
+    }
+
     // Foto dei problemi (piccole, dentro al database): le signore ne aggiungono solo per la loro zona.
     match /foto/{id} {
       allow read: if puoLeggereTutto() || (addetta() && resource.data.zona == miaZona());

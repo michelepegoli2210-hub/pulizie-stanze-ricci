@@ -122,3 +122,24 @@ Dopo il salvataggio le pulizie dei prossimi 14 giorni si ricalcolano da sole (co
 - **Guarda l'app come la vedono le signore**: in ⋯ i proprietari possono aprire l'app come "Signora 1° piano / 2° piano /
   appartamenti" con i dati veri (banner nero in alto, "Torna alla gestione"). Per giocare senza toccare dati veri c'è sempre
   la modalità prova (`?prova=1`).
+
+## Grafica "piastre", link di prova diretti, LED e sezioni nuove (versioni 0.18.1 – 0.20)
+
+- **Grafica**: tutto è fatto di piastre di metallo satinato scuro (colori presi dall'iPhone 18 Pro: argento per i riquadri
+  neutri, Light Blue per giorni/linguette/barra, Burgundy per "problema" e per il giorno scelto, rosso Ferrari per "da pulire",
+  Cosmic Orange per "in corso", verde per "pulita", blu per i bottoni principali). I riquadri bianchi sono bianco panna.
+  Le finiture stanno tutte in `style.css` nel blocco "PIASTRE" (variabili `--al1…--al5`, `--gloss`, `--lucido`, `--sp`).
+- **Link di prova diretti** (dati finti, solo sul telefono che li apre): `index.html?prova=1&signora=1` (1° piano), `&signora=2`
+  (2° piano), `&signora=3` (appartamenti), `&gestione=1` (proprietario). La prova prepara da sola le pulizie dei prossimi
+  giorni e almeno tre camere da fare oggi per zona (`db.js`, `datiIniziali`). Chiave dei dati di prova: `ricci_prova_db_v5`.
+- **LED rosso**: dove c'è un problema ancora aperto lampeggia solo un pallino rosso (sulla targhetta della camera, sul giorno
+  nella striscia in alto, accanto al nome della zona, sull'avatar della signora e sul tasto "Lavori di manutenzione").
+- **Lavori di manutenzione** (raccolta `manutenzione`, documenti `pul_<idPulizia>` per i problemi segnalati e `man_<tempo>`
+  per quelli aggiunti a mano): ogni problema segnalato da una signora crea da solo una voce che resta anche dopo che la
+  camera viene ripulita. I proprietari aprono la sezione dal tasto in cima a "Oggi", scrivono note, segnano "Fatto,
+  sistemato" o cancellano. Le regole Firestore permettono alle signore solo di AGGIUNGERE voci per la loro zona.
+  Sfondo: `sfondo-manutenzione.svg` (officina).
+- **La signora, settimana per settimana**: in cima a "Oggi" ci sono gli avatar delle tre signore; toccandone una si vede
+  tutto quello che fa e deve fare nella settimana (giorno per giorno, con stato, orari, paga della settimana, problemi),
+  con i bottoni "Mandale il piano della settimana su WhatsApp", "Aggiungi un lavoro extra" e "Guarda l'app come la vede lei".
+  Sfondo: laguna + bolle di sapone (`sfondo-bolle.svg`).

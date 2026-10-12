@@ -116,7 +116,7 @@ async function dbFirebase(config) {
 //  PROVA  (senza Firebase: dati di esempio, salvati solo su questo telefono)
 // ---------------------------------------------------------------------------
 function dbProva() {
-  const CHIAVE = "ricci_prova_db_v4";
+  const CHIAVE = "ricci_prova_db_v5";
   let dati = null;
   try { dati = JSON.parse(localStorage.getItem(CHIAVE) || "null"); } catch (e) { dati = null; }
   if (!dati || !dati.soggiorni) dati = datiIniziali();
@@ -249,6 +249,12 @@ function dbProva() {
         n++;
       }
     }
-    return { soggiorni, pulizie, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {} };
+    // un paio di lavori di manutenzione d'esempio, così la sezione non è vuota
+    const manutenzione = {
+      man_es1: { pulizia: null, camera: "alba", zona: "p2", data: isoIeri, titolo: "Lampadina del bagno bruciata", nota: "", da: "Signora 2° piano", fonte: "signora", foto: false, stato: "aperto", creato: new Date().toISOString(), fatto: null, fattoDa: "" },
+      man_es2: { pulizia: null, camera: "zarapt", zona: "ap", data: aggiungiGiorni(isoOggi, -5), titolo: "Tapparella della cucina bloccata", nota: "Chiamato il fabbro, viene giovedì", da: "Michele", fonte: "mano", foto: false, stato: "aperto", creato: new Date().toISOString(), fatto: null, fattoDa: "" },
+      man_es3: { pulizia: null, camera: "salvatore", zona: "p1", data: aggiungiGiorni(isoOggi, -9), titolo: "Doccia che perde", nota: "Cambiata la guarnizione", da: "Signora 1° piano", fonte: "signora", foto: false, stato: "fatto", creato: new Date().toISOString(), fatto: aggiungiGiorni(isoOggi, -7) + "T10:00:00.000Z", fattoDa: "Michele" },
+    };
+    return { soggiorni, pulizie, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {}, manutenzione };
   }
 }

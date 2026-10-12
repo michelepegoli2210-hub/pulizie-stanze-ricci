@@ -263,7 +263,7 @@ button.row .badge{grid-column:2}
 /* messaggio del giorno e dettagli: riquadri chiari, testo grande, un'icona azzurra */
 .pro-sec{display:flex;justify-content:space-between;gap:10px;margin-top:4px}
 .pro-sec .nonna-link{display:inline-flex;align-items:center;gap:6px}
-.pro-sec .nonna-link::after{content:""}
+.pro-sec .nonna-link::after,.nonna-link.indietro::after{content:""}
 .nonna-link.rosso{color:var(--warn)}
 .dett-mini{display:inline-flex;gap:4px;align-items:center;color:var(--muted);background:var(--campo);border-radius:6px;padding:2px 7px;font-size:13px;font-weight:500;max-width:100%;white-space:normal;text-align:left}
 .dett-mini .ic{width:14px;height:14px;color:var(--accent)}
@@ -554,6 +554,7 @@ input[type=text],input[type=email],input[type=password],input[type=number],input
 .pro-data-riga .pro-data{font-size:14px;flex:1 1 auto}
 .pro-data-riga .nonna-link{margin-left:auto}
 .nonna-link .ic{width:20px;height:20px}
+.nonna-link.indietro{padding-left:8px;gap:2px}
 .inizio-indietro{border-radius:999px;padding:8px 14px 8px 8px;min-height:40px;font:700 16px var(--f-body);color:var(--mtx)}
 .toast button{margin-left:10px;padding:9px 16px;font:800 13px var(--f-display);letter-spacing:.05em;text-transform:uppercase}
 .chip{border-radius:999px;padding:2px 9px;font:700 11px var(--f-display);letter-spacing:.04em;text-transform:uppercase}
@@ -576,19 +577,48 @@ input[type=text],input[type=email],input[type=password],input[type=number],input
 .badge.tess-stato::before{background:var(--dot);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 
 /* ==========================================================================
-   LED FLUO — una camera con un problema lampeggia, non si può non vedere
+   LED FLUO — solo un pallino rosso che lampeggia dove c'è un problema
+   (sulla targhetta della camera, sul giorno, accanto alla zona, sul tasto Lavori)
    ========================================================================== */
-@keyframes led-alone{0%,100%{box-shadow:0 0 0 3px rgba(255,23,68,.95),0 0 16px 6px rgba(255,23,68,.8),0 0 44px 16px rgba(255,23,68,.4)}50%{box-shadow:0 0 0 3px rgba(255,23,68,.25),0 0 4px 1px rgba(255,23,68,.15),0 0 0 0 rgba(255,23,68,0)}}
-@keyframes led-alone-piccolo{0%,100%{box-shadow:0 0 0 2px rgba(255,23,68,.95),0 0 10px 4px rgba(255,23,68,.75)}50%{box-shadow:0 0 0 2px rgba(255,23,68,.2),0 0 2px 0 rgba(255,23,68,.1)}}
 @keyframes led-punto{0%,100%{opacity:1;box-shadow:0 0 6px 2px rgba(255,23,68,.95),0 0 14px 6px rgba(255,23,68,.55)}50%{opacity:.3;box-shadow:0 0 0 0 rgba(255,23,68,0)}}
-@keyframes led-riga{0%,100%{background-color:rgba(255,23,68,.22);box-shadow:inset 6px 0 0 #FF1744,inset 0 0 0 1px rgba(255,23,68,.55)}50%{background-color:rgba(255,23,68,.04);box-shadow:inset 6px 0 0 rgba(255,23,68,.35),inset 0 0 0 1px rgba(255,23,68,.1)}}
-.tess.warn::after,.inizio-testa.warn::after,.pro-tempo.warn::after,.card.problemi::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;animation:led-alone 1s ease-in-out infinite}
-.card.problemi{position:relative}
-.day.problema::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;animation:led-alone-piccolo 1s ease-in-out infinite}
-.row.problema{animation:led-riga 1s ease-in-out infinite}
 .badge.warn::before,.day.problema .dot,.led{background:#FF1744!important;animation:led-punto 1s ease-in-out infinite}
 .day.problema .dot{opacity:1;width:7px;height:7px}
 .led{display:inline-block;width:13px;height:13px;border-radius:50%;margin:0 8px 0 0;vertical-align:-1px;flex:0 0 auto}
+.led.mini{width:9px;height:9px;margin:0 0 0 6px;vertical-align:0}
 h2 .led{margin:0 0 0 10px}
-.card.problemi h2 .led{margin:0 10px 0 0}
-@media (prefers-reduced-motion:reduce){.tess.warn::after,.inizio-testa.warn::after,.pro-tempo.warn::after,.card.problemi::after,.day.problema::after,.row.problema,.badge.warn::before,.day.problema .dot,.led{animation-duration:2.4s}}
+.man-testa h2 .led,.card .head h2 .led{margin:0 8px 0 0}
+@media (prefers-reduced-motion:reduce){.badge.warn::before,.day.problema .dot,.led{animation-duration:2.4s}}
+
+/* ==========================================================================
+   LE SIGNORE (avatar) E I LAVORI DI MANUTENZIONE — in cima a "Oggi"
+   ========================================================================== */
+.sig-blocco{display:grid;gap:10px}
+.sig-griglia{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sig-plate{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:24px;padding:10px 6px 9px;cursor:pointer;min-height:124px;text-align:center}
+.sig-plate .donnina{width:56px;height:63px}
+.sig-nome{font:800 11.5px var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--tx);text-shadow:var(--inciso);margin-top:2px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.sig-sotto{display:inline-flex;align-items:center;font:600 12px var(--f-body);color:var(--tx2);text-shadow:var(--inciso)}
+.man-plate{display:flex;align-items:center;gap:12px;border-radius:24px;padding:14px 16px;cursor:pointer;min-height:66px;text-align:left;width:100%}
+.man-plate .ic{width:28px;height:28px;color:var(--tx)}
+.man-testo{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;color:var(--tx);text-shadow:var(--inciso)}
+.man-testo b{font:800 15px var(--f-display);letter-spacing:.02em}
+.man-testo span{font:600 13px var(--f-body);color:var(--tx2)}
+.man-plate .led{margin:0}
+.man-freccia{font-size:26px;color:var(--tx2);margin-left:4px}
+/* sezione Manutenzione: officina sullo sfondo */
+.man-testa h2{display:flex;align-items:center;gap:8px}
+.man-testa h2 .ic{width:26px;height:26px;color:#8A5A2B}
+body.vista-manutenzione .laguna{background:#EFE9DE url(sfondo-manutenzione.svg) center top/900px auto repeat;filter:none}
+body.vista-manutenzione .laguna::after{background:linear-gradient(180deg,rgba(255,252,246,.35) 0%,rgba(255,252,246,.1) 40%,rgba(255,252,246,.25) 100%)}
+:root[data-theme="dark"] body.vista-manutenzione .laguna{filter:brightness(.35) saturate(.5)}
+.man-riga .badge{align-self:center}
+/* sezione della signora: laguna + bolle di sapone che salgono piano */
+@keyframes bolle-su{from{background-position:0 0,300px 450px}to{background-position:0 -900px,300px -450px}}
+body.vista-signora .laguna::before{content:"";position:absolute;inset:0;background:url(sfondo-bolle.svg) 0 0/600px 900px repeat,url(sfondo-bolle.svg) 300px 450px/400px 600px repeat;opacity:.95;animation:bolle-su 60s linear infinite;pointer-events:none}
+@media (prefers-reduced-motion:reduce){body.vista-signora .laguna::before{animation:none}}
+.sig-testa{margin-top:0}
+.sig-testa .pro-saluto{font-size:23px}
+.sig-testa .donnina{width:84px;height:95px}
+.sig-giorno.oggi{box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 2px rgba(20,56,128,.55),0 2px 0 rgba(214,207,194,.9),0 16px 30px -18px rgba(0,0,0,.35)}
+.sig-giorno.passato h2{color:var(--muted)}
+.navmese b{text-transform:none}
