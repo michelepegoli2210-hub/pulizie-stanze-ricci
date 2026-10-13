@@ -527,8 +527,10 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       if (r.quando === "meteo" && reg?.ultima && giorniTra(reg.ultima, p.data) < 3) continue;
       cand.push(stella(r, l, reg, p.data, ogni || 0, { urgenza: r.quando === "meteo" ? 50 : urgenza(ogni, reg?.ultima || null, p.data, inizio), sempre: false, slot: slot ? (slot.has(r.codice) ? 0 : 1) : 0 }));
     }
-    // L'ordine (Michele, specifiche §10): PRIMA LA PIÙ SCADUTA (è quello che fa girare tutto: una cosa mai fatta sale finché non tocca a lei),
-    // a parità la priorità (igiene, poi quello che l'ospite vede, poi il nascosto). Booking: prima quello che l'ospite vede e tocca. Operai: prima lo slot "una per volta".
+    // L'ORDINE (Michele, specifiche §10): PRIMA LA PIÙ SCADUTA. L'urgenza è "quanto è scaduta rispetto al suo ritmo" col pavimento dei 90 giorni
+    // (vedi urgenza()): una cosa mai fatta sale finché non tocca a lei, l'igiene torna in cima quando è più scaduta delle altre. A parità la priorità
+    // (igiene, poi quello che l'ospite vede, poi il nascosto). Booking: prima quello che l'ospite vede e tocca. Operai: prima lo slot "una per volta".
+    // (Provato anche "prima l'igiene scaduta, poi il giro dei 90 giorni": tiene l'igiene al ritmo ma il giro completo scende dal 77% al 48%.)
     const ordinePrio = passo.visibilePrima ? { 2: 0, 1: 1, 3: 2 } : { 1: 0, 2: 1, 3: 2 };
     const prio = (a, b) => (ordinePrio[a.priorita] ?? 3) - (ordinePrio[b.priorita] ?? 3);
     if (passo.visibilePrima) cand.sort((a, b) => prio(a, b) || (a.slot - b.slot) || (b.urgenza - a.urgenza) || (a.minuti - b.minuti));
