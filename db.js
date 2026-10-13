@@ -221,8 +221,8 @@ function dbProva() {
     const isoIeri = new Date(Date.UTC(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() - 1)).toISOString().slice(0, 10);
     const isoDomani = new Date(Date.UTC(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() + 1)).toISOString().slice(0, 10);
     const occupata = (camera, notte) => Object.values(soggiorni).some(s => s.camera === camera && s.inizio <= notte && notte < s.fine);
-    const extra = [["p1", ["aurora", "michele", "salvatore", "antonio", "lella"], "Famiglia Bianchi", 2], ["p2", ["tramonto", "passerella", "alba", "fenicotteri", "nicole"], "Coppia Verdi", 2], ["ap", ["zarapt", "trento", "zara1"], "Sig. Esposito", 3]];
-    const CAM = { aurora: "p1", michele: "p1", salvatore: "p1", antonio: "p1", lella: "p1", tramonto: "p2", passerella: "p2", alba: "p2", fenicotteri: "p2", nicole: "p2", zarapt: "ap", trento: "ap", zara1: "ap" };
+    const extra = [["p1", ["aurora", "michele", "salvatore", "antonio", "lella"], "Famiglia Bianchi", 2], ["p2", ["tramonto", "passerella", "alba", "fenicotteri", "nicole"], "Coppia Verdi", 2], ["ap", ["zarapt", "trento", "zara1", "zara2"], "Sig. Esposito", 3]];
+    const CAM = { aurora: "p1", michele: "p1", salvatore: "p1", antonio: "p1", lella: "p1", tramonto: "p2", passerella: "p2", alba: "p2", fenicotteri: "p2", nicole: "p2", zarapt: "ap", trento: "ap", zara1: "ap", zara2: "ap" };
     const NOMI2 = ["Sposi Marino", "Famiglia Conte", "Sig. Greco"];
     extra.forEach(([zona, camere, nome, persone], k) => {
       const libere = camere.filter(c => !occupata(c, isoIeri)).slice(0, 2);

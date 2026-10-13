@@ -17,7 +17,8 @@ export const ZONE = {
 };
 
 // ---- Le camere e le case ----------------------------------------------------
-// tipo: "camera" (si pulisce mercoledì + venerdì) oppure "casa" (martedì + venerdì)
+// tipo: "camera" oppure "casa". I giorni di pulizia vengono dal foglio "Calendario vero" (catalogo.js); REGOLE_BASE qui sotto
+// vale per i posti che nel foglio hanno ancora una domanda aperta [CONTROLLA]
 // lato: dove sta nella piantina. L = sinistra del corridoio, R = destra, S = via Nazario Sauro
 // posti: letti disponibili (serve per il quadro, non per le pulizie)
 export const CAMERE = [
@@ -33,7 +34,8 @@ export const CAMERE = [
   { id: "nicole",      nome: "Nicole",                zona: "p2", tipo: "camera", lato: "S", ordine: 10, posti: 1, via: "via Nazario Sauro" },
   { id: "zarapt",      nome: "Via Zara · piano terra", zona: "ap", tipo: "casa", lato: "A", ordine: 11, posti: 4 },
   { id: "zara1",       nome: "Via Zara · 1° piano",   zona: "ap", tipo: "casa",   lato: "A", ordine: 12, posti: 4 },
-  { id: "trento",      nome: "Via Trento 47",         zona: "ap", tipo: "casa",   lato: "A", ordine: 13, posti: 4 },
+  { id: "zara2",       nome: "Via Zara · 2° piano",   zona: "ap", tipo: "casa",   lato: "A", ordine: 13, posti: 4 },
+  { id: "trento",      nome: "Via Trento 47",         zona: "ap", tipo: "casa",   lato: "A", ordine: 14, posti: 4 },
 ];
 
 // Appoggio esterno: compare nel foglio di papà ma NON ha pulizie nostre.
@@ -180,6 +182,7 @@ export const COLONNE_EXCEL = {
   "lella": "lella", "nicole": "nicole",
   "via zara piano terra": "zarapt", "via zara pt": "zarapt", "zara piano terra": "zarapt", "zara pt": "zarapt",
   "via zara 1 piano": "zara1", "via zara 1piano": "zara1", "via zara primo piano": "zara1", "zara 1 piano": "zara1", "via zara 1": "zara1",
+  "via zara 2 piano": "zara2", "via zara 2piano": "zara2", "via zara secondo piano": "zara2", "zara 2 piano": "zara2", "via zara 2": "zara2",
   "via trento 47": "trento", "via trento": "trento", "trento 47": "trento", "trento": "trento",
 };
 
@@ -199,6 +202,7 @@ export const SOGGIORNI_ESEMPIO = [
   ["nicole",      "2026-09-28", "2026-10-02", "Castaldi",          "ferr"],
   ["zarapt",      "2026-09-27", "2026-10-10", "Rega Ugo · 1 tecnico", "ferr"],
   ["zara1",       "2026-09-28", "2026-10-10", "D'Agostino · 1 operaio", "dago"],
+  ["zara2",       "2026-09-28", "2026-10-17", "D'Agostino · 2 operai", "dago"],
   ["trento",      "2026-10-01", "2026-11-01", "Fondamenta",        "fond"],
   ["salvatore",   "2026-10-04", "2026-10-09", "Manna",             "ferr"],
   ["aurora",      "2026-10-05", "2026-10-09", "Palazzo",           "ferr"],

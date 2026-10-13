@@ -3,6 +3,7 @@
 //  Funzioni "pure": prendono dati, restituiscono risultati. Niente rete.
 // ============================================================================
 import { TIPI_PULIZIA, REGOLE_BASE, LISTINO_BASE, VOTI_BASE } from "./regole.js";
+import { CALENDARIO_VERO } from "./catalogo.js";
 
 export const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
 export const GIORNI = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
@@ -97,15 +98,39 @@ export function arrivaIl(soggiorni, cameraId, iso) {
   return soggiorni.find(s => s.camera === cameraId && s.inizio === iso) || null;
 }
 
+// ---- Il calendario vero (foglio "Calendario vero" di Michele, dentro catalogo.js) --------------------------------------
+// Per ogni posto: i passaggi della settimana. Se una riga del foglio ha ancora una domanda aperta ([CONTROLLA], [COMPLETA],
+// "oppure"), quel posto resta con REGOLE_BASE finché Michele non risponde: l'app non inventa. [DECIDI: profilo] non blocca i giorni.
+export const CALENDARIO_CAMERE = (() => {
+  const out = {};
+  for (const v of CALENDARIO_VERO) {
+    if (!v.tipo || !v.posti || !v.posti.length) continue;
+    const dubbio = /CONTROLLA|COMPLETA/i.test(v.controlla || "") || !!v.oppure;
+    for (const id of v.posti) {
+      const c = out[id] = out[id] || { passi: [], aperto: false, domande: [] };
+      c.passi.push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, oppure: !!v.oppure, controlla: v.controlla || "", dubbio });
+      if (dubbio) { c.aperto = true; if (v.controlla && !c.domande.includes(v.controlla)) c.domande.push(v.controlla); }
+    }
+  }
+  return out;
+})();
+// I passaggi della settimana di un posto: dal calendario vero se non ha domande aperte, altrimenti da REGOLE_BASE
+export function passaggiCamera(camera, regole = REGOLE_BASE) {
+  const r = { ...REGOLE_BASE, ...(regole || {}) };
+  const cal = CALENDARIO_CAMERE[camera.id];
+  if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), daCalendario: true }));
+  return ((camera.tipo === "casa" ? r.casa : r.camera) || []).map(x => ({ ...x, daCalendario: false }));
+}
+
 // ---- Piano delle pulizie ---------------------------------------------------
-// Decide che pulizia va fatta in una camera in un certo giorno, secondo le regole.
+// Decide che pulizia va fatta in una camera in un certo giorno, secondo il calendario vero (o le regole di base).
 // Restituisce null se quel giorno non c'è niente da fare.
 export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, note = []) {
   const r = { ...REGOLE_BASE, ...(regole || {}) };
   const occ = ospiteIl(soggiorni, camera.id, iso);
   const parte = parteIl(soggiorni, camera.id, iso);
   const wd = giornoSettimana(iso);
-  const lista = (camera.tipo === "casa" ? r.casa : r.camera) || [];
+  const lista = passaggiCamera(camera, r);
   const regola = lista.find(x => x.giorno === wd);
   let tipo = null;
   if (occ && regola) tipo = regola.tipo;

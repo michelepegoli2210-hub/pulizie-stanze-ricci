@@ -744,3 +744,65 @@ body.nonna .rif-materiale{font-size:17px}
 .gov-rivedi.fatta{opacity:.85}
 .row.one .gov-regola-nota{margin-top:2px}
 #rvCome{min-height:140px;font-size:16px;line-height:1.4}
+
+/* ==========================================================================
+   0.26 · La lista della signora (lo schizzo di Michele): numeri blu, stelle oro, "come si fa" sotto la stella
+   ========================================================================== */
+.sig-data{font:700 13px var(--f-display);color:var(--muted);background:var(--campo);border-radius:999px;padding:7px 12px;white-space:nowrap}
+.inizio.sig .inizio-testa{align-items:flex-start}
+.inizio.sig .inizio-lavoro{text-transform:none;letter-spacing:0;font:600 15px/1.35 var(--f-body)}
+.inizio.sig .inizio-testa .badge{flex:0 0 auto;margin-top:4px}
+.sig-box{margin-top:12px;background:var(--card);border-radius:var(--r);padding:14px 14px 6px;box-shadow:var(--shadow)}
+.sig-sez-t{font:800 11px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 2px 8px}
+.sig-dice{font:800 24px/1.2 var(--f-display);color:var(--accent);margin:0 0 10px;letter-spacing:-.015em;white-space:pre-line}
+.sig-dice.secondo{font-size:19px;font-weight:700;color:var(--fg)}
+.sig-lista{display:grid;gap:0}
+.sig-riga{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:transparent;border-top:1px solid var(--line2);padding:12px 4px;min-height:64px;cursor:pointer;color:var(--fg);font:inherit;border-radius:0}
+.sig-lista>.sig-riga:first-child{border-top:0}
+.sig-riga:disabled{cursor:default}
+.sig-riga:active{background:var(--campo)}
+.sig-riga .sig-testo{min-width:0}
+.sig-riga .sig-testo b{display:block;font:700 20px/1.2 var(--f-display);letter-spacing:-.015em}
+.sig-riga .sig-testo small{display:block;font:500 14px/1.3 var(--f-body);color:var(--muted);margin-top:2px}
+.sig-riga.fatta .sig-testo b{color:var(--muted);text-decoration:line-through;text-decoration-thickness:2px}
+.sig-riga.non .sig-testo b{color:var(--muted)}
+.sig-non-perche{color:var(--warn)!important;font-weight:700!important}
+.sig-num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;font:800 17px var(--f-display);color:#fff;background:linear-gradient(135deg,#5A8AD6,#143880 40%,#2A56A6 55%,#0A2252);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 4px rgba(0,0,0,.25);text-shadow:0 1px 1px rgba(0,0,0,.4)}
+.sig-num.stella{background:linear-gradient(135deg,#FFD75E,#C98A00 45%,#E8B52A 60%,#9A6800);font-size:21px}
+.sig-num.fatta{background:linear-gradient(135deg,#4DBC6C,#1A7B3B 45%,#2B9B4D 60%,#0B5024)}
+.sig-num.fatta .ic{width:22px;height:22px;stroke-width:3}
+.sig-num.non{background:linear-gradient(135deg,#B0BDD0,#7A889D 45%,#95A3B7 60%,#5A6980);font-size:18px}
+.sig-come{margin:-4px 4px 12px 56px;background:#FFF7DC;border:1px solid #F2DF9A;border-radius:14px;padding:10px 12px;font:500 15px/1.4 var(--f-body);color:#3D2F00}
+:root[data-theme="dark"] .sig-come{background:#2E2608;border-color:#5A4A12;color:#F5E7B5}
+.sig-come b{font-weight:800;color:#8A5A00} :root[data-theme="dark"] .sig-come b{color:#FFD75E}
+.sig-come div{margin-top:4px}
+.sig-ctrl{color:var(--muted)}
+.sig-nota{color:var(--warn);font-weight:700}
+.sig-sempre{font:700 20px/1.3 var(--f-display);color:var(--accent);background:var(--accent-bg);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.sig-scelta{display:grid;gap:6px;max-height:50dvh;overflow:auto}
+.sig-scelta .big{margin-top:0;text-align:left;text-transform:none;letter-spacing:0;font:700 16px var(--f-body)}
+.inizio.sig .pro-sec{flex-wrap:wrap;margin-top:10px}
+.conferma-box.chiusura .big.skip{font-size:13px;text-transform:none;letter-spacing:0;line-height:1.25}
+.conferma-box.chiusura .big.skip{bottom:52px} .conferma-box.chiusura .big.ok{bottom:104px}
+body.nonna .sig-riga .sig-testo b{font-size:22px}
+
+/* --- 0.26 · Regole: livelli, profili, calendario vero, meteo; Tabellone: celle fuori livello --- */
+.livelli{display:grid;gap:8px;margin-top:8px}
+.livello{display:grid;gap:4px;text-align:left;border:2px solid var(--line);background:var(--card-pieno);border-radius:var(--r2);padding:12px 14px;cursor:pointer;color:var(--fg);font:inherit;width:100%}
+.livello.scelto{border-color:var(--accent);background:var(--accent-bg)}
+.livello:disabled{cursor:default}
+.livello b{font:800 17px var(--f-display)}
+.livello span{font:500 14px/1.35 var(--f-body);color:var(--muted)}
+.livello .livello-num{color:var(--fg);font-weight:700}
+.pall.fuori{background:#E3E3E8;border:1px dashed #A9A9B2;box-shadow:none} :root[data-theme="dark"] .pall.fuori{background:#2C2C2E;border-color:#5A5A60}
+.tab-cella.fuori{opacity:.4}
+.gov-blocco{display:inline-block;border-radius:6px;padding:1px 7px;font:700 10.5px var(--f-display);background:var(--campo);color:var(--muted);margin-left:4px;text-transform:uppercase;letter-spacing:.04em;vertical-align:1px}
+.gov-blocco.rot{background:#FFF3CC;color:#7A5200} :root[data-theme="dark"] .gov-blocco.rot{background:#3A2E08;color:#FFD75E}
+.gov-blocco.lib{background:var(--accent-bg);color:var(--accent)}
+.gov-regola.fuori .gov-regola-testa b,.gov-regola.fuori .gov-regola-dove{opacity:.45}
+.gov-fuori{display:inline-block;font:600 12px var(--f-body);color:var(--muted);font-style:italic}
+.conto-livelli{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.conto-livelli div{background:var(--campo);border-radius:12px;padding:8px 8px 10px;font:500 12px/1.3 var(--f-body);color:var(--muted)}
+.conto-livelli div.scelto{outline:2px solid var(--accent)}
+.conto-livelli b{display:block;font:800 14px var(--f-display);color:var(--fg);margin-bottom:2px}
+.conto-livelli strong{color:var(--fg)}

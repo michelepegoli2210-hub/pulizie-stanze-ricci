@@ -22,7 +22,11 @@ Funziona su iPhone e Android aprendo un link e mettendola in Home. Niente abbona
 | `style.css` | I colori e la grafica ("Laguna profonda", chiaro e scuro) | Per cambiare l'aspetto |
 | `app.js` | Le schermate e i bottoni | Per cambiare come funziona |
 | `logica.js` | Date, settimana di paga (sabato ore 13), prezzi, piano delle pulizie | Per cambiare i conti |
-| `regole.js` | **Il dizionario**: camere, zone, giorni delle pulizie, cosa si fa, prezzi di partenza, regole per leggere l'Excel | Per cambiare le regole |
+| `regole.js` | **Il dizionario**: camere, zone, giorni di riserva delle pulizie, cosa si fa, prezzi di partenza, regole per leggere l'Excel | Per cambiare le regole |
+| `catalogo/` | **La fonte delle regole della governante**: `catalogo-governante-v4.csv` (il catalogo, una riga per cosa), `catalogo-governante.xlsx` (checklist della signora, calendario vero, livelli), `mockup-signora.png` | Qui si cambiano catalogo e calendario; poi si rilancia `strumenti/genera-catalogo.mjs` |
+| `catalogo.js` | Il catalogo tradotto per l'app (**generato**, non si tocca a mano) | Mai a mano: lo scrive `strumenti/genera-catalogo.mjs` |
+| `governante.js` | La testa della governante: stelle per passaggio, calendario, livelli, profili, tabellone, mappa, materiali | Per cambiare come ragiona |
+| `strumenti/` | Gli script da computer: genera il catalogo, legge il CSV, l'unione fatta per la 0.26 | Quando cambia il file del catalogo |
 | `db.js` | Il collegamento ai dati (Firebase, oppure modalità prova) | Quasi mai |
 | `firebase-config.js` | I dati del progetto Firebase (pubblici) | Una volta sola, al Passo 2 |
 | `firestore.rules` | Le regole di sicurezza da incollare nella console Firebase | Al Passo 4 |
@@ -213,5 +217,48 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   **Rivedi con la mamma**: in Regole il contatore "Regole riviste: N su M" con le prossime da rivedere; per ogni regola il foglio con il
   "come si fa" modificabile: "Va bene così" o "Salva come dice la mamma" (il testo della mamma va in `regole[id].come` e lo leggono le
   signore; "Torna al testo di prima" lo toglie); `riviste[id] = { data, da, cambiata }`.
-- Passi successivi previsti: la tabella completa di Michele riga per riga (codici C01…O03), ritmi che imparano dai controlli ("gli
-  occhi"), meteo di Lesina, pagella del sabato, voce con Gemini.
+- **0.25.1** — il nome delle regole del catalogo nella scheda Regole (prima restava vuoto), la vista di copertura rinominata
+  `vistaTabelloneCopertura` (si scontrava con il tabellone del prospetto), i 5 lavori di manutenzione visti nelle foto messi nei Lavori.
+- **Dalla 0.26 — il catalogo è il FILE di Michele, calendario vero, profili Lusso/Base, la lista della signora, i livelli.**
+  **Fonte unica**: `catalogo/catalogo-governante-v4.csv` (il file di Michele, 163 righe, unito alle 15 righe dalle foto P01-P15 e ai
+  testi delle foto su 14 righe: box a soffietto, cassetta esterna, termosifone in ghisa, marmo…) e `catalogo/catalogo-governante.xlsx`
+  (fogli "Checklist signora", "Calendario vero", "Livelli e costi"). `strumenti/genera-catalogo.mjs` li legge e scrive **`catalogo.js`**
+  (generato, non si tocca a mano): `RIGHE` (le righe così come sono), `PARTI` (le regole come le usa l'app: una riga a più ritmi diventa
+  più parti, "a ogni pulizia" = voce della lista, i ritmi lunghi = rifiniture), `CHECKLIST`, `CALENDARIO_VERO`, `LIVELLI_TESTO`.
+  Il **Blocco** della riga decide come viene caricata: *Pulizia normale* = riga della lista della signora (non è una rifinitura, niente
+  budget, niente extra); *Dentro la totale* = parte del lavoro della totale (i ritmi lunghi diventano stelle della totale); *Pulizia
+  normale + rotazione* = lista + stella; *Rotazione* e *Camera libera* = le vere rifiniture; *Giorno della zona*; *Meteo e stagione*.
+  **Copertura e Buchi del Tabellone si contano solo sui blocchi Rotazione e Camera libera** (`CELLA`); la Mappa dice "Superfici
+  scoperte", che è un'altra cosa. `VECCHI_ID`/`nuovoId` traducono il registro scritto con i nomi vecchi delle regole.
+  **Calendario vero** (`logica.CALENDARIO_CAMERE`, `passaggiCamera`): i giorni di pulizia vengono dal foglio, posto per posto (Trento
+  e via Zara 1°/2° lunedì ripasso + giovedì totale, via Zara piano terra sabato); dove nel foglio c'è ancora una domanda
+  ([CONTROLLA], [COMPLETA], "oppure") quel posto resta con REGOLE_BASE finché Michele non risponde: l'app non inventa. Camera nuova
+  `zara2` (Via Zara · 2° piano). Le stelle entrano solo nei passaggi veri, con il **budget per passaggio** (`passoDi`: ripasso 15′ e 1-2
+  stelle, totale 30′, totale a camera vuota 45′, Base 0′/10′ e una sola), riempito per priorità 1 → 2 → 3 e poi la più in ritardo;
+  le parti a ritmo corto che la lista di quel passaggio nomina non diventano stelle (`copertaDallaLista`) e la lista fatta le registra
+  (`coperteDalPasso`). **Profili** (`profiloDi`, `PROFILI_BASE`, `impostazioni/governante.profili`): Lusso = tutto il catalogo; Base
+  (via Zara 1° e 2°, operai) = solo le righe con Profilo base = Sì, nella totale del giovedì una sola cosa di igiene a rotazione
+  pescando prima dalla riga "una per volta" della checklist (`slotBase`); le celle fuori profilo non esistono nel Tabellone.
+  **Livelli** (`LIVELLI`, `livelloDi`, `applicaLivello`, `soglie.livello`, si parte da Igiene): Igiene = solo priorità 1; Albergo =
+  igiene ai ritmi scritti, il resto a metà ritmo; Lusso pieno = tutto. Le regole fuori livello restano in catalogo spente
+  (`fuoriLivello`): nel Tabellone sono grigio chiaro "non previsto a questo livello", non buchi. `contoLivelli` dà per ogni livello
+  minuti a settimana per camera, € al mese (quello che ci sta nel calendario e il pieno) e quanto ci sta; nelle Regole tre carte per
+  scegliere, nel Tabellone "Il conto" con le tre colonne. Meteo segnato a mano in Regole (`governante.meteo`: pioggia/vento,
+  umidità, freddo, fino a una data) finché non c'è un meteo gratis. Via le soglie minutiGiorno/rifiniturePerPulizia/minutiRifiniture e
+  il tasto "dentro la totale" (il blocco del file decide).
+  **La schermata della signora** (`foglioInizio`, `listaDelGiorno`, `righeLista`): una camera, una lista, un giorno, come lo schizzo
+  `catalogo/mockup-signora.png`. Targa con camera, tipo, minuti, ospite; "Oggi Michele dice" (dettagli del giorno, istruzioni
+  dell'ospite, messaggio del giorno); le righe grandi del foglio "Checklist signora" (12 ripasso, 25 totale, 7 cucina, 4+4 Base) con i
+  numeri blu, le stelle oro al punto giusto (dopo l'ultima riga di quel posto) con "Come si fa", prodotto, "Qui:" (materiale), ⚠ note;
+  le zone comuni in un riquadro a parte ("Come ogni giorno" in una riga sola + quelle a ritmo); "Sempre in questa camera"; si tocca
+  ogni riga quando è fatta (verde; le spunte restano sul telefono, `localStorage ricci_spunte`, finché non si chiude); un tasto solo
+  **FATTO, TUTTO** (se restano righe non toccate chiede "Le hai fatte?": tutte sì, oppure chiudi lo stesso e quelle senza spunta
+  diventano non fatte); "Non riesco a fare una cosa" (riga con un tocco + perché con un tocco: la stella va nel registro come saltata e
+  la governante la rimette un'altra volta); "C'è un problema". Sulla pulizia si salvano `rifiniture` (stelle fatte, prezzo
+  minuti × 0,25 €), `extraRifiniture`, `spuntate`, `nonFatte` (regole Firestore aggiornate). Una pulizia chiusa mostra le stelle che
+  aveva davvero (`stelleSalvate`). "Le mie camere" mostra solo le camere di oggi, con il tipo sulla targa. Paghe e Soldi: "Alba ·
+  Pulizia totale 15 € + 6 stelle 5,75 €". Sul telefono delle signore non compaiono mai le parole governante, catalogo, regole,
+  rotazione, extra, rivista (la prova `prova-lista-signora.mjs` le cerca). Nella scheda della pulizia della gestione: la lista di oggi
+  con le spunte della signora.
+- Passi successivi previsti: le risposte di Michele alle domande aperte del calendario (nel foglio), le foto dei materiali di Lella,
+  Nicole, via Trento e via Zara, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.

@@ -68,7 +68,7 @@ service cloud.firestore {
       allow write: if proprietario();
     }
 
-    // Pulizie: le signore vedono la loro zona e cambiano SOLO stato, ora, nota, settimana, segnatoDa, foto, rifiniture fatte.
+    // Pulizie: le signore vedono la loro zona e cambiano SOLO stato, ora, nota, settimana, segnatoDa, foto, stelle fatte, righe spuntate e non fatte.
     // La controllatrice di turno vede anche le camere FATTE dalle colleghe (per dare il voto).
     match /pulizie/{id} {
       allow read: if puoLeggereTutto()
@@ -78,7 +78,7 @@ service cloud.firestore {
       allow update: if proprietario()
         || (addetta()
             && resource.data.zona == miaZona()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "inizio", "nota", "settimana", "segnatoDa", "foto", "rifiniture", "extraRifiniture"])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "inizio", "nota", "settimana", "segnatoDa", "foto", "rifiniture", "extraRifiniture", "spuntate", "nonFatte"])
             && request.resource.data.stato in ["da_fare", "in_corso", "fatta", "non_fatta", "problema"]);
     }
 
