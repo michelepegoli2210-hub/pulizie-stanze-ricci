@@ -80,6 +80,9 @@ export function domandeCameraLibera(st) {
   const oggi = st.oggi, sog = st.soggiorni || [], out = [];
   const prezzo = Number((st.listino && st.listino.fondo) || 40);
   const noDiRecente = cam => Object.values(st.chat && st.chat.risposte || {}).some(r => r.tipo === "libera" && r.dati && r.dati.camera === cam && r.risposta === "no" && r.il >= L.aggiungiGiorni(oggi, -30));
+  // fin dove arriva il prospetto: dopo l'ultimo arrivo scritto non si sa niente (la settimana dopo spesso non è ancora inserita),
+  // quindi una camera "libera" oltre quel giorno non conta come libera
+  const orizzonte = sog.reduce((m, s) => s.inizio > m ? s.inizio : m, oggi);
   for (const c of st.camere || CAMERE) {
     if (c.tipo === "comune") continue;
     const occupata = iso => sog.some(s => s.camera === c.id && L.soggiornoCopre(s, iso));
@@ -93,7 +96,8 @@ export function domandeCameraLibera(st) {
     let trovata = null;
     for (let i = 0; i <= 7 && !trovata; i++) {
       const d = L.aggiungiGiorni(oggi, i); if (occupata(d)) continue;
-      let n = 0, fine = d; while (!occupata(fine) && n < 14) { n++; fine = L.aggiungiGiorni(fine, 1); }
+      let n = 0, fine = d; while (!occupata(fine) && n < 14 && fine < orizzonte) { n++; fine = L.aggiungiGiorni(fine, 1); }
+      if (n === 0) { i += 1; continue; }
       // il weekend normale dei Tecnici (venerdì → lunedì) non è una "camera libera": ci pensa già la totale del venerdì a camera vuota
       const haWeekend = (() => { for (let g = d, j = 0; j < n; j++, g = L.aggiungiGiorni(g, 1)) if (L.giornoSettimana(g) === 0 || L.giornoSettimana(g) === 6) return true; return false; })();
       if (n >= 2 && !(n <= 3 && haWeekend)) { let giorno = d; while (L.giornoSettimana(giorno) === 0 && giorno < fine) giorno = L.aggiungiGiorni(giorno, 1); trovata = { da: d, fino: fine, giorni: n, giorno: giorno < fine ? giorno : d }; }
@@ -101,7 +105,7 @@ export function domandeCameraLibera(st) {
     }
     if (!trovata) continue;
     const arrivo = sog.filter(s => s.camera === c.id && s.inizio >= trovata.fino).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0];
-    const finoTesto = arrivo ? `fino a ${L.dataBreve(arrivo.inizio)} (arriva ${arrivo.nome})` : `e nessuno in arrivo`;
+    const finoTesto = arrivo && arrivo.inizio === trovata.fino ? `fino a ${L.dataBreve(arrivo.inizio)} (arriva ${arrivo.nome})` : `almeno fino a ${L.dataBreve(trovata.fino)}`;
     const daTesto = trovata.da <= oggi ? "è libera da oggi" : `è libera da ${L.dataBreve(trovata.da)}`;
     const urgente = false; // (una camera che si libera all'improvviso passa comunque per prima: priorità 10)
     out.push({
