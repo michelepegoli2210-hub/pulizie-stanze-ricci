@@ -12,8 +12,9 @@
 //  Il budget è PER PASSAGGIO (dal Calendario vero): ripasso 15′, totale 30′, totale a camera libera 45′; profilo Base 0′/10′.
 //  Due profili: Lusso (tutto il catalogo) e Base (solo le righe con Profilo base = Sì). Tre livelli: Igiene, Albergo, Lusso pieno.
 // ============================================================================
-import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, passaggiCamera, CALENDARIO_CAMERE, regimeDi, zonaDi } from "./logica.js";
-export { regimeDi };
+import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, passaggiCamera, CALENDARIO_CAMERE, regimeDi, zonaDi, modoCamera, modoSoggiorno } from "./logica.js";
+import { MODI } from "./regole.js";
+export { regimeDi, modoCamera, modoSoggiorno, MODI };
 import { RIGHE, PARTI, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA } from "./catalogo.js";
 export { RIGHE, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA };
 
@@ -291,10 +292,9 @@ export function nuovoId(vecchio) {
   return parti.length ? parti[0].id : codice;
 }
 // Soglie di partenza (si cambiano dall'app)
-export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, livello: "igiene", zonaMinuti: 20 };
-export const BUDGET_BASE = { ripasso: 15, totale: 30, libera: 45, baseRipasso: 10, baseTotale: 25 };
-// Quante stelle al massimo in un passaggio (Michele, 0.27): 2 in un ripasso, 3 in una totale; dentro il budget in minuti del passaggio
-export const STELLE_MAX = { ripasso: 2, totale: 3, libera: 3 };
+export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, zonaMinuti: 20 };
+export const BUDGET_BASE = { ripasso: 15, totale: 30, libera: 45, baseRipasso: 10, baseTotale: 25 }; // (i budget veri stanno nei MODI)
+export const STELLE_MAX = { ripasso: 2, totale: 3, libera: 3 }; // il tetto generale (Michele, 0.27); ogni modo ha il suo, mai sopra questo
 export const SCALA_OGNI = [1, 3.5, 7, 14, 21, 30, 45, 60, 90, 120, 180, 365];
 export function etichettaOgni(g) {
   if (!g) return "a ogni pulizia";
@@ -318,35 +318,48 @@ export function etichettaOgni(g) {
 }
 
 // ============================================================================
-//  LIVELLI (il budget lo sceglie Michele, con i costi davanti) e PROFILI (Lusso / Base)
-//  Igiene = solo le rifiniture di priorità 1 · Albergo = igiene ai ritmi scritti, il resto a metà ritmo · Lusso pieno = tutto
+//  I TRE MODI legati all'ospite (Michele, specifiche §1): il catalogo è uno, cambia solo il ritmo.
+//  OPERAI: igiene a ritmo pieno (cucina più spesso), estetica a un terzo, nascosto solo nella fondo completa; stelle: nessuna nel
+//  ripasso, una sola di igiene nella totale. TECNICI: igiene piena, estetica e nascosto a metà ritmo. BOOKING: tutto a ritmo pieno,
+//  stelle prima su quello che l'ospite vede e tocca. I moltiplicatori si cambiano con + e − (impostazioni/governante.modi).
 // ============================================================================
-export const LIVELLI = {
-  igiene: { nome: "Igiene", breve: "A", testo: "Solo le rifiniture di priorità 1 (muffa, filtri, materasso, scarichi, fondo completa). L'estetica si fa solo quello che sta già nella lista del ripasso e della totale." },
-  albergo: { nome: "Albergo", breve: "B", testo: "Igiene ai ritmi scritti; le cose che l'ospite vede e quelle nascoste a metà del ritmo (ogni 2 settimane → ogni mese)." },
-  lusso: { nome: "Lusso pieno", breve: "C", testo: "Tutto il catalogo ai ritmi scritti: lo standard di un hotel che pulisce ogni giorno." },
+export const MODI_BASE = {
+  operai:  { p1: 1, p2: 3, p3: 0, cucina: 0.5, budget: { ripasso: 10, totale: 25, libera: 25 }, stelle: { ripasso: 0, totale: 1, libera: 1 }, soloIgiene: true, visibilePrima: false },
+  tecnici: { p1: 1, p2: 2, p3: 2, cucina: 1,   budget: { ripasso: 15, totale: 30, libera: 45 }, stelle: { ripasso: 2, totale: 3, libera: 3 }, soloIgiene: false, visibilePrima: false },
+  booking: { p1: 1, p2: 1, p3: 1, cucina: 1,   budget: { ripasso: 15, totale: 30, libera: 30 }, stelle: { ripasso: 2, totale: 2, libera: 2 }, soloIgiene: false, visibilePrima: true },
 };
-export function livelloDi(imp) { const l = (imp && imp.soglie && imp.soglie.livello) || SOGLIE_BASE.livello; return LIVELLI[l] ? l : "igiene"; }
-// La regola a quel livello: fuoriLivello = resta in catalogo ma spenta, grigio chiaro nel Tabellone
-function applicaLivello(r, livello) {
-  if (r.tipo !== "rotazione" || r.quando === "giornata" || r.sempre) return r;
-  if (livello === "igiene") return r.priorita === 1 ? r : { ...r, fuoriLivello: true };
-  if (livello === "albergo") return r.priorita === 1 || !r.ogni ? r : { ...r, ogni: r.ogni * 2, ogniScritto: r.ogni, ogniMezza: r.ogniMezza ? r.ogniMezza * 2 : r.ogniMezza };
-  return r;
+export const NOMI_MODI = ["tecnici", "operai", "booking"];
+// l'igiene della cucina che negli appartamenti degli operai va più spesso del ritmo scritto: cappa, forno, bidoni, frigo, scarichi
+export const IGIENE_CUCINA = new Set(["K02", "K04", "K12", "K08", "K06", "B36", "K07"]);
+export const MOLTIPLICATORI = [0, 0.5, 1, 2, 3];
+export function modiDi(imp) { const m = (imp && imp.modi) || {}; const out = {}; for (const k of NOMI_MODI) out[k] = { ...MODI_BASE[k], ...(m[k] || {}), budget: { ...MODI_BASE[k].budget, ...((m[k] || {}).budget || {}) }, stelle: { ...MODI_BASE[k].stelle, ...((m[k] || {}).stelle || {}) } }; return out; }
+export function modoValido(m) { return NOMI_MODI.includes(m) ? m : "tecnici"; }
+// La regola in quel modo: fuoriModo = non si fa come stella in quel modo (solo nella pulizia a fondo completa); grigio chiaro nel Tabellone
+export function applicaModo(r, modo, modi) {
+  if (r.tipo !== "rotazione" || r.quando === "giornata" || r.sempre || r.personale) return { ...r, modo };
+  const m = modi[modoValido(modo)]; const pr = r.priorita || 2;
+  let k = pr === 1 ? m.p1 : pr === 2 ? m.p2 : m.p3;
+  if (pr === 1 && m.cucina !== 1 && IGIENE_CUCINA.has(r.codice)) k = m.cucina;
+  if (!k) return { ...r, modo, fuoriModo: true, fuoriLivello: true };
+  if (k === 1 || !r.ogni) return { ...r, modo };
+  return { ...r, modo, ogni: Math.round(r.ogni * k * 10) / 10, ogniScritto: r.ogni, ogniMezza: r.ogniMezza ? Math.round(r.ogniMezza * k * 10) / 10 : r.ogniMezza };
 }
-// Le regole con sopra le modifiche fatte dall'app (impostazioni/governante) e il livello scelto
+// Le regole con sopra le modifiche fatte dall'app (impostazioni/governante) e, se si chiede un modo, i suoi ritmi
 export function regoleAttive(imp, opz = {}) {
   const mod = (imp && imp.regole) || {}, personali = (imp && imp.personali) || {};
-  const livello = opz.livello || livelloDi(imp);
   const prezzi = prezziStelle(imp);
   const base = CATALOGO.map(r => { const m = { ...(mod[r.codice] || {}), ...(mod[r.id] || {}) }; delete m.dentroTotale; const x = { ...r, ...m, euro: prezzoStella(m.minuti ?? r.minuti, prezzi) }; if (mod[r.codice]?.attiva === false) x.attiva = false; return x; });
   const extra = Object.values(personali).map(r => ({ priorita: 2, euro: 0, quando: "ripasso", gruppo: "P", icona: "stella", controllo: "", tipo: "rotazione", blocco: "rotazione", ...r, codice: r.id, personale: true, ...(mod[r.id] || {}) }));
-  return [...base, ...extra].filter(r => r.attiva !== false).map(r => applicaLivello(r, livello));
+  const tutte = [...base, ...extra].filter(r => r.attiva !== false);
+  if (!opz.modo) return tutte;
+  const modi = opz.modi || modiDi(imp);
+  return tutte.map(r => applicaModo(r, opz.modo, modi));
 }
+// le regole di ogni modo, calcolate una volta per contesto
+export function regolePerModo(ctx, modo) { const k = modoValido(modo); ctx._regoleModo = ctx._regoleModo || {}; if (!ctx._regoleModo[k]) ctx._regoleModo[k] = regoleAttive(ctx.imp, { modo: k }); return ctx._regoleModo[k]; }
+// Il modo di un posto in un giorno (dal prospetto): per le zone comuni non ha senso → tecnici
+export function modoDi(l, iso, ctx) { if (!l || l.tipo === "comune") return "tecnici"; return modoValido(modoCamera(l, iso, ctx.soggiorni || [], ctx.clienti || {}, ctx.regoleBase)); }
 export function soglie(imp) { return { ...SOGLIE_BASE, ...((imp && imp.soglie) || {}) }; }
-export const PROFILI_BASE = { zara1: "base", zara2: "base" };
-export function profiloDi(camera, imp) { if (!camera || camera.tipo === "comune") return "lusso"; const p = (imp && imp.profili && imp.profili[camera.id]) || PROFILI_BASE[camera.id] || "lusso"; return p === "base" ? "base" : "lusso"; }
-export function valePerProfilo(r, profilo) { return profilo !== "base" || !!r.profiloBase || r.personale; }
 
 // ============================================================================
 //  IL CALENDARIO VERO: i passaggi delle signore, camera per camera (dal foglio "Calendario vero")
@@ -359,25 +372,19 @@ export const CALENDARIO = (() => {
 })();
 export function passiDi(cameraId) { return CALENDARIO[cameraId] || []; }
 // Il passaggio di una pulizia: dal calendario se c'è, altrimenti dal tipo di pulizia
-export function passoDi(p, camera, imp, regoleBase) {
-  const profilo = profiloDi(camera, imp);
+export function passoDi(p, camera, imp, regoleBase, ctx = {}) {
   const tipo = p.tipo === "totale" || p.tipo === "totale_casa" ? "totale" : "ripasso";
   const regime = p.regime || regimeDi(p.data, regoleBase);
-  // ESTATE (modo Booking): niente giorni fissi, le stelle vanno sulle pulizie di partenza, 1-2 a partenza, prima il visibile
-  if (regime === "estate") {
-    const vuotaDopo = p.partenza ? !p.arrivo : (p.soggiorno === null && !p.ospite);
-    const libera = tipo === "totale" && vuotaDopo;
-    const budget = profilo === "base" ? (tipo === "totale" ? BUDGET_BASE.baseTotale : BUDGET_BASE.baseRipasso) : (tipo === "totale" ? (libera ? BUDGET_BASE.libera : BUDGET_BASE.totale) : BUDGET_BASE.ripasso);
-    return { tipo, budget, libera, base: profilo === "base", profilo, stelle: 2, daCalendario: false, daConfermare: false, aperto: false, regime, estate: true };
-  }
-  const cal = passiDi(p.camera).find(x => x.giorno === giornoSettimana(p.data) && x.tipo === tipo) || null;
+  const modo = modoValido(p.modo || modoCamera(camera, p.data, ctx.soggiorni || [], ctx.clienti || {}, regoleBase));
+  const m = modiDi(imp)[modo];
   // camera vuota dopo la pulizia: l'ospite parte e non arriva nessuno, oppure la pulizia è stata messa a mano su una camera senza nessuno
   const vuotaDopo = p.partenza ? !p.arrivo : (p.soggiorno === null && !p.ospite);
   const libera = tipo === "totale" && vuotaDopo;
-  const standard = profilo === "base" ? (tipo === "totale" ? BUDGET_BASE.baseTotale : BUDGET_BASE.baseRipasso) : (tipo === "totale" ? (libera ? BUDGET_BASE.libera : BUDGET_BASE.totale) : BUDGET_BASE.ripasso);
-  const budget = cal && cal.libera === libera ? cal.budget : standard;
-  const stelle = tipo === "ripasso" ? STELLE_MAX.ripasso : libera ? STELLE_MAX.libera : STELLE_MAX.totale;
-  return { tipo, budget, libera, base: profilo === "base", profilo, stelle, daCalendario: !!cal, daConfermare: !!(cal && cal.daConfermare), aperto: !!(CALENDARIO_CAMERE[p.camera] && CALENDARIO_CAMERE[p.camera].aperto), regime, estate: false, insieme: (cal && cal.insieme) || p.insieme || "" };
+  const fascia = tipo === "ripasso" ? "ripasso" : libera ? "libera" : "totale";
+  const cal = regime === "estate" ? null : (passiDi(p.camera).find(x => x.giorno === giornoSettimana(p.data) && x.tipo === tipo) || null);
+  const budget = cal && cal.libera === libera ? cal.budget : m.budget[fascia];
+  const stelle = Math.min(STELLE_MAX[fascia], m.stelle[fascia]);
+  return { tipo, budget, libera, modo, base: modo === "operai", soloIgiene: !!m.soloIgiene, visibilePrima: !!m.visibilePrima, stelle, daCalendario: !!cal, daConfermare: !!(cal && cal.daConfermare), aperto: !!(CALENDARIO_CAMERE[p.camera] && CALENDARIO_CAMERE[p.camera].aperto), regime, estate: regime === "estate", insieme: (cal && cal.insieme) || p.insieme || "" };
 }
 
 // ============================================================================
@@ -414,7 +421,7 @@ export function copertaDallaLista(r, righe) {
 }
 // Tutte le parti che un passaggio fatto per intero copre: le voci della lista e le parti a ritmo corto nominate dalla lista
 export function coperteDalPasso(p, camera, ctx) {
-  const regole = ctx.regole || regoleAttive(ctx.imp); const passo = passoDi(p, camera, ctx.imp || null, ctx.regoleBase);
+  const regole = ctx.regole || regoleAttive(ctx.imp); const passo = passoDi(p, camera, ctx.imp || null, ctx.regoleBase, ctx);
   const righe = righeLista(passo, camera.tipo === "casa", !!p.partenza); const codici = new Set(righe.flatMap(c => c.codici));
   return regole.filter(r => (r.tipo === "lista" && codici.has(r.codice) && (r.quando !== "cambio" || passo.tipo === "totale")) || copertaDallaLista(r, righe)).map(r => r.id);
 }
@@ -482,7 +489,7 @@ function stella(r, l, reg, data, ogni, extra = {}) {
 //  LE RIFINITURE (le stelle) DI OGNI PASSAGGIO
 //  rifinitureDelGiorno(zona, iso, ctx) → { [idPulizia]: [stella…] }
 //  Per ogni pulizia normale del giorno: il budget del passaggio (dal calendario), le candidate (rifiniture a ritmo che valgono
-//  per quel posto, quel profilo, quel livello, e che toccano), in ordine priorità 1 → 2 → 3 e, a pari priorità, la più scaduta.
+//  per quel posto, nel modo dell'ospite di quel giorno, e che toccano), in ordine priorità 1 → 2 → 3 e, a pari priorità, la più scaduta.
 //  Le cose coperte dalla lista di quel passaggio (stesso codice, ritmo entro la settimana) non diventano stelle.
 //  Le zone comuni vanno alla prima pulizia del giorno della signora (una a ritmo + quelle di ogni giorno).
 // ============================================================================
@@ -494,19 +501,19 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
   const out = {}; if (!pulizie.length) return out;
   for (const p of pulizie) {
     const l = trovaLuogo(p.camera, camere, luoghi); if (!l) continue;
-    const passo = passoDi(p, l, imp, ctx.regoleBase);
+    const passo = passoDi(p, l, imp, ctx.regoleBase, ctx);
     const fisso = nottiDiFila(soggiorni, p.camera, p.data) >= 14;
+    const regoleModo = regolePerModo(ctx, passo.modo);
     const righe = righeLista(passo, l.tipo === "casa", !!p.partenza), slot = passo.base ? slotBase(passo) : null;
     const cand = [];
-    for (const r of regole) {
+    for (const r of regoleModo) {
       if (r.tipo !== "rotazione" || r.fuoriLivello || r.evento || r.sempre) continue;
       if (r.quando === "giornata" || r.quando === "giorno") continue;
       if (r.quando === "cambio" && passo.tipo !== "totale") continue;
       if (r.quando === "libera" && !passo.libera) continue;
       if (r.quando === "meteo" && !meteoAttivo(ctx, r.meteoTrigger, p.data)) continue;
-      if (!valePerProfilo(r, passo.profilo)) continue;
-      if (passo.base && r.priorita !== 1) continue;
-      if (!copre(regole, r, l, camere, luoghi, flags)) continue;
+      if (passo.soloIgiene && r.priorita !== 1) continue;
+      if (!copre(regoleModo, r, l, camere, luoghi, flags)) continue;
       if (!inStagione(r, p.data)) continue;
       if (r.soloFissi && !fisso) continue;
       const reg = registro?.[chiaveRegistro(r.id, l.id)] || null;
@@ -518,7 +525,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       if (r.quando === "meteo" && reg?.ultima && giorniTra(reg.ultima, p.data) < 3) continue;
       cand.push(stella(r, l, reg, p.data, ogni || 0, { urgenza: r.quando === "meteo" ? 50 : urgenza(ogni, reg?.ultima || null, p.data, inizio), sempre: false, slot: slot ? (slot.has(r.codice) ? 0 : 1) : 0 }));
     }
-    const ordinePrio = passo.estate ? { 2: 0, 1: 1, 3: 2 } : { 1: 0, 2: 1, 3: 2 };
+    const ordinePrio = passo.visibilePrima ? { 2: 0, 1: 1, 3: 2 } : { 1: 0, 2: 1, 3: 2 };
     cand.sort((a, b) => ((ordinePrio[a.priorita] ?? 3) - (ordinePrio[b.priorita] ?? 3)) || (a.slot - b.slot) || (b.urgenza - a.urgenza) || (a.minuti - b.minuti));
     const scelte = []; let min = 0;
     for (const c of cand) { if (scelte.length >= passo.stelle) break; if (min + c.minuti > passo.budget) continue; scelte.push(c); min += c.minuti; }
@@ -555,7 +562,7 @@ export const routinePer = rifiniturePer;
 // ============================================================================
 export function listaDelGiorno(p, ctx) {
   const camere = ctx.camere, l = trovaLuogo(p.camera, camere, ctx.luoghi || LUOGHI_COMUNI) || { id: p.camera, nome: p.camera, tipo: "camera" };
-  const passo = passoDi(p, l, ctx.imp || null, ctx.regoleBase);
+  const passo = passoDi(p, l, ctx.imp || null, ctx.regoleBase, ctx);
   const base = righeLista(passo, l.tipo === "casa", !!p.partenza).map((c) => { const m = c.testo.match(/^(.*?)\s*\(([^)]+)\)\s*$/); return { k: `L${c.lista}${c.n}`, tipo: "riga", testo: m ? m[1] : c.testo, sotto: m ? m[2] : "", codici: c.codici, minuti: c.minuti, lista: c.lista, blocco: c.blocco || "camera" }; });
   const tutte = ctx.stelle || rifiniturePer(p, ctx);
   const stelle = tutte.filter(s => !s.sempre && !s.comune), zona = tutte.filter(s => s.comune);
@@ -601,8 +608,7 @@ function giorniLiberi(camera, lun, soggiorni, pulizie, oggi) {
 function cambiDelGiorno(pulizie, zona, iso) { return Object.values(pulizie).filter(p => p.data === iso && p.zona === zona && CAMBIO(p)).length; }
 export function regoleDellaFondoCompleta(luogo, ctx) {
   const { camere } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(ctx.imp), flags = ctx.flags || {}, oggi = ctx.oggi;
-  const profilo = profiloDi(luogo, ctx.imp);
-  return regole.filter(r => r.tipo === "rotazione" && !r.evento && r.ogni > 0 && (r.quando === "ripasso" || r.quando === "cambio" || r.quando === "libera") && valePerProfilo(r, profilo) && copre(regole, r, luogo, camere, luoghi, flags) && inStagione(r, oggi)).map(r => r.id);
+  return regole.filter(r => r.tipo === "rotazione" && !r.evento && r.ogni > 0 && (r.quando === "ripasso" || r.quando === "cambio" || r.quando === "libera") && copre(regole, r, luogo, camere, luoghi, flags) && inStagione(r, oggi)).map(r => r.id);
 }
 export function proposteSettimana(ctx) {
   const { lun, oggi, camere, soggiorni, pulizie, registro, rinvii = {} } = ctx;
@@ -612,12 +618,14 @@ export function proposteSettimana(ctx) {
   const candidati = [];
   // le camere che hanno già un passaggio a camera vuota nel calendario (i tecnici il venerdì) non hanno bisogno dei consigli "libera"
   const haPassoLibero = c => passiDi(c.id).some(x => x.libera);
-  for (const r of regole) {
-    if (r.tipo !== "rotazione" || r.fuoriLivello) continue;
-    if (!(r.quando === "libera" || r.quando === "giorno")) continue;
-    if (!inStagione(r, lun) && !inStagione(r, fine)) continue;
-    for (const l of luoghiDi(r, camere, luoghi, flags)) {
-      if (!valePerProfilo(r, profiloDi(l, imp))) continue;
+  for (const r0 of regole) {
+    if (r0.tipo !== "rotazione") continue;
+    if (!(r0.quando === "libera" || r0.quando === "giorno")) continue;
+    if (!inStagione(r0, lun) && !inStagione(r0, fine)) continue;
+    for (const l of luoghiDi(r0, camere, luoghi, flags)) {
+      // la regola nel modo di quel posto (ritmo e fuoriModo); i reset (M07/M08) e la fondo completa valgono in tutti i modi
+      const r = (l.tipo === "comune" || r0.reset || r0.evento) ? r0 : (regolePerModo(ctx, modoDi(l, lun, ctx)).find(x => x.id === r0.id) || r0);
+      if (r.fuoriLivello) continue;
       if (r.quando === "libera" && !r.evento && l.tipo !== "comune" && haPassoLibero(l)) continue;
       const k = chiaveRegistro(r.id, l.id);
       const reg = registro?.[k] || null, ult = reg?.ultima || null;
@@ -697,17 +705,17 @@ export function proposteSettimana(ctx) {
 // ============================================================================
 export function calendarioPulito(ctx) {
   const { camere, registro, oggi } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, flags = ctx.flags || {}, imp = ctx.imp || null;
-  const tutte = ctx.regole || regoleAttive(imp);
-  const regole = tutte.filter(r => r.tipo === "rotazione" && r.ogni > 1 && !r.evento && !r.fuoriLivello);
   return [...camere, ...luoghi].map(l => {
-    const profilo = profiloDi(l, imp), fisso = nottiDiFila(ctx.soggiorni || [], l.id, oggi) >= 14;
-    const voci = regole.filter(r => valePerProfilo(r, profilo) && copre(tutte, r, l, camere, luoghi, flags) && inStagione(r, oggi) && (!r.soloFissi || fisso)).map(r => {
+    const modo = modoDi(l, oggi, ctx), tutte = l.tipo === "comune" ? (ctx.regole || regoleAttive(imp)) : regolePerModo(ctx, modo);
+    const regole = tutte.filter(r => r.tipo === "rotazione" && r.ogni > 1 && !r.evento && !r.fuoriLivello);
+    const profilo = modo, fisso = nottiDiFila(ctx.soggiorni || [], l.id, oggi) >= 14;
+    const voci = regole.filter(r => copre(tutte, r, l, camere, luoghi, flags) && inStagione(r, oggi) && (!r.soloFissi || fisso)).map(r => {
       const reg = registro?.[chiaveRegistro(r.id, l.id)] || null; const ogni = ogniAttuale(r, oggi, l, flags); const rapporto = rapportoScadenza(r, reg?.ultima || null, oggi, ogni);
       return { regola: r.id, codice: r.codice, nome: r.nome, cosa: r.nome, icona: r.icona, ogni, quando: r.quando, blocco: r.blocco, ultima: reg?.ultima || null, da: reg?.da || "", rapporto, colore: coloreScadenza(rapporto), testo: testoUltima(reg?.ultima || null, oggi) };
     }).sort((a, b) => (b.rapporto === Infinity ? 99 : b.rapporto) - (a.rapporto === Infinity ? 99 : a.rapporto));
     const peggio = voci[0] || null;
     const punteggio = voci.reduce((s, v) => s + Math.min(3, v.rapporto === Infinity ? 3 : v.rapporto), 0) / Math.max(1, voci.length);
-    return { luogo: l.id, nome: l.nome, zona: l.zona, tipo: l.tipo, profilo, voci, peggio, punteggio, rossi: voci.filter(v => v.colore === "rosso").length, gialli: voci.filter(v => v.colore === "giallo").length, verdi: voci.filter(v => v.colore === "verde").length, mai: voci.filter(v => !v.ultima).length };
+    return { luogo: l.id, nome: l.nome, zona: l.zona, tipo: l.tipo, profilo, modo, voci, peggio, punteggio, rossi: voci.filter(v => v.colore === "rosso").length, gialli: voci.filter(v => v.colore === "giallo").length, verdi: voci.filter(v => v.colore === "verde").length, mai: voci.filter(v => !v.ultima).length };
   }).sort((a, b) => b.punteggio - a.punteggio);
 }
 export function settimanaGovernante(adesso = new Date()) {
@@ -723,14 +731,14 @@ export function settimanaGovernante(adesso = new Date()) {
 // ============================================================================
 // Una settimana tipo: gli stessi passaggi che l'app programma davvero (calendario vero, o REGOLE_BASE dove c'è una domanda aperta)
 export const NOTTI_ESTATE = 3; // d'estate (modo Booking) si stima un cambio ogni 3 notti per camera
-export function modelloCalendario(camere, lun, regoleBase) {
+export function modelloCalendario(camere, lun, regoleBase, ctx = {}) {
   const out = [];
   if (regimeDi(lun, regoleBase) === "estate") {
     // ESTATE: nessun giorno fisso; una partenza ogni 3 notti per camera (sfalsate), con un arrivo subito dopo; mai di domenica
     for (const c of camere) for (let d = 0; d < 7; d++) {
       if ((d + (c.ordine || 0)) % NOTTI_ESTATE !== 0) continue;
       const data = aggiungiGiorni(lun, d); if (giornoSettimana(data) === 0) continue;
-      out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: zonaDi(c, regoleBase), tipo: c.tipo === "casa" ? "totale_casa" : "totale", partenza: true, arrivo: true, origine: "auto", stato: "da_fare", titolo: "Cambio completo", regime: "estate" });
+      out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: zonaDi(c, regoleBase), tipo: c.tipo === "casa" ? "totale_casa" : "totale", partenza: true, arrivo: true, origine: "auto", stato: "da_fare", titolo: "Cambio completo", regime: "estate", modo: "booking" });
     }
     return out;
   }
@@ -739,14 +747,14 @@ export function modelloCalendario(camere, lun, regoleBase) {
     const totale = x.tipo === "totale" || x.tipo === "totale_casa";
     const cal = passiDi(c.id).find(y => y.giorno === x.giorno && y.tipo === (totale ? "totale" : "ripasso"));
     const libera = totale && !!(cal && cal.libera);
-    out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: x.zona || c.zona, tipo: x.tipo, partenza: libera, arrivo: false, origine: "auto", stato: "da_fare", titolo: totale ? "Cambio completo" : "Ripasso", insieme: x.insieme || "", regime: "inverno" });
+    out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: x.zona || c.zona, tipo: x.tipo, partenza: libera, arrivo: false, origine: "auto", stato: "da_fare", titolo: totale ? "Cambio completo" : "Ripasso", insieme: x.insieme || "", regime: "inverno", modo: modoValido(modoCamera(c, data, ctx.soggiorni || [], ctx.clienti || {}, regoleBase)) });
   }
   return out;
 }
 export function simulaGovernante(ctx, settimane = 13, opz = {}) {
   const { camere, soggiorni = [] } = ctx; const regole = ctx.regole || regoleAttive(ctx.imp);
   const lun = ctx.lun || lunediDi(ctx.oggi);
-  const modello = opz.modello || modelloCalendario(camere, lun, ctx.regoleBase);
+  const modello = opz.modello || modelloCalendario(camere, lun, ctx.regoleBase, ctx);
   if (!modello.length) return null;
   const registro = {};
   if (!opz.daZero) for (const [k, v] of Object.entries(ctx.registro || {})) if (v && v.ultima) registro[k] = { ultima: v.ultima };
@@ -763,9 +771,9 @@ export function simulaGovernante(ctx, settimane = 13, opz = {}) {
       const iso = aggiungiGiorni(lunW, d);
       for (const z of zone) {
         const m = rifinitureDelGiorno(z, iso, { ...c2, oggi: iso });
-        for (const [pid, rf] of Object.entries(m)) { let minP = 0; for (const r of rf) { const k = chiaveRegistro(r.regola, r.luogo); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; if (!r.sempre) { nRif++; minuti[`${z}|${iso}`] = (minuti[`${z}|${iso}`] || 0) + r.minuti; if (!r.comune) minP += r.minuti; } } const p = pul[pid]; if (p) { perPasso.push({ camera: p.camera, tipo: p.tipo, minuti: minP, stelle: rf.filter(r => !r.sempre && !r.comune).length }); const l = camere.find(c => c.id === p.camera); if (l) for (const id of coperteDalPasso(p, l, c2)) { const k = chiaveRegistro(id, l.id); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; } } }
+        for (const [pid, rf] of Object.entries(m)) { let minP = 0; for (const r of rf) { const k = chiaveRegistro(r.regola, r.luogo); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; if (!r.sempre) { nRif++; minuti[`${z}|${iso}`] = (minuti[`${z}|${iso}`] || 0) + r.minuti; if (!r.comune) minP += r.minuti; } } const p = pul[pid]; if (p) { perPasso.push({ camera: p.camera, tipo: p.tipo, modo: p.modo || "", settimana: w, minuti: minP, stelle: rf.filter(r => !r.sempre && !r.comune).length, euro: rf.filter(r => !r.sempre).reduce((s, r) => s + (r.euro || 0), 0) }); const l = camere.find(c => c.id === p.camera); if (l) for (const id of coperteDalPasso(p, l, c2)) { const k = chiaveRegistro(id, l.id); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; } } }
         // anche i passaggi senza stelle coprono la loro lista
-        for (const p of Object.values(pul)) if (p.data === iso && p.zona === z && NORMALE(p) && !m[p.id]) { const l = camere.find(c => c.id === p.camera); if (l) for (const id of coperteDalPasso(p, l, c2)) { const k = chiaveRegistro(id, l.id); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; } }
+        for (const p of Object.values(pul)) if (p.data === iso && p.zona === z && NORMALE(p) && !m[p.id]) { perPasso.push({ camera: p.camera, tipo: p.tipo, modo: p.modo || "", settimana: w, minuti: 0, stelle: 0, euro: 0 }); const l = camere.find(c => c.id === p.camera); if (l) for (const id of coperteDalPasso(p, l, c2)) { const k = chiaveRegistro(id, l.id); registro[k] = { ultima: iso }; if (!prima[k]) prima[k] = iso; } }
       }
       for (const c of pr.proposte) if (c.data === iso) {
         registro[chiaveRegistro(c.regola, c.luogo)] = { ultima: iso };
@@ -788,7 +796,7 @@ export function simulaCopertura(ctx, settimane = 8) {
 
 // ============================================================================
 //  IL TABELLONE DI COPERTURA: una cella per posto × rifinitura (blocchi Rotazione e Camera libera). Profilo Base: solo le righe
-//  con Profilo base = Sì. Le regole fuori livello sono grigio chiaro ("non previsto a questo livello"), non buchi.
+//  di igiene (modo Operai). Le regole fuori modo sono grigio chiaro ("solo nella fondo completa"), non buchi.
 // ============================================================================
 // Stella possibile = una parte a ritmo che può entrare in un passaggio. Cella del Tabellone = solo blocchi Rotazione e Camera libera (regola di Michele)
 export const STELLA_POSSIBILE = r => r.tipo === "rotazione" && !r.evento && !r.sempre && (r.quando === "ripasso" || r.quando === "cambio" || r.quando === "libera");
@@ -809,15 +817,15 @@ export function tabellone(ctx, settimane = 13) {
     if (r.quando === "cambio" && !haTotale(l)) return "solo nella totale: questo posto non ha una totale nel calendario";
     if (r.quando === "libera") return haLibera(l) ? "a camera vuota: non entra nei 45 minuti del passaggio a camera vuota" : maiLibera(l) ? "solo a camera libera: nel prospetto questa camera non è mai libera" : "a camera libera: in coda nei consigli (massimo 8 a settimana)";
     const b = budgetSett(l); if (r.minuti > Math.max(...passiDi(l.id).map(x => x.budget || 0), 0)) return `dura ${r.minuti} minuti, più del budget di un passaggio (${passiDi(l.id).map(x => x.budget).join("/")}′)`;
-    return `non entra nei ${b} minuti a settimana dei passaggi di questo posto: alza il livello solo se accetti il costo, oppure spegni la regola`;
+    return `non entra nei ${b} minuti a settimana dei passaggi di questo posto: allenta il ritmo del modo (+) solo se accetti il costo, oppure spegni la regola`;
   };
-  const celle = [];
+  const celle = [], modoLuogo = {};
   for (const l of camere) {
-    const profilo = profiloDi(l, imp), fisso = nottiDiFila(soggiorni, l.id, oggi) >= 14;
-    for (const r of regole) {
+    const modo = modoDi(l, oggi, ctx), regoleModo = regolePerModo(ctx, modo), profilo = modo, fisso = nottiDiFila(soggiorni, l.id, oggi) >= 14;
+    modoLuogo[l.id] = modo;
+    for (const r of regoleModo) {
       if (!CELLA(r)) continue;
-      if (!valePerProfilo(r, profilo)) continue;
-      if (!copre(regole, r, l, camere, luoghi, flags)) continue;
+      if (!copre(regoleModo, r, l, camere, luoghi, flags)) continue;
       if (!inStagione(r, oggi)) continue;
       if (r.soloFissi && !fisso) continue;
       const k = chiaveRegistro(r.id, l.id), reg = registro[k] || null, ult = reg?.ultima || null;
@@ -830,48 +838,59 @@ export function tabellone(ctx, settimane = 13) {
       else { const c = coloreScadenza(rapporto); colore = c === "verde" ? "verde" : c === "giallo" ? (programmata ? "giallo" : "rosso") : programmata ? (ult ? "giallo" : "grigio") : "rosso"; }
       // mai fatta e non in programma, ma scade dopo la fine della simulazione (ritmi lunghi: 4-12 mesi): non è un buco, è "più avanti"
       if (colore === "rosso" && !ult && ogni && sim && aggiungiGiorni(inizioGovernante(ctx), Math.round(ogni)) > sim.fine) colore = "grigio";
-      celle.push({ luogo: l.id, luogoNome: l.nome, zona: l.zona, tipo: l.tipo, profilo, regola: r.id, codice: r.codice, nome: r.nome, gruppo: r.gruppo, quando: r.quando, blocco: r.blocco, priorita: r.priorita, ogni, ultima: ult, testo: testoUltima(ult, oggi), da: reg?.da || "", rapporto, colore, programmata, motivo: colore === "rosso" ? motivoDi(r, l) : "" });
+      celle.push({ luogo: l.id, luogoNome: l.nome, zona: l.zona, tipo: l.tipo, profilo, modo, regola: r.id, codice: r.codice, nome: r.nome, gruppo: r.gruppo, quando: r.quando, blocco: r.blocco, priorita: r.priorita, ogni, ultima: ult, testo: testoUltima(ult, oggi), da: reg?.da || "", rapporto, colore, programmata, motivo: colore === "rosso" ? motivoDi(r, l) : "" });
     }
   }
   const conteggiate = celle.filter(c => c.colore !== "fuori"), rosse = celle.filter(c => c.colore === "rosso");
   const perLuogo = camere.map(l => {
     const mie = celle.filter(c => c.luogo === l.id); const gruppi = {};
     for (const c of mie) { const g = gruppi[c.gruppo] = gruppi[c.gruppo] || { rosse: 0, gialle: 0, grigie: 0, verdi: 0, fuori: 0, n: 0 }; g.n++; g[c.colore === "rosso" ? "rosse" : c.colore === "giallo" ? "gialle" : c.colore === "grigio" ? "grigie" : c.colore === "fuori" ? "fuori" : "verdi"]++; }
-    return { luogo: l.id, nome: l.nome, zona: l.zona, tipo: l.tipo, profilo: profiloDi(l, imp), n: mie.length, rosse: mie.filter(c => c.colore === "rosso").length, gialle: mie.filter(c => c.colore === "giallo").length, grigie: mie.filter(c => c.colore === "grigio").length, verdi: mie.filter(c => c.colore === "verde").length, fuori: mie.filter(c => c.colore === "fuori").length, gruppi, budget: budgetSett(l) };
+    return { luogo: l.id, nome: l.nome, zona: l.zona, tipo: l.tipo, profilo: modoLuogo[l.id], modo: modoLuogo[l.id], n: mie.length, rosse: mie.filter(c => c.colore === "rosso").length, gialle: mie.filter(c => c.colore === "giallo").length, grigie: mie.filter(c => c.colore === "grigio").length, verdi: mie.filter(c => c.colore === "verde").length, fuori: mie.filter(c => c.colore === "fuori").length, gruppi, budget: budgetSett(l) };
   });
   const motivi = Object.values(rosse.reduce((m, c) => { const x = m[c.motivo] = m[c.motivo] || { motivo: c.motivo, n: 0, regole: {} }; x.n++; x.regole[c.regola] = x.regole[c.regola] || { regola: c.regola, nome: c.nome, n: 0 }; x.regole[c.regola].n++; return m; }, {}))
     .map(x => ({ ...x, regole: Object.values(x.regole).sort((a, b) => b.n - a.n) })).sort((a, b) => b.n - a.n);
   const copertura = conteggiate.length ? Math.round((conteggiate.length - rosse.length) / conteggiate.length * 100) : 100;
-  return { celle, perLuogo, motivi, copertura, buchi: rosse.length, celleContate: conteggiate.length, fuoriLivello: celle.length - conteggiate.length, settimane, sim, livello: livelloDi(imp), regime: regimeDi(oggi, ctx.regoleBase), conto: contoLivelli(ctx), prova: sim ? prova90(ctx, sim, regole) : null };
+  return { celle, perLuogo, motivi, copertura, buchi: rosse.length, celleContate: conteggiate.length, fuoriLivello: celle.length - conteggiate.length, settimane, sim, modi: modoLuogo, regime: regimeDi(oggi, ctx.regoleBase), conto: contoModi(ctx, sim), prova: sim ? prova90(ctx, sim, regole) : null };
 }
-// Il conto dei tre livelli: minuti di rifiniture a settimana per camera, euro a settimana e al mese, quanto ci sta nel calendario
-export function contoLivelli(ctx) {
+// Il conto (Michele, specifiche §1 e §2): per MODO il costo di una camera a settimana (dalla simulazione: le stelle che entrano davvero,
+// col tetto di 2/3 stelle e il listino a fasce), e per STAGIONE: un mese d'inverno (calendario vero, i modi del prospetto),
+// un mese d'estate (modo Booking, un cambio ogni 3 notti), l'anno = 9 mesi d'inverno + 3 d'estate. Mai una media dell'anno.
+export function contoModi(ctx, simData) {
   const { camere } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, imp = ctx.imp || null, flags = ctx.flags || {}, oggi = ctx.oggi;
-  const prezzi = prezziStelle(imp);
-  const out = {};
-  for (const liv of Object.keys(LIVELLI)) {
-    const regole = regoleAttive(imp, { livello: liv }).filter(r => STELLA_POSSIBILE(r) && !r.fuoriLivello);
-    let domandaTot = 0, capacitaTot = 0, capEstateTot = 0, euroPienoTot = 0, euroFattiTot = 0, euroEstateTot = 0, nLusso = 0, domandaLusso = 0, euroLusso = 0; const perPosto = [];
-    for (const l of camere) {
-      const profilo = profiloDi(l, imp);
-      const mie = regole.filter(r => valePerProfilo(r, profilo) && copre(regole, r, l, camere, luoghi, flags) && inStagione(r, oggi) && !r.soloFissi);
-      const dom = mie.reduce((s, r) => s + r.minuti * 7 / ogniAttuale(r, oggi, l, flags), 0);              // minuti di stelle a settimana
-      const euroSett = mie.reduce((s, r) => s + prezzoStella(r.minuti, prezzi) * 7 / ogniAttuale(r, oggi, l, flags), 0); // euro di stelle a settimana, listino a fasce
-      const cap = passiDi(l.id).reduce((s, x) => s + (x.budget || 0), 0);                    // inverno: i passaggi del calendario vero
-      const capEstate = Math.round(7 / NOTTI_ESTATE * (profilo === "base" ? BUDGET_BASE.baseTotale : BUDGET_BASE.totale)); // estate: un cambio ogni 3 notti, 30′ di stelle a cambio
-      const quota = dom ? Math.min(1, cap / dom) : 1, quotaEstate = dom ? Math.min(1, capEstate / dom) : 1;
-      domandaTot += dom; capacitaTot += cap; capEstateTot += capEstate; euroPienoTot += euroSett; euroFattiTot += euroSett * quota; euroEstateTot += euroSett * quotaEstate; if (profilo === "lusso") { nLusso++; domandaLusso += dom; euroLusso += euroSett; }
-      perPosto.push({ luogo: l.id, nome: l.nome, profilo, domanda: Math.round(dom), capacita: cap, ciSta: Math.round(quota * 100), euroSettimana: Math.round(euroSett * 10) / 10 });
-    }
-    const mese = x => Math.round(x * 52 / 12);
-    out[liv] = { livello: liv, ...LIVELLI[liv], minutiCamera: nLusso ? Math.round(domandaLusso / nLusso) : 0, euroSettimanaCamera: nLusso ? Math.round(euroLusso / nLusso * 10) / 10 : 0,
-      euroMese: mese(euroFattiTot), euroMesePieno: mese(euroPienoTot), ciSta: domandaTot ? Math.min(100, Math.round(capacitaTot / domandaTot * 100)) : 100, domanda: Math.round(domandaTot), capacita: capacitaTot, perPosto, regole: regole.length, prezzi,
-      // per stagione: un mese d'inverno (giorni fissi), un mese d'estate (partenze ogni 3 notti), l'anno = 9 mesi d'inverno + 3 d'estate
-      inverno: { euroMese: mese(euroFattiTot), ciSta: domandaTot ? Math.min(100, Math.round(capacitaTot / domandaTot * 100)) : 100, capacita: capacitaTot },
-      estate: { euroMese: mese(euroEstateTot), ciSta: domandaTot ? Math.min(100, Math.round(capEstateTot / domandaTot * 100)) : 100, capacita: capEstateTot },
-      anno: mese(euroFattiTot) * 9 + mese(euroEstateTot) * 3, annoPieno: mese(euroPienoTot) * 12 };
+  const prezzi = prezziStelle(imp), lun = ctx.lun || lunediDi(oggi);
+  const forza = modo => ({ ...(ctx.regoleBase || {}), regime: { modo } });
+  const regimeOggi = regimeDi(oggi, ctx.regoleBase);
+  const simInv = regimeOggi === "inverno" && simData ? simData : simulaGovernante({ ...ctx, regoleBase: forza("inverno") }, 13);
+  const simEst = regimeOggi === "estate" && simData ? simData : simulaGovernante({ ...ctx, regoleBase: forza("estate") }, 13);
+  const mese = sim => sim ? Math.round(sim.perPasso.reduce((s, p) => s + (p.euro || 0), 0) / sim.settimane * 52 / 12) : 0;
+  const stelleSett = sim => sim ? Math.round(sim.perPasso.reduce((s, p) => s + (p.stelle || 0), 0) / sim.settimane) : 0;
+  // per modo: euro di stelle per camera-settimana (una camera-settimana = una camera che in quella settimana ha avuto passaggi in quel modo)
+  const perModo = {};
+  for (const k of NOMI_MODI) perModo[k] = { modo: k, ...MODI[k], euroCameraSettimana: 0, stelleCameraSettimana: 0, camereSettimana: 0 };
+  const conta = (sim) => { if (!sim) return; const cs = {}; for (const p of sim.perPasso) { const k = modoValido(p.modo); const id = `${k}|${p.camera}|${p.settimana}`; cs[id] = cs[id] || { modo: k, euro: 0, stelle: 0 }; cs[id].euro += p.euro || 0; cs[id].stelle += p.stelle || 0; } for (const x of Object.values(cs)) { const m = perModo[x.modo]; m.camereSettimana++; m.euroCameraSettimana += x.euro; m.stelleCameraSettimana += x.stelle; } };
+  conta(simInv); conta(simEst);
+  for (const m of Object.values(perModo)) { if (m.camereSettimana) { m.euroCameraSettimana = Math.round(m.euroCameraSettimana / m.camereSettimana * 10) / 10; m.stelleCameraSettimana = Math.round(m.stelleCameraSettimana / m.camereSettimana * 10) / 10; } }
+  // "tutto in regola": quanto costerebbe fare ogni stella al suo ritmo, posto per posto col modo che ha oggi (inverno) e in modo Booking (estate)
+  const pieno = (modoDiPosto) => { let euroSett = 0; for (const l of camere) { const modo = modoDiPosto(l); const regole = regolePerModo(ctx, modo).filter(r => STELLA_POSSIBILE(r) && !r.fuoriLivello); for (const r of regole) { if (!copre(regole, r, l, camere, luoghi, flags) || !inStagione(r, oggi) || r.soloFissi) continue; euroSett += prezzoStella(r.minuti, prezzi) * 7 / ogniAttuale(r, oggi, l, flags); } } return Math.round(euroSett * 52 / 12); };
+  const inverno = { euroMese: mese(simInv), stelleSettimana: stelleSett(simInv), euroMesePieno: pieno(l => modoDi(l, oggi, ctx)) };
+  const estate = { euroMese: mese(simEst), stelleSettimana: stelleSett(simEst), euroMesePieno: pieno(() => "booking") };
+  return { modi: perModo, inverno, estate, anno: inverno.euroMese * 9 + estate.euroMese * 3, annoPieno: inverno.euroMesePieno * 9 + estate.euroMesePieno * 3, prezzi, regime: regimeOggi };
+}
+export function contoLivelli(ctx) { return contoModi(ctx); } // nome vecchio
+// Il conto della settimana dal prospetto vero: quante camere per modo, quante partenze Booking, quante stelle e quanti euro
+export function contoSettimana(ctx, lun) {
+  const da = lun || ctx.lun || lunediDi(ctx.oggi), a = aggiungiGiorni(da, 6);
+  const pulizie = Object.values(ctx.pulizie || {}).filter(p => p.data >= da && p.data <= a && NORMALE(p) && p.stato !== "non_fatta");
+  const camereModo = { tecnici: new Set(), operai: new Set(), booking: new Set() }; let partenzeBooking = 0, stelle = 0, euro = 0;
+  const giorni = [...new Set(pulizie.map(p => p.data))], zone = [...new Set(pulizie.map(p => p.zona))];
+  const stelleDi = {}; for (const g of giorni) for (const z of zone) { const m = rifinitureDelGiorno(z, g, { ...ctx, oggi: g }); for (const [id, rf] of Object.entries(m)) stelleDi[id] = rf; }
+  for (const p of pulizie) {
+    const modo = modoValido(p.modo || modoCamera({ id: p.camera, tipo: "camera" }, p.data, ctx.soggiorni || [], ctx.clienti || {}, ctx.regoleBase));
+    camereModo[modo].add(p.camera); if (modo === "booking" && p.partenza) partenzeBooking++;
+    const rf = p.stato === "fatta" ? (p.rifiniture || []).filter(r => r.euro).map(r => ({ euro: r.euro, sempre: false })) : (stelleDi[p.id] || []).filter(r => !r.sempre);
+    stelle += rf.length; euro += rf.reduce((s, r) => s + (r.euro || 0), 0);
   }
-  return out;
+  return { da, a, pulizie: pulizie.length, tecnici: camereModo.tecnici.size, operai: camereModo.operai.size, booking: camereModo.booking.size, partenzeBooking, stelle, euro: Math.round(euro * 100) / 100 };
 }
 function prova90(ctx, sim, regole) {
   const sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) };

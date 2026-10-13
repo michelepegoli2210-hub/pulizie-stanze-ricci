@@ -98,9 +98,11 @@ export const TIPI_PULIZIA = {
 export const LISTINO_BASE = {
   totale:      { G: 15, P: 10 },   // pulizia totale (cambio completo): camera grande / piccola
   ripasso:     { G: 5, P: 5 },     // ripasso veloce del mercoledì: prezzo base
-  casa:        15,                 // pulizia casa del martedì
-  totale_casa: 15,                 // pulizia totale casa del venerdì
+  casa:        15,                 // pulizia casa (ripasso dell'appartamento)
+  totale_casa: 15,                 // pulizia totale casa
   extra:       0,                  // i lavori extra hanno il prezzo scritto a mano
+  // Prezzi diversi per una casa precisa (Michele: via Zara 1° e 2° il giovedì, 10 € a signora, una per appartamento)
+  perCasa:     { zara1: { totale_casa: 10 }, zara2: { totale_casa: 10 } },
   // Camere piccole (P). Tutte le altre sono grandi (G).
   taglia:      { michele: "P", aurora: "P", tramonto: "P", passerella: "P" },
 };
@@ -151,6 +153,18 @@ export const TIPI_OSPITE = {
   altro: { nome: "Altro ospite",        colore: "var(--c-altro)" },
   unk:   { nome: "Da chiarire (?)",     colore: "var(--c-unk)" },
 };
+
+// ---- I tre modi della governante, legati all'OSPITE (non alla camera) -------
+// Il modo decide i ritmi delle rifiniture e il budget delle stelle. Lo si imposta sul soggiorno (tre pulsanti grandi) o si eredita
+// dal nome del cliente (impostazioni/clienti) o dal tipo di ospite: ferrovia = Tecnici, operai di via Zara = Operai, il resto = Booking.
+export const MODI = {
+  tecnici: { nome: "Tecnici", lungo: "Tecnici (stesse persone per mesi, camera vuota nel weekend)", breve: "Tecnici" },
+  operai:  { nome: "Operai",  lungo: "Operai (soggiorni lunghi, cucinano ogni giorno)", breve: "Operai" },
+  booking: { nome: "Booking", lungo: "Ospiti Booking / Airbnb / privati (soggiorni corti, scrivono recensioni)", breve: "Ospiti Booking" },
+};
+export const MODO_DA_TIPO = { ferr: "tecnici", fond: "tecnici", dago: "operai", altro: "booking", unk: "booking" };
+// Senza nessuno dentro: gli appartamenti di via Zara 1° e 2° sono degli operai, il resto dei tecnici (d'estate tutto Booking)
+export const MODO_CAMERA_BASE = { zara1: "operai", zara2: "operai" };
 
 // ---- Dizionario per leggere il foglio Excel di papà ------------------------
 // Si usa nel Passo 5 (importazione). Le regole sono fisse: niente IA.

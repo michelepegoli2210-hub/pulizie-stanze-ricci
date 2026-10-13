@@ -829,3 +829,32 @@ body.nonna .sig-riga .sig-testo b{font-size:22px}
 .meteo-tasti .pro-btn{margin-top:0;min-height:60px;font-size:15px;text-transform:none;letter-spacing:0}
 .meteo-tasti .pro-btn:not(.blu){--al1:#B0BDD0;--al2:#7A889D;--al3:#95A3B7;--al4:#5A6980;--al5:#8593A7;--tx:#121822;--inciso:0 1px 0 rgba(255,255,255,.55);--ombra:rgba(70,85,110,.5);--sp:#4B586A;--bordo:rgba(30,45,70,.3);--luce:rgba(255,255,255,.75)}
 body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
+
+/* --- 0.29 · i tre modi legati all'ospite (Tecnici · Operai · Booking): card in Regole, conto per stagione, tre riquadri nei Consigli, pulsanti nella scheda del soggiorno --- */
+.modo-tecnici{--modo:#2A56A6}.modo-operai{--modo:#B8741A}.modo-booking{--modo:#1A7B3B}
+:root[data-theme="dark"] .modo-tecnici{--modo:#7FA6F0}:root[data-theme="dark"] .modo-operai{--modo:#E8A94A}:root[data-theme="dark"] .modo-booking{--modo:#5FCB84}
+.modi{display:grid;gap:8px;margin-top:8px}
+.modo-card{display:grid;gap:5px;min-width:0;border:2px solid var(--line);border-left:6px solid var(--modo);background:var(--card-pieno);border-radius:var(--r2);padding:12px 14px}
+.modo-card>*{min-width:0}
+.modo-testa{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.modo-testa b{font:800 18px var(--f-display);color:var(--modo)}
+.modo-euro{font:800 16px var(--f-display);color:var(--fg);text-align:right}
+.modo-riga{padding:10px 4px}
+.modo-riga .gov-pm{margin-top:4px}
+.modo-euro small{font:500 12px var(--f-body);color:var(--muted)}
+.modo-descr{color:var(--muted);line-height:1.35}
+.modo-card .gov-dett{margin-top:2px}
+.conto-stagioni,.conto-modi,.modi-box{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.conto-stagioni div,.conto-modi div,.modi-box div{background:var(--campo);border-radius:12px;padding:8px 8px 10px;font:500 12px/1.3 var(--f-body);color:var(--muted);display:grid;gap:2px;align-content:start}
+.conto-stagioni b,.conto-modi b,.modi-box b{font:800 13px var(--f-display);color:var(--fg)}
+.conto-stagioni strong,.conto-modi strong,.modi-box strong{font:800 20px var(--f-display);color:var(--fg)}
+.conto-modi div,.modi-box div{border-top:4px solid var(--modo,var(--line))}
+.conto-modi div b,.modi-box div b{color:var(--modo,var(--fg))}
+.modi-scelta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.modo-btn{display:grid;gap:2px;text-align:left;border:2px solid var(--line);border-top:5px solid var(--modo,var(--line));background:var(--card-pieno);border-radius:12px;padding:10px;cursor:pointer;color:var(--fg);font:inherit;min-height:66px;align-content:start}
+.modo-btn[aria-pressed="true"]{border-color:var(--modo,var(--accent));background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--modo,var(--accent))}
+.modo-btn b{font:800 15px var(--f-display);color:var(--modo,var(--fg))}
+.modo-btn span{font:500 11.5px/1.3 var(--f-body);color:var(--muted)}
+.modo-btn:disabled{cursor:default;opacity:.7}
+.gov-regola-modi{display:block;margin-top:2px}
+@media (max-width:380px){.modi-scelta,.conto-stagioni,.conto-modi,.modi-box{grid-template-columns:1fr 1fr}}

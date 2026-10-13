@@ -2,7 +2,7 @@
 //  LOGICA  ·  date, settimana di paga, prezzi e piano delle pulizie
 //  Funzioni "pure": prendono dati, restituiscono risultati. Niente rete.
 // ============================================================================
-import { TIPI_PULIZIA, REGOLE_BASE, LISTINO_BASE, VOTI_BASE } from "./regole.js";
+import { TIPI_PULIZIA, REGOLE_BASE, LISTINO_BASE, VOTI_BASE, MODO_DA_TIPO, MODO_CAMERA_BASE } from "./regole.js";
 import { CALENDARIO_VERO } from "./catalogo.js";
 
 export const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -73,12 +73,15 @@ export function listinoCompleto(l) {
   out.totale = { ...base.totale, ...(l.totale || {}) };
   out.ripasso = { ...base.ripasso, ...(l.ripasso || {}) };
   out.taglia = { ...base.taglia, ...(l.taglia || {}) };
+  out.perCasa = { ...base.perCasa }; for (const [id, v] of Object.entries(l.perCasa || {})) out.perCasa[id] = { ...(base.perCasa[id] || {}), ...(v || {}) };
   return out;
 }
 export function tagliaCamera(listino, cameraId) { return listino?.taglia?.[cameraId] === "P" ? "P" : "G"; }
 export function prezzoPulizia(listino, camera, tipo) {
   const l = listinoCompleto(listino);
   const voce = TIPI_PULIZIA[tipo]?.prezzo || tipo;
+  const speciale = l.perCasa && l.perCasa[camera.id] && l.perCasa[camera.id][voce];
+  if (speciale != null) return Number(speciale) || 0;
   const v = l[voce];
   if (v == null) return 0;
   if (typeof v === "object") return Number(v[tagliaCamera(l, camera.id)] ?? v.G ?? 0);
@@ -114,6 +117,24 @@ export const CALENDARIO_CAMERE = (() => {
   }
   return out;
 })();
+// ---- I tre modi (Michele, 0.29): il modo segue l'ospite che c'è in camera ----------------------------------------------
+export const NOMI_MODI = ["tecnici", "operai", "booking"];
+export function normNome(n) { return String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
+// Il modo di un soggiorno: scelto sul soggiorno → ricordato per quel nome (impostazioni/clienti) → dal tipo di ospite
+export function modoSoggiorno(s, clienti = {}) {
+  if (!s) return null;
+  if (NOMI_MODI.includes(s.modo)) return s.modo;
+  const c = clienti && clienti[normNome(s.nome)]; if (c && NOMI_MODI.includes(c.modo)) return c.modo;
+  return MODO_DA_TIPO[s.tipo] || "booking";
+}
+// Il modo di una camera in un giorno: chi dorme quella notte, o chi parte quel giorno; senza nessuno, quello di base della camera (d'estate Booking)
+export function modoCamera(camera, iso, soggiorni = [], clienti = {}, regole = REGOLE_BASE) {
+  const occ = ospiteIl(soggiorni, camera.id, iso) || parteIl(soggiorni, camera.id, iso);
+  if (occ) return modoSoggiorno(occ, clienti);
+  if (regimeDi(iso, regole) === "estate") return "booking";
+  return MODO_CAMERA_BASE[camera.id] || "tecnici";
+}
+
 // ---- Le stagioni (Michele, 0.28): INVERNO da ottobre a maggio = i giorni fissi del calendario vero; ESTATE da giugno ad agosto =
 // niente giorni fissi, le pulizie seguono arrivi e partenze del prospetto. Il passaggio lo fa l'app dalle date; in Regole si può
 // anticipare o posticipare (impostazioni/regole.regime = { modo: "auto" | "estate" | "inverno", fino?: "AAAA-MM-GG", da?: "MM-GG", a?: "MM-GG" }).
@@ -143,24 +164,37 @@ export function passaggiCamera(camera, regole = REGOLE_BASE, iso = null) {
 // ---- Piano delle pulizie ---------------------------------------------------
 // Decide che pulizia va fatta in una camera in un certo giorno, secondo il calendario vero (o le regole di base).
 // Restituisce null se quel giorno non c'è niente da fare.
-export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, note = []) {
+export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, note = [], clienti = {}) {
   const r = { ...REGOLE_BASE, ...(regole || {}) };
   const occ = ospiteIl(soggiorni, camera.id, iso);
   const parte = parteIl(soggiorni, camera.id, iso);
   const wd = giornoSettimana(iso);
   const lista = passaggiCamera(camera, r, iso);
   const regola = lista.find(x => x.giorno === wd);
-  let tipo = null;
+  let tipo = null, titoloSpeciale = "";
   if (occ && regola) tipo = regola.tipo;
   if (parte && r.totaleAllaPartenza) tipo = camera.tipo === "casa" ? "totale_casa" : "totale";
-  if (!tipo) return null;
   const chi = occ || parte;
+  const modo = chi ? modoSoggiorno(chi, clienti) : modoCamera(camera, iso, soggiorni, clienti, r);
+  // modo BOOKING: cambio d'aria e letto rifatto se la camera è rimasta ferma 2+ giorni prima dell'arrivo
+  const arrivoOggi = arrivaIl(soggiorni, camera.id, iso);
+  if (!tipo && arrivoOggi && modoSoggiorno(arrivoOggi, clienti) === "booking" && !parte) {
+    const ferma = !ospiteIl(soggiorni, camera.id, aggiungiGiorni(iso, -1)) && !ospiteIl(soggiorni, camera.id, aggiungiGiorni(iso, -2)) && !parteIl(soggiorni, camera.id, aggiungiGiorni(iso, -1));
+    if (ferma) { tipo = "ripasso"; titoloSpeciale = "Arrivo: aria e letto"; }
+  }
+  // modo BOOKING d'estate: un soggiorno più lungo di 4 notti ha un ripasso al 4° giorno (e poi ogni 3 notti: asciugamani)
+  if (!tipo && occ && modoSoggiorno(occ, clienti) === "booking" && regimeDi(iso, r) === "estate" && !regola) {
+    const notti = giorniTra(occ.inizio, occ.fine), giornoN = giorniTra(occ.inizio, iso);
+    if (notti > 4 && giornoN >= 4 && giornoN < notti && (giornoN - 4) % 3 === 0) { tipo = "ripasso"; titoloSpeciale = "Ripasso e asciugamani"; }
+  }
+  if (!tipo) return null;
   const notePubbliche = note.filter(n => n.camera === camera.id && n.data === iso && !n.privata).map(n => n.testo);
   // il prossimo che arriva in questa camera (da oggi in poi, escluso chi c'è già)
   const prossimo = soggiorni.filter(s => s.camera === camera.id && s.inizio >= iso && (!occ || s.id !== occ.id)).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0] || null;
   return {
     tipo,
-    titolo: TIPI_PULIZIA[tipo]?.titolo || tipo,
+    titolo: titoloSpeciale || TIPI_PULIZIA[tipo]?.titolo || tipo,
+    modo,
     passi: TIPI_PULIZIA[tipo]?.passi || [],
     ospite: chi?.nome || "",
     soggiorno: chi?.id || null,
@@ -180,15 +214,15 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
 }
 
 // Costruisce l'elenco completo delle pulizie "attese" in un intervallo di giorni.
-export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = []) {
+export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [], clienti = {}) {
   const out = [];
   for (let iso = da; iso <= a; iso = aggiungiGiorni(iso, 1)) {
     for (const c of camere) {
-      const p = pulizia_prevista(c, iso, soggiorni, regole, note);
+      const p = pulizia_prevista(c, iso, soggiorni, regole, note, clienti);
       if (!p) continue;
       out.push({
         id: `${iso}_${c.id}`,
-        data: iso, camera: c.id, zona: p.zona || c.zona, insieme: p.insieme || "",
+        data: iso, camera: c.id, zona: p.zona || c.zona, insieme: p.insieme || "", modo: p.modo || "",
         tipo: p.tipo, titolo: p.titolo, passi: p.passi,
         ospite: p.ospite, soggiorno: p.soggiorno, partenza: p.partenza, arrivo: p.arrivo,
         parteIl: p.parteIl, prossimoArrivo: p.prossimoArrivo, prossimoNome: p.prossimoNome, prossimoPersone: p.prossimoPersone,
@@ -211,7 +245,7 @@ export function differenzePiano(attese, esistenti) {
     const e = esistenti[a.id];
     if (!e) { crea.push({ ...a, stato: "da_fare" }); continue; }
     if (e.origine !== "auto" || e.stato !== "da_fare") continue;
-    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","zona","persone","insieme"];
+    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","zona","persone","insieme","modo"];
     const patch = {};
     for (const k of campi) {
       const va = a[k] ?? null, ve = e[k] ?? null;

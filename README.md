@@ -25,7 +25,7 @@ Funziona su iPhone e Android aprendo un link e mettendola in Home. Niente abbona
 | `regole.js` | **Il dizionario**: camere, zone, giorni di riserva delle pulizie, cosa si fa, prezzi di partenza, regole per leggere l'Excel | Per cambiare le regole |
 | `catalogo/` | **La fonte delle regole della governante**: `catalogo-governante-v4.csv` (il catalogo, una riga per cosa), `catalogo-governante.xlsx` (checklist della signora, calendario vero, livelli), `mockup-signora.png` | Qui si cambiano catalogo e calendario; poi si rilancia `strumenti/genera-catalogo.mjs` |
 | `catalogo.js` | Il catalogo tradotto per l'app (**generato**, non si tocca a mano) | Mai a mano: lo scrive `strumenti/genera-catalogo.mjs` |
-| `governante.js` | La testa della governante: stelle per passaggio, calendario, livelli, profili, tabellone, mappa, materiali | Per cambiare come ragiona |
+| `governante.js` | La testa della governante: stelle per passaggio, calendario, i tre modi (Tecnici · Operai · Booking), tabellone, conto per stagione, mappa, materiali | Per cambiare come ragiona |
 | `strumenti/` | Gli script da computer: genera il catalogo, legge il CSV, l'unione fatta per la 0.26 | Quando cambia il file del catalogo |
 | `db.js` | Il collegamento ai dati (Firebase, oppure modalità prova) | Quasi mai |
 | `firebase-config.js` | I dati del progetto Firebase (pubblici) | Una volta sola, al Passo 2 |
@@ -295,6 +295,30 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   camere) e la nuova **M08** "Chiusura della stagione estiva" (1–20 settembre: fondo completa, materasso girato, tende lavate, filtri e
   sanificazione dei condizionatori, balconi a fondo; registra tutto il catalogo della camera come la fondo completa). M08 è nel CSV v4
   (179 righe).
-- Passi successivi previsti: il testo dei "tre modi" (Booking, Tecnici, Operai) che Michele deve rimandare, le foto dei materiali di
-  Lella, Nicole, via Trento e via Zara, la paga del giovedì in via Zara (chi preme Fatto), un ripasso ogni N notti per i soggiorni
-  lunghi d'estate, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.
+- **0.29 — i tre modi legati all'ospite** (specifiche in `catalogo/specifiche-governante.md`, §1: da qui in poi quel file è la
+  fonte delle decisioni). I livelli Igiene/Albergo/Lusso e i profili Lusso/Base **non ci sono più**: il catalogo è uno e in ogni modo
+  esistono tutte le regole, cambia solo il ritmo. **Il modo segue l'ospite**, non la camera (`logica.modoSoggiorno`: `modo` scritto
+  sul soggiorno → `impostazioni/clienti[normNome(nome)].modo` → `MODO_DA_TIPO` dal tipo: ferrovia = Tecnici, D'Agostino = Operai,
+  altro = Booking; `logica.modoCamera`: chi dorme o chi parte quel giorno, senza nessuno `MODO_CAMERA_BASE` (via Zara 1° e 2° =
+  Operai) o Tecnici, d'estate Booking). Nella **scheda del soggiorno** tre pulsanti grandi (Tecnici · Operai · Booking) con "Sempre
+  per questo nome" (si salva in `impostazioni/clienti`, il soggiorno eredita) o "Solo per questo soggiorno" (`soggiorno.modo`);
+  scrivendo un nome noto il pulsante si mette da solo. Le pulizie portano il loro `modo` (`pianoPulizie(..., clienti)`), così le
+  signore non hanno bisogno del prospetto. **I ritmi dei modi** (`governante.MODI_BASE`, `applicaModo`, `regolePerModo`, in
+  `impostazioni/governante.modi` i cambi): un moltiplicatore per priorità su `ogni` (`MOLTIPLICATORI` 0 · ½ · 1 · 2 · 3; 0 = mai come
+  stella, solo nella fondo completa = `fuoriModo`), più l'eccezione cucina per Operai (`IGIENE_CUCINA` ×½). Partenza: **Operai** p1
+  pieno, cucina ×½, p2 ÷3, p3 mai, budget 10′/25′, stelle 0 nel ripasso e 1 di igiene nella totale (`soloIgiene`); **Tecnici** p1
+  pieno, p2 ÷2, p3 ÷2, budget 15′/30′/45′, stelle 2/3/3; **Booking** tutto pieno, budget 15′/30′/30′, stelle 2/2/2, prima il visibile
+  (`visibilePrima`). `passoDi` prende budget e tetto dal modo (il foglio "Calendario vero" vince d'inverno se dice un budget), mai
+  sopra `STELLE_MAX` 2/3/3. Regole speciali Booking in `pulizia_prevista`: "Arrivo: aria e letto" (camera ferma 2+ giorni prima di un
+  arrivo) e d'estate "Ripasso e asciugamani" (soggiorni > 4 notti: 4° giorno, poi ogni 3). **Dove si vede**: in Regole la carta
+  "I tre modi" (descrizione, camere di oggi, budget, €/camera/settimana, e dentro "Cambia i ritmi" i + e − di priorità, cucina, minuti
+  e stelle, con "Torna ai valori di partenza"); ogni riga del catalogo dice il suo ritmo nei tre modi; nei Consigli la carta "Questa
+  settimana" con i tre riquadri (`contoSettimana`: camere per modo dal prospetto vero, partenze Booking, stelle ed euro della
+  settimana) e il conto per stagione; nel Tabellone le celle hanno il modo della camera di oggi (`tabellone().modi`, celle grigio
+  chiaro "solo nella fondo completa"), **"Il conto"** è per stagione (un mese d'inverno, un mese d'estate, l'anno) e per modo
+  (`contoModi`: €/camera-settimana da 13 settimane simulate; `contoLivelli` è solo un alias); sulla targa della signora una parola
+  piccola col tipo di ospite (Tecnici · Operai · Ospiti Booking). **Listino**: via Zara 1° e 2° il giovedì 10 € a signora, una per
+  appartamento (`LISTINO_BASE.perCasa`, righe in Paghe → Listino; nel foglio il giovedì di via Zara 2° è della signora del 2° piano).
+  Risultato nei dati di prova: un mese d'inverno 275 € (era 539 € a livello Igiene), un mese d'estate 307 €, anno 3.396 €.
+- Passi successivi previsti: le foto dei materiali di Lella, Nicole, via Trento e via Zara, il tipo di ospite abituale di via Zara
+  piano terra, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.
