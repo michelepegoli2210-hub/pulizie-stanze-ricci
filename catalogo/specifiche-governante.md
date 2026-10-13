@@ -2,7 +2,7 @@
 
 **Rileggi questo file dopo ogni riavvio della memoria.** Qui stanno tutte le decisioni prese con Michele sulla governante, in ordine. Se un messaggio in chat manca, vale quello che c'è scritto qui. Le domande ancora aperte sono in fondo: Michele risponde con un numero, una alla volta.
 
-Aggiornato: 13 ottobre 2026, sera (dopo la 0.29.1).
+Aggiornato: 13 ottobre 2026, sera (dopo la 0.29.1; aggiunto il punto 11).
 
 ---
 
@@ -111,3 +111,34 @@ Aggiornato: 13 ottobre 2026, sera (dopo la 0.29.1).
 - Il conto va mostrato con le due letture: "cosa spendo" (col tetto) e "cosa costerebbe tutto in regola", come già fa la 0.29.
 - D'Agostino nel prospetto: Michele decide il tipo (Tecnici o Operai) con "Sempre per questo nome". **Risposta: …**
 - Giovedì in via Zara: 1) una per appartamento, 10 € a testa · 2) tutte e due in tutti e due, 20 € a signora · 3) insieme, paga solo a chi preme Fatto. **Risposta: …**
+
+## 11. La chat con la governante (decisa il 13 ottobre sera): una collaboratrice che fa domande
+
+Principio: quando alla governante manca un'informazione, o succede qualcosa (meteo, camera libera, problema, budget), **è lei a chiedere a Michele**, una cosa alla volta, con le risposte già scritte su pulsanti grandi. Michele non deve più andare a cercare le impostazioni: risponde ai tocchi. Funziona al 100% senza intelligenza artificiale (è una lista di domande generate dalle regole); l'IA a voce (Gemini, se e quando Michele dirà sì) si aggiunge sopra solo per capire le frasi libere.
+
+### Dove sta
+- In "Oggi", in cima, una card **"La governante ti chiede"** con il numero di domande aperte (pallino rosso solo se ce n'è una urgente). Si apre come una chat: ogni domanda è un messaggio della governante con 2-4 pulsanti grandi e un pulsante piccolo "Dimmelo a parole" (testo o dettatura dalla tastiera). Sotto ogni domanda, dopo la risposta, una riga "Fatto: …" che dice cosa ha cambiato.
+- Massimo **3 domande al giorno**, le più importanti prima; il resto aspetta. Le domande arrivano in due momenti: alle 8 (per la giornata) e alle 13 (col report del giorno). Un'urgenza (problema grave, camera che si libera all'improvviso) passa subito.
+- Ogni risposta **fa davvero qualcosa** nell'app (cambia il tipo di ospite, scrive il messaggio alle signore, mette le stelle, sposta un lavoro) e lo dice.
+
+### Quando chiede (le prime regole di domanda; se ne aggiungono con lo stesso schema)
+1. **Nome nuovo nel prospetto senza tipo di ospite** → "D'Agostino: chi sono? [Tecnici] [Operai] [Booking]" → imposta il tipo "sempre per questo nome".
+2. **Ha piovuto / vento forte** (per ora dal tocco in Regole, poi dal meteo) → "Ha piovuto. Domani mando alle signore: 'tappeti e zerbini a posto, vetri esterni e balconi' e metto le stelle? [Sì, manda] [Solo le stelle] [No]" → scrive il messaggio del giorno e lo propone su WhatsApp con un tasto "Manda".
+3. **Freddo in arrivo / caldo** → "Arriva il freddo: coperte sui letti occupati da venerdì? [Sì] [Più avanti]".
+4. **Camera libera 2 giorni o più** → "Alba è libera fino a giovedì: la facciamo a fondo (3 ore, 40 €)? [Sì] [Solo le stelle in ritardo] [No]".
+5. **Report delle 13**: una camera non controllata da 2 settimane, una rifinitura "Non riesco" 2 volte di fila, una signora sotto il 90% di affidabilità → "Aurora non è controllata da 2 settimane: [Fallo controllare sabato] [Lo controllo io] [Lascia stare]".
+6. **Manca un prodotto** (dal "Non riesco: manca il prodotto") → "Manca l'antimuffa al 2° piano: [Lo compro io] [Lo porta pap&agrave;] [Salta questa settimana]" → aggiorna la lista della spesa.
+7. **Budget quasi finito** → "Questo mese le stelle sono a 230 € su 250: [Freno sul nascosto] [Lascio andare] [Alzo il budget]".
+8. **Lavoro di manutenzione fermo da 7 giorni** → "La doccia di Tramonto è segnalata da 9 giorni: [Chiamo l'idraulico, segna 'chiamato'] [È sistemata] [Aspetta ancora]".
+9. **Una regola in ritardo in molte camere** → "Dietro la TV non si fa da 6 settimane in 5 camere: [Più stelle il venerdì] [Va bene così] [Spegni la regola]".
+10. **Prima di una partenza Booking** → "Domani parte la coppia di Alba e sabato arriva un'altra: controllo di lusso e coprimaterasso già messi; vuoi aggiungere qualcosa? [No] [Dimmelo a parole]".
+11. **Ogni sabato alle 13**: il conto delle paghe e la pagella del pulito, con una sola domanda: "Pago così? [Sì] [Guardo prima]".
+
+### Impara
+- Se Michele risponde allo stesso modo 2 volte alla stessa domanda, la governante chiede: "La prossima volta lo faccio da sola? [Sì] [No, chiedimelo sempre]". Con Sì, quella domanda diventa una regola automatica (si vede in Regole, si spegne con un tocco).
+
+### Cosa NON fa
+- Non chiede cose che può decidere da sola col catalogo e col calendario. Non chiede due volte la stessa cosa nella stessa settimana. Non usa parole tecniche. Non manda niente alle signore senza il tasto "Manda" di Michele (finché l'Automatico è spento).
+
+### Meteo automatico
+- I servizi meteo gratuiti sono per uso non commerciale; per un'attività serve un piano piccolo a pagamento o si resta al tocco a mano ("Ha piovuto", "Arriva il freddo"), che è una cosa da 2 secondi. Per ora a mano; la domanda 2 e 3 partono dal tocco.
