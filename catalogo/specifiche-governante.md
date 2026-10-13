@@ -2,7 +2,7 @@
 
 **Rileggi questo file dopo ogni riavvio della memoria.** Qui stanno tutte le decisioni prese con Michele sulla governante, in ordine. Se un messaggio in chat manca, vale quello che c'è scritto qui. Le domande ancora aperte sono in fondo: Michele risponde con un numero, una alla volta.
 
-Aggiornato: 14 ottobre 2026 (dopo la 0.34: via Zara è un appartamento solo, punto 12 chiuso; resta aperta solo via Zara piano terra al punto 9).
+Aggiornato: 14 ottobre 2026 (dopo la 0.34: via Zara è un appartamento solo, punto 12 chiuso; via Zara piano terra risposto al punto 9; **aperto il punto 13: si spende troppo, come si paga**).
 
 ---
 
@@ -102,7 +102,7 @@ Aggiornato: 14 ottobre 2026 (dopo la 0.34: via Zara è un appartamento solo, pun
 
 - Giovedì in via Zara 1° e 2°: chi preme "Fatto" e prende la paga? 1) la signora del 1° piano · 2) metà per una · 3) tutte e due per intero · 4) una per appartamento (1° piano → via Zara 1°, 2° piano → via Zara 2°). **Risposta: 4 (confermata il 13 ottobre: una per appartamento, 10 € a testa). Superata il 14 ottobre: è un appartamento solo, vedi il punto 12.**
 - Materiali di Lella, Nicole, via Trento e via Zara piano terra (pavimento, porte, box doccia, mobili): Michele manda le foto.
-- Via Zara piano terra: Tecnici o Booking come tipo di ospite abituale? **Risposta: …**
+- Via Zara piano terra: Tecnici o Booking come tipo di ospite abituale? **Risposta: 4 (14 ottobre): cambia ogni volta; la governante chiede nome per nome, come già fa. Senza risposta vale Tecnici d'inverno e Booking d'estate.**
 
 ## 10. Decisioni del 13 ottobre sera (dopo la 0.29.1)
 
@@ -156,3 +156,16 @@ Principio: quando alla governante manca un'informazione, o succede qualcosa (met
 - Nella lista della signora, il piano di sopra è un blocco in più ("Piano di sopra: camere e bagno"), non una camera a parte.
 - Il giovedì in via Zara: **tutte e due le signore insieme, 10 € a testa, ognuna preme Fatto sul proprio piano** (risposta 2 di Michele, 14 ottobre). La Signora 1° piano fa il piano di sotto, con le stelle (fino a 2 di igiene, modo Operai); la Signora 2° piano fa il piano di sopra, senza stelle. Il lunedì il ripasso resta alla Signora 1° piano, 15 €. Fatto nella 0.34.
 - In Paghe, in cima, "Il conto dal prospetto": "Pulizie: … € + stelle: … € = … €" per la settimana e per il mese, coi lavori a parte (consigli accettati, pulizie a fondo, extra) su una riga sotto. Fatto nella 0.34.
+
+## 13. Le paghe vere e il budget (14 ottobre): si spende troppo
+
+- Michele vuole **ridimensionare di molto il budget delle pulizie**. Oggi le ragazze prendono circa **90–100 € a testa a settimana**.
+- Lucia (Signora 1° piano; prima faceva solo gli appartamenti, l'ultima settimana anche l'albergo), ore fatte per settimana:
+  - via Trento 3 · via Zara 3.30 · 1°/2° piano 2.30 (= 9 ore)
+  - via Trento 2.30 · piano terra 1.15 · 1°/2° piano 4 · Lella 0.30 (= 8 ore e un quarto)
+  - piano terra 2 · 1°/2° piano 4 · via Trento 2.30 · albergo 2.30 · Nicole 2 (= 13 ore)
+  - in 3 settimane circa 300 € (≈ 10 € l'ora).
+- L'altra signora: ripasso 1 ora, 2 al massimo; venerdì circa 3 ore; sabato circa 3 ore.
+- Il conto dell'app col listino di adesso, settimana 12–18 ottobre: pulizie 232 € + stelle 57 € = 289 €, più 284 € di lavori a parte accettati dai consigli = 573 €. Nella realtà si pagano circa 200 € a settimana. Quindi le pulizie normali dell'app sono più o meno in linea (un po' sopra), mentre **le stelle (≈ 250 € al mese) e i consigli accettati sono tutta spesa in più** che prima non c'era. Il budget stelle di 400 € al mese (punto 11) va rivisto molto al ribasso.
+- Le ore vere servono anche a tarare i minuti dell'app: via Zara 1° e 2° (lunedì + giovedì) 3.30–4 ore, via Trento 2.30–3, piano terra 1.15–2: molto più dei minuti stimati dal catalogo.
+- **Domanda aperta (una alla volta):** come si pagano le ragazze — 1) a ore, circa 10 € l'ora · 2) a camera coi prezzi del listino · 3) cifra fissa a settimana. La risposta decide come l'app conta la paga e dentro cosa devono stare stelle e consigli.
