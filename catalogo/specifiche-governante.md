@@ -2,7 +2,7 @@
 
 **Rileggi questo file dopo ogni riavvio della memoria.** Qui stanno tutte le decisioni prese con Michele sulla governante, in ordine. Se un messaggio in chat manca, vale quello che c'è scritto qui. Le domande ancora aperte sono in fondo: Michele risponde con un numero, una alla volta.
 
-Aggiornato: 13 ottobre 2026, sera (dopo la 0.29.1; aggiunto il punto 11).
+Aggiornato: 13 ottobre 2026, notte (dopo la 0.32; aggiunti i ritocchi in fondo al punto 11).
 
 ---
 
@@ -100,7 +100,7 @@ Aggiornato: 13 ottobre 2026, sera (dopo la 0.29.1; aggiunto il punto 11).
 
 ## 9. Domande aperte (Michele risponde con un numero)
 
-- Giovedì in via Zara 1° e 2°: chi preme "Fatto" e prende la paga? 1) la signora del 1° piano · 2) metà per una · 3) tutte e due per intero · 4) una per appartamento (1° piano → via Zara 1°, 2° piano → via Zara 2°). **Risposta: …**
+- Giovedì in via Zara 1° e 2°: chi preme "Fatto" e prende la paga? 1) la signora del 1° piano · 2) metà per una · 3) tutte e due per intero · 4) una per appartamento (1° piano → via Zara 1°, 2° piano → via Zara 2°). **Risposta: 4 (confermata il 13 ottobre: una per appartamento, 10 € a testa).**
 - Materiali di Lella, Nicole, via Trento e via Zara piano terra (pavimento, porte, box doccia, mobili): Michele manda le foto.
 - Via Zara piano terra: Tecnici o Booking come tipo di ospite abituale? **Risposta: …**
 
@@ -109,8 +109,8 @@ Aggiornato: 13 ottobre 2026, sera (dopo la 0.29.1; aggiunto il punto 11).
 - **Tetto delle stelle per tipo di passaggio**: ripasso 2, totale 3, totale a camera libera 5 (vedi punto 4). Il tetto lo decide il passaggio, poi il modo dell'ospite può solo abbassarlo (Operai: 0 nel ripasso, 2 di igiene nella totale).
 - **Due numeri nel Tabellone, non uno.** "Copertura" resta quella severa (celle in regola col ritmo scritto). Accanto va aggiunto **"Giro completo"**: la percentuale di celle (posto × regola di Rotazione e Camera libera) fatte **almeno una volta negli ultimi 90 giorni**, e per ogni camera "superfici mai fatte da 90 giorni: N". È questo il numero che conta per Michele: tutto almeno una volta a trimestre, l'igiene al suo ritmo. L'ordine delle stelle resta "prima la più scaduta", che è quello che fa girare tutto.
 - Il conto va mostrato con le due letture: "cosa spendo" (col tetto) e "cosa costerebbe tutto in regola", come già fa la 0.29.
-- D'Agostino nel prospetto: Michele decide il tipo (Tecnici o Operai) con "Sempre per questo nome". **Risposta: …**
-- Giovedì in via Zara: 1) una per appartamento, 10 € a testa · 2) tutte e due in tutti e due, 20 € a signora · 3) insieme, paga solo a chi preme Fatto. **Risposta: …**
+- D'Agostino nel prospetto: Michele decide il tipo (Tecnici o Operai) con "Sempre per questo nome". **Risposta: Tecnici in albergo; Operai solo in via Zara 1° e 2° (chi è Tecnici altrove, lì conta come Operai).**
+- Giovedì in via Zara: 1) una per appartamento, 10 € a testa · 2) tutte e due in tutti e due, 20 € a signora · 3) insieme, paga solo a chi preme Fatto. **Risposta: 1.**
 
 ## 11. La chat con la governante (decisa il 13 ottobre sera): una collaboratrice che fa domande
 
@@ -142,3 +142,10 @@ Principio: quando alla governante manca un'informazione, o succede qualcosa (met
 
 ### Meteo automatico
 - I servizi meteo gratuiti sono per uso non commerciale; per un'attività serve un piano piccolo a pagamento o si resta al tocco a mano ("Ha piovuto", "Arriva il freddo"), che è una cosa da 2 secondi. Per ora a mano; la domanda 2 e 3 partono dal tocco.
+
+### Ritocchi del 13 ottobre sera (dopo la 0.32, fatti nella 0.33)
+- **Budget delle stelle del mese: 400 €** (Regole → Due soglie piccole). L'avviso "budget quasi finito" arriva al 90%, cioè solo quando si sfora davvero (i conti dicono 306 € un mese d'inverno, 310 € d'estate).
+- **Mai "da sola" per paghe, budget, manutenzione e regole**: su queste la governante chiede sempre; "la prossima volta lo faccio da sola?" vale per le altre.
+- **Regole senza prodotto (Prodotto = "nessuno", es. Soffitto e angoli: asta e panno).** Sul telefono della signora il tasto non dice "Manca il prodotto" ma **"Manca l'attrezzo"**, e la risposta va a lei: "Qui non serve un prodotto: si fa con l'asta telescopica e un panno. Gli attrezzi stanno in lavanderia", con "Va bene, la faccio" (niente segnato) o "Non riesco lo stesso". Per queste righe **niente domanda nella chat di Michele** e niente lista della spesa.
+- **Dopo l'orario delle signore (dalle 14 in poi) niente proposte per "oggi"**: la pulizia a fondo, i lavori a parte e i consigli vanno al prossimo giorno di passaggio di quella camera (il primo giorno libero che è anche un giorno della signora in quella camera; se no il primo feriale), mai a oggi.
+- **Domande a elenco, una schermata sola, un tocco per riga**: quando la stessa domanda vale per più nomi ("chi sono?" per tutti i nomi senza tipo di ospite) o per più lavori di manutenzione fermi, la chat le mostra in un unico messaggio con l'elenco e i pulsanti per riga (tre per nome: Tecnici · Operai · Booking; tre per lavoro: Chiamato · Sistemato · Aspetta). **Non contano nelle 3 domande del giorno.**
