@@ -733,3 +733,14 @@ details > summary::-webkit-details-marker{display:none}
 .prova90 li::marker{font:800 15px var(--f-display);color:var(--muted)}
 .buchi .pall{box-shadow:none}
 body.nonna .rif-prodotto,body.nonna .rif-nota{font-size:17px}
+
+/* 0.25 — materiali dei posti, rivedi con la mamma */
+.rif-materiale{font:500 15px/1.35 var(--f-body);margin:4px 0 0 36px;color:var(--tx2)}
+body.nonna .rif-materiale{font-size:17px}
+.gov-mat-riga{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
+.gov-mat{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:8px;font:600 13px var(--f-display)}
+.gov-mat select{min-height:40px;font-size:14px}
+.gov-rivedi{min-height:0;padding:4px 10px;margin:4px 0 0;font-size:13px;justify-self:start}
+.gov-rivedi.fatta{opacity:.85}
+.row.one .gov-regola-nota{margin-top:2px}
+#rvCome{min-height:140px;font-size:16px;line-height:1.4}

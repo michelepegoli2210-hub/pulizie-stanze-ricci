@@ -92,9 +92,9 @@ export const CATALOGO = [
   R("battiscopa", "camera", "Battiscopa", "stanza", 14, "ripasso", 5, 1, 3, "armadio",
     "Panno BLU umido lungo tutti i battiscopa, anche dietro la porta e sotto il letto dove arrivi.", "Dito sul battiscopa dietro la porta: pulito."),
   R("porte_ditate", "camera", "Ditate sulla porta e intorno alla maniglia", "stanza", 0, "ripasso", 1, 0, 2, "porta",
-    "A ogni pulizia: panno BLU umido sulle ditate intorno alla maniglia e sulla porta all'altezza delle mani, dentro e fuori.", "Zona della maniglia senza ditate.", { codice: "C18" }),
+    "A ogni pulizia: panno BLU umido sulle ditate intorno alla maniglia e sulla porta all'altezza delle mani, dentro e fuori.", "Zona della maniglia senza ditate.", { codice: "C18", materiale: "porte" }),
   R("porte", "camera", "Porte lavate (davanti, dietro, bordo sopra)", "stanza", 14, "ripasso", 5, 1, 2, "porta",
-    "Panno BLU umido con il multiuso su tutte e due le facce della porta, sul bordo sopra e intorno alla maniglia. Maniglie disinfettate.", "Bordo sopra la porta e zona maniglia: niente polvere né ditate.", { codice: "C18" }),
+    "Panno BLU appena umido con il multiuso su tutte e due le facce della porta, sul bordo sopra e intorno alla maniglia; la scritta con il nome della stanza solo con il panno asciutto (è un adesivo). Maniglie disinfettate.", "Bordo sopra la porta e zona maniglia: niente polvere né ditate; scritta intera.", { codice: "C18", materiale: "porte", note: "La scritta con il nome sulla porta è un adesivo: mai strofinarla né bagnarla." }),
   R("lampade", "camera", "Lampade e abat-jour", "stanza", 14, "ripasso", 5, 1, 3, "finestra",
     "Luce spenta e fredda: panno BLU asciutto sui paralumi e sulle lampadine, umido sulle basi.", "Accendi la lampada: niente polvere che si vede sul paralume."),
   R("pareti_ditate", "camera", "Ditate e segni sulle pareti", "stanza", 14, "ripasso", 5, 1, 2, "porta",
@@ -105,6 +105,16 @@ export const CATALOGO = [
     "Con la scopa con il panno avvolto: angoli del soffitto, sopra le porte, intorno alla plafoniera. Plafoniera spenta: panno asciutto.", "Guarda in alto negli angoli: niente ragnatele."),
   R("quadri", "camera", "Quadri e cornici", "stanza", 30, "ripasso", 3, 1, 3, "finestra",
     "Panno BLU asciutto sulla cornice e sul bordo superiore, un passaggio leggero sul vetro.", "Dito sul bordo superiore della cornice: pulito."),
+  R("fotomurale", "camera", "Pannello fotografico sopra il letto (la laguna)", "stanza", 30, "ripasso", 3, 1, 2, "finestra",
+    "Solo panno asciutto in microfibra dall'alto in basso, leggero. Mai acqua, mai spray, mai spugna: la stampa si rovina. Guarda che gli angoli e le giunte non si stiano staccando.", "Pannello senza polvere e senza angoli sollevati.", { prodotto: "nessuno: solo panno asciutto", note: "Mai acqua né prodotti sul pannello fotografico. Angolo che si stacca: segnalalo." }),
+  R("tappeti", "camera", "Tappeti e passatoie sbattuti e aspirati", "stanza", 7, "ripasso", 3, 1, 2, "scopa",
+    "Tappeto davanti al letto e passatoia della cucina: sbattuti fuori (balcone o finestra), aspirati sopra e sotto, pavimento sotto passato.", "Alza il tappeto: niente briciole né sabbia sotto."),
+  R("tappeti_lavati", "camera", "Tappeti e passatoie lavati", "stanza", 30, "cambio", 5, 1, 2, "scopa",
+    "In lavatrice a 30-40° (leggi l'etichetta: quelli con il fondo in gomma a 30°), asciugati stesi, rimessi solo asciutti. Se è rovinato o scolorito, segnalalo.", "Tappeto senza macchie e senza odore."),
+  R("portapane", "camera", "Portapane a serrandina sul piano", "stanza", 14, "ripasso", 2, 0.5, 3, "cucina",
+    "Serrandina alzata: briciole via, dentro e fuori con il panno appena umido, asciugato; serrandina provata (deve scorrere).", "Dentro il portapane: niente briciole."),
+  R("armadio_stoffa", "camera", "Armadio in stoffa (dove c'è)", "stanza", 30, "cambio", 5, 1, 3, "armadio",
+    "A camera libera: cerniera aperta, aspirato dentro, sopra e sui ripiani con la spazzola; struttura passata con il panno; una macchia sulla stoffa con panno umido e poco sapone, poi asciugato.", "Dentro l'armadio in stoffa: niente polvere né odore di chiuso."),
   R("prese_ciabatte", "camera", "Prese, ciabatte e cavi spolverati", "stanza", 90, "ripasso", 5, 1, 3, "lente",
     "Panno BLU asciutto su prese, ciabatte e cavi dietro i comodini e la scrivania. Niente acqua.", "Ciabatta sotto la scrivania: niente polvere."),
   R("lampadari", "camera", "Lampadari", "stanza", 180, "ripasso", 10, 2, 3, "finestra",
@@ -141,7 +151,7 @@ export const CATALOGO = [
     "Stacca le tende, lavaggio delicato a 30-40° (leggi l'etichetta), riappendile umide così si stirano da sole. Tende pesanti: ogni 6 mesi. Subito se c'è odore di fumo.", "Annusa e guarda le tende controluce: profumo di pulito, niente aloni.", { stagioneLunga: 180 }),
   // --- aggiunte per la mappa delle superfici (camera) ---
   R("camera_base", "camera", "Pulizia normale della camera", "stanza", 0, "ripasso", 0, 0, 1, "scopa",
-    "Quello che si fa a ogni pulizia: letto rifatto, superfici a vista spolverate, pavimento spazzato e lavato, cestini, bagno. (È la pulizia pagata come camera.)", "La camera a vista: in ordine, senza polvere, pavimento pulito."),
+    "Quello che si fa a ogni pulizia: letto rifatto, superfici a vista spolverate, pavimento spazzato e lavato con il prodotto giusto per quel pavimento (vedi sotto), cestini, bagno. (È la pulizia pagata come camera.)", "La camera a vista: in ordine, senza polvere, pavimento pulito e senza aloni.", { materiale: "pavimento" }),
   R("testiera", "camera", "Testiera del letto (davanti e sopra)", "stanza", 7, "ripasso", 3, 1, 2, "letto",
     "Panno BLU umido sulla testiera davanti e sul bordo sopra; se è imbottita, aspirala con la spazzola.", "Dito sul bordo sopra della testiera: pulito."),
   R("struttura_letto", "camera", "Struttura e piedini del letto", "stanza", 30, "cambio", 5, 1, 3, "letto",
@@ -155,7 +165,7 @@ export const CATALOGO = [
   R("comodini_dentro", "camera", "Comodini dentro e dietro", "stanza", 14, "cambio", 3, 1, 3, "armadio",
     "A camera libera: cassetto e vano del comodino svuotati e passati con il panno BLU umido, poi asciugati; comodino scostato e aspirato dietro.", "Apri il cassetto del comodino: niente briciole né capelli.", { codice: "C35" }),
   R("armadio_ante", "camera", "Ante dell'armadio fuori e maniglie", "stanza", 14, "ripasso", 5, 1, 2, "armadio",
-    "Panno BLU umido con il multiuso sulle ante fuori (ditate intorno alle maniglie), maniglie disinfettate; per il legno solo panno appena umido.", "Zona delle maniglie senza ditate."),
+    "Panno BLU appena umido con il multiuso sulle ante fuori (ditate intorno alle maniglie), subito asciugate; maniglie disinfettate. I mobili sono in laminato chiaro: mai acqua che cola sui bordi, si gonfiano.", "Zona delle maniglie senza ditate; bordi delle ante asciutti.", { note: "Mobili in laminato: panno strizzato bene, mai acqua sui bordi e sugli spigoli." }),
   R("sotto_mobili", "camera", "Sotto armadio, cassettiera e scrivania", "stanza", 30, "ripasso", 5, 1, 3, "armadio",
     "Bocchetta piatta dell'aspirapolvere sotto l'armadio, la cassettiera e la scrivania, fin dove arriva.", "Torcia sotto l'armadio: niente batuffoli."),
   R("scrivania", "camera", "Scrivania e sedie", "stanza", 7, "ripasso", 3, 1, 2, "armadio",
@@ -177,7 +187,7 @@ export const CATALOGO = [
   R("ventilatore", "camera", "Ventilatore: pale e griglia", "stanza", 30, "ripasso", 5, 1, 2, "aria",
     "Ventilatore staccato: griglia e pale con il panno umido (polvere nera), asciuga prima di riaccendere.", "Pale pulite, niente polvere che vola quando parte.", { stagione: { da: "05-01", a: "09-30" } }),
   R("pavimento_angoli", "camera", "Angoli del pavimento e dietro la porta", "stanza", 7, "ripasso", 3, 1, 2, "scopa",
-    "Bocchetta piatta negli angoli, dietro la porta e lungo i battiscopa dove la scopa non arriva.", "Angoli senza righe di polvere."),
+    "Bocchetta piatta negli angoli, dietro la porta e lungo i battiscopa dove la scopa non arriva.", "Angoli senza righe di polvere.", { materiale: "pavimento" }),
   R("pavimento_fughe", "camera", "Fughe del pavimento", "stanza", 90, "ripasso", 15, 3, 3, "scopa",
     "Spazzolone con detersivo per fughe (o bicarbonato e acqua calda), strofina lungo le fughe, risciacqua. Sul marmo niente acidi.", "Fughe dello stesso colore ovunque.", { prodotto: "detersivo per fughe (o bicarbonato e acqua calda)", note: "Mai acidi (anticalcare, aceto) sul marmo: lo macchiano per sempre." }),
   R("zerbino_camera", "camera", "Zerbino della camera", "stanza", 14, "ripasso", 2, 0.5, 3, "porta",
@@ -187,7 +197,7 @@ export const CATALOGO = [
   R("quadri_retro", "camera", "Retro dei quadri e degli specchi", "stanza", 180, "ripasso", 5, 1, 3, "finestra",
     "Stacca il quadro o guarda dietro con la torcia: aspira il retro e il muro dietro, ricontrolla il gancio.", "Dietro il quadro: niente ragnatele."),
   R("porta_stipite", "camera", "Stipite, cardini e serratura della porta", "stanza", 30, "ripasso", 3, 1, 3, "porta",
-    "Panno umido sullo stipite e sul bordo della porta, cardini spolverati, serratura passata (una goccia d'olio se cigola).", "Stipite in alto senza polvere, porta che non cigola."),
+    "Panno umido sullo stipite e sul bordo della porta, cardini spolverati, serratura passata (una goccia d'olio se cigola).", "Stipite in alto senza polvere, porta che non cigola.", { materiale: "porte" }),
   R("davanzale_esterno", "camera", "Davanzale esterno", "stanza", 14, "ripasso", 3, 1, 2, "finestra",
     "Finestra aperta: spazzola via sabbia e foglie, panno umido sul davanzale esterno.", "Davanzale fuori senza sabbia né escrementi di uccelli.", { meteo: "vento", note: "Dopo un vento forte: controlla anche se non è scaduta." }),
   R("tapparelle", "camera", "Tapparelle: stecche e cinghia", "stanza", 30, "ripasso", 10, 2, 2, "finestra",
@@ -219,8 +229,14 @@ export const CATALOGO = [
     "Guarda gli angoli del soffitto sopra la doccia: se ci sono puntini neri, anti-muffa sul panno (non spruzzare in alto), lascia agire, asciuga.", "Angoli del soffitto bianchi."),
   R("aspiratore", "bagno", "Griglia dell'aspiratore", "bagno", 30, "ripasso", 3, 1, 2, "aria",
     "Griglia dell'aspiratore aspirata e passata con il panno umido; se si stacca, lavala.", "Griglia senza polvere grigia."),
-  R("scaldasalviette", "bagno", "Scaldasalviette", "bagno", 14, "ripasso", 3, 1, 2, "termo",
-    "Scaldasalviette spento: panno umido su tutti i tubi, davanti e dietro.", "Tubi senza polvere."),
+  R("scaldasalviette", "bagno", "Termosifone o scaldasalviette del bagno", "bagno", 14, "ripasso", 3, 1, 2, "termo",
+    "Termosifone spento: panno umido tra gli elementi, davanti, dietro e sopra; spazzola lunga dove non arriva la mano. Se c'è la ruggine non strofinare: segnalala.", "Tra gli elementi: niente polvere grigia.", { note: "Ruggine sul termosifone in ghisa: va carteggiato e riverniciato → Lavori di manutenzione, non spugna." }),
+  R("dispenser_carta", "bagno", "Dispenser grande della carta igienica", "bagno", 14, "ripasso", 2, 0.5, 1, "doccia",
+    "Coperchio aperto: dentro e fuori con il panno umido e il disinfettante, rotolo di scorta dentro, coperchio richiuso e lucidato fuori.", "Dispenser pulito fuori, rotolo dentro.", { codice: "B38" }),
+  R("accappatoi", "bagno", "Accappatoi cambiati", "bagno", 0, "cambio", 2, 0, 1, "coperta",
+    "A ogni partenza l'accappatoio va in lavanderia e se ne appende uno pulito; con un ospite fisso si cambia ogni settimana insieme agli asciugamani. Guardalo alla luce prima di appenderlo.", "Accappatoio pulito e asciutto sul gancio.", { note: "Con i tecnici fissi: cambiato ogni settimana con gli asciugamani." }),
+  R("finestrella_bagno", "bagno", "Finestrella del bagno (telaio in legno)", "bagno", 30, "ripasso", 3, 1, 3, "finestra",
+    "Vetro con il detergente vetri; telaio in legno solo con il panno appena umido e subito asciugato (mai bagnarlo); davanzale e ragnatele negli angoli.", "Vetro pulito, telaio asciutto, niente ragnatele.", { note: "Telaio in legno: mai acqua, si gonfia e si scrosta." }),
   R("piastrelle_pareti", "bagno", "Piastrelle delle pareti del bagno", "bagno", 30, "ripasso", 10, 2, 2, "doccia",
     "Panno GIALLO con il multiuso sulle piastrelle fuori dalla doccia, dall'alto in basso; asciuga.", "Piastrelle senza schizzi di dentifricio."),
   R("troppopieno", "bagno", "Troppopieno e piletta del lavandino", "bagno", 30, "ripasso", 3, 1, 1, "doccia",
@@ -233,24 +249,24 @@ export const CATALOGO = [
     "Tavoletta alzata: disinfettante sopra, sotto e nelle cerniere (si sporcano sempre), panno ROSSO. Se si stacca, smontala.", "Cerniere della tavoletta pulite."),
   R("wc_sotto_bordo", "bagno", "WC sotto il bordo e bordo interno", "bagno", 7, "ripasso", 3, 1, 1, "doccia",
     "Anticalcare sotto il bordo del WC, 10 minuti, spazzolino sotto il bordo e nei fori, tira l'acqua.", "Specchietto sotto il bordo: niente calcare giallo."),
-  R("wc_cassetta", "bagno", "Cassetta del WC e pulsante", "bagno", 14, "ripasso", 2, 0.5, 2, "doccia",
-    "Sopra e dietro la cassetta con il panno ROSSO umido, pulsante disinfettato.", "Sopra la cassetta: niente polvere."),
+  R("wc_cassetta", "bagno", "Cassetta del WC (esterna) e pulsante", "bagno", 14, "ripasso", 2, 0.5, 2, "doccia",
+    "Rotoli di scorta tolti, sopra, davanti e dietro la cassetta con il panno ROSSO umido, tubo flessibile passato, pulsante o leva disinfettati; rotoli rimessi (asciutti).", "Sopra la cassetta: niente polvere; pulsante pulito."),
   R("accessori_bagno", "bagno", "Portarotolo, portasciugamani e ganci", "bagno", 7, "ripasso", 3, 1, 2, "doccia",
     "Portarotolo, portasciugamani, ganci e maniglioni passati con il panno GIALLO e disinfettati.", "Portarotolo senza polvere sopra."),
-  R("box_doccia_tergivetro", "bagno", "Box doccia: tergivetro a ogni pulizia", "bagno", 0, "ripasso", 1, 0, 2, "doccia",
-    "A ogni pulizia: tergivetro sui vetri del box dall'alto in basso dopo aver sciacquato, così il calcare non si attacca. Panno GIALLO sui bordi.", "Vetro del box senza gocce secche.", { codice: "B24" }),
-  R("box_doccia_vetro", "bagno", "Box doccia: vetri dentro con l'anticalcare", "bagno", 7, "ripasso", 5, 1, 2, "doccia",
-    "Anticalcare sul vetro dentro, 5 minuti, spugna non graffiante, tergivetro, panno asciutto. Mai abrasivi sul vetro.", "Vetro del box trasparente controluce.", { codice: "B24", note: "Mai spugne abrasive sul vetro: lo rigano." }),
-  R("box_doccia_fuori", "bagno", "Box doccia: vetri fuori e maniglia", "bagno", 14, "ripasso", 3, 1, 2, "doccia",
-    "Detergente vetri sul panno, vetri del box fuori, maniglia e cerniere lucidate con il panno GIALLO asciutto.", "Fuori del box senza ditate né aloni.", { codice: "B24" }),
-  R("box_doccia_binari", "bagno", "Profili e binari del box doccia", "bagno", 14, "ripasso", 5, 1, 2, "doccia",
+  R("box_doccia_tergivetro", "bagno", "Box doccia: asciugato a ogni pulizia", "bagno", 0, "ripasso", 1, 0, 2, "doccia",
+    "A ogni pulizia, dopo aver sciacquato: le ante del box asciugate dall'alto in basso (tergivetro sul vetro, panno GIALLO sul soffietto in PVC), così calcare e muffa non si attaccano. Ante lasciate aperte.", "Ante del box senza gocce secche.", { codice: "B24", materiale: "box" }),
+  R("box_doccia_vetro", "bagno", "Box doccia: ante dentro con l'anticalcare", "bagno", 7, "ripasso", 5, 1, 2, "doccia",
+    "Anticalcare sulle ante dentro, 5 minuti; sul soffietto in PVC spazzolino morbido dentro le pieghe, sul vetro spugna non graffiante; sciacqua e asciuga. Mai abrasivi.", "Ante del box pulite controluce, pieghe senza nero.", { codice: "B24", materiale: "box", note: "Mai spugne abrasive: rigano il vetro e opacizzano il PVC." }),
+  R("box_doccia_fuori", "bagno", "Box doccia: ante fuori e maniglia", "bagno", 14, "ripasso", 3, 1, 2, "doccia",
+    "Panno GIALLO con il multiuso sulle ante fuori, sulla maniglia e sul bordo alto; asciuga.", "Fuori del box senza ditate né aloni.", { codice: "B24", materiale: "box" }),
+  R("box_doccia_binari", "bagno", "Profili e guide del box doccia", "bagno", 14, "ripasso", 5, 1, 2, "doccia",
     "Spazzolino con anticalcare nei binari delle ante e sui profili di alluminio, sciacqua, asciuga.", "Binari delle ante senza calcare né nero."),
   R("tenda_doccia", "bagno", "Tenda della doccia lavata", "bagno", 30, "ripasso", 10, 2, 1, "doccia",
     "Se c'è la tenda: in lavatrice a 40° con un asciugamano e bicarbonato, riappesa aperta. Se è rovinata, nuova. Se non c'è, spegni la regola.", "Tenda senza puntini neri in basso."),
   R("tappetino_doccia", "bagno", "Tappetino antiscivolo della doccia", "bagno", 7, "ripasso", 3, 1, 1, "doccia",
     "Tappetino antiscivolo tolto, strofinato sotto con anticalcare, sciacquato e appeso ad asciugare.", "Sotto il tappetino: niente nero."),
-  R("tappetini_bagno", "bagno", "Tappetini del bagno cambiati", "bagno", 0, "cambio", 2, 0, 1, "coperta",
-    "A ogni cambio completo: tappetini del bagno puliti, quelli usati in lavanderia.", "Tappetini senza impronte né odore."),
+  R("tappetini_bagno", "bagno", "Tappetino del bagno cambiato", "bagno", 0, "cambio", 2, 0, 1, "coperta",
+    "A ogni cambio completo: il tappetino (o l'asciugamano usato a terra) va in lavanderia e se ne mette uno pulito e asciutto davanti alla doccia.", "Tappetino pulito e asciutto, senza impronte."),
   // --- aggiunte per la mappa delle superfici (cucina) ---
   R("pensili_ante", "cucina", "Ante dei pensili fuori e maniglie", "cucina", 14, "ripasso", 5, 1, 2, "armadio",
     "Sgrassatore sul panno VERDE, ante fuori (soprattutto vicino ai fornelli) e maniglie.", "Ante vicino ai fornelli non appiccicose."),
@@ -308,6 +324,8 @@ export const CATALOGO = [
     "Cestini della camera e del bagno svuotati, lavati con sgrassatore, asciugati, sacchetto nuovo.", "Alza il sacchetto: cestino pulito e asciutto sotto."),
 
   // ---- CUCINA (appartamenti) ------------------------------------------------------------------
+  R("barra_utensili", "cucina", "Barra con i mestoli appesi", "cucina", 14, "ripasso", 3, 1, 1, "cucina",
+    "Mestoli, forchettoni e ganci appesi alla barra lavati e sgrassati (prendono il grasso dei fornelli), barra passata con il panno VERDE, riappesi asciutti.", "Mestoli appesi non unti al tatto."),
   R("cucina_base", "cucina", "Fornelli, lavello, microonde, cestino e bidoni", "cucina", 0, "ripasso", 10, 0, 1, "cucina",
     "A ogni pulizia: fornelli e griglie con lo sgrassatore, lavello lucidato, microonde dentro e fuori, cestino lavato, bidoni della differenziata sciacquati. I piatti sporchi degli ospiti NON si lavano. Panno VERDE.", "Apri il microonde e guarda sotto le griglie dei fornelli: puliti."),
   R("cappa_filtri", "cucina", "Filtri della cappa sgrassati", "cucina", 30, "ripasso", 10, 2, 1, "cucina",
@@ -333,7 +351,13 @@ export const CATALOGO = [
   R("balcone_lavato", "balcone", "Balcone lavato: pavimento, soglia, mobili", "balcone", 14, "ripasso", 10, 2, 2, "terrazzo",
     "Secchio d'acqua con il detersivo per pavimenti, spazzolone, risciacquo; soglia della portafinestra, sedie e tavolino passati con il panno.", "Pavimento del balcone senza aloni, sedie pulite."),
   R("balcone_fondo", "balcone", "Balcone a fondo: ringhiera, muretto, scarico, lampada", "balcone", 30, "ripasso", 20, 4, 2, "terrazzo",
-    "Ringhiera e muretto lavati con sgrassatore e asciugati, scarico liberato, lampada spolverata, vetro della portafinestra fuori.", "Mano sulla ringhiera: pulita; scarico libero.", { meteo: "pioggia" }),
+    "Ringhiera, rete e muretto lavati con sgrassatore e asciugati, scarico liberato, lampada spolverata, vetro della portafinestra fuori. Sulla ruggine non insistere con la spugna: segnalala.", "Mano sulla ringhiera: pulita; scarico libero.", { meteo: "pioggia", note: "Ruggine su ringhiera e rete: va carteggiata e verniciata → Lavori di manutenzione." }),
+  R("condizionatore_esterno", "balcone", "Unità esterna del condizionatore", "balcone", 90, "ripasso", 5, 1, 3, "aria",
+    "A condizionatore spento: niente vasi sopra (bloccano l'aria e la terra entra dentro), griglia e alette spazzolate a secco dall'alto in basso, foglie e polvere via da dietro e da sotto, cassetta esterna passata con il panno umido. Mai acqua a getto.", "Alette senza foglie né lanugine, niente vasi sopra.", { prodotto: "nessuno: spazzola morbida e panno", note: "Mai acqua a getto e mai con il condizionatore acceso. Alette piegate o sporco dentro: segnala." }),
+  R("piante_balcone", "balcone", "Piante del balcone e sottovasi", "balcone", 7, "ripasso", 3, 1, 2, "terrazzo",
+    "Sottovasi svuotati (acqua ferma = zanzare), foglie secche e fiori appassiti via, terra bagnata se è asciutta (un bicchiere d'acqua a pianta, due in estate), vasi spostati e pavimento passato sotto.", "Sottovasi vuoti e asciutti, niente foglie secche a terra.", { note: "Se le piante le cura qualcun altro, spegni questa regola." }),
+  R("pareti_balcone", "balcone", "Muro del balcone, canaline e tubi", "balcone", 90, "ripasso", 5, 1, 3, "terrazzo",
+    "Ragnatele e polvere dal muro con la scopa, righe nere con spazzola e acqua e sapone, canalina del condizionatore e tubo dell'acqua passati con il panno umido.", "Muro senza ragnatele né righe nere, canalina pulita."),
 
   // ---- STAGIONI -------------------------------------------------------------------------------
   R("coperte_autunno", "stagioni", "Coperte e piumoni lavati e pronti nell'armadio", "stanza", 365, "giorno", 30, 6, 2, "coperta",
@@ -355,13 +379,19 @@ export const CATALOGO = [
   R("corridoio_passata", "comuni", "Passata veloce del corridoio", ["corridoio_p1", "corridoio_p2"], 1, "giornata", 5, 0, 2, "scopa",
     "Ogni giorno di lavoro: scopa veloce o aspirapolvere nel corridoio, cestino comune svuotato, un'occhiata a luci e porte.", "Corridoio senza briciole né cartacce."),
   R("corridoio_fondo", "comuni", "Corridoio a fondo: battiscopa, plafoniere, porte comuni, segni", ["corridoio_p1", "corridoio_p2"], 7, "giornata", 20, 4, 2, "scopa",
-    "Pavimento lavato, battiscopa con il panno umido, plafoniere spolverate, porte comuni e maniglie sgrassate, segni sulle pareti con la spugna magica.", "Battiscopa e maniglie delle porte comuni: puliti al tatto.", { codice: "Z03", meteo: "pioggia", note: "Con la pioggia: pavimento lavato 2 volte a settimana." }),
+    "Pavimento lavato con il prodotto giusto per quel pavimento, battiscopa con il panno umido, plafoniere spolverate, porte comuni e maniglie sgrassate, segni sulle pareti bianche con la spugna magica (mai sui disegni).", "Battiscopa e maniglie delle porte comuni: puliti al tatto.", { codice: "Z03", meteo: "pioggia", materiale: "pavimento", note: "Con la pioggia: pavimento lavato 2 volte a settimana. Spugna magica solo sulle pareti bianche, mai sui disegni." }),
+  R("murales", "comuni", "Disegni sui muri (corridoio e scale del 2° piano)", ["corridoio_p2", "scale"], 30, "giornata", 5, 1, 2, "finestra",
+    "Solo piumino o panno asciutto, leggero, dall'alto in basso. MAI acqua, MAI spugna magica, MAI prodotti: il disegno si cancella. Un segno vero sul disegno si segnala, non si strofina.", "Disegni interi, senza polvere e senza aloni.", { prodotto: "nessuno: solo panno asciutto", note: "Mai acqua, spugna magica o prodotti sui disegni dipinti: si cancellano." }),
+  R("pouf_corridoio", "comuni", "Pouf contenitori e cuscini del corridoio", "corridoio_p2", 14, "giornata", 3, 1, 2, "scopa",
+    "Pouf aspirati sopra e sui lati con la spazzola per tessuti, aperti e guardati dentro (roba dimenticata, polvere), cuscini sbattuti e sprimacciati, pavimento sotto passato.", "Sopra i pouf: niente polvere né peli; dentro in ordine."),
+  R("decorazioni", "comuni", "Vasi, fiori finti, lanterne, tovaglia e cassapanca", ["ingresso", "scale"], 7, "giornata", 5, 1, 2, "finestra",
+    "Vasi, lanterna e lampada in vimini passati con il panno asciutto; fiori finti e pampas scossi fuori o soffiati con il phon ad aria fredda; tovaglia del tavolino scossa e cambiata se macchiata; cassapanca spolverata sopra e aperta per guardare dentro.", "Dito sul bordo del vaso e sulla cassapanca: pulito; tovaglia senza macchie."),
   R("corridoio_quadri_estintore", "comuni", "Quadri, estintore e cartelli del corridoio", ["corridoio_p1", "corridoio_p2"], 30, "giornata", 5, 1, 3, "finestra",
     "Cornici e vetri dei quadri con il panno asciutto, estintore spolverato (guarda che il cartellino sia in regola), cartelli e targhette passati.", "Dito sopra la cornice e sull'estintore: pulito."),
   R("scale_scopate", "comuni", "Scale di servizio scopate", "scale", 3.5, "giornata", 10, 2, 2, "scopa",
     "Scopa dall'alto in basso, gradino per gradino, angoli compresi; raccogli con la paletta.", "Angoli dei gradini senza polvere."),
-  R("scale_lavate", "comuni", "Scale di servizio lavate", "scale", 7, "giornata", 15, 3, 2, "scopa",
-    "Dopo averle scopate: secchio con detersivo per pavimenti, dall'alto in basso, strizza bene lo straccio (gradini scivolosi = pericolo). Cartello 'bagnato'.", "Gradini asciutti e senza aloni.", { codice: "Z03", meteo: "pioggia", note: "Con la pioggia: 2 volte a settimana." }),
+  R("scale_lavate", "comuni", "Scale lavate (gradini in marmo)", "scale", 7, "giornata", 15, 3, 2, "scopa",
+    "Dopo averle scopate: secchio con detergente neutro per marmo, dall'alto in basso, strizza bene lo straccio (gradini scivolosi = pericolo). Cartello 'bagnato'. Mai anticalcare né aceto sul marmo.", "Gradini asciutti e senza aloni.", { codice: "Z03", meteo: "pioggia", note: "Con la pioggia: 2 volte a settimana. Gradini in marmo: mai acidi (anticalcare, aceto)." }),
   R("scale_corrimano", "comuni", "Corrimano, ringhiera e battiscopa delle scale", "scale", 14, "giornata", 10, 2, 2, "scopa",
     "Corrimano sgrassato e disinfettato per tutta la lunghezza, ringhiera passata, battiscopa dei gradini con il panno umido.", "Mano sul corrimano: pulito, non appiccicoso."),
   R("scale_pareti_luci", "comuni", "Pareti e plafoniere delle scale", "scale", 30, "giornata", 15, 3, 2, "finestra",
@@ -369,7 +399,7 @@ export const CATALOGO = [
   R("vetri_scale", "comuni", "Vetri delle scale", "scale", 30, "giornata", 20, 4, 2, "finestra",
     "Detergente vetri e tergivetro sui vetri delle scale dentro e, dove si arriva in sicurezza, fuori; telai e davanzali con il panno umido.", "Vetri delle scale controluce: senza aloni."),
   R("ingresso", "comuni", "Portone, maniglione, citofono, cassetta della posta, targhe e zerbini", "ingresso", 7, "giornata", 10, 2, 2, "porta",
-    "Portone davanti e dietro con il panno umido, maniglione e citofono disinfettati, cassetta della posta e targhe lucidate, zerbini sbattuti fuori, gradino d'ingresso lavato.", "Citofono e maniglione del portone: lucidi."),
+    "Portone davanti e dietro con il panno umido, maniglione e citofono disinfettati, cassetta della posta e targhe lucidate, zerbini sbattuti fuori, gradino d'ingresso e pavimento in marmo lavati con detergente neutro (mai acidi), rivestimento in marmo delle pareti passato con il panno appena umido.", "Citofono e maniglione del portone: lucidi; marmo senza aloni.", { materiale: "pavimento" }),
   R("zerbini_lavati", "comuni", "Zerbini lavati", "ingresso", 30, "giornata", 10, 2, 3, "porta",
     "Zerbini lavati con acqua e sapone, spazzolati, asciugati al sole prima di rimetterli.", "Zerbino asciutto e senza sabbia sotto."),
   R("terrazzo_scopa", "comuni", "Terrazzo: scopa e acqua", "terrazzo", 7, "giornata", 15, 3, 2, "terrazzo",
@@ -425,6 +455,63 @@ export const CATALOGO = [
 ];
 // (nome vecchio: lo usano ancora alcune schermate)
 export const REGOLE_GOVERNANTE = CATALOGO;
+
+// ============================================================================
+//  I MATERIALI DEI POSTI (prova 4): dalle foto delle camere. Per ogni posto si sceglie il pavimento, il box doccia
+//  e le porte; il "come si fa" della signora aggiunge la riga giusta ("in Salvatore il pavimento è marmo lucido: …").
+//  Si cambiano dall'app (Regole → Materiali dei posti) e stanno in impostazioni/governante.materiali[luogo].
+// ============================================================================
+export const MATERIALI = {
+  pavimento: {
+    marmo: { nome: "marmo o granito lucido", come: "solo detergente neutro per marmo (o acqua e poco sapone di Marsiglia), straccio ben strizzato, asciugato subito per non lasciare aloni", mai: "MAI anticalcare, aceto, limone, candeggina o sgrassatore forte: macchiano il marmo per sempre e lo opacizzano" },
+    gres: { nome: "piastrelle di gres (color cotto)", come: "detersivo per pavimenti normale, acqua calda, straccio strizzato; sulle fughe scure spazzola con bicarbonato", mai: "mai cera o prodotti lucidanti (poi scivola e fa le impronte); mai candeggina pura sulle fughe colorate" },
+    cotto: { nome: "cotto vero", come: "solo acqua tiepida e sapone neutro, poca acqua, straccio strizzato; macchie con bicarbonato", mai: "mai acidi (anticalcare, aceto) e mai troppa acqua: il cotto assorbe" },
+    legno: { nome: "parquet o legno", come: "panno appena umido con detergente per parquet, mai acqua in terra", mai: "mai acqua abbondante, mai vapore, mai aceto" },
+  },
+  box: {
+    soffietto: { nome: "box doccia a soffietto in PVC", come: "ante piegate e aperte, anticalcare lasciato 5 minuti nelle pieghe, spazzolino morbido dentro le pieghe e nelle guide, sciacquo, asciugatura con il panno GIALLO; ante lasciate aperte ad asciugare", mai: "mai spugne abrasive né candeggina pura: il PVC si opacizza e ingiallisce; mai tirare le ante quando sono rigide" },
+    vetro: { nome: "box doccia in vetro", come: "anticalcare 5 minuti, spugna non graffiante, tergivetro, panno asciutto", mai: "mai spugne abrasive né lame: rigano il vetro" },
+    tenda: { nome: "tenda della doccia", come: "tenda stesa e lasciata aperta ad asciugare; lavata in lavatrice a 40° con bicarbonato ogni mese", mai: "mai lasciarla appallottolata bagnata: fa la muffa in due giorni" },
+    nessuno: { nome: "doccia senza box", come: "piatto e piastrelle intorno asciugati dopo ogni pulizia", mai: "" },
+  },
+  porte: {
+    legno: { nome: "porta in legno verniciato scuro", come: "panno appena umido e subito asciutto, nel verso delle venature; la scritta con il nome solo con il panno asciutto", mai: "mai acqua che cola, mai sgrassatore forte o alcol: la vernice si opacizza" },
+    laminato: { nome: "porta in laminato chiaro", come: "panno umido con il multiuso, asciugata; la scritta con il nome solo con il panno asciutto", mai: "mai acqua sui bordi e sugli spigoli: il laminato si gonfia; mai spugne abrasive" },
+  },
+};
+// Che materiali ha un posto, partendo da quello che si vede nelle foto (1° piano marmo rosso e porte in legno scuro,
+// 2° piano gres color cotto e porte in laminato chiaro, appartamenti marmo rosso; box a soffietto dappertutto)
+export function materialiBase(luogo) {
+  if (!luogo) return { pavimento: "gres", box: "soffietto", porte: "laminato" };
+  if (luogo.tipo === "comune") return { pavimento: luogo.id === "corridoio_p2" || luogo.id === "terrazzo" || luogo.id === "lavanderia" ? "gres" : "marmo", box: "nessuno", porte: luogo.id === "corridoio_p2" ? "laminato" : "legno" };
+  if (luogo.zona === "p1") return { pavimento: "marmo", box: "soffietto", porte: "legno" };
+  if (luogo.zona === "p2") return { pavimento: "gres", box: "soffietto", porte: "laminato" };
+  return { pavimento: "marmo", box: "soffietto", porte: "laminato" };
+}
+export function materialiDi(luogo, impostati = {}) { return { ...materialiBase(luogo), ...((impostati || {})[luogo?.id] || {}) }; }
+// La riga da aggiungere al "come si fa" per una regola che dipende dal materiale
+export function rigaMateriale(regola, luogo, impostati = {}) {
+  if (!regola || !regola.materiale || !luogo) return null;
+  const scelta = materialiDi(luogo, impostati)[regola.materiale]; const m = (MATERIALI[regola.materiale] || {})[scelta];
+  if (!m) return null;
+  const mai = m.mai ? m.mai.charAt(0).toUpperCase() + m.mai.slice(1) : "";
+  return { tipo: regola.materiale, scelta, nome: m.nome, come: m.come, mai, testo: `${luogo.nome}: ${m.nome} → ${m.come}.${mai ? " " + mai + "." : ""}` };
+}
+// La scheda dei materiali (per la signora e per la mamma): come si tratta ogni cosa che c'è davvero nelle stanze
+export const SCHEDA_MATERIALI = [
+  { nome: "Marmo e granito lucidi", dove: "pavimenti rossi del 1° piano e degli appartamenti, ingresso, scale, rivestimento dell'ingresso", come: MATERIALI.pavimento.marmo.come, mai: MATERIALI.pavimento.marmo.mai },
+  { nome: "Piastrelle di gres color cotto", dove: "pavimenti del 2° piano e del corridoio, balconi", come: MATERIALI.pavimento.gres.come, mai: MATERIALI.pavimento.gres.mai },
+  { nome: "Ceramica del bagno (piastrelle a fiori, sanitari)", dove: "tutti i bagni", come: "multiuso o anticalcare sulle piastrelle lisce, spugna morbida; sulle fughe spazzolino con bicarbonato; sanitari con disinfettante", mai: "mai candeggina pura sulle fughe colorate (le sbiadisce), mai pagliette" },
+  { nome: "Rubinetti e docce cromate", dove: "lavandini, bidet, docce, cucine", come: "anticalcare sul panno, 2 minuti, sciacquo, lucidatura con il panno asciutto; filtrino svitato nell'aceto", mai: "mai anticalcare lasciato asciugare sul cromo (lo macchia), mai pagliette" },
+  { nome: "Box doccia a soffietto in PVC", dove: "quasi tutti i bagni", come: MATERIALI.box.soffietto.come, mai: MATERIALI.box.soffietto.mai },
+  { nome: "Mobili in laminato chiaro", dove: "letti, comodini, armadi, cucine, piani in laminato puntinato", come: "panno appena umido con il multiuso, asciugato subito; ditate intorno alle maniglie", mai: "mai acqua sui bordi e sugli spigoli (si gonfiano), mai spugne abrasive" },
+  { nome: "Porte in legno verniciato scuro", dove: "1° piano", come: MATERIALI.porte.legno.come, mai: MATERIALI.porte.legno.mai },
+  { nome: "Vetri e specchi", dove: "finestre, portefinestre, specchi, mensola di vetro del bagno", come: "detergente vetri sul panno (non sul vetro), tergivetro o panno asciutto, bordi asciugati", mai: "mai abrasivi; mai spruzzare sullo specchio (cola dietro e lo macchia)" },
+  { nome: "Ferro: ringhiere, reti e termosifoni in ghisa", dove: "balconi, bagni, corridoi", come: "panno umido e asciugatura; ragnatele via con la spazzola", mai: "mai insistere sulla ruggine con la spugna: si segnala, va carteggiata e riverniciata" },
+  { nome: "Disegni dipinti sui muri e pannelli fotografici", dove: "corridoio e scale del 2° piano, sopra i letti", come: "solo piumino o panno asciutto, leggerissimo", mai: "MAI acqua, MAI spugna magica, MAI prodotti: si cancellano" },
+  { nome: "Stoffa: pouf, armadio in stoffa, tende, cuscini", dove: "corridoio del 2° piano, camere", come: "aspirapolvere con la spazzola per tessuti; macchie con panno umido e poco sapone", mai: "mai bagnare molto, mai candeggina" },
+  { nome: "Plastica: cassette del WC, dispenser, cestini, sedie del balcone", dove: "bagni, balconi", come: "sgrassatore delicato o multiuso, panno, asciugatura", mai: "mai alcol né acetone (la plastica si opacizza)" },
+];
 
 export const GRUPPI = { camera: "Camera", bagno: "Bagno", cucina: "Cucina (appartamenti)", balcone: "Balcone", stagioni: "Stagioni e meteo", comuni: "Zone comuni", lavanderia: "Lavanderia, attrezzi e scorte", P: "Le tue regole" };
 
@@ -603,7 +690,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       const ogni = ogniAttuale(r, p.data, l, flags);
       const rapporto = ogni ? rapportoScadenza(r, reg?.ultima || null, p.data, ogni) : Infinity;
       if (ogni && reg?.ultima && rapporto < 0.9) continue;
-      cand.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", codice: r.codice || "", icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, domanda: !!r.domanda, sempre: !ogni, ogni, rapporto, urgenza: urgenza(ogni, reg?.ultima || null, p.data, inizio, r.priorita), ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, perche: perche(r, reg, p.data, ogni) });
+      cand.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", codice: r.codice || "", materiale: rigaMateriale(r, l, ctx.materiali), icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, domanda: !!r.domanda, sempre: !ogni, ogni, rapporto, urgenza: urgenza(ogni, reg?.ultima || null, p.data, inizio, r.priorita), ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, perche: perche(r, reg, p.data, ogni) });
     }
     cand.sort((a, b) => (b.sempre - a.sempre) || (b.urgenza - a.urgenza) || (a.priorita - b.priorita));
     const scelte = []; let min = 0, n = 0;
@@ -630,7 +717,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       const rapporto = ogni ? rapportoScadenza(r, reg?.ultima || null, iso, ogni) : Infinity;
       if (ogni > 1 && reg?.ultima && rapporto < 0.9) continue;
       if (ogni <= 1 && reg?.ultima === iso) continue;
-      comuni.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", codice: r.codice || "", icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, domanda: !!r.domanda, sempre: ogni <= 1, ogni, rapporto, urgenza: urgenza(ogni > 1 ? ogni : 0, reg?.ultima || null, iso, inizio, r.priorita), ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, comune: true, perche: perche(r, reg, iso, ogni) });
+      comuni.push({ regola: r.id, nome: r.nome, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", codice: r.codice || "", materiale: rigaMateriale(r, l, ctx.materiali), icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, domanda: !!r.domanda, sempre: ogni <= 1, ogni, rapporto, urgenza: urgenza(ogni > 1 ? ogni : 0, reg?.ultima || null, iso, inizio, r.priorita), ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, comune: true, perche: perche(r, reg, iso, ogni) });
     }
   }
   comuni.sort((a, b) => (b.sempre - a.sempre) || (b.urgenza - a.urgenza) || (a.priorita - b.priorita));
@@ -721,7 +808,7 @@ export function proposteSettimana(ctx) {
       }
       if (!r.evento) perche.unshift(ult ? `${etichettaOgni(ogni)} · ultima volta ${testoUltima(ult, oggi)}` : `${etichettaOgni(ogni)} · mai registrata`);
       if (r.stagione) perche.push("è il periodo giusto");
-      candidati.push({ id: `${r.id}|${l.id}|${data}`, regola: r.id, nome: r.nome, cosa: r.nome, icona: r.icona, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", luogo: l.id, luogoNome: l.nome, luogoTipo: l.tipo, zona: l.zona, data, minuti: r.minuti, euro: r.euro || 0, grande: !!r.grande, libera: r.quando === "libera", priorita: r.priorita || 2, perche, rapporto: r.evento ? 99 : urgenza(ogni, ult, fine, inizio, r.priorita), chiave: k });
+      candidati.push({ id: `${r.id}|${l.id}|${data}`, regola: r.id, nome: r.nome, cosa: r.nome, icona: r.icona, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", materiale: rigaMateriale(r, l, ctx.materiali), luogo: l.id, luogoNome: l.nome, luogoTipo: l.tipo, zona: l.zona, data, minuti: r.minuti, euro: r.euro || 0, grande: !!r.grande, libera: r.quando === "libera", priorita: r.priorita || 2, perche, rapporto: r.evento ? 99 : urgenza(ogni, ult, fine, inizio, r.priorita), chiave: k });
     }
   }
   candidati.sort((a, b) => (b.rapporto - a.rapporto) || (a.priorita - b.priorita) || (a.data < b.data ? -1 : 1));
@@ -945,41 +1032,41 @@ export const SUPERFICI = {
     { o: "Aria", s: [["Aria e odori", ["aria_odori"]]] },
     { o: "Condizionatore", s: [["Griglia", ["condizionatore_griglie", "condizionatori_maggio"]], ["Filtri", ["condizionatore_filtri", "condizionatori_maggio"]], ["Alette", ["condizionatore_griglie"]], ["Telecomando", ["contatti"]]] },
     { o: "Pareti", s: [["Pareti (ditate e segni)", ["pareti_ditate", "fondo_completa"]], ["Interruttori e prese", ["contatti", "prese_ciabatte"]]] },
-    { o: "Quadri", s: [["Cornice", ["quadri"]], ["Vetro", ["quadri"]], ["Retro", ["quadri_retro"]]] },
+    { o: "Quadri e pannello fotografico", s: [["Cornice", ["quadri"]], ["Vetro", ["quadri"]], ["Retro", ["quadri_retro"]], ["Pannello fotografico sopra il letto", ["fotomurale"]]] },
     { o: "Termosifone", s: [["Davanti", ["termosifone_polvere", "termosifoni"]], ["Dietro", ["termosifone_polvere", "termosifoni"]], ["Sopra", ["termosifone_polvere"]]] },
     { o: "Battiscopa", s: [["Battiscopa", ["battiscopa"]]] },
     { o: "Porta", s: [["Davanti", ["porte", "porte_ditate"]], ["Dietro", ["porte", "porte_ditate"]], ["Bordo sopra", ["porte"]], ["Maniglie dei due lati", ["porte", "porte_ditate", "contatti"]], ["Serratura", ["porta_stipite"]], ["Stipite", ["porta_stipite"]], ["Cardini", ["porta_stipite"]]] },
     { o: "Finestra", s: [["Vetro dentro", ["vetri_interni"]], ["Vetro fuori", ["vetri_esterni"]], ["Telaio", ["telai_binari"]], ["Binari", ["telai_binari"]], ["Maniglia", ["contatti"]], ["Davanzale dentro", ["davanzali"]], ["Davanzale fuori", ["davanzale_esterno"]]] },
     { o: "Tapparella", s: [["Stecche", ["tapparelle"]], ["Cassonetto", ["tapparelle_cassonetto"]], ["Cinghia", ["tapparelle"]]] },
-    { o: "Zanzariera", s: [["Rete", ["zanzariere"]], ["Telaio", ["zanzariere"]]] },
+    { o: "Zanzariera (se c'è)", opz: true, s: [["Rete", ["zanzariere"]], ["Telaio", ["zanzariere"]]] },
     { o: "Tende", s: [["Tessuto", ["tende_aspirate", "tende_lavate"]], ["Bastone o binario", ["tende_bastone"]]] },
     { o: "Letto", s: [["Testiera davanti", ["testiera"]], ["Testiera dietro", ["letto_spostato"]], ["Struttura e piedini", ["struttura_letto"]], ["Sotto il letto", ["sotto_letto"]], ["Doghe", ["doghe"]], ["Materasso sopra", ["materasso_aspirato"]], ["Materasso sotto", ["materasso_girato"]], ["Materasso bordi", ["materasso_aspirato"]], ["Coprimaterasso", ["coprimaterasso_cambio", "coprimaterasso_fissi"]], ["Cuscini", ["cuscini_piumoni", "controllo_materassi"]], ["Copricuscini", ["coprimaterasso_cambio", "coprimaterasso_fissi"]], ["Piumino", ["cuscini_piumoni"]], ["Coperte", ["coperte_autunno", "coperte_primavera", "coperta_scorta"]], ["Copriletto", ["copriletto"]], ["Lenzuola alla luce", ["biancheria_luce"]]] },
     { o: "Comodini", s: [["Sopra", ["comodini"]], ["Dentro", ["comodini_dentro", "dentro_armadi"]], ["Dietro", ["comodini_dentro", "dietro_mobili"]], ["Sotto", ["sotto_letto"]]] },
     { o: "Abat-jour", s: [["Paralume", ["lampade"]], ["Base", ["lampade", "comodini"]], ["Interruttore", ["contatti", "comodini"]]] },
-    { o: "Armadio", s: [["Sopra", ["sopra_armadi"]], ["Ante fuori", ["armadio_ante"]], ["Ante dentro", ["dentro_armadi"]], ["Maniglie", ["armadio_ante", "contatti"]], ["Ripiani", ["dentro_armadi"]], ["Asta e grucce", ["dentro_armadi"]], ["Cassetti dentro e guide", ["dentro_armadi"]], ["Sotto", ["sotto_mobili"]], ["Dietro", ["dietro_armadi"]]] },
+    { o: "Armadio", s: [["Sopra", ["sopra_armadi"]], ["Ante fuori", ["armadio_ante"]], ["Ante dentro", ["dentro_armadi"]], ["Maniglie", ["armadio_ante", "contatti"]], ["Ripiani", ["dentro_armadi"]], ["Asta e grucce", ["dentro_armadi"]], ["Cassetti dentro e guide", ["dentro_armadi"]], ["Sotto", ["sotto_mobili"]], ["Dietro", ["dietro_armadi"]], ["Armadio in stoffa (se c'è)", ["armadio_stoffa"], true]] },
     { o: "Scrivania e sedie", s: [["Piano", ["scrivania"]], ["Gambe", ["scrivania"]], ["Sotto", ["sotto_mobili"]], ["Seduta e schienale", ["scrivania"]]] },
     { o: "TV", s: [["Schermo", ["tv_schermo"]], ["Retro e cavi", ["dietro_tv"]], ["Telecomando", ["contatti"]], ["Mobile sopra", ["dietro_tv", "scrivania"]], ["Mobile dentro", ["dentro_armadi"]], ["Mobile dietro", ["dietro_tv"]], ["Ciabatta", ["prese_ciabatte"]]] },
     { o: "Frigo in camera (se c'è)", opz: true, s: [["Dentro, a ogni partenza", ["minibar"]], ["Guarnizione", ["minibar_guarnizione"]], ["Retro e sotto", ["minibar_retro", "dietro_mobili"]]] },
     { o: "Specchio", s: [["Vetro", ["specchi"]], ["Cornice", ["quadri"]], ["Retro", ["quadri_retro"]]] },
-    { o: "Piccoli elettrodomestici", s: [["Phon: filtro", ["phon_filtro"]], ["Phon: impugnatura", ["contatti"]], ["Bollitore", ["bollitore", "bollitore_calcare"]], ["Ventilatore: pale e griglia", ["ventilatore"]]] },
+    { o: "Piccoli elettrodomestici e piano d'appoggio", s: [["Phon: filtro", ["phon_filtro"]], ["Phon: impugnatura", ["contatti"]], ["Bollitore (se c'è)", ["bollitore", "bollitore_calcare"], true], ["Portapane a serrandina (se c'è)", ["portapane"], true], ["Ventilatore (se c'è)", ["ventilatore"], true]] },
     { o: "Appendiabiti e cestino", s: [["Appendiabiti e ganci", ["appendiabiti"]], ["Cestino dentro", ["cestini_lavati"]], ["Cestino fuori", ["cestini_lavati"]]] },
-    { o: "Pavimento", s: [["Pavimento", ["camera_base"]], ["Fughe", ["pavimento_fughe"]], ["Angoli", ["pavimento_angoli"]], ["Sotto i mobili", ["sotto_mobili", "sotto_letto"]], ["Zerbino", ["zerbino_camera"]]] },
-    { o: "Cartelli e chiavi", s: [["Cartelli e targhette", ["targhette"]], ["Portachiavi", ["contatti", "appendiabiti"]]] },
+    { o: "Pavimento", s: [["Pavimento", ["camera_base"]], ["Fughe", ["pavimento_fughe"]], ["Angoli", ["pavimento_angoli"]], ["Sotto i mobili", ["sotto_mobili", "sotto_letto"]], ["Tappeti e passatoie", ["tappeti", "tappeti_lavati"]], ["Zerbino", ["zerbino_camera"]]] },
+    { o: "Cartelli e chiavi", s: [["Scritta con il nome sulla porta", ["porte", "targhette"]], ["Cartelli e targhette", ["targhette"]], ["Portachiavi", ["contatti", "appendiabiti"]]] },
     { o: "Prima di chiudere la camera", s: [["Giro di controllo di 5 minuti", ["controllo_lusso"]], ["Camera ferma da 2+ giorni prima di un arrivo", ["arrivo_ferma"]]] },
   ] },
   bagno: { nome: "Bagno", oggetti: [
     { o: "Soffitto e luci", s: [["Soffitto e angoli (muffa)", ["soffitto_bagno_muffa", "plafoniere"]], ["Plafoniera", ["plafoniere"]], ["Luci del bagno (funzionano?)", ["luci_lampadine"]], ["Aspiratore: griglia", ["aspiratore"]]] },
-    { o: "Finestra del bagno", s: [["Vetro dentro", ["vetri_interni"]], ["Vetro fuori", ["vetri_esterni"]], ["Telaio e binari", ["telai_binari"]], ["Maniglia", ["contatti"]], ["Davanzale", ["davanzali"]]] },
-    { o: "Scaldasalviette", s: [["Tubi davanti e dietro", ["scaldasalviette"]]] },
+    { o: "Finestra del bagno", s: [["Vetro dentro", ["vetri_interni", "finestrella_bagno"]], ["Vetro fuori", ["vetri_esterni"]], ["Telaio e binari", ["telai_binari", "finestrella_bagno"]], ["Maniglia", ["contatti"]], ["Davanzale", ["davanzali", "finestrella_bagno"]]] },
+    { o: "Termosifone o scaldasalviette", s: [["Elementi davanti, dietro e sopra", ["scaldasalviette"]]] },
     { o: "Pareti", s: [["Piastrelle", ["piastrelle_pareti"]], ["Fughe", ["fughe"]], ["Silicone", ["doccia_muffa"]], ["Angoli", ["soffitto_bagno_muffa", "pavimento_angoli"]]] },
     { o: "Porta", s: [["Davanti e dietro", ["porte"]], ["Bordo sopra", ["porte"]], ["Maniglie", ["porte", "contatti"]], ["Stipite, cardini, serratura", ["porta_stipite"]]] },
     { o: "Interruttori e prese", s: [["Interruttori e prese", ["contatti"]]] },
     { o: "Specchio", s: [["Vetro", ["specchi"]], ["Cornice", ["specchi"]], ["Luce", ["lampade"]]] },
     { o: "Lavandino", s: [["Vasca", ["bagno_base"]], ["Troppopieno", ["troppopieno"]], ["Piletta", ["troppopieno", "scarichi", "scarichi_odori"]], ["Rubinetto, base e filtrino del calcare", ["soffione_rubinetti", "contatti"]], ["Sotto", ["sotto_lavandini"]], ["Sifone e tubi", ["sotto_lavandini"]], ["Mobiletto dentro e fuori", ["mobiletto_bagno"]], ["Mensola", ["mobiletto_bagno", "bagno_base"]], ["Dispenser", ["dispenser"]], ["Bicchiere e portaspazzolino", ["dispenser"]]] },
-    { o: "WC", s: [["Tavoletta sopra, sotto, cerniere", ["wc_tavoletta"]], ["Bordo interno", ["wc_sotto_bordo"]], ["Sotto il bordo", ["wc_sotto_bordo"]], ["Base al pavimento", ["dietro_wc"]], ["Dietro", ["dietro_wc"]], ["Cassetta sopra e pulsante", ["wc_cassetta", "contatti"]], ["Tubo", ["dietro_wc"]], ["Scopino e portascopino", ["spazzolino_wc", "scopino_nuovo"]], ["Portarotolo", ["accessori_bagno"]]] },
+    { o: "WC", s: [["Tavoletta sopra, sotto, cerniere", ["wc_tavoletta"]], ["Bordo interno", ["wc_sotto_bordo"]], ["Sotto il bordo", ["wc_sotto_bordo"]], ["Base al pavimento", ["dietro_wc"]], ["Dietro", ["dietro_wc"]], ["Cassetta esterna sopra, davanti e tubo", ["wc_cassetta", "contatti"]], ["Tubo", ["dietro_wc"]], ["Scopino e portascopino", ["spazzolino_wc", "scopino_nuovo"]], ["Portarotolo", ["accessori_bagno"]], ["Dispenser grande della carta", ["dispenser_carta"]]] },
     { o: "Bidet", s: [["Rubinetto", ["soffione_rubinetti", "bagno_base"]], ["Scarico", ["scarichi"]], ["Sotto", ["dietro_wc"]], ["Dietro", ["dietro_wc"]]] },
-    { o: "Doccia", s: [["Piatto", ["piastrelle_doccia"]], ["Piletta e capelli", ["scarichi", "scarichi_odori"]], ["Box vetro dentro", ["box_doccia_vetro", "box_doccia_tergivetro"]], ["Box vetro fuori", ["box_doccia_fuori"]], ["Profili", ["box_doccia_binari"]], ["Binari delle ante", ["box_doccia_binari"]], ["Guarnizioni", ["doccia_muffa", "box_doccia_binari"]], ["Soffione", ["soffione_rubinetti"]], ["Flessibile", ["soffione_rubinetti"]], ["Miscelatore", ["soffione_rubinetti", "contatti"]], ["Mensola", ["bagno_base", "piastrelle_doccia"]], ["Tenda (se c'è)", ["tenda_doccia"], true], ["Silicone", ["doccia_muffa"]], ["Fughe", ["fughe"]], ["Tappetino antiscivolo sotto", ["tappetino_doccia"]]] },
-    { o: "Accessori", s: [["Portasciugamani e ganci", ["accessori_bagno"]], ["Bidoncino dentro, fuori, coperchio", ["cestini_lavati"]], ["Tappetino", ["tappetini_bagno"]], ["Asciugamani alla luce", ["asciugamani_luce"]], ["Dotazioni: carta, sapone, bicchieri, phon", ["dotazioni_bagno"]]] },
+    { o: "Doccia", s: [["Piatto", ["piastrelle_doccia"]], ["Piletta e capelli", ["scarichi", "scarichi_odori"]], ["Box vetro dentro", ["box_doccia_vetro", "box_doccia_tergivetro"]], ["Box vetro fuori", ["box_doccia_fuori"]], ["Profili", ["box_doccia_binari"]], ["Binari delle ante", ["box_doccia_binari"]], ["Guarnizioni", ["doccia_muffa", "box_doccia_binari"]], ["Soffione", ["soffione_rubinetti"]], ["Flessibile", ["soffione_rubinetti"]], ["Miscelatore", ["soffione_rubinetti", "contatti"]], ["Mensola", ["bagno_base", "piastrelle_doccia"]], ["Tenda (se c'è)", ["tenda_doccia"], true], ["Silicone", ["doccia_muffa"]], ["Fughe", ["fughe"]], ["Tappetino antiscivolo (se c'è)", ["tappetino_doccia"], true], ["Portasapone", ["accessori_bagno"]]] },
+    { o: "Accessori", s: [["Portasciugamani e ganci", ["accessori_bagno"]], ["Mensola di vetro sotto lo specchio", ["specchi", "mobiletto_bagno"]], ["Bidoncino dentro, fuori, coperchio", ["cestini_lavati"]], ["Tappetino", ["tappetini_bagno"]], ["Accappatoio", ["accappatoi"]], ["Asciugamani alla luce", ["asciugamani_luce"]], ["Dotazioni: carta, sapone, bicchieri, phon", ["dotazioni_bagno"]]] },
     { o: "Pavimento", s: [["Pavimento", ["bagno_base"]], ["Fughe", ["pavimento_fughe"]], ["Angoli", ["pavimento_angoli"]], ["Dietro la porta", ["pavimento_angoli"]], ["Scarico a pavimento", ["scarico_pavimento"]]] },
   ] },
   cucina: { nome: "Cucina (appartamenti)", oggetti: [
@@ -987,7 +1074,7 @@ export const SUPERFICI = {
     { o: "Cappa", s: [["Filtri", ["cappa_filtri"]], ["Esterno", ["cappa_esterno"]], ["Sotto", ["cappa_esterno"]]] },
     { o: "Piano cottura", s: [["Fornelli", ["cucina_base"]], ["Griglie", ["cucina_base", "fornelli_fondo"]], ["Spartifiamma", ["fornelli_fondo"]], ["Manopole", ["fornelli_fondo", "contatti"]], ["Sotto le griglie", ["fornelli_fondo"]]] },
     { o: "Forno", s: [["Dentro", ["forno"]], ["Porta e vetro", ["forno"]], ["Guarnizione", ["forno"]], ["Teglie", ["forno"]], ["Sopra", ["forno"]]] },
-    { o: "Piano di lavoro", s: [["Piano di lavoro", ["cucina_base"]], ["Paraschizzi", ["dietro_fornelli"]]] },
+    { o: "Piano di lavoro", s: [["Piano di lavoro", ["cucina_base"]], ["Paraschizzi", ["dietro_fornelli"]], ["Barra con i mestoli appesi", ["barra_utensili"]]] },
     { o: "Lavello", s: [["Vasca", ["cucina_base"]], ["Scarico", ["scarichi"]], ["Rubinetto", ["cucina_base", "contatti", "soffione_rubinetti"]], ["Sifone", ["sotto_lavello"]], ["Sotto", ["sotto_lavello"]]] },
     { o: "Lavastoviglie", s: [["A ogni partenza", ["lavastoviglie_partenza"]], ["Filtro", ["lavastoviglie_filtro", "lavastoviglie_partenza"]], ["Guarnizione", ["lavastoviglie_esterno"]], ["Cestelli", ["lavastoviglie_esterno"]], ["Esterno", ["lavastoviglie_esterno"]]] },
     { o: "Frigo e freezer", s: [["A ogni partenza", ["frigo_partenza"]], ["Ripiani", ["frigo_ripiani", "frigo_partenza"]], ["Cassetti", ["frigo_ripiani"]], ["Guarnizioni", ["guarnizioni_frigo"]], ["Sopra", ["sopra_armadi"]], ["Griglia dietro", ["dietro_frigo"]], ["Sotto", ["dietro_frigo"]], ["Sbrinare", ["frigo_sbrinato"]]] },
@@ -1000,16 +1087,16 @@ export const SUPERFICI = {
     { o: "Prese e finestra", s: [["Prese e interruttori", ["contatti"]], ["Finestra", ["vetri_interni", "telai_binari", "davanzali"]]] },
   ] },
   balcone: { nome: "Balcone (camere che ce l'hanno)", oggetti: [
-    { o: "Balcone", s: [["Pavimento", ["balcone_scopa", "balcone_lavato"]], ["Scarico", ["balcone_fondo", "balcone_scopa"]], ["Ringhiera", ["balcone_fondo"]], ["Muretto", ["balcone_fondo"]], ["Mobili", ["balcone_lavato"]], ["Lampada", ["balcone_fondo"]], ["Soglia", ["balcone_lavato"]]] },
+    { o: "Balcone", s: [["Pavimento", ["balcone_scopa", "balcone_lavato"]], ["Scarico", ["balcone_fondo", "balcone_scopa"]], ["Ringhiera e rete", ["balcone_fondo"]], ["Muretto", ["balcone_fondo"]], ["Muro, canaline e tubi", ["pareti_balcone"]], ["Sedie e sdraio", ["balcone_lavato"]], ["Lampada", ["balcone_fondo"]], ["Soglia", ["balcone_lavato"]], ["Unità esterna del condizionatore", ["condizionatore_esterno"]], ["Piante e sottovasi", ["piante_balcone"]]] },
   ] },
   ingresso: { nome: "Ingresso", oggetti: [
-    { o: "Ingresso", s: [["Portone", ["ingresso"]], ["Maniglione", ["ingresso"]], ["Citofono", ["ingresso"]], ["Cassetta della posta", ["ingresso"]], ["Targhe", ["ingresso"]], ["Zerbino", ["ingresso", "zerbini_lavati"]], ["Bidoni dei rifiuti", ["bidoni"]], ["Luci esterne", ["luci_esterne"]]] },
+    { o: "Ingresso", s: [["Portone", ["ingresso"]], ["Maniglione", ["ingresso"]], ["Citofono", ["ingresso"]], ["Cassetta della posta", ["ingresso"]], ["Targhe", ["ingresso"]], ["Pavimento e rivestimento in marmo", ["ingresso"]], ["Cassapanca, lanterna e fiori", ["decorazioni"]], ["Zerbino", ["ingresso", "zerbini_lavati"]], ["Bidoni dei rifiuti", ["bidoni"]], ["Luci esterne", ["luci_esterne"]]] },
   ] },
   scale: { nome: "Scale di servizio", oggetti: [
-    { o: "Scale", s: [["Gradini", ["scale_scopate", "scale_lavate"]], ["Alzate", ["scale_lavate"]], ["Battiscopa", ["scale_corrimano"]], ["Corrimano", ["scale_corrimano"]], ["Ringhiera", ["scale_corrimano"]], ["Pianerottoli", ["scale_lavate"]], ["Plafoniere", ["scale_pareti_luci", "luci_esterne"]], ["Finestre", ["vetri_scale"]], ["Pareti", ["scale_pareti_luci"]]] },
+    { o: "Scale", s: [["Gradini in marmo", ["scale_scopate", "scale_lavate"]], ["Alzate", ["scale_lavate"]], ["Battiscopa", ["scale_corrimano"]], ["Corrimano", ["scale_corrimano"]], ["Ringhiera", ["scale_corrimano"]], ["Pianerottoli", ["scale_lavate"]], ["Plafoniere e lampada in vimini", ["scale_pareti_luci", "luci_esterne"]], ["Finestre", ["vetri_scale"]], ["Pareti bianche", ["scale_pareti_luci"]], ["Disegni dipinti sui muri", ["murales"]], ["Tavolino, vaso, pampas e tovaglia", ["decorazioni"]]] },
   ] },
   corridoio: { nome: "Corridoi", oggetti: [
-    { o: "Corridoio", s: [["Pavimento", ["corridoio_passata", "corridoio_fondo"]], ["Battiscopa", ["corridoio_fondo"]], ["Porte comuni", ["corridoio_fondo"]], ["Quadri", ["corridoio_quadri_estintore"]], ["Estintore", ["corridoio_quadri_estintore"]], ["Luci", ["corridoio_fondo"]], ["Pareti", ["corridoio_fondo"]], ["Cestino comune", ["corridoio_passata"]]] },
+    { o: "Corridoio", s: [["Pavimento", ["corridoio_passata", "corridoio_fondo"]], ["Battiscopa", ["corridoio_fondo"]], ["Porte comuni", ["corridoio_fondo"]], ["Quadri", ["corridoio_quadri_estintore"]], ["Estintore", ["corridoio_quadri_estintore"]], ["Luci", ["corridoio_fondo"]], ["Pareti bianche", ["corridoio_fondo"]], ["Disegni dipinti sui muri (2° piano)", ["murales"], true], ["Pouf contenitori e cuscini (2° piano)", ["pouf_corridoio"], true], ["Termosifone del corridoio", ["termosifone_polvere", "termosifoni"]], ["Cestino comune", ["corridoio_passata"]]] },
   ] },
   terrazzo: { nome: "Terrazzo", oggetti: [
     { o: "Terrazzo", s: [["Pavimento", ["terrazzo_scopa", "terrazzo_fondo"]], ["Scarichi", ["terrazzo_fondo", "scarichi_terrazzo"]], ["Ringhiere", ["terrazzo_fondo"]], ["Muretti", ["terrazzo_fondo"]], ["Mobili", ["terrazzo_scopa", "terrazzo_fondo"]], ["Stendini", ["stendini"]], ["Lampade", ["terrazzo_fondo", "luci_esterne"]]] },

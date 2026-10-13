@@ -147,7 +147,7 @@ Dopo il salvataggio le pulizie dei prossimi 14 giorni si ricalcolano da sole (co
 ## La governante (dalla versione 0.21, rifatta nella 0.22)
 
 Una governante come in un hotel di lusso, **senza intelligenza artificiale**: catalogo + calendario + registro "ultima volta fatto".
-- **Il catalogo** sta in `governante.js` (`CATALOGO`): una riga per ogni singola cosa (168 voci nella 0.24), con nome preciso, dove, ogni quanto,
+- **Il catalogo** sta in `governante.js` (`CATALOGO`): una riga per ogni singola cosa (183 voci nella 0.25), con nome preciso, dove, ogni quanto,
   quando (`ripasso` = durante qualunque pulizia, `cambio` = solo nel cambio completo, `libera` = a camera libera, `giornata` = zona
   comune alla prima pulizia del giorno, `giorno` = lavoro a sé), minuti, prezzo, "come si fa" in 3 righe con prodotto e colore del
   panno, "come si controlla" per la controllatrice, stagione/meteo. Le zone comuni sono in `LUOGHI_COMUNI`. Le modifiche fatte
@@ -200,5 +200,18 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   **Prova la governante per 90 giorni** (`simulaGovernante` + `prova90`): ripete le pulizie di questa settimana e il prospetto per 13
   settimane con tutti i consigli accettati e risponde in 5 righe (rifiniture, minuti al giorno mai sopra il limite e mai di domenica,
   cosa entra a camera libera, a quanto arriva il catalogo, cosa resta indietro).
-- Passi successivi previsti: la tabella completa di Michele riga per riga (codici C01…O03), materiali per posto e "Rivedi con la
-  mamma" sui "come si fa", ritmi che imparano dai controlli, meteo di Lesina, pagella del sabato, voce con Gemini.
+- **Dalla 0.25 — le foto delle camere diventano regole, materiali per posto e "Rivedi con la mamma" (prova 4).**
+  Dalle foto di Michele: regole nuove (pannello fotografico sopra il letto, tappeti e passatoie, portapane, armadio in stoffa,
+  dispenser grande della carta, accappatoi, finestrella del bagno in legno, barra dei mestoli, unità esterna del condizionatore,
+  piante e sottovasi, muro del balcone, disegni dipinti sui muri, pouf del corridoio, decorazioni dell'ingresso e delle scale) e regole
+  adattate (box doccia a soffietto in PVC, cassetta esterna del WC, termosifone in ghisa del bagno, laminato chiaro, scritta con il nome
+  sulla porta, marmo di scale e ingresso); la mappa segna "se c'è" quello che nelle foto non si vede (zanzariere, bollitore,
+  ventilatore, tappetino antiscivolo). **Materiali dei posti** (`MATERIALI`, `materialiBase`, `materialiDi`, `rigaMateriale`): per ogni
+  posto pavimento (marmo lucido · gres · cotto · legno), box doccia (soffietto PVC · vetro · tenda · niente) e porte (legno · laminato),
+  con i valori di partenza dalle foto e i cambi in `impostazioni/governante.materiali[luogo]`; le regole con `materiale:` mostrano alla
+  signora la riga "Qui: <posto>: <materiale> → come si fa. Mai …". `SCHEDA_MATERIALI` è la scheda di come si tratta ogni cosa.
+  **Rivedi con la mamma**: in Regole il contatore "Regole riviste: N su M" con le prossime da rivedere; per ogni regola il foglio con il
+  "come si fa" modificabile: "Va bene così" o "Salva come dice la mamma" (il testo della mamma va in `regole[id].come` e lo leggono le
+  signore; "Torna al testo di prima" lo toglie); `riviste[id] = { data, da, cambiata }`.
+- Passi successivi previsti: la tabella completa di Michele riga per riga (codici C01…O03), ritmi che imparano dai controlli ("gli
+  occhi"), meteo di Lesina, pagella del sabato, voce con Gemini.
