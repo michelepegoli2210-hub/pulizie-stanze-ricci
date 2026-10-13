@@ -260,5 +260,19 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   Pulizia totale 15 € + 6 stelle 5,75 €". Sul telefono delle signore non compaiono mai le parole governante, catalogo, regole,
   rotazione, extra, rivista (la prova `prova-lista-signora.mjs` le cerca). Nella scheda della pulizia della gestione: la lista di oggi
   con le spunte della signora.
+- **0.27 — la lista a blocchi, budget Base, prezzo delle stelle a fasce, meteo con due tasti.**
+  **Blocchi**: le righe grandi della signora stanno sotto un titolo grande con UN solo tasto "Fatto" per blocco (colonna "Blocco
+  (schermata)" nel foglio "Checklist signora": Letto e biancheria · Bagno · Camera · Cucina · Alla partenza · Pavimenti e controllo
+  finale, in quest'ordine: il controllo chiude la camera; `BLOCCHI_LISTA`, `ORDINE_BLOCCHI`, `righeLista` ordina per blocco,
+  `listaDelGiorno` restituisce `blocchi` con righe e stelle); le righe dentro si leggono, le **stelle** si toccano una per una e stanno
+  in fondo al loro blocco (`bloccoStella`: letto / bagno / cucina / camera). Massimo **2 stelle in un ripasso, 3 in una totale**
+  (`STELLE_MAX`). "Fatto, tutto" con un blocco non toccato chiede "Questo l'hai fatto?" per blocco; "Non riesco a fare una cosa"
+  sceglie un blocco o una stella. Sulla pulizia `spuntate`/`nonFatte` portano le chiavi dei blocchi (`B:letto`…) e delle stelle;
+  la lista fatta copre le voci dei blocchi fatti (`coperteDalPasso` + filtro per blocco). **Budget Base** (via Zara 1° e 2°, dal
+  foglio "Calendario vero"): lunedì 10′, giovedì 25′ (prima 0′/10′), con gli stessi limiti di stelle; la riga "una per volta" resta
+  la prima da cui si pesca. **Prezzo delle stelle a fasce** (`PREZZI_STELLE_BASE` 1 € fino a 5 min · 2 € fino a 10 · 3 € oltre;
+  `prezzoStella`, `prezziStelle`, in `impostazioni/governante.prezziStelle`, si cambia in Paghe → Listino): vale per la paga e per
+  "Il conto" dei tre livelli, che si aggiorna subito. **Meteo con due tasti** in Regole: "Ha piovuto / vento forte" (pioggia + vento
+  per 2 giorni, umidità per 3) e "Arriva il freddo / arriva il caldo" (scelta con un tocco, 7 giorni; M01 scatta in tutti e due i sensi).
 - Passi successivi previsti: le risposte di Michele alle domande aperte del calendario (nel foglio), le foto dei materiali di Lella,
   Nicole, via Trento e via Zara, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.

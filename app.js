@@ -10,7 +10,7 @@ import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 import * as G from "./governante.js";
 
-export const VERSIONE = "0.26.0";
+export const VERSIONE = "0.27.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -481,7 +481,17 @@ function rigaSignora(r, p, stato, aperta, nonMotivo) {
     come = `<div class="sig-come"><b>Come si fa:</b> ${esc(s.come || "")}${s.controllo ? ` <span class="sig-ctrl">(è a posto se: ${esc(s.controllo.charAt(0).toLowerCase() + s.controllo.slice(1))})</span>` : ""}${s.prodotto && !/^nessuno/.test(s.prodotto) ? `<div><b>Prodotto:</b> ${esc(s.prodotto)}</div>` : ""}${mat ? `<div><b>Qui:</b> ${esc(mat.testo)}</div>` : ""}${s.note ? `<div class="sig-nota">⚠ ${esc(s.note)}</div>` : ""}</div>`;
   }
   const sotto = [r.azione, r.sotto, r.luogoNome].filter(Boolean).join(" · ");
-  return `<button class="sig-riga ${stato || ""} ${stella ? "stella" : ""}" data-spunta="${esc(p.id)}|${esc(r.k)}" ${aperta ? "" : "disabled"} aria-pressed="${stato === "fatta"}"><span class="sig-n">${num}</span><span class="sig-testo"><b>${esc(r.testo)}</b>${sotto ? `<small>${esc(sotto)}</small>` : ""}${stato === "non" ? `<small class="sig-non-perche">non fatta${nonMotivo ? ": " + esc(nonMotivo) : ""}</small>` : ""}</span></button>${come}`;
+  const dentro = `<span class="sig-n">${num}</span><span class="sig-testo"><b>${esc(r.testo)}</b>${sotto ? `<small>${esc(sotto)}</small>` : ""}${stato === "non" ? `<small class="sig-non-perche">non fatta${nonMotivo ? ": " + esc(nonMotivo) : ""}</small>` : ""}</span>`;
+  // le righe grandi dentro un blocco si leggono (il tasto è quello del blocco); le stelle e le zone si toccano una per una
+  if (r.tipo === "riga" && r.blocco && r.blocco !== "zona") return `<div class="sig-riga letta ${stato || ""}">${dentro}</div>`;
+  return `<button class="sig-riga ${stato || ""} ${stella ? "stella" : ""}" data-spunta="${esc(p.id)}|${esc(r.k)}" ${aperta ? "" : "disabled"} aria-pressed="${stato === "fatta"}">${dentro}</button>${come}`;
+}
+// Un blocco della lista: titolo grande, un solo tasto Fatto, le righe dentro, poi le stelle del blocco (da toccare una per una)
+function bloccoSignora(b, p, statoRiga, motivoRiga, aperta) {
+  const st = statoRiga(b.k), motivo = motivoRiga(b.k);
+  const tasto = b.righe.length ? `<button class="sig-blocco-fatto ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>Fatto</span>`}</button>` : "";
+  return `<section class="sig-box sig-blocco ${st || ""}"><div class="sig-blocco-t"><div><div class="sig-sez-t">${esc(b.nome)}</div>${st === "non" && motivo ? `<div class="sig-non-perche">${esc(motivo)}</div>` : ""}</div>${tasto}</div>
+    <div class="sig-lista">${b.righe.map(r => rigaSignora(r, p, st, aperta, "")).join("")}${b.stelle.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
 }
 function foglioInizio(f) {
   const p = S.pulizie[f.id];
@@ -507,10 +517,11 @@ function foglioInizio(f) {
   // "Oggi Michele dice": i dettagli del giorno, le istruzioni dell'ospite, il messaggio del giorno
   const dice = [p.dettagli, p.istruzioni].filter(Boolean);
   const diceHtml = dice.length || msg ? `<section class="sig-box"><div class="sig-sez-t">Oggi ${esc(p.dettagliDa || msg?.da || "Michele")} dice</div>${dice.map(x => `<div class="sig-dice">${esc(x)}</div>`).join("")}${msg ? `<div class="sig-dice ${dice.length ? "secondo" : ""}">${esc(msg.testo)}</div>` : ""}</section>` : "";
-  // la lista
+  // la lista a blocchi
   let listaHtml = "";
   if (lista) {
-    listaHtml = `<section class="sig-box"><div class="sig-sez-t">Cosa si fa · tocca ogni riga quando è fatta</div><div class="sig-lista">${lista.righe.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
+    const nStelle = lista.stelle;
+    listaHtml = `<div class="sig-guida">Cosa si fa · un tasto <b>Fatto</b> per ogni blocco${nStelle ? `, le <b>★ stelle</b> si toccano una per una` : ""}</div>` + lista.blocchi.map(b => bloccoSignora(b, p, statoRiga, motivoRiga, aperta)).join("");
     if (lista.zona.length) listaHtml += `<section class="sig-box"><div class="sig-sez-t">Scale, corridoio e lavanderia · oggi</div><div class="sig-lista">${righeZona(lista).map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
   } else if (fondo) {
     const r = { k: "G0", tipo: "stella", n: 1, testo: p.titolo, sotto: `${p.minuti || 0} min`, codici: [], stella: { regola: p.regola, luogo: p.camera, come: p.come || "", controllo: "", prodotto: "", note: "" } };
@@ -543,7 +554,7 @@ function scegliRigaNonRiesco(p) {
   return new Promise((ok) => {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
     const el = document.createElement("div"); el.className = "conferma";
-    el.innerHTML = `<div class="conferma-box chiusura" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>Quale cosa non riesci a fare?</span></div>${righe.length ? `<div class="chiusura-voci sig-scelta">${righe.map(r => `<button class="big undo" data-r="${esc(r.k)}">${r.tipo === "stella" ? "★ " : ""}${esc(r.testo)}</button>`).join("")}</div>` : `<p class="muted">Hai già toccato tutte le righe.</p>`}<button class="big close" data-no>Lascia stare</button></div>`;
+    el.innerHTML = `<div class="conferma-box chiusura" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>Quale cosa non riesci a fare?</span></div>${righe.length ? `<div class="chiusura-voci sig-scelta">${righe.map(r => `<button class="big undo" data-r="${esc(r.k)}">${r.tipo === "stella" ? "★ " : r.tipo === "blocco" ? "Blocco: " : ""}${esc(r.testo)}</button>`).join("")}</div>` : `<p class="muted">Hai già toccato tutto.</p>`}<button class="big close" data-no>Lascia stare</button></div>`;
     document.body.appendChild(el);
     el.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { el.remove(); ok(b.dataset.r); });
     el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
@@ -787,7 +798,9 @@ function stelleSalvate(p) {
 }
 // le righe delle zone comuni come le vede la signora: quelle di ogni giorno in una riga sola ("Come ogni giorno"), poi quelle a ritmo
 function righeZona(l) { if (!l || !l.zona.length) return []; const giorno = l.zona.filter(r => r.sempre), ritmo = l.zona.filter(r => !r.sempre); return [...(giorno.length ? [{ k: "Zgiorno", tipo: "riga", n: "✓", testo: "Come ogni giorno", sotto: giorno.map(r => r.testo.toLowerCase()).join(", "), codici: [], minuti: giorno.reduce((s, r) => s + (r.minuti || 0), 0) }] : []), ...ritmo]; }
-function righeDi(p) { const l = listaDi(p); return l ? [...l.righe, ...righeZona(l)] : []; }
+// Le cose che la signora tocca: i BLOCCHI (un tasto Fatto per blocco: le righe dentro si leggono), le STELLE una per una, le zone comuni
+function unitaDi(p) { const l = listaDi(p); if (!l) return []; return [...l.blocchi.filter(b => b.righe.length).map(b => ({ k: b.k, tipo: "blocco", testo: b.nome, codici: b.codici, n: b.righe.length, minuti: b.minuti, blocco: b.id })), ...l.blocchi.flatMap(b => b.stelle), ...righeZona(l)]; }
+function righeDi(p) { return unitaDi(p); }
 // Le spunte della signora su una camera aperta: restano sul telefono finché non preme FATTO (poi si salvano sulla pulizia)
 function spunteDi(id) { if (!S.spunte[id]) S.spunte[id] = { fatte: {}, non: {} }; return S.spunte[id]; }
 function salvaSpunte() { try { const oggi = L.oggiISO(); for (const k of Object.keys(S.spunte)) if (k.slice(0, 10) < L.aggiungiGiorni(oggi, -2)) delete S.spunte[k]; localStorage.setItem("ricci_spunte", JSON.stringify(S.spunte)); } catch (e) {} }
@@ -852,7 +865,7 @@ function registraPuliziaFatta(p) {
   for (const r of saltate) saltaRifinitura(p, r.regola, r.luogo || p.camera, sp.non[chiaveStella(r)] || "non fatta");
   // la lista fatta per intero copre le sue voci e le cose a ritmo corto che nomina (tranne le righe segnate "non fatta")
   try {
-    const codiciNon = new Set(righe.filter(r => r.tipo === "riga" && sp.non[r.k]).flatMap(r => r.codici)), codiciFatte = new Set(righe.filter(r => r.tipo === "riga" && !sp.non[r.k]).flatMap(r => r.codici));
+    const codiciNon = new Set(righe.filter(r => r.tipo === "blocco" && sp.non[r.k]).flatMap(r => r.codici)), codiciFatte = new Set(righe.filter(r => r.tipo === "blocco" && !sp.non[r.k]).flatMap(r => r.codici));
     for (const id of G.coperteDalPasso(p, l, ctxGov())) { const r = regoleGov().find(x => x.id === id); if (r && codiciNon.has(r.codice) && !codiciFatte.has(r.codice)) continue; registraFatto(id, p.camera, p.zona, p.data); }
   } catch (e) { console.warn("coperte", e); }
   const pagate = fatte.filter(r => !r.sempre && r.euro);
@@ -944,7 +957,7 @@ const GRUPPI_GOV = G.GRUPPI;
 // ============================================================================
 let memoTab = { chiave: "", valore: null };
 function tabellone() {
-  const chiave = JSON.stringify([S.gov?.regole, S.gov?.soglie, S.gov?.personali, S.gov?.balconi, S.gov?.strada, S.gov?.frigo, S.gov?.inizio, S.gov?.profili, S.gov?.meteo, S.regole, S.camere.length, Object.keys(S.registro).length, Object.values(S.registro).map(r => r.ultima).join(","), L.oggiISO(), Object.keys(S.pulizie).length, Object.values(S.pulizie).filter(p => p.origine === "governante").length, soggiorniLista().length]);
+  const chiave = JSON.stringify([S.gov?.regole, S.gov?.soglie, S.gov?.personali, S.gov?.balconi, S.gov?.strada, S.gov?.frigo, S.gov?.inizio, S.gov?.profili, S.gov?.meteo, S.gov?.prezziStelle, S.regole, S.camere.length, Object.keys(S.registro).length, Object.values(S.registro).map(r => r.ultima).join(","), L.oggiISO(), Object.keys(S.pulizie).length, Object.values(S.pulizie).filter(p => p.origine === "governante").length, soggiorniLista().length]);
   if (memoTab.chiave !== chiave) { let v = null; try { v = G.tabellone(ctxGov(L.lunediDi(L.oggiISO()))); } catch (e) { console.warn("tabellone", e); } memoTab = { chiave, valore: v }; }
   return memoTab.valore;
 }
@@ -957,7 +970,7 @@ function vistaTabelloneCopertura() {
   const testa = `<section class="card"><div class="buchi ${t.buchi ? "rossi" : "zero"}"><div class="buchi-due"><b>Copertura: ${t.copertura}%</b><b>Buchi: ${t.buchi}</b></div><span>Livello ${esc(nomeLiv)} · ${t.celleContate} celle (posti × rifiniture dei blocchi Rotazione e Camera libera)${t.fuoriLivello ? ` · ${t.fuoriLivello} fuori livello, non contate` : ""} · ${t.buchi ? "le celle rosse non hanno nessuno che ci arrivi nelle prossime " + t.settimane + " settimane" : "ogni cosa è fatta o in programma"}</span></div>
     <p class="muted small" style="margin:10px 0 0"><span class="pall verde"></span> fatta, in regola · <span class="pall giallo"></span> quasi scaduta, o scaduta ma in programma · <span class="pall grigio"></span> mai fatta, in programma o più avanti (ritmi lunghi) · <span class="pall rosso"></span> buco: scaduta o mai fatta, e nessuno ci arriva · <span class="pall fuori"></span> non previsto a questo livello. Il tabellone ripete i passaggi del calendario vero per ${t.settimane} settimane con il livello e i profili di adesso. Le righe della lista della signora non sono celle: sono il lavoro normale. (Le "superfici scoperte" della Mappa sono un'altra cosa.)</p></section>`;
   const c3 = t.conto || null;
-  const conto = c3 ? `<section class="card"><h2 style="margin:0 0 4px">Il conto</h2><p class="muted small" style="margin:0">Quanto costano le stelle (minuti × ${eur(sg.euroMinuto || G.EURO_MINUTO)} al minuto) ai tre livelli, con il calendario vero di adesso: quello che le signore riescono a fare nei loro passaggi, e tra parentesi quanto costerebbe tenere tutto in regola.</p>
+  const conto = c3 ? `<section class="card"><h2 style="margin:0 0 4px">Il conto</h2><p class="muted small" style="margin:0">Quanto costano le stelle ai tre livelli con il listino di adesso (fino a 5 min ${eur(G.prezziStelle(S.gov).fino5)} · fino a 10 ${eur(G.prezziStelle(S.gov).fino10)} · oltre ${eur(G.prezziStelle(S.gov).oltre10)}, si cambia in Paghe → Listino) e il calendario vero: quello che le signore riescono a fare nei loro passaggi, e tra parentesi quanto costerebbe tenere tutto in regola.</p>
     <div class="conto-livelli">${Object.keys(G.LIVELLI).map(k => { const c = c3[k]; return `<div class="${k === liv ? "scelto" : ""}"><b>${esc(G.LIVELLI[k].breve)} · ${esc(G.LIVELLI[k].nome)}</b><strong>${c.minutiCamera}′</strong>/sett per camera<br><strong>${eur(c.euroMese)}</strong> al mese${c.euroMesePieno > c.euroMese ? `<br>(tutto: ${eur(c.euroMesePieno)})` : ""}<br>ci sta il <strong>${c.ciSta}%</strong></div>`; }).join("")}</div>
     <p class="muted small" style="margin:8px 0 0">Le leve: il livello (in Regole), i profili Base, spegnere le regole che non ti servono, o alzare il budget dei passaggi nel foglio "Calendario vero".</p>
     ${mod ? `<div class="scelte" style="margin-top:8px"><button type="button" data-gov-tab="regole">Cambia livello</button></div>` : ""}</section>` : `<section class="card"><h2 style="margin:0 0 4px">Il conto</h2><p class="muted small" style="margin:0">Questa settimana non ci sono pulizie in programma: il tabellone non sa su cosa contare. Appena c'è il prospetto, qui compaiono i numeri.</p></section>`;
@@ -1079,7 +1092,7 @@ function vistaRegoleGov() {
   let conto = null; try { conto = (tabellone() && tabellone().conto) || G.contoLivelli(ctxGov()); } catch (e) { console.warn("conto", e); }
   // 1. il livello: quanto può chiedere la governante, con i costi davanti
   const livelli = `<section class="card"><h2 style="margin:0 0 4px">Quanto vuoi che chieda</h2><p class="muted small" style="margin:0 0 8px">Tre livelli. Le righe fuori dal livello restano nel catalogo, spente: nel Tabellone sono grigio chiaro ("non previsto a questo livello"), non buchi. Il budget si riempie per priorità: prima l'igiene, poi quello che l'ospite vede, poi il nascosto; a parità, la cosa più in ritardo. Si parte da Igiene.</p>
-    <div class="livelli">${Object.keys(G.LIVELLI).map(k => { const c = conto && conto[k]; return `<button class="livello ${liv === k ? "scelto" : ""}" data-gov-livello="${k}" ${mod ? "" : "disabled"}><b>${esc(G.LIVELLI[k].breve)} · ${esc(G.LIVELLI[k].nome)}${liv === k ? " · scelto" : ""}</b><span>${esc(G.LIVELLI[k].testo)}</span>${c ? `<span class="livello-num">${c.minutiCamera}′ di stelle a settimana per camera · ${c.regole} rifiniture · circa ${eur(c.euroMese)} al mese di stelle${c.euroMesePieno > c.euroMese ? ` (tutte in regola: ${eur(c.euroMesePieno)})` : ""} · nel calendario vero ci sta il ${c.ciSta}%</span>` : ""}</button>`; }).join("")}</div></section>`;
+    <div class="livelli">${Object.keys(G.LIVELLI).map(k => { const c = conto && conto[k]; return `<button class="livello ${liv === k ? "scelto" : ""}" data-gov-livello="${k}" ${mod ? "" : "disabled"}><b>${esc(G.LIVELLI[k].breve)} · ${esc(G.LIVELLI[k].nome)}${liv === k ? " · scelto" : ""}</b><span>${esc(G.LIVELLI[k].testo)}</span>${c ? `<span class="livello-num">${c.minutiCamera}′ di stelle a settimana per camera (${eur(c.euroSettimanaCamera)}) · ${c.regole} rifiniture · circa ${eur(c.euroMese)} al mese di stelle${c.euroMesePieno > c.euroMese ? ` (tutte in regola: ${eur(c.euroMesePieno)})` : ""} · nel calendario vero ci sta il ${c.ciSta}%</span>` : ""}</button>`; }).join("")}</div></section>`;
   // 2. i profili: Lusso o Base, posto per posto
   const domandaProfilo = c => (L.CALENDARIO_CAMERE[c.id]?.passi || []).some(x => /DECIDI/i.test(x.controlla || ""));
   const profili = `<section class="card"><h2 style="margin:0 0 4px">Lusso o Base, posto per posto</h2><p class="muted small" style="margin:0 0 8px">Lusso = tutto il catalogo. Base (operai) = solo le righe con "Profilo base = Sì": niente estetica, nel ripasso niente stelle, nella totale del giovedì una sola cosa di igiene a rotazione. Le righe fuori profilo per quel posto non esistono nel Tabellone.</p>
@@ -1091,9 +1104,11 @@ function vistaRegoleGov() {
     <p class="muted small" style="margin:8px 0 0">Mai di domenica. Le zone comuni (scale, corridoio, lavanderia) vanno alla prima camera del giorno della signora: le cose di ogni giorno più una a ritmo entro ${sg.zonaMinuti} minuti.</p></section>`;
   // 4. il meteo segnato a mano
   const meteo = imp.meteo || {}, oggi = L.oggiISO();
-  const chip = (k, testo, giorni) => { const attivo = meteo[k] && meteo[k] >= oggi; return `<button type="button" aria-pressed="${!!attivo}" data-gov-meteo="${k}|${attivo ? 0 : giorni}" ${mod ? "" : "disabled"}>${esc(testo)}${attivo ? ` · fino a ${esc(L.dataBreve(meteo[k]))}` : ""}</button>`; };
-  const cardMeteo = `<section class="card"><h2 style="margin:0 0 4px">Il meteo di Lesina</h2><p class="muted small" style="margin:0 0 8px">Il meteo automatico gratis non c'è ancora: lo segni tu con un tocco, e per qualche giorno le signore trovano nelle liste le cose giuste (esterni dopo la pioggia o il vento, antimuffa con l'umidità alta, coperte quando arriva il freddo). Tocca di nuovo per spegnere.</p>
-    <div class="scelte">${chip("pioggia", "Ha piovuto o tirato vento", 2)}${chip("umidita", "Umidità alta da 3 giorni", 3)}${chip("freddo", "Arriva il freddo", 7)}</div></section>`;
+  const attivo = k => meteo[k] && meteo[k] >= oggi ? meteo[k] : null;
+  const pioggiaOn = attivo("pioggia") || attivo("vento"), freddoOn = attivo("freddo"), caldoOn = attivo("caldo");
+  const cardMeteo = `<section class="card"><h2 style="margin:0 0 4px">Il meteo di Lesina</h2><p class="muted small" style="margin:0 0 8px">Il meteo automatico gratis non c'è ancora: lo segni tu, e le regole del meteo scattano come se fossero le previsioni (esterni e scarichi dopo pioggia o vento forte, antimuffa con l'umidità, coperte e trapuntine quando cambia la stagione). Tocca di nuovo per spegnere.</p>
+    <div class="meteo-tasti"><button class="pro-btn ${pioggiaOn ? "blu" : ""}" data-gov-meteo-pioggia="${pioggiaOn ? 0 : 1}" ${mod ? "" : "disabled"}>${ICONA("pioggia")}<span>Ha piovuto / vento forte${pioggiaOn ? ` · fino a ${esc(L.dataBreve(pioggiaOn))}` : ""}</span></button>
+    <button class="pro-btn ${freddoOn || caldoOn ? "blu" : ""}" data-gov-meteo-stagione="1" ${mod ? "" : "disabled"}>${ICONA("coperta")}<span>${freddoOn ? `Arriva il freddo · fino a ${esc(L.dataBreve(freddoOn))}` : caldoOn ? `Arriva il caldo · fino a ${esc(L.dataBreve(caldoOn))}` : "Arriva il freddo / arriva il caldo"}</span></button></div></section>`;
   // 5. le righe del file, posto per posto (Sì/No per codice, ritmo delle parti a ritmo, badge del blocco)
   const attive = regoleGov(), modRegole = imp.regole || {}, riv = imp.riviste || {};
   const partiDi = codice => G.CATALOGO.filter(p => p.codice === codice);
@@ -1304,8 +1319,13 @@ function vistaPaghe() {
     ${Object.keys(rich.controllate).length || Object.keys(rich.controllatrici).length ? `<div class="rows" style="margin-top:10px">${Object.entries(rich.controllate).map(([z, l]) => `<div class="row"><span>Richiami per voti bassi · Signora ${esc(S.zone[z]?.breve || z)}</span><span class="s warn">${l.length}</span></div>`).join("")}${Object.entries(rich.controllatrici).map(([z, l]) => `<div class="row"><span>Controlli che non corrispondono · Signora ${esc(S.zone[z]?.breve || z)}${l.length >= rich.soglia ? " · <b>richiamo</b>" : ""}</span><span class="s warn">${l.length}/${rich.soglia}</span></div>`).join("")}</div>` : ""}</section>`;
   const l = S.listino, mod = puoModificare();
   const riga = (lab, chiave, val) => `<label for="l_${chiave}">${lab}</label><input id="l_${chiave}" type="number" min="0" step="0.5" value="${val}" data-listino="${chiave}" ${mod ? "" : "disabled"}>`;
-  const listino = `<section class="card"><h2>Listino</h2><p class="muted small" style="margin:0 0 10px">Il prezzo si fissa quando la signora preme "Ho finito". Se lo cambi, vale dalle prossime pulizie: quelle già fatte o pagate non cambiano.</p>
-    <div class="listino">${riga("Pulizia totale · camera grande", "totale.G", l.totale.G)}${riga("Pulizia totale · camera piccola", "totale.P", l.totale.P)}${riga("Ripasso veloce · camera grande", "ripasso.G", l.ripasso.G)}${riga("Ripasso veloce · camera piccola", "ripasso.P", l.ripasso.P)}${riga("Pulizia casa (martedì)", "casa", l.casa)}${riga("Pulizia totale casa (venerdì)", "totale_casa", l.totale_casa)}</div>
+  const pz = G.prezziStelle(S.gov);
+  const rigaStella = (lab, k) => `<label for="ps_${k}">${lab}</label><input id="ps_${k}" type="number" min="0" step="0.5" value="${pz[k]}" data-prezzo-stella="${k}" ${mod ? "" : "disabled"}>`;
+  const listino = `<section class="card"><h2>Listino</h2><p class="muted small" style="margin:0 0 10px">Il prezzo si fissa quando la signora preme "Fatto, tutto". Se lo cambi, vale dalle prossime pulizie: quelle già fatte o pagate non cambiano.</p>
+    <div class="listino">${riga("Pulizia totale · camera grande", "totale.G", l.totale.G)}${riga("Pulizia totale · camera piccola", "totale.P", l.totale.P)}${riga("Ripasso veloce · camera grande", "ripasso.G", l.ripasso.G)}${riga("Ripasso veloce · camera piccola", "ripasso.P", l.ripasso.P)}${riga("Pulizia casa (ripasso dell'appartamento)", "casa", l.casa)}${riga("Pulizia totale casa", "totale_casa", l.totale_casa)}</div>
+    <div class="floorlabel" style="margin-top:14px">Prezzo di una stella (per quanto dura)</div>
+    <p class="muted small" style="margin:0 0 6px">Ogni stella fatta si paga oltre la camera, secondo i minuti scritti nel catalogo. Il costo mensile dei tre livelli (Governante → Regole e Tabellone) si aggiorna subito.</p>
+    <div class="listino">${rigaStella("Stella fino a 5 minuti", "fino5")}${rigaStella("Stella fino a 10 minuti", "fino10")}${rigaStella("Stella oltre 10 minuti", "oltre10")}</div>
     <div class="floorlabel" style="margin-top:14px">Grande o piccola?</div>
     <div class="rows">${S.camere.filter(c => c.tipo !== "casa").map(c => `<div class="row"><span>${esc(c.nome)}</span><span class="seg"><button aria-pressed="${L.tagliaCamera(l, c.id) === "G"}" data-taglia="${c.id}|G" ${mod ? "" : "disabled"}>Grande</button><button aria-pressed="${L.tagliaCamera(l, c.id) === "P"}" data-taglia="${c.id}|P" ${mod ? "" : "disabled"}>Piccola</button></span></div>`).join("")}</div></section>`;
   return blocchi + controlliCard + listino;
@@ -1493,8 +1513,9 @@ function listaGestione(p, passi) {
   const segno = r => fatta ? (non[r.k] != null ? `<span style="color:var(--warn)">✕</span>` : spuntate.has(r.k) ? `<span style="color:var(--done)">✓</span>` : `<span class="muted">·</span>`) : (r.tipo === "stella" ? `<span style="color:#C98A00">★</span>` : `<b style="color:var(--accent)">${r.n}</b>`);
   const riga = r => `<li style="${r.tipo === "stella" ? "background:#FFF7DC;color:#3D2F00" : ""}">${segno(r)}<span>${esc(r.testo)}${r.tipo === "stella" && r.stella ? ` <span class="muted small">· ${r.stella.minuti} min · ${eur(r.stella.euro || 0)}${r.stella.luogoNome && r.stella.comune ? " · " + esc(r.stella.luogoNome) : ""}</span>` : r.sotto ? ` <span class="muted small">· ${esc(r.sotto)}</span>` : ""}${non[r.k] ? ` <span class="small" style="color:var(--warn)">non fatta: ${esc(non[r.k])}</span>` : ""}</span></li>`;
   const stelle = l.righe.filter(r => r.tipo === "stella");
-  return `<div class="floorlabel" style="margin-top:12px"><span>La lista di oggi · ${l.righe.length} righe · circa ${l.minuti} min</span><span>${stelle.length ? `${stelle.length} ${stelle.length === 1 ? "stella" : "stelle"} · ${eur(l.euroStelle)}` : "nessuna stella"}</span></div>
-    <ol class="steps" style="gap:4px">${l.righe.map(riga).join("")}</ol>
+  const segnoBlocco = b => fatta ? (non[b.k] != null ? `<span style="color:var(--warn)">✕ non fatto${non[b.k] ? ": " + esc(non[b.k]) : ""}</span>` : spuntate.has(b.k) ? `<span style="color:var(--done)">✓ fatto</span>` : `<span class="muted">·</span>`) : "";
+  return `<div class="floorlabel" style="margin-top:12px"><span>La lista di oggi · ${l.righe.length} righe in ${l.blocchi.length} blocchi · circa ${l.minuti} min</span><span>${stelle.length ? `${stelle.length} ${stelle.length === 1 ? "stella" : "stelle"} · ${eur(l.euroStelle)}` : "nessuna stella"}</span></div>
+    ${l.blocchi.map(b => `<div class="floorlabel" style="margin-top:8px"><span>${esc(b.nome)}</span>${segnoBlocco(b)}</div><ol class="steps" style="gap:4px">${[...b.righe, ...b.stelle].map(riga).join("")}</ol>`).join("")}
     ${l.zona.length ? `<div class="floorlabel"><span>Zone comuni di oggi (alla prima camera della signora)</span><span>${l.euroZona ? eur(l.euroZona) : ""}</span></div><ol class="steps" style="gap:4px">${l.zona.map(riga).join("")}</ol>` : ""}`;
 }
 
@@ -1762,7 +1783,8 @@ function collega() {
   document.querySelectorAll("[data-gov-soglia]").forEach(b => b.onclick = () => { const [k, d] = b.dataset.govSoglia.split("|"); const sg = soglieGov(); const lim = { camereSettimana: [1, 5], zonaMinuti: [5, 60], freddoGradi: [5, 18] }[k] || [0, 999]; const v = Math.min(lim[1], Math.max(lim[0], (sg[k] || 0) + Number(d))); salvaGov({ soglie: { ...sg, [k]: v } }); });
   document.querySelectorAll("[data-gov-livello]").forEach(b => b.onclick = () => { const liv = b.dataset.govLivello; if (!G.LIVELLI[liv]) return; salvaGov({ soglie: { ...soglieGov(), livello: liv } }).then(() => toast(`Livello ${G.LIVELLI[liv].nome}: le liste di domani cambiano da sole`)); });
   document.querySelectorAll("[data-gov-profilo]").forEach(b => b.onclick = () => { const [id, v] = b.dataset.govProfilo.split("|"); const profili = { ...((S.gov && S.gov.profili) || {}) }; profili[id] = v; salvaGov({ profili }); });
-  document.querySelectorAll("[data-gov-meteo]").forEach(b => b.onclick = () => { const [k, g] = b.dataset.govMeteo.split("|"); const meteo = { ...((S.gov && S.gov.meteo) || {}) }; if (Number(g) > 0) meteo[k] = L.aggiungiGiorni(L.oggiISO(), Number(g)); else delete meteo[k]; salvaGov({ meteo }).then(() => toast(Number(g) > 0 ? "Segnato: per qualche giorno le signore trovano le cose giuste nelle liste" : "Tolto")); });
+  document.querySelectorAll("[data-gov-meteo-pioggia]").forEach(b => b.onclick = () => { const on = b.dataset.govMeteoPioggia === "1"; const meteo = { ...((S.gov && S.gov.meteo) || {}) }; const oggi = L.oggiISO(); if (on) { meteo.pioggia = L.aggiungiGiorni(oggi, 2); meteo.vento = L.aggiungiGiorni(oggi, 2); meteo.umidita = L.aggiungiGiorni(oggi, 3); } else { delete meteo.pioggia; delete meteo.vento; delete meteo.umidita; } salvaGov({ meteo }).then(() => toast(on ? "Segnato: per due giorni esterni e scarichi entrano nelle liste, antimuffa per tre" : "Tolto")); });
+  document.querySelectorAll("[data-gov-meteo-stagione]").forEach(b => b.onclick = async () => { const scelta = await scegliTra("Che tempo arriva?", [["freddo", "Arriva il freddo"], ["caldo", "Arriva il caldo"], ["", "Né l'uno né l'altro (spegni)"]]); if (scelta === null) return; const meteo = { ...((S.gov && S.gov.meteo) || {}) }; delete meteo.freddo; delete meteo.caldo; if (scelta) meteo[scelta] = L.aggiungiGiorni(L.oggiISO(), 7); salvaGov({ meteo }).then(() => toast(scelta ? "Segnato: per una settimana coperte e trapuntine entrano nelle liste" : "Tolto")); });
   document.querySelectorAll("[data-gov-attiva]").forEach(b => b.onclick = () => { const [id, v] = b.dataset.govAttiva.split("|"); const regole = { ...(S.gov?.regole || {}) }; regole[id] = { ...(regole[id] || {}), attiva: v === "1" }; salvaGov({ regole }); });
   document.querySelectorAll("[data-gov-ogni]").forEach(b => b.onclick = () => { const [id, d] = b.dataset.govOgni.split("|"); const r = regoleGov().find(x => x.id === id) || G.CATALOGO.find(x => x.id === id) || (S.gov?.personali || {})[id]; if (!r) return; const sc = G.SCALA_OGNI.filter(x => x >= 3.5); let i = sc.findIndex(x => x >= r.ogni); if (i < 0) i = sc.length - 1; i = Math.min(sc.length - 1, Math.max(0, i - Number(d))); const regole = { ...(S.gov?.regole || {}) }; regole[id] = { ...(regole[id] || {}), ogni: sc[i] }; salvaGov({ regole }); });
   document.querySelectorAll("[data-gov-cancella-regola]").forEach(b => b.onclick = async () => { const id = b.dataset.govCancellaRegola; if (await chiedi("Cancello questa regola?", { si: "Sì, cancella", pericolo: true })) { const personali = { ...(S.gov?.personali || {}) }; delete personali[id]; salvaGov({ personali }); } });
@@ -1786,6 +1808,7 @@ function collega() {
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
   document.querySelectorAll("[data-unpay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.unpay.split("|"); segnaPagata(z, k, false); });
   document.querySelectorAll("[data-taglia]").forEach(b => b.onclick = () => { const [cam, t] = b.dataset.taglia.split("|"); const l = JSON.parse(JSON.stringify(S.listino)); l.taglia[cam] = t; salvaListino(l); });
+  document.querySelectorAll("[data-prezzo-stella]").forEach(i => i.onchange = () => { const k = i.dataset.prezzoStella; const v = Math.max(0, Number(i.value) || 0); salvaGov({ prezziStelle: { ...G.prezziStelle(S.gov), [k]: v } }).then(() => toast("Prezzo delle stelle salvato: i costi dei livelli sono aggiornati")); });
   document.querySelectorAll("[data-listino]").forEach(i => i.onchange = () => { const l = JSON.parse(JSON.stringify(S.listino)); const v = Math.max(0, Number(i.value) || 0); const [a, b] = i.dataset.listino.split("."); if (b) l[a][b] = v; else l[a] = v; salvaListino(l); });
   document.querySelectorAll("[data-voto]").forEach(i => i.onchange = () => { const v = L.votiCompleti(S.regole); const k = i.dataset.voto; const n = Math.max(0, Number(i.value) || 0); const nuovi = JSON.parse(JSON.stringify(v)); if (k === "bonusControllatrice" || k === "penalitaRichiesta") nuovi[k] = n; else nuovi[k].perc = n; const r = { ...S.regole, voti: nuovi }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-regola]").forEach(b => b.onclick = () => { const [k, v] = b.dataset.regola.split("|"); const r = { ...S.regole, [k]: v === "1" }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
@@ -1846,7 +1869,7 @@ function collegaFoglio() {
   document.querySelectorAll("[data-chip-testo]").forEach(b => b.onclick = () => { const [id, testo] = b.dataset.chipTesto.split("|"); const t = document.getElementById(id); if (!t) return; t.value = (t.value.trim() ? t.value.replace(/\s+$/, "") + (/[.!?]$/.test(t.value.trim()) ? " " : ". ") : "") + testo; t.focus(); t.setSelectionRange(t.value.length, t.value.length); });
   if (f.tipo === "inizio") {
     const p = S.pulizie[f.id];
-    document.querySelectorAll("[data-comincia]").forEach(b => b.onclick = () => { if (!p) return; cambiaStato(p, "in_corso", "", { tieniFoglio: true }); toast(`Buon lavoro! Tocca ogni riga quando è fatta; alla fine premi "Fatto, tutto".`); });
+    document.querySelectorAll("[data-comincia]").forEach(b => b.onclick = () => { if (!p) return; cambiaStato(p, "in_corso", "", { tieniFoglio: true }); toast(`Buon lavoro! Premi "Fatto" su ogni blocco e tocca le stelle; alla fine "Fatto, tutto".`); });
     document.querySelectorAll("[data-spunta]").forEach(b => b.onclick = () => { const [id, k] = b.dataset.spunta.split("|"); const sp = spunteDi(id); if (sp.non[k]) { delete sp.non[k]; sp.fatte[k] = true; } else if (sp.fatte[k]) delete sp.fatte[k]; else sp.fatte[k] = true; salvaSpunte(); disegnaFoglio(); });
     document.querySelectorAll("[data-non-riesco]").forEach(b => b.onclick = async () => { const q = S.pulizie[b.dataset.nonRiesco]; if (!q) return; const k = await scegliRigaNonRiesco(q); if (!k) return; const motivo = await scegliMotivoRifinitura(); if (!motivo) return; const sp = spunteDi(q.id); sp.non[k] = motivo; delete sp.fatte[k]; salvaSpunte(); disegnaFoglio(); toast("Va bene: la rimetto un'altra volta"); });
     document.querySelectorAll("[data-fatta-foglio]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fattaFoglio));
@@ -2052,14 +2075,14 @@ function confermaFinito(p) {
   const lista = listaDi(p), sp = spunteDi(p.id);
   const righe = righeDi(p);
   // con la lista: si chiede solo delle righe non toccate; senza lista (lavori a parte): le vecchie richieste da spuntare
-  const voci = lista ? righe.filter(r => !sp.fatte[r.k] && !sp.non[r.k]).map(r => ({ id: r.k, testo: r.testo, stella: r.tipo === "stella" }))
+  const voci = lista ? righe.filter(r => !sp.fatte[r.k] && !sp.non[r.k]).map(r => ({ id: r.k, testo: r.testo, stella: r.tipo === "stella", blocco: r.tipo === "blocco" }))
     : p.origine === "governante" ? [{ id: "G0", testo: `⭐ ${p.titolo}`, fissa: true }] : L.richiesteDaVerificare(p, sempreDi(p));
   if (lista && !voci.length) return Promise.resolve(true);
   return new Promise((ok) => {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
     const el = document.createElement("div"); el.className = "conferma";
-    el.innerHTML = `<div class="conferma-box chiusura" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>${lista ? `In <b>${esc(c.nome)}</b> queste righe non le hai toccate. Le hai fatte?` : `Sei sicura che in <b>${esc(c.nome)}</b> tutto sia stato fatto al meglio?`}</span></div>
-      ${voci.length ? `<p class="muted" style="margin:0 0 6px">${lista ? "Tocca quelle che hai fatto:" : "Spunta una per una:"}</p><div class="chiusura-voci">${voci.map(v => `<label class="chiusura-voce"><input type="checkbox" data-voce="${esc(v.id)}"><span>${esc(v.testo)}${v.stella || /^⭐/.test(v.testo) ? ` <small>stella</small>` : v.fissa ? ` <small>sempre in ${esc(c.nome)}</small>` : lista ? "" : ` <small>oggi</small>`}</span></label>`).join("")}</div>` : ""}
+    el.innerHTML = `<div class="conferma-box chiusura" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>${lista ? (voci.length === 1 ? `In <b>${esc(c.nome)}</b> manca un tocco: ${voci[0].blocco ? "questo blocco l'hai fatto?" : "questa l'hai fatta?"}` : `In <b>${esc(c.nome)}</b> non hai toccato tutto. Questi li hai fatti?`) : `Sei sicura che in <b>${esc(c.nome)}</b> tutto sia stato fatto al meglio?`}</span></div>
+      ${voci.length ? `<p class="muted" style="margin:0 0 6px">${lista ? "Tocca quelle che hai fatto:" : "Spunta una per una:"}</p><div class="chiusura-voci">${voci.map(v => `<label class="chiusura-voce"><input type="checkbox" data-voce="${esc(v.id)}"><span>${esc(v.testo)}${v.stella || /^⭐/.test(v.testo) ? ` <small>stella</small>` : v.blocco ? ` <small>blocco</small>` : v.fissa ? ` <small>sempre in ${esc(c.nome)}</small>` : lista ? "" : ` <small>oggi</small>`}</span></label>`).join("")}</div>` : ""}
       <button class="big ok" data-si ${voci.length && !lista ? "disabled" : ""}>${voci.length ? "Sì, le ho fatte tutte ✓" : "Sì, è tutta a posto ✓"}</button>${lista ? `<button class="big skip" data-parte>Chiudi lo stesso: quelle senza spunta non le ho fatte</button>` : ""}<button class="big undo" data-no>Aspetta, controllo</button></div>`;
     document.body.appendChild(el);
     const bSi = el.querySelector("[data-si]"), bParte = el.querySelector("[data-parte]");
@@ -2374,6 +2397,18 @@ function scegliMotivoRifinitura() {
     el.innerHTML = `<div class="conferma-box" role="dialog"><p>Perché non riesci a farla?</p>${["Manca il prodotto", "C'è l'ospite", "Non c'è tempo", "Non so come si fa"].map(m => `<button class="big undo" data-m="${esc(m)}">${esc(m)}</button>`).join("")}<button class="big close" data-no>Lascia stare</button></div>`;
     document.body.appendChild(el);
     el.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { el.remove(); ok(b.dataset.m); });
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
+  });
+}
+// Scelta con un tocco tra poche cose: scegliTra("Che tempo arriva?", [["freddo", "Arriva il freddo"], …]) → valore, oppure null se lascia stare
+function scegliTra(testo, scelte) {
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box" role="dialog"><p>${esc(testo)}</p>${scelte.map(([v, t]) => `<button class="big undo" data-v="${esc(v)}">${esc(t)}</button>`).join("")}<button class="big close" data-no>Lascia stare</button></div>`;
+    document.body.appendChild(el);
+    el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { el.remove(); ok(b.dataset.v); });
     el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
     el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
   });

@@ -806,3 +806,26 @@ body.nonna .sig-riga .sig-testo b{font-size:22px}
 .conto-livelli div.scelto{outline:2px solid var(--accent)}
 .conto-livelli b{display:block;font:800 14px var(--f-display);color:var(--fg);margin-bottom:2px}
 .conto-livelli strong{color:var(--fg)}
+
+/* --- 0.27 · la lista a blocchi: un tasto Fatto per blocco, le righe dentro si leggono; due tasti grandi per il meteo --- */
+.sig-guida{font:600 13px/1.35 var(--f-body);color:var(--muted);margin:12px 4px 0}
+.sig-blocco{padding-top:10px}
+.sig-blocco-t{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px}
+.sig-blocco-t .sig-sez-t{margin:0 2px;font-size:13px;color:var(--fg)}
+.sig-blocco-t .sig-non-perche{font:700 13px var(--f-body);margin:2px 2px 0}
+.sig-blocco-fatto{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;min-height:46px;padding:0 18px;font:800 14px var(--f-display);letter-spacing:.05em;text-transform:uppercase;cursor:pointer;color:#fff;background:linear-gradient(135deg,#5A8AD6,#143880 40%,#2A56A6 55%,#0A2252);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 4px rgba(0,0,0,.25);text-shadow:0 1px 1px rgba(0,0,0,.4)}
+.sig-blocco-fatto .ic{width:20px;height:20px;stroke-width:3}
+.sig-blocco-fatto.fatta{background:linear-gradient(135deg,#4DBC6C,#1A7B3B 45%,#2B9B4D 60%,#0B5024)}
+.sig-blocco-fatto.non{background:linear-gradient(135deg,#B0BDD0,#7A889D 45%,#95A3B7 60%,#5A6980);color:#121822;text-shadow:none}
+.sig-blocco-fatto:disabled{cursor:default;opacity:.9}
+.sig-blocco.fatta{background:var(--done-bg)}
+.sig-blocco.non{background:var(--todo-bg)}
+.sig-riga.letta{cursor:default;min-height:52px;padding:9px 4px}
+.sig-riga.letta .sig-testo b{font-size:18px}
+.sig-riga.letta .sig-num{width:32px;height:32px;font-size:14px}
+.sig-riga.letta .sig-num.fatta .ic{width:18px;height:18px}
+.sig-blocco .sig-riga.stella{background:rgba(255,215,94,.12);border-radius:12px;margin-top:4px}
+.meteo-tasti{display:grid;gap:8px}
+.meteo-tasti .pro-btn{margin-top:0;min-height:60px;font-size:15px;text-transform:none;letter-spacing:0}
+.meteo-tasti .pro-btn:not(.blu){--al1:#B0BDD0;--al2:#7A889D;--al3:#95A3B7;--al4:#5A6980;--al5:#8593A7;--tx:#121822;--inciso:0 1px 0 rgba(255,255,255,.55);--ombra:rgba(70,85,110,.5);--sp:#4B586A;--bordo:rgba(30,45,70,.3);--luce:rgba(255,255,255,.75)}
+body.nonna .sig-riga.letta .sig-testo b{font-size:20px}

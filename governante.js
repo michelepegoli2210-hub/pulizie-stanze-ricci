@@ -13,8 +13,8 @@
 //  Due profili: Lusso (tutto il catalogo) e Base (solo le righe con Profilo base = Sì). Tre livelli: Igiene, Albergo, Lusso pieno.
 // ============================================================================
 import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, passaggiCamera, CALENDARIO_CAMERE } from "./logica.js";
-import { RIGHE, PARTI, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO } from "./catalogo.js";
-export { RIGHE, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO };
+import { RIGHE, PARTI, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA } from "./catalogo.js";
+export { RIGHE, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA };
 
 export const LUOGHI_COMUNI = [
   { id: "corridoio_p1",   nome: "Corridoio 1° piano",     zona: "p1", tipo: "comune" },
@@ -84,8 +84,12 @@ export const SCHEDA_MATERIALI = [
 // ============================================================================
 //  IL CATALOGO: le parti del file, con il prezzo a minuto
 // ============================================================================
-export const EURO_MINUTO = 0.25;
-export const CATALOGO = PARTI.map(p => ({ ...p, euro: Math.round(p.minuti * EURO_MINUTO * 100) / 100 }));
+export const EURO_MINUTO = 0.25; // (fino alla 0.26: prezzo a minuto; dalla 0.27 si usa il listino a fasce qui sotto)
+// Il listino delle stelle: Michele lo cambia in Paghe → Listino (impostazioni/governante.prezziStelle); tre fasce di minuti
+export const PREZZI_STELLE_BASE = { fino5: 1, fino10: 2, oltre10: 3 };
+export function prezziStelle(imp) { return { ...PREZZI_STELLE_BASE, ...((imp && imp.prezziStelle) || {}) }; }
+export function prezzoStella(minuti, prezzi = PREZZI_STELLE_BASE) { const m = Number(minuti) || 0; return Number(m <= 5 ? prezzi.fino5 : m <= 10 ? prezzi.fino10 : prezzi.oltre10) || 0; }
+export const CATALOGO = PARTI.map(p => ({ ...p, euro: prezzoStella(p.minuti) }));
 export const REGOLE_GOVERNANTE = CATALOGO;
 export const RIGA_DI = Object.fromEntries(RIGHE.map(r => [r.id, r]));
 export const GRUPPI = { camera: "Camera", bagno: "Bagno", cucina: "Cucina (appartamenti)", balcone: "Balcone", stagioni: "Meteo e stagioni", comuni: "Zone comuni", lavanderia: "Lavanderia e attrezzi", P: "Le tue regole" };
@@ -286,10 +290,10 @@ export function nuovoId(vecchio) {
   return parti.length ? parti[0].id : codice;
 }
 // Soglie di partenza (si cambiano dall'app)
-export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, euroMinuto: EURO_MINUTO, livello: "igiene", zonaMinuti: 20 };
-export const BUDGET_BASE = { ripasso: 15, totale: 30, libera: 45, baseRipasso: 0, baseTotale: 10 };
-// Quante stelle al massimo in un passaggio (il limite vero è il budget in minuti; nel ripasso Michele vuole 1-2 cose, nel Base una sola)
-export const STELLE_MAX = { ripasso: 2, totale: 5, libera: 6, base: 1 };
+export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, livello: "igiene", zonaMinuti: 20 };
+export const BUDGET_BASE = { ripasso: 15, totale: 30, libera: 45, baseRipasso: 10, baseTotale: 25 };
+// Quante stelle al massimo in un passaggio (Michele, 0.27): 2 in un ripasso, 3 in una totale; dentro il budget in minuti del passaggio
+export const STELLE_MAX = { ripasso: 2, totale: 3, libera: 3 };
 export const SCALA_OGNI = [1, 3.5, 7, 14, 21, 30, 45, 60, 90, 120, 180, 365];
 export function etichettaOgni(g) {
   if (!g) return "a ogni pulizia";
@@ -333,7 +337,8 @@ function applicaLivello(r, livello) {
 export function regoleAttive(imp, opz = {}) {
   const mod = (imp && imp.regole) || {}, personali = (imp && imp.personali) || {};
   const livello = opz.livello || livelloDi(imp);
-  const base = CATALOGO.map(r => { const m = { ...(mod[r.codice] || {}), ...(mod[r.id] || {}) }; delete m.dentroTotale; const x = { ...r, ...m }; if (mod[r.codice]?.attiva === false) x.attiva = false; return x; });
+  const prezzi = prezziStelle(imp);
+  const base = CATALOGO.map(r => { const m = { ...(mod[r.codice] || {}), ...(mod[r.id] || {}) }; delete m.dentroTotale; const x = { ...r, ...m, euro: prezzoStella(m.minuti ?? r.minuti, prezzi) }; if (mod[r.codice]?.attiva === false) x.attiva = false; return x; });
   const extra = Object.values(personali).map(r => ({ priorita: 2, euro: 0, quando: "ripasso", gruppo: "P", icona: "stella", controllo: "", tipo: "rotazione", blocco: "rotazione", ...r, codice: r.id, personale: true, ...(mod[r.id] || {}) }));
   return [...base, ...extra].filter(r => r.attiva !== false).map(r => applicaLivello(r, livello));
 }
@@ -362,21 +367,28 @@ export function passoDi(p, camera, imp) {
   const libera = tipo === "totale" && vuotaDopo;
   const standard = profilo === "base" ? (tipo === "totale" ? BUDGET_BASE.baseTotale : BUDGET_BASE.baseRipasso) : (tipo === "totale" ? (libera ? BUDGET_BASE.libera : BUDGET_BASE.totale) : BUDGET_BASE.ripasso);
   const budget = cal && cal.libera === libera ? cal.budget : standard;
-  const stelle = profilo === "base" ? STELLE_MAX.base : tipo === "ripasso" ? STELLE_MAX.ripasso : libera ? STELLE_MAX.libera : STELLE_MAX.totale;
+  const stelle = tipo === "ripasso" ? STELLE_MAX.ripasso : libera ? STELLE_MAX.libera : STELLE_MAX.totale;
   return { tipo, budget, libera, base: profilo === "base", profilo, stelle, daCalendario: !!cal, daConfermare: !!(cal && cal.daConfermare), aperto: !!(CALENDARIO_CAMERE[p.camera] && CALENDARIO_CAMERE[p.camera].aperto) };
 }
 
 // ============================================================================
 //  LA LISTA DELLA SIGNORA: le righe grandi del foglio "Checklist signora" per quel passaggio
 // ============================================================================
+// L'ordine dei blocchi sullo schermo: letto · bagno · camera · cucina · alla partenza · pavimenti e controllo finale (il controllo chiude la camera)
+export const ORDINE_BLOCCHI = BLOCCHI_LISTA.map(b => b.id);
+export const BLOCCO_DI = Object.fromEntries(BLOCCHI_LISTA.map(b => [b.id, b]));
 export function righeLista(passo, casa, partenza) {
   const prendi = (lista) => CHECKLIST.filter(c => c.lista === lista && !c.slot && (!c.soloPartenza || partenza) && (!c.soloTotale || passo.tipo === "totale"));
-  if (passo.base) return passo.tipo === "totale" ? [...prendi("base_ripasso"), ...prendi("base_totale")] : prendi("base_ripasso");
-  let righe = prendi("ripasso");
-  if (passo.tipo === "totale") { const chiusura = righe.filter(c => /^prima di chiudere/i.test(c.testo)); righe = [...righe.filter(c => !chiusura.includes(c)), ...prendi("totale"), ...chiusura]; }
-  if (casa) { const chiusura = righe.filter(c => /^prima di chiudere/i.test(c.testo)); righe = [...righe.filter(c => !chiusura.includes(c)), ...prendi("cucina"), ...chiusura]; }
-  return righe;
+  let righe;
+  if (passo.base) righe = passo.tipo === "totale" ? [...prendi("base_ripasso"), ...prendi("base_totale")] : prendi("base_ripasso");
+  else { righe = prendi("ripasso"); if (passo.tipo === "totale") righe = [...righe, ...prendi("totale")]; if (casa) righe = [...righe, ...prendi("cucina")]; }
+  // dentro ogni blocco l'ordine del foglio; "Prima di chiudere" sempre per ultima
+  const ord = c => ORDINE_BLOCCHI.indexOf(c.blocco || "camera");
+  return righe.map((c, i) => ({ ...c, _i: i })).sort((a, b) => (ord(a) - ord(b)) || (/^prima di chiudere/i.test(a.testo) - /^prima di chiudere/i.test(b.testo)) || (a._i - b._i)).map(({ _i, ...c }) => c);
 }
+// A quale blocco va una stella: letto per le cose del letto, bagno per i codici B, cucina per i K, camera per il resto
+const CODICI_LETTO = new Set(["C24", "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "B37", "P06", "M01"]);
+export function bloccoStella(s) { const c = String(s.codice || ""); if (CODICI_LETTO.has(c)) return "letto"; if (c[0] === "B") return "bagno"; if (c[0] === "K") return "cucina"; if (/bagno/i.test(s.posto || "")) return "bagno"; if (/cucina/i.test(s.posto || "")) return "cucina"; return "camera"; }
 export function codiciLista(passo, casa, partenza) { return new Set(righeLista(passo, casa, partenza).flatMap(c => c.codici)); }
 export function minutiLista(passo, casa, partenza) { return righeLista(passo, casa, partenza).reduce((s, c) => s + (c.minuti || 0), 0); }
 // La riga "Una cosa di igiene a rotazione (una per volta)" del profilo Base: da quali cose si pesca per prima
@@ -446,7 +458,7 @@ export function inizioGovernante(ctx) { if (ctx.inizio) return ctx.inizio; const
 // Urgenza: più alta = prima. Una cosa mai registrata vale come fatta il giorno in cui la governante è partita.
 function urgenza(ogni, ultima, oggi, inizio) { if (!ogni) return 99; if (ultima) return giorniTra(ultima, oggi) / ogni; return 1 + Math.max(0, giorniTra(inizio, oggi)) / ogni; }
 // Il meteo segnato da Michele: { pioggia: "AAAA-MM-GG fino", umidita, freddo, caldo, vento }
-function meteoAttivo(ctx, trigger, iso) { const m = ctx.meteo || {}; const chiavi = trigger === "pioggia" ? ["pioggia", "vento"] : [trigger]; return chiavi.some(k => m[k] && m[k] >= iso); }
+function meteoAttivo(ctx, trigger, iso) { const m = ctx.meteo || {}; const chiavi = trigger === "pioggia" ? ["pioggia", "vento"] : trigger === "freddo" || trigger === "caldo" ? ["freddo", "caldo"] : trigger === "vento" ? ["vento", "pioggia"] : [trigger]; return chiavi.some(k => m[k] && m[k] >= iso); }
 
 function liberaLaNotte(soggiorni, camera, iso) { return !soggiorni.some(s => s.camera === camera && soggiornoCopre(s, iso)); }
 function nottiDiFila(soggiorni, camera, iso) { const s = soggiorni.find(x => x.camera === camera && soggiornoCopre(x, iso)); return s ? giorniTra(s.inizio, iso) : 0; }
@@ -534,28 +546,23 @@ export const routinePer = rifiniturePer;
 export function listaDelGiorno(p, ctx) {
   const camere = ctx.camere, l = trovaLuogo(p.camera, camere, ctx.luoghi || LUOGHI_COMUNI) || { id: p.camera, nome: p.camera, tipo: "camera" };
   const passo = passoDi(p, l, ctx.imp || null);
-  const base = righeLista(passo, l.tipo === "casa", !!p.partenza).map((c, i) => { const m = c.testo.match(/^(.*?)\s*\(([^)]+)\)\s*$/); return { k: `L${c.lista}${c.n}`, tipo: "riga", testo: m ? m[1] : c.testo, sotto: m ? m[2] : "", codici: c.codici, minuti: c.minuti, lista: c.lista }; });
+  const base = righeLista(passo, l.tipo === "casa", !!p.partenza).map((c) => { const m = c.testo.match(/^(.*?)\s*\(([^)]+)\)\s*$/); return { k: `L${c.lista}${c.n}`, tipo: "riga", testo: m ? m[1] : c.testo, sotto: m ? m[2] : "", codici: c.codici, minuti: c.minuti, lista: c.lista, blocco: c.blocco || "camera" }; });
   const tutte = ctx.stelle || rifiniturePer(p, ctx);
   const stelle = tutte.filter(s => !s.sempre && !s.comune), zona = tutte.filter(s => s.comune);
-  const righe = base.slice();
-  const chiusura = r => r.tipo === "riga" && /^prima di chiudere/i.test(r.testo);
-  const indiceChiusura = () => { const i = righe.findIndex(chiusura); return i >= 0 ? i : righe.length; };
-  // la lettera del posto della stella: B bagno, K cucina, C camera (e balcone)
-  const letteraDi = s => /bagno/i.test(s.posto || "") || (s.codice || "")[0] === "B" ? "B" : /cucina/i.test(s.posto || "") || (s.codice || "")[0] === "K" ? "K" : "C";
   const azione = s => { const r = RIGA_DI[s.codice]; const a = r && r.regola ? r.regola.replace(/\s*\(.*$/, "").trim() : ""; return a && a.length <= 60 ? a : ""; };
-  const rigaStella = s => ({ k: `S${s.regola}`, tipo: "stella", testo: s.parte ? `${s.superficie}: ${s.parte}` : s.superficie || s.nome, azione: s.parte ? "" : azione(s), sotto: `${s.minuti} min${s.prodotto && !/^nessuno/.test(s.prodotto) ? " · " + s.prodotto : ""}`, codici: [s.codice], minuti: s.minuti, stella: s });
-  for (const s of stelle) {
-    const L = letteraDi(s); let at = -1;
-    // dopo l'ultima riga grande che parla solo di quel posto; se non c'è, dopo l'ultima che lo nomina; altrimenti prima di "Prima di chiudere"
-    for (let i = righe.length - 1; i >= 0 && at < 0; i--) { const r = righe[i]; if (r.tipo === "riga" && !chiusura(r) && r.codici.length && r.codici.every(c => c[0] === L)) at = i + 1; }
-    for (let i = righe.length - 1; i >= 0 && at < 0; i--) { const r = righe[i]; if (r.tipo === "riga" && !chiusura(r) && r.codici.some(c => c[0] === L)) at = i + 1; }
-    if (at < 0) at = indiceChiusura();
-    righe.splice(at, 0, rigaStella(s));
-  }
+  const rigaStella = s => ({ k: `S${s.regola}`, tipo: "stella", testo: s.parte ? `${s.superficie}: ${s.parte}` : s.superficie || s.nome, azione: s.parte ? "" : azione(s), sotto: `${s.minuti} min${s.prodotto && !/^nessuno/.test(s.prodotto) ? " · " + s.prodotto : ""}`, codici: [s.codice], minuti: s.minuti, stella: s, blocco: bloccoStella(s) });
+  // i blocchi: un titolo grande, le righe dentro si leggono, le stelle del blocco in fondo al blocco e si toccano una per una
+  const blocchi = [];
+  const trova = id => { let b = blocchi.find(x => x.id === id); if (!b) { const def = BLOCCO_DI[id] || { id, nome: id, breve: id }; b = { id, k: `B:${id}`, nome: def.nome, breve: def.breve, righe: [], stelle: [], codici: [], minuti: 0 }; blocchi.push(b); } return b; };
+  for (const r of base) { const b = trova(r.blocco); b.righe.push(r); b.codici.push(...r.codici); b.minuti += r.minuti || 0; }
+  for (const s of stelle) { const r = rigaStella(s); let b = blocchi.find(x => x.id === r.blocco); if (!b) { b = trova(r.blocco); } b.stelle.push(r); }
+  blocchi.sort((a, b) => ORDINE_BLOCCHI.indexOf(a.id) - ORDINE_BLOCCHI.indexOf(b.id));
+  for (const b of blocchi) { const breveTot = BLOCCO_DI[b.id]; if (breveTot && passo.tipo !== "totale") b.nome = breveTot.breve; }
+  const righe = blocchi.flatMap(b => [...b.righe, ...b.stelle]);
   righe.forEach((r, i) => r.n = i + 1);
-  const righeZona = zona.map(s => ({ ...rigaStella(s), k: `Z${s.regola}|${s.luogo}`, luogo: s.luogo, luogoNome: s.luogoNome, sempre: !!s.sempre }));
+  const righeZona = zona.map(s => ({ ...rigaStella(s), k: `Z${s.regola}|${s.luogo}`, luogo: s.luogo, luogoNome: s.luogoNome, sempre: !!s.sempre, blocco: "zona" }));
   const euro = xs => Math.round(xs.reduce((s, x) => s + (x.euro || 0), 0) * 100) / 100;
-  return { passo, righe, minuti: righe.reduce((s, r) => s + (r.minuti || 0), 0), stelle: stelle.length, euroStelle: euro(stelle), zona: righeZona, minutiZona: zona.reduce((s, x) => s + (x.minuti || 0), 0), euroZona: euro(zona.filter(s => !s.sempre)) };
+  return { passo, blocchi, righe, minuti: righe.reduce((s, r) => s + (r.minuti || 0), 0), stelle: stelle.length, euroStelle: euro(stelle), zona: righeZona, minutiZona: zona.reduce((s, x) => s + (x.minuti || 0), 0), euroZona: euro(zona.filter(s => !s.sempre)) };
 }
 
 // ============================================================================
@@ -815,21 +822,23 @@ export function tabellone(ctx, settimane = 13) {
 }
 // Il conto dei tre livelli: minuti di rifiniture a settimana per camera, euro a settimana e al mese, quanto ci sta nel calendario
 export function contoLivelli(ctx) {
-  const { camere } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, imp = ctx.imp || null, flags = ctx.flags || {}, sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) }, oggi = ctx.oggi;
+  const { camere } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, imp = ctx.imp || null, flags = ctx.flags || {}, oggi = ctx.oggi;
+  const prezzi = prezziStelle(imp);
   const out = {};
   for (const liv of Object.keys(LIVELLI)) {
     const regole = regoleAttive(imp, { livello: liv }).filter(r => STELLA_POSSIBILE(r) && !r.fuoriLivello);
-    let domandaTot = 0, capacitaTot = 0, fattaTot = 0, nLusso = 0, domandaLusso = 0; const perPosto = [];
+    let domandaTot = 0, capacitaTot = 0, euroPienoTot = 0, euroFattiTot = 0, nLusso = 0, domandaLusso = 0, euroLusso = 0; const perPosto = [];
     for (const l of camere) {
       const profilo = profiloDi(l, imp);
-      const dom = regole.filter(r => valePerProfilo(r, profilo) && copre(regole, r, l, camere, luoghi, flags) && inStagione(r, oggi) && !r.soloFissi).reduce((s, r) => s + r.minuti * 7 / ogniAttuale(r, oggi, l, flags), 0);
+      const mie = regole.filter(r => valePerProfilo(r, profilo) && copre(regole, r, l, camere, luoghi, flags) && inStagione(r, oggi) && !r.soloFissi);
+      const dom = mie.reduce((s, r) => s + r.minuti * 7 / ogniAttuale(r, oggi, l, flags), 0);              // minuti di stelle a settimana
+      const euroSett = mie.reduce((s, r) => s + prezzoStella(r.minuti, prezzi) * 7 / ogniAttuale(r, oggi, l, flags), 0); // euro di stelle a settimana, listino a fasce
       const cap = passiDi(l.id).reduce((s, x) => s + (x.budget || 0), 0);
-      const fatta = Math.min(dom, cap);
-      domandaTot += dom; capacitaTot += cap; fattaTot += fatta; if (profilo === "lusso") { nLusso++; domandaLusso += dom; }
-      perPosto.push({ luogo: l.id, nome: l.nome, profilo, domanda: Math.round(dom), capacita: cap, ciSta: dom ? Math.min(100, Math.round(cap / dom * 100)) : 100 });
+      const quota = dom ? Math.min(1, cap / dom) : 1;
+      domandaTot += dom; capacitaTot += cap; euroPienoTot += euroSett; euroFattiTot += euroSett * quota; if (profilo === "lusso") { nLusso++; domandaLusso += dom; euroLusso += euroSett; }
+      perPosto.push({ luogo: l.id, nome: l.nome, profilo, domanda: Math.round(dom), capacita: cap, ciSta: Math.round(quota * 100), euroSettimana: Math.round(euroSett * 10) / 10 });
     }
-    const euroMin = sg.euroMinuto || EURO_MINUTO;
-    out[liv] = { livello: liv, ...LIVELLI[liv], minutiCamera: nLusso ? Math.round(domandaLusso / nLusso) : 0, euroSettimanaCamera: nLusso ? Math.round(domandaLusso / nLusso * euroMin * 10) / 10 : 0, euroMese: Math.round(fattaTot * euroMin * 52 / 12), euroMesePieno: Math.round(domandaTot * euroMin * 52 / 12), ciSta: domandaTot ? Math.min(100, Math.round(capacitaTot / domandaTot * 100)) : 100, domanda: Math.round(domandaTot), capacita: capacitaTot, perPosto, regole: regole.length };
+    out[liv] = { livello: liv, ...LIVELLI[liv], minutiCamera: nLusso ? Math.round(domandaLusso / nLusso) : 0, euroSettimanaCamera: nLusso ? Math.round(euroLusso / nLusso * 10) / 10 : 0, euroMese: Math.round(euroFattiTot * 52 / 12), euroMesePieno: Math.round(euroPienoTot * 52 / 12), ciSta: domandaTot ? Math.min(100, Math.round(capacitaTot / domandaTot * 100)) : 100, domanda: Math.round(domandaTot), capacita: capacitaTot, perPosto, regole: regole.length, prezzi };
   }
   return out;
 }
