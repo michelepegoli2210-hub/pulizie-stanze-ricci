@@ -817,7 +817,7 @@ export function tabellone(ctx, settimane = 13) {
     if (r.quando === "cambio" && !haTotale(l)) return "solo nella totale: questo posto non ha una totale nel calendario";
     if (r.quando === "libera") return haLibera(l) ? "a camera vuota: non entra nei 45 minuti del passaggio a camera vuota" : maiLibera(l) ? "solo a camera libera: nel prospetto questa camera non è mai libera" : "a camera libera: in coda nei consigli (massimo 8 a settimana)";
     const b = budgetSett(l); if (r.minuti > Math.max(...passiDi(l.id).map(x => x.budget || 0), 0)) return `dura ${r.minuti} minuti, più del budget di un passaggio (${passiDi(l.id).map(x => x.budget).join("/")}′)`;
-    return `non entra nei ${b} minuti a settimana dei passaggi di questo posto: allenta il ritmo del modo (+) solo se accetti il costo, oppure spegni la regola`;
+    return `non entra nei ${b} minuti a settimana dei passaggi di questo posto: alza i minuti di stelle del modo (o del foglio "Calendario vero") se accetti il costo, allenta il ritmo del modo con −, oppure spegni la regola`;
   };
   const celle = [], modoLuogo = {};
   for (const l of camere) {

@@ -10,7 +10,7 @@ import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 import * as G from "./governante.js";
 
-export const VERSIONE = "0.29.0";
+export const VERSIONE = "0.29.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
