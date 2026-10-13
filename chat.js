@@ -19,7 +19,9 @@ export const TESTO_CALDO = "Arriva il caldo: via le coperte pesanti, filtri dei 
 export const NOMI_MODI_CHAT = { tecnici: "Tecnici", operai: "Operai", booking: "Booking" };
 // per queste domande la governante non propone mai di "fare da sola" (i soldi li conferma sempre Michele)
 export const NON_IMPARA = new Set(["paga", "budget", "manutenzione", "regola"]);
-export const BUDGET_STELLE_BASE = 350; // € al mese di stelle: la domanda 7 scatta al 90%; si cambia in Regole
+export const BUDGET_STELLE_BASE = 400; // € al mese di stelle (Michele: l'avviso solo quando sfora davvero): la domanda 7 scatta al 90%; si cambia in Regole
+export const ORA_FINE_SIGNORE = 14; // dopo quest'ora le proposte vanno al prossimo giorno di passaggio, mai a "oggi"
+export const GRUPPI = { nome: "nomi", manutenzione: "manutenzioni" }; // domande che si fanno in una schermata sola, un tocco per riga, fuori dalle 3 del giorno
 export const MOTIVO_PRODOTTO = /prodotto/i;
 
 const nomeZona = (zone, z) => `Signora ${(zone && zone[z] && zone[z].breve) || z}`;
@@ -94,15 +96,24 @@ export function domandeCameraLibera(st) {
     // una fondo già in programma per questa camera?
     if (Object.values(st.pulizie || {}).some(p => p.camera === c.id && p.origine === "governante" && (p.regola === "C57" || p.grande) && p.data >= oggi && p.stato !== "non_fatta")) continue;
     if (noDiRecente(c.id)) continue;
-    // la prima finestra libera di almeno 2 giorni nei prossimi 7, senza contare la domenica come giorno di lavoro
+    // la prima finestra libera di almeno 2 giorni nei prossimi 7, senza contare la domenica come giorno di lavoro.
+    // Dopo l'orario delle signore (dalle 14) "oggi" non vale più: si parte da domani (Michele, ritocco 2)
+    const ora = st.ora != null ? st.ora : L.partiRoma(st.adesso || new Date()).h;
+    const primo = ora >= ORA_FINE_SIGNORE ? L.aggiungiGiorni(oggi, 1) : oggi;
+    const passaggi = new Set(L.passaggiCamera(c, st.regole).map(x => x.giorno));
     let trovata = null;
-    for (let i = 0; i <= 7 && !trovata; i++) {
+    for (let i = L.giorniTra(oggi, primo); i <= 7 && !trovata; i++) {
       const d = L.aggiungiGiorni(oggi, i); if (occupata(d)) continue;
       let n = 0, fine = d; while (!occupata(fine) && n < 14 && fine < orizzonte) { n++; fine = L.aggiungiGiorni(fine, 1); }
       if (n === 0) { i += 1; continue; }
       // il weekend normale dei Tecnici (venerdì → lunedì) non è una "camera libera": ci pensa già la totale del venerdì a camera vuota
       const haWeekend = (() => { for (let g = d, j = 0; j < n; j++, g = L.aggiungiGiorni(g, 1)) if (L.giornoSettimana(g) === 0 || L.giornoSettimana(g) === 6) return true; return false; })();
-      if (n >= 2 && !(n <= 3 && haWeekend)) { let giorno = d; while (L.giornoSettimana(giorno) === 0 && giorno < fine) giorno = L.aggiungiGiorni(giorno, 1); trovata = { da: d, fino: fine, giorni: n, giorno: giorno < fine ? giorno : d }; }
+      if (n >= 2 && !(n <= 3 && haWeekend)) {
+        // il giorno proposto: il primo giorno libero che è anche un giorno di passaggio della signora in quella camera; se no il primo feriale
+        const liberi = []; for (let g = d; g < fine; g = L.aggiungiGiorni(g, 1)) if (L.giornoSettimana(g) !== 0) liberi.push(g);
+        const giorno = liberi.find(g => passaggi.has(L.giornoSettimana(g))) || liberi[0] || d;
+        trovata = { da: d, fino: fine, giorni: n, giorno };
+      }
       else i += n; // salta la finestra corta
     }
     if (!trovata) continue;
@@ -203,7 +214,8 @@ export function domandeProdotto(st) {
       const m = String(x.k).match(/^S(.+)$/); const regola = m ? m[1] : null;
       const r = regola && st.catalogo ? st.catalogo.find(c => c.id === regola) : null;
       const noto = !!(r && r.prodotto && !/^(nessuno|—|-)$/i.test(r.prodotto));
-      const prodotto = noto ? r.prodotto : `il prodotto per «${x.testo || "quella cosa"}»`;
+      if (!noto) continue; // regola senza prodotto (si fa con un attrezzo) o sconosciuta: la risposta la riceve la signora, non Michele (ritocco 1)
+      const prodotto = r.prodotto;
       const k = `${L.normNome(prodotto)}|${p.zona}`;
       if (Object.values(spesa).some(v => !v.fatto && L.normNome(v.prodotto) === L.normNome(prodotto) && v.zona === p.zona)) continue; // già in lista
       const d = out[k] = out[k] || { prodotto, noto, zona: p.zona, per: [], ultima: p.data };
@@ -212,8 +224,8 @@ export function domandeProdotto(st) {
   }
   return Object.values(out).map(d => ({
     id: chiaveRisposta("prodotto", `${L.normNome(d.prodotto)}|${d.zona}|${d.ultima}`), tipo: "prodotto", chiave: `${L.normNome(d.prodotto)}|${d.zona}|${d.ultima}`, priorita: 15, quando: "mattina", urgente: false,
-    titolo: d.noto ? `Manca ${d.prodotto}` : `Manca un prodotto`,
-    testo: d.noto ? `Manca «${d.prodotto}» alla ${nomeZona(st.zone || ZONE, d.zona)} (per: ${d.per.slice(0, 3).join(", ")}). Che faccio?` : `Alla ${nomeZona(st.zone || ZONE, d.zona)} manca ${d.prodotto} (non so quale sia: nel catalogo non c'è scritto). Che faccio?`,
+    titolo: `Manca ${d.prodotto}`,
+    testo: `Manca «${d.prodotto}» alla ${nomeZona(st.zone || ZONE, d.zona)} (per: ${d.per.slice(0, 3).join(", ")}). Che faccio?`,
     tasti: [{ k: "io", testo: "Lo compro io" }, { k: "papa", testo: "Lo porta papà" }, { k: "salta", testo: "Salta questa settimana" }],
     parole: true, dati: d,
   }));
@@ -247,7 +259,7 @@ export function domandeManutenzione(st) {
       titolo: `${m.titolo || "Lavoro"} fermo da ${giorni} giorni`,
       testo: `«${m.titolo || "Lavoro"}»${c ? ` (${c.nome})` : ""} è segnalato da ${giorni} giorni${m.chiamato ? `, tecnico chiamato ${L.dataBreve(m.chiamato)}` : ""}${m.nota ? ` · nota: ${m.nota}` : ""}. Che faccio?`,
       tasti: [{ k: "chiamato", testo: m.chiamato ? "Richiamo il tecnico" : "Chiamo il tecnico: segna «chiamato»" }, { k: "fatto", testo: "È sistemato" }, { k: "aspetta", testo: "Aspetta ancora" }],
-      parole: true, dati: { id, titolo: m.titolo || "Lavoro", camera: m.camera || null, giorni } });
+      parole: true, dati: { id, titolo: m.titolo || "Lavoro", camera: m.camera || null, cameraNome: c ? c.nome : "", giorni, chiamato: m.chiamato || "" } });
   }
   return out;
 }
@@ -304,6 +316,10 @@ export function domandeImpara(st, candidate) {
   return out;
 }
 function ultimaRisposta(chat, tipo) { return Object.values(chat.risposte || {}).filter(r => r.tipo === tipo).sort((a, b) => (a.ora || "") < (b.ora || "") ? 1 : -1)[0] || null; }
+export const TITOLI_GRUPPI = {
+  nomi: { titolo: "Chi sono?", testo: n => `${n === 1 ? "Un nome nel prospetto non ha" : n + " nomi nel prospetto non hanno"} il tipo di ospite: chi sono? Un tocco per nome, lo ricordo per tutti i loro soggiorni.` },
+  manutenzioni: { titolo: "Lavori fermi", testo: n => `${n === 1 ? "Un lavoro di manutenzione è fermo" : n + " lavori di manutenzione sono fermi"} da più di ${GIORNI_MANUTENZIONE} giorni. Un tocco per riga.` },
+};
 export const TITOLI = { nome: "Nome nuovo: chi sono?", pioggia: "Ha piovuto: mando il messaggio?", freddo: "Arriva il freddo: coperte?", caldo: "Arriva il caldo: via le coperte?", libera: "Camera libera: la facciamo a fondo?", paga: "Pago così?", impara: "Lo faccio da sola?", controllo: "Camera non controllata da 2 settimane", nonriesco: "Una stella che la signora non riesce a fare", affidabilita: "Signora sotto il 90% di pulizie chiuse", prodotto: "Manca un prodotto", budget: "Budget delle stelle quasi finito", manutenzione: "Lavoro di manutenzione fermo", regola: "Una regola in ritardo in molte camere", partenza: "Prima di una partenza Booking" };
 
 // ---- Tutte le candidate, poi la selezione del giorno ---------------------------------------------------------------------
@@ -322,7 +338,14 @@ export function statoChat(st) {
   const ordina = (a, b) => (b.urgente - a.urgente) || (a.priorita - b.priorita) || (a.id < b.id ? -1 : 1);
   // quelle che la governante fa da sola (impara): escono dalla lista, l'app le esegue e scrive "Fatto da sola"
   const daSole = tutte.filter(d => auto[d.tipo] && d.tasti.some(t => t.k === auto[d.tipo]) && rilasciata(d)).map(d => ({ ...d, auto: auto[d.tipo] }));
-  const daChiedere = tutte.filter(d => !daSole.includes(d) && !(auto[d.tipo] && d.tasti.some(t => t.k === auto[d.tipo]))).sort(ordina);
+  // le domande "a gruppo" (nomi nuovi, lavori di manutenzione fermi): una schermata sola, un tocco per riga, fuori dalle 3 del giorno (ritocco 3)
+  const gruppi = [];
+  for (const [tipo, nomeGruppo] of Object.entries(GRUPPI)) {
+    const righe = tutte.filter(d => d.tipo === tipo && !daSole.includes(d) && !(auto[d.tipo] && d.tasti.some(t => t.k === auto[d.tipo])) && rilasciata(d)).sort(ordina).map(d => ({ ...d, gruppo: nomeGruppo }));
+    if (righe.length) gruppi.push({ id: `gruppo|${nomeGruppo}`, tipo: nomeGruppo, titolo: TITOLI_GRUPPI[nomeGruppo].titolo, testo: TITOLI_GRUPPI[nomeGruppo].testo(righe.length), righe });
+  }
+  const inGruppo = new Set(gruppi.flatMap(g => g.righe.map(d => d.id)));
+  const daChiedere = tutte.filter(d => !daSole.includes(d) && !inGruppo.has(d.id) && !(auto[d.tipo] && d.tasti.some(t => t.k === auto[d.tipo]))).sort(ordina);
   const risposteOggi = Object.values(risposte).filter(r => r.il === oggi && !r.auto && !r.fuoriConto); // le urgenze e le domande nate da un tuo tocco non contano nei 3
   let posti = Math.max(0, MAX_AL_GIORNO - risposteOggi.length);
   const aperte = [], inAttesa = [], nonAncora = [];
@@ -338,13 +361,14 @@ export function statoChat(st) {
   aperte.sort(ordina);
   const storico = Object.values(risposte).filter(r => r.il >= L.aggiungiGiorni(oggi, -GIORNI_STORICO)).sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1);
   const prossime = nonAncora.length ? (nonAncora.some(d => d.quando === "mattina") && ora < ORA_MATTINA ? `${nonAncora.length} alle 8` : `${nonAncora.filter(d => d.quando === "report").length} alle 13`) : "";
-  return { aperte, inAttesa, nonAncora, daSole, storico, risposteOggi, urgenti: aperte.filter(d => d.urgente).length, prossime, ora };
+  return { aperte, inAttesa, nonAncora, daSole, gruppi, storico, risposteOggi, urgenti: aperte.filter(d => d.urgente).length, prossime, ora };
 }
 // La risposta da registrare (l'azione la fa l'app): aggiorna anche il conteggio per "impara"
 export function registraRisposta(chat, d, k, extra = {}) {
   const c = { risposte: { ...(chat && chat.risposte || {}) }, conta: { ...(chat && chat.conta || {}) }, automatiche: { ...(chat && chat.automatiche || {}) } };
   const tasto = (d.tasti || []).find(t => t.k === k);
-  c.risposte[d.id] = { id: d.id, tipo: d.tipo, chiave: d.chiave, titolo: d.titolo, testo: d.testo, risposta: k, testoRisposta: tasto ? tasto.testo : (k === "parole" ? "a parole" : k), il: extra.il, ora: extra.ora, fatto: extra.fatto || "", parole: extra.parole || "", auto: !!extra.auto, fuoriConto: !!(d.urgente || d.quando === "subito"), dati: d.dati || {} };
+  const gruppo = d.gruppo || GRUPPI[d.tipo] || "";
+  c.risposte[d.id] = { id: d.id, tipo: d.tipo, chiave: d.chiave, titolo: d.titolo, testo: d.testo, risposta: k, testoRisposta: tasto ? tasto.testo : (k === "parole" ? "a parole" : k), il: extra.il, ora: extra.ora, fatto: extra.fatto || "", parole: extra.parole || "", auto: !!extra.auto, fuoriConto: !!(d.urgente || d.quando === "subito" || gruppo), gruppo, dati: d.dati || {} };
   if (d.tipo === "impara") { c.automatiche[d.dati.tipoDomanda] = k === "si" ? d.dati.risposta : false; }
   else if (k !== "parole" && !extra.auto) { const kk = `${d.tipo}|${k}`; c.conta[kk] = (c.conta[kk] || 0) + 1; }
   // pulizia: via le risposte più vecchie di 60 giorni

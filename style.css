@@ -899,3 +899,11 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 @media (max-width:360px){.chat-tasti{grid-template-columns:repeat(2,1fr)}}
 .sheet.pieno.chat-sheet{background:var(--bg)}
 :root[data-theme="dark"] .sheet.pieno.chat-sheet{background:var(--bg)}
+
+/* --- 0.33 · domande a elenco (nomi, lavori fermi): una schermata, un tocco per riga --- */
+.chat-gruppo{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.chat-riga{background:var(--campo);border-radius:12px;padding:8px 10px}
+.chat-riga-t{display:flex;flex-direction:column;gap:1px;margin-bottom:6px}
+.chat-riga-t b{font:800 15px var(--f-display)}
+.chat-tasti.mini{margin-top:0;gap:5px}
+.chat-tasti.mini .chat-tasto{min-height:42px;font-size:13px;padding:6px 6px;border-radius:11px}

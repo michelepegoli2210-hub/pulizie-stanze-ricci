@@ -11,7 +11,7 @@ import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiesta
 import * as G from "./governante.js";
 import * as CH from "./chat.js";
 
-export const VERSIONE = "0.32.0";
+export const VERSIONE = "0.33.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -793,7 +793,7 @@ function testoPianoSettimana(z, lun) {
 function regoleGov() { return G.regoleAttive(S.gov); }
 function soglieGov() { return G.soglie(S.gov); }
 function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {}, frigo: (S.gov && S.gov.frigo) || {} }; }
-function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov(), inizio: (S.gov && S.gov.inizio) || null, materiali: (S.gov && S.gov.materiali) || {}, imp: S.gov, meteo: (S.gov && S.gov.meteo) || {}, regoleBase: S.regole, clienti: S.clienti }; }
+function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov(), inizio: (S.gov && S.gov.inizio) || null, materiali: (S.gov && S.gov.materiali) || {}, imp: S.gov, meteo: (S.gov && S.gov.meteo) || {}, regoleBase: S.regole, clienti: S.clienti, ora: L.partiRoma(new Date()).h }; }
 let memoProposte = new Map(), memoRif = new Map(), memoLista = new Map();
 function proposteGov(lun) { const k = lun || S.govSett; if (!memoProposte.has(k)) memoProposte.set(k, G.proposteSettimana(ctxGov(k))); return memoProposte.get(k); }
 // le rifiniture dentro una pulizia normale (per la signora, per la controllatrice e per la paga)
@@ -908,10 +908,11 @@ function statoChatApp() {
 }
 function cardChat() {
   if (!S.caricati.soggiorni || !S.caricati.pulizie) return "";
-  const c = statoChatApp(); const n = c.aperte.length;
-  const sotto = n ? `${n === 1 ? "una domanda" : n + " domande"} per te${c.inAttesa.length ? ` · altre ${c.inAttesa.length} domani` : ""}` : c.prossime ? `le prossime arrivano ${c.prossime.replace(/^\d+ /, "")}` : c.risposteOggi.length ? "per oggi ho finito, grazie" : "niente da chiedere, per ora";
-  const prima = c.aperte[0];
-  return `<section class="card chat-card ${n ? "" : "quiete"}"><button class="chat-plate" data-chat-apri aria-label="Apri la chat con la governante">${DONNINA("governante", "piccola")}<span class="chat-plate-testo"><b>La governante ti chiede${n ? ` · ${n}` : ""}</b><span>${esc(sotto)}</span>${prima ? `<span class="chat-anteprima">“${esc(prima.titolo)}”</span>` : ""}</span>${c.urgenti ? `<span class="led" role="img" aria-label="urgente"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
+  const c = statoChatApp(); const n = c.aperte.length, g = (c.gruppi || []).reduce((s, x) => s + x.righe.length, 0);
+  const gruppiTesto = (c.gruppi || []).map(x => `${x.righe.length} ${x.tipo === "nomi" ? (x.righe.length === 1 ? "nome da sistemare" : "nomi da sistemare") : (x.righe.length === 1 ? "lavoro fermo" : "lavori fermi")}`).join(" · ");
+  const sotto = [n ? `${n === 1 ? "una domanda" : n + " domande"} per te${c.inAttesa.length ? ` · altre ${c.inAttesa.length} domani` : ""}` : "", gruppiTesto].filter(Boolean).join(" · ") || (c.prossime ? `le prossime arrivano ${c.prossime.replace(/^\d+ /, "")}` : c.risposteOggi.length ? "per oggi ho finito, grazie" : "niente da chiedere, per ora");
+  const prima = c.aperte[0] || (c.gruppi || [])[0];
+  return `<section class="card chat-card ${n || g ? "" : "quiete"}"><button class="chat-plate" data-chat-apri aria-label="Apri la chat con la governante">${DONNINA("governante", "piccola")}<span class="chat-plate-testo"><b>La governante ti chiede${n + g ? ` · ${n + g}` : ""}</b><span>${esc(sotto)}</span>${prima ? `<span class="chat-anteprima">“${esc(prima.titolo)}”</span>` : ""}</span>${c.urgenti ? `<span class="led" role="img" aria-label="urgente"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
 }
 function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
 function foglioChat(f) {
@@ -919,10 +920,11 @@ function foglioChat(f) {
   const storico = c.storico.slice(-8);
   const vecchie = storico.map(r => `${bollaGov(esc(r.testo || r.titolo))}<div class="chat-msg me"><div class="chat-bolla">${esc(r.auto ? "(fatto da sola)" : r.testoRisposta || r.risposta)}${r.parole ? `<br><i>«${esc(r.parole)}»</i>` : ""}</div></div>${r.fatto ? `<div class="chat-fatto">${r.auto ? "Fatto da sola" : "Fatto"}: ${esc(r.fatto)}${r.whatsapp ? ` <button class="btnsm" data-chat-wa="${esc(r.id)}">Manda su WhatsApp</button>` : ""}</div>` : ""}<div class="chat-quando">${esc(L.dataBreve(r.il))}${r.ora ? " · " + L.oraBreve(r.ora) : ""}</div>`).join("");
   const aperte = c.aperte.map(d => bollaGov(`${d.urgente ? `<span class="chat-urgente">Urgente</span> ` : ""}${esc(d.testo)}`, mod ? `<div class="chat-tasti ${d.tasti.length === 1 ? "uno" : d.tasti.length === 2 ? "due" : d.tasti.length === 4 ? "quattro" : ""}">${d.tasti.map(t => `<button type="button" class="chat-tasto" data-chat-risposta="${esc(d.id)}|${esc(t.k)}">${esc(t.testo)}</button>`).join("")}</div>${d.parole ? `<button type="button" class="chat-parole" data-chat-parole="${esc(d.id)}">Dimmelo a parole</button><div class="chat-scrivi" id="cp_${esc(d.id)}" hidden><input type="text" data-keep id="ci_${esc(d.id)}" placeholder="Scrivi o detta col microfono della tastiera" autocomplete="off"><button type="button" class="btnsm" data-chat-invia="${esc(d.id)}">Invia</button></div>` : ""}` : "")).join("");
-  const piede = c.aperte.length ? `<p class="muted small center" style="margin:8px 0 0">${c.risposteOggi.length ? `Oggi hai risposto a ${c.risposteOggi.length} su ${CH.MAX_AL_GIORNO}. ` : ""}${c.inAttesa.length ? `Altre ${c.inAttesa.length} domande aspettano domani (massimo ${CH.MAX_AL_GIORNO} al giorno).` : ""}${c.prossime ? ` Le prossime arrivano ${esc(c.prossime.replace(/^\d+ /, ""))}.` : ""}</p>` : bollaGov(c.risposteOggi.length ? "Per oggi ho finito, grazie. Se succede qualcosa di urgente ti chiamo subito." : c.prossime ? `Niente per adesso: le prossime domande arrivano ${esc(c.prossime.replace(/^\d+ /, ""))}.` : "Niente da chiedere: il prospetto, il meteo e le paghe sono a posto. Se succede qualcosa ti chiamo subito.") + (c.inAttesa.length ? `<p class="muted small center" style="margin:8px 0 0">Altre ${c.inAttesa.length} domande aspettano domani (massimo ${CH.MAX_AL_GIORNO} al giorno).</p>` : "");
+  const gruppi = (c.gruppi || []).map(g => bollaGov(esc(g.testo), `<div class="chat-gruppo">${g.righe.map(d => `<div class="chat-riga"><div class="chat-riga-t"><b>${esc(g.tipo === "nomi" ? d.dati.nome : d.dati.titolo)}</b><span class="muted small">${esc(g.tipo === "nomi" ? d.dati.camere.join(", ") : `${d.dati.cameraNome ? d.dati.cameraNome + " · " : ""}${d.dati.giorni} giorni${d.dati.chiamato ? " · chiamato " + L.dataBreve(d.dati.chiamato) : ""}`)}</span></div>${mod ? `<div class="chat-tasti mini ${d.tasti.length === 2 ? "due" : ""}">${d.tasti.map(t => `<button type="button" class="chat-tasto" data-chat-risposta="${esc(d.id)}|${esc(t.k)}">${esc(g.tipo === "manutenzioni" ? ({ chiamato: d.dati.chiamato ? "Richiamo" : "Chiamato", fatto: "Sistemato", aspetta: "Aspetta" })[t.k] || t.testo : t.testo)}</button>`).join("")}</div>` : ""}</div>`).join("")}</div>`)).join("");
+  const piede = c.aperte.length || (c.gruppi || []).length ? `<p class="muted small center" style="margin:8px 0 0">${c.risposteOggi.length ? `Oggi hai risposto a ${c.risposteOggi.length} su ${CH.MAX_AL_GIORNO}. ` : ""}${c.inAttesa.length ? `Altre ${c.inAttesa.length} domande aspettano domani (massimo ${CH.MAX_AL_GIORNO} al giorno).` : ""}${c.prossime ? ` Le prossime arrivano ${esc(c.prossime.replace(/^\d+ /, ""))}.` : ""}${(c.gruppi || []).length ? " Le schermate a elenco (nomi, lavori fermi) non contano nelle 3 del giorno." : ""}</p>` : bollaGov(c.risposteOggi.length ? "Per oggi ho finito, grazie. Se succede qualcosa di urgente ti chiamo subito." : c.prossime ? `Niente per adesso: le prossime domande arrivano ${esc(c.prossime.replace(/^\d+ /, ""))}.` : "Niente da chiedere: il prospetto, il meteo e le paghe sono a posto. Se succede qualcosa ti chiamo subito.") + (c.inAttesa.length ? `<p class="muted small center" style="margin:8px 0 0">Altre ${c.inAttesa.length} domande aspettano domani (massimo ${CH.MAX_AL_GIORNO} al giorno).</p>` : "");
   const auto = Object.entries(S.chat.automatiche || {}).filter(([, v]) => v);
   return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">La governante</span></div>
-    <div class="chat-corpo">${vecchie}${aperte}${piede}</div>
+    <div class="chat-corpo">${vecchie}${aperte}${gruppi}${piede}</div>
     <p class="muted small center" style="margin:10px 0 0">Rispondo con i pulsanti o "Dimmelo a parole". Ogni risposta cambia davvero qualcosa nell'app e lo scrivo sotto.${auto.length ? ` Cose che faccio da sola: ${auto.length} (in Regole le spegni).` : ""}</p></div>`;
 }
 function collegaChat() {
@@ -1025,7 +1027,8 @@ const AZIONI_CHAT = {
     if (k === "riprova") return { fatto: "va bene: la stella torna nella lista la prossima volta.", scade: L.aggiungiGiorni(oggi, 14) };
     const r = regoleGov().find(x => x.id === dd.regola) || G.CATALOGO.find(x => x.id === dd.regola) || null;
     if (k === "spegni") { const regole = { ...((S.gov && S.gov.regole) || {}) }; const codice = (r && r.codice) || dd.regola; regole[codice] = { ...(regole[codice] || {}), attiva: false }; await salvaGov({ regole }); return { fatto: `regola «${dd.cosa}» spenta per tutte le camere (in Regole la riaccendi con Sì).` }; }
-    const prossima = Object.values(S.pulizie).filter(p => p.camera === dd.camera && p.data >= oggi && p.origine !== "governante" && p.tipo !== "extra" && p.stato !== "fatta").sort((a, b) => a.data < b.data ? -1 : 1)[0];
+    const daQuando = L.partiRoma(new Date()).h >= CH.ORA_FINE_SIGNORE ? L.aggiungiGiorni(oggi, 1) : oggi; // dopo le 14 mai "oggi"
+    const prossima = Object.values(S.pulizie).filter(p => p.camera === dd.camera && p.data >= daQuando && p.origine !== "governante" && p.tipo !== "extra" && p.stato !== "fatta").sort((a, b) => a.data < b.data ? -1 : 1)[0];
     const data = prossima ? prossima.data : L.aggiungiGiorni(oggi, 1);
     if (k === "parole") { if (prossima) await salvaDettagliSilenzioso(prossima, parole); else await notaDellaGovernante(data, dd.camera, parole, false); return { fatto: `scritto per la signora su ${dd.nome}, ${L.dataBreve(data)}: «${parole}».` }; }
     const importo = Math.max(1, Number((r && r.euro) || 2)); const id = `${data}_${dd.camera}_x${Date.now().toString(36)}`;
@@ -1095,7 +1098,7 @@ let chatInCorso = false;
 async function rispondiChat(id, k, parole = "") {
   if (chatInCorso || !puoModificare()) return; chatInCorso = true;
   try {
-    const c = statoChatApp(); const d = c.aperte.find(x => x.id === id) || c.inAttesa.find(x => x.id === id) || c.nonAncora.find(x => x.id === id);
+    const c = statoChatApp(); const d = c.aperte.find(x => x.id === id) || (c.gruppi || []).flatMap(g => g.righe).find(x => x.id === id) || c.inAttesa.find(x => x.id === id) || c.nonAncora.find(x => x.id === id);
     if (!d) return;
     const az = AZIONI_CHAT[d.tipo]; let esito = { fatto: "" };
     try { esito = await az(d, k, parole) || esito; } catch (e) { console.error("chat azione", e); erroreScrittura(e); return; }
@@ -2134,7 +2137,7 @@ function collegaFoglio() {
   if (S.foglio && S.foglio.tipo === "chat") collegaChat();
   const f = S.foglio; if (!f) return;
   document.querySelectorAll("[data-chiudi]").forEach(b => b.onclick = chiudiFoglio);
-  document.querySelectorAll("[data-rif-no]").forEach(b => b.onclick = async () => { const [id, regola, luogo] = b.dataset.rifNo.split("|"); const p = S.pulizie[id]; if (!p) return; const motivo = await scegliMotivoRifinitura(); if (motivo) saltaRifinitura(p, regola, luogo, motivo); });
+  document.querySelectorAll("[data-rif-no]").forEach(b => b.onclick = async () => { const [id, regola, luogo] = b.dataset.rifNo.split("|"); const p = S.pulizie[id]; if (!p) return; const stella = rifinitureDi(p).find(r => r.regola === regola && (r.luogo || p.camera) === luogo) || null; const motivo = await scegliMotivoRifinitura(stella); if (motivo) saltaRifinitura(p, regola, luogo, motivo); });
   document.querySelectorAll("[data-giro-inizia]").forEach(b => b.onclick = () => iniziaGiro(b.dataset.giroInizia));
   if (f.tipo === "giro") {
     document.querySelectorAll("[data-giro-ce]").forEach(b => b.onclick = () => { S.giro.viste++; S.giro.i++; S.giro.manca = false; disegnaFoglio(); });
@@ -2173,7 +2176,7 @@ function collegaFoglio() {
     const p = S.pulizie[f.id];
     document.querySelectorAll("[data-comincia]").forEach(b => b.onclick = () => { if (!p) return; cambiaStato(p, "in_corso", "", { tieniFoglio: true }); toast(`Buon lavoro! Premi "Fatto" su ogni blocco e tocca le stelle; alla fine "Fatto, tutto".`); });
     document.querySelectorAll("[data-spunta]").forEach(b => b.onclick = () => { const [id, k] = b.dataset.spunta.split("|"); const sp = spunteDi(id); if (sp.non[k]) { delete sp.non[k]; sp.fatte[k] = true; } else if (sp.fatte[k]) delete sp.fatte[k]; else sp.fatte[k] = true; salvaSpunte(); disegnaFoglio(); });
-    document.querySelectorAll("[data-non-riesco]").forEach(b => b.onclick = async () => { const q = S.pulizie[b.dataset.nonRiesco]; if (!q) return; const k = await scegliRigaNonRiesco(q); if (!k) return; const motivo = await scegliMotivoRifinitura(); if (!motivo) return; const sp = spunteDi(q.id); sp.non[k] = motivo; delete sp.fatte[k]; salvaSpunte(); disegnaFoglio(); toast("Va bene: la rimetto un'altra volta"); });
+    document.querySelectorAll("[data-non-riesco]").forEach(b => b.onclick = async () => { const q = S.pulizie[b.dataset.nonRiesco]; if (!q) return; const k = await scegliRigaNonRiesco(q); if (!k) return; const stella = (unitaDi(q).find(r => r.k === k) || {}).stella || null; const motivo = await scegliMotivoRifinitura(stella); if (!motivo) return; const sp = spunteDi(q.id); sp.non[k] = motivo; delete sp.fatte[k]; salvaSpunte(); disegnaFoglio(); toast("Va bene: la rimetto un'altra volta"); });
     document.querySelectorAll("[data-fatta-foglio]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fattaFoglio));
     document.querySelectorAll("[data-stato-foglio]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoFoglio.split("|"); const q = S.pulizie[id]; if (q) cambiaStato(q, st, ""); });
     document.querySelectorAll("[data-apri-motivo]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.apriMotivo.split("|"); apriFoglio({ tipo: "pulizia", id, apriMotivo: st }); });
@@ -2701,13 +2704,27 @@ async function salvaImportazione() {
 
 // Domanda sì/no con due bottoni grandi (al posto della finestrina piccola del browser)
 // Motivo con un tocco per una rifinitura che non si può fare
-function scegliMotivoRifinitura() {
+// Se la riga non ha un prodotto (si fa con un attrezzo: asta, panno, spazzola) il tasto dice "Manca l'attrezzo" e la risposta va
+// alla signora: come si fa e dove stanno gli attrezzi (in lavanderia). Niente domanda nella chat di Michele (ritocco 1).
+function senzaProdotto(stella) { return !!stella && (!stella.prodotto || /^(nessuno|—|-)$/i.test(String(stella.prodotto).trim())); }
+function rispostaAttrezzo(stella) {
+  const come = String(stella.come || "").split(/[.:]/)[0].trim();
+  return new Promise((ok) => {
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box" role="dialog"><p>Qui non serve un prodotto${come ? `: si fa con <b>${esc(come.charAt(0).toLowerCase() + come.slice(1))}</b>` : ""}. Gli attrezzi stanno in lavanderia.</p><button class="big main" data-si>Va bene, la faccio</button><button class="big undo" data-m="Manca l'attrezzo">Non riesco lo stesso</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("[data-si]").onclick = () => { el.remove(); ok(null); };
+    el.querySelector("[data-m]").onclick = () => { el.remove(); ok("Manca l'attrezzo"); };
+  });
+}
+function scegliMotivoRifinitura(stella) {
+  const attrezzo = senzaProdotto(stella);
   return new Promise((ok) => {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
     const el = document.createElement("div"); el.className = "conferma";
-    el.innerHTML = `<div class="conferma-box" role="dialog"><p>Perché non riesci a farla?</p>${["Manca il prodotto", "C'è l'ospite", "Non c'è tempo", "Non so come si fa"].map(m => `<button class="big undo" data-m="${esc(m)}">${esc(m)}</button>`).join("")}<button class="big close" data-no>Lascia stare</button></div>`;
+    el.innerHTML = `<div class="conferma-box" role="dialog"><p>Perché non riesci a farla?</p>${[attrezzo ? "Manca l'attrezzo" : "Manca il prodotto", "C'è l'ospite", "Non c'è tempo", "Non so come si fa"].map(m => `<button class="big undo" data-m="${esc(m)}">${esc(m)}</button>`).join("")}<button class="big close" data-no>Lascia stare</button></div>`;
     document.body.appendChild(el);
-    el.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { el.remove(); ok(b.dataset.m); });
+    el.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { el.remove(); if (attrezzo && b.dataset.m === "Manca l'attrezzo") { rispostaAttrezzo(stella).then(ok); return; } ok(b.dataset.m); });
     el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
     el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
   });

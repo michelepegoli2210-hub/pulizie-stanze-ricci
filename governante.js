@@ -292,7 +292,8 @@ export function nuovoId(vecchio) {
   return parti.length ? parti[0].id : codice;
 }
 // Soglie di partenza (si cambiano dall'app)
-export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, zonaMinuti: 20, budgetStelle: 350 };
+export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, zonaMinuti: 20, budgetStelle: 400 };
+export const ORA_FINE_SIGNORE = 14; // dopo le 14 le signore hanno finito: le proposte vanno al prossimo giorno, mai a "oggi" (Michele)
 export const BUDGET_BASE = { ripasso: 15, totale: 30, libera: 45, baseRipasso: 10, baseTotale: 25 }; // (i budget veri stanno nei MODI)
 export const STELLE_MAX = { ripasso: 2, totale: 3, libera: 5 }; // il tetto lo decide il tipo di passaggio (Michele, specifiche §10): 2 ripasso · 3 totale · 5 totale a camera libera; il modo può solo abbassarlo
 export const SCALA_OGNI = [1, 3.5, 7, 14, 21, 30, 45, 60, 90, 120, 180, 365];
@@ -628,7 +629,8 @@ export function proposteSettimana(ctx) {
   const { lun, oggi, camere, soggiorni, pulizie, registro, rinvii = {} } = ctx;
   const luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(ctx.imp), sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) }, flags = ctx.flags || {}, imp = ctx.imp || null;
   const fine = aggiungiGiorni(lun, 6), inizio = inizioGovernante(ctx);
-  const giorniLavoro = []; for (let i = 0; i < 7; i++) { const g = aggiungiGiorni(lun, i); if (g >= oggi && giornoSettimana(g) !== 0) giorniLavoro.push(g); }
+  const primoGiorno = ctx.ora != null && ctx.ora >= ORA_FINE_SIGNORE ? aggiungiGiorni(oggi, 1) : oggi; // dopo le 14 niente proposte per oggi
+  const giorniLavoro = []; for (let i = 0; i < 7; i++) { const g = aggiungiGiorni(lun, i); if (g >= primoGiorno && giornoSettimana(g) !== 0) giorniLavoro.push(g); }
   const candidati = [];
   // le camere che hanno già un passaggio a camera vuota nel calendario (i tecnici il venerdì) non hanno bisogno dei consigli "libera"
   const haPassoLibero = c => passiDi(c.id).some(x => x.libera);

@@ -377,5 +377,15 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   partenza Booking** (`domandePartenzaBooking`: domani parte un ospite in modo Booking) → "No, va bene così" o "Dimmelo a parole"
   (le parole finiscono nei dettagli della pulizia di partenza: la signora le legge in "Oggi Michele dice"). Le domande del report
   (5 e 10) compaiono dopo le 13; per paghe, budget, manutenzione e regole la governante non propone mai di "fare da sola".
+- **0.33 — tre ritocchi di Michele alla chat** (scritti anche in `catalogo/specifiche-governante.md`, in fondo al punto 11).
+  **Budget delle stelle 400 €** (`SOGLIE_BASE.budgetStelle`, `BUDGET_STELLE_BASE`): l'avviso arriva solo quando si sfora davvero.
+  **Regole senza prodotto** (`senzaProdotto`): sul telefono della signora il tasto dice "Manca l'attrezzo" e la risposta va a lei
+  (`rispostaAttrezzo`: come si fa, dal "come" del catalogo, e "gli attrezzi stanno in lavanderia", con "Va bene, la faccio" o "Non
+  riesco lo stesso"); `domandeProdotto` ignora le righe senza prodotto o sconosciute: niente domanda a Michele. **Dopo le 14 niente
+  "oggi"** (`ORA_FINE_SIGNORE`, `ctx.ora`): la camera libera parte da domani e il giorno proposto è il primo libero che è anche un
+  giorno di passaggio della signora in quella camera (`passaggiCamera`), i lavori a parte vanno alla prossima pulizia da domani, i
+  consigli della governante (`proposteSettimana`) non usano più oggi. **Domande a elenco** (`GRUPPI`, `statoChat().gruppi`): i nomi
+  senza tipo di ospite e i lavori di manutenzione fermi stanno in un messaggio solo con una riga per voce e i pulsanti per riga;
+  ogni riga è una risposta a sé (`fuoriConto`, `gruppo`) e non conta nelle 3 del giorno.
 - Passi successivi previsti: l'IA per "Dimmelo a parole" (chiave Gemini gratuita di Michele, solo sul suo telefono, se vorrà),
   le foto dei materiali, il tipo di ospite di via Zara piano terra, meteo automatico.
