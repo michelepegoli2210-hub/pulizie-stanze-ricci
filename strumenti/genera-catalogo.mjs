@@ -107,7 +107,10 @@ for (const r of righe) {
   if (/^O0/.test(r.id)) { scartate.push(`${r.id}: comportamento del prospetto, non una regola (${r.superficie})`); continue; }
   if (/^M0/.test(r.id)) { // meteo e stagione
     const m = { M01: { quando: "meteo", meteoTrigger: "freddo", ogni: 0 }, M02: { quando: "giorno", ogni: 150, stagione: [FIN("05-01", "05-31"), FIN("10-01", "10-31")] }, M03: { quando: "giorno", ogni: 150, stagione: [FIN("10-01", "10-31"), FIN("04-01", "04-30")] },
-      M04: { quando: "meteo", meteoTrigger: "pioggia", ogni: 0 }, M05: { quando: "meteo", meteoTrigger: "umidita", ogni: 0 }, M06: { quando: "giorno", ogni: 365, stagione: [FIN("09-01", "09-30")] }, M07: { quando: "giorno", ogni: 365, stagione: [FIN("05-01", "05-31")] } }[r.id];
+      M04: { quando: "meteo", meteoTrigger: "pioggia", ogni: 0 }, M05: { quando: "meteo", meteoTrigger: "umidita", ogni: 0 }, M06: { quando: "giorno", ogni: 365, stagione: [FIN("09-01", "09-30")] },
+      // le due finestre di reset dell'anno: lavori a camera libera su tutte le camere, mezza giornata, uno per signora al giorno, senza il limite settimanale delle fondo complete
+      M07: { quando: "libera", ogni: 365, stagione: [FIN("05-15", "06-05")], grande: true, reset: true, dove: "stanza" }, M08: { quando: "libera", ogni: 365, stagione: [FIN("09-01", "09-20")], grande: true, reset: true, dove: "stanza" } }[r.id];
+    if (!m) { scartate.push(`${r.id}: regola meteo/stagione non prevista dal generatore`); continue; }
     parti.push(mk({ id: r.id, nome: r.superficie, tipo: "rotazione", minuti: r.minuti, ...m })); continue;
   }
   let ritmi = ritmiDa(r);
@@ -179,10 +182,11 @@ for (const row of fogli["Calendario vero"].slice(1)) {
   const nomi = String(posto).split(/,|\boppure\b/).map(x => norm(x)).filter(Boolean);
   const posti = nomi.map(n => NOMI[n]).filter(Boolean);
   const t = norm(tipo); const tipoP = /cambio totale|totale/.test(t) ? "totale" : /ripasso/.test(t) ? "ripasso" : "";
-  const base = /base/.test(t); const zona = /1 piano/.test(norm(signora)) ? "p1" : /2 piano/.test(norm(signora)) ? "p2" : /appartamenti/.test(norm(signora)) ? "ap" : null;
+  const base = /base/.test(t); const ns = norm(signora); const zona = /^signora 1 piano/.test(ns) ? "p1" : /^signora 2 piano/.test(ns) ? "p2" : /appartamenti/.test(ns) ? "ap" : null;
+  const insieme = /insieme/.test(ns) ? (/insieme alla signora del 2 piano/.test(ns) ? "p2" : /insieme alla signora del 1 piano/.test(ns) ? "p1" : "si") : "";
   const budget = Number((String(rif).match(/\d+/) || [0])[0]); const libera = /camera vuota|camera libera/i.test(String(rif));
   const controlla = /\[(CONTROLLA|DECIDI|COMPLETA)/i.test(String(signora) + String(note) + String(posto)) ? (String(note) + " " + String(signora)).match(/\[[^\]]*\]/g)?.join(" ") || "da controllare" : "";
-  calendario.push({ giorno: g, posto: String(posto), posti, tipo: tipoP, base, zona, budget, libera, oppure: /oppure/i.test(String(posto)), controlla, note: String(note || "").replace(/\[[^\]]*\]/g, "").trim() });
+  calendario.push({ giorno: g, posto: String(posto), posti, tipo: tipoP, base, zona, budget, libera, oppure: /oppure/i.test(String(posto)), controlla, insieme, note: String(note || "").replace(/\[[^\]]*\]/g, "").trim() });
 }
 const livelli = fogli["Livelli e costi"].slice(1).map(([livello, cosa, min, eurSett, eurMese, ciSta]) => ({ livello, cosa, minuti: min, euroSettimana: eurSett, euroMese: eurMese, ciSta }));
 
