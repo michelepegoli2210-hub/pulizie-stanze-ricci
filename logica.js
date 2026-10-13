@@ -108,18 +108,36 @@ export const CALENDARIO_CAMERE = (() => {
     const dubbio = /CONTROLLA|COMPLETA/i.test(v.controlla || "") || !!v.oppure;
     for (const id of v.posti) {
       const c = out[id] = out[id] || { passi: [], aperto: false, domande: [] };
-      c.passi.push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, oppure: !!v.oppure, controlla: v.controlla || "", dubbio });
+      c.passi.push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, oppure: !!v.oppure, controlla: v.controlla || "", zona: v.zona || null, insieme: v.insieme || "", dubbio });
       if (dubbio) { c.aperto = true; if (v.controlla && !c.domande.includes(v.controlla)) c.domande.push(v.controlla); }
     }
   }
   return out;
 })();
-// I passaggi della settimana di un posto: dal calendario vero se non ha domande aperte, altrimenti da REGOLE_BASE
-export function passaggiCamera(camera, regole = REGOLE_BASE) {
-  const r = { ...REGOLE_BASE, ...(regole || {}) };
+// ---- Le stagioni (Michele, 0.28): INVERNO da ottobre a maggio = i giorni fissi del calendario vero; ESTATE da giugno ad agosto =
+// niente giorni fissi, le pulizie seguono arrivi e partenze del prospetto. Il passaggio lo fa l'app dalle date; in Regole si può
+// anticipare o posticipare (impostazioni/regole.regime = { modo: "auto" | "estate" | "inverno", fino?: "AAAA-MM-GG", da?: "MM-GG", a?: "MM-GG" }).
+export const ESTATE_BASE = { da: "06-01", a: "08-31" };
+export function regimeDi(iso, regole) {
+  const r = (regole && regole.regime) || {};
+  if ((r.modo === "estate" || r.modo === "inverno") && (!r.fino || r.fino >= iso)) return r.modo;
+  const da = r.da || ESTATE_BASE.da, a = r.a || ESTATE_BASE.a, mg = String(iso).slice(5);
+  return (da <= a ? (mg >= da && mg <= a) : (mg >= da || mg <= a)) ? "estate" : "inverno";
+}
+export function regimeTesto(regime) { return regime === "estate" ? "estate: le pulizie seguono arrivi e partenze" : "inverno: i giorni fissi del calendario vero"; }
+// La signora che fa un posto d'inverno: quella scritta nel calendario vero (la signora del 1° piano fa anche gli appartamenti); altrimenti la zona del posto
+export function zonaDi(camera, regole = REGOLE_BASE) {
   const cal = CALENDARIO_CAMERE[camera.id];
-  if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), daCalendario: true }));
-  return ((camera.tipo === "casa" ? r.casa : r.camera) || []).map(x => ({ ...x, daCalendario: false }));
+  if (cal && !cal.aperto) { const conta = {}; for (const x of cal.passi) if (x.zona) conta[x.zona] = (conta[x.zona] || 0) + 1; const top = Object.entries(conta).sort((a, b) => b[1] - a[1])[0]; if (top) return top[0]; }
+  return camera.zona;
+}
+// I passaggi della settimana di un posto: dal calendario vero se non ha domande aperte, altrimenti da REGOLE_BASE. D'estate nessuno.
+export function passaggiCamera(camera, regole = REGOLE_BASE, iso = null) {
+  const r = { ...REGOLE_BASE, ...(regole || {}) };
+  if (iso && regimeDi(iso, r) === "estate") return [];
+  const cal = CALENDARIO_CAMERE[camera.id];
+  if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), zona: x.zona || camera.zona, insieme: x.insieme || "", daCalendario: true }));
+  return ((camera.tipo === "casa" ? r.casa : r.camera) || []).map(x => ({ ...x, zona: camera.zona, daCalendario: false }));
 }
 
 // ---- Piano delle pulizie ---------------------------------------------------
@@ -130,7 +148,7 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
   const occ = ospiteIl(soggiorni, camera.id, iso);
   const parte = parteIl(soggiorni, camera.id, iso);
   const wd = giornoSettimana(iso);
-  const lista = passaggiCamera(camera, r);
+  const lista = passaggiCamera(camera, r, iso);
   const regola = lista.find(x => x.giorno === wd);
   let tipo = null;
   if (occ && regola) tipo = regola.tipo;
@@ -155,6 +173,9 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
     istruzioni: [chi?.nota || "", ...notePubbliche].filter(Boolean).join(" · "),
     persone: chi?.persone || null,
     supplemento: Number(chi?.supplemento || 0),
+    zona: (regola && regola.zona) || zonaDi(camera, r),
+    insieme: (regola && regola.insieme) || "",
+    regime: regimeDi(iso, r),
   };
 }
 
@@ -167,7 +188,7 @@ export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [
       if (!p) continue;
       out.push({
         id: `${iso}_${c.id}`,
-        data: iso, camera: c.id, zona: c.zona,
+        data: iso, camera: c.id, zona: p.zona || c.zona, insieme: p.insieme || "",
         tipo: p.tipo, titolo: p.titolo, passi: p.passi,
         ospite: p.ospite, soggiorno: p.soggiorno, partenza: p.partenza, arrivo: p.arrivo,
         parteIl: p.parteIl, prossimoArrivo: p.prossimoArrivo, prossimoNome: p.prossimoNome, prossimoPersone: p.prossimoPersone,
@@ -190,7 +211,7 @@ export function differenzePiano(attese, esistenti) {
     const e = esistenti[a.id];
     if (!e) { crea.push({ ...a, stato: "da_fare" }); continue; }
     if (e.origine !== "auto" || e.stato !== "da_fare") continue;
-    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","zona","persone"];
+    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","zona","persone","insieme"];
     const patch = {};
     for (const k of campi) {
       const va = a[k] ?? null, ve = e[k] ?? null;

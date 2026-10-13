@@ -12,15 +12,16 @@
 //  Il budget è PER PASSAGGIO (dal Calendario vero): ripasso 15′, totale 30′, totale a camera libera 45′; profilo Base 0′/10′.
 //  Due profili: Lusso (tutto il catalogo) e Base (solo le righe con Profilo base = Sì). Tre livelli: Igiene, Albergo, Lusso pieno.
 // ============================================================================
-import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, passaggiCamera, CALENDARIO_CAMERE } from "./logica.js";
+import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, passaggiCamera, CALENDARIO_CAMERE, regimeDi, zonaDi } from "./logica.js";
+export { regimeDi };
 import { RIGHE, PARTI, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA } from "./catalogo.js";
 export { RIGHE, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA };
 
 export const LUOGHI_COMUNI = [
   { id: "corridoio_p1",   nome: "Corridoio 1° piano",     zona: "p1", tipo: "comune" },
   { id: "corridoio_p2",   nome: "Corridoio 2° piano",     zona: "p2", tipo: "comune" },
-  { id: "scale",          nome: "Scale di servizio",      zona: "p1", tipo: "comune" },
-  { id: "ingresso",       nome: "Ingresso e portone",     zona: "p1", tipo: "comune" },
+  { id: "scale",          nome: "Scale di servizio",      zona: "p2", tipo: "comune" }, // le fa la signora del 2° piano (il sabato)
+  { id: "ingresso",       nome: "Ingresso e portone",     zona: "p2", tipo: "comune" },
   { id: "terrazzo",       nome: "Terrazzo",               zona: "p2", tipo: "comune" },
   { id: "lavanderia",     nome: "Lavanderia e attrezzi",  zona: "p1", tipo: "comune" },
 ];
@@ -353,14 +354,22 @@ export function valePerProfilo(r, profilo) { return profilo !== "base" || !!r.pr
 // ============================================================================
 export const CALENDARIO = (() => {
   const out = {};
-  for (const v of CALENDARIO_VERO) { if (!v.tipo || !v.posti.length) continue; for (const id of v.posti) (out[id] = out[id] || []).push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, zona: v.zona, daConfermare: !!v.controlla, oppure: !!v.oppure }); }
+  for (const v of CALENDARIO_VERO) { if (!v.tipo || !v.posti.length) continue; for (const id of v.posti) (out[id] = out[id] || []).push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, zona: v.zona, daConfermare: !!v.controlla, oppure: !!v.oppure, insieme: v.insieme || "" }); }
   return out;
 })();
 export function passiDi(cameraId) { return CALENDARIO[cameraId] || []; }
 // Il passaggio di una pulizia: dal calendario se c'è, altrimenti dal tipo di pulizia
-export function passoDi(p, camera, imp) {
+export function passoDi(p, camera, imp, regoleBase) {
   const profilo = profiloDi(camera, imp);
   const tipo = p.tipo === "totale" || p.tipo === "totale_casa" ? "totale" : "ripasso";
+  const regime = p.regime || regimeDi(p.data, regoleBase);
+  // ESTATE (modo Booking): niente giorni fissi, le stelle vanno sulle pulizie di partenza, 1-2 a partenza, prima il visibile
+  if (regime === "estate") {
+    const vuotaDopo = p.partenza ? !p.arrivo : (p.soggiorno === null && !p.ospite);
+    const libera = tipo === "totale" && vuotaDopo;
+    const budget = profilo === "base" ? (tipo === "totale" ? BUDGET_BASE.baseTotale : BUDGET_BASE.baseRipasso) : (tipo === "totale" ? (libera ? BUDGET_BASE.libera : BUDGET_BASE.totale) : BUDGET_BASE.ripasso);
+    return { tipo, budget, libera, base: profilo === "base", profilo, stelle: 2, daCalendario: false, daConfermare: false, aperto: false, regime, estate: true };
+  }
   const cal = passiDi(p.camera).find(x => x.giorno === giornoSettimana(p.data) && x.tipo === tipo) || null;
   // camera vuota dopo la pulizia: l'ospite parte e non arriva nessuno, oppure la pulizia è stata messa a mano su una camera senza nessuno
   const vuotaDopo = p.partenza ? !p.arrivo : (p.soggiorno === null && !p.ospite);
@@ -368,7 +377,7 @@ export function passoDi(p, camera, imp) {
   const standard = profilo === "base" ? (tipo === "totale" ? BUDGET_BASE.baseTotale : BUDGET_BASE.baseRipasso) : (tipo === "totale" ? (libera ? BUDGET_BASE.libera : BUDGET_BASE.totale) : BUDGET_BASE.ripasso);
   const budget = cal && cal.libera === libera ? cal.budget : standard;
   const stelle = tipo === "ripasso" ? STELLE_MAX.ripasso : libera ? STELLE_MAX.libera : STELLE_MAX.totale;
-  return { tipo, budget, libera, base: profilo === "base", profilo, stelle, daCalendario: !!cal, daConfermare: !!(cal && cal.daConfermare), aperto: !!(CALENDARIO_CAMERE[p.camera] && CALENDARIO_CAMERE[p.camera].aperto) };
+  return { tipo, budget, libera, base: profilo === "base", profilo, stelle, daCalendario: !!cal, daConfermare: !!(cal && cal.daConfermare), aperto: !!(CALENDARIO_CAMERE[p.camera] && CALENDARIO_CAMERE[p.camera].aperto), regime, estate: false, insieme: (cal && cal.insieme) || p.insieme || "" };
 }
 
 // ============================================================================
@@ -405,7 +414,7 @@ export function copertaDallaLista(r, righe) {
 }
 // Tutte le parti che un passaggio fatto per intero copre: le voci della lista e le parti a ritmo corto nominate dalla lista
 export function coperteDalPasso(p, camera, ctx) {
-  const regole = ctx.regole || regoleAttive(ctx.imp); const passo = passoDi(p, camera, ctx.imp || null);
+  const regole = ctx.regole || regoleAttive(ctx.imp); const passo = passoDi(p, camera, ctx.imp || null, ctx.regoleBase);
   const righe = righeLista(passo, camera.tipo === "casa", !!p.partenza); const codici = new Set(righe.flatMap(c => c.codici));
   return regole.filter(r => (r.tipo === "lista" && codici.has(r.codice) && (r.quando !== "cambio" || passo.tipo === "totale")) || copertaDallaLista(r, righe)).map(r => r.id);
 }
@@ -485,7 +494,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
   const out = {}; if (!pulizie.length) return out;
   for (const p of pulizie) {
     const l = trovaLuogo(p.camera, camere, luoghi); if (!l) continue;
-    const passo = passoDi(p, l, imp);
+    const passo = passoDi(p, l, imp, ctx.regoleBase);
     const fisso = nottiDiFila(soggiorni, p.camera, p.data) >= 14;
     const righe = righeLista(passo, l.tipo === "casa", !!p.partenza), slot = passo.base ? slotBase(passo) : null;
     const cand = [];
@@ -509,7 +518,8 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       if (r.quando === "meteo" && reg?.ultima && giorniTra(reg.ultima, p.data) < 3) continue;
       cand.push(stella(r, l, reg, p.data, ogni || 0, { urgenza: r.quando === "meteo" ? 50 : urgenza(ogni, reg?.ultima || null, p.data, inizio), sempre: false, slot: slot ? (slot.has(r.codice) ? 0 : 1) : 0 }));
     }
-    cand.sort((a, b) => (a.priorita - b.priorita) || (a.slot - b.slot) || (b.urgenza - a.urgenza) || (a.minuti - b.minuti));
+    const ordinePrio = passo.estate ? { 2: 0, 1: 1, 3: 2 } : { 1: 0, 2: 1, 3: 2 };
+    cand.sort((a, b) => ((ordinePrio[a.priorita] ?? 3) - (ordinePrio[b.priorita] ?? 3)) || (a.slot - b.slot) || (b.urgenza - a.urgenza) || (a.minuti - b.minuti));
     const scelte = []; let min = 0;
     for (const c of cand) { if (scelte.length >= passo.stelle) break; if (min + c.minuti > passo.budget) continue; scelte.push(c); min += c.minuti; }
     out[p.id] = scelte;
@@ -545,7 +555,7 @@ export const routinePer = rifiniturePer;
 // ============================================================================
 export function listaDelGiorno(p, ctx) {
   const camere = ctx.camere, l = trovaLuogo(p.camera, camere, ctx.luoghi || LUOGHI_COMUNI) || { id: p.camera, nome: p.camera, tipo: "camera" };
-  const passo = passoDi(p, l, ctx.imp || null);
+  const passo = passoDi(p, l, ctx.imp || null, ctx.regoleBase);
   const base = righeLista(passo, l.tipo === "casa", !!p.partenza).map((c) => { const m = c.testo.match(/^(.*?)\s*\(([^)]+)\)\s*$/); return { k: `L${c.lista}${c.n}`, tipo: "riga", testo: m ? m[1] : c.testo, sotto: m ? m[2] : "", codici: c.codici, minuti: c.minuti, lista: c.lista, blocco: c.blocco || "camera" }; });
   const tutte = ctx.stelle || rifiniturePer(p, ctx);
   const stelle = tutte.filter(s => !s.sempre && !s.comune), zona = tutte.filter(s => s.comune);
@@ -637,9 +647,9 @@ export function proposteSettimana(ctx) {
       const nonPrima = (!r.evento && ult && ogni) ? (() => { const pr = aggiungiGiorni(ult, Math.round(ogni)); return pr > oggi ? aggiungiGiorni(pr, -7) : oggi; })() : oggi;
       let data = null;
       if (r.quando === "libera") {
-        const vuoti = giorniLiberi(l, lun, soggiorni, pulizie, oggi).filter(g => g.iso >= nonPrima);
+        const vuoti = giorniLiberi(l, lun, soggiorni, pulizie, oggi).filter(g => g.iso >= nonPrima && inStagione(r, g.iso));
         if (!vuoti.length) continue;
-        const g = vuoti[0]; data = g.iso; if (g.perche) perche.push(g.perche);
+        const g = vuoti[0]; data = g.iso; if (g.perche) perche.push(g.perche); var giorniVuoti = vuoti.map(x => x.iso);
         if (g.prossimo) perche.push(`prossimo arrivo ${g.prossimo === aggiungiGiorni(g.iso, 1) ? "il giorno dopo" : "il " + g.prossimo.slice(8) + "/" + g.prossimo.slice(5, 7)}`);
       } else {
         let giorni = giorniLavoro.filter(g => g >= nonPrima);
@@ -649,19 +659,22 @@ export function proposteSettimana(ctx) {
       }
       if (!r.evento) perche.unshift(ult ? `${etichettaOgni(ogni)} · ultima volta ${testoUltima(ult, oggi)}` : `${etichettaOgni(ogni)} · prima volta`);
       if (r.stagione) perche.push("è il periodo giusto");
-      candidati.push({ id: `${r.id}|${l.id}|${data}`, regola: r.id, codice: r.codice, nome: r.nome, cosa: r.nome, icona: r.icona, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", materiale: rigaMateriale(r, l, ctx.materiali), luogo: l.id, luogoNome: l.nome, luogoTipo: l.tipo, zona: l.zona, data, minuti: r.minuti, euro: r.euro || 0, grande: !!r.grande, libera: r.quando === "libera", priorita: r.priorita || 2, perche, rapporto: r.evento ? 99 : urgenza(ogni, ult, fine, inizio), chiave: k });
+      candidati.push({ id: `${r.id}|${l.id}|${data}`, regola: r.id, codice: r.codice, nome: r.nome, cosa: r.nome, icona: r.icona, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", materiale: rigaMateriale(r, l, ctx.materiali), luogo: l.id, luogoNome: l.nome, luogoTipo: l.tipo, zona: l.tipo === "comune" ? l.zona : zonaDi(l, ctx.regoleBase), data, minuti: r.minuti, euro: r.euro || 0, grande: !!r.grande, reset: !!r.reset, giorniLiberi: r.quando === "libera" ? giorniVuoti : [], libera: r.quando === "libera", priorita: r.priorita || 2, perche, rapporto: r.evento ? 99 : urgenza(ogni, ult, fine, inizio), chiave: k });
     }
   }
   candidati.sort((a, b) => (a.priorita - b.priorita) || (b.rapporto - a.rapporto) || (a.data < b.data ? -1 : 1));
   const minuti = {}, grandi = { n: 0 }, perLuogo = {}, perRegola = {}, scelte = [];
   let scartate = 0;
   for (const c of candidati) {
-    if (scelte.length >= 8) { scartate++; continue; }
+    // le finestre di reset (fine maggio, settembre) non hanno i limiti settimanali: una camera per signora al giorno, tutte le camere
+    if (!c.reset && scelte.length >= 8) { scartate++; continue; }
     if ((perLuogo[c.luogo] || 0) >= 2) { scartate++; continue; }
-    if ((perRegola[c.regola] || 0) >= 3) { scartate++; continue; }
+    if (!c.reset && (perRegola[c.regola] || 0) >= 3) { scartate++; continue; }
     perRegola[c.regola] = (perRegola[c.regola] || 0) + 1;
     if (c.grande) {
-      if (grandi.n >= sg.camereSettimana || scelte.some(s => s.grande && s.zona === c.zona && s.data === c.data) || cambiDelGiorno(pulizie, c.zona, c.data) > 1) { scartate++; continue; }
+      if (!c.reset && grandi.n >= sg.camereSettimana) { scartate++; continue; }
+      const libero = g => !scelte.some(s => s.grande && s.zona === c.zona && s.data === g) && cambiDelGiorno(pulizie, c.zona, g) <= 1;
+      if (!libero(c.data)) { const alt = (c.giorniLiberi || []).find(g => g !== c.data && libero(g)); if (!alt) { scartate++; continue; } c.data = alt; c.id = `${c.regola}|${c.luogo}|${alt}`; }
       grandi.n++; perLuogo[c.luogo] = (perLuogo[c.luogo] || 0) + 1; scelte.push(c); continue;
     }
     const kk = `${c.zona}|${c.data}`;
@@ -709,14 +722,24 @@ export function settimanaGovernante(adesso = new Date()) {
 //  LA SIMULAZIONE: N settimane con il calendario vero (i passaggi delle signore), le stelle di ogni passaggio e i consigli accettati
 // ============================================================================
 // Una settimana tipo: gli stessi passaggi che l'app programma davvero (calendario vero, o REGOLE_BASE dove c'è una domanda aperta)
+export const NOTTI_ESTATE = 3; // d'estate (modo Booking) si stima un cambio ogni 3 notti per camera
 export function modelloCalendario(camere, lun, regoleBase) {
   const out = [];
+  if (regimeDi(lun, regoleBase) === "estate") {
+    // ESTATE: nessun giorno fisso; una partenza ogni 3 notti per camera (sfalsate), con un arrivo subito dopo; mai di domenica
+    for (const c of camere) for (let d = 0; d < 7; d++) {
+      if ((d + (c.ordine || 0)) % NOTTI_ESTATE !== 0) continue;
+      const data = aggiungiGiorni(lun, d); if (giornoSettimana(data) === 0) continue;
+      out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: zonaDi(c, regoleBase), tipo: c.tipo === "casa" ? "totale_casa" : "totale", partenza: true, arrivo: true, origine: "auto", stato: "da_fare", titolo: "Cambio completo", regime: "estate" });
+    }
+    return out;
+  }
   for (const c of camere) for (const x of passaggiCamera(c, regoleBase)) {
     const giorno = x.giorno === 0 ? 6 : x.giorno - 1; const data = aggiungiGiorni(lun, giorno);
     const totale = x.tipo === "totale" || x.tipo === "totale_casa";
     const cal = passiDi(c.id).find(y => y.giorno === x.giorno && y.tipo === (totale ? "totale" : "ripasso"));
     const libera = totale && !!(cal && cal.libera);
-    out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: c.zona, tipo: x.tipo, partenza: libera, arrivo: false, origine: "auto", stato: "da_fare", titolo: totale ? "Cambio completo" : "Ripasso" });
+    out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: x.zona || c.zona, tipo: x.tipo, partenza: libera, arrivo: false, origine: "auto", stato: "da_fare", titolo: totale ? "Cambio completo" : "Ripasso", insieme: x.insieme || "", regime: "inverno" });
   }
   return out;
 }
@@ -727,7 +750,7 @@ export function simulaGovernante(ctx, settimane = 13, opz = {}) {
   if (!modello.length) return null;
   const registro = {};
   if (!opz.daZero) for (const [k, v] of Object.entries(ctx.registro || {})) if (v && v.ultima) registro[k] = { ultima: v.ultima };
-  const prima = {}, minuti = {}, perPasso = [], zone = [...new Set(camere.map(c => c.zona))], accettate = []; let nRif = 0;
+  const prima = {}, minuti = {}, perPasso = [], zone = [...new Set([...modello.map(p => p.zona), ...camere.map(c => c.zona)])], accettate = []; let nRif = 0;
   const base = { ...ctx, regole, registro, rinvii: {}, inizio: inizioGovernante(ctx) };
   for (let w = 0; w < settimane; w++) {
     const lunW = aggiungiGiorni(lun, w * 7);
@@ -777,9 +800,10 @@ export function tabellone(ctx, settimane = 13) {
   const modello = sim ? sim.modello : [];
   const lun = ctx.lun || lunediDi(oggi);
   const programmati = Object.values(ctx.pulizie || {}).filter(p => p.origine === "governante" && p.stato !== "fatta" && p.data >= oggi);
-  const haPasso = l => modello.some(p => p.camera === l.id), haTotale = l => modello.some(p => p.camera === l.id && CAMBIO(p)), haLibera = l => passiDi(l.id).some(x => x.libera);
+  const haPasso = l => modello.some(p => p.camera === l.id), haTotale = l => modello.some(p => p.camera === l.id && CAMBIO(p)), haLibera = l => estate ? false : passiDi(l.id).some(x => x.libera);
   const maiLibera = l => { for (let w = 0; w < settimane; w++) for (let d = 0; d < 7; d++) { const iso = aggiungiGiorni(lun, w * 7 + d); if (giornoSettimana(iso) !== 0 && !soggiorni.some(s => s.camera === l.id && soggiornoCopre({ ...s, inizio: aggiungiGiorni(s.inizio, w * 7), fine: aggiungiGiorni(s.fine, w * 7) }, iso))) return false; } return true; };
-  const budgetSett = l => passiDi(l.id).reduce((s, x) => s + (x.budget || 0), 0);
+  const estate = regimeDi(oggi, ctx.regoleBase) === "estate";
+  const budgetSett = l => estate ? Math.round(7 / NOTTI_ESTATE * BUDGET_BASE.totale) : passiDi(l.id).reduce((s, x) => s + (x.budget || 0), 0);
   const motivoDi = (r, l) => {
     if (!haPasso(l)) return "questo posto non ha passaggi nel calendario vero";
     if (r.quando === "cambio" && !haTotale(l)) return "solo nella totale: questo posto non ha una totale nel calendario";
@@ -818,7 +842,7 @@ export function tabellone(ctx, settimane = 13) {
   const motivi = Object.values(rosse.reduce((m, c) => { const x = m[c.motivo] = m[c.motivo] || { motivo: c.motivo, n: 0, regole: {} }; x.n++; x.regole[c.regola] = x.regole[c.regola] || { regola: c.regola, nome: c.nome, n: 0 }; x.regole[c.regola].n++; return m; }, {}))
     .map(x => ({ ...x, regole: Object.values(x.regole).sort((a, b) => b.n - a.n) })).sort((a, b) => b.n - a.n);
   const copertura = conteggiate.length ? Math.round((conteggiate.length - rosse.length) / conteggiate.length * 100) : 100;
-  return { celle, perLuogo, motivi, copertura, buchi: rosse.length, celleContate: conteggiate.length, fuoriLivello: celle.length - conteggiate.length, settimane, sim, livello: livelloDi(imp), conto: contoLivelli(ctx), prova: sim ? prova90(ctx, sim, regole) : null };
+  return { celle, perLuogo, motivi, copertura, buchi: rosse.length, celleContate: conteggiate.length, fuoriLivello: celle.length - conteggiate.length, settimane, sim, livello: livelloDi(imp), regime: regimeDi(oggi, ctx.regoleBase), conto: contoLivelli(ctx), prova: sim ? prova90(ctx, sim, regole) : null };
 }
 // Il conto dei tre livelli: minuti di rifiniture a settimana per camera, euro a settimana e al mese, quanto ci sta nel calendario
 export function contoLivelli(ctx) {
@@ -827,18 +851,25 @@ export function contoLivelli(ctx) {
   const out = {};
   for (const liv of Object.keys(LIVELLI)) {
     const regole = regoleAttive(imp, { livello: liv }).filter(r => STELLA_POSSIBILE(r) && !r.fuoriLivello);
-    let domandaTot = 0, capacitaTot = 0, euroPienoTot = 0, euroFattiTot = 0, nLusso = 0, domandaLusso = 0, euroLusso = 0; const perPosto = [];
+    let domandaTot = 0, capacitaTot = 0, capEstateTot = 0, euroPienoTot = 0, euroFattiTot = 0, euroEstateTot = 0, nLusso = 0, domandaLusso = 0, euroLusso = 0; const perPosto = [];
     for (const l of camere) {
       const profilo = profiloDi(l, imp);
       const mie = regole.filter(r => valePerProfilo(r, profilo) && copre(regole, r, l, camere, luoghi, flags) && inStagione(r, oggi) && !r.soloFissi);
       const dom = mie.reduce((s, r) => s + r.minuti * 7 / ogniAttuale(r, oggi, l, flags), 0);              // minuti di stelle a settimana
       const euroSett = mie.reduce((s, r) => s + prezzoStella(r.minuti, prezzi) * 7 / ogniAttuale(r, oggi, l, flags), 0); // euro di stelle a settimana, listino a fasce
-      const cap = passiDi(l.id).reduce((s, x) => s + (x.budget || 0), 0);
-      const quota = dom ? Math.min(1, cap / dom) : 1;
-      domandaTot += dom; capacitaTot += cap; euroPienoTot += euroSett; euroFattiTot += euroSett * quota; if (profilo === "lusso") { nLusso++; domandaLusso += dom; euroLusso += euroSett; }
+      const cap = passiDi(l.id).reduce((s, x) => s + (x.budget || 0), 0);                    // inverno: i passaggi del calendario vero
+      const capEstate = Math.round(7 / NOTTI_ESTATE * (profilo === "base" ? BUDGET_BASE.baseTotale : BUDGET_BASE.totale)); // estate: un cambio ogni 3 notti, 30′ di stelle a cambio
+      const quota = dom ? Math.min(1, cap / dom) : 1, quotaEstate = dom ? Math.min(1, capEstate / dom) : 1;
+      domandaTot += dom; capacitaTot += cap; capEstateTot += capEstate; euroPienoTot += euroSett; euroFattiTot += euroSett * quota; euroEstateTot += euroSett * quotaEstate; if (profilo === "lusso") { nLusso++; domandaLusso += dom; euroLusso += euroSett; }
       perPosto.push({ luogo: l.id, nome: l.nome, profilo, domanda: Math.round(dom), capacita: cap, ciSta: Math.round(quota * 100), euroSettimana: Math.round(euroSett * 10) / 10 });
     }
-    out[liv] = { livello: liv, ...LIVELLI[liv], minutiCamera: nLusso ? Math.round(domandaLusso / nLusso) : 0, euroSettimanaCamera: nLusso ? Math.round(euroLusso / nLusso * 10) / 10 : 0, euroMese: Math.round(euroFattiTot * 52 / 12), euroMesePieno: Math.round(euroPienoTot * 52 / 12), ciSta: domandaTot ? Math.min(100, Math.round(capacitaTot / domandaTot * 100)) : 100, domanda: Math.round(domandaTot), capacita: capacitaTot, perPosto, regole: regole.length, prezzi };
+    const mese = x => Math.round(x * 52 / 12);
+    out[liv] = { livello: liv, ...LIVELLI[liv], minutiCamera: nLusso ? Math.round(domandaLusso / nLusso) : 0, euroSettimanaCamera: nLusso ? Math.round(euroLusso / nLusso * 10) / 10 : 0,
+      euroMese: mese(euroFattiTot), euroMesePieno: mese(euroPienoTot), ciSta: domandaTot ? Math.min(100, Math.round(capacitaTot / domandaTot * 100)) : 100, domanda: Math.round(domandaTot), capacita: capacitaTot, perPosto, regole: regole.length, prezzi,
+      // per stagione: un mese d'inverno (giorni fissi), un mese d'estate (partenze ogni 3 notti), l'anno = 9 mesi d'inverno + 3 d'estate
+      inverno: { euroMese: mese(euroFattiTot), ciSta: domandaTot ? Math.min(100, Math.round(capacitaTot / domandaTot * 100)) : 100, capacita: capacitaTot },
+      estate: { euroMese: mese(euroEstateTot), ciSta: domandaTot ? Math.min(100, Math.round(capEstateTot / domandaTot * 100)) : 100, capacita: capEstateTot },
+      anno: mese(euroFattiTot) * 9 + mese(euroEstateTot) * 3, annoPieno: mese(euroPienoTot) * 12 };
   }
   return out;
 }

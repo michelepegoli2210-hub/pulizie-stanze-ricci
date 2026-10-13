@@ -274,5 +274,27 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   `prezzoStella`, `prezziStelle`, in `impostazioni/governante.prezziStelle`, si cambia in Paghe → Listino): vale per la paga e per
   "Il conto" dei tre livelli, che si aggiorna subito. **Meteo con due tasti** in Regole: "Ha piovuto / vento forte" (pioggia + vento
   per 2 giorni, umidità per 3) e "Arriva il freddo / arriva il caldo" (scelta con un tocco, 7 giorni; M01 scatta in tutti e due i sensi).
-- Passi successivi previsti: le risposte di Michele alle domande aperte del calendario (nel foglio), le foto dei materiali di Lella,
-  Nicole, via Trento e via Zara, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.
+- **0.28 — le stagioni e il calendario vero a due signore.**
+  **Calendario vero** (dalle risposte di Michele, nel foglio "Calendario vero"): d'inverno ci sono **due signore**. La signora del
+  1° piano: lunedì ripasso in via Zara 1° e 2° (Base, leggerissimo) e via Trento; giovedì cambio totale in via Trento e in via Zara 1° e
+  2° (insieme alla signora del 2° piano); venerdì Salvatore, Aurora, Michele, Antonio (camera libera); sabato Nicole e via Zara piano
+  terra. La signora del 2° piano: mercoledì ripasso Alba, Tramonto, Passerella, Fenicotteri e Lella (solo le camere occupate); giovedì
+  in via Zara con la collega; venerdì Alba, Tramonto, Fenicotteri; sabato Passerella e Lella più scalinata, ingresso e zone comuni.
+  Niente ripasso del mercoledì al 1° piano. La **zona della pulizia è quella della signora del calendario**, non del posto
+  (`logica.zonaDi`, `passaggiCamera` restituisce `zona` e `insieme`, `pulizia_prevista`/`pianoPulizie` la scrivono sulla pulizia:
+  così la signora del 1° piano vede gli appartamenti nelle sue camere); le tessere della signora si costruiscono dalle pulizie della
+  sua zona. Scale e ingresso passano alla zona del 2° piano. Resta aperto il profilo di via Zara piano terra ([DECIDI]).
+  **Stagioni** (`logica.regimeDi`, `impostazioni/regole.regime = { modo: auto|estate|inverno }`, carta "Le stagioni" in Regole):
+  **inverno** (ottobre–maggio) = i giorni fissi; **estate** (1 giugno – 31 agosto, o forzata a mano) = nessun giorno fisso, le
+  pulizie seguono arrivi e partenze del prospetto (`passaggiCamera` vuoto, resta `totaleAllaPartenza`), la governante mette **2
+  stelle a partenza, prima il visibile** (`passoDi` con `estate: true`, ordine di priorità 2 → 1 → 3). Il Tabellone e la copertura
+  usano il regime del giorno: d'estate il modello è "un cambio ogni 3 notti per camera" (`NOTTI_ESTATE`, `modelloCalendario`).
+  **Il conto per stagione** (`contoLivelli`: `inverno`, `estate`, `anno` = 9 mesi d'inverno + 3 d'estate) nelle carte dei livelli e
+  nel Tabellone. **Due finestre di reset** come lavori a camera libera su tutte le camere, senza i limiti settimanali (`reset: true`,
+  una camera per signora al giorno, nei giorni liberi del prospetto): **M07** "Pronti al caldo" (15 maggio – 5 giugno, ora su tutte le
+  camere) e la nuova **M08** "Chiusura della stagione estiva" (1–20 settembre: fondo completa, materasso girato, tende lavate, filtri e
+  sanificazione dei condizionatori, balconi a fondo; registra tutto il catalogo della camera come la fondo completa). M08 è nel CSV v4
+  (179 righe).
+- Passi successivi previsti: il testo dei "tre modi" (Booking, Tecnici, Operai) che Michele deve rimandare, le foto dei materiali di
+  Lella, Nicole, via Trento e via Zara, la paga del giovedì in via Zara (chi preme Fatto), un ripasso ogni N notti per i soggiorni
+  lunghi d'estate, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.
