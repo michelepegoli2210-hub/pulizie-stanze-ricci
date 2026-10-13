@@ -374,7 +374,7 @@ export function soglie(imp) { return { ...SOGLIE_BASE, ...((imp && imp.soglie) |
 // ============================================================================
 export const CALENDARIO = (() => {
   const out = {};
-  for (const v of CALENDARIO_VERO) { if (!v.tipo || !v.posti.length) continue; for (const id of v.posti) (out[id] = out[id] || []).push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, zona: v.zona, daConfermare: !!v.controlla, oppure: !!v.oppure, insieme: v.insieme || "" }); }
+  for (const v of CALENDARIO_VERO) { if (!v.tipo || !v.posti.length) continue; for (const id of v.posti) (out[id] = out[id] || []).push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, zona: v.zona, daConfermare: !!v.controlla, oppure: !!v.oppure, insieme: v.insieme || "", parte: v.parte || "" }); }
   return out;
 })();
 export function passiDi(cameraId) { return CALENDARIO[cameraId] || []; }
@@ -388,10 +388,13 @@ export function passoDi(p, camera, imp, regoleBase, ctx = {}) {
   const vuotaDopo = p.partenza ? !p.arrivo : (p.soggiorno === null && !p.ospite);
   const libera = tipo === "totale" && vuotaDopo;
   const fascia = tipo === "ripasso" ? "ripasso" : libera ? "libera" : "totale";
-  const cal = regime === "estate" ? null : (passiDi(p.camera).find(x => x.giorno === giornoSettimana(p.data) && x.tipo === tipo) || null);
-  const budget = cal && cal.libera === libera ? cal.budget : m.budget[fascia];
-  const stelle = Math.min(STELLE_MAX[fascia], m.stelle[fascia]);
-  return { tipo, budget, libera, modo, base: modo === "operai", soloIgiene: !!m.soloIgiene, visibilePrima: !!m.visibilePrima, stelle, daCalendario: !!cal, daConfermare: !!(cal && cal.daConfermare), aperto: !!(CALENDARIO_CAMERE[p.camera] && CALENDARIO_CAMERE[p.camera].aperto), regime, estate: regime === "estate", insieme: (cal && cal.insieme) || p.insieme || "" };
+  const parte = p.parte || "";
+  const passi = regime === "estate" ? [] : passiDi(p.camera).filter(x => x.giorno === giornoSettimana(p.data) && x.tipo === tipo);
+  const cal = passi.find(x => (x.parte || "") === parte) || passi.find(x => !x.parte) || passi[0] || null;
+  let budget = cal && cal.libera === libera ? cal.budget : m.budget[fascia];
+  let stelle = Math.min(STELLE_MAX[fascia], m.stelle[fascia]);
+  if (parte === "sopra") { budget = 0; stelle = 0; } // l'appartamento su due piani: le stelle stanno sul passaggio del piano di sotto
+  return { tipo, budget, libera, modo, base: modo === "operai", soloIgiene: !!m.soloIgiene, visibilePrima: !!m.visibilePrima, stelle, parte, piani: camera && camera.piani || 1, daCalendario: !!cal, daConfermare: !!(cal && cal.daConfermare), aperto: !!(CALENDARIO_CAMERE[p.camera] && CALENDARIO_CAMERE[p.camera].aperto), regime, estate: regime === "estate", insieme: (cal && cal.insieme) || p.insieme || "" };
 }
 
 // ============================================================================
@@ -405,6 +408,12 @@ export function righeLista(passo, casa, partenza) {
   let righe;
   if (passo.base) righe = passo.tipo === "totale" ? [...prendi("base_ripasso"), ...prendi("base_totale")] : prendi("base_ripasso");
   else { righe = prendi("ripasso"); if (passo.tipo === "totale") righe = [...righe, ...prendi("totale")]; if (casa) righe = [...righe, ...prendi("cucina")]; }
+  // il blocco "Piano di sopra" esiste solo negli appartamenti su due piani (via Zara 1° e 2°); se il passaggio è di una parte sola
+  // (una signora per piano), il piano di sotto non lo vede e il piano di sopra vede solo quello
+  const piani = passo.piani || 1, parte = passo.parte || "";
+  righe = righe.filter(c => c.blocco !== "sopra" || piani >= 2);
+  if (parte === "sotto") righe = righe.filter(c => c.blocco !== "sopra");
+  if (parte === "sopra") righe = righe.filter(c => c.blocco === "sopra");
   // dentro ogni blocco l'ordine del foglio; "Prima di chiudere" sempre per ultima
   const ord = c => ORDINE_BLOCCHI.indexOf(c.blocco || "camera");
   return righe.map((c, i) => ({ ...c, _i: i })).sort((a, b) => (ord(a) - ord(b)) || (/^prima di chiudere/i.test(a.testo) - /^prima di chiudere/i.test(b.testo)) || (a._i - b._i)).map(({ _i, ...c }) => c);
@@ -763,7 +772,7 @@ export function modelloCalendario(camere, lun, regoleBase, ctx = {}) {
     const totale = x.tipo === "totale" || x.tipo === "totale_casa";
     const cal = passiDi(c.id).find(y => y.giorno === x.giorno && y.tipo === (totale ? "totale" : "ripasso"));
     const libera = totale && !!(cal && cal.libera);
-    out.push({ id: `${data}_${c.id}`, data, camera: c.id, zona: x.zona || c.zona, tipo: x.tipo, partenza: libera, arrivo: false, origine: "auto", stato: "da_fare", titolo: totale ? "Cambio completo" : "Ripasso", insieme: x.insieme || "", regime: "inverno", modo: modoValido(modoCamera(c, data, ctx.soggiorni || [], ctx.clienti || {}, regoleBase)) });
+    out.push({ id: `${data}_${c.id}${x.parte === "sopra" ? "_sopra" : ""}`, data, camera: c.id, zona: x.zona || c.zona, tipo: x.tipo, partenza: libera, arrivo: false, origine: "auto", stato: "da_fare", titolo: totale ? "Cambio completo" : "Ripasso", insieme: x.insieme || "", parte: x.parte || "", regime: "inverno", modo: modoValido(modoCamera(c, data, ctx.soggiorni || [], ctx.clienti || {}, regoleBase)) });
   }
   return out;
 }
@@ -779,7 +788,7 @@ export function simulaGovernante(ctx, settimane = 13, opz = {}) {
   for (let w = 0; w < settimane; w++) {
     const lunW = aggiungiGiorni(lun, w * 7);
     const sog = soggiorni.map(s => ({ ...s, inizio: aggiungiGiorni(s.inizio, w * 7), fine: aggiungiGiorni(s.fine, w * 7) }));
-    const pul = {}; for (const p of modello) { const iso = aggiungiGiorni(p.data, w * 7); const id = `${iso}_${p.camera}`; pul[id] = { ...p, id, data: iso, stato: "da_fare" }; }
+    const pul = {}; for (const p of modello) { const iso = aggiungiGiorni(p.data, w * 7); const id = `${iso}_${p.camera}${p.parte === "sopra" ? "_sopra" : ""}`; pul[id] = { ...p, id, data: iso, stato: "da_fare" }; }
     const c2 = { ...base, lun: lunW, oggi: lunW, pulizie: pul, soggiorni: sog };
     const pr = proposteSettimana(c2);
     for (const c of pr.proposte) { accettate.push({ ...c, settimana: w }); const k = chiaveRegistro(c.regola, c.luogo); if (!prima[k]) prima[k] = c.data; pul[`${c.data}_${c.luogo}_g_${c.regola}`] = { id: `${c.data}_${c.luogo}_g_${c.regola}`, data: c.data, camera: c.luogo, zona: c.zona, tipo: "fondo", origine: "governante", regola: c.regola, minuti: c.minuti, stato: "da_fare" }; }

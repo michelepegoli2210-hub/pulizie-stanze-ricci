@@ -62,7 +62,7 @@ function aliasCamere() {
   for (const [k, v] of Object.entries(COLONNE_EXCEL)) m[k] = v;
   Object.assign(m, {
     "zara piano terra": "zarapt", "zara pt": "zarapt", "zara terra": "zarapt", "zara sotto": "zarapt", "zara giu": "zarapt", "zara pianterreno": "zarapt", "zara piano terreno": "zarapt", "via zara sotto": "zarapt", "via zara giu": "zarapt", "via zara pianterreno": "zarapt", "via zara piano terreno": "zarapt", "zara pianoterra": "zarapt", "via zara pianoterra": "zarapt",
-    "zara secondo piano": "zara2", "zara secondo": "zara2", "zara 2 piano": "zara2", "zara 2": "zara2", "zara in cima": "zara2", "via zara secondo": "zara2", "via zara 2 piano": "zara2", "via zara 2": "zara2", "zara ultimo piano": "zara2",
+    "zara secondo piano": "zara1", "zara secondo": "zara1", "zara 2 piano": "zara1", "zara 2": "zara1", "zara in cima": "zara1", "via zara secondo": "zara1", "via zara 2 piano": "zara1", "via zara 2": "zara1", "zara ultimo piano": "zara1", "zara 1 e 2": "zara1", "via zara 1 e 2": "zara1", "zara primo e secondo": "zara1", "via zara primo e secondo": "zara1",
     "zara primo piano": "zara1", "zara primo": "zara1", "zara 1 piano": "zara1", "zara 1": "zara1", "zara sopra": "zara1", "zara su": "zara1", "via zara sopra": "zara1", "via zara su": "zara1", "via zara primo": "zara1", "via zara 1 piano": "zara1",
     "via zara": "zara?", "zara": "zara?",
     "trento": "trento", "via trento": "trento", "trento 47": "trento", "via trento 47": "trento",

@@ -111,7 +111,7 @@ export const CALENDARIO_CAMERE = (() => {
     const dubbio = /CONTROLLA|COMPLETA/i.test(v.controlla || "") || !!v.oppure;
     for (const id of v.posti) {
       const c = out[id] = out[id] || { passi: [], aperto: false, domande: [] };
-      c.passi.push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, oppure: !!v.oppure, controlla: v.controlla || "", zona: v.zona || null, insieme: v.insieme || "", dubbio });
+      c.passi.push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, oppure: !!v.oppure, controlla: v.controlla || "", zona: v.zona || null, insieme: v.insieme || "", parte: v.parte || "", dubbio });
       if (dubbio) { c.aperto = true; if (v.controlla && !c.domande.includes(v.controlla)) c.domande.push(v.controlla); }
     }
   }
@@ -170,7 +170,7 @@ export function passaggiCamera(camera, regole = REGOLE_BASE, iso = null) {
   const r = { ...REGOLE_BASE, ...(regole || {}) };
   if (iso && regimeDi(iso, r) === "estate") return [];
   const cal = CALENDARIO_CAMERE[camera.id];
-  if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), zona: x.zona || camera.zona, insieme: x.insieme || "", daCalendario: true }));
+  if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), zona: x.zona || camera.zona, insieme: x.insieme || "", parte: x.parte || "", daCalendario: true }));
   return ((camera.tipo === "casa" ? r.casa : r.camera) || []).map(x => ({ ...x, zona: camera.zona, daCalendario: false }));
 }
 
@@ -183,7 +183,10 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
   const parte = parteIl(soggiorni, camera.id, iso);
   const wd = giornoSettimana(iso);
   const lista = passaggiCamera(camera, r, iso);
-  const regola = lista.find(x => x.giorno === wd);
+  // un appartamento su due piani può avere due passaggi lo stesso giorno (una signora per piano): il principale è quello di sotto
+  const delGiorno = lista.filter(x => x.giorno === wd);
+  const regola = delGiorno.find(x => !x.parte || x.parte === "sotto") || delGiorno[0] || null;
+  const altreParti = regola ? delGiorno.filter(x => x !== regola && x.parte && x.parte !== regola.parte) : [];
   let tipo = null, titoloSpeciale = "";
   if (occ && regola) tipo = regola.tipo;
   if (parte && r.totaleAllaPartenza) tipo = camera.tipo === "casa" ? "totale_casa" : "totale";
@@ -222,9 +225,12 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
     supplemento: Number(chi?.supplemento || 0),
     zona: (regola && regola.zona) || zonaDi(camera, r),
     insieme: (regola && regola.insieme) || "",
+    parte: (regola && regola.parte) || "",
+    altreParti: regola && tipo === regola.tipo ? altreParti : [],
     regime: regimeDi(iso, r),
   };
 }
+export const PARTE_TESTO = { sotto: "piano di sotto", sopra: "piano di sopra" };
 
 // Costruisce l'elenco completo delle pulizie "attese" in un intervallo di giorni.
 export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [], clienti = {}) {
@@ -233,8 +239,7 @@ export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [
     for (const c of camere) {
       const p = pulizia_prevista(c, iso, soggiorni, regole, note, clienti);
       if (!p) continue;
-      out.push({
-        id: `${iso}_${c.id}`,
+      const base = {
         data: iso, camera: c.id, zona: p.zona || c.zona, insieme: p.insieme || "", modo: p.modo || "",
         tipo: p.tipo, titolo: p.titolo, passi: p.passi,
         ospite: p.ospite, soggiorno: p.soggiorno, partenza: p.partenza, arrivo: p.arrivo,
@@ -242,7 +247,11 @@ export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [
         istruzioni: p.istruzioni, persone: p.persone,
         importo: prezzoPulizia(listino, c, p.tipo) + Number(p.supplemento || 0),
         origine: "auto",
-      });
+      };
+      const conParte = (b, parte) => parte ? { ...b, parte, titolo: `${b.titolo} · ${PARTE_TESTO[parte] || parte}` } : b;
+      out.push({ id: `${iso}_${c.id}`, ...conParte(base, p.parte) });
+      // le altre parti dello stesso giorno (l'altra signora, l'altro piano): un'altra riga di paga, senza il supplemento dell'ospite
+      for (const x of p.altreParti || []) out.push({ id: `${iso}_${c.id}_${x.parte}`, ...conParte({ ...base, zona: x.zona || base.zona, insieme: x.insieme || "", importo: prezzoPulizia(listino, c, p.tipo) }, x.parte) });
     }
   }
   return out;
@@ -258,7 +267,7 @@ export function differenzePiano(attese, esistenti) {
     const e = esistenti[a.id];
     if (!e) { crea.push({ ...a, stato: "da_fare" }); continue; }
     if (e.origine !== "auto" || e.stato !== "da_fare") continue;
-    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","zona","persone","insieme","modo"];
+    const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","zona","persone","insieme","modo","parte"];
     const patch = {};
     for (const k of campi) {
       const va = a[k] ?? null, ve = e[k] ?? null;

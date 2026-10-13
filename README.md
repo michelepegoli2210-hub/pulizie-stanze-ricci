@@ -234,7 +234,7 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   **Calendario vero** (`logica.CALENDARIO_CAMERE`, `passaggiCamera`): i giorni di pulizia vengono dal foglio, posto per posto (Trento
   e via Zara 1°/2° lunedì ripasso + giovedì totale, via Zara piano terra sabato); dove nel foglio c'è ancora una domanda
   ([CONTROLLA], [COMPLETA], "oppure") quel posto resta con REGOLE_BASE finché Michele non risponde: l'app non inventa. Camera nuova
-  `zara2` (Via Zara · 2° piano). Le stelle entrano solo nei passaggi veri, con il **budget per passaggio** (`passoDi`: ripasso 15′ e 1-2
+  `zara2` (Via Zara · 2° piano; **tolta nella 0.34**: era lo stesso appartamento del 1° piano). Le stelle entrano solo nei passaggi veri, con il **budget per passaggio** (`passoDi`: ripasso 15′ e 1-2
   stelle, totale 30′, totale a camera vuota 45′, Base 0′/10′ e una sola), riempito per priorità 1 → 2 → 3 e poi la più in ritardo;
   le parti a ritmo corto che la lista di quel passaggio nomina non diventano stelle (`copertaDallaLista`) e la lista fatta le registra
   (`coperteDalPasso`). **Profili** (`profiloDi`, `PROFILI_BASE`, `impostazioni/governante.profili`): Lusso = tutto il catalogo; Base
@@ -387,5 +387,22 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   consigli della governante (`proposteSettimana`) non usano più oggi. **Domande a elenco** (`GRUPPI`, `statoChat().gruppi`): i nomi
   senza tipo di ospite e i lavori di manutenzione fermi stanno in un messaggio solo con una riga per voce e i pulsanti per riga;
   ogni riga è una risposta a sé (`fuoriConto`, `gruppo`) e non conta nelle 3 del giorno.
+- **0.34 — via Zara 1° e 2° piano è un appartamento solo** (correzione di Michele, `catalogo/specifiche-governante.md` punto 12:
+  la camera "Via Zara · 2° piano" creata nella 0.28 era uno sbaglio). In `regole.js` la camera `zara1` si chiama **"Via Zara · 1° e
+  2° piano"**, `piani: 2`; `zara2` sta in `CAMERE_TOLTE` (`unitaA: "zara1"`): sparisce da piastre, Tabellone, prospetto ed Excel
+  (tutte le scritte "via Zara 2°" nelle colonne e nella dettatura vanno su zara1), le pulizie future di zara2 le cancella
+  `pianificaPulizie`, le celle del registro delle stelle di zara2 le unisce a zara1 `unisciRegistroTolte` (una volta, dal
+  proprietario, tenendo la data più recente; in console "registro: unite N celle"). Un posto, una pulizia, un Tabellone.
+  **Il giovedì in due** (calendario vero nel foglio Excel, `CALENDARIO_VERO` con `parte`): "Cambio totale · piano di sotto" alla
+  Signora 1° piano con le stelle (fino a 2 di igiene, modo Operai) e "piano di sopra" alla Signora 2° piano senza stelle, ognuna
+  preme Fatto sul proprio piano; `pulizia_prevista` restituisce `parte` e `altreParti`, `pianoPulizie` scrive la seconda pulizia
+  con id `${iso}_zara1_sopra` (10 € l'una dal listino `perCasa`); il lunedì il ripasso resta della Signora 1° piano, 15 €.
+  **Nella lista della signora il piano di sopra è un blocco in più** ("Piano di sopra: camere e bagno", `BLOCCHI_LISTA` "sopra" nel
+  generatore, righe nuove nel foglio Checklist con Blocco "Piano di sopra"): si vede solo nelle case a 2 piani (`piani`) e
+  `righeLista` lo tiene da solo per la parte "sopra", lo toglie per la parte "sotto". **Paghe → "Conto dal prospetto"**
+  (`contoProspetto`, `cardContoProspetto`, solo proprietario): "Pulizie: … € + stelle: … € = … €" per la settimana (lun–dom) e per il
+  mese fino all'ultimo giorno coperto dal prospetto, più la stima del mese intero; stelle = quelle segnate nelle pulizie fatte
+  (`extraRifiniture`) e quelle previste nelle pulizie ancora da fare. In modalità prova `ricci_prova_ora` fissa l'ora del giorno
+  (serve alle prove automatiche). Ancora da decidere con Michele: se il giovedì lo fa una signora sola (punto 10 delle specifiche).
 - Passi successivi previsti: l'IA per "Dimmelo a parole" (chiave Gemini gratuita di Michele, solo sul suo telefono, se vorrà),
   le foto dei materiali, il tipo di ospite di via Zara piano terra, meteo automatico.

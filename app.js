@@ -3,7 +3,7 @@
 //  Qui c'è tutto quello che si vede: schermate, bottoni, tabellone, soldi.
 //  I dati passano sempre da db.js; le regole stanno in regole.js e logica.js.
 // ============================================================================
-import { ZONE, CAMERE, REGOLE_BASE, TIPI_PULIZIA, TIPI_OSPITE, RIFIUTI, APPOGGIO_ESTERNO, PERSONE_BASE } from "./regole.js";
+import { ZONE, CAMERE, CAMERE_TOLTE, REGOLE_BASE, TIPI_PULIZIA, TIPI_OSPITE, RIFIUTI, APPOGGIO_ESTERNO, PERSONE_BASE } from "./regole.js";
 import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
@@ -11,7 +11,7 @@ import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiesta
 import * as G from "./governante.js";
 import * as CH from "./chat.js";
 
-export const VERSIONE = "0.33.0";
+export const VERSIONE = "0.34.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -135,7 +135,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const eur = L.eur;
 
-function camera(id) { return S.camere.find(c => c.id === id) || G.LUOGHI_COMUNI.find(l => l.id === id) || { id, nome: id, zona: "?", tipo: "camera" }; }
+function camera(id) { return S.camere.find(c => c.id === id) || G.LUOGHI_COMUNI.find(l => l.id === id) || (CAMERE_TOLTE[id] ? { id, nome: CAMERE_TOLTE[id].nome, zona: "ap", tipo: "casa", tolta: true } : { id, nome: id, zona: "?", tipo: "camera" }); }
 function camereZona(z) { return S.camere.filter(c => c.zona === z).sort((a, b) => (a.ordine || 0) - (b.ordine || 0)); }
 function zoneOrdinate() { return Object.entries(S.zone).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0)).map(([k, v]) => ({ id: k, ...v })); }
 function proprietario() { return S.utente?.ruolo === "proprietario"; }
@@ -240,7 +240,7 @@ function avviaAscolto() {
   const da = L.aggiungiGiorni(L.primoDelMese(L.aggiungiGiorni(oggi, -31)), 0); // dal mese scorso
   const a = L.aggiungiGiorni(oggi, 45);
   // impostazioni condivise
-  S.stop.push(db.ascoltaDoc("impostazioni", "camere", d => { if (d?.lista?.length) S.camere = [...d.lista, ...CAMERE.filter(c => !d.lista.some(x => x.id === c.id))]; if (d?.zone) S.zone = d.zone; disegna(); pianifica(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "camere", d => { if (d?.lista?.length) { const lista = d.lista.filter(c => !CAMERE_TOLTE[c.id]).map(c => { const b = CAMERE.find(x => x.id === c.id); return b ? { ...c, nome: b.nome, piani: b.piani, posti: b.posti ?? c.posti } : c; }); S.camere = [...lista, ...CAMERE.filter(c => !lista.some(x => x.id === c.id))]; } if (d?.zone) S.zone = d.zone; disegna(); pianifica(); }));
   S.stop.push(db.ascoltaDoc("impostazioni", "controlli", d => { S.impControlli = d || null; if (d) delete S.impControlli.id; aggiornaAscoltoAltrui(); aggiornaControllatrice(); disegna(); }));
   if (addetta()) {
     S.stop.push(db.ascolta("controlli", { where: [["zonaControllata", "==", u.zona]] }, (m) => { S.controlliA = m; S.controlli = { ...S.controlliA, ...S.controlliB }; disegna(); }, mostraErrore));
@@ -260,7 +260,7 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
   S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteAutomatica(); segnaInizioGovernante(); }));
-  S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; for (const r of Object.values(m)) { const k = G.chiaveRegistro(G.nuovoId(r.regola), r.luogo); const prev = S.registro[k]; if (!prev || (r.ultima || "") > (prev.ultima || "")) S.registro[k] = { ...r, regola: G.nuovoId(r.regola) }; } disegna(); governanteAutomatica(); }, mostraErrore));
+  S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; const daUnire = []; for (const r of Object.values(m)) { const tolta = CAMERE_TOLTE[r.luogo]; const luogo = tolta ? tolta.unitaA : r.luogo; if (tolta) daUnire.push(r); const k = G.chiaveRegistro(G.nuovoId(r.regola), luogo); const prev = S.registro[k]; if (!prev || (r.ultima || "") > (prev.ultima || "")) S.registro[k] = { ...r, regola: G.nuovoId(r.regola), luogo }; } disegna(); governanteAutomatica(); unisciRegistroTolte(daUnire); }, mostraErrore));
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; disegna(); pianoDelMattino(); }));
   if (!addetta()) S.stop.push(db.ascoltaDoc("impostazioni", "listino", d => { S.listino = L.listinoCompleto(d); disegna(); pianifica(); }));
@@ -514,7 +514,7 @@ function foglioInizio(f) {
   const statoRiga = k => chiusa ? (nonSalvate[k] != null ? "non" : salvate.has(k) || !(p.spuntate || []).length ? "fatta" : "") : sp.non[k] ? "non" : sp.fatte[k] ? "fatta" : "";
   const motivoRiga = k => chiusa ? nonSalvate[k] : sp.non[k];
   // la targa: camera, tipo di pulizia, minuti, ospite
-  const tipoTesto = fondo ? `⭐ ${p.titolo}` : extra ? p.titolo : lista ? (lista.passo.tipo === "totale" ? "Cambio completo" : c.tipo === "casa" ? "Pulizia della casa" : "Ripasso") : titoloLavoro(p);
+  const tipoTesto = (fondo ? `⭐ ${p.titolo}` : extra ? p.titolo : lista ? (lista.passo.tipo === "totale" ? "Cambio completo" : c.tipo === "casa" ? "Pulizia della casa" : "Ripasso") : titoloLavoro(p)) + (p.parte && L.PARTE_TESTO[p.parte] ? ` · ${L.PARTE_TESTO[p.parte]}` : "");
   const minuti = lista ? lista.minuti + lista.minutiZona : (p.minuti || 0);
   const chi = p.ospite ? p.ospite : "";
   const quando = p.partenza ? `${chi || "l'ospite"} parte ${giornoParlato(p.data).replace(/^oggi,.*$/, "oggi")}` : (p.parteIl && p.parteIl > p.data ? `${chi || "l'ospite"} resta fino a ${L.GIORNI[L.giornoSettimana(p.parteIl)]}` : chi);
@@ -793,7 +793,7 @@ function testoPianoSettimana(z, lun) {
 function regoleGov() { return G.regoleAttive(S.gov); }
 function soglieGov() { return G.soglie(S.gov); }
 function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {}, frigo: (S.gov && S.gov.frigo) || {} }; }
-function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov(), inizio: (S.gov && S.gov.inizio) || null, materiali: (S.gov && S.gov.materiali) || {}, imp: S.gov, meteo: (S.gov && S.gov.meteo) || {}, regoleBase: S.regole, clienti: S.clienti, ora: L.partiRoma(new Date()).h }; }
+function ctxGov(lun) { return { lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov(), inizio: (S.gov && S.gov.inizio) || null, materiali: (S.gov && S.gov.materiali) || {}, imp: S.gov, meteo: (S.gov && S.gov.meteo) || {}, regoleBase: S.regole, clienti: S.clienti, ora: oraRoma() }; }
 let memoProposte = new Map(), memoRif = new Map(), memoLista = new Map();
 function proposteGov(lun) { const k = lun || S.govSett; if (!memoProposte.has(k)) memoProposte.set(k, G.proposteSettimana(ctxGov(k))); return memoProposte.get(k); }
 // le rifiniture dentro una pulizia normale (per la signora, per la controllatrice e per la paga)
@@ -851,6 +851,18 @@ async function governanteAutomatica() {
   const piccole = proposteGov(lun).proposte.filter(c => !c.grande && !S.pulizie[idPuliziaGov(c)]);
   if (piccole.length) await accettaProposte(piccole);
 }
+// Le celle di un posto tolto (via Zara 2° piano) passano al posto a cui è stato unito: le scrive il proprietario una volta sola, poi cancella le vecchie
+let unioneInCorso = false;
+async function unisciRegistroTolte(vecchie) {
+  if (!vecchie.length || !proprietario() || S.utente?.finta || unioneInCorso) return; unioneInCorso = true;
+  try {
+    const ops = [];
+    for (const r of vecchie) { const a = CAMERE_TOLTE[r.luogo].unitaA; const regola = G.nuovoId(r.regola); const k = G.chiaveRegistro(regola, a); const cur = S.registro[k]; const id = `${regola}_${a}`;
+      if (!cur || cur.luogo !== a || (r.ultima || "") >= (cur.ultima || "")) ops.push({ tipo: "salva", coll: "governante_registro", id, dati: { ...r, regola, luogo: a, zona: r.zona || "ap", unitoDa: r.luogo }, merge: true });
+      ops.push({ tipo: "cancella", coll: "governante_registro", id: `${r.regola}_${r.luogo}` }); }
+    if (ops.length) { await S.db.scrivi(ops); console.info("registro: unite", vecchie.length, "celle del posto tolto"); }
+  } catch (e) { console.warn("unione registro", e); } finally { unioneInCorso = false; }
+}
 // il registro "ultima volta fatto": lo scrive chi segna fatto (signora o proprietario)
 async function registraFatto(regola, luogo, zona, data) {
   const k = G.chiaveRegistro(regola, luogo), prev = S.registro[k] || {};
@@ -901,9 +913,11 @@ function nomeZonaBreve(z) { return `Signora ${S.zone[z]?.breve || z}`; }
 //  LA CHAT CON LA GOVERNANTE (specifiche §11): "La governante ti chiede". Le domande nascono dalle regole in chat.js;
 //  qui c'è quello che si vede (card in Oggi, foglio a chat) e quello che OGNI RISPOSTA FA DAVVERO nell'app ("Fatto: …").
 // ============================================================================
+// l'ora di Roma; in modalità prova si può fissare (localStorage ricci_prova_ora) per provare la chat a qualunque ora
+function oraRoma() { if (S.db && S.db.modalita !== "firebase") { try { const o = localStorage.getItem("ricci_prova_ora"); if (o != null && o !== "") return Number(o); } catch (e) {} } return L.partiRoma(new Date()).h; }
 function statoChatApp() {
   let tab = null; try { tab = tabellone(); } catch (e) {}
-  const st = { oggi: L.oggiISO(), adesso: new Date(), camere: S.camere, zone: S.zone, soggiorni: soggiorniLista(), pulizie: S.pulizie, clienti: S.clienti, gov: S.gov, pagamenti: S.pagamenti, regole: S.regole, controlli: S.controlli, listino: S.listino, chat: S.chat, registro: S.registro, manutenzione: S.manutenzione, impControlli: S.impControlli, tabellone: tab, spesa: S.spesa, catalogo: G.CATALOGO };
+  const st = { oggi: L.oggiISO(), adesso: new Date(), ora: oraRoma(), camere: S.camere, zone: S.zone, soggiorni: soggiorniLista(), pulizie: S.pulizie, clienti: S.clienti, gov: S.gov, pagamenti: S.pagamenti, regole: S.regole, controlli: S.controlli, listino: S.listino, chat: S.chat, registro: S.registro, manutenzione: S.manutenzione, impControlli: S.impControlli, tabellone: tab, spesa: S.spesa, catalogo: G.CATALOGO };
   try { return CH.statoChat(st); } catch (e) { console.warn("chat", e); return { aperte: [], inAttesa: [], nonAncora: [], daSole: [], storico: [], risposteOggi: [], urgenti: 0, prossime: "" }; }
 }
 function cardChat() {
@@ -1027,7 +1041,7 @@ const AZIONI_CHAT = {
     if (k === "riprova") return { fatto: "va bene: la stella torna nella lista la prossima volta.", scade: L.aggiungiGiorni(oggi, 14) };
     const r = regoleGov().find(x => x.id === dd.regola) || G.CATALOGO.find(x => x.id === dd.regola) || null;
     if (k === "spegni") { const regole = { ...((S.gov && S.gov.regole) || {}) }; const codice = (r && r.codice) || dd.regola; regole[codice] = { ...(regole[codice] || {}), attiva: false }; await salvaGov({ regole }); return { fatto: `regola «${dd.cosa}» spenta per tutte le camere (in Regole la riaccendi con Sì).` }; }
-    const daQuando = L.partiRoma(new Date()).h >= CH.ORA_FINE_SIGNORE ? L.aggiungiGiorni(oggi, 1) : oggi; // dopo le 14 mai "oggi"
+    const daQuando = oraRoma() >= CH.ORA_FINE_SIGNORE ? L.aggiungiGiorni(oggi, 1) : oggi; // dopo le 14 mai "oggi"
     const prossima = Object.values(S.pulizie).filter(p => p.camera === dd.camera && p.data >= daQuando && p.origine !== "governante" && p.tipo !== "extra" && p.stato !== "fatta").sort((a, b) => a.data < b.data ? -1 : 1)[0];
     const data = prossima ? prossima.data : L.aggiungiGiorni(oggi, 1);
     if (k === "parole") { if (prossima) await salvaDettagliSilenzioso(prossima, parole); else await notaDellaGovernante(data, dd.camera, parole, false); return { fatto: `scritto per la signora su ${dd.nome}, ${L.dataBreve(data)}: «${parole}».` }; }
@@ -1375,7 +1389,7 @@ function vistaRegoleGov() {
   const profili = "";
   // 3. il calendario vero: i passaggi delle signore, posto per posto, con il budget delle stelle
   const calendario = `<section class="card"><h2 style="margin:0 0 4px">Il calendario vero</h2><p class="muted small" style="margin:0 0 8px">Dal foglio "Calendario vero" nella cartella catalogo (è lì che si cambia). Le stelle entrano solo nei giorni in cui una signora passa davvero, dentro il budget del passaggio. Dove nel foglio c'è ancora una domanda, quel posto resta con i giorni di prima finché Michele non risponde: l'app non inventa.</p>
-    <div class="rows">${S.camere.map(c => { const cal = L.CALENDARIO_CAMERE[c.id]; const passi = L.passaggiCamera(c, S.regole); const txt = passi.map(x => `${L.GIORNI[x.giorno]} ${x.tipo === "ripasso" || x.tipo === "casa" ? "ripasso" : "totale"}`).join(" · ") || "nessun passaggio"; const bud = G.passiDi(c.id).map(x => `${L.GG[x.giorno]} ${x.budget}′${x.libera ? " (camera vuota)" : ""}`).join(" · ");
+    <div class="rows">${S.camere.map(c => { const cal = L.CALENDARIO_CAMERE[c.id]; const passi = L.passaggiCamera(c, S.regole); const txt = passi.map(x => `${L.GIORNI[x.giorno]} ${x.tipo === "ripasso" || x.tipo === "casa" ? "ripasso" : "totale"}${x.parte ? ` (${L.PARTE_TESTO[x.parte] || x.parte}, ${nomeZonaBreve(x.zona)})` : ""}`).join(" · ") || "nessun passaggio"; const bud = G.passiDi(c.id).map(x => `${L.GG[x.giorno]} ${x.budget}′${x.libera ? " (camera vuota)" : ""}`).join(" · ");
       return `<div class="row one"><b>${esc(c.nome)} <span class="muted small">· oggi ${esc(G.MODI[G.modoDi(c, oggiIso0, ctx0)]?.nome || "")}</span></b><span class="small">${esc(txt)}${bud ? ` <span class="muted">· stelle: ${esc(bud)}</span>` : ""}</span>${cal?.aperto ? `<span class="small" style="color:var(--warn)">● da confermare: ${esc(cal.domande.join(" · ").replace(/\[|\]/g, ""))}${passi.some(x => !x.daCalendario) ? " → per ora come prima" : ""}</span>` : ""}</div>`; }).join("")}</div>
     <p class="muted small" style="margin:8px 0 0">Mai di domenica. Le zone comuni (scale, corridoio, lavanderia) vanno alla prima camera del giorno della signora: le cose di ogni giorno più una a ritmo entro ${sg.zonaMinuti} minuti.</p></section>`;
   // 3b. le stagioni: inverno (giorni fissi) ed estate (arrivi e partenze), con l'interruttore per anticipare o posticipare
@@ -1428,7 +1442,7 @@ function vistaRegoleGov() {
   const soglie = `<section class="card"><h2 style="margin:0 0 6px">Due soglie piccole</h2><div class="rows">${sogliaRiga("camereSettimana", "Pulizie a fondo complete a settimana (mezza giornata, a camera vuota)", 1, 1, 5, "")}${sogliaRiga("zonaMinuti", "Minuti a ritmo per le zone comuni nel giorno della signora", 5, 5, 60, "′")}${sogliaRiga("budgetStelle", "Budget delle stelle al mese (la governante ti avvisa al 90%)", 10, 100, 2000, " €")}</div><p class="muted small" style="margin:8px 0 0">Il budget delle stelle per passaggio sta nel foglio "Calendario vero" e, dove il foglio non dice niente, nel modo dell'ospite (sopra, "I tre modi").</p></section>`;
   const matImp = imp.materiali || {};
   const selMat = (l, tipo, etichetta) => { const m = G.materialiDi(l, matImp); return `<label class="gov-mat"><span>${etichetta}</span><select data-gov-materiale="${esc(l.id)}|${tipo}" ${mod ? "" : "disabled"}>${Object.entries(G.MATERIALI[tipo]).map(([k, v]) => `<option value="${k}" ${m[tipo] === k ? "selected" : ""}>${esc(v.nome)}</option>`).join("")}</select></label>`; };
-  const daFoto = new Set(["lella", "nicole", "trento", "zarapt", "zara1", "zara2"]);
+  const daFoto = new Set(["lella", "nicole", "trento", "zarapt", "zara1"]);
   const materiali = `<section class="card"><h2 style="margin:0 0 4px">Materiali dei posti</h2><p class="muted small" style="margin:0 0 8px">Dalle foto: 1° piano e appartamenti con il pavimento in marmo rosso lucido e porte in legno scuro, 2° piano con il gres color cotto e le porte in laminato chiaro, box doccia a soffietto in PVC quasi ovunque, mobili in laminato di finto legno dappertutto. Per Lella, Nicole, via Trento e via Zara non ho foto: sono messi come il piano a cui somigliano, finché Michele non manda le foto. La signora legge la riga giusta per quel posto ("Qui: …").</p>
     <div class="rows">${[...S.camere, ...G.LUOGHI_COMUNI].map(l => `<div class="row one"><b>${esc(l.nome)}${daFoto.has(l.id) ? ` <span class="el-pill out">MICHELE: foto?</span>` : ""}</b><div class="gov-mat-riga">${selMat(l, "pavimento", "Pavimento")}${l.tipo !== "comune" ? selMat(l, "box", "Box doccia") : ""}${selMat(l, "porte", "Porte")}${l.tipo !== "comune" ? selMat(l, "mobili", "Mobili") : ""}</div></div>`).join("")}</div>
     <details style="margin-top:10px"><summary class="nonna-link" style="display:inline-flex">Come si trattano i materiali (la scheda)</summary><div class="rows" style="margin-top:8px">${G.SCHEDA_MATERIALI.map(m => `<div class="row one"><b>${esc(m.nome)}</b><span class="muted small">${esc(m.dove)}</span><span class="small">${esc(m.come)}.</span>${m.mai ? `<span class="small gov-regola-nota">⚠ ${esc(m.mai)}.</span>` : ""}</div>`).join("")}</div></details></section>`;
@@ -1588,6 +1602,30 @@ function elencoProspetto(da, a) {
 }
 
 // ---- paghe e listino -----------------------------------------------------------
+// Il conto dal prospetto (Michele): "Pulizie: … € + stelle: … € = … €" per la settimana e per il mese, pulizie previste e fatte
+function contoProspetto(da, a) {
+  const ps = Object.values(S.pulizie).filter(p => p.data >= da && p.data <= a && p.stato !== "non_fatta");
+  let pulizie = 0, stelle = 0, lavori = 0, n = 0, ultimo = "";
+  for (const p of ps) {
+    if (p.data > ultimo) ultimo = p.data;
+    if (p.origine === "governante" || p.tipo === "extra") { lavori += Number(p.importo) || 0; continue; }
+    n++; pulizie += Number(p.importo) || 0;
+    stelle += p.stato === "fatta" ? (Number(p.extraRifiniture) || 0) : rifinitureDi(p).filter(r => !r.sempre && !r.comune).reduce((x, r) => x + (r.euro || 0), 0);
+  }
+  const r2 = x => Math.round(x * 100) / 100;
+  return { pulizie: r2(pulizie), stelle: r2(stelle), lavori: r2(lavori), totale: r2(pulizie + stelle + lavori), n, ultimo };
+}
+function cardContoProspetto() {
+  const oggi = L.oggiISO(), lun = L.lunediDi(oggi), dom = L.aggiungiGiorni(lun, 6);
+  const sett = contoProspetto(lun, dom);
+  const m1 = L.primoDelMese(oggi), m2 = L.ultimoDelMese(oggi), mese = contoProspetto(m1, m2);
+  const giorniMese = L.giorniTra(m1, m2) + 1, copertoFino = mese.ultimo && mese.ultimo < m2 ? mese.ultimo : m2;
+  const riga = (c) => `Pulizie: <b>${eur(c.pulizie)}</b> + stelle: <b>${eur(c.stelle)}</b>${c.lavori ? ` + lavori a parte: <b>${eur(c.lavori)}</b>` : ""} = <b>${eur(c.totale)}</b>`;
+  const stima = sett.totale ? Math.round(sett.totale / 7 * giorniMese) : 0;
+  return `<section class="card conto-prospetto"><h2 style="margin:0 0 4px">Il conto dal prospetto</h2><p class="muted small" style="margin:0 0 8px">Quello che costano le pulizie normali e le stelle scritte nel prospetto di adesso (fatte e da fare), coi prezzi del listino. Non sono le paghe già pagate: quelle stanno sotto, signora per signora.</p>
+    <div class="row one"><b>Questa settimana</b> <span class="muted small">${esc(L.dataBreve(lun))} – ${esc(L.dataBreve(dom))} · ${sett.n} pulizie</span><span>${riga(sett)}</span></div>
+    <div class="row one"><b>${esc(L.meseLungo(oggi).replace(/^./, ch => ch.toUpperCase()))}</b> <span class="muted small">dal prospetto che c'è${copertoFino < m2 ? `, fino a ${esc(L.dataBreve(copertoFino))}` : ""} · ${mese.n} pulizie</span><span>${riga(mese)}</span>${copertoFino < m2 && stima ? `<span class="muted small">Se le altre settimane sono come questa, il mese intero viene circa <b>${eur(stima)}</b>.</span>` : ""}</div></section>`;
+}
 function vistaPaghe() {
   const chiave = L.settimanaCorrente();
   const blocchi = zoneOrdinate().map(z => {
@@ -1617,7 +1655,7 @@ function vistaPaghe() {
     <div class="listino">${rigaStella("Stella fino a 5 minuti", "fino5")}${rigaStella("Stella fino a 10 minuti", "fino10")}${rigaStella("Stella oltre 10 minuti", "oltre10")}</div>
     <div class="floorlabel" style="margin-top:14px">Grande o piccola?</div>
     <div class="rows">${S.camere.filter(c => c.tipo !== "casa").map(c => `<div class="row"><span>${esc(c.nome)}</span><span class="seg"><button aria-pressed="${L.tagliaCamera(l, c.id) === "G"}" data-taglia="${c.id}|G" ${mod ? "" : "disabled"}>Grande</button><button aria-pressed="${L.tagliaCamera(l, c.id) === "P"}" data-taglia="${c.id}|P" ${mod ? "" : "disabled"}>Piccola</button></span></div>`).join("")}</div></section>`;
-  return blocchi + controlliCard + listino;
+  return (puoModificare() ? cardContoProspetto() : "") + blocchi + controlliCard + listino;
 }
 
 // ---- altro ---------------------------------------------------------------------------

@@ -33,10 +33,12 @@ export const CAMERE = [
   { id: "fenicotteri", nome: "Fenicotteri",           zona: "p2", tipo: "camera", lato: "R", ordine: 9,  posti: 2 },
   { id: "nicole",      nome: "Nicole",                zona: "p2", tipo: "camera", lato: "S", ordine: 10, posti: 1, via: "via Nazario Sauro" },
   { id: "zarapt",      nome: "Via Zara · piano terra", zona: "ap", tipo: "casa", lato: "A", ordine: 11, posti: 4 },
-  { id: "zara1",       nome: "Via Zara · 1° piano",   zona: "ap", tipo: "casa",   lato: "A", ordine: 12, posti: 4 },
-  { id: "zara2",       nome: "Via Zara · 2° piano",   zona: "ap", tipo: "casa",   lato: "A", ordine: 13, posti: 4 },
+  { id: "zara1",       nome: "Via Zara · 1° e 2° piano", zona: "ap", tipo: "casa", lato: "A", ordine: 12, posti: 6, piani: 2 }, // un appartamento solo, su due piani (Michele, specifiche §12)
   { id: "trento",      nome: "Via Trento 47",         zona: "ap", tipo: "casa",   lato: "A", ordine: 14, posti: 4 },
 ];
+// Posti che non esistono più: si tolgono dall'app anche se sono ancora scritti in impostazioni/camere, e i loro vecchi dati (registro,
+// pulizie fatte) si leggono col nome di prima
+export const CAMERE_TOLTE = { zara2: { nome: "Via Zara · 2° piano (ora unito al 1°)", unitaA: "zara1" } };
 
 // Appoggio esterno: compare nel foglio di papà ma NON ha pulizie nostre.
 export const APPOGGIO_ESTERNO = [
@@ -103,7 +105,7 @@ export const LISTINO_BASE = {
   extra:       0,                  // i lavori extra hanno il prezzo scritto a mano
   fondo:       40,                 // pulizia a fondo completa (mezza giornata, a camera vuota): proposta dalla governante
   // Prezzi diversi per una casa precisa (Michele: via Zara 1° e 2° il giovedì, 10 € a signora, una per appartamento)
-  perCasa:     { zara1: { totale_casa: 10 }, zara2: { totale_casa: 10 } },
+  perCasa:     { zara1: { totale_casa: 10 } }, // il giovedì: 10 € a signora, una per piano (piano di sotto e piano di sopra sono due righe di paga)
   // Camere piccole (P). Tutte le altre sono grandi (G).
   taglia:      { michele: "P", aurora: "P", tramonto: "P", passerella: "P" },
 };
@@ -165,7 +167,7 @@ export const MODI = {
 };
 export const MODO_DA_TIPO = { ferr: "tecnici", fond: "tecnici", dago: "tecnici", altro: "booking", unk: "booking" }; // D'Agostino: tecnici in albergo, operai solo in via Zara 1° e 2° (vedi logica.modoCamera)
 // Senza nessuno dentro: gli appartamenti di via Zara 1° e 2° sono degli operai, il resto dei tecnici (d'estate tutto Booking)
-export const MODO_CAMERA_BASE = { zara1: "operai", zara2: "operai" };
+export const MODO_CAMERA_BASE = { zara1: "operai" };
 
 // ---- Dizionario per leggere il foglio Excel di papà ------------------------
 // Si usa nel Passo 5 (importazione). Le regole sono fisse: niente IA.
@@ -196,8 +198,8 @@ export const COLONNE_EXCEL = {
   "alba": "alba", "tramonto": "tramonto", "passerella": "passerella", "fenicotteri": "fenicotteri",
   "lella": "lella", "nicole": "nicole",
   "via zara piano terra": "zarapt", "via zara pt": "zarapt", "zara piano terra": "zarapt", "zara pt": "zarapt",
-  "via zara 1 piano": "zara1", "via zara 1piano": "zara1", "via zara primo piano": "zara1", "zara 1 piano": "zara1", "via zara 1": "zara1",
-  "via zara 2 piano": "zara2", "via zara 2piano": "zara2", "via zara secondo piano": "zara2", "zara 2 piano": "zara2", "via zara 2": "zara2",
+  "via zara 1 piano": "zara1", "via zara 1piano": "zara1", "via zara primo piano": "zara1", "zara 1 piano": "zara1", "via zara 1": "zara1", "via zara 1 e 2 piano": "zara1", "via zara 1 e 2": "zara1",
+  "via zara 2 piano": "zara1", "via zara 2piano": "zara1", "via zara secondo piano": "zara1", "zara 2 piano": "zara1", "via zara 2": "zara1",
   "via trento 47": "trento", "via trento": "trento", "trento 47": "trento", "trento": "trento",
 };
 
@@ -216,8 +218,7 @@ export const SOGGIORNI_ESEMPIO = [
   ["fenicotteri", "2026-09-28", "2026-10-02", "Salerno",           "ferr"],
   ["nicole",      "2026-09-28", "2026-10-02", "Castaldi",          "ferr"],
   ["zarapt",      "2026-09-27", "2026-10-10", "Rega Ugo · 1 tecnico", "ferr"],
-  ["zara1",       "2026-09-28", "2026-10-10", "D'Agostino · 1 operaio", "dago"],
-  ["zara2",       "2026-09-28", "2026-10-17", "D'Agostino · 2 operai", "dago"],
+  ["zara1",       "2026-09-28", "2026-10-17", "D'Agostino · 3 operai", "dago"],
   ["trento",      "2026-10-01", "2026-11-01", "Fondamenta",        "fond"],
   ["salvatore",   "2026-10-04", "2026-10-09", "Manna",             "ferr"],
   ["aurora",      "2026-10-05", "2026-10-09", "Palazzo",           "ferr"],
