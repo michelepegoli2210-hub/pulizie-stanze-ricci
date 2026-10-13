@@ -864,3 +864,37 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .buchi-due.giro b:first-child{font-size:24px}
 .buchi-due.giro b:last-child{font:700 15px/1.2 var(--f-display);opacity:.95}
 .buchi span strong{font-weight:800}
+
+/* --- 0.31 · "La governante ti chiede": la card in Oggi e la chat a pulsanti --- */
+.chat-card{padding:0;overflow:hidden;border:2px solid var(--accent)}
+.chat-card.quiete{border-color:var(--line)}
+.chat-plate{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;padding:12px 14px 12px 12px;cursor:pointer;text-align:left;color:var(--fg);font:inherit;min-height:76px}
+.chat-plate .donnina{width:54px;height:61px}
+.chat-plate-testo{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chat-plate-testo b{font:800 17px var(--f-display)}
+.chat-plate-testo span{font:600 13px var(--f-body);color:var(--muted)}
+.chat-plate-testo .chat-anteprima{font:500 14px var(--f-body);color:var(--fg);font-style:italic}
+.chat-plate .led{margin:0}
+.chat-plate .man-freccia{color:var(--muted)}
+.chat .chat-titolo{font:800 17px var(--f-display);color:var(--fg);padding-right:10px}
+.chat-corpo{display:flex;flex-direction:column;gap:10px;margin-top:8px;max-height:calc(100dvh - 150px);overflow:auto;overscroll-behavior:contain;padding:2px 2px 8px}
+.chat-msg{display:flex;align-items:flex-end;gap:8px;max-width:100%}
+.chat-msg.gov .donnina{width:40px;height:45px;flex:0 0 auto}
+.chat-msg.me{justify-content:flex-end}
+.chat-bolla{background:var(--card-pieno);border:1px solid var(--line);border-radius:18px 18px 18px 6px;padding:12px 14px;font:500 16px/1.4 var(--f-body);color:var(--fg);max-width:88%;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.chat-msg.me .chat-bolla{background:var(--accent);color:#fff;border:0;border-radius:18px 18px 6px 18px;font-weight:700;max-width:80%}
+.chat-fatto{font:600 13px/1.4 var(--f-body);color:var(--done);background:var(--done-bg);border-radius:12px;padding:8px 12px;margin:-2px 0 0 48px}
+.chat-fatto .btnsm{margin-left:6px;vertical-align:middle}
+.chat-quando{font:500 11.5px var(--f-body);color:var(--muted);text-align:right;margin:-4px 4px 0 0}
+.chat-tasti{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.chat-tasti.due{grid-template-columns:repeat(2,1fr)}
+.chat-tasti.quattro{grid-template-columns:repeat(2,1fr)}
+.chat-tasto{border:2px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:14px;min-height:54px;padding:8px 10px;font:800 14px/1.2 var(--f-display);cursor:pointer}
+.chat-tasto:active{background:var(--accent);color:#fff}
+.chat-parole{display:inline-block;margin-top:8px;border:0;background:transparent;color:var(--muted);font:600 13px var(--f-body);text-decoration:underline;cursor:pointer;padding:6px 2px;min-height:32px}
+.chat-scrivi{display:flex;gap:6px;margin-top:6px}
+.chat-scrivi input{flex:1 1 auto;min-width:0}
+.chat-urgente{display:inline-block;background:var(--warn);color:#fff;border-radius:6px;padding:1px 7px;font:800 11px var(--f-display);text-transform:uppercase;letter-spacing:.04em;vertical-align:2px}
+@media (max-width:360px){.chat-tasti{grid-template-columns:repeat(2,1fr)}}
+.sheet.pieno.chat-sheet{background:var(--bg)}
+:root[data-theme="dark"] .sheet.pieno.chat-sheet{background:var(--bg)}

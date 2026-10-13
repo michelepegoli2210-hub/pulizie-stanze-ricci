@@ -101,6 +101,7 @@ export const LISTINO_BASE = {
   casa:        15,                 // pulizia casa (ripasso dell'appartamento)
   totale_casa: 15,                 // pulizia totale casa
   extra:       0,                  // i lavori extra hanno il prezzo scritto a mano
+  fondo:       40,                 // pulizia a fondo completa (mezza giornata, a camera vuota): proposta dalla governante
   // Prezzi diversi per una casa precisa (Michele: via Zara 1° e 2° il giovedì, 10 € a signora, una per appartamento)
   perCasa:     { zara1: { totale_casa: 10 }, zara2: { totale_casa: 10 } },
   // Camere piccole (P). Tutte le altre sono grandi (G).

@@ -25,6 +25,7 @@ Funziona su iPhone e Android aprendo un link e mettendola in Home. Niente abbona
 | `regole.js` | **Il dizionario**: camere, zone, giorni di riserva delle pulizie, cosa si fa, prezzi di partenza, regole per leggere l'Excel | Per cambiare le regole |
 | `catalogo/` | **La fonte delle regole della governante**: `catalogo-governante-v4.csv` (il catalogo, una riga per cosa), `catalogo-governante.xlsx` (checklist della signora, calendario vero, livelli), `mockup-signora.png` | Qui si cambiano catalogo e calendario; poi si rilancia `strumenti/genera-catalogo.mjs` |
 | `catalogo.js` | Il catalogo tradotto per l'app (**generato**, non si tocca a mano) | Mai a mano: lo scrive `strumenti/genera-catalogo.mjs` |
+| `chat.js` | La chat con la governante: le regole delle domande, il tetto di 3 al giorno, "impara" | Per aggiungere una domanda |
 | `governante.js` | La testa della governante: stelle per passaggio, calendario, i tre modi (Tecnici · Operai · Booking), tabellone, conto per stagione, mappa, materiali | Per cambiare come ragiona |
 | `strumenti/` | Gli script da computer: genera il catalogo, legge il CSV, l'unione fatta per la 0.26 | Quando cambia il file del catalogo |
 | `db.js` | Il collegamento ai dati (Firebase, oppure modalità prova) | Quasi mai |
@@ -335,6 +336,27 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   soggiorno). **Il nome del cliente** dentro il nome del soggiorno (`logica.nomeCliente`: "D'Agostino · 3 persone" → "D'Agostino";
   `clienteDi`: nome esatto, poi nome del cliente, poi la chiave più lunga che inizia il nome): "Sempre per D'Agostino" salva la chiave
   corta e vale per tutti i soggiorni di quel nome. Giovedì in via Zara confermato: una signora per appartamento, 10 € a testa.
-- Passi successivi previsti: il prezzo dei lavori a camera libera e della pulizia a fondo completa (oggi presi dal listino delle
-  stelle: 3 € per mezza giornata, da sistemare), le foto dei materiali di Lella, Nicole, via Trento e via Zara, il tipo di ospite
-  abituale di via Zara piano terra, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.
+- **0.31 — "La governante ti chiede": la chat a pulsanti** (specifiche §11). Nuovo file `chat.js`: le domande nascono dalle
+  regole (niente intelligenza artificiale), ognuna con 2-4 pulsanti grandi e "Dimmelo a parole" (testo o dettatura dalla tastiera).
+  In "Oggi", in cima, la card **"La governante ti chiede · N"** (`cardChat`) apre il foglio a chat (`foglioChat`, a tutto schermo):
+  le domande aperte con i pulsanti, sotto ogni risposta la riga **"Fatto: …"** che dice cosa è cambiato, lo storico degli ultimi 7
+  giorni. **Massimo 3 al giorno** (`MAX_AL_GIORNO`), una per tipo nel primo giro (`MAX_PER_TIPO`), le più importanti prima
+  (paghe → camera libera → meteo → nomi); quelle del mattino compaiono dopo le 8, quelle del report dopo le 13 (`ORA_MATTINA`,
+  `ORA_REPORT`); le urgenze e le domande nate da un tocco di Michele passano subito e non contano nei 3. Regole fatte:
+  **1** nome nuovo senza tipo di ospite (`domandeNomeNuovo`: un nome per domanda, col nome del cliente; Tecnici/Operai/Booking →
+  `impostazioni/clienti` "sempre per questo nome"); **2** ha piovuto (`domandePioggia`, dal tocco in Regole: "Sì, manda" scrive il
+  messaggio di domani alle signore e offre "Manda su WhatsApp"; "Solo le stelle"; "No" spegne il meteo); **3** arriva il
+  freddo/caldo (`domandeStagione`: messaggio per venerdì; "Più avanti" richiede tra 7 giorni); **4** camera libera 2 giorni o più
+  e fondo completa dovuta (`domandeCameraLibera`: non il weekend normale dei Tecnici; "Sì, a fondo" crea la pulizia a fondo per la
+  signora giusta, 3 ore, al prezzo del listino `fondo` = 40 €; "Solo le stelle in ritardo" accetta i consigli a camera libera di
+  quella camera; "No" tace per 30 giorni); **11** ogni sabato dalle 13 "Pago così?" (`domandePaga`: la settimana di paga appena
+  chiusa, signora per signora, voto medio dei controlli; "Sì" segna pagate in `pagamenti`; "Guardo prima" apre le Paghe).
+  **Impara** (`domandeImpara`, `registraRisposta`): alla seconda risposta uguale chiede "la prossima volta lo faccio da sola?";
+  con Sì quella domanda diventa automatica (`impostazioni/chat.automatiche`): la governante la esegue e scrive "Fatto da sola";
+  in Regole la carta "Cose che la governante fa da sola" la spegne con un tocco. Mai per le paghe (`NON_IMPARA`). Tutto in
+  `impostazioni/chat` (`risposte`, `conta`, `automatiche`; le risposte più vecchie di 60 giorni si cancellano da sole). Le
+  pulizie a fondo accettate dai Consigli ora costano il prezzo del listino (`LISTINO_BASE.fondo`, riga in Paghe → Listino), non
+  più 3 €.
+- Passi successivi previsti: le altre regole di domanda (5 report delle 13, 6 manca un prodotto, 7 budget, 8 manutenzione ferma,
+  9 regola in ritardo in molte camere, 10 prima di una partenza Booking), l'IA per "Dimmelo a parole" (chiave Gemini gratuita
+  di Michele sul suo telefono, se vorrà), le foto dei materiali, il tipo di ospite di via Zara piano terra, meteo automatico.

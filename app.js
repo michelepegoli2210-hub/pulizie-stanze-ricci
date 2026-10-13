@@ -9,8 +9,9 @@ import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
 import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
 import * as G from "./governante.js";
+import * as CH from "./chat.js";
 
-export const VERSIONE = "0.30.0";
+export const VERSIONE = "0.31.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -124,7 +125,7 @@ const S = {
   camere: CAMERE.slice(), zone: ZONE, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
-  gov: null, clienti: {}, registro: {}, govSett: G.settimanaGovernante(), govTab: "consigli", tab: { vista: "posti", zona: "", regola: "", soloRosse: false, prova: false },
+  gov: null, clienti: {}, chat: { risposte: {}, conta: {}, automatiche: {} }, registro: {}, govSett: G.settimanaGovernante(), govTab: "consigli", tab: { vista: "posti", zona: "", regola: "", soloRosse: false, prova: false },
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
   caricati: { pulizie: false, soggiorni: false, ruoli: false, manutenzione: false, gov: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
@@ -250,6 +251,8 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "regole", d => { S.regole = { ...REGOLE_BASE, ...(d || {}) }; delete S.regole.id; disegna(); pianifica(); }));
   // i clienti: il tipo di ospite ricordato per nome (Tecnici · Operai · Booking), scelto nella scheda del soggiorno
   S.stop.push(db.ascoltaDoc("impostazioni", "clienti", d => { S.clienti = { ...(d || {}) }; delete S.clienti.id; disegna(); pianifica(); }));
+  // la chat con la governante: le risposte date, i conteggi per "impara", le cose che fa da sola
+  S.stop.push(db.ascoltaDoc("impostazioni", "chat", d => { const x = { ...(d || {}) }; delete x.id; S.chat = { risposte: x.risposte || {}, conta: x.conta || {}, automatiche: x.automatiche || {} }; disegna(); governanteDaSola(); }));
   // messaggi del giorno dei proprietari alle signore (un documento, una voce per giorno)
   S.stop.push(db.ascoltaDoc("impostazioni", "messaggi", d => { S.messaggi = { ...(d || {}) }; delete S.messaggi.id; disegna(); }));
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
@@ -263,11 +266,11 @@ function avviaAscolto() {
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
   if (addetta()) wherePul.push(["zona", "==", u.zona]);
-  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); allineaManutenzione(); }, mostraErrore));
+  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); allineaManutenzione(); governanteDaSola(); }, mostraErrore));
   // pagamenti
   S.stop.push(db.ascolta("pagamenti", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.pagamenti = m; disegna(); }, mostraErrore));
   if (!addetta()) {
-    S.stop.push(db.ascolta("soggiorni", { where: [["fine", ">=", da]] }, (m) => { S.soggiorni = m; S.caricati.soggiorni = true; disegna(); pianifica(); }, mostraErrore));
+    S.stop.push(db.ascolta("soggiorni", { where: [["fine", ">=", da]] }, (m) => { S.soggiorni = m; S.caricati.soggiorni = true; disegna(); pianifica(); governanteDaSola(); }, mostraErrore));
     S.stop.push(db.ascolta("note", { where: [["data", ">=", da]] }, (m) => { S.note = m; disegna(); pianifica(); }, mostraErrore));
   S.stop.push(db.ascoltaDoc("impostazioni", "foglio", d => { S.foglioInfo = d; disegna(); }));
     // lavori di manutenzione (problemi segnalati + lavori aggiunti a mano)
@@ -685,7 +688,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
-  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + messaggio + avviso + blocchi + bottone;
+  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + (puoModificare() && iso === L.oggiISO() ? cardChat() : "") + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -824,7 +827,7 @@ async function salvaGov(patch) {
 }
 // "Va bene": il consiglio diventa un lavoro nella settimana della signora (una pulizia come le altre, tipo "fondo")
 async function accettaProposte(lista) {
-  const ops = lista.map(c => ({ tipo: "salva", coll: "pulizie", id: idPuliziaGov(c), merge: false, dati: { id: idPuliziaGov(c), data: c.data, camera: c.luogo, zona: c.zona, tipo: "fondo", titolo: c.cosa, passi: [], come: c.come, minuti: c.minuti, icona: c.icona, perche: c.perche, importo: c.euro || 0, stato: "da_fare", origine: "governante", regola: c.regola, creato: S.db.adesso(), da: S.utente.nome || "" } }));
+  const ops = lista.map(c => ({ tipo: "salva", coll: "pulizie", id: idPuliziaGov(c), merge: false, dati: { id: idPuliziaGov(c), data: c.data, camera: c.luogo, zona: c.zona, tipo: "fondo", titolo: c.cosa, passi: [], come: c.come, minuti: c.minuti, icona: c.icona, perche: c.perche, importo: c.grande ? Number(S.listino.fondo ?? c.euro) || 0 : (c.euro || 0), grande: !!c.grande, stato: "da_fare", origine: "governante", regola: c.regola, creato: S.db.adesso(), da: S.utente.nome || "" } }));
   if (!ops.length) return;
   for (const op of ops) S.pulizie[op.id] = op.dati;
   disegna();
@@ -889,6 +892,143 @@ async function saltaRifinitura(p, regola, luogo, motivo) {
 }
 function etichettaSettimanaLun(lun) { return L.etichettaSettimana(L.aggiungiGiorni(lun, 6)); }
 function nomeZonaBreve(z) { return `Signora ${S.zone[z]?.breve || z}`; }
+
+// ============================================================================
+//  LA CHAT CON LA GOVERNANTE (specifiche §11): "La governante ti chiede". Le domande nascono dalle regole in chat.js;
+//  qui c'è quello che si vede (card in Oggi, foglio a chat) e quello che OGNI RISPOSTA FA DAVVERO nell'app ("Fatto: …").
+// ============================================================================
+function statoChatApp() {
+  const st = { oggi: L.oggiISO(), adesso: new Date(), camere: S.camere, zone: S.zone, soggiorni: soggiorniLista(), pulizie: S.pulizie, clienti: S.clienti, gov: S.gov, pagamenti: S.pagamenti, regole: S.regole, controlli: S.controlli, listino: S.listino, chat: S.chat, registro: S.registro };
+  try { return CH.statoChat(st); } catch (e) { console.warn("chat", e); return { aperte: [], inAttesa: [], nonAncora: [], daSole: [], storico: [], risposteOggi: [], urgenti: 0, prossime: "" }; }
+}
+function cardChat() {
+  if (!S.caricati.soggiorni || !S.caricati.pulizie) return "";
+  const c = statoChatApp(); const n = c.aperte.length;
+  const sotto = n ? `${n === 1 ? "una domanda" : n + " domande"} per te${c.inAttesa.length ? ` · altre ${c.inAttesa.length} domani` : ""}` : c.prossime ? `le prossime arrivano ${c.prossime.replace(/^\d+ /, "")}` : c.risposteOggi.length ? "per oggi ho finito, grazie" : "niente da chiedere, per ora";
+  const prima = c.aperte[0];
+  return `<section class="card chat-card ${n ? "" : "quiete"}"><button class="chat-plate" data-chat-apri aria-label="Apri la chat con la governante">${DONNINA("governante", "piccola")}<span class="chat-plate-testo"><b>La governante ti chiede${n ? ` · ${n}` : ""}</b><span>${esc(sotto)}</span>${prima ? `<span class="chat-anteprima">“${esc(prima.titolo)}”</span>` : ""}</span>${c.urgenti ? `<span class="led" role="img" aria-label="urgente"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
+}
+function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
+function foglioChat(f) {
+  const c = statoChatApp(); const mod = puoModificare();
+  const storico = c.storico.slice(-8);
+  const vecchie = storico.map(r => `${bollaGov(esc(r.testo || r.titolo))}<div class="chat-msg me"><div class="chat-bolla">${esc(r.auto ? "(fatto da sola)" : r.testoRisposta || r.risposta)}${r.parole ? `<br><i>«${esc(r.parole)}»</i>` : ""}</div></div>${r.fatto ? `<div class="chat-fatto">${r.auto ? "Fatto da sola" : "Fatto"}: ${esc(r.fatto)}${r.whatsapp ? ` <button class="btnsm" data-chat-wa="${esc(r.id)}">Manda su WhatsApp</button>` : ""}</div>` : ""}<div class="chat-quando">${esc(L.dataBreve(r.il))}${r.ora ? " · " + L.oraBreve(r.ora) : ""}</div>`).join("");
+  const aperte = c.aperte.map(d => bollaGov(`${d.urgente ? `<span class="chat-urgente">Urgente</span> ` : ""}${esc(d.testo)}`, mod ? `<div class="chat-tasti ${d.tasti.length === 2 ? "due" : d.tasti.length === 4 ? "quattro" : ""}">${d.tasti.map(t => `<button type="button" class="chat-tasto" data-chat-risposta="${esc(d.id)}|${esc(t.k)}">${esc(t.testo)}</button>`).join("")}</div>${d.parole ? `<button type="button" class="chat-parole" data-chat-parole="${esc(d.id)}">Dimmelo a parole</button><div class="chat-scrivi" id="cp_${esc(d.id)}" hidden><input type="text" data-keep id="ci_${esc(d.id)}" placeholder="Scrivi o detta col microfono della tastiera" autocomplete="off"><button type="button" class="btnsm" data-chat-invia="${esc(d.id)}">Invia</button></div>` : ""}` : "")).join("");
+  const piede = c.aperte.length ? `<p class="muted small center" style="margin:8px 0 0">${c.risposteOggi.length ? `Oggi hai risposto a ${c.risposteOggi.length} su ${CH.MAX_AL_GIORNO}. ` : ""}${c.inAttesa.length ? `Altre ${c.inAttesa.length} domande aspettano domani (massimo ${CH.MAX_AL_GIORNO} al giorno).` : ""}${c.prossime ? ` Le prossime arrivano ${esc(c.prossime.replace(/^\d+ /, ""))}.` : ""}</p>` : bollaGov(c.risposteOggi.length ? "Per oggi ho finito, grazie. Se succede qualcosa di urgente ti chiamo subito." : c.prossime ? `Niente per adesso: le prossime domande arrivano ${esc(c.prossime.replace(/^\d+ /, ""))}.` : "Niente da chiedere: il prospetto, il meteo e le paghe sono a posto. Se succede qualcosa ti chiamo subito.") + (c.inAttesa.length ? `<p class="muted small center" style="margin:8px 0 0">Altre ${c.inAttesa.length} domande aspettano domani (massimo ${CH.MAX_AL_GIORNO} al giorno).</p>` : "");
+  const auto = Object.entries(S.chat.automatiche || {}).filter(([, v]) => v);
+  return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">La governante</span></div>
+    <div class="chat-corpo">${vecchie}${aperte}${piede}</div>
+    <p class="muted small center" style="margin:10px 0 0">Rispondo con i pulsanti o "Dimmelo a parole". Ogni risposta cambia davvero qualcosa nell'app e lo scrivo sotto.${auto.length ? ` Cose che faccio da sola: ${auto.length} (in Regole le spegni).` : ""}</p></div>`;
+}
+function collegaChat() {
+  document.querySelectorAll("[data-chat-risposta]").forEach(b => b.onclick = () => { const parti = b.dataset.chatRisposta.split("|"); const k = parti.pop(); rispondiChat(parti.join("|"), k); });
+  document.querySelectorAll("[data-chat-parole]").forEach(b => b.onclick = () => { const box = document.getElementById("cp_" + b.dataset.chatParole); if (!box) return; box.hidden = !box.hidden; if (!box.hidden) box.querySelector("input")?.focus(); });
+  document.querySelectorAll("[data-chat-invia]").forEach(b => b.onclick = () => { const id = b.dataset.chatInvia; const inp = document.getElementById("ci_" + id); const t = (inp?.value || "").trim(); if (!t) { inp?.focus(); return; } rispondiChat(id, "parole", t); });
+  document.querySelectorAll(".chat-scrivi input").forEach(i => i.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); i.closest(".chat-scrivi").querySelector("[data-chat-invia]")?.click(); } });
+  document.querySelectorAll("[data-chat-wa]").forEach(b => b.onclick = () => { const r = S.chat.risposte[b.dataset.chatWa]; if (r && r.whatsapp) apriWhatsApp(r.whatsapp); });
+  const corpo = document.querySelector(".chat-corpo"); if (corpo && !corpo.dataset.scrollato) { corpo.dataset.scrollato = "1"; requestAnimationFrame(() => { corpo.scrollTop = corpo.scrollHeight; }); }
+}
+async function salvaChat(nuovo) {
+  S.chat = nuovo; disegna(); if (S.foglio && S.foglio.tipo === "chat") disegnaFoglio();
+  try { await S.db.salva("impostazioni", "chat", nuovo, false); } catch (e) { erroreScrittura(e); }
+}
+// Il messaggio alle signore di un giorno, scritto dalla governante (senza chiudere il foglio)
+async function scriviMessaggio(giorno, testo) {
+  const nuovo = {}; const limite = L.aggiungiGiorni(L.oggiISO(), -60);
+  for (const [k, v] of Object.entries(S.messaggi || {})) if (k >= limite && v && typeof v === "object") nuovo[k] = v;
+  nuovo[giorno] = { testo, da: "la governante", ora: S.db.adesso() };
+  S.messaggi = nuovo;
+  await S.db.salva("impostazioni", "messaggi", nuovo, false);
+  inviaTelegram(testoMessaggioGiorno(giorno, testo), "messaggio");
+}
+async function notaDellaGovernante(giorno, camera, testo, privata) {
+  const id = `${giorno}_gov_${Date.now().toString(36)}`;
+  await S.db.salva("note", id, { data: giorno, camera: camera || null, testo, privata: !!privata, da: "la governante" });
+}
+// Le azioni: cosa fa davvero ogni risposta. Tornano il testo "Fatto: …" (e, se serve, il testo per WhatsApp)
+const AZIONI_CHAT = {
+  async nome(d, k, parole) {
+    const dd = d.dati; const chiave = dd.k;
+    if (k === "parole") { S.clienti = { ...S.clienti, [chiave]: { ...(S.clienti[chiave] || {}), nome: dd.nome, nota: parole, aggiornato: L.oggiISO() } }; await S.db.salva("impostazioni", "clienti", { [chiave]: S.clienti[chiave] }, true); return { fatto: `ho segnato le tue parole su ${dd.nome}. Il tipo di ospite resta ${CH.NOMI_MODI_CHAT[dd.modoAttuale] || "Tecnici"}: per cambiarlo tocca un pulsante nella scheda del soggiorno.` }; }
+    S.clienti = { ...S.clienti, [chiave]: { ...(S.clienti[chiave] || {}), modo: k, nome: dd.nome, aggiornato: L.oggiISO() } };
+    await S.db.salva("impostazioni", "clienti", { [chiave]: S.clienti[chiave] }, true); pianifica();
+    return { fatto: `${dd.nome} → ${CH.NOMI_MODI_CHAT[k]}, per tutti i soggiorni con questo nome (adesso in ${dd.camere.join(", ")}). Le liste delle signore cambiano da sole.` };
+  },
+  async pioggia(d, k, parole) {
+    const { fino, domani } = d.dati;
+    if (k === "no") { const meteo = { ...((S.gov && S.gov.meteo) || {}) }; delete meteo.pioggia; delete meteo.vento; await salvaGov({ meteo }); return { fatto: "tolto: niente messaggio e niente stelle del meteo." }; }
+    if (k === "stelle") return { fatto: `niente messaggio. Le stelle del meteo (esterni, davanzali, scarichi, balconi) entrano da sole nei passaggi fino a ${L.dataBreve(fino)}.` };
+    const testo = k === "parole" ? parole : CH.TESTO_PIOGGIA;
+    await scriviMessaggio(domani, testo);
+    return { fatto: `messaggio di ${L.dataBreve(domani)} alle signore: «${testo}». Lo vedono in cima alla loro schermata. Stelle del meteo accese fino a ${L.dataBreve(fino)}.`, whatsapp: testoMessaggioGiorno(domani, testo) };
+  },
+  async freddo(d, k, parole) { return AZIONI_CHAT.stagione(d, k, parole); },
+  async caldo(d, k, parole) { return AZIONI_CHAT.stagione(d, k, parole); },
+  async stagione(d, k, parole) {
+    const { giorno, testo } = d.dati;
+    if (k === "dopo") return { fatto: "va bene, te lo richiedo tra una settimana.", scade: L.aggiungiGiorni(L.oggiISO(), 7) };
+    const t = k === "parole" ? parole : testo;
+    await scriviMessaggio(giorno, t);
+    return { fatto: `messaggio di ${L.dataBreve(giorno)} alle signore: «${t}».`, whatsapp: testoMessaggioGiorno(giorno, t) };
+  },
+  async libera(d, k, parole) {
+    const dd = d.dati; const cam = camera(dd.camera);
+    if (k === "no") return { fatto: `va bene, ${dd.nome} resta com'è.` };
+    if (k === "parole") { await notaDellaGovernante(dd.giorno, dd.camera, parole, false); return { fatto: `ho scritto alle signore per ${dd.nome}, ${L.dataBreve(dd.giorno)}: «${parole}».` }; }
+    if (k === "si") {
+      const r = G.CATALOGO.find(x => x.codice === "C57") || {};
+      const c = { regola: r.id || "C57", codice: "C57", luogo: dd.camera, luogoNome: cam.nome, zona: dd.zona, data: dd.giorno, cosa: "Pulizia a fondo completa", come: r.come || "Tutto il catalogo della camera in una volta, a camera vuota.", minuti: 180, icona: r.icona || "stella", perche: ["camera libera", dd.giorni + " giorni liberi"], euro: dd.prezzo, grande: true, libera: true };
+      await accettaProposte([c]);
+      return { fatto: `pulizia a fondo di ${dd.nome} messa ${L.dataGiornoLungo(dd.giorno)} per la ${nomeZonaBreve(dd.zona)} · 3 ore · ${eur(dd.prezzo)}. Sta nelle sue camere di quel giorno.` };
+    }
+    // solo le stelle in ritardo: le cose a camera libera che la governante ha in coda per questa camera, nelle sue giornate libere
+    const lun = L.lunediDi(L.oggiISO());
+    const cand = [...proposteGov(lun).proposte, ...proposteGov(L.aggiungiGiorni(lun, 7)).proposte].filter(c => c.luogo === dd.camera && !c.grande && !S.pulizie[idPuliziaGov(c)]);
+    const miei = cand.filter(c => c.data >= dd.da && c.data < dd.fino);
+    const scelte = miei.length ? miei : cand.slice(0, 4).map(c => ({ ...c, data: dd.giorno }));
+    if (!scelte.length) return { fatto: `per ${dd.nome} non c'è niente in ritardo da fare a camera libera: resta tutto in regola.` };
+    await accettaProposte(scelte);
+    return { fatto: `${scelte.length} ${scelte.length === 1 ? "cosa messa" : "cose messe"} per ${dd.nome} ${L.dataBreve(scelte[0].data)}: ${scelte.map(c => c.cosa).join(", ")}.` };
+  },
+  async paga(d, k, parole) {
+    const dd = d.dati;
+    if (k === "guardo") { S.vista = "paghe"; chiudiFoglio(); disegna(); window.scrollTo(0, 0); return { fatto: "ti ho aperto le Paghe: lì segni pagata ogni signora quando hai finito." }; }
+    if (k === "parole") { await notaDellaGovernante(L.oggiISO(), null, `Paghe ${L.etichettaSettimana(dd.chiusa)}: ${parole}`, true); return { fatto: `segnato nelle note: «${parole}». Le paghe restano da confermare in Paghe.` }; }
+    const fatte = [];
+    for (const r of dd.righe) { const id = `${r.zona}_${dd.chiusa}`; if (S.pagamenti[id]) continue; await S.db.salva("pagamenti", id, { zona: r.zona, settimana: dd.chiusa, importo: r.totale, pulizie: r.pulizie, quando: new Date().toLocaleDateString("it-IT", { day: "numeric", month: "short", timeZone: "Europe/Rome" }), istante: S.db.adesso(), da: S.utente.nome || S.utente.email || "" }, false); fatte.push(`${r.nome} ${eur(r.totale)}`); }
+    return { fatto: fatte.length ? `segnate pagate: ${fatte.join(", ")} (settimana ${L.etichettaSettimana(dd.chiusa)}). Le trovi in Paghe.` : "erano già tutte segnate pagate." };
+  },
+  async impara(d, k) {
+    const t = d.dati;
+    return { fatto: k === "si" ? `d'ora in poi «${CH.TITOLI[t.tipoDomanda] || t.tipoDomanda}» lo faccio da sola: ${t.testoRisposta}. Lo vedi in Regole → "Cose che faccio da sola", e lo spegni con un tocco.` : "va bene, te lo chiedo sempre." };
+  },
+};
+let chatInCorso = false;
+async function rispondiChat(id, k, parole = "") {
+  if (chatInCorso || !puoModificare()) return; chatInCorso = true;
+  try {
+    const c = statoChatApp(); const d = c.aperte.find(x => x.id === id) || c.inAttesa.find(x => x.id === id) || c.nonAncora.find(x => x.id === id);
+    if (!d) return;
+    const az = AZIONI_CHAT[d.tipo]; let esito = { fatto: "" };
+    try { esito = await az(d, k, parole) || esito; } catch (e) { console.error("chat azione", e); erroreScrittura(e); return; }
+    const nuovo = CH.registraRisposta(S.chat, d, k, { il: L.oggiISO(), ora: S.db.adesso(), fatto: esito.fatto, parole, scade: esito.scade });
+    if (esito.whatsapp) nuovo.risposte[d.id].whatsapp = esito.whatsapp;
+    if (esito.scade) nuovo.risposte[d.id].scade = esito.scade;
+    await salvaChat(nuovo);
+  } finally { chatInCorso = false; }
+}
+// Le cose che la governante fa da sola (dopo "la prossima volta lo faccio da sola? Sì"): le esegue e scrive "Fatto da sola"
+let daSolaInCorso = false;
+async function governanteDaSola() {
+  if (daSolaInCorso || !proprietario() || S.utente?.finta || !S.caricati.pulizie || !S.caricati.soggiorni) return;
+  const c = statoChatApp(); if (!c.daSole.length) return;
+  daSolaInCorso = true;
+  try {
+    let nuovo = S.chat;
+    for (const d of c.daSole) { let esito = { fatto: "" }; try { esito = await AZIONI_CHAT[d.tipo](d, d.auto, "") || esito; } catch (e) { console.error("da sola", e); continue; } nuovo = CH.registraRisposta(nuovo, d, d.auto, { il: L.oggiISO(), ora: S.db.adesso(), fatto: esito.fatto, auto: true }); if (esito.whatsapp) nuovo.risposte[d.id].whatsapp = esito.whatsapp; }
+    await salvaChat(nuovo);
+  } finally { daSolaInCorso = false; }
+}
 
 // --- la card in "Oggi" ---
 function plateGovernante() {
@@ -1194,7 +1334,11 @@ function vistaRegoleGov() {
   const daRivedere = G.RIGHE.filter(r => modRegole[r.id]?.attiva !== false && !riv[r.id]);
   const mamma = `<section class="card"><h2 style="margin:0 0 4px">Vuoi rivedere una regola con chi conosce le camere?</h2><p class="muted small" style="margin:0 0 8px">Non è un compito: se non ne rivedete nessuna, le signore leggono i testi del catalogo e va bene così. Serve quando un "come si fa" vi sembra sbagliato: lo aprite, la mamma dice come si fa davvero, lo correggete e da quel momento le signore leggono il suo. Finora riviste: <b>${G.RIGHE.length - daRivedere.length}</b> su ${G.RIGHE.length}.</p>
     ${daRivedere.length ? `<div class="scelte">${daRivedere.slice(0, 6).map(r => `<button type="button" data-gov-rivedi="${esc(r.id)}">${esc(r.superficie)}</button>`).join("")}</div>` : ""}</section>`;
-  return livelli + profili + calendario + cardStagioni + cardMeteo + gruppi + tue + nuova + soglie + materiali + fisse + camereFlag + mamma;
+  // 1b. le cose che la governante fa da sola (dalla chat: "la prossima volta lo faccio da sola? Sì")
+  const auto = Object.entries((S.chat && S.chat.automatiche) || {}).filter(([, v]) => v);
+  const daSola = `<section class="card"><h2 style="margin:0 0 4px">Cose che la governante fa da sola</h2><p class="muted small" style="margin:0 0 8px">Quando a una domanda della chat rispondi due volte allo stesso modo, la governante chiede "la prossima volta lo faccio da sola?". Quelle a cui hai detto sì stanno qui: le fa senza chiedere e scrive "Fatto da sola" nella chat. Un tocco e torna a chiedertelo.</p>
+    ${auto.length ? `<div class="rows">${auto.map(([tipo, v]) => `<div class="row"><span><b>${esc(CH.TITOLI[tipo] || tipo)}</b><br><span class="muted small">risponde sempre: ${esc(String(v))}</span></span>${mod ? `<button class="btnsm ghost" data-chat-auto-off="${esc(tipo)}">Chiedimelo</button>` : ""}</div>`).join("")}</div>` : `<p class="muted small" style="margin:0">Per ora niente: ti chiede tutto.</p>`}</section>`;
+  return livelli + daSola + profili + calendario + cardStagioni + cardMeteo + gruppi + tue + nuova + soglie + materiali + fisse + camereFlag + mamma;
 }
 // --- Rivedi con la mamma: si legge il "come si fa", lei conferma o lo corregge ---
 function foglioRivedi(f) {
@@ -1366,7 +1510,7 @@ function vistaPaghe() {
   const pz = G.prezziStelle(S.gov);
   const rigaStella = (lab, k) => `<label for="ps_${k}">${lab}</label><input id="ps_${k}" type="number" min="0" step="0.5" value="${pz[k]}" data-prezzo-stella="${k}" ${mod ? "" : "disabled"}>`;
   const listino = `<section class="card"><h2>Listino</h2><p class="muted small" style="margin:0 0 10px">Il prezzo si fissa quando la signora preme "Fatto, tutto". Se lo cambi, vale dalle prossime pulizie: quelle già fatte o pagate non cambiano.</p>
-    <div class="listino">${riga("Pulizia totale · camera grande", "totale.G", l.totale.G)}${riga("Pulizia totale · camera piccola", "totale.P", l.totale.P)}${riga("Ripasso veloce · camera grande", "ripasso.G", l.ripasso.G)}${riga("Ripasso veloce · camera piccola", "ripasso.P", l.ripasso.P)}${riga("Pulizia casa (ripasso dell'appartamento)", "casa", l.casa)}${riga("Pulizia totale casa", "totale_casa", l.totale_casa)}${riga("Via Zara 1° · totale del giovedì (una signora per appartamento)", "perCasa.zara1.totale_casa", l.perCasa?.zara1?.totale_casa ?? l.totale_casa)}${riga("Via Zara 2° · totale del giovedì (una signora per appartamento)", "perCasa.zara2.totale_casa", l.perCasa?.zara2?.totale_casa ?? l.totale_casa)}</div>
+    <div class="listino">${riga("Pulizia totale · camera grande", "totale.G", l.totale.G)}${riga("Pulizia totale · camera piccola", "totale.P", l.totale.P)}${riga("Ripasso veloce · camera grande", "ripasso.G", l.ripasso.G)}${riga("Ripasso veloce · camera piccola", "ripasso.P", l.ripasso.P)}${riga("Pulizia casa (ripasso dell'appartamento)", "casa", l.casa)}${riga("Pulizia totale casa", "totale_casa", l.totale_casa)}${riga("Pulizia a fondo completa (mezza giornata, a camera vuota)", "fondo", l.fondo ?? 40)}${riga("Via Zara 1° · totale del giovedì (una signora per appartamento)", "perCasa.zara1.totale_casa", l.perCasa?.zara1?.totale_casa ?? l.totale_casa)}${riga("Via Zara 2° · totale del giovedì (una signora per appartamento)", "perCasa.zara2.totale_casa", l.perCasa?.zara2?.totale_casa ?? l.totale_casa)}</div>
     <div class="floorlabel" style="margin-top:14px">Prezzo di una stella (per quanto dura)</div>
     <p class="muted small" style="margin:0 0 6px">Ogni stella fatta si paga oltre la camera, secondo i minuti scritti nel catalogo. Il costo mensile dei tre livelli (Governante → Regole e Tabellone) si aggiorna subito.</p>
     <div class="listino">${rigaStella("Stella fino a 5 minuti", "fino5")}${rigaStella("Stella fino a 10 minuti", "fino10")}${rigaStella("Stella oltre 10 minuti", "oltre10")}</div>
@@ -1460,13 +1604,14 @@ function disegnaFoglio() {
   else if (f.tipo === "superficie") html = foglioSuperficie(f);
   else if (f.tipo === "giro") html = foglioGiro(f);
   else if (f.tipo === "giroScegli") html = `<h3>Giro con la mamma</h3><div class="muted">Scegli il posto che girate insieme, superficie per superficie.</div><div class="pick" style="margin-top:10px">${[...S.camere, ...G.LUOGHI_COMUNI].map(l => `<button class="big undo" data-giro-inizia="${esc(l.id)}">${esc(l.nome)}</button>`).join("")}</div>`;
+  else if (f.tipo === "chat") html = foglioChat(f);
   else if (f.tipo === "info") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><div class="note info">${esc(f.testo)}</div>`;
   else if (f.tipo === "foto") html = `<h3>${esc(f.titolo)}</h3><div class="muted">${esc(f.sotto || "")}</div><img src="${f.dati}" alt="Foto" style="width:100%;border-radius:14px;margin-top:10px">`;
   // Se la persona sta scrivendo e arriva un aggiornamento, il testo non deve sparire
   const attivo = document.activeElement, idAttivo = s.contains(attivo) && attivo.id ? attivo.id : null;
   const valori = {}; s.querySelectorAll("textarea[id],input[id]").forEach(e => { if (e.type !== "file") valori[e.id] = { v: e.value, s: e.selectionStart, e: e.selectionEnd }; });
-  const pieno = f.tipo === "inizio" || f.tipo === "giro";
-  s.classList.toggle("pieno", pieno);
+  const pieno = f.tipo === "inizio" || f.tipo === "giro" || f.tipo === "chat";
+  s.classList.toggle("pieno", pieno); s.classList.toggle("chat-sheet", f.tipo === "chat");
   const scroll = pieno ? 0 : (s.querySelector(".panel")?.scrollTop || 0);
   s.innerHTML = `<div class="panel ${pieno ? "pieno" : ""}" role="dialog">${pieno ? "" : `<div class="grip"></div>`}${html}${pieno ? "" : `<button class="big close" data-chiudi>Chiudi</button>`}</div>`;
   for (const [id, x] of Object.entries(valori)) { const e = s.querySelector("#" + CSS.escape(id)); if (e && e.hasAttribute("data-keep")) { e.value = x.v; } }
@@ -1823,6 +1968,8 @@ function collega() {
   document.querySelectorAll("[data-nuovo-man]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovoMan" }));
   // la governante
   document.querySelectorAll("[data-gov-tab]").forEach(b => b.onclick = () => { S.govTab = b.dataset.govTab; disegna(); });
+  document.querySelectorAll("[data-chat-apri]").forEach(b => b.onclick = () => apriFoglio({ tipo: "chat" }));
+  document.querySelectorAll("[data-chat-auto-off]").forEach(b => b.onclick = () => { const auto = { ...(S.chat.automatiche || {}) }; delete auto[b.dataset.chatAutoOff]; salvaChat({ ...S.chat, automatiche: auto }).then(() => toast("Da adesso te lo chiedo di nuovo")); });
   document.querySelectorAll("[data-gov-sett]").forEach(b => b.onclick = () => { S.govSett = L.aggiungiGiorni(S.govSett, 7 * Number(b.dataset.govSett)); disegna(); });
   const trovaProposta = (id) => proposteGov(S.govSett).proposte.find(c => c.id === id);
   document.querySelectorAll("[data-gov-ok]").forEach(b => b.onclick = () => { const c = trovaProposta(b.dataset.govOk); if (c) accettaProposte([c]); });
@@ -1885,6 +2032,7 @@ function collega() {
 }
 
 function collegaFoglio() {
+  if (S.foglio && S.foglio.tipo === "chat") collegaChat();
   const f = S.foglio; if (!f) return;
   document.querySelectorAll("[data-chiudi]").forEach(b => b.onclick = chiudiFoglio);
   document.querySelectorAll("[data-rif-no]").forEach(b => b.onclick = async () => { const [id, regola, luogo] = b.dataset.rifNo.split("|"); const p = S.pulizie[id]; if (!p) return; const motivo = await scegliMotivoRifinitura(); if (motivo) saltaRifinitura(p, regola, luogo, motivo); });
