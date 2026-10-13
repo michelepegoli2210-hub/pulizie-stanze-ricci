@@ -2,7 +2,7 @@
 
 **Rileggi questo file dopo ogni riavvio della memoria.** Qui stanno tutte le decisioni prese con Michele sulla governante, in ordine. Se un messaggio in chat manca, vale quello che c'è scritto qui. Le domande ancora aperte sono in fondo: Michele risponde con un numero, una alla volta.
 
-Aggiornato: 13 ottobre 2026.
+Aggiornato: 13 ottobre 2026, sera (dopo la 0.29.1).
 
 ---
 
@@ -18,8 +18,7 @@ Aggiornato: 13 ottobre 2026.
 - Igiene della cucina (cappa, forno, bidoni, frigo, scarichi): **più spesso** del ritmo scritto.
 - Priorità 2 (estetica): un terzo del ritmo, oppure alla partenza.
 - Priorità 3 (nascosto): solo nella pulizia a fondo completa ogni 6 mesi.
-- Stelle: nessuna nel ripasso; **una sola, di igiene,** nella totale del giovedì.
-- Budget: 25 minuti il giovedì, 10 il lunedì.
+- Stelle: **nessuna nel ripasso del lunedì**; nella totale del giovedì **fino a 2, solo di igiene**, dentro 25 minuti.
 
 ### Modo TECNICI (stesse persone per mesi, camera vuota nel weekend, la ditta paga a notte e non scrive recensioni)
 - Priorità 1: ritmo pieno.
@@ -73,7 +72,7 @@ Aggiornato: 13 ottobre 2026.
 - Una sola lista nell'ordine in cui si gira la stanza, con dentro tutto: la pulizia di oggi (ripasso o totale) e le stelle del giorno. Schizzo: `catalogo/mockup-signora.png`.
 - Dall'alto: targa della camera (tipo di pulizia, minuti, chi c'è dentro, tipo di ospite); "Oggi Michele dice"; la lista "Cosa si fa"; "Sempre in questa camera" (istruzioni fisse del cliente); tasto grande FATTO, TUTTO; sotto, piccoli, "Non riesco a fare una cosa" (riga + perché con un tocco: manca il prodotto / c'è l'ospite / non c'è tempo; la stella torna un'altra volta) e "C'è un problema".
 - **A blocchi, non in due schermate.** La totale (25 righe) è raggruppata in 5 blocchi con titolo grande: Letto e biancheria · Bagno · Camera · Pavimenti e controllo finale · Alla partenza. Il ripasso (12 righe) in 4 blocchi: Letto · Bagno · Camera · Pavimenti. **Ogni blocco ha un solo tasto "Fatto"**: le righe dentro si leggono, non si toccano una per una. **Le stelle si toccano singolarmente**, al loro posto nella lista. FATTO, TUTTO con un blocco non toccato chiede "Questo l'hai fatto?" per blocco.
-- Massimo **3 stelle in una totale, 2 in un ripasso**.
+- Tetto delle stelle per tipo di passaggio: **2 in un ripasso, 3 in una totale, 5 in una totale a camera libera** (venerdì dei Tecnici: la camera resta vuota fino a lunedì, 45 minuti). Con 5 stelle il venerdì ogni superficie di una camera Tecnici viene fatta almeno una volta ogni 3 mesi; con 3 ci vogliono 4-5 mesi.
 - Parole vietate sul telefono delle signore: governante, catalogo, regole, rotazione, extra, rivista. La governante, il Tabellone, i Consigli, le Regole, i Materiali e il "Rivedi con la mamma" stanno solo dalla parte dei proprietari.
 - "Le mie camere" mostra solo le camere di oggi secondo il calendario (o le partenze, d'estate), col tipo di pulizia sulla targa.
 - Paga: le righe numerate sono dentro il prezzo della camera; ogni stella ha il suo prezzo dal listino e si somma ("Alba · Pulizia totale 15 € + 2 stelle 3 €").
@@ -104,3 +103,11 @@ Aggiornato: 13 ottobre 2026.
 - Giovedì in via Zara 1° e 2°: chi preme "Fatto" e prende la paga? 1) la signora del 1° piano · 2) metà per una · 3) tutte e due per intero · 4) una per appartamento (1° piano → via Zara 1°, 2° piano → via Zara 2°). **Risposta: …**
 - Materiali di Lella, Nicole, via Trento e via Zara piano terra (pavimento, porte, box doccia, mobili): Michele manda le foto.
 - Via Zara piano terra: Tecnici o Booking come tipo di ospite abituale? **Risposta: …**
+
+## 10. Decisioni del 13 ottobre sera (dopo la 0.29.1)
+
+- **Tetto delle stelle per tipo di passaggio**: ripasso 2, totale 3, totale a camera libera 5 (vedi punto 4). Il tetto lo decide il passaggio, poi il modo dell'ospite può solo abbassarlo (Operai: 0 nel ripasso, 2 di igiene nella totale).
+- **Due numeri nel Tabellone, non uno.** "Copertura" resta quella severa (celle in regola col ritmo scritto). Accanto va aggiunto **"Giro completo"**: la percentuale di celle (posto × regola di Rotazione e Camera libera) fatte **almeno una volta negli ultimi 90 giorni**, e per ogni camera "superfici mai fatte da 90 giorni: N". È questo il numero che conta per Michele: tutto almeno una volta a trimestre, l'igiene al suo ritmo. L'ordine delle stelle resta "prima la più scaduta", che è quello che fa girare tutto.
+- Il conto va mostrato con le due letture: "cosa spendo" (col tetto) e "cosa costerebbe tutto in regola", come già fa la 0.29.
+- D'Agostino nel prospetto: Michele decide il tipo (Tecnici o Operai) con "Sempre per questo nome". **Risposta: …**
+- Giovedì in via Zara: 1) una per appartamento, 10 € a testa · 2) tutte e due in tutti e due, 20 € a signora · 3) insieme, paga solo a chi preme Fatto. **Risposta: …**
