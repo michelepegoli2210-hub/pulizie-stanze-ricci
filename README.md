@@ -403,6 +403,6 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   (`contoProspetto`, `cardContoProspetto`, solo proprietario): "Pulizie: … € + stelle: … € = … €" per la settimana (lun–dom) e per il
   mese fino all'ultimo giorno coperto dal prospetto, più la stima del mese intero; stelle = quelle segnate nelle pulizie fatte
   (`extraRifiniture`) e quelle previste nelle pulizie ancora da fare. In modalità prova `ricci_prova_ora` fissa l'ora del giorno
-  (serve alle prove automatiche). Ancora da decidere con Michele: se il giovedì lo fa una signora sola (punto 10 delle specifiche).
+  (serve alle prove automatiche). **0.34.1**: "piano di sotto / piano di sopra" anche nelle righe di Michele e su WhatsApp (`titoloLavoro`); nel conto la riga è proprio "Pulizie + stelle = …" e i lavori a parte stanno sotto; la stima del mese usa il ritmo dei giorni già coperti più i lavori così come sono scritti. Ancora da decidere con Michele: se il giovedì lo fa una signora sola (punto 10 delle specifiche).
 - Passi successivi previsti: l'IA per "Dimmelo a parole" (chiave Gemini gratuita di Michele, solo sul suo telefono, se vorrà),
   le foto dei materiali, il tipo di ospite di via Zara piano terra, meteo automatico.

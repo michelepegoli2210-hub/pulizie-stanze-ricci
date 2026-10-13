@@ -11,7 +11,7 @@ import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiesta
 import * as G from "./governante.js";
 import * as CH from "./chat.js";
 
-export const VERSIONE = "0.34.0";
+export const VERSIONE = "0.34.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -147,7 +147,9 @@ function ordineCamera(id) { return camera(id).ordine || 99; }
 function statoClasse(p) { return !p ? "" : (STATI[p.stato] || STATI.da_fare).cls; }
 function statoTesto(p) { return p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : p.stato === "in_corso" ? `In corso da ${L.oraBreve(p.inizio)}` : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? "Non fatta" : p.titolo; }
 function minutiPulizia(p) { if (!p.inizio || !p.ora) return null; const m = Math.round((new Date(p.ora) - new Date(p.inizio)) / 60000); return m >= 0 && m < 600 ? m : null; }
-function titoloLavoro(p) { return p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : p.titolo; }
+function titoloBase(p) { return p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : p.titolo; }
+function parteTesto(p) { return p.parte && L.PARTE_TESTO[p.parte] ? ` · ${L.PARTE_TESTO[p.parte]}` : ""; } // via Zara 1° e 2°: "piano di sotto" / "piano di sopra"
+function titoloLavoro(p) { return titoloBase(p) + parteTesto(p); }
 // Un problema "aperto": la camera è in stato problema e nessuno ha ancora segnato il lavoro come fatto in Manutenzione
 function problemaAperto(p) { return !!p && p.stato === "problema" && S.manutenzione[`pul_${p.id}`]?.stato !== "fatto"; }
 function lavoriAperti() { return Object.values(S.manutenzione).filter(m => m.stato !== "fatto").sort((a, b) => (a.data || "") < (b.data || "") ? 1 : -1); }
@@ -514,7 +516,7 @@ function foglioInizio(f) {
   const statoRiga = k => chiusa ? (nonSalvate[k] != null ? "non" : salvate.has(k) || !(p.spuntate || []).length ? "fatta" : "") : sp.non[k] ? "non" : sp.fatte[k] ? "fatta" : "";
   const motivoRiga = k => chiusa ? nonSalvate[k] : sp.non[k];
   // la targa: camera, tipo di pulizia, minuti, ospite
-  const tipoTesto = (fondo ? `⭐ ${p.titolo}` : extra ? p.titolo : lista ? (lista.passo.tipo === "totale" ? "Cambio completo" : c.tipo === "casa" ? "Pulizia della casa" : "Ripasso") : titoloLavoro(p)) + (p.parte && L.PARTE_TESTO[p.parte] ? ` · ${L.PARTE_TESTO[p.parte]}` : "");
+  const tipoTesto = (fondo ? `⭐ ${p.titolo}` : extra ? p.titolo : lista ? (lista.passo.tipo === "totale" ? "Cambio completo" : c.tipo === "casa" ? "Pulizia della casa" : "Ripasso") : titoloBase(p)) + parteTesto(p);
   const minuti = lista ? lista.minuti + lista.minutiZona : (p.minuti || 0);
   const chi = p.ospite ? p.ospite : "";
   const quando = p.partenza ? `${chi || "l'ospite"} parte ${giornoParlato(p.data).replace(/^oggi,.*$/, "oggi")}` : (p.parteIl && p.parteIl > p.data ? `${chi || "l'ospite"} resta fino a ${L.GIORNI[L.giornoSettimana(p.parteIl)]}` : chi);
@@ -1616,15 +1618,19 @@ function contoProspetto(da, a) {
   return { pulizie: r2(pulizie), stelle: r2(stelle), lavori: r2(lavori), totale: r2(pulizie + stelle + lavori), n, ultimo };
 }
 function cardContoProspetto() {
+  const r2 = x => Math.round(x * 100) / 100;
   const oggi = L.oggiISO(), lun = L.lunediDi(oggi), dom = L.aggiungiGiorni(lun, 6);
   const sett = contoProspetto(lun, dom);
   const m1 = L.primoDelMese(oggi), m2 = L.ultimoDelMese(oggi), mese = contoProspetto(m1, m2);
   const giorniMese = L.giorniTra(m1, m2) + 1, copertoFino = mese.ultimo && mese.ultimo < m2 ? mese.ultimo : m2;
-  const riga = (c) => `Pulizie: <b>${eur(c.pulizie)}</b> + stelle: <b>${eur(c.stelle)}</b>${c.lavori ? ` + lavori a parte: <b>${eur(c.lavori)}</b>` : ""} = <b>${eur(c.totale)}</b>`;
-  const stima = sett.totale ? Math.round(sett.totale / 7 * giorniMese) : 0;
+  // la riga che vuole Michele: "Pulizie: … € + stelle: … € = … €"; i lavori a parte (consigli accettati, pulizie a fondo, lavori extra) stanno su una riga sotto
+  const riga = (c) => `Pulizie: <b>${eur(c.pulizie)}</b> + stelle: <b>${eur(c.stelle)}</b> = <b>${eur(r2(c.pulizie + c.stelle))}</b>${c.lavori ? `<br><span class="muted small">Lavori a parte (consigli accettati, pulizie a fondo, extra): ${eur(c.lavori)} · in tutto ${eur(c.totale)}</span>` : ""}`;
+  // stima del mese: pulizie e stelle al ritmo dei giorni già coperti dal prospetto, più i lavori a parte così come sono scritti
+  const giorniCoperti = L.giorniTra(m1, copertoFino) + 1;
+  const stima = copertoFino < m2 && giorniCoperti > 0 && (mese.pulizie + mese.stelle) ? Math.round((mese.pulizie + mese.stelle) / giorniCoperti * giorniMese + mese.lavori) : 0;
   return `<section class="card conto-prospetto"><h2 style="margin:0 0 4px">Il conto dal prospetto</h2><p class="muted small" style="margin:0 0 8px">Quello che costano le pulizie normali e le stelle scritte nel prospetto di adesso (fatte e da fare), coi prezzi del listino. Non sono le paghe già pagate: quelle stanno sotto, signora per signora.</p>
     <div class="row one"><b>Questa settimana</b> <span class="muted small">${esc(L.dataBreve(lun))} – ${esc(L.dataBreve(dom))} · ${sett.n} pulizie</span><span>${riga(sett)}</span></div>
-    <div class="row one"><b>${esc(L.meseLungo(oggi).replace(/^./, ch => ch.toUpperCase()))}</b> <span class="muted small">dal prospetto che c'è${copertoFino < m2 ? `, fino a ${esc(L.dataBreve(copertoFino))}` : ""} · ${mese.n} pulizie</span><span>${riga(mese)}</span>${copertoFino < m2 && stima ? `<span class="muted small">Se le altre settimane sono come questa, il mese intero viene circa <b>${eur(stima)}</b>.</span>` : ""}</div></section>`;
+    <div class="row one"><b>${esc(L.meseLungo(oggi).replace(/^./, ch => ch.toUpperCase()))}</b> <span class="muted small">dal prospetto che c'è${copertoFino < m2 ? `, fino a ${esc(L.dataBreve(copertoFino))}` : ""} · ${mese.n} pulizie</span><span>${riga(mese)}</span>${copertoFino < m2 && stima ? `<span class="muted small">Se il resto del mese va come i giorni già coperti, il mese intero viene circa <b>${eur(stima)}</b>.</span>` : ""}</div></section>`;
 }
 function vistaPaghe() {
   const chiave = L.settimanaCorrente();
@@ -1842,7 +1848,7 @@ function listaGestione(p, passi) {
   const riga = r => `<li style="${r.tipo === "stella" ? "background:#FFF7DC;color:#3D2F00" : ""}">${segno(r)}<span>${esc(r.testo)}${r.tipo === "stella" && r.stella ? ` <span class="muted small">· ${r.stella.minuti} min · ${eur(r.stella.euro || 0)}${r.stella.luogoNome && r.stella.comune ? " · " + esc(r.stella.luogoNome) : ""}</span>` : r.sotto ? ` <span class="muted small">· ${esc(r.sotto)}</span>` : ""}${non[r.k] ? ` <span class="small" style="color:var(--warn)">non fatta: ${esc(non[r.k])}</span>` : ""}</span></li>`;
   const stelle = l.righe.filter(r => r.tipo === "stella");
   const segnoBlocco = b => fatta ? (non[b.k] != null ? `<span style="color:var(--warn)">✕ non fatto${non[b.k] ? ": " + esc(non[b.k]) : ""}</span>` : spuntate.has(b.k) ? `<span style="color:var(--done)">✓ fatto</span>` : `<span class="muted">·</span>`) : "";
-  return `<div class="floorlabel" style="margin-top:12px"><span>La lista di oggi · ${l.righe.length} righe in ${l.blocchi.length} blocchi · circa ${l.minuti} min</span><span>${stelle.length ? `${stelle.length} ${stelle.length === 1 ? "stella" : "stelle"} · ${eur(l.euroStelle)}` : "nessuna stella"}</span></div>
+  return `<div class="floorlabel" style="margin-top:12px"><span>La lista di oggi · ${l.righe.length} ${l.righe.length === 1 ? "riga" : "righe"} in ${l.blocchi.length} ${l.blocchi.length === 1 ? "blocco" : "blocchi"} · circa ${l.minuti} min</span><span>${stelle.length ? `${stelle.length} ${stelle.length === 1 ? "stella" : "stelle"} · ${eur(l.euroStelle)}` : "nessuna stella"}</span></div>
     ${l.blocchi.map(b => `<div class="floorlabel" style="margin-top:8px"><span>${esc(b.nome)}</span>${segnoBlocco(b)}</div><ol class="steps" style="gap:4px">${[...b.righe, ...b.stelle].map(riga).join("")}</ol>`).join("")}
     ${l.zona.length ? `<div class="floorlabel"><span>Zone comuni di oggi (alla prima camera della signora)</span><span>${l.euroZona ? eur(l.euroZona) : ""}</span></div><ol class="steps" style="gap:4px">${l.zona.map(riga).join("")}</ol>` : ""}`;
 }
