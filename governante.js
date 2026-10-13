@@ -294,7 +294,7 @@ export function nuovoId(vecchio) {
 // Soglie di partenza (si cambiano dall'app)
 export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, zonaMinuti: 20 };
 export const BUDGET_BASE = { ripasso: 15, totale: 30, libera: 45, baseRipasso: 10, baseTotale: 25 }; // (i budget veri stanno nei MODI)
-export const STELLE_MAX = { ripasso: 2, totale: 3, libera: 3 }; // il tetto generale (Michele, 0.27); ogni modo ha il suo, mai sopra questo
+export const STELLE_MAX = { ripasso: 2, totale: 3, libera: 5 }; // il tetto lo decide il tipo di passaggio (Michele, specifiche §10): 2 ripasso · 3 totale · 5 totale a camera libera; il modo può solo abbassarlo
 export const SCALA_OGNI = [1, 3.5, 7, 14, 21, 30, 45, 60, 90, 120, 180, 365];
 export function etichettaOgni(g) {
   if (!g) return "a ogni pulizia";
@@ -320,12 +320,12 @@ export function etichettaOgni(g) {
 // ============================================================================
 //  I TRE MODI legati all'ospite (Michele, specifiche §1): il catalogo è uno, cambia solo il ritmo.
 //  OPERAI: igiene a ritmo pieno (cucina più spesso), estetica a un terzo, nascosto solo nella fondo completa; stelle: nessuna nel
-//  ripasso, una sola di igiene nella totale. TECNICI: igiene piena, estetica e nascosto a metà ritmo. BOOKING: tutto a ritmo pieno,
+//  ripasso, fino a 2 di igiene nella totale del giovedì. TECNICI: igiene piena, estetica e nascosto a metà ritmo. BOOKING: tutto a ritmo pieno,
 //  stelle prima su quello che l'ospite vede e tocca. I moltiplicatori si cambiano con + e − (impostazioni/governante.modi).
 // ============================================================================
 export const MODI_BASE = {
-  operai:  { p1: 1, p2: 3, p3: 0, cucina: 0.5, budget: { ripasso: 10, totale: 25, libera: 25 }, stelle: { ripasso: 0, totale: 1, libera: 1 }, soloIgiene: true, visibilePrima: false },
-  tecnici: { p1: 1, p2: 2, p3: 2, cucina: 1,   budget: { ripasso: 15, totale: 30, libera: 45 }, stelle: { ripasso: 2, totale: 3, libera: 3 }, soloIgiene: false, visibilePrima: false },
+  operai:  { p1: 1, p2: 3, p3: 0, cucina: 0.5, budget: { ripasso: 10, totale: 25, libera: 25 }, stelle: { ripasso: 0, totale: 2, libera: 2 }, soloIgiene: true, visibilePrima: false },
+  tecnici: { p1: 1, p2: 2, p3: 2, cucina: 1,   budget: { ripasso: 15, totale: 30, libera: 45 }, stelle: { ripasso: 2, totale: 3, libera: 5 }, soloIgiene: false, visibilePrima: false },
   booking: { p1: 1, p2: 1, p3: 1, cucina: 1,   budget: { ripasso: 15, totale: 30, libera: 30 }, stelle: { ripasso: 2, totale: 2, libera: 2 }, soloIgiene: false, visibilePrima: true },
 };
 export const NOMI_MODI = ["tecnici", "operai", "booking"];
@@ -472,7 +472,9 @@ export function chiaveRegistro(regola, luogo) { return `${regola}|${luogo}`; }
 export function ultimaVolta(registro, regola, luogo) { return (registro && registro[chiaveRegistro(regola, luogo)]) || null; }
 export function inizioGovernante(ctx) { if (ctx.inizio) return ctx.inizio; const date = Object.values(ctx.registro || {}).map(v => v && v.ultima).filter(Boolean).sort(); return date[0] || ctx.oggi; }
 // Urgenza: più alta = prima. Una cosa mai registrata vale come fatta il giorno in cui la governante è partita.
-function urgenza(ogni, ultima, oggi, inizio) { if (!ogni) return 99; if (ultima) return giorniTra(ultima, oggi) / ogni; return 1 + Math.max(0, giorniTra(inizio, oggi)) / ogni; }
+// L'urgenza di una cella: quanto è scaduta rispetto al suo ritmo, con il pavimento del "giro completo" (Michele, specifiche §10: tutto almeno
+// una volta ogni 90 giorni): una cosa a ritmo lungo diventa urgente comunque man mano che si avvicina ai 90 giorni dall'ultima volta.
+function urgenza(ogni, ultima, oggi, inizio) { if (!ogni) return 99; if (ultima) { const d = giorniTra(ultima, oggi); return Math.max(d / ogni, d / GIORNI_GIRO); } const d0 = Math.max(0, giorniTra(inizio, oggi)); return 1 + Math.max(d0 / ogni, d0 / GIORNI_GIRO); }
 // Il meteo segnato da Michele: { pioggia: "AAAA-MM-GG fino", umidita, freddo, caldo, vento }
 function meteoAttivo(ctx, trigger, iso) { const m = ctx.meteo || {}; const chiavi = trigger === "pioggia" ? ["pioggia", "vento"] : trigger === "freddo" || trigger === "caldo" ? ["freddo", "caldo"] : trigger === "vento" ? ["vento", "pioggia"] : [trigger]; return chiavi.some(k => m[k] && m[k] >= iso); }
 
@@ -525,8 +527,12 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       if (r.quando === "meteo" && reg?.ultima && giorniTra(reg.ultima, p.data) < 3) continue;
       cand.push(stella(r, l, reg, p.data, ogni || 0, { urgenza: r.quando === "meteo" ? 50 : urgenza(ogni, reg?.ultima || null, p.data, inizio), sempre: false, slot: slot ? (slot.has(r.codice) ? 0 : 1) : 0 }));
     }
+    // L'ordine (Michele, specifiche §10): PRIMA LA PIÙ SCADUTA (è quello che fa girare tutto: una cosa mai fatta sale finché non tocca a lei),
+    // a parità la priorità (igiene, poi quello che l'ospite vede, poi il nascosto). Booking: prima quello che l'ospite vede e tocca. Operai: prima lo slot "una per volta".
     const ordinePrio = passo.visibilePrima ? { 2: 0, 1: 1, 3: 2 } : { 1: 0, 2: 1, 3: 2 };
-    cand.sort((a, b) => ((ordinePrio[a.priorita] ?? 3) - (ordinePrio[b.priorita] ?? 3)) || (a.slot - b.slot) || (b.urgenza - a.urgenza) || (a.minuti - b.minuti));
+    const prio = (a, b) => (ordinePrio[a.priorita] ?? 3) - (ordinePrio[b.priorita] ?? 3);
+    if (passo.visibilePrima) cand.sort((a, b) => prio(a, b) || (a.slot - b.slot) || (b.urgenza - a.urgenza) || (a.minuti - b.minuti));
+    else cand.sort((a, b) => (a.slot - b.slot) || (b.urgenza - a.urgenza) || prio(a, b) || (a.minuti - b.minuti));
     const scelte = []; let min = 0;
     for (const c of cand) { if (scelte.length >= passo.stelle) break; if (min + c.minuti > passo.budget) continue; scelte.push(c); min += c.minuti; }
     out[p.id] = scelte;
@@ -801,6 +807,7 @@ export function simulaCopertura(ctx, settimane = 8) {
 // Stella possibile = una parte a ritmo che può entrare in un passaggio. Cella del Tabellone = solo blocchi Rotazione e Camera libera (regola di Michele)
 export const STELLA_POSSIBILE = r => r.tipo === "rotazione" && !r.evento && !r.sempre && (r.quando === "ripasso" || r.quando === "cambio" || r.quando === "libera");
 const CELLA = r => STELLA_POSSIBILE(r) && (r.blocco === "rotazione" || r.blocco === "libera" || r.personale);
+export const GIORNI_GIRO = 90; // "Giro completo": ogni cella fatta almeno una volta a trimestre (Michele, specifiche §10)
 export function tabellone(ctx, settimane = 13) {
   const { camere, oggi, soggiorni = [] } = ctx; const registro = ctx.registro || {}, luoghi = ctx.luoghi || LUOGHI_COMUNI, imp = ctx.imp || null, flags = ctx.flags || {};
   const regole = ctx.regole || regoleAttive(imp);
@@ -838,19 +845,27 @@ export function tabellone(ctx, settimane = 13) {
       else { const c = coloreScadenza(rapporto); colore = c === "verde" ? "verde" : c === "giallo" ? (programmata ? "giallo" : "rosso") : programmata ? (ult ? "giallo" : "grigio") : "rosso"; }
       // mai fatta e non in programma, ma scade dopo la fine della simulazione (ritmi lunghi: 4-12 mesi): non è un buco, è "più avanti"
       if (colore === "rosso" && !ult && ogni && sim && aggiungiGiorni(inizioGovernante(ctx), Math.round(ogni)) > sim.fine) colore = "grigio";
-      celle.push({ luogo: l.id, luogoNome: l.nome, zona: l.zona, tipo: l.tipo, profilo, modo, regola: r.id, codice: r.codice, nome: r.nome, gruppo: r.gruppo, quando: r.quando, blocco: r.blocco, priorita: r.priorita, ogni, ultima: ult, testo: testoUltima(ult, oggi), da: reg?.da || "", rapporto, colore, programmata, motivo: colore === "rosso" ? motivoDi(r, l) : "" });
+      // il "giro completo" (Michele, specifiche §10): fatta almeno una volta negli ultimi 90 giorni, oggi e alla fine della prova simulata
+      const fatta90 = !!(ult && ult >= aggiungiGiorni(oggi, -GIORNI_GIRO));
+      const simUlt = sim && sim.registro[k] ? sim.registro[k].ultima : null;
+      const fatta90Prova = !!(simUlt && sim && simUlt >= aggiungiGiorni(sim.fine, -GIORNI_GIRO));
+      celle.push({ luogo: l.id, luogoNome: l.nome, zona: l.zona, tipo: l.tipo, profilo, modo, regola: r.id, codice: r.codice, nome: r.nome, gruppo: r.gruppo, quando: r.quando, blocco: r.blocco, priorita: r.priorita, ogni, ultima: ult, testo: testoUltima(ult, oggi), da: reg?.da || "", rapporto, colore, programmata, motivo: colore === "rosso" ? motivoDi(r, l) : "", fatta90, fatta90Prova });
     }
   }
   const conteggiate = celle.filter(c => c.colore !== "fuori"), rosse = celle.filter(c => c.colore === "rosso");
   const perLuogo = camere.map(l => {
     const mie = celle.filter(c => c.luogo === l.id); const gruppi = {};
     for (const c of mie) { const g = gruppi[c.gruppo] = gruppi[c.gruppo] || { rosse: 0, gialle: 0, grigie: 0, verdi: 0, fuori: 0, n: 0 }; g.n++; g[c.colore === "rosso" ? "rosse" : c.colore === "giallo" ? "gialle" : c.colore === "grigio" ? "grigie" : c.colore === "fuori" ? "fuori" : "verdi"]++; }
-    return { luogo: l.id, nome: l.nome, zona: l.zona, tipo: l.tipo, profilo: modoLuogo[l.id], modo: modoLuogo[l.id], n: mie.length, rosse: mie.filter(c => c.colore === "rosso").length, gialle: mie.filter(c => c.colore === "giallo").length, grigie: mie.filter(c => c.colore === "grigio").length, verdi: mie.filter(c => c.colore === "verde").length, fuori: mie.filter(c => c.colore === "fuori").length, gruppi, budget: budgetSett(l) };
+    const contate = mie.filter(c => c.colore !== "fuori");
+    return { luogo: l.id, nome: l.nome, zona: l.zona, tipo: l.tipo, profilo: modoLuogo[l.id], modo: modoLuogo[l.id], n: mie.length, rosse: mie.filter(c => c.colore === "rosso").length, gialle: mie.filter(c => c.colore === "giallo").length, grigie: mie.filter(c => c.colore === "grigio").length, verdi: mie.filter(c => c.colore === "verde").length, fuori: mie.filter(c => c.colore === "fuori").length, gruppi, budget: budgetSett(l), contate: contate.length, mai90: contate.filter(c => !c.fatta90).length, mai90Prova: contate.filter(c => !c.fatta90Prova).length };
   });
   const motivi = Object.values(rosse.reduce((m, c) => { const x = m[c.motivo] = m[c.motivo] || { motivo: c.motivo, n: 0, regole: {} }; x.n++; x.regole[c.regola] = x.regole[c.regola] || { regola: c.regola, nome: c.nome, n: 0 }; x.regole[c.regola].n++; return m; }, {}))
     .map(x => ({ ...x, regole: Object.values(x.regole).sort((a, b) => b.n - a.n) })).sort((a, b) => b.n - a.n);
   const copertura = conteggiate.length ? Math.round((conteggiate.length - rosse.length) / conteggiate.length * 100) : 100;
-  return { celle, perLuogo, motivi, copertura, buchi: rosse.length, celleContate: conteggiate.length, fuoriLivello: celle.length - conteggiate.length, settimane, sim, modi: modoLuogo, regime: regimeDi(oggi, ctx.regoleBase), conto: contoModi(ctx, sim), prova: sim ? prova90(ctx, sim, regole) : null };
+  const pct = n => conteggiate.length ? Math.round(n / conteggiate.length * 100) : 100;
+  const fatte90 = conteggiate.filter(c => c.fatta90).length, fatte90Prova = conteggiate.filter(c => c.fatta90Prova).length;
+  const giro = { giorni: GIORNI_GIRO, percento: pct(fatte90), fatte: fatte90, totale: conteggiate.length, mai: conteggiate.length - fatte90, prova: sim ? { percento: pct(fatte90Prova), fatte: fatte90Prova, totale: conteggiate.length, mai: conteggiate.length - fatte90Prova, fine: sim.fine } : null };
+  return { celle, perLuogo, motivi, copertura, buchi: rosse.length, celleContate: conteggiate.length, fuoriLivello: celle.length - conteggiate.length, settimane, sim, modi: modoLuogo, regime: regimeDi(oggi, ctx.regoleBase), conto: contoModi(ctx, sim), giro, prova: sim ? prova90(ctx, sim, regole) : null };
 }
 // Il conto (Michele, specifiche §1 e §2): per MODO il costo di una camera a settimana (dalla simulazione: le stelle che entrano davvero,
 // col tetto di 2/3 stelle e il listino a fasce), e per STAGIONE: un mese d'inverno (calendario vero, i modi del prospetto),

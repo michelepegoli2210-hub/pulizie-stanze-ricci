@@ -120,17 +120,30 @@ export const CALENDARIO_CAMERE = (() => {
 // ---- I tre modi (Michele, 0.29): il modo segue l'ospite che c'è in camera ----------------------------------------------
 export const NOMI_MODI = ["tecnici", "operai", "booking"];
 export function normNome(n) { return String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
+// Il nome del cliente dentro il nome del soggiorno: "D'Agostino · 3 persone" → "D'Agostino" (si taglia a "·", " - ", "(" o ",")
+export function nomeCliente(n) { return String(n || "").split(/\s*[·(,]|\s+-\s+/)[0].trim(); }
+// Il cliente ricordato per quel nome (impostazioni/clienti): nome esatto, poi il nome del cliente, poi la chiave più lunga che inizia il nome
+export function clienteDi(nome, clienti = {}) {
+  if (!clienti || !nome) return null;
+  const n = normNome(nome); if (!n) return null;
+  if (clienti[n]) return clienti[n];
+  const nc = normNome(nomeCliente(nome)); if (nc && clienti[nc]) return clienti[nc];
+  let best = null; for (const k of Object.keys(clienti)) if (k && n.startsWith(k + " ") && (!best || k.length > best.length)) best = k;
+  return best ? clienti[best] : null;
+}
 // Il modo di un soggiorno: scelto sul soggiorno → ricordato per quel nome (impostazioni/clienti) → dal tipo di ospite
 export function modoSoggiorno(s, clienti = {}) {
   if (!s) return null;
   if (NOMI_MODI.includes(s.modo)) return s.modo;
-  const c = clienti && clienti[normNome(s.nome)]; if (c && NOMI_MODI.includes(c.modo)) return c.modo;
+  const c = clienteDi(s.nome, clienti); if (c && NOMI_MODI.includes(c.modo)) return c.modo;
   return MODO_DA_TIPO[s.tipo] || "booking";
 }
-// Il modo di una camera in un giorno: chi dorme quella notte, o chi parte quel giorno; senza nessuno, quello di base della camera (d'estate Booking)
+// Il modo di una camera in un giorno: chi dorme quella notte, o chi parte quel giorno; senza nessuno, quello di base della camera (d'estate Booking).
+// Negli appartamenti degli operai (via Zara 1° e 2°) chi è Tecnici altrove è Operai lì (Michele: "i D'Agostino all'albergo sono tecnici,
+// solo in via Zara 1° e 2° sono operai"), a meno che il modo sia scritto a mano su quel soggiorno.
 export function modoCamera(camera, iso, soggiorni = [], clienti = {}, regole = REGOLE_BASE) {
   const occ = ospiteIl(soggiorni, camera.id, iso) || parteIl(soggiorni, camera.id, iso);
-  if (occ) return modoSoggiorno(occ, clienti);
+  if (occ) { const m = modoSoggiorno(occ, clienti); return m === "tecnici" && MODO_CAMERA_BASE[camera.id] === "operai" && !NOMI_MODI.includes(occ.modo) ? "operai" : m; }
   if (regimeDi(iso, regole) === "estate") return "booking";
   return MODO_CAMERA_BASE[camera.id] || "tecnici";
 }
@@ -175,7 +188,7 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
   if (occ && regola) tipo = regola.tipo;
   if (parte && r.totaleAllaPartenza) tipo = camera.tipo === "casa" ? "totale_casa" : "totale";
   const chi = occ || parte;
-  const modo = chi ? modoSoggiorno(chi, clienti) : modoCamera(camera, iso, soggiorni, clienti, r);
+  const modo = modoCamera(camera, iso, soggiorni, clienti, r); // chi dorme o chi parte, con la regola di via Zara 1° e 2°
   // modo BOOKING: cambio d'aria e letto rifatto se la camera è rimasta ferma 2+ giorni prima dell'arrivo
   const arrivoOggi = arrivaIl(soggiorni, camera.id, iso);
   if (!tipo && arrivoOggi && modoSoggiorno(arrivoOggi, clienti) === "booking" && !parte) {

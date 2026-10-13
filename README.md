@@ -320,5 +320,21 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   piccola col tipo di ospite (Tecnici · Operai · Ospiti Booking). **Listino**: via Zara 1° e 2° il giovedì 10 € a signora, una per
   appartamento (`LISTINO_BASE.perCasa`, righe in Paghe → Listino; nel foglio il giovedì di via Zara 2° è della signora del 2° piano).
   Risultato nei dati di prova: un mese d'inverno 275 € (era 539 € a livello Igiene), un mese d'estate 307 €, anno 3.396 €.
-- Passi successivi previsti: le foto dei materiali di Lella, Nicole, via Trento e via Zara, il tipo di ospite abituale di via Zara
-  piano terra, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.
+- **0.30 — tetto 2/3/5, "Giro completo", prima la più scaduta, D'Agostino** (specifiche §10, risposte di Michele del 13 ottobre).
+  **Il tetto delle stelle lo decide il tipo di passaggio** (`STELLE_MAX` = ripasso 2 · totale 3 · totale a camera libera 5: il venerdì
+  dei Tecnici, 45′, camera vuota fino a lunedì); il modo può solo abbassarlo (Operai: 0 nel ripasso del lunedì, fino a 2 di igiene nella
+  totale del giovedì dentro 25′; Booking 2/2/2). **L'ordine delle stelle è "prima la più scaduta"** (`rifinitureDelGiorno`: urgenza
+  decrescente, a parità la priorità; Booking resta "prima quello che l'ospite vede"; Operai prima lo slot "una per volta"), con il
+  pavimento dei 90 giorni nell'urgenza (`urgenza`: una cosa a ritmo lungo diventa urgente comunque avvicinandosi ai 90 giorni): nei
+  dati di prova la copertura sale dal 45% al 72% e i buchi scendono da 375 a 188. **"Giro completo"** nel Tabellone (`GIORNI_GIRO` = 90,
+  `tabellone().giro`): la percentuale di celle (Rotazione e Camera libera, col modo di oggi) fatte almeno una volta negli ultimi 90
+  giorni, oggi e "a fine prova" (dal registro della simulazione a 13 settimane, con tutti i consigli accettati); per ogni posto
+  "mai fatte da 90 giorni: N" (`perLuogo.mai90`, `mai90Prova`), e nel foglio del posto. La Copertura resta quella severa.
+  **D'Agostino**: le sue persone sono Tecnici in albergo e Operai solo in via Zara 1° e 2° (`MODO_DA_TIPO.dago` = tecnici;
+  `logica.modoCamera` promuove Tecnici → Operai negli appartamenti di `MODO_CAMERA_BASE`, a meno che il modo sia scritto a mano sul
+  soggiorno). **Il nome del cliente** dentro il nome del soggiorno (`logica.nomeCliente`: "D'Agostino · 3 persone" → "D'Agostino";
+  `clienteDi`: nome esatto, poi nome del cliente, poi la chiave più lunga che inizia il nome): "Sempre per D'Agostino" salva la chiave
+  corta e vale per tutti i soggiorni di quel nome. Giovedì in via Zara confermato: una signora per appartamento, 10 € a testa.
+- Passi successivi previsti: il prezzo dei lavori a camera libera e della pulizia a fondo completa (oggi presi dal listino delle
+  stelle: 3 € per mezza giornata, da sistemare), le foto dei materiali di Lella, Nicole, via Trento e via Zara, il tipo di ospite
+  abituale di via Zara piano terra, ritmi che imparano dai controlli ("gli occhi"), meteo di Lesina automatico, pagella del sabato.

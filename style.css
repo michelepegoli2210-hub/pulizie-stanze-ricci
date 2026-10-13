@@ -858,3 +858,9 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .modo-btn:disabled{cursor:default;opacity:.7}
 .gov-regola-modi{display:block;margin-top:2px}
 @media (max-width:380px){.modi-scelta,.conto-stagioni,.conto-modi,.modi-box{grid-template-columns:1fr 1fr}}
+
+/* --- 0.30 · "Giro completo" nel Tabellone (celle fatte almeno una volta negli ultimi 90 giorni), tetto 2/3/5 stelle --- */
+.buchi-due.giro{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.45)}
+.buchi-due.giro b:first-child{font-size:24px}
+.buchi-due.giro b:last-child{font:700 15px/1.2 var(--f-display);opacity:.95}
+.buchi span strong{font-weight:800}

@@ -162,7 +162,7 @@ export const MODI = {
   operai:  { nome: "Operai",  lungo: "Operai (soggiorni lunghi, cucinano ogni giorno)", breve: "Operai" },
   booking: { nome: "Booking", lungo: "Ospiti Booking / Airbnb / privati (soggiorni corti, scrivono recensioni)", breve: "Ospiti Booking" },
 };
-export const MODO_DA_TIPO = { ferr: "tecnici", fond: "tecnici", dago: "operai", altro: "booking", unk: "booking" };
+export const MODO_DA_TIPO = { ferr: "tecnici", fond: "tecnici", dago: "tecnici", altro: "booking", unk: "booking" }; // D'Agostino: tecnici in albergo, operai solo in via Zara 1° e 2° (vedi logica.modoCamera)
 // Senza nessuno dentro: gli appartamenti di via Zara 1° e 2° sono degli operai, il resto dei tecnici (d'estate tutto Booking)
 export const MODO_CAMERA_BASE = { zara1: "operai", zara2: "operai" };
 
