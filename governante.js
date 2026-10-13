@@ -88,7 +88,7 @@ export const CATALOGO = [
   R("sotto_letto", "camera", "Sotto il letto aspirato", "stanza", 7, "ripasso", 5, 1, 1, "letto",
     "Aspirapolvere con la bocchetta piatta fin sotto il letto, da tutti e due i lati, e sotto i comodini. Raccogli quello che trovi (calzini, caricabatterie: lasciali sul comodino).", "Torcia del telefono sotto il letto: niente batuffoli."),
   R("sopra_armadi", "camera", "Sopra gli armadi, i pensili e il frigo", "stanza", 30, "ripasso", 5, 1, 3, "armadio",
-    "Con la scaletta: panno BLU umido sopra l'armadio (negli appartamenti anche sopra pensili e frigo), poi asciuga. Togli le cose dimenticate.", "Passa un dito sopra l'armadio: deve restare pulito."),
+    "Con la scaletta: panno BLU umido sopra l'armadio (negli appartamenti anche sopra pensili e frigo), poi asciuga. Togli le cose dimenticate.", "Passa un dito sopra l'armadio: deve restare pulito.", { materiale: "mobili" }),
   R("battiscopa", "camera", "Battiscopa", "stanza", 14, "ripasso", 5, 1, 3, "armadio",
     "Panno BLU umido lungo tutti i battiscopa, anche dietro la porta e sotto il letto dove arrivi.", "Dito sul battiscopa dietro la porta: pulito."),
   R("porte_ditate", "camera", "Ditate sulla porta e intorno alla maniglia", "stanza", 0, "ripasso", 1, 0, 2, "porta",
@@ -132,7 +132,7 @@ export const CATALOGO = [
   R("luci_lampadine", "camera", "Luci e lampadine", "stanza", 0, "ripasso", 1, 0, 2, "finestra",
     "Accendi tutte le luci: plafoniera, abat-jour, specchio, bagno, lampada del balcone. Tutte devono funzionare. Spegni e via.", "Accendi tutto: nessuna lampadina spenta o che sfarfalla.", { codice: "C55", note: "Lampadina fulminata: segnala il problema, la cambia la manutenzione. Mai lasciare una camera con una luce che non va." }),
   R("dentro_armadi", "camera", "Dentro armadi, comodini e cassetti (ripiani, asta, grucce, guide)", "stanza", 14, "cambio", 10, 2, 2, "armadio",
-    "Solo a camera libera (mai toccare la roba degli ospiti): svuota, aspira le briciole, panno BLU umido dentro, sui ripiani e nelle guide dei cassetti, asciuga, rimetti grucce e carta; anche dentro i comodini e il mobile della TV.", "Apri due cassetti e l'armadio: niente briciole né capelli."),
+    "Solo a camera libera (mai toccare la roba degli ospiti): svuota, aspira le briciole, panno BLU umido dentro, sui ripiani e nelle guide dei cassetti, asciuga, rimetti grucce e carta; anche dentro i comodini e il mobile della TV.", "Apri due cassetti e l'armadio: niente briciole né capelli.", { materiale: "mobili" }),
   R("materasso_aspirato", "camera", "Materasso aspirato", "stanza", 30, "cambio", 10, 2, 1, "letto",
     "Letto sfatto: aspira il materasso sopra e sui bordi con la spazzola per tessuti, lentamente; se c'è una macchia, bicarbonato 15 minuti e aspira.", "Guarda il materasso senza coprimaterasso: niente briciole né macchie."),
   R("materasso_girato", "camera", "Materasso girato testa-piedi", "stanza", 90, "cambio", 5, 2, 1, "letto",
@@ -153,23 +153,23 @@ export const CATALOGO = [
   R("camera_base", "camera", "Pulizia normale della camera", "stanza", 0, "ripasso", 0, 0, 1, "scopa",
     "Quello che si fa a ogni pulizia: letto rifatto, superfici a vista spolverate, pavimento spazzato e lavato con il prodotto giusto per quel pavimento (vedi sotto), cestini, bagno. (È la pulizia pagata come camera.)", "La camera a vista: in ordine, senza polvere, pavimento pulito e senza aloni.", { materiale: "pavimento" }),
   R("testiera", "camera", "Testiera del letto (davanti e sopra)", "stanza", 7, "ripasso", 3, 1, 2, "letto",
-    "Panno BLU umido sulla testiera davanti e sul bordo sopra; se è imbottita, aspirala con la spazzola.", "Dito sul bordo sopra della testiera: pulito."),
+    "Panno BLU umido sulla testiera davanti e sul bordo sopra; se è imbottita, aspirala con la spazzola.", "Dito sul bordo sopra della testiera: pulito.", { materiale: "mobili" }),
   R("struttura_letto", "camera", "Struttura e piedini del letto", "stanza", 30, "cambio", 5, 1, 3, "letto",
-    "Letto sfatto: panno umido su struttura, bordi e piedini; aspira la polvere sulle traverse.", "Piedini del letto senza batuffoli."),
+    "Letto sfatto: panno umido su struttura, bordi e piedini; aspira la polvere sulle traverse.", "Piedini del letto senza batuffoli.", { materiale: "mobili" }),
   R("doghe", "camera", "Doghe del letto aspirate", "stanza", 90, "cambio", 5, 1, 3, "letto",
     "Materasso sollevato di lato: aspira le doghe e il telaio, controlla che nessuna doga sia rotta.", "Doghe senza polvere, nessuna rotta."),
   R("copriletto", "camera", "Copriletto lavato", "stanza", 30, "cambio", 5, 2, 2, "coperta",
     "Copriletto in lavatrice secondo l'etichetta e rimesso solo asciutto; se macchiato, subito.", "Copriletto senza macchie né odori."),
   R("comodini", "camera", "Comodini sopra e abat-jour", "stanza", 0, "ripasso", 2, 0, 2, "armadio",
-    "A ogni pulizia: panno BLU umido sopra i comodini (sposta le cose dell'ospite e rimettile uguali), base dell'abat-jour, interruttore disinfettato.", "Sopra il comodino: niente aloni di bicchieri.", { codice: "C35" }),
+    "A ogni pulizia: panno BLU umido sopra i comodini (sposta le cose dell'ospite e rimettile uguali), base dell'abat-jour, interruttore disinfettato.", "Sopra il comodino: niente aloni di bicchieri.", { codice: "C35" , materiale: "mobili" }),
   R("comodini_dentro", "camera", "Comodini dentro e dietro", "stanza", 14, "cambio", 3, 1, 3, "armadio",
-    "A camera libera: cassetto e vano del comodino svuotati e passati con il panno BLU umido, poi asciugati; comodino scostato e aspirato dietro.", "Apri il cassetto del comodino: niente briciole né capelli.", { codice: "C35" }),
+    "A camera libera: cassetto e vano del comodino svuotati e passati con il panno BLU umido, poi asciugati; comodino scostato e aspirato dietro.", "Apri il cassetto del comodino: niente briciole né capelli.", { codice: "C35" , materiale: "mobili" }),
   R("armadio_ante", "camera", "Ante dell'armadio fuori e maniglie", "stanza", 14, "ripasso", 5, 1, 2, "armadio",
-    "Panno BLU appena umido con il multiuso sulle ante fuori (ditate intorno alle maniglie), subito asciugate; maniglie disinfettate. I mobili sono in laminato chiaro: mai acqua che cola sui bordi, si gonfiano.", "Zona delle maniglie senza ditate; bordi delle ante asciutti.", { note: "Mobili in laminato: panno strizzato bene, mai acqua sui bordi e sugli spigoli." }),
+    "Panno BLU appena umido con il multiuso sulle ante fuori (ditate intorno alle maniglie), subito asciugate; maniglie disinfettate. I mobili sono in laminato chiaro: mai acqua che cola sui bordi, si gonfiano.", "Zona delle maniglie senza ditate; bordi delle ante asciutti.", { note: "Mobili in laminato: panno strizzato bene, mai acqua sui bordi e sugli spigoli." , materiale: "mobili" }),
   R("sotto_mobili", "camera", "Sotto armadio, cassettiera e scrivania", "stanza", 30, "ripasso", 5, 1, 3, "armadio",
     "Bocchetta piatta dell'aspirapolvere sotto l'armadio, la cassettiera e la scrivania, fin dove arriva.", "Torcia sotto l'armadio: niente batuffoli."),
   R("scrivania", "camera", "Scrivania e sedie", "stanza", 7, "ripasso", 3, 1, 2, "armadio",
-    "Piano della scrivania passato (sposta e rimetti le cose dell'ospite), sedie: seduta, schienale e gambe con il panno BLU.", "Piano e sedie senza polvere né briciole."),
+    "Piano della scrivania passato (sposta e rimetti le cose dell'ospite), sedie: seduta, schienale e gambe con il panno BLU.", "Piano e sedie senza polvere né briciole.", { materiale: "mobili" }),
   R("tv_schermo", "camera", "Schermo della TV", "stanza", 7, "ripasso", 2, 0.5, 2, "finestra",
     "TV spenta e fredda: panno in microfibra asciutto, movimenti leggeri, mai spruzzare sullo schermo.", "Schermo spento senza ditate né aloni."),
   R("minibar", "camera", "Frigo in camera dentro, a ogni partenza", "camera", 0, "cambio", 3, 0, 1, "frigo",
@@ -242,7 +242,7 @@ export const CATALOGO = [
   R("troppopieno", "bagno", "Troppopieno e piletta del lavandino", "bagno", 30, "ripasso", 3, 1, 1, "doccia",
     "Spazzolino nel troppopieno con bicarbonato e poco aceto, poi acqua bollente; piletta smontata e lavata.", "Troppopieno senza odore né nero."),
   R("mobiletto_bagno", "bagno", "Mobiletto del lavandino dentro e fuori, mensole", "bagno", 30, "ripasso", 5, 1, 2, "armadio",
-    "Ante fuori e dentro con il panno GIALLO umido, ripiani svuotati e passati, mensole passate.", "Dentro il mobiletto: asciutto, niente aloni."),
+    "Ante fuori e dentro con il panno GIALLO umido, ripiani svuotati e passati, mensole passate.", "Dentro il mobiletto: asciutto, niente aloni.", { materiale: "mobili" }),
   R("dispenser", "bagno", "Dispenser del sapone e accessori riempiti e puliti", "bagno", 7, "ripasso", 2, 0.5, 2, "doccia",
     "Dispenser riempito, beccuccio pulito, esterno passato; bicchiere e portaspazzolino lavati e sanificati.", "Beccuccio senza sapone secco; bicchiere trasparente."),
   R("wc_tavoletta", "bagno", "Tavoletta del WC (sopra, sotto, cerniere)", "bagno", 7, "ripasso", 3, 1, 1, "doccia",
@@ -269,7 +269,7 @@ export const CATALOGO = [
     "A ogni cambio completo: il tappetino (o l'asciugamano usato a terra) va in lavanderia e se ne mette uno pulito e asciutto davanti alla doccia.", "Tappetino pulito e asciutto, senza impronte."),
   // --- aggiunte per la mappa delle superfici (cucina) ---
   R("pensili_ante", "cucina", "Ante dei pensili fuori e maniglie", "cucina", 14, "ripasso", 5, 1, 2, "armadio",
-    "Sgrassatore sul panno VERDE, ante fuori (soprattutto vicino ai fornelli) e maniglie.", "Ante vicino ai fornelli non appiccicose."),
+    "Sgrassatore sul panno VERDE, ante fuori (soprattutto vicino ai fornelli) e maniglie.", "Ante vicino ai fornelli non appiccicose.", { materiale: "mobili" }),
   R("cappa_esterno", "cucina", "Cappa fuori e sotto", "cucina", 14, "ripasso", 5, 1, 2, "cucina",
     "Sgrassatore sulla cappa fuori e sulla parte sotto intorno ai filtri, panno VERDE, asciuga.", "Sotto la cappa: niente grasso appiccicoso."),
   R("fornelli_fondo", "cucina", "Fornelli a fondo: griglie, spartifiamma, manopole, sotto le griglie", "cucina", 30, "ripasso", 15, 3, 1, "cucina",
@@ -293,7 +293,7 @@ export const CATALOGO = [
   R("moka", "cucina", "Moka e bollitore dell'appartamento", "cucina", 14, "ripasso", 5, 1, 2, "cucina",
     "Moka smontata e lavata solo con acqua calda, guarnizione controllata; bollitore sciacquato.", "Moka senza fondi vecchi."),
   R("tavolo_sedie", "cucina", "Tavolo e sedie", "cucina", 7, "ripasso", 5, 1, 2, "armadio",
-    "Tavolo sopra e bordi, sedie: seduta, schienale e gambe con il panno VERDE.", "Sedie senza briciole sotto la seduta."),
+    "Tavolo sopra e bordi, sedie: seduta, schienale e gambe con il panno VERDE.", "Sedie senza briciole sotto la seduta.", { materiale: "mobili" }),
   R("bidoni_cucina", "cucina", "Bidoni della differenziata lavati a fondo", "cucina", 14, "ripasso", 5, 1, 1, "bidone",
     "Bidoni e coperchi lavati dentro e fuori con sgrassatore, asciugati aperti.", "Bidoni aperti che non puzzano."),
   R("fondo_completa", "camera", "Pulizia a fondo completa", "stanza", 0, "libera", 180, 40, 1, "stella",
@@ -339,7 +339,7 @@ export const CATALOGO = [
   R("dietro_fornelli", "cucina", "Dietro e sotto i fornelli", "cucina", 30, "ripasso", 10, 2, 2, "cucina",
     "Sgrassatore sulla parete dietro i fornelli e sui bordi del piano; se il piano si alza, pulisci sotto.", "Parete dietro i fornelli senza schizzi."),
   R("pensili", "cucina", "Dentro pensili e cassetti", "cucina", 30, "cambio", 10, 2, 2, "armadio",
-    "Solo ad appartamento libero: svuota, briciole via, panno VERDE umido dentro, asciuga, rimetti. Butta cibi aperti lasciati dagli ospiti.", "Apri due pensili: niente briciole né cibi aperti."),
+    "Solo ad appartamento libero: svuota, briciole via, panno VERDE umido dentro, asciuga, rimetti. Butta cibi aperti lasciati dagli ospiti.", "Apri due pensili: niente briciole né cibi aperti.", { materiale: "mobili" }),
   R("frigo_sbrinato", "cucina", "Frigo e freezer sbrinati e lavati", "cucina", 90, "libera", 45, 10, 1, "frigo",
     "Appartamento libero: frigo spento e vuoto, sbrina il freezer con una pentola d'acqua calda dentro, lava tutto con acqua e bicarbonato, asciuga, riaccendi.", "Freezer senza ghiaccio sulle pareti, frigo che non puzza."),
   R("dietro_frigo", "cucina", "Dietro e sotto frigo e cucina", "cucina", 90, "libera", 15, 3, 3, "frigo",
@@ -474,6 +474,10 @@ export const MATERIALI = {
     tenda: { nome: "tenda della doccia", come: "tenda stesa e lasciata aperta ad asciugare; lavata in lavatrice a 40° con bicarbonato ogni mese", mai: "mai lasciarla appallottolata bagnata: fa la muffa in due giorni" },
     nessuno: { nome: "doccia senza box", come: "piatto e piastrelle intorno asciugati dopo ogni pulizia", mai: "" },
   },
+  mobili: {
+    laminato: { nome: "mobili in laminato di finto legno (truciolato dentro)", come: "panno umido ben strizzato, mai bagnato; bordi e giunzioni asciugati subito, perché se l'acqua entra nelle giunzioni il bordo si gonfia e non torna più", mai: "mai spugne abrasive, mai vapore, mai acetone o alcol; mai acqua che resta sui bordi" },
+    legno: { nome: "mobili in legno verniciato", come: "panno appena umido nel verso delle venature, subito asciugato", mai: "mai acqua che cola, mai sgrassatore forte o alcol: la vernice si opacizza" },
+  },
   porte: {
     legno: { nome: "porta in legno verniciato scuro", come: "panno appena umido e subito asciutto, nel verso delle venature; la scritta con il nome solo con il panno asciutto", mai: "mai acqua che cola, mai sgrassatore forte o alcol: la vernice si opacizza" },
     laminato: { nome: "porta in laminato chiaro", come: "panno umido con il multiuso, asciugata; la scritta con il nome solo con il panno asciutto", mai: "mai acqua sui bordi e sugli spigoli: il laminato si gonfia; mai spugne abrasive" },
@@ -482,11 +486,11 @@ export const MATERIALI = {
 // Che materiali ha un posto, partendo da quello che si vede nelle foto (1° piano marmo rosso e porte in legno scuro,
 // 2° piano gres color cotto e porte in laminato chiaro, appartamenti marmo rosso; box a soffietto dappertutto)
 export function materialiBase(luogo) {
-  if (!luogo) return { pavimento: "gres", box: "soffietto", porte: "laminato" };
-  if (luogo.tipo === "comune") return { pavimento: luogo.id === "corridoio_p2" || luogo.id === "terrazzo" || luogo.id === "lavanderia" ? "gres" : "marmo", box: "nessuno", porte: luogo.id === "corridoio_p2" ? "laminato" : "legno" };
-  if (luogo.zona === "p1") return { pavimento: "marmo", box: "soffietto", porte: "legno" };
-  if (luogo.zona === "p2") return { pavimento: "gres", box: "soffietto", porte: "laminato" };
-  return { pavimento: "marmo", box: "soffietto", porte: "laminato" };
+  if (!luogo) return { pavimento: "gres", box: "soffietto", porte: "laminato", mobili: "laminato" };
+  if (luogo.tipo === "comune") return { pavimento: luogo.id === "corridoio_p2" || luogo.id === "terrazzo" || luogo.id === "lavanderia" ? "gres" : "marmo", box: "nessuno", porte: luogo.id === "corridoio_p2" ? "laminato" : "legno", mobili: "laminato" };
+  if (luogo.zona === "p1") return { pavimento: "marmo", box: "soffietto", porte: "legno", mobili: "laminato" };
+  if (luogo.zona === "p2") return { pavimento: "gres", box: "soffietto", porte: "laminato", mobili: "laminato" };
+  return { pavimento: "marmo", box: "soffietto", porte: "laminato", mobili: "laminato" };
 }
 export function materialiDi(luogo, impostati = {}) { return { ...materialiBase(luogo), ...((impostati || {})[luogo?.id] || {}) }; }
 // La riga da aggiungere al "come si fa" per una regola che dipende dal materiale
@@ -504,7 +508,7 @@ export const SCHEDA_MATERIALI = [
   { nome: "Ceramica del bagno (piastrelle a fiori, sanitari)", dove: "tutti i bagni", come: "multiuso o anticalcare sulle piastrelle lisce, spugna morbida; sulle fughe spazzolino con bicarbonato; sanitari con disinfettante", mai: "mai candeggina pura sulle fughe colorate (le sbiadisce), mai pagliette" },
   { nome: "Rubinetti e docce cromate", dove: "lavandini, bidet, docce, cucine", come: "anticalcare sul panno, 2 minuti, sciacquo, lucidatura con il panno asciutto; filtrino svitato nell'aceto", mai: "mai anticalcare lasciato asciugare sul cromo (lo macchia), mai pagliette" },
   { nome: "Box doccia a soffietto in PVC", dove: "quasi tutti i bagni", come: MATERIALI.box.soffietto.come, mai: MATERIALI.box.soffietto.mai },
-  { nome: "Mobili in laminato chiaro", dove: "letti, comodini, armadi, cucine, piani in laminato puntinato", come: "panno appena umido con il multiuso, asciugato subito; ditate intorno alle maniglie", mai: "mai acqua sui bordi e sugli spigoli (si gonfiano), mai spugne abrasive" },
+  { nome: "Mobili in laminato di finto legno (truciolato dentro)", dove: "letti, comodini, armadi, cucine, piani in laminato puntinato: tutti i mobili delle stanze", come: MATERIALI.mobili.laminato.come, mai: MATERIALI.mobili.laminato.mai },
   { nome: "Porte in legno verniciato scuro", dove: "1° piano", come: MATERIALI.porte.legno.come, mai: MATERIALI.porte.legno.mai },
   { nome: "Vetri e specchi", dove: "finestre, portefinestre, specchi, mensola di vetro del bagno", come: "detergente vetri sul panno (non sul vetro), tergivetro o panno asciutto, bordi asciugati", mai: "mai abrasivi; mai spruzzare sullo specchio (cola dietro e lo macchia)" },
   { nome: "Ferro: ringhiere, reti e termosifoni in ghisa", dove: "balconi, bagni, corridoi", come: "panno umido e asciugatura; ragnatele via con la spazzola", mai: "mai insistere sulla ruggine con la spugna: si segnala, va carteggiata e riverniciata" },
