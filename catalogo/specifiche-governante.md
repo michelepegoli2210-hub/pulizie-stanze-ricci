@@ -2,7 +2,7 @@
 
 **Rileggi questo file dopo ogni riavvio della memoria.** Qui stanno tutte le decisioni prese con Michele sulla governante, in ordine. Se un messaggio in chat manca, vale quello che c'è scritto qui. Le domande ancora aperte sono in fondo: Michele risponde con un numero, una alla volta.
 
-Aggiornato: 13 ottobre 2026, notte (dopo la 0.32; aggiunti i ritocchi in fondo al punto 11).
+Aggiornato: 14 ottobre 2026 (dopo la 0.34: via Zara è un appartamento solo, punto 12 chiuso; resta aperta solo via Zara piano terra al punto 9).
 
 ---
 
@@ -100,7 +100,7 @@ Aggiornato: 13 ottobre 2026, notte (dopo la 0.32; aggiunti i ritocchi in fondo a
 
 ## 9. Domande aperte (Michele risponde con un numero)
 
-- Giovedì in via Zara 1° e 2°: chi preme "Fatto" e prende la paga? 1) la signora del 1° piano · 2) metà per una · 3) tutte e due per intero · 4) una per appartamento (1° piano → via Zara 1°, 2° piano → via Zara 2°). **Risposta: 4 (confermata il 13 ottobre: una per appartamento, 10 € a testa).**
+- Giovedì in via Zara 1° e 2°: chi preme "Fatto" e prende la paga? 1) la signora del 1° piano · 2) metà per una · 3) tutte e due per intero · 4) una per appartamento (1° piano → via Zara 1°, 2° piano → via Zara 2°). **Risposta: 4 (confermata il 13 ottobre: una per appartamento, 10 € a testa). Superata il 14 ottobre: è un appartamento solo, vedi il punto 12.**
 - Materiali di Lella, Nicole, via Trento e via Zara piano terra (pavimento, porte, box doccia, mobili): Michele manda le foto.
 - Via Zara piano terra: Tecnici o Booking come tipo di ospite abituale? **Risposta: …**
 
@@ -110,7 +110,7 @@ Aggiornato: 13 ottobre 2026, notte (dopo la 0.32; aggiunti i ritocchi in fondo a
 - **Due numeri nel Tabellone, non uno.** "Copertura" resta quella severa (celle in regola col ritmo scritto). Accanto va aggiunto **"Giro completo"**: la percentuale di celle (posto × regola di Rotazione e Camera libera) fatte **almeno una volta negli ultimi 90 giorni**, e per ogni camera "superfici mai fatte da 90 giorni: N". È questo il numero che conta per Michele: tutto almeno una volta a trimestre, l'igiene al suo ritmo. L'ordine delle stelle resta "prima la più scaduta", che è quello che fa girare tutto.
 - Il conto va mostrato con le due letture: "cosa spendo" (col tetto) e "cosa costerebbe tutto in regola", come già fa la 0.29.
 - D'Agostino nel prospetto: Michele decide il tipo (Tecnici o Operai) con "Sempre per questo nome". **Risposta: Tecnici in albergo; Operai solo in via Zara 1° e 2° (chi è Tecnici altrove, lì conta come Operai).**
-- Giovedì in via Zara: 1) una per appartamento, 10 € a testa · 2) tutte e due in tutti e due, 20 € a signora · 3) insieme, paga solo a chi preme Fatto. **Risposta: 1.**
+- Giovedì in via Zara: 1) una per appartamento, 10 € a testa · 2) tutte e due in tutti e due, 20 € a signora · 3) insieme, paga solo a chi preme Fatto. **Risposta: 1. Superata il 14 ottobre dal punto 12 (un appartamento solo): tutte e due insieme, 10 € a testa, ognuna sul proprio piano.**
 
 ## 11. La chat con la governante (decisa il 13 ottobre sera): una collaboratrice che fa domande
 
@@ -154,4 +154,5 @@ Principio: quando alla governante manca un'informazione, o succede qualcosa (met
 
 - Via Zara 1° piano e 2° piano sono **lo stesso appartamento**, su due piani: un posto solo nell'app ("Via Zara · 1° e 2° piano"), una pulizia, una paga, un Tabellone. La "camera" separata "Via Zara · 2° piano" creata nella 0.28 va tolta e le sue celle unite. Via Zara piano terra resta un posto a parte.
 - Nella lista della signora, il piano di sopra è un blocco in più ("Piano di sopra: camere e bagno"), non una camera a parte.
-- Il giovedì in via Zara: vedi la domanda al punto 10 (una signora sola o tutte e due insieme con la paga divisa).
+- Il giovedì in via Zara: **tutte e due le signore insieme, 10 € a testa, ognuna preme Fatto sul proprio piano** (risposta 2 di Michele, 14 ottobre). La Signora 1° piano fa il piano di sotto, con le stelle (fino a 2 di igiene, modo Operai); la Signora 2° piano fa il piano di sopra, senza stelle. Il lunedì il ripasso resta alla Signora 1° piano, 15 €. Fatto nella 0.34.
+- In Paghe, in cima, "Il conto dal prospetto": "Pulizie: … € + stelle: … € = … €" per la settimana e per il mese, coi lavori a parte (consigli accettati, pulizie a fondo, extra) su una riga sotto. Fatto nella 0.34.
