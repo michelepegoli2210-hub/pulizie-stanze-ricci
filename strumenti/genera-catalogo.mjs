@@ -153,12 +153,18 @@ print(json.dumps(out, ensure_ascii=False))
 if (py.status !== 0) throw new Error("xlsx: " + py.stderr);
 const fogli = JSON.parse(py.stdout);
 
+// I blocchi della schermata della signora (colonna "Blocco (schermata)" del foglio): un titolo grande e un solo tasto Fatto per blocco
+const BLOCCHI_LISTA = [
+  { id: "letto", nome: "Letto e biancheria", breve: "Letto" }, { id: "bagno", nome: "Bagno", breve: "Bagno" }, { id: "camera", nome: "Camera", breve: "Camera" },
+  { id: "cucina", nome: "Cucina", breve: "Cucina" }, { id: "partenza", nome: "Alla partenza", breve: "Alla partenza" }, { id: "pavimenti", nome: "Pavimenti e controllo finale", breve: "Pavimenti" },
+];
+function bloccoDa(testo) { const n = norm(testo); if (!n) return ""; if (/letto/.test(n)) return "letto"; if (/bagno/.test(n)) return "bagno"; if (/cucina/.test(n)) return "cucina"; if (/partenza/.test(n)) return "partenza"; if (/paviment|controllo/.test(n)) return "pavimenti"; if (/camera/.test(n)) return "camera"; console.error("blocco non riconosciuto:", testo); return ""; }
 const LISTE = { "ripasso camera": "ripasso", "totale camera ripasso": "totale", "appartamento aggiunte cucina": "cucina", "base ripasso via zara 1 e 2 operai": "base_ripasso", "base totale giovedi": "base_totale" };
 const checklist = [];
 for (const row of fogli["Checklist signora"].slice(1)) {
-  const [lista, n, testo, codici, minuti] = row; const k = LISTE[norm(lista)];
+  const [lista, n, testo, codici, minuti, bloccoTesto] = row; const k = LISTE[norm(lista)];
   if (!k) { console.error("lista non riconosciuta:", lista); continue; }
-  const voce = { lista: k, n: Number(n), testo: String(testo).trim(), codici: String(codici).split(/[,;]/).map(x => x.trim()).filter(Boolean), minuti: Number(minuti) || 0 };
+  const voce = { lista: k, n: Number(n), testo: String(testo).trim(), codici: String(codici).split(/[,;]/).map(x => x.trim()).filter(Boolean), minuti: Number(minuti) || 0, blocco: bloccoDa(bloccoTesto) };
   if (/^alla partenza/i.test(voce.testo)) voce.soloPartenza = true;
   if (/^al cambio totale/i.test(voce.testo)) voce.soloTotale = true;
   if (/a rotazione \(una per volta\)/i.test(voce.testo)) voce.slot = true;
@@ -184,13 +190,13 @@ const livelli = fogli["Livelli e costi"].slice(1).map(([livello, cosa, min, eurS
 const testa = `// ============================================================================
 //  CATALOGO DELLA GOVERNANTE · GENERATO, NON MODIFICARE A MANO
 //  Fonte: catalogo/catalogo-governante-v4.csv e catalogo/catalogo-governante.xlsx (fogli Checklist signora, Calendario vero,
-//  Livelli e costi). Per rigenerarlo: node dev/genera-catalogo.mjs. Generato il ${new Date().toISOString().slice(0, 10)}.
+//  Livelli e costi). Per rigenerarlo: node strumenti/genera-catalogo.mjs. Generato il ${new Date().toISOString().slice(0, 10)}.
 //  RIGHE = le righe del CSV così come sono · PARTI = le regole come le usa l'app (una riga a più ritmi diventa più parti:
 //  la parte "a ogni pulizia" è una voce della lista, le parti a ritmo sono rifiniture) · CHECKLIST = le righe grandi della signora
 // ============================================================================
 `;
 const js = v => JSON.stringify(v, null, 0);
-writeFileSync(OUT, testa + `export const RIGHE = ${JSON.stringify(righe)};\nexport const PARTI = ${JSON.stringify(parti)};\nexport const CHECKLIST = ${JSON.stringify(checklist)};\nexport const CALENDARIO_VERO = ${JSON.stringify(calendario)};\nexport const LIVELLI_TESTO = ${JSON.stringify(livelli)};\n`);
+writeFileSync(OUT, testa + `export const RIGHE = ${JSON.stringify(righe)};\nexport const PARTI = ${JSON.stringify(parti)};\nexport const CHECKLIST = ${JSON.stringify(checklist)};\nexport const CALENDARIO_VERO = ${JSON.stringify(calendario)};\nexport const LIVELLI_TESTO = ${JSON.stringify(livelli)};\nexport const BLOCCHI_LISTA = ${JSON.stringify(BLOCCHI_LISTA)};\n`);
 
 // ---------------------------------------------------------------- rapporto
 const perTipo = parti.reduce((m, p) => (m[p.tipo + "/" + p.quando] = (m[p.tipo + "/" + p.quando] || 0) + 1, m), {});
