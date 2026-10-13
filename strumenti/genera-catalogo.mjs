@@ -159,9 +159,9 @@ const fogli = JSON.parse(py.stdout);
 // I blocchi della schermata della signora (colonna "Blocco (schermata)" del foglio): un titolo grande e un solo tasto Fatto per blocco
 const BLOCCHI_LISTA = [
   { id: "letto", nome: "Letto e biancheria", breve: "Letto" }, { id: "bagno", nome: "Bagno", breve: "Bagno" }, { id: "camera", nome: "Camera", breve: "Camera" },
-  { id: "cucina", nome: "Cucina", breve: "Cucina" }, { id: "partenza", nome: "Alla partenza", breve: "Alla partenza" }, { id: "pavimenti", nome: "Pavimenti e controllo finale", breve: "Pavimenti" },
+  { id: "cucina", nome: "Cucina", breve: "Cucina" }, { id: "sopra", nome: "Piano di sopra: camere e bagno", breve: "Piano di sopra", piani: 2 }, { id: "partenza", nome: "Alla partenza", breve: "Alla partenza" }, { id: "pavimenti", nome: "Pavimenti e controllo finale", breve: "Pavimenti" },
 ];
-function bloccoDa(testo) { const n = norm(testo); if (!n) return ""; if (/letto/.test(n)) return "letto"; if (/bagno/.test(n)) return "bagno"; if (/cucina/.test(n)) return "cucina"; if (/partenza/.test(n)) return "partenza"; if (/paviment|controllo/.test(n)) return "pavimenti"; if (/camera/.test(n)) return "camera"; console.error("blocco non riconosciuto:", testo); return ""; }
+function bloccoDa(testo) { const n = norm(testo); if (!n) return ""; if (/piano di sopra|sopra/.test(n)) return "sopra"; if (/letto/.test(n)) return "letto"; if (/bagno/.test(n)) return "bagno"; if (/cucina/.test(n)) return "cucina"; if (/partenza/.test(n)) return "partenza"; if (/paviment|controllo/.test(n)) return "pavimenti"; if (/camera/.test(n)) return "camera"; console.error("blocco non riconosciuto:", testo); return ""; }
 const LISTE = { "ripasso camera": "ripasso", "totale camera ripasso": "totale", "appartamento aggiunte cucina": "cucina", "base ripasso via zara 1 e 2 operai": "base_ripasso", "base totale giovedi": "base_totale" };
 const checklist = [];
 for (const row of fogli["Checklist signora"].slice(1)) {
@@ -173,20 +173,22 @@ for (const row of fogli["Checklist signora"].slice(1)) {
   if (/a rotazione \(una per volta\)/i.test(voce.testo)) voce.slot = true;
   checklist.push(voce);
 }
-const NOMI = { "via trento 47": "trento", "via zara 1 piano": "zara1", "via zara 2 piano": "zara2", "via zara piano terra": "zarapt", salvatore: "salvatore", aurora: "aurora", michele: "michele", antonio: "antonio", lella: "lella", alba: "alba", tramonto: "tramonto", passerella: "passerella", fenicotteri: "fenicotteri", nicole: "nicole" };
+const NOMI = { "via trento 47": "trento", "via zara 1 e 2 piano": "zara1", "via zara 1 piano": "zara1", "via zara 2 piano": "zara1", "via zara piano terra": "zarapt", salvatore: "salvatore", aurora: "aurora", michele: "michele", antonio: "antonio", lella: "lella", alba: "alba", tramonto: "tramonto", passerella: "passerella", fenicotteri: "fenicotteri", nicole: "nicole" };
 const GIORNI = { lunedi: 1, martedi: 2, mercoledi: 3, giovedi: 4, venerdi: 5, sabato: 6, domenica: 0 };
 const calendario = [];
 for (const row of fogli["Calendario vero"].slice(1)) {
   const [giorno, posto, tipo, signora, rif, note] = row;
   const g = GIORNI[norm(giorno)]; if (g == null) continue;
-  const nomi = String(posto).split(/,|\boppure\b/).map(x => norm(x)).filter(Boolean);
-  const posti = nomi.map(n => NOMI[n]).filter(Boolean);
+  // "· piano di sotto" / "· piano di sopra": la parte dell'appartamento su due piani (via Zara 1° e 2°) che fa quella signora
+  const parte = /piano di sopra/i.test(String(posto)) ? "sopra" : /piano di sotto/i.test(String(posto)) ? "sotto" : "";
+  const nomi = String(posto).replace(/·\s*piano di (sotto|sopra)/gi, "").split(/,|\boppure\b/).map(x => norm(x)).filter(Boolean);
+  const posti = [...new Set(nomi.map(n => NOMI[n]).filter(Boolean))];
   const t = norm(tipo); const tipoP = /cambio totale|totale/.test(t) ? "totale" : /ripasso/.test(t) ? "ripasso" : "";
   const base = /base/.test(t); const ns = norm(signora); const zona = /^signora 1 piano/.test(ns) ? "p1" : /^signora 2 piano/.test(ns) ? "p2" : /appartamenti/.test(ns) ? "ap" : null;
   const insieme = /insieme/.test(ns) ? (/insieme alla signora del 2 piano/.test(ns) ? "p2" : /insieme alla signora del 1 piano/.test(ns) ? "p1" : "si") : "";
   const budget = Number((String(rif).match(/\d+/) || [0])[0]); const libera = /camera vuota|camera libera/i.test(String(rif));
   const controlla = /\[(CONTROLLA|DECIDI|COMPLETA)/i.test(String(signora) + String(note) + String(posto)) ? (String(note) + " " + String(signora)).match(/\[[^\]]*\]/g)?.join(" ") || "da controllare" : "";
-  calendario.push({ giorno: g, posto: String(posto), posti, tipo: tipoP, base, zona, budget, libera, oppure: /oppure/i.test(String(posto)), controlla, insieme, note: String(note || "").replace(/\[[^\]]*\]/g, "").trim() });
+  calendario.push({ giorno: g, posto: String(posto), posti, tipo: tipoP, base, zona, budget, libera, parte, oppure: /oppure/i.test(String(posto)), controlla, insieme, note: String(note || "").replace(/\[[^\]]*\]/g, "").trim() });
 }
 const livelli = fogli["Livelli e costi"].slice(1).map(([livello, cosa, min, eurSett, eurMese, ciSta]) => ({ livello, cosa, minuti: min, euroSettimana: eurSett, euroMese: eurMese, ciSta }));
 
