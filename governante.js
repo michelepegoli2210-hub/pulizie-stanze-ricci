@@ -12,7 +12,7 @@
 //  Il budget è PER PASSAGGIO (dal Calendario vero): ripasso 15′, totale 30′, totale a camera libera 45′; profilo Base 0′/10′.
 //  Due profili: Lusso (tutto il catalogo) e Base (solo le righe con Profilo base = Sì). Tre livelli: Igiene, Albergo, Lusso pieno.
 // ============================================================================
-import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, passaggiCamera, CALENDARIO_CAMERE, regimeDi, zonaDi, modoCamera, modoSoggiorno } from "./logica.js";
+import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, oggiISO, passaggiCamera, CALENDARIO_CAMERE, regimeDi, zonaDi, modoCamera, modoSoggiorno } from "./logica.js";
 import { MODI } from "./regole.js";
 export { regimeDi, modoCamera, modoSoggiorno, MODI };
 import { RIGHE, PARTI, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA } from "./catalogo.js";
@@ -292,7 +292,7 @@ export function nuovoId(vecchio) {
   return parti.length ? parti[0].id : codice;
 }
 // Soglie di partenza (si cambiano dall'app)
-export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, zonaMinuti: 20 };
+export const SOGLIE_BASE = { camereSettimana: 2, freddoGradi: 12, automatico: false, zonaMinuti: 20, budgetStelle: 350 };
 export const BUDGET_BASE = { ripasso: 15, totale: 30, libera: 45, baseRipasso: 10, baseTotale: 25 }; // (i budget veri stanno nei MODI)
 export const STELLE_MAX = { ripasso: 2, totale: 3, libera: 5 }; // il tetto lo decide il tipo di passaggio (Michele, specifiche §10): 2 ripasso · 3 totale · 5 totale a camera libera; il modo può solo abbassarlo
 export const SCALA_OGNI = [1, 3.5, 7, 14, 21, 30, 45, 60, 90, 120, 180, 365];
@@ -332,7 +332,13 @@ export const NOMI_MODI = ["tecnici", "operai", "booking"];
 // l'igiene della cucina che negli appartamenti degli operai va più spesso del ritmo scritto: cappa, forno, bidoni, frigo, scarichi
 export const IGIENE_CUCINA = new Set(["K02", "K04", "K12", "K08", "K06", "B36", "K07"]);
 export const MOLTIPLICATORI = [0, 0.5, 1, 2, 3];
-export function modiDi(imp) { const m = (imp && imp.modi) || {}; const out = {}; for (const k of NOMI_MODI) out[k] = { ...MODI_BASE[k], ...(m[k] || {}), budget: { ...MODI_BASE[k].budget, ...((m[k] || {}).budget || {}) }, stelle: { ...MODI_BASE[k].stelle, ...((m[k] || {}).stelle || {}) } }; return out; }
+export function modiDi(imp, oggi = oggiISO()) {
+  const m = (imp && imp.modi) || {}; const out = {};
+  for (const k of NOMI_MODI) out[k] = { ...MODI_BASE[k], ...(m[k] || {}), budget: { ...MODI_BASE[k].budget, ...((m[k] || {}).budget || {}) }, stelle: { ...MODI_BASE[k].stelle, ...((m[k] || {}).stelle || {}) } };
+  // il "freno sul nascosto" (dalla chat, domanda 7): fino a quella data la priorità 3 non entra come stella in nessun modo
+  const fr = imp && imp.freno; if (fr && fr.fino && oggi && fr.fino >= oggi) for (const k of NOMI_MODI) out[k].p3 = 0;
+  return out;
+}
 export function modoValido(m) { return NOMI_MODI.includes(m) ? m : "tecnici"; }
 // La regola in quel modo: fuoriModo = non si fa come stella in quel modo (solo nella pulizia a fondo completa); grigio chiaro nel Tabellone
 export function applicaModo(r, modo, modi) {
@@ -352,11 +358,11 @@ export function regoleAttive(imp, opz = {}) {
   const extra = Object.values(personali).map(r => ({ priorita: 2, euro: 0, quando: "ripasso", gruppo: "P", icona: "stella", controllo: "", tipo: "rotazione", blocco: "rotazione", ...r, codice: r.id, personale: true, ...(mod[r.id] || {}) }));
   const tutte = [...base, ...extra].filter(r => r.attiva !== false);
   if (!opz.modo) return tutte;
-  const modi = opz.modi || modiDi(imp);
+  const modi = opz.modi || modiDi(imp, opz.oggi);
   return tutte.map(r => applicaModo(r, opz.modo, modi));
 }
 // le regole di ogni modo, calcolate una volta per contesto
-export function regolePerModo(ctx, modo) { const k = modoValido(modo); ctx._regoleModo = ctx._regoleModo || {}; if (!ctx._regoleModo[k]) ctx._regoleModo[k] = regoleAttive(ctx.imp, { modo: k }); return ctx._regoleModo[k]; }
+export function regolePerModo(ctx, modo) { const k = modoValido(modo); ctx._regoleModo = ctx._regoleModo || {}; if (!ctx._regoleModo[k]) ctx._regoleModo[k] = regoleAttive(ctx.imp, { modo: k, oggi: ctx.oggi }); return ctx._regoleModo[k]; }
 // Il modo di un posto in un giorno (dal prospetto): per le zone comuni non ha senso → tecnici
 export function modoDi(l, iso, ctx) { if (!l || l.tipo === "comune") return "tecnici"; return modoValido(modoCamera(l, iso, ctx.soggiorni || [], ctx.clienti || {}, ctx.regoleBase)); }
 export function soglie(imp) { return { ...SOGLIE_BASE, ...((imp && imp.soglie) || {}) }; }

@@ -888,6 +888,7 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .chat-quando{font:500 11.5px var(--f-body);color:var(--muted);text-align:right;margin:-4px 4px 0 0}
 .chat-tasti{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
 .chat-tasti.due{grid-template-columns:repeat(2,1fr)}
+.chat-tasti.uno{grid-template-columns:1fr}
 .chat-tasti.quattro{grid-template-columns:repeat(2,1fr)}
 .chat-tasto{border:2px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:14px;min-height:54px;padding:8px 10px;font:800 14px/1.2 var(--f-display);cursor:pointer}
 .chat-tasto:active{background:var(--accent);color:#fff}

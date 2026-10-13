@@ -357,6 +357,25 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   `impostazioni/chat` (`risposte`, `conta`, `automatiche`; le risposte più vecchie di 60 giorni si cancellano da sole). Le
   pulizie a fondo accettate dai Consigli ora costano il prezzo del listino (`LISTINO_BASE.fondo`, riga in Paghe → Listino), non
   più 3 €.
-- Passi successivi previsti: le altre regole di domanda (5 report delle 13, 6 manca un prodotto, 7 budget, 8 manutenzione ferma,
-  9 regola in ritardo in molte camere, 10 prima di una partenza Booking), l'IA per "Dimmelo a parole" (chiave Gemini gratuita
-  di Michele sul suo telefono, se vorrà), le foto dei materiali, il tipo di ospite di via Zara piano terra, meteo automatico.
+- **0.32 — le altre domande della chat (5-10)**, sempre senza intelligenza artificiale, in `chat.js`. **5 il report delle 13**
+  (`domandeReport`): (a) una camera pulita 2+ volte negli ultimi 14 giorni senza nessun controllo → "Falla controllare sabato"
+  (`impostazioni/controlli.daControllare`: la controllatrice di turno la vede in cima con "chiesto da Michele"; si toglie da sola
+  quando arriva un controllo) · "La controllo io" (apre il controllo da proprietario) · "Lascia stare" (14 giorni); (b) la stessa
+  stella "Non riesco" nelle ultime 2 pulizie della camera → "Mettilo come lavoro a parte" (una pulizia `extra` col nome della
+  stella, pagata come la stella, nel prossimo giorno di pulizia) · "Riprova la prossima volta" · "Spegni la regola"; (c) una signora
+  sotto il 90% di pulizie chiuse col Fatto sulle previste (ultime 4 settimane, almeno 10) → "Ricordaglielo nel messaggio di domani"
+  · "Gliene parlo io" (nota privata) · "Lascia stare". **6 manca un prodotto** (`domandeProdotto`, dal "Non riesco: manca il
+  prodotto", col prodotto del catalogo) → "Lo compro io" / "Lo porta papà" → **lista della spesa** (`impostazioni/spesa`, card in
+  Governante → Consigli con "Comprato") · "Salta questa settimana". **7 budget quasi finito** (`domandeBudget`: stelle + lavori
+  della governante del mese ≥ 90% di `soglie.budgetStelle`, 350 € di partenza, riga in Regole → Due soglie piccole) → "Freno sul
+  nascosto" (`impostazioni/governante.freno = {fino}`: `modiDi` mette la priorità 3 a zero in tutti i modi fino a fine mese; nota
+  e tasto "Togli il freno" in Regole → I tre modi) · "Lascio andare" · "Alzo il budget" (+50 €, arrotondato). **8 lavoro di
+  manutenzione fermo da 7 giorni** (`domandeManutenzione`) → "Chiamo il tecnico: segna «chiamato»" (`stato: chiamato`, `chiamato`;
+  si richiede dopo altri 7 giorni) · "È sistemato" · "Aspetta ancora". **9 una regola in ritardo in molte camere**
+  (`domandeRegola`, dal Tabellone: celle rosse della stessa regola in 4+ camere, una domanda a settimana) → "Più minuti di stelle il
+  venerdì" (Tecnici: +15′ a camera vuota, +10′ nella totale) · "Va bene così" (30 giorni) · "Spegni la regola". **10 prima di una
+  partenza Booking** (`domandePartenzaBooking`: domani parte un ospite in modo Booking) → "No, va bene così" o "Dimmelo a parole"
+  (le parole finiscono nei dettagli della pulizia di partenza: la signora le legge in "Oggi Michele dice"). Le domande del report
+  (5 e 10) compaiono dopo le 13; per paghe, budget, manutenzione e regole la governante non propone mai di "fare da sola".
+- Passi successivi previsti: l'IA per "Dimmelo a parole" (chiave Gemini gratuita di Michele, solo sul suo telefono, se vorrà),
+  le foto dei materiali, il tipo di ospite di via Zara piano terra, meteo automatico.
