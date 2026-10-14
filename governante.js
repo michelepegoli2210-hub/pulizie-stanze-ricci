@@ -12,7 +12,7 @@
 //  Il budget è PER PASSAGGIO (dal Calendario vero): ripasso 15′, totale 30′, totale a camera libera 45′; profilo Base 0′/10′.
 //  Due profili: Lusso (tutto il catalogo) e Base (solo le righe con Profilo base = Sì). Tre livelli: Igiene, Albergo, Lusso pieno.
 // ============================================================================
-import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, oggiISO, passaggiCamera, CALENDARIO_CAMERE, regimeDi, zonaDi, modoCamera, modoSoggiorno } from "./logica.js";
+import { aggiungiGiorni, giornoSettimana, giorniTra, lunediDi, soggiornoCopre, partiRoma, aISO, oggiISO, passaggiCamera, CALENDARIO_CAMERE, regimeDi, zonaDi, modoCamera, modoSoggiorno, ospiteIl, parteIl } from "./logica.js";
 import { MODI } from "./regole.js";
 export { regimeDi, modoCamera, modoSoggiorno, MODI };
 import { RIGHE, PARTI, CHECKLIST, CALENDARIO_VERO, LIVELLI_TESTO, BLOCCHI_LISTA } from "./catalogo.js";
@@ -88,7 +88,7 @@ export const SCHEDA_MATERIALI = [
 // ============================================================================
 export const EURO_MINUTO = 0.25; // (fino alla 0.26: prezzo a minuto; dalla 0.27 si usa il listino a fasce qui sotto)
 // Il listino delle stelle: Michele lo cambia in Paghe → Listino (impostazioni/governante.prezziStelle); tre fasce di minuti
-export const PREZZI_STELLE_BASE = { fino5: 1, fino10: 2, oltre10: 3 };
+export const PREZZI_STELLE_BASE = { fino5: 1, fino10: 1.5, oltre10: 2.5 }; // 10 € l'ora (Michele, specifiche §14; fino alla 0.34: 1/2/3)
 export function prezziStelle(imp) { return { ...PREZZI_STELLE_BASE, ...((imp && imp.prezziStelle) || {}) }; }
 export function prezzoStella(minuti, prezzi = PREZZI_STELLE_BASE) { const m = Number(minuti) || 0; return Number(m <= 5 ? prezzi.fino5 : m <= 10 ? prezzi.fino10 : prezzi.oltre10) || 0; }
 export const CATALOGO = PARTI.map(p => ({ ...p, euro: prezzoStella(p.minuti) }));
@@ -497,7 +497,7 @@ function meteoAttivo(ctx, trigger, iso) { const m = ctx.meteo || {}; const chiav
 function liberaLaNotte(soggiorni, camera, iso) { return !soggiorni.some(s => s.camera === camera && soggiornoCopre(s, iso)); }
 function nottiDiFila(soggiorni, camera, iso) { const s = soggiorni.find(x => x.camera === camera && soggiornoCopre(x, iso)); return s ? giorniTra(s.inizio, iso) : 0; }
 const CAMBIO = p => p.tipo === "totale" || p.tipo === "totale_casa";
-const NORMALE = p => p && p.origine !== "governante" && p.tipo !== "extra" && p.tipo !== "fondo";
+const NORMALE = p => p && p.origine !== "governante" && p.tipo !== "extra" && p.tipo !== "fondo" && p.tipo !== "fisso" && p.tipo !== "stelle";
 function perche(r, reg, oggi, ogni) { if (!ogni) return [r.quando === "cambio" ? "nella totale" : "a ogni pulizia"]; return [etichettaOgni(ogni), reg?.ultima ? `ultima volta ${testoUltima(reg.ultima, oggi)}` : "prima volta"]; }
 function stella(r, l, reg, data, ogni, extra = {}) {
   return { regola: r.id, codice: r.codice, nome: r.nome, parte: r.parte || "", superficie: r.superficie || r.nome, come: r.come, controllo: r.controllo || "", prodotto: r.prodotto || "", note: r.note || "", icona: r.icona, minuti: r.minuti, euro: r.euro || 0, priorita: r.priorita || 2, posto: r.posto || "", gruppo: r.gruppo, quando: r.quando, sempre: !!r.sempre || !ogni, ogni, rapporto: ogni ? rapportoScadenza(r, reg?.ultima || null, data, ogni) : null, ultima: reg?.ultima || null, luogo: l.id, luogoNome: l.nome, perche: perche(r, reg, data, ogni), ...extra };
@@ -511,15 +511,45 @@ function stella(r, l, reg, data, ogni, extra = {}) {
 //  Le cose coperte dalla lista di quel passaggio (stesso codice, ritmo entro la settimana) non diventano stelle.
 //  Le zone comuni vanno alla prima pulizia del giorno della signora (una a ritmo + quelle di ogni giorno).
 // ============================================================================
+// ---- Chi fa le stelle (0.35, specifiche §14): solo la signora delle stelle (Selena, 2° piano), in tutto l'albergo, per un
+// obiettivo di € a settimana; negli appartamenti le stelle sono spente finché Michele non le accende. Le zone comuni "di ogni
+// giorno" (euro 0) restano a chi ha la zona.
+export function regoleStelle(ctx) { const l = ctx.listino || {}; return { zona: l.zonaStelle || "p2", obiettivo: Number(l.obiettivoStelle ?? 27), appartamenti: !!l.stelleAppartamenti, escluse: ctx.escluse || null }; }
+export function faStelle(zona, luogo, ctx) { const rs = regoleStelle(ctx); if (luogo && luogo.tipo === "casa") return rs.appartamenti; return zona === rs.zona; }
+// La settimana di paga di un giorno: da domenica a sabato (la chiave è il sabato)
+export function giorniSettimanaPaga(iso) { const wd = giornoSettimana(iso); const dom = aggiungiGiorni(iso, -wd); return Array.from({ length: 7 }, (_, i) => aggiungiGiorni(dom, i)); }
+// Quanti € di stelle la signora delle stelle ha già (fatte o in programma) nei giorni della settimana prima di oggi, e quanti giorni
+// con lavori le restano da oggi (compreso): il budget di oggi è quello che resta diviso per i giorni che restano.
+export function budgetStelleOggi(zona, iso, ctx) {
+  const rs = regoleStelle(ctx); if (zona !== rs.zona || !rs.obiettivo) return { oggi: Infinity, resto: Infinity, giorni: 1 };
+  ctx._memoStelleEuro = ctx._memoStelleEuro || {};
+  const giorni = giorniSettimanaPaga(iso);
+  const haLavori = d => Object.values(ctx.pulizie || {}).some(p => p.data === d && p.zona === zona && p.stato !== "non_fatta" && (NORMALE(p) || p.tipo === "stelle"));
+  let spesi = 0;
+  for (const d of giorni) { if (d >= iso) break; if (!haLavori(d)) continue;
+    if (ctx._memoStelleEuro[d] == null) { let e = 0; const m = rifinitureDelGiorno(zona, d, ctx); for (const [pid, rf] of Object.entries(m)) { const p = (ctx.pulizie || {})[pid]; e += p && p.stato === "fatta" ? Number(p.extraRifiniture) || 0 : rf.filter(r => !r.sempre).reduce((x, r) => x + (r.euro || 0), 0); } ctx._memoStelleEuro[d] = e; }
+    spesi += ctx._memoStelleEuro[d]; }
+  const resto = Math.max(0, rs.obiettivo - spesi);
+  const restanti = giorni.filter(d => d >= iso && haLavori(d)).length || 1;
+  return { oggi: Math.ceil(resto / restanti * 2) / 2, resto, giorni: restanti, spesi };
+}
 export function rifinitureDelGiorno(zona, iso, ctx) {
   const { camere, registro, soggiorni = [] } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, regole = ctx.regole || regoleAttive(ctx.imp), sg = { ...SOGLIE_BASE, ...(ctx.soglie || {}) }, flags = ctx.flags || {}, imp = ctx.imp || null;
   const inizio = inizioGovernante(ctx);
-  const pulizie = Object.values(ctx.pulizie || {}).filter(p => p.data === iso && p.zona === zona && NORMALE(p) && p.stato !== "non_fatta")
+  const rs = regoleStelle(ctx), escluse = rs.escluse;
+  const tutte = Object.values(ctx.pulizie || {}).filter(p => p.data === iso && p.zona === zona && p.stato !== "non_fatta");
+  const pulizie = tutte.filter(p => NORMALE(p))
     .sort((a, b) => ((camere.find(c => c.id === a.camera) || {}).ordine || 99) - ((camere.find(c => c.id === b.camera) || {}).ordine || 99));
-  const out = {}; if (!pulizie.length) return out;
+  const giro = tutte.find(p => p.tipo === "stelle") || null;
+  const out = {}; if (!pulizie.length && !giro) return out;
+  // il budget in € di oggi per la signora delle stelle (l'obiettivo della settimana diviso nei suoi giorni)
+  const bud = budgetStelleOggi(zona, iso, ctx); let euroOggi = 0;
+  const ciSta = c => euroOggi + (c.euro || 0) <= bud.oggi + 1e-9;
+  const inCamera = {}; // stelle per camera oggi (per non ammucchiarle)
   for (const p of pulizie) {
     const l = trovaLuogo(p.camera, camere, luoghi); if (!l) continue;
     const passo = passoDi(p, l, imp, ctx.regoleBase, ctx);
+    if (!faStelle(zona, l, ctx)) { out[p.id] = []; continue; }
     const fisso = nottiDiFila(soggiorni, p.camera, p.data) >= 14;
     const regoleModo = regolePerModo(ctx, passo.modo);
     const righe = righeLista(passo, l.tipo === "casa", !!p.partenza), slot = passo.base ? slotBase(passo) : null;
@@ -534,6 +564,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       if (!copre(regoleModo, r, l, camere, luoghi, flags)) continue;
       if (!inStagione(r, p.data)) continue;
       if (r.soloFissi && !fisso) continue;
+      if (escluse && escluse.has(chiaveRegistro(r.id, l.id))) continue;
       const reg = registro?.[chiaveRegistro(r.id, l.id)] || null;
       if (reg?.saltata === p.data && reg?.saltataPer === p.id) continue;
       const ogni = ogniAttuale(r, p.data, l, flags);
@@ -552,12 +583,14 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
     if (passo.visibilePrima) cand.sort((a, b) => prio(a, b) || (a.slot - b.slot) || (b.urgenza - a.urgenza) || (a.minuti - b.minuti));
     else cand.sort((a, b) => (a.slot - b.slot) || (b.urgenza - a.urgenza) || prio(a, b) || (a.minuti - b.minuti));
     const scelte = []; let min = 0;
-    for (const c of cand) { if (scelte.length >= passo.stelle) break; if (min + c.minuti > passo.budget) continue; scelte.push(c); min += c.minuti; }
-    out[p.id] = scelte;
+    for (const c of cand) { if (scelte.length >= passo.stelle) break; if (min + c.minuti > passo.budget) continue; if (!ciSta(c)) continue; scelte.push(c); min += c.minuti; euroOggi += c.euro || 0; }
+    out[p.id] = scelte; inCamera[p.camera] = scelte.length;
   }
-  // le zone comuni della signora: alla prima pulizia del giorno (quelle di ogni giorno + una a ritmo entro zonaMinuti)
+  // il giro delle stelle nelle altre camere dell'albergo (quelle che oggi non pulisce lei): le più scadute, col budget che resta
+  if (giro && zona === rs.zona) out[giro.id] = giroStelle(zona, iso, ctx, { giro, pulizieOggi: pulizie, budget: Math.max(0, bud.oggi - euroOggi), inizio, escluse });
+  // le zone comuni della signora: alla prima pulizia del giorno (quelle di ogni giorno + una a ritmo entro zonaMinuti, solo per chi fa le stelle)
   const prima = pulizie[0], comuni = [];
-  for (const r of regole) {
+  if (prima) for (const r of regole) {
     if (r.tipo !== "rotazione" || r.quando !== "giornata" || r.fuoriLivello) continue;
     for (const l of luoghiDi(r, camere, luoghi, flags)) {
       if (l.zona !== zona || !inStagione(r, iso)) continue;
@@ -567,16 +600,53 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       const rapporto = ogni ? rapportoScadenza(r, reg?.ultima || null, iso, ogni) : Infinity;
       if (ogni > 1 && reg?.ultima && rapporto < 0.9) continue;
       if (ogni <= 1 && reg?.ultima === iso) continue;
+      if (ogni > 1 && zona !== rs.zona) continue; // le zone comuni "a ritmo" (pagate) sono stelle: solo la signora delle stelle
       comuni.push(stella(r, l, reg, iso, ogni, { comune: true, sempre: ogni <= 1, euro: ogni <= 1 ? 0 : r.euro || 0, urgenza: urgenza(ogni > 1 ? ogni : 0, reg?.ultima || null, iso, inizio) }));
     }
   }
   comuni.sort((a, b) => (b.sempre - a.sempre) || (a.priorita - b.priorita) || (b.urgenza - a.urgenza));
   const sceltiComuni = []; let minZ = 0, nZ = 0;
-  for (const c of comuni) { if (c.sempre) { sceltiComuni.push(c); continue; } if (nZ >= 1 || minZ + c.minuti > sg.zonaMinuti) continue; sceltiComuni.push(c); minZ += c.minuti; nZ++; }
-  if (sceltiComuni.length) out[prima.id] = [...(out[prima.id] || []), ...sceltiComuni];
+  for (const c of comuni) { if (c.sempre) { sceltiComuni.push(c); continue; } if (nZ >= 1 || minZ + c.minuti > sg.zonaMinuti || !ciSta(c)) continue; sceltiComuni.push(c); minZ += c.minuti; nZ++; euroOggi += c.euro || 0; }
+  if (prima && sceltiComuni.length) out[prima.id] = [...(out[prima.id] || []), ...sceltiComuni];
   return out;
 }
-export function rifiniturePer(p, ctx) { if (!NORMALE(p)) return []; return rifinitureDelGiorno(p.zona, p.data, ctx)[p.id] || []; }
+// Il giro delle stelle nelle altre camere dell'albergo: camere che oggi la signora delle stelle non pulisce, accessibili (vuote, o con
+// Tecnici/Operai che di giorno sono fuori; mai con ospiti Booking dentro), le superfici più scadute, al massimo 2 per camera, dentro il budget di oggi.
+export function giroStelle(zona, iso, ctx, { giro, pulizieOggi = [], budget = 0, inizio = null, escluse = null } = {}) {
+  if (!giro || budget <= 0) return [];
+  const { camere, registro, soggiorni = [] } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, flags = ctx.flags || {}, imp = ctx.imp || null;
+  inizio = inizio || inizioGovernante(ctx);
+  const pulite = new Set(pulizieOggi.map(p => p.camera));
+  const cand = [];
+  for (const l of camere) {
+    if (l.tipo === "casa" || pulite.has(l.id)) continue;
+    const occ = ospiteIl(soggiorni, l.id, iso);
+    const modo = modoValido(modoCamera(l, iso, soggiorni, ctx.clienti || {}, ctx.regoleBase));
+    if (occ && modo === "booking") continue; // ospiti in camera: non si entra per le stelle
+    const vuota = !occ && !parteIl(soggiorni, l.id, iso);
+    const regoleModo = regolePerModo(ctx, modo);
+    for (const r of regoleModo) {
+      if (r.tipo !== "rotazione" || r.fuoriLivello || r.evento || r.sempre) continue;
+      if (r.quando === "giornata" || r.quando === "giorno" || r.quando === "meteo") continue;
+      if (r.quando === "libera" && !vuota) continue;
+      if (r.quando === "cambio") continue; // le cose del cambio si fanno nel cambio
+      if (!copre(regoleModo, r, l, camere, luoghi, flags)) continue;
+      if (!inStagione(r, iso)) continue;
+      if (escluse && escluse.has(chiaveRegistro(r.id, l.id))) continue;
+      const reg = registro?.[chiaveRegistro(r.id, l.id)] || null;
+      if (reg?.saltata === iso) continue;
+      const ogni = ogniAttuale(r, iso, l, flags);
+      const rapporto = ogni ? rapportoScadenza(r, reg?.ultima || null, iso, ogni) : Infinity;
+      if (ogni && reg?.ultima && rapporto < 0.9) continue;
+      cand.push(stella(r, l, reg, iso, ogni || 0, { urgenza: urgenza(ogni, reg?.ultima || null, iso, inizio), sempre: false, giro: true }));
+    }
+  }
+  cand.sort((a, b) => (b.urgenza - a.urgenza) || (a.priorita - b.priorita) || (a.minuti - b.minuti));
+  const scelte = [], perCamera = {}; let euro = 0;
+  for (const c of cand) { if ((perCamera[c.luogo] || 0) >= 2) continue; if (euro + (c.euro || 0) > budget + 1e-9) continue; scelte.push(c); euro += c.euro || 0; perCamera[c.luogo] = (perCamera[c.luogo] || 0) + 1; if (scelte.length >= 8) break; }
+  return scelte;
+}
+export function rifiniturePer(p, ctx) { if (!NORMALE(p) && !(p && p.tipo === "stelle")) return []; return rifinitureDelGiorno(p.zona, p.data, ctx)[p.id] || []; }
 export const routinePer = rifiniturePer;
 
 // ============================================================================

@@ -18,7 +18,7 @@ export const TESTO_FREDDO = "Arriva il freddo: coperte sui letti occupati, contr
 export const TESTO_CALDO = "Arriva il caldo: via le coperte pesanti, filtri dei condizionatori puliti, finestre con la zanzariera.";
 export const NOMI_MODI_CHAT = { tecnici: "Tecnici", operai: "Operai", booking: "Booking" };
 // per queste domande la governante non propone mai di "fare da sola" (i soldi li conferma sempre Michele)
-export const NON_IMPARA = new Set(["paga", "budget", "manutenzione", "regola"]);
+export const NON_IMPARA = new Set(["paga", "budget", "manutenzione", "regola", "terzomale", "smentite", "controllami"]);
 export const BUDGET_STELLE_BASE = 400; // € al mese di stelle (Michele: l'avviso solo quando sfora davvero): la domanda 7 scatta al 90%; si cambia in Regole
 export const ORA_FINE_SIGNORE = 14; // dopo quest'ora le proposte vanno al prossimo giorno di passaggio, mai a "oggi"
 export const GRUPPI = { nome: "nomi", manutenzione: "manutenzioni" }; // domande che si fanno in una schermata sola, un tocco per riga, fuori dalle 3 del giorno
@@ -82,7 +82,7 @@ function prossimoGiorno(oggi, wd) { let d = oggi; for (let i = 0; i < 7; i++) { 
 export const GIORNI_FONDO_DOVUTA = 150; // la fondo completa è ogni 6 mesi: si propone quando mancano 30 giorni o è già passata
 export function domandeCameraLibera(st) {
   const oggi = st.oggi, sog = st.soggiorni || [], out = [];
-  const prezzo = Number((st.listino && st.listino.fondo) || 40);
+  const prezzoDi = (c) => L.prezzoFondo(st.listino, c); // 3 ore standard alla tariffa del posto (8 € albergo, 10 € appartamenti)
   const noDiRecente = cam => Object.values(st.chat && st.chat.risposte || {}).some(r => r.tipo === "libera" && r.dati && r.dati.camera === cam && r.risposta === "no" && r.il >= L.aggiungiGiorni(oggi, -30));
   // fin dove arriva il prospetto: dopo l'ultimo arrivo scritto non si sa niente (la settimana dopo spesso non è ancora inserita),
   // quindi una camera "libera" oltre quel giorno non conta come libera
@@ -121,6 +121,7 @@ export function domandeCameraLibera(st) {
     const finoTesto = arrivo && arrivo.inizio === trovata.fino ? `fino a ${L.dataBreve(arrivo.inizio)} (arriva ${arrivo.nome})` : `almeno fino a ${L.dataBreve(trovata.fino)}`;
     const daTesto = trovata.da <= oggi ? "è libera da oggi" : `è libera da ${L.dataBreve(trovata.da)}`;
     const urgente = false; // (una camera che si libera all'improvviso passa comunque per prima: priorità 10)
+    const prezzo = prezzoDi(c);
     out.push({
       id: chiaveRisposta("libera", `${c.id}|${trovata.da}`), tipo: "libera", chiave: `${c.id}|${trovata.da}`, priorita: 10, quando: urgente ? "subito" : "mattina", urgente,
       titolo: `${c.nome} è libera`,
@@ -131,21 +132,23 @@ export function domandeCameraLibera(st) {
   }
   return out.sort((a, b) => a.dati.da < b.dati.da ? -1 : 1);
 }
-// 11. Ogni sabato alle 13: il conto delle paghe della settimana appena chiusa e la pagella del pulito → "Pago così?"
+// 11. Ogni sabato dalle 14 (chiusura della settimana): il conto delle paghe della settimana appena chiusa e la pagella → "Pago così?"
 export function domandePaga(st) {
   const chiusa = L.settimanaPrecedente(L.chiaveSettimana(st.adesso || new Date()));
   const zone = Object.entries(st.zone || ZONE).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0));
   const righe = [];
   for (const [z, v] of zone) {
-    const t = L.totaleSettimana(st.pulizie || {}, z, chiusa, st.regole, st.controlli || {});
+    const t = L.totaleSettimana(st.pulizie || {}, z, chiusa, st.regole, st.controlli || {}, st.listino || null);
     if (!t.totale) continue;
     if (st.pagamenti && st.pagamenti[`${z}_${chiusa}`]) continue;
     const votati = t.lista.filter(p => p.voto != null); const media = votati.length ? Math.round(votati.reduce((s, p) => s + Number(p.voto), 0) / votati.length * 10) / 10 : null;
-    righe.push({ zona: z, nome: nomeZona(st.zone || ZONE, z), totale: t.totale, pulizie: t.lista.length, bonus: t.bonus, media, controlli: votati.length });
+    const esiti = t.lista.filter(p => p.esito).map(p => p.esito.esito);
+    righe.push({ zona: z, nome: nomeZona(st.zone || ZONE, z), totale: t.totale, pulizie: t.lista.length, bonus: t.bonus, media, controlli: votati.length, ore: t.ore, minuti: t.minuti, stelle: t.stelle, tagli: t.tagli, controlliFatti: t.controlliFatti, esiti });
   }
   if (!righe.length) return [];
   const tot = righe.reduce((s, r) => s + r.totale, 0);
-  const testo = `Settimana ${L.etichettaSettimana(chiusa)}, le paghe: ${righe.map(r => `${r.nome} ${L.eur(r.totale)} (${r.pulizie} ${r.pulizie === 1 ? "pulizia" : "pulizie"}${r.bonus && r.bonus.importo ? `, bonus controlli` : ""}${r.media != null ? `, voto medio ${String(r.media).replace(".", ",")} su ${r.controlli} controlli` : ", nessun controllo"})`).join(" · ")}. In tutto ${L.eur(tot)}. Pago così?`;
+  const pezzo = (r) => { const p = [`${L.eur(r.ore)} di ore${r.minuti ? ` (${L.testoOre(r.minuti)})` : ""}`]; if (r.stelle) p.push(`stelle ${L.eur(r.stelle)}`); if (r.controlliFatti && r.controlliFatti.n) p.push(`${r.controlliFatti.n} controlli ${L.eur(r.controlliFatti.importo)}`); if (r.bonus && r.bonus.importo) p.push("bonus controlli"); let t = p.join(" + "); if (r.tagli) t += ` − tagli ${L.eur(r.tagli)}`; const e = r.esiti || []; if (e.length) t += `; controllata ${e.length} ${e.length === 1 ? "volta" : "volte"}: ${e.filter(x => x === "bene").length} bene, ${e.filter(x => x === "cosicosi").length} così così, ${e.filter(x => x === "male").length} male`; else if (r.media != null) t += `; voto medio ${String(r.media).replace(".", ",")}`; return t; };
+  const testo = `Settimana ${L.etichettaSettimana(chiusa)}, le paghe: ${righe.map(r => `${r.nome} ${L.eur(r.totale)} (${pezzo(r)})`).join(" · ")}. In tutto ${L.eur(tot)}. Pago così?`;
   return [{
     id: chiaveRisposta("paga", chiusa), tipo: "paga", chiave: chiusa, priorita: 5, quando: "report", urgente: false,
     titolo: `Paghe ${L.etichettaSettimana(chiusa)}`, testo,
@@ -320,11 +323,77 @@ export const TITOLI_GRUPPI = {
   nomi: { titolo: "Chi sono?", testo: n => `${n === 1 ? "Un nome nel prospetto non ha" : n + " nomi nel prospetto non hanno"} il tipo di ospite: chi sono? Un tocco per nome, lo ricordo per tutti i loro soggiorni.` },
   manutenzioni: { titolo: "Lavori fermi", testo: n => `${n === 1 ? "Un lavoro di manutenzione è fermo" : n + " lavori di manutenzione sono fermi"} da più di ${GIORNI_MANUTENZIONE} giorni. Un tocco per riga.` },
 };
-export const TITOLI = { nome: "Nome nuovo: chi sono?", pioggia: "Ha piovuto: mando il messaggio?", freddo: "Arriva il freddo: coperte?", caldo: "Arriva il caldo: via le coperte?", libera: "Camera libera: la facciamo a fondo?", paga: "Pago così?", impara: "Lo faccio da sola?", controllo: "Camera non controllata da 2 settimane", nonriesco: "Una stella che la signora non riesce a fare", affidabilita: "Signora sotto il 90% di pulizie chiuse", prodotto: "Manca un prodotto", budget: "Budget delle stelle quasi finito", manutenzione: "Lavoro di manutenzione fermo", regola: "Una regola in ritardo in molte camere", partenza: "Prima di una partenza Booking" };
+export const TITOLI = { nome: "Nome nuovo: chi sono?", pioggia: "Ha piovuto: mando il messaggio?", freddo: "Arriva il freddo: coperte?", caldo: "Arriva il caldo: via le coperte?", libera: "Camera libera: la facciamo a fondo?", paga: "Pago così?", impara: "Lo faccio da sola?", controllo: "Camera non controllata da 2 settimane", nonriesco: "Una stella che la signora non riesce a fare", affidabilita: "Signora sotto il 90% di pulizie chiuse", prodotto: "Manca un prodotto", budget: "Budget delle stelle quasi finito", manutenzione: "Lavoro di manutenzione fermo", regola: "Una regola in ritardo in molte camere", partenza: "Prima di una partenza Booking", settimana: "Settimana prossima come sempre?", stelle: "Le stelle della settimana", controllami: "Guardi tu una camera?", terzomale: "Terzo Male del mese", smentite: "Controlli smentiti" };
+
+// ---- Le domande della 0.35 (specifiche §14): la settimana, le stelle di Selena, il controllo del mercoledì, il terzo Male, le smentite ----
+// I giorni in cui ogni signora lavora (dal calendario vero e dai lavori fissi)
+export function giorniDelleSignore(st) {
+  const zone = Object.keys(st.zone || ZONE), out = {}; const l = L.listinoCompleto(st.listino || null);
+  for (const z of zone) out[z] = new Set();
+  for (const c of st.camere || CAMERE) for (const x of L.passaggiCamera(c, st.regole)) if (out[x.zona || c.zona]) out[x.zona || c.zona].add(x.giorno);
+  for (const f of l.fissi || []) if (out[f.zona]) out[f.zona].add(Number(f.giorno));
+  const nomi = { 1: "lunedì", 2: "martedì", 3: "mercoledì", 4: "giovedì", 5: "venerdì", 6: "sabato", 0: "domenica" };
+  const testo = z => { const gg = [1, 2, 3, 4, 5, 6, 0].filter(d => out[z].has(d)).map(d => nomi[d]); return gg.length > 1 ? gg.slice(0, -1).join(", ") + " e " + gg[gg.length - 1] : (gg[0] || "nessun giorno"); };
+  return { giorni: out, testo };
+}
+// 12. Domenica (dalle 13): "Settimana prossima come sempre?" [Sì] [Cambia] — con due Sì la governante smette di chiedere
+export function domandeSettimana(st) {
+  const oggi = st.oggi; if (L.giornoSettimana(oggi) !== 0) return [];
+  const prossima = L.chiaveSettimana(L.aggiungiGiorni(oggi, 1) + "T12:00:00", (st.regole && st.regole.chiusuraPaga) || undefined);
+  const g = giorniDelleSignore(st);
+  const zone = Object.entries(st.zone || ZONE).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0)).filter(([z]) => g.giorni[z] && g.giorni[z].size);
+  if (!zone.length) return [];
+  const righe = zone.map(([z, v]) => `${nomeZona(st.zone || ZONE, z)} ${g.testo(z)}`).join("; ");
+  return [{ id: chiaveRisposta("settimana", prossima), tipo: "settimana", chiave: prossima, priorita: 6, quando: "report", urgente: false,
+    titolo: "Settimana prossima", testo: `Settimana prossima: ${righe}, come sempre? Le camere le prendo dal prospetto.`,
+    tasti: [{ k: "si", testo: "Sì, come sempre" }, { k: "cambia", testo: "Cambia giorni o ore" }], parole: true, dati: { prossima } }];
+}
+// 13. Lunedì (dalle 8): "Le stelle di Selena questa settimana, 27 €: …" [Va bene] [Cambia] — la lista la calcola l'app (st.stelleSettimana)
+export function domandeStelleSettimana(st) {
+  const ss = st.stelleSettimana; if (!ss || !ss.righe || !ss.righe.length) return [];
+  const oggi = st.oggi, wd = L.giornoSettimana(oggi); if (wd === 0 || wd === 6) return [];
+  const chiave = ss.settimana || L.chiaveSettimana(oggi + "T12:00:00");
+  const primi = ss.righe.slice(0, 6).map(r => `${r.luogoNome} ${r.nome.toLowerCase()} (${L.eur(r.euro)})`).join(", ");
+  return [{ id: chiaveRisposta("stelle", chiave), tipo: "stelle", chiave, priorita: 7, quando: "mattina", urgente: false,
+    titolo: `Le stelle di ${ss.nome || "Selena"} questa settimana`, testo: `Le stelle di ${ss.nome || "Selena"} questa settimana, ${L.eur(ss.euro)} su ${L.eur(ss.obiettivo)}: ${primi}${ss.righe.length > 6 ? ` e altre ${ss.righe.length - 6}` : ""}. Vanno bene?`,
+    tasti: [{ k: "ok", testo: "Va bene" }, { k: "cambia", testo: "Cambia" }], parole: true, dati: { chiave, zona: ss.zona } }];
+}
+// 14. Nei giorni in cui Lucia non controlla (es. mercoledì), dalle 13: "guardi tu una camera di Selena?" [Alba] [Tramonto] [Oggi no]
+export function domandeControllami(st) {
+  const oggi = st.oggi, l = L.listinoCompleto(st.listino || null), rs = l.zonaStelle || "p2", wd = L.giornoSettimana(oggi);
+  const controllata = rs, chiControlla = Object.keys(l.controlli || {}).filter(z => z !== controllata);
+  if (chiControlla.some(z => Number(((l.controlli || {})[z] || {})[wd] || 0) > 0)) return []; // oggi qualcuno la controlla già
+  const giaFatti = new Set(Object.values(st.controlli || {}).filter(c => c.esito || c.esitoProprietario || c.voto != null).map(c => c.pulizia));
+  const casa = new Set((st.camere || CAMERE).filter(c => c.tipo === "casa").map(c => c.id));
+  const fatte = Object.values(st.pulizie || {}).filter(p => p.data === oggi && p.zona === controllata && p.stato === "fatta" && !casa.has(p.camera) && p.tipo !== "stelle" && p.tipo !== "fisso" && p.origine !== "governante" && !giaFatti.has(p.id));
+  if (!fatte.length) return [];
+  const con = fatte.sort((a, b) => ((b.rifiniture || []).filter(r => r.euro).length) - ((a.rifiniture || []).filter(r => r.euro).length)).slice(0, 2);
+  return [{ id: chiaveRisposta("controllami", oggi), tipo: "controllami", chiave: oggi, priorita: 8, quando: "report", urgente: false,
+    titolo: "Oggi nessun controllo incrociato", testo: `Oggi ${nomeZona(st.zone || ZONE, controllata)} ha fatto ${fatte.map(p => camera(st.camere, p.camera).nome).join(", ")} e nessuna collega la controlla. Ne guardi una tu con la lista (3 minuti)?`,
+    tasti: [...con.map(p => ({ k: p.id, testo: camera(st.camere, p.camera).nome })), { k: "no", testo: "Oggi no" }], parole: false, dati: { oggi, pulizie: con.map(p => p.id) } }];
+}
+// 15. Il terzo Male nel mese (per la signora controllata) e 16. la terza smentita nel mese (per chi controlla)
+export function domandeMale(st) {
+  const oggi = st.oggi, mese = L.meseDi(oggi), v = L.votiCompleti(st.regole), soglia = v.terzoMale ?? 3, out = [];
+  const perZona = {}, smentite = {};
+  for (const c of Object.values(st.controlli || {})) {
+    if (!(c.esito || c.esitoProprietario) || L.meseDi(c.data || "") !== mese) continue;
+    const e = L.esitoChePaga(c, st.regole); if (e.esito === "male") (perZona[c.zonaControllata] = perZona[c.zonaControllata] || []).push(c);
+    if (c.smentito && c.zonaControllatrice && c.zonaControllatrice !== "proprietario") (smentite[c.zonaControllatrice] = smentite[c.zonaControllatrice] || []).push(c);
+  }
+  for (const [z, l] of Object.entries(perZona)) if (l.length >= soglia) out.push({ id: chiaveRisposta("terzomale", `${z}|${mese}`), tipo: "terzomale", chiave: `${z}|${mese}`, priorita: 4, quando: "report", urgente: false,
+    titolo: `${nomeZona(st.zone || ZONE, z)}: ${l.length}° Male del mese`, testo: `${nomeZona(st.zone || ZONE, z)} ha preso ${l.length} "Male" ai controlli questo mese (${l.map(c => camera(st.camere, c.camera).nome).join(", ")}). Che faccio?`,
+    tasti: [{ k: "parlo", testo: "Gliene parlo io" }, { k: "richiamo", testo: "Richiamo scritto domani" }, { k: "lascia", testo: "Lascia stare" }], parole: true, dati: { zona: z, mese, n: l.length } });
+  const soglia2 = v.richiamoDopo ?? 3;
+  for (const [z, l] of Object.entries(smentite)) if (l.length >= soglia2 && !(L.listinoCompleto(st.listino || null).sospesi || {})[z]) out.push({ id: chiaveRisposta("smentite", `${z}|${mese}`), tipo: "smentite", chiave: `${z}|${mese}`, priorita: 4, quando: "report", urgente: false,
+    titolo: `I controlli di ${nomeZona(st.zone || ZONE, z)} non reggono`, testo: `${nomeZona(st.zone || ZONE, z)} aveva detto Bene e tu hai trovato dei NO ${l.length} volte questo mese (${l.map(c => camera(st.camere, c.camera).nome).join(", ")}). Che faccio?`,
+    tasti: [{ k: "sospendi", testo: "Li faccio io per un mese" }, { k: "lascia", testo: "Lascia stare" }], parole: true, dati: { zona: z, mese, n: l.length } });
+  return out;
+}
 
 // ---- Tutte le candidate, poi la selezione del giorno ---------------------------------------------------------------------
 export function domandeCandidate(st) {
-  const base = [...domandePaga(st), ...domandeCameraLibera(st), ...domandeBudget(st), ...domandeProdotto(st), ...domandePartenzaBooking(st), ...domandePioggia(st), ...domandeManutenzione(st), ...domandeReport(st), ...domandeStagione(st), ...domandeRegola(st), ...domandeNomeNuovo(st)];
+  const base = [...domandePaga(st), ...domandeMale(st), ...domandeCameraLibera(st), ...domandeBudget(st), ...domandeSettimana(st), ...domandeStelleSettimana(st), ...domandeControllami(st), ...domandeProdotto(st), ...domandePartenzaBooking(st), ...domandePioggia(st), ...domandeManutenzione(st), ...domandeReport(st), ...domandeStagione(st), ...domandeRegola(st), ...domandeNomeNuovo(st)];
   return [...base, ...domandeImpara(st, base)];
 }
 // Lo stato della chat: le domande da mostrare oggi (massimo 3 al giorno, le urgenze passano), quelle in attesa, lo storico

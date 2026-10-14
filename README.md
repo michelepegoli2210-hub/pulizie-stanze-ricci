@@ -404,5 +404,41 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   mese fino all'ultimo giorno coperto dal prospetto, più la stima del mese intero; stelle = quelle segnate nelle pulizie fatte
   (`extraRifiniture`) e quelle previste nelle pulizie ancora da fare. In modalità prova `ricci_prova_ora` fissa l'ora del giorno
   (serve alle prove automatiche). **0.34.1**: "piano di sotto / piano di sopra" anche nelle righe di Michele e su WhatsApp (`titoloLavoro`); nel conto la riga è proprio "Pulizie + stelle = …" e i lavori a parte stanno sotto; la stima del mese usa il ritmo dei giorni già coperti più i lavori così come sono scritti. Ancora da decidere con Michele: se il giovedì lo fa una signora sola (punto 10 delle specifiche).
-- Passi successivi previsti: l'IA per "Dimmelo a parole" (chiave Gemini gratuita di Michele, solo sul suo telefono, se vorrà),
-  le foto dei materiali, il tipo di ospite di via Zara piano terra, meteo automatico.
+- **0.35 — paga a ore standard, le stelle di Selena, i controlli a punti** (decisioni di Michele del 14–15 ottobre,
+  `catalogo/specifiche-governante.md` punti 13 e 14). **Paga a ore standard, non a cronometro**: `LISTINO_BASE` (regole.js) ora
+  è `{ versione: 2, tariffe: { albergo: 8, appartamenti: 10 }, minuti: {...}, perCasa: {...}, fissi: [...], ... }`; ogni pulizia
+  ha i suoi minuti standard (`minutiPulizia`, i tempi di Michele: camera ripasso 30′, cambio 49′/45′, Nicole 90′, Lella 40′,
+  appartamenti 60′/120′, via Zara piano terra 90′) e `prezzoPulizia = minuti × tariffa / 60` ai 50 centesimi (`euroDaMinuti`,
+  `testoOre`). I documenti `pulizie` portano `minuti`. **Lavori fissi** (`fissi`, `lavoriFissi`): terrazzo mezz'ora per signora e il
+  sabato di Selena "scale, ingresso, corridoi e lavanderia" 3 ore, documenti `${iso}_fisso_${id}` di tipo `fisso` con la loro lista di
+  passi. **Via Zara 1° e 2° il giovedì lo fa Lucia da sola** (calendario vero: una riga, 2 ore, 20 €). La signora vede in testa "2 ore
+  e 54 minuti standard · 23 €" e sulla targa "49 minuti · 6,50 €"; in "I miei soldi" il conto è "ore + stelle + controlli − tagli".
+  Paghe → **Orario di base e tariffe** (`cardOrarioBase`) al posto del listino: tariffe, minuti per tipo e per posto, lavori fissi
+  (giorno, signora, minuti), obiettivo e chi fa le stelle, interruttore delle stelle negli appartamenti, paga e quote dei controlli,
+  taglie. La settimana di paga chiude il **sabato alle 14** (`chiusuraPaga`). **Le stelle sono solo di Selena** (`zonaStelle`,
+  `faStelle`, `regoleStelle` in governante.js): in tutto l'albergo, anche nelle camere di Lucia, Lella e Nicole; Lucia in albergo non ha
+  stelle, negli appartamenti sono spente (`stelleAppartamenti`); **obiettivo settimanale** `obiettivoStelle` (27 €) diviso nei giorni in
+  cui lavora (`budgetStelleOggi`, settimana da domenica a sabato); le stelle nelle camere che quel giorno non pulisce stanno nel
+  **giro "Altre camere"** (`giroStelle`, documento `${iso}_stelle_p2` di tipo `stelle`, camera `stelle`, visibile solo se ha stelle;
+  righe "Camera: cosa fare", `chiaveStella` con il luogo); in Governante → Consigli la card **"Le stelle di Signora 2° piano questa
+  settimana"** con "Togli" (`impostazioni/governante.stelleEscluse[settimana]`). Prezzi delle stelle 1 / 1,50 / 2,50 €
+  (`PREZZI_STELLE_BASE`). **Controlli incrociati a punti** (`PUNTI_CONTROLLO`, 9 punti fissi + le richieste del giorno; 4 gravi che
+  valgono doppio; `PUNTI_CONTROLLO_COMUNI` per scale e terrazzo): chi controlla risponde SÌ/NO con la foto obbligatoria sul NO
+  (`foto/ctrl_*`), poi conferma le stelle segnate fatte (Fatta/Non fatta con foto); **l'esito lo fa l'app** (`punteggioControllo`,
+  `esitoDaPunteggio`: 0 Bene · 1–2 Così così −20% · 3+ Male −50% e richiamo, `VOTI_BASE.esiti`); stella non fatta: non pagata e tolta
+  una seconda volta (`esitoChePaga`, `importoFinale`). Le camere le sceglie l'app a sorte la mattina (`controlliDaFare`: quote
+  `controlli[zona][giorno]`, Lucia venerdì 2 e sabato 2 di Selena, Selena venerdì 1 e sabato 1 di Lucia, mai gli appartamenti, prima
+  quelle con le stelle); la signora vede in cima "Oggi controlli: Alba e Tramonto" (`cardControlliOggi`) e la linguetta Controlli
+  (`sonoControllatrice` = ha una quota); **2,50 € a controllo** (`controlliFattiSettimana`), persi se Michele smentisce un Bene
+  (`smentito`, "La controllo io" = `data-controlla-prop`). **Recupero fino a sabato alle 14** (`daRifare`, `cardDaRifare`,
+  `segnaRifatto`, `foto/rif_*`): la signora controllata vede "Da rifare entro sabato alle 14", rifà e manda la foto, il taglio
+  sparisce (`rifatti`); dopo la chiusura (`chiusuraDellaSettimana`, `recuperoAperto`) resta tutto definitivo. In Paghe la card
+  **Controlli incrociati** (ricevuti con gli esiti, fatti con i soldi, la pagella del mese) e nella scheda della pulizia il riepilogo
+  del controllo. **La governante chiede** (chat.js): domenica "Settimana prossima come sempre?" (`domandeSettimana`, impara), lunedì
+  "Le stelle di Selena questa settimana" (`domandeStelleSettimana`, da `stelleSettimanaApp`), nei giorni senza controlli incrociati
+  "guardi tu una camera di Selena?" con le camere come pulsanti (`domandeControllami` → apre il controllo), il terzo Male del mese
+  (`domandeMale`: parlo / richiamo scritto / lascia) e la terza smentita (sospende i controlli di quella signora per un mese,
+  `listino.sospesi`). "Pago così?" dalle 14 con il conto nuovo. Il voto 1–10 e il bonus controllatrice restano solo per leggere i vecchi
+  controlli. Prove nuove: `prova-controlli-35.mjs`, `prova-stelle-35.mjs`.
+- Passi successivi previsti: l'avviso "venerdì Selena ha 3 camere invece di 4" quando il prospetto cambia le ore, le foto dei materiali,
+  l'IA per "Dimmelo a parole" (se Michele vorrà), meteo automatico.

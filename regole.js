@@ -66,8 +66,8 @@ export const REGOLE_BASE = {
   // Quanti giorni avanti l'app prepara le pulizie, e quanti indietro le tiene aggiornate
   giorniAvanti: 14,
   giorniIndietro: 3,
-  // La settimana di paga chiude il sabato alle 13:00 (ora di Lesina)
-  chiusuraPaga: { giorno: 6, ora: 13 },
+  // La settimana di paga chiude il sabato alle 14:00 (ora di Lesina)
+  chiusuraPaga: { giorno: 6, ora: 14 },  // dalla 0.35: sabato alle 14 (fino ad allora si può rifare quello che il controllo ha bocciato)
 };
 
 // ---- Cosa si fa in ogni tipo di pulizia ------------------------------------
@@ -95,33 +95,74 @@ export const TIPI_PULIZIA = {
   },
 };
 
-// ---- Prezzi di partenza (si cambiano dal Listino nell'app) -----------------
-// G = camera grande, P = camera piccola. taglia: quali camere sono piccole.
+// ---- Paga a ORE STANDARD (dalla 0.35, specifiche §14) ---------------------------------------------
+// Michele: il lavoro normale si paga a ore, ma a ore STANDARD (i suoi tempi), non a cronometro: il venerdì al 1° piano
+// vale 3 ore e un quarto sia che si finisca in 3 sia in 4. Tariffe: 8 € l'ora in albergo e in via Nazario Sauro (Lella e
+// Nicole comprese, chiunque le faccia), 10 € l'ora negli appartamenti (Lucia ci va con la macchina e porta tutto).
+// importo di una pulizia = minuti standard × tariffa / 60, arrotondato ai 50 centesimi. Niente prezzi "a pezzi" per le
+// signore: vedono "4 camere · 3 ore e un quarto · 26 €". Michele cambia minuti e tariffe in Paghe → Orario di base.
 export const LISTINO_BASE = {
-  totale:      { G: 15, P: 10 },   // pulizia totale (cambio completo): camera grande / piccola
-  ripasso:     { G: 5, P: 5 },     // ripasso veloce del mercoledì: prezzo base
-  casa:        15,                 // pulizia casa (ripasso dell'appartamento)
-  totale_casa: 15,                 // pulizia totale casa
-  extra:       0,                  // i lavori extra hanno il prezzo scritto a mano
-  fondo:       40,                 // pulizia a fondo completa (mezza giornata, a camera vuota): proposta dalla governante
-  // Prezzi diversi per una casa precisa (Michele: via Zara 1° e 2° il giovedì, 10 € a signora, una per appartamento)
-  perCasa:     { zara1: { totale_casa: 10 } }, // il giovedì: 10 € a signora, una per piano (piano di sotto e piano di sopra sono due righe di paga)
+  versione: 2,                                  // 1 = prezzi in euro (fino alla 0.34); 2 = minuti standard × tariffa
+  tariffe: { albergo: 8, appartamenti: 10 },    // € l'ora
+  minuti: {
+    ripasso:     { G: 30, P: 30 },              // camera dell'albergo, ripasso: 4 camere = 2 ore (Selena il mercoledì)
+    totale:      { G: 49, P: 45 },              // cambio completo: 4 camere ≈ 3 ore – 3 ore e un quarto (venerdì)
+    casa:        60,                            // appartamento, ripasso: 1 ora
+    totale_casa: 120,                           // appartamento, cambio completo: 2 ore
+    fondo:       180,                           // pulizia a fondo completa a camera vuota: 3 ore (proposta dalla governante)
+    extra:       0,                             // i lavori extra hanno i minuti scritti a mano
+  },
+  // minuti diversi per un posto preciso (i tempi veri di Michele, 14 ottobre)
+  perCasa: {
+    nicole: { totale: 90, ripasso: 40 },        // Nicole è grande (cucina non usata): un'ora e mezza il cambio
+    lella:  { totale: 40, ripasso: 20 },        // Lella ha un letto solo
+    zarapt: { totale_casa: 90, casa: 60 },      // via Zara piano terra: cambio un'ora e mezza
+    zara1:  { totale_casa: 120, casa: 60 },     // via Zara 1° e 2° (due piani): cambio 2 ore (Lucia da sola), ripasso 1 ora
+    trento: { totale_casa: 120, casa: 60 },     // via Trento è molto grande: cambio 2 ore, ripasso 1 ora
+  },
   // Camere piccole (P). Tutte le altre sono grandi (G).
-  taglia:      { michele: "P", aurora: "P", tramonto: "P", passerella: "P" },
+  taglia: { michele: "P", aurora: "P", tramonto: "P", passerella: "P" },
+  // Lavori fissi della settimana, pagati a ore standard come il resto (giorno: 0 domenica … 6 sabato)
+  fissi: [
+    { id: "terrazzo_p1", zona: "p1", giorno: 5, luogo: "terrazzo", titolo: "Terrazzo", minuti: 30, tariffa: "albergo", passi: ["Terrazzo spazzato e lavato", "Tavoli, sedie e portacenere puliti", "Stendini e angoli in ordine"] },
+    { id: "terrazzo_p2", zona: "p2", giorno: 6, luogo: "terrazzo", titolo: "Terrazzo", minuti: 30, tariffa: "albergo", passi: ["Terrazzo spazzato e lavato", "Tavoli, sedie e portacenere puliti", "Stendini e angoli in ordine"] },
+    { id: "sabato_p2",   zona: "p2", giorno: 6, luogo: "scale",    titolo: "Scale, ingresso, corridoi e lavanderia", minuti: 180, tariffa: "albergo", passi: ["Scale e ringhiera: spazzate, lavate, spolverata la ringhiera", "Ingresso e portone: pavimento lavato, zerbino battuto, vetri del portone", "Corridoi del 1° e del 2° piano: spazzati e lavati", "Lavanderia in ordine: panni e prodotti al loro posto, cestini vuoti"] },
+  ],
+  // Le stelle (rifiniture del catalogo): prezzo per minuti, 10 € l'ora. Le fa solo la signora delle stelle (Selena, 2° piano),
+  // in tutto l'albergo, per un obiettivo di € a settimana; negli appartamenti sono spente finché Michele non le accende.
+  stelle: { fino5: 1, fino10: 1.5, oltre10: 2.5 },
+  zonaStelle: "p2",
+  obiettivoStelle: 27,                          // € a settimana (32 se Selena non fa controlli)
+  stelleAppartamenti: false,
+  // I controlli incrociati: € a camera controllata, e quanti controlli al giorno per chi controlla (giorno → numero)
+  controllo: 2.5,
+  controlli: { p1: { 5: 2, 6: 2 }, p2: { 5: 1, 6: 1 } },
 };
+// Fino alla 0.34: prezzi in euro a camera. Restano per leggere i vecchi documenti e per il confronto.
+export const LISTINO_VECCHIO = { totale: { G: 15, P: 10 }, ripasso: { G: 5, P: 5 }, casa: 15, totale_casa: 15, extra: 0, fondo: 40 };
 
 // ---- Il voto delle pulizie (controlli tra colleghe) --------------------------
 // Quando una collega "controllatrice" dà il voto a una camera, la paga di quella
 // pulizia cambia così (percentuale del prezzo base). Si cambia dall'app (Regole).
 export const VOTI_BASE = {
-  ottimo:  { daVoto: 9, perc: 120, nome: "Voto 9–10" },              // es. 10 € → 12 €
+  // Dalla 0.35 l'esito del controllo lo fa l'app contando i "no" della lista (vedi PUNTI_CONTROLLO in logica.js):
+  // 0 punti = Bene (tutto pagato), 1–2 = Così così (quella camera −20%), 3 o più = Male (−50% e richiamo).
+  esiti: {
+    bene:     { perc: 100, nome: "Bene" },
+    cosicosi: { perc: 80,  nome: "Così così" },
+    male:     { perc: 50,  nome: "Male", richiamo: true },
+  },
+  sogliaCosicosi: 1, sogliaMale: 3,  // punti (i "no" gravi valgono 2)
+  // (voti da 1 a 10 dei controlli fino alla 0.34: restano per leggere i vecchi controlli)
+  ottimo:  { daVoto: 9, perc: 100, nome: "Voto 9–10" },
   normale: { daVoto: 6, perc: 100, nome: "Voto 6–8" },
-  scarso:  { daVoto: 5, perc: 80,  nome: "Voto 5" },                 // es. 10 € → 8 €
-  pessimo: { daVoto: 0, perc: 50,  nome: "Voto 1–4", richiamo: true }, // es. 10 € → 5 € + richiamo
-  bonusControllatrice: 5,   // € a settimana a chi fa i controlli, se i voti reggono al controllo di Michele
-  scartoMassimo: 2,         // se il voto di Michele differisce di più di così, il controllo "non corrisponde"
-  richiamoDopo: 3,          // al terzo controllo che non corrisponde, richiamo anche alla controllatrice
-  penalitaRichiesta: 3,     // punti tolti al voto per ogni richiesta del giorno (dettagli) non fatta
+  scarso:  { daVoto: 5, perc: 80,  nome: "Voto 5" },
+  pessimo: { daVoto: 0, perc: 50,  nome: "Voto 1–4", richiamo: true },
+  bonusControllatrice: 0,   // (fino alla 0.34: 5 € a settimana; ora si paga a camera controllata, LISTINO_BASE.controllo)
+  scartoMassimo: 2,
+  richiamoDopo: 3,          // alla terza smentita di Michele in un mese, i controlli di quella signora si fermano per un mese
+  penalitaRichiesta: 3,
+  terzoMale: 3,             // al terzo Male nel mese la chat lo chiede a Michele
 };
 
 // ---- Le persone che entrano nell'app (nome per entrare → chi è) ----------
