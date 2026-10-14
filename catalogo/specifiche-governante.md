@@ -2,7 +2,7 @@
 
 **Rileggi questo file dopo ogni riavvio della memoria.** Qui stanno tutte le decisioni prese con Michele sulla governante, in ordine. Se un messaggio in chat manca, vale quello che c'è scritto qui. Le domande ancora aperte sono in fondo: Michele risponde con un numero, una alla volta.
 
-Aggiornato: 14 ottobre 2026 (dopo la 0.34: via Zara è un appartamento solo, punto 12 chiuso; via Zara piano terra risposto al punto 9; **punti 13 e 14: paga a ore standard (8 € albergo, 10 € appartamenti), stelle di Selena per 27 € a settimana, controlli incrociati a 10 punti con recupero fino a sabato alle 14; tutto deciso, si costruisce la 0.35**).
+Aggiornato: 15 ottobre 2026 (**la 0.35 è costruita e online**: punti 13 e 14 fatti; in fondo al punto 14 le assunzioni da confermare).
 
 ---
 
@@ -205,3 +205,7 @@ Michele: "va benissimo così tutto, implementa tutto, a prova di mia nonna". Spe
 - Domenica sera: "Settimana prossima: Selena mercoledì, venerdì e sabato; Lucia lunedì, giovedì, venerdì e sabato, come sempre? [Sì] [Cambia]" (con due Sì smette di chiedere e lo dice soltanto).
 - Lunedì 8: le stelle di Selena della settimana. Quando il prospetto cambia le ore di un giorno: "Venerdì Selena ha 3 camere, 2 ore e un quarto, 18 €". Sabato 14: "Pago così?" con le due paghe già fatte.
 - Tutto a prova di nonna: pulsanti grandi, disegnini per i 10 punti, sì/no, foto con un tocco. Niente messaggi alle signore finché Michele non vede la 0.35.
+
+### Costruito nella 0.35 (15 ottobre, notte) — da confermare con Michele
+- Tutto il punto 14 è nell'app (vedi README, voce 0.35). Assunzioni mie, da confermare con un numero: (a) **il cambio del giovedì in via Zara 1° e 2° lo fa Lucia da sola, 2 ore, 20 €** (non era nella sua lista; Selena negli appartamenti non va); (b) **le 3 ore del sabato di Selena** sono "scale, ingresso, corridoi e lavanderia" (si cambia in Paghe → Orario di base); (c) **Lella** sta con chi ha il passaggio nel calendario (ripasso 20′ = 2,50 €, cambio 40′ = 5,50 €); (d) i controlli di Lucia il **sabato** sono 2 tra le cose fatte da Selena il venerdì e il sabato; (e) la **stella non fatta** costa il doppio (non pagata + lo stesso importo tolto), come detto in chat; (f) il **giro "Altre camere"** di Selena prende al massimo 2 stelle per camera e 8 al giorno, mai nelle camere con ospiti Booking dentro.
+- Non ancora fatto: l'avviso "venerdì Selena ha 3 camere invece di 4" quando il prospetto cambia le ore (si vede comunque nel conto); le foto dei materiali; il meteo automatico.
