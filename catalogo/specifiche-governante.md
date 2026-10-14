@@ -2,7 +2,7 @@
 
 **Rileggi questo file dopo ogni riavvio della memoria.** Qui stanno tutte le decisioni prese con Michele sulla governante, in ordine. Se un messaggio in chat manca, vale quello che c'è scritto qui. Le domande ancora aperte sono in fondo: Michele risponde con un numero, una alla volta.
 
-Aggiornato: 14 ottobre 2026 (dopo la 0.34: via Zara è un appartamento solo, punto 12 chiuso; via Zara piano terra risposto al punto 9; **aperto il punto 13: si spende troppo, come si paga**).
+Aggiornato: 14 ottobre 2026 (dopo la 0.34: via Zara è un appartamento solo, punto 12 chiuso; via Zara piano terra risposto al punto 9; **punto 13: si paga a ore, 10 € l'ora; le stelle costano troppo, si passa alla paga a ore nella 0.35**).
 
 ---
 
@@ -168,4 +168,7 @@ Principio: quando alla governante manca un'informazione, o succede qualcosa (met
 - L'altra signora: ripasso 1 ora, 2 al massimo; venerdì circa 3 ore; sabato circa 3 ore.
 - Il conto dell'app col listino di adesso, settimana 12–18 ottobre: pulizie 232 € + stelle 57 € = 289 €, più 284 € di lavori a parte accettati dai consigli = 573 €. Nella realtà si pagano circa 200 € a settimana. Quindi le pulizie normali dell'app sono più o meno in linea (un po' sopra), mentre **le stelle (≈ 250 € al mese) e i consigli accettati sono tutta spesa in più** che prima non c'era. Il budget stelle di 400 € al mese (punto 11) va rivisto molto al ribasso.
 - Le ore vere servono anche a tarare i minuti dell'app: via Zara 1° e 2° (lunedì + giovedì) 3.30–4 ore, via Trento 2.30–3, piano terra 1.15–2: molto più dei minuti stimati dal catalogo.
-- **Domanda aperta (una alla volta):** come si pagano le ragazze — 1) a ore, circa 10 € l'ora · 2) a camera coi prezzi del listino · 3) cifra fissa a settimana. La risposta decide come l'app conta la paga e dentro cosa devono stare stelle e consigli.
+- **Risposta del 14 ottobre: si paga a ore, 10 € l'ora**, e Michele continua così finché l'app non è pronta. Le 13 ore di Lucia erano una settimana particolare (cambio di operai: via Zara 1° e 2° circa 4 volte); una settimana normale sua sta sulle 8–9 ore.
+- Le stelle, così come sono (prezzo a stella, 400 € al mese), **costano troppo: Michele non se le può permettere**. Con la paga a ore non esistono stelle gratis: ogni stella sono minuti pagati. Quindi le stelle si fanno solo nelle ore che Michele autorizza.
+- **Da fare (0.35, "paga a ore")**: la paga nell'app = ore vere (da "Inizia" a "Fatto") × 10 €; le stelle e i consigli non hanno più un prezzo a parte, hanno dei minuti; un tetto di ore a settimana per signora e un tetto di ore di stelle; la governante pianifica dentro i tetti (prima le pulizie normali, poi le stelle con i minuti che restano) e il conto si vede **prima** della settimana, non dopo; i minuti del catalogo si tarano sulle ore vere.
+- **Domanda aperta:** quante ore di stelle a settimana autorizza Michele (zero e solo su richiesta dalla chat · 1 · 2 · altro).
