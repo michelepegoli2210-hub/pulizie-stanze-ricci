@@ -256,3 +256,41 @@ Michele: *"devi assolutamente implementare un'IA molto intelligente e la governa
 - Paga sulle **ore standard** o **a minuto** (punto 13): deciso nulla, l'interruttore c'è.
 - La voce vera (lei che parla ad alta voce e lui che risponde senza tastiera).
 - Foto dei materiali, meteo automatico, avviso "venerdì Selena ha 3 camere invece di 4".
+
+## 18. La 0.39 (16 ottobre, sera): Gemini scelto, governante più sveglia, faccia rifatta
+
+Michele: *"vai metti Gemini ma fai tutto tu, se c'è bisogno della carta lo metto subito però guarda che qualche sito per utilizzare Gemini al massimo gratis sicuramente lo trovi. La IA la governante deve essere davvero impressionante realistica ed ultra intelligente e perspicace per le faccende dell'albergo."*
+
+### "Un sito per usare Gemini gratis": cosa ho trovato davvero (16 ottobre 2026)
+
+- **Il free tier di Google esiste ancora** e include i modelli Flash e Flash-Lite. I numeri esatti (quante domande al minuto e al giorno) **non sono più pubblicati**: si vedono solo entrando su `aistudio.google.com/rate-limit`.
+- **Novità importante per l'Italia.** Nei termini dell'API, per chi si trova nello Spazio economico europeo, in Svizzera e nel Regno Unito le regole dati del piano a pagamento *"apply to all Services, including Google AI Studio and unpaid quota in the Gemini API"*. Cioè: **in Italia Google non usa i prompt per addestrare nemmeno sul piano gratuito.** Questo corregge quello che avevo scritto al punto 16.
+- **Però** gli stessi termini dicono, in grassetto: *"You may use only Paid Services when making API Clients available to users in the European Economic Area"*. Un'app messa a disposizione di persone in Europa va sul piano a pagamento. Per questo a Michele conviene mettere la carta: prepagato minimo 5 $, che con il suo uso durano mesi.
+- **Due bufale da togliere di mezzo.** (1) Il credito da 300 $ di Google Cloud **non vale più per Gemini**: *"starting March 2026, Gemini API usage costs are specifically excluded from the $300 Google Cloud Free Trial"*. (2) L'abbonamento Google AI Pro/Ultra **non dà accesso all'API**: vale solo dentro la pagina di AI Studio (*"Direct use of the Gemini API ... is billed and managed separately"*).
+- **I siti che regalano "chiavi Gemini gratis": da evitare.** Usano la chiave di qualcun altro (vietato dai termini Google: *"Developer credentials ... are intended to be used by you"*), leggono in chiaro tutto quello che scrivi, e da maggio 2026 Google blocca in fretta le chiavi condivise. Non li ho messi nell'app e non li consiglio.
+- Unica alternativa davvero gratuita e pulita: i modelli **Gemma** a pesi aperti (gratis su OpenRouter, 50 richieste al giorno) — ma sono parecchio meno bravi di Gemini Flash, non li ho messi.
+
+### Prezzi veri (per un milione di parole, 16 ottobre 2026)
+
+| Modello | Entrata | Uscita | Nel free tier? |
+|---|---|---|---|
+| `gemini-3.8-flash` (il più nuovo) | 0,75 $ | 3,75 $ (raddoppiano dal 1° gennaio 2027) | sì |
+| `gemini-2.5-flash` | 0,30 $ | 2,50 $ | sì |
+| `gemini-3.5-flash-lite` | 0,30 $ | 2,50 $ | sì |
+| `gemini-2.5-flash-lite` (il più economico) | 0,10 $ | 0,40 $ | sì |
+| `gemini-2.5-pro` | 1,25 $ | 10 $ | sì |
+
+Con l'uso di Michele (qualche decina di domande al giorno, circa 8.500 parole di fotografia a domanda) **Flash nuovo costa 1-2 € al mese**. Scelto quello come predefinito: la differenza di intelligenza si sente, la differenza di prezzo no.
+
+### Cosa ho cambiato nella 0.39
+
+- **Interruttore "Sveglia / Risparmio"**: Sveglia prende il Flash più nuovo che la chiave vede, Risparmio il Flash-Lite. Il modello lo cerca l'app da sola, pescando sempre la versione più alta: se Google cambia i nomi non si rompe niente.
+- **Istruzioni rifatte.** Adesso la governante ha vent'anni di mestiere, le regole della casa scritte (tariffe, tetto dei 100 €, stelle, controlli incrociati, sabato alle 14, i tre modi) e un **giro di controllo obbligatorio di sette cose** prima di ogni risposta: soldi sopra o sotto il tetto, controlli di oggi non fatti, cose bocciate da rifare prima di sabato, camere che partono senza pulizia, manutenzione ferma da più di una settimana, catalogo in ritardo, stelle sopra o sotto l'obiettivo. Scrive prima un "pensiero" che Michele non vede (così ragiona prima di parlare) e poi la risposta. Divieto esplicito di inventare numeri.
+- **Fotografia più ricca**: il piano di tutta la settimana giorno per giorno, arrivi e partenze dei prossimi 3 giorni **con l'avviso quando una camera parte e non ha nessuna pulizia in programma**, il modo (Tecnici/Operai/Booking) di ogni camera, i ritardi del catalogo raggruppati per regola e filtrati per posto (la lavanderia non è una camera, la cucina solo negli appartamenti).
+- **Il consiglio del giorno.** Quando apre la governante, lei lo saluta dicendo la situazione vera in una riga più il consiglio da fare per primo. Una sola chiamata al giorno, salvata nel telefono.
+- **La faccia rifatta da zero** (solo la governante; le donnine delle signore restano come erano): sfumature su pelle, capelli e vestito, occhi veri (bianco, iride, pupilla, due luci), ciglia, sopracciglia, orecchie, naso, labbra. Divisa da governante: collo bianco, collana di perle, grembiule con i lacci, taccuino in mano. **Si muove la testa, non la statuina**: respiro sul busto, testa che gira piano, occhi che guardano in giro da soli, palpebre che sbattono due volte, ciocche e taccuino che ondeggiano. Mentre parla: tre bocche diverse che si alternano sette volte al secondo e la testa che fa sì. Con l'umore cambiano sopracciglia e bocca (sorriso, broncio).
+- **Setup più facile**: tasto che apre direttamente il sito della chiave, tasto "Incolla" che la prende dagli appunti, e "Prova" che cerca il modello, lo salva e accende tutto da solo.
+- Corretto un errore vecchio: nella chat delle stelle il tasto "Cambia" chiamava una funzione che non esisteva (`apriGovernante`) e non apriva niente.
+
+### Cosa NON si può fare (detto chiaro)
+La governante resta un **disegno animato fatto bene**, non una persona vera dentro lo schermo. Per una faccia filmata che parla servirebbe un servizio a pagamento a parte (decine di euro al mese) e non ne vale la pena. E non parla ancora ad alta voce: si scrive, o si detta col microfono della tastiera.
