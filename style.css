@@ -963,3 +963,29 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .chat-msg.gov svg{animation:govdondola 3.4s ease-in-out infinite;transform-origin:50% 90%}
 @keyframes govdondola{0%,100%{transform:rotate(-1.2deg) translateY(0)}50%{transform:rotate(1.2deg) translateY(-2px)}}
 @media (prefers-reduced-motion: reduce){.chat-msg.gov svg{animation:none}.chat-punti i{animation:none}}
+.crono-e{margin-left:auto;font:800 26px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--done)}
+.crono.oltre .crono-e{color:var(--warn)}
+.crono.soldi .crono-t{gap:8px}
+
+/* 0.37: la governante viva (respira, sbatte le palpebre, cambia faccia) */
+.gov-viva{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.45));margin:6px 0 10px}
+.gov-viva .donnina.viva{width:76px;height:86px;flex:none}
+.gov-viva-t{display:flex;flex-direction:column;gap:2px;line-height:1.3}
+.gov-viva-t b{font:800 19px var(--f-display)}
+.gov-viva-t span{font-size:14px;color:var(--muted)}
+/* respiro */
+.donnina.viva{animation:respira 4s ease-in-out infinite;transform-origin:50% 95%}
+@keyframes respira{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.025) translateY(-1.5px)}}
+/* palpebre: chiuse solo nell'attimo dell'ammicco */
+.donnina .palpebre{opacity:0}
+.donnina.viva .palpebre{animation:ammicca 5.5s infinite}
+@keyframes ammicca{0%,96%,100%{opacity:0}97%,99%{opacity:1}}
+/* l'umore si vede in faccia */
+.gov-viva.contenta .donnina .occhi{transform:translateY(-.5px)}
+.gov-viva.preoccupata .donnina{filter:saturate(.9)}
+.gov-viva.preoccupata .donnina .palpebre{animation-duration:3s}
+@media (prefers-reduced-motion: reduce){.donnina.viva,.donnina.viva .palpebre{animation:none}}
+.sig-capelli{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px;color:var(--muted)}
+.sig-capelli .cap{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.sig-capelli .cap[aria-pressed="true"]{border-color:var(--fg);transform:scale(1.12)}
+.cap.castana{background:#6B4226}.cap.bionda{background:#D9A441}.cap.mora{background:#2E2A28}.cap.rossa{background:#B4522B}.cap.grigia{background:#9AA0A6}

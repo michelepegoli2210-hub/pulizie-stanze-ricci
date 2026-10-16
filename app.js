@@ -12,7 +12,7 @@ import * as G from "./governante.js";
 import * as CH from "./chat.js";
 import * as PAROLE from "./parole.js";
 
-export const VERSIONE = "0.36.0";
+export const VERSIONE = "0.37.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -60,8 +60,9 @@ const BADGE = (p) => { const st = STATI[p.stato] || STATI.da_fare; return `<span
 
 // Donnine delle pulizie stilizzate (disegni nostri, SVG). Varianti: scopa, festa, secchio, saluto.
 const STELLA = (x, y, r, col = "#FFC83D") => `<path d="M${x} ${y - r} L${x + r * .28} ${y - r * .28} L${x + r} ${y} L${x + r * .28} ${y + r * .28} L${x} ${y + r} L${x - r * .28} ${y + r * .28} L${x - r} ${y} L${x - r * .28} ${y - r * .28}Z" fill="${col}"/>`;
-function DONNINA(v = "scopa", cls = "") {
-  const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = "#6B4226";
+const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa: "#B4522B", grigia: "#9AA0A6" };
+function DONNINA(v = "scopa", cls = "", colore = null) {
+  const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = CAPELLI[colore] || colore || "#6B4226";
   const vestito = { scopa: "#4F7BE8", festa: "#EF6F7B", secchio: "#23B5A3", saluto: "#9A6BF2", governante: "#1F2A44" }[v] || "#4F7BE8";
   const braccio = (d) => `<path d="${d}" stroke="${pelle}" stroke-width="7.5" fill="none" stroke-linecap="round"/>`;
   const mano = (x, y) => `<circle cx="${x}" cy="${y}" r="4.6" fill="${pelle}"/>`;
@@ -106,8 +107,9 @@ function DONNINA(v = "scopa", cls = "") {
     <path d="M39 37 Q60 12 81 37 L79 43 Q60 29 41 43Z" fill="#E04E5C"/>
     <path d="M41 42 L30 36 L35 46Z" fill="#E04E5C"/>`}
     <path d="M44 33 Q60 20 76 33" stroke="rgba(255,255,255,.35)" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <circle cx="53" cy="45" r="2.4" fill="#2B2B2B"/><circle cx="67" cy="45" r="2.4" fill="#2B2B2B"/>
-    <circle cx="54" cy="44" r=".8" fill="#fff"/><circle cx="68" cy="44" r=".8" fill="#fff"/>
+    <g class="occhi"><circle cx="53" cy="45" r="2.4" fill="#2B2B2B"/><circle cx="67" cy="45" r="2.4" fill="#2B2B2B"/>
+    <circle cx="54" cy="44" r=".8" fill="#fff"/><circle cx="68" cy="44" r=".8" fill="#fff"/></g>
+    <g class="palpebre"><rect x="50" y="41" width="6" height="5" rx="2.4" fill="${pelle}"/><rect x="64" y="41" width="6" height="5" rx="2.4" fill="${pelle}"/></g>
     <circle cx="48" cy="51" r="3.4" fill="#F7A1A6" opacity=".6"/><circle cx="72" cy="51" r="3.4" fill="#F7A1A6" opacity=".6"/>
     ${bocca}
     ${davanti}
@@ -160,16 +162,24 @@ function statoTesto(p) { return p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora
 // Il cronometro (0.36): mentre la signora pulisce, il tempo che passa, grande, accanto al tempo standard pagato.
 // Il cronometro serve a vedere i tempi veri e tarare l'orario di base: la paga resta sulle ore standard (si cambia in Paghe).
 function cronometroHtml(p) {
-  const std = Number(p.minuti) || 0;
-  return `<div class="crono" data-crono="${esc(p.inizio || "")}" data-crono-std="${std}"><div class="crono-t">${ICONA("orologio")}<b class="crono-n">${esc(testoCrono(p.inizio))}</b></div>
-    <div class="crono-s">Hai iniziato alle ${esc(L.oraBreve(p.inizio))}${std ? ` · tempo pagato <b>${esc(L.testoOre(std))}</b> (${eur(p.importo)}), finisci prima e prendi lo stesso` : ""}</div></div>`;
+  const std = Number(p.minuti) || 0, l = L.listinoCompleto(S.listino), aMinuto = l.pagaCol === "vero" && std;
+  const tariffa = L.tariffaDi(S.listino, camera(p.camera)), tetto = std ? Math.round(std * (1 + (Number(l.tolleranzaCrono) || 0) / 100)) : 0;
+  return `<div class="crono ${aMinuto ? "soldi" : ""}" data-crono="${esc(p.inizio || "")}" data-crono-std="${std}" data-crono-tetto="${tetto}" data-crono-euro="${aMinuto ? tariffa / 60 : 0}">
+    <div class="crono-t">${ICONA("orologio")}<b class="crono-n">${esc(testoCrono(p.inizio))}</b>${aMinuto ? `<b class="crono-e">${eur(0)}</b>` : ""}</div>
+    <div class="crono-s">Hai iniziato alle ${esc(L.oraBreve(p.inizio))}${aMinuto
+      ? ` · si paga il tempo che ci metti (${(tariffa / 60).toFixed(2).replace(".", ",")} € al minuto)${tetto ? `, fino a ${esc(L.testoOre(tetto))}` : ""}`
+      : std ? ` · tempo pagato <b>${esc(L.testoOre(std))}</b> (${eur(p.importo)}), finisci prima e prendi lo stesso` : ""}</div></div>`;
 }
 function testoCrono(inizio) { if (!inizio) return "0:00"; const sec = Math.max(0, Math.round((Date.now() - new Date(inizio)) / 1000)); const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, ss = sec % 60; return h ? `${h}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}` : `${m}:${String(ss).padStart(2, "0")}`; }
 let tickCrono = null;
 function avviaCronometri() {
   if (tickCrono) { clearInterval(tickCrono); tickCrono = null; }
   const giro = () => { const el = document.querySelectorAll("[data-crono]"); if (!el.length) { clearInterval(tickCrono); tickCrono = null; return; }
-    el.forEach(d => { const n = d.querySelector(".crono-n"); if (n) n.textContent = testoCrono(d.dataset.crono); const std = Number(d.dataset.cronoStd) || 0; const min = (Date.now() - new Date(d.dataset.crono)) / 60000; d.classList.toggle("oltre", std > 0 && min > std); }); };
+    el.forEach(d => { const n = d.querySelector(".crono-n"); if (n) n.textContent = testoCrono(d.dataset.crono);
+      const std = Number(d.dataset.cronoStd) || 0, tetto = Number(d.dataset.cronoTetto) || 0, euroMin = Number(d.dataset.cronoEuro) || 0;
+      const min = (Date.now() - new Date(d.dataset.crono)) / 60000;
+      const e = d.querySelector(".crono-e"); if (e && euroMin) e.textContent = eur(Math.round(Math.min(min, tetto || min) * euroMin * 20) / 20);
+      d.classList.toggle("oltre", (tetto ? min > tetto : std > 0 && min > std)); }); };
   if (document.querySelector("[data-crono]")) { giro(); tickCrono = setInterval(giro, 1000); }
 }
 function minutiPulizia(p) { if (p.minutiVeri != null) return Number(p.minutiVeri); if (!p.inizio || !p.ora) return null; const m = Math.round((new Date(p.ora) - new Date(p.inizio)) / 60000); return m >= 0 && m < 600 ? m : null; }
@@ -181,7 +191,7 @@ function problemaAperto(p) { return !!p && p.stato === "problema" && S.manutenzi
 function lavoriAperti() { return Object.values(S.manutenzione).filter(m => m.stato !== "fatto").sort((a, b) => (a.data || "") < (b.data || "") ? 1 : -1); }
 function lavoriFatti() { return Object.values(S.manutenzione).filter(m => m.stato === "fatto").sort((a, b) => (a.fatto || "") < (b.fatto || "") ? 1 : -1); }
 // Avatar della signora (le donnine: una diversa per zona)
-function avatarZona(z, cls = "piccola") { const v = ["scopa", "secchio", "saluto", "festa"][zoneOrdinate().findIndex(x => x.id === z)] || "scopa"; return DONNINA(v, cls); }
+function avatarZona(z, cls = "piccola") { const v = ["scopa", "secchio", "saluto", "festa"][zoneOrdinate().findIndex(x => x.id === z)] || "scopa"; const col = (squadra()[z] || {}).capelli || null; return DONNINA(v, cls, col); }
 // Ogni problema segnalato finisce nell'elenco dei lavori di manutenzione (che resta anche dopo che la camera viene ripulita)
 function vocePerProblema(p) {
   const chi = p.segnatoDa && !/^prova_|@/.test(p.segnatoDa) ? p.segnatoDa : SIG(p.zona);
@@ -1045,6 +1055,28 @@ function cardChat() {
   const prima = c.aperte[0] || (c.gruppi || [])[0];
   return `<section class="card chat-card ${n || g ? "" : "quiete"}"><button class="chat-plate" data-chat-apri aria-label="Apri la chat con la governante">${DONNINA("governante", "piccola")}<span class="chat-plate-testo"><b>La governante ti chiede${n + g ? ` · ${n + g}` : ""}</b><span>${esc(sotto)}</span>${prima ? `<span class="chat-anteprima">“${esc(prima.titolo)}”</span>` : ""}</span>${c.urgenti ? `<span class="led" role="img" aria-label="urgente"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
 }
+// L'umore della governante: guarda come sta la casa e lo dice in una riga (e si vede in faccia)
+function umoreGov() {
+  const oggi = L.oggiISO();
+  const problemi = Object.values(S.pulizie).filter(p => p.data === oggi && p.stato === "problema").length;
+  const lavori = lavoriAperti().filter(m => m.data <= L.aggiungiGiorni(oggi, -7)).length;
+  let tab = null; try { tab = tabellone(); } catch (e) {}
+  const rosse = tab ? tab.buchi : 0, copertura = tab ? tab.copertura : null;
+  const ls = pulizieDelGiorno(oggi), fatte = ls.filter(p => p.stato === "fatta").length;
+  const chat = (() => { try { return statoChatApp().aperte.length; } catch (e) { return 0; } })();
+  if (problemi) return { v: "preoccupata", testo: problemi === 1 ? "C'è un problema in una camera: guardalo quando puoi." : `Ci sono ${problemi} problemi nelle camere.` };
+  if (lavori >= 3) return { v: "preoccupata", testo: `${lavori} lavori di manutenzione sono fermi da più di una settimana.` };
+  if (ls.length && fatte === ls.length) return { v: "contenta", testo: "Tutto pulito per oggi: le ragazze hanno finito." };
+  if (chat) return { v: "attenta", testo: chat === 1 ? "Ho una cosa da chiederti." : `Ho ${chat} cose da chiederti.` };
+  if (copertura != null && copertura >= 70) return { v: "contenta", testo: `La casa è in ordine: copertura ${copertura}%.` };
+  if (ls.length) return { v: "attenta", testo: `Oggi ci sono ${ls.length} ${ls.length === 1 ? "lavoro" : "lavori"}: ${fatte} ${fatte === 1 ? "fatto" : "fatti"} finora.` };
+  return { v: "serena", testo: "Oggi è tranquilla. Se ti serve qualcosa, dimmelo." };
+}
+// La governante grande, viva: respira, sbatte le palpebre, cambia faccia con l'umore
+function testataGov() {
+  const u = umoreGov();
+  return `<div class="gov-viva ${u.v}">${DONNINA("governante", "viva")}<div class="gov-viva-t"><b>La governante</b><span>${esc(u.testo)}</span></div></div>`;
+}
 function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
 function foglioChat(f) {
   const c = statoChatApp(); const mod = puoModificare();
@@ -1062,6 +1094,7 @@ function foglioChat(f) {
   const parla = mod ? `<form class="chat-parla" id="formParla"><textarea id="parlaGov" rows="1" placeholder="Scrivi o detta col microfono della tastiera…" data-keep aria-label="Scrivi alla governante"></textarea><button class="chat-invia" type="submit" aria-label="Manda alla governante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
     <p class="muted small center" style="margin:6px 0 0">Per esempio: «ho messo i piumoni» · «fai lavare le tende in Alba» · «quanto prende ${esc(SIG(signore()[0]?.id || "p1"))}?» · «di' alle signore che domani arrivano gli operai»</p>` : "";
   return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">La governante</span></div>
+    ${testataGov()}
     <div class="chat-corpo">${vecchie}${aperte}${gruppi}${piede}${conv}${scrive}</div>
     ${parla}
     <p class="muted small center" style="margin:10px 0 0">Rispondo con i pulsanti o "Dimmelo a parole". Ogni risposta cambia davvero qualcosa nell'app e lo scrivo sotto.${auto.length ? ` Cose che faccio da sola: ${auto.length} (in Regole le spegni).` : ""}</p></div>`;
@@ -2056,6 +2089,19 @@ function tempiVeri(giorni = 60) {
   }).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
   return lista;
 }
+// Quanto cambierebbe la paga col cronometro, sui tempi già misurati: il numero per decidere con i fatti
+function confrontoPaga(giorni = 60) {
+  const da = L.aggiungiGiorni(L.oggiISO(), -giorni);
+  let std = 0, crono = 0, n = 0, lunghi = 0, corti = 0;
+  for (const p of Object.values(S.pulizie)) {
+    const v = minutiPulizia(p);
+    if (p.stato !== "fatta" || v == null || p.data < da || !p.minuti || p.origine === "governante" || p.tipo === "extra") continue;
+    const c = L.pagaCronometro(S.listino, camera(p.camera), p.minuti, v);
+    std += L.euroDaMinuti(p.minuti, L.tariffaDi(S.listino, camera(p.camera))); crono += c.importo; n++;
+    if (c.strano === "lungo") lunghi++; if (c.strano === "corto") corti++;
+  }
+  return { n, std: Math.round(std * 100) / 100, crono: Math.round(crono * 100) / 100, diff: Math.round((crono - std) * 100) / 100, lunghi, corti };
+}
 function cardTempiVeri() {
   const lista = tempiVeri(), mod = puoModificare();
   if (!lista.length) return `<div class="floorlabel" style="margin-top:14px">I tempi veri</div><p class="muted small" style="margin:0">Appena le signore premono "Inizia" e "Fatto", il cronometro misura quanto ci mettono davvero e qui te lo scrivo accanto ai minuti standard: così li tari sui fatti, non a occhio. (Servono almeno due volte sullo stesso posto.)</p>`;
@@ -2082,6 +2128,7 @@ function cardSignore() {
     return `<div class="sig-riga-ed ${attiva ? "" : "spenta"}">
       <div class="sig-riga-top">${avatarZona(z.id, "mini")}<input type="text" value="${esc(v.nome || "")}" placeholder="${esc("Signora " + (z.breve || z.id))}" data-sig-nome="${z.id}" ${mod ? "" : "disabled"} aria-label="Nome">
         <span class="seg"><button aria-pressed="${attiva}" data-sig-attiva="${z.id}|1" ${mod ? "" : "disabled"}>Lavora</button><button aria-pressed="${!attiva}" data-sig-attiva="${z.id}|0" ${mod ? "" : "disabled"}>No</button></span></div>
+      ${attiva && mod ? `<div class="sig-capelli">Capelli: ${["castana", "bionda", "mora", "rossa", "grigia"].map(c => `<button class="cap ${c}" aria-pressed="${(v.capelli || "castana") === c}" data-sig-capelli="${z.id}|${c}" title="${c}" aria-label="${c}"></button>`).join("")}</div>` : ""}
       <div class="muted small">${esc(z.nome)}${attiva ? ` · questa settimana ${camereSett.length} ${camereSett.length === 1 ? "posto" : "posti"}${t && t.totale ? ` · ${eur(t.totale)} finora` : ""}` : " · non lavora: le sue camere le fanno le altre"}</div>
       ${attiva && sue.length ? `<div class="muted small">Camere sue: ${esc(sue.join(", "))}</div>` : ""}
       ${attiva && mod ? `<details><summary>Quali camere fa lei</summary><p class="muted small" style="margin:6px 0">Di solito le camere le decide il calendario. Qui si spostano a mano: quelle che segni passano a lei (lista, paga e controlli), dalle prossime pulizie.</p>
@@ -2126,8 +2173,13 @@ function cardOrarioBase() {
     <div class="floorlabel" style="margin-top:14px">I controlli</div>
     <div class="listino">${num("Paga per ogni camera controllata", "controllo", l.controllo, 0.5, "€")}${signore().map(z => [5, 6].map(d => num(`${esc(SIG(z.id))} · controlli ${L.GIORNI[d]}`, `controlli.${z.id}.${d}`, (l.controlli[z.id] || {})[d] ?? 0, 1, "camere")).join("")).join("")}</div>
     <div class="floorlabel" style="margin-top:14px">Il cronometro</div>
-    <p class="muted small" style="margin:0 0 6px">La signora preme "Inizia" e vede il tempo che passa; quando preme "Fatto" l'app segna quanto ci ha messo davvero. Di solito la paga resta sulle <b>ore standard</b> (finisce prima, prende lo stesso; va piano, prende lo stesso), e i tempi veri servono a tarare i minuti qui sopra. Se preferisci, si paga il tempo vero del cronometro: allora chi va piano prende di più, e tu paghi anche le pause.</p>
-    <div class="row"><span>Cosa pago</span><span class="seg"><button aria-pressed="${(l.pagaCol || "standard") === "standard"}" data-listino-paga="standard" ${mod ? "" : "disabled"}>Ore standard</button><button aria-pressed="${l.pagaCol === "vero"}" data-listino-paga="vero" ${mod ? "" : "disabled"}>Tempo vero</button></span></div>
+    <p class="muted small" style="margin:0 0 6px">La signora preme "Inizia" e vede il tempo che passa; quando preme "Fatto" l'app segna quanto ci ha messo davvero. Con <b>ore standard</b> la camera vale sempre i suoi minuti (finisce prima, prende lo stesso). Con <b>a minuto</b> si paga il cronometro: ${eur(l.tariffe.albergo)} l'ora in albergo fanno ${(l.tariffe.albergo / 60).toFixed(2).replace(".", ",")} € al minuto, ${eur(l.tariffe.appartamenti)} l'ora negli appartamenti ${(l.tariffe.appartamenti / 60).toFixed(2).replace(".", ",")} € al minuto. Due reti di sicurezza: non pago mai più del tempo standard più la tolleranza qui sotto (se una scorda il Fatto non costa tre ore), e i tempi troppo corti o troppo lunghi finiscono nella lista qui sotto perché tu li veda.</p>
+    <div class="row"><span>Cosa pago</span><span class="seg"><button aria-pressed="${(l.pagaCol || "standard") === "standard"}" data-listino-paga="standard" ${mod ? "" : "disabled"}>Ore standard</button><button aria-pressed="${l.pagaCol === "vero"}" data-listino-paga="vero" ${mod ? "" : "disabled"}>A minuto (cronometro)</button></span></div>
+    ${(() => { const c = confrontoPaga(); if (!c.n) return `<p class="muted small" style="margin:6px 0 0">Appena ci sono dei tempi misurati ti scrivo qui quanto cambierebbe pagare a minuto invece che a ore standard, sui tuoi numeri veri.</p>`;
+      return `<div class="row one"><span><b>Se pagassi a minuto</b> <span class="muted small">(su ${c.n} pulizie col cronometro, ultimi 2 mesi)</span><br><span class="muted small">ore standard ${eur(c.std)} · a minuto ${eur(c.crono)} → <b style="color:${c.diff > 0 ? "var(--warn)" : "var(--done)"}">${c.diff > 0 ? "+" : ""}${eur(c.diff)}</b>${c.lunghi ? ` · ${c.lunghi} ${c.lunghi === 1 ? "volta è andata" : "volte sono andate"} oltre il tetto` : ""}${c.corti ? ` · ${c.corti} ${c.corti === 1 ? "volta troppo veloce" : "volte troppo veloci"}` : ""}</span></span></div>`; })()}
+    <div class="listino" style="margin-top:6px">${num("Tetto: non pago più del tempo standard più…", "tolleranzaCrono", l.tolleranzaCrono, 5, "%")}${num("Segnalami i tempi sotto il…", "sogliaStrano", l.sogliaStrano, 5, "% dello standard")}</div>
+    ${(() => { const strani = Object.values(S.pulizie).filter(p => p.strano && p.data >= L.aggiungiGiorni(L.oggiISO(), -30)).sort((a, b) => a.data < b.data ? 1 : -1).slice(0, 6);
+      if (!strani.length) return ""; return `<div class="floorlabel" style="margin-top:10px">Tempi strani da guardare</div><div class="rows">${strani.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(L.dataBreve(p.data))}<br><span class="muted small">standard ${esc(L.testoOre(p.minuti))} · ci ha messo ${esc(L.testoOre(minutiPulizia(p)))} · ${p.strano === "lungo" ? "pagato il tetto" : "troppo veloce"}</span></span><span class="s warn">${eur(p.importo)}</span></button>`).join("")}</div>`; })()}
     ${cardTempiVeri()}
     <div class="floorlabel" style="margin-top:14px">Grande o piccola?</div>
     <div class="rows">${S.camere.filter(c => c.tipo !== "casa").map(c => `<div class="row"><span>${esc(c.nome)}</span><span class="seg"><button aria-pressed="${L.tagliaCamera(l, c.id) === "G"}" data-taglia="${c.id}|G" ${mod ? "" : "disabled"}>Grande</button><button aria-pressed="${L.tagliaCamera(l, c.id) === "P"}" data-taglia="${c.id}|P" ${mod ? "" : "disabled"}>Piccola</button></span></div>`).join("")}</div></section>`;
@@ -2578,6 +2630,7 @@ function collega() {
   document.querySelectorAll("[data-listino-paga]").forEach(b => b.onclick = () => { const l = JSON.parse(JSON.stringify(S.listino)); l.pagaCol = b.dataset.listinoPaga; salvaListino(l); toast(b.dataset.listinoPaga === "vero" ? "Da ora pago il tempo vero del cronometro" : "Pago le ore standard"); });
   document.querySelectorAll("[data-tara]").forEach(b => b.onclick = () => { const [chiave, v] = b.dataset.tara.split("|"); const l = JSON.parse(JSON.stringify(S.listino)); const parti = chiave.split("."); let o = l; for (let j = 0; j < parti.length - 1; j++) o = o[parti[j]] = o[parti[j]] || {}; o[parti[parti.length - 1]] = Number(v); salvaListino(l); toast(`Messo ${v} minuti: la paga di quel posto si aggiorna dalle prossime pulizie`); });
   document.querySelectorAll("[data-sig-nome]").forEach(i => i.onchange = () => salvaSquadra(i.dataset.sigNome, { nome: i.value.trim() }));
+  document.querySelectorAll("[data-sig-capelli]").forEach(b => b.onclick = () => { const [z, c] = b.dataset.sigCapelli.split("|"); salvaSquadra(z, { capelli: c }); });
   document.querySelectorAll("[data-sig-attiva]").forEach(b => b.onclick = () => { const [z, v] = b.dataset.sigAttiva.split("|"); salvaSquadra(z, { attiva: v === "1" }); });
   document.querySelectorAll("[data-sig-camera]").forEach(b => b.onclick = () => { const [z, c, v] = b.dataset.sigCamera.split("|"); const sq = squadra(); const cur = new Set((sq[z]?.camere) || []); if (v === "1") cur.add(c); else cur.delete(c); salvaSquadra(z, { camere: [...cur] }); });
   const fs = $("#formSignora");
@@ -2979,7 +3032,11 @@ async function cambiaStato(p, stato, nota, opz = {}) {
   if (stato === "fatta") { patch.settimana = L.chiaveSettimana(new Date(), S.regole.chiusuraPaga);
     // il cronometro: quanto ci ha messo davvero (da "Inizia" a "Fatto"); la paga resta sulle ore standard, se Michele non la mette sul tempo vero
     const veri = p.inizio ? Math.round((new Date(adesso) - new Date(p.inizio)) / 60000) : null;
-    if (veri != null && veri >= 0 && veri < 600) { patch.minutiVeri = veri; if (L.listinoCompleto(S.listino).pagaCol === "vero" && p.tipo !== "extra" && p.origine !== "governante") patch.importo = L.euroDaMinuti(Math.max(5, veri), L.tariffaDi(S.listino, camera(p.camera))); }
+    if (veri != null && veri >= 0 && veri < 600) { patch.minutiVeri = veri;
+      if (L.listinoCompleto(S.listino).pagaCol === "vero" && p.tipo !== "extra" && p.origine !== "governante" && p.minuti) {
+        const c = L.pagaCronometro(S.listino, camera(p.camera), p.minuti, veri);
+        patch.importo = c.importo; patch.minutiPagati = c.minuti; patch.strano = c.strano === "ok" ? null : c.strano;
+      } }
   }
   else patch.settimana = null;
   const foto = fotoPending; fotoPending = null;

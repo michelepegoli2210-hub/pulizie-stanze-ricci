@@ -85,6 +85,8 @@ export function listinoCompleto(l) {
   out.controlli = { ...base.controlli, ...((!vecchio && l.controlli) || {}) };
   out.fissi = (!vecchio && Array.isArray(l.fissi)) ? l.fissi : base.fissi;
   out.pagaCol = (!vecchio && l.pagaCol) ? l.pagaCol : base.pagaCol;
+  out.tolleranzaCrono = (!vecchio && l.tolleranzaCrono != null) ? Number(l.tolleranzaCrono) : base.tolleranzaCrono;
+  out.sogliaStrano = (!vecchio && l.sogliaStrano != null) ? Number(l.sogliaStrano) : base.sogliaStrano;
   return out;
 }
 export function tagliaCamera(listino, cameraId) { return listino?.taglia?.[cameraId] === "P" ? "P" : "G"; }
@@ -105,16 +107,26 @@ export function minutiPulizia(listino, camera, tipo) {
 export function mezziEuro(x) { return Math.round((Number(x) || 0) * 2) / 2; }
 export function euroDaMinuti(minuti, tariffa) { return mezziEuro((Number(minuti) || 0) * (Number(tariffa) || 0) / 60); }
 export function prezzoPulizia(listino, camera, tipo) { return euroDaMinuti(minutiPulizia(listino, camera, tipo), tariffaDi(listino, camera)); }
+// Quanto si paga una pulizia col cronometro: i minuti veri al minuto, mai più del tempo standard + tolleranza.
+// Torna anche com'è andata: "ok" · "lungo" (oltre il tetto, pagato il tetto) · "corto" (molto sotto lo standard).
+export function pagaCronometro(listino, camera, standard, veri) {
+  const l = listinoCompleto(listino), t = tariffaDi(listino, camera);
+  const std = Number(standard) || 0, v = Math.max(0, Number(veri) || 0);
+  const tetto = std ? Math.round(std * (1 + (Number(l.tolleranzaCrono) || 0) / 100)) : v;
+  const pagati = Math.min(v, tetto || v);
+  const strano = std ? (v > tetto ? "lungo" : v < std * ((Number(l.sogliaStrano) || 0) / 100) ? "corto" : "ok") : "ok";
+  return { minuti: pagati, veri: v, tetto, strano, importo: Math.round(pagati * t / 60 * 20) / 20 }; // ai 5 centesimi
+}
 // La pulizia a fondo completa (3 ore standard) al prezzo del posto
 export function prezzoFondo(listino, camera) { const l = listinoCompleto(listino); return euroDaMinuti(l.minuti.fondo, tariffaDi(listino, camera)); }
 // "3 ore e un quarto", "1 ora e mezza", "45 minuti"
 export function testoOre(minuti) {
   const m = Math.round(Number(minuti) || 0); if (m <= 0) return "";
   const h = Math.floor(m / 60), r = m % 60;
-  if (!h) return `${r} minuti`;
+  if (!h) return `${r} ${r === 1 ? "minuto" : "minuti"}`;
   const ore = h === 1 ? "1 ora" : `${h} ore`;
   if (r === 0) return ore; if (r === 15) return `${ore} e un quarto`; if (r === 30) return `${ore} e mezza`; if (r === 45) return `${ore} e tre quarti`;
-  return `${ore} e ${r} minuti`;
+  return `${ore} e ${r} ${r === 1 ? "minuto" : "minuti"}`;
 }
 // I lavori fissi di una zona in un giorno della settimana (terrazzo, scale e ingresso del sabato…)
 export function lavoriFissi(listino, iso) {

@@ -135,8 +135,14 @@ export const LISTINO_BASE = {
   obiettivoStelle: 27,                          // € a settimana (32 se Selena non fa controlli)
   stelleAppartamenti: false,
   // Cosa si paga: "standard" = i minuti standard qui sopra (chi finisce prima prende lo stesso) · "vero" = il tempo
-  // misurato dal cronometro, da "Inizia" a "Fatto" (minimo 5 minuti). Si cambia in Paghe → Orario di base.
+  // misurato dal cronometro, da "Inizia" a "Fatto", pagato al minuto (8 € l'ora = 13,3 centesimi al minuto).
+  // Si cambia in Paghe → Orario di base. Col cronometro valgono due reti di sicurezza:
+  //  - TETTO: non si paga più del tempo standard + tolleranza (se una si dimentica di premere Fatto, non costa 3 ore);
+  //  - TEMPO STRANO: sotto il 40% del tempo standard (o oltre il tetto) la pulizia finisce nella lista "tempi strani"
+  //    in Paghe, perché Michele la guardi: si paga lo stesso, ma lui lo vede.
   pagaCol: "standard",
+  tolleranzaCrono: 25,   // % in più del tempo standard che il cronometro può pagare
+  sogliaStrano: 40,      // % del tempo standard sotto cui il tempo è "strano"
   // I controlli incrociati: € a camera controllata, e quanti controlli al giorno per chi controlla (giorno → numero)
   controllo: 2.5,
   controlli: { p1: { 5: 2, 6: 2 }, p2: { 5: 1, 6: 1 } },

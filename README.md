@@ -461,5 +461,18 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   catalogo si somigliano chiede **"quale?"** coi pulsanti; se manca il posto chiede **"dove?"**. La conversazione resta scritta
   (`impostazioni/chat.conversazione`, ultime 40), la governante "dondola" mentre parla e ha i tre puntini mentre pensa.
   Prove nuove: `prova-parole.mjs` (la lingua) e `prova-parla-36.mjs` (la chat dallo schermo).
-- Passi successivi previsti: l'avviso "venerdì Selena ha 3 camere invece di 4" quando il prospetto cambia le ore, le foto dei materiali,
-  la voce vera (parlare senza tastiera), meteo automatico.
+- **0.37 — paga a minuto col cronometro, e la governante viva** (Michele, 16 ottobre: "sarebbe utile fare un timer, pagare
+  proprio a minuto"; "la governante deve essere una specie di tamagotchi, una persona dentro lo schermo"). **A minuto**
+  (`pagaCronometro`, `LISTINO_BASE.pagaCol = "vero"`): la paga è il tempo misurato × la tariffa al minuto (8 €/ora = 0,13 €/min in
+  albergo, 10 €/ora = 0,17 €/min negli appartamenti), ai 5 centesimi, con due reti di sicurezza — un **tetto**
+  (`tolleranzaCrono`, 25%: oltre il tempo standard più la tolleranza non si paga, così un "Fatto" dimenticato non costa tre ore)
+  e i **tempi strani** (`sogliaStrano`, 40%: sotto quella soglia, o oltre il tetto, la pulizia finisce in una lista in Paghe perché
+  Michele la guardi; `pulizie.strano`). Mentre pulisce, la signora vede il cronometro **con i soldi che salgono** e fin dove
+  contano. In Paghe → Orario di base, il confronto sui numeri veri (`confrontoPaga`): "ore standard X €, a minuto Y €, differenza
+  Z" sulle pulizie già misurate, per decidere coi fatti. **La governante viva** (`umoreGov`, `testataGov`): in cima alla chat c'è
+  lei, grande, che **respira e sbatte le palpebre**, con l'umore preso dalla casa (tutto pulito → contenta; problemi o lavori fermi
+  → preoccupata; domande in attesa → attenta) scritto in una riga. Ogni signora può avere il **colore dei capelli** giusto
+  (`squadra[].capelli`: castana, bionda, mora, rossa, grigia) in Paghe → Le signore.
+- Passi successivi previsti: la governante con l'intelligenza artificiale vera (Gemini a pagamento, circa 1-2 € al mese: col piano
+  gratuito Google usa i contenuti per migliorare i suoi prodotti e le persone possono leggerli, quindi non va bene coi nomi degli
+  ospiti e delle signore), la voce vera senza tastiera, le foto dei materiali, meteo automatico.
