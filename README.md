@@ -440,5 +440,26 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
   (`domandeMale`: parlo / richiamo scritto / lascia) e la terza smentita (sospende i controlli di quella signora per un mese,
   `listino.sospesi`). "Pago così?" dalle 14 con il conto nuovo. Il voto 1–10 e il bonus controllatrice restano solo per leggere i vecchi
   controlli. Prove nuove: `prova-controlli-35.mjs`, `prova-stelle-35.mjs`.
+- **0.36 — il cronometro, le due signore coi loro nomi, e si parla con la governante** (Michele, 16 ottobre).
+  **Il cronometro** (`cronometroHtml`, `avviaCronometri`): mentre la signora pulisce vede il tempo che passa, grande, accanto al
+  tempo pagato ("tempo pagato 49 minuti, 6,50 €: finisci prima e prendi lo stesso"); al Fatto l'app salva `minutiVeri` e dopo le
+  dice "ci hai messo 41 minuti". Michele li ritrova in Paghe (riga per riga) e soprattutto in **Orario di base → I tempi veri**
+  (`tempiVeri`, `cardTempiVeri`): per ogni posto il tempo standard accanto al tempo vero (valore di mezzo delle ultime volte, da 2
+  misure in su) e, dove sono lontani, il tasto **"Metti 45′"** che tara il listino con un tocco. Nuovo interruttore **"Cosa pago"**
+  (`LISTINO_BASE.pagaCol`): "Ore standard" (come adesso: chi finisce prima prende lo stesso) o "Tempo vero" (paga il cronometro,
+  minimo 5 minuti). **Le signore sono due, coi loro nomi** (`SQUADRA_BASE`, `impostazioni/squadra`, `signore()`, `SIG()`): Lucia
+  (1° piano, Lella e gli appartamenti) e Selena (2° piano, Nicole, scale e ingresso); "Appartamenti" non è più una persona. L'app
+  le chiama per nome dappertutto (piastre, paghe, controlli, chat, WhatsApp, messaggi). In **Paghe → Le signore** si cambia il
+  nome, si mette "non lavora", e si **aggiunge una collaboratrice**: nasce con la sua casella in Paghe e nei controlli, e le camere
+  che Michele le segna passano a lei (`signoraDiCamera`, applicato al piano delle pulizie). **Si parla con la governante**
+  (`parole.js` + la barra in fondo alla chat): Michele scrive o detta col microfono della tastiera e lei capisce — senza
+  intelligenza artificiale — le parole del catalogo, i posti ("in Alba", "al primo piano", "in tutte") e pochi verbi, poi
+  **propone e fa solo dopo il Sì**: segnare una cosa come **fatta** (registro aggiornato: "ho messo i piumoni"), **farla fare**
+  alle signore come lavoro a parte col prezzo ("fai lavare le tende in via Trento"), **toglierla** dalle stelle della settimana o
+  spegnerla ("non fare i filtri questa settimana"), **scrivere alle signore** ("di' alle signore che domani arrivano gli operai"),
+  e risponde a **quando è stata fatta l'ultima volta**, **quanto prende una signora**, **chi pulisce domani**. Se due righe del
+  catalogo si somigliano chiede **"quale?"** coi pulsanti; se manca il posto chiede **"dove?"**. La conversazione resta scritta
+  (`impostazioni/chat.conversazione`, ultime 40), la governante "dondola" mentre parla e ha i tre puntini mentre pensa.
+  Prove nuove: `prova-parole.mjs` (la lingua) e `prova-parla-36.mjs` (la chat dallo schermo).
 - Passi successivi previsti: l'avviso "venerdì Selena ha 3 camere invece di 4" quando il prospetto cambia le ore, le foto dei materiali,
-  l'IA per "Dimmelo a parole" (se Michele vorrà), meteo automatico.
+  la voce vera (parlare senza tastiera), meteo automatico.

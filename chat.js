@@ -24,7 +24,7 @@ export const ORA_FINE_SIGNORE = 14; // dopo quest'ora le proposte vanno al pross
 export const GRUPPI = { nome: "nomi", manutenzione: "manutenzioni" }; // domande che si fanno in una schermata sola, un tocco per riga, fuori dalle 3 del giorno
 export const MOTIVO_PRODOTTO = /prodotto/i;
 
-const nomeZona = (zone, z) => `Signora ${(zone && zone[z] && zone[z].breve) || z}`;
+const nomeZona = (zone, z) => (zone && zone[z] && zone[z].persona) || `Signora ${(zone && zone[z] && zone[z].breve) || z}`;
 const camera = (camere, id) => (camere || CAMERE).find(c => c.id === id) || { id, nome: id, zona: "?", tipo: "camera" };
 const chiaveRisposta = (tipo, k) => `${tipo}|${k}`;
 

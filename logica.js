@@ -84,6 +84,7 @@ export function listinoCompleto(l) {
   out.stelle = { ...base.stelle, ...((!vecchio && l.stelle) || {}) };
   out.controlli = { ...base.controlli, ...((!vecchio && l.controlli) || {}) };
   out.fissi = (!vecchio && Array.isArray(l.fissi)) ? l.fissi : base.fissi;
+  out.pagaCol = (!vecchio && l.pagaCol) ? l.pagaCol : base.pagaCol;
   return out;
 }
 export function tagliaCamera(listino, cameraId) { return listino?.taglia?.[cameraId] === "P" ? "P" : "G"; }

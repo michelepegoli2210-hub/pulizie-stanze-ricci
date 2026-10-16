@@ -134,6 +134,9 @@ export const LISTINO_BASE = {
   zonaStelle: "p2",
   obiettivoStelle: 27,                          // € a settimana (32 se Selena non fa controlli)
   stelleAppartamenti: false,
+  // Cosa si paga: "standard" = i minuti standard qui sopra (chi finisce prima prende lo stesso) · "vero" = il tempo
+  // misurato dal cronometro, da "Inizia" a "Fatto" (minimo 5 minuti). Si cambia in Paghe → Orario di base.
+  pagaCol: "standard",
   // I controlli incrociati: € a camera controllata, e quanti controlli al giorno per chi controlla (giorno → numero)
   controllo: 2.5,
   controlli: { p1: { 5: 2, 6: 2 }, p2: { 5: 1, 6: 1 } },
@@ -163,6 +166,16 @@ export const VOTI_BASE = {
   richiamoDopo: 3,          // alla terza smentita di Michele in un mese, i controlli di quella signora si fermano per un mese
   penalitaRichiesta: 3,
   terzoMale: 3,             // al terzo Male nel mese la chat lo chiede a Michele
+};
+
+// ---- Le signore (Michele, 15 ottobre: "di signore ce ne sono solo 2") ------------------------------------
+// Le zone di lavoro sono due, una per signora, col suo nome. "Appartamenti" non è una persona: gli appartamenti
+// li fa Lucia (col calendario vero). Si cambia tutto in Paghe → "Le signore": nome, attiva o no, e le camere
+// che passano a una collaboratrice nuova (quelle camere diventano sue: lista, paga e controlli).
+export const SQUADRA_BASE = {
+  p1: { nome: "Lucia",  attiva: true,  camere: [] },  // 1° piano, Lella e gli appartamenti
+  p2: { nome: "Selena", attiva: true,  camere: [] },  // 2° piano, Nicole, scale e ingresso
+  ap: { nome: "",       attiva: false, camere: [] },  // non è una persona (resta per le vecchie paghe)
 };
 
 // ---- Le persone che entrano nell'app (nome per entrare → chi è) ----------
