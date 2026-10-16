@@ -12,8 +12,9 @@ import * as G from "./governante.js";
 import * as CH from "./chat.js";
 import * as PAROLE from "./parole.js";
 import * as IA from "./ia.js";
+import * as VOCE from "./voce.js";
 
-export const VERSIONE = "0.39.0";
+export const VERSIONE = "0.40.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -51,6 +52,8 @@ const ICONE_SVG = {
   porta: '<rect x="5" y="3" width="14" height="18" rx="1"/><circle cx="15" cy="12" r="1"/>',
   lavatrice: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M4 7h16M7 5h2"/>',
   secchio: '<path d="M5 8h14l-1.5 12h-11z"/><path d="M8 8a4 4 0 0 1 8 0"/>',
+  altoparlante: '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7"/><path d="M19 6a8 8 0 0 1 0 12"/>',
+  muto: '<path d="M4 9h3l5-4v14l-5-4H4z"/><path d="M17 10l4 4M21 10l-4 4"/>',
 };
 const ICONA = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONE_SVG[n] || ""}</svg>`;
 const STATI = {
@@ -1191,7 +1194,8 @@ function testataGov() {
   const u = umoreGov(), c = consiglioOggi();
   if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
   const testo = c && c.testo ? c.testo : u.testo;
-  return `<div class="gov-viva ${u.v}${govScrive ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (govScrive ? " parla" : ""))}<div class="gov-viva-t"><b>La governante${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
+  const muove = govScrive || voceInCorso;
+  return `<div class="gov-viva ${u.v}${muove ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (muove ? " parla" : ""))}<div class="gov-viva-t"><b>La governante${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
 }
 const escNl = s => esc(s).replace(/\n/g, "<br>");
 function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
@@ -1211,7 +1215,7 @@ function foglioChat(f) {
   const parla = mod ? `<form class="chat-parla" id="formParla"><textarea id="parlaGov" rows="1" placeholder="Scrivi o detta col microfono della tastiera…" data-keep aria-label="Scrivi alla governante"></textarea><button class="chat-invia" type="submit" aria-label="Manda alla governante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
     ${iaAccesa() ? `<div class="chat-veloci">${VELOCI_IA.map((v, i) => `<button type="button" class="chat-veloce" data-ia-veloce="${i}">${esc(v.tasto)}</button>`).join("")}</div>` : ""}
     <p class="muted small center" style="margin:6px 0 0">Per esempio: «ho messo i piumoni» · «fai lavare le tende in Alba» · «quanto prende ${esc(SIG(signore()[0]?.id || "p1"))}?» · «di' alle signore che domani arrivano gli operai»</p>` : "";
-  return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">La governante</span></div>
+  return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">La governante</span>${mod ? `<button class="chat-voce" data-voce-tasto aria-pressed="${voceAccesa()}" aria-label="${voceAccesa() ? "Spegni la voce" : "Accendi la voce"}">${ICONA(voceAccesa() ? "altoparlante" : "muto")}</button>` : ""}</div>
     ${testataGov()}
     <div class="chat-corpo">${vecchie}${aperte}${gruppi}${piede}${conv}${scrive}</div>
     ${parla}
@@ -1250,6 +1254,7 @@ async function parlaGov(testo, perIA) {
   }
   govScrive = false;
   await salvaConversazione([...conversazione(), msg]);
+  if (voceAccesa() && msg && msg.testo) parlaConVoce(msg.testo);
 }
 // La risposta della governante: per le domande risponde subito, per le cose da fare chiede conferma
 async function rispostaGov(r) {
@@ -1411,6 +1416,27 @@ const VELOCI_IA = [
   { tasto: "Cosa è rimasto indietro?", chiedo: "Cosa è rimasto indietro?", testo: "Dimmi le cose del catalogo più in ritardo e quali conviene recuperare per prime, coi giorni." },
   { tasto: "Guarda i soldi", chiedo: "Guarda i soldi", testo: "Guarda i soldi di questa settimana: quanto prende ogni signora, se siamo sopra o sotto i 100 € a testa che spendo di solito, e se c'è qualcosa di strano." },
 ];
+// La bocca si apre e si chiude su quanto è forte la voce, istante per istante.
+let voceInCorso = false, provaVoce = null, voceInProva = false;
+function applicaBocca(forza) {
+  const f = Math.max(0, Math.min(1, Number(forza) || 0));
+  const v = f < 0.07 ? "" : f < 0.24 ? "c" : f < 0.52 ? "b" : "a";
+  document.querySelectorAll(".donnina.gov-fig").forEach(svg => { svg.dataset.v = v; svg.style.setProperty("--apri", f.toFixed(2)); });
+}
+function voceAccesa() { return !!VOCE.leggiVoce().attiva; }
+async function parlaConVoce(testo) {
+  let vc = VOCE.leggiVoce(); if (!vc.attiva) return;
+  // se la voce vera non ha ancora il suo modello, lo cerco adesso (una volta sola)
+  if (vc.motore === "google" && !vc.modello && confIA().chiave) {
+    try { vc = VOCE.salvaVoce({ modello: await VOCE.trovaModelloVoce(confIA().chiave) }); } catch (e) { console.warn("modello voce", e); }
+  }
+  voceInCorso = true; disegna();
+  await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave, onBocca: applicaBocca,
+    onFine: () => { voceInCorso = false; applicaBocca(0); disegna(); },
+    onErrore: (e) => toast("Voce vera non disponibile, uso quella del telefono") });
+}
+function zittisciVoce() { VOCE.stazitta(); voceInCorso = false; applicaBocca(0); }
+
 let provaIA = null;      // il risultato dell'ultimo "Prova la chiave"
 let iaInCorso = false;   // sta pensando
 
@@ -1619,7 +1645,7 @@ async function chiediConsiglioDelGiorno() {
 // --- la cartolina delle impostazioni, a prova di nonna ---------------------
 function cardIA() {
   if (!proprietario()) return "";
-  const c = confIA(), f = IA.FORNITORI[c.fornitore] || IA.FORNITORI[IA.FORNITORE_BASE], q = c.qualita || "sveglia";
+  const c = confIA(), f = IA.FORNITORI[c.fornitore] || IA.FORNITORI[IA.FORNITORE_BASE], q = c.qualita || "sveglia", vc = VOCE.leggiVoce();
   const su = IA.accesa(c);
   const stato = su ? `<span class="ia-stato on">Accesa</span>` : c.chiave ? `<span class="ia-stato off">Spenta</span>` : `<span class="ia-stato off">Non ancora pronta</span>`;
   const esito = provaIA ? (provaIA.ok
@@ -1639,6 +1665,13 @@ function cardIA() {
       <div class="ia-riga"><input type="password" id="iaChiave" data-keep placeholder="incolla qui la chiave" value="${esc(c.chiave || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm ghost" data-ia-incolla>Incolla</button><button type="button" class="btnsm" data-ia-prova ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova"}</button></div>
       ${c.modello ? `<span class="small muted">Sta usando ${esc(c.modello)} · <button type="button" class="nonna-link" style="min-height:0;padding:2px 8px" data-ia-rimodello>cercane un altro</button></span>` : ""}${esito}</div>
     <div class="ia-passo"><b>5.</b> Accendila<div class="seg"><button type="button" aria-pressed="${su}" data-ia-accendi="1" ${c.chiave ? "" : "disabled"}>Accesa</button><button type="button" aria-pressed="${!su}" data-ia-accendi="0">Spenta</button></div></div>
+    <div class="ia-passo"><b>6.</b> La voce: te la legge ad alta voce
+      <div class="seg"><button type="button" aria-pressed="${vc.attiva && vc.motore === "google"}" data-voce-motore="google">Voce vera</button><button type="button" aria-pressed="${vc.attiva && vc.motore === "telefono"}" data-voce-motore="telefono">Voce del telefono</button><button type="button" aria-pressed="${!vc.attiva}" data-voce-motore="">Muta</button></div>
+      ${vc.attiva && vc.motore === "google" ? `<div class="voce-scelte">${VOCE.VOCI.map(v => `<button type="button" class="voce-chip" aria-pressed="${vc.voce === v.id}" data-voce-nome="${esc(v.id)}" title="${esc(v.come)}">${esc(v.nome)}</button>`).join("")}</div>` : ""}
+      ${vc.attiva ? `<div class="ia-riga"><button type="button" class="btnsm" data-voce-prova ${voceInProva ? "disabled" : ""}>${voceInProva ? "Provo…" : "Prova la voce"}</button>${provaVoce ? `<span class="small ${provaVoce.ok ? "" : "muted"}">${esc(provaVoce.testo)}</span>` : ""}</div>` : ""}
+      <span class="small muted">${vc.attiva && vc.motore === "google"
+        ? "La voce vera di Google: sembra una persona. Costa meno di un centesimo al minuto parlato — con il tuo uso, circa 1,50 € al mese in tutto. Serve internet e la stessa chiave di sopra. Se non parte, parla il telefono."
+        : vc.attiva ? "La voce che c'è già nel telefono: gratis, funziona anche senza internet, ma si sente che è un robot." : "Adesso la governante scrive e basta."}</span></div>
     <details class="gov-dett" style="margin-top:10px"><summary class="small">Le cose da sapere, in chiaro</summary>
       <p class="muted small" style="margin:6px 0 0"><b>I nomi degli ospiti non escono mai.</b> Le mando camere, lavori, giorni, soldi e ritardi: mai un nome di chi dorme qui. C'è una prova automatica che lo controlla a ogni versione.</p>
       <p class="muted small" style="margin:6px 0 0"><b>La chiave resta su questo telefono.</b> Non va nel database: le signore non la vedono e non la possono spendere. Se cambi telefono la devi rimettere.</p>
@@ -1673,7 +1706,38 @@ function collegaIA() {
     if (r.ok) { IA.salvaConf({ modello: r.modello, attiva: true }); try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} }
     disegna(); toast(r.ok ? "Funziona: governante intelligente accesa" : "Non ha funzionato");
   });
-  document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
+  document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
+  // --- la voce ---
+  document.querySelectorAll("[data-voce-motore]").forEach(b => b.onclick = () => {
+    VOCE.sbloccaAudio(); zittisciVoce();
+    const m = b.dataset.voceMotore;
+    VOCE.salvaVoce(m ? { attiva: true, motore: m } : { attiva: false });
+    provaVoce = null; disegna();
+    toast(m === "google" ? "Voce vera: tocca «Prova la voce»" : m ? "Voce del telefono accesa" : "Voce spenta");
+  });
+  document.querySelectorAll("[data-voce-nome]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); zittisciVoce(); VOCE.salvaVoce({ voce: b.dataset.voceNome }); provaVoce = null; disegna(); });
+  document.querySelectorAll("[data-voce-tasto]").forEach(b => b.onclick = () => {
+    VOCE.sbloccaAudio();
+    const v = VOCE.leggiVoce();
+    if (v.attiva) { zittisciVoce(); VOCE.salvaVoce({ attiva: false }); disegna(); return toast("Voce spenta"); }
+    VOCE.salvaVoce({ attiva: true, motore: v.modello && IA.accesa(confIA()) ? "google" : "telefono" }); disegna(); toast("Voce accesa");
+  });
+  document.querySelectorAll("[data-voce-prova]").forEach(b => b.onclick = async () => {
+    VOCE.sbloccaAudio(); zittisciVoce();
+    let v = VOCE.leggiVoce();
+    if (v.motore === "google") {
+      const chiave = confIA().chiave;
+      if (!chiave) { provaVoce = { ok: false, testo: "Prima metti la chiave qui sopra." }; return disegna(); }
+      if (!v.modello) {
+        voceInProva = true; disegna();
+        try { v = VOCE.salvaVoce({ modello: await VOCE.trovaModelloVoce(chiave) }); }
+        catch (e) { voceInProva = false; provaVoce = { ok: false, testo: String(e.message || e).slice(0, 90) }; return disegna(); }
+        voceInProva = false;
+      }
+    }
+    provaVoce = { ok: true, testo: v.motore === "google" ? "Sta usando " + v.modello : "Voce del telefono" }; disegna();
+    parlaConVoce(`Buongiorno Michele, sono la governante. Oggi ci sono ${pulizieDelGiorno(L.oggiISO()).length} lavori in programma.`);
+  });
 }
 
 function collegaChat() {

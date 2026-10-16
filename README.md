@@ -501,3 +501,16 @@ In Italia Google applica le regole dati del piano a pagamento anche al piano gra
 - **Il consiglio del giorno.** Aprendo la governante lei saluta con la situazione vera in una riga e il consiglio da fare per primo: una sola chiamata al giorno, salvata nel telefono.
 
 La chiave sta solo nel `localStorage` del telefono del proprietario (`ricci_ia`), **mai in Firestore**: le signore non la vedono e non la possono spendere.
+
+
+## La voce (dalla versione 0.40)
+
+La governante può leggere ad alta voce quello che risponde. Si accende in **Governante → Regole**, passo 6, e si zittisce al volo con l'altoparlante in cima alla chat.
+
+- **Voce vera** (Google, `voce.js` → endpoint `/v1beta/interactions`, modello `*-tts`): sembra una persona, sei voci fra cui scegliere, italiano riconosciuto da solo. Costa **0,009 $ al minuto parlato** (25 token per secondo di audio): con 5 minuti al giorno sono **circa 1,30 € al mese**. Usa la stessa chiave dell'intelligenza artificiale.
+- **Voce del telefono** (`speechSynthesis`): gratis, funziona anche senza internet, ma è robotica. È anche la rete di sicurezza: se Google non risponde parte questa da sola.
+- **Muta**: la governante scrive e basta.
+
+**Le labbra si muovono sul suono vero**, non a tempo: l'audio passa per un `AnalyserNode`, si misura l'ampiezza a ogni fotogramma e si sceglie una delle tre bocche. Lo stesso testo non si paga due volte (cassetto in memoria), e si leggono al massimo 600 caratteri per volta.
+
+Un **avatar video fotorealistico** è stato valutato e scartato: il più economico utilizzabile costerebbe circa 20 € al mese, richiederebbe un server (che questa app non ha) o una chiave molto più costosa dentro al telefono, nessun fornitore dichiara l'italiano, e servirebbe video in streaming — quindi niente uso offline. I dettagli e i prezzi stanno nelle specifiche, punto 19.
