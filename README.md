@@ -12,7 +12,8 @@ Funziona su iPhone e Android aprendo un link e mettendola in Home. Niente abbona
 | **GitHub Pages** (questo repository) | Tiene i file dell'app e li mostra al link qui sopra. Gratis. |
 | **Firebase – Firestore** | Il magazzino dei dati: prospetto, pulizie, Fatta/Non fatta/Problema, pagamenti, listino, note. Gratis (piano Spark). |
 | **Firebase – Authentication** | Gli accessi con nome e password. I proprietari creano gli account dalla console. |
-| **SheetJS** (`xlsx.min.js`) | Legge il foglio Excel di papà dentro al telefono, con regole fisse. Niente intelligenza artificiale. |
+| **SheetJS** (`xlsx.min.js`) | Legge il foglio Excel di papà dentro al telefono, con regole fisse. |
+| **La governante intelligente** (`ia.js`, dalla 0.38) | Facoltativa. Si accende con una chiave (Gemini, ChatGPT o Claude) in Governante → Regole: la governante capisce come parli, guarda i numeri della casa e dà consigli. Senza chiave l'app funziona lo stesso, con le parole del catalogo. La chiave resta solo sul telefono di Michele. |
 
 ## I file
 
@@ -476,3 +477,22 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
 - Passi successivi previsti: la governante con l'intelligenza artificiale vera (Gemini a pagamento, circa 1-2 € al mese: col piano
   gratuito Google usa i contenuti per migliorare i suoi prodotti e le persone possono leggerli, quindi non va bene coi nomi degli
   ospiti e delle signore), la voce vera senza tastiera, le foto dei materiali, meteo automatico.
+
+
+## La governante intelligente (dalla versione 0.38)
+
+Facoltativa: l'app funziona benissimo anche senza. Si accende in **Governante → Regole**, prima cartolina, quattro passi:
+
+1. **Scegli chi le presta il cervello**: Gemini (la più facile: basta la mail di Google), ChatGPT o Claude.
+2. **Prendi la chiave** sul sito del fornitore (per Gemini: `aistudio.google.com/apikey`).
+3. **Incollala** e tocca **Prova la chiave**: l'app cerca da sola il modello piccolo (quello che costa pochissimo) e prova a parlarci.
+4. **Accendila.**
+
+Costo vero, con l'uso di Michele: **meno di 1 € al mese** con tutti e tre.
+
+### Le tre cose importanti
+- **I nomi degli ospiti non escono mai.** Alla governante si manda una "fotografia" della casa: camere, lavori, giorni, soldi, ritardi del catalogo, manutenzione. Mai un nome di ospite. C'è una prova automatica (`dev/prova-ia-38.mjs`) che lo verifica a ogni versione.
+- **Non fa niente da sola.** Propone e chiede "Confermo?": il lavoro nasce solo dopo il "Sì, fallo", esattamente come prima.
+- **Se cade, non si rompe niente.** Senza chiave, senza internet o con la chiave scaduta torna da sola alle parole del catalogo (`parole.js`). Il bollino **IA** accanto alla risposta dice chi ha parlato.
+
+La chiave sta solo nel `localStorage` del telefono del proprietario (`ricci_ia`), **mai in Firestore**: le signore non la vedono e non la possono spendere.

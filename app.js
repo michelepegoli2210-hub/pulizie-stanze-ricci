@@ -11,8 +11,9 @@ import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiesta
 import * as G from "./governante.js";
 import * as CH from "./chat.js";
 import * as PAROLE from "./parole.js";
+import * as IA from "./ia.js";
 
-export const VERSIONE = "0.37.0";
+export const VERSIONE = "0.38.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -107,11 +108,13 @@ function DONNINA(v = "scopa", cls = "", colore = null) {
     <path d="M39 37 Q60 12 81 37 L79 43 Q60 29 41 43Z" fill="#E04E5C"/>
     <path d="M41 42 L30 36 L35 46Z" fill="#E04E5C"/>`}
     <path d="M44 33 Q60 20 76 33" stroke="rgba(255,255,255,.35)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <g class="sopracciglia"><path d="M46.5 37.5 Q53 33.8 58.5 36.6" stroke="${capelli}" stroke-width="2.3" fill="none" stroke-linecap="round"/><path d="M61.5 36.6 Q67 33.8 73.5 37.5" stroke="${capelli}" stroke-width="2.3" fill="none" stroke-linecap="round"/></g>
     <g class="occhi"><circle cx="53" cy="45" r="2.4" fill="#2B2B2B"/><circle cx="67" cy="45" r="2.4" fill="#2B2B2B"/>
     <circle cx="54" cy="44" r=".8" fill="#fff"/><circle cx="68" cy="44" r=".8" fill="#fff"/></g>
     <g class="palpebre"><rect x="50" y="41" width="6" height="5" rx="2.4" fill="${pelle}"/><rect x="64" y="41" width="6" height="5" rx="2.4" fill="${pelle}"/></g>
     <circle cx="48" cy="51" r="3.4" fill="#F7A1A6" opacity=".6"/><circle cx="72" cy="51" r="3.4" fill="#F7A1A6" opacity=".6"/>
-    ${bocca}
+    <g class="bocca">${bocca}</g>
+    <g class="bocca-parla"><ellipse cx="60" cy="54" rx="6.2" ry="4.4" fill="#8E3B42"/><ellipse cx="60" cy="57" rx="3.4" ry="1.8" fill="#E8838F"/><path d="M54.5 51.6 Q60 50 65.5 51.6" stroke="#FFFFFF" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
     ${davanti}
   </svg>`;
 }
@@ -1075,8 +1078,9 @@ function umoreGov() {
 // La governante grande, viva: respira, sbatte le palpebre, cambia faccia con l'umore
 function testataGov() {
   const u = umoreGov();
-  return `<div class="gov-viva ${u.v}">${DONNINA("governante", "viva")}<div class="gov-viva-t"><b>La governante</b><span>${esc(u.testo)}</span></div></div>`;
+  return `<div class="gov-viva ${u.v}${govScrive ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (govScrive ? " parla" : ""))}<div class="gov-viva-t"><b>La governante</b><span>${esc(u.testo)}</span></div></div>`;
 }
+const escNl = s => esc(s).replace(/\n/g, "<br>");
 function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
 function foglioChat(f) {
   const c = statoChatApp(); const mod = puoModificare();
@@ -1089,9 +1093,10 @@ function foglioChat(f) {
   const conv = conversazione().map((m, i) => m.chi === "io"
     ? `<div class="chat-msg me"><div class="chat-bolla">${esc(m.testo)}</div></div>`
     : m.fatto ? `<div class="chat-fatto">${esc(m.testo)}</div>`
-    : bollaGov(esc(m.testo), (m.tasti && m.tasti.length) ? `<div class="chat-tasti ${m.tasti.length === 2 ? "due" : m.tasti.length === 4 ? "quattro" : ""}">${m.tasti.map(t => `<button type="button" class="chat-tasto" data-conv="${i}|${esc(t.k)}">${esc(t.testo)}</button>`).join("")}</div>` : (m.scelto ? `<div class="chat-scelto">→ ${esc(m.scelto)}</div>` : ""))).join("");
+    : bollaGov(`${m.ia ? `<span class="ia-bollo" title="risposta dell'intelligenza artificiale">IA</span>` : ""}${escNl(m.testo)}`, (m.tasti && m.tasti.length) ? `<div class="chat-tasti ${m.tasti.length === 2 ? "due" : m.tasti.length === 4 ? "quattro" : ""}">${m.tasti.map(t => `<button type="button" class="chat-tasto" data-conv="${i}|${esc(t.k)}">${esc(t.testo)}</button>`).join("")}</div>` : (m.scelto ? `<div class="chat-scelto">→ ${esc(m.scelto)}</div>` : ""))).join("");
   const scrive = govScrive ? bollaGov(`<span class="chat-punti"><i></i><i></i><i></i></span>`) : "";
   const parla = mod ? `<form class="chat-parla" id="formParla"><textarea id="parlaGov" rows="1" placeholder="Scrivi o detta col microfono della tastiera…" data-keep aria-label="Scrivi alla governante"></textarea><button class="chat-invia" type="submit" aria-label="Manda alla governante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
+    ${iaAccesa() ? `<div class="chat-veloci">${VELOCI_IA.map((v, i) => `<button type="button" class="chat-veloce" data-ia-veloce="${i}">${esc(v.tasto)}</button>`).join("")}</div>` : ""}
     <p class="muted small center" style="margin:6px 0 0">Per esempio: «ho messo i piumoni» · «fai lavare le tende in Alba» · «quanto prende ${esc(SIG(signore()[0]?.id || "p1"))}?» · «di' alle signore che domani arrivano gli operai»</p>` : "";
   return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">La governante</span></div>
     ${testataGov()}
@@ -1114,14 +1119,22 @@ async function salvaConversazione(righe) {
   await salvaChat({ ...S.chat, conversazione: conv });
 }
 // Michele scrive o detta: lei capisce, risponde, e se c'è da fare qualcosa chiede conferma
-async function parlaGov(testo) {
+async function parlaGov(testo, perIA) {
   const t = String(testo || "").trim(); if (!t) return;
   const conv = [...conversazione(), { chi: "io", testo: t, ora: S.db.adesso() }];
   await salvaConversazione(conv);
   govScrive = true; disegna();
-  let r;
-  try { r = PAROLE.capisci(t, ctxParole()); } catch (e) { console.warn("parole", e); r = { tipo: "boh", testo: "Mi sono persa. Riprova con parole semplici." }; }
-  const msg = await rispostaGov(r);
+  let msg = null;
+  // prima prova la governante intelligente; se non c'è o non risponde, si torna alle parole del catalogo
+  if (iaAccesa()) {
+    try { msg = await rispostaIA(perIA || t, conv); }
+    catch (e) { console.warn("ia", e); msg = null; toast("La governante intelligente non risponde: " + String(e.message || e)); }
+  }
+  if (!msg) {
+    let r;
+    try { r = PAROLE.capisci(t, ctxParole()); } catch (e) { console.warn("parole", e); r = { tipo: "boh", testo: "Mi sono persa. Riprova con parole semplici." }; }
+    msg = await rispostaGov(r);
+  }
   govScrive = false;
   await salvaConversazione([...conversazione(), msg]);
 }
@@ -1270,7 +1283,214 @@ async function eseguiParole(a) {
   }
   return "Fatto.";
 }
+// ============================================================================
+//  LA GOVERNANTE INTELLIGENTE (0.38)
+//  Dietro c'è un'intelligenza artificiale vera (Gemini, ChatGPT o Claude, a
+//  scelta tua). Le mandiamo una "fotografia" della casa — senza i nomi degli
+//  ospiti — e lei risponde, consiglia e PROPONE. Non fa mai niente da sola:
+//  la proposta passa sempre dal tuo "Sì, fallo", come prima.
+//  Senza chiave, o se internet non va, l'app torna da sola alle parole del
+//  catalogo (parole.js) e non si accorge nessuno.
+// ============================================================================
+const VELOCI_IA = [
+  { tasto: "Dammi un consiglio", chiedo: "Dammi un consiglio", testo: "Guarda la fotografia della casa e dimmi le 2 o 3 cose più importanti da fare adesso, in ordine. Se c'è qualcosa da far fare alle signore, proponimela." },
+  { tasto: "Come va oggi?", chiedo: "Come va oggi?", testo: "Raccontami com'è andata oggi: cosa è fatto, cosa manca e quanto stiamo spendendo questa settimana. Corto." },
+  { tasto: "Cosa è rimasto indietro?", chiedo: "Cosa è rimasto indietro?", testo: "Dimmi le cose del catalogo più in ritardo e quali conviene recuperare per prime, coi giorni." },
+  { tasto: "Guarda i soldi", chiedo: "Guarda i soldi", testo: "Guarda i soldi di questa settimana: quanto prende ogni signora, se siamo sopra o sotto i 100 € a testa che spendo di solito, e se c'è qualcosa di strano." },
+];
+let provaIA = null;      // il risultato dell'ultimo "Prova la chiave"
+let iaInCorso = false;   // sta pensando
+
+function confIA() { return IA.leggiConf(); }
+function iaAccesa() { return proprietario() && IA.accesa(confIA()); }
+
+// --- l'elenco delle sigle che l'IA può usare -------------------------------
+function postiIA() { return [...S.camere, ...G.LUOGHI_COMUNI]; }
+function elenchiIA() {
+  const camere = postiIA().map(c => {
+    const z = signoraDiCamera(c.id) || c.zona;
+    const che = c.tipo === "casa" ? "appartamento" : c.tipo === "comune" ? "zona comune" : "camera";
+    return `${c.id} = ${c.nome} (${che}, ${S.zone[z]?.nome || z}${SIG(z) ? ", la pulisce " + SIG(z) : ""})`;
+  }).join("\n");
+  const regole = regoleGov().map(r => `${r.codice} ${r.posto}/${r.superficie}: ${r.regola}${r.ogni ? ` — ogni ${r.ogni} giorni, ${r.minuti} minuti` : ""}`).join("\n");
+  return { camere, regole };
+}
+
+// --- la fotografia della casa, adesso (mai i nomi degli ospiti) ------------
+function fotografiaIA() {
+  const oggi = L.oggiISO(), ora = oraRoma(), l = L.listinoCompleto(S.listino), R = [];
+  const prova = (etichetta, f) => { try { const t = f(); if (t) R.push(t); } catch (e) { console.warn("foto/" + etichetta, e); } };
+  R.push(`OGGI è ${L.dataGiornoLungo(oggi)} (${oggi}), ore ${ora}:00 circa. La paga della settimana chiude sabato alle ${(S.regole.chiusuraPaga || {}).ora || 14}.`);
+  prova("signore", () => `LE SIGNORE: ${signore().map(z => `${SIG(z.id)} (${z.zonaNome})`).join(" · ")}. Si paga ${eur(l.tariffe.albergo)} l'ora in albergo e in via Nazario Sauro (Lella e Nicole), ${eur(l.tariffe.appartamenti)} l'ora negli appartamenti, sulle ore standard${l.pagaCol === "vero" ? " — ma adesso è acceso il pagamento a minuto col cronometro" : ""}. Le stelle in più le fa solo ${SIG(l.zonaStelle)}; i controlli incrociati valgono ${eur(l.controllo)} l'uno.`);
+  prova("lavoro", () => {
+    const ls = pulizieDelGiorno(oggi);
+    if (!ls.length) return "LAVORO DI OGGI: niente in programma.";
+    return "LAVORO DI OGGI:\n" + ls.map(p => `- ${camera(p.camera).nome}: ${titoloLavoro(p)}, ${p.minuti || 0} minuti, ${eur(p.importo)}, ${SIG(p.zona)} — ${p.stato === "fatta" ? "FATTA alle " + L.oraBreve(p.ora) : p.stato === "in_corso" ? "in corso da " + L.oraBreve(p.inizio) : p.stato === "problema" ? "PROBLEMA: " + (p.nota || "segnalato") : p.stato === "non_fatta" ? "non fatta" : "da fare"}`).join("\n");
+  });
+  prova("domani", () => {
+    const d = L.aggiungiGiorni(oggi, 1), ls = pulizieDelGiorno(d);
+    return `DOMANI (${L.dataGiornoLungo(d)}): ${ls.length ? ls.map(p => `${camera(p.camera).nome} (${SIG(p.zona)})`).join(", ") : "niente"}.`;
+  });
+  prova("settimana", () => {
+    const chiave = L.settimanaCorrente();
+    return "SOLDI GIÀ MATURATI QUESTA SETTIMANA: " + signore().map(z => {
+      const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino);
+      return `${SIG(z.id)} ${eur(t.totale)} (ore ${eur(t.ore)}${t.stelle ? ", stelle " + eur(t.stelle) : ""}${t.controlliFatti && t.controlliFatti.importo ? ", controlli " + eur(t.controlliFatti.importo) : ""}${t.tagli ? ", tagliati " + eur(t.tagli) : ""})`;
+    }).join(" · ") + ". Di solito spendo circa 100 € a testa a settimana: è il tetto.";
+  });
+  prova("prospetto", () => {
+    const lun = L.lunediDi(oggi), c = contoProspetto(lun, L.aggiungiGiorni(lun, 6));
+    return `DAL PROSPETTO, LA SETTIMANA INTERA: pulizie ${eur(c.pulizie)} + stelle ${eur(c.stelle)} = ${eur(c.pulizie + c.stelle)}${c.lavori ? `, più ${eur(c.lavori)} di lavori a parte` : ""}.`;
+  });
+  prova("stelle", () => {
+    const ss = stelleSettimanaApp(); if (!ss) return "";
+    return `STELLE DI ${String(SIG(ss.zona)).toUpperCase()}: obiettivo ${eur(ss.obiettivo)} a settimana, adesso siamo a ${eur(ss.euro)}${ss.fatte.length ? ` (${ss.fatte.length} già fatte)` : ""}. In programma da qui a sabato: ${ss.righe.slice(0, 8).map(r => `${r.luogoNome}/${r.nome}`).join(", ") || "niente"}.`;
+  });
+  prova("controlli", () => {
+    const righe = [];
+    for (const z of signore()) {
+      const co = L.controlliDaFare({ zona: z.id, iso: oggi, listino: S.listino, pulizie: S.pulizie, controlli: S.controlli, camere: S.camere, regole: S.regole, adesso: new Date() });
+      if (co.quota) righe.push(`${SIG(z.id)} oggi deve controllare ${co.quota} ${co.quota === 1 ? "camera" : "camere"} (ne ha fatte ${co.fattiOggi.length}${co.daFare.length ? `, da fare: ${co.daFare.map(p => camera(p.camera).nome).join(", ")}` : ""})`);
+      const rif = L.daRifare(S.controlli, z.id, S.regole, new Date());
+      if (rif.length) righe.push(`${SIG(z.id)} ha ${rif.reduce((n, x) => n + x.voci.length, 0)} cose bocciate da rifare entro sabato alle 14 (${rif.slice(0, 3).map(x => camera(x.controllo.camera).nome).join(", ")})`);
+    }
+    return righe.length ? "CONTROLLI INCROCIATI: " + righe.join(" · ") + "." : "";
+  });
+  prova("indietro", () => {
+    const righe = indietroIA(12);
+    return righe.length ? "PIÙ IN RITARDO NEL CATALOGO:\n" + righe.map(x => `- ${x.c.nome}/${x.r.superficie} (${x.r.codice}, ${x.r.regola}): ${x.mai ? "MAI fatta" : x.giorni + " giorni fa"}, si rifà ogni ${x.r.ogni}`).join("\n") : "";
+  });
+  prova("tabellone", () => { const t = tabellone(); return t ? `TABELLONE: copertura ${t.copertura}%, buchi ${t.buchi}.` : ""; });
+  prova("manutenzione", () => {
+    const ap = lavoriAperti(); if (!ap.length) return "MANUTENZIONE: niente aperto.";
+    return `MANUTENZIONE APERTA (${ap.length}): ` + ap.slice(0, 6).map(m => `${m.titolo}${m.camera ? " in " + camera(m.camera).nome : ""} (da ${L.giorniTra(m.data, oggi)} giorni)`).join(" · ") + ".";
+  });
+  prova("occupate", () => {
+    const dentro = soggiorniLista().filter(s => s.arrivo <= oggi && s.partenza > oggi).map(s => camera(s.camera).nome);
+    const parte = soggiorniLista().filter(s => s.partenza === oggi).map(s => camera(s.camera).nome);
+    return `CAMERE OCCUPATE OGGI: ${dentro.length ? dentro.join(", ") : "nessuna"}${parte.length ? ` · partono oggi: ${parte.join(", ")}` : ""}. (I nomi degli ospiti non te li mando mai.)`;
+  });
+  prova("messaggio", () => { const m = (S.messaggi || {})[oggi]; return m && m.testo ? `MESSAGGIO DI OGGI ALLE SIGNORE: «${m.testo}»` : ""; });
+  prova("spesa", () => {
+    const voci = Object.values((S.spesa || {}).voci || {}).filter(v => v && !v.fatto);
+    return voci.length ? `DA COMPRARE: ${voci.slice(0, 8).map(v => v.nome || v.cosa).join(", ")}.` : "";
+  });
+  prova("chat", () => { const n = statoChatApp().aperte.length; return n ? `DOMANDE CHE TI HO GIÀ FATTO E ASPETTANO RISPOSTA: ${n}.` : ""; });
+  return R.join("\n");
+}
+// Le cose del catalogo più in ritardo (per posto), le peggiori prima
+function indietroIA(max = 12) {
+  const oggi = L.oggiISO(), out = [];
+  for (const r of regoleGov()) {
+    if (!r.ogni) continue;
+    for (const c of postiIA()) {
+      const reg = S.registro[G.chiaveRegistro(r.id, c.id)], ultima = reg && reg.ultima;
+      const giorni = ultima ? L.giorniTra(ultima, oggi) : Math.round(r.ogni * 3);
+      if (giorni <= r.ogni) continue;
+      out.push({ r, c, giorni, mai: !ultima, quanto: giorni / r.ogni });
+    }
+  }
+  return out.sort((a, b) => b.quanto - a.quanto || a.r.ogni - b.r.ogni).slice(0, max);
+}
+function sistemaIA() { return IA.istruzioni({ oggi: L.oggiISO(), testo: fotografiaIA() }, elenchiIA()); }
+
+// --- da quello che dice l'IA a un'azione vera dell'app ---------------------
+function camereDaIA(dove) {
+  const lista = Array.isArray(dove) ? dove : dove ? [dove] : [];
+  const tutte = postiIA(), ids = new Set();
+  for (const d of lista) {
+    const s = String(d || "").trim(); if (!s) continue;
+    if (/^tutt/i.test(s)) { tutte.forEach(c => ids.add(c.id)); continue; }
+    const per = tutte.find(c => c.id === s) || tutte.find(c => PAROLE.norm(c.nome) === PAROLE.norm(s));
+    if (per) { ids.add(per.id); continue; }
+    try { for (const id of PAROLE.trovaLuoghi(s, ctxParole())) ids.add(id); } catch (e) {}
+  }
+  return [...ids];
+}
+function regolaDaIA(codice, nome) {
+  const rs = regoleGov(), cod = String(codice || "").trim().toUpperCase();
+  return rs.find(r => String(r.codice).toUpperCase() === cod) || rs.find(r => String(r.id).toUpperCase() === cod)
+    || (nome ? rs.find(r => PAROLE.norm(r.nome) === PAROLE.norm(nome)) : null) || null;
+}
+const dataBuona = d => /^\d{4}-\d{2}-\d{2}$/.test(String(d || "")) ? d : L.oggiISO();
+function azioneDaIA(a) {
+  if (!a || !a.tipo) return null;
+  if (a.tipo === "messaggio") { const t = String(a.testo || "").trim(); return t ? { tipo: "messaggio", giorno: dataBuona(a.giorno), testo: t.slice(0, 300) } : null; }
+  const camere = camereDaIA(a.dove || a.camere);
+  if (a.tipo === "aggiungi") {
+    const r = regolaDaIA(a.codice, a.cosa || a.nome), cosa = String(a.cosa || a.nome || (r && r.nome) || "").trim();
+    if (!cosa) return null;
+    return { tipo: "aggiungi", regola: r, cosa, camere, minuti: Math.max(1, Math.min(120, Math.round(Number(a.minuti) || (r && r.minuti) || 10))) };
+  }
+  const r = regolaDaIA(a.codice, a.cosa || a.nome); if (!r) return null;
+  if (a.tipo === "fatto") return { tipo: "fatto", regola: r, altre: [], camere, giorno: dataBuona(a.giorno) };
+  if (a.tipo === "togli") return { tipo: "togli", regola: r, regole: [r], camere, perSempre: !!a.perSempre };
+  return null;
+}
+// La risposta dell'IA, pronta per la chat (col "Sì, fallo" se propone qualcosa)
+async function rispostaIA(testo, conv) {
+  const c = confIA();
+  const r = await IA.chiedi({ conf: c, sistema: sistemaIA(), storia: conv.slice(0, -1), testo });
+  if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
+  IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
+  const base = { chi: "gov", ora: S.db.adesso(), ia: true };
+  const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
+  const a = azioneDaIA(r.azione);
+  if (!a) return { ...base, testo: dice };
+  if ((a.tipo === "fatto" || a.tipo === "aggiungi") && !a.camere.length)
+    return { ...base, testo: `${dice}\n\n«${a.regola ? a.regola.nome : a.cosa}» dove?`, tasti: tastiDove(), azioneDove: a };
+  const prop = a.tipo === "togli" ? testoTogli(a)
+    : a.tipo === "messaggio" ? `Scrivo alle signore, per ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)}: «${a.testo}». Confermo?`
+    : testoProposta(a);
+  return { ...base, testo: `${dice}\n\n${prop}`, tasti: [{ k: "si", testo: "Sì, fallo" }, { k: "no", testo: "No, lascia" }], azione: a };
+}
+
+// --- la cartolina delle impostazioni, a prova di nonna ---------------------
+function cardIA() {
+  if (!proprietario()) return "";
+  const c = confIA(), f = IA.FORNITORI[c.fornitore] || IA.FORNITORI[IA.FORNITORE_BASE];
+  const su = IA.accesa(c);
+  const stato = su ? `<span class="ia-stato on">Accesa</span>` : c.chiave ? `<span class="ia-stato off">Spenta</span>` : `<span class="ia-stato off">Non ancora pronta</span>`;
+  const esito = provaIA ? (provaIA.ok
+    ? `<div class="note ok" style="margin:8px 0 0">Funziona. Ha risposto: «${esc(provaIA.testo || "ci sono")}». Sta usando <b>${esc(provaIA.modello)}</b> (il modello piccolo, quello che costa pochissimo).</div>`
+    : `<div class="note warn" style="margin:8px 0 0">Non ha funzionato: ${esc(provaIA.errore)}</div>`) : "";
+  const scelta = Object.entries(IA.FORNITORI).map(([k, v]) => `<button type="button" aria-pressed="${c.fornitore === k}" data-ia-fornitore="${k}">${esc(v.nome)}</button>`).join("");
+  return `<section class="card ia-card"><div class="ia-testa"><h2 style="margin:0">La governante intelligente</h2>${stato}</div>
+    <p class="muted small" style="margin:6px 0 10px">Adesso la governante capisce le parole del catalogo: funziona, ma è un elenco, non un cervello. Se le dai una <b>chiave</b>, dietro ci pensa un'intelligenza artificiale vera: capisce come parli tu, guarda i numeri della casa, ti dà consigli e ti propone cosa fare. Decide sempre tu: lei chiede «Confermo?» e non fa niente finché non tocchi <b>Sì</b>.</p>
+    <div class="ia-passo"><b>1.</b> Scegli chi le presta il cervello<div class="seg ia-seg">${scelta}</div>
+      <span class="small muted">Costo vero, con quanto la usi tu: ${esc(IA.COSTI[c.fornitore] || "pochi centesimi al mese")}.</span></div>
+    <div class="ia-passo"><b>2.</b> Vai su <b>${esc(f.dove)}</b> dal computer, entra con la tua mail e fatti dare la chiave. ${esc(f.chiave)}.</div>
+    <div class="ia-passo"><b>3.</b> Incollala qui sotto
+      <div class="ia-riga"><input type="password" id="iaChiave" data-keep placeholder="incolla qui la chiave" value="${esc(c.chiave || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm" data-ia-prova ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova la chiave"}</button></div>
+      ${c.modello ? `<span class="small muted">Modello in uso: ${esc(c.modello)} <button type="button" class="nonna-link" style="min-height:0;padding:2px 8px" data-ia-rimodello>cercane un altro</button></span>` : ""}${esito}</div>
+    <div class="ia-passo"><b>4.</b> Accendila<div class="seg" style="margin-top:4px"><button type="button" aria-pressed="${su}" data-ia-accendi="1" ${c.chiave ? "" : "disabled"}>Accesa</button><button type="button" aria-pressed="${!su}" data-ia-accendi="0">Spenta</button></div></div>
+    <p class="muted small" style="margin:10px 0 0"><b>Le tre cose da sapere, in chiaro.</b> Primo: quello che scrivi alla governante esce da qui e lo legge il computer di ${esc(f.nome)}${c.fornitore === "gemini" ? " (Google)" : c.fornitore === "openai" ? " (OpenAI)" : " (Anthropic)"} — <b>i nomi degli ospiti non glieli mando mai</b>, le mando camere, lavori, giorni e soldi. Secondo: la chiave resta solo su questo telefono, non va nel database, le signore non la vedono e non la spendono. Terzo: se internet non va o la chiave scade, la governante torna da sola a capire con le parole del catalogo, come adesso: non si rompe niente.</p>
+    ${c.chiave ? `<button class="nonna-link" style="margin:8px 0 0" data-ia-cancella>Cancella la chiave da questo telefono</button>` : ""}</section>`;
+}
+function collegaIA() {
+  document.querySelectorAll("[data-ia-fornitore]").forEach(b => b.onclick = () => { IA.salvaConf({ fornitore: b.dataset.iaFornitore, modello: "" }); provaIA = null; disegna(); });
+  document.querySelectorAll("[data-ia-accendi]").forEach(b => b.onclick = () => {
+    const su = b.dataset.iaAccendi === "1";
+    if (su && !(document.getElementById("iaChiave")?.value || "").trim()) return toast("Prima incolla la chiave");
+    IA.salvaConf({ attiva: su, chiave: (document.getElementById("iaChiave")?.value || "").trim() });
+    disegna(); toast(su ? "Governante intelligente accesa" : "Spenta: torna alle parole del catalogo");
+  });
+  document.querySelectorAll("[data-ia-cancella]").forEach(b => b.onclick = () => { IA.cancellaConf(); provaIA = null; disegna(); toast("Chiave cancellata da questo telefono"); });
+  document.querySelectorAll("[data-ia-rimodello]").forEach(b => b.onclick = () => { IA.salvaConf({ modello: "" }); provaIA = null; disegna(); toast("Cerco di nuovo il modello: tocca «Prova la chiave»"); });
+  document.querySelectorAll("[data-ia-prova]").forEach(b => b.onclick = async () => {
+    const chiave = (document.getElementById("iaChiave")?.value || "").trim();
+    if (!chiave) return toast("Incolla prima la chiave");
+    IA.salvaConf({ chiave }); iaInCorso = true; provaIA = null; disegna();
+    const r = await IA.provaChiave({ ...confIA(), chiave });
+    iaInCorso = false; provaIA = r;
+    if (r.ok) IA.salvaConf({ modello: r.modello, attiva: true });
+    disegna(); toast(r.ok ? "Funziona: governante intelligente accesa" : "Non ha funzionato");
+  });
+  document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
+}
+
 function collegaChat() {
+  collegaIA(); // i tasti veloci della governante intelligente stanno dentro il foglio della chat
   document.querySelectorAll("[data-chat-risposta]").forEach(b => b.onclick = () => { const parti = b.dataset.chatRisposta.split("|"); const k = parti.pop(); rispondiChat(parti.join("|"), k); });
   document.querySelectorAll("[data-chat-parole]").forEach(b => b.onclick = () => { const box = document.getElementById("cp_" + b.dataset.chatParole); if (!box) return; box.hidden = !box.hidden; if (!box.hidden) box.querySelector("input")?.focus(); });
   document.querySelectorAll("[data-chat-invia]").forEach(b => b.onclick = () => { const id = b.dataset.chatInvia; const inp = document.getElementById("ci_" + id); const t = (inp?.value || "").trim(); if (!t) { inp?.focus(); return; } rispondiChat(id, "parole", t); });
@@ -1840,7 +2060,7 @@ function vistaRegoleGov() {
   const auto = Object.entries((S.chat && S.chat.automatiche) || {}).filter(([, v]) => v);
   const daSola = `<section class="card"><h2 style="margin:0 0 4px">Cose che la governante fa da sola</h2><p class="muted small" style="margin:0 0 8px">Quando a una domanda della chat rispondi due volte allo stesso modo, la governante chiede "la prossima volta lo faccio da sola?". Quelle a cui hai detto sì stanno qui: le fa senza chiedere e scrive "Fatto da sola" nella chat. Un tocco e torna a chiedertelo.</p>
     ${auto.length ? `<div class="rows">${auto.map(([tipo, v]) => `<div class="row"><span><b>${esc(CH.TITOLI[tipo] || tipo)}</b><br><span class="muted small">risponde sempre: ${esc(String(v))}</span></span>${mod ? `<button class="btnsm ghost" data-chat-auto-off="${esc(tipo)}">Chiedimelo</button>` : ""}</div>`).join("")}</div>` : `<p class="muted small" style="margin:0">Per ora niente: ti chiede tutto.</p>`}</section>`;
-  return livelli + daSola + profili + calendario + cardStagioni + cardMeteo + gruppi + tue + nuova + soglie + materiali + fisse + camereFlag + mamma;
+  return cardIA() + livelli + daSola + profili + calendario + cardStagioni + cardMeteo + gruppi + tue + nuova + soglie + materiali + fisse + camereFlag + mamma;
 }
 // --- Rivedi con la mamma: si legge il "come si fa", lei conferma o lo corregge ---
 function foglioRivedi(f) {
@@ -2654,6 +2874,7 @@ function collega() {
   document.querySelectorAll("[data-nuovo-man]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovoMan" }));
   // la governante
   document.querySelectorAll("[data-gov-tab]").forEach(b => b.onclick = () => { S.govTab = b.dataset.govTab; disegna(); });
+  collegaIA();
   document.querySelectorAll("[data-chat-apri]").forEach(b => b.onclick = () => apriFoglio({ tipo: "chat" }));
   document.querySelectorAll("[data-spesa-fatto]").forEach(b => b.onclick = () => { const voci = { ...((S.spesa && S.spesa.voci) || {}) }; if (voci[b.dataset.spesaFatto]) voci[b.dataset.spesaFatto] = { ...voci[b.dataset.spesaFatto], fatto: true, fattoIl: L.oggiISO() }; salvaSpesa({ voci }).then(() => toast("Segnato come comprato")); });
   document.querySelectorAll("[data-gov-freno-off]").forEach(b => b.onclick = () => salvaGov({ freno: null }).then(() => toast("Freno tolto: il nascosto torna nelle stelle")));

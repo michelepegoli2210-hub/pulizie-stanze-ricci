@@ -970,6 +970,7 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 /* 0.37: la governante viva (respira, sbatte le palpebre, cambia faccia) */
 .gov-viva{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.45));margin:6px 0 10px}
 .gov-viva .donnina.viva{width:76px;height:86px;flex:none}
+.inizio.chat .gov-viva .donnina.viva{width:104px;height:117px}
 .gov-viva-t{display:flex;flex-direction:column;gap:2px;line-height:1.3}
 .gov-viva-t b{font:800 19px var(--f-display)}
 .gov-viva-t span{font-size:14px;color:var(--muted)}
@@ -989,3 +990,41 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .sig-capelli .cap{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
 .sig-capelli .cap[aria-pressed="true"]{border-color:var(--fg);transform:scale(1.12)}
 .cap.castana{background:#6B4226}.cap.bionda{background:#D9A441}.cap.mora{background:#2E2A28}.cap.rossa{background:#B4522B}.cap.grigia{background:#9AA0A6}
+
+/* 0.38: la governante intelligente — la faccia che parla e le impostazioni */
+.note.ok{background:var(--done-bg);color:var(--done)}
+/* la bocca: chiusa quando ascolta, aperta e in movimento quando parla */
+.donnina .bocca-parla{opacity:0}
+.donnina.parla .bocca{opacity:0}
+.donnina.parla .bocca-parla{opacity:1;transform-origin:60px 54px;animation:parlotta .22s ease-in-out infinite alternate}
+@keyframes parlotta{from{transform:scaleY(.3) scaleX(.92)}to{transform:scaleY(1.06) scaleX(1)}}
+/* mentre parla fa anche un po' di sì con la testa e respira più in fretta */
+.donnina.parla{animation:respira 1.9s ease-in-out infinite,annuisce 1.5s ease-in-out infinite}
+@keyframes annuisce{0%,100%{rotate:-1.2deg}50%{rotate:1.2deg}}
+/* le sopracciglia: si alzano se è contenta, si abbassano se è preoccupata */
+.donnina .sopracciglia{transform-origin:60px 36px;transition:transform .35s ease}
+.gov-viva.contenta .donnina .sopracciglia{transform:translateY(-1.8px)}
+.gov-viva.attenta .donnina .sopracciglia{transform:translateY(-.6px)}
+.gov-viva.preoccupata .donnina .sopracciglia{transform:translateY(1.4px) scaleY(-.9)}
+.gov-viva.sta-parlando{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.6))}
+@media (prefers-reduced-motion:reduce){.donnina.parla,.donnina.parla .bocca-parla{animation:none}.donnina.parla .bocca{opacity:1}.donnina.parla .bocca-parla{opacity:0}}
+/* il bollino "IA" sulle risposte vere dell'intelligenza artificiale */
+.ia-bollo{display:inline-block;font:800 10px/1.5 var(--f-display);letter-spacing:.06em;background:var(--done-bg);color:var(--done);border-radius:6px;padding:1px 5px;margin-right:6px;vertical-align:1px}
+/* i tasti veloci sotto la casella della chat */
+.chat-veloci{display:flex;gap:6px;overflow-x:auto;padding:8px 2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chat-veloci::-webkit-scrollbar{display:none}
+.chat-veloce{flex:0 0 auto;background:var(--campo);border:0;border-radius:999px;padding:8px 14px;font:600 13px var(--f-display);color:var(--fg);min-height:36px}
+.chat-veloce:disabled{opacity:.45}
+/* la cartolina delle impostazioni */
+.ia-card .ia-testa{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ia-stato{font:700 12px var(--f-display);border-radius:999px;padding:4px 10px}
+.ia-stato.on{background:var(--done-bg);color:var(--done)}
+.ia-stato.off{background:var(--campo);color:var(--muted)}
+.ia-passo{background:var(--campo);border-radius:var(--r2);padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.45}
+.ia-passo b:first-child{font:800 15px var(--f-display);margin-right:4px}
+.ia-passo .small{display:block;margin-top:4px}
+.ia-riga{display:flex;gap:8px;margin-top:6px;align-items:center}
+.ia-riga input{flex:1;min-width:0}
+.ia-passo .seg{display:flex;margin-top:8px;width:100%}
+.ia-seg{display:flex;margin-top:8px;flex-wrap:wrap}
+.ia-passo b:first-child{display:inline-block;min-width:18px}
