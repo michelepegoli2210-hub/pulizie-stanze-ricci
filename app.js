@@ -13,7 +13,7 @@ import * as CH from "./chat.js";
 import * as PAROLE from "./parole.js";
 import * as IA from "./ia.js";
 
-export const VERSIONE = "0.38.0";
+export const VERSIONE = "0.39.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -62,7 +62,118 @@ const BADGE = (p) => { const st = STATI[p.stato] || STATI.da_fare; return `<span
 // Donnine delle pulizie stilizzate (disegni nostri, SVG). Varianti: scopa, festa, secchio, saluto.
 const STELLA = (x, y, r, col = "#FFC83D") => `<path d="M${x} ${y - r} L${x + r * .28} ${y - r * .28} L${x + r} ${y} L${x + r * .28} ${y + r * .28} L${x} ${y + r} L${x - r * .28} ${y + r * .28} L${x - r} ${y} L${x - r * .28} ${y - r * .28}Z" fill="${col}"/>`;
 const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa: "#B4522B", grigia: "#9AA0A6" };
+// --- 0.39: la governante disegnata bene -------------------------------------
+// Non è una fotografia (per una faccia vera servirebbe un servizio a pagamento):
+// è un disegno fatto a strati, con le ombre, gli occhi veri (bianco, iride,
+// pupilla, luce) e la bocca che cambia forma mentre parla. Si muove la testa,
+// non tutta la figura: così sembra viva e non una statuina che dondola.
+let CONTA_DONNINA = 0;
+function tinta(hex, d) {
+  const h = String(hex).replace("#", ""), pieno = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const n = parseInt(pieno, 16) || 0, cl = v => Math.max(0, Math.min(255, Math.round(v)));
+  const r = cl((n >> 16 & 255) + d), g = cl((n >> 8 & 255) + d), b = cl((n & 255) + d);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+function GOVERNANTE(cls = "", colore = null) {
+  const u = "gv" + (++CONTA_DONNINA);
+  const cap = CAPELLI[colore] || colore || "#4A3426", capS = tinta(cap, -28), capL = tinta(cap, 34);
+  const occhio = colore === "bionda" ? "#5B8BA8" : colore === "rossa" ? "#6B8E5A" : "#5A3A24";
+  const PEL = "#F6C6A0", PELS = "#E0A77F", PELO = "#C98C66";
+  const AB = "#223052", ABS = "#161F38", ABL = "#33456F";
+  return `<svg class="donnina gov-fig ${cls}" viewBox="0 0 124 140" aria-hidden="true">
+  <defs>
+    <linearGradient id="${u}pel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${tinta(PEL, 10)}"/><stop offset=".62" stop-color="${PEL}"/><stop offset="1" stop-color="${PELS}"/></linearGradient>
+    <linearGradient id="${u}cap" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${capL}"/><stop offset=".45" stop-color="${cap}"/><stop offset="1" stop-color="${capS}"/></linearGradient>
+    <linearGradient id="${u}ab" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${ABL}"/><stop offset=".5" stop-color="${AB}"/><stop offset="1" stop-color="${ABS}"/></linearGradient>
+    <radialGradient id="${u}iri" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="${tinta(occhio, 46)}"/><stop offset=".62" stop-color="${occhio}"/><stop offset="1" stop-color="${tinta(occhio, -42)}"/></radialGradient>
+    <radialGradient id="${u}ros" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#F08A92" stop-opacity=".55"/><stop offset="1" stop-color="#F08A92" stop-opacity="0"/></radialGradient>
+    <linearGradient id="${u}lab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C2626A"/><stop offset="1" stop-color="#A2434E"/></linearGradient>
+  </defs>
+  <ellipse cx="62" cy="133" rx="33" ry="5" fill="rgba(15,23,42,.15)"/>
+  <g class="busto">
+    <path d="M51 112h7.5v15H51z" fill="${PELO}"/><path d="M65.5 112h7.5v15h-7.5z" fill="${PELO}"/>
+    <ellipse cx="54" cy="128" rx="7.6" ry="4.2" fill="#20242F"/><ellipse cx="70" cy="128" rx="7.6" ry="4.2" fill="#20242F"/>
+    <ellipse cx="54" cy="126.6" rx="7.6" ry="3.2" fill="#323849"/><ellipse cx="70" cy="126.6" rx="7.6" ry="3.2" fill="#323849"/>
+    <rect x="57" y="55" width="10" height="11" rx="3" fill="${PELS}"/>
+    <path d="M57 56 Q62 62 67 56 L67 63 Q62 66 57 63Z" fill="rgba(0,0,0,.2)"/>
+    <path d="M47 73 Q62 64 77 73 L81 97 Q62 102 43 97Z" fill="url(#${u}ab)"/>
+    <path d="M43 97 Q62 102 81 97 L89 120 Q62 127 35 120Z" fill="url(#${u}ab)"/>
+    <path d="M62 66 Q71 67 77 73 L81 97 L89 120 Q76 124 62 125Z" fill="rgba(0,0,0,.15)"/>
+    <path d="M47 73 Q53 69 58 67 L56 86 Q49 81 46 76Z" fill="rgba(255,255,255,.08)"/>
+    <ellipse cx="47.5" cy="76" rx="6.4" ry="7.4" fill="${AB}" transform="rotate(-14 47.5 76)"/>
+    <ellipse cx="76.5" cy="76" rx="6.4" ry="7.4" fill="${ABS}" transform="rotate(14 76.5 76)"/>
+    <path d="M44.5 81 Q40 92 41.5 102" stroke="${PEL}" stroke-width="6.6" fill="none" stroke-linecap="round"/>
+    <path d="M44.5 81 Q40 92 41.5 102" stroke="rgba(0,0,0,.08)" stroke-width="6.6" fill="none" stroke-linecap="round" stroke-dasharray="4 40" stroke-dashoffset="-26"/>
+    <ellipse cx="41.6" cy="105" rx="3.9" ry="4.8" fill="${PEL}"/><path d="M38.4 104 Q37.4 107 39.4 108.2" stroke="${PELS}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M52 95 Q62 99 72 95 L74 119 Q62 123 50 119Z" fill="#FAF7EF"/>
+    <path d="M62 97 Q68 97 72 95 L74 119 Q68 121 62 122Z" fill="rgba(15,23,42,.05)"/>
+    <path d="M52 95 Q62 99 72 95" stroke="#DED7C6" stroke-width="1.1" fill="none"/>
+    <path d="M50.5 96.5 Q46 98 44.5 100" stroke="#FAF7EF" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M73.5 96.5 Q78 98 79.5 100" stroke="#FAF7EF" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M53 65.5 Q62 75 71 65.5 Q62 70 53 65.5Z" fill="#FFFFFF"/>
+    <path d="M54.4 66 L62 74 L69.6 66" stroke="#E3E7EE" stroke-width=".9" fill="none"/>
+    ${[57, 59.6, 62, 64.4, 67].map((x, i) => `<circle cx="${x}" cy="${[70.2, 71.2, 71.6, 71.2, 70.2][i]}" r="1.1" fill="#F5EDD8" stroke="#D9CBA6" stroke-width=".35"/>`).join("")}
+    <g class="taccuino">
+      <g transform="rotate(-9 88 64)">
+        <rect x="77.5" y="50" width="21" height="26" rx="2.4" fill="#FBF7E9" stroke="#B9A67A" stroke-width="1.2"/>
+        <rect x="77.5" y="50" width="21" height="4.4" rx="2.1" fill="#D9C89C"/>
+        <path d="M81.5 60h13M81.5 65h13M81.5 70h8.5" stroke="#9D8A5C" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M83 52.4v-2.8M91 52.4v-2.8" stroke="#8B7B53" stroke-width="1.3" stroke-linecap="round"/>
+      </g>
+      <path d="M77.5 81 Q84 80 86.5 75" stroke="${PEL}" stroke-width="6.6" fill="none" stroke-linecap="round"/>
+      <ellipse cx="86.2" cy="73.6" rx="3.9" ry="4.6" fill="${PEL}" transform="rotate(18 86.2 73.6)"/>
+      <path d="M83.6 70.6 Q82.4 73.4 84.4 74.8" stroke="${PELS}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </g>
+  </g>
+  <g class="testa">
+    <path d="M40 34 Q62 16 84 34 L86 52 Q84 30 62 28 Q40 30 38 52Z" fill="url(#${u}cap)"/>
+    <circle cx="62" cy="19.5" r="9" fill="url(#${u}cap)"/><ellipse cx="62" cy="19.5" rx="9" ry="8.4" fill="none" stroke="${capS}" stroke-width=".9"/>
+    <path d="M57 15 Q62 13 67 16" stroke="${capL}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
+    <ellipse cx="42.6" cy="44" rx="3.1" ry="4.2" fill="${PELS}"/><ellipse cx="81.4" cy="44" rx="3.1" ry="4.2" fill="${PELS}"/>
+    <ellipse cx="62" cy="42" rx="19.4" ry="21" fill="url(#${u}pel)"/>
+    <path d="M44 50 Q62 60 80 50 Q74 61 62 62 Q50 61 44 50Z" fill="${PELS}" opacity=".3"/>
+    <path d="M40.6 40 Q41 21 62 20 Q83 21 83.4 40 Q80 30 70 27.5 Q62 33 54 31 Q46 32 40.6 40Z" fill="url(#${u}cap)"/>
+    <path d="M44 28 Q54 22 62 23" stroke="${capL}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".65"/>
+    <path d="M68 24 Q77 27 81 34" stroke="${capL}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".5"/>
+    <g class="ciocca"><path d="M42 33 Q38 44 41 55" stroke="url(#${u}cap)" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <path d="M82 33 Q86 43 83.5 53" stroke="url(#${u}cap)" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+    <ellipse cx="48.5" cy="50.5" rx="4" ry="3" fill="url(#${u}ros)"/><ellipse cx="75.5" cy="50.5" rx="4" ry="3" fill="url(#${u}ros)"/>
+    <path d="M62 42.5 Q59.6 48 61.4 49.4 Q62.6 50 63.6 49.2" stroke="${PELO}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+    <g class="occhi">
+      <ellipse cx="53.2" cy="45" rx="5" ry="3.7" fill="#FCFBFA"/><ellipse cx="70.8" cy="45" rx="5" ry="3.7" fill="#FCFBFA"/>
+      <path d="M48.4 44.4 Q53.2 40.2 58.2 44.4 Q53.2 42.6 48.4 44.4Z" fill="rgba(90,60,45,.22)"/><path d="M65.8 44.4 Q70.8 40.2 75.6 44.4 Q70.8 42.6 65.8 44.4Z" fill="rgba(90,60,45,.22)"/>
+      <g class="pupille">
+        <circle cx="53.2" cy="45.2" r="3.05" fill="url(#${u}iri)"/><circle cx="70.8" cy="45.2" r="3.05" fill="url(#${u}iri)"/>
+        <circle cx="53.2" cy="45.2" r="1.35" fill="#17100E"/><circle cx="70.8" cy="45.2" r="1.35" fill="#17100E"/>
+        <circle cx="52.2" cy="43.9" r="1.05" fill="#fff"/><circle cx="69.8" cy="43.9" r="1.05" fill="#fff"/>
+        <circle cx="54.4" cy="46.5" r=".55" fill="#fff" opacity=".7"/><circle cx="72" cy="46.5" r=".55" fill="#fff" opacity=".7"/>
+      </g>
+      <path d="M48.2 44.2 Q53.2 39.8 58.3 44.2" stroke="#3B2A22" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M65.7 44.2 Q70.8 39.8 75.8 44.2" stroke="#3B2A22" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M49 48.1 Q53.2 49.6 57.5 48.1" stroke="${PELO}" stroke-width=".9" fill="none" stroke-linecap="round" opacity=".7"/>
+      <path d="M66.5 48.1 Q70.8 49.6 75 48.1" stroke="${PELO}" stroke-width=".9" fill="none" stroke-linecap="round" opacity=".7"/>
+    </g>
+    <g class="palpebre"><path d="M48.2 44.2 Q53.2 39.8 58.3 44.2 Q53.2 48.4 48.2 44.2Z" fill="${PEL}" stroke="#3B2A22" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M65.7 44.2 Q70.8 39.8 75.8 44.2 Q70.8 48.4 65.7 44.2Z" fill="${PEL}" stroke="#3B2A22" stroke-width="1.3" stroke-linejoin="round"/></g>
+    <g class="sopracciglia"><path d="M47.6 36 Q53.2 32.6 59 35.2" stroke="${cap}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
+      <path d="M65 35.2 Q70.8 32.6 76.4 36" stroke="${cap}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/></g>
+    <g class="bocca">
+      <path d="M53.4 53.2 Q56.6 51.2 60 51.5 Q63.4 51.2 66.6 53.2 Q63 56.4 60 56.4 Q57 56.4 53.4 53.2Z" fill="url(#${u}lab)" transform="translate(2 0)"/>
+      <path d="M55.4 53.2 Q62 54.6 68.6 53.2" stroke="#8C3A44" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <path d="M56.6 51.4 Q62 49.6 67.4 51.4" stroke="#E7A9AE" stroke-width=".7" fill="none" stroke-linecap="round" opacity=".6"/>
+    </g>
+    <g class="bocca-parla">
+      <g class="vA"><ellipse cx="62" cy="54" rx="5.8" ry="4.2" fill="#7E2F38"/><path d="M56.6 52.6 Q62 50.8 67.4 52.6 Q62 54 56.6 52.6Z" fill="#FFF7F3"/><ellipse cx="62" cy="56.8" rx="3.2" ry="1.7" fill="#D2707B"/></g>
+      <g class="vB"><ellipse cx="62" cy="54" rx="3.5" ry="4.2" fill="#7E2F38"/><ellipse cx="62" cy="56.4" rx="2" ry="1.3" fill="#D2707B"/></g>
+      <g class="vC"><ellipse cx="62" cy="53.6" rx="5.4" ry="1.8" fill="#7E2F38"/><path d="M57 53 Q62 52 67 53" stroke="#FFF7F3" stroke-width="1.1" fill="none" stroke-linecap="round"/></g>
+    </g>
+    <path class="sorriso" d="M54.5 51.6 Q62 58.4 69.5 51.6" stroke="#8C3A44" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path class="broncio" d="M55.5 55.4 Q62 51.4 68.5 55.4" stroke="#8C3A44" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>`;
+}
 function DONNINA(v = "scopa", cls = "", colore = null) {
+  if (v === "governante") return GOVERNANTE(cls, colore);
   const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = CAPELLI[colore] || colore || "#6B4226";
   const vestito = { scopa: "#4F7BE8", festa: "#EF6F7B", secchio: "#23B5A3", saluto: "#9A6BF2", governante: "#1F2A44" }[v] || "#4F7BE8";
   const braccio = (d) => `<path d="${d}" stroke="${pelle}" stroke-width="7.5" fill="none" stroke-linecap="round"/>`;
@@ -1077,8 +1188,10 @@ function umoreGov() {
 }
 // La governante grande, viva: respira, sbatte le palpebre, cambia faccia con l'umore
 function testataGov() {
-  const u = umoreGov();
-  return `<div class="gov-viva ${u.v}${govScrive ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (govScrive ? " parla" : ""))}<div class="gov-viva-t"><b>La governante</b><span>${esc(u.testo)}</span></div></div>`;
+  const u = umoreGov(), c = consiglioOggi();
+  if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
+  const testo = c && c.testo ? c.testo : u.testo;
+  return `<div class="gov-viva ${u.v}${govScrive ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (govScrive ? " parla" : ""))}<div class="gov-viva-t"><b>La governante${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
 }
 const escNl = s => esc(s).replace(/\n/g, "<br>");
 function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
@@ -1310,9 +1423,10 @@ function elenchiIA() {
   const camere = postiIA().map(c => {
     const z = signoraDiCamera(c.id) || c.zona;
     const che = c.tipo === "casa" ? "appartamento" : c.tipo === "comune" ? "zona comune" : "camera";
-    return `${c.id} = ${c.nome} (${che}, ${S.zone[z]?.nome || z}${SIG(z) ? ", la pulisce " + SIG(z) : ""})`;
+    let modo = ""; try { if (c.tipo !== "comune") modo = ", modo " + G.MODI[G.modoDi(c, L.oggiISO(), ctxGov())].nome; } catch (e) {}
+    return `${c.id} = ${c.nome} (${che}, ${S.zone[z]?.nome || z}${SIG(z) ? ", la pulisce " + SIG(z) : ""}${modo})`;
   }).join("\n");
-  const regole = regoleGov().map(r => `${r.codice} ${r.posto}/${r.superficie}: ${r.regola}${r.ogni ? ` — ogni ${r.ogni} giorni, ${r.minuti} minuti` : ""}`).join("\n");
+  const regole = regoleGov().map(r => `${r.codice} ${r.posto}/${r.superficie}${r.regola && r.regola !== r.superficie ? ": " + r.regola : ""}${r.ogni ? ` (${G.etichettaOgni(r.ogni).toLowerCase()})` : ""}`).join("\n");
   return { camere, regole };
 }
 
@@ -1325,7 +1439,7 @@ function fotografiaIA() {
   prova("lavoro", () => {
     const ls = pulizieDelGiorno(oggi);
     if (!ls.length) return "LAVORO DI OGGI: niente in programma.";
-    return "LAVORO DI OGGI:\n" + ls.map(p => `- ${camera(p.camera).nome}: ${titoloLavoro(p)}, ${p.minuti || 0} minuti, ${eur(p.importo)}, ${SIG(p.zona)} — ${p.stato === "fatta" ? "FATTA alle " + L.oraBreve(p.ora) : p.stato === "in_corso" ? "in corso da " + L.oraBreve(p.inizio) : p.stato === "problema" ? "PROBLEMA: " + (p.nota || "segnalato") : p.stato === "non_fatta" ? "non fatta" : "da fare"}`).join("\n");
+    return "LAVORO DI OGGI:\n" + ls.map(p => `- ${camera(p.camera).nome}: ${titoloLavoro(p)}${Number(p.minuti) ? ", " + p.minuti + " minuti" : ""}, ${eur(p.importo)}, ${SIG(p.zona)} — ${p.stato === "fatta" ? "FATTA alle " + L.oraBreve(p.ora) : p.stato === "in_corso" ? "in corso da " + L.oraBreve(p.inizio) : p.stato === "problema" ? "PROBLEMA: " + (p.nota || "segnalato") : p.stato === "non_fatta" ? "non fatta" : "da fare"}`).join("\n");
   });
   prova("domani", () => {
     const d = L.aggiungiGiorni(oggi, 1), ls = pulizieDelGiorno(d);
@@ -1357,8 +1471,9 @@ function fotografiaIA() {
     return righe.length ? "CONTROLLI INCROCIATI: " + righe.join(" · ") + "." : "";
   });
   prova("indietro", () => {
-    const righe = indietroIA(12);
-    return righe.length ? "PIÙ IN RITARDO NEL CATALOGO:\n" + righe.map(x => `- ${x.c.nome}/${x.r.superficie} (${x.r.codice}, ${x.r.regola}): ${x.mai ? "MAI fatta" : x.giorni + " giorni fa"}, si rifà ogni ${x.r.ogni}`).join("\n") : "";
+    const g = indietroIA(10);
+    return g.length ? "PIÙ IN RITARDO NEL CATALOGO (raggruppato per regola):\n" + g.map(x =>
+      `- ${x.codice} ${x.nome} (si rifà ${G.etichettaOgni(x.ogni).toLowerCase()}): ${x.mai.length ? `mai fatta in ${x.mai.length} ${x.mai.length === 1 ? "posto" : "posti"} (${x.mai.slice(0, 5).join(", ")}${x.mai.length > 5 ? "…" : ""})` : ""}${x.mai.length && x.tardi.length ? "; " : ""}${x.tardi.length ? `in ritardo: ${x.tardi.slice(0, 5).map(t => `${t.nome} ${t.giorni} gg fa`).join(", ")}${x.tardi.length > 5 ? "…" : ""}` : ""}`).join("\n") : "";
   });
   prova("tabellone", () => { const t = tabellone(); return t ? `TABELLONE: copertura ${t.copertura}%, buchi ${t.buchi}.` : ""; });
   prova("manutenzione", () => {
@@ -1366,9 +1481,31 @@ function fotografiaIA() {
     return `MANUTENZIONE APERTA (${ap.length}): ` + ap.slice(0, 6).map(m => `${m.titolo}${m.camera ? " in " + camera(m.camera).nome : ""} (da ${L.giorniTra(m.data, oggi)} giorni)`).join(" · ") + ".";
   });
   prova("occupate", () => {
-    const dentro = soggiorniLista().filter(s => s.arrivo <= oggi && s.partenza > oggi).map(s => camera(s.camera).nome);
-    const parte = soggiorniLista().filter(s => s.partenza === oggi).map(s => camera(s.camera).nome);
+    const dentro = soggiorniLista().filter(x => x.inizio <= oggi && x.fine > oggi).map(x => camera(x.camera).nome);
+    const parte = soggiorniLista().filter(x => x.fine === oggi).map(x => camera(x.camera).nome);
     return `CAMERE OCCUPATE OGGI: ${dentro.length ? dentro.join(", ") : "nessuna"}${parte.length ? ` · partono oggi: ${parte.join(", ")}` : ""}. (I nomi degli ospiti non te li mando mai.)`;
+  });
+  prova("settimanaPiano", () => {
+    const lun = L.lunediDi(oggi), righe = [];
+    for (let i = 0; i < 7; i++) {
+      const d = L.aggiungiGiorni(lun, i), ls = pulizieDelGiorno(d);
+      if (!ls.length) { righe.push(`${L.dataGiornoLungo(d)}${d === oggi ? " (OGGI)" : ""}: niente`); continue; }
+      const per = {};
+      for (const x of ls) { const z = x.zona; per[z] = per[z] || { n: 0, min: 0 }; per[z].n++; per[z].min += Number(x.minuti) || 0; }
+      righe.push(`${L.dataGiornoLungo(d)}${d === oggi ? " (OGGI)" : ""}: ` + Object.entries(per).map(([z, v]) => `${SIG(z)} ${v.n} ${v.n === 1 ? "posto" : "posti"}${v.min ? ", " + L.testoOre(v.min) : ""}`).join(" · "));
+    }
+    return "LA SETTIMANA INTERA DAL PROSPETTO:\n" + righe.map(r => "- " + r).join("\n");
+  });
+  prova("partenze", () => {
+    const righe = [];
+    for (let i = 0; i <= 3; i++) {
+      const d = L.aggiungiGiorni(oggi, i);
+      const part = soggiorniLista().filter(x => x.fine === d), arr = soggiorniLista().filter(x => x.inizio === d);
+      if (!part.length && !arr.length) continue;
+      const senza = part.filter(x => !Object.values(S.pulizie).some(pp => pp.camera === x.camera && pp.data === d && pp.stato !== "non_fatta"));
+      righe.push(`${L.dataGiornoLungo(d)}: partono ${part.length ? part.map(x => camera(x.camera).nome).join(", ") : "nessuna"}; arrivano ${arr.length ? arr.map(x => camera(x.camera).nome).join(", ") : "nessuna"}${senza.length ? ` — ATTENZIONE: ${senza.map(x => camera(x.camera).nome).join(", ")} ${senza.length === 1 ? "parte" : "partono"} e non c'è nessuna pulizia in programma quel giorno` : ""}`);
+    }
+    return righe.length ? "ARRIVI E PARTENZE DEI PROSSIMI GIORNI (senza nomi):\n" + righe.map(r => "- " + r).join("\n") : "";
   });
   prova("messaggio", () => { const m = (S.messaggi || {})[oggi]; return m && m.testo ? `MESSAGGIO DI OGGI ALLE SIGNORE: «${m.testo}»` : ""; });
   prova("spesa", () => {
@@ -1378,19 +1515,34 @@ function fotografiaIA() {
   prova("chat", () => { const n = statoChatApp().aperte.length; return n ? `DOMANDE CHE TI HO GIÀ FATTO E ASPETTANO RISPOSTA: ${n}.` : ""; });
   return R.join("\n");
 }
-// Le cose del catalogo più in ritardo (per posto), le peggiori prima
-function indietroIA(max = 12) {
-  const oggi = L.oggiISO(), out = [];
+// Le cose del catalogo più in ritardo, raggruppate per regola: le peggiori prima
+function indietroIA(max = 10) {
+  const oggi = L.oggiISO(), per = {}, visti = new Set(), fl = flagsGov();
+  // una regola non vale dappertutto: la lavanderia è un posto solo, la cucina solo negli appartamenti
+  const vale = (r, c) => {
+    const g = r.gruppo || "";
+    if (g === "lavanderia") return c.id === "lavanderia";
+    if (g === "comuni") return c.tipo === "comune";
+    if (c.tipo === "comune") return g === "comuni";
+    if (g === "cucina") return c.tipo === "casa";
+    if (g === "balcone") return !!(fl.balconi || {})[c.id];
+    return true;
+  };
   for (const r of regoleGov()) {
-    if (!r.ogni) continue;
+    if (!r.ogni || r.ogni < 3) continue; // le cose di tutti i giorni non sono "indietro": sono la routine
     for (const c of postiIA()) {
+      if (!vale(r, c)) continue;
+      const k = r.codice || r.id, kk = k + "|" + c.id;
+      if (visti.has(kk)) continue; visti.add(kk);
       const reg = S.registro[G.chiaveRegistro(r.id, c.id)], ultima = reg && reg.ultima;
       const giorni = ultima ? L.giorniTra(ultima, oggi) : Math.round(r.ogni * 3);
       if (giorni <= r.ogni) continue;
-      out.push({ r, c, giorni, mai: !ultima, quanto: giorni / r.ogni });
+      per[k] = per[k] || { codice: k, nome: `${r.posto}/${r.superficie}`, ogni: r.ogni, mai: [], tardi: [], peggio: 0 };
+      if (ultima) per[k].tardi.push({ nome: c.nome, giorni }); else per[k].mai.push(c.nome);
+      per[k].peggio = Math.max(per[k].peggio, giorni / r.ogni);
     }
   }
-  return out.sort((a, b) => b.quanto - a.quanto || a.r.ogni - b.r.ogni).slice(0, max);
+  return Object.values(per).sort((a, b) => b.peggio - a.peggio || a.ogni - b.ogni).slice(0, max);
 }
 function sistemaIA() { return IA.istruzioni({ oggi: L.oggiISO(), testo: fotografiaIA() }, elenchiIA()); }
 
@@ -1445,45 +1597,80 @@ async function rispostaIA(testo, conv) {
   return { ...base, testo: `${dice}\n\n${prop}`, tasti: [{ k: "si", testo: "Sì, fallo" }, { k: "no", testo: "No, lascia" }], azione: a };
 }
 
+// --- il consiglio del giorno: lei guarda la casa e dice la sua, una volta al giorno
+const CHIAVE_CONSIGLIO = "ricci_ia_consiglio";
+function consiglioOggi() {
+  try { const c = JSON.parse(localStorage.getItem(CHIAVE_CONSIGLIO) || "null"); return c && c.giorno === L.oggiISO() ? c : null; } catch (e) { return null; }
+}
+let consiglioInCorso = false;
+async function chiediConsiglioDelGiorno() {
+  if (consiglioInCorso || !iaAccesa() || consiglioOggi()) return;
+  if (!S.caricati.pulizie || !S.caricati.soggiorni) return;
+  consiglioInCorso = true;
+  try {
+    const r = await IA.chiedi({ conf: confIA(), sistema: sistemaIA(), storia: [],
+      testo: "Guarda la fotografia e fai il tuo giro di controllo delle sette cose. Poi dimmi in UNA frase corta com'è la situazione adesso (la cosa più importante, con il numero), e nel consiglio la cosa da fare per prima. Niente azione." });
+    const c = { giorno: L.oggiISO(), testo: String(r.risposta || "").slice(0, 220), consiglio: String(r.consiglio || "").slice(0, 220), ora: new Date().toISOString() };
+    if (c.testo) { try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); } catch (e) {} disegna(); }
+  } catch (e) { console.warn("consiglio", e); }
+  consiglioInCorso = false;
+}
+
 // --- la cartolina delle impostazioni, a prova di nonna ---------------------
 function cardIA() {
   if (!proprietario()) return "";
-  const c = confIA(), f = IA.FORNITORI[c.fornitore] || IA.FORNITORI[IA.FORNITORE_BASE];
+  const c = confIA(), f = IA.FORNITORI[c.fornitore] || IA.FORNITORI[IA.FORNITORE_BASE], q = c.qualita || "sveglia";
   const su = IA.accesa(c);
   const stato = su ? `<span class="ia-stato on">Accesa</span>` : c.chiave ? `<span class="ia-stato off">Spenta</span>` : `<span class="ia-stato off">Non ancora pronta</span>`;
   const esito = provaIA ? (provaIA.ok
-    ? `<div class="note ok" style="margin:8px 0 0">Funziona. Ha risposto: «${esc(provaIA.testo || "ci sono")}». Sta usando <b>${esc(provaIA.modello)}</b> (il modello piccolo, quello che costa pochissimo).</div>`
+    ? `<div class="note ok" style="margin:8px 0 0">Funziona. Ha risposto: «${esc(provaIA.testo || "ci sono")}». Sta usando <b>${esc(provaIA.modello)}</b>.</div>`
     : `<div class="note warn" style="margin:8px 0 0">Non ha funzionato: ${esc(provaIA.errore)}</div>`) : "";
   const scelta = Object.entries(IA.FORNITORI).map(([k, v]) => `<button type="button" aria-pressed="${c.fornitore === k}" data-ia-fornitore="${k}">${esc(v.nome)}</button>`).join("");
   return `<section class="card ia-card"><div class="ia-testa"><h2 style="margin:0">La governante intelligente</h2>${stato}</div>
-    <p class="muted small" style="margin:6px 0 10px">Adesso la governante capisce le parole del catalogo: funziona, ma è un elenco, non un cervello. Se le dai una <b>chiave</b>, dietro ci pensa un'intelligenza artificiale vera: capisce come parli tu, guarda i numeri della casa, ti dà consigli e ti propone cosa fare. Decide sempre tu: lei chiede «Confermo?» e non fa niente finché non tocchi <b>Sì</b>.</p>
-    <div class="ia-passo"><b>1.</b> Scegli chi le presta il cervello<div class="seg ia-seg">${scelta}</div>
-      <span class="small muted">Costo vero, con quanto la usi tu: ${esc(IA.COSTI[c.fornitore] || "pochi centesimi al mese")}.</span></div>
-    <div class="ia-passo"><b>2.</b> Vai su <b>${esc(f.dove)}</b> dal computer, entra con la tua mail e fatti dare la chiave. ${esc(f.chiave)}.</div>
-    <div class="ia-passo"><b>3.</b> Incollala qui sotto
-      <div class="ia-riga"><input type="password" id="iaChiave" data-keep placeholder="incolla qui la chiave" value="${esc(c.chiave || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm" data-ia-prova ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova la chiave"}</button></div>
-      ${c.modello ? `<span class="small muted">Modello in uso: ${esc(c.modello)} <button type="button" class="nonna-link" style="min-height:0;padding:2px 8px" data-ia-rimodello>cercane un altro</button></span>` : ""}${esito}</div>
-    <div class="ia-passo"><b>4.</b> Accendila<div class="seg" style="margin-top:4px"><button type="button" aria-pressed="${su}" data-ia-accendi="1" ${c.chiave ? "" : "disabled"}>Accesa</button><button type="button" aria-pressed="${!su}" data-ia-accendi="0">Spenta</button></div></div>
-    <p class="muted small" style="margin:10px 0 0"><b>Le tre cose da sapere, in chiaro.</b> Primo: quello che scrivi alla governante esce da qui e lo legge il computer di ${esc(f.nome)}${c.fornitore === "gemini" ? " (Google)" : c.fornitore === "openai" ? " (OpenAI)" : " (Anthropic)"} — <b>i nomi degli ospiti non glieli mando mai</b>, le mando camere, lavori, giorni e soldi. Secondo: la chiave resta solo su questo telefono, non va nel database, le signore non la vedono e non la spendono. Terzo: se internet non va o la chiave scade, la governante torna da sola a capire con le parole del catalogo, come adesso: non si rompe niente.</p>
+    <p class="muted small" style="margin:6px 0 10px">Senza chiave la governante capisce solo le parole del catalogo: funziona, ma è un elenco, non un cervello. Con una <b>chiave</b> dietro ci pensa un'intelligenza artificiale vera: legge i numeri della casa, si accorge delle cose da sola e ti dà consigli. Decide sempre tu: lei chiede «Confermo?» e non fa niente finché non tocchi <b>Sì</b>.</p>
+    <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
+    <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
+      <div class="seg"><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Sveglia</button><button type="button" aria-pressed="${q === "risparmio"}" data-ia-qualita="risparmio">Risparmio</button></div>
+      <span class="small muted">${esc(IA.COSTI[c.fornitore]?.[q] || "pochi centesimi al mese")}</span></div>
+    <div class="ia-passo"><b>3.</b> Prendi la chiave su <b>${esc(f.dove)}</b>: entra con la tua mail e falla creare. ${esc(f.passi)}
+      <button type="button" class="ia-vai" data-ia-apri="${esc(f.dove)}">Apri ${esc(f.dove.split("/")[0])} ↗</button>
+      <span class="small muted">${esc(f.chiave)}</span></div>
+    <div class="ia-passo"><b>4.</b> Incollala qui
+      <div class="ia-riga"><input type="password" id="iaChiave" data-keep placeholder="incolla qui la chiave" value="${esc(c.chiave || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm ghost" data-ia-incolla>Incolla</button><button type="button" class="btnsm" data-ia-prova ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova"}</button></div>
+      ${c.modello ? `<span class="small muted">Sta usando ${esc(c.modello)} · <button type="button" class="nonna-link" style="min-height:0;padding:2px 8px" data-ia-rimodello>cercane un altro</button></span>` : ""}${esito}</div>
+    <div class="ia-passo"><b>5.</b> Accendila<div class="seg"><button type="button" aria-pressed="${su}" data-ia-accendi="1" ${c.chiave ? "" : "disabled"}>Accesa</button><button type="button" aria-pressed="${!su}" data-ia-accendi="0">Spenta</button></div></div>
+    <details class="gov-dett" style="margin-top:10px"><summary class="small">Le cose da sapere, in chiaro</summary>
+      <p class="muted small" style="margin:6px 0 0"><b>I nomi degli ospiti non escono mai.</b> Le mando camere, lavori, giorni, soldi e ritardi: mai un nome di chi dorme qui. C'è una prova automatica che lo controlla a ogni versione.</p>
+      <p class="muted small" style="margin:6px 0 0"><b>La chiave resta su questo telefono.</b> Non va nel database: le signore non la vedono e non la possono spendere. Se cambi telefono la devi rimettere.</p>
+      <p class="muted small" style="margin:6px 0 0"><b>Se cade, non si rompe niente.</b> Senza internet o con la chiave scaduta torna da sola alle parole del catalogo. Lo vedi perché sparisce il bollino IA.</p>
+      <p class="muted small" style="margin:6px 0 0"><b>Gratis o a pagamento.</b> In Italia, anche col piano gratuito, Google dice di trattare i dati come quelli a pagamento (non li usa per imparare). Però le loro condizioni dicono che un'app messa a disposizione di persone in Europa deve stare sul piano a pagamento. Per questo conviene mettere la carta: si prepaga 5 € e durano mesi.</p>
+      <p class="muted small" style="margin:6px 0 0"><b>Due bufale da evitare.</b> Il credito da 300 $ di Google Cloud da marzo 2026 non vale più per Gemini. E i siti che regalano "chiavi Gemini gratis" usano la chiave di qualcun altro, leggono tutto quello che scrivi e smettono di funzionare dopo pochi giorni: non usarli.</p></details>
     ${c.chiave ? `<button class="nonna-link" style="margin:8px 0 0" data-ia-cancella>Cancella la chiave da questo telefono</button>` : ""}</section>`;
 }
 function collegaIA() {
   document.querySelectorAll("[data-ia-fornitore]").forEach(b => b.onclick = () => { IA.salvaConf({ fornitore: b.dataset.iaFornitore, modello: "" }); provaIA = null; disegna(); });
+  document.querySelectorAll("[data-ia-qualita]").forEach(b => b.onclick = () => { IA.salvaConf({ qualita: b.dataset.iaQualita, modello: "" }); provaIA = null; disegna(); toast("Cerco il modello giusto: tocca «Prova»"); });
+  document.querySelectorAll("[data-ia-apri]").forEach(b => b.onclick = () => { window.open("https://" + b.dataset.iaApri, "_blank", "noopener"); });
+  document.querySelectorAll("[data-ia-incolla]").forEach(b => b.onclick = async () => {
+    try { const t = (await navigator.clipboard.readText() || "").trim(); if (!t) return toast("Non ho trovato niente da incollare");
+      const inp = document.getElementById("iaChiave"); if (inp) { inp.value = t; IA.salvaConf({ chiave: t }); toast("Incollata: adesso tocca «Prova»"); } }
+    catch (e) { toast("Il telefono non mi fa incollare: tienila premuta nella casella e scegli Incolla"); }
+  });
   document.querySelectorAll("[data-ia-accendi]").forEach(b => b.onclick = () => {
     const su = b.dataset.iaAccendi === "1";
     if (su && !(document.getElementById("iaChiave")?.value || "").trim()) return toast("Prima incolla la chiave");
     IA.salvaConf({ attiva: su, chiave: (document.getElementById("iaChiave")?.value || "").trim() });
     disegna(); toast(su ? "Governante intelligente accesa" : "Spenta: torna alle parole del catalogo");
   });
-  document.querySelectorAll("[data-ia-cancella]").forEach(b => b.onclick = () => { IA.cancellaConf(); provaIA = null; disegna(); toast("Chiave cancellata da questo telefono"); });
-  document.querySelectorAll("[data-ia-rimodello]").forEach(b => b.onclick = () => { IA.salvaConf({ modello: "" }); provaIA = null; disegna(); toast("Cerco di nuovo il modello: tocca «Prova la chiave»"); });
+  document.querySelectorAll("[data-ia-cancella]").forEach(b => b.onclick = () => { IA.cancellaConf(); provaIA = null; try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} disegna(); toast("Chiave cancellata da questo telefono"); });
+  document.querySelectorAll("[data-ia-rimodello]").forEach(b => b.onclick = () => { IA.salvaConf({ modello: "" }); provaIA = null; disegna(); toast("Cerco di nuovo il modello: tocca «Prova»"); });
   document.querySelectorAll("[data-ia-prova]").forEach(b => b.onclick = async () => {
     const chiave = (document.getElementById("iaChiave")?.value || "").trim();
     if (!chiave) return toast("Incolla prima la chiave");
     IA.salvaConf({ chiave }); iaInCorso = true; provaIA = null; disegna();
     const r = await IA.provaChiave({ ...confIA(), chiave });
     iaInCorso = false; provaIA = r;
-    if (r.ok) IA.salvaConf({ modello: r.modello, attiva: true });
+    if (r.ok) { IA.salvaConf({ modello: r.modello, attiva: true }); try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} }
     disegna(); toast(r.ok ? "Funziona: governante intelligente accesa" : "Non ha funzionato");
   });
   document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
@@ -1543,7 +1730,7 @@ const AZIONI_CHAT = {
   async stelle(d, k, parole) {
     if (k === "ok") return { fatto: `va bene: le stelle di ${nomeZonaBreve(d.dati.zona)} restano queste. Le trova nelle sue camere, giorno per giorno.` };
     if (k === "parole") { await notaDellaGovernante(L.oggiISO(), null, `Stelle della settimana: ${parole}`, true); return { fatto: `segnato: «${parole}». Per toglierne una tocca "Togli" nella card delle stelle della settimana (Governante → Consigli).` }; }
-    S.vista = "oggi"; S.govTab = "consigli"; apriGovernante(); setTimeout(() => { const el = document.querySelector(".stelle-sett"); if (el) el.scrollIntoView({ block: "start" }); }, 400);
+    S.vista = "governante"; S.govTab = "consigli"; setTimeout(() => { const el = document.querySelector(".stelle-sett"); if (el) el.scrollIntoView({ block: "start" }); }, 400);
     return { fatto: "ti ho aperto le stelle della settimana: togli quelle che non vuoi con un tocco, le altre restano." };
   },
   // 14. guardi tu una camera di Selena?
@@ -1746,7 +1933,7 @@ function plateGovernante() {
 function vistaGovernante() {
   const tab = S.govTab;
   const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button></section>
-  <section class="pro-testa gov-testa"><div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">La governante</div><div class="pro-frase">Guarda il prospetto, il calendario e il registro, e decide cosa va fatto a fondo oltre alle pulizie normali.</div></div>${DONNINA("governante", "media")}</div>
+  <section class="pro-testa gov-testa">${testataGov()}<p class="muted small" style="margin:0">Guarda il prospetto, il calendario e il registro, e decide cosa va fatto a fondo oltre alle pulizie normali.</p>
     <div class="seg gov-seg" style="margin-top:12px;display:flex"><button aria-pressed="${tab === "consigli"}" data-gov-tab="consigli">Consigli</button><button aria-pressed="${tab === "calendario"}" data-gov-tab="calendario">Calendario</button><button aria-pressed="${tab === "tabellone"}" data-gov-tab="tabellone">Tabellone</button><button aria-pressed="${tab === "regole"}" data-gov-tab="regole">Regole</button><button aria-pressed="${tab === "mappa"}" data-gov-tab="mappa">Mappa</button></div></section>`;
   if (tab === "calendario") return testa + vistaCalendarioPulito();
   if (tab === "tabellone") return testa + vistaTabelloneCopertura();

@@ -14,8 +14,9 @@ export const FORNITORI = {
   gemini: {
     nome: "Gemini",
     dove: "aistudio.google.com/apikey",
+    passi: "Tocca il tasto blu «Create API key», scegli il progetto che ti propone e conferma.",
     chiave: "È una riga lunghissima di lettere e numeri: copiala tutta",
-    preferiti: [/^gemini-[\d.]+-flash-lite$/, /flash-lite/, /^gemini-[\d.]+-flash$/, /flash/],
+    preferiti: { sveglia: [/^gemini-[\d.]+-flash$/, /flash$/, /flash-lite$/], risparmio: [/^gemini-[\d.]+-flash-lite$/, /flash-lite/, /flash$/] },
     elenco: () => "https://generativelanguage.googleapis.com/v1beta/models",
     elencoTesta: (k) => ({ "x-goog-api-key": k }),
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
@@ -24,15 +25,16 @@ export const FORNITORI = {
     corpo: (sistema, storia, testo) => ({
       system_instruction: { parts: [{ text: sistema }] },
       contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })), { role: "user", parts: [{ text: testo }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 900, responseMimeType: "application/json" },
+      generationConfig: { temperature: 0.4, maxOutputTokens: 1600, responseMimeType: "application/json" },
     }),
     leggi: (j) => (((j.candidates || [])[0] || {}).content?.parts || []).map(p => p.text || "").join(""),
   },
   openai: {
     nome: "ChatGPT",
     dove: "platform.openai.com/api-keys",
+    passi: "Tocca «Create new secret key», dalle un nome qualsiasi e conferma. Si vede una volta sola.",
     chiave: "È una riga lunghissima che comincia con s, k e un trattino: copiala tutta",
-    preferiti: [/^gpt-\d+(\.\d+)?-luna$/, /luna/, /nano$/, /mini$/],
+    preferiti: { sveglia: [/^gpt-\d+(\.\d+)?-sol$/, /sol$/, /luna$/, /mini$/], risparmio: [/^gpt-\d+(\.\d+)?-luna$/, /luna$/, /nano$/, /mini$/] },
     elenco: () => "https://api.openai.com/v1/models",
     elencoTesta: (k) => ({ authorization: "Bearer " + k }),
     elencoLeggi: (j) => (j.data || []).map(m => m.id).filter(id => /^(gpt|o)\d/.test(id) && !/audio|image|realtime|embedding|tts|whisper|moderation|search|transcribe/.test(id)),
@@ -41,29 +43,41 @@ export const FORNITORI = {
     corpo: (sistema, storia, testo, m) => ({
       model: m,
       messages: [{ role: "system", content: sistema }, ...storia.map(x => ({ role: x.chi === "io" ? "user" : "assistant", content: x.testo })), { role: "user", content: testo }],
-      response_format: { type: "json_object" }, max_completion_tokens: 900,
+      response_format: { type: "json_object" }, max_completion_tokens: 1600,
     }),
     leggi: (j) => ((j.choices || [])[0] || {}).message?.content || "",
   },
   claude: {
     nome: "Claude",
     dove: "console.anthropic.com/settings/keys",
+    passi: "Tocca «Create Key», dalle un nome qualsiasi e conferma. Si vede una volta sola.",
     chiave: "È una riga lunghissima che comincia con s, k e un trattino: copiala tutta",
-    preferiti: [/haiku/, /sonnet/],
+    preferiti: { sveglia: [/sonnet/, /haiku/], risparmio: [/haiku/, /sonnet/] },
     elenco: () => "https://api.anthropic.com/v1/models?limit=100",
     elencoTesta: (k) => ({ "x-api-key": k, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }),
     elencoLeggi: (j) => (j.data || []).map(m => m.id),
     url: () => "https://api.anthropic.com/v1/messages",
     testa: (k) => ({ "content-type": "application/json", "x-api-key": k, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }),
     corpo: (sistema, storia, testo, m) => ({
-      model: m, max_tokens: 900, system: sistema,
+      model: m, max_tokens: 1600, system: sistema,
       messages: [...storia.map(x => ({ role: x.chi === "io" ? "user" : "assistant", content: x.testo })), { role: "user", content: testo }],
     }),
     leggi: (j) => (j.content || []).map(p => p.text || "").join(""),
   },
 };
 export const FORNITORE_BASE = "gemini";
-export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", ultimo: "", errori: 0 };
+export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", qualita: "sveglia", ultimo: "", errori: 0 };
+// Il numero di versione dentro il nome del modello ("gemini-3.8-flash" -> 3.8): serve a pescare sempre il piu nuovo
+export function versioneModello(nome) { const m = String(nome).match(/(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; }
+export function scegliModello(tutti, fornitore, qualita = "sveglia") {
+  const f = FORNITORI[fornitore]; if (!f) return tutti[0] || "";
+  const liste = f.preferiti[qualita] || f.preferiti.sveglia;
+  for (const p of liste) {
+    const c = tutti.filter(x => p.test(x) && !/preview|exp|thinking|audio|image|tts|live|transcribe|embedding|search|moderation/.test(x));
+    if (c.length) return c.sort((a, b) => versioneModello(b) - versioneModello(a) || a.length - b.length)[0];
+  }
+  return tutti[0] || "";
+}
 const CHIAVE_LOCALE = "ricci_ia";
 
 // La chiave sta SOLO su questo telefono (localStorage), mai nel database
@@ -82,44 +96,66 @@ export function accesa(c = leggiConf()) { return !!(c.attiva && c.chiave && FORN
 
 // ---- Le istruzioni: chi è lei, cosa sa fare, come deve rispondere ---------
 export function istruzioni(foto, elenchi) {
-  return `Sei LA GOVERNANTE di "Le Stanze di Ricci", un piccolo affittacamere di Lesina (Foggia, Italia) con poche camere e qualche appartamento. Parli con Michele, il proprietario. Michele NON è un tecnico: parlagli in italiano semplicissimo, frasi corte, niente parole difficili, niente inglese, niente elenchi lunghi. Dagli del tu.
+  return `Sei LA GOVERNANTE di "Le Stanze di Ricci", un affittacamere a Lesina (Foggia): 13 camere fra albergo, camere in via Nazario Sauro e appartamenti in via Zara e via Trento. Parli con Michele, il proprietario, che ci lavorerà anche mentre fa un altro lavoro.
 
 CHI SEI
-Sei una governante d'albergo vera: pratica, sveglia, diretta. Conosci le camere, le signore delle pulizie, i soldi della settimana e cosa è rimasto indietro. Dici la verità anche quando non piace: se una cosa non va, lo dici. Non fai complimenti a vuoto. Non inventi MAI numeri: se un dato non c'è nella fotografia qui sotto, dillo ("questo non lo so").
+Una governante d'albergo con vent'anni di mestiere: pratica, sveglia, diretta, con l'occhio allenato. Vedi le cose prima che diventino problemi. Non sei un'assistente gentile che dice sempre di sì: se una cosa non va, lo dici subito e dici perché, con il numero in mano.
+
+COME PARLI
+Italiano semplicissimo, da persona vera. Frasi corte. Niente parole inglesi, niente termini tecnici, niente elenchi lunghi: al massimo tre righe con il trattino. Dagli del tu. Mai complimenti a vuoto, mai "ottima domanda". Vai al punto nella prima frase.
+
+LA REGOLA PIÙ IMPORTANTE: NON INVENTARE
+Tutti i numeri che dici devono stare nella FOTOGRAFIA qui sotto. Se un dato non c'è, dici "questo non lo so" e basta. Non stimare, non arrotondare per far tornare un conto, non inventare nomi di camere o di persone. Se ti accorgi che due numeri della fotografia non tornano fra loro, dillo: è proprio quello che serve a Michele.
+
+COME GIRA QUESTA CASA (devi ragionare con queste regole)
+- Le signore delle pulizie sono poche e il tempo è poco. Niente idee da albergo a cinque stelle: cose concrete che si fanno in 10-20 minuti.
+- Si paga a ore: 8 € l'ora in albergo e in via Nazario Sauro, 10 € l'ora negli appartamenti (ci si va in macchina). Le ore sono quelle standard scritte nel listino, non il cronometro.
+- Ogni signora deve arrivare a circa 100 € a settimana, non di più: è il tetto che Michele si può permettere. Ci arriva con le ore, più le stelle e i controlli.
+- Le "stelle" sono i lavori di rifinitura in più, pagati a parte, e li fa una signora sola, con un obiettivo in euro per settimana.
+- I "controlli incrociati": una signora controlla a sorte le camere pulite dall'altra, con una lista di 10 punti e le foto. Ogni controllo fatto le vale 2,50 €. Se una cosa è bocciata, chi ha pulito la può rifare fino a SABATO alle 14, quando chiude la paga della settimana: dopo, i soldi sono persi.
+- Il catalogo è l'elenco di tutte le cose da fare in ogni posto, ognuna col suo ritmo (ogni tot giorni). Quello che è in ritardo torna su come stella.
+- Ogni camera ha un "modo" secondo chi ci dorme: Tecnici (stessi ospiti per mesi), Operai (soggiorni lunghi, cucinano) e Booking (weekend, scrivono recensioni: lì l'estetica conta).
+- Prima l'igiene e la sicurezza, poi quello che l'ospite vede, poi il nascosto.
+
+QUELLO CHE DEVI GUARDARE SEMPRE, PRIMA DI RISPONDERE
+Scorri la fotografia e controlla queste sette cose. Se una non va, dillo anche se Michele non te l'ha chiesto — è il tuo mestiere accorgertene:
+1. I soldi: qualche signora sta andando sopra i 100 € della settimana? O molto sotto, cioè le stiamo dando poco lavoro?
+2. I controlli incrociati di oggi: sono stati fatti? Se la quota è 2 e ne ha fatto 0, manca qualcosa.
+3. Le cose bocciate da rifare: quanto manca a sabato alle 14? Se è venerdì o sabato è urgente.
+4. Le camere: c'è qualcuna che parte o arriva senza una pulizia in programma?
+5. La manutenzione ferma da più di una settimana.
+6. Il catalogo: cosa è talmente in ritardo che conviene recuperarlo adesso, approfittando di una camera vuota.
+7. Le stelle: siamo sopra o sotto l'obiettivo della settimana?
 
 COME RISPONDI
-Rispondi SEMPRE con un oggetto JSON, niente altro, in questa forma:
-{"risposta":"quello che dici a Michele","consiglio":"(facoltativo) una cosa concreta che gli conviene fare adesso","azione":null}
-"risposta": da 1 a 4 frasi corte. Se ti fa una domanda sui numeri, rispondi col numero preciso.
-"consiglio": mettilo solo quando serve davvero, al massimo una frase.
+Rispondi SOLO con un oggetto JSON, in quest'ordine esatto:
+{"pensiero":"...","risposta":"...","consiglio":"...","azione":null}
+- "pensiero": qui ragioni prima di parlare, per te. Scorri le sette cose qui sopra, fai i conti che servono, scrivi i numeri. Michele non lo legge mai. Da 2 a 6 righe.
+- "risposta": quello che dici a Michele. Da 1 a 4 frasi corte. Se ti chiede un numero, dai il numero preciso.
+- "consiglio": una sola frase, la cosa concreta che gli conviene fare adesso. Mettila solo se serve davvero, altrimenti lascia "".
+- "azione": solo se ti chiede di FARE qualcosa (vedi sotto), altrimenti null.
 
 QUANDO TI CHIEDE DI FARE QUALCOSA
-Metti "azione". Tu PROPONI soltanto: fa tutto l'app dopo che Michele tocca "Sì, fallo". Non dire mai "fatto", di' "se vuoi lo faccio".
-Le azioni che esistono (nient'altro):
-1) aggiungere un lavoro extra in una o più camere:
+Tu PROPONI soltanto: fa tutto l'app dopo che Michele tocca "Sì, fallo". Non dire mai "fatto", di' "se vuoi lo faccio".
+Le azioni che esistono, nient'altro:
+1) aggiungere un lavoro extra in uno o più posti:
    {"tipo":"aggiungi","cosa":"Lavare le tende","dove":["alba","tramonto"],"minuti":20}
 2) segnare che una cosa del catalogo è GIÀ STATA FATTA:
    {"tipo":"fatto","codice":"C14","dove":["alba"]}
-3) togliere una cosa dalle stelle di questa settimana (o spegnerla per sempre):
+3) toglierla dalle stelle di questa settimana, o spegnerla per sempre:
    {"tipo":"togli","codice":"C14","dove":["alba"],"perSempre":false}
 4) scrivere un messaggio che le signore leggono in cima alla loro schermata:
    {"tipo":"messaggio","testo":"Domani arrivano gli operai alle 8","giorno":"${foto.oggi}"}
-In "dove" usa SOLO le sigle delle camere dell'elenco. Se Michele dice "tutte", mettile tutte. Se non capisci dove, lascia "dove" vuoto: te lo chiede l'app.
-Se non c'è niente da fare, "azione": null.
+In "dove" usa SOLO le sigle dell'elenco delle camere. Se dice "tutte", mettile tutte. Se non capisci dove, lascia "dove" vuoto: te lo chiede l'app. Una azione sola per volta, la più importante.
+Prima di proporre una spesa, guarda quanto è già stato speso questa settimana e dillo nella risposta.
 
-LE CAMERE (sigla = nome · zona)
+LE CAMERE (sigla = nome, chi la pulisce)
 ${elenchi.camere}
 
-IL CATALOGO (codice = cosa è; usalo per "fatto" e "togli")
+IL CATALOGO (codice = posto/superficie: cosa si fa; serve per "fatto" e "togli")
 ${elenchi.regole}
 
-REGOLE DELLA CASA
-- Le signore sono poche e il tempo è poco: niente idee da albergo a cinque stelle. Cose concrete, che si fanno in 10-20 minuti.
-- I soldi sono contati: prima di proporre spese, guarda quanto è già stato speso questa settimana.
-- Non si parla mai degli ospiti per nome (nella fotografia non ci sono, e va bene così).
-- La sicurezza e l'igiene vengono prima dell'estetica.
-
-LA FOTOGRAFIA DI ADESSO
+LA FOTOGRAFIA DELLA CASA, ADESSO
 ${foto.testo}`;
 }
 
@@ -148,8 +184,7 @@ export async function trovaModello(conf) {
   const j = await chiamata(f.elenco(), f.elencoTesta(conf.chiave), null, 20);
   const tutti = f.elencoLeggi(j).filter(Boolean);
   if (!tutti.length) throw new Error("Non ho trovato nessun modello con questa chiave.");
-  for (const p of f.preferiti) { const m = tutti.filter(x => p.test(x)).sort()[0]; if (m) return { modello: m, tutti }; }
-  return { modello: tutti[0], tutti };
+  return { modello: scegliModello(tutti, conf.fornitore, conf.qualita || "sveglia"), tutti };
 }
 
 // "Prova la chiave": cerca il modello, fa una domanda finta e vede se risponde.
@@ -159,7 +194,7 @@ export async function provaChiave(conf) {
   try {
     let modello = conf.modello, tutti = [];
     if (!modello) { const t = await trovaModello(conf); modello = t.modello; tutti = t.tutti; }
-    const sistema = 'Rispondi solo con questo JSON: {"risposta":"ci sono","consiglio":"","azione":null}';
+    const sistema = 'Rispondi solo con questo JSON, niente altro: {"risposta":"ci sono","consiglio":"","azione":null}';
     const j = await chiamata(f.url(modello), f.testa(conf.chiave), f.corpo(sistema, [], "ci sei?", modello), 25);
     const txt = f.leggi(j) || "";
     if (!txt.trim()) return { ok: false, errore: "Ha risposto vuoto. Riprova." };
@@ -200,7 +235,7 @@ export function leggiRisposta(txt) {
 
 // Quanto costa, più o meno: serve solo per dirglielo a schermo.
 export const COSTI = {
-  gemini: "circa 1 euro al mese (versione a pagamento); c'è anche la prova gratuita",
-  openai: "circa 50 centesimi al mese; serve mettere 5 € sul conto all'inizio",
-  claude: "circa 50 centesimi al mese; serve mettere 5 € sul conto all'inizio",
+  gemini: { sveglia: "Il modello Flash nuovo: circa 1-2 € al mese con quanto la usi tu. Gratis fino a un certo numero di domande al giorno.", risparmio: "Il modello piccolo: pochi centesimi al mese, un filo meno sveglia." },
+  openai: { sveglia: "Il modello di mezzo: circa 2-3 € al mese. Serve mettere 5 € sul conto all'inizio.", risparmio: "Il modello piccolo: pochi centesimi al mese. Serve mettere 5 € sul conto all'inizio." },
+  claude: { sveglia: "Il modello di mezzo: circa 2-3 € al mese. Serve una ricarica all'inizio.", risparmio: "Il modello piccolo: pochi centesimi al mese. Serve una ricarica all'inizio." },
 };

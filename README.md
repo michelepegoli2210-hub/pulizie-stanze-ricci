@@ -484,15 +484,20 @@ Una governante come in un hotel di lusso, **senza intelligenza artificiale**: ca
 Facoltativa: l'app funziona benissimo anche senza. Si accende in **Governante → Regole**, prima cartolina, quattro passi:
 
 1. **Scegli chi le presta il cervello**: Gemini (la più facile: basta la mail di Google), ChatGPT o Claude.
-2. **Prendi la chiave** sul sito del fornitore (per Gemini: `aistudio.google.com/apikey`).
-3. **Incollala** e tocca **Prova la chiave**: l'app cerca da sola il modello piccolo (quello che costa pochissimo) e prova a parlarci.
-4. **Accendila.**
+2. **Quanto sveglia**: *Sveglia* (il modello Flash più nuovo, consigliato) o *Risparmio* (il modello piccolo).
+3. **Prendi la chiave** sul sito del fornitore — c'è il tasto che lo apre (per Gemini: `aistudio.google.com/apikey`).
+4. **Incollala** (c'è il tasto *Incolla*) e tocca **Prova**: l'app cerca da sola il modello giusto, lo salva e si accende.
+5. **Accendila**, se non si è già accesa da sola.
 
-Costo vero, con l'uso di Michele: **meno di 1 € al mese** con tutti e tre.
+Costo vero, con l'uso di Michele: **1-2 € al mese** con Gemini Flash, pochi centesimi con Risparmio.
+
+In Italia Google applica le regole dati del piano a pagamento anche al piano gratuito (i prompt non vengono usati per addestrare). Però i loro termini chiedono il piano a pagamento per un'app messa a disposizione di utenti europei: conviene prepagare i 5 $ minimi. Il credito da 300 $ di Google Cloud **non** vale per Gemini (escluso da marzo 2026) e l'abbonamento Google AI Pro/Ultra **non** dà accesso all'API.
 
 ### Le tre cose importanti
 - **I nomi degli ospiti non escono mai.** Alla governante si manda una "fotografia" della casa: camere, lavori, giorni, soldi, ritardi del catalogo, manutenzione. Mai un nome di ospite. C'è una prova automatica (`dev/prova-ia-38.mjs`) che lo verifica a ogni versione.
 - **Non fa niente da sola.** Propone e chiede "Confermo?": il lavoro nasce solo dopo il "Sì, fallo", esattamente come prima.
 - **Se cade, non si rompe niente.** Senza chiave, senza internet o con la chiave scaduta torna da sola alle parole del catalogo (`parole.js`). Il bollino **IA** accanto alla risposta dice chi ha parlato.
+- **Il giro di controllo.** Prima di ogni risposta la governante guarda sette cose: soldi sopra o sotto i 100 € a testa, controlli incrociati di oggi, cose bocciate da rifare prima di sabato alle 14, camere che partono senza pulizia in programma, manutenzione ferma da più di una settimana, catalogo in ritardo, stelle sopra o sotto l'obiettivo. Se qualcosa non va lo dice anche se non gliel'hai chiesto.
+- **Il consiglio del giorno.** Aprendo la governante lei saluta con la situazione vera in una riga e il consiglio da fare per primo: una sola chiamata al giorno, salvata nel telefono.
 
 La chiave sta solo nel `localStorage` del telefono del proprietario (`ricci_ia`), **mai in Firestore**: le signore non la vedono e non la possono spendere.

@@ -991,23 +991,70 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .sig-capelli .cap[aria-pressed="true"]{border-color:var(--fg);transform:scale(1.12)}
 .cap.castana{background:#6B4226}.cap.bionda{background:#D9A441}.cap.mora{background:#2E2A28}.cap.rossa{background:#B4522B}.cap.grigia{background:#9AA0A6}
 
-/* 0.38: la governante intelligente — la faccia che parla e le impostazioni */
+/* 0.38-0.39: la governante intelligente — la faccia viva e le impostazioni */
 .note.ok{background:var(--done-bg);color:var(--done)}
-/* la bocca: chiusa quando ascolta, aperta e in movimento quando parla */
-.donnina .bocca-parla{opacity:0}
+
+/* ---- la governante disegnata bene: si muove la testa, non la statuina ---- */
+.donnina.gov-fig.viva{animation:none}
+.donnina.gov-fig .busto{transform-origin:62px 124px;transform-box:fill-box}
+.donnina.gov-fig.viva .busto{animation:respiro 4.2s ease-in-out infinite}
+@keyframes respiro{0%,100%{scale:1 1}50%{scale:1.014 1.011}}
+.donnina.gov-fig .testa{transform-origin:62px 62px;transform-box:view-box}
+.donnina.gov-fig.viva .testa{animation:testina 11s ease-in-out infinite}
+@keyframes testina{0%,100%{rotate:0deg;translate:0 0}22%{rotate:1.7deg;translate:.4px -.3px}55%{rotate:-1.5deg;translate:-.4px .2px}78%{rotate:.5deg}}
+/* gli occhi guardano in giro da soli */
+.donnina.gov-fig .pupille{transform-box:view-box}
+.donnina.gov-fig.viva .pupille{animation:sguardo 8s ease-in-out infinite}
+@keyframes sguardo{0%,16%{translate:0 0}21%,34%{translate:1.5px -.3px}39%,58%{translate:0 .4px}63%,76%{translate:-1.4px -.2px}81%,100%{translate:0 0}}
+/* le palpebre: chiuse solo nell'attimo dell'ammicco */
+.donnina .palpebre{opacity:0}
+.donnina.viva .palpebre{animation:ammicca 5.5s infinite}
+@keyframes ammicca{0%,94%,100%{opacity:0}95.5%,98%{opacity:1}}
+.donnina.gov-fig.viva .palpebre{animation:ammicca2 6.4s infinite}
+@keyframes ammicca2{0%,92%,100%{opacity:0}93.5%,95.5%{opacity:1}96.5%,97.5%{opacity:0}}
+/* i capelli sciolti e il taccuino si muovono appena */
+.donnina.gov-fig .ciocca{transform-origin:62px 28px;transform-box:view-box}
+.donnina.gov-fig.viva .ciocca{animation:ciocca 7s ease-in-out infinite}
+@keyframes ciocca{0%,100%{rotate:-1deg}50%{rotate:1.6deg}}
+.donnina.gov-fig .taccuino{transform-origin:96px 62px;transform-box:view-box}
+.donnina.gov-fig.viva .taccuino{animation:taccuino 8s ease-in-out infinite}
+@keyframes taccuino{0%,100%{rotate:-2.4deg}50%{rotate:2deg}}
+
+/* ---- la bocca: tre forme che si alternano mentre parla ---- */
+.donnina .bocca-parla,.donnina .sorriso,.donnina .broncio{opacity:0}
 .donnina.parla .bocca{opacity:0}
-.donnina.parla .bocca-parla{opacity:1;transform-origin:60px 54px;animation:parlotta .22s ease-in-out infinite alternate}
-@keyframes parlotta{from{transform:scaleY(.3) scaleX(.92)}to{transform:scaleY(1.06) scaleX(1)}}
-/* mentre parla fa anche un po' di sì con la testa e respira più in fretta */
-.donnina.parla{animation:respira 1.9s ease-in-out infinite,annuisce 1.5s ease-in-out infinite}
-@keyframes annuisce{0%,100%{rotate:-1.2deg}50%{rotate:1.2deg}}
-/* le sopracciglia: si alzano se è contenta, si abbassano se è preoccupata */
-.donnina .sopracciglia{transform-origin:60px 36px;transition:transform .35s ease}
+.donnina.parla .bocca-parla{opacity:1}
+.donnina.parla .vA,.donnina.parla .vB,.donnina.parla .vC{opacity:0;animation:visema .42s steps(1,end) infinite}
+.donnina.parla .vB{animation-delay:-.14s}
+.donnina.parla .vC{animation-delay:-.28s}
+@keyframes visema{0%,33.2%{opacity:1}33.3%,100%{opacity:0}}
+.donnina.gov-fig.parla .testa{animation:annuisce 1.5s ease-in-out infinite}
+@keyframes annuisce{0%,100%{rotate:-1.7deg;translate:0 0}50%{rotate:1.7deg;translate:0 .7px}}
+.donnina.gov-fig.parla .busto{animation:respiro 2.1s ease-in-out infinite}
+/* la vecchia donnina (le signore): resta il respiro di prima */
+.donnina.viva:not(.gov-fig){animation:respira 4s ease-in-out infinite;transform-origin:50% 95%}
+@keyframes respira{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.025) translateY(-1.5px)}}
+.donnina:not(.gov-fig).parla .bocca-parla{opacity:1;transform-origin:60px 54px;animation:parlotta .22s ease-in-out infinite alternate}
+@keyframes parlotta{from{transform:scaleY(.3)}to{transform:scaleY(1.05)}}
+
+/* ---- l'umore si vede in faccia ---- */
+.donnina .sopracciglia{transform-origin:62px 37px;transform-box:view-box;transition:transform .35s ease}
 .gov-viva.contenta .donnina .sopracciglia{transform:translateY(-1.8px)}
-.gov-viva.attenta .donnina .sopracciglia{transform:translateY(-.6px)}
-.gov-viva.preoccupata .donnina .sopracciglia{transform:translateY(1.4px) scaleY(-.9)}
-.gov-viva.sta-parlando{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.6))}
-@media (prefers-reduced-motion:reduce){.donnina.parla,.donnina.parla .bocca-parla{animation:none}.donnina.parla .bocca{opacity:1}.donnina.parla .bocca-parla{opacity:0}}
+.gov-viva.attenta .donnina .sopracciglia{transform:translateY(-.7px) rotate(-1.5deg)}
+.gov-viva.preoccupata .donnina .sopracciglia{transform:translateY(2px) scaleY(-.85)}
+.gov-viva.contenta .donnina:not(.parla) .bocca{opacity:0}
+.gov-viva.contenta .donnina:not(.parla) .sorriso{opacity:1}
+.gov-viva.preoccupata .donnina:not(.parla) .bocca{opacity:0}
+.gov-viva.preoccupata .donnina:not(.parla) .broncio{opacity:1}
+.gov-viva.preoccupata .donnina{filter:saturate(.93)}
+.gov-viva.sta-parlando{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.62))}
+@media (prefers-reduced-motion:reduce){
+  .donnina.viva,.donnina.viva .palpebre,.donnina.gov-fig.viva .busto,.donnina.gov-fig.viva .testa,.donnina.gov-fig.viva .pupille,
+  .donnina.gov-fig.viva .ciocca,.donnina.gov-fig.viva .taccuino,.donnina.gov-fig.parla .testa,.donnina.gov-fig.parla .busto,
+  .donnina.parla .vA,.donnina.parla .vB,.donnina.parla .vC,.donnina:not(.gov-fig).parla .bocca-parla{animation:none}
+  .donnina.parla .bocca{opacity:1}.donnina.parla .bocca-parla{opacity:0}
+}
+
 /* il bollino "IA" sulle risposte vere dell'intelligenza artificiale */
 .ia-bollo{display:inline-block;font:800 10px/1.5 var(--f-display);letter-spacing:.06em;background:var(--done-bg);color:var(--done);border-radius:6px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 /* i tasti veloci sotto la casella della chat */
@@ -1021,10 +1068,14 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .ia-stato.on{background:var(--done-bg);color:var(--done)}
 .ia-stato.off{background:var(--campo);color:var(--muted)}
 .ia-passo{background:var(--campo);border-radius:var(--r2);padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.45}
-.ia-passo b:first-child{font:800 15px var(--f-display);margin-right:4px}
+.ia-passo>b:first-child{font:800 15px var(--f-display);margin-right:4px;display:inline-block;min-width:18px}
 .ia-passo .small{display:block;margin-top:4px}
-.ia-riga{display:flex;gap:8px;margin-top:6px;align-items:center}
-.ia-riga input{flex:1;min-width:0}
 .ia-passo .seg{display:flex;margin-top:8px;width:100%}
+.ia-riga{display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.ia-riga input{flex:1;min-width:140px}
 .ia-seg{display:flex;margin-top:8px;flex-wrap:wrap}
-.ia-passo b:first-child{display:inline-block;min-width:18px}
+.ia-vai{display:inline-flex;align-items:center;gap:6px;background:var(--fg);color:var(--bg);border:0;border-radius:999px;padding:10px 16px;font:700 14px var(--f-display);margin-top:8px;min-height:42px}
+.gov-consiglio{display:block;margin-top:4px;font-size:13px;color:var(--fg);opacity:.85;line-height:1.35}
+.gov-testa .gov-viva{margin:0 0 8px}
+.gov-testa .gov-viva .donnina.viva{width:104px;height:117px}
+.gov-viva-t span{font-size:14.5px;line-height:1.4}
