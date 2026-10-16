@@ -224,3 +224,35 @@ Michele: "va benissimo così tutto, implementa tutto, a prova di mia nonna". Spe
 - **Ancora da decidere (punto 13):** ore standard o a minuto. Adesso è su ore standard; si cambia con un tocco.
 - **La governante viva.** In cima alla chat c'è lei, grande: respira, sbatte le palpebre e ha l'umore della casa ("Tutto pulito per oggi", "Ci sono 2 problemi", "Ho una cosa da chiederti"). Colore dei capelli scegliibile per ogni signora (Selena è bionda).
 - **L'intelligenza artificiale vera (deciso dopo).** Michele la vuole: "deve parlarmi, suggerire, essere un tamagotchi". Fatti trovati il 16 ottobre sulle pagine ufficiali di Google: nel piano **gratuito** dell'API Gemini "Content used to improve our products" = Sì, e i termini dicono che revisori umani possono leggere input e output, con l'avviso in grassetto di non mandare informazioni personali o riservate; inoltre i termini dicono che per gli utenti nello Spazio economico europeo (Italia compresa) si devono usare i servizi a pagamento. Quindi il gratuito non va bene coi nomi degli ospiti e delle signore. Il piano a pagamento non usa i dati per addestrare: con Gemini 3.5 Flash-Lite costa 0,30 $ per milione di parole in ingresso e 2,50 $ in uscita, cioè **circa 1-2 € al mese** per l'uso di Michele. Serve una carta su Google e una chiave; la chiave va tenuta nelle impostazioni (solo proprietario), non nel codice.
+
+## 17. La 0.38 (16 ottobre): la governante con un'intelligenza artificiale vera
+
+Michele: *"devi assolutamente implementare un'IA molto intelligente e la governante si deve muovere bene e mi deve dare consigli, si deve muovere la faccia pure; trovami la migliore IA da implementare per farmi gestire l'albergo."*
+
+### Quale IA (confronto vero, prezzi del 16 ottobre 2026, dalle pagine ufficiali)
+
+| Chi | Modello piccolo | Entrata (1 milione di parole) | Uscita | Usa i tuoi dati per imparare? | Serve la carta? |
+|---|---|---|---|---|---|
+| **Google Gemini** | gemini-3.5-flash-lite | 0,30 $ | 2,50 $ | **Sì nel piano gratuito** (revisori umani possono leggere); no nel piano a pagamento. I termini chiedono il piano a pagamento per gli utenti nello Spazio economico europeo | No per provare, sì per il piano a pagamento |
+| **OpenAI (ChatGPT)** | gpt-6-luna | 0,10 $ | 0,50 $ | **No**, mai sull'API (serve un consenso esplicito). Log antiabuso 30 giorni | Sì, 5 $ di ricarica |
+| **Anthropic (Claude)** | claude-haiku-5-5 | 0,10 $ | 0,50 $ | Non dichiarato sulle pagine lette | Sì, ricarica |
+
+**Con l'uso di Michele (qualche decina di domande al mese) costano tutti meno di 1 € al mese: il prezzo non decide.** Quello che decide è: (a) quanto è facile prendere la chiave — Gemini è la più facile, basta la mail di Google e due tocchi su aistudio.google.com/apikey, senza carta; (b) si può chiamare direttamente dal telefono, senza un server in mezzo (Gemini sì, e la chiave viaggia nell'intestazione, non nell'indirizzo).
+
+**Scelta messa nell'app: si sceglie lui, con tre tasti (Gemini, ChatGPT, Claude).** Consiglio scritto nella cartolina: partire da Gemini perché la chiave si prende in due minuti; se vuole il massimo della riservatezza, OpenAI non usa i dati dell'API per imparare nemmeno nel piano gratuito di prova.
+
+### Cosa è stato fatto
+
+- **File nuovo `ia.js`.** Parla con i tre fornitori, trova **da sola** il modello piccolo giusto (se cambia nome non si rompe niente: `trovaModello` chiede l'elenco e prende il flash-lite / luna / haiku), e legge la risposta in JSON anche se arriva sporca.
+- **La fotografia della casa** (`fotografiaIA` in app.js): giorno e ora, le signore e le tariffe, il lavoro di oggi e di domani con stato e soldi, i soldi già maturati della settimana per signora, il conto del prospetto, le stelle e l'obiettivo, i controlli incrociati da fare e le cose da rifare entro sabato, le 12 cose del catalogo più in ritardo, copertura e buchi del tabellone, la manutenzione aperta, le camere occupate, il messaggio del giorno, la spesa, le domande della chat ancora aperte. **Mai i nomi degli ospiti** (c'è una prova automatica che lo verifica).
+- **Le azioni restano le stesse quattro** e passano tutte dal "Sì, fallo": segnare fatta, aggiungere un lavoro col prezzo, togliere dalle stelle o spegnere, scrivere alle signore. L'IA **propone**, non fa.
+- **Se non c'è la chiave, o internet non va, o la chiave scade**: torna da sola alle parole del catalogo (`parole.js`). Non si rompe niente e Michele se ne accorge solo dal bollino **IA** che sparisce dalle risposte.
+- **La chiave sta solo nel telefono di Michele** (`localStorage`), mai in Firestore: le signore non la vedono e non la possono spendere.
+- **Tasti veloci** nella chat: "Dammi un consiglio", "Come va oggi?", "Cosa è rimasto indietro?", "Guarda i soldi".
+- **La faccia si muove davvero**: la bocca si apre e si chiude mentre parla, la testa fa sì, le sopracciglia si alzano se è contenta e si abbassano se è preoccupata, continua a respirare e a sbattere le palpebre. Nella chat è più grande (104px).
+- **Dove si accende:** Governante → Regole, prima cartolina, quattro passi numerati.
+
+### Ancora da decidere / da fare
+- Paga sulle **ore standard** o **a minuto** (punto 13): deciso nulla, l'interruttore c'è.
+- La voce vera (lei che parla ad alta voce e lui che risponde senza tastiera).
+- Foto dei materiali, meteo automatico, avviso "venerdì Selena ha 3 camere invece di 4".
