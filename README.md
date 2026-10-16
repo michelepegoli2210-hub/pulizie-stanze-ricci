@@ -514,3 +514,12 @@ La governante può leggere ad alta voce quello che risponde. Si accende in **Gov
 **Le labbra si muovono sul suono vero**, non a tempo: l'audio passa per un `AnalyserNode`, si misura l'ampiezza a ogni fotogramma e si sceglie una delle tre bocche. Lo stesso testo non si paga due volte (cassetto in memoria), e si leggono al massimo 600 caratteri per volta.
 
 Un **avatar video fotorealistico** è stato valutato e scartato: il più economico utilizzabile costerebbe circa 20 € al mese, richiederebbe un server (che questa app non ha) o una chiave molto più costosa dentro al telefono, nessun fornitore dichiara l'italiano, e servirebbe video in streaming — quindi niente uso offline. I dettagli e i prezzi stanno nelle specifiche, punto 19.
+
+
+## Anna e le spiegazioni coi disegnini (dalla versione 0.41)
+
+La governante ha un **nome** (di partenza "Anna", si cambia in Governante → Regole, passo 0) e si comporta da persona: si accorge da sola delle cose e le dice, anche quelle scomode ("Selena venerdì ha fatto 3 camere su 4, la richiamerei").
+
+**Le spiegazioni passo per passo.** Michele le dice a parole *"spiega a Selena come spostare le cose di Passerella"*; lei prepara i passi, li propone con "Confermo?", e dopo il Sì la signora se li trova in cima alla sua schermata: titolo, passi numerati, e sotto ogni passo un **disegnino animato** che fa vedere il gesto (`gesti.js`: scatole, letto, asciugamani, spray, finestra, pavimento, armadio, bidone). Il tasto altoparlante glieli legge ad alta voce — per le signore con la voce gratis del telefono, così non costano niente.
+
+Le spiegazioni stanno dentro `impostazioni/messaggi`, sotto il giorno: le signore leggono già quel documento, quindi **non serve cambiare le regole di sicurezza**.

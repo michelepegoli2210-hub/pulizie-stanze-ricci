@@ -1099,3 +1099,46 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .voce-scelte{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .voce-chip{background:var(--bg);border:1.5px solid var(--bordo,rgba(0,0,0,.12));border-radius:999px;padding:7px 13px;font:600 13px var(--f-display);color:var(--fg);min-height:36px}
 .voce-chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+/* 0.41: le spiegazioni coi disegnini animati */
+.istr-card{border-left:4px solid var(--done,#2e9e63)}
+.istr-testa{display:flex;align-items:center;gap:10px}
+.istr-testa .donnina{width:50px;height:56px}
+.istr-testa>div{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.istr-testa b{font:800 16px var(--f-display)}
+.istr-testa span{font-size:14px;color:var(--muted)}
+.istr-testa .chat-voce{margin-left:auto;flex:0 0 auto}
+.istr-passi{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.istr-passi li{background:var(--campo);border-radius:var(--r2);padding:10px 12px 9px;display:flex;flex-direction:column;gap:7px}
+.istr-testo{font-size:15px;line-height:1.4}
+.istr-testo b{font:800 16px var(--f-display);margin-right:4px}
+.istr-avviso{display:flex;align-items:center;gap:8px}
+.istr-avviso .ic{flex:0 0 auto;width:20px;height:20px}
+.gesto{width:100%;max-width:186px;height:auto;display:block;border-radius:12px;background:var(--bg);align-self:center}
+
+/* i gesti che si muovono */
+.g-freccia{animation:gFreccia 3s ease-in-out infinite}
+@keyframes gFreccia{0%,18%{opacity:0;translate:-6px 0}38%,66%{opacity:1;translate:0 0}86%,100%{opacity:0;translate:7px 0}}
+.g-porta{animation:gPorta 3s ease-in-out infinite}
+@keyframes gPorta{0%,8%{translate:0 0;opacity:1}22%{translate:0 -13px}48%{translate:64px -13px}60%,74%{translate:64px -27px}80%{translate:64px -27px;opacity:0}81%{translate:0 0;opacity:0}90%,100%{translate:0 0;opacity:1}}
+.g-lenzuolo{animation:gLenz 2.8s ease-in-out infinite}
+@keyframes gLenz{0%,10%{translate:36px 0;opacity:.55}55%,82%{translate:0 0;opacity:1}96%,100%{translate:36px 0;opacity:.55}}
+.g-piega{transform-origin:60px 52px;transform-box:view-box;animation:gPiega 2.8s ease-in-out infinite}
+@keyframes gPiega{0%,15%{translate:0 0;scale:1 1}55%,85%{translate:36px 0;scale:-1 1}100%{translate:0 0;scale:1 1}}
+.g-panno{animation:gPanno 1.9s ease-in-out infinite}
+@keyframes gPanno{0%,100%{translate:0 0}50%{translate:42px 0}}
+.g-goccia{animation:gGoccia 1.9s ease-in-out infinite}
+@keyframes gGoccia{0%{opacity:0;translate:12px -5px}25%{opacity:1;translate:0 0}62%,100%{opacity:0;translate:-10px 7px}}
+.g-anta-sx{transform-origin:26px 45px;transform-box:view-box;animation:gAnta 3.2s ease-in-out infinite}
+@keyframes gAnta{0%,15%{rotate:0deg}55%,85%{rotate:-62deg}100%{rotate:0deg}}
+.g-aria{animation:gAria 2.2s linear infinite}
+@keyframes gAria{0%{opacity:0;translate:-8px 0}30%{opacity:1}100%{opacity:0;translate:26px 0}}
+.g-mop{transform-origin:74px 18px;transform-box:view-box;animation:gMop 2.1s ease-in-out infinite}
+@keyframes gMop{0%,100%{translate:0 0;rotate:-6deg}50%{translate:-38px 0;rotate:7deg}}
+.g-lucido{animation:gLucido 2.1s ease-in-out infinite}
+@keyframes gLucido{0%,100%{opacity:.18}50%{opacity:.9}}
+.g-anta{animation:gAnta2 3.2s ease-in-out infinite}
+@keyframes gAnta2{0%,15%{translate:0 0;opacity:1}55%,85%{translate:30px 0;opacity:.3}100%{translate:0 0;opacity:1}}
+.g-sacco{animation:gSacco 2.8s ease-in-out infinite}
+@keyframes gSacco{0%,14%{translate:-42px 8px}54%,82%{translate:0 -10px}100%{translate:-42px 8px}}
+@media (prefers-reduced-motion:reduce){.gesto *{animation:none!important}}

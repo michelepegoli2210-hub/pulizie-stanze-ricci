@@ -13,8 +13,9 @@ import * as CH from "./chat.js";
 import * as PAROLE from "./parole.js";
 import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
+import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.40.0";
+export const VERSIONE = "0.41.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -564,6 +565,20 @@ function vistaAddetta() {
 
 // Messaggio del giorno scritto dai proprietari (impostazioni/messaggi: una voce per giorno)
 function messaggioDelGiorno(iso) { const m = S.messaggi?.[iso]; return m && m.testo ? m : null; }
+// 0.41: le istruzioni pratiche che la governante lascia a una signora per un giorno
+function istruzioniDelGiorno(iso, zona) {
+  const l = (S.messaggi?.[iso]?.istruzioni) || [];
+  return l.filter(x => x && x.passi && x.passi.length && (!zona || !x.zona || x.zona === "tutte" || x.zona === zona));
+}
+function cardIstruzione(x, i) {
+  const passi = (x.passi || []).map((pz, n) => `<li><div class="istr-testo"><b>${n + 1}.</b> ${esc(pz.testo)}</div>${pz.gesto && GESTI.GESTI[pz.gesto] ? GESTI.disegnoGesto(pz.gesto) : ""}</li>`).join("");
+  const parlato = [x.titolo, ...(x.passi || []).map((pz, n) => `${n + 1}. ${pz.testo}`)].join(". ");
+  return `<section class="card istr-card"><div class="istr-testa">${DONNINA("governante", "piccola")}<div><b>${esc(nomeGov())} ti spiega</b><span>${esc(x.titolo || "Una cosa da fare")}</span></div>
+      <button class="chat-voce" data-istr-voce="${esc(String(i))}" aria-label="Ascolta">${ICONA("altoparlante")}</button></div>
+    <ol class="istr-passi">${passi}</ol>
+    <p class="muted small" style="margin:8px 0 0">Te l'ha lasciata ${esc(x.da || "la governante")}${x.ora ? " alle " + L.oraBreve(x.ora) : ""}. Tocca l'altoparlante e te la legge.</p>
+    <span hidden data-istr-testo="${esc(String(i))}">${esc(parlato)}</span></section>`;
+}
 function quandoEtichetta(iso) { const oggi = L.oggiISO(); return iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, 1) ? "Domani" : iso === L.aggiungiGiorni(oggi, -1) ? "Ieri" : L.GIORNI[L.giornoSettimana(iso)].replace(/^./, c => c.toUpperCase()); }
 
 // La giornata della signora: saluto, numeri grandi, una camera per riquadro, INIZIA → HO FINITO.
@@ -588,13 +603,14 @@ function vistaNonnaOggi(z) {
     ${(() => { const std = lavori.filter(p => p.minuti && p.origine !== "governante" && p.tipo !== "extra"); const min = std.reduce((s, p) => s + (Number(p.minuti) || 0), 0), eu = std.reduce((s, p) => s + (Number(p.importo) || 0), 0); return min ? `<div class="pro-ore">${ICONA("orologio")}<span>${esc(L.testoOre(min))} standard · <b>${eur(eu)}</b>${lavori.some(p => rifinitureDi(p).some(r => r.euro)) ? " + le stelle" : ""}</span></div>` : ""; })()}
     ${lavori.length ? `<div class="bar bar-grande"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
     <div class="pro-data-riga"><div class="pro-data">${ICONA("calendario")}<span>${["Oggi", "Domani", "Ieri"].includes(quando) ? esc(quando) + " · " + esc(L.dataLunga(iso)) : esc(L.dataLunga(iso).replace(/^./, ch => ch.toUpperCase()))}</span></div><button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi" : "Altri giorni"}</button></div>
-    ${messaggio}${tutteFatte && numeroWhatsApp() ? `<button class="pro-btn verde" style="margin-top:12px;min-height:56px;font-size:15px" data-whatsapp-finito="${iso}">${ICONA("spunta")}<span>Avvisa su WhatsApp che hai finito</span></button>` : ""}</section>`;
+    ${messaggio}${istruzioniDelGiorno(iso, z).length ? `<div class="pro-msg dentro istr-avviso">${ICONA("stella")}<span><b>${esc(nomeGov())} ti ha lasciato ${istruzioniDelGiorno(iso, z).length === 1 ? "una spiegazione" : istruzioniDelGiorno(iso, z).length + " spiegazioni"}</b>: le trovi qui sotto, coi disegni.</span></div>` : ""}${tutteFatte && numeroWhatsApp() ? `<button class="pro-btn verde" style="margin-top:12px;min-height:56px;font-size:15px" data-whatsapp-finito="${iso}">${ICONA("spunta")}<span>Avvisa su WhatsApp che hai finito</span></button>` : ""}</section>`;
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
   const bidoni = rif && z === "ap" ? `<div class="pro-nota">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.replace(/^./, c => c.toUpperCase()))}</b></span></div>` : "";
   // La piantina: le camere al loro posto (sinistra/destra del corridoio, poi via Nazario Sauro); si tocca una camera
   const legenda = `<div class="legenda"><span><i class="todo"></i>Da pulire</span><span><i class="wip"></i>In corso</span><span><i class="done"></i>Pulita</span><span><i class="warn"></i>Problema</span></div>`;
   const piantina = `<section class="card piantina-card"><div class="floorlabel" style="margin:0 2px 6px"><span>Le mie camere</span><span class="muted small">${lavori.length ? `${lavori.length} ${lavori.length === 1 ? "camera" : "camere"}` : ""}</span></div>${piantinaZona(z, iso, true)}${legenda}${lavori.length ? `<p class="piantina-aiuto">Tocca una camera: si apre la lista di oggi, riga per riga.</p>` : ""}</section>`;
-  return testata + cardDaRifare(z) + cardControlliOggi(z) + bidoni + piantina;
+  const spiegazioni = istruzioniDelGiorno(iso, z).map((x, i) => cardIstruzione(x, i)).join("");
+  return testata + spiegazioni + cardDaRifare(z) + cardControlliOggi(z) + bidoni + piantina;
 }
 
 // Un riquadro-camera della piantina (per le signore e per le piantine della gestione)
@@ -1012,6 +1028,8 @@ function testoPianoSettimana(z, lun) {
 //  LA GOVERNANTE (schermate). La testa sta in governante.js.
 // ============================================================================
 function regoleGov() { return G.regoleAttive(S.gov); }
+// 0.41: la governante ha un nome. Michele glielo cambia in Governante → Regole.
+function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Anna"; }
 function soglieGov() { return G.soglie(S.gov); }
 function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {}, frigo: (S.gov && S.gov.frigo) || {} }; }
 let ctxMemo = null;
@@ -1170,7 +1188,7 @@ function cardChat() {
   const gruppiTesto = (c.gruppi || []).map(x => `${x.righe.length} ${x.tipo === "nomi" ? (x.righe.length === 1 ? "nome da sistemare" : "nomi da sistemare") : (x.righe.length === 1 ? "lavoro fermo" : "lavori fermi")}`).join(" · ");
   const sotto = [n ? `${n === 1 ? "una domanda" : n + " domande"} per te${c.inAttesa.length ? ` · altre ${c.inAttesa.length} domani` : ""}` : "", gruppiTesto].filter(Boolean).join(" · ") || (c.prossime ? `le prossime arrivano ${c.prossime.replace(/^\d+ /, "")}` : c.risposteOggi.length ? "per oggi ho finito, grazie" : "niente da chiedere, per ora");
   const prima = c.aperte[0] || (c.gruppi || [])[0];
-  return `<section class="card chat-card ${n || g ? "" : "quiete"}"><button class="chat-plate" data-chat-apri aria-label="Apri la chat con la governante">${DONNINA("governante", "piccola")}<span class="chat-plate-testo"><b>La governante ti chiede${n + g ? ` · ${n + g}` : ""}</b><span>${esc(sotto)}</span>${prima ? `<span class="chat-anteprima">“${esc(prima.titolo)}”</span>` : ""}</span>${c.urgenti ? `<span class="led" role="img" aria-label="urgente"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
+  return `<section class="card chat-card ${n || g ? "" : "quiete"}"><button class="chat-plate" data-chat-apri aria-label="Apri la chat con la governante">${DONNINA("governante", "piccola")}<span class="chat-plate-testo"><b>${esc(nomeGov())} ti chiede${n + g ? ` · ${n + g}` : ""}</b><span>${esc(sotto)}</span>${prima ? `<span class="chat-anteprima">“${esc(prima.titolo)}”</span>` : ""}</span>${c.urgenti ? `<span class="led" role="img" aria-label="urgente"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
 }
 // L'umore della governante: guarda come sta la casa e lo dice in una riga (e si vede in faccia)
 function umoreGov() {
@@ -1195,7 +1213,7 @@ function testataGov() {
   if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
   const testo = c && c.testo ? c.testo : u.testo;
   const muove = govScrive || voceInCorso;
-  return `<div class="gov-viva ${u.v}${muove ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (muove ? " parla" : ""))}<div class="gov-viva-t"><b>La governante${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
+  return `<div class="gov-viva ${u.v}${muove ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (muove ? " parla" : ""))}<div class="gov-viva-t"><b>${esc(nomeGov())}${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
 }
 const escNl = s => esc(s).replace(/\n/g, "<br>");
 function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
@@ -1215,7 +1233,7 @@ function foglioChat(f) {
   const parla = mod ? `<form class="chat-parla" id="formParla"><textarea id="parlaGov" rows="1" placeholder="Scrivi o detta col microfono della tastiera…" data-keep aria-label="Scrivi alla governante"></textarea><button class="chat-invia" type="submit" aria-label="Manda alla governante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
     ${iaAccesa() ? `<div class="chat-veloci">${VELOCI_IA.map((v, i) => `<button type="button" class="chat-veloce" data-ia-veloce="${i}">${esc(v.tasto)}</button>`).join("")}</div>` : ""}
     <p class="muted small center" style="margin:6px 0 0">Per esempio: «ho messo i piumoni» · «fai lavare le tende in Alba» · «quanto prende ${esc(SIG(signore()[0]?.id || "p1"))}?» · «di' alle signore che domani arrivano gli operai»</p>` : "";
-  return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">La governante</span>${mod ? `<button class="chat-voce" data-voce-tasto aria-pressed="${voceAccesa()}" aria-label="${voceAccesa() ? "Spegni la voce" : "Accendi la voce"}">${ICONA(voceAccesa() ? "altoparlante" : "muto")}</button>` : ""}</div>
+  return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">${esc(nomeGov())}</span>${mod ? `<button class="chat-voce" data-voce-tasto aria-pressed="${voceAccesa()}" aria-label="${voceAccesa() ? "Spegni la voce" : "Accendi la voce"}">${ICONA(voceAccesa() ? "altoparlante" : "muto")}</button>` : ""}</div>
     ${testataGov()}
     <div class="chat-corpo">${vecchie}${aperte}${gruppi}${piede}${conv}${scrive}</div>
     ${parla}
@@ -1382,6 +1400,11 @@ async function eseguiParole(a) {
     await salvaGov({ stelleEscluse: { ...cur, [w]: [...lista] } });
     return `Fatto: tolta dalle stelle di questa settimana. Al suo posto entra la prossima più in ritardo.`;
   }
+  if (a.tipo === "istruzione") {
+    const chi = a.zona === "tutte" ? "tutte le signore" : SIG(a.zona);
+    await salvaIstruzione(a);
+    return `Fatto: ${chi} ${a.zona === "tutte" ? "la trovano" : "la trova"} ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)} in cima alla sua schermata, coi ${a.passi.length} passi e i disegnini.`;
+  }
   if (a.tipo === "aggiungi") {
     const prezzi = G.prezziStelle(S.gov), euro = G.prezzoStella(a.minuti, prezzi), oggi = L.oggiISO();
     const ops = []; let n = 0; const quando = [];
@@ -1453,7 +1476,7 @@ function elenchiIA() {
     return `${c.id} = ${c.nome} (${che}, ${S.zone[z]?.nome || z}${SIG(z) ? ", la pulisce " + SIG(z) : ""}${modo})`;
   }).join("\n");
   const regole = regoleGov().map(r => `${r.codice} ${r.posto}/${r.superficie}${r.regola && r.regola !== r.superficie ? ": " + r.regola : ""}${r.ogni ? ` (${G.etichettaOgni(r.ogni).toLowerCase()})` : ""}`).join("\n");
-  return { camere, regole };
+  return { camere, regole, nome: nomeGov(), gesti: GESTI.ELENCO_GESTI };
 }
 
 // --- la fotografia della casa, adesso (mai i nomi degli ospiti) ------------
@@ -1594,6 +1617,17 @@ const dataBuona = d => /^\d{4}-\d{2}-\d{2}$/.test(String(d || "")) ? d : L.oggiI
 function azioneDaIA(a) {
   if (!a || !a.tipo) return null;
   if (a.tipo === "messaggio") { const t = String(a.testo || "").trim(); return t ? { tipo: "messaggio", giorno: dataBuona(a.giorno), testo: t.slice(0, 300) } : null; }
+  if (a.tipo === "istruzione") {
+    const passi = (Array.isArray(a.passi) ? a.passi : []).map(x => ({
+      testo: String((x && (x.testo || x)) || "").trim().slice(0, 180),
+      gesto: GESTI.gestoValido(String((x && x.gesto) || "")),
+    })).filter(x => x.testo).slice(0, 8);
+    if (!passi.length) return null;
+    const zone = Object.keys(S.zone);
+    let chi = String(a.chi || a.zona || "").trim();
+    if (!zone.includes(chi) && chi !== "tutte") { const z = signore().find(x => PAROLE.norm(SIG(x.id)) === PAROLE.norm(chi)); chi = z ? z.id : "tutte"; }
+    return { tipo: "istruzione", zona: chi, giorno: dataBuona(a.giorno), titolo: String(a.titolo || "Una cosa da fare").trim().slice(0, 90), passi };
+  }
   const camere = camereDaIA(a.dove || a.camere);
   if (a.tipo === "aggiungi") {
     const r = regolaDaIA(a.codice, a.cosa || a.nome), cosa = String(a.cosa || a.nome || (r && r.nome) || "").trim();
@@ -1619,6 +1653,7 @@ async function rispostaIA(testo, conv) {
     return { ...base, testo: `${dice}\n\n«${a.regola ? a.regola.nome : a.cosa}» dove?`, tasti: tastiDove(), azioneDove: a };
   const prop = a.tipo === "togli" ? testoTogli(a)
     : a.tipo === "messaggio" ? `Scrivo alle signore, per ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)}: «${a.testo}». Confermo?`
+    : a.tipo === "istruzione" ? `Lascio a ${a.zona === "tutte" ? "tutte le signore" : SIG(a.zona)}, per ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)}, la spiegazione «${a.titolo}» in ${a.passi.length} ${a.passi.length === 1 ? "passo" : "passi"}:\n${a.passi.map((x, i) => `${i + 1}. ${x.testo}`).join("\n")}\nCon i disegnini che fanno vedere il gesto. Confermo?`
     : testoProposta(a);
   return { ...base, testo: `${dice}\n\n${prop}`, tasti: [{ k: "si", testo: "Sì, fallo" }, { k: "no", testo: "No, lascia" }], azione: a };
 }
@@ -1654,6 +1689,9 @@ function cardIA() {
   const scelta = Object.entries(IA.FORNITORI).map(([k, v]) => `<button type="button" aria-pressed="${c.fornitore === k}" data-ia-fornitore="${k}">${esc(v.nome)}</button>`).join("");
   return `<section class="card ia-card"><div class="ia-testa"><h2 style="margin:0">La governante intelligente</h2>${stato}</div>
     <p class="muted small" style="margin:6px 0 10px">Senza chiave la governante capisce solo le parole del catalogo: funziona, ma è un elenco, non un cervello. Con una <b>chiave</b> dietro ci pensa un'intelligenza artificiale vera: legge i numeri della casa, si accorge delle cose da sola e ti dà consigli. Decide sempre tu: lei chiede «Confermo?» e non fa niente finché non tocchi <b>Sì</b>.</p>
+    <div class="ia-passo"><b>0.</b> Come si chiama
+      <div class="ia-riga"><input type="text" id="iaNome" data-keep value="${esc(nomeGov())}" placeholder="Anna" maxlength="18" autocomplete="off"><button type="button" class="btnsm" data-ia-nome>Salva il nome</button></div>
+      <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Dalle il nome che vuoi: lo usa dappertutto.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
     <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
       <div class="seg"><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Sveglia</button><button type="button" aria-pressed="${q === "risparmio"}" data-ia-qualita="risparmio">Risparmio</button></div>
@@ -1681,6 +1719,10 @@ function cardIA() {
     ${c.chiave ? `<button class="nonna-link" style="margin:8px 0 0" data-ia-cancella>Cancella la chiave da questo telefono</button>` : ""}</section>`;
 }
 function collegaIA() {
+  document.querySelectorAll("[data-ia-nome]").forEach(b => b.onclick = () => {
+    const n = (document.getElementById("iaNome")?.value || "").trim().slice(0, 18);
+    salvaGov({ nome: n }).then(() => { try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} toast(n ? `Da adesso si chiama ${n}` : "Nome tolto: torna «Anna»"); });
+  });
   document.querySelectorAll("[data-ia-fornitore]").forEach(b => b.onclick = () => { IA.salvaConf({ fornitore: b.dataset.iaFornitore, modello: "" }); provaIA = null; disegna(); });
   document.querySelectorAll("[data-ia-qualita]").forEach(b => b.onclick = () => { IA.salvaConf({ qualita: b.dataset.iaQualita, modello: "" }); provaIA = null; disegna(); toast("Cerco il modello giusto: tocca «Prova»"); });
   document.querySelectorAll("[data-ia-apri]").forEach(b => b.onclick = () => { window.open("https://" + b.dataset.iaApri, "_blank", "noopener"); });
@@ -1708,6 +1750,16 @@ function collegaIA() {
   });
   document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
   // --- la voce ---
+  document.querySelectorAll("[data-istr-voce]").forEach(b => b.onclick = () => {
+    VOCE.sbloccaAudio();
+    const t = document.querySelector(`[data-istr-testo="${b.dataset.istrVoce}"]`)?.textContent || "";
+    if (!t) return;
+    if (VOCE.staParlando()) { zittisciVoce(); return; }
+    // le signore non hanno la chiave: per loro parla il telefono, gratis
+    voceInCorso = true; disegna();
+    VOCE.parla(t, { conf: { ...VOCE.leggiVoce(), motore: proprietario() ? VOCE.leggiVoce().motore : "telefono", attiva: true }, chiave: proprietario() ? confIA().chiave : "",
+      onBocca: applicaBocca, onFine: () => { voceInCorso = false; applicaBocca(0); disegna(); } });
+  });
   document.querySelectorAll("[data-voce-motore]").forEach(b => b.onclick = () => {
     VOCE.sbloccaAudio(); zittisciVoce();
     const m = b.dataset.voceMotore;
@@ -1771,6 +1823,17 @@ async function scriviMessaggio(giorno, testo) {
   S.messaggi = nuovo;
   await S.db.salva("impostazioni", "messaggi", nuovo, false);
   inviaTelegram(testoMessaggioGiorno(giorno, testo), "messaggio");
+}
+// 0.41: la spiegazione pratica che la governante lascia a una signora (sta dentro impostazioni/messaggi, che le signore leggono)
+async function salvaIstruzione(a) {
+  const nuovo = {}; const limite = L.aggiungiGiorni(L.oggiISO(), -60);
+  for (const [k, v] of Object.entries(S.messaggi || {})) if (k >= limite && v && typeof v === "object") nuovo[k] = v;
+  const g = nuovo[a.giorno] || {};
+  const lista = [...((g.istruzioni) || []), { id: "i" + Date.now().toString(36), zona: a.zona, titolo: a.titolo, passi: a.passi, da: nomeGov(), ora: S.db.adesso() }].slice(-6);
+  nuovo[a.giorno] = { ...g, istruzioni: lista };
+  S.messaggi = nuovo;
+  await S.db.salva("impostazioni", "messaggi", nuovo, false);
+  inviaTelegram(`📋 ${a.titolo}\n` + a.passi.map((x, i) => `${i + 1}. ${x.testo}`).join("\n"), "istruzione");
 }
 // i dettagli di una pulizia scritti dalla governante (senza chiudere il foglio della chat)
 async function salvaDettagliSilenzioso(p, testo) {
@@ -1990,7 +2053,7 @@ function plateGovernante() {
   const n = r.proposte.length, rit = r.inRitardo.length;
   const buchi = mappaGov().buchi;
   const sotto = buchi ? `${buchi} ${buchi === 1 ? "superficie scoperta nella mappa" : "superfici scoperte nella mappa"}${rit ? ` · ${rit} in ritardo` : ""}` : rit ? `${rit} in ritardo${n ? ` · ${n} consigli` : ""}` : n ? `${n} consigli per ${G.settimanaGovernante() === L.lunediDi(L.oggiISO()) ? "questa settimana" : "la settimana prossima"}` : "tutto in ordine";
-  return `<button class="piastra gov-plate" data-vista="governante">${DONNINA("governante", "piccola")}<span class="man-testo"><b>Governante</b><span>${esc(sotto)}</span></span>${ledGovernante() ? `<span class="led" role="img" aria-label="novità"></span>` : ""}<span class="man-freccia">›</span></button>`;
+  return `<button class="piastra gov-plate" data-vista="governante">${DONNINA("governante", "piccola")}<span class="man-testo"><b>${esc(nomeGov())}</b><span>${esc(sotto)}</span></span>${ledGovernante() ? `<span class="led" role="img" aria-label="novità"></span>` : ""}<span class="man-freccia">›</span></button>`;
 }
 
 // --- la sezione ---
