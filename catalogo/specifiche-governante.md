@@ -294,3 +294,38 @@ Con l'uso di Michele (qualche decina di domande al giorno, circa 8.500 parole di
 
 ### Cosa NON si può fare (detto chiaro)
 La governante resta un **disegno animato fatto bene**, non una persona vera dentro lo schermo. Per una faccia filmata che parla servirebbe un servizio a pagamento a parte (decine di euro al mese) e non ne vale la pena. E non parla ancora ad alta voce: si scrive, o si detta col microfono della tastiera.
+
+## 19. La 0.40 (16 ottobre, notte): la governante parla ad alta voce
+
+Michele: *"sì va bene voce reale, va bene Google Flash, e va bene avatar di persona reale incredibilmente reale con voce reale. Dammi le istruzioni e dimmi quanto costa e facciamo tutto."*
+
+### La voce: fatta
+
+- **Motore "Voce vera" (Google).** `POST https://generativelanguage.googleapis.com/v1beta/interactions`, chiave nell'intestazione `x-goog-api-key`. Corpo: `{model, input:[{type:"user_input", content:[{type:"text", text, annotations:[{type:"speech_metadata", style}]}]}], response_format:{type:"audio"}, generation_config:{speech_config:[{voice:"Sulafat"}]}}`. **Attenzione: non è la vecchia forma `generateContent` + `responseModalities`**, che nella documentazione del 12 ottobre 2026 non esiste più.
+- La risposta porta l'audio in base64 in `steps[].content[].data` dove `type === "audio"`. In chiamata normale (non in streaming) è **già un WAV completo** (24 kHz, mono, 16 bit): si suona così com'è, senza costruire l'intestazione a mano.
+- **Modello**: l'app cerca da sola il `-tts` più nuovo fra quelli che la chiave vede, preferendo il "lite" (oggi `gemini-3.8-flash-lite-tts`).
+- **Voci**: sei fra cui scegliere, dalle 30 prebuilt di Google: Sulafat (*Warm*, è quella di partenza), Achird (*Friendly*), Vindemiatrix (*Gentle*), Achernar (*Soft*), Leda (*Youthful*), Callirrhoe (*Easy-going*). L'italiano è nella tabella delle lingue supportate con la spunta su entrambi i modelli 3.8; la lingua la riconosce da sola dal testo.
+- **Stile di recitazione**: le passiamo `style: "calma, cortese e pratica, come una governante d'albergo italiana..."` nelle annotazioni.
+- **Costo vero.** Il listino conta **25 token per secondo di audio**. `gemini-3.8-flash-lite-tts` costa 6 $ per milione di token in uscita → 60 s × 25 = 1.500 token = **0,009 $ al minuto parlato** (la pagina lo conferma: "Equivalent to $0.0015 per 10s audio"). Con 5 minuti di parlato al giorno: **circa 1,35 $ al mese**, cioè ~1,30 €. Dal 1° gennaio 2027 i prezzi raddoppiano (12 $/milione → ~2,60 € al mese). Sul piano gratuito è a zero.
+- **Rete di sicurezza**: se Google non risponde, se manca internet o se la chiave non va, parla la **voce del telefono** (`speechSynthesis`, gratis, funziona offline). Terza posizione: "Muta".
+- **Le labbra si muovono sul suono vero.** L'audio passa per un `AnalyserNode`; a ogni fotogramma si misura l'ampiezza (RMS) e si sceglie una delle tre bocche (stretta / tonda / larga) più un'apertura continua con la variabile CSS `--apri`. Non è un'animazione a tempo: è la voce che muove la bocca.
+- **Risparmio**: stesso testo = stesso audio, tenuto in un cassetto in memoria (max 40). Si legge al massimo 600 caratteri per volta. Non legge il consiglio del giorno da sola: solo le risposte a quello che scrive Michele, più il tasto "Prova la voce".
+- **Dove si accende**: Governante → Regole, passo 6 della cartolina. E c'è l'altoparlante in cima alla chat per zittirla al volo.
+
+### L'avatar di persona reale: NON fatto, e perché
+
+Ho cercato i prezzi veri dei cinque servizi che fanno parlare una faccia fotorealistica (16 ottobre 2026):
+
+| Servizio | Tempo reale | Prezzo pubblicato |
+|---|---|---|
+| **Synthesia Interactive Avatars** | sì | **0,12 $ al minuto**, pay-as-you-go, 500 minuti gratis all'inizio |
+| **Tavus** | sì (tutta la filiera) | Free 20 min/mese · Starter **22 $/mese** (60 min) · Builder 59 $/mese |
+| **Simli** | sì | pagina prezzi rotta; "10 $ all'iscrizione + 50 minuti al mese" |
+| **D-ID** | sì | nessun prezzo leggibile (tabelle che non si caricano) |
+| **HeyGen** | il prodotto live sta su un altro sito | 29-149 $/mese per il video registrato |
+
+**Il più economico sulla carta è Synthesia a 0,12 $/minuto (~11 $ al mese per 90 minuti), ma non si può usare qui**: il loro collegamento richiede un **agente LiveKit scritto in Python che gira su un server**. Questa app è un sito statico su GitHub Pages: non c'è nessun server, e metterne uno vuol dire un costo fisso al mese più una cosa in più che si può rompere. Esattamente quello che l'app non vuole essere.
+
+**Il più realistico da fare davvero è Tavus a 22 $/mese** (circa 20 € — 240 € l'anno, più di quello che una signora prende in due settimane), e comunque: la chiave finirebbe nel browser come quella di Gemini, ma lì vale 22 $ al mese invece di centesimi; nessuno dei cinque dichiara l'italiano nelle lingue (tutti dicono solo "30-175 lingue"), e il labiale di questi servizi è quasi sempre tarato sull'inglese; servirebbe video in streaming, quindi niente da fare con poca linea nei corridoi e niente da fare offline, mentre adesso l'app funziona anche senza rete.
+
+**Quindi non l'ho fatto, e non lo consiglio.** Con la voce vera di Google più le labbra che si muovono sul suono vero si prende quasi tutta la sensazione di "persona dentro lo schermo" a **circa 1,30 € al mese invece di 240 € l'anno**. Se Michele dopo averlo provato vuole comunque la faccia filmata, la strada è Tavus Starter e va detto chiaro che è un abbonamento fisso.
