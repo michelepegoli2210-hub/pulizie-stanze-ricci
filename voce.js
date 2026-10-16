@@ -84,13 +84,24 @@ export async function audioDaGoogle(testo, conf, chiave) {
     generation_config: { speech_config: [{ voice: conf.voce || "Sulafat" }] },
   };
   const stop = new AbortController(); const t = setTimeout(() => stop.abort(), 30000);
-  let j;
+  let j, r;
   try {
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions",
-      { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": chiave }, body: JSON.stringify(corpo), signal: stop.signal });
+    try {
+      r = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions",
+        { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": chiave }, body: JSON.stringify(corpo), signal: stop.signal });
+    } catch (e) {
+      // niente risposta del tutto: rete giù, oppure il telefono non lascia uscire la chiamata
+      throw new Error(e && e.name === "AbortError" ? "La voce ci ha messo troppo." : "Non riesco a raggiungere il server della voce (rete o blocco del telefono).");
+    }
     const txt = await r.text();
     try { j = JSON.parse(txt); } catch (e) { j = null; }
-    if (!r.ok) throw new Error((j && (j.error?.message || j.message)) || txt.slice(0, 160));
+    if (!r.ok) {
+      const m = (j && (j.error?.message || j.message)) || txt.slice(0, 160);
+      if (r.status === 401 || r.status === 403) throw new Error("La chiave non vale per la voce. Controllala.");
+      if (r.status === 404) throw new Error("Quel modello di voce non c'è più: tocca «Prova la voce» e lo ricerco.");
+      if (r.status === 429) throw new Error("Hai finito le voci gratuite per adesso. Riprova tra un po'.");
+      throw new Error(String(m).slice(0, 140));
+    }
   } finally { clearTimeout(t); }
   const pezzi = [];
   for (const s of (j.steps || [])) if (s.type === "model_output") for (const c of (s.content || [])) if (c.type === "audio" && c.data) pezzi.push(c.data);

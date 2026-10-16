@@ -523,3 +523,11 @@ La governante ha un **nome** (di partenza "Anna", si cambia in Governante → Re
 **Le spiegazioni passo per passo.** Michele le dice a parole *"spiega a Selena come spostare le cose di Passerella"*; lei prepara i passi, li propone con "Confermo?", e dopo il Sì la signora se li trova in cima alla sua schermata: titolo, passi numerati, e sotto ogni passo un **disegnino animato** che fa vedere il gesto (`gesti.js`: scatole, letto, asciugamani, spray, finestra, pavimento, armadio, bidone). Il tasto altoparlante glieli legge ad alta voce — per le signore con la voce gratis del telefono, così non costano niente.
 
 Le spiegazioni stanno dentro `impostazioni/messaggi`, sotto il giorno: le signore leggono già quel documento, quindi **non serve cambiare le regole di sicurezza**.
+
+
+## Parlarle e farsi avvisare (dalla versione 0.42)
+
+- **Il nome**: di partenza **Rosa**; sei nomi pronti da toccare nella cartolina (Governante → Regole, passo 0) o uno scritto da te.
+- **Il microfono**: nella chat, tasto rotondo accanto alla freccia. Tocchi, parli, lei scrive e manda da sola. Gratis (`SpeechRecognition` del browser, it-IT). Funziona su Android; su iPhone il motore non esiste e l'app dice di usare il microfono della tastiera.
+- **Le notifiche sul telefono**: passano da **Telegram**, in ⋯ → Avvisi automatici. Oltre al gruppo delle signore c'è ora **"La TUA chat col bot"**: lì arrivano solo i messaggi per il proprietario, a partire dal consiglio del giorno della governante. Il tasto "Cerca la mia chat" la trova da sola dopo che hai scritto «ciao» al bot.
+- Senza un server, Telegram parte quando apri l'app: una notifica a app chiusa richiederebbe un server acceso sempre.

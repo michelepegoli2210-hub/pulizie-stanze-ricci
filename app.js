@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.41.0";
+export const VERSIONE = "0.42.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1029,7 +1029,8 @@ function testoPianoSettimana(z, lun) {
 // ============================================================================
 function regoleGov() { return G.regoleAttive(S.gov); }
 // 0.41: la governante ha un nome. Michele glielo cambia in Governante → Regole.
-function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Anna"; }
+const NOMI_GOV = ["Rosa", "Carmela", "Mimma", "Gilda", "Assunta", "Stella"];
+function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Rosa"; }
 function soglieGov() { return G.soglie(S.gov); }
 function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {}, frigo: (S.gov && S.gov.frigo) || {} }; }
 let ctxMemo = null;
@@ -1230,9 +1231,9 @@ function foglioChat(f) {
     : m.fatto ? `<div class="chat-fatto">${esc(m.testo)}</div>`
     : bollaGov(`${m.ia ? `<span class="ia-bollo" title="risposta dell'intelligenza artificiale">IA</span>` : ""}${escNl(m.testo)}`, (m.tasti && m.tasti.length) ? `<div class="chat-tasti ${m.tasti.length === 2 ? "due" : m.tasti.length === 4 ? "quattro" : ""}">${m.tasti.map(t => `<button type="button" class="chat-tasto" data-conv="${i}|${esc(t.k)}">${esc(t.testo)}</button>`).join("")}</div>` : (m.scelto ? `<div class="chat-scelto">→ ${esc(m.scelto)}</div>` : ""))).join("");
   const scrive = govScrive ? bollaGov(`<span class="chat-punti"><i></i><i></i><i></i></span>`) : "";
-  const parla = mod ? `<form class="chat-parla" id="formParla"><textarea id="parlaGov" rows="1" placeholder="Scrivi o detta col microfono della tastiera…" data-keep aria-label="Scrivi alla governante"></textarea><button class="chat-invia" type="submit" aria-label="Manda alla governante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
+  const parla = mod ? `<form class="chat-parla" id="formParla"><textarea id="parlaGov" rows="1" placeholder="Scrivi, o tocca il microfono e parla…" data-keep aria-label="Scrivi a ${esc(nomeGov())}"></textarea><button class="chat-mic" type="button" data-mic aria-pressed="false" aria-label="Parla con ${esc(nomeGov())}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button><button class="chat-invia" type="submit" aria-label="Manda a ${esc(nomeGov())}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
     ${iaAccesa() ? `<div class="chat-veloci">${VELOCI_IA.map((v, i) => `<button type="button" class="chat-veloce" data-ia-veloce="${i}">${esc(v.tasto)}</button>`).join("")}</div>` : ""}
-    <p class="muted small center" style="margin:6px 0 0">Per esempio: «ho messo i piumoni» · «fai lavare le tende in Alba» · «quanto prende ${esc(SIG(signore()[0]?.id || "p1"))}?» · «di' alle signore che domani arrivano gli operai»</p>` : "";
+    <p class="muted small center" style="margin:6px 0 0">${micDisponibile() ? "Tocca il microfono e parlale come parleresti a una persona. " : "Per dettare usa il microfono della tastiera. "}Per esempio: «ho messo i piumoni» · «fai lavare le tende in Alba» · «quanto prende ${esc(SIG(signore()[0]?.id || "p1"))}?» · «di' alle signore che domani arrivano gli operai»</p>` : "";
   return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">${esc(nomeGov())}</span>${mod ? `<button class="chat-voce" data-voce-tasto aria-pressed="${voceAccesa()}" aria-label="${voceAccesa() ? "Spegni la voce" : "Accendi la voce"}">${ICONA(voceAccesa() ? "altoparlante" : "muto")}</button>` : ""}</div>
     ${testataGov()}
     <div class="chat-corpo">${vecchie}${aperte}${gruppi}${piede}${conv}${scrive}</div>
@@ -1456,9 +1457,39 @@ async function parlaConVoce(testo) {
   voceInCorso = true; disegna();
   await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave, onBocca: applicaBocca,
     onFine: () => { voceInCorso = false; applicaBocca(0); disegna(); },
-    onErrore: (e) => toast("Voce vera non disponibile, uso quella del telefono") });
+    onErrore: (e) => toast(String(e && e.message || "Voce vera non disponibile") + " Per ora parla il telefono.") });
 }
 function zittisciVoce() { VOCE.stazitta(); voceInCorso = false; applicaBocca(0); }
+
+// 0.42: parlarle col microfono, senza tastiera. Su Android funziona dentro l'app;
+// su iPhone il motore non c'è e si usa il microfono della tastiera (glielo diciamo).
+let ascolto = null;
+function micDisponibile() { try { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); } catch (e) { return false; } }
+function segnaMic(on) {
+  document.querySelectorAll("[data-mic]").forEach(b => { b.classList.toggle("ascolta", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+  document.querySelectorAll(".gov-viva").forEach(g => g.classList.toggle("ascolta", on));
+}
+function microfono() {
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!R) return toast("Qui dentro non posso aprire il microfono: usa quello della tastiera, accanto alla barra spaziatrice");
+  if (ascolto) { try { ascolto.stop(); } catch (e) {} return; }
+  zittisciVoce();
+  const ta = document.getElementById("parlaGov");
+  const r = new R(); r.lang = "it-IT"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+  let finale = "";
+  r.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) finale += t; else interim += t; }
+    if (ta) { ta.value = (finale + interim).trim(); ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; }
+  };
+  r.onerror = (e) => { ascolto = null; segnaMic(false); if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("Il telefono non mi dà il microfono: dallo a questa app nelle impostazioni"); else if (e.error !== "aborted" && e.error !== "no-speech") toast("Non ti ho sentito, riprova"); };
+  r.onend = () => {
+    ascolto = null; segnaMic(false);
+    const t = (ta?.value || "").trim();
+    if (t) { ta.value = ""; ta.style.height = "auto"; parlaGov(t); }
+  };
+  try { r.start(); ascolto = r; segnaMic(true); VOCE.sbloccaAudio(); } catch (e) { ascolto = null; segnaMic(false); toast("Microfono non disponibile"); }
+}
 
 let provaIA = null;      // il risultato dell'ultimo "Prova la chiave"
 let iaInCorso = false;   // sta pensando
@@ -1672,7 +1703,11 @@ async function chiediConsiglioDelGiorno() {
     const r = await IA.chiedi({ conf: confIA(), sistema: sistemaIA(), storia: [],
       testo: "Guarda la fotografia e fai il tuo giro di controllo delle sette cose. Poi dimmi in UNA frase corta com'è la situazione adesso (la cosa più importante, con il numero), e nel consiglio la cosa da fare per prima. Niente azione." });
     const c = { giorno: L.oggiISO(), testo: String(r.risposta || "").slice(0, 220), consiglio: String(r.consiglio || "").slice(0, 220), ora: new Date().toISOString() };
-    if (c.testo) { try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); } catch (e) {} disegna(); }
+    if (c.testo) {
+      try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); } catch (e) {}
+      disegna();
+      inviaTelegram(`👩 ${nomeGov()}: ${c.testo}${c.consiglio ? `\n💡 ${c.consiglio}` : ""}`, "anna", { aMe: true });
+    }
   } catch (e) { console.warn("consiglio", e); }
   consiglioInCorso = false;
 }
@@ -1690,8 +1725,9 @@ function cardIA() {
   return `<section class="card ia-card"><div class="ia-testa"><h2 style="margin:0">La governante intelligente</h2>${stato}</div>
     <p class="muted small" style="margin:6px 0 10px">Senza chiave la governante capisce solo le parole del catalogo: funziona, ma è un elenco, non un cervello. Con una <b>chiave</b> dietro ci pensa un'intelligenza artificiale vera: legge i numeri della casa, si accorge delle cose da sola e ti dà consigli. Decide sempre tu: lei chiede «Confermo?» e non fa niente finché non tocchi <b>Sì</b>.</p>
     <div class="ia-passo"><b>0.</b> Come si chiama
-      <div class="ia-riga"><input type="text" id="iaNome" data-keep value="${esc(nomeGov())}" placeholder="Anna" maxlength="18" autocomplete="off"><button type="button" class="btnsm" data-ia-nome>Salva il nome</button></div>
-      <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Dalle il nome che vuoi: lo usa dappertutto.</span></div>
+      <div class="voce-scelte">${NOMI_GOV.map(n => `<button type="button" class="voce-chip" aria-pressed="${nomeGov() === n}" data-gov-nome="${esc(n)}">${esc(n)}</button>`).join("")}</div>
+      <div class="ia-riga"><input type="text" id="iaNome" data-keep value="${esc(nomeGov())}" placeholder="il nome che vuoi" maxlength="18" autocomplete="off"><button type="button" class="btnsm" data-ia-nome>Salva</button></div>
+      <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Tocca un nome o scrivine uno tuo: lo usa dappertutto. Non mettere il nome di una delle signore, se no vi confondete.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
     <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
       <div class="seg"><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Sveglia</button><button type="button" aria-pressed="${q === "risparmio"}" data-ia-qualita="risparmio">Risparmio</button></div>
@@ -1719,6 +1755,11 @@ function cardIA() {
     ${c.chiave ? `<button class="nonna-link" style="margin:8px 0 0" data-ia-cancella>Cancella la chiave da questo telefono</button>` : ""}</section>`;
 }
 function collegaIA() {
+  document.querySelectorAll("[data-gov-nome]").forEach(b => b.onclick = () => {
+    const n = b.dataset.govNome;
+    const inp = document.getElementById("iaNome"); if (inp) inp.value = n; // la casella "si ricorda" quello che c'era: la aggiorno a mano
+    salvaGov({ nome: n }).then(() => { try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} const i2 = document.getElementById("iaNome"); if (i2) i2.value = n; toast(`Da adesso si chiama ${n}`); });
+  });
   document.querySelectorAll("[data-ia-nome]").forEach(b => b.onclick = () => {
     const n = (document.getElementById("iaNome")?.value || "").trim().slice(0, 18);
     salvaGov({ nome: n }).then(() => { try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} toast(n ? `Da adesso si chiama ${n}` : "Nome tolto: torna «Anna»"); });
@@ -1750,6 +1791,7 @@ function collegaIA() {
   });
   document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
   // --- la voce ---
+  document.querySelectorAll("[data-mic]").forEach(b => b.onclick = () => microfono());
   document.querySelectorAll("[data-istr-voce]").forEach(b => b.onclick = () => {
     VOCE.sbloccaAudio();
     const t = document.querySelector(`[data-istr-testo="${b.dataset.istrVoce}"]`)?.textContent || "";
@@ -2763,12 +2805,14 @@ function vistaAvvisi() {
     <p class="muted small" style="margin:0 0 10px"><b>Telegram</b> invece è gratis e automatico: crea un bot con @BotFather, mettilo nel gruppo delle signore e scrivi qui il token e il numero del gruppo. Da quel momento l'app scrive da sola nel gruppo e tagga la signora della zona. ${attivo ? `<b style="color:var(--done)">Attivo.</b>` : `<b>Non ancora attivo.</b>`}</p>
     <div class="campo"><label for="avWa">Numero WhatsApp che riceve gli avvisi delle signore (es. 39333 1234567)</label><input id="avWa" type="tel" data-keep value="${esc(a.whatsapp || "")}" placeholder="39…" ${mod ? "" : "disabled"}><p class="muted small" style="margin:4px 0 0">Con questo numero, quando una signora segnala un problema o finisce tutte le camere le compare il bottone "Avvisa su WhatsApp": si apre WhatsApp con il messaggio pronto verso di te, lei preme Invia.</p></div>
     <div class="campo"><label for="avToken">Token del bot (da @BotFather)</label><input id="avToken" type="text" autocapitalize="none" data-keep value="${esc(a.token || "")}" placeholder="123456789:AAH…" ${mod ? "" : "disabled"}></div>
-    <div class="due"><div class="campo"><label for="avChat">Numero del gruppo (chat id)</label><input id="avChat" type="text" data-keep value="${esc(a.chat || "")}" placeholder="-100123456789" ${mod ? "" : "disabled"}></div><div class="campo"><label for="avOra">Piano del mattino dalle ore</label><input id="avOra" type="number" min="0" max="23" value="${a.oraPiano ?? 7}" ${mod ? "" : "disabled"}></div></div>
-    ${mod ? `<button class="big undo" data-cerca-gruppo>Cerca il gruppo da solo (dopo aver messo il bot nel gruppo)</button><div id="gruppiTrovati" class="scelte"></div>` : ""}
+    <div class="due"><div class="campo"><label for="avChat">Numero del gruppo (chat id)</label><input id="avChat" type="text" data-keep value="${esc(a.chat || "")}" placeholder="-100123456789" ${mod ? "" : "disabled"}></div>
+      <div class="campo"><label for="avChatMio">La TUA chat col bot (per i messaggi solo a te)</label><input id="avChatMio" type="text" data-keep value="${esc(a.chatMio || "")}" placeholder="scrivi «ciao» al bot, poi cerca" ${mod ? "" : "disabled"}></div></div>
+    <div class="due" style="margin-bottom:8px"><div class="campo"><label for="avOra">Piano del mattino dalle ore</label><input id="avOra" type="number" min="0" max="23" value="${a.oraPiano ?? 7}" ${mod ? "" : "disabled"}></div></div>
+    ${mod ? `<button class="big undo" data-cerca-gruppo>Cerca il gruppo da solo (dopo aver messo il bot nel gruppo)</button><button class="big undo" data-cerca-mia>Cerca la mia chat (dopo aver scritto «ciao» al bot)</button><div id="gruppiTrovati" class="scelte"></div>` : ""}
     <div class="floorlabel">Chi taggare (nome Telegram con @)</div>
     <div class="due">${signore().map(z => `<div class="campo"><label for="avTag_${z.id}">${esc(SIG(z.id))}</label><input id="avTag_${z.id}" type="text" autocapitalize="none" data-keep value="${esc((a.tag || {})[z.id] || "")}" placeholder="@nome" ${mod ? "" : "disabled"}></div>`).join("")}</div>
     <div class="floorlabel" style="margin-top:8px">Cosa mandare da solo</div>
-    <div class="rows">${sw("pianoMattina", "Il piano della giornata, al mattino (la prima volta che un proprietario apre l'app)")}${sw("messaggio", "Il messaggio del giorno, appena lo scrivi")}${sw("dettagli", "I dettagli di una camera, appena li salvi")}${sw("problema", "Quando una signora segnala un problema o una camera non fatta")}${sw("pulita", "Quando una camera viene segnata pulita", false)}</div>
+    <div class="rows">${sw("pianoMattina", "Il piano della giornata, al mattino (la prima volta che un proprietario apre l'app)")}${sw("messaggio", "Il messaggio del giorno, appena lo scrivi")}${sw("dettagli", "I dettagli di una camera, appena li salvi")}${sw("problema", "Quando una signora segnala un problema o una camera non fatta")}${sw("pulita", "Quando una camera viene segnata pulita", false)}${sw("anna", `I consigli di ${esc(nomeGov())}, sul telefono, solo a te (serve la TUA chat qui sopra)`)}</div>
     ${mod ? `<button class="big main" data-salva-avvisi>Salva</button><div class="due"><button class="big undo" data-prova-telegram>Prova: manda un saluto</button><button class="big undo" data-prova-piano>Prova: manda il piano di oggi</button></div>` : ""}
   </section>`;
 }
@@ -3156,6 +3200,7 @@ function collega() {
   document.querySelectorAll("[data-whatsapp-finito]").forEach(b => b.onclick = () => { const iso = b.dataset.whatsappFinito; const n = pulizieDelGiorno(iso, S.utente.zona).length; apriWhatsApp(`✅ ${S.utente.nome || tagZona(S.utente.zona)}: tutte le camere di ${quandoEtichetta(iso).toLowerCase()} sono pulite (${n}/${n}).`, numeroWhatsApp()); });
   document.querySelectorAll("[data-salva-avvisi]").forEach(b => b.onclick = salvaAvvisi);
   document.querySelectorAll("[data-cerca-gruppo]").forEach(b => b.onclick = cercaGruppoTelegram);
+  document.querySelectorAll("[data-cerca-mia]").forEach(b => b.onclick = () => cercaGruppoTelegram(true));
   document.querySelectorAll("[data-prova-telegram]").forEach(b => b.onclick = async () => { await salvaAvvisi(); inviaTelegram(`✅ Prova riuscita: gli avvisi delle pulizie arrivano qui.\n${zoneOrdinate().map(z => tagZona(z.id)).join(" · ")}`, null, { manuale: true }); });
   document.querySelectorAll("[data-prova-piano]").forEach(b => b.onclick = async () => { await salvaAvvisi(); inviaTelegram(testoPianoGiorno(L.oggiISO()), null, { manuale: true }); });
   document.querySelectorAll("[data-stato-diretto]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.statoDiretto.split("|"); const p = S.pulizie[id]; if (!p) return; if (st === "fatta") segnaFatta(id); else cambiaStato(p, st, ""); });
@@ -3430,12 +3475,13 @@ function apriWhatsApp(testo, numero) {
   if (!w) location.href = url;
 }
 // Telegram: manda un messaggio al gruppo (se configurato). Non blocca mai l'app se qualcosa va storto.
-async function inviaTelegram(testo, tipo, { manuale = false } = {}) {
+async function inviaTelegram(testo, tipo, { manuale = false, aMe = false } = {}) {
   const a = S.avvisi;
-  if (!a || !a.token || !a.chat) { if (manuale) toast("Prima compila token e gruppo in ⋯ → Avvisi automatici."); return false; }
+  const dove = aMe ? (a && a.chatMio) : (a && a.chat);
+  if (!a || !a.token || !dove) { if (manuale) toast(aMe ? "Prima metti la TUA chat in ⋯ → Avvisi automatici." : "Prima compila token e gruppo in ⋯ → Avvisi automatici."); return false; }
   if (!manuale && tipo && a[tipo] === false) return false;
   try {
-    const r = await fetch(`https://api.telegram.org/bot${encodeURIComponent(a.token)}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: a.chat, text: testo, disable_web_page_preview: true }) });
+    const r = await fetch(`https://api.telegram.org/bot${encodeURIComponent(a.token)}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: dove, text: testo, disable_web_page_preview: true }) });
     const j = await r.json().catch(() => ({}));
     if (!j.ok) { console.warn("telegram", j); if (manuale) toast("Telegram ha risposto: " + (j.description || "errore")); return false; }
     if (manuale) toast("Avviso mandato su Telegram ✓");
@@ -3458,8 +3504,9 @@ async function pianoDelMattino() {
   } catch (e) { console.warn(e); } finally { pianoMattinoInCorso = false; }
 }
 // Chiede a Telegram in quali gruppi è stato messo il bot e fa scegliere quello giusto
-async function cercaGruppoTelegram() {
+async function cercaGruppoTelegram(privata = false) {
   const token = ($("#avToken")?.value || "").trim(); const box = $("#gruppiTrovati");
+  const campo = privata ? "#avChatMio" : "#avChat";
   if (!token) { toast("Prima incolla il token del bot."); $("#avToken")?.focus(); return; }
   if (box) box.innerHTML = `<span class="muted small">Cerco…</span>`;
   try {
@@ -3467,18 +3514,19 @@ async function cercaGruppoTelegram() {
     const j = await r.json();
     if (!j.ok) { if (box) box.innerHTML = `<span class="muted small">Telegram dice: ${esc(j.description || "token non valido")}</span>`; return; }
     const trovati = {};
-    for (const u of j.result || []) { const ch = u.message?.chat || u.my_chat_member?.chat || u.channel_post?.chat || u.edited_message?.chat; if (ch && ch.type !== "private") trovati[ch.id] = ch.title || String(ch.id); }
+    for (const u of j.result || []) { const ch = u.message?.chat || u.my_chat_member?.chat || u.channel_post?.chat || u.edited_message?.chat; if (!ch) continue; const priv = ch.type === "private"; if (priv !== privata) continue; trovati[ch.id] = ch.title || [ch.first_name, ch.last_name].filter(Boolean).join(" ") || ch.username || String(ch.id); }
     const voci = Object.entries(trovati);
-    if (!voci.length) { if (box) box.innerHTML = `<span class="muted small">Non vedo ancora gruppi: aggiungi il bot al gruppo delle signore (o scrivi un messaggio lì) e ripremi.</span>`; return; }
-    if (voci.length === 1) { $("#avChat").value = voci[0][0]; toast(`Trovato: ${voci[0][1]}`); if (box) box.innerHTML = `<span class="muted small">Gruppo scelto: <b>${esc(voci[0][1])}</b>. Ora premi Salva.</span>`; return; }
-    if (box) { box.innerHTML = voci.map(([id, t]) => `<button type="button" data-gruppo="${esc(id)}">${esc(t)}</button>`).join(""); box.querySelectorAll("[data-gruppo]").forEach(bt => bt.onclick = () => { $("#avChat").value = bt.dataset.gruppo; box.querySelectorAll("[data-gruppo]").forEach(x => x.setAttribute("aria-pressed", x === bt ? "true" : "false")); toast("Gruppo scelto: ora premi Salva"); }); }
+    if (!voci.length) { if (box) box.innerHTML = `<span class="muted small">${privata ? "Non vedo ancora la tua chat: apri Telegram, cerca il bot, scrivigli «ciao» e ripremi." : "Non vedo ancora gruppi: aggiungi il bot al gruppo delle signore (o scrivi un messaggio lì) e ripremi."}</span>`; return; }
+    if (voci.length === 1) { $(campo).value = voci[0][0]; toast(`Trovato: ${voci[0][1]}`); if (box) box.innerHTML = `<span class="muted small">${privata ? "La tua chat" : "Gruppo"}: <b>${esc(voci[0][1])}</b>. Ora premi Salva.</span>`; return; }
+    if (box) { box.innerHTML = voci.map(([id, t]) => `<button type="button" data-gruppo="${esc(id)}">${esc(t)}</button>`).join(""); box.querySelectorAll("[data-gruppo]").forEach(bt => bt.onclick = () => { $(campo).value = bt.dataset.gruppo; box.querySelectorAll("[data-gruppo]").forEach(x => x.setAttribute("aria-pressed", x === bt ? "true" : "false")); toast("Scelto: ora premi Salva"); }); }
   } catch (e) { console.warn(e); if (box) box.innerHTML = `<span class="muted small">Non riesco a raggiungere Telegram (rete?).</span>`; }
 }
 async function salvaAvvisi() {
   const v = id => ($("#" + id)?.value || "").trim();
-  const dati = { ...(S.avvisi || {}), token: v("avToken"), chat: v("avChat"), whatsapp: v("avWa").replace(/[^0-9]/g, ""), oraPiano: Number(v("avOra")) || 7, tag: { ...(S.avvisi?.tag || {}) } };
+  const dati = { ...(S.avvisi || {}), token: v("avToken"), chat: v("avChat"), chatMio: v("avChatMio"), whatsapp: v("avWa").replace(/[^0-9]/g, ""), oraPiano: Number(v("avOra")) || 7, tag: { ...(S.avvisi?.tag || {}) } };
   zoneOrdinate().forEach(z => { dati.tag[z.id] = v("avTag_" + z.id); });
-  ["pianoMattina", "messaggio", "dettagli", "problema", "pulita"].forEach(k => { const el = $("#av_" + k); if (el) dati[k] = el.checked; });
+  dati.chatMio = v("avChatMio");
+  ["pianoMattina", "messaggio", "dettagli", "problema", "pulita", "anna"].forEach(k => { const el = $("#av_" + k); if (el) dati[k] = el.checked; });
   try { await S.db.salva("impostazioni", "avvisi", dati, false); toast("Avvisi salvati"); } catch (e) { erroreScrittura(e); }
 }
 
