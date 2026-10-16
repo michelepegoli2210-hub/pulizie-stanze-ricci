@@ -329,3 +329,29 @@ Ho cercato i prezzi veri dei cinque servizi che fanno parlare una faccia fotorea
 **Il più realistico da fare davvero è Tavus a 22 $/mese** (circa 20 € — 240 € l'anno, più di quello che una signora prende in due settimane), e comunque: la chiave finirebbe nel browser come quella di Gemini, ma lì vale 22 $ al mese invece di centesimi; nessuno dei cinque dichiara l'italiano nelle lingue (tutti dicono solo "30-175 lingue"), e il labiale di questi servizi è quasi sempre tarato sull'inglese; servirebbe video in streaming, quindi niente da fare con poca linea nei corridoi e niente da fare offline, mentre adesso l'app funziona anche senza rete.
 
 **Quindi non l'ho fatto, e non lo consiglio.** Con la voce vera di Google più le labbra che si muovono sul suono vero si prende quasi tutta la sensazione di "persona dentro lo schermo" a **circa 1,30 € al mese invece di 240 € l'anno**. Se Michele dopo averlo provato vuole comunque la faccia filmata, la strada è Tavus Starter e va detto chiaro che è un abbonamento fisso.
+
+## 20. La 0.41 (16 ottobre): Anna — l'entità che parla a Michele e spiega alle signore
+
+Michele: *"non va bene farlo troppo realistico... rimaniamo che lo facciamo animato, come quello della lingua [Duolingo]... io devo interagire con questo cartone animato... la cosa che voglio è interagire con un'entità. Questa entità mi deve fare impressione... mi deve dire come mai questa persona non ha fatto, ti suggerisco di richiamarla, ti suggerisco di metterle più ore... 'Anna ascolta, vedi che è arrivato domenica, bisogna spostare le cose di Passerella... manda un messaggio a Selena e spiegagli con praticità questo passaggio. Fagli un piccolo video, che così magari capisce pure come le deve mettere, un piccolo gesto, deve prendere le scatole'... anche loro devono avere questo tipo di interazione."*
+
+### Il chiarimento sui soldi (Michele ricordava 20 € al mese)
+
+Sono due cose diverse, e ricordava bene un prezzo che però non è il nostro:
+- **Google AI Pro = 19,99 $ al mese.** È l'abbonamento per usare Gemini come chat sul sito di Google. **Non include l'API** (pagina ufficiale: i vantaggi "apply only within the Google AI Studio web interface"; "Direct use of the Gemini API ... is billed and managed separately"). **Non ci serve, non va comprato.**
+- **Quello che usiamo noi è a consumo**, senza abbonamento: ~1-2 € al mese per il cervello, ~1,30 € per la voce. Si prepagano 5 $ e durano mesi.
+
+Michele aveva anche nominato **ElevenLabs** e **Neets**. Verificato oggi: ElevenLabs costa **0,04 $ al minuto** nel modello più economico (v4 Turbo), cioè **4,4 volte** Google, più un abbonamento minimo di 6 $ al mese. **Neets.ai ha chiuso il 28 febbraio 2025** e non esiste più. Google resta il più economico e senza canone.
+
+### Cosa è stato fatto
+
+- **La governante ha un nome: Anna** (si cambia in un tocco, Governante → Regole, passo 0 della cartolina). Il nome compare dappertutto: nella chat, nella testata, nelle spiegazioni alle signore. Nelle istruzioni all'IA: *"Ti chiami Anna... Sei una persona, non un programma: non dire mai di essere un'intelligenza artificiale."*
+- **Non aspetta che le si chieda.** Nuovo blocco nelle istruzioni: deve accorgersi da sola e dire le cose scomode — "Selena venerdì ha fatto 3 camere su 4, la richiamerei", "Lucia è a 112 €, è sopra", "Passerella parte domenica e non c'è nessuna pulizia". Una cosa per volta, la più importante.
+- **Azione nuova: `istruzione`.** Michele le dice a parole "spiega a Selena come spostare le cose di Passerella" e lei prepara una **spiegazione passo per passo** (da 2 a 6 passi, frasi cortissime in seconda persona), la propone con il solito "Confermo?", e dopo il Sì la signora se la trova in cima alla sua schermata.
+- **Il "piccolo video": disegnini animati** (`gesti.js`). Non sono video — sono disegni che si muovono in tondo, come i cartoni delle app per imparare le lingue. Otto gesti: **scatole** (le mani che prendono la scatola e la posano sulla pila), **letto** (il lenzuolo che si stende), **asciugamani** (l'asciugamano che si piega), **spray** (lo spruzzo e il panno che passa), **finestra** (l'anta che si apre e l'aria che entra), **pavimento** (il mop che va avanti e indietro), **armadio** (l'anta che scorre), **bidone** (il sacco che esce). L'IA sceglie il gesto giusto per ogni passo da questo elenco.
+- **Anche le signore hanno l'interazione.** Sulla loro schermata: Anna disegnata, il titolo, i passi numerati con il disegnino sotto ognuno, e il tasto **altoparlante** che glieli legge ad alta voce. Per le signore parla **la voce gratis del telefono** (non hanno la chiave e non devono costare niente).
+- Dove stanno: dentro `impostazioni/messaggi`, sotto il giorno, campo `istruzioni`. Le signore leggono già `impostazioni` e i proprietari ci scrivono: **nessuna modifica alle regole di sicurezza di Firestore**.
+
+### Cosa resta da fare
+- Michele deve ancora prendere la chiave (i quattro tocchi del punto 18).
+- La signora non può ancora segnare "fatto" su una spiegazione.
+- I gesti sono otto: se ne servono altri si aggiungono in `gesti.js`, uno per volta.
