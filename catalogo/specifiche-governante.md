@@ -355,3 +355,21 @@ Michele aveva anche nominato **ElevenLabs** e **Neets**. Verificato oggi: Eleven
 - Michele deve ancora prendere la chiave (i quattro tocchi del punto 18).
 - La signora non può ancora segnare "fatto" su una spiegazione.
 - I gesti sono otto: se ne servono altri si aggiungono in `gesti.js`, uno per volta.
+
+## 21. La 0.42 (16 ottobre, sera): si chiama Rosa, le si parla col microfono, e ti scrive sul telefono
+
+Michele ha creato la chiave (16 ott 2026, progetto `gen-lang-client-0380052006`, livello gratuito) e ha chiesto tre cose.
+
+### 1. "Quale numero devo mettere nella fatturazione?"
+**5 $.** È il minimo prepagato che Google accetta (pagina ufficiale: *"The minimum purchase is $5"*, massimo 5.000 $). Con il suo uso durano mesi. Dopo, su `aistudio.google.com/apikey` il "Livello di fatturazione" smette di dire "Livello gratuito" e si sblocca il piano a pagamento, che serve perché i termini chiedono il piano a pagamento per un'app a disposizione di utenti europei.
+
+### 2. Il nome: non più Anna
+Michele: *"ho avuto una fidanzata che si chiamava Anna e quindi la mia ragazza si può innervosire molto"*. Il nome di partenza diventa **Rosa**, e nella cartolina ci sono sei nomi da toccare — Rosa, Carmela, Mimma, Gilda, Assunta, Stella — più la casella per scriverne uno qualsiasi. Avviso scritto: non usare il nome di una delle signore.
+
+### 3. Parlarle col microfono (niente tastiera)
+Tasto rotondo col microfono accanto alla freccia di invio: si tocca, si parla, lei scrive quello che sente mentre lo dici e appena smetti manda da sola. Motore: `SpeechRecognition` del browser, lingua `it-IT`, gratis, nessuna chiave. **Funziona su Android** (il telefono di Michele). **Su iPhone il motore non esiste**: l'app se ne accorge e scrive "usa il microfono della tastiera". Mentre ascolta il tasto diventa rosso e pulsa, e **Rosa inclina la testa e alza le sopracciglia**: si vede che sta ascoltando.
+
+### 4. Le notifiche sul telefono
+Non serve niente di nuovo: l'app ha già **Telegram** (⋯ → Avvisi automatici). Aggiunto un campo: **"La TUA chat col bot"**, separato dal gruppo delle signore, con il tasto che la cerca da sola (basta scrivere «ciao» al bot). Da lì passano i messaggi che Rosa manda **solo a Michele**: il consiglio del giorno arriva come notifica sul telefono, firmato col suo nome. Interruttore dedicato nell'elenco "Cosa mandare da solo".
+
+**Limite da dire chiaro:** senza un server, Telegram parte quando Michele apre l'app (come già il piano del mattino). Una notifica che arriva da sola a app chiusa richiederebbe un server acceso sempre, con il suo costo fisso. Tutti gli avvisi che già esistono (problema, camera non fatta, camera pulita, messaggio del giorno, spiegazioni alle signore) continuano a partire nel momento in cui succedono.
