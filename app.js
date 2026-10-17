@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.44.0";
+export const VERSIONE = "0.45.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -103,6 +103,7 @@ function rimpicciolisci(file, lato = 420) {
     fr.readAsDataURL(file);
   });
 }
+function stileGov() { const v = (S.gov && S.gov.stile) || ""; return v === "contorno" ? "contorno" : "piatta"; }
 function FACCIA_FOTO(cls = "") {
   const f = fotoGov();
   return `<span class="donnina gov-fig gov-foto ${cls}" role="img" aria-label="${esc(nomeGov())}"><img src="${f}" alt=""><i class="gov-alone"></i></span>`;
@@ -113,6 +114,61 @@ function tinta(hex, d) {
   const n = parseInt(pieno, 16) || 0, cl = v => Math.max(0, Math.min(255, Math.round(v)));
   const r = cl((n >> 16 & 255) + d), g = cl((n >> 8 & 255) + d), b = cl((n & 255) + d);
   return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+// --- Stile "piatta": come le mascotte delle app per le lingue --------------
+// La differenza vera non è la faccia: è che NON c'è nessun contorno nero,
+// le forme sono geometriche (rettangoli stondati e cerchi), i colori sono
+// pochi e pieni, gli occhi sono due fagioli scuri e le mani sono manopole.
+function GOVERNANTE_PIATTA(cls = "", colore = null) {
+  const cap = CAPELLI[colore] || colore || "#4A2E1F", capS = tinta(cap, -22);
+  const PEL = "#F6CBA6", PELS = "#E3AE85", AB = "#3E7BD6", ABS = "#2F63B4";
+  const BIA = "#FFFFFF", BIA2 = "#E8EDF5", SC = "#2B3A55", OCC = "#2A2320", ORO = "#FFC93C";
+  return `<svg class="donnina gov-fig gov-piatta ${cls}" viewBox="0 0 124 140" aria-hidden="true">
+  <ellipse cx="62" cy="133" rx="27" ry="4" fill="rgba(43,58,85,.14)"/>
+  <g class="busto">
+    <rect x="51" y="110" width="9" height="16" rx="4.5" fill="${PELS}"/><rect x="64" y="110" width="9" height="16" rx="4.5" fill="${PELS}"/>
+    <rect x="45" y="122" width="18" height="9" rx="4.5" fill="${SC}"/><rect x="61" y="122" width="18" height="9" rx="4.5" fill="${SC}"/>
+    <path d="M62 70c-12 0-19 5-20 12l-5 28c-1 5 10 7 25 7s26-2 25-7l-5-28c-1-7-8-12-20-12Z" fill="${AB}"/>
+    <path d="M62 70c12 0 19 5 20 12l5 28c1 5-10 7-25 7Z" fill="${ABS}"/>
+    <rect x="50" y="90" width="24" height="26" rx="7" fill="${BIA}"/>
+    <rect x="50" y="90" width="24" height="5" rx="2.5" fill="${BIA2}"/>
+    <rect x="56" y="101" width="12" height="9" rx="3" fill="${BIA2}"/>
+    <path d="M54 69h16l-8 10Z" fill="${BIA}"/>
+    <circle cx="62" cy="80" r="3" fill="${ORO}"/>
+    <g class="braccio-sx"><rect x="31" y="77" width="11" height="27" rx="5.5" fill="${AB}"/>
+      <circle cx="36.5" cy="106" r="7" fill="${PEL}"/></g>
+    <g class="braccio-dx">
+      <g class="taccuino"><rect x="83" y="58" width="25" height="29" rx="5" fill="${BIA}"/>
+        <rect x="83" y="58" width="25" height="7" rx="3.5" fill="${ORO}"/>
+        <rect x="88" y="70" width="15" height="3.4" rx="1.7" fill="${BIA2}"/><rect x="88" y="76" width="15" height="3.4" rx="1.7" fill="${BIA2}"/><rect x="88" y="82" width="10" height="3.4" rx="1.7" fill="${BIA2}"/></g>
+      <rect x="82" y="76" width="11" height="22" rx="5.5" fill="${ABS}"/>
+      <circle cx="87.5" cy="90" r="7" fill="${PEL}"/></g>
+  </g>
+  <g class="testa">
+    <rect x="34" y="14" width="56" height="44" rx="22" fill="${cap}"/>
+    <circle cx="62" cy="15" r="11" fill="${cap}"/>
+    <rect x="37" y="16" width="50" height="52" rx="24" fill="${PEL}"/>
+    <path d="M37 32c0-10 7-16 25-16s25 6 25 16c-2-7-9-10-15-9-5 3-11 4-15 2-10-1-18 1-20 7Z" fill="${cap}"/>
+    <g class="ciocca"><rect x="34" y="30" width="6.5" height="22" rx="3.2" fill="${capS}"/><rect x="83.5" y="30" width="6.5" height="20" rx="3.2" fill="${capS}"/></g>
+    <circle cx="46" cy="53" r="5" fill="#F79AA4" opacity=".5"/><circle cx="78" cy="53" r="5" fill="#F79AA4" opacity=".5"/>
+    <g class="occhi">
+      <g class="pupille">
+        <rect x="50" y="40" width="7.6" height="12" rx="3.8" fill="${OCC}"/><rect x="66.4" y="40" width="7.6" height="12" rx="3.8" fill="${OCC}"/>
+        <circle cx="52.4" cy="43.4" r="1.8" fill="#fff"/><circle cx="68.8" cy="43.4" r="1.8" fill="#fff"/>
+      </g>
+    </g>
+    <g class="palpebre"><rect x="48.4" y="43.6" width="10.8" height="4.8" rx="2.4" fill="${PEL}"/><rect x="64.8" y="43.6" width="10.8" height="4.8" rx="2.4" fill="${PEL}"/></g>
+    <g class="sopracciglia"><rect x="48.4" y="34" width="10.8" height="3.4" rx="1.7" fill="${capS}"/><rect x="64.8" y="34" width="10.8" height="3.4" rx="1.7" fill="${capS}"/></g>
+    <g class="bocca"><path d="M56 57c1.8 3.6 4 5.4 6 5.4s4.2-1.8 6-5.4Z" fill="${OCC}"/></g>
+    <g class="bocca-parla">
+      <g class="vA"><rect x="55" y="55" width="14" height="11" rx="5.5" fill="${OCC}"/><rect x="58" y="61" width="8" height="3.4" rx="1.7" fill="#E07C88"/></g>
+      <g class="vB"><rect x="57.5" y="55" width="9" height="10" rx="4.5" fill="${OCC}"/></g>
+      <g class="vC"><rect x="55" y="57" width="14" height="5" rx="2.5" fill="${OCC}"/></g>
+    </g>
+    <path class="sorriso" d="M53.5 56c2.6 6 5.6 8 8.5 8s5.9-2 8.5-8Z" fill="${OCC}"/>
+    <rect class="broncio" x="55" y="59" width="14" height="3.6" rx="1.8" fill="${OCC}" transform="rotate(-4 62 61)"/>
+  </g>
+</svg>`;
 }
 function GOVERNANTE(cls = "", colore = null) {
   const u = "gv" + (++CONTA_DONNINA);
@@ -188,7 +244,7 @@ function GOVERNANTE(cls = "", colore = null) {
 </svg>`;
 }
 function DONNINA(v = "scopa", cls = "", colore = null) {
-  if (v === "governante") return fotoGov() ? FACCIA_FOTO(cls) : GOVERNANTE(cls, colore);
+  if (v === "governante") return fotoGov() ? FACCIA_FOTO(cls) : (stileGov() === "contorno" ? GOVERNANTE(cls, colore) : GOVERNANTE_PIATTA(cls, colore));
   const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = CAPELLI[colore] || colore || "#6B4226";
   const vestito = { scopa: "#4F7BE8", festa: "#EF6F7B", secchio: "#23B5A3", saluto: "#9A6BF2", governante: "#1F2A44" }[v] || "#4F7BE8";
   const braccio = (d) => `<path d="${d}" stroke="${pelle}" stroke-width="7.5" fill="none" stroke-linecap="round"/>`;
@@ -1778,7 +1834,7 @@ function cardIA() {
       <div class="ia-riga"><input type="text" id="iaNome" data-keep value="${esc(nomeGov())}" placeholder="il nome che vuoi" maxlength="18" autocomplete="off"><button type="button" class="btnsm" data-ia-nome>Salva</button></div>
       <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Tocca un nome o scrivine uno tuo: lo usa dappertutto. Non mettere il nome di una delle signore, se no vi confondete.</span></div>
     <div class="ia-passo"><b>0b.</b> La sua faccia
-      <div class="seg"><button type="button" aria-pressed="${!fotoGov()}" data-faccia="disegno">Disegno</button><button type="button" aria-pressed="${!!fotoGov()}" data-faccia="foto" ${fotoGov() ? "" : "disabled"}>La tua foto</button></div>
+      <div class="seg"><button type="button" aria-pressed="${!fotoGov() && stileGov() === "piatta"}" data-faccia="piatta">Piatta</button><button type="button" aria-pressed="${!fotoGov() && stileGov() === "contorno"}" data-faccia="contorno">Contornata</button><button type="button" aria-pressed="${!!fotoGov()}" data-faccia="foto" ${fotoGov() ? "" : "disabled"}>Foto</button></div>
       <div class="ia-riga"><label class="btnsm ghost faccia-scegli">${fotoGov() ? "Cambia la foto" : "Scegli una foto"}<input type="file" accept="image/*" id="fotoGov" hidden></label>${fotoGov() ? `<button type="button" class="nonna-link" style="min-height:0;padding:4px 10px" data-faccia-togli>Togli la foto</button>` : ""}${fotoGov() ? `<span class="faccia-ante"><img src="${fotoGov()}" alt=""></span>` : ""}</div>
       <span class="small muted">Se il disegno non ti piace, mettici la faccia che vuoi: una foto dal telefono. Respira, si illumina quando parla e resta anche senza internet. Sta solo su questo telefono, non la vedono le signore. Usa una foto tua o una di quelle che si fanno con l'intelligenza artificiale — non la foto di una persona vera senza il suo permesso.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
@@ -1809,8 +1865,11 @@ function cardIA() {
 }
 function collegaIA() {
   document.querySelectorAll("[data-faccia]").forEach(b => b.onclick = () => {
-    if (b.dataset.faccia === "disegno") { if (!fotoGov()) return; salvaFotoGov(""); disegna(); toast("Torna il disegno"); }
-    else document.getElementById("fotoGov")?.click();
+    const k = b.dataset.faccia;
+    if (k === "foto") return document.getElementById("fotoGov")?.click();
+    if (fotoGov()) salvaFotoGov("");
+    salvaGov({ stile: k }).then(() => toast(k === "piatta" ? "Stile piatto, come le app delle lingue" : "Stile col contorno"));
+    disegna();
   });
   document.querySelectorAll("[data-faccia-togli]").forEach(b => b.onclick = () => { salvaFotoGov(""); disegna(); toast("Foto tolta: torna il disegno"); });
   const inpFoto = document.getElementById("fotoGov");

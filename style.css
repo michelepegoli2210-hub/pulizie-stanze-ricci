@@ -1213,3 +1213,9 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .faccia-ante{margin-left:auto;line-height:0}
 .faccia-ante img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--bordo,rgba(0,0,0,.12))}
 @media (prefers-reduced-motion:reduce){.gov-foto.viva img,.gov-foto.parla img{animation:none}}
+
+/* 0.45: stile piatto — niente contorni, forme geometriche */
+.donnina.gov-piatta .palpebre{opacity:0}
+.donnina.gov-piatta.viva .palpebre{animation:ammicca2 6.4s infinite}
+.donnina.gov-piatta .pupille{transform-box:view-box}
+.donnina.gov-piatta.viva .pupille{animation:sguardo 8s ease-in-out infinite}

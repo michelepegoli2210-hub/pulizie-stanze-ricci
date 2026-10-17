@@ -546,9 +546,10 @@ Lo stile grafico richiama le mascotte delle app per imparare le lingue, ma il pe
 
 ## La faccia di Consuela (dalla versione 0.44)
 
-Due possibilità, nella cartolina al passo 0b:
+Tre possibilità, nella cartolina al passo 0b:
 
-- **Disegno** — la mascotte disegnata nell'app, che rimbalza, saluta con la mano e muove la bocca sul suono vero della voce.
+- **Piatta** (di partenza, dalla 0.45) — nello stile delle mascotte delle app per imparare le lingue: nessun contorno, forme geometriche piene, occhi a fagiolo, mani a manopola, pochi colori.
+- **Contornata** — la mascotte della 0.43, col contorno spesso e gli occhi grandi.
 - **La tua foto** — scegli un'immagine dal telefono: l'app la ritaglia quadrata, la rimpicciolisce a 420 px e la usa come faccia di Consuela dappertutto. Respira piano e si illumina con un anello che segue l'ampiezza della voce mentre parla.
 
 La foto sta **solo in `localStorage`, su quel telefono**: non va in Firestore (è pesante e alle signore non serve), quindi nelle spiegazioni che vedono loro resta il disegno. Si torna al disegno con un tocco.
