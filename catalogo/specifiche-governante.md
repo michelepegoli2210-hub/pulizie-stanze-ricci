@@ -391,3 +391,37 @@ I personaggi di quell'app sono **suoi**: disegnarne una copia non si può fare, 
 
 ### Sulla voce
 La voce di quei personaggi è la loro. La nostra è una delle 30 voci di Google: di partenza **Sulafat**, quella che il listino chiama *Warm*. Si cambia fra sei caratteri nella cartolina, passo 6.
+
+## 23. La 0.44 (17 ottobre): HeyGen e D-ID guardati davvero, e la faccia che sceglie Michele
+
+Michele: *"non mi piace, prova con HeyGen o D-ID però tutto gratuito o quasi."*
+
+### I prezzi veri, letti sulle pagine aperte nel browser (17 ottobre 2026)
+
+Ieri quelle pagine non si lasciavano leggere da fuori (sono costruite dal javascript). Oggi le ho aperte nel Chrome di Michele e lette renderizzate.
+
+**HeyGen** (heygen.com/pricing):
+- **Gratuito 0 $/mese**: "3 video al mese", "video fino a 1 minuto", "oltre 500 avatar video di repertorio", "1 avatar video personalizzato", "oltre 30 lingue".
+- **Creatore 29 $/mese**: 600 crediti, video fino a 30 minuti, 1080p, e — questa è la riga che conta — **"Rimozione della filigrana"** compare qui. Quindi **sul piano gratuito la filigrana c'è**.
+- Pro 49 $/mese.
+
+**D-ID** (d-id.com/pricing/api):
+- **Prova 0 $**: "Prova di 14 giorni", "fino a 3 minuti di video", "fino a 10 minuti di video in streaming", **"Filigrana a schermo intero"**. Dopo 14 giorni finisce.
+- **Costruire 14,4 $/mese** (172,8 $ l'anno): 64 crediti, 16 minuti di video — e comunque **"Filigrana D-ID"**.
+- **Lancio 35 $/mese** (420 $ l'anno): 45 minuti, licenza commerciale, ma la riga dice ancora **"Filigrana AI"**.
+- Scala 138,6 $/mese.
+
+**Conclusione, senza giri di parole: una faccia fotorealistica che parla, gratis, non esiste.** Il gratuito di HeyGen sono 3 video al mese col marchio sopra; quello di D-ID dura due settimane col marchio a schermo intero. Il primo piano davvero pulito è HeyGen Creatore a **29 $/mese, cioè circa 320 € l'anno**. E restano i problemi strutturali già scritti al punto 19: niente server, chiave costosa dentro al telefono, italiano non dichiarato da nessuno, niente uso senza rete.
+
+### Cosa ho fatto invece: la faccia la sceglie lui
+
+Nella cartolina, **passo 0b — La sua faccia**: due tasti, *Disegno* o *La tua foto*. Con "Scegli una foto" Michele prende un'immagine dal telefono: l'app la ritaglia quadrata, la rimpicciolisce a 420 px, la salva in JPEG dentro `localStorage` (**mai in Firestore**: è pesante e alle signore non serve) e da quel momento Consuela ha quella faccia dappertutto — cartolina grande di Oggi, chat, bollicine, piastre.
+
+La foto **respira** (zoom lentissimo), e **quando parla** si illumina con un anello verde la cui grandezza segue l'ampiezza del suono vero, più una leggera oscillazione. Non c'è il labiale — per quello servirebbe il video a pagamento — ma c'è una faccia vera che saluta per nome con una voce vera, gratis, senza filigrana, senza canone e anche senza rete.
+
+Avviso scritto nella cartolina: usare una foto propria o una fatta con l'intelligenza artificiale, **non la foto di una persona vera senza il suo permesso**.
+
+Con un tocco su *Disegno* si torna alla mascotte: niente è perso.
+
+### Limite da sapere
+La foto sta solo sul telefono di Michele. Nelle spiegazioni che vedono le signore resta il disegno.
