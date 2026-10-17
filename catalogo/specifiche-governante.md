@@ -449,3 +449,24 @@ Cartolina → passo 0b, **La sua faccia**: **Piatta** (quella nuova, di partenza
 
 ### Sul motore
 Michele ha confermato: **Gemini Flash è la scelta chiusa** e basta per quello che deve fare adesso. Quando arriveranno compiti nuovi si rivaluta — niente da cambiare oggi.
+
+## 25. La 0.46 (17 ottobre): il pupazzo a immagini — come fa Praktika
+
+Michele ha mandato due schermate di **Praktika** (app di pratica linguistica): a destra una ragazza in 3D stile Pixar che parla. *"Quello voglio come Consuela mia."* Ha anche chiesto se può usare OpenArt o le immagini di ChatGPT.
+
+### Il trucco, guardando bene le sue due schermate
+Nelle due immagini **la posa è identica**: stessa inquadratura, stessa mano sotto il mento, stessa luce, stesso sfondo. Cambiano **solo la bocca e gli occhi** (nella prima bocca chiusa e occhi aperti, nella seconda bocca a «o» e occhi chiusi). Non è un 3D calcolato sul telefono: è un personaggio reso una volta e **scambiato a strati**. Quello si può rifare esattamente, gratis.
+
+### Cosa è stato fatto
+- La "foto" della 0.44 diventa un **set di quattro immagini**: *Faccia normale* (l'unica obbligatoria), *Bocca socchiusa*, *Bocca aperta*, *Occhi chiusi*.
+- Sono **impilate** una sull'altra nello stesso tondo. L'`AnalyserNode` che già misura la voce vera decide quale accendere, fotogramma per fotogramma: silenzio → faccia normale, voce bassa → bocca socchiusa, voce alta → bocca aperta. È lo stesso meccanismo delle tre bocche del disegno, applicato a immagini vere.
+- **Le palpebre**: l'immagine a occhi chiusi lampeggia per 1,6 decimi di secondo ogni 5,4 secondi quando sta ferma, e si spegne mentre parla (lì comanda la bocca).
+- Se ci sono solo la prima immagine, si comporta come prima (respira e si illumina): niente si rompe.
+- Nella cartolina ci sono **i testi pronti da incollare** nel sito che disegna, uno per posa, col tasto Copia. Il consiglio scritto: fare la prima immagine, poi chiedere le altre **sulla stessa immagine** ("cambia solo la bocca"), se no esce un'altra persona.
+- Tutto in `localStorage` (4 × ~60 KB), **mai in Firestore**.
+
+### Risposta alla domanda su OpenArt / ChatGPT
+Vanno bene entrambi, e anche Gemini. La parte difficile non è fare una bella immagine: è farne **quattro della stessa persona**. Per questo serve partire da una e chiedere le varianti come modifica di quella, non come disegno nuovo.
+
+### Cosa resta diverso da Praktika
+Loro hanno un modello 3D vero mosso in tempo reale: la testa gira, le sopracciglia si alzano, il labiale segue i suoni uno per uno. Qui sono quattro fotogrammi scambiati sull'ampiezza della voce. A schermo, in un tondo da 112 px che saluta, la differenza si vede poco; in un primo piano grande si vedrebbe.
