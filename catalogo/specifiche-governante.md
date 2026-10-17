@@ -425,3 +425,27 @@ Con un tocco su *Disegno* si torna alla mascotte: niente è perso.
 
 ### Limite da sapere
 La foto sta solo sul telefono di Michele. Nelle spiegazioni che vedono le signore resta il disegno.
+
+## 24. La 0.45 (17 ottobre): lo stile piatto, quello giusto
+
+Michele: *"a me mi serve più un avatar come ti ho detto, come l'applicazione di linguaggio. Cerca di trovare un modo per farmi avere quello che ti ho chiesto."*
+
+### Dov'era l'errore
+Alla 0.43 avevo fatto una mascotte **col contorno nero spesso e gli occhi grandi lucidi**. È il registro delle icone da catalogo, non quello delle app per imparare le lingue. La differenza vera di quello stile non sono gli occhi: è che **il contorno non c'è proprio**.
+
+Le regole di quel linguaggio grafico, che ho applicato:
+- **nessun tratto, nessun contorno**: solo forme piene, una accanto all'altra;
+- **geometria semplice**: rettangoli stondati e cerchi, niente curve complicate;
+- **pochi colori pieni**, due tonalità per pezzo al massimo (una chiara e una in ombra);
+- **occhi a fagiolo scuri** con un punto di luce — non occhi grandi col bianco;
+- **mani a manopola**, senza dita; **niente collo**;
+- **capelli come una macchia grafica sola**, con la frangia a svolazzo e due ciocche ai lati;
+- silhouette che si riconosce anche piccolissima.
+
+Il personaggio è **nostro**: lo stile non è di nessuno, i personaggi di quell'app sì.
+
+### Tre facce, si cambia con un tocco
+Cartolina → passo 0b, **La sua faccia**: **Piatta** (quella nuova, di partenza) · **Contornata** (la mascotte della 0.43, se gli piaceva di più) · **Foto** (una sua immagine, dalla 0.44). Tutte e tre usano lo stesso meccanismo: rimbalzo, saluto con la mano, palpebre, occhi che si muovono, e la bocca che segue il suono vero della voce.
+
+### Sul motore
+Michele ha confermato: **Gemini Flash è la scelta chiusa** e basta per quello che deve fare adesso. Quando arriveranno compiti nuovi si rivaluta — niente da cambiare oggi.
