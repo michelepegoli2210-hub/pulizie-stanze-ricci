@@ -1189,30 +1189,43 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 @media (prefers-reduced-motion:reduce){.donnina.gov-fig.viva .busto,.donnina.gov-fig.viva .braccio-dx,.donnina.gov-fig.viva .braccio-sx{animation:none}}
 @media (max-width:380px){.donnina.gov-fig.grande{width:96px;height:108px}.cons-sal{font-size:18px}}
 
-/* 0.44: la faccia vera — una foto al posto del disegno */
-.gov-foto{display:inline-block;position:relative;flex:0 0 auto;border-radius:50%;overflow:visible;line-height:0}
-.gov-foto img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;
+/* 0.44-0.46: la faccia a immagini — stesso personaggio, cambia bocca e occhi */
+.gov-foto{display:inline-block;position:relative;flex:0 0 auto;border-radius:50%;line-height:0}
+.gov-foto img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;
   box-shadow:0 2px 10px rgba(15,23,42,.22);border:3px solid rgba(255,255,255,.9)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .gov-foto img{border-color:rgba(255,255,255,.22)}}
 :root[data-theme="dark"] .gov-foto img{border-color:rgba(255,255,255,.22)}
+.gov-foto .f-m1,.gov-foto .f-m2,.gov-foto .f-occhi{opacity:0}
+.gov-foto[data-v="c"] .f-m1,.gov-foto[data-v="b"] .f-m1{opacity:1}
+.gov-foto[data-v="a"] .f-m2{opacity:1}
 .gov-foto .gov-alone{position:absolute;inset:-7px;border-radius:50%;border:3px solid var(--done);opacity:0;pointer-events:none;
   transform:scale(calc(1 + var(--apri,0) * .06))}
-.gov-foto.viva img{animation:fotoRespira 5s ease-in-out infinite}
-@keyframes fotoRespira{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
-.gov-foto.parla .gov-alone{opacity:calc(.25 + var(--apri,0) * .75)}
-.gov-foto.parla img{animation:fotoParla 2.4s ease-in-out infinite}
-@keyframes fotoParla{0%,100%{transform:scale(1.01) rotate(-.5deg)}50%{transform:scale(1.035) rotate(.5deg)}}
-.gov-foto.piccola{width:62px;height:70px}.gov-foto.piccola img{height:62px}
-.gov-foto.mini{width:40px;height:40px}.gov-foto.mini img{height:40px}
-.gov-foto.media{width:84px;height:84px}.gov-foto.media img{height:84px}
-.gov-foto.viva{width:76px;height:76px}.gov-foto.viva img{height:76px}
-.gov-foto.grande{width:112px;height:112px}.gov-foto.grande img{height:112px}
+.gov-foto.parla .gov-alone{opacity:calc(.22 + var(--apri,0) * .7)}
+.gov-foto.parlante.parla .gov-alone{opacity:0}
+.gov-foto.viva .f-occhi{animation:occhiFoto 5.4s infinite}
+@keyframes occhiFoto{0%,95.4%,100%{opacity:0}96.4%,98%{opacity:1}}
+.gov-foto.parla .f-occhi{animation:none;opacity:0}
+.gov-foto.viva{animation:fotoRespira 5s ease-in-out infinite}
+@keyframes fotoRespira{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+.gov-foto.parlante.parla{animation:none}
+.gov-foto.piccola{width:62px;height:62px}
+.gov-foto.mini{width:40px;height:40px}
+.gov-foto.media{width:84px;height:84px}
+.gov-foto.viva{width:76px;height:76px}
+.gov-foto.grande{width:112px;height:112px}
 .inizio.chat .gov-viva .gov-foto.viva{width:104px;height:104px}
-.inizio.chat .gov-viva .gov-foto.viva img{height:104px}
-.faccia-scegli{display:inline-flex;align-items:center;cursor:pointer}
-.faccia-ante{margin-left:auto;line-height:0}
-.faccia-ante img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--bordo,rgba(0,0,0,.12))}
-@media (prefers-reduced-motion:reduce){.gov-foto.viva img,.gov-foto.parla img{animation:none}}
+/* i quattro riquadri dove si mettono le immagini */
+.facce-griglia{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+.faccia-slot{display:flex;flex-direction:column;gap:2px;min-width:0}
+.faccia-slot b{font:700 13px var(--f-display);margin-top:4px}
+.faccia-box{display:block;aspect-ratio:1;border-radius:14px;overflow:hidden;background:var(--bg);
+  border:2px dashed var(--bordo,rgba(0,0,0,.18));cursor:pointer;position:relative}
+.faccia-slot.piena .faccia-box{border-style:solid;border-color:var(--done)}
+.faccia-box img{width:100%;height:100%;object-fit:cover;display:block}
+.faccia-vuoto{position:absolute;inset:0;display:grid;place-items:center;font:800 26px var(--f-display);color:var(--muted);opacity:.5}
+.prompt-box{display:flex;gap:8px;align-items:flex-start;margin-top:8px;background:var(--bg);border-radius:10px;padding:8px 10px}
+.prompt-box code{flex:1;min-width:0;font:400 12px/1.45 ui-monospace,monospace;color:var(--fg);word-break:break-word}
+@media (prefers-reduced-motion:reduce){.gov-foto.viva,.gov-foto.viva .f-occhi{animation:none}}
 
 /* 0.45: stile piatto — niente contorni, forme geometriche */
 .donnina.gov-piatta .palpebre{opacity:0}

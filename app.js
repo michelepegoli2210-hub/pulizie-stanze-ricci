@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.45.0";
+export const VERSIONE = "0.46.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -73,19 +73,36 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 // non tutta la figura: così sembra viva e non una statuina che dondola.
 // 0.44: la faccia di Consuela può essere una foto scelta da Michele, al posto del disegno.
 // Sta solo su questo telefono (è pesante e non serve alle signore).
-const CHIAVE_FOTO = "ricci_gov_foto";
-let fotoGovCache = null;
-function fotoGov() {
-  if (fotoGovCache !== null) return fotoGovCache;
-  try { fotoGovCache = localStorage.getItem(CHIAVE_FOTO) || ""; } catch (e) { fotoGovCache = ""; }
-  return fotoGovCache;
+// 0.46: la faccia di Consuela come la fa Praktika — stesso personaggio, stessa posa,
+// cambiano solo bocca e occhi. Michele porta 2-4 immagini, l'app le scambia a tempo
+// con la voce vera. Stanno solo su questo telefono (sono pesanti e alle signore non servono).
+const CHIAVE_FACCE = "ricci_gov_facce";
+const POSE = [
+  { k: "base", nome: "Faccia normale", aiuto: "bocca chiusa, occhi aperti. Questa serve sempre." },
+  { k: "m1", nome: "Bocca socchiusa", aiuto: "stessa posa, labbra appena aperte." },
+  { k: "m2", nome: "Bocca aperta", aiuto: "stessa posa, bocca aperta come quando dice «a»." },
+  { k: "occhi", nome: "Occhi chiusi", aiuto: "stessa posa, occhi chiusi: serve per farla sbattere le palpebre." },
+];
+let facceCache = null;
+function facceGov() {
+  if (facceCache) return facceCache;
+  let f = {};
+  try { f = JSON.parse(localStorage.getItem(CHIAVE_FACCE) || "{}") || {}; } catch (e) { f = {}; }
+  if (!f.base) { try { const vecchia = localStorage.getItem("ricci_gov_foto"); if (vecchia) f.base = vecchia; } catch (e) {} }
+  facceCache = f; return f;
 }
-function salvaFotoGov(dataUrl) {
-  try { if (dataUrl) localStorage.setItem(CHIAVE_FOTO, dataUrl); else localStorage.removeItem(CHIAVE_FOTO); fotoGovCache = dataUrl || ""; return true; }
-  catch (e) { console.warn("foto", e); return false; }
+function fotoGov() { return facceGov().base || ""; }
+function salvaFaccia(k, dataUrl) {
+  const f = { ...facceGov() };
+  if (dataUrl) f[k] = dataUrl; else delete f[k];
+  if (k === "base" && !dataUrl) { try { localStorage.removeItem("ricci_gov_foto"); } catch (e) {} }
+  try { localStorage.setItem(CHIAVE_FACCE, JSON.stringify(f)); facceCache = f; return true; }
+  catch (e) { console.warn("facce", e); return false; }
 }
-// La foto rimpicciolita: 420 px di lato, così sta comoda nel telefono
-function rimpicciolisci(file, lato = 420) {
+function togliFacce() { try { localStorage.removeItem(CHIAVE_FACCE); localStorage.removeItem("ricci_gov_foto"); } catch (e) {} facceCache = null; }
+function salvaFotoGov(d) { return d ? salvaFaccia("base", d) : (togliFacce(), true); }
+// La foto ritagliata quadrata e rimpicciolita: 460 px, così pesa poco e si vede bene
+function rimpicciolisci(file, lato = 460) {
   return new Promise((ok, no) => {
     const fr = new FileReader();
     fr.onerror = () => no(new Error("Non riesco a leggere la foto."));
@@ -96,18 +113,27 @@ function rimpicciolisci(file, lato = 420) {
         const m = Math.min(im.width, im.height), sx = (im.width - m) / 2, sy = (im.height - m) / 2;
         const cv = document.createElement("canvas"); cv.width = cv.height = lato;
         const cx = cv.getContext("2d"); cx.drawImage(im, sx, sy, m, m, 0, 0, lato, lato);
-        ok(cv.toDataURL("image/jpeg", 0.84));
+        ok(cv.toDataURL("image/jpeg", 0.85));
       };
       im.src = fr.result;
     };
     fr.readAsDataURL(file);
   });
 }
-function stileGov() { const v = (S.gov && S.gov.stile) || ""; return v === "contorno" ? "contorno" : "piatta"; }
+// Il pupazzo: tutte le facce impilate, si accende quella giusta
 function FACCIA_FOTO(cls = "") {
-  const f = fotoGov();
-  return `<span class="donnina gov-fig gov-foto ${cls}" role="img" aria-label="${esc(nomeGov())}"><img src="${f}" alt=""><i class="gov-alone"></i></span>`;
+  const f = facceGov();
+  const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
+  return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
+    ${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m2", "f-m2")}${strato("occhi", "f-occhi")}<i class="gov-alone"></i></span>`;
 }
+const PROMPT_FACCIA = `3D animated character portrait, Pixar/Disney 3D render style, friendly Italian housekeeper woman around 35, warm smile, dark brown hair in a neat bun, navy blue uniform with a white collar, soft cinematic lighting, head and shoulders, looking at the camera, plain soft blue background, high quality, photorealistic 3D rendering`;
+const PROMPT_VARIANTI = [
+  "same character, exact same pose, same lighting, same background — lips slightly parted as if starting to speak",
+  "same character, exact same pose, same lighting, same background — mouth open wide saying AH",
+  "same character, exact same pose, same lighting, same background — eyes fully closed, mouth closed",
+];
+function stileGov() { const v = (S.gov && S.gov.stile) || ""; return v === "contorno" ? "contorno" : "piatta"; }
 let CONTA_DONNINA = 0;
 function tinta(hex, d) {
   const h = String(hex).replace("#", ""), pieno = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
@@ -1835,8 +1861,17 @@ function cardIA() {
       <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Tocca un nome o scrivine uno tuo: lo usa dappertutto. Non mettere il nome di una delle signore, se no vi confondete.</span></div>
     <div class="ia-passo"><b>0b.</b> La sua faccia
       <div class="seg"><button type="button" aria-pressed="${!fotoGov() && stileGov() === "piatta"}" data-faccia="piatta">Piatta</button><button type="button" aria-pressed="${!fotoGov() && stileGov() === "contorno"}" data-faccia="contorno">Contornata</button><button type="button" aria-pressed="${!!fotoGov()}" data-faccia="foto" ${fotoGov() ? "" : "disabled"}>Foto</button></div>
-      <div class="ia-riga"><label class="btnsm ghost faccia-scegli">${fotoGov() ? "Cambia la foto" : "Scegli una foto"}<input type="file" accept="image/*" id="fotoGov" hidden></label>${fotoGov() ? `<button type="button" class="nonna-link" style="min-height:0;padding:4px 10px" data-faccia-togli>Togli la foto</button>` : ""}${fotoGov() ? `<span class="faccia-ante"><img src="${fotoGov()}" alt=""></span>` : ""}</div>
-      <span class="small muted">Se il disegno non ti piace, mettici la faccia che vuoi: una foto dal telefono. Respira, si illumina quando parla e resta anche senza internet. Sta solo su questo telefono, non la vedono le signore. Usa una foto tua o una di quelle che si fanno con l'intelligenza artificiale — non la foto di una persona vera senza il suo permesso.</span></div>
+      <div class="facce-griglia">${POSE.map((x, i) => { const c = facceGov()[x.k]; return `<div class="faccia-slot ${c ? "piena" : ""}">
+        <label class="faccia-box">${c ? `<img src="${c}" alt="">` : `<span class="faccia-vuoto">${i + 1}</span>`}<input type="file" accept="image/*" data-posa="${x.k}" hidden></label>
+        <b>${esc(x.nome)}</b><span class="small muted">${esc(x.aiuto)}</span>
+        ${c ? `<button type="button" class="nonna-link" style="min-height:0;padding:2px 8px;margin-top:2px" data-posa-togli="${x.k}">togli</button>` : ""}</div>`; }).join("")}</div>
+      <span class="small muted">Serve solo la prima. Se ci metti anche la <b>bocca socchiusa</b> e la <b>bocca aperta</b>, quando parla l'app le scambia a tempo con la voce e sembra che parli davvero — è lo stesso trucco di quell'app che mi hai fatto vedere: stesso personaggio, stessa posa, cambia solo la bocca. Con gli <b>occhi chiusi</b> sbatte anche le palpebre.</span>
+      <details class="gov-dett" style="margin-top:8px"><summary class="small">Come me le faccio, queste immagini?</summary>
+        <p class="muted small" style="margin:6px 0 0">Va bene qualunque sito che disegna con l'intelligenza artificiale: <b>OpenArt</b>, le immagini di <b>ChatGPT</b>, <b>Gemini</b>. Fanne una, poi chiedi le altre <b>sulla stessa immagine</b> ("cambia solo la bocca"), se no viene un'altra persona.</p>
+        <div class="prompt-box"><code id="promptFaccia">${esc(PROMPT_FACCIA)}</code><button type="button" class="btnsm" data-copia-prompt="base">Copia</button></div>
+        ${PROMPT_VARIANTI.map((t, i) => `<div class="prompt-box"><code>${esc(POSE[i + 1].nome)}: ${esc(t)}</code><button type="button" class="btnsm ghost" data-copia-prompt="${i}">Copia</button></div>`).join("")}
+        <p class="muted small" style="margin:6px 0 0">Poi scarichi le immagini sul telefono e le metti nei quattro riquadri qui sopra.</p></details>
+      <span class="small muted" style="margin-top:6px">Stanno solo su questo telefono, non le vedono le signore. Usa un personaggio inventato o una foto tua — non la foto di una persona vera senza il suo permesso.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
     <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
       <div class="seg"><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Sveglia</button><button type="button" aria-pressed="${q === "risparmio"}" data-ia-qualita="risparmio">Risparmio</button></div>
@@ -1866,23 +1901,29 @@ function cardIA() {
 function collegaIA() {
   document.querySelectorAll("[data-faccia]").forEach(b => b.onclick = () => {
     const k = b.dataset.faccia;
-    if (k === "foto") return document.getElementById("fotoGov")?.click();
-    if (fotoGov()) salvaFotoGov("");
+    if (k === "foto") return document.querySelector("[data-posa='base']")?.click();
+    if (fotoGov()) togliFacce();
     salvaGov({ stile: k }).then(() => toast(k === "piatta" ? "Stile piatto, come le app delle lingue" : "Stile col contorno"));
     disegna();
   });
-  document.querySelectorAll("[data-faccia-togli]").forEach(b => b.onclick = () => { salvaFotoGov(""); disegna(); toast("Foto tolta: torna il disegno"); });
-  const inpFoto = document.getElementById("fotoGov");
-  if (inpFoto) inpFoto.onchange = async () => {
-    const f = inpFoto.files && inpFoto.files[0]; inpFoto.value = "";
+  document.querySelectorAll("[data-faccia-togli]").forEach(b => b.onclick = () => { togliFacce(); disegna(); toast("Tolte: torna il disegno"); });
+  document.querySelectorAll("[data-posa]").forEach(i => i.onchange = async () => {
+    const f = i.files && i.files[0], k = i.dataset.posa; i.value = "";
     if (!f) return;
-    if (!/^image\//.test(f.type)) return toast("Scegli una foto, non un altro tipo di file");
+    if (!/^image\//.test(f.type)) return toast("Scegli un'immagine");
     try {
       const d = await rimpicciolisci(f);
-      if (!salvaFotoGov(d)) return toast("Il telefono non ha spazio per la foto");
-      disegna(); toast("Fatto: adesso ha questa faccia");
-    } catch (e) { toast(String(e.message || "Non riesco a usare questa foto")); }
-  };
+      if (!salvaFaccia(k, d)) return toast("Il telefono non ha spazio: togli un'immagine");
+      disegna(); toast(k === "base" ? "Fatto: adesso ha questa faccia" : "Messa");
+    } catch (e) { toast(String(e.message || "Non riesco a usare questa immagine")); }
+  });
+  document.querySelectorAll("[data-posa-togli]").forEach(b => b.onclick = () => { salvaFaccia(b.dataset.posaTogli, ""); disegna(); toast("Tolta"); });
+  document.querySelectorAll("[data-copia-prompt]").forEach(b => b.onclick = async () => {
+    const k = b.dataset.copiaPrompt;
+    const t = k === "base" ? PROMPT_FACCIA : PROMPT_VARIANTI[Number(k)];
+    try { await navigator.clipboard.writeText(t); toast("Copiato: incollalo nel sito che disegna"); }
+    catch (e) { toast("Tieni premuto sul testo e copia a mano"); }
+  });
   document.querySelectorAll("[data-gov-nome]").forEach(b => b.onclick = () => {
     const n = b.dataset.govNome;
     const inp = document.getElementById("iaNome"); if (inp) inp.value = n; // la casella "si ricorda" quello che c'era: la aggiorno a mano
