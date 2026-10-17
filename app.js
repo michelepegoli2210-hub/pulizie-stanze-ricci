@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.43.0";
+export const VERSIONE = "0.44.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -71,6 +71,42 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 // è un disegno fatto a strati, con le ombre, gli occhi veri (bianco, iride,
 // pupilla, luce) e la bocca che cambia forma mentre parla. Si muove la testa,
 // non tutta la figura: così sembra viva e non una statuina che dondola.
+// 0.44: la faccia di Consuela può essere una foto scelta da Michele, al posto del disegno.
+// Sta solo su questo telefono (è pesante e non serve alle signore).
+const CHIAVE_FOTO = "ricci_gov_foto";
+let fotoGovCache = null;
+function fotoGov() {
+  if (fotoGovCache !== null) return fotoGovCache;
+  try { fotoGovCache = localStorage.getItem(CHIAVE_FOTO) || ""; } catch (e) { fotoGovCache = ""; }
+  return fotoGovCache;
+}
+function salvaFotoGov(dataUrl) {
+  try { if (dataUrl) localStorage.setItem(CHIAVE_FOTO, dataUrl); else localStorage.removeItem(CHIAVE_FOTO); fotoGovCache = dataUrl || ""; return true; }
+  catch (e) { console.warn("foto", e); return false; }
+}
+// La foto rimpicciolita: 420 px di lato, così sta comoda nel telefono
+function rimpicciolisci(file, lato = 420) {
+  return new Promise((ok, no) => {
+    const fr = new FileReader();
+    fr.onerror = () => no(new Error("Non riesco a leggere la foto."));
+    fr.onload = () => {
+      const im = new Image();
+      im.onerror = () => no(new Error("Questa non è una foto che so leggere."));
+      im.onload = () => {
+        const m = Math.min(im.width, im.height), sx = (im.width - m) / 2, sy = (im.height - m) / 2;
+        const cv = document.createElement("canvas"); cv.width = cv.height = lato;
+        const cx = cv.getContext("2d"); cx.drawImage(im, sx, sy, m, m, 0, 0, lato, lato);
+        ok(cv.toDataURL("image/jpeg", 0.84));
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+function FACCIA_FOTO(cls = "") {
+  const f = fotoGov();
+  return `<span class="donnina gov-fig gov-foto ${cls}" role="img" aria-label="${esc(nomeGov())}"><img src="${f}" alt=""><i class="gov-alone"></i></span>`;
+}
 let CONTA_DONNINA = 0;
 function tinta(hex, d) {
   const h = String(hex).replace("#", ""), pieno = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
@@ -152,7 +188,7 @@ function GOVERNANTE(cls = "", colore = null) {
 </svg>`;
 }
 function DONNINA(v = "scopa", cls = "", colore = null) {
-  if (v === "governante") return GOVERNANTE(cls, colore);
+  if (v === "governante") return fotoGov() ? FACCIA_FOTO(cls) : GOVERNANTE(cls, colore);
   const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = CAPELLI[colore] || colore || "#6B4226";
   const vestito = { scopa: "#4F7BE8", festa: "#EF6F7B", secchio: "#23B5A3", saluto: "#9A6BF2", governante: "#1F2A44" }[v] || "#4F7BE8";
   const braccio = (d) => `<path d="${d}" stroke="${pelle}" stroke-width="7.5" fill="none" stroke-linecap="round"/>`;
@@ -1741,6 +1777,10 @@ function cardIA() {
       <div class="voce-scelte">${NOMI_GOV.map(n => `<button type="button" class="voce-chip" aria-pressed="${nomeGov() === n}" data-gov-nome="${esc(n)}">${esc(n)}</button>`).join("")}</div>
       <div class="ia-riga"><input type="text" id="iaNome" data-keep value="${esc(nomeGov())}" placeholder="il nome che vuoi" maxlength="18" autocomplete="off"><button type="button" class="btnsm" data-ia-nome>Salva</button></div>
       <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Tocca un nome o scrivine uno tuo: lo usa dappertutto. Non mettere il nome di una delle signore, se no vi confondete.</span></div>
+    <div class="ia-passo"><b>0b.</b> La sua faccia
+      <div class="seg"><button type="button" aria-pressed="${!fotoGov()}" data-faccia="disegno">Disegno</button><button type="button" aria-pressed="${!!fotoGov()}" data-faccia="foto" ${fotoGov() ? "" : "disabled"}>La tua foto</button></div>
+      <div class="ia-riga"><label class="btnsm ghost faccia-scegli">${fotoGov() ? "Cambia la foto" : "Scegli una foto"}<input type="file" accept="image/*" id="fotoGov" hidden></label>${fotoGov() ? `<button type="button" class="nonna-link" style="min-height:0;padding:4px 10px" data-faccia-togli>Togli la foto</button>` : ""}${fotoGov() ? `<span class="faccia-ante"><img src="${fotoGov()}" alt=""></span>` : ""}</div>
+      <span class="small muted">Se il disegno non ti piace, mettici la faccia che vuoi: una foto dal telefono. Respira, si illumina quando parla e resta anche senza internet. Sta solo su questo telefono, non la vedono le signore. Usa una foto tua o una di quelle che si fanno con l'intelligenza artificiale — non la foto di una persona vera senza il suo permesso.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
     <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
       <div class="seg"><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Sveglia</button><button type="button" aria-pressed="${q === "risparmio"}" data-ia-qualita="risparmio">Risparmio</button></div>
@@ -1768,6 +1808,22 @@ function cardIA() {
     ${c.chiave ? `<button class="nonna-link" style="margin:8px 0 0" data-ia-cancella>Cancella la chiave da questo telefono</button>` : ""}</section>`;
 }
 function collegaIA() {
+  document.querySelectorAll("[data-faccia]").forEach(b => b.onclick = () => {
+    if (b.dataset.faccia === "disegno") { if (!fotoGov()) return; salvaFotoGov(""); disegna(); toast("Torna il disegno"); }
+    else document.getElementById("fotoGov")?.click();
+  });
+  document.querySelectorAll("[data-faccia-togli]").forEach(b => b.onclick = () => { salvaFotoGov(""); disegna(); toast("Foto tolta: torna il disegno"); });
+  const inpFoto = document.getElementById("fotoGov");
+  if (inpFoto) inpFoto.onchange = async () => {
+    const f = inpFoto.files && inpFoto.files[0]; inpFoto.value = "";
+    if (!f) return;
+    if (!/^image\//.test(f.type)) return toast("Scegli una foto, non un altro tipo di file");
+    try {
+      const d = await rimpicciolisci(f);
+      if (!salvaFotoGov(d)) return toast("Il telefono non ha spazio per la foto");
+      disegna(); toast("Fatto: adesso ha questa faccia");
+    } catch (e) { toast(String(e.message || "Non riesco a usare questa foto")); }
+  };
   document.querySelectorAll("[data-gov-nome]").forEach(b => b.onclick = () => {
     const n = b.dataset.govNome;
     const inp = document.getElementById("iaNome"); if (inp) inp.value = n; // la casella "si ricorda" quello che c'era: la aggiorno a mano

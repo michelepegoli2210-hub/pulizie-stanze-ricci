@@ -542,3 +542,17 @@ La governante si chiama **Consuela** (il nome si cambia nella cartolina, passo 0
 Il saluto lo scrive lei quando l'intelligenza artificiale è accesa, con una regola precisa nelle istruzioni: il merito si dice **solo se c'è davvero**, col fatto preciso; se non c'è, niente complimenti inventati. Senza chiave il saluto lo costruisce l'app da sola e funziona lo stesso.
 
 Lo stile grafico richiama le mascotte delle app per imparare le lingue, ma il personaggio è originale: i loro personaggi e le loro voci sono loro.
+
+
+## La faccia di Consuela (dalla versione 0.44)
+
+Due possibilità, nella cartolina al passo 0b:
+
+- **Disegno** — la mascotte disegnata nell'app, che rimbalza, saluta con la mano e muove la bocca sul suono vero della voce.
+- **La tua foto** — scegli un'immagine dal telefono: l'app la ritaglia quadrata, la rimpicciolisce a 420 px e la usa come faccia di Consuela dappertutto. Respira piano e si illumina con un anello che segue l'ampiezza della voce mentre parla.
+
+La foto sta **solo in `localStorage`, su quel telefono**: non va in Firestore (è pesante e alle signore non serve), quindi nelle spiegazioni che vedono loro resta il disegno. Si torna al disegno con un tocco.
+
+Usa una foto tua o una generata; non la foto di una persona vera senza il suo permesso.
+
+**Perché non un avatar video fotorealistico**: i prezzi veri, letti il 17 ottobre 2026 — HeyGen gratuito dà 3 video al mese *con filigrana* (toglierla costa 29 $/mese); D-ID gratuito è una prova di 14 giorni con filigrana a schermo intero, e perfino il piano da 14,4 $/mese resta marchiato. Senza contare che servirebbe un server, la chiave costosa nel telefono e la rete sempre accesa. I dettagli stanno nelle specifiche, punto 23.
