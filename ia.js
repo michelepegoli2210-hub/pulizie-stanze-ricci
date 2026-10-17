@@ -237,9 +237,10 @@ export function leggiRisposta(txt) {
   if (!o || typeof o !== "object") return { risposta: String(txt || "").slice(0, 600).trim(), consiglio: "", azione: null };
   const r = String(o.risposta ?? o.testo ?? "").trim();
   const c = String(o.consiglio ?? "").trim();
+  const sal = String(o.saluto ?? "").trim();
   let a = o.azione && typeof o.azione === "object" ? o.azione : null;
   if (a && !["aggiungi", "fatto", "togli", "messaggio", "istruzione"].includes(a.tipo)) a = null;
-  return { risposta: r || String(txt).slice(0, 600).trim(), consiglio: c, azione: a };
+  return { risposta: r || String(txt).slice(0, 600).trim(), consiglio: c, saluto: sal, azione: a };
 }
 
 // Quanto costa, più o meno: serve solo per dirglielo a schermo.

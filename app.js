@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.42.0";
+export const VERSIONE = "0.43.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -80,99 +80,74 @@ function tinta(hex, d) {
 }
 function GOVERNANTE(cls = "", colore = null) {
   const u = "gv" + (++CONTA_DONNINA);
-  const cap = CAPELLI[colore] || colore || "#4A3426", capS = tinta(cap, -28), capL = tinta(cap, 34);
-  const occhio = colore === "bionda" ? "#5B8BA8" : colore === "rossa" ? "#6B8E5A" : "#5A3A24";
-  const PEL = "#F6C6A0", PELS = "#E0A77F", PELO = "#C98C66";
-  const AB = "#223052", ABS = "#161F38", ABL = "#33456F";
+  const cap = CAPELLI[colore] || colore || "#6B3F26", capS = tinta(cap, -34), capL = tinta(cap, 30);
+  const occhio = colore === "bionda" ? "#2E7FA8" : colore === "rossa" ? "#4E8A4A" : "#5A3418";
+  // Stile "mascotte": tinte piatte, contorno grosso, occhi grandi, niente sfumature.
+  const T = "#22313B", PEL = "#F8C9A4", PELS = "#E7A87C";
+  const AB = "#2E6FB8", ABS = "#245A99", BIA = "#FDFCF8", ORO = "#F2C14E";
+  const l = (d, w = 3) => `stroke="${T}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
   return `<svg class="donnina gov-fig ${cls}" viewBox="0 0 124 140" aria-hidden="true">
-  <defs>
-    <linearGradient id="${u}pel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${tinta(PEL, 10)}"/><stop offset=".62" stop-color="${PEL}"/><stop offset="1" stop-color="${PELS}"/></linearGradient>
-    <linearGradient id="${u}cap" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${capL}"/><stop offset=".45" stop-color="${cap}"/><stop offset="1" stop-color="${capS}"/></linearGradient>
-    <linearGradient id="${u}ab" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${ABL}"/><stop offset=".5" stop-color="${AB}"/><stop offset="1" stop-color="${ABS}"/></linearGradient>
-    <radialGradient id="${u}iri" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="${tinta(occhio, 46)}"/><stop offset=".62" stop-color="${occhio}"/><stop offset="1" stop-color="${tinta(occhio, -42)}"/></radialGradient>
-    <radialGradient id="${u}ros" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#F08A92" stop-opacity=".55"/><stop offset="1" stop-color="#F08A92" stop-opacity="0"/></radialGradient>
-    <linearGradient id="${u}lab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C2626A"/><stop offset="1" stop-color="#A2434E"/></linearGradient>
-  </defs>
-  <ellipse cx="62" cy="133" rx="33" ry="5" fill="rgba(15,23,42,.15)"/>
+  <ellipse cx="62" cy="134" rx="30" ry="4.5" fill="rgba(34,49,59,.18)"/>
   <g class="busto">
-    <path d="M51 112h7.5v15H51z" fill="${PELO}"/><path d="M65.5 112h7.5v15h-7.5z" fill="${PELO}"/>
-    <ellipse cx="54" cy="128" rx="7.6" ry="4.2" fill="#20242F"/><ellipse cx="70" cy="128" rx="7.6" ry="4.2" fill="#20242F"/>
-    <ellipse cx="54" cy="126.6" rx="7.6" ry="3.2" fill="#323849"/><ellipse cx="70" cy="126.6" rx="7.6" ry="3.2" fill="#323849"/>
-    <rect x="57" y="55" width="10" height="11" rx="3" fill="${PELS}"/>
-    <path d="M57 56 Q62 62 67 56 L67 63 Q62 66 57 63Z" fill="rgba(0,0,0,.2)"/>
-    <path d="M47 73 Q62 64 77 73 L81 97 Q62 102 43 97Z" fill="url(#${u}ab)"/>
-    <path d="M43 97 Q62 102 81 97 L89 120 Q62 127 35 120Z" fill="url(#${u}ab)"/>
-    <path d="M62 66 Q71 67 77 73 L81 97 L89 120 Q76 124 62 125Z" fill="rgba(0,0,0,.15)"/>
-    <path d="M47 73 Q53 69 58 67 L56 86 Q49 81 46 76Z" fill="rgba(255,255,255,.08)"/>
-    <ellipse cx="47.5" cy="76" rx="6.4" ry="7.4" fill="${AB}" transform="rotate(-14 47.5 76)"/>
-    <ellipse cx="76.5" cy="76" rx="6.4" ry="7.4" fill="${ABS}" transform="rotate(14 76.5 76)"/>
-    <path d="M44.5 81 Q40 92 41.5 102" stroke="${PEL}" stroke-width="6.6" fill="none" stroke-linecap="round"/>
-    <path d="M44.5 81 Q40 92 41.5 102" stroke="rgba(0,0,0,.08)" stroke-width="6.6" fill="none" stroke-linecap="round" stroke-dasharray="4 40" stroke-dashoffset="-26"/>
-    <ellipse cx="41.6" cy="105" rx="3.9" ry="4.8" fill="${PEL}"/><path d="M38.4 104 Q37.4 107 39.4 108.2" stroke="${PELS}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-    <path d="M52 95 Q62 99 72 95 L74 119 Q62 123 50 119Z" fill="#FAF7EF"/>
-    <path d="M62 97 Q68 97 72 95 L74 119 Q68 121 62 122Z" fill="rgba(15,23,42,.05)"/>
-    <path d="M52 95 Q62 99 72 95" stroke="#DED7C6" stroke-width="1.1" fill="none"/>
-    <path d="M50.5 96.5 Q46 98 44.5 100" stroke="#FAF7EF" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <path d="M73.5 96.5 Q78 98 79.5 100" stroke="#FAF7EF" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <path d="M53 65.5 Q62 75 71 65.5 Q62 70 53 65.5Z" fill="#FFFFFF"/>
-    <path d="M54.4 66 L62 74 L69.6 66" stroke="#E3E7EE" stroke-width=".9" fill="none"/>
-    ${[57, 59.6, 62, 64.4, 67].map((x, i) => `<circle cx="${x}" cy="${[70.2, 71.2, 71.6, 71.2, 70.2][i]}" r="1.1" fill="#F5EDD8" stroke="#D9CBA6" stroke-width=".35"/>`).join("")}
-    <g class="taccuino">
-      <g transform="rotate(-9 88 64)">
-        <rect x="77.5" y="50" width="21" height="26" rx="2.4" fill="#FBF7E9" stroke="#B9A67A" stroke-width="1.2"/>
-        <rect x="77.5" y="50" width="21" height="4.4" rx="2.1" fill="#D9C89C"/>
-        <path d="M81.5 60h13M81.5 65h13M81.5 70h8.5" stroke="#9D8A5C" stroke-width="1.4" stroke-linecap="round"/>
-        <path d="M83 52.4v-2.8M91 52.4v-2.8" stroke="#8B7B53" stroke-width="1.3" stroke-linecap="round"/>
-      </g>
-      <path d="M77.5 81 Q84 80 86.5 75" stroke="${PEL}" stroke-width="6.6" fill="none" stroke-linecap="round"/>
-      <ellipse cx="86.2" cy="73.6" rx="3.9" ry="4.6" fill="${PEL}" transform="rotate(18 86.2 73.6)"/>
-      <path d="M83.6 70.6 Q82.4 73.4 84.4 74.8" stroke="${PELS}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    </g>
+    <path d="M50 116h10v12H50z" fill="${PELS}" ${l("", 2.6)}/><path d="M64 116h10v12H64z" fill="${PELS}" ${l("", 2.6)}/>
+    <path d="M44 126h20a4 4 0 0 1 0 8H44a4 4 0 0 1 0-8Z" fill="${T}"/>
+    <path d="M60 126h20a4 4 0 0 1 0 8H60a4 4 0 0 1 0-8Z" fill="${T}"/>
+    <path d="M62 70c-14 0-21 6-22 14l-4 30c-1 6 6 8 26 8s27-2 26-8l-4-30c-1-8-8-14-22-14Z" fill="${AB}" ${l("")}/>
+    <path d="M62 70c14 0 21 6 22 14l4 30c1 6-6 8-26 8Z" fill="${ABS}" opacity=".45"/>
+    <path d="M50 94h24c2 0 3 1 3 3l2 21c0 2-6 3-15 3s-15-1-15-3l2-21c0-2 1-3 3-3Z" fill="${BIA}" ${l("", 2.6)}/>
+    <path d="M47 97c-5 1-8 3-10 5M77 97c5 1 8 3 10 5" fill="none" ${l("", 2.6)}/>
+    <path d="M49 100h26" fill="none" stroke="${T}" stroke-width="2.4" stroke-linecap="round" opacity=".5"/>
+    <rect x="56" y="106" width="14" height="9" rx="2" fill="none" stroke="${T}" stroke-width="2.2" opacity=".45"/>
+    <path d="M52 70c3 6 6 9 10 9s7-3 10-9c-4-2-14-2-20 0Z" fill="${BIA}" ${l("", 2.6)}/>
+    <circle cx="62" cy="80" r="3.4" fill="${ORO}" ${l("", 2.2)}/>
+    <g class="braccio-sx"><path d="M43 80c-10 4-16 13-16 24" fill="none" stroke="${T}" stroke-width="10.5" stroke-linecap="round"/>
+      <path d="M43 80c-10 4-16 13-16 24" fill="none" stroke="${AB}" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="27" cy="109" r="7" fill="${PEL}" ${l("", 2.6)}/></g>
+    <g class="braccio-dx"><path d="M81 80c11 3 17 10 17 19" fill="none" stroke="${T}" stroke-width="10.5" stroke-linecap="round"/>
+      <path d="M81 80c11 3 17 10 17 19" fill="none" stroke="${AB}" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="98" cy="101" r="7" fill="${PEL}" ${l("", 2.6)}/>
+      <g class="taccuino"><rect x="90" y="74" width="23" height="27" rx="4" fill="${BIA}" ${l("", 2.6)}/>
+        <path d="M95 83h13M95 89h13M95 95h9" fill="none" stroke="${T}" stroke-width="2.2" stroke-linecap="round" opacity=".55"/>
+        <rect x="90" y="74" width="23" height="6" rx="3" fill="${ORO}" ${l("", 2.2)}/></g></g>
+    <path d="M56 64h12v10H56z" fill="${PELS}" ${l("", 2.6)}/>
   </g>
   <g class="testa">
-    <path d="M40 34 Q62 16 84 34 L86 52 Q84 30 62 28 Q40 30 38 52Z" fill="url(#${u}cap)"/>
-    <circle cx="62" cy="19.5" r="9" fill="url(#${u}cap)"/><ellipse cx="62" cy="19.5" rx="9" ry="8.4" fill="none" stroke="${capS}" stroke-width=".9"/>
-    <path d="M57 15 Q62 13 67 16" stroke="${capL}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
-    <ellipse cx="42.6" cy="44" rx="3.1" ry="4.2" fill="${PELS}"/><ellipse cx="81.4" cy="44" rx="3.1" ry="4.2" fill="${PELS}"/>
-    <ellipse cx="62" cy="42" rx="19.4" ry="21" fill="url(#${u}pel)"/>
-    <path d="M44 50 Q62 60 80 50 Q74 61 62 62 Q50 61 44 50Z" fill="${PELS}" opacity=".3"/>
-    <path d="M40.6 40 Q41 21 62 20 Q83 21 83.4 40 Q80 30 70 27.5 Q62 33 54 31 Q46 32 40.6 40Z" fill="url(#${u}cap)"/>
-    <path d="M44 28 Q54 22 62 23" stroke="${capL}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".65"/>
-    <path d="M68 24 Q77 27 81 34" stroke="${capL}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".5"/>
-    <g class="ciocca"><path d="M42 33 Q38 44 41 55" stroke="url(#${u}cap)" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-      <path d="M82 33 Q86 43 83.5 53" stroke="url(#${u}cap)" stroke-width="3" fill="none" stroke-linecap="round"/></g>
-    <ellipse cx="48.5" cy="50.5" rx="4" ry="3" fill="url(#${u}ros)"/><ellipse cx="75.5" cy="50.5" rx="4" ry="3" fill="url(#${u}ros)"/>
-    <path d="M62 42.5 Q59.6 48 61.4 49.4 Q62.6 50 63.6 49.2" stroke="${PELO}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+    <path d="M62 10c-18 0-29 12-29 28 0 4 1 8 2 11h54c1-3 2-7 2-11 0-16-11-28-29-28Z" fill="${cap}" ${l("")}/>
+    <circle cx="62" cy="13" r="10" fill="${cap}" ${l("")}/>
+    <path d="M57 8c3-2 7-2 10 1" fill="none" stroke="${capL}" stroke-width="2.6" stroke-linecap="round"/>
+    <ellipse cx="34" cy="46" rx="5" ry="6.5" fill="${PEL}" ${l("", 2.6)}/><ellipse cx="90" cy="46" rx="5" ry="6.5" fill="${PEL}" ${l("", 2.6)}/>
+    <circle cx="62" cy="43" r="27" fill="${PEL}" ${l("")}/>
+    <path d="M35 39c1-16 12-26 27-26s26 10 27 26c-4-9-13-13-20-12-4 4-11 5-16 3-8 0-15 3-18 9Z" fill="${cap}" ${l("")}/>
+    <g class="ciocca"><path d="M36 38c-4 7-5 14-4 20" fill="none" stroke="${cap}" stroke-width="5.5" stroke-linecap="round"/>
+      <path d="M88 38c4 7 5 13 4 19" fill="none" stroke="${cap}" stroke-width="5" stroke-linecap="round"/></g>
+    <circle cx="45" cy="55" r="5.5" fill="#F79AA0" opacity=".65"/><circle cx="79" cy="55" r="5.5" fill="#F79AA0" opacity=".65"/>
     <g class="occhi">
-      <ellipse cx="53.2" cy="45" rx="5" ry="3.7" fill="#FCFBFA"/><ellipse cx="70.8" cy="45" rx="5" ry="3.7" fill="#FCFBFA"/>
-      <path d="M48.4 44.4 Q53.2 40.2 58.2 44.4 Q53.2 42.6 48.4 44.4Z" fill="rgba(90,60,45,.22)"/><path d="M65.8 44.4 Q70.8 40.2 75.6 44.4 Q70.8 42.6 65.8 44.4Z" fill="rgba(90,60,45,.22)"/>
+      <ellipse cx="51" cy="45" rx="8.4" ry="9.4" fill="${BIA}" ${l("", 2.8)}/>
+      <ellipse cx="73" cy="45" rx="8.4" ry="9.4" fill="${BIA}" ${l("", 2.8)}/>
       <g class="pupille">
-        <circle cx="53.2" cy="45.2" r="3.05" fill="url(#${u}iri)"/><circle cx="70.8" cy="45.2" r="3.05" fill="url(#${u}iri)"/>
-        <circle cx="53.2" cy="45.2" r="1.35" fill="#17100E"/><circle cx="70.8" cy="45.2" r="1.35" fill="#17100E"/>
-        <circle cx="52.2" cy="43.9" r="1.05" fill="#fff"/><circle cx="69.8" cy="43.9" r="1.05" fill="#fff"/>
-        <circle cx="54.4" cy="46.5" r=".55" fill="#fff" opacity=".7"/><circle cx="72" cy="46.5" r=".55" fill="#fff" opacity=".7"/>
+        <circle cx="51.6" cy="46" r="5.2" fill="${occhio}"/><circle cx="73.6" cy="46" r="5.2" fill="${occhio}"/>
+        <circle cx="51.6" cy="46" r="2.8" fill="#15202A"/><circle cx="73.6" cy="46" r="2.8" fill="#15202A"/>
+        <circle cx="49.6" cy="43.4" r="2.2" fill="#fff"/><circle cx="71.6" cy="43.4" r="2.2" fill="#fff"/>
+        <circle cx="53.6" cy="48.4" r="1" fill="#fff" opacity=".8"/><circle cx="75.6" cy="48.4" r="1" fill="#fff" opacity=".8"/>
       </g>
-      <path d="M48.2 44.2 Q53.2 39.8 58.3 44.2" stroke="#3B2A22" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      <path d="M65.7 44.2 Q70.8 39.8 75.8 44.2" stroke="#3B2A22" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      <path d="M49 48.1 Q53.2 49.6 57.5 48.1" stroke="${PELO}" stroke-width=".9" fill="none" stroke-linecap="round" opacity=".7"/>
-      <path d="M66.5 48.1 Q70.8 49.6 75 48.1" stroke="${PELO}" stroke-width=".9" fill="none" stroke-linecap="round" opacity=".7"/>
     </g>
-    <g class="palpebre"><path d="M48.2 44.2 Q53.2 39.8 58.3 44.2 Q53.2 48.4 48.2 44.2Z" fill="${PEL}" stroke="#3B2A22" stroke-width="1.3" stroke-linejoin="round"/>
-      <path d="M65.7 44.2 Q70.8 39.8 75.8 44.2 Q70.8 48.4 65.7 44.2Z" fill="${PEL}" stroke="#3B2A22" stroke-width="1.3" stroke-linejoin="round"/></g>
-    <g class="sopracciglia"><path d="M47.6 36 Q53.2 32.6 59 35.2" stroke="${cap}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
-      <path d="M65 35.2 Q70.8 32.6 76.4 36" stroke="${cap}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/></g>
-    <g class="bocca">
-      <path d="M53.4 53.2 Q56.6 51.2 60 51.5 Q63.4 51.2 66.6 53.2 Q63 56.4 60 56.4 Q57 56.4 53.4 53.2Z" fill="url(#${u}lab)" transform="translate(2 0)"/>
-      <path d="M55.4 53.2 Q62 54.6 68.6 53.2" stroke="#8C3A44" stroke-width=".9" fill="none" stroke-linecap="round"/>
-      <path d="M56.6 51.4 Q62 49.6 67.4 51.4" stroke="#E7A9AE" stroke-width=".7" fill="none" stroke-linecap="round" opacity=".6"/>
+    <g class="palpebre">
+      <path d="M42.6 45a8.4 9.4 0 0 1 16.8 0Z" fill="${PEL}" ${l("", 2.8)}/>
+      <path d="M64.6 45a8.4 9.4 0 0 1 16.8 0Z" fill="${PEL}" ${l("", 2.8)}/>
     </g>
+    <g class="sopracciglia">
+      <path d="M43 32.5c3-3.4 9-3.8 13-1" fill="none" stroke="${capS}" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M68 31.5c4-2.8 10-2.4 13 1" fill="none" stroke="${capS}" stroke-width="3.4" stroke-linecap="round"/>
+    </g>
+    <path d="M62 48c-1.6 3-2.6 4.6-1 5.6" fill="none" stroke="${PELS}" stroke-width="2.4" stroke-linecap="round"/>
+    <g class="bocca"><path d="M55 58c2.6 3.6 5 5 7 5s4.4-1.4 7-5" fill="none" stroke="${T}" stroke-width="3" stroke-linecap="round"/></g>
     <g class="bocca-parla">
-      <g class="vA"><ellipse cx="62" cy="54" rx="5.8" ry="4.2" fill="#7E2F38"/><path d="M56.6 52.6 Q62 50.8 67.4 52.6 Q62 54 56.6 52.6Z" fill="#FFF7F3"/><ellipse cx="62" cy="56.8" rx="3.2" ry="1.7" fill="#D2707B"/></g>
-      <g class="vB"><ellipse cx="62" cy="54" rx="3.5" ry="4.2" fill="#7E2F38"/><ellipse cx="62" cy="56.4" rx="2" ry="1.3" fill="#D2707B"/></g>
-      <g class="vC"><ellipse cx="62" cy="53.6" rx="5.4" ry="1.8" fill="#7E2F38"/><path d="M57 53 Q62 52 67 53" stroke="#FFF7F3" stroke-width="1.1" fill="none" stroke-linecap="round"/></g>
+      <g class="vA"><ellipse cx="62" cy="60" rx="8" ry="6" fill="#8E3B44" ${l("", 2.6)}/><path d="M55.4 57.6c4.4-1.6 8.8-1.6 13.2 0-4.4 1.4-8.8 1.4-13.2 0Z" fill="${BIA}"/><ellipse cx="62" cy="63.4" rx="4" ry="2.2" fill="#E0828C"/></g>
+      <g class="vB"><ellipse cx="62" cy="60" rx="4.6" ry="5.6" fill="#8E3B44" ${l("", 2.6)}/><ellipse cx="62" cy="62" rx="2.4" ry="1.6" fill="#E0828C"/></g>
+      <g class="vC"><ellipse cx="62" cy="59" rx="7.4" ry="2.6" fill="#8E3B44" ${l("", 2.6)}/></g>
     </g>
-    <path class="sorriso" d="M54.5 51.6 Q62 58.4 69.5 51.6" stroke="#8C3A44" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-    <path class="broncio" d="M55.5 55.4 Q62 51.4 68.5 55.4" stroke="#8C3A44" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+    <path class="sorriso" d="M52 56c3.6 6 7 8 10 8s6.4-2 10-8c-6 2.4-14 2.4-20 0Z" fill="#8E3B44" ${l("", 2.8)}/>
+    <path class="broncio" d="M55 62c2.6-3.6 5-5 7-5s4.4 1.4 7 5" fill="none" stroke="${T}" stroke-width="3" stroke-linecap="round"/>
   </g>
 </svg>`;
 }
@@ -929,7 +904,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
-  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + (puoModificare() && iso === L.oggiISO() ? cardChat() : "") + messaggio + avviso + blocchi + bottone;
+  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + (puoModificare() && iso === L.oggiISO() ? cardConsuela() + cardChat() : "") + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -1029,8 +1004,21 @@ function testoPianoSettimana(z, lun) {
 // ============================================================================
 function regoleGov() { return G.regoleAttive(S.gov); }
 // 0.41: la governante ha un nome. Michele glielo cambia in Governante → Regole.
-const NOMI_GOV = ["Rosa", "Carmela", "Mimma", "Gilda", "Assunta", "Stella"];
-function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Rosa"; }
+const NOMI_GOV = ["Consuela", "Rosa", "Carmela", "Mimma", "Gilda", "Stella"];
+function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Consuela"; }
+// Il nome di chi è entrato, per il saluto ("Buongiorno Michele!")
+function nomeMio() { const n = String(S.utente?.nome || "").trim().split(/\s+/)[0]; return n && !/^prova/i.test(n) ? n : "Michele"; }
+// Una spinta al giorno, senza IA: la stessa per tutta la giornata
+const SPINTE = [
+  "Una camera alla volta e la giornata si chiude da sola.",
+  "Se finite prima delle due, il resto del pomeriggio è tuo.",
+  "Le cose fatte bene oggi non tornano indietro domani.",
+  "Guarda i numeri una volta sola, poi lascia lavorare le ragazze.",
+  "Meglio tre cose fatte per bene che dieci di corsa.",
+  "La casa in ordine si vede dal primo passo nel corridoio.",
+  "Oggi scegli una cosa in ritardo e portala a casa.",
+];
+function spintaDelGiorno() { const d = L.oggiISO(); let h = 0; for (const c of d) h = (h * 31 + c.charCodeAt(0)) >>> 0; return SPINTE[h % SPINTE.length]; }
 function soglieGov() { return G.soglie(S.gov); }
 function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore: true }, strada: (S.gov && S.gov.strada) || {}, frigo: (S.gov && S.gov.frigo) || {} }; }
 let ctxMemo = null;
@@ -1182,6 +1170,28 @@ function statoChatApp() {
   const zoneChat = {}; for (const z of signore()) zoneChat[z.id] = { ...S.zone[z.id], persona: SIG(z.id) };
   const st = { oggi: L.oggiISO(), adesso: new Date(), ora: oraRoma(), camere: S.camere, zone: zoneChat, soggiorni: soggiorniLista(), pulizie: S.pulizie, clienti: S.clienti, gov: S.gov, pagamenti: S.pagamenti, regole: S.regole, controlli: S.controlli, listino: S.listino, chat: S.chat, registro: S.registro, manutenzione: S.manutenzione, impControlli: S.impControlli, tabellone: tab, spesa: S.spesa, catalogo: G.CATALOGO, stelleSettimana: ss };
   try { return CH.statoChat(st); } catch (e) { console.warn("chat", e); return { aperte: [], inAttesa: [], nonAncora: [], daSole: [], storico: [], risposteOggi: [], urgenti: 0, prossime: "" }; }
+}
+// 0.43: Michele apre l'app e la prima cosa che vede è lei, grande, che lo saluta per nome.
+function cardConsuela() {
+  if (!proprietario()) return "";
+  if (!S.caricati.soggiorni || !S.caricati.pulizie) return "";
+  const c = consiglioOggi(), u = umoreGov();
+  if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
+  const muove = govScrive || voceInCorso;
+  const sal = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`;
+  const riga = c && c.testo ? c.testo : u.testo;
+  const spinta = c && c.consiglio ? c.consiglio : spintaDelGiorno();
+  return `<section class="card consuela ${u.v}${muove ? " sta-parlando" : ""}">
+    <button class="cons-apri" data-chat-apri aria-label="Parla con ${esc(nomeGov())}">
+      <span class="cons-fig">${DONNINA("governante", "viva grande" + (muove ? " parla" : ""))}</span>
+      <span class="cons-testo">
+        <b class="cons-sal">${esc(sal)}</b>
+        <span class="cons-riga">${esc(riga)}</span>
+        ${spinta ? `<span class="cons-spinta">${esc(spinta)}</span>` : ""}
+        <span class="cons-az"><span class="cons-chip">${esc(nomeGov())} · parlale ›</span>${c ? `<span class="ia-bollo">IA</span>` : ""}</span>
+      </span></button>
+    ${voceAccesa() ? `<button class="cons-voce" data-cons-voce aria-label="Fatti leggere il saluto">${ICONA("altoparlante")}</button>` : ""}
+  </section>`;
 }
 function cardChat() {
   if (!S.caricati.soggiorni || !S.caricati.pulizie) return "";
@@ -1701,12 +1711,15 @@ async function chiediConsiglioDelGiorno() {
   consiglioInCorso = true;
   try {
     const r = await IA.chiedi({ conf: confIA(), sistema: sistemaIA(), storia: [],
-      testo: "Guarda la fotografia e fai il tuo giro di controllo delle sette cose. Poi dimmi in UNA frase corta com'è la situazione adesso (la cosa più importante, con il numero), e nel consiglio la cosa da fare per prima. Niente azione." });
-    const c = { giorno: L.oggiISO(), testo: String(r.risposta || "").slice(0, 220), consiglio: String(r.consiglio || "").slice(0, 220), ora: new Date().toISOString() };
+      testo: `Fai il tuo giro di controllo delle sette cose, poi rispondi con questo JSON: {"pensiero":"...","saluto":"...","risposta":"...","consiglio":"...","azione":null}.
+"saluto": una riga sola che apre la giornata. Comincia con ${saluto()} e il mio nome (${nomeMio()}). Se c'è qualcosa di VERAMENTE meritato nella fotografia (tutte le camere chiuse, un controllo andato bene, una settimana in ordine) dillo in mezza frase, con il fatto preciso. Se non c'è niente di meritato NON inventare complimenti: metti invece una spinta corta e pratica per oggi. Massimo 18 parole.
+"risposta": in UNA frase corta com'è la situazione adesso, la cosa più importante, col numero.
+"consiglio": la cosa da fare per prima.` });
+    const c = { giorno: L.oggiISO(), saluto: String(r.saluto || "").slice(0, 160), testo: String(r.risposta || "").slice(0, 220), consiglio: String(r.consiglio || "").slice(0, 220), ora: new Date().toISOString() };
     if (c.testo) {
       try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); } catch (e) {}
       disegna();
-      inviaTelegram(`👩 ${nomeGov()}: ${c.testo}${c.consiglio ? `\n💡 ${c.consiglio}` : ""}`, "anna", { aMe: true });
+      inviaTelegram(`👩 ${nomeGov()}${c.saluto ? ` — ${c.saluto}` : ""}\n${c.testo}${c.consiglio ? `\n💡 ${c.consiglio}` : ""}`, "anna", { aMe: true });
     }
   } catch (e) { console.warn("consiglio", e); }
   consiglioInCorso = false;
@@ -1791,6 +1804,12 @@ function collegaIA() {
   });
   document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
   // --- la voce ---
+  document.querySelectorAll("[data-cons-voce]").forEach(b => b.onclick = (e) => {
+    e.stopPropagation(); VOCE.sbloccaAudio();
+    if (VOCE.staParlando()) return zittisciVoce();
+    const c = consiglioOggi();
+    parlaConVoce([c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`, c && c.testo ? c.testo : umoreGov().testo, c && c.consiglio ? c.consiglio : spintaDelGiorno()].join(" "));
+  });
   document.querySelectorAll("[data-mic]").forEach(b => b.onclick = () => microfono());
   document.querySelectorAll("[data-istr-voce]").forEach(b => b.onclick = () => {
     VOCE.sbloccaAudio();

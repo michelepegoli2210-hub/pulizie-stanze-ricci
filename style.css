@@ -1155,3 +1155,36 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 @keyframes ascolta{0%,100%{rotate:3.2deg}50%{rotate:1.4deg}}
 .gov-viva.ascolta{background:linear-gradient(180deg,rgba(224,78,92,.10),rgba(255,255,255,.5))}
 @media (prefers-reduced-motion:reduce){.chat-mic.ascolta,.gov-viva.ascolta .donnina.gov-fig .testa{animation:none}}
+
+/* 0.43: Consuela grande in cima a Oggi — la prima cosa che si vede */
+.card.consuela{position:relative;padding:0;overflow:hidden;border:0;
+  background:linear-gradient(160deg,#EAF2FF 0%,#F7F3EA 62%,#FFF6E4 100%)}
+:root[data-theme="dark"] .card.consuela,
+.card.consuela{background:linear-gradient(160deg,#EAF2FF 0%,#F7F3EA 62%,#FFF6E4 100%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .card.consuela{background:linear-gradient(160deg,#1E2A3E 0%,#222A33 62%,#2C2A22 100%)}}
+:root[data-theme="dark"] .card.consuela{background:linear-gradient(160deg,#1E2A3E 0%,#222A33 62%,#2C2A22 100%)}
+.cons-apri{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;padding:14px 14px 16px;text-align:left;color:var(--fg);cursor:pointer}
+.cons-fig{flex:0 0 auto;display:block}
+.donnina.gov-fig.grande{width:116px;height:131px}
+.cons-testo{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.cons-sal{font:800 20px/1.2 var(--f-display);letter-spacing:-.01em}
+.cons-riga{font-size:14.5px;line-height:1.38;color:var(--fg);opacity:.92}
+.cons-spinta{font-size:13.5px;line-height:1.35;color:var(--muted);font-style:italic;margin-top:2px}
+.cons-az{display:flex;align-items:center;gap:7px;margin-top:7px}
+.cons-chip{display:inline-block;background:var(--fg);color:var(--bg);border-radius:999px;padding:5px 12px;font:700 12.5px var(--f-display)}
+.cons-voce{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.72);color:var(--fg);display:inline-flex;align-items:center;justify-content:center}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cons-voce{background:rgba(255,255,255,.14)}}
+:root[data-theme="dark"] .cons-voce{background:rgba(255,255,255,.14)}
+.cons-voce .ic{width:20px;height:20px}
+.card.consuela.sta-parlando .cons-chip{background:var(--done);color:#fff}
+/* la mascotte: rimbalza invece di respirare, e saluta con la mano */
+.donnina.gov-fig.viva .busto{animation:rimbalzo 3.4s ease-in-out infinite}
+@keyframes rimbalzo{0%,100%{scale:1 1;translate:0 0}45%{scale:1.035 .965;translate:0 1.5px}70%{scale:.985 1.02;translate:0 -1.5px}}
+.donnina.gov-fig .braccio-dx{transform-origin:82px 82px;transform-box:view-box}
+.donnina.gov-fig.viva .braccio-dx{animation:saluta 6.5s ease-in-out infinite}
+@keyframes saluta{0%,72%,100%{rotate:0deg}78%{rotate:-13deg}84%{rotate:4deg}90%{rotate:-9deg}}
+.donnina.gov-fig .braccio-sx{transform-origin:44px 82px;transform-box:view-box}
+.donnina.gov-fig.viva .braccio-sx{animation:dondola 4.4s ease-in-out infinite}
+@keyframes dondola{0%,100%{rotate:-2deg}50%{rotate:3deg}}
+@media (prefers-reduced-motion:reduce){.donnina.gov-fig.viva .busto,.donnina.gov-fig.viva .braccio-dx,.donnina.gov-fig.viva .braccio-sx{animation:none}}
+@media (max-width:380px){.donnina.gov-fig.grande{width:96px;height:108px}.cons-sal{font-size:18px}}

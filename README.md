@@ -531,3 +531,14 @@ Le spiegazioni stanno dentro `impostazioni/messaggi`, sotto il giorno: le signor
 - **Il microfono**: nella chat, tasto rotondo accanto alla freccia. Tocchi, parli, lei scrive e manda da sola. Gratis (`SpeechRecognition` del browser, it-IT). Funziona su Android; su iPhone il motore non esiste e l'app dice di usare il microfono della tastiera.
 - **Le notifiche sul telefono**: passano da **Telegram**, in ⋯ → Avvisi automatici. Oltre al gruppo delle signore c'è ora **"La TUA chat col bot"**: lì arrivano solo i messaggi per il proprietario, a partire dal consiglio del giorno della governante. Il tasto "Cerca la mia chat" la trova da sola dopo che hai scritto «ciao» al bot.
 - Senza un server, Telegram parte quando apri l'app: una notifica a app chiusa richiederebbe un server acceso sempre.
+
+
+## Consuela (dalla versione 0.43)
+
+La governante si chiama **Consuela** (il nome si cambia nella cartolina, passo 0) ed è disegnata **come una mascotte**: contorni spessi, tinte piatte, occhi grandi, guance rosa. Si muove di conseguenza — rimbalza, saluta con la mano, gira la testa, sbatte le palpebre — e mentre parla le tre bocche seguono il suono vero della voce.
+
+**Aprendo l'app** la prima cosa che si vede è lei, grande, in cima a Oggi: ti saluta per nome secondo l'ora, ti dice la situazione vera in una riga e ti dà una spinta. Si tocca e si apre la chat; l'altoparlante te la fa leggere.
+
+Il saluto lo scrive lei quando l'intelligenza artificiale è accesa, con una regola precisa nelle istruzioni: il merito si dice **solo se c'è davvero**, col fatto preciso; se non c'è, niente complimenti inventati. Senza chiave il saluto lo costruisce l'app da sola e funziona lo stesso.
+
+Lo stile grafico richiama le mascotte delle app per imparare le lingue, ma il personaggio è originale: i loro personaggi e le loro voci sono loro.
