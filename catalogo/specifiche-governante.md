@@ -373,3 +373,21 @@ Tasto rotondo col microfono accanto alla freccia di invio: si tocca, si parla, l
 Non serve niente di nuovo: l'app ha già **Telegram** (⋯ → Avvisi automatici). Aggiunto un campo: **"La TUA chat col bot"**, separato dal gruppo delle signore, con il tasto che la cerca da sola (basta scrivere «ciao» al bot). Da lì passano i messaggi che Rosa manda **solo a Michele**: il consiglio del giorno arriva come notifica sul telefono, firmato col suo nome. Interruttore dedicato nell'elenco "Cosa mandare da solo".
 
 **Limite da dire chiaro:** senza un server, Telegram parte quando Michele apre l'app (come già il piano del mattino). Una notifica che arriva da sola a app chiusa richiederebbe un server acceso sempre, con il suo costo fisso. Tutti gli avvisi che già esistono (problema, camera non fatta, camera pulita, messaggio del giorno, spiegazioni alle signore) continuano a partire nel momento in cui succedono.
+
+## 22. La 0.43 (17 ottobre): si chiama Consuela, ha la faccia da mascotte e ti accoglie lei
+
+Michele: *"quello che voglio io è che CONSUELA la governante debba avere un avatar uguale a quelli che hanno quell'app delle lingue, e forse se si può anche la stessa voce. Io devo aprire l'app ed deve risaltare e deve essere molto evidente la sua presenza, mi deve dire buongiorno e buonasera Michele, un po' di elogi, una frase motivazionale e poi mi deve parlare di quello che mi deve dire dell'albergo. Ma è essenziale che ci sia un avatar come quello."*
+
+### Il limite da dire chiaro (e come l'ho risolto)
+I personaggi di quell'app sono **suoi**: disegnarne una copia non si può fare, e la loro voce è una voce registrata loro. Quello che **si può** fare, e che ho fatto, è disegnare un personaggio **nostro nello stesso registro grafico** — uno stile non è di nessuno. Risultato: contorni spessi, tinte piatte senza sfumature, testa grossa, **occhi enormi** con bianco, iride, pupilla e due luci, guance rosa, corpo semplificato e braccia a capsula con le mani tonde. È la stessa famiglia visiva, ma è Consuela e non somiglia a nessun personaggio esistente.
+
+### Cosa è cambiato
+- **Nome di partenza: Consuela** (resta cambiabile: Rosa, Carmela, Mimma, Gilda, Stella, o uno scritto a mano).
+- **Avatar rifatto da mascotte**, al posto del disegno a sfumature della 0.39. Si muove come una mascotte: **rimbalzo** con schiacciamento e allungamento al posto del respiro, **saluto con la mano** ogni sei secondi e mezzo, braccio sinistro che dondola, testa che gira, occhi che guardano in giro, palpebre a due battiti, ciocche e taccuino che ondeggiano. Mentre parla restano le tre bocche guidate dal suono vero.
+- **La cartolina grande in cima a Oggi.** Appena Michele apre l'app vede lei a 116 px che lo saluta per nome secondo l'ora ("Buongiorno, Michele!"), poi la situazione vera in una riga, poi una spinta. Tocchi e si apre la chat; c'è l'altoparlante per fartela leggere.
+- **Il saluto lo scrive lei**, con l'IA accesa: nuovo campo `saluto` nel JSON della chiamata del giorno. Nelle istruzioni: il merito si dice **solo se c'è davvero**, con il fatto preciso ("tutte le camere chiuse", "il controllo è andato bene"); se non c'è niente di meritato **non deve inventare complimenti**, mette una spinta pratica. Massimo 18 parole. È il contrario dell'adulazione: Michele vuole la verità, non le pacche sulle spalle.
+- **Senza chiave funziona lo stesso**: saluto costruito dall'app, la riga dell'umore della casa e una delle sette spinte, scelta dal giorno (uguale per tutta la giornata).
+- Il saluto entra anche nella notifica Telegram del mattino.
+
+### Sulla voce
+La voce di quei personaggi è la loro. La nostra è una delle 30 voci di Google: di partenza **Sulafat**, quella che il listino chiama *Warm*. Si cambia fra sei caratteri nella cartolina, passo 6.
