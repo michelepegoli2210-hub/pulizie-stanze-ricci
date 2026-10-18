@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.46.1";
+export const VERSIONE = "0.47.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -77,6 +77,7 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 // cambiano solo bocca e occhi. Michele porta 2-4 immagini, l'app le scambia a tempo
 // con la voce vera. Stanno solo su questo telefono (sono pesanti e alle signore non servono).
 const CHIAVE_FACCE = "ricci_gov_facce";
+const FACCE_PRONTE = { base: "consuela-base.jpg", m1: "consuela-m1.jpg", m2: "consuela-m2.jpg", occhi: "consuela-occhi.jpg" };
 const POSE = [
   { k: "base", nome: "Faccia normale", aiuto: "bocca chiusa, occhi aperti. Questa serve sempre." },
   { k: "m1", nome: "Bocca socchiusa", aiuto: "stessa posa, labbra appena aperte." },
@@ -89,11 +90,13 @@ function facceGov() {
   let f = {};
   try { f = JSON.parse(localStorage.getItem(CHIAVE_FACCE) || "{}") || {}; } catch (e) { f = {}; }
   if (!f.base) { try { const vecchia = localStorage.getItem("ricci_gov_foto"); if (vecchia) f.base = vecchia; } catch (e) {} }
+  try { if (!Object.keys(f).length && stileGov() === "consuela") f = { ...FACCE_PRONTE }; } catch (e) {}
   facceCache = f; return f;
 }
 function fotoGov() { return facceGov().base || ""; }
 function salvaFaccia(k, dataUrl) {
-  const f = { ...facceGov() };
+  let f = {};
+  try { f = JSON.parse(localStorage.getItem(CHIAVE_FACCE) || "{}") || {}; } catch (e) { f = {}; }
   if (dataUrl) f[k] = dataUrl; else delete f[k];
   if (k === "base" && !dataUrl) { try { localStorage.removeItem("ricci_gov_foto"); } catch (e) {} }
   try { localStorage.setItem(CHIAVE_FACCE, JSON.stringify(f)); facceCache = f; return true; }
@@ -134,7 +137,7 @@ const PROMPT_VARIANTI = [
   STESSA + " Change ONLY the mouth: open in a relaxed oval, as if saying the vowel AH, upper teeth slightly visible. Eyes stay open and identical.",
   STESSA + " Change ONLY the eyes: both eyes gently closed, eyelashes resting down. Mouth stays closed and identical.",
 ];
-function stileGov() { const v = (S.gov && S.gov.stile) || ""; return v === "contorno" ? "contorno" : "piatta"; }
+function stileGov() { const v = (S.gov && S.gov.stile) || ""; return v === "contorno" ? "contorno" : v === "piatta" ? "piatta" : "consuela"; }
 let CONTA_DONNINA = 0;
 function tinta(hex, d) {
   const h = String(hex).replace("#", ""), pieno = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
@@ -1861,7 +1864,7 @@ function cardIA() {
       <div class="ia-riga"><input type="text" id="iaNome" data-keep value="${esc(nomeGov())}" placeholder="il nome che vuoi" maxlength="18" autocomplete="off"><button type="button" class="btnsm" data-ia-nome>Salva</button></div>
       <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Tocca un nome o scrivine uno tuo: lo usa dappertutto. Non mettere il nome di una delle signore, se no vi confondete.</span></div>
     <div class="ia-passo"><b>0b.</b> La sua faccia
-      <div class="seg"><button type="button" aria-pressed="${!fotoGov() && stileGov() === "piatta"}" data-faccia="piatta">Piatta</button><button type="button" aria-pressed="${!fotoGov() && stileGov() === "contorno"}" data-faccia="contorno">Contornata</button><button type="button" aria-pressed="${!!fotoGov()}" data-faccia="foto" ${fotoGov() ? "" : "disabled"}>Foto</button></div>
+      <div class="seg"><button type="button" aria-pressed="${!fotoGov() && stileGov() === "piatta"}" data-faccia="piatta">Piatta</button><button type="button" aria-pressed="${!fotoGov() && stileGov() === "contorno"}" data-faccia="contorno">Contornata</button><button type="button" aria-pressed="${stileGov() === "consuela"}" data-faccia="consuela">Consuela</button><button type="button" aria-pressed="${!!fotoGov() && stileGov() !== "consuela"}" data-faccia="foto" ${fotoGov() ? "" : "disabled"}>Foto</button></div>
       <div class="facce-griglia">${POSE.map((x, i) => { const c = facceGov()[x.k]; return `<div class="faccia-slot ${c ? "piena" : ""}">
         <label class="faccia-box">${c ? `<img src="${c}" alt="">` : `<span class="faccia-vuoto">${i + 1}</span>`}<input type="file" accept="image/*" data-posa="${x.k}" hidden></label>
         <b>${esc(x.nome)}</b><span class="small muted">${esc(x.aiuto)}</span>
@@ -1904,7 +1907,7 @@ function collegaIA() {
     const k = b.dataset.faccia;
     if (k === "foto") return document.querySelector("[data-posa='base']")?.click();
     if (fotoGov()) togliFacce();
-    salvaGov({ stile: k }).then(() => toast(k === "piatta" ? "Stile piatto, come le app delle lingue" : "Stile col contorno"));
+    salvaGov({ stile: k }).then(() => toast(k === "piatta" ? "Stile piatto, come le app delle lingue" : k === "contorno" ? "Stile col contorno" : "Eccomi, sono Consuela"));
     disegna();
   });
   document.querySelectorAll("[data-faccia-togli]").forEach(b => b.onclick = () => { togliFacce(); disegna(); toast("Tolte: torna il disegno"); });
