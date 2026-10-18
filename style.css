@@ -1305,3 +1305,46 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 /* 0.48.2 - la foto resta sempre rotonda, non ovale */
 .donnina.gov-fig.gov-foto{aspect-ratio:1/1}
 .chat-msg.gov .donnina.gov-fig.gov-foto,.gov-plate .donnina.gov-fig.gov-foto,.chat-plate .donnina.gov-fig.gov-foto,.sig-plate .donnina.gov-fig.gov-foto,.sig-testa .donnina.gov-fig.gov-foto,.gov-testa .donnina.gov-fig.gov-foto,.istr-testa .donnina.gov-fig.gov-foto,.gov-viva .donnina.gov-fig.gov-foto,.inizio.chat .gov-viva .donnina.gov-fig.gov-foto{height:auto}
+
+/* ============================================================
+   0.49 - Consuela a figura intera che si muove davvero
+   ============================================================ */
+.donnina.gov-fig.gov-corpo{position:relative;display:block;width:100%;height:auto;aspect-ratio:663/652;flex:0 0 auto;line-height:0;overflow:visible}
+.gov-corpo .cg-giro,.gov-corpo .cg-salto,.gov-corpo .cg-pose{position:absolute;inset:0;display:block}
+.gov-corpo .cg-giro{transform-origin:50% 97%}
+.gov-corpo .cg-salto{transform-origin:50% 97%}
+.gov-corpo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;border:0;border-radius:0;box-shadow:none}
+.gov-corpo .cg-p{opacity:0;transition:opacity .14s linear}
+.gov-corpo[data-posa="saluto"] .cg-saluto{opacity:1}
+.gov-corpo[data-posa="riposo"] .cg-riposo{opacity:1}
+.gov-corpo:not([data-posa]) .cg-base,.gov-corpo[data-posa=""] .cg-base,.gov-corpo[data-posa="base"] .cg-base{opacity:1}
+.gov-corpo .cg-t{opacity:0;transition:opacity .07s linear}
+.gov-corpo .cg-felice{transition:opacity .35s ease}
+.gov-corpo[data-v="c"] .cg-b1{opacity:1}
+.gov-corpo[data-v="b"] .cg-b3{opacity:1}
+.gov-corpo[data-v="a"] .cg-b2{opacity:1}
+.gov-corpo.batte .cg-occhi{opacity:1}
+.gov-corpo[data-um="felice"] .cg-felice{opacity:1}
+.gov-corpo[data-v="c"] .cg-felice,.gov-corpo[data-v="b"] .cg-felice,.gov-corpo[data-v="a"] .cg-felice{opacity:0}
+@keyframes cgGiro{0%{transform:rotate(-2.3deg) translateX(-2.4%)}17%{transform:rotate(1.2deg) translateX(1.3%)}36%{transform:rotate(2.5deg) translateX(2.6%)}54%{transform:rotate(-.7deg) translateX(-.9%)}73%{transform:rotate(1.7deg) translateX(1.8%)}100%{transform:rotate(-2.3deg) translateX(-2.4%)}}
+@keyframes cgSalto{0%,100%{transform:translateY(0) scale(1)}28%{transform:translateY(-2.8%) scale(1.022)}61%{transform:translateY(1%) scale(.993)}}
+@keyframes cgScatto{0%{transform:translateY(0) scale(1) rotate(0deg)}30%{transform:translateY(-4.5%) scale(1.035) rotate(-1.2deg)}65%{transform:translateY(.8%) scale(.99) rotate(.6deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
+.gov-corpo.viva .cg-giro{animation:cgGiro 7s ease-in-out infinite}
+.gov-corpo.viva .cg-salto{animation:cgSalto 2.9s ease-in-out infinite}
+.gov-corpo.parla .cg-giro{animation-duration:3.6s}
+.gov-corpo.parla .cg-salto{animation-duration:1.4s}
+.gov-corpo.scatto .cg-salto{animation:cgScatto .6s cubic-bezier(.3,1.4,.5,1)}
+.card.consuela{padding:0;overflow:hidden}
+.cons-apri{flex-direction:column-reverse;align-items:center;text-align:center;gap:2px;padding:20px 16px 0}
+.cons-fig{width:min(82vw,360px);align-self:center;margin-bottom:-6px}
+.cons-testo{align-items:center;text-align:center;gap:6px;width:100%}
+.cons-sal{font-size:27px}
+.cons-az{justify-content:center}
+@media (min-width:760px){
+  .cons-apri{flex-direction:row;align-items:flex-end;text-align:left;gap:20px;padding:22px 28px 0}
+  .cons-fig{width:340px;margin-bottom:-6px}
+  .cons-testo{align-items:flex-start;text-align:left;padding-bottom:26px}
+  .cons-az{justify-content:flex-start}
+  .cons-sal{font-size:32px}
+}
+@media (prefers-reduced-motion:reduce){.gov-corpo .cg-giro,.gov-corpo .cg-salto{animation:none!important}}

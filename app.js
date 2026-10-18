@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.48.2";
+export const VERSIONE = "0.49.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -77,7 +77,17 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 // cambiano solo bocca e occhi. Michele porta 2-4 immagini, l'app le scambia a tempo
 // con la voce vera. Stanno solo su questo telefono (sono pesanti e alle signore non servono).
 const CHIAVE_FACCE = "ricci_gov_facce";
-const FACCE_PRONTE = { base: "consuela-base.jpg", m1: "consuela-m1.jpg", m3: "consuela-m3.jpg", m2: "consuela-m2.jpg", occhi: "consuela-occhi.jpg", felice: "consuela-felice.jpg", pensa: "consuela-pensa.jpg" };
+const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
+const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp" };
+function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
+function CORPO_CONS(cls) {
+  const c = CORPO_PRONTO, im = (k, n) => `<img class="${n}" src="${c[k]}" alt="">`;
+  return `<span class="donnina gov-fig gov-corpo ${cls}" role="img" aria-label="${esc(nomeGov())}">
+    <span class="cg-giro"><span class="cg-salto">
+      <span class="cg-pose">${im("corpo", "cg-p cg-base")}${im("saluto", "cg-p cg-saluto")}${im("riposo", "cg-p cg-riposo")}</span>
+      ${im("b1", "cg-t cg-b1")}${im("b3", "cg-t cg-b3")}${im("b2", "cg-t cg-b2")}${im("felice", "cg-t cg-felice")}${im("occhi", "cg-t cg-occhi")}
+    </span></span></span>`;
+}
 const POSE = [
   { k: "base", nome: "Faccia normale", aiuto: "bocca chiusa, occhi aperti. Questa serve sempre." },
   { k: "m1", nome: "Bocca socchiusa", aiuto: "stessa posa, labbra appena aperte." },
@@ -126,6 +136,7 @@ function rimpicciolisci(file, lato = 460) {
 // Il pupazzo: tutte le facce impilate, si accende quella giusta
 function FACCIA_FOTO(cls = "") {
   const f = facceGov();
+  if (/grande/.test(cls) && corpoPronto()) return CORPO_CONS(cls);
   const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
   return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
     <span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa">${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m3", "f-m3")}${strato("m2", "f-m2")}${strato("felice", "f-felice")}${strato("pensa", "f-pensa")}${strato("occhi", "f-occhi")}</span></span></span><i class="gov-alone"></i></span>`;
@@ -1579,19 +1590,39 @@ function applicaBocca(forza) {
   const v = f < 0.07 ? "" : f < 0.24 ? "c" : f < 0.52 ? "b" : "a";
   document.querySelectorAll(".donnina.gov-fig").forEach(svg => { svg.dataset.v = v; svg.style.setProperty("--apri", f.toFixed(2)); });
 }
-let vitaGovTimer = null;
+let vitaGovTimer = null, vitaOcchiTimer = null, vitaPosa = "base";
+function vivaGov() { return document.querySelector(".gov-corpo.viva") || document.querySelector(".gov-foto.viva.grande"); }
+function gestoGov() {
+  const f = vivaGov(); if (!f || document.hidden) return;
+  const r = Math.random();
+  if (r < 0.58) {
+    const p = ["base", "saluto", "riposo", "base", "saluto"];
+    let n = p[Math.floor(Math.random() * p.length)];
+    if (n === vitaPosa) n = vitaPosa === "base" ? "saluto" : "base";
+    vitaPosa = n; f.dataset.posa = n;
+    f.classList.remove("scatto"); void f.offsetWidth; f.classList.add("scatto");
+    setTimeout(() => { if (f.isConnected) f.classList.remove("scatto"); }, 640);
+  } else if (r < 0.84 && !f.classList.contains("parla")) {
+    f.dataset.um = "felice";
+    setTimeout(() => { if (f.isConnected) f.dataset.um = ""; }, 1100 + Math.random() * 700);
+  }
+}
+function battiGov() {
+  const f = vivaGov();
+  if (f && !document.hidden) {
+    const doppio = Math.random() < 0.38;
+    f.classList.add("batte");
+    setTimeout(() => {
+      f.classList.remove("batte");
+      if (doppio) setTimeout(() => { f.classList.add("batte"); setTimeout(() => f.classList.remove("batte"), 95); }, 95);
+    }, 115);
+  }
+  vitaOcchiTimer = setTimeout(battiGov, 1800 + Math.random() * 2600);
+}
 function vitaGov() {
   if (vitaGovTimer) return;
-  vitaGovTimer = setInterval(() => {
-    if (document.hidden) return;
-    const f = document.querySelector(".gov-foto.viva.grande");
-    if (!f || f.classList.contains("parla")) return;
-    const scelte = ["", "", "base", "felice", "pensa", "felice"];
-    const s = scelte[Math.floor(Math.random() * scelte.length)];
-    if (!s) return;
-    f.dataset.sp = s;
-    setTimeout(() => { if (f.isConnected && f.dataset.sp === s) f.dataset.sp = ""; }, 1400 + Math.random() * 900);
-  }, 6500);
+  vitaGovTimer = setInterval(gestoGov, 2400);
+  battiGov();
 }
 vitaGov();
 function voceAccesa() { return !!VOCE.leggiVoce().attiva; }

@@ -3,12 +3,12 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "0.48.2";
+const VERSIONE = "0.49.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
-  "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./consuela-base.jpg", "./consuela-m1.jpg", "./consuela-m2.jpg", "./consuela-occhi.jpg", "./consuela-m3.jpg", "./consuela-felice.jpg", "./consuela-pensa.jpg",
+  "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./cons-base.webp", "./cons-saluto.webp", "./cons-riposo.webp", "./cons-b1.webp", "./cons-b2.webp", "./cons-b3.webp", "./cons-occhi.webp", "./cons-felice.webp", "./cons-testa.webp", "./cons-testa-occhi.webp",
   "./fonts/montserrat-latin-500-normal.woff2", "./fonts/montserrat-latin-600-normal.woff2", "./fonts/montserrat-latin-700-normal.woff2", "./fonts/montserrat-latin-800-normal.woff2",
 ];
 
