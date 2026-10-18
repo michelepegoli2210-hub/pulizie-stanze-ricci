@@ -698,3 +698,46 @@ COME HO CAPITO QUALE ERA QUALE: i tre file arrivano senza nome. Ho misurato col 
 ### Il motore dei filmati adesso ha tre stati
 filmVigila() guarda document.body.dataset.cons: "parla" -> cons-parla, "ascolto" -> cons-ascolta, altrimenti cons-attesa. statoCons() scrive quel valore e marca sia .card.consuela sia .sofia-hero.
 Provato dal vivo: attesa -> ascolta -> parla -> attesa, i filmati si scambiano davvero.
+
+## 33. La 0.61 (18 ottobre, notte): le adesso parla davvero
+
+### Cosa ha detto Michele
+"la voce falla meno sensuale... deve capire quando parlo e quando ascolta, le labbra si devono muovere in sincrono, invece adesso apro l'app e lei parla senza audio, e' ridicolo. Al massimo deve parlarmi appena apro l'app con possibilita' di mettere muto. Mi deve parlare sempre e dirmi sempre una frase motivazionale. No, metti meno tasti sotto, fallo piu' uniforme."
+Aveva ragione su tutto.
+
+### IL DIFETTO PIU' GROSSO: la bocca si muoveva in silenzio
+Il filmato di "attesa" era preso da un pezzo in cui lei stava parlando. Quindi all'apertura dell'app si vedeva una donna che muove le labbra senza che esca un suono.
+Due aggiustamenti:
+1. Il filmato di attesa adesso e' preso dal pezzo in cui la bocca e' CHIUSA e ferma. Misurato col computer: movimento bocca 1,20 e apertura 0,046 nell'attesa, contro 6,13 e 0,091 nel parla. Cinque volte meno.
+2. REGOLA NUOVA in filmVigila(): il filmato "parla" parte SOLO se VOCE.staParlando() e' vero, cioe' se sta uscendo davvero dell'audio. Prima bastava che lei stesse scrivendo nella chat (govScrive) e le labbra si muovevano a vuoto.
+
+### IL SINCRONO DELLE LABBRA (quello che si puo' e quello che non si puo')
+Non si puo' fare un labiale vero: il filmato e' gia' girato, la bocca non puo' formare le parole che la voce dice in quel momento. Dirlo chiaro a Michele, non promettere il contrario.
+Quello che si fa e' questo, dentro applicaBocca() -> boccaFilm(): mentre la voce suona si misura quanto e' forte, istante per istante, e il filmato va avanti solo quando c'e' suono, con velocita' da 0,6 a 1,7 a seconda del volume. Nei silenzi si ferma. Con una tolleranza di 220 ms, se no fra una sillaba e l'altra scattava.
+Risultato: la bocca si muove sulle parole e sta ferma nelle pause. Da guardare sembra sincronizzata.
+
+### PARLA APPENA APRI L'APP
+benvenutoSofia() parte 1,1 secondi dopo che compare la schermata di casa e le fa dire: saluto + la riga della giornata + la frase motivazionale.
+PROBLEMA DEI TELEFONI: nessun browser lascia partire un suono da solo senza che la persona abbia toccato lo schermo. Si controlla VOCE.sbloccaAudio(): se il contesto audio non e' "running", invece di fallire in silenzio compare una striscia gialla "Tocca qui per sentirla parlare", e al primo tocco qualsiasi parte.
+Provato sul computer di Michele: ha parlato da sola al caricamento, senza nessun tocco (Chrome lo permette ai siti che usano spesso l'audio). Sul telefono probabilmente la prima volta serve il tocco.
+La frase motivazionale viene da SPINTE in app.js (sette frasi, una per giorno) oppure dal consiglio dell'IA se c'e'.
+
+### IL MUTO
+Il tasto dell'altoparlante sta in alto a destra, accanto ai tre puntini. Usa il data-voce-tasto che c'era gia': spegne e riaccende la voce. Se e' spento lei non parla all'apertura.
+
+### I TASTI UNIFORMI
+Prima c'erano: microfono tondo, "Scrivile" a pasticca, le pasticche dei numeri, e un tastone largo. Quattro forme diverse.
+Adesso: una sola fila di TRE tasti uguali (stessa altezza, stessa larghezza, stesso bordo): Parlale, Scrivile, Giornate. I numeri di oggi sono una riga di testo semplice, non piu' pasticche. Il muto e' salito in alto.
+
+### LA VOCE MENO SENSUALE
+Di partenza adesso: voce Sulafat (Calda) e tono "Calda". Prima erano Despina e "Sensuale".
+Il contrassegno di passaggio e' salito da v:2 a v:3, cosi' anche chi aveva gia' salvato la voce di prima passa da solo a quella nuova. Le scelte piu' sensuali restano disponibili nel passo 6, ma non sono piu' quelle di partenza.
+
+### DA SAPERE SUI TRE VIDEO DEL 18 OTTOBRE SERA
+I tre file che Michele ha mandato (10, 20 e 30 secondi) sono LO STESSO IDENTICO FILMATO di lunghezza diversa: confrontati fotogramma per fotogramma, la differenza e' 0,5 su 255, cioe' nulla. Erano la stessa generazione allungata, non tre video diversi.
+Quindi i tre spezzoni dell'app sono ritagliati tutti dallo stesso filmato da 30 secondi:
+- cons-attesa.mp4: da 14,5 s a 20 s, poi avanti-e-indietro = 11 s, 164 KB. Bocca chiusa.
+- cons-ascolta.mp4: da 23 s a 28 s, boomerang = 10 s, 156 KB. Bocca chiusa.
+- cons-parla.mp4: da 1 s a 9 s, boomerang = 16 s, 402 KB. Qui parla.
+COME SI TROVANO I PEZZI GIUSTI: si decodifica un ritaglio di 180x120 pixel centrato sulla bocca (x 275, y 425 su un fotogramma 720x1280) e si misurano due cose per ogni fotogramma: quanto cambia rispetto al precedente (movimento) e quanti pixel scuri ci sono fra le labbra (apertura). Poi si cerca la finestra di 5 secondi che le minimizza (attesa) o massimizza (parla).
+ATTENZIONE AL RITAGLIO: con crop su un video yuv420p le misure devono essere PARI, se no ffmpeg le arrotonda e i conti vengono sballati di dieci volte.
