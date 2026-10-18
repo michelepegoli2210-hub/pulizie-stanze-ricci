@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.55.0";
+export const VERSIONE = "0.56.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -87,15 +87,18 @@ function FILM_CONS(cls) {
     <video class="cf-v giu" poster="${f.poster}" muted playsinline preload="none"></video>
   </span>`;
 }
-let filmStato = "attesa", filmOccupato = false;
-function filmGov(quale) {
-  const box = document.querySelector(".gov-film");
-  if (!box || !FILM_PRONTO[quale] || filmStato === quale || filmOccupato) return;
+let filmTimer = null;
+function filmGov(quale, soloBox) {
+  const caselle = soloBox ? [soloBox] : [...document.querySelectorAll(".gov-film")];
+  for (const b of caselle) filmUno(quale, b);
+}
+function filmUno(quale, box) {
+  if (!box || !FILM_PRONTO[quale] || box.dataset.film === quale || box.dataset.occupato === "1") return;
   const vs = [...box.querySelectorAll("video")];
   if (vs.length < 2) return;
   const su = vs.find(v => !v.classList.contains("giu")) || vs[0];
   const giu = vs.find(v => v !== su);
-  filmOccupato = true;
+  box.dataset.occupato = "1";
   giu.src = FILM_PRONTO[quale];
   giu.loop = true;
   giu.load();
@@ -105,19 +108,21 @@ function filmGov(quale) {
     giu.play().catch(() => {});
     giu.classList.remove("giu");
     su.classList.add("giu");
-    filmStato = quale;
-    setTimeout(() => { try { su.pause(); } catch (e) {} filmOccupato = false; }, 500);
+    box.dataset.film = quale;
+    setTimeout(() => { try { su.pause(); } catch (e) {} box.dataset.occupato = ""; }, 500);
   };
   giu.addEventListener("canplay", vai, { once: true });
   setTimeout(vai, 1800);
 }
-let filmTimer = null;
 function filmVigila() {
   if (filmTimer) return;
   filmTimer = setInterval(() => {
-    const box = document.querySelector(".gov-film");
-    if (!box || document.hidden) return;
-    filmGov(box.classList.contains("parla") ? "parla" : "attesa");
+    if (document.hidden) return;
+    const forzato = document.body.dataset.cons || "";
+    for (const b of document.querySelectorAll(".gov-film")) {
+      const parla = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
+      filmUno(parla ? "parla" : "attesa", b);
+    }
   }, 450);
 }
 filmVigila();
@@ -126,7 +131,7 @@ function statoCons(s) {
   const c = document.querySelector(".card.consuela");
   if (!c) return;
   c.dataset.stato = s || "";
-  if (s === "parla") filmGov("parla"); else if (s !== "ascolto") filmGov("attesa");
+  document.body.dataset.cons = (s === "parla") ? "parla" : "";
 }
 function sottoCons(t, fantasma) {
   const z = document.getElementById("consSotto");
@@ -249,7 +254,7 @@ function rimpicciolisci(file, lato = 460) {
 // Il pupazzo: tutte le facce impilate, si accende quella giusta
 function FACCIA_FOTO(cls = "") {
   const f = facceGov();
-  if (/grande/.test(cls) && corpoPronto()) return FILM_PRONTO.attesa ? FILM_CONS(cls) : CORPO_CONS(cls);
+  if (/grande|film/.test(cls) && corpoPronto()) return FILM_PRONTO.attesa ? FILM_CONS(cls) : CORPO_CONS(cls);
   const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
   return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
     <span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa">${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m3", "f-m3")}${strato("m2", "f-m2")}${strato("felice", "f-felice")}${strato("pensa", "f-pensa")}${strato("occhi", "f-occhi")}</span></span></span><i class="gov-alone"></i></span>`;
@@ -1471,7 +1476,7 @@ function testataGov() {
   if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
   const testo = c && c.testo ? c.testo : u.testo;
   const muove = govScrive || voceInCorso;
-  return `<div class="gov-viva ${u.v}${muove ? " sta-parlando" : ""}">${DONNINA("governante", "viva" + (muove ? " parla" : ""))}<div class="gov-viva-t"><b>${esc(nomeGov())}${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
+  return `<div class="gov-viva ${u.v}${muove ? " sta-parlando" : ""}">${DONNINA("governante", "viva film" + (muove ? " parla" : ""))}<div class="gov-viva-t"><b>${esc(nomeGov())}${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
 }
 const escNl = s => esc(s).replace(/\n/g, "<br>");
 function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
