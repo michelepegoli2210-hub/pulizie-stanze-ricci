@@ -16,7 +16,7 @@ export const FORNITORI = {
     dove: "aistudio.google.com/apikey",
     passi: "Tocca il tasto blu «Create API key», scegli il progetto che ti propone e conferma.",
     chiave: "È una riga lunghissima di lettere e numeri: copiala tutta",
-    preferiti: { sveglia: [/argon/, /^gemini-[\d.]+-pro$/, /-pro$/, /^gemini-[\d.]+-flash$/, /flash$/, /flash-lite$/], risparmio: [/^gemini-[\d.]+-flash-lite$/, /flash-lite/, /flash$/] },
+    preferiti: { sveglia: [/^gemini-[\d.]+-flash$/, /flash$/, /argon/, /^gemini-[\d.]+-pro$/, /-pro$/, /flash-lite$/], risparmio: [/^gemini-[\d.]+-flash-lite$/, /flash-lite/, /flash$/] },
     elenco: () => "https://generativelanguage.googleapis.com/v1beta/models",
     elencoTesta: (k) => ({ "x-goog-api-key": k }),
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
@@ -181,7 +181,7 @@ async function chiamata(url, testa, corpo, secondi = 30) {
 }
 function messaggioChiaro(stato, m) {
   if (stato === 401 || stato === 403 || /api key|unauthorized|invalid.*key|permission/i.test(m)) return "La chiave non va bene (o non è abilitata). Controllala e riprova.";
-  if (stato === 429 || /quota|rate limit|exceeded/i.test(m)) return "Hai finito le chiamate gratuite per adesso. Riprova tra qualche minuto.";
+  if (stato === 429 || /quota|rate limit|exceeded/i.test(m)) return "Questo modello non ha chiamate gratuite, oppure le hai finite per adesso. Vai al passo 2 e metti Risparmio, poi riprova.";
   if (stato === 404 || /not found|model/i.test(m)) return "Quel modello non esiste più: tocca «Prova la chiave» e lo ricerco.";
   if (stato >= 500) return "Il loro server non risponde. Riprova tra poco.";
   return m.slice(0, 160);
