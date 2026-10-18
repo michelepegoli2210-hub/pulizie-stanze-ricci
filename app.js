@@ -79,7 +79,7 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 const CHIAVE_FACCE = "ricci_gov_facce";
 const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
 const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
-const FILM_PRONTO = { attesa: "cons-attesa.mp4", parla: "cons-parla.mp4", poster: "cons-poster.webp" };
+const FILM_PRONTO = { attesa: "cons-attesa.mp4", parla: "cons-parla.mp4", ascolta: "cons-ascolta.mp4", poster: "cons-poster.webp" };
 function FILM_CONS(cls) {
   const f = FILM_PRONTO;
   return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}">
@@ -121,17 +121,19 @@ function filmVigila() {
     const forzato = document.body.dataset.cons || "";
     for (const b of document.querySelectorAll(".gov-film")) {
       const parla = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
-      filmUno(parla ? "parla" : "attesa", b);
+      const ascolta = !parla && forzato === "ascolto";
+      filmUno(parla ? "parla" : ascolta ? "ascolta" : "attesa", b);
     }
   }, 450);
 }
 filmVigila();
 let micCasa = null, micAttivo = false;
 function statoCons(s) {
-  const c = document.querySelector(".card.consuela");
-  if (!c) return;
-  c.dataset.stato = s || "";
-  document.body.dataset.cons = (s === "parla") ? "parla" : "";
+  document.querySelectorAll(".card.consuela, .sofia-hero").forEach(c => {
+    c.dataset.stato = s || "";
+    c.classList.toggle("sta-parlando", s === "parla");
+  });
+  document.body.dataset.cons = (s === "parla") ? "parla" : (s === "ascolto") ? "ascolto" : "";
 }
 function sottoCons(t, fantasma) {
   const z = document.getElementById("consSotto");
@@ -196,6 +198,14 @@ document.addEventListener("click", (e) => {
   if (!b) return;
   e.preventDefault(); e.stopPropagation();
   micCasaVai();
+}, true);
+// il tasto che porta giu', dalla schermata di Sofia a tutto il resto
+document.addEventListener("click", (e) => {
+  const g = e.target && e.target.closest && e.target.closest("[data-casa-giu]");
+  if (!g) return;
+  e.preventDefault();
+  const h = document.getElementById("sofiaHero");
+  window.scrollTo({ top: h ? h.offsetHeight : window.innerHeight, behavior: "smooth" });
 }, true);
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
 function CORPO_CONS(cls) {
@@ -729,6 +739,7 @@ function disegna() {
   for (const [id, x] of Object.entries(tenuti)) { const e = document.getElementById(id); if (e && e.hasAttribute("data-keep")) e.value = x.v; }
   if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
+  disegnaCasa();
   collega();
   if (S.foglio) disegnaFoglio();
   avviaCronometri();
@@ -1155,7 +1166,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
-  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + (puoModificare() && iso === L.oggiISO() ? cardConsuela() + cardChat() : "") + messaggio + avviso + blocchi + bottone;
+  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + (puoModificare() && iso === L.oggiISO() ? (casaAttiva() ? "" : cardConsuela()) + cardChat() : "") + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -1423,6 +1434,77 @@ function statoChatApp() {
   try { return CH.statoChat(st); } catch (e) { console.warn("chat", e); return { aperte: [], inAttesa: [], nonAncora: [], daSole: [], storico: [], risposteOggi: [], urgenti: 0, prossime: "" }; }
 }
 // 0.43: Michele apre l'app e la prima cosa che vede è lei, grande, che lo saluta per nome.
+// ---------------------------------------------------------------------------
+//  LA SCHERMATA DI CASA (0.60): quando apri l'app vedi SOLO lei, a tutto schermo.
+//  Sta fuori da #app, sopra l'intestazione: scorrendo in giu' si trova tutto il
+//  resto esattamente com'era. Il tasto "Le mie giornate" fa la stessa cosa.
+// ---------------------------------------------------------------------------
+const CASA_MIC = `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`;
+function casaAttiva() {
+  try {
+    return !!(S.pronto && S.utente && S.utente.ruolo && proprietario()
+      && S.vista === "oggi" && S.giorno === L.oggiISO()
+      && S.caricati.soggiorni && S.caricati.pulizie && FILM_PRONTO.attesa && corpoPronto());
+  } catch (e) { return false; }
+}
+function casaOssatura() {
+  return `<div class="casa-film">${FILM_CONS("casa-fig")}</div>
+    <div class="casa-velo" aria-hidden="true"></div>
+    <div class="casa-su">
+      <span class="casa-nome">Le Stanze di Ricci</span>
+      <button type="button" class="casa-menu" data-vista="altro" aria-label="Altro">\u22ef</button>
+    </div>
+    <div class="casa-giu">
+      <b class="casa-sal"></b>
+      <p class="casa-riga"></p>
+      <div class="casa-sotto" id="consSotto"></div>
+      <div class="casa-tasti">
+        <button type="button" class="casa-mic" data-cons-mic aria-label="Parlale">${CASA_MIC}</button>
+        <button type="button" class="casa-scrivi" data-chat-apri>Scrivile</button>
+      </div>
+      <div class="casa-chips"></div>
+      <button type="button" class="casa-giu-btn" data-casa-giu><span>Le mie giornate</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+    </div>`;
+}
+function casaAggiorna(h) {
+  const c = consiglioOggi(), u = umoreGov();
+  if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
+  const oggi = L.oggiISO();
+  const ls = pulizieDelGiorno(oggi), fatte = ls.filter(p => p.stato === "fatta").length;
+  const man = lavoriAperti().length;
+  let dom = 0; try { dom = statoChatApp().aperte.length; } catch (e) {}
+  const voci = [ls.length ? `${fatte}/${ls.length} pulizie oggi` : "nessuna pulizia oggi"];
+  if (man) voci.push(`${man} ${man === 1 ? "lavoro" : "lavori"} da fare`);
+  if (dom) voci.push(`${dom} ${dom === 1 ? "domanda" : "domande"} per te`);
+  const sal = h.querySelector(".casa-sal"), riga = h.querySelector(".casa-riga"), chips = h.querySelector(".casa-chips");
+  if (sal) sal.textContent = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`;
+  if (riga) riga.textContent = c && c.testo ? c.testo : u.testo;
+  if (chips) chips.innerHTML = voci.map(t => `<span class="casa-chip">${esc(t)}</span>`).join("");
+  const mic = h.querySelector(".casa-mic");
+  if (mic) mic.setAttribute("aria-label", "Parla con " + nomeGov());
+  h.dataset.umore = u.v;
+  h.classList.toggle("sta-parlando", !!(govScrive || voceInCorso));
+  h.classList.toggle("con-ia", !!c);
+}
+function disegnaCasa() {
+  let h = document.getElementById("sofiaHero");
+  if (!casaAttiva()) {
+    if (h) { h.remove(); window.scrollTo(0, 0); }
+    document.body.classList.remove("ha-casa");
+    return;
+  }
+  if (!h) {
+    h = document.createElement("section");
+    h.id = "sofiaHero";
+    h.className = "sofia-hero";
+    h.innerHTML = casaOssatura();
+    const t = document.querySelector("header");
+    document.body.insertBefore(h, t || document.body.firstChild);
+    window.scrollTo(0, 0);
+  }
+  document.body.classList.add("ha-casa");
+  casaAggiorna(h);
+}
 function cardConsuela() {
   if (!proprietario()) return "";
   if (!S.caricati.soggiorni || !S.caricati.pulizie) return "";
