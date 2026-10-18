@@ -503,3 +503,39 @@ Regole della governante, passo 0b: si tocca **Piatta** o **Contornata** e torna 
 
 ### Cosa resta da fare
 La chiave di Gemini la deve incollare Michele (passo 4): le chiavi non le scrive l'assistente.
+
+## 27. La 0.48 (18 ottobre): Consuela rifatta, grande e che si muove davvero
+
+### Cosa ha chiesto Michele
+Piu giovane, piu sorridente, piu bella. Riquadro molto piu grande, la prima cosa che si vede aprendo l'app. E che si muova tanto, faccia e corpo, come l'avatar di Praktika.
+
+### Le sette facce (una sola posa, cambia solo quello che serve)
+Fatte su Gemini, sempre partendo dalla prima immagine e cambiando una cosa per volta:
+`consuela-base.jpg` (sorriso normale), `-m1` (bocca socchiusa), `-m3` (bocca a O), `-m2` (bocca aperta, la A), `-occhi` (occhi chiusi), `-felice` (risata), `-pensa` (pensierosa, guarda di lato).
+640x640, 54 KB l'una, 380 KB in tutto. Controllo col computer: fra una e l'altra cambia il 2,5-7% dei pixel, quindi la testa non si sposta.
+
+### Il trucco della finestra
+Prima la foto era un cerchio e basta. Adesso il cerchio e' una FINESTRA (`.gf-vetro`) e dentro ci sono due strati che si muovono:
+- `.gf-corpo` = il respiro (si alza e si abbassa, 4,6 secondi)
+- `.gf-testa` = l'ondeggio della testa (11 secondi) e, quando parla, il cenno del capo (1,9 secondi)
+Cosi' lei si muove DENTRO al riquadro, come un personaggio vero, e il bordo bianco resta fermo.
+
+### La bocca che segue la voce
+Il volume della voce diventa quattro livelli: chiusa, socchiusa, a O, aperta. Erano tre, adesso le forme sono piu varie e sembra che parli davvero.
+
+### Gli occhi che sbattono anche mentre parla
+Difetto vecchio: la foto con gli occhi chiusi copriva tutta la faccia, quindi se sbatteva le ciglia mentre parlava la bocca si fermava.
+Aggiustato con una maschera: la foto degli occhi dipinge solo la meta' di sopra (fino al 52%). Sotto resta la bocca che sta parlando.
+
+### Le espressioni
+- Umore della giornata (lo decide gia' `umoreGov()`): contenta = risata, attenta o preoccupata = pensierosa, serena = normale.
+- Micro-espressioni: ogni 6,5 secondi circa `vitaGov()` puo' cambiarle faccia per un secondo e mezzo (normale, risata, pensierosa). Non lo fa mentre parla.
+
+### Il riquadro grande
+Sul telefono: foto tonda da 60% della larghezza (massimo 240 px) in cima, testo sotto, tutto centrato. Sul computer: 260 px a sinistra e testo a destra. Saluto da 27-32 px.
+
+### Difetto trovato e aggiustato (0.48.2)
+Nelle bollette della chat la foto veniva ovale (40x45) per una vecchia regola fatta per il disegno. Messo `aspect-ratio:1/1`: adesso e' sempre un cerchio.
+
+### Cosa ancora non e' come Praktika
+Non gira la testa in 3D e non muove le braccia: sono sette immagini che si scambiano dentro una finestra, piu respiro e ondeggio fatti dal telefono. Per il 3D vero servirebbe un video generato, che si paga.
