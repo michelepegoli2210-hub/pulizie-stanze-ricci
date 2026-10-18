@@ -470,3 +470,36 @@ Vanno bene entrambi, e anche Gemini. La parte difficile non è fare una bella im
 
 ### Cosa resta diverso da Praktika
 Loro hanno un modello 3D vero mosso in tempo reale: la testa gira, le sopracciglia si alzano, il labiale segue i suoni uno per uno. Qui sono quattro fotogrammi scambiati sull'ampiezza della voce. A schermo, in un tondo da 112 px che saluta, la differenza si vede poco; in un primo piano grande si vedrebbe.
+
+## 26. La 0.47 (18 ottobre): Consuela e' dentro l'app, non piu' da caricare a mano
+
+### Cosa ha chiesto Michele
+«Fallo tu direttamente apri il sito e fallo tu e poi mettila nella nostra app».
+
+### Come sono nate le 4 immagini
+OpenArt chiedeva di creare un account: non si puo' fare. Si e' usato **Gemini** (gemini.google.com), dove Michele e' gia' dentro, e li' le immagini si fanno gratis.
+Prima immagine: ritratto 3D stile Pixar, donna italiana sui 35 anni, divisa blu notte con colletto bianco, sfondo blu scuro liscio, 1024x1024.
+Poi tre modifiche della STESSA immagine, una per volta, ripartendo sempre dalla prima: bocca socchiusa, bocca aperta (la «A»), occhi chiusi.
+Controllo fatto col computer: fra una immagine e l'altra cambia solo l'1-2,5% dei pixel. Vuol dire che la posa e' identica e il pupazzo non «salta».
+
+### Dove stanno adesso
+Quattro file dentro il deposito, non piu' dentro il telefono:
+`consuela-base.jpg`, `consuela-m1.jpg`, `consuela-m2.jpg`, `consuela-occhi.jpg` — 512x512, 34 KB l'uno.
+Sono anche nella lista di `sw.js`, cosi' l'app li tiene da parte e funzionano pure senza internet.
+
+### Cosa cambia nel codice (poco, ma importante)
+- `FACCE_PRONTE`: la lista dei quattro file gia' pronti.
+- `facceGov()`: se Michele non ha caricato niente di suo, usa quelli. Prima restava vuoto e si vedeva il disegno.
+- `stileGov()`: di partenza adesso vale `"consuela"` (prima `"piatta"`).
+- `salvaFaccia()`: legge solo quello che e' stato caricato davvero, cosi' se Michele mette una sua foto NON resta mischiata con le bocche di Consuela.
+- Nel passo 0b c'e' un bottone in piu': **Consuela**. Piatta / Contornata / Consuela / Foto.
+
+### Il difetto trovato e aggiustato (0.47.1)
+La card grande di Consuela su Oggi diventava scura se il telefono o il computer era in modo scuro, ma il testo restava nero: non si leggeva niente.
+Nel `style.css` c'erano tre pezzi che seguivano il modo scuro del telefono invece di quello scelto dentro l'app (Aspetto: Chiaro / Scuro). Tolti tutti e tre. Adesso comanda solo il bottone dentro l'app.
+
+### Come si torna indietro
+Regole della governante, passo 0b: si tocca **Piatta** o **Contornata** e torna il disegno; si tocca **Consuela** e torna lei.
+
+### Cosa resta da fare
+La chiave di Gemini la deve incollare Michele (passo 4): le chiavi non le scrive l'assistente.
