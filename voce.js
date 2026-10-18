@@ -31,9 +31,9 @@ export const TONI = [
   { id: "sensuale", nome: "Sensuale", rate: 0.84, pitch: 0.74,
     stile: "very low, velvety and slightly breathy; speak slowly and close to the microphone, as if confiding in someone's ear; stretch the vowels, leave a small pause between phrases, let the pitch fall at the end of every sentence; soft, intimate, unhurried and self-assured; never bright, never cheerful, never loud" },
 ];
-export function tonoDi(c) { return TONI.find(t => t.id === ((c && c.tono) || "")) || TONI[2]; }
-export const STILE_BASE = TONI[2].stile;
-export const CONF_BASE = { attiva: false, motore: "google", voce: "Despina", modello: "", tono: "sensuale", stile: STILE_BASE, v: 2 };
+export function tonoDi(c) { return TONI.find(t => t.id === ((c && c.tono) || "")) || TONI[1]; }
+export const STILE_BASE = TONI[1].stile;
+export const CONF_BASE = { attiva: false, motore: "google", voce: "Sulafat", modello: "", tono: "calda", stile: STILE_BASE, v: 3 };
 const CHIAVE_LOCALE = "ricci_voce";
 const MAX_CARATTERI = 600; // oltre, si taglia: non si paga un comizio
 
@@ -42,7 +42,7 @@ export function leggiVoce() {
   try { salvato = JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}") || {}; } catch (e) { salvato = {}; }
   const c = { ...CONF_BASE, ...salvato };
   // chi aveva gia' salvato la voce vecchia passa da solo a quella nuova
-  if (salvato.v !== 2) { c.voce = CONF_BASE.voce; c.tono = CONF_BASE.tono; c.v = 2; }
+  if (salvato.v !== 3) { c.voce = CONF_BASE.voce; c.tono = CONF_BASE.tono; c.v = 3; }
   c.stile = tonoDi(c).stile; // lo stile segue sempre il tono scelto
   return c;
 }

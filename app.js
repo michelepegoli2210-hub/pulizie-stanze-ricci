@@ -101,6 +101,7 @@ function filmUno(quale, box) {
   box.dataset.occupato = "1";
   giu.src = FILM_PRONTO[quale];
   giu.loop = true;
+  try { giu.playbackRate = 1; } catch (e) {}
   giu.load();
   let andato = false;
   const vai = () => {
@@ -119,8 +120,12 @@ function filmVigila() {
   filmTimer = setInterval(() => {
     if (document.hidden) return;
     const forzato = document.body.dataset.cons || "";
+    // REGOLA: la bocca si muove SOLO se sta uscendo davvero del suono.
+    // Senza questo controllo lei muoveva le labbra in silenzio, e faceva ridere.
+    let suono = false; try { suono = VOCE.staParlando(); } catch (e) {}
     for (const b of document.querySelectorAll(".gov-film")) {
-      const parla = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
+      const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
+      const parla = suono && vuole;
       const ascolta = !parla && forzato === "ascolto";
       filmUno(parla ? "parla" : ascolta ? "ascolta" : "attesa", b);
     }
@@ -206,6 +211,12 @@ document.addEventListener("click", (e) => {
   e.preventDefault();
   const h = document.getElementById("sofiaHero");
   window.scrollTo({ top: h ? h.offsetHeight : window.innerHeight, behavior: "smooth" });
+}, true);
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest && e.target.closest("[data-casa-tocca]");
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  benvenutoSofia(true);
 }, true);
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
 function CORPO_CONS(cls) {
@@ -1447,23 +1458,35 @@ function casaAttiva() {
       && S.caricati.soggiorni && S.caricati.pulizie && FILM_PRONTO.attesa && corpoPronto());
   } catch (e) { return false; }
 }
+const CASA_ICO = {
+  mic: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`,
+  chat: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg>`,
+  giu: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
+  voceSi: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
+  voceNo: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>`,
+};
 function casaOssatura() {
   return `<div class="casa-film">${FILM_CONS("casa-fig")}</div>
     <div class="casa-velo" aria-hidden="true"></div>
     <div class="casa-su">
       <span class="casa-nome">Le Stanze di Ricci</span>
-      <button type="button" class="casa-menu" data-vista="altro" aria-label="Altro">\u22ef</button>
+      <span class="casa-su-tasti">
+        <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
+        <button type="button" class="casa-tondo" data-vista="altro" aria-label="Altro">\u22ef</button>
+      </span>
     </div>
     <div class="casa-giu">
       <b class="casa-sal"></b>
       <p class="casa-riga"></p>
+      <p class="casa-spinta"></p>
       <div class="casa-sotto" id="consSotto"></div>
-      <div class="casa-tasti">
-        <button type="button" class="casa-mic" data-cons-mic aria-label="Parlale">${CASA_MIC}</button>
-        <button type="button" class="casa-scrivi" data-chat-apri>Scrivile</button>
+      <p class="casa-info"></p>
+      <button type="button" class="casa-tocca" data-casa-tocca>Tocca qui per sentirla parlare</button>
+      <div class="casa-barra">
+        <button type="button" class="casa-t casa-t-mic" data-cons-mic aria-label="Parlale">${CASA_ICO.mic}<span>Parlale</span></button>
+        <button type="button" class="casa-t" data-chat-apri>${CASA_ICO.chat}<span>Scrivile</span></button>
+        <button type="button" class="casa-t" data-casa-giu>${CASA_ICO.giu}<span>Giornate</span></button>
       </div>
-      <div class="casa-chips"></div>
-      <button type="button" class="casa-giu-btn" data-casa-giu><span>Le mie giornate</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
     </div>`;
 }
 function casaAggiorna(h) {
@@ -1476,15 +1499,56 @@ function casaAggiorna(h) {
   const voci = [ls.length ? `${fatte}/${ls.length} pulizie oggi` : "nessuna pulizia oggi"];
   if (man) voci.push(`${man} ${man === 1 ? "lavoro" : "lavori"} da fare`);
   if (dom) voci.push(`${dom} ${dom === 1 ? "domanda" : "domande"} per te`);
-  const sal = h.querySelector(".casa-sal"), riga = h.querySelector(".casa-riga"), chips = h.querySelector(".casa-chips");
+  const q = (s) => h.querySelector(s);
+  const sal = q(".casa-sal"), riga = q(".casa-riga"), spinta = q(".casa-spinta"), info = q(".casa-info");
   if (sal) { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); }
   if (riga) riga.textContent = c && c.testo ? c.testo : u.testo;
-  if (chips) chips.innerHTML = voci.map(t => `<span class="casa-chip">${esc(t)}</span>`).join("");
-  const mic = h.querySelector(".casa-mic");
+  if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
+  if (info) info.textContent = voci.join(" \u00b7 ");
+  const mic = q(".casa-t-mic");
   if (mic) mic.setAttribute("aria-label", "Parla con " + nomeGov());
+  const bv = q(".casa-voce"), su = voceAccesa();
+  if (bv) {
+    bv.innerHTML = su ? CASA_ICO.voceSi : CASA_ICO.voceNo;
+    bv.setAttribute("aria-pressed", su ? "true" : "false");
+    bv.setAttribute("aria-label", su ? "Voce accesa: tocca per mettere muto" : "Muto: tocca per accendere la voce");
+    bv.classList.toggle("spenta", !su);
+  }
   h.dataset.umore = u.v;
-  h.classList.toggle("sta-parlando", !!(govScrive || voceInCorso));
+  h.classList.toggle("sta-parlando", !!voceInCorso);
   h.classList.toggle("con-ia", !!c);
+}
+// ---- lei ti parla appena apri l'app -------------------------------------
+// I telefoni non lasciano partire un suono da soli: se il browser dice di no,
+// compare la striscia gialla e basta un tocco qualsiasi per farla partire.
+let salutoDetto = false, salutoArmato = false;
+function testoBenvenuto() {
+  const c = consiglioOggi(), u = umoreGov();
+  const sal = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`;
+  const riga = c && c.testo ? c.testo : u.testo;
+  const spinta = c && c.consiglio ? c.consiglio : spintaDelGiorno();
+  return [sal, riga, spinta].filter(Boolean).join(" ");
+}
+function casaTocca(mostra) {
+  const h = document.getElementById("sofiaHero");
+  if (h) h.classList.toggle("muta", !!mostra);
+}
+async function benvenutoSofia(forza) {
+  if (salutoDetto && !forza) return;
+  if (!document.getElementById("sofiaHero")) return;
+  if (!voceAccesa()) { salutoDetto = true; casaTocca(false); return; }
+  let ctx = null; try { ctx = VOCE.sbloccaAudio(); } catch (e) {}
+  if (!ctx || ctx.state !== "running") {
+    casaTocca(true);
+    if (!salutoArmato) {
+      salutoArmato = true;
+      const vai = () => { document.removeEventListener("pointerdown", vai, true); setTimeout(() => benvenutoSofia(true), 60); };
+      document.addEventListener("pointerdown", vai, true);
+    }
+    return;
+  }
+  salutoDetto = true; casaTocca(false);
+  try { await parlaConVoce(testoBenvenuto()); } catch (e) { console.warn("benvenuto", e); }
 }
 function disegnaCasa() {
   let h = document.getElementById("sofiaHero");
@@ -1501,6 +1565,7 @@ function disegnaCasa() {
     const t = document.querySelector("header");
     document.body.insertBefore(h, t || document.body.firstChild);
     window.scrollTo(0, 0);
+    setTimeout(() => benvenutoSofia(), 1100);
   }
   document.body.classList.add("ha-casa");
   casaAggiorna(h);
@@ -1790,6 +1855,27 @@ function applicaBocca(forza) {
   const f = Math.max(0, Math.min(1, Number(forza) || 0));
   const v = f < 0.07 ? "" : f < 0.24 ? "c" : f < 0.52 ? "b" : "a";
   document.querySelectorAll(".donnina.gov-fig").forEach(svg => { svg.dataset.v = v; svg.style.setProperty("--apri", f.toFixed(2)); });
+  boccaFilm(f);
+}
+// Il filmato "parla" va avanti solo mentre c'e' voce, e va piu' svelto quando lei
+// alza il tono: non e' un vero labiale (il filmato e' gia' girato), ma la bocca si
+// ferma nei silenzi e si muove sulle parole, cosi' sembra sincronizzata.
+let boccaSuono = 0;
+function boccaFilm(f) {
+  const ora = Date.now();
+  if (f >= 0.06) boccaSuono = ora;
+  // una pausa corta fra due sillabe non deve bloccare il filmato: aspetto 220 ms
+  const fermo = (ora - boccaSuono) > 220;
+  for (const box of document.querySelectorAll(".gov-film")) {
+    if (box.dataset.film !== "parla") continue;
+    const v = [...box.querySelectorAll("video")].find(x => !x.classList.contains("giu"));
+    if (!v) continue;
+    if (fermo !== v.paused) { if (fermo) { try { v.pause(); } catch (e) {} } else { v.play().catch(() => {}); } }
+    if (!fermo) {
+      const r = Math.max(0.6, Math.min(1.7, 0.6 + f * 1.8));
+      if (Math.abs((v.playbackRate || 1) - r) > 0.12) { try { v.playbackRate = r; } catch (e) {} }
+    }
+  }
 }
 let vitaGovTimer = null, vitaOcchiTimer = null, vitaSguardoTimer = null, vitaPosa = "base";
 function sguardoGov() {
