@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.57.0";
+export const VERSIONE = "0.58.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1255,7 +1255,7 @@ function testoPianoSettimana(z, lun) {
 // ============================================================================
 function regoleGov() { return G.regoleAttive(S.gov); }
 // 0.41: la governante ha un nome. Michele glielo cambia in Governante → Regole.
-const NOMI_GOV = ["Consuela", "Rosa", "Carmela", "Mimma", "Gilda", "Stella"];
+const NOMI_GOV = ["Sveva", "Lesia", "Daunia", "Perla", "Consuela", "Rosa", "Carmela", "Stella"];
 function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Consuela"; }
 // Il nome di chi è entrato, per il saluto ("Buongiorno Michele!")
 function nomeMio() { const n = String(S.utente?.nome || "").trim().split(/\s+/)[0]; return n && !/^prova/i.test(n) ? n : "Michele"; }

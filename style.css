@@ -1451,3 +1451,9 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
   .inizio.chat .gov-viva .donnina.gov-fig.gov-film,
   .gov-testa .gov-viva .donnina.gov-fig.gov-film{width:230px}
 }
+
+/* 0.58 - quando parla, si avvicina */
+.gov-viva .gov-film video,.cons-fig .gov-film video{transition:transform .55s ease}
+.gov-viva.sta-parlando .gov-film video{transform:scale(1.5);transform-origin:50% 11%}
+.card.consuela.sta-parlando .cons-fig .gov-film video{transform:scale(1.46);transform-origin:50% 11%}
+.card.consuela[data-stato="ascolto"] .cons-fig .gov-film video{transform:scale(1.4);transform-origin:50% 11%}
