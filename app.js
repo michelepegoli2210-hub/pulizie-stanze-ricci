@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.51.0";
+export const VERSIONE = "0.52.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -79,6 +79,48 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 const CHIAVE_FACCE = "ricci_gov_facce";
 const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
 const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
+const FILM_PRONTO = { attesa: "cons-attesa.mp4", parla: "cons-parla.mp4", poster: "cons-poster.webp" };
+function FILM_CONS(cls) {
+  const f = FILM_PRONTO;
+  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}">
+    <video class="cf-v" src="${f.attesa}" poster="${f.poster}" autoplay muted loop playsinline preload="auto"></video>
+    <video class="cf-v giu" poster="${f.poster}" muted playsinline preload="none"></video>
+  </span>`;
+}
+let filmStato = "attesa", filmOccupato = false;
+function filmGov(quale) {
+  const box = document.querySelector(".gov-film");
+  if (!box || !FILM_PRONTO[quale] || filmStato === quale || filmOccupato) return;
+  const vs = [...box.querySelectorAll("video")];
+  if (vs.length < 2) return;
+  const su = vs.find(v => !v.classList.contains("giu")) || vs[0];
+  const giu = vs.find(v => v !== su);
+  filmOccupato = true;
+  giu.src = FILM_PRONTO[quale];
+  giu.loop = true;
+  giu.load();
+  let andato = false;
+  const vai = () => {
+    if (andato) return; andato = true;
+    giu.play().catch(() => {});
+    giu.classList.remove("giu");
+    su.classList.add("giu");
+    filmStato = quale;
+    setTimeout(() => { try { su.pause(); } catch (e) {} filmOccupato = false; }, 500);
+  };
+  giu.addEventListener("canplay", vai, { once: true });
+  setTimeout(vai, 1800);
+}
+let filmTimer = null;
+function filmVigila() {
+  if (filmTimer) return;
+  filmTimer = setInterval(() => {
+    const box = document.querySelector(".gov-film");
+    if (!box || document.hidden) return;
+    filmGov(box.classList.contains("parla") ? "parla" : "attesa");
+  }, 450);
+}
+filmVigila();
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
 function CORPO_CONS(cls) {
   const c = CORPO_PRONTO, im = (k, n) => `<img class="${n}" src="${c[k]}" alt="">`;
@@ -136,7 +178,7 @@ function rimpicciolisci(file, lato = 460) {
 // Il pupazzo: tutte le facce impilate, si accende quella giusta
 function FACCIA_FOTO(cls = "") {
   const f = facceGov();
-  if (/grande/.test(cls) && corpoPronto()) return CORPO_CONS(cls);
+  if (/grande/.test(cls) && corpoPronto()) return FILM_PRONTO.attesa ? FILM_CONS(cls) : CORPO_CONS(cls);
   const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
   return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
     <span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa">${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m3", "f-m3")}${strato("m2", "f-m2")}${strato("felice", "f-felice")}${strato("pensa", "f-pensa")}${strato("occhi", "f-occhi")}</span></span></span><i class="gov-alone"></i></span>`;
