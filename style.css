@@ -1422,9 +1422,7 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 @keyframes consEntra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .cons-apri:has(.gov-film){padding-bottom:10px}
 
-/* ============================================================
-   0.56 - video verticali, e lei si muove anche nella chat
-   ============================================================ */
+/* 0.56 - video verticali, e lei si muove anche nella chat */
 .donnina.gov-fig.gov-film{aspect-ratio:9/16}
 .cons-fig:has(.gov-film){width:min(78vw,330px)}
 @media (min-width:760px){ .cons-fig:has(.gov-film){width:270px} }
@@ -1433,6 +1431,3 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .gov-viva .gov-film video{object-position:50% 14%}
 .inizio.chat .gov-viva .donnina.gov-fig.gov-film{width:150px}
 .gov-testa .gov-viva .donnina.gov-fig.gov-film{width:150px}
-.card.consuela[data-stato="ascolto"] .gov-film,
-.card.consuela[data-stato="pensa"] .gov-film,
-.card.consuela[data-stato="errore"] .gov-film{border-radius:20px}
