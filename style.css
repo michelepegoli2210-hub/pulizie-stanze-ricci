@@ -1292,3 +1292,12 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 @media (prefers-reduced-motion:reduce){
   .gov-foto .gf-corpo,.gov-foto .gf-testa,.gov-foto .f-occhi{animation:none!important}
 }
+
+/* 0.48.1 - micro-espressioni spontanee: ogni tanto cambia faccia da sola */
+.gov-foto[data-sp="base"] .f-felice,.gov-foto[data-sp="base"] .f-pensa{opacity:0}
+.gov-foto[data-sp="felice"] .f-felice{opacity:1}
+.gov-foto[data-sp="felice"] .f-pensa{opacity:0}
+.gov-foto[data-sp="pensa"] .f-pensa{opacity:1}
+.gov-foto[data-sp="pensa"] .f-felice{opacity:0}
+.gov-foto[data-v="c"] .f-felice,.gov-foto[data-v="b"] .f-felice,.gov-foto[data-v="a"] .f-felice,
+.gov-foto[data-v="c"] .f-pensa,.gov-foto[data-v="b"] .f-pensa,.gov-foto[data-v="a"] .f-pensa{opacity:0}

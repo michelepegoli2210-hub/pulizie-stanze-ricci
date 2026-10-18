@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.48.0";
+export const VERSIONE = "0.48.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1579,6 +1579,21 @@ function applicaBocca(forza) {
   const v = f < 0.07 ? "" : f < 0.24 ? "c" : f < 0.52 ? "b" : "a";
   document.querySelectorAll(".donnina.gov-fig").forEach(svg => { svg.dataset.v = v; svg.style.setProperty("--apri", f.toFixed(2)); });
 }
+let vitaGovTimer = null;
+function vitaGov() {
+  if (vitaGovTimer) return;
+  vitaGovTimer = setInterval(() => {
+    if (document.hidden) return;
+    const f = document.querySelector(".gov-foto.viva.grande");
+    if (!f || f.classList.contains("parla")) return;
+    const scelte = ["", "", "base", "felice", "pensa", "felice"];
+    const s = scelte[Math.floor(Math.random() * scelte.length)];
+    if (!s) return;
+    f.dataset.sp = s;
+    setTimeout(() => { if (f.isConnected && f.dataset.sp === s) f.dataset.sp = ""; }, 1400 + Math.random() * 900);
+  }, 6500);
+}
+vitaGov();
 function voceAccesa() { return !!VOCE.leggiVoce().attiva; }
 async function parlaConVoce(testo) {
   let vc = VOCE.leggiVoce(); if (!vc.attiva) return;
