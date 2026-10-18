@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.47.1";
+export const VERSIONE = "0.48.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -77,7 +77,7 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 // cambiano solo bocca e occhi. Michele porta 2-4 immagini, l'app le scambia a tempo
 // con la voce vera. Stanno solo su questo telefono (sono pesanti e alle signore non servono).
 const CHIAVE_FACCE = "ricci_gov_facce";
-const FACCE_PRONTE = { base: "consuela-base.jpg", m1: "consuela-m1.jpg", m2: "consuela-m2.jpg", occhi: "consuela-occhi.jpg" };
+const FACCE_PRONTE = { base: "consuela-base.jpg", m1: "consuela-m1.jpg", m3: "consuela-m3.jpg", m2: "consuela-m2.jpg", occhi: "consuela-occhi.jpg", felice: "consuela-felice.jpg", pensa: "consuela-pensa.jpg" };
 const POSE = [
   { k: "base", nome: "Faccia normale", aiuto: "bocca chiusa, occhi aperti. Questa serve sempre." },
   { k: "m1", nome: "Bocca socchiusa", aiuto: "stessa posa, labbra appena aperte." },
@@ -128,7 +128,7 @@ function FACCIA_FOTO(cls = "") {
   const f = facceGov();
   const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
   return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
-    ${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m2", "f-m2")}${strato("occhi", "f-occhi")}<i class="gov-alone"></i></span>`;
+    <span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa">${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m3", "f-m3")}${strato("m2", "f-m2")}${strato("felice", "f-felice")}${strato("pensa", "f-pensa")}${strato("occhi", "f-occhi")}</span></span></span><i class="gov-alone"></i></span>`;
 }
 const PROMPT_FACCIA = `3D animated character portrait, stylized realism, Pixar and Disney style CGI render. A friendly Italian woman, about 35 years old, warm brown eyes, dark brown hair pulled back in a neat low bun with a few loose strands framing her face, light olive skin with soft subsurface scattering, subtle freckles, glossy natural lips, long detailed eyelashes, gentle closed-mouth smile. She wears a navy blue housekeeper uniform with a crisp white collar. Head and shoulders, facing the camera straight on, centered. Soft cinematic studio lighting, warm key light and a cool rim light on the hair. Plain smooth dark blue gradient background, slightly out of focus. Ultra detailed hair strands, clean skin shading, high quality 3D render, square 1:1, sharp focus on the eyes. No text, no watermark, one person only, no hands in frame.`;
 const STESSA = "Keep everything exactly the same: same character, same face, same hairstyle, same clothes, same pose, same camera angle, same lighting, same background.";
