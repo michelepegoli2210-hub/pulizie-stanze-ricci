@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.46.0";
+export const VERSIONE = "0.46.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -127,11 +127,12 @@ function FACCIA_FOTO(cls = "") {
   return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
     ${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m2", "f-m2")}${strato("occhi", "f-occhi")}<i class="gov-alone"></i></span>`;
 }
-const PROMPT_FACCIA = `3D animated character portrait, Pixar/Disney 3D render style, friendly Italian housekeeper woman around 35, warm smile, dark brown hair in a neat bun, navy blue uniform with a white collar, soft cinematic lighting, head and shoulders, looking at the camera, plain soft blue background, high quality, photorealistic 3D rendering`;
+const PROMPT_FACCIA = `3D animated character portrait, stylized realism, Pixar and Disney style CGI render. A friendly Italian woman, about 35 years old, warm brown eyes, dark brown hair pulled back in a neat low bun with a few loose strands framing her face, light olive skin with soft subsurface scattering, subtle freckles, glossy natural lips, long detailed eyelashes, gentle closed-mouth smile. She wears a navy blue housekeeper uniform with a crisp white collar. Head and shoulders, facing the camera straight on, centered. Soft cinematic studio lighting, warm key light and a cool rim light on the hair. Plain smooth dark blue gradient background, slightly out of focus. Ultra detailed hair strands, clean skin shading, high quality 3D render, square 1:1, sharp focus on the eyes. No text, no watermark, one person only, no hands in frame.`;
+const STESSA = "Keep everything exactly the same: same character, same face, same hairstyle, same clothes, same pose, same camera angle, same lighting, same background.";
 const PROMPT_VARIANTI = [
-  "same character, exact same pose, same lighting, same background — lips slightly parted as if starting to speak",
-  "same character, exact same pose, same lighting, same background — mouth open wide saying AH",
-  "same character, exact same pose, same lighting, same background — eyes fully closed, mouth closed",
+  STESSA + " Change ONLY the mouth: lips slightly parted, as if she is starting to speak. Eyes stay open and identical.",
+  STESSA + " Change ONLY the mouth: open in a relaxed oval, as if saying the vowel AH, upper teeth slightly visible. Eyes stay open and identical.",
+  STESSA + " Change ONLY the eyes: both eyes gently closed, eyelashes resting down. Mouth stays closed and identical.",
 ];
 function stileGov() { const v = (S.gov && S.gov.stile) || ""; return v === "contorno" ? "contorno" : "piatta"; }
 let CONTA_DONNINA = 0;
@@ -1867,7 +1868,7 @@ function cardIA() {
         ${c ? `<button type="button" class="nonna-link" style="min-height:0;padding:2px 8px;margin-top:2px" data-posa-togli="${x.k}">togli</button>` : ""}</div>`; }).join("")}</div>
       <span class="small muted">Serve solo la prima. Se ci metti anche la <b>bocca socchiusa</b> e la <b>bocca aperta</b>, quando parla l'app le scambia a tempo con la voce e sembra che parli davvero — è lo stesso trucco di quell'app che mi hai fatto vedere: stesso personaggio, stessa posa, cambia solo la bocca. Con gli <b>occhi chiusi</b> sbatte anche le palpebre.</span>
       <details class="gov-dett" style="margin-top:8px"><summary class="small">Come me le faccio, queste immagini?</summary>
-        <p class="muted small" style="margin:6px 0 0">Va bene qualunque sito che disegna con l'intelligenza artificiale: <b>OpenArt</b>, le immagini di <b>ChatGPT</b>, <b>Gemini</b>. Fanne una, poi chiedi le altre <b>sulla stessa immagine</b> ("cambia solo la bocca"), se no viene un'altra persona.</p>
+        <p class="muted small" style="margin:6px 0 0">Su <b>openart.ai</b> (o con le immagini di ChatGPT o Gemini): entra nel <b>nuovo spazio di lavoro</b>, <b>Crea immagine</b>, incolla il primo testo e genera. Quando la ragazza ti piace, <b>non generarne altre</b>: usa <b>Modifica immagine</b> (o "Chatta per modificare") sulla stessa, e incolla gli altri tre testi uno per volta. Se le generi da capo esce un'altra persona.</p>
         <div class="prompt-box"><code id="promptFaccia">${esc(PROMPT_FACCIA)}</code><button type="button" class="btnsm" data-copia-prompt="base">Copia</button></div>
         ${PROMPT_VARIANTI.map((t, i) => `<div class="prompt-box"><code>${esc(POSE[i + 1].nome)}: ${esc(t)}</code><button type="button" class="btnsm ghost" data-copia-prompt="${i}">Copia</button></div>`).join("")}
         <p class="muted small" style="margin:6px 0 0">Poi scarichi le immagini sul telefono e le metti nei quattro riquadri qui sopra.</p></details>
