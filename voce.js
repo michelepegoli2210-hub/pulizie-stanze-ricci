@@ -38,11 +38,11 @@ const CHIAVE_LOCALE = "ricci_voce";
 const MAX_CARATTERI = 600; // oltre, si taglia: non si paga un comizio
 
 export function leggiVoce() {
-  let c;
-  try { c = { ...CONF_BASE, ...JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}") }; }
-  catch (e) { c = { ...CONF_BASE }; }
+  let salvato = {};
+  try { salvato = JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}") || {}; } catch (e) { salvato = {}; }
+  const c = { ...CONF_BASE, ...salvato };
   // chi aveva gia' salvato la voce vecchia passa da solo a quella nuova
-  if (c.v !== 2) { c.voce = CONF_BASE.voce; c.tono = CONF_BASE.tono; c.v = 2; }
+  if (salvato.v !== 2) { c.voce = CONF_BASE.voce; c.tono = CONF_BASE.tono; c.v = 2; }
   c.stile = tonoDi(c).stile; // lo stile segue sempre il tono scelto
   return c;
 }
