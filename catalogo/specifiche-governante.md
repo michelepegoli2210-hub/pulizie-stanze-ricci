@@ -664,3 +664,37 @@ COSA SAPERE: se si tocca "Prova la voce" tre o quattro volte di seguito arriva "
 
 ### Dove si cambia
 Tre puntini in alto a destra -> passo 6 "La voce". Prima riga: quale voce. Seconda riga: come deve parlare. Poi "Prova la voce" per sentirla.
+
+## 32. La 0.60 (18 ottobre, sera): LA SCHERMATA DI CASA
+
+### Cosa ha chiesto Michele
+"deve essere proprio l'unica cosa che si deve vedere quando apro l'app e poi tutto magari sotto, affianco, oppure se si puo' aprire un'altra pagina dove c'e' il resto delle macro informazioni, prospetto, giornate, signore e quant'altro".
+Gli ho dato tre scelte e ha scelto la terza: solo lei all'apertura, con sotto una striscia piccola con le cose di oggi, PIU' il tasto che porta a tutto il resto.
+
+### Com'e' fatta
+Una sezione nuova, #sofiaHero, che NON sta dentro #app: viene infilata nel corpo della pagina PRIMA dell'intestazione. Cosi' il resto dell'app non e' stato toccato: sta tutto sotto, uguale a prima, e si raggiunge scorrendo col dito o col tasto "Le mie giornate".
+Altezza 100svh (svh e non vh: cosi' la barra del browser del telefono non mangia il tasto in basso).
+Dentro: il filmato a tutto schermo, un velo scuro sfumato in basso per leggere il testo, in alto il nome della struttura e i tre puntini, in basso il saluto, la riga della giornata, il microfono grande, "Scrivile", le pasticche con i numeri di oggi e il tasto "Le mie giornate".
+
+### Le funzioni nuove in app.js
+- casaAttiva(): dice se la schermata va mostrata (proprietario, vista "oggi", giorno = oggi, dati caricati, faccia FOTO).
+- casaOssatura(): il guscio, costruito UNA VOLTA SOLA. Importante: se si ricostruisse a ogni disegno, il video ripartirebbe da capo a ogni aggiornamento.
+- casaAggiorna(h): cambia solo i testi e le pasticche.
+- disegnaCasa(): crea o toglie la sezione. Chiamata dentro disegna(), prima di collega(), cosi' i tasti data-vista e data-chat-apri vengono collegati come tutti gli altri.
+Quando la schermata di casa c'e', vistaOggiGestione() NON disegna piu' cardConsuela(): altrimenti ci sarebbero due #consSotto con lo stesso id.
+
+### Il trucco dello schermo largo
+Il filmato e' 9:16, in piedi. Su un telefono riempie tutto, giusto. Su un computer (schermo largo) "cover" tagliava tutto tranne la fronte.
+Aggiunta la regola @media (min-aspect-ratio:9/16): se lo schermo e' piu' largo di una foto in piedi, il filmato si vede INTERO al centro (object-fit:contain) e ai lati si mette la stessa immagine sfocata (il poster, con blur 44px e luminosita' 45%). Niente barre nere.
+
+### I tre filmati (dai video della notte del 18 ottobre)
+Montati con ffmpeg a 540x960, senza audio (-an: i video di Veo hanno il sonoro e non serve), crf 30.
+- cons-attesa.mp4 (415 KB, 20 s): 10 secondi presi dal clip lungo, poi avanti-e-indietro (boomerang) per un giro perfetto senza stacco.
+- cons-parla.mp4 (245 KB, 10 s): il clip con piu' movimento della bocca.
+- cons-ascolta.mp4 (212 KB, 10 s): NUOVO, prima non c'era. Adesso mentre il microfono ascolta lei annuisce davvero.
+- cons-poster.webp (17 KB): il primo fotogramma, serve anche come sfondo sfocato.
+COME HO CAPITO QUALE ERA QUALE: i tre file arrivano senza nome. Ho misurato col computer quanto si muove la bocca (ritaglio 170x100 sulla bocca, differenza media fra un fotogramma e il successivo): piu' movimento = parla, meno movimento = attesa.
+
+### Il motore dei filmati adesso ha tre stati
+filmVigila() guarda document.body.dataset.cons: "parla" -> cons-parla, "ascolto" -> cons-ascolta, altrimenti cons-attesa. statoCons() scrive quel valore e marca sia .card.consuela sia .sofia-hero.
+Provato dal vivo: attesa -> ascolta -> parla -> attesa, i filmati si scambiano davvero.
