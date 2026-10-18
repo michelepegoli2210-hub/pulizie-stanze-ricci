@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.49.0";
+export const VERSIONE = "0.50.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -78,14 +78,14 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 // con la voce vera. Stanno solo su questo telefono (sono pesanti e alle signore non servono).
 const CHIAVE_FACCE = "ricci_gov_facce";
 const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
-const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp" };
+const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
 function CORPO_CONS(cls) {
   const c = CORPO_PRONTO, im = (k, n) => `<img class="${n}" src="${c[k]}" alt="">`;
   return `<span class="donnina gov-fig gov-corpo ${cls}" role="img" aria-label="${esc(nomeGov())}">
     <span class="cg-giro"><span class="cg-salto">
-      <span class="cg-pose">${im("corpo", "cg-p cg-base")}${im("saluto", "cg-p cg-saluto")}${im("riposo", "cg-p cg-riposo")}</span>
-      ${im("b1", "cg-t cg-b1")}${im("b3", "cg-t cg-b3")}${im("b2", "cg-t cg-b2")}${im("felice", "cg-t cg-felice")}${im("occhi", "cg-t cg-occhi")}
+      <span class="cg-pose">${im("corpo", "cg-p cg-base")}${im("saluto", "cg-p cg-saluto")}${im("riposo", "cg-p cg-riposo")}${im("indica", "cg-p cg-indica")}${im("cuore", "cg-p cg-cuore")}${im("pollice", "cg-p cg-pollice")}</span>
+      ${im("b1", "cg-t cg-b1")}${im("b3", "cg-t cg-b3")}${im("b2", "cg-t cg-b2")}${im("felice", "cg-t cg-felice")}${im("osu", "cg-t cg-osu")}${im("osx", "cg-t cg-osx")}${im("odx", "cg-t cg-odx")}${im("occhi", "cg-t cg-occhi")}
     </span></span></span>`;
 }
 const POSE = [
@@ -1590,13 +1590,21 @@ function applicaBocca(forza) {
   const v = f < 0.07 ? "" : f < 0.24 ? "c" : f < 0.52 ? "b" : "a";
   document.querySelectorAll(".donnina.gov-fig").forEach(svg => { svg.dataset.v = v; svg.style.setProperty("--apri", f.toFixed(2)); });
 }
-let vitaGovTimer = null, vitaOcchiTimer = null, vitaPosa = "base";
+let vitaGovTimer = null, vitaOcchiTimer = null, vitaSguardoTimer = null, vitaPosa = "base";
+function sguardoGov() {
+  const f = document.querySelector(".gov-corpo.viva");
+  if (f && !document.hidden) {
+    const s = ["", "sx", "dx", "su", "sx", "dx", "", "su"][Math.floor(Math.random() * 8)];
+    f.dataset.sg = s;
+  }
+  vitaSguardoTimer = setTimeout(sguardoGov, 900 + Math.random() * 1700);
+}
 function vivaGov() { return document.querySelector(".gov-corpo.viva") || document.querySelector(".gov-foto.viva.grande"); }
 function gestoGov() {
   const f = vivaGov(); if (!f || document.hidden) return;
   const r = Math.random();
   if (r < 0.58) {
-    const p = ["base", "saluto", "riposo", "base", "saluto"];
+    const p = ["base", "saluto", "riposo", "indica", "cuore", "pollice", "base", "indica", "saluto"];
     let n = p[Math.floor(Math.random() * p.length)];
     if (n === vitaPosa) n = vitaPosa === "base" ? "saluto" : "base";
     vitaPosa = n; f.dataset.posa = n;
@@ -1617,12 +1625,13 @@ function battiGov() {
       if (doppio) setTimeout(() => { f.classList.add("batte"); setTimeout(() => f.classList.remove("batte"), 95); }, 95);
     }, 115);
   }
-  vitaOcchiTimer = setTimeout(battiGov, 1800 + Math.random() * 2600);
+  vitaOcchiTimer = setTimeout(battiGov, 1500 + Math.random() * 2300);
 }
 function vitaGov() {
   if (vitaGovTimer) return;
-  vitaGovTimer = setInterval(gestoGov, 2400);
+  vitaGovTimer = setInterval(gestoGov, 1900);
   battiGov();
+  sguardoGov();
 }
 vitaGov();
 function voceAccesa() { return !!VOCE.leggiVoce().attiva; }

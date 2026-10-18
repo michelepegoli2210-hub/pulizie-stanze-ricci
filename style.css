@@ -1348,3 +1348,34 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
   .cons-sal{font-size:32px}
 }
 @media (prefers-reduced-motion:reduce){.gov-corpo .cg-giro,.gov-corpo .cg-salto{animation:none!important}}
+
+/* ============================================================
+   0.50 - altri gesti, occhi che si muovono, sfondo dell'albergo
+   ============================================================ */
+.gov-corpo[data-posa="indica"] .cg-indica{opacity:1}
+.gov-corpo[data-posa="cuore"] .cg-cuore{opacity:1}
+.gov-corpo[data-posa="pollice"] .cg-pollice{opacity:1}
+.gov-corpo .cg-osx,.gov-corpo .cg-odx,.gov-corpo .cg-osu{opacity:0;transition:opacity .13s ease}
+.gov-corpo[data-sg="sx"] .cg-osx{opacity:1}
+.gov-corpo[data-sg="dx"] .cg-odx{opacity:1}
+.gov-corpo[data-sg="su"] .cg-osu{opacity:1}
+.gov-corpo[data-um="felice"] .cg-osx,.gov-corpo[data-um="felice"] .cg-odx,.gov-corpo[data-um="felice"] .cg-osu{opacity:0}
+@keyframes cgGiro{0%{transform:rotate(-3.2deg) translateX(-3.4%)}17%{transform:rotate(1.7deg) translateX(1.9%)}36%{transform:rotate(3.4deg) translateX(3.6%)}54%{transform:rotate(-1deg) translateX(-1.3%)}73%{transform:rotate(2.3deg) translateX(2.5%)}100%{transform:rotate(-3.2deg) translateX(-3.4%)}}
+@keyframes cgSalto{0%,100%{transform:translateY(0) scale(1)}28%{transform:translateY(-3.8%) scale(1.03)}61%{transform:translateY(1.4%) scale(.991)}}
+.gov-corpo.viva .cg-giro{animation:cgGiro 5.4s ease-in-out infinite}
+.gov-corpo.viva .cg-salto{animation:cgSalto 2.3s ease-in-out infinite}
+.gov-corpo.parla .cg-giro{animation-duration:2.8s}
+.gov-corpo.parla .cg-salto{animation-duration:1.15s}
+.card.consuela{position:relative;padding:0;overflow:hidden;background:#F6F1E7}
+.card.consuela::before{content:"";position:absolute;inset:0;z-index:0;background:url("cons-scena.webp") center/cover no-repeat;opacity:.92}
+.card.consuela::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(255,253,248,.62) 0%,rgba(255,251,243,.18) 42%,rgba(255,248,235,.55) 100%)}
+.cons-apri{position:relative;z-index:2}
+.cons-voce{z-index:3}
+.cons-fig{position:relative;width:min(92vw,420px)}
+.cons-fig::before{content:"";position:absolute;left:50%;bottom:3%;width:88%;height:70%;transform:translateX(-50%);z-index:0;background:radial-gradient(ellipse at 50% 62%,rgba(255,219,160,.5),rgba(255,219,160,0) 68%);filter:blur(5px)}
+.cons-fig .gov-corpo{position:relative;z-index:1}
+.cons-sal{text-shadow:0 1px 0 rgba(255,255,255,.65)}
+.cons-riga,.cons-spinta{text-shadow:0 1px 0 rgba(255,255,255,.55)}
+@media (min-width:760px){
+  .cons-fig{width:400px}
+}
