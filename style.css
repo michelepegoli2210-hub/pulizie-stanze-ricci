@@ -1431,3 +1431,10 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .gov-viva .gov-film video{object-position:50% 14%}
 .inizio.chat .gov-viva .donnina.gov-fig.gov-film{width:150px}
 .gov-testa .gov-viva .donnina.gov-fig.gov-film{width:150px}
+
+/* 0.56.1 - la testa nella chat resta quadrata */
+.gov-viva .donnina.gov-fig.gov-film,
+.inizio.chat .gov-viva .donnina.gov-fig.gov-film,
+.gov-testa .gov-viva .donnina.gov-fig.gov-film{height:auto;aspect-ratio:1/1}
+.inizio.chat .gov-viva .donnina.gov-fig.gov-film{width:132px}
+.gov-testa .gov-viva .donnina.gov-fig.gov-film{width:132px}
