@@ -1477,7 +1477,7 @@ function casaAggiorna(h) {
   if (man) voci.push(`${man} ${man === 1 ? "lavoro" : "lavori"} da fare`);
   if (dom) voci.push(`${dom} ${dom === 1 ? "domanda" : "domande"} per te`);
   const sal = h.querySelector(".casa-sal"), riga = h.querySelector(".casa-riga"), chips = h.querySelector(".casa-chips");
-  if (sal) sal.textContent = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`;
+  if (sal) { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); }
   if (riga) riga.textContent = c && c.testo ? c.testo : u.testo;
   if (chips) chips.innerHTML = voci.map(t => `<span class="casa-chip">${esc(t)}</span>`).join("");
   const mic = h.querySelector(".casa-mic");

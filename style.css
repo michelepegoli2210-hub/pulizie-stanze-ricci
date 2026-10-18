@@ -1490,9 +1490,16 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .casa-giu-btn i{font-style:normal;font-size:22px;line-height:.6}
 @media (min-width:760px){
   .sofia-hero .donnina.gov-fig.gov-film.casa-fig{width:100%;height:100%}
-  .sofia-hero .casa-fig video{object-position:50% 10%}
   .casa-su,.casa-giu{max-width:760px;margin-left:auto;margin-right:auto}
 }
+/* schermo piu' largo di una foto in piedi (computer, telefono girato):
+   il filmato si vede tutto intero al centro, ai lati la stessa immagine sfocata */
+@media (min-aspect-ratio:9/16){
+  .sofia-hero .casa-fig video{object-fit:contain;object-position:50% 50%}
+  .sofia-hero .casa-film::before{content:"";position:absolute;inset:-8%;background:url(cons-poster.webp) center/cover no-repeat;filter:blur(44px) brightness(.45) saturate(.8);z-index:-1}
+  .sofia-hero.sta-parlando .casa-fig video,.sofia-hero[data-stato="ascolto"] .casa-fig video{transform:scale(1.06)}
+}
+.casa-sal.lunga{font-size:clamp(18px,5vw,24px)}
 @media (prefers-reduced-motion:reduce){
   .sofia-hero .casa-fig video{transition:none}
 }
