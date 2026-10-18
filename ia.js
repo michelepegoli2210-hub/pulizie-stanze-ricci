@@ -16,7 +16,7 @@ export const FORNITORI = {
     dove: "aistudio.google.com/apikey",
     passi: "Tocca il tasto blu «Create API key», scegli il progetto che ti propone e conferma.",
     chiave: "È una riga lunghissima di lettere e numeri: copiala tutta",
-    preferiti: { sveglia: [/^gemini-[\d.]+-flash$/, /flash$/, /flash-lite$/], risparmio: [/^gemini-[\d.]+-flash-lite$/, /flash-lite/, /flash$/] },
+    preferiti: { sveglia: [/argon/, /^gemini-[\d.]+-pro$/, /-pro$/, /^gemini-[\d.]+-flash$/, /flash$/, /flash-lite$/], risparmio: [/^gemini-[\d.]+-flash-lite$/, /flash-lite/, /flash$/] },
     elenco: () => "https://generativelanguage.googleapis.com/v1beta/models",
     elencoTesta: (k) => ({ "x-goog-api-key": k }),
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
@@ -73,7 +73,7 @@ export function scegliModello(tutti, fornitore, qualita = "sveglia") {
   const f = FORNITORI[fornitore]; if (!f) return tutti[0] || "";
   const liste = f.preferiti[qualita] || f.preferiti.sveglia;
   for (const p of liste) {
-    const c = tutti.filter(x => p.test(x) && !/preview|exp|thinking|audio|image|tts|live|transcribe|embedding|search|moderation/.test(x));
+    const c = tutti.filter(x => p.test(x) && !/preview|exp|audio|image|tts|live|transcribe|embedding|search|moderation/.test(x));
     if (c.length) return c.sort((a, b) => versioneModello(b) - versioneModello(a) || a.length - b.length)[0];
   }
   return tutti[0] || "";
