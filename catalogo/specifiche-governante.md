@@ -539,3 +539,39 @@ Nelle bollette della chat la foto veniva ovale (40x45) per una vecchia regola fa
 
 ### Cosa ancora non e' come Praktika
 Non gira la testa in 3D e non muove le braccia: sono sette immagini che si scambiano dentro una finestra, piu respiro e ondeggio fatti dal telefono. Per il 3D vero servirebbe un video generato, che si paga.
+
+## 28. La 0.49 (18 ottobre): Consuela a figura intera, con i gesti
+
+### Cosa ha chiesto Michele
+Piu bella ancora, si deve vedere quasi tutto il corpo, e si deve muovere venti volte di piu.
+
+### Il personaggio
+Rifatto da zero su Gemini: ragazza di 24 anni, capelli castani lunghi e mossi, divisa blu notte, inquadratura dai fianchi in su, mani aperte e ben visibili.
+Trucco importante: generata su SFONDO VERDE pieno (#00B140), come al cinema. Poi col computer il verde e stato tolto, cosi lei sta dentro la card senza nessun riquadro intorno.
+
+### Come si ottengono pose davvero identiche
+La chat di Gemini si confondeva e tornava sempre alla prima immagine. Soluzione: chat nuova, la foto base CARICATA come allegato, e ogni volta "riparti dalla foto che ti ho caricato". Cosi tutte le pose tornano uguali.
+
+### I dieci pezzi (110 KB in tutto, formato WEBP)
+- Tre pose intere: cons-base (braccia aperte), cons-saluto (braccio alzato che saluta), cons-riposo (braccia giu).
+- Cinque TOPPE trasparenti che coprono solo un pezzetto di faccia: cons-b1 (bocca socchiusa), cons-b2 (bocca A), cons-b3 (bocca O), cons-occhi (occhi chiusi), cons-felice (risata).
+- Due teste tonde per le bollette della chat: cons-testa, cons-testa-occhi.
+Le toppe hanno i bordi sfumati (rettangolo arrotondato + sfocatura 11 px): si incollano sopra senza che si veda il taglio. Controllo col computer: lo scarto fra una posa e l altra e di 0-1 pixel, quindi combacia tutto.
+
+### Il motore dei movimenti
+Due strati uno dentro l altro, con tempi diversi apposta, cosi il movimento non si ripete mai uguale:
+- cg-giro: ondeggia a destra e sinistra, 7 secondi, rotazione fino a 2,5 gradi
+- cg-salto: respiro e saltello, 2,9 secondi
+Quando parla diventano 3,6 e 1,4 secondi: si muove quasi il doppio piu veloce.
+Ogni cambio di posa fa anche uno scatto (cgScatto, 0,6 s) che la fa saltare un po: cosi il cambio sembra un gesto e non una dissolvenza.
+
+### Quanto si muove adesso
+- gestoGov() ogni 2,4 secondi: 58% cambia posa (saluta, apre le braccia, le abbassa), 26% fa una risata.
+- battiGov() ogni 1,8-4,4 secondi: sbatte le palpebre, a volte due volte di fila.
+Prima succedeva qualcosa ogni 6,5 secondi e solo con la faccia. Adesso succede qualcosa quasi ogni secondo e mezzo, e muove anche le braccia.
+
+### La card
+Telefono: testo in alto, Consuela sotto larga fino a 360 px, appoggiata al bordo basso della card. Computer: lei a sinistra 340 px, testo a destra.
+
+### Cosa ancora non e come Praktika
+Le braccia cambiano a scatti fra tre pose, non si muovono in modo continuo: per quello servirebbe un vero scheletro 3D o un video generato, che si paga.
