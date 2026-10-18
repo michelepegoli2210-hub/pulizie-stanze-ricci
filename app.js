@@ -15,7 +15,7 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 
-export const VERSIONE = "0.54.0";
+export const VERSIONE = "0.55.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -121,6 +121,77 @@ function filmVigila() {
   }, 450);
 }
 filmVigila();
+let micCasa = null, micAttivo = false;
+function statoCons(s) {
+  const c = document.querySelector(".card.consuela");
+  if (!c) return;
+  c.dataset.stato = s || "";
+  if (s === "parla") filmGov("parla"); else if (s !== "ascolto") filmGov("attesa");
+}
+function sottoCons(t, fantasma) {
+  const z = document.getElementById("consSotto");
+  if (!z) return;
+  z.textContent = t || "";
+  z.classList.toggle("fantasma", !!fantasma);
+  z.classList.toggle("vedi", !!t);
+  clearTimeout(z._t);
+  if (t && !fantasma) z._t = setTimeout(() => z.classList.remove("vedi"), 9000);
+}
+function ultimaDiLei() {
+  try {
+    const c = conversazione();
+    for (let i = c.length - 1; i >= 0; i--) {
+      const x = c[i];
+      const chi = x && (x.chi || x.da || x.ruolo);
+      if (chi && /gov|lei|ia|assist/i.test(String(chi))) return String(x.testo || x.msg || x.t || "");
+    }
+  } catch (e) {}
+  return "";
+}
+function micCasaVai() {
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!R) { toast("Qui il microfono non si apre: usa quello della tastiera"); return; }
+  if (micAttivo && micCasa) { try { micCasa.stop(); } catch (e) {} return; }
+  const r = new R();
+  micCasa = r; micAttivo = true;
+  r.lang = "it-IT"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+  let finale = "";
+  statoCons("ascolto"); sottoCons("ti ascolto…", true);
+  r.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const x = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finale += x; else interim += x;
+    }
+    sottoCons((finale + interim).trim() || "ti ascolto…", true);
+  };
+  r.onerror = () => {
+    micAttivo = false;
+    statoCons("errore"); sottoCons("Non ho sentito bene, riprova.");
+    setTimeout(() => statoCons("ferma"), 2600);
+  };
+  r.onend = async () => {
+    micAttivo = false;
+    const t = finale.trim();
+    if (!t) { statoCons("ferma"); sottoCons(""); return; }
+    statoCons("pensa"); sottoCons("ci penso…", true);
+    try {
+      await parlaGov(t);
+      statoCons("parla");
+      sottoCons(ultimaDiLei() || "Ti ho risposto nella chat.");
+    } catch (e) {
+      statoCons("errore"); sottoCons("Non sono riuscita a rispondere.");
+    }
+    setTimeout(() => statoCons("ferma"), 3200);
+  };
+  try { r.start(); } catch (e) { micAttivo = false; statoCons("ferma"); sottoCons(""); }
+}
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-cons-mic]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  micCasaVai();
+}, true);
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
 function CORPO_CONS(cls) {
   const c = CORPO_PRONTO, im = (k, n) => `<img class="${n}" src="${c[k]}" alt="">`;
@@ -1365,6 +1436,7 @@ function cardConsuela() {
         ${spinta ? `<span class="cons-spinta">${esc(spinta)}</span>` : ""}
         <span class="cons-az"><span class="cons-chip">${esc(nomeGov())} · parlale ›</span>${c ? `<span class="ia-bollo">IA</span>` : ""}</span>
       </span></button>
+    <div class="cons-parlaci"><button type="button" class="cons-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button><div class="cons-sotto" id="consSotto"></div></div>
     ${voceAccesa() ? `<button class="cons-voce" data-cons-voce aria-label="Fatti leggere il saluto">${ICONA("altoparlante")}</button>` : ""}
   </section>`;
 }
