@@ -1439,9 +1439,7 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .inizio.chat .gov-viva .donnina.gov-fig.gov-film{width:132px}
 .gov-testa .gov-viva .donnina.gov-fig.gov-film{width:132px}
 
-/* ============================================================
-   0.57 - lei resta grande anche nella chat, e piu' vicina
-   ============================================================ */
+/* 0.57 - lei resta grande anche nella chat, e piu' vicina */
 .gov-viva{position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#FFFDF8 0%,#FFFDF8 78%,rgba(255,253,248,0) 100%);padding:10px 12px 14px;align-items:center;gap:14px}
 .gov-viva .donnina.gov-fig.gov-film,
 .inizio.chat .gov-viva .donnina.gov-fig.gov-film,
