@@ -607,3 +607,60 @@ Aggiustato: vistaAltro() adesso comincia con cardIA(), quindi la scheda sta in c
 Michele ce l ha gia, creata il 16 ottobre (finisce con Dx7g, progetto Default Gemini Project). Il livello scritto e "Prova senza costi": piano GRATUITO. Per un albergo basta.
 PostePay non e accettata da Google e PayPal chiede un minimo di 30 dollari: non servono, perche sul piano gratuito non si paga niente.
 Le chiavi non le scrive mai l assistente: Michele copia da aistudio.google.com/apikey e tocca Incolla nel passo 4.
+
+## 30. Dalla 0.54 alla 0.58 (18 ottobre): la governante diventa Sofia e si parla dalla prima pagina
+
+### 0.54 - un errore mio, scritto qui perche non si ripeta
+Nella 0.51 avevo messo l app a preferire Argon e Pro. Quei modelli NON hanno chiamate gratuite via API: la prima chiamata di Michele ha risposto 429 e l app diceva "Hai finito le chiamate gratuite". Non era vero, non ne aveva mai fatta una.
+Rimesso l ordine giusto in ia.js: PRIMA flash, poi argon, poi pro, poi flash-lite. Argon resta disponibile ma non e piu il primo.
+Cambiato anche il messaggio del 429, che prima dava la colpa a Michele: adesso dice "Questo modello non ha chiamate gratuite, oppure le hai finite per adesso. Vai al passo 2 e metti Risparmio, poi riprova."
+REGOLA: con la chiave gratuita di AI Studio funzionano i modelli flash. Pro e Argon vogliono la carta.
+
+### 0.55 - il microfono sulla prima pagina
+Michele: "io devo poterci parlare da subito e non che devo andare nella chat".
+Sotto la faccia di Sofia, nella card della prima pagina, c e un bottone tondo col microfono. Usa il riconoscimento vocale del telefono (it-IT). Mentre lui parla, sotto compare quello che sta dicendo in grigio chiaro; quando finisce, il testo va a parlaGov(), cioe lo stesso cervello della chat.
+La card cambia bordo: verde mentre ascolta, ambra mentre pensa, rosso se qualcosa non va. E document.body prende un attributo che dice in che stato e, cosi anche il video sa che deve cambiare.
+
+### 0.56 e 0.57 - il video anche nella chat
+Prima, entrando nella chat, Sofia si riduceva a un bollino tondo da 45 px: Michele ha detto "non la vedo piu".
+Adesso il filmato resta grande anche nella chat (meta schermo in larghezza, forma 3:4) e sta attaccato in alto mentre i messaggi scorrono sotto.
+
+### 0.58 - lo zoom quando parla
+Quando Sofia parla, il video si avvicina (ingrandimento 1,5 nella chat, 1,46 nella card), con una transizione morbida di mezzo secondo. Quando ascolta, 1,4. E il modo di Praktika: in primo piano mentre parla, un po piu indietro quando sta ferma.
+
+### 0.58.1 - il nome
+Michele: "Consuela non tanto mi piace". Cercato un nome piu adatto al posto; alla fine ha scelto lui: SOFIA. Aggiunto in cima alla lista dei nomi nel passo 0.
+Nel codice le variabili si chiamano ancora cons-qualcosa (cons-attesa.mp4, FACCE_PRONTE, cardConsuela): e solo il nome interno dei file, quello che si legge a schermo lo decide il passo 0.
+
+### Le regole dei video, dette da Michele guardando Praktika
+Queste valgono per tutti i video che si generano da qui in avanti:
+- PRIMO PIANO: testa e spalle che riempiono l inquadratura.
+- SGUARDO FISSO IN CAMERA, negli occhi, SEMPRE, anche quando sta zitta.
+- Le espressioni stanno sul VISO (bocca, sopracciglia, occhi, piccoli cenni del capo), NON sulle mani. Ha detto che gesticolava troppo e a vuoto.
+- Elegante, composta, bella, professionale.
+Il riferimento da caricare su Gemini e /home/claude/dev/c4/nuova.png.
+
+## 31. La 0.59 (18 ottobre): la voce sensuale
+
+### Cosa ha chiesto Michele
+"la voce deve essere molto molto piu sensuale".
+
+### Due cose diverse: QUALE voce e COME parla
+- QUALE voce: e il nome del timbro che si chiede a Google. Prima era Sulafat (calda). Adesso la lista parte dalle tre piu basse e morbide: Despina (Vellutata, quella di partenza), Achernar (Sussurrata, soffiata), Gacrux (Profonda). Poi restano Sulafat, Vindemiatrix, Callirrhoe, Leda, Achird.
+- COME parla: e lo "stile", un pezzo di testo che si manda a Google insieme alla frase e che NON viene letto ad alta voce, dice solo con che tono leggere. Adesso ce ne sono tre, scegliibili nel passo 6 sotto la scritta "Come deve parlare": Garbata, Calda, Sensuale. Di partenza e Sensuale.
+Lo stile Sensuale, parola per parola: voce molto bassa, vellutata e un filo soffiata, lenta, vicina al microfono come se confidasse qualcosa all orecchio, vocali allungate, una piccola pausa tra le frasi, il tono che scende alla fine di ogni frase; mai squillante, mai allegra, mai forte.
+Lo stile e scritto in inglese apposta: e la lingua degli esempi nella documentazione di Google ed e quella che il modello segue meglio. La frase letta resta in italiano.
+
+### Anche la voce del telefono
+Il ripiego gratuito (quando manca internet o la chiave) adesso segue lo stesso tono: Sensuale = velocita 0,84 e altezza 0,74, cioe molto piu lenta e piu bassa di prima (era 1,02 e 1,04).
+
+### Il difetto trovato subito (0.59.1)
+Per far passare alla voce nuova anche chi aveva gia salvato quella vecchia avevo messo un contrassegno v:2 nella configurazione. Ma il controllo guardava la configurazione gia mescolata con quella di base, che il v:2 ce l aveva sempre: quindi il passaggio non avveniva mai e restava Sulafat. Aggiustato: adesso il controllo guarda SOLO quello che c e scritto in memoria.
+REGOLA GENERALE: quando si controlla se una cosa era gia salvata, si guarda il salvato grezzo, mai quello gia unito ai valori di partenza.
+
+### Provato davvero
+Chiamata vera a Google dal telefono di Michele: Despina, Achernar e Gacrux rispondono e tornano l audio (modello gemini-3.8-flash-lite-tts). Le altre non le ho potute provare perche dopo tre chiamate di fila il piano gratuito dice 429.
+COSA SAPERE: se si tocca "Prova la voce" tre o quattro volte di seguito arriva "Hai finito le voci gratuite per adesso". Non e finita niente: e solo il limite al minuto. Si aspetta un paio di minuti e riparte.
+
+### Dove si cambia
+Tre puntini in alto a destra -> passo 6 "La voce". Prima riga: quale voce. Seconda riga: come deve parlare. Poi "Prova la voce" per sentirla.
