@@ -1301,3 +1301,7 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .gov-foto[data-sp="pensa"] .f-felice{opacity:0}
 .gov-foto[data-v="c"] .f-felice,.gov-foto[data-v="b"] .f-felice,.gov-foto[data-v="a"] .f-felice,
 .gov-foto[data-v="c"] .f-pensa,.gov-foto[data-v="b"] .f-pensa,.gov-foto[data-v="a"] .f-pensa{opacity:0}
+
+/* 0.48.2 - la foto resta sempre rotonda, non ovale */
+.donnina.gov-fig.gov-foto{aspect-ratio:1/1}
+.chat-msg.gov .donnina.gov-fig.gov-foto,.gov-plate .donnina.gov-fig.gov-foto,.chat-plate .donnina.gov-fig.gov-foto,.sig-plate .donnina.gov-fig.gov-foto,.sig-testa .donnina.gov-fig.gov-foto,.gov-testa .donnina.gov-fig.gov-foto,.istr-testa .donnina.gov-fig.gov-foto,.gov-viva .donnina.gov-fig.gov-foto,.inizio.chat .gov-viva .donnina.gov-fig.gov-foto{height:auto}
