@@ -575,3 +575,35 @@ Telefono: testo in alto, Consuela sotto larga fino a 360 px, appoggiata al bordo
 
 ### Cosa ancora non e come Praktika
 Le braccia cambiano a scatti fra tre pose, non si muovono in modo continuo: per quello servirebbe un vero scheletro 3D o un video generato, che si paga.
+
+## 29. Dalla 0.50 alla 0.53 (18 ottobre): dal pupazzo di immagini al VIDEO VERO
+
+### 0.50 - sei gesti, occhi vivi, sfondo
+Aggiunte tre pose (indica, mani sul cuore, pollice su) e tre toppe per gli occhi (guarda a sinistra, a destra, sopracciglia alzate). Lo sguardo cambia ogni 0,9-2,6 secondi, i gesti ogni 1,9 secondi. Sfondo della hall disegnato col computer (gradienti sfocati), 4,8 KB.
+
+### 0.51 - Argon nel motore dell app
+In ia.js la lista "sveglia" adesso cerca in ordine: argon, poi pro, poi flash. Tolto "thinking" dalla lista di esclusione, cosi i modelli che ragionano non vengono piu scartati.
+ATTENZIONE, cosa importante da ricordare: l abbonamento Google AI Pro (21,99 euro al mese, fatto il 18 ottobre) vale SOLO per il Gemini dove scrive Michele. NON paga l intelligenza dell app: quella usa l API con la chiave di AI Studio, che e un altro prodotto e si paga a consumo.
+
+### 0.52 - Consuela diventa un video
+Con l abbonamento Pro si e sbloccato "Crea video" (Veo 3.1 Lite) dentro Gemini. Fatti tre filmati partendo dalla foto del personaggio.
+I video NON si possono scaricare dal lato assistente: il link di Google e firmato e funziona solo dentro il browser di Michele (provato: il proxy blocca l host, e il fetch da un altra origine lo blocca il CORS). Quindi il giro e: Michele tocca la freccia di download in Gemini e attacca il file nella chat.
+Montaggio fatto col computer (ffmpeg):
+- cons-attesa.mp4: tagliato il primo secondo e tre (partiva ancora con lo sfondo verde della foto), rimpicciolito a 720 px, poi avanti e indietro (reverse) per avere un giro perfetto da 17,4 secondi. 168 KB.
+- cons-parla.mp4: 10 secondi, 163 KB.
+- cons-poster.webp: primo fotogramma, 14 KB.
+Nell app: due elementi video sovrapposti che si sfumano l uno nell altro (nessun lampo nero), un controllo ogni 450 ms che guarda se la card ha la classe "parla" e cambia filmato.
+
+### 0.53 - il difetto piu importante trovato finora
+La scheda di Consuela con la casella della CHIAVE API stava dentro vistaRegoleGov(), cioe nella vista della governante, a cui NON si arriva toccando nessun bottone (ci si va solo da un azione dell IA). Michele non poteva incollare la chiave nemmeno volendo.
+Aggiustato: vistaAltro() adesso comincia con cardIA(), quindi la scheda sta in cima al menu dei tre puntini. Il campo e #iaChiave, con accanto il bottone Incolla che legge dagli appunti.
+
+### I numeri veri dei limiti video (visti il 18 ottobre su gemini.google.com/usage)
+- Tre video di fila portano l "utilizzo attuale" al 99%. Si resetta ogni 5 ore circa.
+- Il limite SETTIMANALE con tre video era solo al 5%. Quindi di video se ne possono fare tanti in una settimana, bastano 3 alla volta ogni 5 ore.
+- AI Ultra (99,99 euro al mese) darebbe 5 volte tanto: non serve.
+
+### La chiave API: come stanno le cose davvero
+Michele ce l ha gia, creata il 16 ottobre (finisce con Dx7g, progetto Default Gemini Project). Il livello scritto e "Prova senza costi": piano GRATUITO. Per un albergo basta.
+PostePay non e accettata da Google e PayPal chiede un minimo di 30 dollari: non servono, perche sul piano gratuito non si paga niente.
+Le chiavi non le scrive mai l assistente: Michele copia da aistudio.google.com/apikey e tocca Incolla nel passo 4.
