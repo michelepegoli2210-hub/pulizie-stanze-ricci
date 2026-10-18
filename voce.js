@@ -1,5 +1,5 @@
 // ============================================================================
-//  VOCE.JS  ·  La governante che parla ad alta voce (0.40)
+//  VOCE.JS  ·  La governante che parla ad alta voce (0.59)
 //  Due motori:
 //   - "google": la voce vera di Google (Gemini TTS). Costa pochissimo e sembra
 //     una persona. Torna un file WAV già pronto, che suoniamo qui.
@@ -10,21 +10,41 @@
 // ============================================================================
 
 export const VOCI = [
-  { id: "Sulafat", nome: "Calda", come: "la più calda, da signora gentile" },
-  { id: "Achird", nome: "Amichevole", come: "allegra e alla mano" },
+  { id: "Despina", nome: "Vellutata", come: "bassa e morbida: la più sensuale" },
+  { id: "Achernar", nome: "Sussurrata", come: "soffiata, come se ti parlasse vicino" },
+  { id: "Gacrux", nome: "Profonda", come: "tono basso, da donna adulta" },
+  { id: "Sulafat", nome: "Calda", come: "calda, da signora gentile" },
   { id: "Vindemiatrix", nome: "Garbata", come: "pacata, parla piano" },
-  { id: "Achernar", nome: "Dolce", come: "morbida, voce bassa" },
-  { id: "Leda", nome: "Giovane", come: "svelta e fresca" },
   { id: "Callirrhoe", nome: "Tranquilla", come: "senza fretta" },
+  { id: "Leda", nome: "Giovane", come: "svelta e fresca" },
+  { id: "Achird", nome: "Amichevole", come: "allegra e alla mano" },
 ];
-export const STILE_BASE = "calma, cortese e pratica, come una governante d'albergo italiana che ti sta dando una buona notizia";
-export const CONF_BASE = { attiva: false, motore: "google", voce: "Sulafat", modello: "", stile: STILE_BASE };
+
+// Come deve parlare. Lo "stile" e' un'istruzione che mandiamo a Google insieme
+// al testo: non viene letta ad alta voce, dice solo con che tono leggere.
+// "rate" e "pitch" servono invece alla voce del telefono: velocita' e altezza.
+export const TONI = [
+  { id: "garbata", nome: "Garbata", rate: 1.0, pitch: 1.02,
+    stile: "calm, courteous and practical, like an Italian hotel housekeeper giving you good news" },
+  { id: "calda", nome: "Calda", rate: 0.94, pitch: 0.92,
+    stile: "warm and unhurried, a half-smile in the voice, a little slower and a little lower than normal, like a woman who knows you well and has all the time in the world" },
+  { id: "sensuale", nome: "Sensuale", rate: 0.84, pitch: 0.74,
+    stile: "very low, velvety and slightly breathy; speak slowly and close to the microphone, as if confiding in someone's ear; stretch the vowels, leave a small pause between phrases, let the pitch fall at the end of every sentence; soft, intimate, unhurried and self-assured; never bright, never cheerful, never loud" },
+];
+export function tonoDi(c) { return TONI.find(t => t.id === ((c && c.tono) || "")) || TONI[2]; }
+export const STILE_BASE = TONI[2].stile;
+export const CONF_BASE = { attiva: false, motore: "google", voce: "Despina", modello: "", tono: "sensuale", stile: STILE_BASE, v: 2 };
 const CHIAVE_LOCALE = "ricci_voce";
 const MAX_CARATTERI = 600; // oltre, si taglia: non si paga un comizio
 
 export function leggiVoce() {
-  try { return { ...CONF_BASE, ...JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}") }; }
-  catch (e) { return { ...CONF_BASE }; }
+  let c;
+  try { c = { ...CONF_BASE, ...JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}") }; }
+  catch (e) { c = { ...CONF_BASE }; }
+  // chi aveva gia' salvato la voce vecchia passa da solo a quella nuova
+  if (c.v !== 2) { c.voce = CONF_BASE.voce; c.tono = CONF_BASE.tono; c.v = 2; }
+  c.stile = tonoDi(c).stile; // lo stile segue sempre il tono scelto
+  return c;
 }
 export function salvaVoce(patch) {
   const n = { ...leggiVoce(), ...patch };
@@ -50,7 +70,8 @@ export function parlaTelefono(testo, { onFine } = {}) {
     const sin = window.speechSynthesis; if (!sin) { onFine?.(); return null; }
     sin.cancel();
     const u = new SpeechSynthesisUtterance(testo);
-    u.lang = "it-IT"; u.rate = 1.02; u.pitch = 1.04;
+    const to = tonoDi(leggiVoce());
+    u.lang = "it-IT"; u.rate = to.rate; u.pitch = to.pitch;
     const it = vociTelefono(); if (it.length) u.voice = it.find(v => /female|donna|alice|elsa|federica/i.test(v.name)) || it[0];
     u.onend = () => onFine?.(); u.onerror = () => onFine?.();
     sin.speak(u);

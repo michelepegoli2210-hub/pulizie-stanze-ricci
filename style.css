@@ -1097,6 +1097,8 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .inizio.chat .inizio-top{align-items:center}
 /* le voci fra cui scegliere */
 .voce-scelte{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.voce-toni{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.voce-toni .voce-scelte{margin-top:0}
 .voce-chip{background:var(--bg);border:1.5px solid var(--bordo,rgba(0,0,0,.12));border-radius:999px;padding:7px 13px;font:600 13px var(--f-display);color:var(--fg);min-height:36px}
 .voce-chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 

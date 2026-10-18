@@ -2064,6 +2064,7 @@ function cardIA() {
     <div class="ia-passo"><b>6.</b> La voce: te la legge ad alta voce
       <div class="seg"><button type="button" aria-pressed="${vc.attiva && vc.motore === "google"}" data-voce-motore="google">Voce vera</button><button type="button" aria-pressed="${vc.attiva && vc.motore === "telefono"}" data-voce-motore="telefono">Voce del telefono</button><button type="button" aria-pressed="${!vc.attiva}" data-voce-motore="">Muta</button></div>
       ${vc.attiva && vc.motore === "google" ? `<div class="voce-scelte">${VOCE.VOCI.map(v => `<button type="button" class="voce-chip" aria-pressed="${vc.voce === v.id}" data-voce-nome="${esc(v.id)}" title="${esc(v.come)}">${esc(v.nome)}</button>`).join("")}</div>` : ""}
+      ${vc.attiva ? `<div class="voce-toni"><span class="small muted">Come deve parlare:</span><div class="voce-scelte">${VOCE.TONI.map(t => `<button type="button" class="voce-chip" aria-pressed="${VOCE.tonoDi(vc).id === t.id}" data-voce-tono="${esc(t.id)}">${esc(t.nome)}</button>`).join("")}</div></div>` : ""}
       ${vc.attiva ? `<div class="ia-riga"><button type="button" class="btnsm" data-voce-prova ${voceInProva ? "disabled" : ""}>${voceInProva ? "Provo…" : "Prova la voce"}</button>${provaVoce ? `<span class="small ${provaVoce.ok ? "" : "muted"}">${esc(provaVoce.testo)}</span>` : ""}</div>` : ""}
       <span class="small muted">${vc.attiva && vc.motore === "google"
         ? "La voce vera di Google: sembra una persona. Costa meno di un centesimo al minuto parlato — con il tuo uso, circa 1,50 € al mese in tutto. Serve internet e la stessa chiave di sopra. Se non parte, parla il telefono."
@@ -2163,6 +2164,7 @@ function collegaIA() {
     toast(m === "google" ? "Voce vera: tocca «Prova la voce»" : m ? "Voce del telefono accesa" : "Voce spenta");
   });
   document.querySelectorAll("[data-voce-nome]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); zittisciVoce(); VOCE.salvaVoce({ voce: b.dataset.voceNome }); provaVoce = null; disegna(); });
+  document.querySelectorAll("[data-voce-tono]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); zittisciVoce(); VOCE.salvaVoce({ tono: b.dataset.voceTono }); provaVoce = null; disegna(); });
   document.querySelectorAll("[data-voce-tasto]").forEach(b => b.onclick = () => {
     VOCE.sbloccaAudio();
     const v = VOCE.leggiVoce();
@@ -2183,7 +2185,7 @@ function collegaIA() {
       }
     }
     provaVoce = { ok: true, testo: v.motore === "google" ? "Sta usando " + v.modello : "Voce del telefono" }; disegna();
-    parlaConVoce(`Buongiorno Michele, sono la governante. Oggi ci sono ${pulizieDelGiorno(L.oggiISO()).length} lavori in programma.`);
+    parlaConVoce(`Ciao Michele... sono ${nomeGov()}. Oggi ci sono ${pulizieDelGiorno(L.oggiISO()).length} lavori in programma. Ci penso io: tu stai tranquillo.`);
   });
 }
 
