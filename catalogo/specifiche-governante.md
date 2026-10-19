@@ -807,3 +807,45 @@ Michele non riusciva a spiegare dove voleva i tasti. Invece di chiederglielo a p
 - "tondi": tre cerchi con la sola icona, sotto la foto.
 Tecnicamente e' un attributo data-stile sulla sezione #sofiaHero piu' la proprieta' CSS order sui figli: nessun pezzo di pagina viene ricostruito, cambia solo l'ordine. La scelta sta in localStorage ("ricci_casa_stile"), quindi e' di quel telefono.
 SE SERVE UNA QUARTA DISPOSIZIONE: si aggiunge una voce a STILI_CASA in app.js e il relativo blocco .sofia-hero[data-stile="..."] nel CSS. Niente altro.
+
+## 36. La 0.64 (19 ottobre): voce sveglia, risposta in un secondo, sei filmati
+
+### Cosa ha detto Michele
+"La voce deve essere più squillante ed intellettuale e intelligente e non da film porno. E poi tutti i filmati che ti ho inviato che fine hanno fatto? Lei fa sempre la stessa cosa, dovrebbe fare tantissimi movimenti. E poi perché io gli parlo e mi risponde dopo 10 secondi? La risposta deve essere istantanea."
+
+### LA VOCE
+Fuori "Sensuale": era sbagliata e gliel'ho fatta due volte prima di capirlo. I toni adesso sono Chiara (di partenza), Garbata, Calda.
+Lo stile "Chiara", parola per parola: chiara, brillante e ben scandita, come una professionista che ti fa un riassunto veloce; consonanti precise, ritmo vivo ma controllato, intelligente e sicura, cortese e calda in modo professionale. MAI soffiata, MAI lenta, MAI intima, niente sussurri, niente vocali allungate.
+Le voci partono dalle più squillanti: Autonoe (Brillante, quella di partenza), Erinome (Nitida), Zephyr (Viva), Kore (Decisa). Poi restano Sulafat, Vindemiatrix, Leda, Achird.
+Il contrassegno di passaggio e' salito a v:4.
+
+### LA RISPOSTA IN 10 SECONDI: dove andava il tempo
+Misurato dal vivo, dentro l'app, con la chiave di Michele. QUESTO E' IL METODO DA RIUSARE: non indovinare, cronometrare.
+- La chiamata all'IA col modello che l'app usava (gemini-3.8-flash): 19-27 SECONDI. Non e' colpa dell'app: quel modello sul piano gratuito e' in coda. Una volta ha perfino risposto "questo modello e' molto richiesto".
+- La stessa domanda su gemini-3.5-flash-lite: 0,6-1,0 secondi. Provata cinque volte, sempre sotto il secondo, anche con un sistema da 4000 caratteri.
+- La voce (TTS): circa 3-4 secondi.
+- In piu': ogni domanda ricaricava l'elenco dei modelli, perche' il modello non era mai stato salvato.
+TOTALE PRIMA: circa 23 secondi. TOTALE ADESSO: 4,9 secondi misurati (IA 1,1 + voce 3,9).
+
+### Cosa e' cambiato per arrivarci
+1. I due tasti del passo 2 non si chiamano piu' "Sveglia / Risparmio" ma "Svelta / Pensa di piu'", e si parte da Svelta. Svelta cerca i modelli flash-LITE, il piu' nuovo per primo.
+2. leggiConf() in ia.js ha un contrassegno v:2: chi aveva salvato il modello vecchio passa da solo a quello nuovo.
+3. Lo scaldamotore: 2,5 secondi dopo l'avvio, se la chiave c'e' e il modello non e' salvato, l'app cerca il modello UNA volta e lo salva. Cosi' la prima domanda non paga quella ricerca.
+4. parlaGov() non aspetta piu' le due scritture sul database: la frase compare a schermo subito e il salvataggio va per conto suo (salvaChat aggiorna gia' S.chat prima di scrivere).
+5. "Un attimo." pronto in cassetto: quando il microfono si apre, l'app prepara in sottofondo l'audio di "Un attimo." e lo tiene. Appena Michele smette di parlare, quello parte SUBITO (zero attesa) mentre l'IA pensa. Poi la risposta vera lo interrompe da sola.
+6. La voce legge al massimo 420 caratteri invece di 600, e taglia all'ultimo punto, non a meta' parola. Meno testo = meno secondi.
+
+### "CHE FINE HANNO FATTO I FILMATI"
+Risposta onesta e da ricordare: i cinque file che Michele ha mandato in due giorni erano TUTTI LO STESSO IDENTICO FILMATO, in lunghezze diverse (10, 20, 30, 41 secondi). Confrontati fotogramma per fotogramma, la differenza e' 0,5 su 255: nulla.
+Succede perche' ogni risposta di Gemini contiene lo stesso video in piu' lunghezze, e perche' "allunga" la generazione precedente invece di farne una nuova. Quindi scaricandone tre da una sola risposta si prendono tre copie.
+I nove video DIVERSI generati nella notte sono ancora nella chat di Gemini: quelli non sono mai arrivati.
+
+### COME SI FA A FARLE FARE TANTE COSE CON UN FILMATO SOLO
+Il filmato da 41 secondi contiene azioni diverse. Tagliati SEI spezzoni, tutti con boomerang:
+- cons-attesa.mp4 (31,6-38,6 s): ferma, sorriso gentile.
+- cons-attesa2.mp4 (16,6-21,8 s): ferma, viso disteso.
+- cons-indica.mp4 (22,4-26,6 s): indica col dito.
+- cons-pensa.mp4 (13,6-16,5 s): faccia concentrata. Serve per lo stato "ci penso".
+- cons-parla.mp4 (2,6-8,2 s) e cons-ascolta.mp4 (8,6-12,4 s): come prima.
+E soprattutto: quando non succede niente, filmVigila() non ripete piu' sempre lo stesso. Gira fra attesa, attesa2 e indica (GIRO_RIPOSO in app.js), uno ogni nove secondi. Provato dal vivo: in quaranta secondi si vedono indica, attesa2, attesa, indica, attesa.
+SE ARRIVANO VIDEO NUOVI VERI: basta aggiungerli a FILM_PRONTO e metterne il nome in GIRO_RIPOSO.
