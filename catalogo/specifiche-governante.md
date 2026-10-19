@@ -741,3 +741,38 @@ Quindi i tre spezzoni dell'app sono ritagliati tutti dallo stesso filmato da 30 
 - cons-parla.mp4: da 1 s a 9 s, boomerang = 16 s, 402 KB. Qui parla.
 COME SI TROVANO I PEZZI GIUSTI: si decodifica un ritaglio di 180x120 pixel centrato sulla bocca (x 275, y 425 su un fotogramma 720x1280) e si misurano due cose per ogni fotogramma: quanto cambia rispetto al precedente (movimento) e quanti pixel scuri ci sono fra le labbra (apertura). Poi si cerca la finestra di 5 secondi che le minimizza (attesa) o massimizza (parla).
 ATTENZIONE AL RITAGLIO: con crop su un video yuv420p le misure devono essere PARI, se no ffmpeg le arrotonda e i conti vengono sballati di dieci volte.
+
+## 34. La 0.62 (19 ottobre, notte): la scheda come il lettore di Gemini
+
+### Cosa ha chiesto Michele
+Mi ha mandato una foto dello schermo del suo telefono con Gemini aperto e il video dentro il suo lettore, e ha scritto: "voglio che lei abbia questo stesso formato nella pagina, uguale preciso e identico. E non mi deve parlare ogni volta che apro l'app: magari la apro e lei sta li' che fa le cose sue, lavora. Poi appena premo i tasti, esempio Parlami. Che pero' devono essere in questa pagina molto eleganti i tasti, molto in accordo con tutto, molto eleganti e sofisticati."
+
+### Prima era a tutto schermo, adesso e' una scheda
+Via il filmato a pieno schermo col velo scuro sopra. Adesso la schermata e' chiara, si vede lo sfondo della laguna dell'app, e al centro c'e' UNA SCHEDA con gli angoli arrotondati (28 px) che contiene il filmato, con l'ombra sotto. Esattamente come il lettore di Gemini nella foto.
+Sulla scheda, in alto a destra, due tondini bianchi da 38 px con l'ombra: l'altoparlante (muto) e i tre puntini. Nella foto di Gemini ci sono il download e la condivisione, nella stessa identica posizione.
+La scheda e' alta min(54svh, 84vw*16/9) sul telefono e min(52svh, 520px) sullo schermo largo. Con quella altezza la larghezza viene da sola dalla forma 9:16.
+
+### TUTTO DEVE STARE IN UNA SCHERMATA
+Problema trovato subito: quando l'IA scrive una frase lunga, il testo cresce e spinge i tasti sotto il bordo dello schermo.
+Due rimedi insieme: le righe di testo sono tagliate (saluto 3 righe, riga 2, spinta 2, i numeri su una riga sola con i puntini), e la scheda e' piu' bassa. Misurato alla fine: altezza della schermata 712, finestra 712. Preciso.
+ATTENZIONE: la regola della scheda e' scritta DUE volte, una normale e una dentro @media (min-width:760px). Se si cambia solo la prima, sullo schermo largo non cambia niente. Mi e' successo e ho dovuto rifare il giro.
+
+### I TASTI
+Tre, tutti uguali: larghezza uguale, altezza 70, angoli 18, sfondo color scheda, bordo di un capello (1 px var(--line)), icona sopra e sotto la parola in maiuscoletto distanziato (11 px, letter-spacing .1em). Niente vetro, niente colori forti.
+- PARLAMI: lo tocchi e lei parla ad alta voce. Icona a onde. Mentre parla il tasto diventa nero pieno.
+- DIMMI: il microfono, per parlare tu. Diventa verde mentre ascolta, ambra mentre pensa, rosso se non ha capito.
+- GIORNATE: porta giu' a tutto il resto.
+
+### NON PARLA PIU' DA SOLA
+Tolto il saluto automatico all'apertura (era la 0.61). Michele: "magari la apro e lei sta li' che fa le cose sue". Adesso all'apertura parte il filmato di attesa, bocca chiusa, e basta.
+benvenutoSofia() si chiama solo dal tasto Parlami. Se la voce era spenta la riaccende da sola: toccare quel tasto vuol dire proprio che la vuoi sentire. Se sta gia' parlando, lo stesso tasto la zittisce.
+E' sparita anche la striscia gialla "tocca per sentirla": non serve piu', perche' adesso c'e' sempre un tocco prima del suono.
+
+### I FILMATI NUOVI (dal video del 19 ottobre notte)
+Di nuovo lo stesso caso di ieri: i due file mandati (20 s e 30 s) sono lo stesso filmato, uno e' l'altro accorciato. Il 30 s contiene tre cose diverse: parla (0-8 s), sta ferma e tranquilla (14-22 s), indica col dito girando la testa (22-27 s).
+L'inquadratura e' piu' larga di quella di ieri (testa, spalle e petto) ed e' quella che si vede nella foto di Gemini.
+- cons-attesa.mp4: 16,6-21,8 s, boomerang, 10,5 s, 190 KB. Calma, bocca chiusa, viso disteso.
+- cons-ascolta.mp4: 8,6-12,4 s, boomerang, 7,7 s, 130 KB.
+- cons-parla.mp4: 2,6-8,2 s, boomerang, 11,3 s, 241 KB.
+- cons-poster.webp: fotogramma a 17,9 s.
+ATTENZIONE SCELTA DEL FOTOGRAMMA: il primo tentativo di attesa partiva a 14,6 s e il poster veniva una faccia PREOCCUPATA. Le misure della bocca non bastano, bisogna guardare anche le facce: ho fatto una striscia di fotogrammi ogni secondo e mezzo e scelto a occhio la finestra dove e' serena.
