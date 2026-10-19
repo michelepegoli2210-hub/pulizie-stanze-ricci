@@ -874,7 +874,7 @@ PROVATO dal vivo: Argon fallisce, la regola riconosce l'errore, il ripiego su ge
 ### I PREZZI VERI (dal listino di Google, 19 ottobre 2026)
 - gemini-4-argon: 2,00 $ per milione di token in entrata e 10,00 $ in uscita FINO AL 30 NOVEMBRE 2026; dal 1 dicembre 4,00 $ e 20,00 $. Free tier: "Gemini 4 Argon is not available on the Free tier."
 - NON ESISTE un abbonamento mensile che copra l'API. Dal sito: "Google AI plan benefits for developer usage apply only within the Google AI Studio web interface. Direct use of the Gemini API (such as using API keys or external applications) is billed and managed separately." Quindi i 21,99 euro di AI Pro che Michele ha gia' pagato NON servono all'app.
-- Stima a 30 domande al giorno: circa 17 $ al mese adesso, circa 34 $ da dicembre.
+- Stima a 30 domande al giorno: circa 30 $ al mese adesso, circa 60 $ da dicembre (CORRETTO il 19/10 sera: la richiesta vera e' di 36.431 caratteri = 11.372 token in entrata, non 3.500; si puo' dimezzare accorciando o mettendo in cache la parte fissa del prompt).
 - Anche i modelli che fanno le IMMAGINI (nano-banana) rispondono 429: servono la carta.
 - Ostacolo pratico gia' noto: Google non accetta la PostePay.
 
@@ -887,3 +887,51 @@ LEZIONE: non fidarsi di models.list per sapere cosa sa fare una chiave. Provare 
 
 ### UNA SBAVATURA MIA, DA SAPERE
 Mentre provavo, ho scritto un messaggio di prova nella casella sbagliata: non quella della chat libera in fondo (id "parlaGov") ma quella dentro la scheda delle stelle (id "ci_stelle|..."). Risultato: nello storico della chat risulta che alla domanda sulle stelle del 24 ottobre e' stato risposto "a parole: Prova veloce: dimmi in una riga quante pulizie ci sono oggi". Non rompe niente e sparisce con "Ricomincia da zero", ma e' li'.
+
+## 38. La 0.66 (20 ottobre, notte): IL LABIALE VERO, scritto da noi
+Michele: "risolviamo il problema dell'immagine, a costo di doverla scrivere da zero noi: una IA che muove la bocca a tempo". Fatto, gratis, dentro l'app.
+
+### COME FUNZIONA (bocca.js, nuovo file)
+1. visemi(testo): ogni lettera diventa una forma della bocca: A E I O U, M per m/b/p (labbra chiuse), F per f/v, L per le altre consonanti, X per pause e punteggiatura. Ogni forma ha un peso (le vocali durano di piu').
+2. profilo(audio): si misura la forza del suono ogni 20 millesimi e si segna dove si parla davvero e dove c'e' silenzio (soglia: 12% del massimo; i buchi di 20 ms si chiudono).
+3. piano(testo, profilo).forma(t): le forme si distribuiscono sul tempo PARLATO in proporzione al peso; nei silenzi la bocca e' chiusa (X); se il suono e' debole A diventa E e O diventa U; se e' quasi niente, M.
+4. Labiale (classe): una TELA (canvas 540x960) sopra il filmato, dentro il riquadro .gov-film, con la foto base (lab-base.webp) e la toppa della bocca giusta (lab-A.webp ecc.) appoggiata in un punto fisso (ancora 180,360). Un respiro e un'oscillazione minima della testa sull'orologio generale (non sulla frase, altrimenti scattava fra una frase e l'altra). Copia object-fit/object-position del video che copre, cosi' l'inquadratura e' identica. Appare con una dissolvenza di 250 ms quando parte la voce, sparisce 650 ms dopo la fine.
+5. Il TEMPO si misura sull'orologio dell'audio (ctx.currentTime - t0, meno outputLatency fino a 250 ms), non su quello dello schermo: la bocca segue il suono anche se il telefono va a scatti. voce.js: suona() adesso chiama onInizio(audioDecodificato) prima di partire e onBocca(forza, secondi).
+6. app.js: labialeAvvia/labialeTick/labialeFerma; una tela per ogni .gov-film visibile; se la pagina si ridisegna durante la frase, al giro dopo (500 ms) la tela si rimette. Se le immagini mancano, labRotto=true e non ci riprova (niente spam).
+7. Con la VOCE DEL TELEFONO (speechSynthesis) non c'e' audio da leggere: profiloFinto(testo, durata) stima la durata dalle lettere (0,072 s a lettera + 0,38 s a punto + 0,2 s a virgola, diviso il rate) e distribuisce le forme; il tempo parte da onstart (con rete di 1,5 s se l'evento non arriva).
+8. sw.js: VERSIONE 0.66.x, in cache bocca.js, lab-base.webp e le 9 toppe (lab-X M A E I O U L F).
+
+### LE BOCCHE DI ADESSO SONO DISEGNATE, NON VERE
+Il video di 41 secondi che abbiamo (quello della 0.64) NON APRE MAI LA BOCCA: analizzato fotogramma per fotogramma, la bocca resta chiusa/sorridente per tutta la durata. Quindi le toppe lab-*.webp sono costruite al computer sulla sua foto (si trova la riga delle labbra colonna per colonna, si abbassa la mascella con un decadimento di 105 px, cavita' scura morbida, niente denti bianchi: la prima versione aveva una barra bianca e sbavature sulle guance, rifatta).
+Da vicino si vede che sono disegnate. Sul telefono, a grandezza naturale, passano. Per avere la bocca VERA serve il video delle 07:17 "parla tanto" (terzultimo nella chat Gemini): da li' si prendono i fotogrammi A/E/O/U/denti/chiusa veri, allineati sulla riga delle labbra, e si sostituiscono i file lab-*.webp lasciando l'ancora. Michele deve scaricarlo e mandarlo.
+LEZIONE: i sei file che Michele aveva mandato erano TUTTI la stessa ripresa (Gemini, continuando nella stessa chat, ESTENDE il video precedente invece di farne uno nuovo; ogni risultato ha la stessa clip in 10/20/30 s). Differenza fra fotogrammi: 0,5 su 255.
+
+### PROVATO
+- Motore in Chromium senza testa: onInizio arriva, l'orologio va 0 -> 2,40 s in 2,7 s reali, le forme seguono le parole e la pausa fra le due parole e' una X (bocca chiusa), onFine arriva.
+- Dal vivo nell'app (0.66.1): tela montata e visibile mentre parla, sparisce a fine frase.
+
+## 39. La 0.67 (20 ottobre, notte): LA VOCE PASSA DAL CANALE LIVE — gratis e senza tetto
+### LA SCOPERTA (dalla pagina "Rate limit" di AI Studio, progetto di Michele, 20/10/2026)
+- Gemini 3.8 Flash Lite TTS (la voce che usavamo): 3 al minuto, 10K token al minuto, **10 AL GIORNO**. Dieci frasi al giorno e poi "Hai finito le voci gratuite": per questo la sera del 19 e la notte del 20 parlava il telefono.
+- Gemini 3.8 Live: richieste al minuto ILLIMITATE, 65K token al minuto, richieste al giorno ILLIMITATE. Gratis.
+- Gemini 3.5 Flash Lite (la "Svelta"): 15 al minuto, 500 al giorno. Gemini 3.8 Flash ("Pensa di piu'"): 5 al minuto, 20 AL GIORNO. Gemini 4 Argon: 0/0/0 (non c'e' sul gratuito, confermato).
+- Il giorno si azzera a mezzanotte ora del Pacifico = le 9 del mattino in Italia.
+- La pagina dei limiti di ai.google.dev non riporta piu' i numeri per modello: si leggono SOLO in AI Studio (aistudio.google.com/rate-limit).
+
+### COME SI FA LA VOCE COL CANALE LIVE (voce.js)
+- Si apre il websocket BidiGenerateContent con la chiave; setup: model gemini-3.8-live, responseModalities AUDIO, voce prebuilt (Autonoe ecc.), languageCode it-IT, systemInstruction "sei un lettore: leggi ESATTAMENTE il testo, parola per parola, non rispondere, non commentare" + lo stile del tono, outputAudioTranscription acceso.
+- Si manda il testo come clientContent con turnComplete true. Arrivano pezzi di audio PCM 16 bit 24 kHz (inlineData base64) e la trascrizione di quello che legge.
+- PROVA VERA (testo di 108 caratteri): collegamento aperto a 0,4 s, setup a 0,8 s, PRIMO AUDIO A 1,4 s, generazione finita a 2,6 s (9,1 s di audio: genera 7 volte piu' svelto di quanto parla), turnComplete a 10,5 s (il server lo manda solo a tempo scaduto: NON aspettarlo, basta generationComplete). Trascrizione IDENTICA al testo, parola per parola. 672 token in entrata, 236 in uscita.
+- parlaLive(): la voce PARTE AL PRIMO PEZZO (streaming): ogni pezzo diventa un AudioBuffer messo in coda senza buchi (src.start(nextT)); se la rete resta indietro si inserisce un buco anche nel profilo del labiale, cosi' restano allineati. Il labiale usa ProfiloVivo (bocca.js): cresce coi pezzi; finche' non e' finito, il totale del parlato si stima dalla frazione di testo gia' trascritta; a generationComplete diventa esatto.
+- scaldaLive(): il collegamento si apre PRIMA che serva (quando si apre il microfono, quando parte la domanda all'IA), cosi' il setup (0,8 s) e' gia' fatto quando arriva il testo.
+- Cassetto: stesso testo = stesso audio (si salva il WAV intero a fine frase, ma SOLO se la trascrizione somiglia al testo almeno al 50%: se il modello ha "risposto" invece di leggere, non si salva).
+- Ordine: Live -> TTS (dieci al giorno, di riserva) -> telefono. stazitta() chiude anche il collegamento Live in corso. MAX_CARATTERI_LIVE = 700 (col TTS restano 420).
+- Il modello TTS (trovaModelloVoce) si cerca in sottofondo e non blocca piu' la frase; la voce si accende anche senza modello TTS.
+
+### MISURATO DAL VIVO (0.67.1, domanda scritta nella chat)
+invio -> puntini 0,3 s -> risposta IA (flash-lite) 1,9 s -> VOCE CHE PARTE con labiale 2,85 s. Prima (TTS, 0.65): circa 4,9 s. Nessun errore in console.
+
+### DA FARE
+- Fotogrammi veri della bocca dal video "parla tanto" (vedi punto 38).
+- Argon solo per i lavori pesanti quando Michele carica il credito (lui mette la carta, profilo Azienda + partita IVA).
+- La conversazione a voce in tempo reale (microfono -> Live -> voce) resta da costruire; ora sappiamo che il canale e' gratis e illimitato.
