@@ -213,10 +213,10 @@ document.addEventListener("click", (e) => {
   window.scrollTo({ top: h ? h.offsetHeight : window.innerHeight, behavior: "smooth" });
 }, true);
 document.addEventListener("click", (e) => {
-  const t = e.target && e.target.closest && e.target.closest("[data-casa-tocca]");
+  const t = e.target && e.target.closest && e.target.closest("[data-casa-parla]");
   if (!t) return;
   e.preventDefault(); e.stopPropagation();
-  benvenutoSofia(true);
+  benvenutoSofia();
 }, true);
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
 function CORPO_CONS(cls) {
@@ -1462,31 +1462,30 @@ const CASA_ICO = {
   mic: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`,
   chat: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg>`,
   giu: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
+  onda: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4"/><path d="M8 6v12"/><path d="M12 9v6"/><path d="M16 4v16"/><path d="M20 10v4"/></svg>`,
   voceSi: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
   voceNo: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>`,
 };
 function casaOssatura() {
-  return `<div class="casa-film">${FILM_CONS("casa-fig")}</div>
-    <div class="casa-velo" aria-hidden="true"></div>
-    <div class="casa-su">
-      <span class="casa-nome">Le Stanze di Ricci</span>
-      <span class="casa-su-tasti">
+  return `<div class="casa-testa"><span class="casa-nome">Le Stanze di Ricci</span></div>
+    <div class="casa-card">
+      ${FILM_CONS("casa-fig")}
+      <span class="casa-tondi">
         <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
         <button type="button" class="casa-tondo" data-vista="altro" aria-label="Altro">\u22ef</button>
       </span>
     </div>
-    <div class="casa-giu">
+    <div class="casa-testo">
       <b class="casa-sal"></b>
       <p class="casa-riga"></p>
       <p class="casa-spinta"></p>
       <div class="casa-sotto" id="consSotto"></div>
       <p class="casa-info"></p>
-      <button type="button" class="casa-tocca" data-casa-tocca>Tocca qui per sentirla parlare</button>
-      <div class="casa-barra">
-        <button type="button" class="casa-t casa-t-mic" data-cons-mic aria-label="Parlale">${CASA_ICO.mic}<span>Parlale</span></button>
-        <button type="button" class="casa-t" data-chat-apri>${CASA_ICO.chat}<span>Scrivile</span></button>
-        <button type="button" class="casa-t" data-casa-giu>${CASA_ICO.giu}<span>Giornate</span></button>
-      </div>
+    </div>
+    <div class="casa-barra">
+      <button type="button" class="casa-t casa-t-voce" data-casa-parla>${CASA_ICO.onda}<span>Parlami</span></button>
+      <button type="button" class="casa-t casa-t-mic" data-cons-mic aria-label="Dille qualcosa">${CASA_ICO.mic}<span>Dimmi</span></button>
+      <button type="button" class="casa-t" data-casa-giu>${CASA_ICO.giu}<span>Giornate</span></button>
     </div>`;
 }
 function casaAggiorna(h) {
@@ -1506,7 +1505,7 @@ function casaAggiorna(h) {
   if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
   if (info) info.textContent = voci.join(" \u00b7 ");
   const mic = q(".casa-t-mic");
-  if (mic) mic.setAttribute("aria-label", "Parla con " + nomeGov());
+  if (mic) mic.setAttribute("aria-label", "Dillo a " + nomeGov());
   const bv = q(".casa-voce"), su = voceAccesa();
   if (bv) {
     bv.innerHTML = su ? CASA_ICO.voceSi : CASA_ICO.voceNo;
@@ -1533,21 +1532,17 @@ function casaTocca(mostra) {
   const h = document.getElementById("sofiaHero");
   if (h) h.classList.toggle("muta", !!mostra);
 }
-async function benvenutoSofia(forza) {
-  if (salutoDetto && !forza) return;
+// Da 0.62 NON parla piu' da sola quando apri l'app: lei sta li' e lavora.
+// Parla solo quando tocchi "Parlami". Se la voce era spenta, la riaccende:
+// toccare quel tasto vuol dire proprio che la vuoi sentire.
+async function benvenutoSofia() {
   if (!document.getElementById("sofiaHero")) return;
-  if (!voceAccesa()) { salutoDetto = true; casaTocca(false); return; }
-  let ctx = null; try { ctx = VOCE.sbloccaAudio(); } catch (e) {}
-  if (!ctx || ctx.state !== "running") {
-    casaTocca(true);
-    if (!salutoArmato) {
-      salutoArmato = true;
-      const vai = () => { document.removeEventListener("pointerdown", vai, true); setTimeout(() => benvenutoSofia(true), 60); };
-      document.addEventListener("pointerdown", vai, true);
-    }
-    return;
+  if (VOCE.staParlando()) { zittisciVoce(); return; }
+  if (!voceAccesa()) {
+    const v = VOCE.leggiVoce();
+    VOCE.salvaVoce({ attiva: true, motore: v.modello && iaAccesa() ? "google" : "telefono" });
   }
-  salutoDetto = true; casaTocca(false);
+  try { VOCE.sbloccaAudio(); } catch (e) {}
   try { await parlaConVoce(testoBenvenuto()); } catch (e) { console.warn("benvenuto", e); }
 }
 function disegnaCasa() {
@@ -1565,7 +1560,6 @@ function disegnaCasa() {
     const t = document.querySelector("header");
     document.body.insertBefore(h, t || document.body.firstChild);
     window.scrollTo(0, 0);
-    setTimeout(() => benvenutoSofia(), 1100);
   }
   document.body.classList.add("ha-casa");
   casaAggiorna(h);

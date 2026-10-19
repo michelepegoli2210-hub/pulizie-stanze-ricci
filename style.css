@@ -1520,3 +1520,46 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .sofia-hero[data-stato="errore"] .casa-t-mic{background:#e05a4e;color:#fff;border-color:#e05a4e}
 .casa-tocca{display:none;width:100%;min-height:46px;border:0;border-radius:14px;background:#ffd86b;color:#231a07;font:800 14px var(--f-display)}
 .sofia-hero.muta .casa-tocca{display:block}
+
+
+/* 0.62 - LA SCHERMATA DI CASA RIFATTA: il filmato in una scheda con gli angoli
+   tondi, come nel lettore di Gemini, su sfondo chiaro. Tasti sobri. */
+.sofia-hero{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;width:100%;min-height:100svh;height:auto;overflow:visible;background:transparent;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 18px}
+.casa-testa{width:100%;max-width:440px;display:flex;align-items:center;justify-content:center}
+.casa-nome{font:700 13px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.casa-card{position:relative;width:min(86vw,calc(60svh * 9 / 16),380px);aspect-ratio:9/16;border-radius:28px;overflow:hidden;background:#17120e;box-shadow:0 2px 6px rgba(0,0,0,.08),0 26px 50px -26px rgba(0,0,0,.45)}
+.sofia-hero .donnina.gov-fig.gov-film.casa-fig{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;aspect-ratio:auto;border-radius:0;margin:0;box-shadow:none;background:#17120e}
+.sofia-hero .casa-fig video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 22%;transition:transform .6s ease}
+.sofia-hero.sta-parlando .casa-fig video{transform:scale(1.07)}
+.sofia-hero[data-stato="ascolto"] .casa-fig video{transform:scale(1.04)}
+.casa-tondi{position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:2}
+.casa-tondo{width:38px;height:38px;border-radius:999px;border:0;background:rgba(255,255,255,.94);color:#1D1D1F;font-size:19px;line-height:1;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.casa-tondo.spenta{background:rgba(255,255,255,.72);color:var(--muted)}
+.casa-testo{width:100%;max-width:440px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.casa-sal{font:700 clamp(19px,5.2vw,23px)/1.22 var(--f-display);color:var(--fg);letter-spacing:-.015em;text-shadow:none}
+.casa-sal.lunga{font-size:clamp(16px,4.3vw,19px)}
+.casa-riga{margin:0;font:500 clamp(14px,3.8vw,15.5px)/1.4 var(--f-body);color:var(--muted);text-shadow:none}
+.casa-spinta{margin:0;font:500 clamp(13px,3.5vw,14.5px)/1.4 var(--f-body);font-style:italic;color:var(--muted2);text-shadow:none}
+.casa-sotto{display:none;max-width:100%;font:500 15px/1.35 var(--f-body);color:var(--fg);background:var(--card-pieno);border:1px solid var(--line);border-radius:14px;padding:9px 13px}
+.casa-sotto.vedi{display:block}
+.casa-sotto.fantasma{color:var(--muted);font-style:italic}
+.casa-info{margin:2px 0 0;font:600 11.5px var(--f-display);letter-spacing:.07em;text-transform:uppercase;color:var(--muted2);text-shadow:none}
+.casa-barra{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:440px;margin-top:auto;padding-top:6px}
+.casa-t{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:70px;padding:0 4px;border-radius:18px;border:1px solid var(--line);background:var(--card-pieno);color:var(--fg);font:700 11px var(--f-display);letter-spacing:.1em;text-transform:uppercase;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:transform .14s ease,box-shadow .14s ease}
+.casa-t svg{display:block;color:var(--muted)}
+.casa-t:active{transform:scale(.97)}
+.casa-t.casa-t-voce svg{color:var(--primary)}
+.sofia-hero.sta-parlando .casa-t-voce{background:var(--dark);border-color:var(--dark);color:var(--dark-fg)}
+.sofia-hero.sta-parlando .casa-t-voce svg{color:var(--dark-fg)}
+.sofia-hero[data-stato="ascolto"] .casa-t-mic{background:var(--done-bg);border-color:var(--done-dot)}
+.sofia-hero[data-stato="ascolto"] .casa-t-mic svg{color:var(--done)}
+.sofia-hero[data-stato="pensa"] .casa-t-mic{background:var(--wip-bg);border-color:var(--wip-dot)}
+.sofia-hero[data-stato="pensa"] .casa-t-mic svg{color:var(--wip)}
+.sofia-hero[data-stato="errore"] .casa-t-mic{background:var(--warn-bg);border-color:var(--warn-dot)}
+.sofia-hero[data-stato="errore"] .casa-t-mic svg{color:var(--warn)}
+.casa-tocca{display:none}
+@media (min-width:760px){
+  .sofia-hero .donnina.gov-fig.gov-film.casa-fig{width:100%;height:100%}
+  .sofia-hero .casa-fig video{object-fit:cover;object-position:50% 22%}
+  .casa-card{width:min(300px,calc(62svh * 9 / 16))}
+}
