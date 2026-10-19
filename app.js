@@ -14,6 +14,7 @@ import * as PAROLE from "./parole.js";
 import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
+import * as BOCCA from "./bocca.js";
 
 export const VERSIONE = "0.58.1";
 
@@ -180,7 +181,8 @@ function diciUnAttimo() {
   if (!vocePronta) return false;
   try {
     statoCons("parla");
-    VOCE.suona(vocePronta, { onBocca: applicaBocca, onFine: () => { applicaBocca(0); statoCons("pensa"); } });
+    VOCE.suona(vocePronta, { onInizio: (buf) => labialeAvvia(buf, "Un attimo."), onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
+      onFine: () => { applicaBocca(0); labialeFerma(); statoCons("pensa"); } });
     return true;
   } catch (e) { return false; }
 }
@@ -2030,6 +2032,44 @@ function vitaGov() {
 }
 vitaGov();
 function voceAccesa() { return !!VOCE.leggiVoce().attiva; }
+// ---- 0.66: IL LABIALE VERO ------------------------------------------------
+// Quando parte l'audio della voce vera, bocca.js legge tutto il suono, lo mette
+// in fila col testo letto e decide, istante per istante, che forma deve avere la
+// bocca. Sopra il filmato si appoggia una tela con la sua foto e la bocca giusta:
+// si apre sulle vocali, si chiude su M/B/P, sta ferma nei silenzi. Quando la
+// frase finisce la tela sparisce e torna il filmato.
+let labiali = [], labPiano = null, labSpegni = null, labCerca = 0, labRotto = false;
+function labialeBox() { return [...document.querySelectorAll(".gov-film")].filter(b => b.offsetWidth > 0 && b.offsetHeight > 0); }
+function labialeMonta() {
+  if (labRotto) return;
+  labiali = labiali.filter(l => l.tela && l.tela.isConnected);
+  for (const box of labialeBox()) {
+    if (labiali.some(l => l.box === box)) continue;
+    const l = new BOCCA.Labiale(box);
+    labiali.push(l);
+    l.monta().catch(e => { console.warn("labiale", e); labRotto = true; labiali = labiali.filter(x => x !== l); });
+  }
+}
+function labialeAvvia(buf, testoLetto) {
+  clearTimeout(labSpegni); labSpegni = null;
+  try { labPiano = BOCCA.piano(testoLetto, BOCCA.profilo(buf)); } catch (e) { console.warn("labiale piano", e); labPiano = null; return; }
+  labialeMonta();
+}
+function labialeTick(forza, t) {
+  if (!labPiano) return;
+  const ora = Date.now();
+  if (ora - labCerca > 500) { labCerca = ora; labialeMonta(); }   // se la pagina si e' ridisegnata, la tela si rimette
+  const r = labPiano.forma(t || 0);
+  for (const l of labiali) if (l.pronta) l.disegna(r.f, Math.max(r.forza, Number(forza) || 0), t || 0);
+}
+function labialeFerma(subito) {
+  labPiano = null;
+  for (const l of labiali) if (l.pronta) l.disegna("X", 0, l.tUltimo || 0);
+  clearTimeout(labSpegni);
+  const via = () => { for (const l of labiali) l.smonta(); labiali = []; labSpegni = null; };
+  if (subito) via(); else labSpegni = setTimeout(via, 650);
+}
+setTimeout(() => { try { BOCCA.precarica().catch(() => {}); } catch (e) {} }, 4000);
 async function parlaConVoce(testo) {
   let vc = VOCE.leggiVoce(); if (!vc.attiva) return;
   // se la voce vera non ha ancora il suo modello, lo cerco adesso (una volta sola)
@@ -2037,11 +2077,13 @@ async function parlaConVoce(testo) {
     try { vc = VOCE.salvaVoce({ modello: await VOCE.trovaModelloVoce(confIA().chiave) }); } catch (e) { console.warn("modello voce", e); }
   }
   voceInCorso = true; disegna();
-  await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave, onBocca: applicaBocca,
-    onFine: () => { voceInCorso = false; applicaBocca(0); disegna(); },
+  await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave,
+    onInizio: (buf, letto) => labialeAvvia(buf, letto),
+    onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
+    onFine: () => { voceInCorso = false; applicaBocca(0); labialeFerma(); disegna(); },
     onErrore: (e) => toast(String(e && e.message || "Voce vera non disponibile") + " Per ora parla il telefono.") });
 }
-function zittisciVoce() { VOCE.stazitta(); voceInCorso = false; applicaBocca(0); }
+function zittisciVoce() { VOCE.stazitta(); voceInCorso = false; applicaBocca(0); labialeFerma(true); }
 
 // 0.42: parlarle col microfono, senza tastiera. Su Android funziona dentro l'app;
 // su iPhone il motore non c'è e si usa il microfono della tastiera (glielo diciamo).

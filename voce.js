@@ -152,36 +152,46 @@ export function sbloccaAudio() {
 export function stazitta() { try { fermaOra?.(); } catch (e) {} fermaOra = null; try { window.speechSynthesis?.cancel(); } catch (e) {} }
 export function staParlando() { return !!fermaOra; }
 
-// Suona il WAV e chiama onBocca(0..1) a ogni fotogramma: è la bocca che si apre
-export async function suona(arrayBuffer, { onBocca, onFine } = {}) {
+// Suona il WAV e chiama onBocca(forza 0..1, secondi dall'inizio) a ogni fotogramma.
+// 0.66: prima di partire chiama onInizio(audioDecodificato): e' li' che il labiale
+// (bocca.js) legge tutto il suono e prepara il piano delle forme della bocca.
+export async function suona(arrayBuffer, { onBocca, onFine, onInizio } = {}) {
   const ctx = sbloccaAudio(); if (!ctx) { onFine?.(); return; }
   const buf = await ctx.decodeAudioData(arrayBuffer.slice(0));
   stazitta();
+  try { onInizio?.(buf); } catch (e) { console.warn("onInizio", e); }
   const src = ctx.createBufferSource(); src.buffer = buf;
   const an = ctx.createAnalyser(); an.fftSize = 512; an.smoothingTimeConstant = 0.45;
   const dati = new Uint8Array(an.fftSize);
   src.connect(an); an.connect(ctx.destination);
   let vivo = true;
+  // il tempo si misura sull'orologio dell'audio, non su quello dello schermo:
+  // cosi' la bocca segue il suono anche se il telefono e' lento o va a scatti.
+  const ritardo = Math.min(0.25, Number(ctx.outputLatency) || 0);
+  let t0 = ctx.currentTime;
   const giro = () => {
     if (!vivo) return;
     an.getByteTimeDomainData(dati);
     let s = 0; for (let i = 0; i < dati.length; i++) { const v = (dati[i] - 128) / 128; s += v * v; }
     const forza = Math.min(1, Math.sqrt(s / dati.length) * 3.4);
-    onBocca?.(forza);
+    onBocca?.(forza, Math.max(0, ctx.currentTime - t0 - ritardo));
     requestAnimationFrame(giro);
   };
-  const chiudi = () => { if (!vivo) return; vivo = false; onBocca?.(0); fermaOra = null; onFine?.(); };
+  const chiudi = () => { if (!vivo) return; vivo = false; onBocca?.(0, buf.duration); fermaOra = null; onFine?.(); };
   src.onended = chiudi;
-  fermaOra = () => { vivo = false; try { src.stop(); } catch (e) {} onBocca?.(0); };
+  fermaOra = () => { vivo = false; try { src.stop(); } catch (e) {} onBocca?.(0, 0); };
+  t0 = ctx.currentTime;
   src.start(); requestAnimationFrame(giro);
 }
 
 // La voce giusta, con la rete di sicurezza: Google, e se non va il telefono
-export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore } = {}) {
+export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, onInizio } = {}) {
   const t = daLeggere(testo); if (!t) { onFine?.(); return; }
   const c = conf || leggiVoce();
   if (c.motore === "google" && chiave && c.modello) {
-    try { const a = await audioDaGoogle(t, c, chiave); await suona(a, { onBocca, onFine }); return; }
+    // onInizio riceve anche il testo LETTO davvero (tagliato come fa daLeggere): e' quello
+    // che il labiale deve seguire, non la risposta intera.
+    try { const a = await audioDaGoogle(t, c, chiave); await suona(a, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, t) }); return; }
     catch (e) { console.warn("voce google", e); onErrore?.(e); }
   }
   // ripiego: la voce del telefono (gratis, anche senza internet)
