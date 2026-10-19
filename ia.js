@@ -16,7 +16,7 @@ export const FORNITORI = {
     dove: "aistudio.google.com/apikey",
     passi: "Tocca il tasto blu «Create API key», scegli il progetto che ti propone e conferma.",
     chiave: "È una riga lunghissima di lettere e numeri: copiala tutta",
-    preferiti: { svelta: [/^gemini-[\d.]+-flash-lite$/, /flash-lite$/, /flash-lite/, /^gemini-[\d.]+-flash$/, /flash$/], sveglia: [/^gemini-[\d.]+-flash$/, /flash$/, /argon/, /^gemini-[\d.]+-pro$/, /-pro$/, /flash-lite$/] },
+    preferiti: { svelta: [/^gemini-[\d.]+-flash-lite$/, /flash-lite$/, /flash-lite/, /^gemini-[\d.]+-flash$/, /flash$/], sveglia: [/^gemini-[\d.]+-flash$/, /flash$/, /^gemini-[\d.]+-pro$/, /-pro$/, /flash-lite$/], argon: [/argon/, /^gemini-[\d.]+-pro$/, /-pro$/, /^gemini-[\d.]+-flash$/, /flash$/] },
     elenco: () => "https://generativelanguage.googleapis.com/v1beta/models",
     elencoTesta: (k) => ({ "x-goog-api-key": k }),
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
@@ -25,7 +25,7 @@ export const FORNITORI = {
     corpo: (sistema, storia, testo) => ({
       system_instruction: { parts: [{ text: sistema }] },
       contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })), { role: "user", parts: [{ text: testo }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 1600, responseMimeType: "application/json" },
+      generationConfig: { temperature: 0.4, maxOutputTokens: 4000, responseMimeType: "application/json" },
     }),
     leggi: (j) => (((j.candidates || [])[0] || {}).content?.parts || []).map(p => p.text || "").join(""),
   },
@@ -141,7 +141,7 @@ COME RISPONDI
 Rispondi SOLO con un oggetto JSON, in quest'ordine esatto:
 {"pensiero":"...","risposta":"...","consiglio":"...","azione":null}
 - "pensiero": qui ragioni prima di parlare, per te. Scorri le sette cose qui sopra, fai i conti che servono, scrivi i numeri. Michele non lo legge mai. Da 2 a 6 righe.
-- "risposta": quello che dici a Michele. Da 1 a 4 frasi corte. Se ti chiede un numero, dai il numero preciso.
+- "risposta": quello che dici a Michele. QUANDO SI PARLA DELL'ALBERGO: da 1 a 4 frasi corte, e se ti chiede un numero dai il numero preciso. QUANDO TI CHIEDE ALTRO (vedi il capitolo qui sotto): lunga quanto serve, anche venti righe.
 - "consiglio": una sola frase, la cosa concreta che gli conviene fare adesso. Mettila solo se serve davvero, altrimenti lascia "".
 - "azione": solo se ti chiede di FARE qualcosa (vedi sotto), altrimenti null.
 
@@ -164,6 +164,17 @@ Le azioni che esistono, nient'altro:
    ${elenchi.gesti}
 In "dove" usa SOLO le sigle dell'elenco delle camere. Se dice "tutte", mettile tutte. Se non capisci dove, lascia "dove" vuoto: te lo chiede l'app. Una azione sola per volta, la più importante.
 Prima di proporre una spesa, guarda quanto è già stato speso questa settimana e dillo nella risposta.
+
+QUANDO TI CHIEDE UNA COSA CHE NON C'ENTRA CON L'ALBERGO
+Michele non ha un altro posto dove chiedere: tu sei anche la sua testa pensante per tutto il resto. Una legge, un conto, una tassa, una mail o una lettera da scrivere, un contratto da capire, una ricetta, una traduzione, un'idea per il locale, un dubbio su come si fa una cosa. In quel caso cambia il modo di rispondere:
+- Rispondi BENE e per esteso, con tutto lo spazio che serve: spiegazioni, passaggi numerati, elenchi, un esempio. Il limite delle quattro frasi vale solo per le cose di casa.
+- Spiega semplice, come a una persona pratica che non ha studiato quella materia: niente paroloni, e se devi usare un termine tecnico spiegalo subito dopo con parole sue.
+- Se c'è un calcolo, fallo e mostra i passaggi.
+- Se ti chiede di scrivere qualcosa (una mail, un annuncio, un messaggio), scrivila pronta da copiare.
+- Resti sempre tu: pratica, diretta, niente "come assistente", niente complimenti a vuoto.
+- "consiglio" lascialo vuoto e "azione" lascialo null: quelli valgono solo per l'albergo.
+- E qui vale la stessa regola di sempre: se una cosa non la sai o non sei sicura, DILLO. Meglio "questo non lo so con certezza, verificherei qui" che una risposta inventata. Vale per le leggi, le date, i prezzi e i nomi: mai inventarli.
+Quando invece la domanda riguarda la casa, torni corta e pratica come sopra.
 
 LE CAMERE (sigla = nome, chi la pulisce)
 ${elenchi.camere}
@@ -188,7 +199,7 @@ async function chiamata(url, testa, corpo, secondi = 30) {
 }
 function messaggioChiaro(stato, m) {
   if (stato === 401 || stato === 403 || /api key|unauthorized|invalid.*key|permission/i.test(m)) return "La chiave non va bene (o non è abilitata). Controllala e riprova.";
-  if (stato === 429 || /quota|rate limit|exceeded/i.test(m)) return "Questo modello non ha chiamate gratuite, oppure le hai finite per adesso. Vai al passo 2 e metti Risparmio, poi riprova.";
+  if (stato === 429 || /quota|rate limit|exceeded/i.test(m)) return "Questo modello non ha chiamate gratuite (Argon e i modelli grossi vogliono la carta sulla chiave), oppure le hai finite per adesso. Al passo 2 metti «Svelta».";
   if (stato === 404 || /not found|model/i.test(m)) return "Quel modello non esiste più: tocca «Prova la chiave» e lo ricerco.";
   if (stato >= 500) return "Il loro server non risponde. Riprova tra poco.";
   return m.slice(0, 160);
@@ -252,7 +263,7 @@ export function leggiRisposta(txt) {
 
 // Quanto costa, più o meno: serve solo per dirglielo a schermo.
 export const COSTI = {
-  gemini: { svelta: "Il modello piccolo e velocissimo: risponde in meno di un secondo e costa pochi centesimi al mese. È quello giusto per parlarle a voce.", sveglia: "Il modello grande: ragiona di più, ma sul piano gratuito può metterci anche venti secondi a rispondere.", risparmio: "Il modello piccolo: pochi centesimi al mese." },
+  gemini: { svelta: "Il modello piccolo e velocissimo: risponde in meno di un secondo e costa pochi centesimi al mese. È quello giusto per parlarle a voce.", sveglia: "Il modello grande: ragiona di più, ma sul piano gratuito può metterci anche venti secondi a rispondere.", argon: "Il più bravo che esiste, quello che ragiona davvero. NON ha chiamate gratuite: serve una carta sulla chiave, e si paga a consumo (a listino 2 $ ogni milione di parole in entrata e 10 $ in uscita, che raddoppiano dal 1° dicembre 2026). Se non trova la carta, l'app risponde lo stesso col modello svelto.", risparmio: "Il modello piccolo: pochi centesimi al mese." },
   openai: { sveglia: "Il modello di mezzo: circa 2-3 € al mese. Serve mettere 5 € sul conto all'inizio.", risparmio: "Il modello piccolo: pochi centesimi al mese. Serve mettere 5 € sul conto all'inizio." },
   claude: { sveglia: "Il modello di mezzo: circa 2-3 € al mese. Serve una ricarica all'inizio.", risparmio: "Il modello piccolo: pochi centesimi al mese. Serve una ricarica all'inizio." },
 };

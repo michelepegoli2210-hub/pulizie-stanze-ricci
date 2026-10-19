@@ -2253,9 +2253,28 @@ function azioneDaIA(a) {
   return null;
 }
 // La risposta dell'IA, pronta per la chat (col "Sì, fallo" se propone qualcosa)
+let argonAvvisato = false;
 async function rispostaIA(testo, conv) {
   const c = confIA();
-  const r = await IA.chiedi({ conf: c, sistema: sistemaIA(), storia: conv.slice(0, -1), testo });
+  const sis = sistemaIA(), storia = conv.slice(0, -1);
+  let r;
+  try { r = await IA.chiedi({ conf: c, sistema: sis, storia, testo }); }
+  catch (e) {
+    // Argon e i modelli grossi non hanno chiamate gratuite: invece di lasciare
+    // Michele senza risposta, rispondo lo stesso col modello svelto e glielo dico.
+    const m = String((e && e.message) || "");
+    if (!/gratuite|quota|429|carta/i.test(m) || c.qualita === "svelta") throw e;
+    const veloce = { ...c, qualita: "svelta", modello: "" };
+    const t = await IA.trovaModello(veloce);
+    r = await IA.chiedi({ conf: { ...veloce, modello: t.modello }, sistema: sis, storia, testo });
+    if (!argonAvvisato) { argonAvvisato = true; toast("Argon non risponde senza carta sulla chiave: ti ho risposto col modello svelto."); }
+    return (() => { const base = { chi: "gov", ora: S.db.adesso(), ia: true };
+      const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
+      const a = azioneDaIA(r.azione);
+      if (!a) return { ...base, testo: dice };
+      if ((a.tipo === "fatto" || a.tipo === "aggiungi") && !a.camere.length) return { ...base, testo: `${dice}\n\n«${a.regola ? a.regola.nome : a.cosa}» dove?`, tasti: tastiDove(), azioneDove: a };
+      return { ...base, testo: dice, tasti: [{ k: "si", testo: "Sì, fallo" }, { k: "no", testo: "No, lascia" }], azione: a }; })();
+  }
   if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
   IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
@@ -2328,7 +2347,7 @@ function cardIA() {
       <span class="small muted" style="margin-top:6px">Stanno solo su questo telefono, non le vedono le signore. Usa un personaggio inventato o una foto tua — non la foto di una persona vera senza il suo permesso.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
     <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
-      <div class="seg"><button type="button" aria-pressed="${q === "svelta"}" data-ia-qualita="svelta">Svelta</button><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Pensa di più</button></div>
+      <div class="seg"><button type="button" aria-pressed="${q === "svelta"}" data-ia-qualita="svelta">Svelta</button><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Pensa di più</button><button type="button" aria-pressed="${q === "argon"}" data-ia-qualita="argon">Argon</button></div>
       <span class="small muted">${esc(IA.COSTI[c.fornitore]?.[q] || "pochi centesimi al mese")}</span></div>
     <div class="ia-passo"><b>3.</b> Prendi la chiave su <b>${esc(f.dove)}</b>: entra con la tua mail e falla creare. ${esc(f.passi)}
       <button type="button" class="ia-vai" data-ia-apri="${esc(f.dove)}">Apri ${esc(f.dove.split("/")[0])} ↗</button>

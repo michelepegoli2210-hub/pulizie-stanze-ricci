@@ -1611,3 +1611,8 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .azz-tasti .big{margin:0}
 .big.warn{background:var(--warn);color:#fff;font-size:16px;padding:13px;min-height:50px}
 .big.warn:disabled{opacity:.5}
+
+/* 0.65 - le risposte lunghe (quando le chiedi cose che non c'entrano con la casa)
+   devono andare a capo come le ha scritte lei, con gli elenchi e i paragrafi */
+.chat-bolla{white-space:pre-wrap;overflow-wrap:anywhere}
+.chat-msg.gov .chat-bolla{max-width:92%}
