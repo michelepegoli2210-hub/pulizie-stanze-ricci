@@ -10,12 +10,12 @@
 // ============================================================================
 
 export const VOCI = [
-  { id: "Despina", nome: "Vellutata", come: "bassa e morbida: la più sensuale" },
-  { id: "Achernar", nome: "Sussurrata", come: "soffiata, come se ti parlasse vicino" },
-  { id: "Gacrux", nome: "Profonda", come: "tono basso, da donna adulta" },
+  { id: "Autonoe", nome: "Brillante", come: "squillante e sveglia: parla chiaro" },
+  { id: "Erinome", nome: "Nitida", come: "pulita e precisa, da professionista" },
+  { id: "Zephyr", nome: "Viva", come: "chiara e piena di energia" },
+  { id: "Kore", nome: "Decisa", come: "ferma e sicura, da chi comanda" },
   { id: "Sulafat", nome: "Calda", come: "calda, da signora gentile" },
   { id: "Vindemiatrix", nome: "Garbata", come: "pacata, parla piano" },
-  { id: "Callirrhoe", nome: "Tranquilla", come: "senza fretta" },
   { id: "Leda", nome: "Giovane", come: "svelta e fresca" },
   { id: "Achird", nome: "Amichevole", come: "allegra e alla mano" },
 ];
@@ -24,16 +24,16 @@ export const VOCI = [
 // al testo: non viene letta ad alta voce, dice solo con che tono leggere.
 // "rate" e "pitch" servono invece alla voce del telefono: velocita' e altezza.
 export const TONI = [
+  { id: "chiara", nome: "Chiara", rate: 1.06, pitch: 1.06,
+    stile: "clear, bright and articulate, like a sharp professional giving a crisp briefing: precise consonants, lively but controlled pace, intelligent and self-assured, courteous and warm in a professional way. NEVER breathy, NEVER slow, NEVER sultry or intimate, no whispering, no stretched vowels" },
   { id: "garbata", nome: "Garbata", rate: 1.0, pitch: 1.02,
-    stile: "calm, courteous and practical, like an Italian hotel housekeeper giving you good news" },
-  { id: "calda", nome: "Calda", rate: 0.94, pitch: 0.92,
-    stile: "warm and unhurried, a half-smile in the voice, a little slower and a little lower than normal, like a woman who knows you well and has all the time in the world" },
-  { id: "sensuale", nome: "Sensuale", rate: 0.84, pitch: 0.74,
-    stile: "very low, velvety and slightly breathy; speak slowly and close to the microphone, as if confiding in someone's ear; stretch the vowels, leave a small pause between phrases, let the pitch fall at the end of every sentence; soft, intimate, unhurried and self-assured; never bright, never cheerful, never loud" },
+    stile: "calm, courteous and practical, like an Italian hotel housekeeper giving you good news. Clear and well articulated, never breathy, never sultry" },
+  { id: "calda", nome: "Calda", rate: 0.96, pitch: 0.98,
+    stile: "warm and friendly, a half-smile in the voice, unhurried but still clear and well articulated, like a colleague you trust. Never breathy, never sultry, never whispered" },
 ];
-export function tonoDi(c) { return TONI.find(t => t.id === ((c && c.tono) || "")) || TONI[1]; }
-export const STILE_BASE = TONI[1].stile;
-export const CONF_BASE = { attiva: false, motore: "google", voce: "Sulafat", modello: "", tono: "calda", stile: STILE_BASE, v: 3 };
+export function tonoDi(c) { return TONI.find(t => t.id === ((c && c.tono) || "")) || TONI[0]; }
+export const STILE_BASE = TONI[0].stile;
+export const CONF_BASE = { attiva: false, motore: "google", voce: "Autonoe", modello: "", tono: "chiara", stile: STILE_BASE, v: 4 };
 const CHIAVE_LOCALE = "ricci_voce";
 const MAX_CARATTERI = 600; // oltre, si taglia: non si paga un comizio
 
@@ -42,7 +42,7 @@ export function leggiVoce() {
   try { salvato = JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}") || {}; } catch (e) { salvato = {}; }
   const c = { ...CONF_BASE, ...salvato };
   // chi aveva gia' salvato la voce vecchia passa da solo a quella nuova
-  if (salvato.v !== 3) { c.voce = CONF_BASE.voce; c.tono = CONF_BASE.tono; c.v = 3; }
+  if (salvato.v !== 4) { c.voce = CONF_BASE.voce; c.tono = CONF_BASE.tono; c.v = 4; }
   c.stile = tonoDi(c).stile; // lo stile segue sempre il tono scelto
   return c;
 }

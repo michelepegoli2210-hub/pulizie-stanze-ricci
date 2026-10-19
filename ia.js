@@ -16,7 +16,7 @@ export const FORNITORI = {
     dove: "aistudio.google.com/apikey",
     passi: "Tocca il tasto blu «Create API key», scegli il progetto che ti propone e conferma.",
     chiave: "È una riga lunghissima di lettere e numeri: copiala tutta",
-    preferiti: { sveglia: [/^gemini-[\d.]+-flash$/, /flash$/, /argon/, /^gemini-[\d.]+-pro$/, /-pro$/, /flash-lite$/], risparmio: [/^gemini-[\d.]+-flash-lite$/, /flash-lite/, /flash$/] },
+    preferiti: { svelta: [/^gemini-[\d.]+-flash-lite$/, /flash-lite$/, /flash-lite/, /^gemini-[\d.]+-flash$/, /flash$/], sveglia: [/^gemini-[\d.]+-flash$/, /flash$/, /argon/, /^gemini-[\d.]+-pro$/, /-pro$/, /flash-lite$/] },
     elenco: () => "https://generativelanguage.googleapis.com/v1beta/models",
     elencoTesta: (k) => ({ "x-goog-api-key": k }),
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
@@ -66,12 +66,12 @@ export const FORNITORI = {
   },
 };
 export const FORNITORE_BASE = "gemini";
-export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", qualita: "sveglia", ultimo: "", errori: 0 };
+export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", qualita: "svelta", ultimo: "", errori: 0, v: 2 };
 // Il numero di versione dentro il nome del modello ("gemini-3.8-flash" -> 3.8): serve a pescare sempre il piu nuovo
 export function versioneModello(nome) { const m = String(nome).match(/(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; }
-export function scegliModello(tutti, fornitore, qualita = "sveglia") {
+export function scegliModello(tutti, fornitore, qualita = "svelta") {
   const f = FORNITORI[fornitore]; if (!f) return tutti[0] || "";
-  const liste = f.preferiti[qualita] || f.preferiti.sveglia;
+  const liste = f.preferiti[qualita] || f.preferiti.svelta || f.preferiti.sveglia;
   for (const p of liste) {
     const c = tutti.filter(x => p.test(x) && !/preview|exp|audio|image|tts|live|transcribe|embedding|search|moderation/.test(x));
     if (c.length) return c.sort((a, b) => versioneModello(b) - versioneModello(a) || a.length - b.length)[0];
@@ -83,8 +83,15 @@ const CHIAVE_LOCALE = "ricci_ia";
 // La chiave sta SOLO su questo telefono (localStorage), mai nel database
 // condiviso: le signore non devono poterla leggere.
 export function leggiConf() {
-  try { const c = JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}"); return { ...CONF_BASE, ...c }; }
-  catch (e) { return { ...CONF_BASE }; }
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem(CHIAVE_LOCALE) || "{}") || {}; } catch (e) { s = {}; }
+  const c = { ...CONF_BASE, ...s };
+  // 0.64: prima si partiva dal modello "flash", che sul piano gratuito ci mette
+  // anche venti secondi. Adesso si parte dal "flash-lite", che risponde in meno
+  // di un secondo. Chi aveva gia' salvato passa da solo.
+  if (s.v !== 2) { c.qualita = CONF_BASE.qualita; c.modello = ""; c.v = 2; }
+  if (c.qualita === "risparmio") c.qualita = "svelta";
+  return c;
 }
 export function salvaConf(patch) {
   const nuovo = { ...leggiConf(), ...patch };
@@ -193,7 +200,7 @@ export async function trovaModello(conf) {
   const j = await chiamata(f.elenco(), f.elencoTesta(conf.chiave), null, 20);
   const tutti = f.elencoLeggi(j).filter(Boolean);
   if (!tutti.length) throw new Error("Non ho trovato nessun modello con questa chiave.");
-  return { modello: scegliModello(tutti, conf.fornitore, conf.qualita || "sveglia"), tutti };
+  return { modello: scegliModello(tutti, conf.fornitore, conf.qualita || "svelta"), tutti };
 }
 
 // "Prova la chiave": cerca il modello, fa una domanda finta e vede se risponde.
@@ -245,7 +252,7 @@ export function leggiRisposta(txt) {
 
 // Quanto costa, più o meno: serve solo per dirglielo a schermo.
 export const COSTI = {
-  gemini: { sveglia: "Il modello Flash nuovo: circa 1-2 € al mese con quanto la usi tu. Gratis fino a un certo numero di domande al giorno.", risparmio: "Il modello piccolo: pochi centesimi al mese, un filo meno sveglia." },
+  gemini: { svelta: "Il modello piccolo e velocissimo: risponde in meno di un secondo e costa pochi centesimi al mese. È quello giusto per parlarle a voce.", sveglia: "Il modello grande: ragiona di più, ma sul piano gratuito può metterci anche venti secondi a rispondere.", risparmio: "Il modello piccolo: pochi centesimi al mese." },
   openai: { sveglia: "Il modello di mezzo: circa 2-3 € al mese. Serve mettere 5 € sul conto all'inizio.", risparmio: "Il modello piccolo: pochi centesimi al mese. Serve mettere 5 € sul conto all'inizio." },
   claude: { sveglia: "Il modello di mezzo: circa 2-3 € al mese. Serve una ricarica all'inizio.", risparmio: "Il modello piccolo: pochi centesimi al mese. Serve una ricarica all'inizio." },
 };

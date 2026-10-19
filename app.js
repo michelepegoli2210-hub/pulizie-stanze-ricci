@@ -79,7 +79,10 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 const CHIAVE_FACCE = "ricci_gov_facce";
 const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
 const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
-const FILM_PRONTO = { attesa: "cons-attesa.mp4", parla: "cons-parla.mp4", ascolta: "cons-ascolta.mp4", poster: "cons-poster.webp" };
+const FILM_PRONTO = { attesa: "cons-attesa.mp4", attesa2: "cons-attesa2.mp4", indica: "cons-indica.mp4", pensa: "cons-pensa.mp4", parla: "cons-parla.mp4", ascolta: "cons-ascolta.mp4", poster: "cons-poster.webp" };
+// Quando non succede niente non resta ferma sullo stesso filmato: gira fra
+// questi, uno ogni nove secondi, cosi' sembra che stia davvero lavorando.
+const GIRO_RIPOSO = ["attesa", "attesa2", "indica", "attesa2", "attesa", "indica"];
 function FILM_CONS(cls) {
   const f = FILM_PRONTO;
   return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}">
@@ -123,11 +126,13 @@ function filmVigila() {
     // REGOLA: la bocca si muove SOLO se sta uscendo davvero del suono.
     // Senza questo controllo lei muoveva le labbra in silenzio, e faceva ridere.
     let suono = false; try { suono = VOCE.staParlando(); } catch (e) {}
+    const riposo = GIRO_RIPOSO[Math.floor(Date.now() / 9000) % GIRO_RIPOSO.length];
     for (const b of document.querySelectorAll(".gov-film")) {
       const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
       const parla = suono && vuole;
       const ascolta = !parla && forzato === "ascolto";
-      filmUno(parla ? "parla" : ascolta ? "ascolta" : "attesa", b);
+      const pensa = !parla && !ascolta && forzato === "pensa";
+      filmUno(parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : riposo, b);
     }
   }, 450);
 }
@@ -138,7 +143,7 @@ function statoCons(s) {
     c.dataset.stato = s || "";
     c.classList.toggle("sta-parlando", s === "parla");
   });
-  document.body.dataset.cons = (s === "parla") ? "parla" : (s === "ascolto") ? "ascolto" : "";
+  document.body.dataset.cons = (s === "parla") ? "parla" : (s === "ascolto") ? "ascolto" : (s === "pensa") ? "pensa" : "";
 }
 function sottoCons(t, fantasma) {
   const z = document.getElementById("consSotto");
@@ -160,6 +165,34 @@ function ultimaDiLei() {
   } catch (e) {}
   return "";
 }
+// "Un attimo…" gia' pronto: si prepara mentre Michele sta ancora parlando, cosi'
+// quando smette lei risponde SUBITO qualcosa e non resta muta ad aspettare l'IA.
+let vocePronta = null, voceInPreparazione = false;
+async function scaldaRisposta() {
+  if (vocePronta || voceInPreparazione) return;
+  const vc = VOCE.leggiVoce(), c = confIA();
+  if (!vc.attiva || vc.motore !== "google" || !vc.modello || !c.chiave) return;
+  voceInPreparazione = true;
+  try { vocePronta = await VOCE.audioDaGoogle("Un attimo.", vc, c.chiave); } catch (e) {}
+  voceInPreparazione = false;
+}
+function diciUnAttimo() {
+  if (!vocePronta) return false;
+  try {
+    statoCons("parla");
+    VOCE.suona(vocePronta, { onBocca: applicaBocca, onFine: () => { applicaBocca(0); statoCons("pensa"); } });
+    return true;
+  } catch (e) { return false; }
+}
+// Lo scaldamotore: la prima domanda non deve pagare la ricerca del modello
+setTimeout(async () => {
+  try {
+    const c = confIA();
+    if (!c.chiave || !IA.accesa(c) || c.modello) return;
+    const t = await IA.trovaModello(c);
+    if (t && t.modello) IA.salvaConf({ modello: t.modello });
+  } catch (e) { console.warn("scaldamotore", e); }
+}, 2500);
 function micCasaVai() {
   const R = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!R) { toast("Qui il microfono non si apre: usa quello della tastiera"); return; }
@@ -168,7 +201,7 @@ function micCasaVai() {
   micCasa = r; micAttivo = true;
   r.lang = "it-IT"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
   let finale = "";
-  statoCons("ascolto"); sottoCons("ti ascolto…", true);
+  statoCons("ascolto"); sottoCons("ti ascolto…", true); scaldaRisposta();
   r.onresult = (e) => {
     let interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -187,6 +220,7 @@ function micCasaVai() {
     const t = finale.trim();
     if (!t) { statoCons("ferma"); sottoCons(""); return; }
     statoCons("pensa"); sottoCons("ci penso…", true);
+    diciUnAttimo();
     try {
       await parlaGov(t);
       statoCons("parla");
@@ -1741,7 +1775,7 @@ async function salvaConversazione(righe) {
 async function parlaGov(testo, perIA) {
   const t = String(testo || "").trim(); if (!t) return;
   const conv = [...conversazione(), { chi: "io", testo: t, ora: S.db.adesso() }];
-  await salvaConversazione(conv);
+  salvaConversazione(conv); // non si aspetta: a schermo compare subito
   govScrive = true; disegna();
   let msg = null;
   // prima prova la governante intelligente; se non c'è o non risponde, si torna alle parole del catalogo
@@ -1755,7 +1789,7 @@ async function parlaGov(testo, perIA) {
     msg = await rispostaGov(r);
   }
   govScrive = false;
-  await salvaConversazione([...conversazione(), msg]);
+  salvaConversazione([...conversazione(), msg]); // idem: prima si vede, poi si salva
   if (voceAccesa() && msg && msg.testo) parlaConVoce(msg.testo);
 }
 // La risposta della governante: per le domande risponde subito, per le cose da fare chiede conferma
@@ -2294,7 +2328,7 @@ function cardIA() {
       <span class="small muted" style="margin-top:6px">Stanno solo su questo telefono, non le vedono le signore. Usa un personaggio inventato o una foto tua — non la foto di una persona vera senza il suo permesso.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
     <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
-      <div class="seg"><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Sveglia</button><button type="button" aria-pressed="${q === "risparmio"}" data-ia-qualita="risparmio">Risparmio</button></div>
+      <div class="seg"><button type="button" aria-pressed="${q === "svelta"}" data-ia-qualita="svelta">Svelta</button><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Pensa di più</button></div>
       <span class="small muted">${esc(IA.COSTI[c.fornitore]?.[q] || "pochi centesimi al mese")}</span></div>
     <div class="ia-passo"><b>3.</b> Prendi la chiave su <b>${esc(f.dove)}</b>: entra con la tua mail e falla creare. ${esc(f.passi)}
       <button type="button" class="ia-vai" data-ia-apri="${esc(f.dove)}">Apri ${esc(f.dove.split("/")[0])} ↗</button>

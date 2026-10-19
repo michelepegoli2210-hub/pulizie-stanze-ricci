@@ -3,12 +3,12 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "0.63.0";
+const VERSIONE = "0.64.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
-  "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./cons-attesa.mp4", "./cons-parla.mp4", "./cons-ascolta.mp4", "./cons-poster.webp", "./cons-base.webp", "./cons-indica.webp", "./cons-cuore.webp", "./cons-pollice.webp", "./cons-osx.webp", "./cons-odx.webp", "./cons-osu.webp", "./cons-scena.webp", "./cons-saluto.webp", "./cons-riposo.webp", "./cons-b1.webp", "./cons-b2.webp", "./cons-b3.webp", "./cons-occhi.webp", "./cons-felice.webp", "./cons-testa.webp", "./cons-testa-occhi.webp",
+  "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./cons-attesa.mp4", "./cons-attesa2.mp4", "./cons-indica.mp4", "./cons-pensa.mp4", "./cons-parla.mp4", "./cons-ascolta.mp4", "./cons-poster.webp", "./cons-base.webp", "./cons-indica.webp", "./cons-cuore.webp", "./cons-pollice.webp", "./cons-osx.webp", "./cons-odx.webp", "./cons-osu.webp", "./cons-scena.webp", "./cons-saluto.webp", "./cons-riposo.webp", "./cons-b1.webp", "./cons-b2.webp", "./cons-b3.webp", "./cons-occhi.webp", "./cons-felice.webp", "./cons-testa.webp", "./cons-testa-occhi.webp",
   "./fonts/montserrat-latin-500-normal.woff2", "./fonts/montserrat-latin-600-normal.woff2", "./fonts/montserrat-latin-700-normal.woff2", "./fonts/montserrat-latin-800-normal.woff2",
 ];
 
