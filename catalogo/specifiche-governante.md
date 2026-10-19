@@ -849,3 +849,41 @@ Il filmato da 41 secondi contiene azioni diverse. Tagliati SEI spezzoni, tutti c
 - cons-parla.mp4 (2,6-8,2 s) e cons-ascolta.mp4 (8,6-12,4 s): come prima.
 E soprattutto: quando non succede niente, filmVigila() non ripete piu' sempre lo stesso. Gira fra attesa, attesa2 e indica (GIRO_RIPOSO in app.js), uno ogni nove secondi. Provato dal vivo: in quaranta secondi si vedono indica, attesa2, attesa, indica, attesa.
 SE ARRIVANO VIDEO NUOVI VERI: basta aggiungerli a FILM_PRONTO e metterne il nome in GIRO_RIPOSO.
+
+## 37. La 0.65 (19 ottobre): Sofia diventa Gemini intero
+
+### Cosa ha chiesto Michele
+Vuole che l'albergo lo gestisca un'intelligenza artificiale molto competente, come se assumesse una persona brava, ed e' disposto a pagarla. Vuole che l'avatar sia la FACCIA di Gemini: lui scrive nella sua app, e la governante risponde come risponderebbe Gemini, su qualunque cosa, non solo sulle pulizie. "Un collegamento ipertestuale che non si capisce, non e' camuffato: io sto parlando con Gemini e basta."
+
+### QUELLO CHE E' CAMBIATO
+Nelle istruzioni (ia.js, funzione istruzioni) c'erano due muri che la tenevano chiusa:
+1. "Sei LA GOVERNANTE" + "parli come una signora che lavora qui da anni" la faceva restare nel personaggio al punto di RIFIUTARE le domande fuori tema. Provato: alla domanda sulla cedolare secca rispondeva "questo non lo so, io mi occupo delle camere, chiedi al commercialista".
+2. "risposta: da 1 a 4 frasi corte" le impediva di spiegare qualcosa per bene.
+Aggiunto nel capitolo CHI SEI: "MA NON SEI SOLO LA GOVERNANTE: sei anche il braccio destro di Michele per TUTTO il resto... NON dire mai «non e' compito mio»... prima spieghi tu quello che sai, poi semmai aggiungi che per firmare conviene sentire un tecnico."
+Aggiunto un capitolo intero "QUANDO TI CHIEDE UNA COSA CHE NON C'ENTRA CON L'ALBERGO": rispondi per esteso, spiega semplice, fai i calcoli coi passaggi, scrivi le mail pronte da copiare, e il limite delle quattro frasi vale solo per la casa.
+E la regola della riga "risposta" adesso dice: corta per l'albergo, lunga quanto serve per il resto.
+maxOutputTokens da 1600 a 4000. Nel CSS .chat-bolla ha white-space:pre-wrap, se no gli elenchi e i paragrafi si appiccicavano.
+PROVATO: stessa domanda sulla cedolare secca, adesso risponde con aliquote e cosa guardare, in 1,9 secondi.
+
+### IL TASTO ARGON (e perche' non parte)
+Al passo 2 adesso ci sono tre tasti: Svelta · Pensa di piu' · Argon.
+Argon sceglie gemini-4-argon. MA: quel modello NON ha chiamate gratuite. Provato con la chiave di Michele, risponde 429 in mezzo secondo con "You exceeded your current quota, please check your plan and billing details", mentre nello stesso momento flash-lite risponde bene. Non e' traffico: e' che serve una carta sulla chiave.
+Per non lasciarlo senza risposta: in rispostaIA, se la chiamata fallisce con un messaggio di quota E la qualita' non e' gia' "svelta", l'app cerca da sola il modello svelto e RIFA la domanda con quello, poi avvisa una volta sola con un toast. La variabile "ripiego" serve a non salvare il modello di ripiego come se fosse quello scelto da Michele.
+PROVATO dal vivo: Argon fallisce, la regola riconosce l'errore, il ripiego su gemini-3.5-flash-lite risponde.
+
+### I PREZZI VERI (dal listino di Google, 19 ottobre 2026)
+- gemini-4-argon: 2,00 $ per milione di token in entrata e 10,00 $ in uscita FINO AL 30 NOVEMBRE 2026; dal 1 dicembre 4,00 $ e 20,00 $. Free tier: "Gemini 4 Argon is not available on the Free tier."
+- NON ESISTE un abbonamento mensile che copra l'API. Dal sito: "Google AI plan benefits for developer usage apply only within the Google AI Studio web interface. Direct use of the Gemini API (such as using API keys or external applications) is billed and managed separately." Quindi i 21,99 euro di AI Pro che Michele ha gia' pagato NON servono all'app.
+- Stima a 30 domande al giorno: circa 17 $ al mese adesso, circa 34 $ da dicembre.
+- Anche i modelli che fanno le IMMAGINI (nano-banana) rispondono 429: servono la carta.
+- Ostacolo pratico gia' noto: Google non accetta la PostePay.
+
+### LA SCOPERTA GROSSA: la voce dal vivo e' GRATIS
+Avevo detto a Michele che i modelli "live" (quelli che ti sentono mentre parli e rispondono in mezzo secondo) non c'erano sulla sua chiave. ERA SBAGLIATO: l'elenco dei modelli non li mostra.
+Provato ad aprire davvero il websocket wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent con la sua chiave: si apre e risponde {"setupComplete":{}} sia con gemini-3.8-live sia con gemini-3.1-flash-live-preview.
+E sul listino quei modelli, colonna Free Tier, sono segnati "Free of charge" sia in entrata sia in uscita.
+QUINDI: la conversazione a voce vera, in tempo reale, si puo' fare e non costa niente. Non e' ancora costruita: serve catturare il microfono in PCM 16 kHz, suonare l'audio che torna a 24 kHz, e gestire l'interruzione. E' il prossimo lavoro grosso.
+LEZIONE: non fidarsi di models.list per sapere cosa sa fare una chiave. Provare la chiamata vera.
+
+### UNA SBAVATURA MIA, DA SAPERE
+Mentre provavo, ho scritto un messaggio di prova nella casella sbagliata: non quella della chat libera in fondo (id "parlaGov") ma quella dentro la scheda delle stelle (id "ci_stelle|..."). Risultato: nello storico della chat risulta che alla domanda sulle stelle del 24 ottobre e' stato risposto "a parole: Prova veloce: dimmi in una riga quante pulizie ci sono oggi". Non rompe niente e sparisce con "Ricomincia da zero", ma e' li'.
