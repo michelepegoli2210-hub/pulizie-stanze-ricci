@@ -1545,6 +1545,22 @@ async function benvenutoSofia() {
   try { VOCE.sbloccaAudio(); } catch (e) {}
   try { await parlaConVoce(testoBenvenuto()); } catch (e) { console.warn("benvenuto", e); }
 }
+// ---- lo stile della prima pagina: lo sceglie Michele, resta su questo telefono ----
+const CHIAVE_STILE_CASA = "ricci_casa_stile";
+const STILI_CASA = [
+  { id: "basso", nome: "Tasti in fondo", come: "I tre tasti restano in fondo allo schermo, il testo sta sotto la foto." },
+  { id: "sotto", nome: "Tasti sotto la foto", come: "I tre tasti stanno subito sotto la foto, il testo scende in fondo." },
+  { id: "tondi", nome: "Tre tondi, senza scritte", come: "Solo tre cerchi con l'icona, sotto la foto. Il piu' pulito." },
+];
+function stileCasa() {
+  try { const v = localStorage.getItem(CHIAVE_STILE_CASA); return STILI_CASA.some(s => s.id === v) ? v : "basso"; }
+  catch (e) { return "basso"; }
+}
+function cambiaStileCasa(v) {
+  try { localStorage.setItem(CHIAVE_STILE_CASA, v); } catch (e) {}
+  const h = document.getElementById("sofiaHero"); if (h) h.dataset.stile = stileCasa();
+  disegna();
+}
 function disegnaCasa() {
   let h = document.getElementById("sofiaHero");
   if (!casaAttiva()) {
@@ -1562,7 +1578,71 @@ function disegnaCasa() {
     window.scrollTo(0, 0);
   }
   document.body.classList.add("ha-casa");
+  h.dataset.stile = stileCasa();
   casaAggiorna(h);
+}
+
+// ---------------------------------------------------------------------------
+//  RICOMINCIA DA ZERO (0.63)
+//  Michele ha fatto delle prove: camere segnate pulite per vedere come andava,
+//  stelle proposte per cose gia' fatte davvero. Questo tasto ripulisce il
+//  lavoro registrato e fa ripartire i conti dal giorno in cui e' pronto.
+//  NON tocca camere, signore, regole, prezzi: quelli sono la casa, non il lavoro.
+// ---------------------------------------------------------------------------
+const AZZERABILI = [
+  { id: "pulizie", nome: "Le pulizie di tutti i giorni", come: "fatte, da fare, extra. Si rifanno da sole dal prospetto, come nuove.", base: true },
+  { id: "manutenzione", nome: "I lavori di manutenzione", come: "problemi segnalati e lavori aggiunti a mano.", base: true },
+  { id: "controlli", nome: "I controlli e i pagamenti", come: "i voti delle camere e le ore gia' contate alle signore.", base: true },
+  { id: "catalogo", nome: "Le stelle della governante", come: "riparte come se il catalogo fosse tutto in pari da oggi: non ti ripropone cose gia' fatte.", base: true },
+  { id: "chat", nome: "Quello che vi siete detti", come: "la chat con lei, le sue risposte e il consiglio del giorno.", base: true },
+  { id: "prospetto", nome: "Il prospetto: chi dorme qui", come: "arrivi e partenze. Toglilo solo se vuoi rifare anche quello.", base: false },
+];
+let azzScelte = Object.fromEntries(AZZERABILI.map(x => [x.id, x.base]));
+let azzChiesto = false, azzInCorso = false;
+async function azzeraDavvero() {
+  if (azzInCorso) return;
+  const s = azzScelte, oggi = L.oggiISO(), ops = [];
+  const togli = (coll, obj) => { for (const v of Object.values(obj || {})) { const id = v && v.id; if (id) ops.push({ tipo: "cancella", coll, id }); } };
+  if (s.pulizie) togli("pulizie", S.pulizie);
+  if (s.manutenzione) togli("manutenzione", S.manutenzione);
+  if (s.controlli) { togli("controlli", S.controlli); togli("pagamenti", S.pagamenti); }
+  if (s.prospetto) { togli("soggiorni", S.soggiorni); togli("note", S.note); }
+  if (s.catalogo) for (const v of Object.values(S.registro || {})) {
+    if (!v || !v.regola || !v.luogo) continue;
+    ops.push({ tipo: "salva", coll: "governante_registro", id: `${v.regola}_${v.luogo}`, dati: { ...v, ultima: oggi, ora: S.db.adesso() } });
+  }
+  azzInCorso = true; disegna();
+  try {
+    if (ops.length) await S.db.scrivi(ops);
+    if (s.chat) { await salvaChat({ risposte: {}, conta: {}, automatiche: {}, conversazione: [] }); try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} }
+    if (s.catalogo) await salvaGov({ inizio: oggi, stelleEscluse: {} });
+    toast("Fatto: si riparte da oggi.");
+  } catch (e) { erroreScrittura(e); }
+  azzInCorso = false; azzChiesto = false; disegna();
+}
+function cardAzzera() {
+  if (!proprietario() || S.utente?.finta) return "";
+  const righe = AZZERABILI.map(x => `<label class="row azz-riga" for="azz_${x.id}"><span><b>${esc(x.nome)}</b><br><span class="muted small">${esc(x.come)}</span></span><input type="checkbox" id="azz_${x.id}" data-azz="${x.id}" ${azzScelte[x.id] ? "checked" : ""}></label>`).join("");
+  const quante = AZZERABILI.filter(x => azzScelte[x.id]).length;
+  return `<section class="card azzera">
+    <h2>Ricomincia da zero</h2>
+    <p class="muted small" style="margin:0 0 10px">Cancella il lavoro registrato finora, cosi' i conti partono dal giorno in cui sei pronto davvero. Le camere, le signore, le regole e i prezzi NON si toccano: resta tutto com'e'.<br><b>Prima fatti una copia di sicurezza</b> (il tasto sta qui sotto, in fondo): se poi ti serve qualcosa, da li' si recupera.</p>
+    <div class="rows">${righe}</div>
+    ${azzChiesto
+      ? `<div class="azz-conferma"><p><b>Sicuro?</b> Cancello ${quante === 1 ? "la cosa scelta" : "le " + quante + " cose scelte"} qui sopra. Non si torna indietro, se non dalla copia di sicurezza.</p>
+         <div class="azz-tasti"><button type="button" class="big warn" data-azzera-si ${azzInCorso ? "disabled" : ""}>${azzInCorso ? "Sto azzerando…" : "Sì, azzera adesso"}</button><button type="button" class="big undo" data-azzera-no>No, lascia stare</button></div></div>`
+      : `<button type="button" class="big warn" data-azzera-chiedi ${quante ? "" : "disabled"}>Azzera quello che ho scelto</button>`}
+  </section>`;
+}
+function cardStileCasa() {
+  if (!proprietario()) return "";
+  const ora = stileCasa();
+  const anteprima = (id) => `<span class="st-prev st-${id}"><i class="st-card"></i><i class="st-bar"></i><i class="st-bar"></i><i class="st-bar"></i></span>`;
+  return `<section class="card">
+    <h2>Prima pagina</h2>
+    <p class="muted small" style="margin:0 0 10px">Dove stanno i tasti sotto ${esc(nomeGov())}. Tocca e cambia subito: puoi tornare indietro quando vuoi.</p>
+    <div class="st-scelte">${STILI_CASA.map(s => `<button type="button" class="st-opt" aria-pressed="${ora === s.id}" data-casa-stile="${s.id}">${anteprima(s.id)}<b>${esc(s.nome)}</b><span class="muted small">${esc(s.come)}</span></button>`).join("")}</div>
+  </section>`;
 }
 function cardConsuela() {
   if (!proprietario()) return "";
@@ -2327,6 +2407,11 @@ function collegaIA() {
   });
   document.querySelectorAll("[data-voce-nome]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); zittisciVoce(); VOCE.salvaVoce({ voce: b.dataset.voceNome }); provaVoce = null; disegna(); });
   document.querySelectorAll("[data-voce-tono]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); zittisciVoce(); VOCE.salvaVoce({ tono: b.dataset.voceTono }); provaVoce = null; disegna(); });
+  document.querySelectorAll("[data-casa-stile]").forEach(b => b.onclick = () => { cambiaStileCasa(b.dataset.casaStile); toast("Guarda la prima pagina: tocca «oggi» in alto"); });
+  document.querySelectorAll("[data-azz]").forEach(b => b.onchange = () => { azzScelte[b.dataset.azz] = b.checked; azzChiesto = false; disegna(); });
+  document.querySelectorAll("[data-azzera-chiedi]").forEach(b => b.onclick = () => { azzChiesto = true; disegna(); });
+  document.querySelectorAll("[data-azzera-no]").forEach(b => b.onclick = () => { azzChiesto = false; disegna(); });
+  document.querySelectorAll("[data-azzera-si]").forEach(b => b.onclick = () => azzeraDavvero());
   document.querySelectorAll("[data-voce-tasto]").forEach(b => b.onclick = () => {
     VOCE.sbloccaAudio();
     const v = VOCE.leggiVoce();
@@ -3281,7 +3366,7 @@ function cardOrarioBase() {
 // ---- altro ---------------------------------------------------------------------------
 function vistaAltro() {
   const r = S.regole;
-  return cardIA() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardStileCasa() + cardIA() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -3304,6 +3389,7 @@ function vistaAltro() {
     ${puoModificare() ? `<label class="big main" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">📄 Carica il foglio di papà<input id="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><p class="muted small" style="margin:8px 0 0">Legge il file Excel con regole fisse e ti fa controllare prima di salvare. Niente viene cambiato finché non premi "Salva nel prospetto".</p>` : ""}
   </section>
   ${vistaPersone()}
+  ${cardAzzera()}
   <div class="menu">
     <button data-esporta="xlsx">Esporta in Excel<span>Pulizie, pagamenti, prospetto e note in un file .xlsx</span></button>
     <button data-esporta="json">Copia di sicurezza completa<span>Un file con tutti i dati (si può ricaricare in futuro)</span></button>
