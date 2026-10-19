@@ -2050,9 +2050,13 @@ function labialeMonta() {
     l.monta().catch(e => { console.warn("labiale", e); labRotto = true; labiali = labiali.filter(x => x !== l); });
   }
 }
-function labialeAvvia(buf, testoLetto) {
+function labialeAvvia(buf, testoLetto, durata) {
   clearTimeout(labSpegni); labSpegni = null;
-  try { labPiano = BOCCA.piano(testoLetto, BOCCA.profilo(buf)); } catch (e) { console.warn("labiale piano", e); labPiano = null; return; }
+  try {
+    // con la voce vera si legge il suono; con quella del telefono si stima dal testo
+    const prof = buf && typeof buf.getChannelData === "function" ? BOCCA.profilo(buf) : BOCCA.profiloFinto(testoLetto, durata);
+    labPiano = BOCCA.piano(testoLetto, prof);
+  } catch (e) { console.warn("labiale piano", e); labPiano = null; return; }
   labialeMonta();
 }
 function labialeTick(forza, t) {
@@ -2078,7 +2082,7 @@ async function parlaConVoce(testo) {
   }
   voceInCorso = true; disegna();
   await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave,
-    onInizio: (buf, letto) => labialeAvvia(buf, letto),
+    onInizio: (buf, letto, durata) => labialeAvvia(buf, letto, durata),
     onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
     onFine: () => { voceInCorso = false; applicaBocca(0); labialeFerma(); disegna(); },
     onErrore: (e) => toast(String(e && e.message || "Voce vera non disponibile") + " Per ora parla il telefono.") });
@@ -2486,7 +2490,8 @@ function collegaIA() {
     // le signore non hanno la chiave: per loro parla il telefono, gratis
     voceInCorso = true; disegna();
     VOCE.parla(t, { conf: { ...VOCE.leggiVoce(), motore: proprietario() ? VOCE.leggiVoce().motore : "telefono", attiva: true }, chiave: proprietario() ? confIA().chiave : "",
-      onBocca: applicaBocca, onFine: () => { voceInCorso = false; applicaBocca(0); disegna(); } });
+      onInizio: (buf, letto, durata) => labialeAvvia(buf, letto, durata),
+      onBocca: (f, tt) => { applicaBocca(f); labialeTick(f, tt); }, onFine: () => { voceInCorso = false; applicaBocca(0); labialeFerma(); disegna(); } });
   });
   document.querySelectorAll("[data-voce-motore]").forEach(b => b.onclick = () => {
     VOCE.sbloccaAudio(); zittisciVoce();

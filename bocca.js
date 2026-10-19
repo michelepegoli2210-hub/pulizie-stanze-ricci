@@ -60,6 +60,33 @@ export function profilo(audioBuffer) {
   return { hop: 0.02, e, max, parlato, cum, totale: c, durata: audioBuffer.duration };
 }
 
+// ---- 2b. quando l'audio non c'e' (voce del telefono): un profilo stimato -------
+// Il telefono non ci da' il suono da leggere: si stima quanto dura la frase dalle
+// lettere e si distribuiscono le forme nel tempo, con le pause sulla punteggiatura
+// e un ritmo di sillabe finto. Meno preciso della voce vera, ma segue il testo.
+export function stimaDurata(testo, rate = 1) {
+  const t = String(testo || "");
+  const lettere = (t.match(/[a-zà-ú]/gi) || []).length;
+  const punti = (t.match(/[.!?]/g) || []).length, virgole = (t.match(/[,;:]/g) || []).length;
+  return Math.max(0.6, (lettere * 0.072 + punti * 0.38 + virgole * 0.2 + 0.25) / (Number(rate) || 1));
+}
+export function profiloFinto(testo, durata) {
+  const v = visemi(testo), pesoTot = v.reduce((s, x) => s + x.p, 0) || 1;
+  const hop = 0.02, n = Math.max(1, Math.round((Number(durata) || stimaDurata(testo)) / hop));
+  const e = new Float32Array(n), parlato = new Uint8Array(n), cum = new Float32Array(n);
+  let acc = 0; const bordi = v.map(x => { acc += x.p; return { fine: acc / pesoTot, f: x.f }; });
+  let k = 0, c = 0;
+  for (let i = 0; i < n; i++) {
+    const frac = (i + 0.5) / n;
+    while (k < bordi.length - 1 && bordi[k].fine < frac) k++;
+    const f = bordi.length ? bordi[k].f : "X", t = i * hop;
+    parlato[i] = f === "X" ? 0 : 1;
+    e[i] = parlato[i] ? 0.35 + 0.55 * Math.abs(Math.sin(t * 17)) : 0;
+    if (parlato[i]) c += hop; cum[i] = c;
+  }
+  return { hop, e, max: 0.9, parlato, cum, totale: c, durata: n * hop, finto: true };
+}
+
 // ---- 3. il piano: a ogni istante, quale forma --------------------------------
 export function piano(testo, prof) {
   const voci = visemi(testo).filter(v => v.f !== "X");

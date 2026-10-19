@@ -9,6 +9,7 @@
 //  bocca della governante si apre e si chiude davvero su quello che dice.
 // ============================================================================
 
+import { stimaDurata } from "./bocca.js";
 export const VOCI = [
   { id: "Autonoe", nome: "Brillante", come: "squillante e sveglia: parla chiaro" },
   { id: "Erinome", nome: "Nitida", come: "pulita e precisa, da professionista" },
@@ -70,7 +71,7 @@ export function daLeggere(t) {
 export function vociTelefono() {
   try { return (window.speechSynthesis?.getVoices() || []).filter(v => /^it/i.test(v.lang)); } catch (e) { return []; }
 }
-export function parlaTelefono(testo, { onFine } = {}) {
+export function parlaTelefono(testo, { onFine, onInizio } = {}) {
   try {
     const sin = window.speechSynthesis; if (!sin) { onFine?.(); return null; }
     sin.cancel();
@@ -78,6 +79,7 @@ export function parlaTelefono(testo, { onFine } = {}) {
     const to = tonoDi(leggiVoce());
     u.lang = "it-IT"; u.rate = to.rate; u.pitch = to.pitch;
     const it = vociTelefono(); if (it.length) u.voice = it.find(v => /female|donna|alice|elsa|federica/i.test(v.name)) || it[0];
+    u.onstart = () => onInizio?.();
     u.onend = () => onFine?.(); u.onerror = () => onFine?.();
     sin.speak(u);
     return () => { try { sin.cancel(); } catch (e) {} };
@@ -195,7 +197,19 @@ export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, on
     catch (e) { console.warn("voce google", e); onErrore?.(e); }
   }
   // ripiego: la voce del telefono (gratis, anche senza internet)
-  let finto = 0; const tic = setInterval(() => { finto = finto ? 0 : 0.75; onBocca?.(finto); }, 130);
-  fermaOra = () => { clearInterval(tic); onBocca?.(0); try { window.speechSynthesis?.cancel(); } catch (e) {} };
-  parlaTelefono(t, { onFine: () => { clearInterval(tic); onBocca?.(0); fermaOra = null; onFine?.(); } });
+  // 0.66: anche qui il labiale segue il testo. Non c'e' un audio da leggere, quindi
+  // la durata si stima dalle lettere (bocca.js) e il tempo parte quando il telefono
+  // comincia davvero a parlare (onstart), con una rete se l'evento non arriva.
+  const durata = stimaDurata(t, tonoDi(c).rate);
+  let t0 = 0, vivo = true, tic = null;
+  const parti = () => {
+    if (!vivo || t0) return;
+    t0 = performance.now();
+    try { onInizio?.(null, t, durata); } catch (e) { console.warn("onInizio", e); }
+    tic = setInterval(() => { if (!vivo) return; onBocca?.(0.7, (performance.now() - t0) / 1000); }, 33);
+  };
+  const chiudi = () => { if (!vivo) return; vivo = false; clearInterval(tic); onBocca?.(0, durata); fermaOra = null; onFine?.(); };
+  fermaOra = () => { vivo = false; clearInterval(tic); onBocca?.(0, 0); try { window.speechSynthesis?.cancel(); } catch (e) {} };
+  setTimeout(parti, 1500);
+  parlaTelefono(t, { onInizio: parti, onFine: chiudi });
 }
