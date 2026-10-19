@@ -2056,7 +2056,7 @@ function labialeAvvia(buf, testoLetto, durata) {
   clearTimeout(labSpegni); labSpegni = null;
   try {
     // con la voce vera si legge il suono; con quella del telefono si stima dal testo
-    const prof = buf && typeof buf.getChannelData === "function" ? BOCCA.profilo(buf) : BOCCA.profiloFinto(testoLetto, durata);
+    const prof = buf && buf.vivo ? buf : buf && typeof buf.getChannelData === "function" ? BOCCA.profilo(buf) : BOCCA.profiloFinto(testoLetto, durata);
     labPiano = BOCCA.piano(testoLetto, prof);
   } catch (e) { console.warn("labiale piano", e); labPiano = null; return; }
   labialeMonta();

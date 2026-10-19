@@ -87,6 +87,41 @@ export function profiloFinto(testo, durata) {
   return { hop, e, max: 0.9, parlato, cum, totale: c, durata: n * hop, finto: true };
 }
 
+// ---- 2c. il profilo "vivo": cresce mentre l'audio arriva a pezzi (voce Live) ----
+// Con il canale Live la voce parte prima che l'audio sia tutto arrivato. Il profilo
+// si costruisce pezzo per pezzo; finche' non e' finito, il totale del parlato si
+// STIMA da quanta parte del testo e' gia' stata letta (la trascrizione che arriva
+// insieme all'audio). Quando il modello dice "finito", il totale diventa esatto.
+export class ProfiloVivo {
+  constructor(testo) {
+    this.vivo = true; this.hop = 0.02; this.e = []; this.parlato = []; this.cum = [];
+    this.max = 0; this._tot = 0; this.durata = 0; this.chiuso = false; this.frazione = 0;
+    this.resto = new Float32Array(0);
+    this.lettere = Math.max(1, (String(testo || "").match(/[a-zà-ú0-9]/gi) || []).length);
+  }
+  _quadro(v) {
+    if (v > this.max) this.max = v;
+    const p = v > this.max * 0.12 ? 1 : 0;
+    this.e.push(v); this.parlato.push(p); if (p) this._tot += this.hop; this.cum.push(this._tot); this.durata += this.hop;
+  }
+  aggiungi(f32, sr) {
+    const hop = Math.max(1, Math.round(sr * this.hop));
+    let d = f32;
+    if (this.resto.length) { const m = new Float32Array(this.resto.length + f32.length); m.set(this.resto); m.set(f32, this.resto.length); d = m; }
+    const n = Math.floor(d.length / hop);
+    for (let i = 0; i < n; i++) { let s = 0; const a = i * hop; for (let j = a; j < a + hop; j++) s += d[j] * d[j]; this._quadro(Math.sqrt(s / hop)); }
+    this.resto = d.slice(n * hop);
+  }
+  silenzio(sec) { const n = Math.round((Number(sec) || 0) / this.hop); for (let i = 0; i < n; i++) this._quadro(0); }
+  trascrizione(t) { const l = (String(t || "").match(/[a-zà-ú0-9]/gi) || []).length; this.frazione = Math.min(1, l / this.lettere); }
+  chiudi() { this.chiuso = true; }
+  get totale() {
+    if (this.chiuso) return this._tot;
+    const fr = Math.max(0.08, this.frazione);
+    return Math.max(this._tot, this._tot / fr);
+  }
+}
+
 // ---- 3. il piano: a ogni istante, quale forma --------------------------------
 export function piano(testo, prof) {
   const voci = visemi(testo).filter(v => v.f !== "X");

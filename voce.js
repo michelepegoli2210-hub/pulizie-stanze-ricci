@@ -9,7 +9,7 @@
 //  bocca della governante si apre e si chiude davvero su quello che dice.
 // ============================================================================
 
-import { stimaDurata } from "./bocca.js";
+import { stimaDurata, ProfiloVivo } from "./bocca.js";
 export const VOCI = [
   { id: "Autonoe", nome: "Brillante", come: "squillante e sveglia: parla chiaro" },
   { id: "Erinome", nome: "Nitida", come: "pulita e precisa, da professionista" },
@@ -263,6 +263,81 @@ export async function audioDaLive(testo, conf, chiave) {
   CASSETTO.set(k, r);
   return r;
 }
+// 0.67.1: la voce Live che PARTE SUBITO. Non si aspetta che l'audio sia tutto
+// generato: il primo pezzo si suona appena arriva (circa un secondo) e gli altri si
+// mettono in coda senza buchi. Il labiale segue un profilo "vivo" che cresce coi
+// pezzi. Alla fine si restituisce anche il WAV intero, per il cassetto.
+function pcmAFloat(u8) {
+  const n = u8.length >> 1, out = new Float32Array(n), dv = new DataView(u8.buffer, u8.byteOffset, n * 2);
+  for (let i = 0; i < n; i++) out[i] = dv.getInt16(i * 2, true) / 32768;
+  return out;
+}
+export async function parlaLive(testo, conf, chiave, { onInizio, onBocca, onFine } = {}) {
+  const ctx = sbloccaAudio(); if (!ctx) throw new Error("Qui l'audio non si apre.");
+  stazitta();
+  let L = liveCaldo;
+  if (!L || L.chiuso || L.usato || L.voce !== conf.voce || L.tono !== conf.tono) L = apriLive(conf, chiave);
+  if (liveCaldo === L) liveCaldo = null;
+  L.usato = true; liveInCorso = L;
+  try { await L.pronto; } catch (e) { if (liveInCorso === L) liveInCorso = null; throw e; }
+  const RATE = 24000;
+  const an = ctx.createAnalyser(); an.fftSize = 512; an.smoothingTimeConstant = 0.45; an.connect(ctx.destination);
+  const dati = new Uint8Array(an.fftSize);
+  const prof = new ProfiloVivo(testo);
+  const pezzi = [], fonti = [];
+  let trascr = "", nextT = 0, t0 = 0, partito = false, generato = false, vivo = true;
+  const ritardo = Math.min(0.25, Number(ctx.outputLatency) || 0);
+  return new Promise((res) => {
+    const spegni = () => {
+      if (!vivo) return; vivo = false;
+      clearTimeout(tMax); L.ascolta = null;
+      try { L.ws.close(); } catch (e) {}
+      if (liveInCorso === L) liveInCorso = null;
+      for (const f of fonti) { try { f.stop(); } catch (e) {} }
+      try { an.disconnect(); } catch (e) {}
+      if (fermaOra === ferma) fermaOra = null;
+      onBocca?.(0, 0);
+    };
+    const finisci = () => { if (!vivo) return; spegni(); onFine?.(); res({ wav: wavDaPcm(pezzi), trascr: trascr.trim() }); };
+    const fallisci = (msg) => { if (!vivo) return; spegni(); res({ errore: new Error(msg) }); };
+    const ferma = () => { L.annullato = true; if (!vivo) return; spegni(); res({ annullata: true }); };
+    const tMax = setTimeout(() => { if (!partito) fallisci("La voce Live ci ha messo troppo."); }, 12000);
+    const giro = () => {
+      if (!vivo) return;
+      an.getByteTimeDomainData(dati);
+      let s = 0; for (let i = 0; i < dati.length; i++) { const v = (dati[i] - 128) / 128; s += v * v; }
+      const forza = Math.min(1, Math.sqrt(s / dati.length) * 3.4);
+      onBocca?.(forza, Math.max(0, ctx.currentTime - t0 - ritardo));
+      if (generato && ctx.currentTime >= nextT + 0.06) { finisci(); return; }
+      requestAnimationFrame(giro);
+    };
+    L.ascolta = (j) => {
+      if (j.chiuso) { if (L.annullato) ferma(); else if (partito) { generato = true; prof.chiudi(); } else fallisci("La voce Live si e' interrotta."); return; }
+      const sc = j.serverContent; if (!sc) return;
+      for (const p of (sc.modelTurn?.parts || [])) if (p.inlineData?.data) {
+        const b = atob(p.inlineData.data), u = new Uint8Array(b.length);
+        for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+        pezzi.push(u);
+        const f32 = pcmAFloat(u); if (!f32.length) continue;
+        const ab = ctx.createBuffer(1, f32.length, RATE); ab.copyToChannel(f32, 0);
+        if (!partito) {
+          partito = true; t0 = ctx.currentTime + 0.18; nextT = t0;
+          fermaOra = ferma;
+          try { onInizio?.(prof, testo); } catch (e) { console.warn("onInizio", e); }
+          requestAnimationFrame(giro);
+        }
+        const ora = ctx.currentTime;
+        if (nextT < ora) { prof.silenzio(ora + 0.03 - nextT); nextT = ora + 0.03; } // la rete e' rimasta indietro: buco anche nel profilo
+        const src = ctx.createBufferSource(); src.buffer = ab; src.connect(an); src.start(nextT); fonti.push(src); nextT += ab.duration;
+        prof.aggiungi(f32, RATE);
+      }
+      if (sc.outputTranscription?.text) { trascr += sc.outputTranscription.text; prof.trascrizione(trascr); }
+      if (sc.generationComplete || sc.turnComplete) { generato = true; prof.chiudi(); if (!partito) fallisci("Dalla voce Live non e' arrivato audio."); }
+    };
+    try { L.ws.send(JSON.stringify({ clientContent: { turns: [{ role: "user", parts: [{ text: testo }] }], turnComplete: true } })); }
+    catch (e) { fallisci("Non riesco a mandare il testo alla voce Live."); }
+  });
+}
 // L'audio di una frase, pronto da suonare: prima il canale Live, poi la voce TTS.
 export async function audioPronto(testo, conf, chiave) {
   if (conf.canale !== "tts") { try { return (await audioDaLive(testo, conf, chiave)).wav; } catch (e) { if (e && e.annullata) throw e; console.warn("voce live", e); } }
@@ -329,8 +404,17 @@ export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, on
     // 0.67: prima il canale Live (gratis, senza tetto giornaliero), poi la voce TTS
     // (gratis ma dieci al giorno), poi la voce del telefono.
     if (live) {
-      try { const r = await audioDaLive(t, c, chiave); await suona(r.wav, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, r.trascr || t) }); return; }
-      catch (e) { if (e && e.annullata) { onFine?.(); return; } console.warn("voce live", e); }
+      const k = `live|${c.voce}|${c.tono}|${t}`;
+      try {
+        if (CASSETTO.has(k)) { const r = CASSETTO.get(k); await suona(r.wav, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, r.trascr || t) }); return; }
+        const r = await parlaLive(t, c, chiave, { onInizio, onBocca, onFine });
+        if (r.annullata) return;
+        if (r.errore) throw r.errore;
+        // nel cassetto solo se ha letto davvero il nostro testo
+        if (r.wav && (!r.trascr || quantoSimile(t, r.trascr) >= 0.5)) { if (CASSETTO.size > 40) CASSETTO.clear(); CASSETTO.set(k, r); }
+        else if (r.trascr) console.warn("voce live: letto altro", r.trascr.slice(0, 80));
+        return;
+      } catch (e) { if (e && e.annullata) { onFine?.(); return; } console.warn("voce live", e); }
     }
     if (c.modello) {
       const tt = daLeggere(t);
