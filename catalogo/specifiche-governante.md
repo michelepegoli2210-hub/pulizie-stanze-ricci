@@ -776,3 +776,34 @@ L'inquadratura e' piu' larga di quella di ieri (testa, spalle e petto) ed e' que
 - cons-parla.mp4: 2,6-8,2 s, boomerang, 11,3 s, 241 KB.
 - cons-poster.webp: fotogramma a 17,9 s.
 ATTENZIONE SCELTA DEL FOTOGRAMMA: il primo tentativo di attesa partiva a 14,6 s e il poster veniva una faccia PREOCCUPATA. Le misure della bocca non bastano, bisogna guardare anche le facce: ho fatto una striscia di fotogrammi ogni secondo e mezzo e scelto a occhio la finestra dove e' serena.
+
+## 35. La 0.63 (19 ottobre, mattina): sorride, si riparte da zero, i tasti si spostano
+
+### Tre cose chieste da Michele
+"Appena apro pero' lei sembra un po' preoccupata, falla sorridere un po'. E poi ormai a questo punto metti un tasto per azzerare tutte le giornate, tutti i conteggi, tutto di tutto, cosi' posso ripartire da 0 quando sono pronto, perche' adesso ci sono delle camere che ho premuto io soltanto per provare, e molte stelle che la governante dice di far fare a Selena in realta' sono gia' state fatte. Poi mi devi mettere nelle condizioni di poter fare una specie di edit delle schermate, perche' vorrei una precisa collocazione dei pulsanti appena apro l'app e non riesco a descriverla bene."
+
+### 1. IL SORRISO
+Il video mandato stavolta e' lungo 41 secondi: e' sempre la stessa generazione, allungata ancora. Dentro ci sono: parla (0-8 s), faccia preoccupata (13-16 s), indica (22-27 s) e, dal 31° secondo in poi, dieci secondi in cui sta ferma con un sorriso gentile.
+cons-attesa.mp4 rifatto da 31,6 a 38,6 s, boomerang, 14 s, 204 KB. Poster preso a 33 s.
+REGOLA IMPARATA: la finestra giusta non si trova solo con le misure della bocca. La prima volta avevo preso 14,6 s (bocca chiusa, poco movimento: numeri perfetti) ed era la faccia preoccupata. Bisogna sempre tirare fuori una striscia di fotogrammi e guardarli.
+
+### 2. RICOMINCIA DA ZERO
+Scheda nuova in fondo al menu dei tre puntini, col bordo rosso. Sei caselle, tutte segnate tranne l'ultima:
+- le pulizie (collezione "pulizie") · i lavori di manutenzione ("manutenzione") · i controlli e i pagamenti ("controlli" e "pagamenti") · le stelle della governante · quello che vi siete detti (impostazioni/chat + il consiglio del giorno in localStorage) · il prospetto ("soggiorni" e "note"), NON segnato di suo.
+Non tocca MAI: camere, signore, regole, listino, prezzi, promemoria. Quelli sono la casa, non il lavoro.
+Due passaggi: il primo tasto apre una fascia rossa "Sicuro? Cancello le N cose scelte", e solo li' c'e' "Si', azzera adesso". Accanto, sempre, "No, lascia stare".
+Nel testo c'e' scritto di fare prima la copia di sicurezza (il tasto sta poco sotto, nel menu).
+
+### LE STELLE: perche' NON si cancella il registro
+Il problema di Michele era che la governante proponeva a Selena cose gia' fatte davvero. Viene dalla collezione "governante_registro", che tiene l'ultima volta che ogni regola e' stata fatta in ogni posto: se non c'e' la riga, per lei non e' mai stata fatta.
+Cancellare quelle righe sarebbe il contrario di quello che serve: diventerebbero TUTTE in ritardo e ne proporrebbe una montagna.
+Quindi "Le stelle della governante" fa due cose: riscrive ogni riga del registro con ultima = oggi, e mette S.gov.inizio = oggi. Il campo "inizio" e' quello che la governante usa per dare un ordine alle cose mai registrate: spostandolo a oggi, anche quelle ripartono da adesso.
+RISULTATO: il catalogo e' tutto in pari dal giorno in cui tocca il tasto. Nessuna stella arretrata.
+
+### 3. L'EDIT DELLA PRIMA PAGINA
+Michele non riusciva a spiegare dove voleva i tasti. Invece di chiederglielo a parole, gli ho dato tre disposizioni da provare: in cima al menu dei tre puntini c'e' "Prima pagina" con tre riquadri che DISEGNANO dove finiscono i tasti (un rettangolo per la foto, tre barrette per i tasti).
+- "basso" (di partenza): i tre tasti in fondo allo schermo.
+- "sotto": i tre tasti subito sotto la foto, il testo scende in fondo.
+- "tondi": tre cerchi con la sola icona, sotto la foto.
+Tecnicamente e' un attributo data-stile sulla sezione #sofiaHero piu' la proprieta' CSS order sui figli: nessun pezzo di pagina viene ricostruito, cambia solo l'ordine. La scelta sta in localStorage ("ricci_casa_stile"), quindi e' di quel telefono.
+SE SERVE UNA QUARTA DISPOSIZIONE: si aggiunge una voce a STILI_CASA in app.js e il relativo blocco .sofia-hero[data-stile="..."] nel CSS. Niente altro.
