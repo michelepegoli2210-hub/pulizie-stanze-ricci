@@ -35,7 +35,7 @@ export function tonoDi(c) { return TONI.find(t => t.id === ((c && c.tono) || "")
 export const STILE_BASE = TONI[0].stile;
 export const CONF_BASE = { attiva: false, motore: "google", voce: "Autonoe", modello: "", tono: "chiara", stile: STILE_BASE, v: 4 };
 const CHIAVE_LOCALE = "ricci_voce";
-const MAX_CARATTERI = 600; // oltre, si taglia: non si paga un comizio
+const MAX_CARATTERI = 420; // piu' corto = risponde prima (la voce costa tempo, non solo soldi): il testo intero resta nella chat
 
 export function leggiVoce() {
   let salvato = {};
@@ -54,11 +54,16 @@ export function salvaVoce(patch) {
 
 // ---- il testo da leggere: via le faccine e le parentesi, non si leggono ----
 export function daLeggere(t) {
-  return String(t || "")
+  const s = String(t || "")
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, " ")
     .replace(/«|»|“|”/g, "")
     .replace(/\s*·\s*/g, ". ")
-    .replace(/\s+/g, " ").trim().slice(0, MAX_CARATTERI);
+    .replace(/\s+/g, " ").trim();
+  if (s.length <= MAX_CARATTERI) return s;
+  // non si taglia a meta' parola: si chiude all'ultimo punto utile
+  const pezzo = s.slice(0, MAX_CARATTERI);
+  const fine = Math.max(pezzo.lastIndexOf(". "), pezzo.lastIndexOf("! "), pezzo.lastIndexOf("? "));
+  return fine > 140 ? pezzo.slice(0, fine + 1) : pezzo;
 }
 
 // ---- il motore gratis: la voce del telefono --------------------------------
