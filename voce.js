@@ -210,6 +210,8 @@ export function scaldaLive(conf, chiave) {
   try {
     if (!chiave || !conf || !conf.attiva || conf.motore !== "google" || conf.canale === "tts") return;
     if (liveCaldo && !liveCaldo.chiuso && !liveCaldo.usato && liveCaldo.voce === conf.voce && liveCaldo.tono === conf.tono && Date.now() - liveCaldo.nato < 60000) return;
+    // quello vecchio (o con un'altra voce) si chiude: non si lasciano collegamenti aperti a vuoto
+    if (liveCaldo && !liveCaldo.usato) { try { liveCaldo.ws.close(); } catch (e) {} }
     liveCaldo = apriLive(conf, chiave);
   } catch (e) {}
 }
