@@ -2257,7 +2257,7 @@ let argonAvvisato = false;
 async function rispostaIA(testo, conv) {
   const c = confIA();
   const sis = sistemaIA(), storia = conv.slice(0, -1);
-  let r;
+  let r, ripiego = false;
   try { r = await IA.chiedi({ conf: c, sistema: sis, storia, testo }); }
   catch (e) {
     // Argon e i modelli grossi non hanno chiamate gratuite: invece di lasciare
@@ -2267,15 +2267,10 @@ async function rispostaIA(testo, conv) {
     const veloce = { ...c, qualita: "svelta", modello: "" };
     const t = await IA.trovaModello(veloce);
     r = await IA.chiedi({ conf: { ...veloce, modello: t.modello }, sistema: sis, storia, testo });
+    ripiego = true;
     if (!argonAvvisato) { argonAvvisato = true; toast("Argon non risponde senza carta sulla chiave: ti ho risposto col modello svelto."); }
-    return (() => { const base = { chi: "gov", ora: S.db.adesso(), ia: true };
-      const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
-      const a = azioneDaIA(r.azione);
-      if (!a) return { ...base, testo: dice };
-      if ((a.tipo === "fatto" || a.tipo === "aggiungi") && !a.camere.length) return { ...base, testo: `${dice}\n\n«${a.regola ? a.regola.nome : a.cosa}» dove?`, tasti: tastiDove(), azioneDove: a };
-      return { ...base, testo: dice, tasti: [{ k: "si", testo: "Sì, fallo" }, { k: "no", testo: "No, lascia" }], azione: a }; })();
   }
-  if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
+  if (!ripiego && r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
   IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
   const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
