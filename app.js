@@ -170,12 +170,13 @@ function ultimaDiLei() {
 // quando smette lei risponde SUBITO qualcosa e non resta muta ad aspettare l'IA.
 let vocePronta = null, voceInPreparazione = false;
 async function scaldaRisposta() {
-  if (vocePronta || voceInPreparazione) return;
   const vc = VOCE.leggiVoce(), c = confIA();
-  if (!vc.attiva || vc.motore !== "google" || !vc.modello || !c.chiave) return;
+  if (!vc.attiva || vc.motore !== "google" || !c.chiave) return;
+  if (vocePronta || voceInPreparazione) { VOCE.scaldaLive(vc, c.chiave); return; }
   voceInPreparazione = true;
-  try { vocePronta = await VOCE.audioDaGoogle("Un attimo.", vc, c.chiave); } catch (e) {}
+  try { vocePronta = await VOCE.audioPronto("Un attimo.", vc, c.chiave); } catch (e) {}
   voceInPreparazione = false;
+  VOCE.scaldaLive(vc, c.chiave); // il collegamento per la risposta vera, gia' aperto
 }
 function diciUnAttimo() {
   if (!vocePronta) return false;
@@ -1576,7 +1577,7 @@ async function benvenutoSofia() {
   if (VOCE.staParlando()) { zittisciVoce(); return; }
   if (!voceAccesa()) {
     const v = VOCE.leggiVoce();
-    VOCE.salvaVoce({ attiva: true, motore: v.modello && iaAccesa() ? "google" : "telefono" });
+    VOCE.salvaVoce({ attiva: true, motore: iaAccesa() ? "google" : "telefono" });
   }
   try { VOCE.sbloccaAudio(); } catch (e) {}
   try { await parlaConVoce(testoBenvenuto()); } catch (e) { console.warn("benvenuto", e); }
@@ -1779,6 +1780,7 @@ async function parlaGov(testo, perIA) {
   const conv = [...conversazione(), { chi: "io", testo: t, ora: S.db.adesso() }];
   salvaConversazione(conv); // non si aspetta: a schermo compare subito
   govScrive = true; disegna();
+  if (voceAccesa()) { try { VOCE.scaldaLive(VOCE.leggiVoce(), confIA().chiave); } catch (e) {} }
   let msg = null;
   // prima prova la governante intelligente; se non c'è o non risponde, si torna alle parole del catalogo
   if (iaAccesa()) {
@@ -1960,7 +1962,7 @@ const VELOCI_IA = [
   { tasto: "Guarda i soldi", chiedo: "Guarda i soldi", testo: "Guarda i soldi di questa settimana: quanto prende ogni signora, se siamo sopra o sotto i 100 € a testa che spendo di solito, e se c'è qualcosa di strano." },
 ];
 // La bocca si apre e si chiude su quanto è forte la voce, istante per istante.
-let voceInCorso = false, provaVoce = null, voceInProva = false;
+let voceInCorso = false, provaVoce = null, voceInProva = false, cercaModelloVoce = null;
 function applicaBocca(forza) {
   const f = Math.max(0, Math.min(1, Number(forza) || 0));
   const v = f < 0.07 ? "" : f < 0.24 ? "c" : f < 0.52 ? "b" : "a";
@@ -2076,9 +2078,10 @@ function labialeFerma(subito) {
 setTimeout(() => { try { BOCCA.precarica().catch(() => {}); } catch (e) {} }, 4000);
 async function parlaConVoce(testo) {
   let vc = VOCE.leggiVoce(); if (!vc.attiva) return;
-  // se la voce vera non ha ancora il suo modello, lo cerco adesso (una volta sola)
-  if (vc.motore === "google" && !vc.modello && confIA().chiave) {
-    try { vc = VOCE.salvaVoce({ modello: await VOCE.trovaModelloVoce(confIA().chiave) }); } catch (e) { console.warn("modello voce", e); }
+  // il modello della voce TTS (la riserva del canale Live) si cerca una volta sola, senza
+  // far aspettare la frase: 0.67, la frase parte col canale Live anche senza modello
+  if (vc.motore === "google" && !vc.modello && confIA().chiave && !cercaModelloVoce) {
+    cercaModelloVoce = VOCE.trovaModelloVoce(confIA().chiave).then(m => VOCE.salvaVoce({ modello: m })).catch(e => console.warn("modello voce", e)).finally(() => { cercaModelloVoce = null; });
   }
   voceInCorso = true; disegna();
   await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave,
@@ -2511,7 +2514,7 @@ function collegaIA() {
     VOCE.sbloccaAudio();
     const v = VOCE.leggiVoce();
     if (v.attiva) { zittisciVoce(); VOCE.salvaVoce({ attiva: false }); disegna(); return toast("Voce spenta"); }
-    VOCE.salvaVoce({ attiva: true, motore: v.modello && IA.accesa(confIA()) ? "google" : "telefono" }); disegna(); toast("Voce accesa");
+    VOCE.salvaVoce({ attiva: true, motore: IA.accesa(confIA()) ? "google" : "telefono" }); disegna(); toast("Voce accesa");
   });
   document.querySelectorAll("[data-voce-prova]").forEach(b => b.onclick = async () => {
     VOCE.sbloccaAudio(); zittisciVoce();
@@ -2519,14 +2522,11 @@ function collegaIA() {
     if (v.motore === "google") {
       const chiave = confIA().chiave;
       if (!chiave) { provaVoce = { ok: false, testo: "Prima metti la chiave qui sopra." }; return disegna(); }
-      if (!v.modello) {
-        voceInProva = true; disegna();
-        try { v = VOCE.salvaVoce({ modello: await VOCE.trovaModelloVoce(chiave) }); }
-        catch (e) { voceInProva = false; provaVoce = { ok: false, testo: String(e.message || e).slice(0, 90) }; return disegna(); }
-        voceInProva = false;
+      if (!v.modello && !cercaModelloVoce) {
+        cercaModelloVoce = VOCE.trovaModelloVoce(chiave).then(m => VOCE.salvaVoce({ modello: m })).catch(e => console.warn("modello voce", e)).finally(() => { cercaModelloVoce = null; });
       }
     }
-    provaVoce = { ok: true, testo: v.motore === "google" ? "Sta usando " + v.modello : "Voce del telefono" }; disegna();
+    provaVoce = { ok: true, testo: v.motore === "google" ? (v.canale === "tts" ? "Sta usando " + (v.modello || "la voce TTS") : "Voce Live di Gemini (" + VOCE.LIVE_MODELLI[0] + ")") : "Voce del telefono" }; disegna();
     parlaConVoce(`Ciao Michele... sono ${nomeGov()}. Oggi ci sono ${pulizieDelGiorno(L.oggiISO()).length} lavori in programma. Ci penso io: tu stai tranquillo.`);
   });
 }

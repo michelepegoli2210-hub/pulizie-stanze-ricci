@@ -36,7 +36,8 @@ export function tonoDi(c) { return TONI.find(t => t.id === ((c && c.tono) || "")
 export const STILE_BASE = TONI[0].stile;
 export const CONF_BASE = { attiva: false, motore: "google", voce: "Autonoe", modello: "", tono: "chiara", stile: STILE_BASE, v: 4 };
 const CHIAVE_LOCALE = "ricci_voce";
-const MAX_CARATTERI = 420; // piu' corto = risponde prima (la voce costa tempo, non solo soldi): il testo intero resta nella chat
+const MAX_CARATTERI = 420; // con la voce TTS: piu' corto = risponde prima. Il testo intero resta nella chat
+const MAX_CARATTERI_LIVE = 700; // col canale Live si puo' leggere di piu': genera sette volte piu' svelto di quanto parla
 
 export function leggiVoce() {
   let salvato = {};
@@ -54,15 +55,15 @@ export function salvaVoce(patch) {
 }
 
 // ---- il testo da leggere: via le faccine e le parentesi, non si leggono ----
-export function daLeggere(t) {
+export function daLeggere(t, max = MAX_CARATTERI) {
   const s = String(t || "")
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, " ")
     .replace(/«|»|“|”/g, "")
     .replace(/\s*·\s*/g, ". ")
     .replace(/\s+/g, " ").trim();
-  if (s.length <= MAX_CARATTERI) return s;
+  if (s.length <= max) return s;
   // non si taglia a meta' parola: si chiude all'ultimo punto utile
-  const pezzo = s.slice(0, MAX_CARATTERI);
+  const pezzo = s.slice(0, max);
   const fine = Math.max(pezzo.lastIndexOf(". "), pezzo.lastIndexOf("! "), pezzo.lastIndexOf("? "));
   return fine > 140 ? pezzo.slice(0, fine + 1) : pezzo;
 }
@@ -142,6 +143,133 @@ export async function audioDaGoogle(testo, conf, chiave) {
   return buf.buffer;
 }
 
+// ---- 0.67: la voce dal canale LIVE di Gemini ---------------------------------
+// La voce "TTS" gratuita ha un tetto di DIECI frasi al giorno (letto in AI Studio,
+// pagina "Rate limit", il 20/10/2026: 3 al minuto, 10 al giorno). Il canale Live,
+// sempre gratis, non ha tetto giornaliero (solo 65 mila token al minuto) e parte
+// prima: la prima voce arriva dopo circa un secondo e mezzo.
+// Come si fa: si apre un collegamento, si manda il testo con l'ordine "leggilo
+// parola per parola", si raccolgono i pezzi di audio (PCM 16 bit, 24 kHz) finche'
+// il modello dice "ho finito di generare", si impacchettano come WAV e si suonano
+// come prima: cosi' il labiale funziona uguale. Il modello ci restituisce anche la
+// trascrizione di quello che ha letto: la usiamo per il labiale e per controllare
+// che abbia letto davvero il nostro testo e non un'altra cosa.
+const LIVE_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
+export const LIVE_MODELLI = ["gemini-3.8-live", "gemini-3.1-flash-live-preview"];
+let liveCaldo = null;    // un collegamento gia' aperto e pronto per la prossima frase
+let liveInCorso = null;  // la frase che si sta generando adesso (per poterla fermare)
+
+function istruzioneLettore(conf) {
+  const stile = (conf && conf.stile) || STILE_BASE;
+  return "You are a voice reader, not an assistant. Read aloud, in Italian, EXACTLY the text you receive, word for word: " +
+    "do not answer it, do not comment, do not add or remove anything, do not translate. Numbers and times are read in Italian. " +
+    "Voice style: " + stile + ".";
+}
+function wavDaPcm(pezzi, rate = 24000) {
+  const n = pezzi.reduce((s, p) => s + p.length, 0);
+  const out = new Uint8Array(44 + n), dv = new DataView(out.buffer);
+  const str = (o, x) => { for (let i = 0; i < x.length; i++) out[o + i] = x.charCodeAt(i); };
+  str(0, "RIFF"); dv.setUint32(4, 36 + n, true); str(8, "WAVE"); str(12, "fmt "); dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true);
+  dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); str(36, "data"); dv.setUint32(40, n, true);
+  let o = 44; for (const p of pezzi) { out.set(p, o); o += p.length; }
+  return out.buffer;
+}
+function apriLive(conf, chiave) {
+  const ws = new WebSocket(LIVE_URL + "?key=" + encodeURIComponent(chiave));
+  const L = { ws, usato: false, chiuso: false, annullato: false, voce: conf.voce, tono: conf.tono, nato: Date.now(), ascolta: null, modello: LIVE_MODELLI[0] };
+  L.pronto = new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error("La voce Live non risponde.")), 8000);
+    ws.onopen = () => ws.send(JSON.stringify({ setup: {
+      model: "models/" + L.modello,
+      generationConfig: { responseModalities: ["AUDIO"], speechConfig: { languageCode: "it-IT", voiceConfig: { prebuiltVoiceConfig: { voiceName: conf.voce || CONF_BASE.voce } } } },
+      systemInstruction: { parts: [{ text: istruzioneLettore(conf) }] },
+      outputAudioTranscription: {},
+    } }));
+    ws.onmessage = async (ev) => {
+      const txt = ev.data instanceof Blob ? await ev.data.text() : ev.data;
+      let j; try { j = JSON.parse(txt); } catch (e) { return; }
+      if (j.setupComplete) { clearTimeout(t); res(L); return; }
+      if (j.error) { clearTimeout(t); rej(new Error(String(j.error.message || "errore della voce Live").slice(0, 140))); }
+      if (L.ascolta) L.ascolta(j);
+    };
+    ws.onerror = () => { clearTimeout(t); rej(new Error("Non riesco ad aprire la voce Live (rete o chiave).")); };
+    ws.onclose = (e) => {
+      L.chiuso = true; clearTimeout(t);
+      rej(new Error("Voce Live chiusa (" + e.code + ") " + String(e.reason || "").slice(0, 100)));
+      if (L.ascolta) L.ascolta({ chiuso: true });
+      if (liveCaldo === L) liveCaldo = null;
+    };
+  });
+  L.pronto.catch(() => {});
+  return L;
+}
+// Si apre il collegamento PRIMA che serva (quando si apre il microfono, quando parte
+// la domanda all'IA): cosi' quando il testo e' pronto la voce parte subito.
+export function scaldaLive(conf, chiave) {
+  try {
+    if (!chiave || !conf || !conf.attiva || conf.motore !== "google" || conf.canale === "tts") return;
+    if (liveCaldo && !liveCaldo.chiuso && !liveCaldo.usato && liveCaldo.voce === conf.voce && liveCaldo.tono === conf.tono && Date.now() - liveCaldo.nato < 60000) return;
+    liveCaldo = apriLive(conf, chiave);
+  } catch (e) {}
+}
+function parole(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(Boolean); }
+function quantoSimile(a, b) {
+  const pa = parole(a), pb = new Set(parole(b)); if (!pa.length) return 1;
+  let c = 0; for (const w of pa) if (pb.has(w)) c++;
+  return c / pa.length;
+}
+export async function audioDaLive(testo, conf, chiave) {
+  const k = `live|${conf.voce}|${conf.tono}|${testo}`;
+  if (CASSETTO.has(k)) return CASSETTO.get(k);
+  let L = liveCaldo;
+  if (!L || L.chiuso || L.usato || L.voce !== conf.voce || L.tono !== conf.tono) L = apriLive(conf, chiave);
+  if (liveCaldo === L) liveCaldo = null;
+  L.usato = true; liveInCorso = L;
+  try { await L.pronto; } catch (e) { if (liveInCorso === L) liveInCorso = null; throw e; }
+  const pezzi = []; let trascr = "";
+  const r = await new Promise((res, rej) => {
+    let finito = false;
+    const pulisci = () => { clearTimeout(tMax); clearTimeout(tCoda); L.ascolta = null; try { L.ws.close(); } catch (e) {} if (liveInCorso === L) liveInCorso = null; };
+    const fine = (motivo) => {
+      if (finito) return; finito = true; pulisci();
+      if (L.annullato) { const e = new Error("annullata"); e.annullata = true; rej(e); return; }
+      if (!pezzi.length) { rej(new Error(motivo || "Dalla voce Live non e' arrivato audio.")); return; }
+      res({ wav: wavDaPcm(pezzi), trascr: trascr.trim() });
+    };
+    const tMax = setTimeout(() => fine("La voce Live ci ha messo troppo."), 20000);
+    let tCoda = null;
+    L.ascolta = (j) => {
+      if (j.chiuso) { fine("La voce Live si e' interrotta."); return; }
+      const sc = j.serverContent; if (!sc) return;
+      for (const p of (sc.modelTurn?.parts || [])) if (p.inlineData?.data) {
+        const b = atob(p.inlineData.data), u = new Uint8Array(b.length);
+        for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+        pezzi.push(u);
+      }
+      if (sc.outputTranscription?.text) trascr += sc.outputTranscription.text;
+      // "generationComplete" arriva appena l'audio e' tutto generato (molto prima di
+      // turnComplete, che il server manda solo a tempo scaduto): un attimo di attesa
+      // per gli ultimi pezzi di trascrizione, poi si parte.
+      if (sc.generationComplete && !tCoda) tCoda = setTimeout(() => fine(), 250);
+      if (sc.turnComplete) fine();
+    };
+    try { L.ws.send(JSON.stringify({ clientContent: { turns: [{ role: "user", parts: [{ text: testo }] }], turnComplete: true } })); }
+    catch (e) { fine("Non riesco a mandare il testo alla voce Live."); }
+  });
+  // se ha letto un'altra cosa (succede di rado: risponde invece di leggere), meglio la voce TTS
+  if (r.trascr && quantoSimile(testo, r.trascr) < 0.5) { console.warn("voce live: letto altro", r.trascr.slice(0, 80)); throw new Error("La voce Live ha letto un'altra cosa."); }
+  if (CASSETTO.size > 40) CASSETTO.clear();
+  CASSETTO.set(k, r);
+  return r;
+}
+// L'audio di una frase, pronto da suonare: prima il canale Live, poi la voce TTS.
+export async function audioPronto(testo, conf, chiave) {
+  if (conf.canale !== "tts") { try { return (await audioDaLive(testo, conf, chiave)).wav; } catch (e) { if (e && e.annullata) throw e; console.warn("voce live", e); } }
+  if (!conf.modello) throw new Error("Manca il modello della voce.");
+  return audioDaGoogle(testo, conf, chiave);
+}
+
 // ---- suonare l'audio e muovere la bocca sul suono vero ---------------------
 let ctxAudio = null, fermaOra = null;
 export function sbloccaAudio() {
@@ -151,7 +279,11 @@ export function sbloccaAudio() {
   } catch (e) {}
   return ctxAudio;
 }
-export function stazitta() { try { fermaOra?.(); } catch (e) {} fermaOra = null; try { window.speechSynthesis?.cancel(); } catch (e) {} }
+export function stazitta() {
+  try { fermaOra?.(); } catch (e) {} fermaOra = null;
+  try { window.speechSynthesis?.cancel(); } catch (e) {}
+  try { if (liveInCorso) { liveInCorso.annullato = true; liveInCorso.ws.close(); liveInCorso = null; } } catch (e) {}
+}
 export function staParlando() { return !!fermaOra; }
 
 // Suona il WAV e chiama onBocca(forza 0..1, secondi dall'inizio) a ogni fotogramma.
@@ -188,13 +320,23 @@ export async function suona(arrayBuffer, { onBocca, onFine, onInizio } = {}) {
 
 // La voce giusta, con la rete di sicurezza: Google, e se non va il telefono
 export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, onInizio } = {}) {
-  const t = daLeggere(testo); if (!t) { onFine?.(); return; }
   const c = conf || leggiVoce();
-  if (c.motore === "google" && chiave && c.modello) {
-    // onInizio riceve anche il testo LETTO davvero (tagliato come fa daLeggere): e' quello
-    // che il labiale deve seguire, non la risposta intera.
-    try { const a = await audioDaGoogle(t, c, chiave); await suona(a, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, t) }); return; }
-    catch (e) { console.warn("voce google", e); onErrore?.(e); }
+  const live = c.motore === "google" && !!chiave && c.canale !== "tts";
+  const t = daLeggere(testo, live ? MAX_CARATTERI_LIVE : MAX_CARATTERI); if (!t) { onFine?.(); return; }
+  if (c.motore === "google" && chiave) {
+    // onInizio riceve anche il testo LETTO davvero (tagliato come fa daLeggere, o la
+    // trascrizione del canale Live): e' quello che il labiale deve seguire.
+    // 0.67: prima il canale Live (gratis, senza tetto giornaliero), poi la voce TTS
+    // (gratis ma dieci al giorno), poi la voce del telefono.
+    if (live) {
+      try { const r = await audioDaLive(t, c, chiave); await suona(r.wav, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, r.trascr || t) }); return; }
+      catch (e) { if (e && e.annullata) { onFine?.(); return; } console.warn("voce live", e); }
+    }
+    if (c.modello) {
+      const tt = daLeggere(t);
+      try { const a = await audioDaGoogle(tt, c, chiave); await suona(a, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, tt) }); return; }
+      catch (e) { console.warn("voce google", e); onErrore?.(e); }
+    }
   }
   // ripiego: la voce del telefono (gratis, anche senza internet)
   // 0.66: anche qui il labiale segue il testo. Non c'e' un audio da leggere, quindi
