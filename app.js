@@ -1280,7 +1280,7 @@ function regoleGov() { return G.regoleAttive(S.gov); }
 const NOMI_GOV = ["Sofia", "Sveva", "Lesia", "Daunia", "Perla", "Consuela", "Rosa", "Stella"];
 function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Consuela"; }
 // Il nome di chi è entrato, per il saluto ("Buongiorno Michele!")
-function nomeMio() { const n = String(S.utente?.nome || "").trim().split(/\s+/)[0]; return n && !/^prova/i.test(n) ? n : "Michele"; }
+function nomeMio() { const n = String(S.utente?.nome || "").trim().split(/\s+/)[0]; const v = n && !/^prova/i.test(n) ? n : "Michele"; return v.charAt(0).toUpperCase() + v.slice(1); }
 // Una spinta al giorno, senza IA: la stessa per tutta la giornata
 const SPINTE = [
   "Una camera alla volta e la giornata si chiude da sola.",
