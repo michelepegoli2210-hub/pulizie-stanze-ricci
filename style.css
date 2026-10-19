@@ -1561,7 +1561,7 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 @media (min-width:760px){
   .sofia-hero .donnina.gov-fig.gov-film.casa-fig{width:100%;height:100%}
   .sofia-hero .casa-fig video{object-fit:cover;object-position:50% 22%}
-  .casa-card{height:min(60svh,520px)}
+  .casa-card{height:min(52svh,520px)}
 }
 
 /* 0.62.2 - il testo non deve mai spingere i tasti fuori dallo schermo */
