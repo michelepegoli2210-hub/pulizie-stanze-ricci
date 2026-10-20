@@ -14,7 +14,7 @@
 // ============================================================================
 
 export const FORME = ["X", "M", "A", "E", "I", "O", "U", "L", "F"];
-export const ANCORA = { x: 180, y: 360 };      // dove si appoggia la toppa, sulla base 540x960
+export const ANCORA = { x: 207, y: 338 };      // dove si appoggia la toppa, sulla base 540x960 (0.68.1: base dal video "attesa" nuovo, bocche vere dal video "parla" del 20/10)
 export const FILE = {
   base: "lab-base.webp",
   toppe: Object.fromEntries(FORME.map(f => [f, `lab-${f}.webp`])),
@@ -228,18 +228,15 @@ export class Labiale {
     if (!this.ctx) return;
     const ctx = this.ctx, W = this.tela.width, H = this.tela.height;
     this.tUltimo = t;
-    // un respiro leggero e un'oscillazione minima della testa: viva, non una statua.
-    // L'oscillazione va sull'orologio generale (non su quello della frase), cosi'
-    // fra una frase e l'altra non ci sono scatti.
+    // un'oscillazione minima della testa, a PIXEL INTERI: se si sposta di mezzo pixel
+    // o si scala dell'1%, il browser ricampiona tutta la foto e la sfoca (0.68.1).
     const g = performance.now() / 1000;
-    const sc = 1 + 0.004 * Math.sin(g * 0.9) + forza * 0.004;
-    const dx = Math.sin(g * 1.1) * 1.6, dy = Math.sin(g * 0.7) * 1.1 + forza * 1.2;
+    const dx = Math.round(Math.sin(g * 1.1) * 1.6), dy = Math.round(Math.sin(g * 0.7) * 1.1 + forza * 1.2);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    ctx.translate(W / 2 + dx, H * 0.3 + dy); ctx.scale(sc, sc); ctx.translate(-W / 2, -H * 0.3);
-    ctx.drawImage(this.base, 0, 0);
+    ctx.drawImage(this.base, dx, dy);
     const tp = this.toppe[f] || this.toppe.X;
-    if (tp) ctx.drawImage(tp, this.ancora.x, this.ancora.y);
+    if (tp) ctx.drawImage(tp, this.ancora.x + dx, this.ancora.y + dy);
     this.formaOra = f;
   }
   smonta() {
