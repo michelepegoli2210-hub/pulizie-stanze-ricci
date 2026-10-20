@@ -971,3 +971,8 @@ L'immagine a risoluzione piena NON si scarica (download bloccato dal proxy); l'h
 - Sofia fa: guarda a sinistra, chiude gli occhi, torna, sorride, si sistema i capelli. Per altre "cose sue" (tablet, blocco note, cenno "ci penso io") servono altri video: 3 generazioni ogni 5 ore, prompt corti.
 - La bocca a sillabe e' da far giudicare a Michele dal vivo (0.68.1 con bocche vere).
 - Live API voce: funziona (0.67); conversazione a voce in tempo reale ancora da costruire.
+
+### 0.68.2 e 0.68.3 (subito dopo, stessa notte)
+- 0.68.2 NIENTE SCATTI: in Labiale.disegna(f, forza, t, ap) la toppa chiusa (X) si disegna sempre; la forma aperta ci si posa sopra con globalAlpha = (ap - 0,08)/0,32 (ap = apertura 0..1 che arriva da piano().forma(t)); quando la forma cambia, per 80 ms la vecchia sfuma nella nuova (formaPrima/tCambio). Risultato: la bocca si apre e si chiude per gradi invece di saltare fra otto disegni. app.js passa r.ap come quarto argomento.
+- 0.68.3 IL BATTITO: provando dal vivo la bocca non si muoveva: requestAnimationFrame nella scheda di Michele arrivava a 2 al secondo (finestra coperta da un'altra: Chrome lo strozza anche se la pagina dice "visible"), mentre setInterval andava a 63 al secondo. Ora voce.js ha battito(fn): timer a 25 ms + rAF insieme, chi arriva prima disegna (minimo 12 ms fra due disegni). Misurato dopo: ~80 disegni al secondo, forme che cambiano ogni 70-120 ms con pause X fra le parole. Sul telefono in primo piano non cambia niente, ma non dipendiamo piu' dal solo rAF.
+- Come si misura senza screenshot: dalla console, import("./bocca.js") e si incarta Labiale.prototype.disegna per registrare (t, forma, forza, ap); si preme PARLAMI; si legge window.__dl. Gli screenshot con la finestra coperta ingannano.
