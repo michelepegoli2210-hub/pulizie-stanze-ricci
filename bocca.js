@@ -1,5 +1,5 @@
 // ============================================================================
-//  BOCCA.JS  ·  Il labiale (0.66 → 0.69: strisce di fotogrammi veri)
+//  BOCCA.JS  ·  Il labiale (0.66 → 0.69: strisce di fotogrammi veri; 0.71: frasi ancorate alle pause)
 //  Dal testo che lei dice alle forme della bocca, a tempo col suono vero.
 //  Come funziona, in tre passi:
 //   1. visemi(testo): ogni lettera diventa una "forma" (A E I O U, labbra chiuse
@@ -104,6 +104,10 @@ export class ProfiloVivo {
     this.max = 0; this._tot = 0; this.durata = 0; this.chiuso = false; this.frazione = 0;
     this.resto = new Float32Array(0);
     this.lettere = Math.max(1, (String(testo || "").match(/[a-zà-ú0-9]/gi) || []).length);
+    // 0.71: quanto parlato ci si aspetta da questo testo, col ritmo imparato dalle frasi
+    // precedenti (lettere per secondo di PARLATO, pause escluse). Serve nei primi istanti,
+    // quando la trascrizione non e' ancora arrivata e la stima "a frazione" sballa.
+    this.previsto = this.lettere / ProfiloVivo.ritmo;
   }
   _quadro(v) {
     if (v > this.max) this.max = v;
@@ -120,13 +124,21 @@ export class ProfiloVivo {
   }
   silenzio(sec) { const n = Math.round((Number(sec) || 0) / this.hop); for (let i = 0; i < n; i++) this._quadro(0); }
   trascrizione(t) { const l = (String(t || "").match(/[a-zà-ú0-9]/gi) || []).length; this.frazione = Math.min(1, l / this.lettere); }
-  chiudi() { this.chiuso = true; }
+  chiudi() {
+    this.chiuso = true;
+    // si impara il ritmo di questa voce per la prossima frase (media mobile, solo su frasi lunghe)
+    if (this._tot > 2.5 && this.lettere > 30) { const r = this.lettere / this._tot; if (r > 8 && r < 30) ProfiloVivo.ritmo = 0.7 * ProfiloVivo.ritmo + 0.3 * r; }
+  }
   get totale() {
     if (this.chiuso) return this._tot;
-    const fr = Math.max(0.08, this.frazione);
-    return Math.max(this._tot, this._tot / fr);
+    // 0.71: finche' la trascrizione copre poco testo, ci si fida della previsione dal
+    // ritmo; dopo, della frazione trascritta. Mai meno del parlato gia' arrivato.
+    const fr = this.frazione;
+    const stima = fr >= 0.3 ? this._tot / fr : this.previsto;
+    return Math.max(this._tot, stima);
   }
 }
+ProfiloVivo.ritmo = 18;   // lettere per secondo di parlato (misurato il 20/10 sulla voce Live: ~18)
 
 // ---- 3. il piano: a ogni istante, quale forma --------------------------------
 // 0.68: NON piu' una forma per lettera (dieci cambi al secondo: sembrava che
@@ -152,20 +164,79 @@ export function sillabe(testo) {
     } else {
       // spazio o punteggiatura: le consonanti rimaste (es. "con", "per") allungano la sillaba prima
       if (cons && out.length) out[out.length - 1].p += 0.25;
+      // 0.71: sulla punteggiatura la voce fa una pausa: e' un punto di ancoraggio fra testo e suono
+      if (/[.,;:!?…]/.test(ch) && out.length) out[out.length - 1].stacco = true;
       cons = ""; primaVocale = false;
     }
   }
   if (cons && out.length) out[out.length - 1].p += 0.25;
   return out;
 }
+
+// ---- 2d. le ancore: le pause del suono agganciate alla punteggiatura del testo ----
+// 0.71: prima le sillabe erano spalmate in proporzione sul tempo parlato TOTALE: se la
+// voce diceva una frase piu' in fretta dell'altra, le vocali scivolavano di una o due
+// sillabe. Ora i segmenti di parlato fra due pause vere (>= 140 ms di silenzio) si
+// agganciano agli spezzoni di testo fra due segni di punteggiatura (allineamento monotono
+// a costo minimo, vedi sotto); dentro ogni tratto resta la proporzione.
+// Risultato: a ogni virgola e punto il labiale si "riallinea" col suono.
+export function ancore(prof, fineFrasi) {
+  const n = prof.e.length, tot = prof.totale || 0;
+  const pause = [];                              // frazione del parlato a cui FINISCE ogni segmento
+  if (tot > 0 && n) {
+    let inParola = false, zitto = 0, cumFine = 0;
+    for (let i = 0; i < n; i++) {
+      if (prof.parlato[i]) { if (!inParola) { inParola = true; } zitto = 0; cumFine = prof.cum[i]; }
+      else if (inParola && ++zitto >= 7) { inParola = false; pause.push(cumFine / tot); }
+    }
+  }
+  // allineamento monotono a costo minimo (programmazione dinamica): ogni coppia costa la
+  // distanza fra le due frazioni, saltare una pausa o uno stacco costa 0,05. Cosi' se le
+  // pause sono tante quante le frasi si accoppiano tutte, anche con scarti del 10-15%;
+  // se la voce ha fatto una pausa in piu' (o in meno) quella resta senza compagna.
+  const P = fineFrasi.length, S = pause.length, SALTO = 0.05;
+  const costo = [], via = [];
+  for (let j = 0; j <= P; j++) { costo.push(new Float64Array(S + 1)); via.push(new Int8Array(S + 1)); }
+  for (let j = 0; j <= P; j++) for (let k = 0; k <= S; k++) {
+    if (!j && !k) { costo[j][k] = 0; continue; }
+    let best = Infinity, b = 0;
+    if (j && k) { const v = costo[j - 1][k - 1] + Math.abs(fineFrasi[j - 1] - pause[k - 1]); if (v < best) { best = v; b = 1; } }
+    if (j) { const v = costo[j - 1][k] + SALTO; if (v < best) { best = v; b = 2; } }
+    if (k) { const v = costo[j][k - 1] + SALTO; if (v < best) { best = v; b = 3; } }
+    costo[j][k] = best; via[j][k] = b;
+  }
+  const coppie = [];
+  for (let j = P, k = S; j || k;) {
+    const b = via[j][k];
+    if (b === 1) { if (Math.abs(fineFrasi[j - 1] - pause[k - 1]) <= 0.18) coppie.push([pause[k - 1], fineFrasi[j - 1]]); j--; k--; }
+    else if (b === 2) j--; else k--;
+  }
+  coppie.reverse();
+  const out = [[0, 0]];
+  for (const [c, a] of coppie) if (c > out[out.length - 1][0] + 0.01 && a > out[out.length - 1][1] + 0.01 && c < 0.99 && a < 0.99) out.push([c, a]);
+  out.push([1, 1]);
+  return out;                                    // coppie [frazione del suono, frazione del testo], crescenti
+}
+function conAncore(anc, frac) {
+  for (let i = 1; i < anc.length; i++) {
+    if (frac <= anc[i][0]) {
+      const [c0, a0] = anc[i - 1], [c1, a1] = anc[i];
+      return c1 > c0 ? a0 + (a1 - a0) * (frac - c0) / (c1 - c0) : a0;
+    }
+  }
+  return 1;
+}
 export function piano(testo, prof) {
   const sill = sillabe(testo);
   const pesoTot = sill.reduce((s, x) => s + x.p, 0) || 1;
   let acc = 0; const fine = sill.map(x => { acc += x.p; return acc / pesoTot; });
   const inizio = fine.map((f, k) => k ? fine[k - 1] : 0);
+  const fineFrasi = fine.filter((f, k) => sill[k].stacco && f < 0.995);
   const FIN = 10;                      // finestra per il massimo locale: ±200 ms
   let ultima = "X", tUltima = -1;
+  let anc = [[0, 0], [1, 1]], ancN = -1, ancTot = -1;
   return {
+    get ancore() { return anc; },
     forma(t) {
       const n = prof.e.length; if (!n) return { f: "X", forza: 0, ap: 0, v: null };
       const i = Math.min(n - 1, Math.max(0, Math.floor(t / prof.hop)));
@@ -175,13 +246,14 @@ export function piano(testo, prof) {
       let loc = 0; for (let j = Math.max(0, i - FIN); j <= Math.min(n - 1, i + FIN); j++) if (prof.e[j] > loc) loc = prof.e[j];
       loc = Math.max(loc, 0.35 * (prof.max || 0));
       let ap = loc ? prof.e[i] / loc : 0; ap = Math.pow(Math.max(0, Math.min(1, ap)), 1.4);
-      // quale sillaba: in base a quanto parlato e' passato
+      // quale sillaba: in base a quanto parlato e' passato, riallineato alle pause (0.71)
       const tot = prof.totale || 0;
-      const frac = tot ? prof.cum[i] / tot : 0;
+      if (fineFrasi.length && (n !== ancN || tot !== ancTot)) { anc = ancore(prof, fineFrasi); ancN = n; ancTot = tot; }
+      const frac = tot ? conAncore(anc, prof.cum[i] / tot) : 0;
       let k = 0; while (k < fine.length - 1 && fine[k] < frac) k++;
       const sl = sill[k] || { v: "A", p: 1 };
-      const durS = Math.max(1e-6, (fine[k] - inizio[k]) * tot);
-      const prog = Math.max(0, Math.min(1, (prof.cum[i] - inizio[k] * tot) / durS));
+      const durS = Math.max(1e-6, fine[k] - inizio[k]);
+      const prog = Math.max(0, Math.min(1, (frac - inizio[k]) / durS));
       // 0.69: la vocale della sillaba e l'apertura, e basta. Le consonanti si vedono
       // nell'apertura: M/B/P = labbra chiuse all'inizio della sillaba, F/V = quasi chiuse.
       let f;
