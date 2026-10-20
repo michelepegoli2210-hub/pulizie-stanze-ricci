@@ -65,11 +65,11 @@ export function visemi(testo) {
 export function profilo(audioBuffer) {
   const d = audioBuffer.getChannelData(0), sr = audioBuffer.sampleRate;
   const hop = Math.max(1, Math.round(sr * 0.02)), n = Math.max(1, Math.floor(d.length / hop));
-  const e = new Float32Array(n); let max = 0;
+  const e = new Float32Array(n), zcr = new Float32Array(n); let max = 0;
   for (let i = 0; i < n; i++) {
-    let s = 0; const a = i * hop, b = a + hop;
-    for (let j = a; j < b; j++) s += d[j] * d[j];
-    e[i] = Math.sqrt(s / hop); if (e[i] > max) max = e[i];
+    let s = 0, z = 0; const a = i * hop, b = a + hop;
+    for (let j = a; j < b; j++) { s += d[j] * d[j]; if (j > a && (d[j] >= 0) !== (d[j - 1] >= 0)) z++; }
+    e[i] = Math.sqrt(s / hop); zcr[i] = z / hop; if (e[i] > max) max = e[i];
   }
   const soglia = max * 0.12;
   const parlato = new Uint8Array(n);
@@ -77,7 +77,9 @@ export function profilo(audioBuffer) {
   for (let i = 1; i < n - 1; i++) if (!parlato[i] && parlato[i - 1] && parlato[i + 1]) parlato[i] = 1; // buchi di 20 ms: chiusi
   const cum = new Float32Array(n); let c = 0;
   for (let i = 0; i < n; i++) { if (parlato[i]) c += 0.02; cum[i] = c; }
-  return { hop: 0.02, e, max, parlato, cum, totale: c, durata: audioBuffer.duration };
+  // 0.76: zcr = quante volte il segnale cambia segno (per campione): basso nelle vocali (< 0,12),
+  // alto nelle s/f/z (> 0,34). Serve a non scambiare una "s" forte per una vocale.
+  return { hop: 0.02, e, zcr, max, parlato, cum, totale: c, durata: audioBuffer.duration };
 }
 
 // ---- 2b. quando l'audio non c'e' (voce del telefono): un profilo stimato -------
@@ -114,7 +116,7 @@ export function profiloFinto(testo, durata) {
 // insieme all'audio). Quando il modello dice "finito", il totale diventa esatto.
 export class ProfiloVivo {
   constructor(testo) {
-    this.vivo = true; this.hop = 0.02; this.e = []; this.parlato = []; this.cum = [];
+    this.vivo = true; this.hop = 0.02; this.e = []; this.zcr = []; this.parlato = []; this.cum = [];
     this.max = 0; this._tot = 0; this.durata = 0; this.chiuso = false; this.frazione = 0;
     this.resto = new Float32Array(0);
     this.lettere = Math.max(1, (String(testo || "").match(/[a-zà-ú0-9]/gi) || []).length);
@@ -123,17 +125,17 @@ export class ProfiloVivo {
     // quando la trascrizione non e' ancora arrivata e la stima "a frazione" sballa.
     this.previsto = this.lettere / ProfiloVivo.ritmo;
   }
-  _quadro(v) {
+  _quadro(v, z) {
     if (v > this.max) this.max = v;
     const p = v > this.max * 0.12 ? 1 : 0;
-    this.e.push(v); this.parlato.push(p); if (p) this._tot += this.hop; this.cum.push(this._tot); this.durata += this.hop;
+    this.e.push(v); this.zcr.push(z || 0); this.parlato.push(p); if (p) this._tot += this.hop; this.cum.push(this._tot); this.durata += this.hop;
   }
   aggiungi(f32, sr) {
     const hop = Math.max(1, Math.round(sr * this.hop));
     let d = f32;
     if (this.resto.length) { const m = new Float32Array(this.resto.length + f32.length); m.set(this.resto); m.set(f32, this.resto.length); d = m; }
     const n = Math.floor(d.length / hop);
-    for (let i = 0; i < n; i++) { let s = 0; const a = i * hop; for (let j = a; j < a + hop; j++) s += d[j] * d[j]; this._quadro(Math.sqrt(s / hop)); }
+    for (let i = 0; i < n; i++) { let s = 0, z = 0; const a = i * hop; for (let j = a; j < a + hop; j++) { s += d[j] * d[j]; if (j > a && (d[j] >= 0) !== (d[j - 1] >= 0)) z++; } this._quadro(Math.sqrt(s / hop), z / hop); }
     this.resto = d.slice(n * hop);
   }
   silenzio(sec) { const n = Math.round((Number(sec) || 0) / this.hop); for (let i = 0; i < n; i++) this._quadro(0); }
@@ -166,6 +168,8 @@ ProfiloVivo.ritmo = 18;   // lettere per secondo di parlato (misurato il 20/10 s
 // gruppo, quella attaccata alla vocale: in "stra" e' la r, in "scia" la sc).
 export function classeCons(cons, vocale) {
   if (!cons) return "";
+  if (/[qg]u$/.test(cons)) return "K";                     // 0.76: "qu"/"gu" (quattro, guida): q/g dura
+  if (/(c|g|sc|gl)i$/.test(cons)) return "C";               // 0.76: "ci/gi/sci/gli" + vocale: dolce, i muta
   const c = cons.slice(-1), c2 = cons.slice(-2);
   if (/^(sc|gl|gn)$/.test(c2) && /[ei]/.test(vocale)) return "C";
   if (c2 === "gl" || c2 === "gn") return "C";
@@ -181,10 +185,35 @@ export function sillabe(testo) {
   const out = [];
   let cons = "", primaVocale = false;  // consonanti in attesa della prossima vocale; la lettera prima era una vocale?
   const vocale = (ch) => "aeiouy".includes(ch) ? (ch === "y" ? "I" : ch.toUpperCase()) : "";
-  for (const ch of t) {
-    const v = vocale(ch);
+  const lettere = [...t];
+  for (let i = 0; i < lettere.length; i++) {
+    const ch = lettere[i], v = vocale(ch);
     if (v) {
-      // due vocali di fila (dittongo, "buo", "pia"): la seconda e' una sillaba corta
+      const dopo = lettere[i + 1] || "", vDopo = vocale(dopo), fineParola = !(dopo >= "a" && dopo <= "z");
+      const terza = lettere[i + 2] || "", vDopoFinale = !(terza >= "a" && terza <= "z");
+      // 0.76: DITTONGHI, come li dice la voce (controllato con espeak-ng):
+      //  - "qu"/"gu" + vocale (quattro, guida): la u e' un soffio dentro la consonante, non una sillaba;
+      //  - i/u + vocale aperta DENTRO la parola (piano, chiamo, buono, piu'): una sillaba sola, la i/u
+      //    e' uno scivolo (g) all'inizio; a FINE parola (Maria, via, mio, zia) sono due sillabe (iato);
+      //  - vocale aperta + i/u (mai, sei, poi, euro): una sillaba sola, la i/u e' una coda breve.
+      if ((ch === "u") && /[qg]$/.test(cons) && vDopo) { cons += "u"; primaVocale = false; continue; }
+      // "ci/gi/sci/gli" + a/o/u (giorno, bacio, mancia, figlio, gia', ciao): la i e' muta, fa parte della
+      // consonante dolce; a fine parola nelle parole lunghe (Lucia, farmacia, bugia) resta una vocale (iato)
+      if (ch === "i" && /(c|g|sc|gl)$/.test(cons) && /[AOU]/.test(vDopo)) {
+        let lung = 0; for (let q = i - 1; q >= 0 && lettere[q] >= "a" && lettere[q] <= "z"; q--) lung++;
+        if (!(vDopoFinale && lung >= 3 && /[cg]$/.test(cons))) { cons += "i"; primaVocale = false; continue; }
+      }
+      if ((v === "I" || v === "U") && /[AEOIU]/.test(vDopo) && vDopo !== v && !primaVocale && !(vDopoFinale && /[AEO]/.test(vDopo))) {
+        // scivolo: la vocale vera e' la prossima; qui si segna solo l'attacco
+        out.push({ v: vDopo, c: classeCons(cons, dopo), g: v, chiusa: /[mbp]/.test(cons), denti: /[fv]/.test(cons), p: 1 });
+        cons = ""; primaVocale = true; i++;            // salto la vocale gia' consumata
+        continue;
+      }
+      if (primaVocale && (v === "I" || v === "U") && out.length && /[AEO]/.test(out[out.length - 1].v) && !out[out.length - 1].coda) {
+        // coda del dittongo discendente (mai, sei, poi): allunga la sillaba prima
+        out[out.length - 1].p += 0.3; out[out.length - 1].coda = v; cons = ""; continue;
+      }
+      // due vocali di fila (iato: "Maria", "aereo", "paura"): la seconda e' una sillaba corta
       out.push({ v, c: classeCons(cons, ch), chiusa: /[mbp]/.test(cons), denti: /[fv]/.test(cons), p: primaVocale ? 0.7 : 1 });
       cons = ""; primaVocale = true;
     } else if (ch >= "a" && ch <= "z") {
@@ -209,26 +238,33 @@ export function sillabe(testo) {
 // a costo minimo, vedi sotto); dentro ogni tratto resta la proporzione.
 // Risultato: a ogni virgola e punto il labiale si "riallinea" col suono.
 export function ancore(prof, fineFrasi) {
-  const n = prof.e.length, tot = prof.totale || 0;
-  const pause = [];                              // frazione del parlato a cui FINISCE ogni segmento
-  if (tot > 0 && n) {
+  // 0.76: le pause si misurano in SECONDI di parlato e si confrontano con la posizione attesa dei
+  // segni di punteggiatura (frazione del testo x durata attesa). Il costo di una coppia e' per lo
+  // piu' lo scarto fra la DISTANZA dalla pausa precedente e quella dallo stacco precedente (il
+  // ritmo locale): cosi' un totale stimato male (voce Live) non fa sbagliare tutte le coppie.
+  const n = prof.e.length;
+  const tot = prof.totale || 0;
+  const T = (prof.vivo && !prof.chiuso && prof.previsto) ? Math.max(prof.previsto, prof.cum[n - 1] || 0) : tot;   // durata attesa del parlato
+  const pause = [];                              // secondi di parlato a cui FINISCE ogni segmento
+  if (T > 0 && n) {
     let inParola = false, zitto = 0, cumFine = 0;
     for (let i = 0; i < n; i++) {
       if (prof.parlato[i]) { if (!inParola) { inParola = true; } zitto = 0; cumFine = prof.cum[i]; }
-      else if (inParola && ++zitto >= 7) { inParola = false; pause.push(cumFine / tot); }
+      else if (inParola && ++zitto >= 7) { inParola = false; pause.push(cumFine); }
     }
   }
-  // allineamento monotono a costo minimo (programmazione dinamica): ogni coppia costa la
-  // distanza fra le due frazioni, saltare una pausa o uno stacco costa 0,05. Cosi' se le
-  // pause sono tante quante le frasi si accoppiano tutte, anche con scarti del 10-15%;
-  // se la voce ha fatto una pausa in piu' (o in meno) quella resta senza compagna.
-  const P = fineFrasi.length, S = pause.length, SALTO = 0.05;
+  const att = fineFrasi.map(f => f * T);         // dove ci si aspetta ogni stacco, in secondi di parlato
+  const P = att.length, S = pause.length, SALTO = 1.0, U = 0.3;
   const costo = [], via = [];
   for (let j = 0; j <= P; j++) { costo.push(new Float64Array(S + 1)); via.push(new Int8Array(S + 1)); }
   for (let j = 0; j <= P; j++) for (let k = 0; k <= S; k++) {
     if (!j && !k) { costo[j][k] = 0; continue; }
     let best = Infinity, b = 0;
-    if (j && k) { const v = costo[j - 1][k - 1] + Math.abs(fineFrasi[j - 1] - pause[k - 1]); if (v < best) { best = v; b = 1; } }
+    if (j && k) {
+      const da = j > 1 ? att[j - 1] - att[j - 2] : att[j - 1], dp = k > 1 ? pause[k - 1] - pause[k - 2] : pause[k - 1];
+      const v = costo[j - 1][k - 1] + 0.3 * Math.abs(att[j - 1] - pause[k - 1]) / U + Math.abs(da - dp) / U;
+      if (v < best) { best = v; b = 1; }
+    }
     if (j) { const v = costo[j - 1][k] + SALTO; if (v < best) { best = v; b = 2; } }
     if (k) { const v = costo[j][k - 1] + SALTO; if (v < best) { best = v; b = 3; } }
     costo[j][k] = best; via[j][k] = b;
@@ -236,14 +272,14 @@ export function ancore(prof, fineFrasi) {
   const coppie = [];
   for (let j = P, k = S; j || k;) {
     const b = via[j][k];
-    if (b === 1) { if (Math.abs(fineFrasi[j - 1] - pause[k - 1]) <= 0.18) coppie.push([pause[k - 1], fineFrasi[j - 1]]); j--; k--; }
+    if (b === 1) { if (Math.abs(att[j - 1] - pause[k - 1]) <= Math.max(1.2, 0.2 * T)) coppie.push([pause[k - 1] / (tot || T), fineFrasi[j - 1]]); j--; k--; }
     else if (b === 2) j--; else k--;
   }
   coppie.reverse();
   const out = [[0, 0]];
   for (const [c, a] of coppie) if (c > out[out.length - 1][0] + 0.01 && a > out[out.length - 1][1] + 0.01 && c < 0.99 && a < 0.99) out.push([c, a]);
   out.push([1, 1]);
-  return out;                                    // coppie [frazione del suono, frazione del testo], crescenti
+  return out;                                    // coppie [frazione del suono (su prof.totale), frazione del testo], crescenti
 }
 function conAncore(anc, frac) {
   for (let i = 1; i < anc.length; i++) {
@@ -254,6 +290,158 @@ function conAncore(anc, frac) {
   }
   return 1;
 }
+// ---- 2e. (0.76) i NUCLEI: ogni sillaba detta e' un picco del volume. Si trovano i picchi
+// dell'inviluppo (lisciato a 100 ms) dentro ogni tratto fra due pause agganciate e si
+// accoppiano, in ordine, alle sillabe del testo di quel tratto (programmazione dinamica:
+// accoppiare costa la distanza fra dove ci si aspettava la sillaba e dove sta il picco,
+// saltare un picco o una sillaba costa 0,12 del tratto). Le sillabe accoppiate prendono il
+// tempo VERO del loro picco; le altre si interpolano; i confini fra due sillabe stanno nel
+// minimo del volume fra i due picchi (li' cadono le consonanti e le labbra chiuse).
+// Risultato: la vocale si apre proprio quando la voce spinge, non "circa li'".
+export function nuclei(prof, a, b) {
+  const e = prof.e, zc = prof.zcr || null, es = [], out = [];
+  const ev = (j) => (zc && zc[j] > 0.22) ? e[j] * 0.25 : e[j];       // le fricative contano un quarto
+  let mx = 0;
+  for (let i = a; i < b; i++) { let s = 0, w = 0; for (let d = -2; d <= 2; d++) { const j = i + d; if (j >= a && j < b) { const ww = 3 - Math.abs(d); s += ev(j) * ww; w += ww; } } es.push(w ? s / w : 0); if (es[es.length - 1] > mx) mx = es[es.length - 1]; }
+  const soglia = 0.15 * mx, L = es.length;
+  for (let i = 0; i < L; i++) {
+    if (es[i] < soglia || !prof.parlato[a + i] || (zc && zc[a + i] > 0.22)) continue;
+    // massimo locale (ai bordi del tratto basta che salga verso il bordo: la sillaba finisce con la pausa)
+    const sin = i === 0 ? true : es[i] > es[i - 1], des = i === L - 1 ? true : es[i] >= es[i + 1];
+    if (sin && des) {
+      if (out.length && (a + i) - out[out.length - 1] < 4) { if (es[i] > es[out[out.length - 1] - a]) out[out.length - 1] = a + i; }   // due picchi a meno di 80 ms: resta il piu' alto
+      else out.push(a + i);
+    }
+  }
+  return { picchi: out, es };
+}
+export function mappaSillabe(prof, sill, inizio, fine, anc) {
+  const n = prof.e.length, tot = prof.totale || 0; if (!n || !tot) return null;
+  const mappa = new Array(sill.length).fill(null);          // per sillaba: { ini, fin, centro } in indici di hop
+  const hopDi = (c) => { const v = c * tot; let i = 0; while (i < n - 1 && prof.cum[i] < v) i++; return i; };
+  const centri = new Array(sill.length).fill(-1);
+  for (let s = 0; s + 1 < anc.length; s++) {
+    const [c0, a0] = anc[s], [c1, a1] = anc[s + 1];
+    const ks = []; for (let k = 0; k < sill.length; k++) { const m = (inizio[k] + fine[k]) / 2; if (m >= a0 && m < a1) ks.push(k); }
+    if (!ks.length) continue;
+    const hA = hopDi(c0), hB = s + 2 === anc.length ? n : hopDi(c1);
+    if (hB - hA < 4) continue;
+    const { picchi } = nuclei(prof, hA, hB);
+    if (!picchi.length) continue;
+    const cA = prof.cum[hA], cB = Math.max(cA + 1e-6, prof.cum[hB - 1]);
+    // tempi in SECONDI di parlato dentro il tratto (cosi' i costi non dipendono dalla lunghezza del tratto).
+    // Se il tratto e' l'ultimo e l'audio sta ancora arrivando (voce Live), la durata attesa del tratto
+    // viene dalla STIMA del totale (non dall'audio arrivato finora, che e' solo l'inizio), e si
+    // accoppiano solo le sillabe che "dovrebbero" essere gia' state dette (+300 ms di margine).
+    const aperto = !!(prof.vivo && !prof.chiuso && s + 2 === anc.length);
+    // (al vivo la durata attesa viene dal RITMO della voce - lettere al secondo, imparato frase dopo
+    //  frase - non dalla stima del totale, che balla finche' la trascrizione non e' arrivata tutta)
+    const attesa = prof.vivo && prof.lettere ? (a1 - a0) * prof.lettere / (ProfiloVivo.ritmo || 18) : (a1 - a0) * tot;
+    const durSeg = aperto ? Math.max(cB - cA, attesa) : (cB - cA);
+    const y = picchi.map(h => prof.cum[h] - cA);
+    const pt = ks.reduce((q, k) => q + sill[k].p, 0) || 1;
+    let accp = 0; const xTutte = ks.map(k => { const m = (accp + sill[k].p / 2) / pt * durSeg; accp += sill[k].p; return m; });
+    if (aperto) { const lim = (cB - cA) + 0.3; while (ks.length > 1 && xTutte[ks.length - 1] > lim) { ks.pop(); xTutte.pop(); } }
+    const x = xTutte;
+    // allineamento monotono (sillabe x picchi): accoppiare costa lo scarto in unita' di 150 ms,
+    // saltare un picco o una sillaba costa 1 (= 150 ms di scarto)
+    const S = ks.length, K = picchi.length, SALTO = 1.0, UNITA = 0.15;
+    const costo = [], via = [];
+    for (let i = 0; i <= S; i++) { costo.push(new Float64Array(K + 1)); via.push(new Int8Array(K + 1)); }
+    for (let i = 0; i <= S; i++) for (let j = 0; j <= K; j++) {
+      if (!i && !j) { costo[i][j] = 0; continue; }
+      let best = Infinity, b = 0;
+      if (i && j) {
+        // costo dell'accoppiata: poco lo scarto assoluto (il "dove dovrebbe stare" e' impreciso), molto lo
+        // scarto fra la DISTANZA dal picco precedente e quella dalla sillaba precedente (il ritmo locale)
+        const dx = i > 1 ? x[i - 1] - x[i - 2] : 0, dy = j > 1 ? y[j - 1] - y[j - 2] : 0;
+        const v = costo[i - 1][j - 1] + 0.3 * Math.abs(x[i - 1] - y[j - 1]) / UNITA + ((i > 1 && j > 1) ? Math.abs(dy - dx) / UNITA : 0);
+        if (v < best) { best = v; b = 1; }
+      }
+      if (i) { const v = costo[i - 1][j] + SALTO; if (v < best) { best = v; b = 2; } }
+      if (j) { const v = costo[i][j - 1] + SALTO; if (v < best) { best = v; b = 3; } }
+      costo[i][j] = best; via[i][j] = b;
+    }
+    for (let i = S, j = K; i || j;) { const b = via[i][j]; if (b === 1) { centri[ks[i - 1]] = picchi[j - 1]; i--; j--; } else if (b === 2) i--; else j--; }
+    // le sillabe senza picco: interpolate fra le vicine accoppiate (dentro il tratto).
+    // Se il tratto e' l'ULTIMO e l'audio sta ancora arrivando (voce Live), le sillabe in coda senza
+    // picco restano senza tempo: stanno nel futuro, ci pensera' il metodo proporzionale.
+    let prev = -1;
+    for (let q = 0; q < ks.length; q++) {
+      const k = ks[q];
+      if (centri[k] >= 0) { prev = q; continue; }
+      let nxt = -1; for (let r = q + 1; r < ks.length; r++) if (centri[ks[r]] >= 0) { nxt = r; break; }
+      if (prev >= 0 && nxt >= 0) centri[k] = Math.round(centri[ks[prev]] + (centri[ks[nxt]] - centri[ks[prev]]) * (q - prev) / (nxt - prev));
+      else if (prev >= 0 && !aperto) { const d = hB - centri[ks[prev]]; centri[k] = Math.round(centri[ks[prev]] + d * (q - prev) / (ks.length - prev)); }
+      else if (nxt >= 0) { centri[k] = Math.round(hA + (centri[ks[nxt]] - hA) * (q + 1) / (nxt + 1)); }
+    }
+    // confini: nel minimo del volume fra due centri consecutivi
+    const esSeg = nuclei(prof, hA, hB).es;
+    const minimoFra = (h0, h1) => { let m = h0, mv = Infinity; for (let h = h0 + 1; h < h1; h++) { const v = esSeg[h - hA]; if (v < mv) { mv = v; m = h; } } return m; };
+    for (let q = 0; q < ks.length; q++) {
+      const k = ks[q]; if (centri[k] < 0) continue;
+      const cPrev = q ? centri[ks[q - 1]] : -1, cNext = q + 1 < ks.length ? centri[ks[q + 1]] : -1;
+      const ini = cPrev >= 0 ? minimoFra(cPrev, centri[k]) : hA;
+      let fin = cNext >= 0 ? minimoFra(centri[k], cNext) : hB;
+      if (cNext < 0 && aperto) fin = Math.min(hB, centri[k] + 8);         // in coda, al vivo: non oltre 160 ms dal picco
+      if (fin > ini) mappa[k] = { ini, fin, centro: centri[k] };
+    }
+  }
+  return mappa;
+}
+// (0.76b) SEGMENTAZIONE: invece di accoppiare picchi e sillabe, si cercano direttamente i CONFINI
+// delle sillabe nel tratto: ogni sillaba deve durare circa quanto il suo peso dice (costo
+// quadratico sullo scarto), avere dentro un momento forte (si premia il massimo del volume
+// dentro) e finire in un momento debole (si penalizza il volume sul confine). Programmazione
+// dinamica su (sillaba, istante). Il centro della vocale = il massimo del volume nel suo tratto.
+export function mappaSillabe2(prof, sill, inizio, fine, anc) {
+  const n = prof.e.length, tot = prof.totale || 0; if (!n || !tot) return null;
+  const mappa = new Array(sill.length).fill(null);
+  const hopDi = (c) => { const v = c * tot; let i = 0; while (i < n - 1 && prof.cum[i] < v) i++; return i; };
+  for (let s = 0; s + 1 < anc.length; s++) {
+    const [c0, a0] = anc[s], [c1, a1] = anc[s + 1];
+    const ks = []; for (let k = 0; k < sill.length; k++) { const m = (inizio[k] + fine[k]) / 2; if (m >= a0 && m < a1) ks.push(k); }
+    if (!ks.length) continue;
+    let hA = hopDi(c0), hB = s + 2 === anc.length ? n : hopDi(c1);
+    while (hA < hB && !prof.parlato[hA]) hA++;                 // si parte dal primo istante parlato
+    while (hB > hA && !prof.parlato[hB - 1]) hB--;
+    const H = hB - hA; if (H < 3) continue;
+    const { es } = nuclei(prof, hA, hB); let mx = 0; for (const v of es) if (v > mx) mx = v; if (!mx) continue;
+    const en = es.map(v => v / mx);
+    // durate attese (in hop) proporzionali ai pesi, ma contando solo gli istanti PARLATI del tratto
+    let parl = 0; for (let h = hA; h < hB; h++) parl += prof.parlato[h] ? 1 : 0;
+    const pt = ks.reduce((q, k) => q + sill[k].p, 0) || 1;
+    const E = ks.map(k => Math.max(2, parl * sill[k].p / pt));
+    const S = ks.length, INF = 1e18;
+    const best = []; const via = [];
+    for (let i = 0; i <= S; i++) { best.push(new Float64Array(H + 1).fill(INF)); via.push(new Int16Array(H + 1)); }
+    best[0][0] = 0;
+    for (let i = 1; i <= S; i++) {
+      const Ek = E[i - 1], Lmin = Math.max(2, Math.round(0.4 * Ek)), Lmax = Math.min(H, Math.round(2.6 * Ek) + 3);
+      for (let h = Lmin; h <= H; h++) {
+        let bb = INF, bl = 0;
+        for (let L = Lmin; L <= Lmax && L <= h; L++) {
+          const prevC = best[i - 1][h - L]; if (prevC >= INF) continue;
+          let pk = 0; for (let q = h - L; q < h; q++) if (en[q] > pk) pk = en[q];
+          const dur = (L - Ek) / Math.max(2, 0.6 * Ek);
+          const bordo = h < H ? en[h] : 0;
+          const c = prevC + 0.9 * dur * dur - 1.6 * pk + 1.2 * bordo;
+          if (c < bb) { bb = c; bl = L; }
+        }
+        best[i][h] = bb; via[i][h] = bl;
+      }
+    }
+    if (best[S][H] >= INF) continue;
+    let h = H;
+    for (let i = S; i >= 1; i--) {
+      const L = via[i][h]; const ini = hA + h - L, fin = hA + h;
+      let cen = ini, pk = -1; for (let q = ini; q < fin; q++) { const v = en[q - hA]; if (v > pk) { pk = v; cen = q; } }
+      mappa[ks[i - 1]] = { ini, fin, centro: cen };
+      h -= L;
+    }
+  }
+  return mappa;
+}
 export function piano(testo, prof) {
   const sill = sillabe(testo);
   const pesoTot = sill.reduce((s, x) => s + x.p, 0) || 1;
@@ -263,8 +451,10 @@ export function piano(testo, prof) {
   const FIN = 25;                      // finestra per il massimo locale: ±500 ms (0.73; era ±200)
   let ultima = "X", tUltima = -1;
   let anc = [[0, 0], [1, 1]], ancN = -1, ancTot = -1;
+  let mappa = null, mapN = -1, mapTot = -1, kUlt = 0;
   return {
     get ancore() { return anc; },
+    get mappa() { return mappa; },
     forma(t) {
       const n = prof.e.length; if (!n) return { f: "X", forza: 0, ap: 0, v: null };
       const i = Math.min(n - 1, Math.max(0, Math.floor(t / prof.hop)));
@@ -282,12 +472,23 @@ export function piano(testo, prof) {
       let ap = 0.05 + 0.86 * Math.pow(Math.max(0, Math.min(1, rel)), 1.5);
       // quale sillaba: in base a quanto parlato e' passato, riallineato alle pause (0.71)
       const tot = prof.totale || 0;
-      if (fineFrasi.length && (n !== ancN || tot !== ancTot)) { anc = ancore(prof, fineFrasi); ancN = n; ancTot = tot; }
-      const frac = tot ? conAncore(anc, prof.cum[i] / tot) : 0;
-      let k = 0; while (k < fine.length - 1 && fine[k] < frac) k++;
+      if ((n !== ancN || tot !== ancTot)) { anc = fineFrasi.length ? ancore(prof, fineFrasi) : [[0, 0], [1, 1]]; ancN = n; ancTot = tot; }
+      // 0.76: la mappa delle sillabe sui picchi veri del volume (non per il profilo finto del telefono)
+      if (!prof.finto && (n !== mapN || tot !== mapTot)) { try { mappa = (piano.metodo === 2 ? mappaSillabe2 : mappaSillabe)(prof, sill, inizio, fine, anc); } catch (e) { mappa = null; } mapN = n; mapTot = tot; }
+      let k = -1, prog = 0, durSec = 0;
+      if (mappa) {
+        // cerco la sillaba il cui tratto [ini, fin) contiene questo istante (partendo dall'ultima)
+        for (let q = 0; q < sill.length && k < 0; q++) { const kk = (kUlt + q) % sill.length, m = mappa[kk]; if (m && i >= m.ini && i < m.fin) k = kk; }
+        if (k >= 0) { const m = mappa[k]; prog = (i - m.ini) / (m.fin - m.ini); durSec = (m.fin - m.ini) * prof.hop; kUlt = k; }
+      }
+      if (k < 0) {
+        const frac = tot ? conAncore(anc, prof.cum[i] / tot) : 0;
+        k = 0; while (k < fine.length - 1 && fine[k] < frac) k++;
+        const durS = Math.max(1e-6, fine[k] - inizio[k]);
+        prog = Math.max(0, Math.min(1, (frac - inizio[k]) / durS));
+        durSec = durS * tot;
+      }
       const sl = sill[k] || { v: "A", p: 1 };
-      const durS = Math.max(1e-6, fine[k] - inizio[k]);
-      const prog = Math.max(0, Math.min(1, (frac - inizio[k]) / durS));
       // 0.69: la vocale della sillaba e l'apertura, e basta. Le consonanti si vedono
       // nell'apertura: M/B/P = labbra chiuse all'inizio della sillaba, F/V = quasi chiuse.
       // 0.72: la consonante occupa l'inizio della sillaba (circa 70 ms, mai oltre il 35%).
@@ -295,13 +496,17 @@ export function piano(testo, prof) {
       // la sua forma si mescola alla vocale. M/B/P chiudono davvero le labbra (peso 1),
       // F/V quasi (0,85), le altre (t d n l r s z c g) solo a meta' (0,5): nel video vero
       // la mascella non si richiude a ogni consonante, si vede appena un filo di denti.
-      const durSec = durS * tot;                         // durata vera della sillaba in secondi
       const quotaCons = sl.c ? Math.min(0.35, Math.max(0.15, 0.07 / Math.max(0.05, durSec))) : 0;
       let f, vis, cw = 0;
+      // 0.76: lo scivolo (i/u di "piano", "buono"): dopo la consonante, per ~60 ms la bocca e' quella della i/u
+      const quotaG = sl.g ? Math.min(0.3, Math.max(0.12, 0.06 / Math.max(0.05, durSec))) : 0;
       if (sl.c && prog < quotaCons) {
         vis = sl.c; cw = sl.c === "M" ? 1 : sl.c === "F" ? 0.85 : 0.5;
         f = sl.c === "M" ? "M" : sl.c === "F" ? "F" : "L";
         if (sl.c === "M") ap = 0; else if (sl.c === "F") ap = Math.min(ap, 0.2); else ap *= 0.7;
+      } else if (sl.g && prog < quotaCons + quotaG) {
+        vis = sl.g; f = sl.g; ap = Math.min(ap, 0.45);
+        return { f, forza, ap, v: vis, voc: sl.g, cw: 0, k };
       } else {
         vis = sl.v;
         if (ap < 0.12) f = "X";
@@ -312,7 +517,7 @@ export function piano(testo, prof) {
       }
       if (f !== ultima && ultima !== "X" && f !== "X" && f !== "M" && t - tUltima < 0.07) f = ultima;
       if (f !== ultima) { ultima = f; tUltima = t; }
-      return { f, forza, ap, v: vis, voc: sl.v, cw };
+      return { f, forza, ap, v: vis, voc: sl.v, cw, k };
     },
   };
 }
