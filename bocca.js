@@ -123,23 +123,71 @@ export class ProfiloVivo {
 }
 
 // ---- 3. il piano: a ogni istante, quale forma --------------------------------
+// 0.68: NON piu' una forma per lettera (dieci cambi al secondo: sembrava che
+// tremasse). Si ragiona a SILLABE, come una persona: ogni vocale e' il cuore di una
+// sillaba, le consonanti prima le appartengono. L'APERTURA della bocca segue il
+// volume della voce rispetto ai suoni vicini (cosi' si chiude fra una sillaba e
+// l'altra e si apre sulla vocale), la FORMA (A E I O U) cambia una volta per
+// sillaba. M/B/P = labbra chiuse per un attimo all'inizio della sillaba, F/V =
+// denti sul labbro.
+export function sillabe(testo) {
+  const t = String(testo || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const out = [];
+  let cons = "", primaVocale = false;  // consonanti in attesa della prossima vocale; la lettera prima era una vocale?
+  const vocale = (ch) => "aeiouy".includes(ch) ? (ch === "y" ? "I" : ch.toUpperCase()) : "";
+  for (const ch of t) {
+    const v = vocale(ch);
+    if (v) {
+      // due vocali di fila (dittongo, "buo", "pia"): la seconda e' una sillaba corta
+      out.push({ v, chiusa: /[mbp]/.test(cons), denti: /[fv]/.test(cons), p: primaVocale ? 0.7 : 1 });
+      cons = ""; primaVocale = true;
+    } else if (ch >= "a" && ch <= "z") {
+      cons += ch; primaVocale = false;
+    } else {
+      // spazio o punteggiatura: le consonanti rimaste (es. "con", "per") allungano la sillaba prima
+      if (cons && out.length) out[out.length - 1].p += 0.25;
+      cons = ""; primaVocale = false;
+    }
+  }
+  if (cons && out.length) out[out.length - 1].p += 0.25;
+  return out;
+}
 export function piano(testo, prof) {
-  const voci = visemi(testo).filter(v => v.f !== "X");
-  const pesoTot = voci.reduce((s, v) => s + v.p, 0) || 1;
-  let acc = 0; const bordi = voci.map(v => { acc += v.p; return acc / pesoTot; });
-  let ultimo = "X";
+  const sill = sillabe(testo);
+  const pesoTot = sill.reduce((s, x) => s + x.p, 0) || 1;
+  let acc = 0; const fine = sill.map(x => { acc += x.p; return acc / pesoTot; });
+  const inizio = fine.map((f, k) => k ? fine[k - 1] : 0);
+  const FIN = 10;                      // finestra per il massimo locale: ±200 ms
+  let ultima = "X", tUltima = -1;
   return {
     forma(t) {
-      const i = Math.min(prof.e.length - 1, Math.max(0, Math.floor(t / prof.hop)));
-      const forza = prof.max ? prof.e[i] / prof.max : 0;
-      if (!prof.parlato[i]) { ultimo = "X"; return { f: "X", forza: 0 }; }
-      const frac = prof.totale ? prof.cum[i] / prof.totale : 0;
-      let k = 0; while (k < bordi.length - 1 && bordi[k] < frac) k++;
-      let f = voci.length ? voci[k].f : "A";
-      if (forza < 0.28) { if (f === "A") f = "E"; else if (f === "O") f = "U"; }
-      if (forza < 0.1) f = "M";
-      ultimo = f;
-      return { f, forza };
+      const n = prof.e.length; if (!n) return { f: "X", forza: 0, ap: 0 };
+      const i = Math.min(n - 1, Math.max(0, Math.floor(t / prof.hop)));
+      const forza = prof.max ? Math.min(1, prof.e[i] / prof.max) : 0;
+      if (!prof.parlato[i]) { ultima = "X"; return { f: "X", forza: 0, ap: 0 }; }
+      // apertura: il volume di adesso rispetto ai suoni vicini
+      let loc = 0; for (let j = Math.max(0, i - FIN); j <= Math.min(n - 1, i + FIN); j++) if (prof.e[j] > loc) loc = prof.e[j];
+      loc = Math.max(loc, 0.35 * (prof.max || 0));
+      let ap = loc ? prof.e[i] / loc : 0; ap = Math.pow(Math.max(0, Math.min(1, ap)), 1.4);
+      // quale sillaba: in base a quanto parlato e' passato
+      const tot = prof.totale || 0;
+      const frac = tot ? prof.cum[i] / tot : 0;
+      let k = 0; while (k < fine.length - 1 && fine[k] < frac) k++;
+      const sl = sill[k] || { v: "A", p: 1 };
+      const durS = Math.max(1e-6, (fine[k] - inizio[k]) * tot);
+      const prog = Math.max(0, Math.min(1, (prof.cum[i] - inizio[k] * tot) / durS));
+      let f;
+      if (sl.chiusa && prog < 0.22) f = "M";
+      else if (sl.denti && prog < 0.2) f = "F";
+      else if (ap < 0.12) f = "X";
+      else if (sl.v === "A") f = ap < 0.45 ? "E" : "A";
+      else if (sl.v === "O") f = ap < 0.45 ? "U" : "O";
+      else if (sl.v === "E") f = ap < 0.3 ? "I" : "E";
+      else f = sl.v;                   // I, U
+      // niente tremolio: una forma resta almeno 50 ms, salvo chiusure
+      if (f !== ultima && ultima !== "X" && f !== "X" && f !== "M" && t - tUltima < 0.07) f = ultima;
+      if (f !== ultima) { ultima = f; tUltima = t; }
+      return { f, forza, ap };
     },
   };
 }
