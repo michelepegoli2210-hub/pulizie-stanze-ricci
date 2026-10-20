@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.73.0";
+export const VERSIONE = "0.74.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -160,6 +160,10 @@ function filmVigila() {
       // Il vecchio "pensa" (occhi chiusi avanti e indietro) a Michele sembrava strano.
       const quale = parla ? "parla" : ascolta ? "ascolta" : pensa ? "parla" : riposo;
       filmUno(quale, b, !FILM_URGENTE[quale]);
+      // 0.74: la MASCHERA (la tela del labiale) sta su per tutto il tempo in cui si vede il
+      // filmato "parla": e' un video in cui lei parla davvero, e senza maschera muoverebbe
+      // la bocca da sola. Con la maschera la bocca e' chiusa finche' non c'e' voce.
+      labialeTieni(b, b.dataset.film === "parla");
     }
   }, 150);
 }
@@ -2071,14 +2075,61 @@ let labiali = [], labPiano = null, labSpegni = null, labCerca = 0, labRotto = fa
 function labialeBox() { return [...document.querySelectorAll(".gov-film")].filter(b => b.offsetWidth > 0 && b.offsetHeight > 0); }
 function labialeMonta() {
   if (labRotto) return;
-  labiali = labiali.filter(l => l.tela && l.tela.isConnected);
+  labiali = labiali.filter(l => l.tela && l.tela.isConnected || l.riserva || (l._montando && Date.now() - l._montando < 8000));
   for (const box of labialeBox()) {
     if (labiali.some(l => l.box === box)) continue;
-    const l = new BOCCA.Labiale(box);
+    const l = new BOCCA.Labiale(box); l._montando = Date.now();
     labiali.push(l);
-    l.monta().catch(e => { console.warn("labiale", e); labRotto = true; labiali = labiali.filter(x => x !== l); });
+    l.monta().then(() => { l._montando = 0; labialeVitaVia(); }).catch(e => { console.warn("labiale", e); labRotto = true; labiali = labiali.filter(x => x !== l); });
   }
+  if (labiali.length) labialeVitaVia();
 }
+// 0.74: la maschera si monta e si smonta seguendo il FILMATO (vedi filmVigila), non la voce.
+// Mentre e' su, un "battito" la ridisegna anche senza voce: bocca chiusa, viso che segue il
+// video (testa, occhi, sopracciglia veri). Quando arriva la voce, labialeTick la guida.
+let labVita = null, labTick = null;
+function labialeTieni(box, si) {
+  if (labRotto || !box) return;
+  labiali = labiali.filter(l => l.tela && l.tela.isConnected || l.riserva || (l._montando && Date.now() - l._montando < 8000));
+  const c = labiali.find(l => l.box === box);
+  if (si && !c) {
+    if (!(box.offsetWidth > 0 && box.offsetHeight > 0)) return;
+    const l = new BOCCA.Labiale(box); l._montando = Date.now();
+    labiali.push(l);
+    l.monta().then(() => { l._montando = 0; labialeVitaVia(); }).catch(e => { console.warn("labiale", e); labRotto = true; labiali = labiali.filter(x => x !== l); });
+  } else if (!si && c) {
+    labiali = labiali.filter(x => x !== c);
+    try { c.smonta(); } catch (e) {}
+  }
+  if (!labiali.length) labialeVitaFerma();
+}
+function labialeVitaVia() {
+  if (labVita) return;
+  let ultimo = 0;
+  const tick = () => {
+    if (!labVita) return;
+    const ora = performance.now();
+    if (ora - ultimo < 14 || document.hidden) return; ultimo = ora;
+    let vivi = 0;
+    for (const l of labiali) {
+      if (!l.pronta) { vivi++; continue; }
+      vivi++;
+      if (ora - (l.tDisegno || 0) < 40) continue;              // ha appena disegnato col tick della voce
+      let r = null;
+      if (labPiano && labTick) {
+        // fra un tick della voce e l'altro si stima dove siamo nel piano
+        const t = labTick.t + (ora - labTick.quando) / 1000;
+        try { r = labPiano.forma(t + 0.04 + labAnticipo() / 1000); } catch (e) { r = null; }
+      }
+      l.disegna(r ? (r.v || null) : null, r ? (r.ap || 0) : 0, 0, l.tUltimo || 0, r);
+    }
+    if (!vivi) labialeVitaFerma();
+  };
+  labVita = { iv: setInterval(tick, 25), raf: 0 };
+  const loop = () => { if (!labVita) return; tick(); labVita.raf = requestAnimationFrame(loop); };
+  labVita.raf = requestAnimationFrame(loop);
+}
+function labialeVitaFerma() { if (!labVita) return; clearInterval(labVita.iv); cancelAnimationFrame(labVita.raf); labVita = null; }
 function labialeAvvia(buf, testoLetto, durata) {
   clearTimeout(labSpegni); labSpegni = null;
   try {
@@ -2098,7 +2149,8 @@ function labialeTick(forza, t) {
   // 0.72: piu' l'ANTICIPO scelto da Michele nelle impostazioni (in millesimi, anche negativo):
   // ogni telefono e ogni cassa Bluetooth ritardano il suono in modo diverso.
   const r = labPiano.forma((t || 0) + 0.04 + labAnticipo() / 1000);
-  for (const l of labiali) if (l.pronta) l.disegna(r.v || null, r.ap == null ? 0 : r.ap, Math.max(r.forza, Number(forza) || 0), t || 0);   // 0.69: vocale + apertura
+  labTick = { t: t || 0, quando: performance.now() };
+  for (const l of labiali) if (l.pronta) l.disegna(r.v || null, r.ap == null ? 0 : r.ap, Math.max(r.forza, Number(forza) || 0), t || 0, r);   // 0.69: vocale + apertura; 0.74: tutto il piano (r)
 }
 let labAntCache = { t: 0, v: 0 };
 function labAnticipo() {
@@ -2107,17 +2159,12 @@ function labAnticipo() {
   return labAntCache.v;
 }
 function labialeFerma(subito) {
-  labPiano = null;
-  for (const l of labiali) if (l.pronta) l.disegna(null, 0, 0, l.tUltimo || 0);
-  clearTimeout(labSpegni);
-  const via = () => { for (const l of labiali) l.smonta(); labiali = []; labSpegni = null; };
-  if (subito) return via();
-  // 0.72: per mezzo secondo si continua a disegnare (bocca che si chiude e toppa che sfuma
-  // sul filmato che scorre), poi la tela se ne va: sotto c'e' lo stesso fotogramma.
-  const t0 = performance.now();
-  const chiudi = () => { if (!labSpegni) return; for (const l of labiali) if (l.pronta) l.disegna(null, 0, 0, l.tUltimo || 0); if (performance.now() - t0 < 600) setTimeout(chiudi, 25); };
-  labSpegni = setTimeout(via, 650);
-  setTimeout(chiudi, 25);
+  // 0.74: finisce solo la VOCE: la maschera resta su (bocca che si chiude da sola col suo
+  // battito) finche' il filmato "parla" non lascia il posto a quello di riposo (filmVigila).
+  labPiano = null; labTick = null;
+  for (const l of labiali) if (l.pronta) l.disegna(null, 0, 0, l.tUltimo || 0, null);
+  clearTimeout(labSpegni); labSpegni = null;
+  if (labiali.length) labialeVitaVia();
 }
 setTimeout(() => { try { BOCCA.precarica().catch(() => {}); } catch (e) {} }, 4000);
 async function parlaConVoce(testo) {

@@ -1,5 +1,5 @@
 // ============================================================================
-//  BOCCA.JS  ·  Il labiale (0.66 → 0.69 strisce; 0.71 frasi ancorate alle pause; 0.72 alfabeto + corpo vivo; 0.73 MASCHERA DEFORMABILE: si muove tutta la faccia)
+//  BOCCA.JS  ·  Il labiale (0.66 → 0.69 strisce; 0.71 frasi ancorate alle pause; 0.72 alfabeto + corpo vivo; 0.73 MASCHERA DEFORMABILE; 0.74 RITMO VERO + filmato in cui parla davvero)
 //  Dal testo che lei dice alle forme della bocca, a tempo col suono vero.
 //  Come funziona, in tre passi:
 //   1. visemi(testo): ogni lettera diventa una "forma" (A E I O U, labbra chiuse
@@ -271,9 +271,12 @@ export function piano(testo, prof) {
       let loc = 0; for (let j = Math.max(0, i - FIN); j <= Math.min(n - 1, i + FIN); j++) if (prof.e[j] > loc) loc = prof.e[j];
       loc = Math.max(loc, 0.35 * (prof.max || 0));
       // 0.73: finestra piu' larga (±500 ms) e una base minima: le sillabe deboli aprono meno,
-      // la bocca non torna a zero fra una sillaba e l'altra (come una bocca vera) e lo
-      // sbattere "da pupazzo" sparisce
-      let ap = loc ? prof.e[i] / loc : 0; ap = 0.10 + 0.90 * Math.pow(Math.max(0, Math.min(1, ap)), 1.2);
+      // la bocca non torna a zero fra una sillaba e l'altra (come una bocca vera).
+      // 0.74: IL RITMO VERO. Misurato sul video in cui Sofia parla davvero (240 fotogrammi,
+      // MediaPipe): i picchi di apertura stanno fra 0,09 e 0,23 "distanze fra gli occhi"
+      // (mediana 0,135), la nostra A tutta aperta e' 0,28: il tetto scende a 0,88.
+      const rel = loc ? prof.e[i] / loc : 0;
+      let ap = 0.05 + 0.86 * Math.pow(Math.max(0, Math.min(1, rel)), 1.5);
       // quale sillaba: in base a quanto parlato e' passato, riallineato alle pause (0.71)
       const tot = prof.totale || 0;
       if (fineFrasi.length && (n !== ancN || tot !== ancTot)) { anc = ancore(prof, fineFrasi); ancN = n; ancTot = tot; }
@@ -284,13 +287,19 @@ export function piano(testo, prof) {
       const prog = Math.max(0, Math.min(1, (frac - inizio[k]) / durS));
       // 0.69: la vocale della sillaba e l'apertura, e basta. Le consonanti si vedono
       // nell'apertura: M/B/P = labbra chiuse all'inizio della sillaba, F/V = quasi chiuse.
-      // 0.72: la consonante occupa l'inizio della sillaba (circa 70 ms, mai oltre il 35%),
-      // poi la vocale con la sua apertura. La bocca disegnata (v) e' la consonante o la vocale.
+      // 0.72: la consonante occupa l'inizio della sillaba (circa 70 ms, mai oltre il 35%).
+      // 0.74: la consonante NON e' piu' una bocca intera che scatta: e' un PESO (cw) con cui
+      // la sua forma si mescola alla vocale. M/B/P chiudono davvero le labbra (peso 1),
+      // F/V quasi (0,85), le altre (t d n l r s z c g) solo a meta' (0,5): nel video vero
+      // la mascella non si richiude a ogni consonante, si vede appena un filo di denti.
       const durSec = durS * tot;                         // durata vera della sillaba in secondi
-      const quotaCons = sl.c ? Math.min(0.35, Math.max(0.15, 0.06 / Math.max(0.05, durSec))) : 0;
-      let f, vis;
-      if (sl.c && prog < quotaCons) { vis = sl.c; f = sl.c === "M" ? "M" : sl.c === "F" ? "F" : "L"; if (sl.c === "M") ap = 0; else if (sl.c === "F") ap = Math.min(ap, 0.18); }
-      else {
+      const quotaCons = sl.c ? Math.min(0.35, Math.max(0.15, 0.07 / Math.max(0.05, durSec))) : 0;
+      let f, vis, cw = 0;
+      if (sl.c && prog < quotaCons) {
+        vis = sl.c; cw = sl.c === "M" ? 1 : sl.c === "F" ? 0.85 : 0.5;
+        f = sl.c === "M" ? "M" : sl.c === "F" ? "F" : "L";
+        if (sl.c === "M") ap = 0; else if (sl.c === "F") ap = Math.min(ap, 0.2); else ap *= 0.7;
+      } else {
         vis = sl.v;
         if (ap < 0.12) f = "X";
         else if (sl.v === "A") f = ap < 0.45 ? "E" : "A";
@@ -300,7 +309,7 @@ export function piano(testo, prof) {
       }
       if (f !== ultima && ultima !== "X" && f !== "X" && f !== "M" && t - tUltima < 0.07) f = ultima;
       if (f !== ultima) { ultima = f; tUltima = t; }
-      return { f, forza, ap, v: vis, voc: sl.v };
+      return { f, forza, ap, v: vis, voc: sl.v, cw };
     },
   };
 }
@@ -343,7 +352,10 @@ export class Labiale2D {
   async monta() {
     const chiavi = Object.keys(STRISCE);
     const [base, posa, ...strisce] = await Promise.all([immagine(this.file.base), this.file.posa ? posaDi(this.file.posa) : null, ...chiavi.map(v => immagine(this.file.strisce[v]))]);
-    this.base = base; this.posa = Array.isArray(posa) && posa.length ? posa : null;
+    // 0.74: posa_parla.json puo' essere { posa: [...], parlante: true } (filmato in cui lei parla davvero:
+    // la toppa chiusa resta sempre sopra, anche nei silenzi, se no si vedrebbe la sua bocca che parla)
+    const lista = Array.isArray(posa) ? posa : (posa && Array.isArray(posa.posa) ? posa.posa : null);
+    this.base = base; this.posa = lista && lista.length ? lista : null; this.parlante = !!(posa && !Array.isArray(posa) && posa.parlante);
     this.strisce = Object.fromEntries(chiavi.map((v, i) => [v, strisce[i]]));
     const c = document.createElement("canvas");
     c.width = base.naturalWidth; c.height = base.naturalHeight;
@@ -374,8 +386,12 @@ export class Labiale2D {
   }
   // il video del filmato "parla" che si vede adesso nella casella (null se non e' lui)
   _videoParla() {
-    if (!this.box || this.box.dataset.film !== "parla") return null;
-    const v = this._videoVisibile();
+    if (!this.box) return null;
+    let v = null;
+    if (this.box.dataset.film === "parla") v = this._videoVisibile();
+    // 0.74: mentre il filmato "parla" sfuma verso quello di riposo, si continua a seguirlo
+    // finche' scorre (la tela sta gia' sfumando via: cosi' non salta alla foto)
+    else v = [...this.box.querySelectorAll("video")].find(x => /cons-parla\./.test(x.currentSrc || x.src || "") && !x.paused && !x.ended) || null;
     if (!v || v.readyState < 2 || !v.videoWidth) return null;
     if (v !== this.video) {
       this.video = v; this.fotogramma = Math.round((v.currentTime || 0) * this.fps);
@@ -425,7 +441,7 @@ export class Labiale2D {
     if (this.apVis < 0.004) this.apVis = 0;
     // la toppa si vede quando c'e' qualcosa da dire (vocale o consonante); nei silenzi
     // sfuma via in ~150 ms e resta la bocca vera del filmato (o della foto)
-    const miraAlfa = v && STRISCE[v] ? 1 : 0;
+    const miraAlfa = (v && STRISCE[v]) || (this.parlante && this.ultimaFonte === "video") ? 1 : 0;
     const passoAlfa = (miraAlfa > this.alfa ? 0.25 : 0.11) * (dt / 16);
     this.alfa += Math.max(-passoAlfa, Math.min(passoAlfa, miraAlfa - this.alfa));
     if (this.alfa < 0.01) this.alfa = 0; if (this.alfa > 0.99) this.alfa = 1;
@@ -479,10 +495,10 @@ export class Labiale {
   constructor(box, file = FILE) {
     this.box = box; this.file = file;
     this.tela = null; this.pronta = false; this.tUltimo = 0; this.tDisegno = 0;
-    this.vVis = null; this.vPrima = null; this.tCambio = 0; this.apVis = 0;
+    this.vVis = null; this.vPrima = null; this.tCambio = 0; this.apVis = 0; this.apVel = 0;
     this.battito = 0; this.tBattito = 0; this.prossimoBattito = 0; this.sopr = 0;
     this.video = null; this.fotogramma = 0; this.fps = 24; this.rvfc = 0; this.ultimaFonte = "";
-    this.riserva = null;
+    this.riserva = null; this.forme = [];
   }
   async monta() {
     const f = this.file;
@@ -500,17 +516,23 @@ export class Labiale {
     // i punti del viso in ogni fotogramma del filmato "parla": base spostata con la posa + residuo
     this.clip = null;
     if (clip && clip.posa && clip.res) {
-      const N = rig.n, q = clip.q || 4, fonti = [], lin = [];
+      // 0.74: il filmato "parla" e' un video in cui lei PARLA DAVVERO (testa, occhi, sopracciglia,
+      // spalle: tutto vero). La sua bocca pero' direbbe altre parole: per ogni fotogramma si
+      // tengono i punti VERI (fonti: da li' si prende l'immagine) e i punti NEUTRI (neutri: la
+      // zona della bocca riportata alla base chiusa, col peso rig.peso), da cui partono le
+      // nostre forme. Fuori dalla zona della bocca neutri = fonti: la sua espressione resta.
+      const N = rig.n, q = clip.q || 4, fonti = [], neutri = [], lin = [], peso = rig.peso || null;
       for (let i = 0; i < clip.posa.length; i++) {
-        const P = clip.posa[i], r = clip.res[i], L = new Float32Array(N * 2);
+        const P = clip.posa[i], r = clip.res[i], L = new Float32Array(N * 2), Nn = peso ? new Float32Array(N * 2) : null;
         for (let k = 0; k < N; k++) {
           const x = rig.base[k][0], y = rig.base[k][1];
-          L[2 * k] = P[0] * x + P[2] * y + P[4] + r[k][0] / q;
-          L[2 * k + 1] = P[1] * x + P[3] * y + P[5] + r[k][1] / q;
+          const bx = P[0] * x + P[2] * y + P[4], by = P[1] * x + P[3] * y + P[5];
+          L[2 * k] = bx + r[k][0] / q; L[2 * k + 1] = by + r[k][1] / q;
+          if (Nn) { const w = 1 - (peso[k] || 0); Nn[2 * k] = bx + w * r[k][0] / q; Nn[2 * k + 1] = by + w * r[k][1] / q; }
         }
-        fonti.push(L); lin.push([P[0], P[1], P[2], P[3]]);
+        fonti.push(L); neutri.push(Nn || L); lin.push([P[0], P[1], P[2], P[3]]);
       }
-      this.clip = { seq: clip.seq, fonti, lin, fps: clip.fps || 24 };
+      this.clip = { seq: clip.seq, fonti, neutri, lin, fps: clip.fps || 24, parlante: !!(peso && clip.parlante) };
       this.fps = this.clip.fps;
     }
     this.box.appendChild(c);
@@ -524,40 +546,57 @@ export class Labiale {
   _videoVisibile() { return Labiale2D.prototype._videoVisibile.call(this); }
   _specchiaStile(v) { return Labiale2D.prototype._specchiaStile.call(this, v); }
   _videoParla() { return Labiale2D.prototype._videoParla.call(this); }
-  disegna(v, ap = 0, forza = 0, t = 0) {
+  // 0.74: dal piano (la forma di adesso: r = { v, voc, cw, ap }) al delta dei punti. E' separato
+  // da disegna() per poterlo provare "a tavolino" (simulazione in Node) con gli stessi numeri.
+  passo(r, ora, dt, mimica) {
+    const mim = mimica || this.mimica;
+    // 1) l'apertura: una massa con molla e smorzamento critico, costante 50 ms (dal 10 al 90%
+    //    in ~170 ms: la mascella vera misurata sale in 167 ms, scende in 208)
+    const mira = Math.max(0, Math.min(1, Number(r && r.ap) || 0));
+    let resto = Math.max(1, Math.min(90, dt));
+    while (resto > 0) { const h = Math.min(12, resto) / 1000, tau = 0.05; resto -= 12; this.apVel += ((mira - this.apVis) / (tau * tau) - 2 * this.apVel / tau) * h; this.apVis += this.apVel * h; }
+    if (this.apVis < 0) { this.apVis = 0; if (this.apVel < 0) this.apVel = 0; }
+    if (this.apVis > 1) { this.apVis = 1; if (this.apVel > 0) this.apVel = 0; }
+    // 2) le forme: la vocale della sillaba al livello dell'apertura; se siamo sulla consonante
+    //    iniziale, la sua bocca si MESCOLA alla vocale col suo peso (M=1, F=0,85, altre 0,5)
+    const vis = mim.vis, forme = this.forme; forme.length = 0;
+    // (O e U: le labbra si arrotondano anche a bocca poco aperta: il livello parte dal 30%)
+    const liv = (v) => ((v === "O" || v === "U") ? 0.3 + 0.7 * this.apVis : this.apVis) * ((vis[v] ? vis[v].length : 1) - 1);
+    const voc = r && r.voc && VOCALI[r.voc] && vis[r.voc] ? r.voc : (r && r.v && VOCALI[r.v] ? r.v : null);
+    const cons = r && r.v && !VOCALI[r.v] && vis[r.v] ? r.v : null;
+    const cw = cons ? Math.max(0, Math.min(1, r.cw === undefined ? 1 : Number(r.cw) || 0)) : 0;
+    if (cons && cw > 0) forme.push({ v: cons, L: 0, w: cw });
+    if (voc && cw < 1) forme.push({ v: voc, L: liv(voc), w: 1 - cw });
+    this.vVis = cons || voc;                       // (in silenzio: nessuna forma, i punti tornano alla posa neutra)
+    // 3) battito di ciglia e sopracciglia: SOLO sulla foto ferma. Sotto il filmato parlante
+    //    gli occhi e le sopracciglia sono quelli veri del video (0.74).
+    const foto = this.ultimaFonte !== "video";
+    if (foto) {
+      if (!this.tBattito && ora >= this.prossimoBattito) { this.tBattito = ora; this.prossimoBattito = ora + 1800 + Math.random() * 2200; }
+      if (this.tBattito) {
+        const e = ora - this.tBattito;
+        this.battito = e < 80 ? e / 80 : e < 120 ? 1 : e < 250 ? 1 - (e - 120) / 130 : 0;
+        if (e >= 250) { this.tBattito = 0; this.battito = 0; }
+      }
+    } else { this.battito = 0; this.tBattito = 0; this.prossimoBattito = ora + 1200; }
+    const miraSopr = foto ? 0.35 * this.apVis * this.apVis : 0;
+    this.sopr += (miraSopr - this.sopr) * (1 - Math.exp(-dt / 150));
+    return mim.aggiorna({ forme, battito: this.battito, sopracciglia: this.sopr }, dt);
+  }
+  disegna(v, ap = 0, forza = 0, t = 0, r = null) {
     if (this.riserva) return this.riserva.disegna(v, ap, forza, t);
     if (!this.tela || !this.viso) return;
     const ora = performance.now();
-    const dt = this.tDisegno ? Math.min(60, ora - this.tDisegno) : 16; this.tDisegno = ora;
+    const dt = this.tDisegno ? Math.min(90, ora - this.tDisegno) : 16; this.tDisegno = ora;
     this.tUltimo = t;
-    // apertura disegnata: insegue quella vera, piu' morbida che nelle toppe (0.73: 14% su, 10% giu')
-    const mira = Math.max(0, Math.min(1, Number(ap) || 0));
-    const su = 0.14 * (dt / 16), giu = 0.10 * (dt / 16);
-    this.apVis += Math.max(-giu, Math.min(su, mira - this.apVis));
-    if (this.apVis < 0.004) this.apVis = 0;
-    // cambio di bocca: i punti scorrono comunque (nessun fantasma), quindi il passaggio e'
-    // sempre un morphing di 120 ms; da/verso il silenzio si va verso la posa neutra
-    const vv = v && STRISCE[v] ? v : null;
-    if (vv !== this.vVis) { this.vPrima = this.vVis; this.vVis = vv; this.tCambio = ora; }
-    const k = this.vPrima !== undefined && this.tCambio ? Math.min(1, (ora - this.tCambio) / 120) : 1;
-    if (k >= 1) this.vPrima = null;
-    // battito di ciglia: uno all'inizio e poi ogni 2,5-5 s; chiude in 80 ms, tiene 40, riapre in 110
-    if (!this.tBattito && ora >= this.prossimoBattito) { this.tBattito = ora; this.prossimoBattito = ora + 2500 + Math.random() * 2500; }
-    if (this.tBattito) {
-      const e = ora - this.tBattito;
-      this.battito = e < 80 ? e / 80 : e < 120 ? 1 : e < 230 ? 1 - (e - 120) / 110 : 0;
-      if (e >= 230) { this.tBattito = 0; this.battito = 0; }
-    }
-    // sopracciglia: un filo in su quando la bocca si apre tanto (vita, non tic)
-    const miraSopr = 0.45 * this.apVis * this.apVis;
-    this.sopr += (miraSopr - this.sopr) * (1 - Math.exp(-dt / 150));
-    const delta = this.mimica.aggiorna({ vVis: this.vVis, vPrima: this.vPrima, k, apVis: this.apVis, battito: this.battito, sopracciglia: this.sopr }, dt);
+    if (!r) r = { v, ap, voc: v && VOCALI[v] ? v : null, cw: v && !VOCALI[v] ? 1 : 0 };
+    const delta = this.passo(r, ora, dt, this.mimica);
     // lo sfondo: il filmato "parla" se c'e' (coi suoi punti e la sua posa), altrimenti la foto
     this._specchiaStile(this._videoVisibile());
     const vid = this._videoParla();
     if (vid && this.clip) {
       const n = this.clip.seq.length, j = ((this.fotogramma % n) + n) % n, i = this.clip.seq[j];
-      this.viso.disegna(delta, vid, this.clip.fonti[i], this.clip.lin[i]); this.ultimaFonte = "video";
+      this.viso.disegna(delta, vid, this.clip.fonti[i], this.clip.lin[i], this.clip.neutri[i]); this.ultimaFonte = "video";
     } else { this.viso.disegna(delta, null, null, null); this.ultimaFonte = "foto"; }
   }
   smonta() {

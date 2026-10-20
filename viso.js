@@ -1,5 +1,5 @@
 // ============================================================================
-//  VISO.JS  ·  0.73  ·  La maschera deformabile del viso di Sofia (WebGL)
+//  VISO.JS  ·  0.73 → 0.74  ·  La maschera deformabile del viso di Sofia (WebGL)
 //  Come funziona, in parole semplici:
 //   - il viso e' una rete di 468 punti (MediaPipe) uniti in 854 triangolini, piu' un
 //     "alone" di 46 punti intorno (capelli, collo, sfondo) che non si muove;
@@ -103,7 +103,12 @@ export class Viso {
   //  video, lm, R: se c'e' il filmato sotto: il <video>, i suoi punti del viso (N*2, nel
   //         fotogramma) e la parte lineare della posa [a,b,c,d] (base -> fotogramma) per
   //         girare gli spostamenti insieme alla testa. Senza: la foto base.
-  disegna(delta, video, lm, R) {
+  //  lmPos (0.74, facoltativo): i punti da cui PARTIRE per la posizione (il fotogramma con la
+  //         bocca "neutralizzata": chiusa come la base), mentre lm restano i punti VERI del
+  //         fotogramma, da cui si prende il pezzo di immagine. Cosi' sotto puo' esserci un
+  //         filmato in cui lei parla davvero: la sua bocca viene riportata a chiusa e poi
+  //         mossa dalle nostre forme.
+  disegna(delta, video, lm, R, lmPos) {
     const gl = this.gl, N = this.N, pos = this.pos, uv = this.uv;
     let tex;
     if (video && lm) {
@@ -114,12 +119,13 @@ export class Viso {
       }
       tex = this.videoSrc ? this.texVideo : this.texBase;
       if (!this.videoSrc) { lm = this.base; R = null; }
-    } else { tex = this.texBase; lm = this.base; R = null; }
+    } else { tex = this.texBase; lm = this.base; R = null; lmPos = null; }
+    if (!lmPos || lm === this.base) lmPos = lm;
     const a = R ? R[0] : 1, b = R ? R[1] : 0, c = R ? R[2] : 0, d = R ? R[3] : 1;
     for (let i = 0; i < N; i++) {
-      const x = lm[2 * i], y = lm[2 * i + 1], dx = delta[2 * i], dy = delta[2 * i + 1];
+      const x = lm[2 * i], y = lm[2 * i + 1], px = lmPos[2 * i], py = lmPos[2 * i + 1], dx = delta[2 * i], dy = delta[2 * i + 1];
       uv[2 * i] = x / this.W; uv[2 * i + 1] = y / this.H;
-      pos[2 * i] = x + a * dx + c * dy; pos[2 * i + 1] = y + b * dx + d * dy;
+      pos[2 * i] = px + a * dx + c * dy; pos[2 * i + 1] = py + b * dx + d * dy;
     }
     for (let i = N; i < N + this.nExtra; i++) { uv[2 * i] = pos[2 * i] / this.W; uv[2 * i + 1] = pos[2 * i + 1] / this.H; }
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -167,6 +173,7 @@ export class Mimica {
     const conv = (s) => { const f = new Float32Array(this.N * 2); for (let i = 0; i < this.N; i++) { f[2 * i] = s[i][0] / 10; f[2 * i + 1] = s[i][1] / 10; } return f; };
     this.battito = conv(rig.battito); this.sopracciglia = conv(rig.sopracciglia);
     this.delta = new Float32Array(this.N * 2);     // quello che si disegna (lisciato)
+    this.vel = new Float32Array(this.N * 2);       // 0.74: la velocita' di ogni punto (molla smorzata)
     this.mira = new Float32Array(this.N * 2);
   }
   // accumula in `out` il viseme v al livello L (0..n-1, anche frazionario) con peso w
@@ -178,19 +185,36 @@ export class Mimica {
     const s0 = sets[i0], s1 = sets[Math.min(n - 1, i0 + 1)];
     for (let i = 0; i < out.length; i++) out[i] += w * (s0[i] * (1 - fr) + s1[i] * fr);
   }
-  // stato: { vVis, vPrima, k (0..1 peso del nuovo), apVis (0..1), battito (0..1), sopracciglia (0..1) }
-  // dt in ms. Restituisce il delta lisciato.
+  // stato (0.74): { forme: [{ v, L, w }], battito (0..1), sopracciglia (0..1) }
+  //   forme = le bocche da sommare: v = vocale o consonante, L = livello nella striscia
+  //   (0..n-1, anche frazionario), w = peso. (Resta accettato il vecchio stato 0.73
+  //   { vVis, vPrima, k, apVis }.)  dt in ms. Restituisce il delta lisciato.
   aggiorna(st, dt) {
     const m = this.mira; m.fill(0);
-    const liv = (v) => st.apVis * ((this.vis[v] ? this.vis[v].length : 1) - 1);
-    if (st.vVis && this.vis[st.vVis]) this._somma(m, st.vVis, liv(st.vVis), st.vPrima ? st.k : 1);
-    if (st.vPrima && this.vis[st.vPrima] && st.k < 1) this._somma(m, st.vPrima, liv(st.vPrima), 1 - st.k);
+    if (st.forme) { for (const f of st.forme) if (f && f.v && this.vis[f.v] && f.w > 0) this._somma(m, f.v, f.L, f.w); }
+    else {
+      const liv = (v) => st.apVis * ((this.vis[v] ? this.vis[v].length : 1) - 1);
+      if (st.vVis && this.vis[st.vVis]) this._somma(m, st.vVis, liv(st.vVis), st.vPrima ? st.k : 1);
+      if (st.vPrima && this.vis[st.vPrima] && st.k < 1) this._somma(m, st.vPrima, liv(st.vPrima), 1 - st.k);
+    }
     if (st.battito > 0) { const b = this.battito, w = st.battito; for (let i = 0; i < m.length; i++) m[i] += w * b[i]; }
     if (st.sopracciglia > 0) { const b = this.sopracciglia, w = st.sopracciglia; for (let i = 0; i < m.length; i++) m[i] += w * b[i]; }
-    // lisciatura: i punti inseguono la mira con costante di tempo ~35 ms (la mascella ha un peso)
-    const a = 1 - Math.exp(-Math.max(1, Math.min(60, dt)) / 35);
-    const d = this.delta;
-    for (let i = 0; i < d.length; i++) d[i] += (m[i] - d[i]) * a;
+    // 0.74: ogni punto e' una piccola massa tenuta da una molla con smorzamento critico:
+    // la velocita' parte da zero e torna a zero, niente piu' "strappi" a ogni sillaba
+    // (prima: inseguimento secco, con la velocita' che saltava a ogni cambio di forma).
+    // Costante di tempo 45 ms in verticale (la mascella: 10-90% in ~150 ms, come quella
+    // vera misurata: 167 ms) e 65 ms in orizzontale (gli angoli della bocca si allargano e
+    // si stringono piu' piano: nel video vero ~2 cambi di larghezza al secondo, non 5).
+    const d = this.delta, vel = this.vel, TX = 0.065, TY = 0.045;
+    let resto = Math.max(1, Math.min(90, dt));
+    while (resto > 0) {
+      const h = Math.min(12, resto) / 1000; resto -= 12;
+      for (let i = 0; i < d.length; i++) {
+        const tau = (i & 1) ? TY : TX;
+        vel[i] += ((m[i] - d[i]) / (tau * tau) - 2 * vel[i] / tau) * h;
+        d[i] += vel[i] * h;
+      }
+    }
     return d;
   }
 }
