@@ -1,5 +1,5 @@
 // ============================================================================
-//  BOCCA.JS  ·  Il labiale (0.66)
+//  BOCCA.JS  ·  Il labiale (0.66 → 0.69: strisce di fotogrammi veri)
 //  Dal testo che lei dice alle forme della bocca, a tempo col suono vero.
 //  Come funziona, in tre passi:
 //   1. visemi(testo): ogni lettera diventa una "forma" (A E I O U, labbra chiuse
@@ -13,11 +13,17 @@
 //  foto base (lab-base.webp) in un punto fisso: così il viso non si deforma.
 // ============================================================================
 
-export const FORME = ["X", "M", "A", "E", "I", "O", "U", "L", "F"];
-export const ANCORA = { x: 207, y: 338 };      // dove si appoggia la toppa, sulla base 540x960 (0.68.1: base dal video "attesa" nuovo, bocche vere dal video "parla" del 20/10)
+export const FORME = ["X", "M", "A", "E", "I", "O", "U", "L", "F"];   // (vecchie lettere: restano per il disegnino SVG e per il piano)
+// 0.69: non piu' UNA foto per forma, ma una STRISCIA di fotogrammi veri per ogni vocale,
+// dal labbro chiuso al massimo dell'apertura (presi dal video in cui dice A E I O U).
+// Il primo fotogramma di ogni striscia e' la bocca chiusa (lo stesso per tutte): cosi'
+// passare da una vocale all'altra a bocca quasi chiusa non si vede.
+export const STRISCE = { A: 7, E: 8, I: 9, O: 7, U: 7 };
+export const TOPPA = { w: 120, h: 97 };
+export const ANCORA = { x: 200, y: 350 };      // dove si appoggia la toppa, sulla base 540x960 (base = fotogramma 46 del video "grazia" del 20/10)
 export const FILE = {
   base: "lab-base.webp",
-  toppe: Object.fromEntries(FORME.map(f => [f, `lab-${f}.webp`])),
+  strisce: Object.fromEntries(Object.keys(STRISCE).map(v => [v, `lab-${v}.webp`])),
 };
 
 // ---- 1. dal testo alle forme -------------------------------------------------
@@ -161,10 +167,10 @@ export function piano(testo, prof) {
   let ultima = "X", tUltima = -1;
   return {
     forma(t) {
-      const n = prof.e.length; if (!n) return { f: "X", forza: 0, ap: 0 };
+      const n = prof.e.length; if (!n) return { f: "X", forza: 0, ap: 0, v: null };
       const i = Math.min(n - 1, Math.max(0, Math.floor(t / prof.hop)));
       const forza = prof.max ? Math.min(1, prof.e[i] / prof.max) : 0;
-      if (!prof.parlato[i]) { ultima = "X"; return { f: "X", forza: 0, ap: 0 }; }
+      if (!prof.parlato[i]) { ultima = "X"; return { f: "X", forza: 0, ap: 0, v: null }; }
       // apertura: il volume di adesso rispetto ai suoni vicini
       let loc = 0; for (let j = Math.max(0, i - FIN); j <= Math.min(n - 1, i + FIN); j++) if (prof.e[j] > loc) loc = prof.e[j];
       loc = Math.max(loc, 0.35 * (prof.max || 0));
@@ -176,18 +182,19 @@ export function piano(testo, prof) {
       const sl = sill[k] || { v: "A", p: 1 };
       const durS = Math.max(1e-6, (fine[k] - inizio[k]) * tot);
       const prog = Math.max(0, Math.min(1, (prof.cum[i] - inizio[k] * tot) / durS));
+      // 0.69: la vocale della sillaba e l'apertura, e basta. Le consonanti si vedono
+      // nell'apertura: M/B/P = labbra chiuse all'inizio della sillaba, F/V = quasi chiuse.
       let f;
-      if (sl.chiusa && prog < 0.22) f = "M";
-      else if (sl.denti && prog < 0.2) f = "F";
+      if (sl.chiusa && prog < 0.22) { ap = 0; f = "M"; }
+      else if (sl.denti && prog < 0.2) { ap = Math.min(ap, 0.18); f = "F"; }
       else if (ap < 0.12) f = "X";
       else if (sl.v === "A") f = ap < 0.45 ? "E" : "A";
       else if (sl.v === "O") f = ap < 0.45 ? "U" : "O";
       else if (sl.v === "E") f = ap < 0.3 ? "I" : "E";
       else f = sl.v;                   // I, U
-      // niente tremolio: una forma resta almeno 50 ms, salvo chiusure
       if (f !== ultima && ultima !== "X" && f !== "X" && f !== "M" && t - tUltima < 0.07) f = ultima;
       if (f !== ultima) { ultima = f; tUltima = t; }
-      return { f, forza, ap };
+      return { f, forza, ap, v: sl.v };
     },
   };
 }
@@ -200,55 +207,82 @@ function immagine(src) {
   CACHE.set(src, p); return p;
 }
 export async function precarica(file = FILE) {
-  const tutte = [file.base, ...Object.values(file.toppe)];
+  const tutte = [file.base, ...Object.values(file.strisce)];
   await Promise.all(tutte.map(immagine));
 }
 
+// 0.69: NIENTE SCATTI. La bocca non salta fra otto disegni: scorre lungo i fotogrammi
+// veri della vocale che sta dicendo, spinta dall'apertura (il volume della voce).
+// - l'apertura che si DISEGNA insegue quella vera con un ritardo di qualche
+//   centesimo (massimo 9% di corsa ogni 16 ms): niente tremolii;
+// - fra un fotogramma e il successivo si fa una media pesata (la posizione
+//   "due e mezzo" e' meta' fotogramma 2 e meta' fotogramma 3);
+// - si cambia vocale subito solo se la bocca e' quasi chiusa (i primi fotogrammi
+//   sono uguali per tutte); se e' aperta, la vecchia vocale sfuma nella nuova in 110 ms.
 export class Labiale {
   constructor(box, file = FILE, ancora = ANCORA) {
     this.box = box; this.file = file; this.ancora = ancora;
-    this.tela = null; this.ctx = null; this.pronta = false; this.formaOra = "X"; this.formaPrima = "X"; this.tCambio = 0; this.tUltimo = 0;
+    this.tela = null; this.ctx = null; this.pronta = false; this.tUltimo = 0;
+    this.vVis = "A"; this.vPrima = null; this.tCambio = 0; this.apVis = 0; this.tDisegno = 0;
   }
   async monta() {
-    const [base, ...toppe] = await Promise.all([immagine(this.file.base), ...FORME.map(f => immagine(this.file.toppe[f]))]);
-    this.base = base; this.toppe = Object.fromEntries(FORME.map((f, i) => [f, toppe[i]]));
+    const chiavi = Object.keys(STRISCE);
+    const [base, ...strisce] = await Promise.all([immagine(this.file.base), ...chiavi.map(v => immagine(this.file.strisce[v]))]);
+    this.base = base; this.strisce = Object.fromEntries(chiavi.map((v, i) => [v, strisce[i]]));
     const c = document.createElement("canvas");
     c.width = base.naturalWidth; c.height = base.naturalHeight;
     c.className = "lab-tela";
-    // stessa inquadratura del video che copre
     const v = this.box.querySelector("video");
     if (v) { const cs = getComputedStyle(v); c.style.objectFit = cs.objectFit; c.style.objectPosition = cs.objectPosition; }
     this.box.appendChild(c);
     this.tela = c; this.ctx = c.getContext("2d");
-    this.disegna("X", 0, 0);
+    this.disegna(null, 0, 0, 0);
     requestAnimationFrame(() => c.classList.add("vedi"));
     this.pronta = true;
   }
-  disegna(f, forza = 0, t = 0, ap = 1) {
+  // un fotogramma della striscia (indice anche frazionario: si fa la media fra i due vicini)
+  _toppa(v, livello, alfa, ax, ay) {
+    const im = this.strisce[v]; if (!im) return;
+    const n = STRISCE[v], w = TOPPA.w, h = TOPPA.h;
+    const L = Math.max(0, Math.min(n - 1, livello));
+    const i0 = Math.floor(L), fr = L - i0;
+    this.ctx.globalAlpha = alfa;
+    this.ctx.drawImage(im, i0 * w, 0, w, h, ax, ay, w, h);
+    if (fr > 0.02 && i0 + 1 < n) { this.ctx.globalAlpha = alfa * fr; this.ctx.drawImage(im, (i0 + 1) * w, 0, w, h, ax, ay, w, h); }
+    this.ctx.globalAlpha = 1;
+  }
+  disegna(v, ap = 0, forza = 0, t = 0) {
     if (!this.ctx) return;
     const ctx = this.ctx, W = this.tela.width, H = this.tela.height;
+    const ora = performance.now();
+    const dt = this.tDisegno ? Math.min(50, ora - this.tDisegno) : 16; this.tDisegno = ora;
     this.tUltimo = t;
-    // un'oscillazione minima della testa, a PIXEL INTERI: se si sposta di mezzo pixel
-    // o si scala dell'1%, il browser ricampiona tutta la foto e la sfoca (0.68.1).
-    const g = performance.now() / 1000;
-    const dx = Math.round(Math.sin(g * 1.1) * 1.6), dy = Math.round(Math.sin(g * 0.7) * 1.1 + forza * 1.2);
+    // apertura disegnata: insegue quella vera. Si apre svelta (fino al 20% ogni 16 ms:
+    // da chiusa a tutta aperta in 80 ms, come una bocca vera) e si chiude un po' piu'
+    // morbida (14%). Senza questo freno tremava; con un freno piu' forte arrivava in ritardo.
+    const mira = Math.max(0, Math.min(1, Number(ap) || 0));
+    const su = 0.20 * (dt / 16), giu = 0.14 * (dt / 16);
+    this.apVis += Math.max(-giu, Math.min(su, mira - this.apVis));
+    if (this.apVis < 0.004) this.apVis = 0;
+    // cambio di vocale
+    if (v && STRISCE[v] && v !== this.vVis) {
+      if (this.apVis < 0.25) { this.vVis = v; this.vPrima = null; }
+      else { this.vPrima = this.vVis; this.vVis = v; this.tCambio = ora; }
+    }
+    const k = this.vPrima ? Math.min(1, (ora - this.tCambio) / 110) : 1;
+    if (k >= 1) this.vPrima = null;
+    // oscillazione minima della testa, a pixel interi (mezzo pixel = tutta la foto sfocata)
+    const g = ora / 1000;
+    const dx = Math.round(Math.sin(g * 1.1) * 1.6), dy = Math.round(Math.sin(g * 0.7) * 1.1 + (Number(forza) || 0) * 1.2);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(this.base, dx, dy);
-    // 0.68.2: niente scatti secchi. Quando la forma cambia, per 80 ms la vecchia
-    // sfuma nella nuova; e la forma aperta si posa SOPRA la bocca chiusa con una
-    // trasparenza che segue l'apertura: cosi' la bocca si apre e si chiude per gradi.
-    const ora = performance.now();
-    if (f !== this.formaOra) { this.formaPrima = this.formaOra; this.tCambio = ora; this.formaOra = f; }
-    const k = Math.min(1, (ora - (this.tCambio || 0)) / 80);
-    const X = this.toppe.X, ax = this.ancora.x + dx, ay = this.ancora.y + dy;
-    const vis = (forma) => forma === "X" || forma === "M" ? 1 : Math.max(0, Math.min(1, (ap - 0.08) / 0.32));
-    if (X) ctx.drawImage(X, ax, ay);
-    const pr = this.toppe[this.formaPrima];
-    if (pr && k < 1 && this.formaPrima !== "X") { ctx.globalAlpha = (1 - k) * vis(this.formaPrima); ctx.drawImage(pr, ax, ay); }
-    const tp = this.toppe[f];
-    if (tp && f !== "X") { ctx.globalAlpha = k * vis(f); ctx.drawImage(tp, ax, ay); }
-    ctx.globalAlpha = 1;
+    const ax = this.ancora.x + dx, ay = this.ancora.y + dy;
+    const liv = (vv) => this.apVis * (STRISCE[vv] - 1);
+    // sotto, sempre la bocca chiusa (fotogramma 0): copre i bordi di qualunque dissolvenza
+    this._toppa(this.vVis, 0, 1, ax, ay);
+    if (this.vPrima && k < 1) this._toppa(this.vPrima, liv(this.vPrima), 1 - k, ax, ay);
+    this._toppa(this.vVis, liv(this.vVis), this.vPrima ? k : 1, ax, ay);
   }
   smonta() {
     const c = this.tela; this.tela = null; this.ctx = null; this.pronta = false;

@@ -130,7 +130,10 @@ function filmVigila() {
     const riposo = GIRO_RIPOSO[Math.floor(Date.now() / 9000) % GIRO_RIPOSO.length];
     for (const b of document.querySelectorAll(".gov-film")) {
       const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
-      const parla = suono && vuole;
+      // 0.69: appena parte la RICHIESTA della voce (voceInCorso) si passa gia' al filmato
+      // "parla", che ha la stessa posa della tela del labiale: quando il suono arriva,
+      // uno o due secondi dopo, la tela si posa sopra senza salto.
+      const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
       const pensa = !parla && !ascolta && forzato === "pensa";
       filmUno(parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : riposo, b);
@@ -2065,12 +2068,15 @@ function labialeTick(forza, t) {
   if (!labPiano) return;
   const ora = Date.now();
   if (ora - labCerca > 500) { labCerca = ora; labialeMonta(); }   // se la pagina si e' ridisegnata, la tela si rimette
-  const r = labPiano.forma(t || 0);
-  for (const l of labiali) if (l.pronta) l.disegna(r.f, Math.max(r.forza, Number(forza) || 0), t || 0, r.ap == null ? 1 : r.ap);
+  // 0.69: si guarda 40 ms AVANTI nel piano: la bocca disegnata insegue con un piccolo
+  // ritardo, cosi' arriva in tempo col suono (la bocca che anticipa di poco non si
+  // nota, quella in ritardo si').
+  const r = labPiano.forma((t || 0) + 0.04);
+  for (const l of labiali) if (l.pronta) l.disegna(r.v || null, r.ap == null ? 0 : r.ap, Math.max(r.forza, Number(forza) || 0), t || 0);   // 0.69: vocale + apertura
 }
 function labialeFerma(subito) {
   labPiano = null;
-  for (const l of labiali) if (l.pronta) l.disegna("X", 0, l.tUltimo || 0);
+  for (const l of labiali) if (l.pronta) l.disegna(null, 0, 0, l.tUltimo || 0);
   clearTimeout(labSpegni);
   const via = () => { for (const l of labiali) l.smonta(); labiali = []; labSpegni = null; };
   if (subito) via(); else labSpegni = setTimeout(via, 650);
@@ -2083,11 +2089,11 @@ async function parlaConVoce(testo) {
   if (vc.motore === "google" && !vc.modello && confIA().chiave && !cercaModelloVoce) {
     cercaModelloVoce = VOCE.trovaModelloVoce(confIA().chiave).then(m => VOCE.salvaVoce({ modello: m })).catch(e => console.warn("modello voce", e)).finally(() => { cercaModelloVoce = null; });
   }
-  voceInCorso = true; disegna();
+  voceInCorso = true; statoCons("parla"); disegna();
   await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave,
     onInizio: (buf, letto, durata) => labialeAvvia(buf, letto, durata),
     onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
-    onFine: () => { voceInCorso = false; applicaBocca(0); labialeFerma(); disegna(); },
+    onFine: () => { voceInCorso = false; applicaBocca(0); labialeFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna(); },
     onErrore: (e) => toast(String(e && e.message || "Voce vera non disponibile") + " Per ora parla il telefono.") });
 }
 function zittisciVoce() { VOCE.stazitta(); voceInCorso = false; applicaBocca(0); labialeFerma(true); }
