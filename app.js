@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.76.0";
+export const VERSIONE = "0.77.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -86,8 +86,13 @@ const FILM_PRONTO = { attesa: "cons-attesa.mp4", attesa2: "cons-attesa2.mp4", in
 // labiale). Quando non succede niente gira fra questi, ma il cambio avviene SOLO quando il
 // filmato in corso torna al suo primo fotogramma: cosi' la dissolvenza e' fra due pose
 // uguali e non si vede. Ogni gesto (mano, collana, capelli) si vede sempre per intero.
-const GIRO_RIPOSO = ["attesa", "attesa2", "attesa", "indica", "attesa", "attesa2"];
+// 0.77: a riposo entra anche il filmato "parla" (il video in cui parla davvero, con la maschera a
+// bocca chiusa: lei che ti guarda, sbatte le ciglia e muove la testa in modo vero), alternato ai gesti.
+const GIRO_RIPOSO = ["parla", "attesa", "parla", "attesa2", "parla", "indica", "parla", "attesa"];
 const PASSO_RIPOSO = 8000;
+// 0.77: i punti del filmato "parla" (10,2 s) in cui la posa e' quella della base: li' si puo' cambiare
+// filmato senza salto (oltre all'inizio e alla fine)
+const FILM_GIRI = { parla: [0.02, 2.48, 5.46, 10.04] };
 // Questi devono partire SUBITO (sta ascoltando, pensa, parla): dissolvenza immediata.
 const FILM_URGENTE = { parla: 1, ascolta: 1, pensa: 1 };
 function FILM_CONS(cls) {
@@ -104,10 +109,12 @@ function filmGov(quale, soloBox) {
 }
 // Vero quando il filmato in corso e' appena ripartito dal primo fotogramma (o sta per
 // arrivarci): e' il momento in cui la sua posa coincide con l'inizio di tutti gli altri.
-function filmAlGiro(v) {
+function filmAlGiro(v, quale) {
   const d = Number(v.duration) || 0, t = Number(v.currentTime) || 0;
   if (!d || v.paused) return true;
-  return t < 0.26 || t > d - 0.08;
+  if (t < 0.26 || t > d - 0.08) return true;
+  const g = FILM_GIRI[quale]; if (g) for (const x of g) if (Math.abs(t - x) < 0.13) return true;
+  return false;
 }
 function filmUno(quale, box, alGiro) {
   if (!box || !FILM_PRONTO[quale] || box.dataset.occupato === "1") return;
@@ -129,7 +136,7 @@ function filmUno(quale, box, alGiro) {
   const pronto = p.pronto || giu.readyState >= 3 || Date.now() - p.da > 1800;
   if (!pronto) return;                        // ci riprova filmVigila fra 150 ms
   // 2) a riposo si aspetta che il filmato in corso torni all'inizio
-  if (alGiro && !filmAlGiro(su) && Date.now() - p.da < 16000) return;
+  if (alGiro && !filmAlGiro(su, box.dataset.film) && Date.now() - p.da < 16000) return;
   box.dataset.occupato = "1"; box._prep = null;
   try { if (giu.currentTime > 0.05) giu.currentTime = 0; } catch (e) {}
   giu.play().catch(() => {});
@@ -159,7 +166,8 @@ function filmVigila() {
       // che si muove): e' naturale e quando parte la voce non c'e' nessun cambio di filmato.
       // Il vecchio "pensa" (occhi chiusi avanti e indietro) a Michele sembrava strano.
       const quale = parla ? "parla" : ascolta ? "ascolta" : pensa ? "parla" : riposo;
-      filmUno(quale, b, !FILM_URGENTE[quale]);
+      // (0.77: l'urgenza dipende dal MOTIVO, non dal filmato: "parla" a riposo aspetta il giro come gli altri)
+      filmUno(quale, b, !(parla || ascolta || pensa));
       // 0.74: la MASCHERA (la tela del labiale) sta su per tutto il tempo in cui si vede il
       // filmato "parla": e' un video in cui lei parla davvero, e senza maschera muoverebbe
       // la bocca da sola. Con la maschera la bocca e' chiusa finche' non c'e' voce.
