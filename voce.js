@@ -295,6 +295,7 @@ export async function parlaLive(testo, conf, chiave, { onInizio, onBocca, onFine
       clearTimeout(tMax); L.ascolta = null;
       try { L.ws.close(); } catch (e) {}
       if (liveInCorso === L) liveInCorso = null;
+      tic.ferma();
       for (const f of fonti) { try { f.stop(); } catch (e) {} }
       try { an.disconnect(); } catch (e) {}
       if (fermaOra === ferma) fermaOra = null;
@@ -311,8 +312,8 @@ export async function parlaLive(testo, conf, chiave, { onInizio, onBocca, onFine
       const forza = Math.min(1, Math.sqrt(s / dati.length) * 3.4);
       onBocca?.(forza, Math.max(0, ctx.currentTime - t0 - ritardo));
       if (generato && ctx.currentTime >= nextT + 0.06) { finisci(); return; }
-      requestAnimationFrame(giro);
     };
+    const tic = battito(giro);
     L.ascolta = (j) => {
       if (j.chiuso) { if (L.annullato) ferma(); else if (partito) { generato = true; prof.chiudi(); } else fallisci("La voce Live si e' interrotta."); return; }
       const sc = j.serverContent; if (!sc) return;
@@ -326,7 +327,7 @@ export async function parlaLive(testo, conf, chiave, { onInizio, onBocca, onFine
           partito = true; t0 = ctx.currentTime + 0.18; nextT = t0;
           fermaOra = ferma;
           try { onInizio?.(prof, testo); } catch (e) { console.warn("onInizio", e); }
-          requestAnimationFrame(giro);
+          tic.via();
         }
         const ora = ctx.currentTime;
         if (nextT < ora) { prof.silenzio(ora + 0.03 - nextT); nextT = ora + 0.03; } // la rete e' rimasta indietro: buco anche nel profilo
@@ -386,13 +387,26 @@ export async function suona(arrayBuffer, { onBocca, onFine, onInizio } = {}) {
     let s = 0; for (let i = 0; i < dati.length; i++) { const v = (dati[i] - 128) / 128; s += v * v; }
     const forza = Math.min(1, Math.sqrt(s / dati.length) * 3.4);
     onBocca?.(forza, Math.max(0, ctx.currentTime - t0 - ritardo));
-    requestAnimationFrame(giro);
   };
-  const chiudi = () => { if (!vivo) return; vivo = false; onBocca?.(0, buf.duration); fermaOra = null; onFine?.(); };
+  const tic = battito(giro);
+  const chiudi = () => { if (!vivo) return; vivo = false; tic.ferma(); onBocca?.(0, buf.duration); fermaOra = null; onFine?.(); };
   src.onended = chiudi;
-  fermaOra = () => { vivo = false; try { src.stop(); } catch (e) {} onBocca?.(0, 0); };
+  fermaOra = () => { vivo = false; tic.ferma(); try { src.stop(); } catch (e) {} onBocca?.(0, 0); };
   t0 = ctx.currentTime;
-  src.start(); requestAnimationFrame(giro);
+  src.start(); tic.via();
+}
+// 0.68.3: il battito del labiale. requestAnimationFrame da solo NON basta: se la
+// finestra e' coperta o il telefono risparmia, scende a 1-2 al secondo e la bocca
+// resta ferma (visto dal vivo: 2 fotogrammi al secondo con la pagina "visibile").
+// Si usa anche un timer a 25 ms; chi dei due arriva prima disegna, l'altro aspetta.
+function battito(fn) {
+  let vivo = false, ultimo = 0, raf = 0, iv = 0;
+  const tick = () => { if (!vivo) return; const ora = performance.now(); if (ora - ultimo >= 12) { ultimo = ora; try { fn(); } catch (e) { console.warn("battito", e); } } };
+  const loop = () => { if (!vivo) return; tick(); raf = requestAnimationFrame(loop); };
+  return {
+    via() { vivo = true; iv = setInterval(tick, 25); raf = requestAnimationFrame(loop); },
+    ferma() { vivo = false; clearInterval(iv); cancelAnimationFrame(raf); },
+  };
 }
 
 // La voce giusta, con la rete di sicurezza: Google, e se non va il telefono
