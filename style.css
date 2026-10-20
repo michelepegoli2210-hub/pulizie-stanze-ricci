@@ -1619,11 +1619,14 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 
 /* 0.66: il labiale vero — una tela con la sua foto e la bocca giusta, appoggiata
    sopra il filmato solo mentre esce la voce. Stessa inquadratura del video che copre. */
-.gov-film .lab-tela{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%;z-index:2;opacity:0;transition:opacity .25s ease,transform .6s ease;pointer-events:none;display:block;border:0}
+/* 0.72: la tela del labiale ha ESATTAMENTE le stesse regole del video sotto (posizione,
+   scala, transizioni): prima la tela aveva scale diverse (1,07 nella testata, 1,22 nella
+   scheda) e all'inizio di ogni frase l'immagine "saltava" di zoom. */
+.gov-film .lab-tela{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%;z-index:2;opacity:0;transition:opacity .25s ease,transform .55s ease;pointer-events:none;display:block;border:0}
 .gov-film .lab-tela.vedi{opacity:1}
-.sofia-hero .casa-fig .lab-tela{object-position:50% 22%}
-.sofia-hero.sta-parlando .casa-fig .lab-tela{transform:scale(1.07)}
-.sofia-hero[data-stato="ascolto"] .casa-fig .lab-tela{transform:scale(1.04)}
-.cons-fig .gov-film .lab-tela{transform:scale(1.22);transform-origin:50% 14%}
 .gov-viva .gov-film .lab-tela{object-position:50% 10%;transform:scale(1.18);transform-origin:50% 14%}
+.cons-fig .gov-film .lab-tela{transform:scale(1.22);transform-origin:50% 14%}
+.gov-viva.sta-parlando .gov-film .lab-tela{transform:scale(1.5);transform-origin:50% 11%}
+.card.consuela.sta-parlando .cons-fig .gov-film .lab-tela{transform:scale(1.46);transform-origin:50% 11%}
+.card.consuela[data-stato="ascolto"] .cons-fig .gov-film .lab-tela{transform:scale(1.4);transform-origin:50% 11%}
 @media (prefers-reduced-motion:reduce){.gov-film .lab-tela{transition:none}}

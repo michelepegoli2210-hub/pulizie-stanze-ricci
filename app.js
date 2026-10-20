@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.71.0";
+export const VERSIONE = "0.72.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1997,6 +1997,7 @@ function applicaBocca(forza) {
 // ferma nei silenzi e si muove sulle parole, cosi' sembra sincronizzata.
 let boccaSuono = 0;
 function boccaFilm(f) {
+  if (labiali.some(l => l.pronta)) return;   // 0.72: con la tela attiva il filmato deve scorrere normale: e' lo sfondo vivo della bocca
   const ora = Date.now();
   if (f >= 0.06) boccaSuono = ora;
   // una pausa corta fra due sillabe non deve bloccare il filmato: aspetto 220 ms
@@ -2091,15 +2092,29 @@ function labialeTick(forza, t) {
   // 0.69: si guarda 40 ms AVANTI nel piano: la bocca disegnata insegue con un piccolo
   // ritardo, cosi' arriva in tempo col suono (la bocca che anticipa di poco non si
   // nota, quella in ritardo si').
-  const r = labPiano.forma((t || 0) + 0.04);
+  // 0.72: piu' l'ANTICIPO scelto da Michele nelle impostazioni (in millesimi, anche negativo):
+  // ogni telefono e ogni cassa Bluetooth ritardano il suono in modo diverso.
+  const r = labPiano.forma((t || 0) + 0.04 + labAnticipo() / 1000);
   for (const l of labiali) if (l.pronta) l.disegna(r.v || null, r.ap == null ? 0 : r.ap, Math.max(r.forza, Number(forza) || 0), t || 0);   // 0.69: vocale + apertura
+}
+let labAntCache = { t: 0, v: 0 };
+function labAnticipo() {
+  const ora = Date.now();
+  if (ora - labAntCache.t > 1000) { const a = Number(VOCE.leggiVoce().anticipo); labAntCache = { t: ora, v: Number.isFinite(a) ? Math.max(-400, Math.min(400, a)) : 0 }; }
+  return labAntCache.v;
 }
 function labialeFerma(subito) {
   labPiano = null;
   for (const l of labiali) if (l.pronta) l.disegna(null, 0, 0, l.tUltimo || 0);
   clearTimeout(labSpegni);
   const via = () => { for (const l of labiali) l.smonta(); labiali = []; labSpegni = null; };
-  if (subito) via(); else labSpegni = setTimeout(via, 650);
+  if (subito) return via();
+  // 0.72: per mezzo secondo si continua a disegnare (bocca che si chiude e toppa che sfuma
+  // sul filmato che scorre), poi la tela se ne va: sotto c'e' lo stesso fotogramma.
+  const t0 = performance.now();
+  const chiudi = () => { if (!labSpegni) return; for (const l of labiali) if (l.pronta) l.disegna(null, 0, 0, l.tUltimo || 0); if (performance.now() - t0 < 600) setTimeout(chiudi, 25); };
+  labSpegni = setTimeout(via, 650);
+  setTimeout(chiudi, 25);
 }
 setTimeout(() => { try { BOCCA.precarica().catch(() => {}); } catch (e) {} }, 4000);
 async function parlaConVoce(testo) {
@@ -2431,6 +2446,7 @@ function cardIA() {
       ${vc.attiva && vc.motore === "google" ? `<div class="voce-scelte">${VOCE.VOCI.map(v => `<button type="button" class="voce-chip" aria-pressed="${vc.voce === v.id}" data-voce-nome="${esc(v.id)}" title="${esc(v.come)}">${esc(v.nome)}</button>`).join("")}</div>` : ""}
       ${vc.attiva ? `<div class="voce-toni"><span class="small muted">Come deve parlare:</span><div class="voce-scelte">${VOCE.TONI.map(t => `<button type="button" class="voce-chip" aria-pressed="${VOCE.tonoDi(vc).id === t.id}" data-voce-tono="${esc(t.id)}">${esc(t.nome)}</button>`).join("")}</div></div>` : ""}
       ${vc.attiva ? `<div class="ia-riga"><button type="button" class="btnsm" data-voce-prova ${voceInProva ? "disabled" : ""}>${voceInProva ? "Provo…" : "Prova la voce"}</button>${provaVoce ? `<span class="small ${provaVoce.ok ? "" : "muted"}">${esc(provaVoce.testo)}</span>` : ""}</div>` : ""}
+      ${vc.attiva ? `<div class="voce-toni"><span class="small muted">Se la bocca non va a tempo con la voce, spostala:</span><div class="voce-scelte">${[[200, "molto prima"], [100, "un po' prima"], [0, "così va bene"], [-100, "un po' dopo"], [-200, "molto dopo"]].map(([ms, nome]) => `<button type="button" class="voce-chip" aria-pressed="${(Number(vc.anticipo) || 0) === ms}" data-voce-anticipo="${ms}">${nome}</button>`).join("")}</div></div>` : ""}
       <span class="small muted">${vc.attiva && vc.motore === "google"
         ? "La voce vera di Google: sembra una persona. Costa meno di un centesimo al minuto parlato — con il tuo uso, circa 1,50 € al mese in tutto. Serve internet e la stessa chiave di sopra. Se non parte, parla il telefono."
         : vc.attiva ? "La voce che c'è già nel telefono: gratis, funziona anche senza internet, ma si sente che è un robot." : "Adesso la governante scrive e basta."}</span></div>
@@ -2531,6 +2547,7 @@ function collegaIA() {
   });
   document.querySelectorAll("[data-voce-nome]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); zittisciVoce(); VOCE.salvaVoce({ voce: b.dataset.voceNome }); provaVoce = null; disegna(); });
   document.querySelectorAll("[data-voce-tono]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); zittisciVoce(); VOCE.salvaVoce({ tono: b.dataset.voceTono }); provaVoce = null; disegna(); });
+  document.querySelectorAll("[data-voce-anticipo]").forEach(b => b.onclick = () => { VOCE.salvaVoce({ anticipo: Number(b.dataset.voceAnticipo) || 0 }); disegna(); toast("Fatto: alla prossima frase la bocca si sposta di " + (Math.abs(Number(b.dataset.voceAnticipo) || 0) / 1000).toString().replace(".", ",") + " secondi"); });
   document.querySelectorAll("[data-casa-stile]").forEach(b => b.onclick = () => { cambiaStileCasa(b.dataset.casaStile); toast("Guarda la prima pagina: tocca «oggi» in alto"); });
   document.querySelectorAll("[data-azz]").forEach(b => b.onchange = () => { azzScelte[b.dataset.azz] = b.checked; azzChiesto = false; disegna(); });
   document.querySelectorAll("[data-azzera-chiedi]").forEach(b => b.onclick = () => { azzChiesto = true; disegna(); });
