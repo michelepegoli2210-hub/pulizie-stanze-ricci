@@ -1038,3 +1038,21 @@ TUTTE partono dalla posa base (occhi in camera, bocca chiusa): attesa = 95->20->
 - 0.70.0 caricata su GitHub (8 file: app.js, sw.js, 6 mp4; commit "0.70.0 filmati a 24 fps veri, cambio solo al giro del filmato, stessa posa di partenza"), verificati byte per byte. sw.js VERSIONE 0.70.0.
 - Mentre parla, lei e' una FOTO (lab-base) con la bocca che si muove e un dondolio di 1 px: se Michele la vuole piu' viva anche mentre parla, l'idea pronta e': disegnare sulla tela il fotogramma del filmato "parla" in corso (drawImage(video)) invece della foto fissa, e spostare la toppa della bocca dell'offset del naso di quel fotogramma (28 fotogrammi, offset precalcolati con il template del naso). Non fatto: prima il suo giudizio sulla 0.70.
 - Video delle consonanti: ancora non necessario.
+
+## 43. La 0.71 (20 ottobre, ore 14:20): IL LABIALE SI RIALLINEA A OGNI PAUSA
+Michele: "anche il labiale cerca di migliorarlo". Senza un suo giudizio preciso ho tolto i due difetti OGGETTIVI che restavano nel piano (bocca.js), senza toccare disegno e strisce.
+
+### 1. Le frasi ancorate alle pause vere (bocca.js: sillabe().stacco, ancore(), conAncore())
+Prima le sillabe erano spalmate in proporzione sul tempo parlato TOTALE: se la voce diceva una frase piu' in fretta dell'altra, le vocali scivolavano di una o due sillabe (la bocca si apriva e chiudeva comunque a tempo, perche' l'apertura segue il volume, ma la FORMA era di una sillaba vicina). Ora:
+- sillabe() segna stacco = true sull'ultima sillaba prima di . , ; : ! ? …
+- ancore(prof, fineFrasi): trova i segmenti di parlato separati da >= 7 quadri (140 ms) di silenzio e li accoppia agli spezzoni di testo con un allineamento monotono a costo minimo (programmazione dinamica: costo = distanza fra le due frazioni, saltare una pausa o uno stacco costa 0,05; coppie oltre 0,18 scartate). Risultato: coppie [frazione del suono, frazione del testo] crescenti, con [0,0] e [1,1] agli estremi.
+- piano().forma(t): frac = conAncore(anc, cum/totale), interpolazione lineare a tratti fra le ancore; prog (posizione dentro la sillaba, per M/B/P e F/V) calcolato su frac. Le ancore si ricalcolano solo quando cambiano la lunghezza del profilo o il totale (canale Live).
+- Prova sintetica (/tmp/test_ancore.mjs, 4 frasi con durate sproporzionate del 10-15%): sillaba nella frase giusta 135/135 contro 109/135 del piano 0.69.
+
+### 2. Il totale del canale Live stimato dal ritmo (ProfiloVivo)
+Prima: totale = parlato / frazione trascritta, con frazione minima 0,08: nei primi istanti (trascrizione non ancora arrivata) il totale era 12 volte il parlato e tutte le prime sillabe cadevano sulla prima vocale; poi saltava. Ora: ProfiloVivo.ritmo = 18 lettere per secondo di parlato (misurato sulla voce Live: 287 lettere in ~16 s di parlato su 23,6 s totali); previsto = lettere/ritmo; totale = max(parlato, frazione >= 0,3 ? parlato/frazione : previsto); a chiudi() il ritmo si aggiorna (media mobile 0,7/0,3, solo frasi > 2,5 s e > 30 lettere, 8 < r < 30). Il ritmo vive solo in memoria della pagina.
+- Misurato nella scheda di Michele (PARLAMI, saluto in cassetto quindi via WAV): 1421 disegni in 23,6 s (60/s), 109 cambi di vocale, nessun errore; sequenza "Buongiorno Michele," = U O I O I E E poi pausa 1,09-1,57 s.
+
+### DA SAPERE
+- 0.71.0 caricata (app.js solo per la VERSIONE, sw.js 0.71.0, bocca.js). Il labiale resta a strisce 0.69 (nessun cambiamento di disegno).
+- Cosa NON ho toccato apposta, in attesa del giudizio di Michele: l'apertura (ap = (e/massimo locale ±200 ms)^1,4: ogni sillaba arriva al massimo; una finestra piu' larga, ±500 ms, farebbe aprire meno le sillabe deboli, piu' naturale ma anche piu' "pigro"); e la foto fissa mentre parla (vedi punto 42, idea del filmato sotto la toppa).
