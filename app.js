@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.72.0";
+export const VERSIONE = "0.73.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -155,7 +155,10 @@ function filmVigila() {
       const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
       const pensa = !parla && !ascolta && forzato === "pensa";
-      const quale = parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : riposo;
+      // 0.73: mentre PENSA mostra lo stesso filmato di quando parla (mano alla collana, testa
+      // che si muove): e' naturale e quando parte la voce non c'e' nessun cambio di filmato.
+      // Il vecchio "pensa" (occhi chiusi avanti e indietro) a Michele sembrava strano.
+      const quale = parla ? "parla" : ascolta ? "ascolta" : pensa ? "parla" : riposo;
       filmUno(quale, b, !FILM_URGENTE[quale]);
     }
   }, 150);
