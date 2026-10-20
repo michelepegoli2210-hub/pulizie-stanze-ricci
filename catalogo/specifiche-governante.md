@@ -935,3 +935,39 @@ invio -> puntini 0,3 s -> risposta IA (flash-lite) 1,9 s -> VOCE CHE PARTE con l
 - Fotogrammi veri della bocca dal video "parla tanto" (vedi punto 38).
 - Argon solo per i lavori pesanti quando Michele carica il credito (lui mette la carta, profilo Azienda + partita IVA).
 - La conversazione a voce in tempo reale (microfono -> Live -> voce) resta da costruire; ora sappiamo che il canale e' gratis e illimitato.
+
+## 40. La 0.68 (20 ottobre, notte fonda): bocca a sillabe, Sofia "miss universo", bocche VERE, filmati nuovi
+Michele alle 3 di notte: "La bocca non va a tempo e lei deve fare altre cose e deve essere più miss universo". Tre lavori, tutti fatti.
+
+### 1. LA BOCCA A SILLABE (bocca.js, 0.68.0)
+Il difetto della 0.66: una forma per LETTERA (dieci cambi al secondo) = tremolio, non parlato. Adesso:
+- sillabe(testo): ogni vocale e' il cuore di una sillaba; le consonanti prima le appartengono; M/B/P = labbra chiuse per il primo 22% della sillaba, F/V = denti sul labbro per il primo 20%; i dittonghi (buo, pia) sono sillabe corte (peso 0,7); le consonanti finali di parola allungano la sillaba prima (+0,25).
+- APERTURA della bocca = volume di adesso diviso il massimo locale (±200 ms), elevato alla 1,4: cosi' si chiude fra una sillaba e l'altra e si apre sulla vocale. Sotto 0,12 = chiusa (X). La FORMA (A E I O U) cambia una volta per sillaba, in base a quanto parlato e' passato (cum/totale). Con apertura bassa A->E, O->U, E->I.
+- Una forma resta almeno 70 ms (niente tremolio), salvo chiusure.
+- Vecchio visemi()/profilo()/profiloFinto()/ProfiloVivo() restano uguali; cambia solo piano().
+
+### 2. IL LOOK NUOVO (sofia-glam2.png)
+Fatto con Gemini (chat "Miss Universe Portrait") a partire da nuova.png: stesso viso, trucco luminoso, capelli lunghi mossi lucidi, blazer blu su camicetta di seta crema, perle (collana + orecchini), spilla d'oro dell'albergo, hall d'albergo sfocata. Due versioni; mandate a Michele (file sofia-look-1-2.jpg); senza risposta in 10 minuti ho preso la 2 (con la collana) come avevo detto.
+L'immagine a risoluzione piena NON si scarica (download bloccato dal proxy); l'ho ricostruita dallo schermo: img nativa 572x1024 mostrata in un overlay ruotato di 90 gradi per usare tutta la larghezza della finestra, screenshot, raddrizzata = 578x1026 (sofia-glam2.png in /home/claude/dev/c4). Basta per fare i video.
+
+### 3. I FILMATI NUOVI (tutti dallo stesso video "attesa" di 10 s, 12 fps catturati dallo schermo)
+- Prompt che ha funzionato (corto, semplice, in inglese): "The woman in the picture stands in the hotel lobby and quietly waits for a guest, mouth closed, with a gentle confident smile. She slowly looks to her left, then back at the camera, tucks a strand of hair behind her ear, takes a soft breath and gives a small warm nod. Static camera, vertical video, framed from the chest up, same background and same outfit as the picture. She does not speak. No text, no captions." Il primo prompt lungo e "glamour" ha dato "I can't generate": tenere i prompt dei video corti e piani.
+- Cattura: come per le immagini, video in overlay ruotato di 90 gradi (rotate(90deg) scale(0.897)) e seek a passi di 1/12 s, zoom della finestra intera a scala 0,8 (1120x694) -> raddrizzato 630x1120 -> 540x960. 120 fotogrammi in 9 lotti (un lotto di 24 e' andato in timeout a 120 s: massimo 12-24 per lotto). I file stanno in tool-results con prefisso blob-<timestamp>.
+- Cosa succede nel video (fotogrammi a 12 fps): 0-9 sorriso coi denti verso la camera; 10-13 chiude il sorriso; 14-17 chiude gli occhi e gira; 18-38 profilo a sinistra; 39-42 torna con gli occhi chiusi; 43-63 guarda in camera e sorride; 64-85 la mano sale e sistema i capelli; 86-101 RIDE a occhi chiusi coi denti (bocca che si muove senza audio: SCARTATO); 102-119 sorriso coi denti verso la camera.
+- Clip (boomerang = avanti e indietro, senza doppiare i fotogrammi agli estremi), 540x960, h264 crf 27, 24 fps:
+  attesa = 10->63 (8,7 s, 395 KB) · attesa2 = 43->85 (7,0 s, 296 KB) · indica = 102->119 (2,7 s) · pensa = 18->38 (3,2 s) · ascolta = 43->58 (2,4 s) · parla = 43->63 (3,2 s) · poster = fotogramma 50.
+- Da 12 a 24 fps con minterpolate (mci, aobmc, bidir, vsbmc): bene sui movimenti della testa, ma sulla MANO che sale veloce fa fantasmi/sbavature. Per attesa2 (quella con la mano) ho usato fps=24 semplice (fotogrammi doppiati), niente interpolazione. LEZIONE: interpolare solo i movimenti lenti.
+
+### 4. LE BOCCHE VERE (lab-*.webp, 0.68.1)
+- Dal video "parla" (primo generato nella stessa chat: "talks to the camera cheerfully explaining the plan for the day") ho catturato la zona della bocca a 12 fps (0,33-5,1 s) a risoluzione nativa (modo "faccia": video 720x1280 non scalato, zoom su una regione).
+- Allineamento: template del NASO (box 70x50 in 330,395 sul base720 del video "parla") cercato in ogni fotogramma con cv2.matchTemplate -> spostamento (dx,dy) della testa; la toppa e' sempre la stessa regione (285,438 160x137 in coordinate base720) spostata di (dx,dy).
+- Scelta a occhio sul foglio dei fotogrammi allineati (sheet_aligned.jpg): X=12 (1,33 s, chiusa) · A=16 · E=11 · I=7 · O=14 · U=1 · L=39 · F=13 · M = X (labbra chiuse: non serve una forma a parte).
+- La BASE della tela e' il fotogramma 50 del video "attesa" nuovo (stesso video dei clip = quando parte la voce non c'e' nessun salto). Le toppe vengono dall'altro video: offset fra i due misurato col naso/bocca = (-9,+13) px a 720 -> ANCORA (207,338) a 540. Scala uguale (stessa immagine di partenza, stessa inquadratura).
+- Fusione: maschera rettangolo arrotondato (16,14)-(W-16,H-10) raggio 44, sfumata Gaussian 13; correzione colore AFFINE per canale sull'anello di bordo (stessa media e stessa dispersione del bersaglio, guadagno fra 0,8 e 1,25). Prima (solo offset di media, sfumatura 9) si vedeva un alone piu' chiaro sul mento.
+- TELA NITIDA: disegnare la base con uno spostamento di mezzo pixel o con scale(1,004) fa ricampionare tutta la foto e la SFOCA (si vedeva benissimo di fianco al poster). Ora lo spostamento e' a pixel interi e la scala non c'e' piu'. Fotogramma del video e tela sono indistinguibili (occhi a (180,300) in tutti e due, scala 1,000).
+- Lo script che rigenera tutto: /home/claude/dev/lip2 (frames.json, base720.png, idle/f_000..119.png, outC/, clips/). Se cambia la base, rifare SOLO l'offset.
+
+### COSA RESTA
+- Sofia fa: guarda a sinistra, chiude gli occhi, torna, sorride, si sistema i capelli. Per altre "cose sue" (tablet, blocco note, cenno "ci penso io") servono altri video: 3 generazioni ogni 5 ore, prompt corti.
+- La bocca a sillabe e' da far giudicare a Michele dal vivo (0.68.1 con bocche vere).
+- Live API voce: funziona (0.67); conversazione a voce in tempo reale ancora da costruire.
