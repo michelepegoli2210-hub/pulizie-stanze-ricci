@@ -1,5 +1,5 @@
 // ============================================================================
-//  BOCCA.JS  ·  Il labiale (0.66 → 0.69 strisce; 0.71 frasi ancorate alle pause; 0.72 alfabeto + corpo vivo; 0.73 MASCHERA DEFORMABILE; 0.74 RITMO VERO + filmato in cui parla davvero)
+//  BOCCA.JS  ·  Il labiale (0.66 → 0.69 strisce; 0.71 frasi ancorate alle pause; 0.72 alfabeto + corpo vivo; 0.73 MASCHERA DEFORMABILE; 0.74 RITMO VERO + filmato in cui parla davvero; 0.75 BOCCHE VERE dai fotogrammi)
 //  Dal testo che lei dice alle forme della bocca, a tempo col suono vero.
 //  Come funziona, in tre passi:
 //   1. visemi(testo): ogni lettera diventa una "forma" (A E I O U, labbra chiuse
@@ -35,6 +35,9 @@ export const FILE = {
   clip: "clip_parla.json",                      // i punti del viso in ogni fotogramma del filmato "parla"
   cavita: "lab-cavita.webp",                    // l'interno della bocca (dalla A vera)
   denti: "lab-denti.webp",                      // i denti di sopra
+  // 0.75: la libreria delle BOCCHE VERE (ritagli di ogni fotogramma del video in cui parla)
+  bocche: "bocche.webp",
+  boccheDati: "bocche.json",
 };
 
 // ---- 1. dal testo alle forme -------------------------------------------------
@@ -328,8 +331,57 @@ function posaDi(src) {
   POSE.set(src, p); return p;
 }
 export async function precarica(file = FILE) {
-  const tutte = [file.base, file.cavita, file.denti].filter(Boolean);
-  await Promise.all([...tutte.map(immagine), file.rig ? posaDi(file.rig) : null, file.clip ? posaDi(file.clip) : null]);
+  const tutte = [file.base, file.cavita, file.denti, file.bocche].filter(Boolean);
+  await Promise.all([...tutte.map(immagine), file.rig ? posaDi(file.rig) : null, file.clip ? posaDi(file.clip) : null, file.boccheDati ? posaDi(file.boccheDati) : null]);
+}
+
+// ============================================================================
+// 0.75: LE BOCCHE VERE. Non si deforma piu' la bocca della foto: a ogni istante si SCEGLIE, fra i
+// fotogrammi del video in cui Sofia parla davvero, quello con la bocca piu' simile a quella che
+// serve (apertura, larghezza, sorriso) e si disegna QUEL pezzo di video sopra il viso: labbra,
+// denti e lingua veri. Si preferisce proseguire col fotogramma successivo (come scorre il video
+// vero), e si cambia sequenza solo quando la forma lo chiede; fra due sequenze c'e' una
+// dissolvenza di 90 ms. Si sceglie 24 volte al secondo, come il video.
+// ============================================================================
+export class Bocche {
+  constructor(frames) {
+    this.f = frames; this.k = -1; this.k2 = -1; this.a = 1; this.tCambio = 0; this.tScelta = -1e9; this.scala = 1;
+    // la bocca chiusa "di riposo": la meno aperta, col sorriso piu' vicino alla base
+    let best = -1, bc = Infinity;
+    frames.forEach((g, j) => { const c = g.ap * 30 + Math.abs(g.sorr) * 10; if (c < bc) { bc = c; best = j; } });
+    this.riposo = best;
+  }
+  // apT = apertura voluta (in "distanze fra gli occhi"), wT = larghezza voluta, sorrT = sorriso del
+  // fotogramma sotto (per non incollare una bocca seria su guance che ridono), apVel = se si sta
+  // aprendo (+) o chiudendo (-), ora in ms
+  scegli(apT, wT, sorrT, apVel, ora) {
+    if (ora - this.tScelta < 40) return;              // 24 scelte al secondo, come il video
+    this.tScelta = ora;
+    const f = this.f, p = this.k, n = f.length; let best = -1, bc = Infinity;
+    const lp = p >= 0 ? f[p].lum : 0, dir = apVel > 0.25 ? 1 : apVel < -0.25 ? -1 : 0;
+    for (let j = 0; j < n; j++) {
+      const g = f[j];
+      const da = (g.ap - apT) / 0.025, dw = (g.w - wT) / 0.06, ds = (g.sorr - sorrT) / 0.04;
+      let c = da * da + dw * dw + 0.5 * ds * ds;
+      // la sequenza deve andare nel verso giusto: se la bocca si sta aprendo, il fotogramma dopo deve essere piu' aperto
+      if (dir && j + 1 < n) { const d2 = f[j + 1].ap - g.ap; if (d2 * dir < -0.004) c += 0.8; }
+      // continuita': proseguire col fotogramma dopo e' gratis, saltare altrove costa (e costa di piu'
+      // se cambia la luce dentro la bocca: denti/lingua che compaiono e spariscono)
+      if (p >= 0) { if (j === p + 1) c -= 0.5; else if (j === p || j === p + 2) c += 0; else { const dl = (g.lum - lp) / 50; c += 2.5 + dl * dl; } }
+      if (c < bc) { bc = c; best = j; }
+    }
+    if (best < 0) return;
+    // la forma si adatta all'apertura voluta: i punti si allungano in verticale (poco)
+    const ak = f[best].ap; this.scala = ak > 0.015 ? Math.max(0.6, Math.min(1.5, apT / ak)) : 1;
+    if (best === this.k) return;
+    if (p >= 0 && best !== p + 1 && best !== p + 2) { this.k2 = this.k; this.a = 0; this.tCambio = ora; }   // salto: dissolvenza
+    else { this.k2 = -1; this.a = 1; }
+    this.k = best;
+  }
+  stato(ora) {
+    if (this.k2 >= 0) { this.a = Math.min(1, (ora - this.tCambio) / 110); if (this.a >= 1) this.k2 = -1; }
+    return { k: this.k, a: this.a, k2: this.k2, a2: this.k2 >= 0 ? 1 : 0, scala: this.scala };
+  }
 }
 
 // (0.69-0.72, RISERVA se manca WebGL) NIENTE SCATTI. La bocca non salta fra otto disegni: scorre lungo i fotogrammi
@@ -498,11 +550,12 @@ export class Labiale {
     this.vVis = null; this.vPrima = null; this.tCambio = 0; this.apVis = 0; this.apVel = 0;
     this.battito = 0; this.tBattito = 0; this.prossimoBattito = 0; this.sopr = 0;
     this.video = null; this.fotogramma = 0; this.fps = 24; this.rvfc = 0; this.ultimaFonte = "";
-    this.riserva = null; this.forme = [];
+    this.riserva = null; this.forme = []; this.bocche = null; this.boccaOra = null; this.sorrOra = 0;
   }
   async monta() {
     const f = this.file;
-    const [rig, clip, base, cavita, denti] = await Promise.all([posaDi(f.rig), posaDi(f.clip), immagine(f.base), immagine(f.cavita), immagine(f.denti)]);
+    const [rig, clip, base, cavita, denti, atlante, lib] = await Promise.all([posaDi(f.rig), posaDi(f.clip), immagine(f.base), immagine(f.cavita), immagine(f.denti),
+      f.bocche ? immagine(f.bocche).catch(() => null) : null, f.boccheDati ? posaDi(f.boccheDati) : null]);
     if (!rig || !rig.base) throw new Error("manca rig.json");
     const c = document.createElement("canvas");
     c.width = rig.w; c.height = rig.h; c.className = "lab-tela"; c.style.transition = "opacity .25s ease";
@@ -513,6 +566,10 @@ export class Labiale {
       this.riserva = new Labiale2D(this.box, f); await this.riserva.monta(); this.pronta = true; return;
     }
     this.viso = viso; this.mimica = new Mimica(rig); this.rig = rig;
+    // 0.75: le bocche vere (se l'atlante c'e' e la scheda grafica lo regge; altrimenti le forme 0.73)
+    this.bocche = null;
+    try { if (atlante && lib && viso.impostaBocche(atlante, lib, rig.peso)) this.bocche = new Bocche(viso.bocche.frames); }
+    catch (e) { console.warn("bocche vere", e); this.bocche = null; }
     // i punti del viso in ogni fotogramma del filmato "parla": base spostata con la posa + residuo
     this.clip = null;
     if (clip && clip.posa && clip.res) {
@@ -532,7 +589,7 @@ export class Labiale {
         }
         fonti.push(L); neutri.push(Nn || L); lin.push([P[0], P[1], P[2], P[3]]);
       }
-      this.clip = { seq: clip.seq, fonti, neutri, lin, fps: clip.fps || 24, parlante: !!(peso && clip.parlante) };
+      this.clip = { seq: clip.seq, fonti, neutri, lin, sorr: clip.sorr || null, fps: clip.fps || 24, parlante: !!(peso && clip.parlante) };
       this.fps = this.clip.fps;
     }
     this.box.appendChild(c);
@@ -568,6 +625,20 @@ export class Labiale {
     if (cons && cw > 0) forme.push({ v: cons, L: 0, w: cw });
     if (voc && cw < 1) forme.push({ v: voc, L: liv(voc), w: 1 - cw });
     this.vVis = cons || voc;                       // (in silenzio: nessuna forma, i punti tornano alla posa neutra)
+    // 0.75: con la libreria delle bocche vere, la forma non viene dalle strisce ma dal fotogramma scelto
+    let res = null, res2 = null, aRes = 1;
+    if (this.bocche) {
+      const LARG = { A: 0.58, E: 0.56, I: 0.57, O: 0.44, U: 0.43 };
+      let apT = this.apVis * 0.29, wT = voc ? (LARG[voc] || 0.55) : 0.50;
+      if (cons) { const wc = cons === "M" ? 0.50 : cons === "F" ? 0.52 : 0.50; wT = wT * (1 - cw) + wc * cw; if (cons === "M") apT = Math.min(apT, 0.01 + 0.03 * (1 - cw)); else if (cons === "F") apT = Math.min(apT, 0.05); }
+      if (!voc && !cons) { apT = Math.min(apT, 0.012); wT = 0.50; }
+      const sorrT = this.sorrOra || 0;
+      this.bocche.scegli(apT, wT, sorrT, this.apVel * 0.29, ora);
+      const st = this.bocche.stato(ora); this.boccaOra = st;
+      const F = this.viso.bocche.frames;
+      res = F[st.k] ? F[st.k].res : null; res2 = st.k2 >= 0 && F[st.k2] ? F[st.k2].res : null; aRes = st.a;
+      forme.length = 0;                            // niente strisce: la forma e' quella della bocca vera
+    } else this.boccaOra = null;
     // 3) battito di ciglia e sopracciglia: SOLO sulla foto ferma. Sotto il filmato parlante
     //    gli occhi e le sopracciglia sono quelli veri del video (0.74).
     const foto = this.ultimaFonte !== "video";
@@ -581,7 +652,8 @@ export class Labiale {
     } else { this.battito = 0; this.tBattito = 0; this.prossimoBattito = ora + 1200; }
     const miraSopr = foto ? 0.35 * this.apVis * this.apVis : 0;
     this.sopr += (miraSopr - this.sopr) * (1 - Math.exp(-dt / 150));
-    return mim.aggiorna({ forme, battito: this.battito, sopracciglia: this.sopr }, dt);
+    const lib = !!(this.bocche && res);
+    return mim.aggiorna({ forme, res, res2, a: aRes, scala: this.boccaOra ? this.boccaOra.scala : 1, tauX: lib ? 0.030 : 0, tauY: lib ? 0.022 : 0, battito: this.battito, sopracciglia: this.sopr }, dt);
   }
   disegna(v, ap = 0, forza = 0, t = 0, r = null) {
     if (this.riserva) return this.riserva.disegna(v, ap, forza, t);
@@ -596,8 +668,9 @@ export class Labiale {
     const vid = this._videoParla();
     if (vid && this.clip) {
       const n = this.clip.seq.length, j = ((this.fotogramma % n) + n) % n, i = this.clip.seq[j];
-      this.viso.disegna(delta, vid, this.clip.fonti[i], this.clip.lin[i], this.clip.neutri[i]); this.ultimaFonte = "video";
-    } else { this.viso.disegna(delta, null, null, null); this.ultimaFonte = "foto"; }
+      this.sorrOra = this.clip.sorr ? this.clip.sorr[i] : 0;
+      this.viso.disegna(delta, vid, this.clip.fonti[i], this.clip.lin[i], this.clip.neutri[i], this.boccaOra); this.ultimaFonte = "video";
+    } else { this.sorrOra = 0; this.viso.disegna(delta, null, null, null, null, this.boccaOra); this.ultimaFonte = "foto"; }
   }
   smonta() {
     if (this.riserva) { this.riserva.smonta(); this.riserva = null; this.pronta = false; return; }
