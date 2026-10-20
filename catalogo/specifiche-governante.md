@@ -1006,3 +1006,35 @@ Michele: "vai adesso il pc e' acceso, mi raccomando va abbastanza a scatti purtr
 - Lo scatto che resta, se resta, viene dai FILMATI: Gemini ha dato 12 immagini al secondo (ogni fotogramma preso due volte a 24 fps) e le clip sono raddoppiate o sfumate. Prossimo passo: ricatturare il video "grazia" a 24 fps veri (seek a k/24 + 0,02 s, scartare i doppioni) e rifare le clip senza raddoppio.
 - sw.js 0.69.1: tolti lab-X/M/L/F dalla cache, restano lab-base e le 5 strisce.
 - Video delle CONSONANTI (M, F, L, S, T) solo se la bocca a strisce non basta: oggi non le vedo necessarie.
+
+## 42. La 0.70 (20 ottobre, ore 13:50): FILMATI A 24 FOTOGRAMMI VERI e cambio "al giro"
+Michele (dopo la 0.69.1): "va abbastanza a scatti purtroppo e anche il labiale cerca di migliorarlo".
+
+### LA SCOPERTA: il video di Gemini E' a 24 fps veri, io ne prendevo 12
+Rifatta la cattura del video "grazia" (scheda Gemini 572357094, stesso overlay ruotato) con seek a (k + 0,5)/24 s, k = 0..239: 240 fotogrammi in 20 lotti da 12, TUTTI DIVERSI fra loro (differenza media fra consecutivi min 0,71, mediana 2,3; nessun doppione, nessuna alternanza pari/dispari). Quindi lo "scatto" dei gesti era mio: le clip 0.68/0.69 avevano 12 immagini al secondo raddoppiate o sfumate. Con una sonda in pagina (video nascosto crossOrigin="use-credentials" + canvas 90x160, differenza fra fotogrammi a passi di 1/96 s) si vede che i bordi fra fotogrammi cadono ogni 4 passi = 24 fps. L'URL di Gemini si puo' leggere in un canvas solo con crossOrigin="use-credentials" (con "anonymous" da' errore 4).
+- Fotogrammi grezzi: /home/claude/dev/lip3/gest24/raw/k000..k239.png (1120x694 ruotati). Raddrizzati: gest24/up/u_000..u_239.png (540x960).
+- Per non spostare di un pixel la tela del labiale (lab-base = vecchio fotogramma 46 = nuovo k092), la trasformazione grezzo->540x960 e' UNA sola warpAffine (gest24/M.json): ritaglio (1,32)-(1120,658), rotazione 90 gradi antioraria, scala, piu' l'affine stimata con cv2.findTransformECC contro il vecchio g_046 (cc 0,99998; differenza media 0,54 livelli). LANCZOS4 senza sfocatura (stessa nitidezza del vecchio).
+- Corrispondenza indici: vecchio fotogramma i (12 fps) = nuovo k = 2i. Contenuto a 24 fps: 0-19 sorriso coi denti; 20-27 lo chiude; 28-33 abbassa gli occhi; 34-63 occhi chiusi testa inclinata; 64-71 riapre; 72-95 guarda in camera bocca chiusa (POSA BASE, k092); 96-103 la mano sale; 104-143 mano sulla collana; 144-167 capelli dietro la spalla; 168-179 occhi chiusi mento su; 180-191 mento su sorriso; 192-239 sorriso largo coi denti (prima non catturato).
+
+### LE CLIP 0.70 (boomerang senza doppiare gli estremi, 24 fps, h264 crf 27, preset slow, -g 48)
+TUTTE partono dalla posa base (occhi in camera, bocca chiusa): attesa = 95->20->94 (150 fotogrammi, 6,25 s, 310 KB) · attesa2 = 92->143->93 (mano alla collana e giu', 4,25 s) · indica = 92->239->93 (mano, collana, capelli, mento su, sorriso largo e ritorno: 12,25 s, 691 KB) · pensa = 66->33->65 (2,75 s) · ascolta = 95->64->94 (2,6 s) · parla = 94->80->93 (1,17 s, quasi ferma: sta sotto la tela). Poster e lab-base NON cambiano (k092 = vecchio 46). Script: /home/claude/dev/lip3/clips70/ (cartelle seq_* di link simbolici + ffmpeg).
+
+### IL CAMBIO "AL GIRO" (app.js 0.70)
+- filmUno(quale, box, alGiro): PRIMA prepara il filmato nuovo nel <video> nascosto (src, load, canplay -> box._prep.pronto) senza mostrarlo; POI, se alGiro, aspetta che il filmato in corso sia al primo fotogramma (filmAlGiro: currentTime < 0,26 s oppure > durata - 0,08, o video in pausa) e solo allora fa la dissolvenza (0,3 s, CSS .giu). Siccome tutte le clip partono dalla stessa posa, la dissolvenza e' fra due immagini uguali: invisibile. Scadenza di sicurezza 16 s. filmVigila gira ogni 150 ms (prima 450).
+- FILM_URGENTE = parla, ascolta, pensa: dissolvenza immediata (~200 ms, compreso il caricamento). Il ritorno a riposo da questi aspetta il loro giro (sono corti).
+- GIRO_RIPOSO = attesa, attesa2, attesa, indica, attesa, attesa2 a passi di 8 s (PASSO_RIPOSO): il cambio vero avviene al giro successivo, quindi ogni gesto si vede per intero (indica dura 12 s: parte e finisce).
+- Lo span .gov-film ha data-film="attesa" fin dall'HTML (il primo video e' gia' attesa).
+- boccaFilm() (vecchia logica: mette in pausa il filmato "parla" nei silenzi e ne cambia la velocita' col volume) e' rimasta: ora lavora sotto la tela, quindi non si vede; a fine voce mette in pausa parla, filmAlGiro lo considera "al giro" e il passaggio a riposo avviene mentre la tela e' ancora sopra (sfuma in 650 ms). Va bene cosi'.
+- VERSIONE in app.js portata a 0.70.0 (era ferma a 0.58.1): il pie' di pagina mostra la versione vera.
+
+### MISURATO (scheda di Michele, 20 ottobre 13:45)
+- Cambi di filmato a riposo con il vecchio video a 0,00-0,03 s (primo fotogramma): attesa 0,82 -> indica a 5,5 s (gira tutto, 12,3 s) -> attesa2 -> attesa -> attesa2 -> attesa. Nessun salto.
+- PARLAMI: attesa2 -> parla a 0,93 s (prima del suono) -> tela a 2,46 s -> voce 24 s con 1435 disegni (60/s), 112 cambi di vocale -> a 26,6 s cambio ad attesa sotto la tela -> tela via a 27,0 s.
+
+### COME SI PROVA IN LOCALE (senza telefono)
+/home/claude/dev/site70 = copia del sito (file scaricati da raw.githubusercontent.com) servita con python3 -m http.server 8470. Chromium senza testa NON decodifica h264: per provare i filmati li ho convertiti in VP9 (.webm) e nell'app.js locale ho cambiato i nomi .mp4 -> .webm. Script: /home/claude/dev/lip3/test70c.cjs (osserva i cambi) e test70d.cjs (forza pensa/ascolto con document.body.dataset.cons). Nella prima schermata "Chi sei?" bisogna premere "Gestione" per vedere Sofia.
+
+### DA SAPERE / PROSSIMI PASSI
+- 0.70.0 caricata su GitHub (8 file: app.js, sw.js, 6 mp4; commit "0.70.0 filmati a 24 fps veri, cambio solo al giro del filmato, stessa posa di partenza"), verificati byte per byte. sw.js VERSIONE 0.70.0.
+- Mentre parla, lei e' una FOTO (lab-base) con la bocca che si muove e un dondolio di 1 px: se Michele la vuole piu' viva anche mentre parla, l'idea pronta e': disegnare sulla tela il fotogramma del filmato "parla" in corso (drawImage(video)) invece della foto fissa, e spostare la toppa della bocca dell'offset del naso di quel fotogramma (28 fotogrammi, offset precalcolati con il template del naso). Non fatto: prima il suo giudizio sulla 0.70.
+- Video delle consonanti: ancora non necessario.
