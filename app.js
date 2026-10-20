@@ -2066,7 +2066,7 @@ function labialeTick(forza, t) {
   const ora = Date.now();
   if (ora - labCerca > 500) { labCerca = ora; labialeMonta(); }   // se la pagina si e' ridisegnata, la tela si rimette
   const r = labPiano.forma(t || 0);
-  for (const l of labiali) if (l.pronta) l.disegna(r.f, Math.max(r.forza, Number(forza) || 0), t || 0);
+  for (const l of labiali) if (l.pronta) l.disegna(r.f, Math.max(r.forza, Number(forza) || 0), t || 0, r.ap == null ? 1 : r.ap);
 }
 function labialeFerma(subito) {
   labPiano = null;

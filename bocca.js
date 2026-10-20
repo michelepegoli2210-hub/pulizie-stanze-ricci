@@ -207,7 +207,7 @@ export async function precarica(file = FILE) {
 export class Labiale {
   constructor(box, file = FILE, ancora = ANCORA) {
     this.box = box; this.file = file; this.ancora = ancora;
-    this.tela = null; this.ctx = null; this.pronta = false; this.formaOra = "X"; this.tUltimo = 0;
+    this.tela = null; this.ctx = null; this.pronta = false; this.formaOra = "X"; this.formaPrima = "X"; this.tCambio = 0; this.tUltimo = 0;
   }
   async monta() {
     const [base, ...toppe] = await Promise.all([immagine(this.file.base), ...FORME.map(f => immagine(this.file.toppe[f]))]);
@@ -224,7 +224,7 @@ export class Labiale {
     requestAnimationFrame(() => c.classList.add("vedi"));
     this.pronta = true;
   }
-  disegna(f, forza = 0, t = 0) {
+  disegna(f, forza = 0, t = 0, ap = 1) {
     if (!this.ctx) return;
     const ctx = this.ctx, W = this.tela.width, H = this.tela.height;
     this.tUltimo = t;
@@ -235,9 +235,20 @@ export class Labiale {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(this.base, dx, dy);
-    const tp = this.toppe[f] || this.toppe.X;
-    if (tp) ctx.drawImage(tp, this.ancora.x + dx, this.ancora.y + dy);
-    this.formaOra = f;
+    // 0.68.2: niente scatti secchi. Quando la forma cambia, per 80 ms la vecchia
+    // sfuma nella nuova; e la forma aperta si posa SOPRA la bocca chiusa con una
+    // trasparenza che segue l'apertura: cosi' la bocca si apre e si chiude per gradi.
+    const ora = performance.now();
+    if (f !== this.formaOra) { this.formaPrima = this.formaOra; this.tCambio = ora; this.formaOra = f; }
+    const k = Math.min(1, (ora - (this.tCambio || 0)) / 80);
+    const X = this.toppe.X, ax = this.ancora.x + dx, ay = this.ancora.y + dy;
+    const vis = (forma) => forma === "X" || forma === "M" ? 1 : Math.max(0, Math.min(1, (ap - 0.08) / 0.32));
+    if (X) ctx.drawImage(X, ax, ay);
+    const pr = this.toppe[this.formaPrima];
+    if (pr && k < 1 && this.formaPrima !== "X") { ctx.globalAlpha = (1 - k) * vis(this.formaPrima); ctx.drawImage(pr, ax, ay); }
+    const tp = this.toppe[f];
+    if (tp && f !== "X") { ctx.globalAlpha = k * vis(f); ctx.drawImage(tp, ax, ay); }
+    ctx.globalAlpha = 1;
   }
   smonta() {
     const c = this.tela; this.tela = null; this.ctx = null; this.pronta = false;
