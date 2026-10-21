@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.78.0";
+export const VERSIONE = "0.80.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -80,98 +80,97 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 const CHIAVE_FACCE = "ricci_gov_facce";
 const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
 const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
-const FILM_PRONTO = { attesa: "cons-attesa.mp4", attesa2: "cons-attesa2.mp4", indica: "cons-indica.mp4", pensa: "cons-pensa.mp4", parla: "cons-parla.mp4", ascolta: "cons-ascolta.mp4", poster: "cons-poster.webp" };
-// 0.70: i filmati sono a 24 fotogrammi veri al secondo (prima 12 raddoppiati) e PARTONO
-// TUTTI DALLA STESSA POSA (occhi in camera, bocca chiusa: il fotogramma della tela del
-// labiale). Quando non succede niente gira fra questi, ma il cambio avviene SOLO quando il
-// filmato in corso torna al suo primo fotogramma: cosi' la dissolvenza e' fra due pose
-// uguali e non si vede. Ogni gesto (mano, collana, capelli) si vede sempre per intero.
-// 0.77: a riposo entra anche il filmato "parla" (il video in cui parla davvero, con la maschera a
-// bocca chiusa: lei che ti guarda, sbatte le ciglia e muove la testa in modo vero), alternato ai gesti.
-const GIRO_RIPOSO = ["parla", "attesa", "parla", "attesa2", "parla", "indica", "parla", "attesa"];
-const PASSO_RIPOSO = 8000;
-// 0.77: i punti del filmato "parla" (10,2 s) in cui la posa e' quella della base: li' si puo' cambiare
-// filmato senza salto (oltre all'inizio e alla fine)
-const FILM_GIRI = { parla: [0.02, 2.48, 5.46, 10.04] };
-// Questi devono partire SUBITO (sta ascoltando, pensa, parla): dissolvenza immediata.
-const FILM_URGENTE = { parla: 1, ascolta: 1, pensa: 1 };
+const FILM_PRONTO = { attesa: "cons-attesa.mp4", attesa2: "cons-attesa2.mp4", indica: "cons-indica.mp4", pensa: "cons-pensa.mp4", parla: "cons-parla.mp4", parla2: "cons-parla2.mp4", posa: "cons-posa.mp4", posa2: "cons-posa2.mp4", ascolta: "cons-ascolta.mp4", poster: "cons-poster.webp" };
+// 0.80: SOLO FILMATI (decisione di Michele del 21 ottobre: "lascia stare la sincronia della bocca,
+// metti soltanto i filmati"). Niente piu' maschera ne' labiale: quando parla si vede un video in cui
+// lei parla davvero, quando ascolta uno in cui ascolta, quando non fa niente uno in cui sta li'
+// (gesti, pose). Ogni filmato si vede UNA volta per intero, in avanti (niente piu' andata e ritorno);
+// quando sta per finire si passa a un altro dello stesso gruppo con una dissolvenza di mezzo secondo.
+// Tutti i video partono dalla stessa foto, quindi hanno la stessa inquadratura: la dissolvenza basta.
+const FILM_GRUPPI = {
+  parla: ["parla", "parla2"],                              // lei che parla (video talk1 intero; video di Michele v3)
+  ascolta: ["ascolta"],                                     // annuisce, bocca chiusa
+  pensa: ["posa", "posa2"],                                 // mentre aspetta la risposta: pose eleganti
+  riposo: ["posa", "attesa", "posa2", "attesa2", "indica"], // a riposo: pose (video di Michele v4, v5) e gesti
+};
+const FILM_DISSOLVENZA = 520;                               // ms (come lo stile .gov-film video)
 function FILM_CONS(cls) {
   const f = FILM_PRONTO;
-  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="attesa">
-    <video class="cf-v" src="${f.attesa}" poster="${f.poster}" autoplay muted loop playsinline preload="auto"></video>
+  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="posa">
+    <video class="cf-v" src="${f.posa}" poster="${f.poster}" autoplay muted playsinline preload="auto"></video>
     <video class="cf-v giu" poster="${f.poster}" muted playsinline preload="none"></video>
   </span>`;
 }
 let filmTimer = null;
 function filmGov(quale, soloBox) {
   const caselle = soloBox ? [soloBox] : [...document.querySelectorAll(".gov-film")];
-  for (const b of caselle) filmUno(quale, b, false);
+  for (const b of caselle) filmUno(quale, b, true);
 }
-// Vero quando il filmato in corso e' appena ripartito dal primo fotogramma (o sta per
-// arrivarci): e' il momento in cui la sua posa coincide con l'inizio di tutti gli altri.
-function filmAlGiro(v, quale) {
+// il prossimo filmato del gruppo, diverso da quello in corso (a giro)
+function filmProssimo(lista, corrente) {
+  if (!lista || !lista.length) return null;
+  const i = lista.indexOf(corrente);
+  if (i < 0) return lista[0] === corrente && lista.length > 1 ? lista[1] : lista[0];
+  return lista[(i + 1) % lista.length];
+}
+// quanto manca alla fine del filmato in corso (secondi; 0 se fermo o finito)
+function filmResto(v) {
   const d = Number(v.duration) || 0, t = Number(v.currentTime) || 0;
-  if (!d || v.paused) return true;
-  if (t < 0.26 || t > d - 0.08) return true;
-  const g = FILM_GIRI[quale]; if (g) for (const x of g) if (Math.abs(t - x) < 0.13) return true;
-  return false;
+  if (!d || v.paused || v.ended) return 0;
+  return Math.max(0, d - t);
 }
-function filmUno(quale, box, alGiro) {
+// Prepara il filmato `quale` nel video nascosto e, quando `subito` e' vero (o il filmato in corso e'
+// agli sgoccioli), lo manda in dissolvenza al posto di quello in corso.
+function filmUno(quale, box, subito, ancheUguale) {
   if (!box || !FILM_PRONTO[quale] || box.dataset.occupato === "1") return;
-  if (box.dataset.film === quale) { box._prep = null; return; }
+  if (box.dataset.film === quale && !ancheUguale) { box._prep = null; return; }
   const vs = [...box.querySelectorAll("video")];
   if (vs.length < 2) return;
   const su = vs.find(v => !v.classList.contains("giu")) || vs[0];
   const giu = vs.find(v => v !== su);
-  // 1) si prepara il filmato nuovo nel video nascosto (scaricato e pronto), senza mostrarlo
   let p = box._prep;
   if (!p || p.quale !== quale) {
     p = box._prep = { quale, pronto: false, da: Date.now() };
     giu.src = FILM_PRONTO[quale];
-    giu.loop = true;
+    giu.loop = false;
     try { giu.playbackRate = 1; } catch (e) {}
     giu.load();
     giu.addEventListener("canplay", () => { if (box._prep === p) p.pronto = true; }, { once: true });
   }
-  const pronto = p.pronto || giu.readyState >= 3 || Date.now() - p.da > 1800;
+  const pronto = p.pronto || giu.readyState >= 3 || Date.now() - p.da > 2500;
   if (!pronto) return;                        // ci riprova filmVigila fra 150 ms
-  // 2) a riposo si aspetta che il filmato in corso torni all'inizio
-  if (alGiro && !filmAlGiro(su, box.dataset.film) && Date.now() - p.da < 16000) return;
+  if (!subito && filmResto(su) > 0.6 && Date.now() - p.da < 16000) return;   // si aspetta la fine del filmato in corso
   box.dataset.occupato = "1"; box._prep = null;
   try { if (giu.currentTime > 0.05) giu.currentTime = 0; } catch (e) {}
   giu.play().catch(() => {});
   giu.classList.remove("giu");
   su.classList.add("giu");
   box.dataset.film = quale;
-  setTimeout(() => { try { su.pause(); } catch (e) {} box.dataset.occupato = ""; }, 500);
+  setTimeout(() => { try { su.pause(); } catch (e) {} box.dataset.occupato = ""; }, FILM_DISSOLVENZA + 80);
 }
 function filmVigila() {
   if (filmTimer) return;
   filmTimer = setInterval(() => {
     if (document.hidden) return;
     const forzato = document.body.dataset.cons || "";
-    // REGOLA: la bocca si muove SOLO se sta uscendo davvero del suono.
-    // Senza questo controllo lei muoveva le labbra in silenzio, e faceva ridere.
     let suono = false; try { suono = VOCE.staParlando(); } catch (e) {}
-    const riposo = GIRO_RIPOSO[Math.floor(Date.now() / PASSO_RIPOSO) % GIRO_RIPOSO.length];
     for (const b of document.querySelectorAll(".gov-film")) {
       const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
-      // 0.69: appena parte la RICHIESTA della voce (voceInCorso) si passa gia' al filmato
-      // "parla", che ha la stessa posa della tela del labiale: quando il suono arriva,
-      // uno o due secondi dopo, la tela si posa sopra senza salto.
       const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
       const pensa = !parla && !ascolta && forzato === "pensa";
-      // 0.73: mentre PENSA mostra lo stesso filmato di quando parla (mano alla collana, testa
-      // che si muove): e' naturale e quando parte la voce non c'e' nessun cambio di filmato.
-      // Il vecchio "pensa" (occhi chiusi avanti e indietro) a Michele sembrava strano.
-      const quale = parla ? "parla" : ascolta ? "ascolta" : pensa ? "parla" : riposo;
-      // (0.77: l'urgenza dipende dal MOTIVO, non dal filmato: "parla" a riposo aspetta il giro come gli altri)
-      filmUno(quale, b, !(parla || ascolta || pensa));
-      // 0.74: la MASCHERA (la tela del labiale) sta su per tutto il tempo in cui si vede il
-      // filmato "parla": e' un video in cui lei parla davvero, e senza maschera muoverebbe
-      // la bocca da sola. Con la maschera la bocca e' chiusa finche' non c'e' voce.
-      labialeTieni(b, b.dataset.film === "parla");
+      const gruppo = parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : "riposo";
+      const lista = FILM_GRUPPI[gruppo] || FILM_GRUPPI.riposo;
+      const corrente = b.dataset.film || "";
+      const dentro = lista.includes(corrente);
+      const su = [...b.querySelectorAll("video")].find(v => !v.classList.contains("giu"));
+      if (su && su.paused && !su.ended && !b.dataset.occupato && su.readyState >= 2 && filmResto(su) === 0 && (su.currentTime || 0) < 0.2) su.play().catch(() => {});
+      const resto = su ? filmResto(su) : 0;
+      // fuori dal gruppo giusto: si cambia subito; dentro: si cambia quando il filmato sta per finire
+      // (si prepara il prossimo 2,5 s prima, cosi' la dissolvenza parte in tempo e non si vede mai fermo)
+      const prossimo = filmProssimo(lista, corrente);
+      if (!dentro) filmUno(prossimo, b, true);
+      else if (resto < 2.5) filmUno(prossimo, b, false, prossimo === corrente);   // (gruppo con un filmato solo: riparte lo stesso, in dissolvenza)
     }
   }, 150);
 }
@@ -2011,7 +2010,12 @@ function applicaBocca(forza) {
 // alza il tono: non e' un vero labiale (il filmato e' gia' girato), ma la bocca si
 // ferma nei silenzi e si muove sulle parole, cosi' sembra sincronizzata.
 let boccaSuono = 0;
+// 0.80: SOLO FILMATI. Il labiale (maschera, bocche vere, sincronia) e' SPENTO: il filmato "parla"
+// scorre normale mentre lei parla. Il codice resta (bocca.js, viso.js) per poterlo riaccendere.
+const LABIALE_ACCESO = false;
 function boccaFilm(f) {
+  if (!LABIALE_ACCESO) return;               // 0.80: il filmato non si ferma piu' nelle pause ne' cambia velocita'
+
   if (labiali.some(l => l.pronta)) return;   // 0.72: con la tela attiva il filmato deve scorrere normale: e' lo sfondo vivo della bocca
   const ora = Date.now();
   if (f >= 0.06) boccaSuono = ora;
@@ -2082,7 +2086,7 @@ function voceAccesa() { return !!VOCE.leggiVoce().attiva; }
 let labiali = [], labPiano = null, labSpegni = null, labCerca = 0, labRotto = false;
 function labialeBox() { return [...document.querySelectorAll(".gov-film")].filter(b => b.offsetWidth > 0 && b.offsetHeight > 0); }
 function labialeMonta() {
-  if (labRotto) return;
+  if (!LABIALE_ACCESO || labRotto) return;
   labiali = labiali.filter(l => l.tela && l.tela.isConnected || l.riserva || (l._montando && Date.now() - l._montando < 8000));
   for (const box of labialeBox()) {
     if (labiali.some(l => l.box === box)) continue;
@@ -2107,7 +2111,7 @@ function labStatMostra() {
   try { toast(`Fluidità: ${al} disegni al secondo, buco più lungo ${buco} ms`); } catch (e) {}
 }
 function labialeTieni(box, si) {
-  if (labRotto || !box) return;
+  if (!LABIALE_ACCESO || labRotto || !box) return;
   labiali = labiali.filter(l => l.tela && l.tela.isConnected || l.riserva || (l._montando && Date.now() - l._montando < 8000));
   const c = labiali.find(l => l.box === box);
   if (si && !c) {
@@ -2155,6 +2159,7 @@ function labialeVitaVia() {
 }
 function labialeVitaFerma() { if (!labVita) return; clearInterval(labVita.iv); cancelAnimationFrame(labVita.raf); labVita = null; }
 function labialeAvvia(buf, testoLetto, durata) {
+  if (!LABIALE_ACCESO) return;
   clearTimeout(labSpegni); labSpegni = null;
   try {
     // con la voce vera si legge il suono; con quella del telefono si stima dal testo
@@ -2164,7 +2169,7 @@ function labialeAvvia(buf, testoLetto, durata) {
   labialeMonta();
 }
 function labialeTick(forza, t) {
-  if (!labPiano) return;
+  if (!LABIALE_ACCESO || !labPiano) return;
   const ora = Date.now();
   if (ora - labCerca > 500) { labCerca = ora; labialeMonta(); }   // se la pagina si e' ridisegnata, la tela si rimette
   // 0.69: si guarda 40 ms AVANTI nel piano: la bocca disegnata insegue con un piccolo
@@ -2183,6 +2188,7 @@ function labAnticipo() {
   return labAntCache.v;
 }
 function labialeFerma(subito) {
+  if (!LABIALE_ACCESO) return;
   // 0.74: finisce solo la VOCE: la maschera resta su (bocca che si chiude da sola col suo
   // battito) finche' il filmato "parla" non lascia il posto a quello di riposo (filmVigila).
   labStatMostra();
@@ -2191,7 +2197,7 @@ function labialeFerma(subito) {
   clearTimeout(labSpegni); labSpegni = null;
   if (labiali.length) labialeVitaVia();
 }
-setTimeout(() => { try { BOCCA.precarica().catch(() => {}); } catch (e) {} }, 4000);
+if (LABIALE_ACCESO) setTimeout(() => { try { BOCCA.precarica().catch(() => {}); } catch (e) {} }, 4000);
 async function parlaConVoce(testo) {
   let vc = VOCE.leggiVoce(); if (!vc.attiva) return;
   // il modello della voce TTS (la riserva del canale Live) si cerca una volta sola, senza
