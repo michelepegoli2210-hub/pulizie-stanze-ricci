@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "0.81.0";
+const VERSIONE = "0.82.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
@@ -27,6 +27,49 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("message", (e) => { if (e.data?.tipo === "attiva") self.skipWaiting(); });
 
+// ---- filmati: cache-first, a pezzi, scaricati per intero una volta sola ----------------------
+const VIDEO = /\.(mp4|webm)$/i;
+const scaricamenti = new Map();   // url -> Promise, per non scaricare due volte lo stesso filmato in parallelo
+async function rispostaVideo(req) {
+  const chiave = new URL(req.url); chiave.search = "";
+  const cache = await caches.open(CACHE);
+  let intera = await cache.match(chiave.href);
+  if (!intera) {
+    // non c'e' (precache fallito o interrotto): lo scarico TUTTO una volta sola e lo tengo
+    try {
+      if (!scaricamenti.has(chiave.href)) {
+        scaricamenti.set(chiave.href, fetch(new Request(chiave.href, { cache: "reload" })).then(async (r) => {
+          if (r && r.status === 200) await cache.put(chiave.href, r.clone());
+          return r;
+        }).finally(() => scaricamenti.delete(chiave.href)));
+      }
+      const r = await scaricamenti.get(chiave.href);
+      intera = (r && r.status === 200) ? (await cache.match(chiave.href)) || r : null;
+      if (!intera) return r || Response.error();
+    } catch (err) { return Response.error(); }
+  }
+  return rispostaIntervallo(req, intera);
+}
+// Il lettore video chiede "Range: bytes=a-b": si risponde 206 con quel pezzo del file in cache
+async function rispostaIntervallo(req, intera) {
+  const range = req.headers.get("range");
+  if (!range) return intera;
+  const m = /bytes=(\d*)-(\d*)/.exec(range);
+  if (!m) return intera;
+  const buf = await intera.arrayBuffer();
+  const tot = buf.byteLength;
+  let a = m[1] ? Number(m[1]) : 0, b = m[2] ? Number(m[2]) : tot - 1;
+  if (!m[1] && m[2]) { a = Math.max(0, tot - Number(m[2])); b = tot - 1; }
+  b = Math.min(b, tot - 1);
+  if (a >= tot || a > b) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${tot}` } });
+  const h = new Headers();
+  h.set("Content-Type", intera.headers.get("Content-Type") || "video/mp4");
+  h.set("Content-Range", `bytes ${a}-${b}/${tot}`);
+  h.set("Content-Length", String(b - a + 1));
+  h.set("Accept-Ranges", "bytes");
+  return new Response(buf.slice(a, b + 1), { status: 206, statusText: "Partial Content", headers: h });
+}
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
@@ -35,6 +78,9 @@ self.addEventListener("fetch", (e) => {
   if (/googleapis\.com|firebaseio\.com|firebase\.com|gstatic\.com\/firebasejs/.test(url.host + url.pathname) && !/fonts\.gstatic/.test(url.host)) return;
 
   if (url.origin === location.origin) {
+    // 0.82: i FILMATI di Sofia hanno una strada a parte (vedi rispostaVideo): si servono dalla cache
+    // a pezzi (richieste "Range" del lettore video) e NON si riscaricano dalla rete a ogni giro.
+    if (VIDEO.test(url.pathname)) { e.respondWith(rispostaVideo(req)); return; }
     // File dell'app: prima la cache (veloce e offline), poi la rete; la rete aggiorna la cache
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);

@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.81.0";
+export const VERSIONE = "0.82.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -140,8 +140,12 @@ function filmUno(quale, box, subito, ancheUguale) {
     giu.load();
     giu.addEventListener("canplay", () => { if (box._prep === p) p.pronto = true; }, { once: true });
   }
-  const pronto = p.pronto || giu.readyState >= 3 || Date.now() - p.da > 2500;
-  if (!pronto) return;                        // ci riprova filmVigila fra 150 ms
+  const pronto = p.pronto || giu.readyState >= 3;
+  if (!pronto) {                              // il prossimo non e' ancora pronto (rete lenta): ci riprova filmVigila fra 150 ms;
+    // intanto, se quello in corso e' finito, lo faccio ripartire da capo: meglio uno stacco che un fotogramma nero o fermo
+    if (su.ended || (su.paused && (Number(su.currentTime) || 0) > 0.2)) { try { su.currentTime = 0; su.play().catch(() => {}); } catch (e) {} }
+    return;
+  }
   if (!subito && filmResto(su) > 0.6) {          // si aspetta la fine del filmato in corso...
     const t = Number(su.currentTime) || 0;
     if (p.ultimoT !== t) { p.ultimoT = t; p.fermoDa = Date.now(); }
@@ -177,7 +181,7 @@ function filmVigila() {
       // (si prepara il prossimo 2,5 s prima, cosi' la dissolvenza parte in tempo e non si vede mai fermo)
       const prossimo = filmProssimo(lista, corrente);
       if (!dentro) filmUno(prossimo, b, true);
-      else if (resto < 2.5) filmUno(prossimo, b, false, prossimo === corrente);   // (gruppo con un filmato solo: riparte lo stesso, in dissolvenza)
+      else if (su && (su.ended || (resto > 0 && resto < 2.5))) filmUno(prossimo, b, false, prossimo === corrente);   // (gruppo con un filmato solo: riparte lo stesso, in dissolvenza)
     }
   }, 150);
 }
