@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.80.0";
+export const VERSIONE = "0.81.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -80,24 +80,27 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 const CHIAVE_FACCE = "ricci_gov_facce";
 const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
 const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
-const FILM_PRONTO = { attesa: "cons-attesa.mp4", attesa2: "cons-attesa2.mp4", indica: "cons-indica.mp4", pensa: "cons-pensa.mp4", parla: "cons-parla.mp4", parla2: "cons-parla2.mp4", posa: "cons-posa.mp4", posa2: "cons-posa2.mp4", ascolta: "cons-ascolta.mp4", poster: "cons-poster.webp" };
+const FILM_PRONTO = { parla: "cons-parla.mp4", riposo: "cons-riposo.mp4", poster: "cons-poster.webp" };
 // 0.80: SOLO FILMATI (decisione di Michele del 21 ottobre: "lascia stare la sincronia della bocca,
 // metti soltanto i filmati"). Niente piu' maschera ne' labiale: quando parla si vede un video in cui
-// lei parla davvero, quando ascolta uno in cui ascolta, quando non fa niente uno in cui sta li'
-// (gesti, pose). Ogni filmato si vede UNA volta per intero, in avanti (niente piu' andata e ritorno);
-// quando sta per finire si passa a un altro dello stesso gruppo con una dissolvenza di mezzo secondo.
-// Tutti i video partono dalla stessa foto, quindi hanno la stessa inquadratura: la dissolvenza basta.
+// lei parla davvero, quando ascolta o non fa niente uno in cui sta li' (ascolta, annuisce, pose).
+// 0.81: DUE FILMATI LUNGHI SOLTANTO (Michele, 21 ottobre: "un filmato di una quarantina di secondi
+// dove parla ed e' sempre quello... e uno di una quarantina di secondi dove sta ferma, ascolta, annuisce").
+//  - cons-parla.mp4  (38,5 s): quattro spezzoni in cui parla, si tocca i capelli, sorride, fusi in dissolvenza
+//  - cons-riposo.mp4 (42,8 s): pose, annuisce, ascolta, si tocca il petto, fusi in dissolvenza
+// Ogni filmato si vede per intero, in avanti; quando sta per finire riparte da capo con una dissolvenza di
+// mezzo secondo. Tutti i video partono dalla stessa foto, quindi hanno la stessa inquadratura.
 const FILM_GRUPPI = {
-  parla: ["parla", "parla2"],                              // lei che parla (video talk1 intero; video di Michele v3)
-  ascolta: ["ascolta"],                                     // annuisce, bocca chiusa
-  pensa: ["posa", "posa2"],                                 // mentre aspetta la risposta: pose eleganti
-  riposo: ["posa", "attesa", "posa2", "attesa2", "indica"], // a riposo: pose (video di Michele v4, v5) e gesti
+  parla: ["parla"],      // lei che parla
+  ascolta: ["riposo"],   // mentre si parla a lei
+  pensa: ["riposo"],     // mentre aspetta la risposta
+  riposo: ["riposo"],    // quando non succede niente
 };
 const FILM_DISSOLVENZA = 520;                               // ms (come lo stile .gov-film video)
 function FILM_CONS(cls) {
   const f = FILM_PRONTO;
-  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="posa">
-    <video class="cf-v" src="${f.posa}" poster="${f.poster}" autoplay muted playsinline preload="auto"></video>
+  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo">
+    <video class="cf-v" src="${f.riposo}" poster="${f.poster}" autoplay muted playsinline preload="auto"></video>
     <video class="cf-v giu" poster="${f.poster}" muted playsinline preload="none"></video>
   </span>`;
 }
@@ -139,7 +142,11 @@ function filmUno(quale, box, subito, ancheUguale) {
   }
   const pronto = p.pronto || giu.readyState >= 3 || Date.now() - p.da > 2500;
   if (!pronto) return;                        // ci riprova filmVigila fra 150 ms
-  if (!subito && filmResto(su) > 0.6 && Date.now() - p.da < 16000) return;   // si aspetta la fine del filmato in corso
+  if (!subito && filmResto(su) > 0.6) {          // si aspetta la fine del filmato in corso...
+    const t = Number(su.currentTime) || 0;
+    if (p.ultimoT !== t) { p.ultimoT = t; p.fermoDa = Date.now(); }
+    if (Date.now() - (p.fermoDa || Date.now()) < 6000) return;   // ...finche' avanza; se resta bloccato 6 s si cambia lo stesso
+  }
   box.dataset.occupato = "1"; box._prep = null;
   try { if (giu.currentTime > 0.05) giu.currentTime = 0; } catch (e) {}
   giu.play().catch(() => {});
@@ -349,7 +356,7 @@ function rimpicciolisci(file, lato = 460) {
 // Il pupazzo: tutte le facce impilate, si accende quella giusta
 function FACCIA_FOTO(cls = "") {
   const f = facceGov();
-  if (/grande|film/.test(cls) && corpoPronto()) return FILM_PRONTO.attesa ? FILM_CONS(cls) : CORPO_CONS(cls);
+  if (/grande|film/.test(cls) && corpoPronto()) return FILM_PRONTO.riposo ? FILM_CONS(cls) : CORPO_CONS(cls);
   const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
   return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
     <span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa">${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m3", "f-m3")}${strato("m2", "f-m2")}${strato("felice", "f-felice")}${strato("pensa", "f-pensa")}${strato("occhi", "f-occhi")}</span></span></span><i class="gov-alone"></i></span>`;
@@ -1529,7 +1536,7 @@ function casaAttiva() {
   try {
     return !!(S.pronto && S.utente && S.utente.ruolo && proprietario()
       && S.vista === "oggi" && S.giorno === L.oggiISO()
-      && S.caricati.soggiorni && S.caricati.pulizie && FILM_PRONTO.attesa && corpoPronto());
+      && S.caricati.soggiorni && S.caricati.pulizie && FILM_PRONTO.riposo && corpoPronto());
   } catch (e) { return false; }
 }
 const CASA_ICO = {
