@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.77.0";
+export const VERSIONE = "0.78.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2095,7 +2095,17 @@ function labialeMonta() {
 // 0.74: la maschera si monta e si smonta seguendo il FILMATO (vedi filmVigila), non la voce.
 // Mentre e' su, un "battito" la ridisegna anche senza voce: bocca chiusa, viso che segue il
 // video (testa, occhi, sopracciglia veri). Quando arriva la voce, labialeTick la guida.
-let labVita = null, labTick = null;
+let labVita = null, labTick = null, labFine = 0;
+// 0.78: la FLUIDITA' misurata (disegni al secondo mentre parla, e il buco piu' lungo): alla fine
+// di ogni frase si mostra un avviso discreto, cosi' Michele puo' dirmi che numero vede sul telefono
+let labStat = null;
+function labStatConta(ora) { if (!labPiano) return; if (!labStat) labStat = { n: 0, t0: ora, ultimo: ora, buco: 0 }; labStat.n++; const g = ora - labStat.ultimo; if (g > labStat.buco) labStat.buco = g; labStat.ultimo = ora; }
+function labStatMostra() {
+  const s = labStat; labStat = null; if (!s || s.n < 10) return;
+  const sec = (s.ultimo - s.t0) / 1000; if (sec < 1.5) return;
+  const al = Math.round(s.n / sec), buco = Math.round(s.buco);
+  try { toast(`Fluidità: ${al} disegni al secondo, buco più lungo ${buco} ms`); } catch (e) {}
+}
 function labialeTieni(box, si) {
   if (labRotto || !box) return;
   labiali = labiali.filter(l => l.tela && l.tela.isConnected || l.riserva || (l._montando && Date.now() - l._montando < 8000));
@@ -2123,6 +2133,10 @@ function labialeVitaVia() {
       if (!l.pronta) { vivi++; continue; }
       vivi++;
       if (ora - (l.tDisegno || 0) < 40) continue;              // ha appena disegnato col tick della voce
+      // 0.78: a riposo (niente voce da almeno 0,7 s) si ridisegna solo quando il filmato cambia
+      // fotogramma (24 volte al secondo, non 60): meno lavoro per il telefono
+      const riposo = !labPiano && ora - labFine > 700;
+      if (riposo && l.ultimaFonte === "video" && l.fotogramma === l._frDisegnato) continue;
       let r = null;
       if (labPiano && labTick) {
         // fra un tick della voce e l'altro si stima dove siamo nel piano
@@ -2130,6 +2144,8 @@ function labialeVitaVia() {
         try { r = labPiano.forma(t + 0.04 + labAnticipo() / 1000); } catch (e) { r = null; }
       }
       l.disegna(r ? (r.v || null) : null, r ? (r.ap || 0) : 0, 0, l.tUltimo || 0, r);
+      l._frDisegnato = l.fotogramma;
+      labStatConta(ora);
     }
     if (!vivi) labialeVitaFerma();
   };
@@ -2158,7 +2174,7 @@ function labialeTick(forza, t) {
   // ogni telefono e ogni cassa Bluetooth ritardano il suono in modo diverso.
   const r = labPiano.forma((t || 0) + 0.04 + labAnticipo() / 1000);
   labTick = { t: t || 0, quando: performance.now() };
-  for (const l of labiali) if (l.pronta) l.disegna(r.v || null, r.ap == null ? 0 : r.ap, Math.max(r.forza, Number(forza) || 0), t || 0, r);   // 0.69: vocale + apertura; 0.74: tutto il piano (r)
+  for (const l of labiali) if (l.pronta) { l.disegna(r.v || null, r.ap == null ? 0 : r.ap, Math.max(r.forza, Number(forza) || 0), t || 0, r); l._frDisegnato = l.fotogramma; labStatConta(performance.now()); }   // 0.69: vocale + apertura; 0.74: tutto il piano (r)
 }
 let labAntCache = { t: 0, v: 0 };
 function labAnticipo() {
@@ -2169,7 +2185,8 @@ function labAnticipo() {
 function labialeFerma(subito) {
   // 0.74: finisce solo la VOCE: la maschera resta su (bocca che si chiude da sola col suo
   // battito) finche' il filmato "parla" non lascia il posto a quello di riposo (filmVigila).
-  labPiano = null; labTick = null;
+  labStatMostra();
+  labPiano = null; labTick = null; labFine = performance.now();
   for (const l of labiali) if (l.pronta) l.disegna(null, 0, 0, l.tUltimo || 0, null);
   clearTimeout(labSpegni); labSpegni = null;
   if (labiali.length) labialeVitaVia();

@@ -120,14 +120,14 @@ export class Viso {
     for (let i = 0; i < this.nInt; i++) idx.push(cen, loc[this.interno[i]], loc[this.interno[(i + 1) % this.nInt]]);
     this.bIdxBocca = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.bIdxBocca); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
     // per ogni fotogramma della libreria: uv nell'atlante e residuo (spostamento dalla base) pesato
-    const x0 = lib.x0 || 0, y0 = lib.y0 || 0;
+    const x0 = lib.x0 || 0, y0 = lib.y0 || 0, sc = lib.scala || 1;     // 0.78: l'atlante puo' essere rimpicciolito (scala)
     const frames = lib.frames.map((f, i) => {
       const r = Math.floor(i / lib.cols), c = i % lib.cols, ox = c * lib.w, oy = r * lib.h;
       const uv = new Float32Array((nz + 1) * 2), res = new Float32Array(N * 2);
       let cu = 0, cv = 0;
       for (let j = 0; j < nz; j++) {
         const px = f.lm[j][0] / q, py = f.lm[j][1] / q;
-        uv[2 * j] = (ox + px) / AW; uv[2 * j + 1] = (oy + py) / AH;
+        uv[2 * j] = (ox + px * sc) / AW; uv[2 * j + 1] = (oy + py * sc) / AH;
         const p = zona[j], w = peso ? peso[p] : 1;
         res[2 * p] = (px + x0 - this.rig.base[p][0]) * w; res[2 * p + 1] = (py + y0 - this.rig.base[p][1]) * w;
       }
@@ -167,9 +167,12 @@ export class Viso {
     const gl = this.gl, N = this.N, pos = this.pos, uv = this.uv;
     let tex;
     if (video && lm) {
-      if (this.videoSrc !== video || true) {
+      // 0.78: il fotogramma del video si ricopia nella texture solo quando E' CAMBIATO (24 volte al
+      // secondo, non 60): meta' del lavoro in meno sul telefono. (bocca.fotogramma = quale fotogramma)
+      const chiave = bocca && bocca.fotogramma != null ? bocca.fotogramma : -1;
+      if (this.videoSrc !== video || chiave < 0 || chiave !== this.videoFotogramma) {
         gl.bindTexture(gl.TEXTURE_2D, this.texVideo);
-        try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video); this.videoSrc = video; }
+        try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video); this.videoSrc = video; this.videoFotogramma = chiave; }
         catch (e) { this.videoSrc = null; }
       }
       tex = this.videoSrc ? this.texVideo : this.texBase;

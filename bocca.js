@@ -566,25 +566,29 @@ export class Bocche {
     const lp = p >= 0 ? f[p].lum : 0, dir = apVel > 0.25 ? 1 : apVel < -0.25 ? -1 : 0;
     for (let j = 0; j < n; j++) {
       const g = f[j];
-      const da = (g.ap - apT) / 0.025, dw = (g.w - wT) / 0.06, ds = (g.sorr - sorrT) / 0.04;
+      // 0.78: tolleranze piu' larghe (la forma si adatta comunque con la scala verticale) e salti molto
+      // piu' cari: era il cambio continuo di "pelle" della bocca (7 al secondo) a dare lo sfarfallio
+      const da = (g.ap - apT) / 0.035, dw = (g.w - wT) / 0.08, ds = (g.sorr - sorrT) / 0.05;
       let c = da * da + dw * dw + 0.5 * ds * ds;
+      // stile morbido (0.78): i sorrisi a trentadue denti costano: lei deve parlare, non ridere
+      if (g.lum > 125) { const dlum = (g.lum - 125) / 30; c += 0.6 * dlum * dlum; }
       // la sequenza deve andare nel verso giusto: se la bocca si sta aprendo, il fotogramma dopo deve essere piu' aperto
       if (dir && j + 1 < n) { const d2 = f[j + 1].ap - g.ap; if (d2 * dir < -0.004) c += 0.8; }
-      // continuita': proseguire col fotogramma dopo e' gratis, saltare altrove costa (e costa di piu'
+      // continuita': proseguire col fotogramma dopo e' premiato, saltare altrove costa molto (e di piu'
       // se cambia la luce dentro la bocca: denti/lingua che compaiono e spariscono)
-      if (p >= 0) { if (j === p + 1) c -= 0.5; else if (j === p || j === p + 2) c += 0; else { const dl = (g.lum - lp) / 50; c += 2.5 + dl * dl; } }
+      if (p >= 0) { if (j === p + 1) c -= 0.6; else if (j === p || j === p + 2) c += 0; else { const dl = (g.lum - lp) / 40; c += 6.0 + dl * dl; } }
       if (c < bc) { bc = c; best = j; }
     }
     if (best < 0) return;
     // la forma si adatta all'apertura voluta: i punti si allungano in verticale (poco)
-    const ak = f[best].ap; this.scala = ak > 0.015 ? Math.max(0.6, Math.min(1.5, apT / ak)) : 1;
+    const ak = f[best].ap; this.scala = ak > 0.015 ? Math.max(0.6, Math.min(1.6, apT / ak)) : 1;
     if (best === this.k) return;
     if (p >= 0 && best !== p + 1 && best !== p + 2) { this.k2 = this.k; this.a = 0; this.tCambio = ora; }   // salto: dissolvenza
     else { this.k2 = -1; this.a = 1; }
     this.k = best;
   }
   stato(ora) {
-    if (this.k2 >= 0) { this.a = Math.min(1, (ora - this.tCambio) / 110); if (this.a >= 1) this.k2 = -1; }
+    if (this.k2 >= 0) { this.a = Math.min(1, (ora - this.tCambio) / 220); if (this.a >= 1) this.k2 = -1; }
     return { k: this.k, a: this.a, k2: this.k2, a2: this.k2 >= 0 ? 1 : 0, scala: this.scala };
   }
 }
@@ -816,7 +820,8 @@ export class Labiale {
     //    in ~170 ms: la mascella vera misurata sale in 167 ms, scende in 208)
     const mira = Math.max(0, Math.min(1, Number(r && r.ap) || 0));
     let resto = Math.max(1, Math.min(90, dt));
-    while (resto > 0) { const h = Math.min(12, resto) / 1000, tau = 0.05; resto -= 12; this.apVel += ((mira - this.apVis) / (tau * tau) - 2 * this.apVel / tau) * h; this.apVis += this.apVel * h; }
+    // (0.78: costante 62 ms = dal 10 al 90% in ~210 ms: piu' vicina a Praktika (267) che al video Gemini (167): piu' morbida)
+    while (resto > 0) { const h = Math.min(12, resto) / 1000, tau = 0.062; resto -= 12; this.apVel += ((mira - this.apVis) / (tau * tau) - 2 * this.apVel / tau) * h; this.apVis += this.apVel * h; }
     if (this.apVis < 0) { this.apVis = 0; if (this.apVel < 0) this.apVel = 0; }
     if (this.apVis > 1) { this.apVis = 1; if (this.apVel > 0) this.apVel = 0; }
     // 2) le forme: la vocale della sillaba al livello dell'apertura; se siamo sulla consonante
@@ -834,11 +839,11 @@ export class Labiale {
     let res = null, res2 = null, aRes = 1;
     if (this.bocche) {
       const LARG = { A: 0.58, E: 0.56, I: 0.57, O: 0.44, U: 0.43 };
-      let apT = this.apVis * 0.29, wT = voc ? (LARG[voc] || 0.55) : 0.50;
+      let apT = this.apVis * 0.26, wT = voc ? (LARG[voc] || 0.55) : 0.50;      // 0.78: tetto piu' basso (0,26): bocca meno spalancata
       if (cons) { const wc = cons === "M" ? 0.50 : cons === "F" ? 0.52 : 0.50; wT = wT * (1 - cw) + wc * cw; if (cons === "M") apT = Math.min(apT, 0.01 + 0.03 * (1 - cw)); else if (cons === "F") apT = Math.min(apT, 0.05); }
       if (!voc && !cons) { apT = Math.min(apT, 0.012); wT = 0.50; }
       const sorrT = this.sorrOra || 0;
-      this.bocche.scegli(apT, wT, sorrT, this.apVel * 0.29, ora);
+      this.bocche.scegli(apT, wT, sorrT, this.apVel * 0.26, ora);
       const st = this.bocche.stato(ora); this.boccaOra = st;
       const F = this.viso.bocche.frames;
       res = F[st.k] ? F[st.k].res : null; res2 = st.k2 >= 0 && F[st.k2] ? F[st.k2].res : null; aRes = st.a;
@@ -874,7 +879,8 @@ export class Labiale {
     if (vid && this.clip) {
       const n = this.clip.seq.length, j = ((this.fotogramma % n) + n) % n, i = this.clip.seq[j];
       this.sorrOra = this.clip.sorr ? this.clip.sorr[i] : 0;
-      this.viso.disegna(delta, vid, this.clip.fonti[i], this.clip.lin[i], this.clip.neutri[i], this.boccaOra); this.ultimaFonte = "video";
+      const bo = this.boccaOra ? Object.assign({ fotogramma: this.fotogramma }, this.boccaOra) : { k: -1, fotogramma: this.fotogramma };
+      this.viso.disegna(delta, vid, this.clip.fonti[i], this.clip.lin[i], this.clip.neutri[i], bo); this.ultimaFonte = "video";
     } else { this.sorrOra = 0; this.viso.disegna(delta, null, null, null, null, this.boccaOra); this.ultimaFonte = "foto"; }
   }
   smonta() {
