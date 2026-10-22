@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.83.0";
+export const VERSIONE = "0.84.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -250,16 +250,21 @@ function micCasaVai() {
   if (micAttivo && micCasa) { try { micCasa.stop(); } catch (e) {} return; }
   const r = new R();
   micCasa = r; micAttivo = true;
-  r.lang = "it-IT"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
-  let finale = "";
+  // 0.84: si ascolta finché parla (anche frasi lunghe, con le pause): si chiude da sola dopo 3 secondi di silenzio,
+  // oppure quando tocca di nuovo il tasto
+  r.lang = "it-IT"; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
+  let finale = "", silenzio = null;
+  const riarma = (ms) => { clearTimeout(silenzio); silenzio = setTimeout(() => { try { r.stop(); } catch (e) {} }, ms); };
   statoCons("ascolto"); sottoCons("ti ascolto…", true); scaldaRisposta();
+  riarma(9000);                                  // se non dice niente, dopo 9 s si chiude
   r.onresult = (e) => {
     let interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const x = e.results[i][0].transcript;
-      if (e.results[i].isFinal) finale += x; else interim += x;
+      if (e.results[i].isFinal) finale += x + " "; else interim += x;
     }
     sottoCons((finale + interim).trim() || "ti ascolto…", true);
+    riarma(3000);
   };
   r.onerror = () => {
     micAttivo = false;
@@ -267,15 +272,17 @@ function micCasaVai() {
     setTimeout(() => statoCons("ferma"), 2600);
   };
   r.onend = async () => {
-    micAttivo = false;
+    micAttivo = false; clearTimeout(silenzio);
     const t = finale.trim();
     if (!t) { statoCons("ferma"); sottoCons(""); return; }
+    // un "sì" o un "no" a una proposta appena fatta: vale come il tocco sul tasto
+    try { if (await casaRispostaVoce(t)) { statoCons("parla"); sottoCons(ultimaDiLei() || "Fatto."); setTimeout(() => statoCons("ferma"), 3200); return; } } catch (e) {}
     statoCons("pensa"); sottoCons("ci penso…", true);
     diciUnAttimo();
     try {
       await parlaGov(t);
       statoCons("parla");
-      sottoCons(ultimaDiLei() || "Ti ho risposto nella chat.");
+      sottoCons("");                            // 0.84: la risposta si legge nel riquadro della conversazione, qui sotto
     } catch (e) {
       statoCons("errore"); sottoCons("Non sono riuscita a rispondere.");
     }
@@ -289,6 +296,34 @@ document.addEventListener("click", (e) => {
   e.preventDefault(); e.stopPropagation();
   micCasaVai();
 }, true);
+// 0.84: dalla casa si scrive e si risponde ai tasti di lei senza cambiare pagina
+document.addEventListener("submit", (e) => {
+  const f = e.target && e.target.closest && e.target.closest("#casaScrivi");
+  if (!f) return;
+  e.preventDefault();
+  const inp = f.querySelector("#casaTesto"); const t = inp ? inp.value.trim() : "";
+  if (!t) return;
+  if (inp) { inp.value = ""; inp.blur(); }
+  casaRispostaVoce(t).then(fatto => { if (!fatto) return parlaGov(t); }).catch(err => console.warn("casa/scrivi", err));
+}, true);
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-casa-tasto]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const [i, k] = String(b.dataset.casaTasto).split("|");
+  b.disabled = true;
+  rispondiParole(Number(i), k).catch(err => console.warn("casa/tasto", err));
+}, true);
+// "sì" / "no" detti a voce (o scritti) quando lei ha appena proposto qualcosa: valgono come il tocco sul tasto
+async function casaRispostaVoce(t) {
+  const conv = conversazione(); const i = conv.length - 1; const m = conv[i];
+  if (!m || m.chi !== "gov" || !Array.isArray(m.tasti) || !m.tasti.length || !m.azione) return false;
+  const x = String(t || "").trim().toLowerCase();
+  const fine = "(?![a-zà-ÿ])";   // non \b: dopo la "ì" di "sì" il \b non scatta
+  if (new RegExp("^(s[iì]|va bene|vai|fallo|falla|ok|okay|certo|confermo|conferma|d'accordo|perfetto|esatto|giusto)" + fine).test(x) && x.length < 40) { await rispondiParole(i, "si"); return true; }
+  if (new RegExp("^(no|lascia|niente|non farlo|non fare|annulla|aspetta)" + fine).test(x) && x.length < 40) { await rispondiParole(i, "no"); return true; }
+  return false;
+}
 // il tasto che porta giu', dalla schermata di Sofia a tutto il resto
 document.addEventListener("click", (e) => {
   const g = e.target && e.target.closest && e.target.closest("[data-casa-giu]");
@@ -1547,6 +1582,7 @@ const CASA_ICO = {
   mic: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`,
   chat: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg>`,
   giu: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
+  manda: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>`,
   onda: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4"/><path d="M8 6v12"/><path d="M12 9v6"/><path d="M16 4v16"/><path d="M20 10v4"/></svg>`,
   voceSi: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
   voceNo: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>`,
@@ -1567,11 +1603,42 @@ function casaOssatura() {
       <div class="casa-sotto" id="consSotto"></div>
       <p class="casa-info"></p>
     </div>
+    <div class="casa-chat" id="casaChat" aria-live="polite"></div>
+    <form class="casa-scrivi-riga" id="casaScrivi" autocomplete="off">
+      <input type="text" id="casaTesto" placeholder="Scrivi a ${esc(nomeGov())}…" autocomplete="off" enterkeyhint="send" maxlength="600">
+      <button type="submit" class="casa-manda" aria-label="Manda">${CASA_ICO.manda}</button>
+    </form>
     <div class="casa-barra">
       <button type="button" class="casa-t casa-t-voce" data-casa-parla>${CASA_ICO.onda}<span>Parlami</span></button>
       <button type="button" class="casa-t casa-t-mic" data-cons-mic aria-label="Dille qualcosa">${CASA_ICO.mic}<span>Dimmi</span></button>
       <button type="button" class="casa-t" data-casa-giu>${CASA_ICO.giu}<span>Giornate</span></button>
     </div>`;
+}
+// 0.84 - UNA PORTA SOLA: l'ultimo scambio con lei sta qui, sotto il filmato, coi tasti "Sì, fallo / No"
+// a portata di pollice. Prima la proposta finiva nella pagina della chat e dalla casa non si vedeva.
+function casaChatAggiorna(h) {
+  const box = h.querySelector("#casaChat"); if (!box) return;
+  const conv = conversazione();
+  const n = conv.length;
+  const ultimo = n ? conv[n - 1] : null;
+  const pezzi = [];
+  const corto = (t, max) => { t = String(t || "").trim(); return t.length > max ? t.slice(0, max - 1).trimEnd() + "…" : t; };
+  // l'ultima cosa che ha detto Michele (se è l'ultimo messaggio, lei sta ancora pensando)
+  const mio = [...conv].reverse().find(m => m.chi === "io");
+  const lei = [...conv].reverse().find(m => m.chi === "gov");
+  const iMio = mio ? conv.lastIndexOf(mio) : -1, iLei = lei ? conv.lastIndexOf(lei) : -1;
+  if (!ultimo) { box.innerHTML = ""; box.classList.remove("vedi"); return; }
+  if (mio && iMio > iLei - 2) pezzi.push(`<div class="cc-io">${esc(corto(mio.testo, 160))}</div>`);
+  if (govScrive || (ultimo && ultimo.chi === "io")) pezzi.push(`<div class="cc-lei cc-pensa">${esc(nomeGov())} ci pensa…</div>`);
+  else if (lei && iLei >= iMio) {
+    const tasti = Array.isArray(lei.tasti) && lei.tasti.length ? lei.tasti : null;
+    pezzi.push(`<div class="cc-lei">${esc(corto(lei.testo, tasti ? 700 : 420)).replace(/\n/g, "<br>")}</div>`);
+    if (tasti) pezzi.push(`<div class="cc-tasti">${tasti.slice(0, 6).map(t => `<button type="button" class="${t.k === "si" ? "cc-si" : t.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(iLei))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("")}</div>`);
+    else if (lei.scelto) pezzi.push(`<div class="cc-scelto">${esc(lei.scelto)}</div>`);
+  }
+  const html = pezzi.join("");
+  if (box.innerHTML !== html) box.innerHTML = html;
+  box.classList.toggle("vedi", !!html);
 }
 function casaAggiorna(h) {
   const c = consiglioOggi(), u = umoreGov();
@@ -1591,6 +1658,7 @@ function casaAggiorna(h) {
   if (info) info.textContent = voci.join(" \u00b7 ");
   const mic = q(".casa-t-mic");
   if (mic) mic.setAttribute("aria-label", "Dillo a " + nomeGov());
+  casaChatAggiorna(h);
   const bv = q(".casa-voce"), su = voceAccesa();
   if (bv) {
     bv.innerHTML = su ? CASA_ICO.voceSi : CASA_ICO.voceNo;
@@ -1875,7 +1943,24 @@ function testoProposta(a) {
   if (a.tipo === "aggiungi") {
     const prezzi = G.prezziStelle(S.gov), euro = G.prezzoStella(a.minuti, prezzi), n = a.camere.length;
     const dove = a.camere.slice(0, 4).map(id => camera(id).nome).join(", ");
-    return `Metto «${a.cosa || a.regola.nome}» da fare in ${n === 1 ? dove : `${n} posti: ${dove}${n > 4 ? "…" : ""}`}, ${a.minuti} minuti l'una, ${eur(euro)} l'una: in tutto ${eur(euro * n)}. Lo trovano nelle loro camere del prossimo passaggio. Confermo?`;
+    const quando = a.giorno ? `Lo metto per ${a.giorno === L.oggiISO() ? "oggi" : L.dataGiornoLungo(a.giorno)}.` : "Lo trovano nelle loro camere del prossimo passaggio.";
+    return `Metto «${a.cosa || a.regola.nome}» da fare in ${n === 1 ? dove : `${n} posti: ${dove}${n > 4 ? "…" : ""}`}, ${a.minuti} minuti l'una, ${eur(euro)} l'una: in tutto ${eur(euro * n)}. ${quando} Confermo?`;
+  }
+  if (a.tipo === "prospetto") {
+    const D = L.dataMedia;
+    const righe = a.righe.map(r => {
+      const nome = camera(r.camera).nome;
+      if (r.azione === "togli") return `${nome}: libera (tolgo ${r.esistenti.map(e => `${e.nome} ${D(e.inizio)}→${D(e.fine)}`).join(", ")})`;
+      if (r.azione === "accorcia") return `${nome}: ${r.nome} parte ${D(r.fine)} invece di ${D(r.esistente.fine)}`;
+      if (r.azione === "prolunga") return `${nome}: ${r.nome} resta fino a ${D(r.fine)} (prima ${D(r.esistente.fine)})`;
+      if (r.azione === "aggiorna") return `${nome}: ${r.nome} ${D(r.inizio)}→${D(r.fine)} (prima ${D(r.esistente.inizio)}→${D(r.esistente.fine)})`;
+      const chi = r.nome && r.nome !== "?" ? r.nome : "ospiti";
+      const conflitto = (r.conflitti || []).length ? (r.comportamento === "sostituisci" ? ` al posto di ${r.conflitti.map(c => c.nome).join(", ")}` : ` (insieme a ${r.conflitti.map(c => c.nome).join(", ")})`) : "";
+      return `${nome}: ${chi}, ${r.persone || 1} ${(r.persone || 1) === 1 ? "persona" : "persone"}, ${D(r.inizio)}→${D(r.fine)}${conflitto}${r.dubbio ? " (?)" : ""}`;
+    });
+    const dubbi = a.righe.filter(r => r.dubbio).length;
+    const lunghi = (a.lunghi || []).length ? `\nNon tocco i soggiorni lunghi: ${a.lunghi.map(e => `${camera(e.camera).nome} (${e.nome} fino al ${D(e.fine)})`).join(", ")}. Se vanno tolti, dimmelo col nome.` : "";
+    return `Metto nel prospetto:\n${righe.map(x => "• " + x).join("\n")}${a.giaCosi ? `\n(${a.giaCosi} ${a.giaCosi === 1 ? "camera era" : "camere erano"} già così)` : ""}${a.nonCapito.length ? `\nNon ho capito: «${a.nonCapito.join("», «")}»` : ""}${dubbi ? `\nSul (?) non sono sicura: se non va, dimmelo.` : ""}${lunghi}\nLe pulizie si rifanno da sole. Confermo?`;
   }
   return "Confermo?";
 }
@@ -1975,14 +2060,22 @@ async function eseguiParole(a) {
     await salvaIstruzione(a);
     return `Fatto: ${chi} ${a.zona === "tutte" ? "la trovano" : "la trova"} ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)} in cima alla sua schermata, coi ${a.passi.length} passi e i disegnini.`;
   }
+  if (a.tipo === "prospetto") {
+    const { ops, n } = opsRigheProspetto(a.righe);
+    await S.db.scrivi(ops);
+    const base = a.base || settimanaBaseDefault(L.oggiISO());
+    S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
+    disegna();
+    return `Fatto: prospetto aggiornato, ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}. Le pulizie si sono rifatte da sole: le vedi in Giornate e nel Prospetto.`;
+  }
   if (a.tipo === "aggiungi") {
     const prezzi = G.prezziStelle(S.gov), euro = G.prezzoStella(a.minuti, prezzi), oggi = L.oggiISO();
     const ops = []; let n = 0; const quando = [];
     for (const id of a.camere) {
       const cam = camera(id);
       const prossima = Object.values(S.pulizie).filter(p => p.camera === id && p.data > oggi && p.origine !== "governante" && p.tipo !== "extra" && p.stato === "da_fare").sort((x, y) => x.data < y.data ? -1 : 1)[0];
-      const data = prossima ? prossima.data : L.aggiungiGiorni(oggi, 1);
-      const zona = prossima ? prossima.zona : (signoraDiCamera(id) || L.zonaDi(cam, S.regole));
+      const data = a.giorno || (prossima ? prossima.data : L.aggiungiGiorni(oggi, 1));
+      const zona = (prossima && !a.giorno) ? prossima.zona : (signoraDiCamera(id) || L.zonaDi(cam, S.regole));
       const pid = `${data}_${id}_x${Date.now().toString(36)}${n}`;
       ops.push({ tipo: "salva", coll: "pulizie", id: pid, dati: { id: pid, data, camera: id, zona, tipo: "extra", titolo: a.cosa || a.regola.nome, passi: a.regola && a.regola.come ? [a.regola.come] : [], regola: a.regola ? a.regola.id : null, minuti: a.minuti, importo: euro, stato: "da_fare", origine: "mano", creato: S.db.adesso(), da: "la governante" } });
       quando.push(`${cam.nome} ${L.dataBreve(data)}`); n++;
@@ -2409,6 +2502,8 @@ function regolaDaIA(codice, nome) {
     || (nome ? rs.find(r => PAROLE.norm(r.nome) === PAROLE.norm(nome)) : null) || null;
 }
 const dataBuona = d => /^\d{4}-\d{2}-\d{2}$/.test(String(d || "")) ? d : L.oggiISO();
+const MESI_PAROLE = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+function dateInParole(t) { return String(t).replace(/(\d{4})-(\d{2})-(\d{2})/g, (m, y, mo, d) => `${Number(d)} ${MESI_PAROLE[Number(mo) - 1] || mo} ${y}`); }
 function azioneDaIA(a) {
   if (!a || !a.tipo) return null;
   if (a.tipo === "messaggio") { const t = String(a.testo || "").trim(); return t ? { tipo: "messaggio", giorno: dataBuona(a.giorno), testo: t.slice(0, 300) } : null; }
@@ -2423,11 +2518,41 @@ function azioneDaIA(a) {
     if (!zone.includes(chi) && chi !== "tutte") { const z = signore().find(x => PAROLE.norm(SIG(x.id)) === PAROLE.norm(chi)); chi = z ? z.id : "tutte"; }
     return { tipo: "istruzione", zona: chi, giorno: dataBuona(a.giorno), titolo: String(a.titolo || "Una cosa da fare").trim().slice(0, 90), passi };
   }
+  if (a.tipo === "prospetto") {
+    // Sofia ha trasformato quello che le ha detto Michele in righe "Camera: Nome, N persone, dal GG mese al GG mese":
+    // le capisce lo stesso motore della scheda "Dimmi il prospetto", così la proposta e il salvataggio sono quelli già provati
+    const righe = (Array.isArray(a.righe) ? a.righe : String(a.righe || a.testo || "").split(/\n/)).map(x => dateInParole(String(x || "").trim())).filter(Boolean);
+    if (!righe.length) return null;
+    const ctx = { oggi: L.oggiISO(), base: settimanaBaseDefault(L.oggiISO()), soggiorni: soggiorniLista() };
+    let ris; try { ris = capisciProspetto(righe.join("\n"), ctx); } catch (e) { console.warn("prospetto/IA", e); return null; }
+    // "libera" detto a voce non tocca i soggiorni LUNGHI (più di 9 notti: operai, mesi interi): troppo facile cancellare
+    // per sbaglio un mese di lavoro. Quelli si tolgono dal prospetto a mano, o dicendo il nome ("in Alba Fondamenta non viene più").
+    const lunghi = [];
+    for (const r of ris.righe || []) if (r.azione === "togli" && !r.nome) {
+      const corti = r.esistenti.filter(e => L.giorniTra(e.inizio, e.fine) <= 9);
+      for (const e of r.esistenti) if (L.giorniTra(e.inizio, e.fine) > 9) lunghi.push({ camera: r.camera, ...e });
+      r.esistenti = corti;
+      if (!corti.length) { r.azione = "niente"; r.scelto = false; }
+    }
+    // nome non detto ("ospiti", "qualcuno") e in quei giorni lì c'è già qualcuno segnato: è lui, non un altro.
+    // Si tengono il nome e il soggiorno che ci sono (semmai con i giorni nuovi), invece di sostituirli con un "?".
+    for (const r of ris.righe || []) if (r.azione === "nuovo" && (!r.nome || r.nome === "?") && (r.conflitti || []).length) {
+      const quanto = (c) => L.giorniTra(c.inizio > r.inizio ? c.inizio : r.inizio, c.fine < r.fine ? c.fine : r.fine);
+      const e = r.conflitti.slice().sort((x, y) => quanto(y) - quanto(x))[0];
+      r.nome = e.nome; r.dubbio = false; r.motivi = (r.motivi || []).filter(m => !/manca il nome/.test(m)); r.conflitti = r.conflitti.filter(c => c !== e);
+      if (e.inizio === r.inizio && e.fine === r.fine) { r.azione = "niente"; r.scelto = false; }
+      else { r.azione = "aggiorna"; r.esistente = { id: e.id, nome: e.nome, inizio: e.inizio, fine: e.fine }; }
+    }
+    const buone = (ris.righe || []).filter(r => r.scelto !== false && r.azione !== "niente");
+    if (!buone.length) return { tipo: "prospettoVuoto", righe: ris.righe || [], nonCapito: ris.nonCapito || [], lunghi };
+    return { tipo: "prospetto", righe: buone, giaCosi: (ris.righe || []).filter(r => r.azione === "niente").length, nonCapito: ris.nonCapito || [], lunghi, base: ris.base };
+  }
   const camere = camereDaIA(a.dove || a.camere);
   if (a.tipo === "aggiungi") {
     const r = regolaDaIA(a.codice, a.cosa || a.nome), cosa = String(a.cosa || a.nome || (r && r.nome) || "").trim();
     if (!cosa) return null;
-    return { tipo: "aggiungi", regola: r, cosa, camere, minuti: Math.max(1, Math.min(120, Math.round(Number(a.minuti) || (r && r.minuti) || 10))) };
+    const giorno = /^\d{4}-\d{2}-\d{2}$/.test(String(a.giorno || "")) && a.giorno >= L.oggiISO() ? a.giorno : "";
+    return { tipo: "aggiungi", regola: r, cosa, camere, minuti: Math.max(1, Math.min(120, Math.round(Number(a.minuti) || (r && r.minuti) || 10))), giorno };
   }
   const r = regolaDaIA(a.codice, a.cosa || a.nome); if (!r) return null;
   if (a.tipo === "fatto") return { tipo: "fatto", regola: r, altre: [], camere, giorno: dataBuona(a.giorno) };
@@ -2458,6 +2583,11 @@ async function rispostaIA(testo, conv) {
   const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
   const a = azioneDaIA(r.azione);
   if (!a) return { ...base, testo: dice };
+  if (a.tipo === "prospettoVuoto") {
+    const lunghi = (a.lunghi || []).length ? ` Non tocco i soggiorni lunghi: ${a.lunghi.map(e => `${camera(e.camera).nome} (${e.nome} fino al ${L.dataMedia(e.fine)})`).join(", ")}. Se vanno tolti, dimmelo col nome.` : "";
+    const perche = (a.nonCapito.length ? `Non ho capito: «${a.nonCapito.join("», «")}».` : "Nel prospetto è già tutto così: non cambio niente.") + lunghi;
+    return { ...base, testo: `${dice}\n\n${perche}` };
+  }
   if ((a.tipo === "fatto" || a.tipo === "aggiungi") && !a.camere.length)
     return { ...base, testo: `${dice}\n\n«${a.regola ? a.regola.nome : a.cosa}» dove?`, tasti: tastiDove(), azioneDove: a };
   const prop = a.tipo === "togli" ? testoTogli(a)
@@ -3960,7 +4090,18 @@ async function salvaDettatura(f) {
   if (!righe.length) { toast("Non c'è niente da salvare."); return; }
   S.attesa = true; disegnaFoglio();
   try {
-    const ops = [], adesso = S.db.adesso(), da = S.utente.nome || "";
+    const { ops, n } = opsRigheProspetto(righe);
+    await S.db.scrivi(ops);
+    const base = ris.base || statoDettatura().base;
+    S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
+    S.attesa = false; chiudiFoglio();
+    S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
+    toast(`Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}. Le pulizie si aggiornano da sole.`);
+  } catch (e) { S.attesa = false; disegnaFoglio(); erroreScrittura(e); }
+}
+// Le scritture sul prospetto per le righe capite (dalla scheda "Dimmi il prospetto" o da quello che dice Sofia)
+function opsRigheProspetto(righe) {
+    const ops = [], adesso = S.db.adesso(), da = (S.utente && S.utente.nome) || "";
     let n = 0;
     righe.forEach((r, i) => {
       if (r.azione === "togli") { for (const e of r.esistenti) ops.push({ tipo: "cancella", coll: "soggiorni", id: e.id }); n += r.esistenti.length; return; }
@@ -3971,13 +4112,7 @@ async function salvaDettatura(f) {
       ops.push({ tipo: "salva", coll: "soggiorni", id, merge: false, dati: { camera: r.camera, inizio: r.inizio, fine: r.fine, nome: r.nome, tipo: r.tipo, persone: r.persone || 1, supplemento: 0, nota: r.nota || "", notaPrivata: r.notaPrivata || "", dubbio: !!r.dubbio, motivi: r.motivi || [], testoOriginale: r.testo || "", origine: r.copia ? "copia" : "dettatura", mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } });
       n++;
     });
-    await S.db.scrivi(ops);
-    const base = ris.base || statoDettatura().base;
-    S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
-    S.attesa = false; chiudiFoglio();
-    S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
-    toast(`Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}. Le pulizie si aggiornano da sole.`);
-  } catch (e) { S.attesa = false; disegnaFoglio(); erroreScrittura(e); }
+    return { ops, n };
 }
 
 function foglioNota(f) {

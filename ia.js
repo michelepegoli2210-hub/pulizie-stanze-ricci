@@ -101,6 +101,23 @@ export function salvaConf(patch) {
 export function cancellaConf() { try { localStorage.removeItem(CHIAVE_LOCALE); } catch (e) {} }
 export function accesa(c = leggiConf()) { return !!(c.attiva && c.chiave && FORNITORI[c.fornitore]); }
 
+// ---- Le date in parole (per "questa settimana", "sabato", "la prossima") -----
+const GIORNI_IT = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+const MESI_IT = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+function dataUTC(iso) { return new Date(String(iso).slice(0, 10) + "T12:00:00Z"); }
+function isoDi(d) { return d.toISOString().slice(0, 10); }
+function piuGiorni(iso, n) { const d = dataUTC(iso); d.setUTCDate(d.getUTCDate() + n); return isoDi(d); }
+function inParole(iso) { const d = dataUTC(iso); return `${GIORNI_IT[d.getUTCDay()]} ${d.getUTCDate()} ${MESI_IT[d.getUTCMonth()]}`; }
+export function calendarioInParole(oggi) {
+  const d = dataUTC(oggi), wd = d.getUTCDay();
+  const lun = piuGiorni(oggi, wd === 0 ? -6 : 1 - wd);                 // il lunedì di questa settimana
+  const righe = [`Oggi è ${inParole(oggi)} (${oggi}).`];
+  righe.push(`Questa settimana: da lunedì ${piuGiorni(lun, 0)} a domenica ${piuGiorni(lun, 6)} (sabato è ${piuGiorni(lun, 5)}).`);
+  righe.push(`La settimana prossima: da lunedì ${piuGiorni(lun, 7)} a domenica ${piuGiorni(lun, 13)} (sabato è ${piuGiorni(lun, 12)}).`);
+  righe.push("I prossimi giorni: " + [1, 2, 3, 4, 5, 6, 7].map(n => `${inParole(piuGiorni(oggi, n))} = ${piuGiorni(oggi, n)}`).join("; ") + ".");
+  return righe.join("\n");
+}
+
 // ---- Le istruzioni: chi è lei, cosa sa fare, come deve rispondere ---------
 export function istruzioni(foto, elenchi) {
   return `Ti chiami ${elenchi.nome}. Sei LA GOVERNANTE di "Le Stanze di Ricci", un affittacamere a Lesina (Foggia): 13 camere fra albergo, camere in via Nazario Sauro e appartamenti in via Zara e via Trento. Parli con Michele, il proprietario, che ci lavorerà anche mentre fa un altro lavoro.
@@ -149,8 +166,9 @@ Rispondi SOLO con un oggetto JSON, in quest'ordine esatto:
 QUANDO TI CHIEDE DI FARE QUALCOSA
 Tu PROPONI soltanto: fa tutto l'app dopo che Michele tocca "Sì, fallo". Non dire mai "fatto", di' "se vuoi lo faccio".
 Le azioni che esistono, nient'altro:
-1) aggiungere un lavoro extra in uno o più posti:
+1) aggiungere un lavoro extra in uno o più posti (con "giorno" SOLO se dice quando: "per sabato", "domani"; se non lo dice, non mettere "giorno"):
    {"tipo":"aggiungi","cosa":"Lavare le tende","dove":["alba","tramonto"],"minuti":20}
+   {"tipo":"aggiungi","cosa":"Passare l'aspirapolvere","dove":["passerella"],"minuti":15,"giorno":"${foto.oggi}"}
 2) segnare che una cosa del catalogo è GIÀ STATA FATTA:
    {"tipo":"fatto","codice":"C14","dove":["alba"]}
 3) toglierla dalle stelle di questa settimana, o spegnerla per sempre:
@@ -163,6 +181,19 @@ Le azioni che esistono, nient'altro:
    I passi: da 2 a 6, uno per gesto, frasi cortissime come le direbbe una persona a voce, in seconda persona ("prendi", "metti", "chiudi"). Niente numeri davanti: li mette l'app.
    "gesto" scegli SOLO fra questi, quello che somiglia di più; se nessuno va bene metti "":
    ${elenchi.gesti}
+6) IL PROSPETTO, cioè chi c'è in quale camera e in che giorni. Quando Michele ti racconta chi è arrivato, chi c'è, chi parte, chi resta o che una camera è libera, tu lo trasformi in righe del prospetto, una per camera, in questo formato ESATTO (il giorno dopo "al" è il giorno di PARTENZA; mesi in italiano; se non sa il nome scrivi "ospiti"):
+   {"tipo":"prospetto","righe":["Salvatore: Manna, 2 persone, dal 19 ottobre al 25 ottobre","Aurora: ospiti, 2 persone, dal 19 ottobre al 25 ottobre","Alba: libera"]}
+   Regole del prospetto:
+   - "questa settimana", "sono venuti", "ci sono" senza altre date = da lunedì di questa settimana a sabato (partenza sabato). "La settimana prossima" = da lunedì a sabato di quella dopo. Le date le prendi dal CALENDARIO qui sotto, mai a memoria.
+   - "Camera: libera" toglie chi era segnato in quella camera quella settimana. Se dice "SOLO" o "SOLTANTO" queste camere ("sono venuti soltanto Salvatore, Aurora e Michele", "non c'è niente da fare, c'è solo..."), metti le righe per quelle camere E una riga "libera" per OGNI ALTRA camera dell'elenco (tutte e tredici vanno nominate).
+   - "parte giovedì" = accorcia il soggiorno che c'è; "resta fino a domenica" = lo allunga; "come la settimana scorsa" = ripeti l'ospite della settimana prima.
+   - Gli ospiti fissi (ferrovia, tecnici, operai) di solito stanno da lunedì a venerdì o a sabato: se non dice il giorno, metti sabato.
+   - Usa i NOMI delle camere esattamente come nell'elenco (Salvatore, Aurora, Michele, Antonio, Lella, Alba, Tramonto, Passerella, Fenicotteri, Nicole, Via Zara piano terra, Via Zara 1° e 2° piano, Via Trento 47).
+ESEMPI DI COSE CHE DICE MICHELE E COSA FAI TU:
+- "questa settimana non c'è niente da fare in albergo, sono venuti soltanto Salvatore, Aurora e Michele" → azione "prospetto": quelle tre camere con "ospiti" da lunedì a sabato di questa settimana, e TUTTE le altre dieci "libera".
+- "Passerella vuole l'aspirapolvere per sabato" → azione "aggiungi" in passerella con "giorno" = il sabato di questa settimana.
+- "domani arrivano gli operai alle 8" → azione "messaggio" per domani.
+- "in Alba è arrivato Rossi, resta fino a mercoledì" → azione "prospetto" con "Alba: Rossi, dal <oggi> al <mercoledì>".
 In "dove" usa SOLO le sigle dell'elenco delle camere. Se dice "tutte", mettile tutte. Se non capisci dove, lascia "dove" vuoto: te lo chiede l'app. Una azione sola per volta, la più importante.
 Prima di proporre una spesa, guarda quanto è già stato speso questa settimana e dillo nella risposta.
 
@@ -176,6 +207,9 @@ Michele non ha un altro posto dove chiedere: tu sei anche la sua testa pensante 
 - "consiglio" lascialo vuoto e "azione" lascialo null: quelli valgono solo per l'albergo.
 - E qui vale la stessa regola di sempre: se una cosa non la sai o non sei sicura, DILLO. Meglio "questo non lo so con certezza, verificherei qui" che una risposta inventata. Vale per le leggi, le date, i prezzi e i nomi: mai inventarli.
 Quando invece la domanda riguarda la casa, torni corta e pratica come sopra.
+
+IL CALENDARIO (per le date: "sabato", "questa settimana", "domani")
+${calendarioInParole(foto.oggi)}
 
 LE CAMERE (sigla = nome, chi la pulisce)
 ${elenchi.camere}
