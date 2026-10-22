@@ -1267,3 +1267,20 @@ L'app ha gia' il tasto Argon (passo 2 della governante intelligente) e sceglie d
 - ia.js leggiRisposta: ammessa l'azione "prospetto" (era il motivo per cui "ho aggiornato" non aggiornava niente).
 - La bolla di Sofia in casa non taglia piu' il testo: scorre (max 46% dello schermo).
 - "Gia' cosi'" con le date VERE del soggiorno che c'e', non quelle della frase.
+
+## 56. La 0.86 (22 ottobre, sera): ARGON COL SUO CREDITO e I COLORI che Michele sceglie da solo
+Michele: "Spiegami bene come utilizzare Argon e come personalizzare senza troppe modifiche la grafica dell'applicazione, perche' piu' o meno ci siamo."
+### COME STA IL SUO GOOGLE (guardato il 22/10 su aistudio.google.com, senza toccare niente)
+- Chiavi API: una sola, "...YRuA", progetto "LE STANZE DI RICCI" (le-stanze-di-ricci), Livello GRATUITO: e' la chiave dell'app (modello svelto + voce Live, gratis).
+- Progetti: "Default Gemini Project", "LE STANZE DI RICCI", "My First Project". Avviso "Il tuo progetto presenta problemi": e' il Default Gemini Project.
+- Fatturazione: esiste gia' "My Billing Account" (ID 017720-CE730B-BB5D43), PAGAMENTO ANTICIPATO, saldo 0,00 euro, ricarica automatica Off, collegato a 1 progetto: "Default Gemini Project". Scritta rossa: "Per completare la configurazione, aggiungi almeno 30,00 euro al tuo account prepagato" (il minimo per l'Italia e' 30 euro, non i 5 $ della documentazione). Tasto "Acquista crediti".
+- Regole di Google (documentazione billing, letta il 22/10): prepagato = si comprano crediti prima; si scalano quasi in tempo reale; scadono dopo 12 mesi; non rimborsabili; a saldo 0 TUTTE le chiave dei progetti collegati a quel conto rispondono 402 finche' non si ricarica (non tornano gratis). Ricarica automatica facoltativa con tetto mensile. Tetto di spesa del progetto (sperimentale) nella pagina "Spesa". Argon NON e' nel piano gratuito; 2 $/10 $ per milione di token fino al 30/11, poi 4 $/20 $.
+### LA SCELTA: DUE CHIAVI
+- Chiave normale (passo 4) = progetto gratuito LE STANZE DI RICCI: modello svelto, voce, consiglio del giorno se Argon e' in pausa.
+- Chiave per Argon (passo 4b, NUOVA) = una chiave creata nel "Default Gemini Project", che e' quello col conto prepagato. Cosi' quando il credito finisce si ferma SOLO Argon (402): Sofia continua col modello svelto e con la voce, gratis.
+- ia.js: conf.chiaveArgon; messaggioChiaro distingue 402 ("Il credito per Argon e' finito: ricaricalo su aistudio.google.com/billing"), 429 senza piano ("non ha chiamate gratuite: vuole una chiave di un progetto col credito") e 429 normale ("Troppe domande in poco tempo").
+- app.js chiediIA: Argon usa chiaveArgon se c'e'; credito finito o niente piano -> risponde lo svelto con la chiave normale, pausa di Argon 1 ora, avviso una volta; troppe domande -> pausa 2 minuti. Passo 4 "Prova": con Argon scelto prova il modello svelto (e salva modelloSvelto). Passo 4b "Prova Argon": prova Argon con la sua chiave, se va salva il modello e TOGLIE la pausa.
+- Provato (lip3/test86.cjs, Gemini finto che guarda la chiave): senza chiave Argon -> risponde lo svelto, pausa; con la chiave Argon -> "Argon funziona", le domande vanno a gemini-4-argon; credito finito (402) -> risponde lo svelto, pausa 60 min, avviso giusto.
+### I COLORI (Altro -> in cima "Come si vede l'app")
+- Una scheda sola con le tre cose che Michele cambia da solo: 1. il colore (Blu, Oro, Laguna, Bordeaux, Notte), 2. chiaro o scuro, 3. dove stanno i tasti sotto Sofia (le tre disposizioni di prima). Tolta la vecchia scheda "Aspetto" in fondo.
+- style.css: i colori dei tasti "metallo" (prima scritti fissi in 8 regole) ora sono variabili --met1..--met5, --met-sp, --met-ombra; ogni tavolozza cambia quelle, --primary e --accent (col modo scuro i collegamenti restano chiari). Il colore resta su quel telefono (localStorage ricci_colore). Le etichette dei tipi di ospite (Tecnici blu, Operai arancio, Booking verde) non cambiano: sono un significato, non un colore.
