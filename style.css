@@ -1649,3 +1649,7 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .casa-scrivi-riga input::placeholder{color:var(--muted2)}
 .casa-manda{width:50px;height:50px;border-radius:999px;border:0;background:var(--primary);color:#fff;display:grid;place-items:center;flex:0 0 auto;box-shadow:0 2px 8px rgba(0,0,0,.14)}
 .casa-manda:active{transform:scale(.96)}
+/* 0.85 - la bolla di Sofia in casa: tutto il testo, scorre se e' lungo; la graffetta per foto ed Excel */
+.cc-lei{max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.casa-graffa{width:50px;height:50px;border-radius:999px;border:1.5px solid var(--line);background:var(--card-pieno);color:var(--muted);display:grid;place-items:center;flex:0 0 auto;cursor:pointer}
+.casa-graffa:active{transform:scale(.96)}

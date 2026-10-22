@@ -22,11 +22,13 @@ export const FORNITORI = {
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
     url: (m) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`,
     testa: (k) => ({ "content-type": "application/json", "x-goog-api-key": k }),
-    corpo: (sistema, storia, testo) => ({
+    corpo: (sistema, storia, testo, m, immagine) => ({
       system_instruction: { parts: [{ text: sistema }] },
-      contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })), { role: "user", parts: [{ text: testo }] }],
+      contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })),
+        { role: "user", parts: [...(immagine ? [{ inline_data: { mime_type: immagine.mime || "image/jpeg", data: immagine.dati } }] : []), { text: testo }] }],
       generationConfig: { temperature: 0.4, maxOutputTokens: 4000, responseMimeType: "application/json" },
     }),
+    leggeFoto: true,
     leggi: (j) => (((j.candidates || [])[0] || {}).content?.parts || []).map(p => p.text || "").join(""),
   },
   openai: {
@@ -66,7 +68,7 @@ export const FORNITORI = {
   },
 };
 export const FORNITORE_BASE = "gemini";
-export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", qualita: "svelta", ultimo: "", errori: 0, v: 2 };
+export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", qualita: "argon", modelloSvelto: "", ultimo: "", errori: 0, v: 3 };
 // Il numero di versione dentro il nome del modello ("gemini-3.8-flash" -> 3.8): serve a pescare sempre il piu nuovo
 export function versioneModello(nome) { const m = String(nome).match(/(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; }
 export function scegliModello(tutti, fornitore, qualita = "svelta") {
@@ -89,7 +91,9 @@ export function leggiConf() {
   // 0.64: prima si partiva dal modello "flash", che sul piano gratuito ci mette
   // anche venti secondi. Adesso si parte dal "flash-lite", che risponde in meno
   // di un secondo. Chi aveva gia' salvato passa da solo.
-  if (s.v !== 2) { c.qualita = CONF_BASE.qualita; c.modello = ""; c.v = 2; }
+  // 0.85: Michele vuole ARGON "a tutti i costi": si parte da Argon. Se Google risponde che serve la carta
+  // (o ci mette troppo), l'app risponde lo stesso col modello svelto e per un'ora non riprova Argon (app.js).
+  if (!s.v || s.v < 3) { c.qualita = "argon"; c.modello = ""; c.v = 3; }
   if (c.qualita === "risparmio") c.qualita = "svelta";
   return c;
 }
@@ -265,15 +269,16 @@ export async function provaChiave(conf) {
 }
 
 // La domanda vera: le mando la fotografia, lo storico corto e quello che ha scritto Michele.
-export async function chiedi({ conf, sistema, storia = [], testo }) {
+export async function chiedi({ conf, sistema, storia = [], testo, immagine = null, secondi = 40 }) {
   const f = FORNITORI[conf.fornitore]; if (!f) throw new Error("Fornitore sconosciuto.");
   if (!conf.chiave) throw new Error("Manca la chiave.");
+  if (immagine && !f.leggeFoto) throw new Error("Le foto le sa leggere solo Gemini.");
   let modello = conf.modello;
   if (!modello) modello = (await trovaModello(conf)).modello;
   const corti = storia.slice(-8).filter(m => m && m.testo && (m.chi === "io" || m.chi === "gov")).map(m => ({ chi: m.chi, testo: String(m.testo).slice(0, 600) }));
   // il primo messaggio deve essere di Michele: se no certi server si lamentano
   while (corti.length && corti[0].chi !== "io") corti.shift();
-  const j = await chiamata(f.url(modello), f.testa(conf.chiave), f.corpo(sistema, corti, testo, modello), 40);
+  const j = await chiamata(f.url(modello), f.testa(conf.chiave), f.corpo(sistema, corti, testo, modello, immagine), immagine ? Math.max(secondi, 60) : secondi);
   const txt = f.leggi(j);
   if (!txt || !txt.trim()) throw new Error("Ha risposto vuoto.");
   return { ...leggiRisposta(txt), modello, grezzo: txt };
@@ -292,7 +297,7 @@ export function leggiRisposta(txt) {
   const c = String(o.consiglio ?? "").trim();
   const sal = String(o.saluto ?? "").trim();
   let a = o.azione && typeof o.azione === "object" ? o.azione : null;
-  if (a && !["aggiungi", "fatto", "togli", "messaggio", "istruzione"].includes(a.tipo)) a = null;
+  if (a && !["aggiungi", "fatto", "togli", "messaggio", "istruzione", "prospetto"].includes(a.tipo)) a = null;   // 0.85: "prospetto" mancava e veniva buttata via
   return { risposta: r || String(txt).slice(0, 600).trim(), consiglio: c, saluto: sal, azione: a };
 }
 

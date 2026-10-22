@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.84.4";
+export const VERSIONE = "0.85.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -80,28 +80,35 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 const CHIAVE_FACCE = "ricci_gov_facce";
 const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
 const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
-const FILM_PRONTO = { parla: "cons-parla.mp4", riposo: "cons-riposo.mp4", poster: "cons-poster.webp" };
+const FILM_PRONTO = { parla: "cons-parla.mp4", riposo: "cons-riposo.mp4", poster: "cons-poster.webp", abbina: "cons-film.json" };
 // 0.80: SOLO FILMATI (decisione di Michele del 21 ottobre: "lascia stare la sincronia della bocca,
-// metti soltanto i filmati"). Niente piu' maschera ne' labiale: quando parla si vede un video in cui
-// lei parla davvero, quando ascolta o non fa niente uno in cui sta li' (ascolta, annuisce, pose).
-// 0.81: DUE FILMATI LUNGHI SOLTANTO (Michele, 21 ottobre: "un filmato di una quarantina di secondi
-// dove parla ed e' sempre quello... e uno di una quarantina di secondi dove sta ferma, ascolta, annuisce").
-//  - cons-parla.mp4  (0.83: 47 s): cinque spezzoni in cui parla (talk1, Gemini Pro, v3, v7, v1), fusi in dissolvenza di 0,7 s
-//  - cons-riposo.mp4 (0.83: 38 s): ascolta, posa, aspetta, posa 2 - SOLO video in avanti, niente piu' andata e ritorno
-// Ogni filmato si vede per intero, in avanti; quando sta per finire riparte da capo con una dissolvenza di
-// mezzo secondo. Tutti i video partono dalla stessa foto, quindi hanno la stessa inquadratura.
-const FILM_GRUPPI = {
-  parla: ["parla"],      // lei che parla
-  ascolta: ["riposo"],   // mentre si parla a lei
-  pensa: ["riposo"],     // mentre aspetta la risposta
-  riposo: ["riposo"],    // quando non succede niente
-};
+// metti soltanto i filmati"). Quando parla si vede un video in cui lei parla davvero, quando ascolta o
+// non fa niente uno in cui sta li' (ascolta, annuisce, pose). 0.81: due filmati lunghi soltanto.
+// 0.83: niente piu' pezzi che vanno avanti e indietro. 0.85: FLUIDI (Michele, 22 ottobre: "devono essere
+// molto piu' fluidi... non farli fare andata e ritorno... mandali in loop"):
+//  - cons-parla.mp4 (37 s, 5 spezzoni) e cons-riposo.mp4 (28 s, 4 spezzoni) sono montati da dev/long/monta.py:
+//    ordine e punti di taglio scelti dove le pose (e gli occhi, la bocca, la testa) si somigliano di piu',
+//    e nelle dissolvenze i due visi sono ALLINEATI (non si vede mai la doppia faccia). La giuntura
+//    fine -> inizio e' dentro il filmato: ogni filmato gira da solo col "loop" del lettore, senza stacchi.
+//  - quando lei comincia o smette di parlare si passa all'altro filmato con una dissolvenza, ma il nuovo
+//    parte dal punto in cui la posa somiglia di piu' a quella di quel momento (cons-film.json, da abbina.py).
+const FILM_GRUPPI = { parla: "parla", ascolta: "riposo", pensa: "riposo", riposo: "riposo" };
 const FILM_DISSOLVENZA = 520;                               // ms (come lo stile .gov-film video)
+let FILM_ABBINA = null;
+try { fetch(FILM_PRONTO.abbina).then(r => r.ok ? r.json() : null).then(j => { if (j && j.da) FILM_ABBINA = j; }).catch(() => {}); } catch (e) {}
+// il punto del filmato `a` che somiglia di piu' al punto `t` (secondi) del filmato `da`
+function filmPuntoAbbinato(da, a, t) {
+  const j = FILM_ABBINA; const lista = j && j.da && j.da[da] && j.da[da][a];
+  if (!lista || !lista.length) return 0;
+  const dur = Number((j.durata || {})[da]) || 0;
+  let tt = Number(t) || 0; if (dur > 0) tt = ((tt % dur) + dur) % dur;
+  return Math.max(0, Number(lista[Math.round(tt / (Number(j.passo) || 0.25)) % lista.length]) || 0);
+}
 function FILM_CONS(cls) {
   const f = FILM_PRONTO;
   return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo">
-    <video class="cf-v" src="${f.riposo}" poster="${f.poster}" autoplay muted playsinline preload="auto"></video>
-    <video class="cf-v giu" poster="${f.poster}" muted playsinline preload="none"></video>
+    <video class="cf-v" src="${f.riposo}" poster="${f.poster}" autoplay muted playsinline loop preload="auto"></video>
+    <video class="cf-v giu" poster="${f.poster}" muted playsinline loop preload="none"></video>
   </span>`;
 }
 let filmTimer = null;
@@ -109,50 +116,33 @@ function filmGov(quale, soloBox) {
   const caselle = soloBox ? [soloBox] : [...document.querySelectorAll(".gov-film")];
   for (const b of caselle) filmUno(quale, b, true);
 }
-// il prossimo filmato del gruppo, diverso da quello in corso (a giro)
-function filmProssimo(lista, corrente) {
-  if (!lista || !lista.length) return null;
-  const i = lista.indexOf(corrente);
-  if (i < 0) return lista[0] === corrente && lista.length > 1 ? lista[1] : lista[0];
-  return lista[(i + 1) % lista.length];
-}
-// quanto manca alla fine del filmato in corso (secondi; 0 se fermo o finito)
-function filmResto(v) {
-  const d = Number(v.duration) || 0, t = Number(v.currentTime) || 0;
-  if (!d || v.paused || v.ended) return 0;
-  return Math.max(0, d - t);
-}
-// Prepara il filmato `quale` nel video nascosto e, quando `subito` e' vero (o il filmato in corso e'
-// agli sgoccioli), lo manda in dissolvenza al posto di quello in corso.
-function filmUno(quale, box, subito, ancheUguale) {
+// Prepara il filmato `quale` nel video nascosto (gia' al punto giusto) e lo manda in dissolvenza al posto di quello in corso.
+function filmUno(quale, box) {
   if (!box || !FILM_PRONTO[quale] || box.dataset.occupato === "1") return;
-  if (box.dataset.film === quale && !ancheUguale) { box._prep = null; return; }
+  if (box.dataset.film === quale) { box._prep = null; return; }
   const vs = [...box.querySelectorAll("video")];
   if (vs.length < 2) return;
   const su = vs.find(v => !v.classList.contains("giu")) || vs[0];
   const giu = vs.find(v => v !== su);
   let p = box._prep;
   if (!p || p.quale !== quale) {
-    p = box._prep = { quale, pronto: false, da: Date.now() };
-    giu.src = FILM_PRONTO[quale];
-    giu.loop = false;
+    const da = box.dataset.film || "";
+    const inizio = da ? filmPuntoAbbinato(da, quale, (Number(su.currentTime) || 0) + 0.3) : 0;
+    p = box._prep = { quale, pronto: false, da: Date.now(), inizio };
+    const segna = () => { if (box._prep === p) p.pronto = true; };
+    const vaiA = () => {
+      if (inizio > 0.05) { giu.addEventListener("seeked", segna, { once: true }); try { giu.currentTime = inizio; } catch (e) { segna(); } }
+      else { try { if ((Number(giu.currentTime) || 0) > 0.05) giu.currentTime = 0; } catch (e) {} segna(); }
+    };
+    giu.loop = true;
     try { giu.playbackRate = 1; } catch (e) {}
-    giu.load();
-    giu.addEventListener("canplay", () => { if (box._prep === p) p.pronto = true; }, { once: true });
+    if (giu.getAttribute("src") === FILM_PRONTO[quale] && giu.readyState >= 1) vaiA();
+    else { giu.src = FILM_PRONTO[quale]; giu.preload = "auto"; giu.addEventListener("loadedmetadata", vaiA, { once: true }); giu.load(); }
   }
-  const pronto = p.pronto || giu.readyState >= 3;
-  if (!pronto) {                              // il prossimo non e' ancora pronto (rete lenta): ci riprova filmVigila fra 150 ms;
-    // intanto, se quello in corso e' finito, lo faccio ripartire da capo: meglio uno stacco che un fotogramma nero o fermo
-    if (su.ended || (su.paused && (Number(su.currentTime) || 0) > 0.2)) { try { su.currentTime = 0; su.play().catch(() => {}); } catch (e) {} }
-    return;
-  }
-  if (!subito && filmResto(su) > 0.6) {          // si aspetta la fine del filmato in corso...
-    const t = Number(su.currentTime) || 0;
-    if (p.ultimoT !== t) { p.ultimoT = t; p.fermoDa = Date.now(); }
-    if (Date.now() - (p.fermoDa || Date.now()) < 6000) return;   // ...finche' avanza; se resta bloccato 6 s si cambia lo stesso
-  }
+  // pronto = gia' al punto giusto e con l'immagine; se il salto non risponde in 3 s si va lo stesso (mai un nero)
+  const pronto = (p.pronto && giu.readyState >= 2) || (Date.now() - p.da > 3000 && giu.readyState >= 3);
+  if (!pronto) return;                        // ci riprova filmVigila fra 150 ms
   box.dataset.occupato = "1"; box._prep = null;
-  try { if (giu.currentTime > 0.05) giu.currentTime = 0; } catch (e) {}
   giu.play().catch(() => {});
   giu.classList.remove("giu");
   su.classList.add("giu");
@@ -170,18 +160,12 @@ function filmVigila() {
       const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
       const pensa = !parla && !ascolta && forzato === "pensa";
-      const gruppo = parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : "riposo";
-      const lista = FILM_GRUPPI[gruppo] || FILM_GRUPPI.riposo;
-      const corrente = b.dataset.film || "";
-      const dentro = lista.includes(corrente);
+      const quale = FILM_GRUPPI[parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : "riposo"];
       const su = [...b.querySelectorAll("video")].find(v => !v.classList.contains("giu"));
-      if (su && su.paused && !su.ended && !b.dataset.occupato && su.readyState >= 2 && filmResto(su) === 0 && (su.currentTime || 0) < 0.2) su.play().catch(() => {});
-      const resto = su ? filmResto(su) : 0;
-      // fuori dal gruppo giusto: si cambia subito; dentro: si cambia quando il filmato sta per finire
-      // (si prepara il prossimo 2,5 s prima, cosi' la dissolvenza parte in tempo e non si vede mai fermo)
-      const prossimo = filmProssimo(lista, corrente);
-      if (!dentro) filmUno(prossimo, b, true);
-      else if (su && (su.ended || (resto > 0 && resto < 2.5))) filmUno(prossimo, b, false, prossimo === corrente);   // (gruppo con un filmato solo: riparte lo stesso, in dissolvenza)
+      // il filmato in vista gira da solo (loop): se per qualche motivo si e' fermato, riparte
+      if (su && !su.loop) su.loop = true;
+      if (su && su.paused && !b.dataset.occupato && su.readyState >= 2) su.play().catch(() => {});
+      if ((b.dataset.film || "") !== quale) filmUno(quale, b);
     }
   }, 150);
 }
@@ -314,6 +298,41 @@ document.addEventListener("click", (e) => {
   b.disabled = true;
   rispondiParole(Number(i), k).catch(err => console.warn("casa/tasto", err));
 }, true);
+// 0.85 - LA GRAFFETTA: il foglio Excel di papà va nella lettura del foglio che c'era già; la FOTO del prospetto
+// la legge Sofia (Gemini vede le immagini) e propone le righe, come quando glielo dici a voce.
+document.addEventListener("change", (e) => {
+  const inp = e.target && e.target.id === "casaFile" ? e.target : null; if (!inp) return;
+  const f = inp.files && inp.files[0]; inp.value = "";
+  casaAllegato(f).catch(err => console.warn("allegato", err));
+}, true);
+async function casaAllegato(file) {
+  if (!file) return;
+  const nome = String(file.name || "").toLowerCase(), tipo = String(file.type || "");
+  if (/\.(xlsx|xlsm|xls|ods)$/.test(nome) || /sheet|excel/.test(tipo)) { leggiFileExcel(file); return; }
+  if (!/^image\//.test(tipo) && !/\.(jpe?g|png|webp)$/.test(nome)) { toast("Mandami una foto o il foglio Excel."); return; }
+  if (!iaAccesa()) { toast(`Per leggere le foto ${nomeGov()} deve essere intelligente: serve la chiave di Gemini (Altro → Governante intelligente).`); return; }
+  let img; try { img = await fotoPiccola(file); } catch (e) { toast("Non riesco ad aprire questa foto."); return; }
+  const conv = [...conversazione(), { chi: "io", testo: "📷 Ti mando la foto del prospetto", ora: S.db.adesso() }];
+  salvaConversazione(conv); govScrive = true; disegna();
+  let msg = null;
+  try {
+    msg = await rispostaIA(`Ti mando la FOTO del prospetto (il foglio di papà: le camere e i giorni). Leggila camera per camera e mettimi l'azione "prospetto" con una riga per ogni ospite che vedi, nel formato "Camera: Nome, N persone, dal GG mese al GG mese" (il giorno dopo "al" è quello di partenza). NON mettere righe "libera". Se un nome o una data non si legge bene, metti il punto di domanda dopo il nome. Nella risposta dimmi in una frase che giorni copre la foto e quanti ospiti hai letto.`, conv, img);
+  } catch (e) { console.warn("foto", e); msg = { chi: "gov", testo: "Non sono riuscita a leggere la foto: " + String(e.message || e), ora: S.db.adesso() }; }
+  govScrive = false;
+  salvaConversazione([...conversazione(), msg]);
+  if (voceAccesa() && msg && msg.testo) parlaConVoce(String(msg.testo).split("\n")[0]);
+}
+// la foto rimpicciolita (lato lungo 1800 punti, JPEG): basta per leggere e non pesa
+async function fotoPiccola(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const im = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url; });
+    const k = Math.min(1, 1800 / Math.max(im.naturalWidth || 1, im.naturalHeight || 1));
+    const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+    c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+    return { mime: "image/jpeg", dati: c.toDataURL("image/jpeg", 0.85).split(",")[1] };
+  } finally { URL.revokeObjectURL(url); }
+}
 // "sì" / "no" detti a voce (o scritti) quando lei ha appena proposto qualcosa: valgono come il tocco sul tasto
 async function casaRispostaVoce(t) {
   const conv = conversazione(); const i = conv.length - 1; const m = conv[i];
@@ -1582,6 +1601,7 @@ const CASA_ICO = {
   mic: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`,
   chat: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg>`,
   giu: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
+  graffa: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>`,
   manda: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>`,
   onda: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4"/><path d="M8 6v12"/><path d="M12 9v6"/><path d="M16 4v16"/><path d="M20 10v4"/></svg>`,
   voceSi: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
@@ -1605,6 +1625,7 @@ function casaOssatura() {
     </div>
     <div class="casa-chat" id="casaChat" aria-live="polite"></div>
     <form class="casa-scrivi-riga" id="casaScrivi" autocomplete="off">
+      <label class="casa-graffa" aria-label="Manda la foto del prospetto o il foglio Excel">${CASA_ICO.graffa}<input type="file" id="casaFile" accept="image/*,.xlsx,.xls,.xlsm,.ods" hidden></label>
       <input type="text" id="casaTesto" placeholder="Scrivi a ${esc(nomeGov())}…" autocomplete="off" enterkeyhint="send" maxlength="600">
       <button type="submit" class="casa-manda" aria-label="Manda">${CASA_ICO.manda}</button>
     </form>
@@ -1632,7 +1653,7 @@ function casaChatAggiorna(h) {
   if (govScrive || (ultimo && ultimo.chi === "io")) pezzi.push(`<div class="cc-lei cc-pensa">${esc(nomeGov())} ci pensa…</div>`);
   else if (lei && iLei >= iMio) {
     const tasti = Array.isArray(lei.tasti) && lei.tasti.length ? lei.tasti : null;
-    pezzi.push(`<div class="cc-lei">${esc(corto(lei.testo, tasti ? 700 : 420)).replace(/\n/g, "<br>")}</div>`);
+    pezzi.push(`<div class="cc-lei">${esc(String(lei.testo || "").trim()).replace(/\n/g, "<br>")}</div>`);
     if (tasti) pezzi.push(`<div class="cc-tasti">${tasti.slice(0, 6).map(t => `<button type="button" class="${t.k === "si" ? "cc-si" : t.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(iLei))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("")}</div>`);
     else if (lei.scelto) pezzi.push(`<div class="cc-scelto">${esc(lei.scelto)}</div>`);
   }
@@ -2557,11 +2578,12 @@ function azioneProspettoDaRighe(righe, baseVoluta) {
       const quanto = (c) => L.giorniTra(c.inizio > r.inizio ? c.inizio : r.inizio, c.fine < r.fine ? c.fine : r.fine);
       const e = r.conflitti.slice().sort((x, y) => quanto(y) - quanto(x))[0];
       r.nome = e.nome; r.dubbio = false; r.motivi = (r.motivi || []).filter(m => !/manca il nome/.test(m)); r.conflitti = r.conflitti.filter(c => c !== e);
+      r.inizio = e.inizio; r.fine = e.fine;
       r.azione = "niente"; r.scelto = false;        // c'è già lui: si tiene com'è, giorni compresi
     }
     // nome non detto ("ospiti") e quell'ospite è già segnato in quei giorni: non gli cambio le date (arriva la domenica
     // sera, parte il venerdì: lo sa il prospetto meglio di una frase detta di fretta). Si tiene com'è.
-    for (const r of ris.righe || []) if (r.azione === "aggiorna" && (r.assunti || []).some(x => /nome non detto/.test(x))) { r.azione = "niente"; r.scelto = false; }
+    for (const r of ris.righe || []) if (r.azione === "aggiorna" && (r.assunti || []).some(x => /nome non detto/.test(x))) { if (r.esistente) { r.inizio = r.esistente.inizio; r.fine = r.esistente.fine; } r.azione = "niente"; r.scelto = false; }
     const buone = (ris.righe || []).filter(r => r.scelto !== false && r.azione !== "niente");
     if (!buone.length) return { tipo: "prospettoVuoto", righe: ris.righe || [], nonCapito: ris.nonCapito || [], lunghi };
     return { tipo: "prospetto", righe: buone, giaCosi: (ris.righe || []).filter(r => r.azione === "niente").length, nonCapito: ris.nonCapito || [], lunghi, base: ris.base };
@@ -2604,29 +2626,46 @@ function azioneDalleParole(testo) {
 }
 // La risposta dell'IA, pronta per la chat (col "Sì, fallo" se propone qualcosa)
 let argonAvvisato = false;
-async function rispostaIA(testo, conv) {
+// ---- 0.85: ARGON PRIMA DI TUTTO (Michele, 22 ottobre: "devi mettere Argon a tutti i costi") -------------------
+// Ogni domanda prova prima il modello scelto (Argon). Se Google risponde che serve la carta sulla chiave, si
+// risponde col modello svelto e per UN'ORA non si riprova Argon (cosi' non si perde tempo a ogni messaggio);
+// se Argon ci mette troppo, si risponde col modello svelto ma Argon resta il primo della volta dopo.
+// Quando Michele mette la carta su Google, Argon parte da solo: non c'e' niente da cambiare nell'app.
+const ARGON_PAUSA_MS = 60 * 60 * 1000, CHIAVE_ARGON_PAUSA = "ricci_argon_pausa";
+function argonInPausa() { try { return Number(localStorage.getItem(CHIAVE_ARGON_PAUSA) || 0) > Date.now(); } catch (e) { return false; } }
+function pausaArgon() { try { localStorage.setItem(CHIAVE_ARGON_PAUSA, String(Date.now() + ARGON_PAUSA_MS)); } catch (e) {} }
+async function confSvelta(c) {
+  const v = { ...c, qualita: "svelta", modello: c.modelloSvelto || "" };
+  if (!v.modello) { const t = await IA.trovaModello(v); v.modello = t.modello; IA.salvaConf({ modelloSvelto: t.modello }); }
+  return v;
+}
+async function chiediIA(dom) {
   const c = confIA();
+  const grande = c.qualita !== "svelta";
+  if (grande && argonInPausa()) return { r: await IA.chiedi({ ...dom, conf: await confSvelta(c) }), ripiego: true };
+  try {
+    const r = await IA.chiedi({ ...dom, conf: c, secondi: grande ? 45 : 40 });
+    if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
+    return { r, ripiego: false };
+  } catch (e) {
+    const m = String((e && e.message) || ""), lento = !!(e && e.name === "AbortError");
+    if (!grande || !(lento || /gratuite|quota|429|carta|billing|exceeded/i.test(m))) throw e;
+    if (!lento) pausaArgon();
+    const r = await IA.chiedi({ ...dom, conf: await confSvelta(c) });
+    if (!lento && !argonAvvisato) { argonAvvisato = true; toast("Argon non risponde finché non c'è la carta sulla chiave di Google: ti ho risposto col modello svelto."); }
+    return { r, ripiego: true };
+  }
+}
+async function rispostaIA(testo, conv, immagine) {
   const sis = sistemaIA(), storia = conv.slice(0, -1);
   let r, ripiego = false;
-  try { r = await IA.chiedi({ conf: c, sistema: sis, storia, testo }); }
-  catch (e) {
-    // Argon e i modelli grossi non hanno chiamate gratuite: invece di lasciare
-    // Michele senza risposta, rispondo lo stesso col modello svelto e glielo dico.
-    const m = String((e && e.message) || "");
-    if (!/gratuite|quota|429|carta/i.test(m) || c.qualita === "svelta") throw e;
-    const veloce = { ...c, qualita: "svelta", modello: "" };
-    const t = await IA.trovaModello(veloce);
-    r = await IA.chiedi({ conf: { ...veloce, modello: t.modello }, sistema: sis, storia, testo });
-    ripiego = true;
-    if (!argonAvvisato) { argonAvvisato = true; toast("Argon non risponde senza carta sulla chiave: ti ho risposto col modello svelto."); }
-  }
+  ({ r, ripiego } = await chiediIA({ sistema: sis, storia, testo, immagine }));
   try { window._ultimaIA = { quando: new Date().toISOString(), modello: r.modello, azione: r.azione || null, grezzo: String(r.grezzo || "").slice(0, 4000) }; } catch (e) {}   // per capire cosa ha risposto davvero (si legge dalla console)
-  if (!ripiego && r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
   IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
   const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
   let a = azioneDaIA(r.azione);
-  if (!a) { try { a = azioneDalleParole(testo); } catch (e) { console.warn("parole/prospetto", e); a = null; } if (!a) console.info("prospetto/parole: niente da proporre per:", String(testo).slice(0, 80)); }
+  if (!a && !immagine) { try { a = azioneDalleParole(testo); } catch (e) { console.warn("parole/prospetto", e); a = null; } if (!a) console.info("prospetto/parole: niente da proporre per:", String(testo).slice(0, 80)); }
   if (!a) return { ...base, testo: dice };
   if (a.tipo === "prospettoVuoto") {
     const lunghi = (a.lunghi || []).length ? ` Non tocco i soggiorni lunghi: ${a.lunghi.map(e => `${camera(e.camera).nome} (${e.nome} fino al ${L.dataMedia(e.fine)})`).join(", ")}. Se vanno tolti, dimmelo col nome.` : "";
@@ -2657,7 +2696,7 @@ async function chiediConsiglioDelGiorno() {
   if (!S.caricati.pulizie || !S.caricati.soggiorni) return;
   consiglioInCorso = true;
   try {
-    const r = await IA.chiedi({ conf: confIA(), sistema: sistemaIA(), storia: [],
+    const { r } = await chiediIA({ sistema: sistemaIA(), storia: [],
       testo: `Fai il tuo giro di controllo delle sette cose, poi rispondi con questo JSON: {"pensiero":"...","saluto":"...","risposta":"...","consiglio":"...","azione":null}.
 "saluto": una riga sola che apre la giornata. Comincia con ${saluto()} e il mio nome (${nomeMio()}). Se c'è qualcosa di VERAMENTE meritato nella fotografia (tutte le camere chiuse, un controllo andato bene, una settimana in ordine) dillo in mezza frase, con il fatto preciso. Se non c'è niente di meritato NON inventare complimenti: metti invece una spinta corta e pratica per oggi. Massimo 18 parole.
 "risposta": in UNA frase corta com'è la situazione adesso, la cosa più importante, col numero.
