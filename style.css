@@ -1673,3 +1673,76 @@ body.nonna .sig-riga.letta .sig-testo b{font-size:20px}
 .col-opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-bg)}
 .come-si-vede h3{margin:14px 0 6px;font:700 13px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .come-si-vede h3:first-of-type{margin-top:4px}
+
+/* ==========================================================================
+   0.88 - LA PARTE DEL TITOLARE IN STILE GRANDE ALBERGO
+   Dietro: parete di velluto bordeaux con le cornici d'oro, corrimano dorato e boiserie di noce lucido
+   (sfondo-lusso.webp; sul computer e col telefono girato sfondo-lusso-largo.webp). Le schede restano
+   chiare, come la carta intestata di un albergo, con un filo d'oro; le scritte che stanno direttamente
+   sulla parete diventano avorio. Titoli in Playfair Display (licenza SIL OFL, file in fonts/).
+   Vale solo con body.lusso (Michele e chi gestisce): le signore restano con la loro schermata.
+   ========================================================================== */
+@font-face{font-family:"Playfair Display";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/playfair-display-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Playfair Display";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/playfair-display-latin-400-italic.woff2) format("woff2")}
+body.lusso{--f-lusso:"Playfair Display","Didot","Bodoni 72",Georgia,"Times New Roman",serif;--avorio:#F8EDD6;--avorio2:rgba(248,237,214,.8);--oro-chiaro:#E8CD8E;--filo-oro:rgba(201,160,84,.5);--ombra-parete:0 1px 3px rgba(0,0,0,.75),0 0 14px rgba(0,0,0,.35);background:#1b0b08}
+body.lusso .laguna{background:#3a0d14 url(sfondo-lusso.webp) center top/cover no-repeat;filter:none}
+@media (min-aspect-ratio:1/1){body.lusso .laguna{background-image:url(sfondo-lusso-largo.webp)}}
+body.lusso .laguna::before{content:none;animation:none}
+body.lusso .laguna::after{background:linear-gradient(180deg,rgba(20,6,4,.28) 0%,rgba(20,6,4,0) 18%,rgba(20,6,4,0) 80%,rgba(10,4,2,.3) 100%)}
+:root[data-theme="dark"] body.lusso .laguna{filter:brightness(.62) saturate(.9)}
+/* la testata: legno scuro con le lettere d'oro */
+body.lusso header{background:linear-gradient(180deg,rgba(40,15,11,.95),rgba(27,10,8,.92));color:var(--avorio);border-bottom:1px solid var(--filo-oro);box-shadow:inset 0 1px 0 rgba(255,228,170,.08),0 8px 20px -10px rgba(0,0,0,.7);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+body.lusso h1{font:600 19px/1.15 var(--f-lusso);color:var(--oro-chiaro);letter-spacing:.01em}
+body.lusso h1 small{font:500 12px var(--f-body);color:rgba(248,237,214,.7);letter-spacing:.02em}
+body.lusso h1 .fl{color:rgba(248,237,214,.7)}
+body.lusso .who{--m1:#F1DDA4;--m2:#9C7428;--m3:#CDA75C;--m4:#7A5718;--mtx:#2A1A06;--msp:#3E2906;--minc:0 1px 0 rgba(255,240,205,.55);--mbordo:rgba(60,35,0,.5)}
+body.lusso .who.off{--m1:#7C3A46;--m2:#412329;--m3:#5B2E37;--m4:#281418;--mtx:#FFFFFF;--msp:#170A0B;--minc:0 1px 1px rgba(0,0,0,.8);--mbordo:rgba(60,0,0,.35)}
+/* le schede: carta avorio con un filo d'oro e l'ombra sulla parete */
+body.lusso .card:not(.flat),body.lusso .conferma-box,body.lusso .menu{box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 1px rgba(176,132,56,.42),0 2px 0 rgba(96,64,20,.6),0 20px 36px -18px rgba(0,0,0,.8)}
+body.lusso .stat{box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 1px rgba(176,132,56,.38),0 2px 0 rgba(96,64,20,.55),0 10px 18px -10px rgba(0,0,0,.6)}
+body.lusso .card h2{font-family:var(--f-lusso);font-weight:600;letter-spacing:0}
+/* quello che sta direttamente sulla parete: avorio */
+body.lusso .card.flat>h2,body.lusso .card.flat>p,body.lusso .card.flat>.muted,body.lusso .card.flat>span.muted{color:var(--avorio);text-shadow:var(--ombra-parete)}
+body.lusso .card.flat>p.muted,body.lusso .card.flat>.muted{color:var(--avorio2)}
+body.lusso .card.flat>h2{font-size:21px}
+body.lusso .navmese b{color:var(--avorio);font-family:var(--f-lusso);font-weight:600;text-shadow:var(--ombra-parete)}
+body.lusso .banner.info{background:rgba(30,10,8,.55);color:var(--avorio2);border:1px solid var(--filo-oro)}
+body.lusso main>.muted,body.lusso main>p{color:var(--avorio2);text-shadow:var(--ombra-parete)}
+/* la prima pagina: il ritratto di Sofia in una cornice dorata, le scritte avorio e oro */
+body.lusso .sofia-hero{padding-top:max(calc(env(safe-area-inset-top,0px) + 14px),min(9vw,40px))}
+body.lusso .casa-card{height:min(calc(54svh - 20px),calc(84vw * 16 / 9))}
+@media (min-width:760px){body.lusso .casa-card{height:min(calc(52svh - 20px),500px)}}
+body.lusso .casa-nome{font:600 14px var(--f-lusso);letter-spacing:.26em;color:var(--oro-chiaro);text-shadow:var(--ombra-parete)}
+body.lusso .casa-card{border:3px solid transparent;background:linear-gradient(#17120e,#17120e) padding-box,linear-gradient(135deg,#F6E3A8 0%,#B8892F 26%,#F3DD98 50%,#8E6620 74%,#E4C47C 100%) border-box;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 4px 10px rgba(0,0,0,.4),0 34px 60px -24px rgba(0,0,0,.9)}
+body.lusso .casa-sal{font-family:var(--f-lusso);font-weight:600;color:var(--avorio);letter-spacing:0;text-shadow:var(--ombra-parete)}
+body.lusso .casa-riga{color:rgba(248,237,214,.88);text-shadow:var(--ombra-parete)}
+body.lusso .casa-spinta{font-family:var(--f-lusso);font-weight:400;color:rgba(232,205,142,.95);text-shadow:var(--ombra-parete)}
+body.lusso .casa-info{color:rgba(232,205,142,.82);text-shadow:var(--ombra-parete)}
+body.lusso .casa-t{border-color:var(--filo-oro);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 12px 24px -12px rgba(0,0,0,.85)}
+body.lusso .casa-scrivi-riga input,body.lusso .casa-graffa{border-color:var(--filo-oro);box-shadow:0 8px 18px -10px rgba(0,0,0,.8)}
+body.lusso .cc-io{background:linear-gradient(180deg,#EEDDB3,#DCC38A);color:#2A1A0C;box-shadow:0 6px 14px -8px rgba(0,0,0,.7)}
+body.lusso .cc-lei{border-color:var(--filo-oro);box-shadow:0 8px 18px -10px rgba(0,0,0,.8)}
+body.lusso .cc-pensa{color:#6E5A3A}
+body.lusso .cc-scelto{color:var(--avorio2);text-shadow:var(--ombra-parete)}
+body.lusso .cc-tasti button.cc-no{background:rgba(30,10,8,.55);color:var(--avorio);border-color:var(--filo-oro)}
+/* col modo scuro le schede diventano legno scurissimo, le scritte restano avorio */
+:root[data-theme="dark"] body.lusso .card:not(.flat),:root[data-theme="dark"] body.lusso .conferma-box,:root[data-theme="dark"] body.lusso .menu{background:linear-gradient(180deg,rgba(36,22,16,.96),rgba(24,14,10,.96));box-shadow:inset 0 1px 0 rgba(255,228,170,.08),inset 0 0 0 1px rgba(176,132,56,.35),0 20px 36px -18px rgba(0,0,0,.9)}
+/* i tasti per muoversi (le schede in alto, i giorni, le scelte) da alluminio azzurro diventano champagne;
+   i colori che vogliono dire qualcosa (da pulire, in corso, fatta, non fatta) restano uguali */
+body.lusso .tabs,body.lusso .day:not([aria-pressed="true"]):not(.oggi),body.lusso .seg,body.lusso .dt-sett button:not([aria-pressed="true"]),body.lusso .p-grafite{--al1:#F1E6CC;--al2:#BFA77A;--al3:#DCCAA2;--al4:#937B50;--al5:#CDB78C;--ombra:rgba(60,35,10,.6);--sp:#5E4A28;--tx:#2A1C08;--tx2:rgba(42,28,8,.82);--pill:rgba(255,255,255,.5);--pilltx:#2A1C08;--dot:#5A3E12;--inciso:0 1px 0 rgba(255,248,230,.6);--bordo:rgba(80,55,15,.35);--luce:rgba(255,250,235,.8)}
+body.lusso .seg button[aria-pressed="true"]{background:linear-gradient(135deg,#FFFDF7,#EFE5CF 40%,#FBF6EA 55%,#DCCBA6);color:#24180A;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+body.lusso .big.undo,body.lusso .btnsm.ghost,body.lusso .sig-plate,body.lusso .gov-plate,body.lusso .navmese button{--al1:#FBF6EA;--al2:#D2C09C;--al3:#EBDFC4;--al4:#AC9670;--al5:#DECFAF;--tx:#24180A;--tx2:rgba(36,24,10,.78);--inciso:0 1px 0 rgba(255,252,240,.8);--bordo:rgba(90,62,20,.3);--luce:rgba(255,253,245,.95);--ombra:rgba(40,20,5,.6);--sp:#7E6A46}
+/* la scelta dello sfondo (Altro -> Come si vede l'app) */
+.sf-scelte{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 6px}
+.sf-opt{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:10px;border-radius:var(--r2);border:1.5px solid var(--line);background:var(--card-pieno);color:var(--fg);font:600 13px var(--f-display)}
+.sf-opt[aria-pressed="true"]{border-color:var(--primary);box-shadow:0 0 0 2px var(--accent-bg)}
+.sf-opt b{font:700 14px var(--f-display)}
+.sf-prev{display:block;width:100%;height:70px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.sf-prev.sf-lusso{background:url(sfondo-lusso.webp) center top/cover no-repeat,#3a0d14}
+.sf-prev.sf-laguna{background:#E6F0FA url(sfondo-laguna.svg) center bottom/cover no-repeat}
+/* 0.88 - il taccuino di Sofia (Altro) */
+.tacc-lista{margin:0 0 10px;padding:0;list-style:none;display:grid;gap:6px}
+.tacc-lista li{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:var(--r3);background:var(--campo)}
+.tacc-testo{display:flex;flex-direction:column;gap:3px;font:500 15px/1.35 var(--f-body);min-width:0;overflow-wrap:anywhere}
+.tacc-testo small{font:600 11.5px var(--f-display);color:var(--muted);letter-spacing:.02em}
+.tacc-lista .btnsm{flex:0 0 auto}
