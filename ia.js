@@ -177,8 +177,9 @@ Le azioni che esistono, nient'altro:
    {"tipo":"fatto","codice":"C14","dove":["alba"]}
 3) toglierla dalle stelle di questa settimana, o spegnerla per sempre:
    {"tipo":"togli","codice":"C14","dove":["alba"],"perSempre":false}
-4) scrivere un messaggio corto che le signore leggono in cima alla loro schermata:
-   {"tipo":"messaggio","testo":"Domani arrivano gli operai alle 8","giorno":"${foto.oggi}"}
+4) scrivere un messaggio corto che le signore leggono in cima alla loro schermata IL GIORNO che metti in "giorno":
+   {"tipo":"messaggio","testo":"Oggi alle 8 arrivano gli operai","giorno":"<il giorno in cui arrivano>"}
+   Scrivilo come si dice QUEL giorno: se Michele dice "domani arrivano gli operai", metti "giorno" = domani e scrivi "Oggi alle 8 arrivano gli operai" (lo leggono quella mattina). Mai "domani" in un messaggio messo per domani.
 5) lasciare a UNA signora una SPIEGAZIONE PRATICA passo per passo, con un disegnino animato per ogni passo. Usala quando Michele ti chiede di spiegare a qualcuna come si fa una cosa:
    {"tipo":"istruzione","chi":"p2","giorno":"${foto.oggi}","titolo":"Spostare le cose di Passerella","passi":[{"testo":"Prendi le scatole dall'armadio di Passerella","gesto":"scatole"},{"testo":"Mettile in corridoio, contro il muro, una sopra l'altra","gesto":"scatole"},{"testo":"Rifai il letto con le lenzuola pulite","gesto":"letto"}]}
    "chi" è la sigla della zona della signora (vedi l'elenco delle camere) oppure "tutte".
