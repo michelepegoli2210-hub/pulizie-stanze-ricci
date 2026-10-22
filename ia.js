@@ -68,7 +68,9 @@ export const FORNITORI = {
   },
 };
 export const FORNITORE_BASE = "gemini";
-export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", qualita: "argon", modelloSvelto: "", ultimo: "", errori: 0, v: 3 };
+// chiaveArgon (0.86): una seconda chiave, facoltativa, di un progetto Google COL CREDITO, usata solo per Argon.
+// La chiave normale resta quella gratuita: se il credito finisce, Sofia continua col modello svelto e la voce.
+export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", chiaveArgon: "", qualita: "argon", modelloSvelto: "", ultimo: "", errori: 0, v: 3 };
 // Il numero di versione dentro il nome del modello ("gemini-3.8-flash" -> 3.8): serve a pescare sempre il piu nuovo
 export function versioneModello(nome) { const m = String(nome).match(/(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; }
 export function scegliModello(tutti, fornitore, qualita = "svelta") {
@@ -239,7 +241,9 @@ async function chiamata(url, testa, corpo, secondi = 30) {
 }
 function messaggioChiaro(stato, m) {
   if (stato === 401 || stato === 403 || /api key|unauthorized|invalid.*key|permission/i.test(m)) return "La chiave non va bene (o non è abilitata). Controllala e riprova.";
-  if (stato === 429 || /quota|rate limit|exceeded/i.test(m)) return "Questo modello non ha chiamate gratuite (Argon e i modelli grossi vogliono la carta sulla chiave), oppure le hai finite per adesso. Al passo 2 metti «Svelta».";
+  if (stato === 402 || /payment required|prepay|credit balance|insufficient.*(credit|balance)/i.test(m)) return "Il credito per Argon è finito: ricaricalo su aistudio.google.com/billing (Acquista crediti).";
+  if ((stato === 429 || /quota|exceeded/i.test(m)) && /billing|plan|free.?tier|limit: 0/i.test(m)) return "Questo modello non ha chiamate gratuite: Argon vuole una chiave di un progetto col credito (vedi la guida).";
+  if (stato === 429 || /rate limit|exceeded|quota/i.test(m)) return "Troppe domande in poco tempo: riprova tra un minuto.";
   if (stato === 404 || /not found|model/i.test(m)) return "Quel modello non esiste più: tocca «Prova la chiave» e lo ricerco.";
   if (stato >= 500) return "Il loro server non risponde. Riprova tra poco.";
   return m.slice(0, 160);

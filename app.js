@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.85.1";
+export const VERSIONE = "0.86.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -636,7 +636,7 @@ const S = {
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
   caricati: { pulizie: false, soggiorni: false, ruoli: false, manutenzione: false, gov: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
-  stop: [], tema: localStorage.getItem("ricci_tema") || "light",
+  stop: [], tema: localStorage.getItem("ricci_tema") || "light", colore: (() => { try { return localStorage.getItem("ricci_colore") || "blu"; } catch (e) { return "blu"; } })(),
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -714,7 +714,18 @@ async function allineaManutenzione() {
 function promemoriaCamera(id) { return L.spezzaRichieste(S.promemoria?.[id] || ""); }
 // "venerdì 16 ott", con "oggi"/"domani" davanti quando serve
 function giornoParlato(iso) { const oggi = L.oggiISO(); const d = L.giorniTra(oggi, iso); const t = L.dataGiornoLungo(iso); return d === 0 ? `oggi, ${t}` : d === 1 ? `domani, ${t}` : d === -1 ? `ieri, ${t}` : t; }
-function applicaTema() { if (S.tema === "dark") document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme"); }
+function applicaTema() {
+  if (S.tema === "dark") document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme");
+  if (S.colore && S.colore !== "blu") document.documentElement.setAttribute("data-colore", S.colore); else document.documentElement.removeAttribute("data-colore");
+}
+// 0.86 - i colori che Michele puo' scegliere da solo (Altro -> Come si vede l'app): cambiano tasti e collegamenti
+const COLORI_APP = [
+  { id: "blu", nome: "Blu", g: "linear-gradient(135deg,#5A8AD6,#143880 45%,#2A56A6)" },
+  { id: "oro", nome: "Oro", g: "linear-gradient(135deg,#D9B36A,#6E4A12 45%,#A87A2C)" },
+  { id: "laguna", nome: "Laguna", g: "linear-gradient(135deg,#4FB3AC,#0C5A57 45%,#1C807A)" },
+  { id: "bordeaux", nome: "Bordeaux", g: "linear-gradient(135deg,#C2536E,#5E0F24 45%,#8E1F3A)" },
+  { id: "notte", nome: "Notte", g: "linear-gradient(135deg,#6E6E73,#1C1C1E 45%,#3A3A3C)" },
+];
 
 // ---------------------------------------------------------------------------
 //  Avvio
@@ -1812,9 +1823,15 @@ function cardStileCasa() {
   if (!proprietario()) return "";
   const ora = stileCasa();
   const anteprima = (id) => `<span class="st-prev st-${id}"><i class="st-card"></i><i class="st-bar"></i><i class="st-bar"></i><i class="st-bar"></i></span>`;
-  return `<section class="card">
-    <h2>Prima pagina</h2>
-    <p class="muted small" style="margin:0 0 10px">Dove stanno i tasti sotto ${esc(nomeGov())}. Tocca e cambia subito: puoi tornare indietro quando vuoi.</p>
+  return `<section class="card come-si-vede">
+    <h2>Come si vede l'app</h2>
+    <p class="muted small" style="margin:0 0 6px">Tre cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
+    <h3>1. Il colore</h3>
+    <div class="col-scelte">${COLORI_APP.map(k => `<button type="button" class="col-opt" aria-pressed="${(S.colore || "blu") === k.id}" data-colore-app="${k.id}"><i style="background:${k.g}"></i>${esc(k.nome)}</button>`).join("")}</div>
+    <span class="small muted">Cambia il colore dei tasti e dei collegamenti. Tutto il resto resta com'è.</span>
+    <h3>2. Chiaro o scuro</h3>
+    <div class="seg"><button type="button" aria-pressed="${S.tema !== "dark"}" data-tema="light">Chiaro</button><button type="button" aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div>
+    <h3>3. Dove stanno i tasti sotto ${esc(nomeGov())}</h3>
     <div class="st-scelte">${STILI_CASA.map(s => `<button type="button" class="st-opt" aria-pressed="${ora === s.id}" data-casa-stile="${s.id}">${anteprima(s.id)}<b>${esc(s.nome)}</b><span class="muted small">${esc(s.come)}</span></button>`).join("")}</div>
   </section>`;
 }
@@ -2370,6 +2387,7 @@ function microfono() {
 }
 
 let provaIA = null;      // il risultato dell'ultimo "Prova la chiave"
+let provaArgon = null;   // il risultato dell'ultimo "Prova Argon" (0.86)
 let iaInCorso = false;   // sta pensando
 
 function confIA() { return IA.leggiConf(); }
@@ -2633,7 +2651,8 @@ let argonAvvisato = false;
 // Quando Michele mette la carta su Google, Argon parte da solo: non c'e' niente da cambiare nell'app.
 const ARGON_PAUSA_MS = 60 * 60 * 1000, CHIAVE_ARGON_PAUSA = "ricci_argon_pausa";
 function argonInPausa() { try { return Number(localStorage.getItem(CHIAVE_ARGON_PAUSA) || 0) > Date.now(); } catch (e) { return false; } }
-function pausaArgon() { try { localStorage.setItem(CHIAVE_ARGON_PAUSA, String(Date.now() + ARGON_PAUSA_MS)); } catch (e) {} }
+function pausaArgon(ms = ARGON_PAUSA_MS) { try { localStorage.setItem(CHIAVE_ARGON_PAUSA, String(Date.now() + ms)); } catch (e) {} }
+function togliPausaArgon() { try { localStorage.removeItem(CHIAVE_ARGON_PAUSA); } catch (e) {} argonAvvisato = false; }
 async function confSvelta(c) {
   const v = { ...c, qualita: "svelta", modello: c.modelloSvelto || "" };
   if (!v.modello) { const t = await IA.trovaModello(v); v.modello = t.modello; IA.salvaConf({ modelloSvelto: t.modello }); }
@@ -2643,16 +2662,24 @@ async function chiediIA(dom) {
   const c = confIA();
   const grande = c.qualita !== "svelta";
   if (grande && argonInPausa()) return { r: await IA.chiedi({ ...dom, conf: await confSvelta(c) }), ripiego: true };
+  // 0.86: Argon passa dalla SUA chiave (progetto col credito), se c'e'; il ripiego usa la chiave normale, gratuita
+  const cg = grande && c.chiaveArgon ? { ...c, chiave: c.chiaveArgon } : c;
   try {
-    const r = await IA.chiedi({ ...dom, conf: c, secondi: grande ? 45 : 40 });
+    const r = await IA.chiedi({ ...dom, conf: cg, secondi: grande ? 45 : 40 });
     if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
     return { r, ripiego: false };
   } catch (e) {
     const m = String((e && e.message) || ""), lento = !!(e && e.name === "AbortError");
-    if (!grande || !(lento || /gratuite|quota|429|carta|billing|exceeded/i.test(m))) throw e;
-    if (!lento) pausaArgon();
+    const credito = /credito/i.test(m), gratis = /chiamate gratuite/i.test(m), troppe = /troppe domande/i.test(m);
+    if (!grande || !(lento || credito || gratis || troppe)) throw e;
+    if (credito || gratis) pausaArgon(ARGON_PAUSA_MS);         // un'ora: finche' non si ricarica non serve riprovare
+    else if (troppe) pausaArgon(2 * 60 * 1000);                // due minuti
     const r = await IA.chiedi({ ...dom, conf: await confSvelta(c) });
-    if (!lento && !argonAvvisato) { argonAvvisato = true; toast("Argon non risponde finché non c'è la carta sulla chiave di Google: ti ho risposto col modello svelto."); }
+    if ((credito || gratis) && !argonAvvisato) {
+      argonAvvisato = true;
+      toast(credito ? "Il credito per Argon è finito: ricaricalo su Google (Fatturazione → Acquista crediti). Intanto ti rispondo col modello svelto."
+        : "Argon ha bisogno della chiave col credito (Altro → La governante intelligente). Intanto ti rispondo col modello svelto.");
+    }
     return { r, ripiego: true };
   }
 }
@@ -2749,7 +2776,11 @@ function cardIA() {
       <span class="small muted">${esc(f.chiave)}</span></div>
     <div class="ia-passo"><b>4.</b> Incollala qui
       <div class="ia-riga"><input type="password" id="iaChiave" data-keep placeholder="incolla qui la chiave" value="${esc(c.chiave || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm ghost" data-ia-incolla>Incolla</button><button type="button" class="btnsm" data-ia-prova ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova"}</button></div>
-      ${c.modello ? `<span class="small muted">Sta usando ${esc(c.modello)} · <button type="button" class="nonna-link" style="min-height:0;padding:2px 8px" data-ia-rimodello>cercane un altro</button></span>` : ""}${esito}</div>
+      ${c.modello ? `<span class="small muted">Sta usando ${esc(q === "argon" ? (c.modelloSvelto || "il modello svelto") + " (e Argon con la chiave del passo 4b)" : c.modello)} · <button type="button" class="nonna-link" style="min-height:0;padding:2px 8px" data-ia-rimodello>cercane un altro</button></span>` : ""}${esito}</div>
+    ${q === "argon" && c.fornitore === "gemini" ? `<div class="ia-passo"><b>4b.</b> La chiave per Argon (quella del progetto col credito)
+      <div class="ia-riga"><input type="password" id="iaChiaveArgon" data-keep placeholder="incolla qui la chiave per Argon" value="${esc(c.chiaveArgon || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm ghost" data-ia-incolla-argon>Incolla</button><button type="button" class="btnsm" data-ia-prova-argon ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova Argon"}</button></div>
+      ${provaArgon ? (provaArgon.ok ? `<div class="note ok" style="margin:8px 0 0">Argon funziona: «${esc(provaArgon.testo || "ci sono")}» (${esc(provaArgon.modello)}). Da adesso Sofia pensa con Argon.</div>` : `<div class="note warn" style="margin:8px 0 0">Argon non ha funzionato: ${esc(provaArgon.errore)}</div>`) : ""}
+      <span class="small muted">Argon si paga a parte: la chiave va creata nel progetto di Google che ha il credito (su Google AI Studio: Fatturazione → Acquista crediti, poi Chiavi API → Crea chiave API in quel progetto). La chiave del passo 4 resta gratuita: se il credito finisce, Sofia continua col modello svelto e con la voce. Se lasci vuoto, Argon lo provo con la chiave del passo 4.</span></div>` : ""}
     <div class="ia-passo"><b>5.</b> Accendila<div class="seg"><button type="button" aria-pressed="${su}" data-ia-accendi="1" ${c.chiave ? "" : "disabled"}>Accesa</button><button type="button" aria-pressed="${!su}" data-ia-accendi="0">Spenta</button></div></div>
     <div class="ia-passo"><b>6.</b> La voce: te la legge ad alta voce
       <div class="seg"><button type="button" aria-pressed="${vc.attiva && vc.motore === "google"}" data-voce-motore="google">Voce vera</button><button type="button" aria-pressed="${vc.attiva && vc.motore === "telefono"}" data-voce-motore="telefono">Voce del telefono</button><button type="button" aria-pressed="${!vc.attiva}" data-voce-motore="">Muta</button></div>
@@ -2823,10 +2854,25 @@ function collegaIA() {
     const chiave = (document.getElementById("iaChiave")?.value || "").trim();
     if (!chiave) return toast("Incolla prima la chiave");
     IA.salvaConf({ chiave }); iaInCorso = true; provaIA = null; disegna();
-    const r = await IA.provaChiave({ ...confIA(), chiave });
+    // con Argon scelto, questa e' la chiave gratuita: si prova col modello svelto (Argon ha la prova sua, passo 4b)
+    const c0 = confIA(), argon = c0.qualita === "argon";
+    const r = await IA.provaChiave(argon ? { ...c0, chiave, qualita: "svelta", modello: c0.modelloSvelto || "" } : { ...c0, chiave });
     iaInCorso = false; provaIA = r;
-    if (r.ok) { IA.salvaConf({ modello: r.modello, attiva: true }); try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} }
+    if (r.ok) { IA.salvaConf(argon ? { modelloSvelto: r.modello, attiva: true } : { modello: r.modello, attiva: true }); try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} }
     disegna(); toast(r.ok ? "Funziona: governante intelligente accesa" : "Non ha funzionato");
+  });
+  document.querySelectorAll("[data-ia-incolla-argon]").forEach(b => b.onclick = async () => {
+    try { const t = (await navigator.clipboard.readText() || "").trim(); if (t) { const i = document.getElementById("iaChiaveArgon"); if (i) i.value = t; toast("Incollata: ora tocca «Prova Argon»"); } else toast("Negli appunti non c'è niente"); }
+    catch (e) { toast("Tieni premuto dentro la casella e scegli «Incolla»"); document.getElementById("iaChiaveArgon")?.focus(); }
+  });
+  document.querySelectorAll("[data-ia-prova-argon]").forEach(b => b.onclick = async () => {
+    const chiaveArgon = (document.getElementById("iaChiaveArgon")?.value || "").trim();
+    IA.salvaConf({ chiaveArgon }); iaInCorso = true; provaArgon = null; disegna();
+    const c0 = confIA();
+    const r = await IA.provaChiave({ ...c0, chiave: chiaveArgon || c0.chiave, qualita: "argon", modello: "" });
+    iaInCorso = false; provaArgon = r;
+    if (r.ok) { IA.salvaConf({ modello: r.modello }); togliPausaArgon(); }
+    disegna(); toast(r.ok ? "Argon funziona: da adesso Sofia pensa con Argon" : "Argon non ha funzionato");
   });
   document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
   // --- la voce ---
@@ -3831,7 +3877,6 @@ function vistaAltro() {
     <div class="pick">${signore().map(z => `<button class="big undo" data-come-signora="${z.id}">👩‍🔧 ${esc(SIG(z.id))}</button>`).join("")}</div>
     <p class="muted small" style="margin:8px 0 0">Per giocare senza toccare niente di vero c'è la modalità prova: apri il link dell'app con <b>?prova=1</b> alla fine.</p></section>
   ${vistaAvvisi()}
-  <section class="card"><h2>Aspetto</h2><div class="seg"><button aria-pressed="${S.tema !== "dark"}" data-tema="light">Chiaro</button><button aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div></section>
   <section class="card"><h2>Foglio di papà</h2>
     ${S.foglioInfo ? `<p class="muted small" style="margin:0 0 8px">Ultimo foglio: <b>${esc(S.foglioInfo.nome || "")}</b> · ${esc(S.foglioInfo.quando || "")} · ${esc((S.foglioInfo.mesi || []).join(", "))}</p>` : `<p class="muted small" style="margin:0 0 8px">Nessun foglio caricato finora.</p>`}
     ${puoModificare() ? `<label class="big main" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">📄 Carica il foglio di papà<input id="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><p class="muted small" style="margin:8px 0 0">Legge il file Excel con regole fisse e ti fa controllare prima di salvare. Niente viene cambiato finché non premi "Salva nel prospetto".</p>` : ""}
@@ -4340,6 +4385,7 @@ function collega() {
   document.querySelectorAll("[data-voto]").forEach(i => i.onchange = () => { const v = L.votiCompleti(S.regole); const k = i.dataset.voto; const n = Math.max(0, Number(i.value) || 0); const nuovi = JSON.parse(JSON.stringify(v)); if (k.startsWith("esito.")) nuovi.esiti[k.slice(6)].perc = n; else if (k === "bonusControllatrice" || k === "penalitaRichiesta" || k === "sogliaCosicosi" || k === "sogliaMale") nuovi[k] = n; else if (nuovi[k] && typeof nuovi[k] === "object") nuovi[k].perc = n; const r = { ...S.regole, voti: nuovi }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-regola]").forEach(b => b.onclick = () => { const [k, v] = b.dataset.regola.split("|"); const r = { ...S.regole, [k]: v === "1" }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { S.tema = b.dataset.tema; localStorage.setItem("ricci_tema", S.tema); applicaTema(); disegna(); });
+  document.querySelectorAll("[data-colore-app]").forEach(b => b.onclick = () => { S.colore = b.dataset.coloreApp; try { localStorage.setItem("ricci_colore", S.colore); } catch (e) {} applicaTema(); disegna(); toast("Colore: " + ((COLORI_APP.find(k => k.id === S.colore) || {}).nome || S.colore)); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
   document.querySelectorAll("[data-promemoria]").forEach(i => i.onchange = () => salvaPromemoria(i.dataset.promemoria, i.value));
