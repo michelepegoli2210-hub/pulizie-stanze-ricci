@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.84.1";
+export const VERSIONE = "0.84.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2523,7 +2523,24 @@ function azioneDaIA(a) {
     // le capisce lo stesso motore della scheda "Dimmi il prospetto", così la proposta e il salvataggio sono quelli già provati
     const righe = (Array.isArray(a.righe) ? a.righe : String(a.righe || a.testo || "").split(/\n/)).map(x => dateInParole(String(x || "").trim())).filter(Boolean);
     if (!righe.length) return null;
-    const ctx = { oggi: L.oggiISO(), base: settimanaBaseDefault(L.oggiISO()), soggiorni: soggiorniLista() };
+    return azioneProspettoDaRighe(righe, a.base);
+  }
+  const camere = camereDaIA(a.dove || a.camere);
+  if (a.tipo === "aggiungi") {
+    const r = regolaDaIA(a.codice, a.cosa || a.nome), cosa = String(a.cosa || a.nome || (r && r.nome) || "").trim();
+    if (!cosa) return null;
+    const giorno = /^\d{4}-\d{2}-\d{2}$/.test(String(a.giorno || "")) && a.giorno >= L.oggiISO() ? a.giorno : "";
+    return { tipo: "aggiungi", regola: r, cosa, camere, minuti: Math.max(1, Math.min(120, Math.round(Number(a.minuti) || (r && r.minuti) || 10))), giorno };
+  }
+  const r = regolaDaIA(a.codice, a.cosa || a.nome); if (!r) return null;
+  if (a.tipo === "fatto") return { tipo: "fatto", regola: r, altre: [], camere, giorno: dataBuona(a.giorno) };
+  if (a.tipo === "togli") return { tipo: "togli", regola: r, regole: [r], camere, perSempre: !!a.perSempre };
+  return null;
+}
+// Le righe del prospetto (dall'IA o dalle parole di Michele) -> l'azione "prospetto" pronta per la proposta
+function azioneProspettoDaRighe(righe, baseVoluta) {
+  {
+    const ctx = { oggi: L.oggiISO(), base: /^\d{4}-\d{2}-\d{2}$/.test(String(baseVoluta || "")) ? baseVoluta : settimanaBaseDefault(L.oggiISO()), soggiorni: soggiorniLista() };
     let ris; try { ris = capisciProspetto(righe.join("\n"), ctx); } catch (e) { console.warn("prospetto/IA", e); return null; }
     // "libera" detto a voce non tocca i soggiorni LUNGHI (più di 9 notti: operai, mesi interi): troppo facile cancellare
     // per sbaglio un mese di lavoro. Quelli si tolgono dal prospetto a mano, o dicendo il nome ("in Alba Fondamenta non viene più").
@@ -2540,24 +2557,47 @@ function azioneDaIA(a) {
       const quanto = (c) => L.giorniTra(c.inizio > r.inizio ? c.inizio : r.inizio, c.fine < r.fine ? c.fine : r.fine);
       const e = r.conflitti.slice().sort((x, y) => quanto(y) - quanto(x))[0];
       r.nome = e.nome; r.dubbio = false; r.motivi = (r.motivi || []).filter(m => !/manca il nome/.test(m)); r.conflitti = r.conflitti.filter(c => c !== e);
-      if (e.inizio === r.inizio && e.fine === r.fine) { r.azione = "niente"; r.scelto = false; }
-      else { r.azione = "aggiorna"; r.esistente = { id: e.id, nome: e.nome, inizio: e.inizio, fine: e.fine }; }
+      r.azione = "niente"; r.scelto = false;        // c'è già lui: si tiene com'è, giorni compresi
     }
+    // nome non detto ("ospiti") e quell'ospite è già segnato in quei giorni: non gli cambio le date (arriva la domenica
+    // sera, parte il venerdì: lo sa il prospetto meglio di una frase detta di fretta). Si tiene com'è.
+    for (const r of ris.righe || []) if (r.azione === "aggiorna" && (r.assunti || []).some(x => /nome non detto/.test(x))) { r.azione = "niente"; r.scelto = false; }
     const buone = (ris.righe || []).filter(r => r.scelto !== false && r.azione !== "niente");
     if (!buone.length) return { tipo: "prospettoVuoto", righe: ris.righe || [], nonCapito: ris.nonCapito || [], lunghi };
     return { tipo: "prospetto", righe: buone, giaCosi: (ris.righe || []).filter(r => r.azione === "niente").length, nonCapito: ris.nonCapito || [], lunghi, base: ris.base };
   }
-  const camere = camereDaIA(a.dove || a.camere);
-  if (a.tipo === "aggiungi") {
-    const r = regolaDaIA(a.codice, a.cosa || a.nome), cosa = String(a.cosa || a.nome || (r && r.nome) || "").trim();
-    if (!cosa) return null;
-    const giorno = /^\d{4}-\d{2}-\d{2}$/.test(String(a.giorno || "")) && a.giorno >= L.oggiISO() ? a.giorno : "";
-    return { tipo: "aggiungi", regola: r, cosa, camere, minuti: Math.max(1, Math.min(120, Math.round(Number(a.minuti) || (r && r.minuti) || 10))), giorno };
+}
+// Quando l'IA risponde a parole ma NON mette l'azione (il modello piccolo lo fa spesso: "ho aggiornato il prospetto"
+// e invece non ha fatto niente), si prova a capire da soli, con le regole fisse della dettatura, se Michele stava
+// dicendo chi c'è nelle camere. Così il prospetto cambia davvero, e con la stessa proposta da confermare.
+function azioneDalleParole(testo) {
+  const x = String(testo || ""); if (x.length < 6 || x.length > 700) return null;
+  const n = " " + x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, " ").replace(/\s+/g, " ") + " ";
+  const sembra = /\b(venut|arriv|c e |ci sono|ci sta|stanno|occupat|liber|soltanto|solo|solamente|parte|partono|resta|restano|rimane|fino a|questa settimana|settimana prossima|prossima settimana|nessuno|niente)/.test(n);
+  if (!sembra) return null;
+  const oggi = L.oggiISO();
+  let base = settimanaBaseDefault(oggi);
+  if (/questa settimana|settimana corrente|stasettimana| venut| arrivat| ci sono | c e | stanno /.test(n)) base = L.lunediDi(oggi);
+  if (/settimana prossima|prossima settimana|settimana dopo/.test(n)) base = L.aggiungiGiorni(L.lunediDi(oggi), 7);
+  let ids = []; try { const tl = PAROLE.trovaLuoghi(x, ctxParole()); ids = (tl && Array.isArray(tl.camere)) ? tl.camere : []; } catch (e) { ids = []; }
+  ids = ids.filter(id => S.camere.some(c => c.id === id));
+  const nienteDaFare = /non c e niente|non ce niente|nessuno|tutte libere|tutto libero|vuot/.test(n);
+  const soltanto = /\b(solo|soltanto|solamente)\b/.test(n);
+  const nome = (id) => camera(id).nome.replace(" · ", " ");
+  const inParole = (iso) => { const d = L.daISO(iso); return `${d.getUTCDate()} ${MESI_PAROLE[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+  let righe;
+  if (soltanto || nienteDaFare || /\b(non|niente)\b/.test(n)) {
+    // frase con "soltanto" o con negazioni: righe pulite, senza far leggere la frase intera al motore della dettatura
+    if (!ids.length && !nienteDaFare) return null;
+    righe = ids.map(id => `${nome(id)}: ospiti, dal ${inParole(base)} al ${inParole(L.aggiungiGiorni(base, 5))}`);
+    if (soltanto || (nienteDaFare && !ids.length)) for (const c of S.camere) if (!ids.includes(c.id)) righe.push(`${nome(c.id)}: libera`);
+  } else {
+    // frase semplice ("in Alba è arrivato Rossi, resta fino a mercoledì"): la legge il motore della dettatura com'è
+    if (!ids.length) return null;
+    righe = [x];
   }
-  const r = regolaDaIA(a.codice, a.cosa || a.nome); if (!r) return null;
-  if (a.tipo === "fatto") return { tipo: "fatto", regola: r, altre: [], camere, giorno: dataBuona(a.giorno) };
-  if (a.tipo === "togli") return { tipo: "togli", regola: r, regole: [r], camere, perSempre: !!a.perSempre };
-  return null;
+  const a = azioneProspettoDaRighe(righe, base);
+  return a && a.tipo === "prospetto" ? a : null;
 }
 // La risposta dell'IA, pronta per la chat (col "Sì, fallo" se propone qualcosa)
 let argonAvvisato = false;
@@ -2582,7 +2622,8 @@ async function rispostaIA(testo, conv) {
   IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
   const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
-  const a = azioneDaIA(r.azione);
+  let a = azioneDaIA(r.azione);
+  if (!a) { try { a = azioneDalleParole(testo); } catch (e) { console.warn("parole/prospetto", e); a = null; } }
   if (!a) return { ...base, testo: dice };
   if (a.tipo === "prospettoVuoto") {
     const lunghi = (a.lunghi || []).length ? ` Non tocco i soggiorni lunghi: ${a.lunghi.map(e => `${camera(e.camera).nome} (${e.nome} fino al ${L.dataMedia(e.fine)})`).join(", ")}. Se vanno tolti, dimmelo col nome.` : "";
