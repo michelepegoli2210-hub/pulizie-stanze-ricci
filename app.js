@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.88.0";
+export const VERSIONE = "0.88.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -228,6 +228,26 @@ setTimeout(async () => {
     if (t && t.modello) IA.salvaConf({ modello: t.modello });
   } catch (e) { console.warn("scaldamotore", e); }
 }, 2500);
+// 0.88 - IL MICROFONO CHE RIPETEVA LE PAROLE: sui telefoni Android il riconoscimento manda ogni pezzo "finale"
+// con dentro anche tutto quello di prima ("cosa", "cosa c'è", "cosa c'è da fare"...). Prima si attaccavano tutti
+// e usciva "cosa cosa c'è cosa c'è da fare...". Adesso si rifà la frase da capo a ogni risultato e un pezzo che
+// comincia come quello prima lo SOSTITUISCE invece di aggiungersi (e uno piu' corto, gia' detto, si salta).
+function uniscVoce(pezzi) {
+  const out = [], n = (x) => String(x).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  for (const p0 of pezzi) {
+    const p = String(p0 || "").trim(); if (!p) continue;
+    const u = out.length ? out[out.length - 1] : "";
+    if (u && n(p).startsWith(n(u))) out[out.length - 1] = p;
+    else if (u && n(u).startsWith(n(p))) continue;
+    else out.push(p);
+  }
+  return out.join(" ").replace(/\s+/g, " ").trim();
+}
+function testoDaRisultati(e) {
+  const finali = [], tutti = [];
+  for (let i = 0; i < e.results.length; i++) { const x = e.results[i][0].transcript; tutti.push(x); if (e.results[i].isFinal) finali.push(x); }
+  return { finale: uniscVoce(finali), visto: uniscVoce(tutti) };
+}
 function micCasaVai() {
   const R = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!R) { toast("Qui il microfono non si apre: usa quello della tastiera"); return; }
@@ -242,12 +262,9 @@ function micCasaVai() {
   statoCons("ascolto"); sottoCons("ti ascolto…", true); scaldaRisposta();
   riarma(9000);                                  // se non dice niente, dopo 9 s si chiude
   r.onresult = (e) => {
-    let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const x = e.results[i][0].transcript;
-      if (e.results[i].isFinal) finale += x + " "; else interim += x;
-    }
-    sottoCons((finale + interim).trim() || "ti ascolto…", true);
+    const t = testoDaRisultati(e);
+    finale = t.finale;
+    sottoCons(t.visto || "ti ascolto…", true);
     riarma(3000);
   };
   r.onerror = () => {
@@ -731,6 +748,8 @@ function applicaTema() {
   if (col !== "blu") document.documentElement.setAttribute("data-colore", col); else document.documentElement.removeAttribute("data-colore");
   const lusso = sfondoLusso();
   if (document.body) document.body.classList.toggle("lusso", lusso);
+  const parete = document.querySelector(".laguna");
+  if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
   const barra = document.querySelector('meta[name="theme-color"]');
   if (barra) barra.setAttribute("content", lusso ? "#24100C" : S.tema === "dark" ? "#000000" : "#ffffff");
   if (S.pronto && eraLusso !== lusso) { eraLusso = lusso; try { localStorage.setItem("ricci_era_lusso", lusso ? "1" : "0"); } catch (e) {} }
@@ -2450,9 +2469,8 @@ function microfono() {
   const r = new R(); r.lang = "it-IT"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
   let finale = "";
   r.onresult = (e) => {
-    let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) finale += t; else interim += t; }
-    if (ta) { ta.value = (finale + interim).trim(); ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; }
+    const t = testoDaRisultati(e); finale = t.finale;
+    if (ta) { ta.value = t.visto; ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; }
   };
   r.onerror = (e) => { ascolto = null; segnaMic(false); if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("Il telefono non mi dà il microfono: dallo a questa app nelle impostazioni"); else if (e.error !== "aborted" && e.error !== "no-speech") toast("Non ti ho sentito, riprova"); };
   r.onend = () => {
@@ -4509,7 +4527,7 @@ function parlaDettatura(f) {
     const rec = new SR(); riconoscimento = rec;
     rec.lang = "it-IT"; rec.interimResults = false; rec.maxAlternatives = 1; rec.continuous = false;
     if (b) { b.textContent = "🎙️ Ti ascolto… parla"; b.classList.add("rec"); }
-    rec.onresult = (e) => { const t = Array.from(e.results).map(r => r[0].transcript).join(" "); if (t) aggiungiTestoDettatura(f, t); };
+    rec.onresult = (e) => { const t = uniscVoce(Array.from(e.results).map(r => r[0].transcript)); if (t) aggiungiTestoDettatura(f, t); };
     rec.onerror = () => toast("Non riesco a sentirti da qui: tocca la casella e usa il microfono 🎤 della tastiera.");
     rec.onend = () => { riconoscimento = null; const bb = $("[data-dett-parla]"); if (bb) { bb.textContent = "🎤 Parla"; bb.classList.remove("rec"); } };
     rec.start();
