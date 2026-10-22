@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.84.3";
+export const VERSIONE = "0.84.4";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2600,7 +2600,7 @@ function azioneDalleParole(testo) {
   const a = azioneProspettoDaRighe(righe, base);
   traccia.push({ quando: new Date().toISOString(), testo: x.slice(0, 80), ids, base, righe, esito: a ? a.tipo : null, dettaglio: a && a.righe ? a.righe.map(r => `${r.camera}:${r.azione}:${r.nome || ""}:${r.inizio}>${r.fine}:${(r.motivi || []).join("/")}`) : null });
   if (traccia.length > 10) traccia.shift();
-  return a && a.tipo === "prospetto" ? a : null;
+  return a && (a.tipo === "prospetto" || a.tipo === "prospettoVuoto") ? a : null;
 }
 // La risposta dell'IA, pronta per la chat (col "Sì, fallo" se propone qualcosa)
 let argonAvvisato = false;
@@ -2630,7 +2630,11 @@ async function rispostaIA(testo, conv) {
   if (!a) return { ...base, testo: dice };
   if (a.tipo === "prospettoVuoto") {
     const lunghi = (a.lunghi || []).length ? ` Non tocco i soggiorni lunghi: ${a.lunghi.map(e => `${camera(e.camera).nome} (${e.nome} fino al ${L.dataMedia(e.fine)})`).join(", ")}. Se vanno tolti, dimmelo col nome.` : "";
-    const perche = (a.nonCapito.length ? `Non ho capito: «${a.nonCapito.join("», «")}».` : "Nel prospetto è già tutto così: non cambio niente.") + lunghi;
+    // com'è già il prospetto per le camere nominate: chi c'è (nome e giorni) e quali sono libere
+    const occ = (a.righe || []).filter(r => r.azione === "niente" && r.nome && r.inizio).map(r => `${camera(r.camera).nome}: ${r.nome} ${L.dataMedia(r.inizio)}→${L.dataMedia(r.fine)}`);
+    const lib = (a.righe || []).filter(r => r.azione === "niente" && !r.nome).map(r => camera(r.camera).nome);
+    const stato = occ.length || lib.length ? ` ${occ.length ? "Occupate: " + occ.join("; ") + "." : ""}${lib.length ? ` Libere: ${lib.length > 6 ? lib.length + " camere" : lib.join(", ")}.` : ""}` : "";
+    const perche = (a.nonCapito.length ? `Non ho capito: «${a.nonCapito.join("», «")}».` : "Nel prospetto è già così, non cambio niente.") + stato + lunghi;
     return { ...base, testo: `${dice}\n\n${perche}` };
   }
   if ((a.tipo === "fatto" || a.tipo === "aggiungi") && !a.camere.length)
