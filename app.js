@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.82.0";
+export const VERSIONE = "0.83.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -86,8 +86,8 @@ const FILM_PRONTO = { parla: "cons-parla.mp4", riposo: "cons-riposo.mp4", poster
 // lei parla davvero, quando ascolta o non fa niente uno in cui sta li' (ascolta, annuisce, pose).
 // 0.81: DUE FILMATI LUNGHI SOLTANTO (Michele, 21 ottobre: "un filmato di una quarantina di secondi
 // dove parla ed e' sempre quello... e uno di una quarantina di secondi dove sta ferma, ascolta, annuisce").
-//  - cons-parla.mp4  (38,5 s): quattro spezzoni in cui parla, si tocca i capelli, sorride, fusi in dissolvenza
-//  - cons-riposo.mp4 (42,8 s): pose, annuisce, ascolta, si tocca il petto, fusi in dissolvenza
+//  - cons-parla.mp4  (0.83: 47 s): cinque spezzoni in cui parla (talk1, Gemini Pro, v3, v7, v1), fusi in dissolvenza di 0,7 s
+//  - cons-riposo.mp4 (0.83: 38 s): ascolta, posa, aspetta, posa 2 - SOLO video in avanti, niente piu' andata e ritorno
 // Ogni filmato si vede per intero, in avanti; quando sta per finire riparte da capo con una dissolvenza di
 // mezzo secondo. Tutti i video partono dalla stessa foto, quindi hanno la stessa inquadratura.
 const FILM_GRUPPI = {
