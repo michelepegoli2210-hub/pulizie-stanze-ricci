@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.88.1";
+export const VERSIONE = "0.89.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -747,18 +747,23 @@ function applicaTema() {
   const col = coloreAttivo();
   if (col !== "blu") document.documentElement.setAttribute("data-colore", col); else document.documentElement.removeAttribute("data-colore");
   const lusso = sfondoLusso();
-  if (document.body) document.body.classList.toggle("lusso", lusso);
+  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; }
   const parete = document.querySelector(".laguna");
   if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
   const barra = document.querySelector('meta[name="theme-color"]');
-  if (barra) barra.setAttribute("content", lusso ? "#24100C" : S.tema === "dark" ? "#000000" : "#ffffff");
+  if (barra) barra.setAttribute("content", lusso ? ({ mogano: "#240C07", noce: "#22140A", ebano: "#0E0805" })[legnoScelto()] : S.tema === "dark" ? "#000000" : "#ffffff");
   if (S.pronto && eraLusso !== lusso) { eraLusso = lusso; try { localStorage.setItem("ricci_era_lusso", lusso ? "1" : "0"); } catch (e) {} }
 }
 // 0.86 - i colori che Michele puo' scegliere da solo (Altro -> Come si vede l'app): cambiano tasti e collegamenti
+// 0.89 - Michele: "non mi piace, ci vuole piu' lusso, piu' legno marezzato": la parete e' tutta boiserie di legno
+// figurato e lucido (venatura a cattedrale speculare, marezzatura cangiante), in tre legni. "lusso" = mogano (di serie).
 const SFONDI_APP = [
-  { id: "lusso", nome: "Grande albergo", come: "Velluto bordeaux, cornici d'oro e legno di noce" },
+  { id: "lusso", nome: "Mogano marezzato", come: "Boiserie di mogano lucido, filetti e cornici d'oro" },
+  { id: "noce", nome: "Noce marezzato", come: "Noce dorato e lucido, con le cornici d'oro" },
+  { id: "ebano", nome: "Ebano marezzato", come: "Legno scurissimo e oro" },
   { id: "laguna", nome: "Laguna", come: "Il cielo e l'acqua di Lesina, chiaro" },
 ];
+function legnoScelto() { return S.sfondo === "noce" || S.sfondo === "ebano" ? S.sfondo : "mogano"; }
 const COLORI_APP = [
   { id: "blu", nome: "Blu", g: "linear-gradient(135deg,#5A8AD6,#143880 45%,#2A56A6)" },
   { id: "oro", nome: "Oro", g: "linear-gradient(135deg,#D9B36A,#6E4A12 45%,#A87A2C)" },
@@ -1903,7 +1908,7 @@ function cardStileCasa() {
     <h3>3. Dove stanno i tasti sotto ${esc(nomeGov())}</h3>
     <div class="st-scelte">${STILI_CASA.map(s => `<button type="button" class="st-opt" aria-pressed="${ora === s.id}" data-casa-stile="${s.id}">${anteprima(s.id)}<b>${esc(s.nome)}</b><span class="muted small">${esc(s.come)}</span></button>`).join("")}</div>
     <h3>4. Lo sfondo</h3>
-    <div class="sf-scelte">${SFONDI_APP.map(f => `<button type="button" class="sf-opt" aria-pressed="${(S.sfondo === "laguna" ? "laguna" : "lusso") === f.id}" data-sfondo-app="${f.id}"><i class="sf-prev sf-${f.id}"></i><b>${esc(f.nome)}</b><span class="muted small">${esc(f.come)}</span></button>`).join("")}</div>
+    <div class="sf-scelte">${SFONDI_APP.map(f => `<button type="button" class="sf-opt" aria-pressed="${(SFONDI_APP.some(x => x.id === S.sfondo) ? S.sfondo : "lusso") === f.id}" data-sfondo-app="${f.id}"><i class="sf-prev sf-${f.id}"></i><b>${esc(f.nome)}</b><span class="muted small">${esc(f.come)}</span></button>`).join("")}</div>
     <span class="small muted">Vale solo per la tua parte: le signore vedono sempre la loro schermata.</span>
   </section>`;
 }
