@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.84.0";
+export const VERSIONE = "0.84.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2577,6 +2577,7 @@ async function rispostaIA(testo, conv) {
     ripiego = true;
     if (!argonAvvisato) { argonAvvisato = true; toast("Argon non risponde senza carta sulla chiave: ti ho risposto col modello svelto."); }
   }
+  try { window._ultimaIA = { quando: new Date().toISOString(), modello: r.modello, azione: r.azione || null, grezzo: String(r.grezzo || "").slice(0, 4000) }; } catch (e) {}   // per capire cosa ha risposto davvero (si legge dalla console)
   if (!ripiego && r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
   IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
