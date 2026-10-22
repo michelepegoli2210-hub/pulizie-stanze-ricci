@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.86.0";
+export const VERSIONE = "0.87.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -630,7 +630,7 @@ const S = {
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
   board: { modo: "elenco", inizio: L.lunediDi(L.oggiISO()) },
   camere: CAMERE.slice(), zone: ZONE, squadra: null, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
-  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
+  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
   gov: null, clienti: {}, chat: { risposte: {}, conta: {}, automatiche: {}, conversazione: [] }, spesa: { voci: {} }, registro: {}, govSett: G.settimanaGovernante(), govTab: "consigli", tab: { vista: "posti", zona: "", regola: "", soloRosse: false, prova: false },
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
@@ -812,6 +812,7 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "chat", d => { const x = { ...(d || {}) }; delete x.id; S.chat = { risposte: x.risposte || {}, conta: x.conta || {}, automatiche: x.automatiche || {}, conversazione: Array.isArray(x.conversazione) ? x.conversazione : [] }; disegna(); governanteDaSola(); }));
   // messaggi del giorno dei proprietari alle signore (un documento, una voce per giorno)
   S.stop.push(db.ascoltaDoc("impostazioni", "messaggi", d => { S.messaggi = { ...(d || {}) }; delete S.messaggi.id; disegna(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "economia", d => { S.economia = { ...(d || {}) }; delete S.economia.id; disegna(); }));
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
@@ -1819,6 +1820,31 @@ function cardAzzera() {
       : `<button type="button" class="big warn" data-azzera-chiedi ${quante ? "" : "disabled"}>Azzera quello che ho scelto</button>`}
   </section>`;
 }
+// 0.87 - I CONTI DELLA CASA: i prezzi e le spese fisse (li scrivi qui o li dici a Sofia) e i numeri del mese
+function cardConti() {
+  if (!proprietario()) return "";
+  let n = null; try { n = numeriAzienda(); } catch (e) { n = null; }
+  const e = S.economia || {}, pr = e.prezzi || {}, sp = e.spese || {};
+  const campo = (id, val, ph) => `<input type="number" inputmode="decimal" min="0" step="0.5" id="${id}" data-keep value="${val != null && val !== "" ? esc(String(val)) : ""}" placeholder="${ph}" style="width:110px">`;
+  const mese = n ? L.MESI[L.daISO(n.oggi).getUTCMonth()] : "";
+  const riassunto = n ? `<div class="rows" style="margin:0 0 12px">
+      <div class="row"><span>${esc(mese)} fino a oggi</span><span><b>${n.finora.tot}</b> notti vendute · <b>${n.occFinora}%</b> pieno</span></div>
+      <div class="row"><span>Pulizie per ogni notte venduta</span><span><b>${n.perNotte ? eur(n.perNotte) : "–"}</b></span></div>
+      <div class="row"><span>${esc(mese)} intero (prospetto)</span><span><b>${n.mese.tot}</b> notti · ${n.occMese}%</span></div>
+      <div class="row"><span>Prossime 4 settimane</span><span><b>${n.avanti.tot}</b> notti · ${n.occAvanti}%</span></div>
+      ${n.ricavoMese != null ? `<div class="row"><span>Ricavo stimato del mese</span><span><b>${eur(n.ricavoMese)}</b></span></div><div class="row"><span>Meno spese fisse e pulizie</span><span><b>${eur(n.ricavoMese - n.speseMese - n.pulMese)}</b></span></div>` : ""}
+    </div>` : "";
+  return `<section class="card"><h2>I conti della casa</h2>
+    <p class="muted small" style="margin:0 0 10px">Servono a ${esc(nomeGov())} per farti i conti di quanto guadagni e darti consigli sui soldi. Puoi scriverli qui o dirglieli a voce ("i tecnici pagano 35 euro a notte"). Le signore non li vedono nell'app.</p>
+    ${riassunto}
+    <h3 style="margin:6px 0 6px;font:700 13px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Prezzo medio a notte, per camera</h3>
+    <div class="listino">${Object.entries(MODI_ECO).map(([m, nome]) => `<label for="ec_${m}">${esc(nome)}</label><span class="unita">${campo("ec_" + m, pr[m], "€")} €</span>`).join("")}
+      <label for="ec_comm">Commissione di Booking</label><span class="unita">${campo("ec_comm", e.commissioneBooking, "%")} %</span></div>
+    <h3 style="margin:12px 0 6px;font:700 13px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Spese fisse al mese</h3>
+    <div class="listino">${SPESE_ECO.map(([k, nome]) => `<label for="es_${k}">${esc(nome)}</label><span class="unita">${campo("es_" + k, sp[k], "€")} €</span>`).join("")}</div>
+    <button class="big main" style="margin-top:12px" data-conti-salva>Salva i conti</button>
+  </section>`;
+}
 function cardStileCasa() {
   if (!proprietario()) return "";
   const ora = stileCasa();
@@ -1984,6 +2010,13 @@ function testoProposta(a) {
     const quando = a.giorno ? `Lo metto per ${a.giorno === L.oggiISO() ? "oggi" : L.dataGiornoLungo(a.giorno)}.` : "Lo trovano nelle loro camere del prossimo passaggio.";
     return `Metto «${a.cosa || a.regola.nome}» da fare in ${n === 1 ? dove : `${n} posti: ${dove}${n > 4 ? "…" : ""}`}, ${a.minuti} minuti l'una, ${eur(euro)} l'una: in tutto ${eur(euro * n)}. ${quando} Confermo?`;
   }
+  if (a.tipo === "conti") {
+    const parti = [];
+    for (const [m, v] of Object.entries(a.prezzi || {})) parti.push(`${MODI_ECO[m] || m} ${eur(v)} a notte`);
+    if (a.commissioneBooking != null) parti.push(`commissione Booking ${a.commissioneBooking}%`);
+    for (const [k, v] of Object.entries(a.spese || {})) parti.push(`${(SPESE_ECO.find(x => x[0] === k) || [k, k])[1]} ${eur(v)} al mese`);
+    return `Segno nei conti della casa: ${parti.join(", ")}. Mi servono per farti i conti di quanto guadagni. Confermo?`;
+  }
   if (a.tipo === "prospetto") {
     const D = L.dataMedia;
     const righe = a.righe.map(r => {
@@ -2097,6 +2130,13 @@ async function eseguiParole(a) {
     const chi = a.zona === "tutte" ? "tutte le signore" : SIG(a.zona);
     await salvaIstruzione(a);
     return `Fatto: ${chi} ${a.zona === "tutte" ? "la trovano" : "la trova"} ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)} in cima alla sua schermata, coi ${a.passi.length} passi e i disegnini.`;
+  }
+  if (a.tipo === "conti") {
+    const e = S.economia || {};
+    const nuovo = { ...e, prezzi: { ...(e.prezzi || {}), ...(a.prezzi || {}) }, spese: { ...(e.spese || {}), ...(a.spese || {}) }, ...(a.commissioneBooking != null ? { commissioneBooking: a.commissioneBooking } : {}), aggiornato: S.db.adesso() };
+    delete nuovo.id;
+    S.economia = nuovo; await S.db.salva("impostazioni", "economia", nuovo, false); disegna();
+    return "Fatto: segnato nei conti della casa (Altro → I conti della casa). Da adesso nei consigli faccio i conti anche con i guadagni.";
   }
   if (a.tipo === "prospetto") {
     const { ops, n } = opsRigheProspetto(a.righe);
@@ -2489,6 +2529,7 @@ function fotografiaIA() {
     return voci.length ? `DA COMPRARE: ${voci.slice(0, 8).map(v => v.nome || v.cosa).join(", ")}.` : "";
   });
   prova("chat", () => { const n = statoChatApp().aperte.length; return n ? `DOMANDE CHE TI HO GIÀ FATTO E ASPETTANO RISPOSTA: ${n}.` : ""; });
+  prova("azienda", () => testoNumeriAzienda());
   return R.join("\n");
 }
 // Le cose del catalogo più in ritardo, raggruppate per regola: le peggiori prima
@@ -2521,6 +2562,54 @@ function indietroIA(max = 10) {
   return Object.values(per).sort((a, b) => b.peggio - a.peggio || a.ogni - b.ogni).slice(0, max);
 }
 function sistemaIA() { return IA.istruzioni({ oggi: L.oggiISO(), testo: fotografiaIA() }, elenchiIA()); }
+// ---- 0.87: I NUMERI DELL'AZIENDA (Michele: "deve suggerire e trovare soluzioni anche economiche, di finanziamento,
+// di risparmio e di gestione: un super cervello"). Dal prospetto: notti vendute e occupazione; dalle pulizie: quanto
+// costa pulire per ogni notte venduta; dai "conti della casa" (prezzi e spese che dice Michele): ricavo e margine.
+const MODI_ECO = { tecnici: "Tecnici", operai: "Operai", booking: "Booking" };
+const SPESE_ECO = [["luce", "Luce"], ["gas", "Gas"], ["acqua", "Acqua"], ["internet", "Internet e telefono"], ["tasse", "Tasse e assicurazioni"], ["altro", "Altro"]];
+function nottiPerModo(da, a) {           // notti da "da" (compreso) ad "a" (escluso), per tipo di ospite
+  const out = { tecnici: 0, operai: 0, booking: 0, tot: 0 };
+  for (const s of soggiorniLista()) {
+    const i = s.inizio > da ? s.inizio : da, f = s.fine < a ? s.fine : a;
+    const n = L.giorniTra(i, f); if (!(n > 0)) continue;
+    const m = L.modoSoggiorno(s, S.clienti) || "booking";
+    out[m] = (out[m] || 0) + n; out.tot += n;
+  }
+  return out;
+}
+function numeriAzienda() {
+  const oggi = L.oggiISO(), m1 = L.primoDelMese(oggi), domani = L.aggiungiGiorni(oggi, 1);
+  const fineMese = L.aggiungiGiorni(L.ultimoDelMese(oggi), 1), nCam = S.camere.length || 13;
+  const finora = nottiPerModo(m1, domani), mese = nottiPerModo(m1, fineMese), avanti = nottiPerModo(domani, L.aggiungiGiorni(domani, 28));
+  const gFinora = L.giorniTra(m1, domani), gMese = L.giorniTra(m1, fineMese);
+  const pulFinora = contoProspetto(m1, oggi).totale, pulMese = contoProspetto(m1, L.ultimoDelMese(oggi)).totale;
+  const e = S.economia || {}, prezzi = e.prezzi || {}, comm = Number(e.commissioneBooking) || 0;
+  const haPrezzi = Object.keys(MODI_ECO).some(m => Number(prezzi[m]) > 0);
+  const ricavo = (n) => Object.keys(MODI_ECO).reduce((x, m) => x + (Number(prezzi[m]) || 0) * (n[m] || 0) * (m === "booking" ? 1 - comm / 100 : 1), 0);
+  const speseMese = Object.values(e.spese || {}).reduce((x, v) => x + (Number(v) || 0), 0);
+  const pc = (n, g) => g ? Math.round(n / (nCam * g) * 100) : 0;
+  return { oggi, nCam, finora, mese, avanti, gFinora, gMese, pulFinora, pulMese, prezzi, comm, haPrezzi, speseMese, spese: e.spese || {},
+    occFinora: pc(finora.tot, gFinora), occMese: pc(mese.tot, gMese), occAvanti: pc(avanti.tot, 28),
+    perNotte: finora.tot ? Math.round(pulFinora / finora.tot * 100) / 100 : 0,
+    ricavoMese: haPrezzi ? Math.round(ricavo(mese)) : null, ricavoFinora: haPrezzi ? Math.round(ricavo(finora)) : null };
+}
+function testoNumeriAzienda() {
+  const n = numeriAzienda(), mese = L.MESI[L.daISO(n.oggi).getUTCMonth()];
+  const tipi = (x) => Object.keys(MODI_ECO).filter(m => x[m]).map(m => `${MODI_ECO[m].toLowerCase()} ${x[m]}`).join(", ");
+  const righe = [
+    `${mese} fino a oggi: ${n.finora.tot} notti vendute su ${n.nCam * n.gFinora} possibili (${n.occFinora}%)${n.finora.tot ? ": " + tipi(n.finora) : ""}. Pulizie, stelle e lavori fino a oggi: ${eur(n.pulFinora)}${n.perNotte ? ` = ${eur(n.perNotte)} per ogni notte venduta` : ""}.`,
+    `${mese} intero, da quello che c'è nel prospetto: ${n.mese.tot} notti (${n.occMese}%); pulizie previste nel mese ${eur(n.pulMese)}.`,
+    `Prossime 4 settimane: ${n.avanti.tot} notti già nel prospetto su ${n.nCam * 28} (${n.occAvanti}%).`,
+  ];
+  if (n.haPrezzi) {
+    const pr = Object.keys(MODI_ECO).filter(m => Number(n.prezzi[m]) > 0).map(m => `${MODI_ECO[m].toLowerCase()} ${eur(n.prezzi[m])}`).join(", ");
+    righe.push(`Prezzi medi a notte (camera): ${pr}${n.comm ? `; Booking si prende il ${n.comm}%` : ""}. Ricavo stimato di ${mese}: ${eur(n.ricavoMese)}${n.speseMese ? `; spese fisse del mese ${eur(n.speseMese)}` : ""}; pulizie ${eur(n.pulMese)}; resta circa ${eur(n.ricavoMese - n.speseMese - n.pulMese)} prima delle tasse e delle spese che non so.`);
+    const senzaPrezzo = Object.keys(MODI_ECO).filter(m => n.mese[m] && !(Number(n.prezzi[m]) > 0));
+    if (senzaPrezzo.length) righe.push(`Manca il prezzo per ${senzaPrezzo.map(m => MODI_ECO[m].toLowerCase()).join(" e ")} (${senzaPrezzo.map(m => n.mese[m] + " notti").join(", ")} nel mese): il ricavo vero è più alto di così. Chiedilo a Michele.`);
+    if (!n.speseMese) righe.push("Le spese fisse (luce, gas, acqua, internet, tasse) non le so: quando servono per un conto, chiedile a Michele una alla volta.");
+  } else righe.push("PREZZI A NOTTE E SPESE FISSE: non li so ancora. Quando ti servono per un consiglio sui soldi, chiedili a Michele UNO ALLA VOLTA (per esempio: «Quanto pagano a notte i tecnici?») e quando te li dice proponi l'azione «conti» per segnarli.");
+  return "I NUMERI DELL'AZIENDA (stime dal prospetto e dalle pulizie):\n" + righe.map(r => "- " + r).join("\n");
+}
 
 // --- da quello che dice l'IA a un'azione vera dell'app ---------------------
 function camereDaIA(dove) {
@@ -2563,6 +2652,14 @@ function azioneDaIA(a) {
     const righe = (Array.isArray(a.righe) ? a.righe : String(a.righe || a.testo || "").split(/\n/)).map(x => dateInParole(String(x || "").trim())).filter(Boolean);
     if (!righe.length) return null;
     return azioneProspettoDaRighe(righe, a.base);
+  }
+  if (a.tipo === "conti") {
+    const num = (v) => { const x = Number(String(v ?? "").replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(x) && x > 0 ? Math.round(x * 100) / 100 : null; };
+    const prezzi = {}; for (const m of Object.keys(MODI_ECO)) { const v = num((a.prezzi || {})[m]); if (v != null) prezzi[m] = v; }
+    const spese = {}; for (const [k, v] of Object.entries(a.spese || {})) { const x = num(v); if (x != null) spese[String(k).toLowerCase().trim().slice(0, 30)] = x; }
+    const comm = num(a.commissioneBooking);
+    if (!Object.keys(prezzi).length && !Object.keys(spese).length && comm == null) return null;
+    return { tipo: "conti", prezzi, spese, commissioneBooking: comm };
   }
   const camere = camereDaIA(a.dove || a.camere);
   if (a.tipo === "aggiungi") {
@@ -2723,14 +2820,15 @@ async function chiediConsiglioDelGiorno() {
   if (!S.caricati.pulizie || !S.caricati.soggiorni) return;
   consiglioInCorso = true;
   try {
+    let affari = false; try { const u = localStorage.getItem("ricci_consiglio_affari") || ""; affari = !u || L.giorniTra(u, L.oggiISO()) >= 7; } catch (e) {}
     const { r } = await chiediIA({ sistema: sistemaIA(), storia: [],
-      testo: `Fai il tuo giro di controllo delle sette cose, poi rispondi con questo JSON: {"pensiero":"...","saluto":"...","risposta":"...","consiglio":"...","azione":null}.
+      testo: (affari ? `OGGI IL CONSIGLIO È DA IMPRENDITORE: guarda «I NUMERI DELL'AZIENDA» e dammi UNA cosa concreta per guadagnare di più o spendere meno (prezzi, occupazione, Booking, mesi vuoti, risparmio, un finanziamento da cercare), col conto fatto e il primo passo. ` : "") + `Fai il tuo giro di controllo delle sette cose, poi rispondi con questo JSON: {"pensiero":"...","saluto":"...","risposta":"...","consiglio":"...","azione":null}.
 "saluto": una riga sola che apre la giornata. Comincia con ${saluto()} e il mio nome (${nomeMio()}). Se c'è qualcosa di VERAMENTE meritato nella fotografia (tutte le camere chiuse, un controllo andato bene, una settimana in ordine) dillo in mezza frase, con il fatto preciso. Se non c'è niente di meritato NON inventare complimenti: metti invece una spinta corta e pratica per oggi. Massimo 18 parole.
 "risposta": in UNA frase corta com'è la situazione adesso, la cosa più importante, col numero.
 "consiglio": la cosa da fare per prima.` });
     const c = { giorno: L.oggiISO(), saluto: String(r.saluto || "").slice(0, 160), testo: String(r.risposta || "").slice(0, 220), consiglio: String(r.consiglio || "").slice(0, 220), ora: new Date().toISOString() };
     if (c.testo) {
-      try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); } catch (e) {}
+      try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); if (affari) localStorage.setItem("ricci_consiglio_affari", L.oggiISO()); } catch (e) {}
       disegna();
       inviaTelegram(`👩 ${nomeGov()}${c.saluto ? ` — ${c.saluto}` : ""}\n${c.testo}${c.consiglio ? `\n💡 ${c.consiglio}` : ""}`, "anna", { aMe: true });
     }
@@ -3860,7 +3958,7 @@ function cardOrarioBase() {
 // ---- altro ---------------------------------------------------------------------------
 function vistaAltro() {
   const r = S.regole;
-  return cardStileCasa() + cardIA() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardStileCasa() + cardIA() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -4385,6 +4483,17 @@ function collega() {
   document.querySelectorAll("[data-voto]").forEach(i => i.onchange = () => { const v = L.votiCompleti(S.regole); const k = i.dataset.voto; const n = Math.max(0, Number(i.value) || 0); const nuovi = JSON.parse(JSON.stringify(v)); if (k.startsWith("esito.")) nuovi.esiti[k.slice(6)].perc = n; else if (k === "bonusControllatrice" || k === "penalitaRichiesta" || k === "sogliaCosicosi" || k === "sogliaMale") nuovi[k] = n; else if (nuovi[k] && typeof nuovi[k] === "object") nuovi[k].perc = n; const r = { ...S.regole, voti: nuovi }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-regola]").forEach(b => b.onclick = () => { const [k, v] = b.dataset.regola.split("|"); const r = { ...S.regole, [k]: v === "1" }; S.db.salva("impostazioni", "regole", r).then(() => toast("Regola salvata")).catch(erroreScrittura); });
   document.querySelectorAll("[data-tema]").forEach(b => b.onclick = () => { S.tema = b.dataset.tema; localStorage.setItem("ricci_tema", S.tema); applicaTema(); disegna(); });
+  document.querySelectorAll("[data-conti-salva]").forEach(b => b.onclick = async () => {
+    const v = (id) => { const x = Number(String(document.getElementById(id)?.value || "").replace(",", ".")); return isFinite(x) && x > 0 ? Math.round(x * 100) / 100 : null; };
+    const prezzi = {}; for (const m of Object.keys(MODI_ECO)) { const x = v("ec_" + m); if (x != null) prezzi[m] = x; }
+    const spese = {}; for (const [k] of SPESE_ECO) { const x = v("es_" + k); if (x != null) spese[k] = x; }
+    const comm = v("ec_comm");
+    const nuovo = { ...(S.economia || {}), prezzi, spese, ...(comm != null ? { commissioneBooking: comm } : { commissioneBooking: null }), aggiornato: S.db.adesso() };
+    delete nuovo.id;
+    S.economia = nuovo;
+    try { await S.db.salva("impostazioni", "economia", nuovo, false); toast("Conti salvati: Sofia li usa da subito"); } catch (e) { erroreScrittura(e); }
+    disegna();
+  });
   document.querySelectorAll("[data-colore-app]").forEach(b => b.onclick = () => { S.colore = b.dataset.coloreApp; try { localStorage.setItem("ricci_colore", S.colore); } catch (e) {} applicaTema(); disegna(); toast("Colore: " + ((COLORI_APP.find(k => k.id === S.colore) || {}).nome || S.colore)); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
