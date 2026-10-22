@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.84.2";
+export const VERSIONE = "0.84.3";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2572,6 +2572,7 @@ function azioneProspettoDaRighe(righe, baseVoluta) {
 // dicendo chi c'è nelle camere. Così il prospetto cambia davvero, e con la stessa proposta da confermare.
 function azioneDalleParole(testo) {
   const x = String(testo || ""); if (x.length < 6 || x.length > 700) return null;
+  const traccia = (window._tracciaProspetto = window._tracciaProspetto || []);
   const n = " " + x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, " ").replace(/\s+/g, " ") + " ";
   const sembra = /\b(venut|arriv|c e |ci sono|ci sta|stanno|occupat|liber|soltanto|solo|solamente|parte|partono|resta|restano|rimane|fino a|questa settimana|settimana prossima|prossima settimana|nessuno|niente)/.test(n);
   if (!sembra) return null;
@@ -2597,6 +2598,8 @@ function azioneDalleParole(testo) {
     righe = [x];
   }
   const a = azioneProspettoDaRighe(righe, base);
+  traccia.push({ quando: new Date().toISOString(), testo: x.slice(0, 80), ids, base, righe, esito: a ? a.tipo : null, dettaglio: a && a.righe ? a.righe.map(r => `${r.camera}:${r.azione}:${r.nome || ""}:${r.inizio}>${r.fine}:${(r.motivi || []).join("/")}`) : null });
+  if (traccia.length > 10) traccia.shift();
   return a && a.tipo === "prospetto" ? a : null;
 }
 // La risposta dell'IA, pronta per la chat (col "Sì, fallo" se propone qualcosa)
@@ -2623,7 +2626,7 @@ async function rispostaIA(testo, conv) {
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
   const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : ""].filter(Boolean).join("\n\n");
   let a = azioneDaIA(r.azione);
-  if (!a) { try { a = azioneDalleParole(testo); } catch (e) { console.warn("parole/prospetto", e); a = null; } }
+  if (!a) { try { a = azioneDalleParole(testo); } catch (e) { console.warn("parole/prospetto", e); a = null; } if (!a) console.info("prospetto/parole: niente da proporre per:", String(testo).slice(0, 80)); }
   if (!a) return { ...base, testo: dice };
   if (a.tipo === "prospettoVuoto") {
     const lunghi = (a.lunghi || []).length ? ` Non tocco i soggiorni lunghi: ${a.lunghi.map(e => `${camera(e.camera).nome} (${e.nome} fino al ${L.dataMedia(e.fine)})`).join(", ")}. Se vanno tolti, dimmelo col nome.` : "";
