@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.94.0";
+export const VERSIONE = "0.95.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -196,6 +196,40 @@ try {
     TRE.ult = performance.now(); TRE.fermoDa = 0;
   }, { passive: true });
 } catch (e) {}
+// 0.95: OROLOGIO E DATA (Michele: "magari anche un orologio con data da qualche parte, ma sempre stile questo").
+// Due medaglioni di radica e oro ai lati della targa "Le Stanze di Ricci", in alto nella schermata di casa:
+// a sinistra l'orologio (quadrante d'acero con gli indici d'ebano, lancette vere), a destra la data (SAB / 24 / OTT).
+// Solo negli stili di lusso del titolare. Si toglie da "Come si vede l'app" -> "6. Orologio e data".
+const CHIAVE_OROLOGIO = "ricci_orologio";
+function orologioVoluto() { try { return localStorage.getItem(CHIAVE_OROLOGIO) !== "no"; } catch (e) { return true; } }
+const OROLOGIO_HTML = `<span class="casa-orologio" role="img" aria-label="Ora"><i class="or-h"></i><i class="or-m"></i><i class="or-s"></i><i class="or-c"></i></span>`;
+const DATARIO_HTML = `<span class="casa-data" role="img" aria-label="Data"><b class="dt-g"></b><b class="dt-n"></b><b class="dt-m"></b></span>`;
+let orologioTimer = null;
+function orologioGira() {
+  const o = document.querySelector(".casa-orologio");
+  if (!o) { clearInterval(orologioTimer); orologioTimer = null; return; }
+  if (document.hidden) return;
+  const d = new Date();
+  const s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
+  o.style.setProperty("--oh", (h * 30).toFixed(2) + "deg");
+  o.style.setProperty("--om", (m * 6).toFixed(2) + "deg");
+  o.style.setProperty("--os", (s * 6) + "deg");
+  o.setAttribute("aria-label", "Sono le " + d.getHours() + " e " + String(d.getMinutes()).padStart(2, "0"));
+  const dt = document.querySelector(".casa-data");
+  if (dt) {
+    const chiave = d.toDateString();
+    if (dt.dataset.giorno !== chiave) {
+      dt.dataset.giorno = chiave;
+      const pulisci = (x) => String(x || "").replace(/\./g, "").toUpperCase();
+      const g = dt.querySelector(".dt-g"), n = dt.querySelector(".dt-n"), mm = dt.querySelector(".dt-m");
+      if (g) g.textContent = pulisci(d.toLocaleDateString("it-IT", { weekday: "short" })).slice(0, 3);
+      if (n) n.textContent = String(d.getDate());
+      if (mm) mm.textContent = pulisci(d.toLocaleDateString("it-IT", { month: "short" })).slice(0, 3);
+      dt.setAttribute("aria-label", d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" }));
+    }
+  }
+}
+function orologioAvvia() { orologioGira(); if (!orologioTimer) orologioTimer = setInterval(orologioGira, 1000); }
 // il punto del filmato `a` che somiglia di piu' al punto `t` (secondi) del filmato `da`
 function filmPuntoAbbinato(da, a, t) {
   const j = FILM_ABBINA; const lista = j && j.da && j.da[da] && j.da[da][a];
@@ -1778,7 +1812,7 @@ const CASA_ICO = {
   voceNo: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>`,
 };
 function casaOssatura(tre) {
-  return `<div class="casa-testa"><span class="casa-nome">Le Stanze di Ricci</span></div>
+  return `<div class="casa-testa">${OROLOGIO_HTML}<span class="casa-nome">Le Stanze di Ricci</span>${DATARIO_HTML}</div>
     <div class="casa-card${tre ? " tre" : ""}">
       ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
       ${FILM_CONS("casa-fig", tre)}
@@ -1929,8 +1963,10 @@ function disegnaCasa() {
   }
   document.body.classList.add("ha-casa");
   h.dataset.stile = stileCasa();
+  h.dataset.orologio = orologioVoluto() ? "" : "no";
   casaAggiorna(h);
   if (tre) treAvvia();
+  orologioAvvia();
 }
 
 // ---------------------------------------------------------------------------
@@ -2016,7 +2052,7 @@ function cardStileCasa() {
   const anteprima = (id) => `<span class="st-prev st-${id}"><i class="st-card"></i><i class="st-bar"></i><i class="st-bar"></i><i class="st-bar"></i></span>`;
   return `<section class="card come-si-vede">
     <h2>Come si vede l'app</h2>
-    <p class="muted small" style="margin:0 0 6px">Cinque cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
+    <p class="muted small" style="margin:0 0 6px">Sei cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
     <h3>1. Il colore</h3>
     <div class="col-scelte">${COLORI_APP.map(k => `<button type="button" class="col-opt" aria-pressed="${coloreAttivo() === k.id}" data-colore-app="${k.id}"><i style="background:${k.g}"></i>${esc(k.nome)}</button>`).join("")}</div>
     <span class="small muted">Cambia il colore dei tasti e dei collegamenti. Tutto il resto resta com'è.</span>
@@ -2034,6 +2070,9 @@ function cardStileCasa() {
       : motoRidotto()
         ? `Il telefono è impostato per avere meno movimento: ${esc(nomeGov())} resta piatta.`
         : `In 3D esce un po' dalla cornice e, quando muovi il telefono, il salone dietro di lei si sposta. "Piatta" la rimette esattamente com'era.`}</span>
+    <h3>6. Orologio e data</h3>
+    <div class="seg"><button type="button" aria-pressed="${orologioVoluto()}" data-orologio-scelta="si">Sì</button><button type="button" aria-pressed="${!orologioVoluto()}" data-orologio-scelta="no">No</button></div>
+    <span class="small muted">I due medaglioni di legno e oro in alto, ai lati di "Le Stanze di Ricci": l'orologio a sinistra, la data a destra.</span>
   </section>`;
 }
 function cardConsuela() {
@@ -4855,6 +4894,7 @@ function collega() {
   document.querySelectorAll("[data-tacc-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.taccTogli; try { await salvaTaccuino(taccuinoVoci().filter(x => x.id !== id)); toast("Tolto dal taccuino"); } catch (e) { erroreScrittura(e); } });
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile2", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
+  document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in alto"); });
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());

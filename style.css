@@ -2057,3 +2057,82 @@ body.lusso[data-legno="intarsio"] .casa-card.tre{--fin-t:8.6%;--fin-r:15.4%;--fi
 .sofia-hero[data-stato="ascolto"] .casa-card.tre{--tre-scala:1.135}
 /* i tondi (voce e menu) in basso a destra, cosi' non le coprono la testa */
 .sofia-hero .casa-card.tre .casa-tondi{z-index:5;top:auto;bottom:calc(var(--fin-b) + 10px);right:calc(var(--fin-r) + 10px)}
+
+/* =====================================================================================================
+   0.95 - SCRITTE CHIARE (Michele: "rendi piu' chiare tutte le scritte perche' cosi' non si capisce niente")
+   Regole per tutta la parte del titolare (stili di lusso): niente scritte direttamente sul legno (sempre su una
+   targa piena e scura), testo scuro e pieno sulle schede avorio (che non lasciano piu' trasparire il legno),
+   niente corsivi sottili, niente scritte sotto i 12 px, niente tasti "spenti" mezzi trasparenti.
+   ===================================================================================================== */
+body.lusso{--fg:#1F140A;--muted:#46362A;--muted2:#55432F;--card:#FBF5E8;--card-pieno:#FFFAF1;--line:rgba(70,45,15,.18);--line2:rgba(70,45,15,.12)}
+:root[data-theme="dark"] body.lusso{--fg:#FFF6E6;--muted:#E8D9BC;--muted2:#DACAA8;--card:#24170F;--card-pieno:#2A1B12;--line:rgba(255,230,180,.18);--line2:rgba(255,230,180,.12)}
+body.lusso .small{font-size:14.5px}
+body.lusso .day{font-size:11.5px}
+body.lusso .day b{font-size:18px}
+body.lusso .tabs button{font-size:13px;letter-spacing:.02em;padding:10px 4px}
+body.lusso .seg button{font-size:13px}
+body.lusso .badge{font-size:12.5px}
+body.lusso .btnsm{font-size:13px}
+body.lusso .el-pill,body.lusso .tess-flag{font-size:12px}
+body.lusso .tess-pr{font-size:13px}
+body.lusso .tess-osp{font-size:14px}
+body.lusso .piano-eti{font-size:13px;letter-spacing:.08em;color:var(--fg)}
+body.lusso .sig-nome{font-size:13px}
+body.lusso .sig-sotto{font-size:13px}
+body.lusso .el-camera-ancora{font-size:13px}
+body.lusso .floorlabel{font-size:14px;color:var(--fg)}
+body.lusso .come-si-vede h3{font-size:14px;color:var(--fg)}
+body.lusso .casa-t{font-size:12.5px}
+body.lusso h1 small{font:600 13.5px var(--f-body);color:#F6EAD2}
+body.lusso h1 .fl{color:#F6EAD2}
+/* i tasti che non si possono toccare (es. "Segna come pagata" a 0 euro): niente mezza trasparenza, si leggono lo stesso */
+body.lusso button:disabled,body.lusso .btnsm:disabled,body.lusso .big:disabled{opacity:1;background:#E8DECB!important;color:#5E4E3A!important;text-shadow:none!important;box-shadow:inset 0 0 0 1px rgba(90,62,20,.35)!important;filter:none}
+:root[data-theme="dark"] body.lusso button:disabled,:root[data-theme="dark"] body.lusso .btnsm:disabled,:root[data-theme="dark"] body.lusso .big:disabled{background:#3A2A1E!important;color:#D2BE9E!important}
+/* le scritte che stavano sulla parete: avorio pieno */
+body.lusso .card.flat>p.muted,body.lusso .card.flat>.muted,body.lusso main>.muted,body.lusso main>p,body.lusso .banner.info{color:var(--avorio)}
+body.lusso .cc-scelto{color:var(--avorio)}
+/* la prima pagina: saluto, frase e consiglio su una targa scura con il filo d'oro (prima erano sul legno) */
+body.lusso .casa-testo{position:relative;padding:14px 16px 12px;border-radius:16px;background:linear-gradient(180deg,rgba(30,15,7,.94),rgba(18,8,3,.96));border:1px solid rgba(214,175,92,.9);box-shadow:inset 0 0 0 3px rgba(18,8,3,.95),inset 0 0 0 4px rgba(214,175,92,.4),0 12px 26px -14px rgba(0,0,0,.95);gap:7px}
+body.lusso[data-legno="legno"] .casa-testo{background:linear-gradient(180deg,rgba(28,12,5,.9),rgba(16,7,2,.93)),url(radica.webp) center/cover}
+body.lusso .casa-testo::before,body.lusso[data-legno="legno"] .casa-testo::before{content:none;display:none}
+body.lusso .casa-sal{color:#FFF8EA;text-shadow:0 1px 2px rgba(0,0,0,.6);font-size:clamp(19px,5.4vw,23px);line-height:1.25;-webkit-line-clamp:4}
+body.lusso .casa-sal.lunga{font-size:clamp(17px,4.7vw,20px)}
+body.lusso .casa-riga{color:#F5EBD8;font-size:clamp(15px,4vw,16.5px);font-weight:500;line-height:1.4;text-shadow:none;-webkit-line-clamp:3}
+body.lusso .casa-spinta{font-family:var(--f-body);font-style:normal;font-weight:600;color:#F3D68E;font-size:clamp(14.5px,3.9vw,16px);line-height:1.4;text-shadow:none}
+body.lusso .casa-info{color:#EAD7AE;font-size:12.5px;letter-spacing:.05em;text-shadow:none;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.45}
+/* Legno d'oro: testata piu' scura (il titolo d'oro e la riga sotto si leggono), schede in alto chiare e calme
+   con le scritte scure, quella scelta scura con le lettere d'oro; targhe di radica piu' scure */
+body.lusso[data-legno="legno"] header{background:linear-gradient(180deg,rgba(20,8,3,.42),rgba(10,4,1,.62)),url(radica.webp) center/cover}
+body.lusso[data-legno="legno"] .tabs{background:linear-gradient(180deg,rgba(255,247,226,.66),rgba(250,236,200,.58)),url(legno-oro.webp) center/cover}
+body.lusso[data-legno="legno"] .tabs button{color:#1F1108;text-shadow:0 1px 0 rgba(255,250,235,.8)}
+body.lusso[data-legno="legno"] .tabs button[aria-pressed="true"]{background:linear-gradient(180deg,#3E2414,#1E0F07);color:#F8E4AF;text-shadow:0 1px 1px rgba(0,0,0,.6);box-shadow:inset 0 0 0 1.5px #C9A55A,0 2px 6px rgba(0,0,0,.45)}
+body.lusso[data-legno="legno"] .card.flat{background:linear-gradient(180deg,rgba(26,11,4,.86),rgba(16,7,2,.9)),url(radica.webp) center/cover}
+/* schede avorio PIENE: prima lasciavano trasparire un filo di legno dietro alle parole */
+body.lusso .card:not(.flat),body.lusso .conferma-box,body.lusso .menu,body.lusso .rows,body.lusso .board-wrap{background:linear-gradient(180deg,#FFFBF3 0%,#FAF3E4 55%,#F4EAD6 100%)}
+/* Piantine: le camere senza niente da fare avevano il nome grigio chiaro */
+body.lusso .tess.idle{--tx:#2E2418;--tx2:#4A3B2A;--metal:linear-gradient(180deg,#4A3B2A,#2A1E12)}
+/* la foto di Sofia un filo piu' bassa, cosi' con le scritte piu' grandi i tasti restano vicini */
+body.lusso .casa-card{height:min(calc(50svh - 16px),calc(84vw * 16 / 9))}
+@media (min-width:760px){body.lusso .casa-card{height:min(calc(50svh - 16px),480px)}}
+/* 0.95 - OROLOGIO E DATA: due medaglioni di radica e oro (come i rosoni della parete) ai lati della targa in alto.
+   Quadrante d'acero con gli indici d'ebano intarsiati (orologio-quadrante.webp), lancette d'ebano filettate d'oro,
+   lancetta dei secondi bordeaux; il datario (datario-quadrante.webp) con SAB / 24 / OTT scuri sull'acero. */
+.casa-orologio,.casa-data{display:none}
+body.lusso .casa-testa{position:relative;--med:clamp(60px,17vw,80px)}
+body.lusso .sofia-hero:not([data-orologio="no"]) .casa-orologio,body.lusso .sofia-hero:not([data-orologio="no"]) .casa-data{position:absolute;top:50%;width:var(--med);height:var(--med);margin-top:calc(var(--med) / -2 + 8px);border-radius:50%;background:url(orologio-quadrante.webp) center/100% 100% no-repeat;filter:drop-shadow(0 6px 9px rgba(0,0,0,.6));z-index:2}
+body.lusso .sofia-hero:not([data-orologio="no"]) .casa-orologio{display:block;left:0}
+body.lusso .sofia-hero:not([data-orologio="no"]) .casa-data{display:flex;flex-direction:column;align-items:center;justify-content:center;right:0;background-image:url(datario-quadrante.webp);color:#1E1009;line-height:1;gap:1px}
+.casa-orologio i{position:absolute;left:50%;bottom:50%;transform-origin:50% 100%;border-radius:999px}
+.casa-orologio .or-h{width:7%;height:23%;margin-left:-3.5%;background:linear-gradient(90deg,#3A2414,#160B05);box-shadow:0 0 0 1px rgba(214,175,92,.95),0 1px 2px rgba(0,0,0,.45);transform:rotate(var(--oh,0deg))}
+.casa-orologio .or-m{width:4.8%;height:34%;margin-left:-2.4%;background:linear-gradient(90deg,#3A2414,#160B05);box-shadow:0 0 0 1px rgba(214,175,92,.95),0 1px 2px rgba(0,0,0,.45);transform:rotate(var(--om,0deg))}
+.casa-orologio .or-s{width:1.8%;height:39%;margin-left:-.9%;background:#8E1F1F;box-shadow:0 1px 1px rgba(0,0,0,.35);transform:rotate(var(--os,0deg))}
+.casa-orologio .or-c{top:50%;bottom:auto;width:12%;height:12%;margin:-6% 0 0 -6%;border-radius:50%;background:radial-gradient(circle at 35% 35%,#FFF1C2,#C9A55A 55%,#6B4A14)}
+.casa-data b{display:block;font-variant-numeric:tabular-nums}
+.casa-data .dt-g,.casa-data .dt-m{font:800 calc(var(--med) * .14)/1 var(--f-display);letter-spacing:.03em;color:#3E1E0E}
+.casa-data .dt-n{font:700 calc(var(--med) * .32)/.95 var(--f-lusso);color:#1A0D06;margin:0}
+/* telefoni stretti: la targa un filo piu' compatta, cosi' i due medaglioni non la toccano */
+@media (max-width:400px){
+  body.lusso .casa-testa{--med:clamp(54px,16vw,64px)}
+  body.lusso .casa-nome{font-size:12.5px;letter-spacing:.16em}
+  body.lusso[data-legno="legno"] .casa-nome{padding:5px 12px}
+}
