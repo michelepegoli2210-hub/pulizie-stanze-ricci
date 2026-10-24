@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.98.0";
+export const VERSIONE = "0.98.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5102,7 +5102,7 @@ async function leggiFotoProspetto(file) {
     const img = await fotoPiccola(file);
     const nomi = S.camere.map(c => c.nome.replace(" · ", " ")).join(", ");
     const sistema = `Sei bravissima a leggere i prospetti (scritti a mano o stampati) di un piccolo albergo: righe = camere, colonne = giorni. Rispondi SOLO con questo JSON: {"risposta":"una frase corta: che giorni copre la foto e quanti ospiti hai letto","righe":["Camera: Nome ospite, N persone, dal GG mese al GG mese"]}. Una riga per ogni ospite. Il giorno dopo "al" è il giorno di PARTENZA (la mattina in cui lascia la camera). Mesi scritti in italiano. Le camere si chiamano esattamente: ${nomi}. Non scrivere righe per le camere libere. Se non leggi bene un nome o una data metti un punto di domanda subito dopo il nome. Oggi è ${L.dataLunga(L.oggiISO())}.`;
-    const { r } = await chiediIA({ sistema, storia: [], testo: "Ecco la foto del prospetto: leggila camera per camera.", immagine: img, secondi: 90 });
+    const { r } = await chiediLettura({ sistema, storia: [], testo: "Ecco la foto del prospetto: leggila camera per camera.", immagine: img, secondi: 90, maxToken: 8000 });
     if (giro !== fotoInLettura) return;
     const x = righeFotoDaRisposta(r.grezzo);
     d.fonte = { tipo: "foto", frase: x.frase, n: x.righe.length, vuota: !x.righe.length };
@@ -5354,6 +5354,27 @@ function lettoDaSofia(j) {
   const abitudini = (Array.isArray(j.abitudini) ? j.abitudini : []).map(x => senzaNomiOspiti(daCodici(String(x || "").trim())).slice(0, 200)).filter(x => x.length > 6).slice(0, 8).map((testo, i) => ({ k: "a" + i, testo, scelta: true }));
   return { righe, indicazioni, abitudini, dubbi, risposta: daCodici(String(j.risposta || "").trim()).slice(0, 700) };
 }
+// 0.98.1: per LEGGERE (chat di papa', foto del foglio) serve il modello che ragiona di piu': Argon se c'e' la sua chiave col
+// credito; altrimenti Gemini Flash (non il "lite", che e' fatto per rispondere in fretta a voce); il lite solo come ultima spiaggia.
+async function chiediLettura(dom) {
+  const c = confIA(), tentativi = [];
+  if (c.chiaveArgon && !argonInPausa()) tentativi.push({ ...c, chiave: c.chiaveArgon, qualita: "argon", modello: /argon|pro/i.test(c.modello || "") ? c.modello : "" });
+  tentativi.push({ ...c, qualita: "sveglia", modello: c.modelloSveglio || "" });
+  tentativi.push({ ...c, qualita: "svelta", modello: c.modelloSvelto || "" });
+  let errore = null;
+  for (const conf of tentativi) {
+    try {
+      if (!conf.modello) { const t = await IA.trovaModello(conf); conf.modello = t.modello; if (conf.qualita === "sveglia") IA.salvaConf({ modelloSveglio: t.modello }); if (conf.qualita === "svelta") IA.salvaConf({ modelloSvelto: t.modello }); }
+      const r = await IA.chiedi({ ...dom, conf });
+      return { r, ripiego: conf.qualita !== "argon" };
+    } catch (e) {
+      errore = e; console.warn("lettura/" + conf.qualita, e);
+      if (conf.qualita === "argon" && /credito|chiamate gratuite/i.test(String((e && e.message) || ""))) pausaArgon(ARGON_PAUSA_MS);
+    }
+  }
+  throw errore || new Error("nessun modello risponde");
+}
+function nomeModello(m) { const x = String(m || "").toLowerCase(); return /argon/.test(x) ? "Argon" : /pro/.test(x) ? "Gemini Pro" : /lite/.test(x) ? "il modello svelto" : /flash/.test(x) ? "Gemini Flash" : x ? m : ""; }
 let letturaGiro = 0;
 // fa leggere a Sofia i messaggi (o un testo qualsiasi) e mette il risultato nell'anteprima del prospetto
 async function leggiConSofia(messaggi, opz = {}) {
@@ -5364,7 +5385,7 @@ async function leggiConSofia(messaggi, opz = {}) {
   d.ia = { leggo: true, n: messaggi.length, tagliati };
   if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else apriFoglio({ tipo: "dettatura" });
   try {
-    const { r, ripiego } = await chiediIA({ sistema: istruzioniLettura(), storia: [], testo: `ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, secondi: 150, maxToken: 16000 });
+    const { r, ripiego } = await chiediLettura({ sistema: istruzioniLettura(), storia: [], testo: `ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, secondi: 150, maxToken: 16000 });
     if (giro !== letturaGiro) return;
     const j = jsonDaRisposta(r.grezzo);
     if (!j) throw new Error("ha risposto in un modo che non capisco. Riprova.");
@@ -5418,10 +5439,10 @@ function partiSofiaHtml(d, parte = "testa") {
   if (x.errore === "chiave") return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>Per far leggere i messaggi a ${esc(nomeGov())} serve la chiave di Gemini su questo telefono</b><small>Altro → ${esc(nomeGov())} intelligente: incolla la chiave, oppure sul computer tocca «Metti la chiave anche sui telefoni». Intanto qui sotto c'è quello che capisco con le regole fisse.</small><button type="button" class="btnsm" data-vista-chiudi="altro">Vai ad Altro</button></div></div>`;
   if (x.leggo) return `<div class="dt-fonte leggo"><span class="dt-giro" aria-hidden="true"></span><div><b>${esc(nomeGov())} sta leggendo ${x.n > 1 ? x.n + " messaggi" : "il testo"}…</b><small>Usa il modello più bravo che c'è: può volerci fino a un minuto. Poi controlli tu riga per riga.${x.tagliati ? ` (I ${x.tagliati} messaggi più vecchi li ho lasciati fuori: erano troppi.)` : ""}</small></div></div>`;
   if (x.errore) return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>${esc(nomeGov())} non è riuscita a leggere</b><small>${esc(x.errore)}</small><button type="button" class="btnsm" data-dett-sofia>Riprova</button></div></div>`;
-  const modello = /argon/i.test(x.modello || "") ? "Argon" : x.modello ? "il modello svelto" : "";
+  const modello = nomeModello(x.modello);
   const ind = x.indicazioni || [], ab = x.abitudini || [];
   const riga = (v, tipo) => `<label class="row dt-riga ok" style="grid-template-columns:auto 1fr;cursor:pointer;align-items:start"><input type="checkbox" data-sofia-${tipo}="${esc(v.k)}" ${v.scelta ? "checked" : ""} style="width:24px;height:24px;margin-top:2px"><span>${tipo === "ind" ? `<b>${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}${v.camera ? " · " + esc(camera(v.camera).nome) : " · a tutte"}</b><br>` : ""}${esc(v.testo)}${v.messaggio ? `<br><span class="muted small">papà: «${esc(v.messaggio)}»</span>` : ""}</span></label>`;
-  if (parte === "testa") return `<div class="dt-fonte sofia"><span class="dt-fonte-foto" aria-hidden="true"></span><div><b>Letto da ${esc(nomeGov())}${modello ? ` (${modello})` : ""}${x.n > 1 ? ` · ${x.n} messaggi` : ""}</b>${x.risposta ? `<span>${esc(x.risposta)}</span>` : ""}${x.ripiego ? `<small>Argon non era disponibile: ho letto col modello svelto. Controlla con più attenzione.</small>` : ""}<button type="button" class="btnsm ghost" data-dett-regole>Usa le regole fisse</button></div></div>
+  if (parte === "testa") return `<div class="dt-fonte sofia"><span class="dt-fonte-foto" aria-hidden="true"></span><div><b>Letto da ${esc(nomeGov())}${modello ? ` (${modello})` : ""}${x.n > 1 ? ` · ${x.n} messaggi` : ""}</b>${x.risposta ? `<span>${esc(x.risposta)}</span>` : ""}${x.ripiego ? `<small>${confIA().chiaveArgon ? "Argon non era disponibile" : "Per Argon serve la sua chiave col credito (Altro → passo 4b)"}: ho letto con ${esc(modello || "un altro modello")}. Controlla con attenzione.</small>` : ""}<button type="button" class="btnsm ghost" data-dett-regole>Usa le regole fisse</button></div></div>
     ${(x.dubbi || []).length ? `<div class="dt-dubbi"><b>Non sono sicura di:</b><ul>${x.dubbi.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}`;
   return `${ind.length ? `<div class="floorlabel" style="margin-top:12px">Indicazioni per le signore <span>${ind.filter(v => v.scelta).length} da salvare</span></div><div class="rows">${ind.map(v => riga(v, "ind")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Vanno nei dettagli della camera di quel giorno (o nel messaggio del giorno alle signore).</p>` : ""}
     ${ab.length ? `<div class="floorlabel" style="margin-top:12px">Come scrive papà: me lo ricordo? <span>${ab.filter(v => v.scelta).length}</span></div><div class="rows">${ab.map(v => riga(v, "ab")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Le spuntate finiscono nel taccuino: la prossima volta lo capisco meglio.</p>` : ""}`;
