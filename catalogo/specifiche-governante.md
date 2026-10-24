@@ -1343,3 +1343,12 @@ Michele manda la foto di un pannello: legno d'oro marezzato al centro, cornice d
 - Le testate delle pagine (Sofia, una signora) da argento a madreperla in tutti gli stili di lusso.
 - TORNARE INDIETRO: Altro -> Come si vede l'app -> "4. Lo stile (sfondo, cornici, colori)": Intarsio prezioso (di serie), Mogano marezzato, Noce marezzato, Ebano marezzato, Laguna. Chiave nuova ricci_stile (le prove di ieri con ricci_sfondo non contano piu', cosi' tutti vedono subito l'intarsio). In cache subito: l'intarsio e i suoi pezzi; gli altri stili si scaricano quando si scelgono.
 - Provato (lip5/test88.cjs aggiornato e foto a 420x860, 504x768, 1440x900): nessun errore; taccuino, piu' azioni, laguna, "come signora" uguali a prima.
+
+## 61. La 0.91 (24 ottobre): TASTI D'ORO E GIOIELLI (Michele: "piu' oro, piu' gioielli sui tasti")
+Solo nello stile Intarsio (gli altri stili non cambiano). Le pietre sono disegnate col CSS (cabochon = luce + pietra + ghiera d'oro), nel ::after del tasto; i diamanti sono file di puntini (pave') lungo i bordi.
+- Tasti grandi principali (es. DIMMI IL PROSPETTO, + AGGIUNGI UN LAVORO, Si' nelle conferme): lingotto d'oro lucido con le lettere incise marroni, ghiera d'oro doppia, uno zaffiro (lapislazzuli) incastonato a ogni estremita', diamanti sopra e sotto.
+- Tasti grandi secondari (FOGLIO DI PAPA', COME LA SETTIMANA SCORSA, MANDA IL PIANO...): madreperla con la ghiera d'oro, un rubino SOPRA le parole (non ai lati: stanno spesso due per riga), diamanti sotto; lettere blu.
+- Tasti piccoli (SCRIVI, + LAVORO, Salva...): oro con i diamanti sotto; quelli leggeri in madreperla.
+- Prima pagina: Parlami con lo zaffiro, Dimmi col rubino, Giornate con lo smeraldo (la pietra sopra l'icona), madreperla con la ghiera d'oro e i diamanti sotto; quando Sofia parla o ascolta il tasto diventa d'oro; la freccia "manda" e' una moneta d'oro con la ghiera, la graffetta in madreperla.
+- Si' / No della conversazione: Si' in oro con gli smeraldi, No in madreperla coi rubini, le altre scelte in madreperla con gli zaffiri.
+- Pillole in alto (tre puntini, giorno) e "< Oggi": oro. Targhe delle signore, di Sofia e della manutenzione: madreperla con la ghiera e i diamanti. I giorni: madreperla con la ghiera, oggi in oro, quello scelto in lapislazzuli. La scheda scelta e Chiaro/Scuro: con un filo di diamanti.
