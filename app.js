@@ -7,7 +7,7 @@ import { ZONE, CAMERE, CAMERE_TOLTE, REGOLE_BASE, TIPI_PULIZIA, TIPI_OSPITE, RIF
 import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
-import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA } from "./dettatura.js";
+import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA, testoDaWhatsApp } from "./dettatura.js";
 import * as G from "./governante.js";
 import * as CH from "./chat.js";
 import * as PAROLE from "./parole.js";
@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.96.1";
+export const VERSIONE = "0.97.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -203,11 +203,12 @@ const CHIAVE_OROLOGIO = "ricci_orologio";
 function orologioVoluto() { try { return localStorage.getItem(CHIAVE_OROLOGIO) !== "no"; } catch (e) { return true; } }
 function barraOra() {
   let b = document.getElementById("barraOra");
-  let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && orologioVoluto()); } catch (e) {}
+  let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && (orologioVoluto() || premiumVisto())); } catch (e) {}
   if (!vuoi) { if (b) b.hidden = true; document.body.classList.remove("con-ora"); return null; }
+  document.body.classList.toggle("senza-orologio", !orologioVoluto());
   if (!b) {
     b = document.createElement("div"); b.id = "barraOra"; b.className = "barra-ora"; b.setAttribute("aria-live", "off");
-    b.innerHTML = `<b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
+    b.innerHTML = `<span class="bo-marca" aria-label="Le Stanze di Ricci"><b>Le Stanze</b><b class="bo-m2">di Ricci</b><small>Pulizie</small></span><b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
     document.body.insertBefore(b, document.body.firstChild);
   }
   b.hidden = false; document.body.classList.add("con-ora");
@@ -254,6 +255,33 @@ function NAV_HTML(v, inCasa) {
     const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
     return `<button type="button" class="nav-t" ${azione} aria-pressed="${att}" aria-label="${esc(nome)}${conta ? " (" + dom + " da guardare)" : ""}"><span class="nav-ico">${NAV_ICO[ic]}${conta}</span><span class="nav-n">${esc(nome)}</span></button>`;
   }).join("")}</nav>`;
+}
+// 0.97 - PREMIUM: i tasti delle sezioni in una barra fissa IN BASSO, sotto il pollice (come le app di lusso), con
+// Sofia al centro (la sua faccia). Negli altri stili restano i tasti tondi vicino a Sofia (0.96).
+const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], ["sofia", "", ""], ["piantine", "Piantine", "mappa"], ["paghe", "Paghe", "euro"]];
+function barraSotto() {
+  let b = document.getElementById("barraSotto");
+  let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && premiumVisto()); } catch (e) {}
+  if (!vuoi) { if (b) b.hidden = true; document.body.classList.remove("con-sotto"); return; }
+  if (!b) { b = document.createElement("nav"); b.id = "barraSotto"; b.className = "barra-sotto"; b.setAttribute("aria-label", "Sezioni"); document.body.appendChild(b); }
+  const v = S.vista, dom = domandeSofia();
+  const html = BS_VOCI.map(([k, n, ic]) => {
+    const att = v === k || (k === "sofia" && v === "governante") || (k === "oggi" && (v === "manutenzione" || v === "signora"));
+    const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
+    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-foto">${conta}</span><span class="bs-n">${esc(nomeGov())}</span></button>`;
+    return `<button type="button" class="bs-t" data-bs="${k}" aria-pressed="${att}"><span class="bs-ico">${NAV_ICO[ic]}</span><span class="bs-n">${esc(n)}</span></button>`;
+  }).join("");
+  if (b.dataset.html !== html) {
+    b.innerHTML = html; b.dataset.html = html;
+    b.querySelectorAll("[data-bs]").forEach(t => t.onclick = () => {
+      const k = t.dataset.bs;
+      if (k === "oggi") { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); }
+      const stessa = S.vista === k;
+      S.vista = k; chiudiFoglio(); disegna();
+      window.scrollTo({ top: 0, behavior: stessa ? "smooth" : "auto" });
+    });
+  }
+  b.hidden = false; document.body.classList.add("con-sotto");
 }
 // il punto del filmato `a` che somiglia di piu' al punto `t` (secondi) del filmato `da`
 function filmPuntoAbbinato(da, a, t) {
@@ -530,6 +558,14 @@ document.addEventListener("click", (e) => {
   e.preventDefault();
   const h = document.getElementById("sofiaHero");
   window.scrollTo({ top: h ? h.offsetHeight : window.innerHeight, behavior: "smooth" });
+}, true);
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest && e.target.closest("[data-casa-vai]");
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  const k = t.dataset.casaVai;
+  if (k === "pulizie") { const a = document.getElementById("app"); const top = a ? a.getBoundingClientRect().top + window.scrollY - 70 : window.innerHeight; window.scrollTo({ top, behavior: "smooth" }); return; }
+  S.vista = k; disegna(); window.scrollTo(0, 0);
 }, true);
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest && e.target.closest("[data-casa-parla]");
@@ -816,7 +852,7 @@ const S = {
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
   caricati: { pulizie: false, soggiorni: false, ruoli: false, manutenzione: false, gov: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
-  stop: [], tema: localStorage.getItem("ricci_tema") || "light", colore: (() => { try { let c = localStorage.getItem("ricci_colore") || ""; if (!localStorage.getItem("ricci_v88")) { localStorage.setItem("ricci_v88", "1"); if (c === "blu") { c = ""; localStorage.removeItem("ricci_colore"); } } return c; } catch (e) { return ""; } })(), sfondo: (() => { try { return localStorage.getItem("ricci_stile3") || "avorio"; } catch (e) { return "avorio"; } })(),
+  stop: [], tema: localStorage.getItem("ricci_tema") || "light", colore: (() => { try { let c = localStorage.getItem("ricci_colore") || ""; if (!localStorage.getItem("ricci_v88")) { localStorage.setItem("ricci_v88", "1"); if (c === "blu") { c = ""; localStorage.removeItem("ricci_colore"); } } return c; } catch (e) { return ""; } })(), sfondo: (() => { try { return localStorage.getItem("ricci_stile4") || "premium"; } catch (e) { return "premium"; } })(),
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -899,21 +935,28 @@ function giornoParlato(iso) { const oggi = L.oggiISO(); const d = L.giorniTra(og
 // da Altro -> Come si vede l'app -> 4. Lo sfondo. Prima di sapere chi e' entrato si ricorda com'era l'ultima volta.
 let eraLusso = null;
 function sfondoLusso() {
-  if (S.sfondo === "laguna") return false;
+  if (S.sfondo === "laguna" || S.sfondo === "premium") return false;
   if (!S.pronto) { try { return localStorage.getItem("ricci_era_lusso") === "1"; } catch (e) { return false; } }
   return !!(S.utente && S.utente.ruolo && !addetta());
 }
-function coloreAttivo() { return S.colore || (sfondoLusso() ? "oro" : "blu"); }
+function coloreAttivo() { return S.colore || (sfondoLusso() || premiumVisto() ? "oro" : "blu"); }
+// il Premium si vede nella parte del titolare (come il legno); prima di sapere chi e' entrato si ricorda l'ultima volta
+function premiumVisto() {
+  if (!premiumScelto()) return false;
+  if (!S.pronto) { try { return localStorage.getItem("ricci_era_premium") === "1"; } catch (e) { return false; } }
+  return !!(S.utente && S.utente.ruolo && !addetta());
+}
 function applicaTema() {
   if (S.tema === "dark") document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme");
   const col = coloreAttivo();
   if (col !== "blu") document.documentElement.setAttribute("data-colore", col); else document.documentElement.removeAttribute("data-colore");
-  const lusso = sfondoLusso();
-  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; }
+  const lusso = sfondoLusso(), premium = premiumVisto();
+  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; document.body.classList.toggle("premium", premium); }
+  if (S.pronto) { try { localStorage.setItem("ricci_era_premium", premium ? "1" : "0"); } catch (e) {} }
   const parete = document.querySelector(".laguna");
   if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
   const barra = document.querySelector('meta[name="theme-color"]');
-  if (barra) barra.setAttribute("content", lusso ? ({ mogano: "#240C07", noce: "#22140A", ebano: "#0E0805", intarsio: "#2A1206", legno: "#2A1206", avorio: "#F3E7D3" })[legnoScelto()] : S.tema === "dark" ? "#000000" : "#ffffff");
+  if (barra) barra.setAttribute("content", premium ? (S.tema === "dark" ? "#161412" : "#F7F5F0") : lusso ? ({ mogano: "#240C07", noce: "#22140A", ebano: "#0E0805", intarsio: "#2A1206", legno: "#2A1206", avorio: "#F3E7D3" })[legnoScelto()] : S.tema === "dark" ? "#000000" : "#ffffff");
   if (S.pronto && eraLusso !== lusso) { eraLusso = lusso; try { localStorage.setItem("ricci_era_lusso", lusso ? "1" : "0"); } catch (e) {} }
 }
 // 0.86 - i colori che Michele puo' scegliere da solo (Altro -> Come si vede l'app): cambiano tasti e collegamenti
@@ -924,8 +967,13 @@ function applicaTema() {
 // pero' dammi sempre la possibilita' di tornare indietro". E' lo stile di serie; gli altri restano qui.
 // 0.93 - Michele: "non mi piace, togli tutti i gioielli e rimani il legno lussuoso": di serie il legno della sua foto
 // senza pietre (Legno d'oro). L'intarsio coi gioielli resta qui sotto, per tornare indietro.
+// 0.97 - Michele: "fai ragionare Gemini Argon come un web designer di fama mondiale, come se l'app costasse milioni:
+// rendi premium tutto e facilissimo da usare, pero' mantieni la possibilita' di tenerla cosi'". PREMIUM e' lo stile
+// di serie (fondo avorio chiaro, schede bianche, oro brunito, barra dei tasti in basso); "Avorio e noce" e' la 0.96
+// esattamente com'era (tasti tondi vicino a Sofia, barra dell'ora in cima), e restano tutti gli altri.
 const SFONDI_APP = [
-  { id: "avorio", nome: "Avorio e noce", come: "La mia proposta per un'app di lavoro: carta avorio calma, noce e oro ai lati, caratteri chiarissimi" },
+  { id: "premium", nome: "Premium chiaro", come: "La proposta di Argon: bianco e avorio, oro brunito, tutto grande e pulito, i tasti in basso sotto il pollice" },
+  { id: "avorio", nome: "Avorio e noce", come: "Lo stile di prima (0.96): carta avorio, noce e oro ai lati, tasti tondi vicino a Sofia" },
   { id: "legno", nome: "Legno d'oro", come: "Il legno marezzato della tua foto, radica e fili d'oro, senza pietre" },
   { id: "intarsio", nome: "Intarsio con gioielli", come: "Il tuo pannello con oro, madreperla, lapislazzuli e diamanti" },
   { id: "lusso", nome: "Mogano marezzato", come: "Boiserie di mogano lucido, filetti e cornici d'oro" },
@@ -934,6 +982,8 @@ const SFONDI_APP = [
   { id: "laguna", nome: "Laguna", come: "Il cielo e l'acqua di Lesina, chiaro" },
 ];
 function legnoScelto() { return ["noce", "ebano", "intarsio", "legno", "avorio"].includes(S.sfondo) ? S.sfondo : "mogano"; }
+// 0.97: il Premium non e' "di legno": usa la grafica chiara di base, ripulita (body.premium in style.css)
+function premiumScelto() { return S.sfondo === "premium"; }
 const COLORI_APP = [
   { id: "blu", nome: "Blu", g: "linear-gradient(135deg,#5A8AD6,#143880 45%,#2A56A6)" },
   { id: "oro", nome: "Oro", g: "linear-gradient(135deg,#D9B36A,#6E4A12 45%,#A87A2C)" },
@@ -1102,6 +1152,7 @@ function disegna() {
   memoProposte = new Map(); memoRif = new Map(); memoLista = new Map(); ctxMemo = null;
   disegnaTestata();
   document.body.classList.toggle("nonna", !!(S.utente && addetta()));
+  document.body.classList.toggle("semplice", !!(S.utente && addetta() && vistaSignoreSemplice()));
   document.body.classList.toggle("vista-manutenzione", !!(S.utente && !addetta() && S.vista === "manutenzione"));
   document.body.classList.toggle("vista-signora", !!(S.utente && !addetta() && (S.vista === "signora" || S.vista === "governante")));
   applicaTema();
@@ -1121,10 +1172,12 @@ function disegna() {
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
   disegnaCasa();
   orologioAvvia();
+  barraSotto();
   collega();
   if (S.foglio) disegnaFoglio();
   avviaCronometri();
   const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
+  if (condivisoAtteso) guardaCondiviso();
 }
 
 function disegnaTestata() {
@@ -1178,7 +1231,7 @@ function vistaAddetta() {
   let corpo;
   if (S.vista === "soldi") corpo = vistaSoldi(z) + `<section class="card center"><button class="big undo" data-esci>Esci dall'app (poi serve di nuovo la password)</button></section>`;
   else if (S.vista === "controlli" && ctrl) corpo = vistaControlliCollega(z);
-  else corpo = vistaNonnaOggi(z);
+  else corpo = vistaSignoreSemplice() ? vistaNonnaSemplice(z) : vistaNonnaOggi(z);
   return corpo + nav;
 }
 
@@ -1232,6 +1285,71 @@ function vistaNonnaOggi(z) {
   return testata + spiegazioni + cardDaRifare(z) + cardControlliOggi(z) + bidoni + piantina;
 }
 
+// 0.97 - LA SCHERMATA "A PROVA DI NONNA" (Michele: "la parte delle signore deve essere a prova di nonna incapace di
+// usare il telefono"). Niente piantina, niente scritte piccole: in alto il saluto e TRE numeri grandi (da fare, in corso,
+// pulite); sotto UNA SCHEDA GRANDE PER CAMERA, prima quelle da fare, con UN tasto solo che dice cosa fare adesso:
+// COMINCIA (parte il tempo e si apre la lista della camera) -> HO FINITO (con la domanda "le hai fatte tutte?" e
+// "Ho sbagliato" per tornare indietro) -> verde "Pulita alle 11:20". Toccando la scheda si apre la lista della camera.
+// Il titolare sceglie in Altro -> "La schermata delle signore" se usare questa (di serie) o quella con la piantina.
+function vistaSignoreSemplice() { return !(S.gov && S.gov.vistaSignore === "classica"); }
+function vistaNonnaSemplice(z) {
+  const iso = S.giorno, oggi = L.oggiISO();
+  const lavori = pulizieDelGiorno(iso, z);
+  const n = (st) => lavori.filter(p => p.stato === st).length;
+  const pulite = n("fatta"), inCorso = n("in_corso"), daFare = lavori.length - pulite - inCorso;
+  const quando = quandoEtichetta(iso);
+  const tutteFatte = lavori.length > 0 && pulite === lavori.length;
+  let frase;
+  if (!lavori.length) frase = iso === oggi ? "Oggi nessuna camera per te: goditi la giornata!" : "Per questo giorno non c'è niente in programma.";
+  else if (tutteFatte) frase = "Tutto pulito! Sei stata bravissima.";
+  else if (!pulite && !inCorso) frase = `${iso === oggi ? "Oggi hai" : "Ci sono"} ${lavori.length === 1 ? "una camera" : lavori.length + " camere"}. Una alla volta!`;
+  else { const resto = lavori.length - pulite; frase = resto === 1 ? "Ne manca una sola. Ci sei quasi!" : `Ne mancano ${resto}. Stai andando benissimo!`; }
+  const msg = messaggioDelGiorno(iso);
+  const nIstr = istruzioniDelGiorno(iso, z).length;
+  const giorno = ["Oggi", "Domani", "Ieri"].includes(quando) ? `${quando} · ${L.dataLunga(iso)}` : L.dataLunga(iso).replace(/^./, ch => ch.toUpperCase());
+  const testata = `<section class="nn-testa">
+    <div class="nn-ciao">${esc(saluto())}, ${esc(nomeSignora())}!</div>
+    <div class="nn-frase">${esc(frase)}</div>
+    ${lavori.length ? `<div class="nn-numeri"><div class="nn-num todo"><b>${daFare}</b><span>da fare</span></div><div class="nn-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="nn-num done"><b>${pulite}</b><span>pulite</span></div></div>
+    <div class="nn-barra" role="img" aria-label="${pulite} pulite su ${lavori.length}"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
+    <div class="nn-giorno">${ICONA("calendario")}<span>${esc(giorno)}</span><button class="nn-altri" data-altri-giorni>${S.mostraGiorni ? "Torna a oggi" : "Altri giorni"}</button></div>
+    ${tutteFatte && numeroWhatsApp() ? `<button class="nn-tasto fatto" style="margin-top:14px" data-whatsapp-finito="${iso}">${ICONA("spunta")}<span>Avvisa su WhatsApp che hai finito</span></button>` : ""}
+  </section>`;
+  const messaggio = msg ? `<section class="nn-msg"><div class="nn-msg-t">${ICONA("nota")}<span>${esc(msg.da || "Michele")} ti scrive</span></div><div class="nn-msg-x">${esc(msg.testo)}</div></section>` : "";
+  const avvisoIstr = nIstr ? `<div class="nn-avviso">${ICONA("stella")}<span><b>${esc(nomeGov())} ti ha lasciato ${nIstr === 1 ? "una spiegazione" : nIstr + " spiegazioni"}</b>, coi disegni: le trovi qui sotto.</span></div>` : "";
+  const spiegazioni = istruzioniDelGiorno(iso, z).map((x, i) => cardIstruzione(x, i)).join("");
+  const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
+  const bidoni = rif && z === "ap" ? `<div class="nn-avviso">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rif.cosa.replace(/^./, c => c.toUpperCase()))}</b></span></div>` : "";
+  const ordine = (p) => p.stato === "in_corso" ? 0 : p.stato === "da_fare" ? 1 : (p.stato === "problema" || p.stato === "non_fatta") ? 2 : 3;
+  const lista = [...lavori].sort((a, b) => ordine(a) - ordine(b) || ordineCamera(a.camera) - ordineCamera(b.camera));
+  const schede = lista.length ? `<div class="nn-titolo">${lista.length === 1 ? "La tua camera" : "Le tue camere"}</div><div class="nn-schede">${lista.map(schedaNonna).join("")}</div>` : "";
+  return testata + messaggio + avvisoIstr + spiegazioni + cardDaRifare(z) + cardControlliOggi(z) + bidoni + schede;
+}
+function schedaNonna(p) {
+  const c = camera(p.camera), id = esc(p.id), cls = statoClasse(p);
+  const stelle = p.tipo === "stelle";
+  const nome = stelle ? "⭐ Altre camere" : c.nome;
+  let cosa = stelle ? (() => { const rg = righeGiro(p); return `${rg.length} ${rg.length === 1 ? "stella" : "stelle"} da fare`; })() : (p.origine === "governante" ? "⭐ " : "") + titoloLavoro(p);
+  const g = p.data === L.oggiISO() ? "oggi" : L.GIORNI[L.giornoSettimana(p.data)];
+  const info = [p.partenza ? `${ICONA("esci")}L'ospite parte ${g}` : p.arrivo ? `${ICONA("entra")}Arriva un ospite ${g}` : "", p.dettagli || p.istruzioni ? `${ICONA("nota")}C'è un messaggio per te` : "", testoRifiniture(p) && !stelle ? `⭐ ${esc(testoRifiniture(p))}` : ""].filter(Boolean);
+  const statoParola = p.stato === "fatta" ? "Pulita" : p.stato === "in_corso" ? "La stai facendo" : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? "Non fatta" : "Da fare";
+  const inizio = S.regole.richiediInizio !== false;
+  let tasto;
+  if (p.stato === "da_fare") tasto = inizio ? `<button class="nn-tasto via" data-nn-comincia="${id}">${ICONA("gioca")}<span>Comincia</span></button>` : `<button class="nn-tasto fatto" data-fatta="${id}">${ICONA("spunta")}<span>Ho finito</span></button>`;
+  else if (p.stato === "in_corso") tasto = `<div class="nn-tempo" data-crono="${esc(p.inizio || "")}" data-crono-std="0" data-crono-tetto="0" data-crono-euro="0">${ICONA("orologio")}<span>Hai cominciato alle ${esc(L.oraBreve(p.inizio))} · <b class="crono-n">${esc(testoCrono(p.inizio))}</b></span></div><button class="nn-tasto fatto" data-fatta="${id}">${ICONA("spunta")}<span>Ho finito</span></button>`;
+  else if (p.stato === "fatta") tasto = `<div class="nn-pulita">${ICONA("spunta")}<span>Pulita alle <b>${esc(L.oraBreve(p.ora))}</b> · brava!</span></div>`;
+  else tasto = `${p.nota ? `<div class="nn-tempo warn">${ICONA("avviso")}<span>${esc(p.nota)}</span></div>` : ""}<button class="nn-tasto fatto" data-fatta="${id}">${ICONA("spunta")}<span>Adesso è pulita</span></button>`;
+  return `<article class="nn-scheda ${cls}">
+    <button class="nn-apri" data-dettagli="${id}" aria-label="${esc(nome)}: ${esc(statoParola)}. Tocca per vedere cosa fare">
+      <span class="nn-stato"><i aria-hidden="true"></i>${esc(statoParola)}</span>
+      <span class="nn-nome">${esc(nome)}</span>
+      <span class="nn-cosa">${esc(cosa)}</span>
+      ${info.length ? `<span class="nn-info">${info.map(x => `<span>${x}</span>`).join("")}</span>` : ""}
+      <span class="nn-vedi">Vedi cosa fare <i aria-hidden="true">›</i></span>
+    </button>
+    ${tasto}
+  </article>`;
+}
 // Un riquadro-camera della piantina (per le signore e per le piantine della gestione)
 function tesseraGrande(c, iso, perSignora) {
   const p = (perSignora && addetta() ? pulizieDelGiorno(iso, S.utente.zona).find(x => x.camera === c.id) : null) || S.pulizie[`${iso}_${c.id}`] || pulizieDelGiorno(iso).find(x => x.camera === c.id);
@@ -1545,7 +1663,7 @@ function vistaOggiGestione() {
       <div class="rows">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}${p.ospite ? ` · <span class="muted">${esc(p.ospite)}</span>` : ""}${p.stato === "fatta" && p.ora ? `<br><span class="muted">${L.oraBreve(p.ora)}${minutiPulizia(p) != null ? " · " + minutiPulizia(p) + " min" : ""}</span>` : p.stato === "in_corso" ? `<br><span class="muted">dalle ${L.oraBreve(p.inizio)}</span>` : ""}${p.dettagli ? `<br><span class="dett-mini">${ICONA("nota")}${esc(p.dettagli)}</span>` : ""}${p.nota ? `<br><span class="muted">“${esc(p.nota)}”</span>` : ""}</span>${BADGE(p)}</button>`).join("")}</div></section>`;
   }).join("");
   const avviso = bloccoSignoreELavori(iso);
-  const bottone = puoModificare() ? `<section class="card flat"><button class="big undo" data-whatsapp-piano="${iso}">Manda il piano di ${esc(quandoEtichetta(iso).toLowerCase())} su WhatsApp</button><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button><button class="big undo" data-dettatura>🗣️ Dimmi il prospetto (scrivi o detta chi arriva)</button></section>` : "";
+  const bottone = puoModificare() ? `<section class="card flat"><button class="big undo" data-whatsapp-piano="${iso}">Manda il piano di ${esc(quandoEtichetta(iso).toLowerCase())} su WhatsApp</button><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button><button class="big undo" data-inserisci>＋ Inserisci il prospetto (WhatsApp, foto, Excel, a voce)</button></section>` : "";
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
@@ -1860,7 +1978,7 @@ function casaOssatura(tre) {
       <p class="casa-riga"></p>
       <p class="casa-spinta"></p>
       <div class="casa-sotto" id="consSotto"></div>
-      <p class="casa-info"></p>
+      <div class="casa-info"></div>
       <div class="casa-testo-tasti">
         <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
         <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio">${CASA_ICO.onda}<span>Ascolta il messaggio</span></button>
@@ -1906,15 +2024,16 @@ function casaAggiorna(h) {
   const ls = pulizieDelGiorno(oggi), fatte = ls.filter(p => p.stato === "fatta").length;
   const man = lavoriAperti().length;
   let dom = 0; try { dom = statoChatApp().aperte.length; } catch (e) {}
-  const voci = [ls.length ? `${fatte}/${ls.length} pulizie oggi` : "nessuna pulizia oggi"];
-  if (man) voci.push(`${man} ${man === 1 ? "lavoro" : "lavori"} da fare`);
-  if (dom) voci.push(`${dom} ${dom === 1 ? "domanda" : "domande"} per te`);
+  // 0.97: il riassunto e' fatto di "pillole" da toccare: pulizie -> l'elenco di oggi, lavori -> manutenzione, domande -> Sofia
+  const voci = [`<button type="button" class="casa-pill" data-casa-vai="pulizie"><span aria-hidden="true">🧹</span>${ls.length ? `<b>${fatte}/${ls.length}</b> pulizie oggi` : "nessuna pulizia oggi"}</button>`];
+  if (man) voci.push(`<button type="button" class="casa-pill" data-casa-vai="manutenzione"><span aria-hidden="true">🔧</span><b>${man}</b> ${man === 1 ? "lavoro" : "lavori"} da fare</button>`);
+  if (dom) voci.push(`<button type="button" class="casa-pill att" data-casa-vai="sofia"><span aria-hidden="true">💬</span><b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} per te</button>`);
   const q = (s) => h.querySelector(s);
   const sal = q(".casa-sal"), riga = q(".casa-riga"), spinta = q(".casa-spinta"), info = q(".casa-info");
   if (sal) { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); }
   if (riga) riga.textContent = c && c.testo ? c.testo : u.testo;
   if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
-  if (info) info.textContent = voci.join(" \u00b7 ");
+  if (info) { const hh = voci.join(""); if (info.innerHTML !== hh) info.innerHTML = hh; }
   const mic = q(".casa-t-mic");
   if (mic) mic.setAttribute("aria-label", "Dillo a " + nomeGov());
   casaChatAggiorna(h);
@@ -4182,15 +4301,51 @@ function vistaTabellone() {
   const noteP = Object.values(S.note).filter(n => n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
   const corpoBoard = elenco ? elencoProspetto(da, a) : `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
-  return `<div class="tabs"><button aria-pressed="${elenco}" data-board="elenco">Elenco</button><button aria-pressed="${sett && !elenco}" data-board="settimana">Tabellone</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
+  return `${puoModificare() ? `<div class="pr-azioni"><button type="button" class="big main pr-ins" data-inserisci>＋ Inserisci il prospetto</button><button type="button" class="pr-wa" data-ins-wa-subito>${ICO_WA}<span>Incolla da<br>WhatsApp</span></button></div>` : ""}
+  ${colpoDOcchio()}
+  <div class="tabs"><button aria-pressed="${elenco}" data-board="elenco">Elenco</button><button aria-pressed="${sett && !elenco}" data-board="settimana">Tabellone</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
   <section class="card flat"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
   <div class="stats"><div class="stat"><b>${occOggi}/${S.camere.length}</b><span>camere occupate oggi</span></div><div class="stat"><b>${notti}</b><span>notti nel periodo</span></div>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<div class="stat"><b style="color:${TIPI_OSPITE[k]?.colore || "inherit"}">${v}</b><span>notti ${esc(TIPI_OSPITE[k]?.nome || k)}</span></div>`).join("")}</div></section>
-  ${puoModificare() ? bottoniProspetto() : ""}
   ${corpoBoard}
   ${dubbi.length ? `<section class="card"><h2 style="color:var(--todo)">Da controllare (?)</h2><div class="rows">${dubbi.map(s => `<button class="row" data-sog="${esc(s.id)}"><span><b>${esc(camera(s.camera).nome)}</b> · ${esc(s.nome)}<br><span class="muted">${esc(L.dataMedia(s.inizio))} → ${esc(L.dataMedia(s.fine))}${s.notaPrivata ? " · " + esc(s.notaPrivata) : ""}</span></span><span class="s todo">?</span></button>`).join("")}</div></section>` : ""}
   <section class="card"><h2>Note del periodo</h2>${noteP.length ? `<div class="notes">${noteP.map(n => `<button class="row" data-nota="${esc(n.id)}"><span><b>${esc(L.dataMedia(n.data))}</b> · ${esc(n.camera ? camera(n.camera).nome : "Generale")}<br>${esc(n.testo)}</span>${n.privata ? `<span class="pill priv">privata</span>` : ""}</button>`).join("")}</div>` : `<p class="muted" style="margin:0">Nessuna nota in questo periodo.</p>`}${puoModificare() ? `<button class="big undo" data-nuova-nota>+ Scrivi una nota</button>` : ""}</section>`;
 }
 
+// 0.97 - IL PROSPETTO A COLPO D'OCCHIO (Michele: "rendi ultra super chiaro il prospetto"): per oggi (o uno dei
+// prossimi 6 giorni, si sceglie in alto) quattro gruppi di camere: chi ARRIVA, chi PARTE, chi RESTA, le LIBERE stanotte.
+// Si tocca una camera: si apre il soggiorno (o, se e' libera, si segna un arrivo).
+function colpoDOcchio() {
+  const oggi = L.oggiISO();
+  if (!S.colpo || S.colpo < oggi || L.giorniTra(oggi, S.colpo) > 6) S.colpo = oggi;
+  const g = S.colpo, sog = soggiorniLista();
+  const camere = zoneOrdinate().flatMap(z => camereZona(z.id));
+  const conta = (x) => ({ a: sog.filter(s => s.inizio === x).length, p: sog.filter(s => s.fine === x).length });
+  const arrivi = [], partenze = [], restano = [], libere = [];
+  for (const c of camere) {
+    const qui = sog.filter(s => s.camera === c.id);
+    qui.filter(s => s.fine === g).forEach(s => partenze.push({ c, s }));
+    qui.filter(s => s.inizio === g).forEach(s => arrivi.push({ c, s }));
+    qui.filter(s => s.inizio < g && g < s.fine).forEach(s => restano.push({ c, s }));
+    if (!qui.some(s => s.inizio <= g && g < s.fine)) libere.push({ c });
+  }
+  const occupate = camere.length - libere.length;
+  const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(oggi, i));
+  const nomeG = (x, i) => i === 0 ? "Oggi" : i === 1 ? "Domani" : L.GG[L.giornoSettimana(x)];
+  const strip = giorni.map((x, i) => { const n = conta(x); return `<button type="button" class="cd-g" aria-pressed="${x === g}" data-colpo="${x}"><span>${nomeG(x, i)}</span><b>${L.giornoDelMese(x)}</b><i>${n.a ? `<em class="in">+${n.a}</em>` : ""}${n.p ? `<em class="out">−${n.p}</em>` : ""}</i></button>`; }).join("");
+  const dubbio = (s) => s.tipo === "unk" || s.dubbio;
+  const chip = (x, cls) => `<button type="button" class="cd-chip ${cls}${dubbio(x.s) ? " q" : ""}" data-sog="${esc(x.s.id)}"><b>${esc(x.c.nome)}</b><span>${dubbio(x.s) ? "? " : ""}${esc(x.s.nome || "")}${x.s.persone > 1 ? ` · ${x.s.persone}` : ""}${cls === "resta" ? ` · fino a ${esc(L.GG[L.giornoSettimana(x.s.fine)])} ${L.giornoDelMese(x.s.fine)}` : ""}</span></button>`;
+  const chipLibera = (x) => puoModificare() ? `<button type="button" class="cd-chip libera" data-cella="${esc(x.c.id)}|${g}" aria-label="${esc(x.c.nome)}: libera, tocca per segnare un arrivo"><b>${esc(x.c.nome)}</b></button>` : `<span class="cd-chip libera"><b>${esc(x.c.nome)}</b></span>`;
+  const gruppo = (titolo, ico, cls, lista, vuoto, fn) => `<div class="cd-gruppo ${cls}"><div class="cd-t"><span class="cd-ico" aria-hidden="true">${ico}</span><b>${titolo}</b><span class="cd-n">${lista.length}</span></div><div class="cd-chips">${lista.length ? lista.map(fn).join("") : `<span class="cd-vuoto">${vuoto}</span>`}</div></div>`;
+  const quale = g === oggi ? "Oggi" : g === L.aggiungiGiorni(oggi, 1) ? "Domani" : L.GIORNI[L.giornoSettimana(g)].replace(/^./, c => c.toUpperCase());
+  return `<section class="card cd" aria-label="Il prospetto a colpo d'occhio">
+    <div class="cd-testa"><div><h2>${esc(quale)}</h2><span class="cd-data">${esc(L.dataLunga(g))}</span></div><div class="cd-occ"><b>${occupate}<small>/${camere.length}</small></b><span>occupate<br>stanotte</span></div></div>
+    <div class="cd-giorni" role="tablist" aria-label="Scegli il giorno">${strip}</div>
+    ${gruppo("Arrivano", "→", "in", arrivi, "Nessun arrivo", x => chip(x, "in"))}
+    ${gruppo("Partono", "←", "out", partenze, "Nessuna partenza", x => chip(x, "out"))}
+    ${gruppo("Restano", "●", "resta", restano, "Nessuno resta", x => chip(x, "resta"))}
+    ${gruppo("Libere stanotte", "○", "libera", libere, "Tutto pieno", chipLibera)}
+  </section>`;
+}
 // Prospetto a elenco: una riga per camera, con chi c'è, quando arriva e quando parte (giorno della settimana per esteso)
 function elencoProspetto(da, a) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), G = L.dataGiornoLungo;
@@ -4440,7 +4595,10 @@ function vistaAltro() {
   <section class="card"><h2>Da fare sempre, camera per camera</h2><p class="muted small" style="margin:0 0 8px">Quello che in una camera va fatto a ogni pulizia (es. Salvatore: balcone). La signora lo vede quando apre la camera e deve spuntarlo prima di chiudere; la controllatrice lo verifica e, se manca, il voto scende.</p>
     <div class="rows">${S.camere.map(c => `<div class="row one"><span><b>${esc(c.nome)}</b><br><input type="text" data-keep id="pm_${esc(c.id)}" data-promemoria="${esc(c.id)}" value="${esc(S.promemoria?.[c.id] || "")}" placeholder="niente di particolare" ${puoModificare() ? "" : "disabled"} style="margin-top:4px"></span></div>`).join("")}</div>
     <p class="muted small" style="margin:8px 0 0">Si salva da solo quando esci dalla casella. Più cose: separale con una virgola.</p></section>
-  <section class="card"><h2>Guarda l'app come la vedono le signore</h2><p class="muted small" style="margin:0 0 8px">Per provare la loro parte sul tuo telefono, con i dati veri. Attenzione: quello che tocchi lì vale davvero (una camera segnata pulita resta pulita; c'è sempre "Ho sbagliato").</p>
+  <section class="card"><h2>La schermata delle signore</h2>
+    <p class="muted small" style="margin:0 0 8px"><b>Semplice</b> (di serie dalla 0.97): una scheda grande per camera con un tasto solo, COMINCIA e poi HO FINITO. <b>Con la piantina</b>: quella di prima, le camere al loro posto nel corridoio. Vale per i telefoni di tutte le signore.</p>
+    <div class="seg"><button type="button" aria-pressed="${vistaSignoreSemplice()}" data-vista-signore="semplice" ${puoModificare() ? "" : "disabled"}>Semplice</button><button type="button" aria-pressed="${!vistaSignoreSemplice()}" data-vista-signore="classica" ${puoModificare() ? "" : "disabled"}>Con la piantina</button></div>
+    <h3 style="font-size:17px;margin:14px 0 6px">Guarda l'app come la vedono loro</h3><p class="muted small" style="margin:0 0 8px">Per provare la loro parte sul tuo telefono, con i dati veri. Attenzione: quello che tocchi lì vale davvero (una camera segnata pulita resta pulita; c'è sempre "Ho sbagliato").</p>
     <div class="pick">${signore().map(z => `<button class="big undo" data-come-signora="${z.id}">👩‍🔧 ${esc(SIG(z.id))}</button>`).join("")}</div>
     <p class="muted small" style="margin:8px 0 0">Per giocare senza toccare niente di vero c'è la modalità prova: apri il link dell'app con <b>?prova=1</b> alla fine.</p></section>
   ${vistaAvvisi()}
@@ -4499,6 +4657,7 @@ function disegnaFoglio() {
   else if (f.tipo === "nota") html = foglioNota(f);
   else if (f.tipo === "nuovoLavoro") html = foglioNuovoLavoro(f);
   else if (f.tipo === "dettatura") html = foglioDettatura(f);
+  else if (f.tipo === "inserisci") html = foglioInserisci(f);
   else if (f.tipo === "manutenzione") html = foglioManutenzione(f);
   else if (f.tipo === "nuovoMan") html = foglioNuovoLavoroMan(f);
   else if (f.tipo === "luogoPulito") html = foglioLuogoPulito(f);
@@ -4663,7 +4822,7 @@ function statoDettatura() {
 }
 function analizzaDettatura(f) {
   const d = statoDettatura();
-  const ctx = { oggi: L.oggiISO(), base: d.base, soggiorni: soggiorniLista() };
+  const ctx = { oggi: d.rif || L.oggiISO(), base: d.base, soggiorni: soggiorniLista() };
   let ris;
   if (f.copia) ris = { righe: copiaSettimanaScorsa(ctx), nonCapito: [], base: d.base };
   else ris = capisciProspetto(d.testo, ctx);
@@ -4712,20 +4871,22 @@ function foglioDettatura(f) {
   const chip = (b, nome) => `<button type="button" aria-pressed="${d.base === b}" data-dett-base="${b}">${nome}<small>${etich(b)}</small></button>`;
   const ris = analizzaDettatura(f);
   const scelte = ris.righe.filter(r => r.scelto && r.azione !== "niente").length;
+  const leggo = !!(d.fonte && d.fonte.leggo);
   const parla = ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) ? `<button type="button" class="btnsm ghost" data-dett-parla>🎤 Parla</button>` : "";
-  return `<h3>${f.copia ? "Come la settimana scorsa" : "Dimmi il prospetto"}</h3>
-    <div class="muted">${f.copia ? "Per le camere ancora vuote ripeto l'ospite della settimana prima, spostato di una settimana. Togli la spunta a chi non torna." : "Scrivi o detta chi arriva, in quale camera e quando: una riga per camera. Io capisco e ti faccio controllare prima di salvare."}</div>
-    <div class="floorlabel" style="margin-top:10px">Di che settimana parliamo?</div>
+  // 0.97: in cima da dove arriva (WhatsApp, foto); i tasti grandi Incolla da WhatsApp e Foto; niente piu' "copia la richiesta per un'IA esterna"
+  return `<h3>${f.copia ? "Come la settimana scorsa" : "Il prospetto"}</h3>
+    ${f.copia ? `<div class="muted">Per le camere ancora vuote ripeto l'ospite della settimana prima, spostato di una settimana. Togli la spunta a chi non torna.</div>` : fonteDettaturaHtml(d) || `<div class="muted">Incolla il messaggio di WhatsApp, oppure scrivi o detta chi arriva: una riga per camera. Prima di salvare ti faccio controllare.</div>`}
+    <div class="floorlabel" style="margin-top:12px">Di che settimana parliamo?</div>
     <div class="dt-sett">${chip(questa, "Questa")}${chip(prossima, "Prossima")}${chip(dopo, "Quella dopo")}</div>
-    ${f.copia ? "" : `<div class="campo"><label for="dtTesto">Cosa mi dici</label><textarea id="dtTesto" data-keep rows="5" placeholder="Salvatore: Manna, 2 persone, da lunedì a venerdì
+    ${f.copia ? "" : `<div class="dt-grandi"><button type="button" class="dt-grande wa" data-dett-incolla>${ICO_WA}<span>Incolla da WhatsApp</span></button><label class="dt-grande"><span aria-hidden="true">📷</span><span>Foto del foglio</span><input class="insFoto" type="file" accept="image/*" hidden></label></div>
+    <div class="campo"><label for="dtTesto">Il testo${d.fonte && d.fonte.tipo === "foto" && !leggo && d.testo ? " letto dalla foto" : ""} <span class="muted small">(puoi correggerlo)</span></label><textarea id="dtTesto" data-keep rows="5" ${leggo ? "disabled" : ""} placeholder="Salvatore: Manna, 2 persone, da lunedì a venerdì
 Aurora: Palazzo dal 12 al 16
 Alba: Fondamenta tutto novembre
 Michele: libera
 Nicole: Castaldi parte giovedì">${esc(d.testo)}</textarea></div>
-    <div class="dt-azioni">${parla}<button type="button" class="btnsm ghost" data-dett-incolla>📋 Incolla</button><button type="button" class="btnsm ghost" data-dett-pulisci>Pulisci</button></div>
-    <p class="muted small" style="margin:6px 0 0">Sul telefono: tocca la casella e poi il microfono 🎤 della tastiera, e parla come parleresti a papà.</p>`}
-    <div id="dtAnteprima">${anteprimaDettatura(ris, f)}</div>
-    <button class="big main" data-dett-salva ${scelte && !S.attesa ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : `Salva nel prospetto (${scelte})`}</button>
+    <div class="dt-azioni">${parla}<button type="button" class="btnsm ghost" data-dett-pulisci>Pulisci</button></div>`}
+    <div id="dtAnteprima">${leggo ? "" : anteprimaDettatura(ris, f)}</div>
+    <button class="big main" data-dett-salva ${scelte && !S.attesa && !leggo ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : `Salva nel prospetto (${scelte})`}</button>
     ${f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Manna, 2 persone, da lunedì a venerdì
 Aurora: Palazzo dal 12 al 16 ottobre
 Alba: Fondamenta tutto novembre
@@ -4735,8 +4896,7 @@ Nicole: Castaldi parte giovedì   → accorcio il soggiorno
 Tramonto: resta fino a domenica   → allungo il soggiorno
 Fenicotteri: come la settimana scorsa
 Via Zara piano terra: D'Agostino, 3 operai, tutto il mese
-Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ultimo ospite di quella camera. Controlla sempre l'anteprima.</div></details>
-    <details style="margin-top:8px"><summary>Hai una foto del prospetto di papà? Fattela leggere da un'intelligenza artificiale gratuita</summary><div class="note info" style="margin-top:6px">1) Tocca <b>Copia la richiesta</b>. 2) Apri Claude (gratis, app o claude.ai) oppure ChatGPT o Gemini, incolla la richiesta e aggiungi la <b>foto</b> del prospetto. 3) Copia la risposta e incollala qui sopra con <b>Incolla</b>: l'app la capisce da sola. L'app resta gratuita e non dipende da nessuna IA: è solo un aiuto per leggere la foto.</div><button class="big undo" data-dett-copia-ia>Copia la richiesta per l'IA</button></details>`}`;
+Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ultimo ospite di quella camera. Controlla sempre l'anteprima.</div></details>`}`;
 }
 function aggiornaAnteprimaDettatura(f) {
   const box = $("#dtAnteprima"); if (!box) return;
@@ -4775,8 +4935,15 @@ function parlaDettatura(f) {
   } catch (e) { riconoscimento = null; toast("Tocca la casella e usa il microfono 🎤 della tastiera."); }
 }
 async function incollaDettatura(f) {
-  try { const t = await navigator.clipboard.readText(); if (t && t.trim()) { aggiungiTestoDettatura(f, t); return; } toast("Negli appunti non c'è niente da incollare."); }
-  catch (e) { toast("Tieni premuto dentro la casella e scegli «Incolla»."); $("#dtTesto")?.focus(); }
+  let t = null;
+  try { t = await navigator.clipboard.readText(); } catch (e) { t = null; }
+  if (t === null) { toast("Tieni premuto dentro la casella bianca e scegli «Incolla»."); $("#dtTesto")?.focus(); return; }
+  if (!t.trim()) { toast("Negli appunti non c'è niente: su WhatsApp tieni premuto il messaggio e tocca Copia."); return; }
+  const d = statoDettatura();
+  const vuota = !String(($("#dtTesto") || {}).value ?? d.testo).trim();
+  if (vuota) { usaTestoWhatsApp(t, "copiato"); return; }
+  const w = testoDaWhatsApp(t);
+  aggiungiTestoDettatura(f, w.testo);
 }
 async function copiaRichiestaIA() {
   const testo = richiestaPerIA();
@@ -4813,6 +4980,151 @@ function opsRigheProspetto(righe) {
       n++;
     });
     return { ops, n };
+}
+
+// ---------------------------------------------------------------------------
+//  0.97 - IL PROSPETTO DA WHATSAPP (Michele: "rendi ultra super chiaro il modo di inserire il prospetto
+//  direttamente da WhatsApp, mio oppure del gruppo albergo"). Quattro strade, tutte finiscono nella stessa
+//  anteprima "Ho capito così" con le spunte, e niente si salva finché non si preme "Salva nel prospetto":
+//   1. Da WhatsApp: si copia il messaggio (tieni premuto -> Copia) e si tocca "Da WhatsApp": l'app legge gli appunti.
+//   2. Condividi -> Pulizie Ricci (foto o file del prospetto, oppure la chat esportata): l'app si apre già pronta
+//      (manifest.json "share_target" + sw.js riceviCondiviso).
+//   3. Foto del foglio: la legge Sofia con Gemini (serve la chiave su quel telefono), e diventa testo da controllare.
+//   4. File Excel di papà, scritto/dettato, come la settimana scorsa (come prima).
+//  Il testo copiato da WhatsApp ha davanti "[25/10/26, 09:12] Nome:": lo pulisce testoDaWhatsApp (dettatura.js).
+//  I testi NON vanno all'intelligenza artificiale (li capisce l'app con le sue regole): solo la foto, che a parole non si legge.
+// ---------------------------------------------------------------------------
+let condivisoAtteso = false;
+try {
+  const u = new URL(location.href);
+  if (u.searchParams.has("condiviso")) { condivisoAtteso = true; u.searchParams.delete("condiviso"); history.replaceState(null, "", u.pathname + u.search + u.hash); }
+} catch (e) {}
+async function guardaCondiviso() {
+  if (!condivisoAtteso || !S.pronto || !S.utente || !S.utente.ruolo) return;
+  if (!proprietario()) { condivisoAtteso = false; toast("Il prospetto lo può inserire solo chi gestisce l'albergo."); return; }
+  if (!S.caricati.soggiorni) return;                         // aspetto di avere il prospetto che c'è già (per i doppioni)
+  condivisoAtteso = false;
+  let c = null, info = null; const files = [];
+  try {
+    c = await caches.open("ricci-condivisi");
+    const r = await c.match(new URL("./condiviso/info", location.href).href);
+    info = r ? await r.json() : null;
+    for (const f of (info && info.file) || []) { const x = await c.match(f.k); if (x) { const bl = await x.blob(); files.push(new File([bl], f.nome || "file", { type: f.tipo || bl.type || "" })); } }
+    for (const k of await c.keys()) await c.delete(k);
+  } catch (e) { console.warn("condiviso", e); }
+  if (!info || (!files.length && !String(info.testo || "").trim())) { toast("Da WhatsApp non mi è arrivato niente. Riprova: Condividi → Pulizie Ricci."); return; }
+  if (Date.now() - (Number(info.quando) || 0) > 30 * 60 * 1000) { toast("Quello che avevi condiviso è di più di mezz'ora fa: rimandamelo."); return; }
+  await usaCondiviso({ testo: String(info.testo || ""), files });
+}
+async function usaCondiviso({ testo, files }) {
+  const nome = f => String(f.name || "").toLowerCase(), tipo = f => String(f.type || "");
+  const excel = files.find(f => /\.(xlsx|xlsm|xls|ods)$/.test(nome(f)) || /sheet|excel/.test(tipo(f)));
+  if (excel) { leggiFileExcel(excel); return; }
+  const txt = files.find(f => /\.txt$/.test(nome(f)) || /^text\//.test(tipo(f)));
+  if (txt) { let t = ""; try { t = await txt.text(); } catch (e) {} usaTestoWhatsApp(t, "chat"); return; }
+  const foto = files.find(f => /^image\//.test(tipo(f)) || /\.(jpe?g|png|webp|heic)$/.test(nome(f)));
+  if (foto) { leggiFotoProspetto(foto); return; }
+  if (testo && testo.trim()) { usaTestoWhatsApp(testo, "condiviso"); return; }
+  toast("Questo non lo so leggere: mandami il messaggio, la foto o il file Excel del prospetto.");
+}
+// il testo che arriva da WhatsApp (copiato, condiviso o chat esportata) -> anteprima
+function usaTestoWhatsApp(grezzo, come) {
+  const w = testoDaWhatsApp(grezzo);
+  const oggi = L.oggiISO();
+  const rif = w.data && w.data < oggi && L.giorniTra(w.data, oggi) <= 21 ? w.data : "";
+  apriDettaturaCon(w.testo, { tipo: "whatsapp", come, messaggi: w.messaggi, chi: w.chi, data: w.data, tolte: w.tolte, nessunaCamera: !!w.nessunaCamera, intestazioni: !!w.intestazioni, rif });
+}
+function apriDettaturaCon(testo, fonte) {
+  const rif = (fonte && fonte.rif) || "";
+  const tieni = !rif && S.foglio && S.foglio.tipo === "dettatura" && S.dett && S.dett.base;
+  S.dett = { testo: String(testo || ""), base: tieni ? S.dett.base : settimanaBaseDefault(rif || L.oggiISO()), scelte: {}, comportamenti: {}, fonte: fonte || null, rif };
+  if (S.vista !== "prospetto") { S.vista = "prospetto"; S.foglio = null; disegna(); window.scrollTo(0, 0); }
+  apriFoglio({ tipo: "dettatura" });
+}
+// "Da WhatsApp": legge gli appunti (il telefono chiede il permesso la prima volta)
+async function incollaDaWhatsApp() {
+  let t = null;
+  try { t = await navigator.clipboard.readText(); } catch (e) { t = null; }
+  if (t === null) { apriDettaturaCon("", { tipo: "incolla" }); toast("Tieni premuto dentro la casella bianca e scegli «Incolla»."); setTimeout(() => $("#dtTesto")?.focus(), 120); return; }
+  if (!t.trim()) { toast("Prima copia il messaggio su WhatsApp (tieni premuto il messaggio → Copia), poi torna qui."); return; }
+  usaTestoWhatsApp(t, "copiato");
+}
+// la foto del foglio: la legge Sofia (Gemini vede le immagini) e scrive le righe da controllare
+function righeFotoDaRisposta(txt) {
+  const p = String(txt || "").replace(/```(?:json)?/gi, "").trim();
+  let o = null;
+  try { o = JSON.parse(p); } catch (e) { const a = p.indexOf("{"), b = p.lastIndexOf("}"); if (a >= 0 && b > a) { try { o = JSON.parse(p.slice(a, b + 1)); } catch (e2) {} } }
+  const righe = o && Array.isArray(o.righe) ? o.righe.map(x => String(x || "").replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, 80) : [];
+  return { righe, frase: o ? String(o.risposta || o.frase || "").trim() : "" };
+}
+let fotoInLettura = 0;
+async function leggiFotoProspetto(file) {
+  if (!file) return;
+  if (!iaAccesa()) { apriDettaturaCon("", { tipo: "foto", senzaChiave: true }); return; }
+  const giro = ++fotoInLettura;
+  apriDettaturaCon("", { tipo: "foto", leggo: true });
+  const d = statoDettatura();
+  try {
+    const img = await fotoPiccola(file);
+    const nomi = S.camere.map(c => c.nome.replace(" · ", " ")).join(", ");
+    const sistema = `Sei bravissima a leggere i prospetti (scritti a mano o stampati) di un piccolo albergo: righe = camere, colonne = giorni. Rispondi SOLO con questo JSON: {"risposta":"una frase corta: che giorni copre la foto e quanti ospiti hai letto","righe":["Camera: Nome ospite, N persone, dal GG mese al GG mese"]}. Una riga per ogni ospite. Il giorno dopo "al" è il giorno di PARTENZA (la mattina in cui lascia la camera). Mesi scritti in italiano. Le camere si chiamano esattamente: ${nomi}. Non scrivere righe per le camere libere. Se non leggi bene un nome o una data metti un punto di domanda subito dopo il nome. Oggi è ${L.dataLunga(L.oggiISO())}.`;
+    const { r } = await chiediIA({ sistema, storia: [], testo: "Ecco la foto del prospetto: leggila camera per camera.", immagine: img, secondi: 90 });
+    if (giro !== fotoInLettura) return;
+    const x = righeFotoDaRisposta(r.grezzo);
+    d.fonte = { tipo: "foto", frase: x.frase, n: x.righe.length, vuota: !x.righe.length };
+    d.testo = x.righe.join("\n"); d.scelte = {}; d.comportamenti = {};
+  } catch (e) {
+    if (giro !== fotoInLettura) return;
+    console.warn("foto prospetto", e);
+    d.fonte = { tipo: "foto", errore: String((e && e.message) || e).slice(0, 160) };
+  }
+  if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio();
+}
+// La scelta "da dove arriva il prospetto": un foglio con le strade, la prima e' WhatsApp
+function foglioInserisci() {
+  const tasto = (attr, ico, t, sotto, cls = "") => `<button type="button" class="ins-tasto ${cls}" ${attr}><span class="ins-ico" aria-hidden="true">${ico}</span><span class="ins-t"><b>${t}</b><small>${sotto}</small></span></button>`;
+  const file = (cls, accept, ico, t, sotto) => `<label class="ins-tasto"><span class="ins-ico" aria-hidden="true">${ico}</span><span class="ins-t"><b>${t}</b><small>${sotto}</small></span><input class="${cls}" type="file" accept="${accept}" hidden></label>`;
+  return `<h3>Inserisci il prospetto</h3>
+    <div class="muted">Scegli da dove arriva. Prima di salvare ti faccio sempre vedere cosa ho capito.</div>
+    <div class="ins-scelte">
+      ${tasto("data-ins-wa", ICO_WA, "Da WhatsApp", "Hai copiato il messaggio? Tocca qui e lo incollo io", "wa")}
+      ${file("insFoto", "image/*", "📷", "Foto del foglio", "Scatta o scegli la foto: la legge " + esc(nomeGov()))}
+      ${tasto("data-ins-scrivi", "✍️", "Lo scrivo o lo detto", "Una riga per camera, come lo diresti a papà")}
+      ${file("fileFoglio", ".xlsx,.xls,.xlsm,.ods", "📄", "File Excel di papà", "Il foglio del computer (.xlsx)")}
+      ${tasto("data-ins-copia", "🔁", "Come la settimana scorsa", "Ripeto gli ospiti nelle camere vuote")}
+    </div>
+    <section class="ins-guida" aria-label="Come si fa da WhatsApp">
+      <div class="ins-guida-t">${ICO_WA}<span>Da WhatsApp, in 3 tocchi</span></div>
+      <div class="ins-passi">
+        <div class="ins-passo"><b>1</b><span><b>Messaggio scritto</b> · tieni premuto il messaggio, tocca <b>Copia</b> (in alto, o nel menu ⋮), torna qui e tocca <b>Da WhatsApp</b>. Puoi copiarne anche più di uno insieme.</span></div>
+        <div class="ins-passo"><b>2</b><span><b>Foto o file Excel</b> · tieni premuto (o apri la foto), tocca <b>Condividi</b> e scegli <b>Pulizie Ricci</b>: si apre qui, già pronto.</span></div>
+        <div class="ins-passo"><b>3</b><span><b>Tutto il gruppo</b> · nel gruppo tocca <b>⋮ → Altro → Esporta chat → Senza media → Pulizie Ricci</b>: prendo io gli ultimi messaggi con le camere.</span></div>
+      </div>
+      <small>Se tra le app di «Condividi» non vedi ancora Pulizie Ricci, il telefono la aggiunge entro un giorno; intanto usa la strada 1.</small>
+    </section>`;
+}
+const ICO_WA = `<svg class="ico-wa" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.1 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.2-.2-.5-.3z"/></svg>`;
+// la striscia in cima all'anteprima: da dove arriva il testo e cosa c'e' da sapere
+function fonteDettaturaHtml(d) {
+  const f = d.fonte; if (!f) return "";
+  if (f.tipo === "whatsapp") {
+    const quando = f.data ? L.dataGiornoLungo(f.data) : "";
+    const chi = (f.chi || []).slice(0, 2).join(", ");
+    const sopra = f.come === "chat" ? "Dalla chat di WhatsApp" : "Da WhatsApp";
+    const dett = [f.messaggi ? `${f.messaggi} ${f.messaggi === 1 ? "messaggio" : "messaggi"}${chi ? " di " + chi : ""}` : "", quando].filter(Boolean).join(" · ");
+    const note = [];
+    if (f.tolte) note.push(`Ho tolto ${f.tolte} ${f.tolte === 1 ? "riga che non parla" : "righe che non parlano"} di camere (saluti, «ok», foto).`);
+    if (f.rif) note.push(`Il messaggio è di ${esc(L.dataGiornoLungo(f.rif))}: «oggi», «domani» e i giorni li leggo come in quel giorno.`);
+    if (f.nessunaCamera) note.push("In questi messaggi non trovo nomi di camere: controlla il testo qui sotto.");
+    return `<div class="dt-fonte wa">${ICO_WA}<div><b>${sopra}</b>${dett ? `<span>${esc(dett)}</span>` : ""}${note.map(n => `<small>${n}</small>`).join("")}</div></div>`;
+  }
+  if (f.tipo === "foto") {
+    if (f.senzaChiave) return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">📷</span><div><b>Per leggere le foto serve la chiave di Gemini su questo telefono</b><small>Vai in <b>Altro → ${esc(nomeGov())} intelligente</b> e incolla la chiave (la stessa che hai sul computer). Intanto puoi copiare il messaggio da WhatsApp e toccare <b>Incolla da WhatsApp</b>.</small><button type="button" class="btnsm" data-vista-chiudi="altro">Vai ad Altro</button></div></div>`;
+    if (f.leggo) return `<div class="dt-fonte leggo"><span class="dt-giro" aria-hidden="true"></span><div><b>${esc(nomeGov())} sta leggendo la foto…</b><small>Ci vuole circa mezzo minuto. Poi controlli tu riga per riga.</small></div></div>`;
+    if (f.errore) return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">📷</span><div><b>Non sono riuscita a leggere la foto</b><small>${esc(f.errore)}</small><small>Riprova con una foto più dritta e con più luce, oppure scrivilo qui sotto.</small></div></div>`;
+    return `<div class="dt-fonte foto"><span class="dt-fonte-ico">📷</span><div><b>Letto dalla foto${f.n ? ` · ${f.n} ${f.n === 1 ? "ospite" : "ospiti"}` : ""}</b>${f.frase ? `<span>${esc(f.frase)}</span>` : ""}<small>${f.vuota ? "Non ho trovato ospiti nella foto." : "La foto può ingannare: controlla nomi e date prima di salvare."}</small></div></div>`;
+  }
+  return "";
 }
 
 function foglioNota(f) {
@@ -4860,6 +5172,8 @@ function collega() {
   document.querySelectorAll("[data-sett]").forEach(b => b.onclick = () => { S.settimana = L.aggiungiGiorni(S.settimana, 7 * Number(b.dataset.sett)); S.giorno = S.settimana; disegna(); });
   document.querySelectorAll("[data-pul]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.pul }));
   document.querySelectorAll("[data-fatta]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fatta));
+  document.querySelectorAll("[data-nn-comincia]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.nnComincia]; if (!p || p.stato !== "da_fare") return; apriFoglio({ tipo: "inizio", id: p.id }); cambiaStato(p, "in_corso", "", { tieniFoglio: true }); toast(`Buon lavoro! Quando hai finito tocca "Fatto, tutto" (o "Ho finito" sulla scheda).`); });
+  document.querySelectorAll("[data-vista-signore]").forEach(b => b.onclick = async () => { const v = b.dataset.vistaSignore; await salvaGov({ vistaSignore: v }); toast(v === "classica" ? "Le signore vedono di nuovo la piantina" : "Le signore vedono la schermata semplice"); });
   document.querySelectorAll("[data-problema]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.problema, apriMotivo: "problema" }));
   // INIZIA apre la schermata grande con tutti i dettagli; da lì si preme "HO CAPITO, COMINCIO!"
   document.querySelectorAll("[data-inizia],[data-dettagli]").forEach(b => b.onclick = () => { const id = b.dataset.inizia || b.dataset.dettagli; if (S.pulizie[id]) apriFoglio({ tipo: "inizio", id }); });
@@ -4940,6 +5254,7 @@ function collega() {
   document.querySelectorAll("#app [data-gov-fatto]").forEach(b => b.onclick = async () => { const [regola, luogo, zona] = b.dataset.govFatto.split("|"); await registraFatto(regola, luogo, zona, L.oggiISO()); toast("Segnato come fatto oggi"); disegna(); });
   document.querySelectorAll("[data-superficie]").forEach(b => b.onclick = () => apriFoglio({ tipo: "superficie", id: b.dataset.superficie, tipoSup: b.dataset.tipo }));
   document.querySelectorAll("[data-giro-scegli]").forEach(b => b.onclick = () => apriFoglio({ tipo: "giroScegli" }));
+  document.querySelectorAll("[data-colpo]").forEach(b => b.onclick = () => { S.colpo = b.dataset.colpo; disegna(); });
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
@@ -4966,7 +5281,7 @@ function collega() {
   document.querySelectorAll("[data-colore-app]").forEach(b => b.onclick = () => { S.colore = b.dataset.coloreApp; try { localStorage.setItem("ricci_colore", S.colore); } catch (e) {} applicaTema(); disegna(); toast("Colore: " + ((COLORI_APP.find(k => k.id === S.colore) || {}).nome || S.colore)); });
   document.querySelectorAll("[data-tacc-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.taccTogli; try { await salvaTaccuino(taccuinoVoci().filter(x => x.id !== id)); toast("Tolto dal taccuino"); } catch (e) { erroreScrittura(e); } });
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
-  document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile3", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
+  document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile4", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
   document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
@@ -4976,6 +5291,8 @@ function collega() {
   document.querySelectorAll("[data-torna-gestione]").forEach(b => b.onclick = esciComeSignora);
   document.querySelectorAll("#fileFoglio, .fileFoglio").forEach(ff => ff.onchange = () => { if (ff.files && ff.files[0]) leggiFileExcel(ff.files[0]); });
   document.querySelectorAll("[data-dettatura]").forEach(b => b.onclick = () => { if (!puoModificare()) return; apriFoglio({ tipo: "dettatura" }); setTimeout(() => $("#dtTesto")?.focus(), 50); });
+  document.querySelectorAll("[data-inserisci]").forEach(b => b.onclick = () => { if (!puoModificare()) return; apriFoglio({ tipo: "inserisci" }); });
+  document.querySelectorAll("[data-ins-wa-subito]").forEach(b => b.onclick = () => { if (!puoModificare()) return; incollaDaWhatsApp(); });
   document.querySelectorAll("[data-dettatura-copia]").forEach(b => b.onclick = () => { if (!puoModificare()) return; const d = statoDettatura(); d.scelte = {}; d.comportamenti = {}; apriFoglio({ tipo: "dettatura", copia: true }); });
   document.querySelectorAll("[data-scelta]").forEach(c => c.onchange = () => { const s = S.importazione?.ris.soggiorni[Number(c.dataset.scelta)]; if (s) { s.scelto = c.checked; disegna(); } });
   const sm = $("#sostMano"); if (sm) sm.onchange = () => { S.importazione.sostituisciMano = sm.checked; };
@@ -5040,6 +5357,14 @@ function collegaFoglio() {
     document.querySelectorAll("[data-apri-motivo]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.apriMotivo.split("|"); apriFoglio({ tipo: "pulizia", id, apriMotivo: st }); });
     return;
   }
+  if (f.tipo === "inserisci") {
+    document.querySelectorAll("[data-ins-wa]").forEach(b => b.onclick = () => incollaDaWhatsApp());
+    document.querySelectorAll(".panel .insFoto").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) leggiFotoProspetto(fl); });
+    document.querySelectorAll(".panel .fileFoglio").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) { chiudiFoglio(); leggiFileExcel(fl); } });
+    document.querySelectorAll("[data-ins-scrivi]").forEach(b => b.onclick = () => { apriDettaturaCon("", null); setTimeout(() => $("#dtTesto")?.focus(), 80); });
+    document.querySelectorAll("[data-ins-copia]").forEach(b => b.onclick = () => { const d = statoDettatura(); d.scelte = {}; d.comportamenti = {}; d.fonte = null; d.rif = ""; apriFoglio({ tipo: "dettatura", copia: true }); });
+    return;
+  }
   if (f.tipo === "dettatura") {
     const d = statoDettatura();
     const t = $("#dtTesto");
@@ -5050,6 +5375,8 @@ function collegaFoglio() {
     document.querySelectorAll("[data-dett-incolla]").forEach(b => b.onclick = () => incollaDettatura(f));
     document.querySelectorAll("[data-dett-pulisci]").forEach(b => b.onclick = () => { d.testo = ""; d.scelte = {}; d.comportamenti = {}; if (t) { t.value = ""; t.focus(); } aggiornaAnteprimaDettatura(f); });
     document.querySelectorAll("[data-dett-copia-ia]").forEach(b => b.onclick = copiaRichiestaIA);
+    document.querySelectorAll(".panel .insFoto").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) leggiFotoProspetto(fl); });
+    document.querySelectorAll("[data-vista-chiudi]").forEach(b => b.onclick = () => { const v = b.dataset.vistaChiudi; chiudiFoglio(); S.vista = v; disegna(); window.scrollTo(0, 0); });
     document.querySelectorAll("[data-dett-salva]").forEach(b => b.onclick = () => salvaDettatura(f));
     collegaAnteprimaDettatura(f);
     return;

@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "0.96.1";
+const VERSIONE = "0.97.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
@@ -71,8 +71,38 @@ async function rispostaIntervallo(req, intera) {
   return new Response(buf.slice(a, b + 1), { status: 206, statusText: "Partial Content", headers: h });
 }
 
+// ---- 0.97: IL PROSPETTO DA WHATSAPP (Condividi -> Pulizie Ricci) --------------------------------
+// Il telefono manda qui (POST) quello che si condivide con l'app: un messaggio, una chat esportata (.txt),
+// una foto del foglio o il file Excel. Si mette da parte in una cache a se' ("ricci-condivisi") e si apre
+// l'app con ?condiviso=1: l'app lo prende, lo legge e lo cancella.
+const CONDIVISI = "ricci-condivisi";
+async function riceviCondiviso(req) {
+  const torna = new URL("./index.html?condiviso=1", self.registration.scope).href;
+  try {
+    const fd = await req.formData();
+    const c = await caches.open(CONDIVISI);
+    for (const k of await c.keys()) await c.delete(k);
+    const testo = ["titolo", "testo", "link"].map((k) => fd.get(k)).filter((x) => typeof x === "string" && x.trim()).join("\n");
+    const file = fd.getAll("file").filter((f) => f && typeof f === "object" && f.size);
+    const info = { quando: Date.now(), testo, file: [] };
+    let i = 0;
+    for (const f of file.slice(0, 12)) {
+      const k = new URL("./condiviso/" + (i++), self.registration.scope).href;
+      await c.put(k, new Response(f, { headers: { "Content-Type": f.type || "application/octet-stream" } }));
+      info.file.push({ k, nome: f.name || "", tipo: f.type || "", peso: f.size });
+    }
+    await c.put(new URL("./condiviso/info", self.registration.scope).href, new Response(JSON.stringify(info), { headers: { "Content-Type": "application/json" } }));
+  } catch (err) { console.warn("condiviso", err); }
+  return Response.redirect(torna, 303);
+}
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
+  if (req.method === "POST") {
+    const u = new URL(req.url);
+    if (u.origin === location.origin && u.searchParams.has("condividi")) e.respondWith(riceviCondiviso(req));
+    return;
+  }
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   // Firebase e Google: mai in cache, passano diretti

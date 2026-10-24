@@ -465,3 +465,56 @@ Le camere si chiamano esattamente: ${nomi}.
 Se una camera è libera scrivi "Camera: libera". Se non sei sicuro di un nome o di una data metti un punto di domanda accanto.
 Non aggiungere nient'altro: niente spiegazioni, niente tabelle.`;
 }
+
+// ---- 0.97: IL PROSPETTO DA WHATSAPP -------------------------------------------------
+// Michele copia (o condivide, o esporta) i messaggi del gruppo dell'albergo. WhatsApp mette davanti a ogni messaggio
+// "[25/10/26, 09:12] Mario Rossi: ..." (messaggi copiati) oppure "25/10/26, 09:12 - Mario Rossi: ..." (chat esportata).
+// Qui si tolgono quelle intestazioni (se no "Michele Pegoli:" sembrerebbe la camera Michele e "25/10/26" una data),
+// le righe di sistema, le foto e i messaggi eliminati; si tengono gli ULTIMI messaggi che parlano di camere
+// (il prospetto piu' recente) e, dentro, solo le righe con una camera o con "settimana prossima" e simili.
+const RE_WA_TESTA = /^\[?\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4}),?\s+(\d{1,2})[:.](\d{2})(?:[:.]\d{2})?(?:\s*[ap]\.?\s?m\.?)?\s*\]?\s*(?:[-–]\s*)?(.*)$/i;
+const RE_WA_VUOTO = /^(?:<[^>]*>|\(?file allegato\)?|null|media omess[io]|immagine omessa|video omesso|audio omesso|sticker omesso|gif omessa|documento omesso|questo messaggio (?:e|è) stato eliminato|hai eliminato questo messaggio|messaggio eliminato)$/i;
+const RE_WA_DIRETTIVA = /^(?:la )?(?:settimana prossima|prossima settimana|settimana dopo|questa settimana|settimana corrente|tra (?:due|2) settimane)\b/;
+function dataWhatsApp(g, m, a) {
+  g = Number(g); m = Number(m); a = Number(a); if (a < 100) a += 2000;
+  if (m > 12 && g <= 12) { const t = g; g = m; m = t; }          // telefono all'americana (mese/giorno)
+  if (!g || !m || g > 31 || m > 12) return "";
+  return iso(a, m, g);
+}
+function haCamera(riga) { const re = aliasRe(); re.lastIndex = 0; const ok = re.test(normalizzaAllineato(riga)); re.lastIndex = 0; return ok; }
+export function testoDaWhatsApp(grezzo) {
+  const pulito = String(grezzo || "").replace(/\r\n?/g, "\n").replace(/[‎‏‪-‮⁦-⁩﻿]/g, "");
+  const msgs = []; let ult = null, teste = 0;
+  for (const r of pulito.split("\n")) {
+    const m = RE_WA_TESTA.exec(r);
+    const data = m ? dataWhatsApp(m[1], m[2], m[3]) : "";
+    if (m && data && Number(m[4]) < 25) {
+      teste++;
+      const s = /^([^:]{1,60}?):\s?([\s\S]*)$/.exec(m[6] || "");
+      ult = { data, chi: s ? s[1].trim() : "", testo: s ? s[2] : "", sistema: !s };
+      msgs.push(ult); continue;
+    }
+    if (ult) ult.testo += "\n" + r; else msgs.push(ult = { data: "", chi: "", testo: r, sistema: false });
+  }
+  // un messaggio solo copiato (senza intestazione): resta com'e'
+  if (!teste) return { testo: pulito.trim(), messaggi: pulito.trim() ? 1 : 0, chi: [], data: "", tolte: 0, intestazioni: false };
+  const buoni = msgs.filter(m => !m.sistema).map(m => ({ ...m, testo: m.testo.replace(/<\s*(?:questo messaggio (?:e|è) stato modificato|messaggio modificato)\s*>/gi, "").trim() }))
+    .filter(m => m.testo && !RE_WA_VUOTO.test(m.testo));
+  const conCamera = buoni.filter(m => m.testo.split("\n").some(haCamera));
+  if (!conCamera.length) {
+    const ultimi = buoni.slice(-15);
+    return { testo: ultimi.map(m => m.testo).join("\n"), messaggi: ultimi.length, chi: [...new Set(ultimi.map(m => m.chi).filter(Boolean))], data: (ultimi[ultimi.length - 1] || {}).data || "", tolte: 0, intestazioni: true, nessunaCamera: true };
+  }
+  // il prospetto piu' recente: i messaggi con le camere dell'ultimo giorno in cui se n'e' parlato (e del giorno prima)
+  const ultimaData = conCamera.reduce((x, m) => (m.data && m.data > x ? m.data : x), "");
+  const vicino = (m) => !ultimaData || !m.data || (m.data <= ultimaData && L.giorniTra(m.data, ultimaData) <= 1);
+  let tolte = 0;
+  const tenuti = [];
+  for (const m of buoni.filter(vicino)) {
+    const righe = m.testo.split("\n").map(x => x.trim()).filter(Boolean);
+    const utili = righe.filter(x => haCamera(x) || RE_WA_DIRETTIVA.test(normalizzaAllineato(x).replace(/\s+/g, " ").trim()));
+    tolte += righe.length - utili.length;
+    if (utili.length) tenuti.push({ ...m, righe: utili });
+  }
+  return { testo: tenuti.map(m => m.righe.join("\n")).join("\n"), messaggi: tenuti.length, chi: [...new Set(tenuti.map(m => m.chi).filter(Boolean))], data: ultimaData, tolte, intestazioni: true };
+}
