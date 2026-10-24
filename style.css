@@ -2022,3 +2022,38 @@ body.lusso[data-legno="legno"] .casa-tondi{z-index:3;top:6.5%;right:9%}
 body.lusso[data-legno="legno"] .casa-nome{background:linear-gradient(180deg,rgba(30,12,5,.5),rgba(20,8,3,.6)),url(radica.webp) center/cover;padding:5px 16px;border-radius:999px;border:1px solid rgba(214,175,92,.75);box-shadow:0 6px 14px -6px rgba(0,0,0,.8)}
 .sf-prev.sf-legno{background:url(legno-oro-parete.webp) center 28%/cover no-repeat,#24100a}
 body.lusso[data-legno="legno"] .casa-testo::before{background:radial-gradient(ellipse at 50% 50%,rgba(14,5,2,.78) 0%,rgba(14,5,2,.52) 50%,rgba(14,5,2,0) 76%)}
+
+/* 0.94 - SOFIA IN 3D: esce dalla cornice (testa davanti alla cornice, con la sua ombra) e il salone dietro
+   si sposta quando si inclina il telefono, come guardare da una finestra.
+   Strati dentro la scheda: 0 il salone (cons-fondo-3d.webp, piu' grande, si muove con l'occhio) - 2 la cornice
+   (::after degli stili) - 3 un riflesso di luce che scorre sulla cornice - 4 Sofia (filmato con trasparenza,
+   ritagliata: sotto resta dentro la finestra, sopra puo' uscire) - 5 i tondi.
+   --fin-* = dove finisce la cornice e comincia la finestra (in % della scheda), per ogni stile.
+   --ex/--ey = di quanto si sposta l'occhio (-1..1), li scrive app.js (treGiro) a ogni fotogramma. */
+.casa-card.tre{overflow:visible;isolation:isolate;--fin-t:0%;--fin-r:0%;--fin-b:0%;--fin-l:0%;--fin-rag:28px;--tre-scala:1.12;--tre-alza:-6%;--ex:0;--ey:0;
+  transform:perspective(1000px) rotateY(calc(var(--ex) * 2deg)) rotateX(calc(var(--ey) * -1.6deg))}
+body.lusso .casa-card.tre{--fin-rag:6px}
+body.lusso[data-legno="legno"] .casa-card.tre{--fin-t:5.1%;--fin-r:9.2%;--fin-b:5.1%;--fin-l:9.2%;--fin-rag:0px}
+body.lusso[data-legno="intarsio"] .casa-card.tre{--fin-t:8.6%;--fin-r:15.4%;--fin-b:8.6%;--fin-l:15.4%;--fin-rag:0px}
+.sofia-hero[data-tre="1"] .casa-testa{margin-bottom:16px}
+.casa-card.tre .casa-fondo{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none;background:#3a2a1c}
+.casa-card.tre .casa-fondo::before{content:"";position:absolute;inset:-7%;background:url(cons-fondo-3d.webp) center/cover no-repeat;
+  translate:calc(var(--ex) * 13px) calc(var(--ey) * 11px)}
+.casa-card.tre .casa-fondo::after{content:"";position:absolute;inset:var(--fin-t) var(--fin-r) var(--fin-b) var(--fin-l);border-radius:var(--fin-rag);
+  box-shadow:inset 0 0 26px 6px rgba(0,0,0,.5),inset 0 12px 20px -8px rgba(0,0,0,.55)}
+/* il riflesso: una striscia di luce in diagonale che scorre sulla cornice (solo sulla cornice, non sul salone) */
+.casa-card.tre .tre-luce{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;mix-blend-mode:overlay;
+  background:linear-gradient(112deg,rgba(255,240,210,0) 36%,rgba(255,240,210,.55) 47%,rgba(255,250,235,.75) 50%,rgba(255,240,210,.55) 53%,rgba(255,240,210,0) 64%) calc(50% + var(--ex) * 70%) calc(50% + var(--ey) * 30%)/260% 160% no-repeat;
+  clip-path:polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,var(--fin-l) var(--fin-t),var(--fin-l) calc(100% - var(--fin-b)),calc(100% - var(--fin-r)) calc(100% - var(--fin-b)),calc(100% - var(--fin-r)) var(--fin-t),var(--fin-l) var(--fin-t))}
+.sofia-hero .casa-card.tre .donnina.gov-fig.gov-film.casa-fig{z-index:4;overflow:visible;background:transparent;border-radius:0;box-shadow:none;
+  clip-path:inset(-40% var(--fin-r) var(--fin-b) var(--fin-l) round 0 0 var(--fin-rag) var(--fin-rag))}
+.sofia-hero .casa-card.tre .casa-fig video{transform:none;transform-origin:50% 100%;scale:var(--tre-scala);
+  translate:calc(var(--ex) * -6px) calc(var(--tre-alza) + var(--ey) * -5px);transition:opacity .52s ease,scale .6s ease}
+/* nel passaggio da un filmato all'altro quello nuovo arriva SOPRA e quello vecchio sparisce solo dopo:
+   con la trasparenza, se sfumassero tutti e due insieme si vedrebbe il salone attraverso di lei */
+.sofia-hero .casa-card.tre .casa-fig video:not(.giu){z-index:2}
+.sofia-hero .casa-card.tre .casa-fig video.giu{z-index:1;transition:opacity 0s linear .56s,scale .6s ease}
+.sofia-hero.sta-parlando .casa-card.tre{--tre-scala:1.145}
+.sofia-hero[data-stato="ascolto"] .casa-card.tre{--tre-scala:1.135}
+/* i tondi (voce e menu) in basso a destra, cosi' non le coprono la testa */
+.sofia-hero .casa-card.tre .casa-tondi{z-index:5;top:auto;bottom:calc(var(--fin-b) + 10px);right:calc(var(--fin-r) + 10px)}

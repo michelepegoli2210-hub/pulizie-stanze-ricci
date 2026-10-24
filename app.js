@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.93.0";
+export const VERSIONE = "0.94.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -96,6 +96,106 @@ const FILM_GRUPPI = { parla: "parla", ascolta: "riposo", pensa: "riposo", riposo
 const FILM_DISSOLVENZA = 520;                               // ms (come lo stile .gov-film video)
 let FILM_ABBINA = null;
 try { fetch(FILM_PRONTO.abbina).then(r => r.ok ? r.json() : null).then(j => { if (j && j.da) FILM_ABBINA = j; }).catch(() => {}); } catch (e) {}
+// 0.94: SOFIA IN 3D (Michele, 24 ottobre: "la governante deve sembrare piu' 3D", scelta "tutte e due"):
+// esce un po' dalla cornice (testa e capelli davanti alla cornice, con la sua ombra sopra) e, quando si
+// inclina il telefono (o si muove il mouse sul computer), il salone dietro si sposta mentre lei resta davanti,
+// come guardare da una finestra. Se il telefono sta fermo "respira" piano da sola.
+//  - cons-parla-3d.webm / cons-riposo-3d.webm: GLI STESSI filmati (stessi tempi: vale lo stesso cons-film.json)
+//    con lei ritagliata (trasparenza VP9) e un'ombra morbida; cons-fondo-3d.webp e' il salone senza di lei;
+//    cons-poster-3d.webp il primo fotogramma ritagliato. Fatti con dev/s3d (maschere_raw.py, codifica3d.py, fondo.py).
+//  - Solo nella schermata di casa del titolare e solo dove il telefono sa mostrare la trasparenza: all'avvio si
+//    prova con un filmatino di 16x16 (meta' trasparente). Se non la sa fare (es. iPhone), Sofia resta piatta.
+//  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
+const FILM_TRE = { parla: "cons-parla-3d.webm", riposo: "cons-riposo-3d.webm", poster: "cons-poster-3d.webp" };
+const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
+let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
+function sofia3dVoluta() { try { return localStorage.getItem(CHIAVE_3D) !== "no"; } catch (e) { return true; } }
+function motoRidotto() { try { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } }
+function sofia3d() { return sofia3dVoluta() && ALFA_OK === "si" && !motoRidotto(); }
+const ALFA_PROVA = "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQRChYECGFOAZwEAAAAAAAJvEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEpTbuMU6uEHFO7a1OsggJZ7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiECPQAAAAAAAFlSua8yuAQAAAAAAAEPXgQFzxYjgNQZxRLWOopyBACK1nIN1bmSIgQCGhVZfVlA5g4EBI+ODhB3NZQDglLCBELqBEJqBAlPAgQFVsIRVuYEBElTDZ0CUc3OgY8CAZ8iaRaOHRU5DT0RFUkSHjUxhdmY2MC4xNi4xMDBzc+5jwItjxYjgNQZxRLWOomfIkUWjikFMUEhBX01PREVEh4ExZ8ilRaOHRU5DT0RFUkSHmExhdmM2MC4zMS4xMDIgbGlidnB4LXZwOWfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDEuMDAwMDAwMDAwAB9DtnVAkOeBAKDXoamBAAAAgkmDQgAA8AD2ADgkHBiMAAAwcAAASqf/sYDf/9KUH//9144AAHWhqaan7oEBpaKCSYNCAADwAPYAOCQcGIwAACAgAEyH///k/7///9sKDeoAoLKhk4EB9ACGAECSnABUAAADIAAAQkB1oZamlO6BAaWPhgBAkpwAVAAAAyAAAEJA+4L+DBxTu2uRu4+zgQC3iveBAfGCAcPwgQM=";
+function provaAlfa() {
+  return new Promise((res) => {
+    let fatto = false;
+    const fine = (ok) => { if (!fatto) { fatto = true; res(ok); } };
+    try {
+      const v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.autoplay = true; v.preload = "auto";
+      const t = setTimeout(() => fine(false), 8000);
+      let giri = 0;
+      const guarda = () => {
+        try {
+          const c = document.createElement("canvas"); c.width = 16; c.height = 16;
+          const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(v, 0, 0, 16, 16);
+          const sx = x.getImageData(2, 8, 1, 1).data, dx = x.getImageData(13, 8, 1, 1).data;
+          if (sx[3] < 60 && dx[3] > 200) { clearTimeout(t); fine(true); return; }
+        } catch (e) {}
+        // il primo fotogramma a volte arriva senza trasparenza: si riguarda un paio di volte prima di dire di no
+        if (++giri < 5) setTimeout(guarda, 300); else { clearTimeout(t); fine(false); }
+      };
+      v.addEventListener("loadeddata", guarda, { once: true });
+      v.addEventListener("error", () => { clearTimeout(t); fine(false); }, { once: true });
+      v.src = ALFA_PROVA;
+      try { v.play().catch(() => {}); } catch (e) {}
+    } catch (e) { fine(false); }
+  });
+}
+try {
+  provaAlfa().then((ok) => {
+    const v = ok ? "si" : "no";
+    if (v === ALFA_OK) return;
+    if (!ok && ALFA_OK === "si") return;      // qui l'ha gia' fatto bene: un intoppo di una volta non spegne il 3D
+    ALFA_OK = v;
+    try { localStorage.setItem(CHIAVE_ALFA, v); } catch (e) {}
+    try { if (document.getElementById("sofiaHero")) disegna(); } catch (e) {}
+  });
+} catch (e) {}
+// il movimento del 3D: inclinazione del telefono (giroscopio), mouse sul computer, oppure un respiro lento da sola.
+// "ex/ey" = di quanto si sposta l'occhio (-1..1): il salone (lontano) va con l'occhio, Sofia (vicina) al contrario.
+const TRE = { x: 0, y: 0, tx: 0, ty: 0, ult: 0, fermoDa: 0, base: null, raf: 0, t: 0, vista: true, io: null };
+function treLimita(v) { return v < -1 ? -1 : v > 1 ? 1 : v; }
+function treGiro(ora) {
+  TRE.raf = 0;
+  const card = document.querySelector(".casa-card.tre");
+  if (!card || document.hidden) return;                       // riparte da sola (visibilitychange / disegnaCasa)
+  const dt = Math.min(0.1, Math.max(0.001, (ora - (TRE.t || ora)) / 1000)); TRE.t = ora;
+  let tx = TRE.tx, ty = TRE.ty;
+  const libero = (ora - TRE.ult > 2500) || (TRE.fermoDa && ora - TRE.fermoDa > 3000);
+  if (libero) { const s = ora / 1000; tx = 0.5 * Math.sin(s * 0.5) + 0.12 * Math.sin(s * 1.3); ty = 0.32 * Math.sin(s * 0.33 + 1.1); }
+  const k = 1 - Math.exp(-dt / (libero ? 0.7 : 0.12));
+  TRE.x += (tx - TRE.x) * k; TRE.y += (ty - TRE.y) * k;
+  if (TRE.vista) { card.style.setProperty("--ex", TRE.x.toFixed(3)); card.style.setProperty("--ey", TRE.y.toFixed(3)); }
+  TRE.raf = requestAnimationFrame(treGiro);
+}
+function treAvvia() { if (!TRE.raf && document.querySelector(".casa-card.tre")) TRE.raf = requestAnimationFrame(treGiro); }
+function treOsserva(card) {
+  try { if (TRE.io) TRE.io.disconnect(); } catch (e) {}
+  TRE.vista = true;
+  try { TRE.io = new IntersectionObserver((v) => { TRE.vista = v.some(x => x.isIntersecting); }); TRE.io.observe(card); } catch (e) { TRE.io = null; }
+}
+try {
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) treAvvia(); });
+  window.addEventListener("deviceorientation", (e) => {
+    if (e.beta == null || e.gamma == null || !TRE.raf) return;
+    let b = e.beta, g = e.gamma;
+    const ang = (screen.orientation && screen.orientation.angle) || 0;
+    if (ang === 90) { const t = b; b = -g; g = t; } else if (ang === 270 || ang === -90) { const t = b; b = g; g = -t; } else if (ang === 180) { b = -b; g = -g; }
+    if (!TRE.base || Math.abs(b - TRE.base.b) > 50 || Math.abs(g - TRE.base.g) > 50) TRE.base = { b, g };
+    TRE.base.b += (b - TRE.base.b) * 0.01; TRE.base.g += (g - TRE.base.g) * 0.01;   // la posizione "normale" segue piano come lo tieni
+    const db = b - TRE.base.b, dg = g - TRE.base.g;
+    TRE.tx = treLimita(-dg / 12); TRE.ty = treLimita(-db / 12);                        // inclinato a destra = occhio a sinistra
+    const ora = performance.now();
+    if (Math.abs(db) + Math.abs(dg) > 0.8) TRE.fermoDa = 0; else if (!TRE.fermoDa) TRE.fermoDa = ora;
+    TRE.ult = ora;
+  }, { passive: true });
+  document.addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse" || !TRE.raf) return;
+    const card = document.querySelector(".casa-card.tre"); if (!card) return;
+    const r = card.getBoundingClientRect(); if (!r.width) return;
+    TRE.tx = treLimita(-(e.clientX - (r.left + r.width / 2)) / (r.width * 1.1));     // lei "segue" il mouse, il salone va al contrario
+    TRE.ty = treLimita(-(e.clientY - (r.top + r.height / 2)) / (r.height * 0.8));
+    TRE.ult = performance.now(); TRE.fermoDa = 0;
+  }, { passive: true });
+} catch (e) {}
 // il punto del filmato `a` che somiglia di piu' al punto `t` (secondi) del filmato `da`
 function filmPuntoAbbinato(da, a, t) {
   const j = FILM_ABBINA; const lista = j && j.da && j.da[da] && j.da[da][a];
@@ -104,13 +204,15 @@ function filmPuntoAbbinato(da, a, t) {
   let tt = Number(t) || 0; if (dur > 0) tt = ((tt % dur) + dur) % dur;
   return Math.max(0, Number(lista[Math.round(tt / (Number(j.passo) || 0.25)) % lista.length]) || 0);
 }
-function FILM_CONS(cls) {
-  const f = FILM_PRONTO;
-  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo">
+function FILM_CONS(cls, tre) {
+  const f = tre ? FILM_TRE : FILM_PRONTO;
+  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo"${tre ? ' data-tre="1"' : ""}>
     <video class="cf-v" src="${f.riposo}" poster="${f.poster}" autoplay muted playsinline loop preload="auto"></video>
     <video class="cf-v giu" poster="${f.poster}" muted playsinline loop preload="none"></video>
   </span>`;
 }
+// i file dei filmati per quella casella: in 3D quelli ritagliati, altrimenti i soliti
+function filmFile(box) { return (box && box.dataset && box.dataset.tre === "1") ? FILM_TRE : FILM_PRONTO; }
 let filmTimer = null;
 function filmGov(quale, soloBox) {
   const caselle = soloBox ? [soloBox] : [...document.querySelectorAll(".gov-film")];
@@ -136,8 +238,9 @@ function filmUno(quale, box) {
     };
     giu.loop = true;
     try { giu.playbackRate = 1; } catch (e) {}
-    if (giu.getAttribute("src") === FILM_PRONTO[quale] && giu.readyState >= 1) vaiA();
-    else { giu.src = FILM_PRONTO[quale]; giu.preload = "auto"; giu.addEventListener("loadedmetadata", vaiA, { once: true }); giu.load(); }
+    const file = filmFile(box)[quale];
+    if (giu.getAttribute("src") === file && giu.readyState >= 1) vaiA();
+    else { giu.src = file; giu.preload = "auto"; giu.addEventListener("loadedmetadata", vaiA, { once: true }); giu.load(); }
   }
   // pronto = gia' al punto giusto e con l'immagine; se il salto non risponde in 3 s si va lo stesso (mai un nero)
   const pronto = (p.pronto && giu.readyState >= 2) || (Date.now() - p.da > 3000 && giu.readyState >= 3);
@@ -1674,10 +1777,11 @@ const CASA_ICO = {
   voceSi: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
   voceNo: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>`,
 };
-function casaOssatura() {
+function casaOssatura(tre) {
   return `<div class="casa-testa"><span class="casa-nome">Le Stanze di Ricci</span></div>
-    <div class="casa-card">
-      ${FILM_CONS("casa-fig")}
+    <div class="casa-card${tre ? " tre" : ""}">
+      ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
+      ${FILM_CONS("casa-fig", tre)}
       <span class="casa-tondi">
         <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
         <button type="button" class="casa-tondo" data-vista="altro" aria-label="Altro">\u22ef</button>
@@ -1809,18 +1913,24 @@ function disegnaCasa() {
     document.body.classList.remove("ha-casa");
     return;
   }
+  // 0.94: se cambia il 3D (scelto in "Come si vede l'app", o la prova della trasparenza ha risposto) la scheda si rifa'
+  const tre = sofia3d() ? "1" : "";
+  if (h && (h.dataset.tre || "") !== tre) { h.remove(); h = null; }
   if (!h) {
     h = document.createElement("section");
     h.id = "sofiaHero";
     h.className = "sofia-hero";
-    h.innerHTML = casaOssatura();
+    h.dataset.tre = tre;
+    h.innerHTML = casaOssatura(!!tre);
     const t = document.querySelector("header");
     document.body.insertBefore(h, t || document.body.firstChild);
     window.scrollTo(0, 0);
+    if (tre) { const c = h.querySelector(".casa-card.tre"); if (c) treOsserva(c); }
   }
   document.body.classList.add("ha-casa");
   h.dataset.stile = stileCasa();
   casaAggiorna(h);
+  if (tre) treAvvia();
 }
 
 // ---------------------------------------------------------------------------
@@ -1906,7 +2016,7 @@ function cardStileCasa() {
   const anteprima = (id) => `<span class="st-prev st-${id}"><i class="st-card"></i><i class="st-bar"></i><i class="st-bar"></i><i class="st-bar"></i></span>`;
   return `<section class="card come-si-vede">
     <h2>Come si vede l'app</h2>
-    <p class="muted small" style="margin:0 0 6px">Quattro cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
+    <p class="muted small" style="margin:0 0 6px">Cinque cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
     <h3>1. Il colore</h3>
     <div class="col-scelte">${COLORI_APP.map(k => `<button type="button" class="col-opt" aria-pressed="${coloreAttivo() === k.id}" data-colore-app="${k.id}"><i style="background:${k.g}"></i>${esc(k.nome)}</button>`).join("")}</div>
     <span class="small muted">Cambia il colore dei tasti e dei collegamenti. Tutto il resto resta com'è.</span>
@@ -1917,6 +2027,13 @@ function cardStileCasa() {
     <h3>4. Lo stile (sfondo, cornici, colori)</h3>
     <div class="sf-scelte">${SFONDI_APP.map(f => `<button type="button" class="sf-opt" aria-pressed="${(SFONDI_APP.some(x => x.id === S.sfondo) ? S.sfondo : "legno") === f.id}" data-sfondo-app="${f.id}"><i class="sf-prev sf-${f.id}"></i><b>${esc(f.nome)}</b><span class="muted small">${esc(f.come)}</span></button>`).join("")}</div>
     <span class="small muted">Se uno stile non ti piace, toccane un altro: torna subito com'era. Vale solo per la tua parte: le signore vedono sempre la loro schermata.</span>
+    <h3>5. ${esc(nomeGov())} in 3D</h3>
+    <div class="seg"><button type="button" aria-pressed="${sofia3dVoluta()}" data-sofia3d="si">In 3D</button><button type="button" aria-pressed="${!sofia3dVoluta()}" data-sofia3d="no">Piatta</button></div>
+    <span class="small muted">${ALFA_OK === "no"
+      ? `Su questo telefono il 3D non si può fare: ${esc(nomeGov())} resta piatta, come prima.`
+      : motoRidotto()
+        ? `Il telefono è impostato per avere meno movimento: ${esc(nomeGov())} resta piatta.`
+        : `In 3D esce un po' dalla cornice e, quando muovi il telefono, il salone dietro di lei si sposta. "Piatta" la rimette esattamente com'era.`}</span>
   </section>`;
 }
 function cardConsuela() {
@@ -4738,6 +4855,7 @@ function collega() {
   document.querySelectorAll("[data-tacc-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.taccTogli; try { await salvaTaccuino(taccuinoVoci().filter(x => x.id !== id)); toast("Tolto dal taccuino"); } catch (e) { erroreScrittura(e); } });
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile2", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
+  document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
   document.querySelectorAll("[data-promemoria]").forEach(i => i.onchange = () => salvaPromemoria(i.dataset.promemoria, i.value));
