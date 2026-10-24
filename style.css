@@ -1905,3 +1905,93 @@ body.lusso[data-legno="intarsio"] .big.undo::after{background:
 body.lusso[data-legno="intarsio"] .big.main,body.lusso[data-legno="intarsio"] .big.ok{padding-left:40px;padding-right:40px}
 body.lusso[data-legno="intarsio"] .big.undo{padding:20px 10px 12px;letter-spacing:.02em}
 body.lusso[data-legno="intarsio"] .big.main,body.lusso[data-legno="intarsio"] .big.ok{letter-spacing:.03em}
+
+/* ==========================================================================
+   0.92 - ANCORA PIU' GIOIELLI (Michele: "ancora piu' gioielli"). Solo nello stile Intarsio.
+   Schede: cornice con la fila di diamanti, zaffiri e rubini alternati e uno smeraldo grande in ogni angolo
+   (cornice-gioielli.svg), e in cima uno stemma d'oro col rubino (stemma.svg). Tasti: aureola di diamanti
+   attorno agli zaffiri, trilogie di pietre, file di diamanti con i rubini. Testata, barre, targhe e giorni con le pietre.
+   ========================================================================== */
+body.lusso[data-legno="intarsio"]{
+  --fila:radial-gradient(circle,#FF9DB0 0 1.1px,#C21E44 2px,#5C0718 2.6px,#E8C66E 2.9px,#8C6420 3.5px,rgba(0,0,0,0) 3.9px);
+  --fila-z:radial-gradient(circle,#9DBBFF 0 1.1px,#2E54C9 2px,#0F2160 2.6px,#E8C66E 2.9px,#8C6420 3.5px,rgba(0,0,0,0) 3.9px);
+  --pietra-luce:radial-gradient(circle,rgba(255,255,255,.95) 0 1.3px,rgba(255,255,255,0) 2px);
+}
+/* le schede: la cornice coi gioielli e lo stemma in cima */
+body.lusso[data-legno="intarsio"] .card:not(.flat),body.lusso[data-legno="intarsio"] .conferma-box,body.lusso[data-legno="intarsio"] .menu{border-width:20px;border-image:url(cornice-gioielli.svg) 28 / 20px round}
+body.lusso[data-legno="intarsio"] .card:not(.flat){padding:6px 3px;position:relative}
+body.lusso[data-legno="intarsio"] .card:not(.flat):not(.consuela)::before{content:"";position:absolute;top:-24px;left:50%;width:96px;height:32px;margin-left:-48px;background:url(stemma.svg) center/contain no-repeat;pointer-events:none;z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+body.lusso[data-legno="intarsio"] main{gap:22px}
+/* le targhe scure sulla parete: un rubino in ogni angolo */
+body.lusso[data-legno="intarsio"] .card.flat{background:
+  radial-gradient(circle at 10px 10px,#FF9DB0 0 1.2px,#C21E44 2.2px,#5C0718 3px,#E8C66E 3.4px,#8C6420 4.2px,rgba(0,0,0,0) 4.6px),
+  radial-gradient(circle at calc(100% - 10px) 10px,#FF9DB0 0 1.2px,#C21E44 2.2px,#5C0718 3px,#E8C66E 3.4px,#8C6420 4.2px,rgba(0,0,0,0) 4.6px),
+  radial-gradient(circle at 10px calc(100% - 10px),#FF9DB0 0 1.2px,#C21E44 2.2px,#5C0718 3px,#E8C66E 3.4px,#8C6420 4.2px,rgba(0,0,0,0) 4.6px),
+  radial-gradient(circle at calc(100% - 10px) calc(100% - 10px),#FF9DB0 0 1.2px,#C21E44 2.2px,#5C0718 3px,#E8C66E 3.4px,#8C6420 4.2px,rgba(0,0,0,0) 4.6px),
+  linear-gradient(180deg,rgba(42,17,7,.86),rgba(24,9,4,.86))}
+/* tasti grandi principali: aureola di diamanti attorno agli zaffiri, e nelle file di diamanti un rubino ogni tre */
+body.lusso[data-legno="intarsio"] .big.main::after,body.lusso[data-legno="intarsio"] .big.ok::after{background:
+  radial-gradient(circle at 20px calc(50% - 2.5px),rgba(255,255,255,.95) 0 1.5px,rgba(255,255,255,0) 2.2px),
+  radial-gradient(circle at 22px 50%,var(--g1) 0,var(--g2) 3.8px,var(--g3) 6.4px,rgba(0,0,0,0) 6.9px),
+  radial-gradient(circle at 22px 50%,rgba(0,0,0,0) 6.7px,#FFF3C4 7.3px,#C99A3A 8.6px,#6E4A12 9.8px,rgba(0,0,0,0) 10.3px),
+  radial-gradient(circle at 34px 50%,#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),radial-gradient(circle at 10px 50%,#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),
+  radial-gradient(circle at 22px calc(50% - 12px),#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),radial-gradient(circle at 22px calc(50% + 12px),#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),
+  radial-gradient(circle at 30.5px calc(50% - 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),radial-gradient(circle at 13.5px calc(50% - 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),
+  radial-gradient(circle at 30.5px calc(50% + 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),radial-gradient(circle at 13.5px calc(50% + 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),
+  radial-gradient(circle at calc(100% - 24px) calc(50% - 2.5px),rgba(255,255,255,.95) 0 1.5px,rgba(255,255,255,0) 2.2px),
+  radial-gradient(circle at calc(100% - 22px) 50%,var(--g1) 0,var(--g2) 3.8px,var(--g3) 6.4px,rgba(0,0,0,0) 6.9px),
+  radial-gradient(circle at calc(100% - 22px) 50%,rgba(0,0,0,0) 6.7px,#FFF3C4 7.3px,#C99A3A 8.6px,#6E4A12 9.8px,rgba(0,0,0,0) 10.3px),
+  radial-gradient(circle at calc(100% - 34px) 50%,#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),radial-gradient(circle at calc(100% - 10px) 50%,#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),
+  radial-gradient(circle at calc(100% - 22px) calc(50% - 12px),#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),radial-gradient(circle at calc(100% - 22px) calc(50% + 12px),#fff 0 1.2px,#cfd9e4 1.7px,rgba(0,0,0,0) 2.2px),
+  radial-gradient(circle at calc(100% - 30.5px) calc(50% - 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),radial-gradient(circle at calc(100% - 13.5px) calc(50% - 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),
+  radial-gradient(circle at calc(100% - 30.5px) calc(50% + 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),radial-gradient(circle at calc(100% - 13.5px) calc(50% + 8.5px),#fff 0 1px,#cfd9e4 1.5px,rgba(0,0,0,0) 2px),
+  var(--fila) 45.5px calc(100% - 1px)/21px 8px repeat-x,var(--pave) 3px calc(100% - 2px)/7px 6px repeat-x,
+  var(--fila) 45.5px 0/21px 8px repeat-x,var(--pave) 3px 3px/7px 6px repeat-x}
+/* tasti grandi secondari: tre pietre in cima (zaffiro, rubino, zaffiro), sotto diamanti con i rubini */
+body.lusso[data-legno="intarsio"] .big.undo{padding-top:22px}
+body.lusso[data-legno="intarsio"] .big.undo::after{background:
+  radial-gradient(circle at calc(50% - 1.8px) 9px,rgba(255,255,255,.95) 0 1.3px,rgba(255,255,255,0) 1.9px),
+  radial-gradient(circle at 50% 11px,var(--g1) 0,var(--g2) 3.1px,var(--g3) 5.2px,rgba(0,0,0,0) 5.7px),
+  radial-gradient(circle at 50% 11px,rgba(0,0,0,0) 5.5px,#FFF3C4 6.1px,#C99A3A 7.2px,#6E4A12 8.2px,rgba(0,0,0,0) 8.7px),
+  radial-gradient(circle at calc(50% - 15px) 11px,#9DBBFF 0 1px,#2E54C9 2.2px,#0F2160 3.2px,#E8C66E 3.6px,#8C6420 4.4px,rgba(0,0,0,0) 4.8px),
+  radial-gradient(circle at calc(50% + 15px) 11px,#9DBBFF 0 1px,#2E54C9 2.2px,#0F2160 3.2px,#E8C66E 3.6px,#8C6420 4.4px,rgba(0,0,0,0) 4.8px),
+  radial-gradient(circle at calc(50% - 25px) 11px,#fff 0 1.1px,#cfd9e4 1.6px,rgba(0,0,0,0) 2.1px),radial-gradient(circle at calc(50% + 25px) 11px,#fff 0 1.1px,#cfd9e4 1.6px,rgba(0,0,0,0) 2.1px),
+  var(--fila) 34.5px calc(100% - 1px)/21px 8px repeat-x,var(--pave) 6px calc(100% - 3px)/7px 6px repeat-x}
+/* tasti piccoli: sotto, diamanti con i rubini */
+body.lusso[data-legno="intarsio"] .btnsm{background:var(--fila) 13px calc(100% + 1px)/21px 8px repeat-x,var(--pave) 6px calc(100% - 2px)/7px 6px repeat-x,var(--oro-tasto)}
+body.lusso[data-legno="intarsio"] .btnsm.ghost{background:var(--fila-z) 13px calc(100% + 1px)/21px 8px repeat-x,var(--pave) 6px calc(100% - 2px)/7px 6px repeat-x,var(--perla-tasto)}
+/* prima pagina: la pietra in cima con due diamanti, sotto la fila di pietre */
+body.lusso[data-legno="intarsio"] .casa-t::after{background:
+  radial-gradient(circle at calc(50% - 2px) 9px,rgba(255,255,255,.95) 0 1.4px,rgba(255,255,255,0) 2px),
+  radial-gradient(circle at 50% 11px,var(--g1) 0,var(--g2) 3.4px,var(--g3) 5.8px,rgba(0,0,0,0) 6.3px),
+  radial-gradient(circle at 50% 11px,rgba(0,0,0,0) 6.1px,#FFF3C4 6.7px,#C99A3A 7.9px,#6E4A12 9px,rgba(0,0,0,0) 9.5px),
+  radial-gradient(circle at calc(50% - 15px) 11px,#fff 0 1.3px,#cfd9e4 1.8px,rgba(0,0,0,0) 2.4px),radial-gradient(circle at calc(50% + 15px) 11px,#fff 0 1.3px,#cfd9e4 1.8px,rgba(0,0,0,0) 2.4px),
+  radial-gradient(circle at calc(50% - 22px) 11px,#fff 0 1px,#cfd9e4 1.4px,rgba(0,0,0,0) 1.9px),radial-gradient(circle at calc(50% + 22px) 11px,#fff 0 1px,#cfd9e4 1.4px,rgba(0,0,0,0) 1.9px),
+  var(--fila) 15px calc(100% - 2px)/21px 8px repeat-x,var(--pave) 8px calc(100% - 4px)/8px 6px repeat-x}
+/* la testata: una gemma prima del nome, e sotto la fila di diamanti con zaffiri e rubini */
+body.lusso[data-legno="intarsio"] header h1::before{content:"";display:inline-block;width:11px;height:11px;margin:0 7px 2px 0;vertical-align:middle;border-radius:50%;background:radial-gradient(circle at 38% 32%,#FFB0C0 0 1.4px,#D62250 3px,#5C0718 5.5px);box-shadow:0 0 0 1.5px #F2DC96,0 0 0 2.6px #8C6420,0 1px 3px rgba(0,0,0,.6)}
+body.lusso[data-legno="intarsio"] header::after{height:9px;bottom:-11px;background:var(--fila-z) 4px 50%/42px 9px repeat-x,var(--fila) 25px 50%/42px 9px repeat-x,radial-gradient(circle at 50% 50%,#fff 0 1.3px,#cfd8e2 1.7px,rgba(255,255,255,0) 2.2px) 0 50%/7px 9px repeat-x,linear-gradient(180deg,#6E4A12,#2a1608)}
+/* il nome dell'albergo in prima pagina: uno zaffiro per lato */
+body.lusso[data-legno="intarsio"] .casa-nome{padding:5px 30px;background:
+  radial-gradient(circle at 13px 50%,#9DBBFF 0 1.2px,#2E54C9 2.4px,#0F2160 3.4px,#E8C66E 3.8px,#8C6420 4.7px,rgba(0,0,0,0) 5.1px),
+  radial-gradient(circle at calc(100% - 13px) 50%,#9DBBFF 0 1.2px,#2E54C9 2.4px,#0F2160 3.4px,#E8C66E 3.8px,#8C6420 4.7px,rgba(0,0,0,0) 5.1px),
+  linear-gradient(180deg,rgba(40,16,6,.88),rgba(24,9,4,.88))}
+/* la barra delle schede: uno smeraldo a ogni capo */
+body.lusso[data-legno="intarsio"] .tabs{padding-left:20px;padding-right:20px;background:
+  radial-gradient(circle at 10px 50%,#9FF3C8 0 1.3px,#129A62 2.8px,#04452A 4px,#F2DC96 4.4px,#8C6420 5.4px,rgba(0,0,0,0) 5.8px),
+  radial-gradient(circle at calc(100% - 10px) 50%,#9FF3C8 0 1.3px,#129A62 2.8px,#04452A 4px,#F2DC96 4.4px,#8C6420 5.4px,rgba(0,0,0,0) 5.8px),
+  linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,30,5,.16)),url(legno-oro.webp) center/cover}
+/* le targhe: una pietra in cima, a turno rubino, smeraldo, zaffiro */
+body.lusso[data-legno="intarsio"] .sig-plate,body.lusso[data-legno="intarsio"] .gov-plate,body.lusso[data-legno="intarsio"] .man-plate{position:relative}
+body.lusso[data-legno="intarsio"] .sig-plate::after,body.lusso[data-legno="intarsio"] .gov-plate::after,body.lusso[data-legno="intarsio"] .man-plate::after{content:"";position:absolute;top:-6px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 38% 32%,var(--p1,#FFB0C0) 0 1.6px,var(--p2,#D62250) 4px,var(--p3,#5C0718) 7px);box-shadow:0 0 0 2px #F2DC96,0 0 0 3.4px #8C6420,0 2px 4px rgba(0,0,0,.6)}
+body.lusso[data-legno="intarsio"] .sig-plate:nth-child(3n+2){--p1:#9FF3C8;--p2:#129A62;--p3:#04452A}
+body.lusso[data-legno="intarsio"] .sig-plate:nth-child(3n),body.lusso[data-legno="intarsio"] .gov-plate{--p1:#9DBBFF;--p2:#2E54C9;--p3:#0F2160}
+body.lusso[data-legno="intarsio"] .man-plate{--p1:#9FF3C8;--p2:#129A62;--p3:#04452A}
+body.lusso[data-legno="intarsio"] .sig-blocco{padding-top:14px}
+/* i giorni: un diamantino in cima a ognuno */
+body.lusso[data-legno="intarsio"] .day{background-image:radial-gradient(circle at 50% 4px,#fff 0 1.3px,#cfd9e4 1.8px,rgba(0,0,0,0) 2.4px),var(--perla-tasto)}
+body.lusso[data-legno="intarsio"] .day.oggi:not([aria-pressed="true"]){background-image:radial-gradient(circle at 50% 4px,#fff 0 1.3px,#cfd9e4 1.8px,rgba(0,0,0,0) 2.4px),var(--oro-tasto)}
+body.lusso[data-legno="intarsio"] .day[aria-pressed="true"]{background-image:radial-gradient(circle at 50% 4px,#fff 0 1.3px,#cfd9e4 1.8px,rgba(0,0,0,0) 2.4px),linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.05) 36%,rgba(0,0,0,0) 58%,rgba(0,0,0,.16) 100%),linear-gradient(135deg,var(--al1) 0%,var(--al3) 40%,var(--al2) 68%,var(--al4) 100%)}
+/* i fogli che salgono dal basso: in cima la fila di pietre */
+body.lusso[data-legno="intarsio"] .sheet .panel:not(.pieno){background:var(--fila-z) 6px 2px/21px 8px repeat-x,var(--pave) 13px 3px/7px 6px repeat-x,radial-gradient(120% 50% at 12% 0%,rgba(255,232,244,.5),rgba(255,255,255,0) 55%),linear-gradient(170deg,#FFFEFB,#F5EFE5 50%,#FBF8F2)}
+body.lusso[data-legno="intarsio"] .chat-card{overflow:visible}
