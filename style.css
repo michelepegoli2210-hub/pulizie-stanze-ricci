@@ -1830,3 +1830,78 @@ body.lusso[data-legno="intarsio"] .cc-lei{background:linear-gradient(160deg,#FFF
 .sf-prev.sf-intarsio{background:url(intarsio.webp) center 42%/cover no-repeat,#24100a}
 /* le testate delle pagine (Sofia, una signora): madreperla invece dell'argento */
 body.lusso .pro-testa{--al1:#FFFFFF;--al2:#E3D9C6;--al3:#F6F1E8;--al4:#C7B796;--al5:#EFE7D8;--tx:#24180A;--tx2:rgba(36,24,10,.78);--inciso:0 1px 0 rgba(255,255,255,.8);--bordo:rgba(150,110,40,.45);--luce:rgba(255,255,255,.95);--ombra:rgba(40,20,5,.55);--sp:#9C8458}
+
+/* ==========================================================================
+   0.91 - TASTI D'ORO E GIOIELLI (Michele: "piu' oro, piu' gioielli sui tasti"). Solo nello stile Intarsio.
+   Oro lucido come un lingotto con le lettere incise, gemme a cabochon incastonate in una ghiera d'oro (lapislazzuli,
+   rubino, smeraldo), file di diamanti (pave') lungo i bordi. Le gemme stanno nel ::after del tasto (sopra, ma
+   trasparente tranne le pietre); i colori che vogliono dire qualcosa (da pulire, fatta...) non cambiano.
+   ========================================================================== */
+body.lusso[data-legno="intarsio"]{
+  --oro-tasto:radial-gradient(130% 90% at 30% 0%,rgba(255,255,240,.85) 0%,rgba(255,250,220,0) 45%),linear-gradient(180deg,#FFF3C2 0%,#F3D57A 18%,#D9AE45 42%,#B8862C 62%,#E8C96E 82%,#9C6E1E 100%);
+  --perla-tasto:radial-gradient(120% 100% at 15% 0%,rgba(255,234,245,.85),rgba(255,255,255,0) 55%),radial-gradient(90% 90% at 100% 100%,rgba(205,236,232,.8),rgba(255,255,255,0) 60%),linear-gradient(165deg,#FFFFFF 0%,#F2ECE2 55%,#FBF8F2 100%);
+  --ghiera:inset 0 0 0 1.5px #7A5418,inset 0 0 0 3px #F6E3A2,inset 0 0 0 4px #A87A2C;
+  --pave:radial-gradient(circle,#FFFFFF 0 1.1px,#D3DCE7 1.5px,rgba(255,255,255,0) 2px);
+}
+/* le pietre: luce + pietra + ghiera, a sinistra e a destra (22 px dal bordo, a meta' altezza) */
+body.lusso[data-legno="intarsio"] .big.main::after,body.lusso[data-legno="intarsio"] .big.undo::after,body.lusso[data-legno="intarsio"] .big.ok::after,body.lusso[data-legno="intarsio"] .cc-tasti button::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:
+    radial-gradient(circle at 20px calc(50% - 2.5px),rgba(255,255,255,.95) 0 1.5px,rgba(255,255,255,0) 2.2px),
+    radial-gradient(circle at 22px 50%,var(--g1) 0,var(--g2) 3.8px,var(--g3) 6.4px,rgba(0,0,0,0) 6.9px),
+    radial-gradient(circle at 22px 50%,rgba(0,0,0,0) 6.7px,#FFF3C4 7.3px,#C99A3A 8.6px,#6E4A12 9.8px,rgba(0,0,0,0) 10.3px),
+    radial-gradient(circle at calc(100% - 24px) calc(50% - 2.5px),rgba(255,255,255,.95) 0 1.5px,rgba(255,255,255,0) 2.2px),
+    radial-gradient(circle at calc(100% - 22px) 50%,var(--g1) 0,var(--g2) 3.8px,var(--g3) 6.4px,rgba(0,0,0,0) 6.9px),
+    radial-gradient(circle at calc(100% - 22px) 50%,rgba(0,0,0,0) 6.7px,#FFF3C4 7.3px,#C99A3A 8.6px,#6E4A12 9.8px,rgba(0,0,0,0) 10.3px),
+    var(--pave) 0 calc(100% - 3px)/7px 6px repeat-x,
+    var(--pave) 3px 3px/7px 6px repeat-x}
+/* i colori delle pietre */
+body.lusso[data-legno="intarsio"]{--g1:#9DBBFF;--g2:#2E54C9;--g3:#0F2160}
+body.lusso[data-legno="intarsio"] .big.undo,body.lusso[data-legno="intarsio"] .cc-tasti button.cc-no{--g1:#FF9DB0;--g2:#C21E44;--g3:#5C0718}
+body.lusso[data-legno="intarsio"] .big.ok,body.lusso[data-legno="intarsio"] .cc-tasti button.cc-si{--g1:#9FF3C8;--g2:#129A62;--g3:#04452A}
+/* tasto grande principale: lingotto d'oro, lettere incise */
+body.lusso[data-legno="intarsio"] .big.main,body.lusso[data-legno="intarsio"] .big.ok{background:var(--oro-tasto);color:#2A1806;text-shadow:0 1px 0 rgba(255,246,214,.85);padding-left:44px;padding-right:44px;box-shadow:var(--ghiera),0 3px 0 #5E3F0C,0 4px 1px rgba(0,0,0,.25),0 16px 26px -12px rgba(0,0,0,.75)}
+body.lusso[data-legno="intarsio"] .big.main::before,body.lusso[data-legno="intarsio"] .big.ok::before{opacity:.55}
+/* tasto grande secondario: madreperla, ghiera d'oro, rubini */
+body.lusso[data-legno="intarsio"] .big.undo{background:var(--perla-tasto);color:#15255E;text-shadow:0 1px 0 rgba(255,255,255,.8);padding-left:42px;padding-right:42px;box-shadow:var(--ghiera),0 3px 0 #8C6A30,0 4px 1px rgba(0,0,0,.2),0 14px 24px -12px rgba(0,0,0,.7)}
+/* tasti piccoli: oro con la fila di diamanti sotto; quelli "leggeri" in madreperla */
+body.lusso[data-legno="intarsio"] .btnsm{background:var(--pave) 6px calc(100% - 2px)/7px 6px repeat-x,var(--oro-tasto);color:#2A1806;text-shadow:0 1px 0 rgba(255,246,214,.85);box-shadow:inset 0 0 0 1.2px #7A5418,inset 0 0 0 2.4px #F6E3A2,0 2px 0 #5E3F0C,0 8px 14px -8px rgba(0,0,0,.7)}
+body.lusso[data-legno="intarsio"] .btnsm.ghost{background:var(--pave) 6px calc(100% - 2px)/7px 6px repeat-x,var(--perla-tasto);color:#15255E}
+/* la prima pagina: Parlami (zaffiro), Dimmi (rubino), Giornate (smeraldo), ogni pietra sopra l'icona */
+body.lusso[data-legno="intarsio"] .casa-t{position:relative;min-height:80px;padding-top:12px;background:var(--perla-tasto);border:0;box-shadow:var(--ghiera),0 3px 0 #8C6A30,0 14px 24px -12px rgba(0,0,0,.8);--g1:#9DBBFF;--g2:#2E54C9;--g3:#0F2160}
+body.lusso[data-legno="intarsio"] .casa-t-mic{--g1:#FF9DB0;--g2:#C21E44;--g3:#5C0718}
+body.lusso[data-legno="intarsio"] .casa-t[data-casa-giu]{--g1:#9FF3C8;--g2:#129A62;--g3:#04452A}
+body.lusso[data-legno="intarsio"] .casa-t::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:
+  radial-gradient(circle at calc(50% - 2px) 9px,rgba(255,255,255,.95) 0 1.4px,rgba(255,255,255,0) 2px),
+  radial-gradient(circle at 50% 11px,var(--g1) 0,var(--g2) 3.4px,var(--g3) 5.8px,rgba(0,0,0,0) 6.3px),
+  radial-gradient(circle at 50% 11px,rgba(0,0,0,0) 6.1px,#FFF3C4 6.7px,#C99A3A 7.9px,#6E4A12 9px,rgba(0,0,0,0) 9.5px),
+  var(--pave) 8px calc(100% - 4px)/8px 6px repeat-x}
+body.lusso[data-legno="intarsio"] .sofia-hero.sta-parlando .casa-t-voce,body.lusso[data-legno="intarsio"] .sofia-hero[data-stato="ascolto"] .casa-t-mic{background:var(--oro-tasto)}
+/* manda e graffetta: moneta d'oro con la ghiera, perla con la ghiera */
+body.lusso[data-legno="intarsio"] .casa-manda{background:radial-gradient(circle at 34% 28%,#FFFBE6 0 3px,rgba(255,251,230,0) 9px),var(--oro-tasto);color:#2A1806;box-shadow:var(--ghiera),0 3px 0 #5E3F0C,0 10px 18px -8px rgba(0,0,0,.8)}
+body.lusso[data-legno="intarsio"] .casa-graffa{background:var(--perla-tasto);color:#15255E;border:0;box-shadow:var(--ghiera),0 8px 16px -8px rgba(0,0,0,.7)}
+/* le pillole in alto (tre puntini, giorno), "‹ Oggi" e simili: oro */
+body.lusso[data-legno="intarsio"] .who,body.lusso[data-legno="intarsio"] .nonna-link.indietro,body.lusso[data-legno="intarsio"] .inizio-indietro{background:var(--oro-tasto);color:#2A1806;text-shadow:0 1px 0 rgba(255,246,214,.85);border-color:#7A5418;box-shadow:inset 0 0 0 1.2px #F6E3A2,0 2px 0 #5E3F0C,0 6px 12px -6px rgba(0,0,0,.7)}
+/* le targhe (le signore, Sofia, la manutenzione): madreperla, ghiera d'oro, diamanti sotto */
+body.lusso[data-legno="intarsio"] .sig-plate,body.lusso[data-legno="intarsio"] .gov-plate,body.lusso[data-legno="intarsio"] .man-plate{background:var(--pave) 10px calc(100% - 4px)/8px 6px repeat-x,var(--perla-tasto);box-shadow:var(--ghiera),0 3px 0 #8C6A30,0 14px 24px -12px rgba(0,0,0,.75)}
+body.lusso[data-legno="intarsio"] .man-plate .ic,body.lusso[data-legno="intarsio"] .man-testo{color:#15255E}
+/* i giorni: perla con la ghiera, oggi in oro, quello scelto in lapislazzuli (c'era gia') */
+body.lusso[data-legno="intarsio"] .day:not([aria-pressed="true"]){background:var(--perla-tasto);box-shadow:inset 0 0 0 1.2px #A87A2C,inset 0 0 0 2.4px #F6E3A2,0 2px 0 #8C6A30,0 8px 14px -8px rgba(0,0,0,.6)}
+body.lusso[data-legno="intarsio"] .day.oggi:not([aria-pressed="true"]){background:var(--oro-tasto)}
+body.lusso[data-legno="intarsio"] .day[aria-pressed="true"]{box-shadow:inset 0 0 0 1.2px #F6E3A2,0 0 0 2px #C99A3A,0 2px 0 #081236,0 10px 18px -8px rgba(0,0,0,.7)}
+/* Si'/No della conversazione in prima pagina: oro con smeraldi, perla con rubini, le altre scelte perla con zaffiri */
+body.lusso[data-legno="intarsio"] .cc-tasti button{position:relative;background:var(--perla-tasto);color:#15255E;border:0;padding:0 38px;box-shadow:var(--ghiera),0 3px 0 #8C6A30,0 10px 18px -10px rgba(0,0,0,.75)}
+body.lusso[data-legno="intarsio"] .cc-tasti button.cc-si{background:var(--oro-tasto);color:#2A1806;border:0}
+body.lusso[data-legno="intarsio"] .cc-tasti button.cc-no{background:var(--perla-tasto)}
+/* la scheda scelta e Chiaro/Scuro: un filo di diamanti sotto */
+body.lusso[data-legno="intarsio"] .tabs button[aria-pressed="true"],body.lusso[data-legno="intarsio"] .seg button[aria-pressed="true"]{background:var(--pave) 8px calc(100% - 2px)/7px 5px repeat-x,radial-gradient(120% 140% at 20% 0%,rgba(255,234,246,.9),rgba(255,255,255,0) 55%),radial-gradient(90% 120% at 100% 100%,rgba(205,236,232,.8),rgba(255,255,255,0) 60%),linear-gradient(160deg,#FFFFFF,#F1ECE3 50%,#FAF7F0)}
+/* i tasti secondari stanno spesso due per riga: la pietra va SOPRA le parole (non ai lati), cosi' il testo ha tutto lo spazio */
+body.lusso[data-legno="intarsio"] .big.undo{padding:20px 14px 12px;min-height:58px}
+body.lusso[data-legno="intarsio"] .big.undo::after{background:
+  radial-gradient(circle at calc(50% - 1.8px) 8px,rgba(255,255,255,.95) 0 1.3px,rgba(255,255,255,0) 1.9px),
+  radial-gradient(circle at 50% 10px,var(--g1) 0,var(--g2) 3.1px,var(--g3) 5.2px,rgba(0,0,0,0) 5.7px),
+  radial-gradient(circle at 50% 10px,rgba(0,0,0,0) 5.5px,#FFF3C4 6.1px,#C99A3A 7.2px,#6E4A12 8.2px,rgba(0,0,0,0) 8.7px),
+  var(--pave) 6px calc(100% - 3px)/7px 6px repeat-x}
+body.lusso[data-legno="intarsio"] .big.main,body.lusso[data-legno="intarsio"] .big.ok{padding-left:40px;padding-right:40px}
+body.lusso[data-legno="intarsio"] .big.undo{padding:20px 10px 12px;letter-spacing:.02em}
+body.lusso[data-legno="intarsio"] .big.main,body.lusso[data-legno="intarsio"] .big.ok{letter-spacing:.03em}
