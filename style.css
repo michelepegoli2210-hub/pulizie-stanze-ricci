@@ -1785,3 +1785,48 @@ body.lusso .tabs button[aria-pressed="true"]{background:linear-gradient(135deg,#
 body.lusso .casa-testo{position:relative}
 body.lusso .casa-testo::before{content:"";position:absolute;inset:-16px -26px -12px;z-index:-1;border-radius:40px;background:radial-gradient(ellipse at 50% 50%,rgba(14,5,2,.66) 0%,rgba(14,5,2,.42) 48%,rgba(14,5,2,0) 74%);pointer-events:none}
 body.lusso[data-legno="noce"]{--ombra-parete:0 1px 3px rgba(0,0,0,.92),0 0 18px rgba(0,0,0,.6)}
+
+/* ==========================================================================
+   0.90 - STILE "INTARSIO PREZIOSO" (la foto che ha mandato Michele: "questo e' il legno che voglio, questo e' lo sfondo,
+   ridisegna tutta l'app con questo stile"): legno d'oro marezzato, cornici d'oro col pave' di diamanti, madreperla,
+   lapislazzuli, radica. Lo sfondo e' la sua immagine ingrandita (intarsio.webp, Real-ESRGAN x4 e poi ridotta), intera
+   ("contain") sopra lo stesso pannello sfocato; sul computer i pannelli uno accanto all'altro. Schede in madreperla con
+   la cornice d'oro e i diamanti (cornice-carta.svg), le parti che stanno sulla parete su una targa di radica, testata di
+   radica (radica.webp) con la fila di diamanti, barra delle schede in legno d'oro (legno-oro.webp) con la scelta in
+   madreperla e lapislazzuli, Sofia dentro la cornice gioiello del pannello (cornice-sofia.webp, trasparente dentro).
+   Si torna indietro da Altro -> Come si vede l'app -> 4. Lo stile.
+   ========================================================================== */
+body.lusso[data-legno="intarsio"]{--ombra-parete:0 1px 3px rgba(0,0,0,.9),0 0 16px rgba(0,0,0,.55);--lapis:#1C3A93;--lapis-scuro:#12286B;--oro-filo:#C9A55A;background:#24100a}
+body.lusso[data-legno="intarsio"] .laguna{background:url(intarsio.webp) center center/contain no-repeat,url(intarsio-fondo.webp) center center/cover no-repeat,#24100a}
+@media (min-aspect-ratio:1/1){body.lusso[data-legno="intarsio"] .laguna{background:url(intarsio.webp) center center/auto 100% repeat-x,#24100a}}
+body.lusso[data-legno="intarsio"] .laguna::before{content:none}
+body.lusso[data-legno="intarsio"] .laguna .cornice{display:none}
+body.lusso[data-legno="intarsio"] .laguna::after{background:radial-gradient(120% 90% at 50% 45%,rgba(0,0,0,0) 55%,rgba(10,4,2,.35) 100%)}
+/* testata di radica con la fila di diamanti sotto */
+body.lusso[data-legno="intarsio"] header{background:linear-gradient(180deg,rgba(255,220,160,.06),rgba(0,0,0,.30)),url(radica.webp) center/cover;border-bottom:0;box-shadow:0 2px 0 #C9A55A,0 10px 22px -10px rgba(0,0,0,.8)}
+body.lusso[data-legno="intarsio"] header::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:7px;pointer-events:none;background:radial-gradient(circle at 50% 50%,#fff 0 1.3px,#cfd8e2 1.7px,rgba(255,255,255,0) 2.2px) 0 0/8px 7px repeat-x,linear-gradient(180deg,#6E4A12,#2a1608);border-bottom:1.5px solid #C9A55A}
+/* la barra delle schede: legno d'oro, la scelta in madreperla con le lettere color lapislazzuli */
+body.lusso[data-legno="intarsio"] .tabs{background:linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,30,5,.16)),url(legno-oro.webp) center/cover;border:1.5px solid #C9A55A;box-shadow:inset 0 0 0 1px rgba(80,50,10,.45),inset 0 1px 0 rgba(255,245,215,.5),0 2px 0 rgba(60,32,8,.9),0 14px 24px -12px rgba(0,0,0,.8)}
+body.lusso[data-legno="intarsio"] .tabs button{color:#2B1606;text-shadow:0 1px 0 rgba(255,240,205,.75)}
+body.lusso[data-legno="intarsio"] .tabs button[aria-pressed="true"],body.lusso[data-legno="intarsio"] .seg button[aria-pressed="true"]{background:radial-gradient(120% 140% at 20% 0%,rgba(255,234,246,.9),rgba(255,255,255,0) 55%),radial-gradient(90% 120% at 100% 100%,rgba(205,236,232,.8),rgba(255,255,255,0) 60%),linear-gradient(160deg,#FFFFFF,#F1ECE3 50%,#FAF7F0);color:var(--lapis);text-shadow:none;box-shadow:inset 0 0 0 1.5px #C9A55A,0 2px 6px rgba(0,0,0,.45)}
+/* le schede: madreperla, cornice d'oro col pave' e un lapislazzuli in ogni angolo */
+body.lusso[data-legno="intarsio"] .card:not(.flat),body.lusso[data-legno="intarsio"] .conferma-box,body.lusso[data-legno="intarsio"] .menu{border:13px solid transparent;border-image:url(cornice-carta.svg) 20 / 13px round;border-radius:6px;background:radial-gradient(120% 70% at 12% 0%,rgba(255,232,244,.55),rgba(255,255,255,0) 55%),radial-gradient(90% 70% at 100% 100%,rgba(206,238,233,.5),rgba(255,255,255,0) 55%),linear-gradient(160deg,#FFFEFB 0%,#F5EFE5 45%,#FCFAF5 70%,#EEE6D6 100%);box-shadow:0 18px 34px -16px rgba(0,0,0,.8)}
+body.lusso[data-legno="intarsio"] .card:not(.flat){padding:8px 6px}
+body.lusso[data-legno="intarsio"] .card h2{color:#15255E}
+body.lusso[data-legno="intarsio"] .card.flat{background:linear-gradient(180deg,rgba(42,17,7,.84),rgba(24,9,4,.84));border:1px solid rgba(214,175,92,.62);border-radius:14px;padding:10px 12px;box-shadow:inset 0 1px 0 rgba(255,225,170,.12),0 10px 22px -12px rgba(0,0,0,.85)}
+body.lusso[data-legno="intarsio"] .card.flat h2{color:var(--avorio)}
+body.lusso[data-legno="intarsio"] .sheet .panel:not(.pieno){background:radial-gradient(120% 50% at 12% 0%,rgba(255,232,244,.5),rgba(255,255,255,0) 55%),linear-gradient(170deg,#FFFEFB,#F5EFE5 50%,#FBF8F2);border-top:3px solid #C9A55A}
+/* il giorno scelto in lapislazzuli */
+body.lusso[data-legno="intarsio"] .day[aria-pressed="true"]{--al1:#5C84E0;--al2:#142A6E;--al3:#2848A8;--al4:#0A1745;--al5:#1C3A93;--ombra:rgba(10,23,69,.6);--sp:#081236;--tx:#FFFFFF;--tx2:rgba(255,255,255,.95)}
+/* la prima pagina: Sofia nella cornice gioiello, il nome dell'albergo su una targa di radica, i tasti in madreperla */
+body.lusso[data-legno="intarsio"] .casa-card{border:0;border-radius:10px;background:#17120e;box-shadow:0 4px 10px rgba(0,0,0,.45),0 34px 60px -24px rgba(0,0,0,.9)}
+body.lusso[data-legno="intarsio"] .casa-card::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:url(cornice-sofia.webp) center/100% 100% no-repeat}
+body.lusso[data-legno="intarsio"] .casa-tondi{z-index:3;top:8.5%;right:13%}
+body.lusso[data-legno="intarsio"] .casa-nome{background:linear-gradient(180deg,rgba(40,16,6,.86),rgba(24,9,4,.86));padding:5px 16px;border-radius:999px;border:1px solid rgba(214,175,92,.7);box-shadow:0 6px 14px -6px rgba(0,0,0,.8)}
+body.lusso[data-legno="intarsio"] .casa-t{background:radial-gradient(120% 90% at 15% 0%,rgba(255,234,245,.75),rgba(255,255,255,0) 55%),radial-gradient(90% 80% at 100% 100%,rgba(205,236,232,.7),rgba(255,255,255,0) 60%),linear-gradient(160deg,#FFFFFF,#F2ECE2 55%,#FBF8F2);border:1.5px solid #C9A55A;color:#2B1606}
+body.lusso[data-legno="intarsio"] .casa-t svg,body.lusso[data-legno="intarsio"] .casa-t.casa-t-voce svg{color:var(--lapis)}
+body.lusso[data-legno="intarsio"] .casa-scrivi-riga input,body.lusso[data-legno="intarsio"] .casa-graffa{background:linear-gradient(160deg,#FFFFFF,#F4EEE5);border-color:#C9A55A}
+body.lusso[data-legno="intarsio"] .cc-lei{background:linear-gradient(160deg,#FFFEFB,#F5EFE5);border-color:#C9A55A}
+.sf-prev.sf-intarsio{background:url(intarsio.webp) center 42%/cover no-repeat,#24100a}
+/* le testate delle pagine (Sofia, una signora): madreperla invece dell'argento */
+body.lusso .pro-testa{--al1:#FFFFFF;--al2:#E3D9C6;--al3:#F6F1E8;--al4:#C7B796;--al5:#EFE7D8;--tx:#24180A;--tx2:rgba(36,24,10,.78);--inciso:0 1px 0 rgba(255,255,255,.8);--bordo:rgba(150,110,40,.45);--luce:rgba(255,255,255,.95);--ombra:rgba(40,20,5,.55);--sp:#9C8458}
