@@ -2136,3 +2136,126 @@ body.lusso .sofia-hero:not([data-orologio="no"]) .casa-data{display:flex;flex-di
   body.lusso .casa-nome{font-size:12.5px;letter-spacing:.16em}
   body.lusso[data-legno="legno"] .casa-nome{padding:5px 12px}
 }
+
+/* =====================================================================================================
+   0.96 - NUOVA IMPAGINAZIONE (Michele: "vorrei l'orologio digitale in ogni schermata e anche il giorno; vicino
+   alla governante ci devono essere anche i tasti prospetto e gli altri che ci sono giu'; la sezione governante
+   deve essere messa a parte; il tasto per interagire con Sofia deve stare piu' vicino a lei") + lo stile
+   "AVORIO E NOCE" (la mia proposta per un'app di lavoro: carta avorio calma, noce e oro solo ai lati, carattere
+   Atkinson Hyperlegible Next, disegnato apposta per leggere bene). Disegni di riferimento fatti fare a Gemini.
+   ===================================================================================================== */
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-next-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/atkinson-hyperlegible-next-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/atkinson-hyperlegible-next-latin-800-normal.woff2) format("woff2")}
+
+/* --- la barra dell'ora: in cima a OGNI schermata del titolare, resta su quando si scorre --- */
+.barra-ora{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:14px;min-height:calc(54px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 54px 0;background:var(--card-pieno);color:var(--fg);border-bottom:1px solid var(--line)}
+.barra-ora[hidden]{display:none}
+.bo-ora{font:400 36px/1 var(--f-display);letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.bo-data{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;font:600 15px var(--f-body)}
+.bo-g{font-weight:800;text-transform:capitalize}
+.bo-menu{position:absolute;right:10px;bottom:9px;width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:transparent;color:inherit;font-size:21px;line-height:1;display:grid;place-items:center;cursor:pointer}
+body.con-ora header{top:calc(54px + env(safe-area-inset-top,0px));padding-top:8px}
+body.con-ora .sofia-hero{padding-top:12px;min-height:auto}
+body.lusso .barra-ora{background:linear-gradient(180deg,#2C170B,#1B0E06);color:#F8EAD0;border-bottom:1px solid rgba(214,175,92,.8);box-shadow:0 2px 0 rgba(201,165,90,.45),0 8px 18px -10px rgba(0,0,0,.85)}
+body.lusso .bo-ora{color:#F6DFA4}
+body.lusso .bo-menu{border-color:rgba(214,175,92,.7);color:#F6DFA4}
+
+/* --- i tasti tondi delle sezioni (vicino a Sofia in casa, in cima alle altre sezioni) --- */
+.nav-tondi{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;width:100%;max-width:470px;margin:2px auto 12px}
+.nav-t{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;border:0;background:none;padding:2px 0;color:var(--fg);font:700 12.5px var(--f-body);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nav-ico{position:relative;display:grid;place-items:center;width:clamp(46px,13vw,56px);height:clamp(46px,13vw,56px);border-radius:50%;background:var(--card-pieno);color:var(--primary);box-shadow:0 0 0 1px var(--line),0 4px 10px -6px rgba(0,0,0,.35)}
+.nav-t[aria-pressed="true"] .nav-ico{background:var(--primary);color:#fff}
+.nav-t:active .nav-ico{transform:scale(.95)}
+.nav-n{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-conta{position:absolute;top:-5px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:#B3261E;color:#fff;font:800 12px/21px var(--f-body);font-style:normal;text-align:center;box-shadow:0 0 0 2px #FFF8EC}
+body.lusso .nav-ico{background:radial-gradient(circle at 35% 30%,#7E5232,#4C2E18 58%,#2E1A0C);color:#F3D68E;box-shadow:inset 0 0 0 2px #C9A55A,inset 0 0 0 4px rgba(40,20,8,.55),0 5px 12px -5px rgba(0,0,0,.7)}
+body.lusso .nav-t[aria-pressed="true"] .nav-ico{background:radial-gradient(circle at 35% 30%,#FFF3C8,#E6C474 45%,#A87A2C);color:#2A1606;box-shadow:inset 0 0 0 2px #8E6620,0 5px 14px -5px rgba(0,0,0,.7)}
+body.lusso .nav-t{color:#FFF4DC;text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.5)}
+.sofia-hero .nav-tondi.in-casa{margin:4px auto 2px}
+body.ha-casa main .nav-tondi{display:none}          /* in casa i tasti stanno gia' sotto Sofia */
+
+/* --- il tasto grande per parlarle, a cavallo del bordo in basso della sua cornice --- */
+.casa-mic-grande{position:relative;z-index:6;display:inline-flex;align-items:center;justify-content:center;gap:9px;height:54px;margin-top:-41px;padding:0 22px 0 16px;border:0;border-radius:999px;background:linear-gradient(180deg,#FBE7B0,#E2BE6E 45%,#B8892F);color:#2A1606;font:800 16px var(--f-body);white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 0 0 1.5px #8E6620,0 9px 20px -6px rgba(0,0,0,.75);cursor:pointer}
+.casa-mic-grande svg{width:27px;height:27px}
+.sofia-hero[data-stato="ascolto"] .casa-mic-grande{background:linear-gradient(180deg,#A8EBC0,#2FBF6A);color:#fff;box-shadow:inset 0 0 0 1.5px #1E7A45,0 0 0 6px rgba(47,191,106,.25),0 9px 20px -6px rgba(0,0,0,.7);animation:consPulsa 1.3s ease-in-out infinite}
+.sofia-hero[data-stato="pensa"] .casa-mic-grande{background:linear-gradient(180deg,#FFE0A0,#F0A52A)}
+.sofia-hero[data-stato="errore"] .casa-mic-grande{background:linear-gradient(180deg,#F5A9A2,#E05A4E);color:#fff}
+.sofia-hero .casa-tondi{display:none}               /* voce e menu non stanno piu' sulla cornice */
+/* sulla targa del messaggio: la voce (muto/acceso) e "Ascolta il messaggio" */
+.casa-testo-tasti{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:4px}
+.casa-testo-tasti .casa-tondo{width:40px;height:40px}
+.casa-ascolta{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--card-pieno);color:var(--fg);font:700 14px var(--f-body);cursor:pointer}
+body.lusso .casa-ascolta{border-color:rgba(214,175,92,.85);background:rgba(255,240,205,.1);color:#F6DFA4}
+body.lusso .casa-testo-tasti .casa-tondo{background:rgba(255,240,205,.12);color:#F6DFA4;box-shadow:inset 0 0 0 1px rgba(214,175,92,.8)}
+body.lusso .casa-testo-tasti .casa-tondo.spenta{color:rgba(246,223,164,.6)}
+.sofia-hero.sta-parlando .casa-ascolta{background:#F6DFA4;color:#2A1606}
+
+/* --- la sezione di Sofia, a parte --- */
+.sofia-vista{display:flex;flex-direction:column;gap:12px;width:100%;max-width:680px;margin:0 auto 12px}
+.sv-tessere{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sv-tessera{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 10px 13px;border-radius:16px;border:1px solid var(--line);background:var(--card-pieno);color:var(--fg);text-align:center;font:500 14px/1.3 var(--f-body);cursor:pointer;box-shadow:0 8px 18px -12px rgba(0,0,0,.6)}
+.sv-tessera b{font:800 15.5px/1.2 var(--f-body)}
+.sv-t-ico{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(180deg,#FBE7B0,#C9A55A);color:#2A1606;font:800 20px var(--f-body)}
+.sv-t-ico svg{width:21px;height:21px}
+.sv-tessera .nav-conta{top:8px;right:10px}
+body.lusso .sv-tessera{border-color:rgba(214,175,92,.85);background:linear-gradient(180deg,#3C2414,#22130A);color:#F3E6CC}
+body.lusso .sv-tessera b{color:#FFF4DC}
+.sv-chat{display:flex;flex-direction:column;gap:10px;max-height:60vh;min-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 12px;border-radius:18px;background:var(--card-pieno);box-shadow:inset 0 0 0 1px var(--line),0 10px 24px -14px rgba(0,0,0,.6)}
+.sv-riga{display:flex;gap:8px;align-items:flex-end}
+.sv-io{justify-content:flex-end}
+.sv-foto{flex:0 0 auto;width:36px;height:36px;border-radius:50%;background:#E9DCC6 url(cons-poster.webp) 50% 18%/190% auto no-repeat;box-shadow:0 0 0 2px #C9A55A}
+.sv-colonna{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:86%}
+.sv-chat .cc-io{max-width:84%;font-size:15.5px;line-height:1.4}
+.sv-chat .cc-lei{max-width:100%;max-height:none;overflow:visible;font-size:15.5px;line-height:1.45}
+.sv-chat .cc-tasti{margin:0}
+.sv-vuota{margin:auto 0;color:var(--muted);font:500 15.5px/1.5 var(--f-body);text-align:center;padding:16px 8px}
+.sofia-vista .casa-sotto{align-self:center}
+.sv-scrivi{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:4}
+.sv-mic{flex:0 0 auto;width:46px;height:46px;border-radius:999px;border:0;display:grid;place-items:center;background:linear-gradient(180deg,#FBE7B0,#E2BE6E 45%,#B8892F);color:#2A1606;box-shadow:inset 0 0 0 1.5px #8E6620,0 6px 14px -6px rgba(0,0,0,.6);cursor:pointer}
+.sofia-vista[data-stato="ascolto"] .sv-mic{background:linear-gradient(180deg,#A8EBC0,#2FBF6A);color:#fff;animation:consPulsa 1.3s ease-in-out infinite}
+.sofia-vista[data-stato="pensa"] .sv-mic{background:linear-gradient(180deg,#FFE0A0,#F0A52A)}
+
+/* =====================================================================================================
+   LO STILE "AVORIO E NOCE" (di serie dalla 0.96)
+   ===================================================================================================== */
+body.lusso[data-legno="avorio"]{--f-body:"Atkinson Hyperlegible Next","Montserrat",system-ui,sans-serif;--f-display:"Atkinson Hyperlegible Next","Montserrat",system-ui,sans-serif;--ombra-parete:none;background:#F3E7D3}
+body.lusso[data-legno="avorio"] .laguna{background:url(avorio-parete.webp) center center/cover no-repeat,#F3E7D3;filter:none}
+@media (min-aspect-ratio:1/1){body.lusso[data-legno="avorio"] .laguna{background-image:url(avorio-parete-largo.webp)}}
+body.lusso[data-legno="avorio"] .laguna::before{content:none}
+body.lusso[data-legno="avorio"] .laguna .cornice{display:none}
+body.lusso[data-legno="avorio"] .laguna::after{background:none}
+/* la barra dell'ora: carta avorio, numeri grandi scuri, filo d'oro sotto (come nei disegni di Gemini) */
+body.lusso[data-legno="avorio"] .barra-ora{background:rgba(251,245,233,.95);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#2A1A0E;border-bottom:2px solid #C9A55A;box-shadow:0 1px 0 #fff inset,0 6px 16px -10px rgba(60,35,10,.55)}
+body.lusso[data-legno="avorio"] .bo-ora{color:#2A1A0E;font-size:38px}
+body.lusso[data-legno="avorio"] .bo-data{color:#3B2716}
+body.lusso[data-legno="avorio"] .bo-menu{border-color:rgba(160,120,50,.55);color:#3B2716}
+/* testata di noce con le lettere d'oro */
+body.lusso[data-legno="avorio"] header{background:linear-gradient(180deg,rgba(255,230,180,.06),rgba(0,0,0,.28)),url(noce.webp) center/cover;border-bottom:0;box-shadow:0 2px 0 #C9A55A,0 3px 0 rgba(0,0,0,.35),0 10px 22px -12px rgba(60,35,10,.7)}
+/* le targhe (scritte che stavano sulla parete) e il messaggio di Sofia: noce scuro col filo d'oro, lettere chiare */
+body.lusso[data-legno="avorio"] .card.flat{background:linear-gradient(180deg,rgba(44,25,12,.9),rgba(28,15,7,.94)),url(noce.webp) center/cover;border:1px solid rgba(214,175,92,.85);border-radius:14px;padding:10px 12px;box-shadow:0 10px 22px -14px rgba(40,20,5,.8)}
+body.lusso[data-legno="avorio"] .casa-testo{background:linear-gradient(180deg,rgba(44,25,12,.93),rgba(26,14,6,.96)),url(noce.webp) center/cover}
+/* il nome in alto: lettere scure eleganti tra due fili d'oro, senza targa (come nei disegni) */
+body.lusso[data-legno="avorio"] .casa-testa{display:flex;align-items:center;justify-content:center;gap:12px}
+body.lusso[data-legno="avorio"] .casa-nome{display:inline-flex;align-items:center;gap:12px;background:none;border:0;box-shadow:none;padding:0;color:#3A2414;text-shadow:none;font:600 15px var(--f-lusso);letter-spacing:.22em}
+body.lusso[data-legno="avorio"] .casa-nome::before,body.lusso[data-legno="avorio"] .casa-nome::after{content:"";display:block;width:34px;height:6px;background:linear-gradient(90deg,transparent,#B8892F 30%,#E8CD88 50%,#B8892F 70%,transparent) center/100% 2px no-repeat,radial-gradient(circle,#C9A55A 2.5px,transparent 3px) center/6px 6px no-repeat}
+/* la cornice di Sofia: noce con filo d'oro */
+body.lusso[data-legno="avorio"] .casa-card{border:0;border-radius:6px;background:#2A1A10;box-shadow:0 4px 10px rgba(60,35,10,.35),0 30px 50px -24px rgba(60,35,10,.65)}
+body.lusso[data-legno="avorio"] .casa-card::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:url(cornice-noce.webp) center/100% 100% no-repeat}
+body.lusso[data-legno="avorio"] .casa-card.tre{--fin-t:4.8%;--fin-r:8.6%;--fin-b:4.8%;--fin-l:8.6%;--fin-rag:0px}
+/* sulla carta avorio le scritte vanno SCURE */
+body.lusso[data-legno="avorio"] .nav-t{color:#2A1A0E;text-shadow:none}
+body.lusso[data-legno="avorio"] main>.muted,body.lusso[data-legno="avorio"] main>p,body.lusso[data-legno="avorio"] .cc-scelto{color:#3A2A1A;text-shadow:none}
+body.lusso[data-legno="avorio"] .card h2{font-family:var(--f-body);font-weight:800;letter-spacing:-.005em}
+body.lusso[data-legno="avorio"] .card.flat>h2{font-family:var(--f-lusso);font-weight:600}
+body.lusso[data-legno="avorio"] .card:not(.flat),body.lusso[data-legno="avorio"] .conferma-box,body.lusso[data-legno="avorio"] .menu{box-shadow:inset 0 1px 0 #FFFDF9,inset 0 0 0 1px rgba(176,132,56,.45),0 2px 0 rgba(150,110,50,.35),0 16px 30px -18px rgba(60,35,10,.6)}
+body.lusso[data-legno="avorio"] .banner.info{background:rgba(60,35,15,.82);color:#F8EAD0}
+/* la foto un po' piu' bassa: cosi' sullo schermo stanno insieme orologio, Sofia, il tasto per parlarle e i tasti delle sezioni */
+body.con-ora.lusso .casa-card{height:min(calc(46svh - 16px),calc(84vw * 16 / 9))}
+@media (min-width:760px){body.con-ora.lusso .casa-card{height:min(calc(48svh - 16px),460px)}}
+.sf-prev.sf-avorio{background:url(avorio-parete.webp) center 40%/cover no-repeat,#F3E7D3}
+.sf-prev.sf-legno{background:url(legno-oro-parete.webp) center 30%/cover no-repeat,#2A1206}
+/* i tasti "Si', fallo / No" come nei disegni: il si' d'oro, il no avorio */
+body.lusso[data-legno="avorio"] .cc-tasti button{background:#FFFBF3;color:#2A1A0E;border:1px solid rgba(160,120,50,.55);text-shadow:none}
+body.lusso[data-legno="avorio"] .cc-tasti button.cc-si{background:linear-gradient(180deg,#FBE7B0,#E2BE6E 45%,#B8892F);color:#2A1606;border:0;box-shadow:inset 0 0 0 1.5px #8E6620,0 4px 10px -5px rgba(0,0,0,.5)}
+body.lusso[data-legno="avorio"] .cc-tasti button.cc-no{background:#FFFBF3;color:#2A1A0E;border:1px solid rgba(160,120,50,.55)}

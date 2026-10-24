@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.95.0";
+export const VERSIONE = "0.96.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -196,40 +196,65 @@ try {
     TRE.ult = performance.now(); TRE.fermoDa = 0;
   }, { passive: true });
 } catch (e) {}
-// 0.95: OROLOGIO E DATA (Michele: "magari anche un orologio con data da qualche parte, ma sempre stile questo").
-// Due medaglioni di radica e oro ai lati della targa "Le Stanze di Ricci", in alto nella schermata di casa:
-// a sinistra l'orologio (quadrante d'acero con gli indici d'ebano, lancette vere), a destra la data (SAB / 24 / OTT).
-// Solo negli stili di lusso del titolare. Si toglie da "Come si vede l'app" -> "6. Orologio e data".
+// 0.95: orologio e data in due medaglioni in casa. 0.96 (Michele: "vorrei l'orologio DIGITALE in ogni schermata e
+// anche il giorno"): una barra fissa in cima a TUTTE le schermate del titolare con l'ora grande (14:05) e il giorno
+// (sabato / 24 ottobre). Si toglie da "Come si vede l'app" -> "5. Orologio e data".
 const CHIAVE_OROLOGIO = "ricci_orologio";
 function orologioVoluto() { try { return localStorage.getItem(CHIAVE_OROLOGIO) !== "no"; } catch (e) { return true; } }
-const OROLOGIO_HTML = `<span class="casa-orologio" role="img" aria-label="Ora"><i class="or-h"></i><i class="or-m"></i><i class="or-s"></i><i class="or-c"></i></span>`;
-const DATARIO_HTML = `<span class="casa-data" role="img" aria-label="Data"><b class="dt-g"></b><b class="dt-n"></b><b class="dt-m"></b></span>`;
+function barraOra() {
+  let b = document.getElementById("barraOra");
+  let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && orologioVoluto()); } catch (e) {}
+  if (!vuoi) { if (b) b.hidden = true; document.body.classList.remove("con-ora"); return null; }
+  if (!b) {
+    b = document.createElement("div"); b.id = "barraOra"; b.className = "barra-ora"; b.setAttribute("aria-live", "off");
+    b.innerHTML = `<b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
+    document.body.insertBefore(b, document.body.firstChild);
+  }
+  b.hidden = false; document.body.classList.add("con-ora");
+  return b;
+}
 let orologioTimer = null;
 function orologioGira() {
-  const o = document.querySelector(".casa-orologio");
-  if (!o) { clearInterval(orologioTimer); orologioTimer = null; return; }
+  const bo = document.getElementById("barraOra");
+  if (!bo || bo.hidden) { clearInterval(orologioTimer); orologioTimer = null; return; }
   if (document.hidden) return;
   const d = new Date();
-  const s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
-  o.style.setProperty("--oh", (h * 30).toFixed(2) + "deg");
-  o.style.setProperty("--om", (m * 6).toFixed(2) + "deg");
-  o.style.setProperty("--os", (s * 6) + "deg");
-  o.setAttribute("aria-label", "Sono le " + d.getHours() + " e " + String(d.getMinutes()).padStart(2, "0"));
-  const dt = document.querySelector(".casa-data");
-  if (dt) {
-    const chiave = d.toDateString();
-    if (dt.dataset.giorno !== chiave) {
-      dt.dataset.giorno = chiave;
-      const pulisci = (x) => String(x || "").replace(/\./g, "").toUpperCase();
-      const g = dt.querySelector(".dt-g"), n = dt.querySelector(".dt-n"), mm = dt.querySelector(".dt-m");
-      if (g) g.textContent = pulisci(d.toLocaleDateString("it-IT", { weekday: "short" })).slice(0, 3);
-      if (n) n.textContent = String(d.getDate());
-      if (mm) mm.textContent = pulisci(d.toLocaleDateString("it-IT", { month: "short" })).slice(0, 3);
-      dt.setAttribute("aria-label", d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" }));
-    }
+  const ora = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  const o = bo.querySelector(".bo-ora"); if (o && o.textContent !== ora) o.textContent = ora;
+  const k = d.toDateString();
+  if (bo.dataset.giorno !== k) {
+    bo.dataset.giorno = k;
+    const g = bo.querySelector(".bo-g"), dd = bo.querySelector(".bo-d");
+    if (g) g.textContent = d.toLocaleDateString("it-IT", { weekday: "long" });
+    if (dd) dd.textContent = d.toLocaleDateString("it-IT", { day: "numeric", month: "long" });
   }
+  bo.setAttribute("aria-label", "Sono le " + d.getHours() + " e " + String(d.getMinutes()).padStart(2, "0") + ", " + d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" }));
 }
-function orologioAvvia() { orologioGira(); if (!orologioTimer) orologioTimer = setInterval(orologioGira, 1000); }
+function orologioAvvia() { if (!barraOra()) return; orologioGira(); if (!orologioTimer) orologioTimer = setInterval(orologioGira, 1000); }
+try { document.addEventListener("visibilitychange", () => { if (!document.hidden) orologioGira(); }); } catch (e) {}
+// 0.96: i tasti delle sezioni, tondi, VICINO A SOFIA (Michele: "vicino alla governante ci devono essere anche i tasti
+// prospetto e gli altri che ci sono giu'") e in cima a ogni sezione. "Sofia" e' la sezione della governante, a parte.
+const NAV_ICO = {
+  cal: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h3v3h-3z"/></svg>`,
+  lista: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2.8h6v3H9zM8.5 10.5h7M8.5 14h7M8.5 17.5h4.5"/></svg>`,
+  mappa: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h7v9M10 3v5M14 12h7M14 12v4"/></svg>`,
+  euro: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 6.6A7 7 0 1 0 17.5 17.4"/><path d="M4 10h9M4 14h9"/></svg>`,
+  chat: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>`,
+};
+const NAV_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], ["piantine", "Piantine", "mappa"], ["paghe", "Paghe", "euro"], ["sofia", "", "chat"]];
+function domandeSofia() {
+  try { const c = statoChatApp(); return c.aperte.length + (c.gruppi || []).reduce((t, x) => t + x.righe.length, 0); } catch (e) { return 0; }
+}
+function NAV_HTML(v, inCasa) {
+  const dom = domandeSofia();
+  return `<nav class="nav-tondi${inCasa ? " in-casa" : ""}" aria-label="Sezioni">${NAV_VOCI.map(([k, n, ic]) => {
+    const att = inCasa ? k === "oggi" : (v === k || (k === "sofia" && v === "governante"));
+    const azione = inCasa && k === "oggi" ? "data-casa-giu" : `data-vista="${k}"`;
+    const nome = k === "sofia" ? nomeGov() : n;
+    const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
+    return `<button type="button" class="nav-t" ${azione} aria-pressed="${att}" aria-label="${esc(nome)}${conta ? " (" + dom + " da guardare)" : ""}"><span class="nav-ico">${NAV_ICO[ic]}${conta}</span><span class="nav-n">${esc(nome)}</span></button>`;
+  }).join("")}</nav>`;
+}
 // il punto del filmato `a` che somiglia di piu' al punto `t` (secondi) del filmato `da`
 function filmPuntoAbbinato(da, a, t) {
   const j = FILM_ABBINA; const lista = j && j.da && j.da[da] && j.da[da][a];
@@ -309,7 +334,7 @@ function filmVigila() {
 filmVigila();
 let micCasa = null, micAttivo = false;
 function statoCons(s) {
-  document.querySelectorAll(".card.consuela, .sofia-hero").forEach(c => {
+  document.querySelectorAll(".card.consuela, .sofia-hero, .sofia-vista").forEach(c => {
     c.dataset.stato = s || "";
     c.classList.toggle("sta-parlando", s === "parla");
   });
@@ -791,7 +816,7 @@ const S = {
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
   caricati: { pulizie: false, soggiorni: false, ruoli: false, manutenzione: false, gov: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
-  stop: [], tema: localStorage.getItem("ricci_tema") || "light", colore: (() => { try { let c = localStorage.getItem("ricci_colore") || ""; if (!localStorage.getItem("ricci_v88")) { localStorage.setItem("ricci_v88", "1"); if (c === "blu") { c = ""; localStorage.removeItem("ricci_colore"); } } return c; } catch (e) { return ""; } })(), sfondo: (() => { try { return localStorage.getItem("ricci_stile2") || "legno"; } catch (e) { return "legno"; } })(),
+  stop: [], tema: localStorage.getItem("ricci_tema") || "light", colore: (() => { try { let c = localStorage.getItem("ricci_colore") || ""; if (!localStorage.getItem("ricci_v88")) { localStorage.setItem("ricci_v88", "1"); if (c === "blu") { c = ""; localStorage.removeItem("ricci_colore"); } } return c; } catch (e) { return ""; } })(), sfondo: (() => { try { return localStorage.getItem("ricci_stile3") || "avorio"; } catch (e) { return "avorio"; } })(),
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -888,7 +913,7 @@ function applicaTema() {
   const parete = document.querySelector(".laguna");
   if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
   const barra = document.querySelector('meta[name="theme-color"]');
-  if (barra) barra.setAttribute("content", lusso ? ({ mogano: "#240C07", noce: "#22140A", ebano: "#0E0805", intarsio: "#2A1206", legno: "#2A1206" })[legnoScelto()] : S.tema === "dark" ? "#000000" : "#ffffff");
+  if (barra) barra.setAttribute("content", lusso ? ({ mogano: "#240C07", noce: "#22140A", ebano: "#0E0805", intarsio: "#2A1206", legno: "#2A1206", avorio: "#F3E7D3" })[legnoScelto()] : S.tema === "dark" ? "#000000" : "#ffffff");
   if (S.pronto && eraLusso !== lusso) { eraLusso = lusso; try { localStorage.setItem("ricci_era_lusso", lusso ? "1" : "0"); } catch (e) {} }
 }
 // 0.86 - i colori che Michele puo' scegliere da solo (Altro -> Come si vede l'app): cambiano tasti e collegamenti
@@ -900,6 +925,7 @@ function applicaTema() {
 // 0.93 - Michele: "non mi piace, togli tutti i gioielli e rimani il legno lussuoso": di serie il legno della sua foto
 // senza pietre (Legno d'oro). L'intarsio coi gioielli resta qui sotto, per tornare indietro.
 const SFONDI_APP = [
+  { id: "avorio", nome: "Avorio e noce", come: "La mia proposta per un'app di lavoro: carta avorio calma, noce e oro ai lati, caratteri chiarissimi" },
   { id: "legno", nome: "Legno d'oro", come: "Il legno marezzato della tua foto, radica e fili d'oro, senza pietre" },
   { id: "intarsio", nome: "Intarsio con gioielli", come: "Il tuo pannello con oro, madreperla, lapislazzuli e diamanti" },
   { id: "lusso", nome: "Mogano marezzato", come: "Boiserie di mogano lucido, filetti e cornici d'oro" },
@@ -907,7 +933,7 @@ const SFONDI_APP = [
   { id: "ebano", nome: "Ebano marezzato", come: "Legno scurissimo e oro" },
   { id: "laguna", nome: "Laguna", come: "Il cielo e l'acqua di Lesina, chiaro" },
 ];
-function legnoScelto() { return ["noce", "ebano", "intarsio", "legno"].includes(S.sfondo) ? S.sfondo : "mogano"; }
+function legnoScelto() { return ["noce", "ebano", "intarsio", "legno", "avorio"].includes(S.sfondo) ? S.sfondo : "mogano"; }
 const COLORI_APP = [
   { id: "blu", nome: "Blu", g: "linear-gradient(135deg,#5A8AD6,#143880 45%,#2A56A6)" },
   { id: "oro", nome: "Oro", g: "linear-gradient(135deg,#D9B36A,#6E4A12 45%,#A87A2C)" },
@@ -1094,9 +1120,11 @@ function disegna() {
   if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
   disegnaCasa();
+  orologioAvvia();
   collega();
   if (S.foglio) disegnaFoglio();
   avviaCronometri();
+  const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
 }
 
 function disegnaTestata() {
@@ -1491,7 +1519,7 @@ function cardDaRifare(z) {
 // ---- schermate dei proprietari ---------------------------------------------------
 function vistaProprietario() {
   const v = S.vista;
-  const tabs = `<div class="tabs">${[["oggi", "Oggi"], ["prospetto", "Prospetto"], ["piantine", "Piantine"], ["paghe", "Paghe"]].map(([k, n]) => `<button aria-pressed="${v === k}" data-vista="${k}">${n}</button>`).join("")}</div>`;
+  const tabs = NAV_HTML(v, false);
   let corpo = "";
   if (v === "oggi") corpo = vistaOggiGestione();
   else if (v === "prospetto") corpo = vistaTabellone();
@@ -1501,6 +1529,7 @@ function vistaProprietario() {
   else if (v === "foglio") corpo = vistaFoglio();
   else if (v === "manutenzione") corpo = vistaManutenzione();
   else if (v === "governante") corpo = vistaGovernante();
+  else if (v === "sofia") corpo = vistaSofia();
   else if (v === "signora") corpo = vistaSignora(S.sigZona || zoneOrdinate()[0].id);
   else corpo = vistaOggiGestione();
   return tabs + corpo;
@@ -1520,7 +1549,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
-  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + (puoModificare() && iso === L.oggiISO() ? (casaAttiva() ? "" : cardConsuela()) + cardChat() : "") + messaggio + avviso + blocchi + bottone;
+  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -1532,7 +1561,6 @@ function bloccoSignoreELavori(iso) {
     return `<button class="piastra sig-plate" data-signora="${z.id}" aria-label="${esc(SIG(z.id))}: cosa fa questa settimana">${avatarZona(z.id, "piccola")}<span class="sig-nome">${esc(SIG(z.id))}</span><span class="sig-sotto">${ls.length ? `${f}/${ls.length} ${quandoEtichetta(iso) === "Oggi" ? "oggi" : L.dataBreve(iso)}` : "libera"}${prob ? `<span class="led mini" role="img" aria-label="problema"></span>` : ""}</span></button>`;
   }).join("");
   return `<section class="card flat sig-blocco"><div class="sig-griglia">${chi}</div>
-    ${plateGovernante()}
     <button class="piastra p-grafite man-plate" data-vista="manutenzione">${ICONA("attrezzi")}<span class="man-testo"><b>Lavori di manutenzione</b><span>${aperti.length ? `${aperti.length} da fare` : "niente in sospeso"}</span></span>${aperti.length ? `<span class="led" role="img" aria-label="lavori da fare"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
 }
 
@@ -1812,33 +1840,33 @@ const CASA_ICO = {
   voceNo: `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>`,
 };
 function casaOssatura(tre) {
-  return `<div class="casa-testa">${OROLOGIO_HTML}<span class="casa-nome">Le Stanze di Ricci</span>${DATARIO_HTML}</div>
+  // 0.96: niente piu' fila di tre tasti in fondo. Il tasto per parlarle e' ATTACCATO alla sua cornice, in basso al
+  // centro (Michele: "il tasto per interagire con Sofia deve stare piu' vicino a lei"); subito sotto, i tasti delle
+  // sezioni; "Ascolta" (lei legge il messaggio) e' sulla targa del messaggio; la conversazione e la casella dopo.
+  return `<div class="casa-testa"><span class="casa-nome">Le Stanze di Ricci</span></div>
     <div class="casa-card${tre ? " tre" : ""}">
       ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
       ${FILM_CONS("casa-fig", tre)}
-      <span class="casa-tondi">
-        <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
-        <button type="button" class="casa-tondo" data-vista="altro" aria-label="Altro">\u22ef</button>
-      </span>
     </div>
+    <button type="button" class="casa-mic-grande casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}<span>Parla con ${esc(nomeGov())}</span></button>
+    ${NAV_HTML("oggi", true)}
     <div class="casa-testo">
       <b class="casa-sal"></b>
       <p class="casa-riga"></p>
       <p class="casa-spinta"></p>
       <div class="casa-sotto" id="consSotto"></div>
       <p class="casa-info"></p>
+      <div class="casa-testo-tasti">
+        <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
+        <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio">${CASA_ICO.onda}<span>Ascolta il messaggio</span></button>
+      </div>
     </div>
     <div class="casa-chat" id="casaChat" aria-live="polite"></div>
     <form class="casa-scrivi-riga" id="casaScrivi" autocomplete="off">
       <label class="casa-graffa" aria-label="Manda la foto del prospetto o il foglio Excel">${CASA_ICO.graffa}<input type="file" id="casaFile" accept="image/*,.xlsx,.xls,.xlsm,.ods" hidden></label>
       <input type="text" id="casaTesto" placeholder="Scrivi a ${esc(nomeGov())}…" autocomplete="off" enterkeyhint="send" maxlength="600">
       <button type="submit" class="casa-manda" aria-label="Manda">${CASA_ICO.manda}</button>
-    </form>
-    <div class="casa-barra">
-      <button type="button" class="casa-t casa-t-voce" data-casa-parla>${CASA_ICO.onda}<span>Parlami</span></button>
-      <button type="button" class="casa-t casa-t-mic" data-cons-mic aria-label="Dille qualcosa">${CASA_ICO.mic}<span>Dimmi</span></button>
-      <button type="button" class="casa-t" data-casa-giu>${CASA_ICO.giu}<span>Giornate</span></button>
-    </div>`;
+    </form>`;
 }
 // 0.84 - UNA PORTA SOLA: l'ultimo scambio con lei sta qui, sotto il filmato, coi tasti "Sì, fallo / No"
 // a portata di pollice. Prima la proposta finiva nella pagina della chat e dalla casa non si vedeva.
@@ -1962,11 +1990,9 @@ function disegnaCasa() {
     if (tre) { const c = h.querySelector(".casa-card.tre"); if (c) treOsserva(c); }
   }
   document.body.classList.add("ha-casa");
-  h.dataset.stile = stileCasa();
-  h.dataset.orologio = orologioVoluto() ? "" : "no";
+  delete h.dataset.stile;            // 0.96: le vecchie disposizioni dei tre tasti non ci sono piu'
   casaAggiorna(h);
   if (tre) treAvvia();
-  orologioAvvia();
 }
 
 // ---------------------------------------------------------------------------
@@ -2048,31 +2074,27 @@ function cardConti() {
 }
 function cardStileCasa() {
   if (!proprietario()) return "";
-  const ora = stileCasa();
-  const anteprima = (id) => `<span class="st-prev st-${id}"><i class="st-card"></i><i class="st-bar"></i><i class="st-bar"></i><i class="st-bar"></i></span>`;
   return `<section class="card come-si-vede">
     <h2>Come si vede l'app</h2>
-    <p class="muted small" style="margin:0 0 6px">Sei cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
+    <p class="muted small" style="margin:0 0 6px">Cinque cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
     <h3>1. Il colore</h3>
     <div class="col-scelte">${COLORI_APP.map(k => `<button type="button" class="col-opt" aria-pressed="${coloreAttivo() === k.id}" data-colore-app="${k.id}"><i style="background:${k.g}"></i>${esc(k.nome)}</button>`).join("")}</div>
     <span class="small muted">Cambia il colore dei tasti e dei collegamenti. Tutto il resto resta com'è.</span>
     <h3>2. Chiaro o scuro</h3>
     <div class="seg"><button type="button" aria-pressed="${S.tema !== "dark"}" data-tema="light">Chiaro</button><button type="button" aria-pressed="${S.tema === "dark"}" data-tema="dark">Scuro</button></div>
-    <h3>3. Dove stanno i tasti sotto ${esc(nomeGov())}</h3>
-    <div class="st-scelte">${STILI_CASA.map(s => `<button type="button" class="st-opt" aria-pressed="${ora === s.id}" data-casa-stile="${s.id}">${anteprima(s.id)}<b>${esc(s.nome)}</b><span class="muted small">${esc(s.come)}</span></button>`).join("")}</div>
-    <h3>4. Lo stile (sfondo, cornici, colori)</h3>
-    <div class="sf-scelte">${SFONDI_APP.map(f => `<button type="button" class="sf-opt" aria-pressed="${(SFONDI_APP.some(x => x.id === S.sfondo) ? S.sfondo : "legno") === f.id}" data-sfondo-app="${f.id}"><i class="sf-prev sf-${f.id}"></i><b>${esc(f.nome)}</b><span class="muted small">${esc(f.come)}</span></button>`).join("")}</div>
+    <h3>3. Lo stile (sfondo, cornici, caratteri)</h3>
+    <div class="sf-scelte">${SFONDI_APP.map(f => `<button type="button" class="sf-opt" aria-pressed="${(SFONDI_APP.some(x => x.id === S.sfondo) ? S.sfondo : "avorio") === f.id}" data-sfondo-app="${f.id}"><i class="sf-prev sf-${f.id}"></i><b>${esc(f.nome)}</b><span class="muted small">${esc(f.come)}</span></button>`).join("")}</div>
     <span class="small muted">Se uno stile non ti piace, toccane un altro: torna subito com'era. Vale solo per la tua parte: le signore vedono sempre la loro schermata.</span>
-    <h3>5. ${esc(nomeGov())} in 3D</h3>
+    <h3>4. ${esc(nomeGov())} in 3D</h3>
     <div class="seg"><button type="button" aria-pressed="${sofia3dVoluta()}" data-sofia3d="si">In 3D</button><button type="button" aria-pressed="${!sofia3dVoluta()}" data-sofia3d="no">Piatta</button></div>
     <span class="small muted">${ALFA_OK === "no"
       ? `Su questo telefono il 3D non si può fare: ${esc(nomeGov())} resta piatta, come prima.`
       : motoRidotto()
         ? `Il telefono è impostato per avere meno movimento: ${esc(nomeGov())} resta piatta.`
         : `In 3D esce un po' dalla cornice e, quando muovi il telefono, il salone dietro di lei si sposta. "Piatta" la rimette esattamente com'era.`}</span>
-    <h3>6. Orologio e data</h3>
+    <h3>5. Orologio e data</h3>
     <div class="seg"><button type="button" aria-pressed="${orologioVoluto()}" data-orologio-scelta="si">Sì</button><button type="button" aria-pressed="${!orologioVoluto()}" data-orologio-scelta="no">No</button></div>
-    <span class="small muted">I due medaglioni di legno e oro in alto, ai lati di "Le Stanze di Ricci": l'orologio a sinistra, la data a destra.</span>
+    <span class="small muted">L'ora grande e il giorno nella barra in cima, in ogni schermata.</span>
   </section>`;
 }
 function cardConsuela() {
@@ -3680,18 +3702,58 @@ async function governanteDaSola() {
 }
 
 // --- la card in "Oggi" ---
-function plateGovernante() {
+function sottoGovernante() {
   const r = proposteGov(G.settimanaGovernante());
   const n = r.proposte.length, rit = r.inRitardo.length;
   const buchi = mappaGov().buchi;
-  const sotto = buchi ? `${buchi} ${buchi === 1 ? "superficie scoperta nella mappa" : "superfici scoperte nella mappa"}${rit ? ` · ${rit} in ritardo` : ""}` : rit ? `${rit} in ritardo${n ? ` · ${n} consigli` : ""}` : n ? `${n} consigli per ${G.settimanaGovernante() === L.lunediDi(L.oggiISO()) ? "questa settimana" : "la settimana prossima"}` : "tutto in ordine";
+  return buchi ? `${buchi} ${buchi === 1 ? "superficie scoperta nella mappa" : "superfici scoperte nella mappa"}${rit ? ` · ${rit} in ritardo` : ""}` : rit ? `${rit} in ritardo${n ? ` · ${n} consigli` : ""}` : n ? `${n} consigli per ${G.settimanaGovernante() === L.lunediDi(L.oggiISO()) ? "questa settimana" : "la settimana prossima"}` : "tutto in ordine";
+}
+function plateGovernante() {
+  const sotto = sottoGovernante();
   return `<button class="piastra gov-plate" data-vista="governante">${DONNINA("governante", "piccola")}<span class="man-testo"><b>${esc(nomeGov())}</b><span>${esc(sotto)}</span></span>${ledGovernante() ? `<span class="led" role="img" aria-label="novità"></span>` : ""}<span class="man-freccia">›</span></button>`;
 }
 
+// 0.96 - LA SEZIONE DI SOFIA, A PARTE (Michele: "la sezione governante deve essere messa a parte").
+// In cima due riquadri (le sue domande -> la chat delle domande; i suoi consigli -> la pagina della governante),
+// sotto TUTTA la conversazione con lei come in una chat di messaggi (Michele a destra, lei a sinistra con la
+// sua fotina), coi tasti "Si', fallo / No" sull'ultima proposta; in fondo la casella, la graffetta e il microfono.
+function vistaSofia() {
+  const nome = nomeGov();
+  const dom = domandeSofia();
+  let sottoCons = ""; try { sottoCons = sottoGovernante(); } catch (e) {}
+  const conv = conversazione();
+  const ultimi = conv.slice(-60), base = conv.length - ultimi.length;
+  let iLei = -1; for (let i = conv.length - 1; i >= 0; i--) { if (conv[i].chi === "gov") { iLei = i; break; } }
+  const pensa = govScrive || (conv.length && conv[conv.length - 1].chi === "io");
+  const bolle = ultimi.map((m, j) => {
+    const i = base + j;
+    const testo = esc(String(m.testo || "").trim()).replace(/\n/g, "<br>");
+    if (m.chi === "io") return `<div class="sv-riga sv-io"><div class="cc-io">${testo}</div></div>`;
+    const tasti = (i === iLei && !pensa && Array.isArray(m.tasti) && m.tasti.length)
+      ? `<div class="cc-tasti">${m.tasti.slice(0, 6).map(t => `<button type="button" class="${t.k === "si" ? "cc-si" : t.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(i))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("")}</div>`
+      : (m.scelto ? `<div class="cc-scelto">${esc(m.scelto)}</div>` : "");
+    return `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">${testo}</div>${tasti}</div></div>`;
+  }).join("");
+  const attesa = pensa ? `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei cc-pensa">${esc(nome)} ci pensa…</div></div></div>` : "";
+  return `<section class="sofia-vista" aria-label="${esc(nome)}">
+    <div class="sv-tessere">
+      <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">?</span><b>${esc(nome)} ti chiede</b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "niente, per adesso"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
+      <button type="button" class="sv-tessera" data-vista="governante"><span class="sv-t-ico">${ICONA("stella")}</span><b>I consigli di ${esc(nome)}</b><span>${esc(sottoCons || "tutto in ordine")}</span></button>
+    </div>
+    <div class="sv-chat" id="svChat" aria-live="polite">${bolle || `<p class="sv-vuota">Qui resta tutta la vostra conversazione. Scrivile o tocca il microfono e parlale come a una persona: «sabato arrivano gli operai alle 8», «Passerella vuole l'aspirapolvere per sabato».</p>`}${attesa}</div>
+    <div class="casa-sotto" id="consSotto"></div>
+    <form class="casa-scrivi-riga sv-scrivi" id="casaScrivi" autocomplete="off">
+      <label class="casa-graffa" aria-label="Manda la foto del prospetto o il foglio Excel">${CASA_ICO.graffa}<input type="file" id="casaFile" accept="image/*,.xlsx,.xls,.xlsm,.ods" hidden></label>
+      <input type="text" id="casaTesto" data-keep placeholder="Scrivi a ${esc(nome)}…" autocomplete="off" enterkeyhint="send" maxlength="600">
+      <button type="button" class="sv-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nome)}">${CASA_ICO.mic}</button>
+      <button type="submit" class="casa-manda" aria-label="Manda">${CASA_ICO.manda}</button>
+    </form>
+  </section>`;
+}
 // --- la sezione ---
 function vistaGovernante() {
   const tab = S.govTab;
-  const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button></section>
+  const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="sofia">${ICONA("indietro")}${esc(nomeGov())}</button></section>
   <section class="pro-testa gov-testa">${testataGov()}<p class="muted small" style="margin:0">Guarda il prospetto, il calendario e il registro, e decide cosa va fatto a fondo oltre alle pulizie normali.</p>
     <div class="seg gov-seg" style="margin-top:12px;display:flex"><button aria-pressed="${tab === "consigli"}" data-gov-tab="consigli">Consigli</button><button aria-pressed="${tab === "calendario"}" data-gov-tab="calendario">Calendario</button><button aria-pressed="${tab === "tabellone"}" data-gov-tab="tabellone">Tabellone</button><button aria-pressed="${tab === "regole"}" data-gov-tab="regole">Regole</button><button aria-pressed="${tab === "mappa"}" data-gov-tab="mappa">Mappa</button></div></section>`;
   if (tab === "calendario") return testa + vistaCalendarioPulito();
@@ -4893,8 +4955,8 @@ function collega() {
   document.querySelectorAll("[data-colore-app]").forEach(b => b.onclick = () => { S.colore = b.dataset.coloreApp; try { localStorage.setItem("ricci_colore", S.colore); } catch (e) {} applicaTema(); disegna(); toast("Colore: " + ((COLORI_APP.find(k => k.id === S.colore) || {}).nome || S.colore)); });
   document.querySelectorAll("[data-tacc-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.taccTogli; try { await salvaTaccuino(taccuinoVoci().filter(x => x.id !== id)); toast("Tolto dal taccuino"); } catch (e) { erroreScrittura(e); } });
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
-  document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile2", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
-  document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in alto"); });
+  document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile3", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
+  document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
