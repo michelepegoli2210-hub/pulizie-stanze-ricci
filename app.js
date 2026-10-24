@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.96.0";
+export const VERSIONE = "0.96.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1649,7 +1649,12 @@ function testoPianoSettimana(z, lun) {
 function regoleGov() { return G.regoleAttive(S.gov); }
 // 0.41: la governante ha un nome. Michele glielo cambia in Governante → Regole.
 const NOMI_GOV = ["Sofia", "Sveva", "Lesia", "Daunia", "Perla", "Consuela", "Rosa", "Stella"];
-function nomeGov() { const n = (S.gov && String(S.gov.nome || "").trim()) || ""; return n || "Consuela"; }
+function nomeGov() {
+  const n = (S.gov && String(S.gov.nome || "").trim()) || "";
+  // 0.96: scritto tutto maiuscolo ("SOFIA") si mostra come un nome normale ("Sofia"), come gli altri tasti
+  if (n && n === n.toUpperCase() && n !== n.toLowerCase()) return n.split(/(\s+)/).map(w => w.charAt(0) + w.slice(1).toLowerCase()).join("");
+  return n || "Consuela";
+}
 // Il nome di chi è entrato, per il saluto ("Buongiorno Michele!")
 function nomeMio() { const n = String(S.utente?.nome || "").trim().split(/\s+/)[0]; const v = n && !/^prova/i.test(n) ? n : "Michele"; return v.charAt(0).toUpperCase() + v.slice(1); }
 // Una spinta al giorno, senza IA: la stessa per tutta la giornata
@@ -1913,6 +1918,12 @@ function casaAggiorna(h) {
   const mic = q(".casa-t-mic");
   if (mic) mic.setAttribute("aria-label", "Dillo a " + nomeGov());
   casaChatAggiorna(h);
+  const nb = q('.nav-tondi [data-vista="sofia"] .nav-ico');
+  if (nb) {
+    const n = domandeSofia(); let c = nb.querySelector(".nav-conta");
+    if (n) { if (!c) { c = document.createElement("i"); c.className = "nav-conta"; nb.appendChild(c); } const t = n > 99 ? "99+" : String(n); if (c.textContent !== t) c.textContent = t; }
+    else if (c) c.remove();
+  }
   const bv = q(".casa-voce"), su = voceAccesa();
   if (bv) {
     bv.innerHTML = su ? CASA_ICO.voceSi : CASA_ICO.voceNo;
