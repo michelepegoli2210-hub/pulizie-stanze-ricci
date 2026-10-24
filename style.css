@@ -1995,3 +1995,30 @@ body.lusso[data-legno="intarsio"] .day[aria-pressed="true"]{background-image:rad
 /* i fogli che salgono dal basso: in cima la fila di pietre */
 body.lusso[data-legno="intarsio"] .sheet .panel:not(.pieno){background:var(--fila-z) 6px 2px/21px 8px repeat-x,var(--pave) 13px 3px/7px 6px repeat-x,radial-gradient(120% 50% at 12% 0%,rgba(255,232,244,.5),rgba(255,255,255,0) 55%),linear-gradient(170deg,#FFFEFB,#F5EFE5 50%,#FBF8F2)}
 body.lusso[data-legno="intarsio"] .chat-card{overflow:visible}
+
+/* ==========================================================================
+   0.93 - "LEGNO D'ORO", SENZA GIOIELLI (Michele: "non mi piace, togli tutti i gioielli e rimani il legno lussuoso").
+   Di serie. Lo sfondo e' solo il legno marezzato della sua foto (il pezzo libero da ornamenti, ingrandito due volte
+   e aperto "a libro" come le impiallacciature di lusso: legno-oro-parete.webp, sul computer -largo con 4 pannelli),
+   incorniciato da radica, fili d'oro e una fascia di legno di traverso. Niente pietre, niente diamanti, niente madreperla:
+   schede color avorio col filo d'oro e tasti d'oro come negli altri stili di legno; testata di radica col filo d'oro;
+   barra delle schede in legno d'oro; le parti sulla parete su una targa di radica; Sofia in una cornice di radica e oro
+   (cornice-legno.webp). L'intarsio coi gioielli resta nella scelta dello stile.
+   ========================================================================== */
+body.lusso[data-legno="legno"]{--ombra-parete:0 1px 3px rgba(0,0,0,.9),0 0 16px rgba(0,0,0,.6);background:#24100a}
+body.lusso[data-legno="legno"] .laguna{background:url(legno-oro-parete.webp) center center/cover no-repeat,#24100a}
+@media (min-aspect-ratio:1/1){body.lusso[data-legno="legno"] .laguna{background-image:url(legno-oro-parete-largo.webp)}}
+body.lusso[data-legno="legno"] .laguna::before{content:none}
+body.lusso[data-legno="legno"] .laguna .cornice{display:none}
+body.lusso[data-legno="legno"] .laguna::after{background:radial-gradient(120% 90% at 50% 45%,rgba(0,0,0,0) 55%,rgba(10,4,2,.32) 100%)}
+body.lusso[data-legno="legno"] header{background:linear-gradient(180deg,rgba(255,220,160,.06),rgba(0,0,0,.30)),url(radica.webp) center/cover;border-bottom:0;box-shadow:0 2px 0 #C9A55A,0 3px 0 rgba(0,0,0,.5),0 10px 22px -10px rgba(0,0,0,.8)}
+body.lusso[data-legno="legno"] .tabs{background:linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,30,5,.16)),url(legno-oro.webp) center/cover;border:1.5px solid #C9A55A;box-shadow:inset 0 0 0 1px rgba(80,50,10,.45),inset 0 1px 0 rgba(255,245,215,.5),0 2px 0 rgba(60,32,8,.9),0 14px 24px -12px rgba(0,0,0,.8)}
+body.lusso[data-legno="legno"] .tabs button{color:#2B1606;text-shadow:0 1px 0 rgba(255,240,205,.75)}
+body.lusso[data-legno="legno"] .tabs button[aria-pressed="true"]{background:linear-gradient(135deg,#FFF8E6,#EEDFB8 40%,#FBF1D8 55%,#D8BF86);color:#2A1A06;text-shadow:0 1px 0 rgba(255,255,255,.7);box-shadow:inset 0 0 0 1.5px #C9A55A,0 2px 6px rgba(0,0,0,.45)}
+body.lusso[data-legno="legno"] .card.flat{background:linear-gradient(180deg,rgba(30,12,5,.58),rgba(20,8,3,.66)),url(radica.webp) center/cover;border:1px solid rgba(214,175,92,.7);border-radius:14px;padding:10px 12px;box-shadow:inset 0 1px 0 rgba(255,225,170,.12),0 10px 22px -12px rgba(0,0,0,.85)}
+body.lusso[data-legno="legno"] .casa-card{border:0;border-radius:8px;background:#17120e;box-shadow:0 4px 10px rgba(0,0,0,.45),0 34px 60px -24px rgba(0,0,0,.9)}
+body.lusso[data-legno="legno"] .casa-card::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:url(cornice-legno.webp) center/100% 100% no-repeat}
+body.lusso[data-legno="legno"] .casa-tondi{z-index:3;top:6.5%;right:9%}
+body.lusso[data-legno="legno"] .casa-nome{background:linear-gradient(180deg,rgba(30,12,5,.5),rgba(20,8,3,.6)),url(radica.webp) center/cover;padding:5px 16px;border-radius:999px;border:1px solid rgba(214,175,92,.75);box-shadow:0 6px 14px -6px rgba(0,0,0,.8)}
+.sf-prev.sf-legno{background:url(legno-oro-parete.webp) center 28%/cover no-repeat,#24100a}
+body.lusso[data-legno="legno"] .casa-testo::before{background:radial-gradient(ellipse at 50% 50%,rgba(14,5,2,.78) 0%,rgba(14,5,2,.52) 50%,rgba(14,5,2,0) 76%)}

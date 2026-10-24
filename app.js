@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.92.0";
+export const VERSIONE = "0.93.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -654,7 +654,7 @@ const S = {
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
   caricati: { pulizie: false, soggiorni: false, ruoli: false, manutenzione: false, gov: false },
   foglio: null, online: navigator.onLine, erroreAccesso: "", attesa: false,
-  stop: [], tema: localStorage.getItem("ricci_tema") || "light", colore: (() => { try { let c = localStorage.getItem("ricci_colore") || ""; if (!localStorage.getItem("ricci_v88")) { localStorage.setItem("ricci_v88", "1"); if (c === "blu") { c = ""; localStorage.removeItem("ricci_colore"); } } return c; } catch (e) { return ""; } })(), sfondo: (() => { try { return localStorage.getItem("ricci_stile") || "intarsio"; } catch (e) { return "intarsio"; } })(),
+  stop: [], tema: localStorage.getItem("ricci_tema") || "light", colore: (() => { try { let c = localStorage.getItem("ricci_colore") || ""; if (!localStorage.getItem("ricci_v88")) { localStorage.setItem("ricci_v88", "1"); if (c === "blu") { c = ""; localStorage.removeItem("ricci_colore"); } } return c; } catch (e) { return ""; } })(), sfondo: (() => { try { return localStorage.getItem("ricci_stile2") || "legno"; } catch (e) { return "legno"; } })(),
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -751,7 +751,7 @@ function applicaTema() {
   const parete = document.querySelector(".laguna");
   if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
   const barra = document.querySelector('meta[name="theme-color"]');
-  if (barra) barra.setAttribute("content", lusso ? ({ mogano: "#240C07", noce: "#22140A", ebano: "#0E0805", intarsio: "#2A1206" })[legnoScelto()] : S.tema === "dark" ? "#000000" : "#ffffff");
+  if (barra) barra.setAttribute("content", lusso ? ({ mogano: "#240C07", noce: "#22140A", ebano: "#0E0805", intarsio: "#2A1206", legno: "#2A1206" })[legnoScelto()] : S.tema === "dark" ? "#000000" : "#ffffff");
   if (S.pronto && eraLusso !== lusso) { eraLusso = lusso; try { localStorage.setItem("ricci_era_lusso", lusso ? "1" : "0"); } catch (e) {} }
 }
 // 0.86 - i colori che Michele puo' scegliere da solo (Altro -> Come si vede l'app): cambiano tasti e collegamenti
@@ -760,14 +760,17 @@ function applicaTema() {
 // 0.90 - Michele manda la foto di un pannello di legno d'oro marezzato con cornici d'oro, madreperla, lapislazzuli,
 // malachite e diamanti: "questo e' il legno che voglio, questo e' lo sfondo; ridisegna tutta l'app con questo stile,
 // pero' dammi sempre la possibilita' di tornare indietro". E' lo stile di serie; gli altri restano qui.
+// 0.93 - Michele: "non mi piace, togli tutti i gioielli e rimani il legno lussuoso": di serie il legno della sua foto
+// senza pietre (Legno d'oro). L'intarsio coi gioielli resta qui sotto, per tornare indietro.
 const SFONDI_APP = [
-  { id: "intarsio", nome: "Intarsio prezioso", come: "Il tuo pannello: legno d'oro, madreperla, lapislazzuli e diamanti" },
+  { id: "legno", nome: "Legno d'oro", come: "Il legno marezzato della tua foto, radica e fili d'oro, senza pietre" },
+  { id: "intarsio", nome: "Intarsio con gioielli", come: "Il tuo pannello con oro, madreperla, lapislazzuli e diamanti" },
   { id: "lusso", nome: "Mogano marezzato", come: "Boiserie di mogano lucido, filetti e cornici d'oro" },
   { id: "noce", nome: "Noce marezzato", come: "Noce dorato e lucido, con le cornici d'oro" },
   { id: "ebano", nome: "Ebano marezzato", come: "Legno scurissimo e oro" },
   { id: "laguna", nome: "Laguna", come: "Il cielo e l'acqua di Lesina, chiaro" },
 ];
-function legnoScelto() { return S.sfondo === "noce" || S.sfondo === "ebano" || S.sfondo === "intarsio" ? S.sfondo : "mogano"; }
+function legnoScelto() { return ["noce", "ebano", "intarsio", "legno"].includes(S.sfondo) ? S.sfondo : "mogano"; }
 const COLORI_APP = [
   { id: "blu", nome: "Blu", g: "linear-gradient(135deg,#5A8AD6,#143880 45%,#2A56A6)" },
   { id: "oro", nome: "Oro", g: "linear-gradient(135deg,#D9B36A,#6E4A12 45%,#A87A2C)" },
@@ -1912,7 +1915,7 @@ function cardStileCasa() {
     <h3>3. Dove stanno i tasti sotto ${esc(nomeGov())}</h3>
     <div class="st-scelte">${STILI_CASA.map(s => `<button type="button" class="st-opt" aria-pressed="${ora === s.id}" data-casa-stile="${s.id}">${anteprima(s.id)}<b>${esc(s.nome)}</b><span class="muted small">${esc(s.come)}</span></button>`).join("")}</div>
     <h3>4. Lo stile (sfondo, cornici, colori)</h3>
-    <div class="sf-scelte">${SFONDI_APP.map(f => `<button type="button" class="sf-opt" aria-pressed="${(SFONDI_APP.some(x => x.id === S.sfondo) ? S.sfondo : "intarsio") === f.id}" data-sfondo-app="${f.id}"><i class="sf-prev sf-${f.id}"></i><b>${esc(f.nome)}</b><span class="muted small">${esc(f.come)}</span></button>`).join("")}</div>
+    <div class="sf-scelte">${SFONDI_APP.map(f => `<button type="button" class="sf-opt" aria-pressed="${(SFONDI_APP.some(x => x.id === S.sfondo) ? S.sfondo : "legno") === f.id}" data-sfondo-app="${f.id}"><i class="sf-prev sf-${f.id}"></i><b>${esc(f.nome)}</b><span class="muted small">${esc(f.come)}</span></button>`).join("")}</div>
     <span class="small muted">Se uno stile non ti piace, toccane un altro: torna subito com'era. Vale solo per la tua parte: le signore vedono sempre la loro schermata.</span>
   </section>`;
 }
@@ -4734,7 +4737,7 @@ function collega() {
   document.querySelectorAll("[data-colore-app]").forEach(b => b.onclick = () => { S.colore = b.dataset.coloreApp; try { localStorage.setItem("ricci_colore", S.colore); } catch (e) {} applicaTema(); disegna(); toast("Colore: " + ((COLORI_APP.find(k => k.id === S.colore) || {}).nome || S.colore)); });
   document.querySelectorAll("[data-tacc-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.taccTogli; try { await salvaTaccuino(taccuinoVoci().filter(x => x.id !== id)); toast("Tolto dal taccuino"); } catch (e) { erroreScrittura(e); } });
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
-  document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
+  document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile2", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
   document.querySelectorAll("[data-promemoria]").forEach(i => i.onchange = () => salvaPromemoria(i.dataset.promemoria, i.value));
