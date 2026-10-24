@@ -2628,3 +2628,16 @@ body.premium .chip,body.semplice .chip{text-transform:none;letter-spacing:0;font
 :root[data-theme="dark"] body.premium{--prob:#D8B4FE;--prob-bg:#2E1A44;--warn:#FCA5A5;--warn-bg:#3B1515}
 body.premium .come-si-vede h3{font:800 17px/1.25 var(--f-display);text-transform:none;letter-spacing:0;color:var(--fg);margin:18px 0 8px}
 body.premium .card h3{font-size:19px}
+/* ==========================================================================
+   0.98 · SOFIA LEGGE LA CHAT DI PAPÀ: il tasto con la sua faccia, la striscia "Letto da Sofia", i dubbi
+   ========================================================================== */
+.big.dt-sofia{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;background:#1C1917;border:0;color:#FFFFFF;font:800 17px var(--f-display);letter-spacing:0;text-transform:none;border-radius:16px;min-height:60px;text-shadow:none;box-shadow:0 8px 18px -10px rgba(28,25,23,.6)}
+.big.dt-sofia::before{display:none}
+.dt-sofia-foto,.dt-fonte-foto{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:#E9DCC6 url(cons-poster.webp) 50% 16%/185% auto no-repeat;box-shadow:0 0 0 2px #E7CF95}
+.dt-fonte.sofia{background:#FBF7EE;border-color:#E7D9B8}
+.dt-fonte.sofia .btnsm{margin-top:8px}
+.dt-dubbi{margin-top:10px;padding:10px 14px;border-radius:14px;background:#FFFBEB;border:1px solid #FCD34D;color:#78350F;font:600 14.5px/1.4 var(--f-body)}
+.dt-dubbi ul{margin:6px 0 0;padding-left:20px}
+.dt-dubbi li{margin:3px 0}
+:root[data-theme="dark"] .dt-fonte.sofia{background:#2A2418;border-color:#5A4A2A}
+:root[data-theme="dark"] .dt-dubbi{background:#2A2210;border-color:#7A5A12;color:#FCD34D}

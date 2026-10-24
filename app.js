@@ -7,7 +7,7 @@ import { ZONE, CAMERE, CAMERE_TOLTE, REGOLE_BASE, TIPI_PULIZIA, TIPI_OSPITE, RIF
 import * as L from "./logica.js";
 import { apriDb } from "./db.js";
 import { daSheetJS, leggiProspetto } from "./excel.js";
-import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA, testoDaWhatsApp } from "./dettatura.js";
+import { capisciProspetto, copiaSettimanaScorsa, settimanaBaseDefault, richiestaPerIA, testoDaWhatsApp, messaggiWhatsApp, haCameraNelTesto, completaRiga, aliasPerCamera } from "./dettatura.js";
 import * as G from "./governante.js";
 import * as CH from "./chat.js";
 import * as PAROLE from "./parole.js";
@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.97.0";
+export const VERSIONE = "0.98.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1178,6 +1178,7 @@ function disegna() {
   avviaCronometri();
   const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
   if (condivisoAtteso) guardaCondiviso();
+  if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
 }
 
 function disegnaTestata() {
@@ -2874,7 +2875,12 @@ function fotografiaIA() {
   prova("occupate", () => {
     const dentro = soggiorniLista().filter(x => x.inizio <= oggi && x.fine > oggi).map(x => camera(x.camera).nome);
     const parte = soggiorniLista().filter(x => x.fine === oggi).map(x => camera(x.camera).nome);
-    return `CAMERE OCCUPATE OGGI: ${dentro.length ? dentro.join(", ") : "nessuna"}${parte.length ? ` · partono oggi: ${parte.join(", ")}` : ""}. (I nomi degli ospiti non te li mando mai.)`;
+    return `CAMERE OCCUPATE OGGI: ${dentro.length ? dentro.join(", ") : "nessuna"}${parte.length ? ` · partono oggi: ${parte.join(", ")}` : ""}.`;
+  });
+  // 0.98 - il prospetto vero, camera per camera: senza, Sofia non poteva capire "Manna parte giovedì" (i nomi in codice)
+  prova("prospettoCodici", () => {
+    const da = L.aggiungiGiorni(oggi, -7), a = L.aggiungiGiorni(oggi, 31);
+    return `IL PROSPETTO CAMERA PER CAMERA (soggiorni dal ${L.dataMedia(da)} al ${L.dataMedia(a)}). Gli ospiti sono CODICI tra parentesi quadre: [O3] è sempre la stessa persona; quando ne parli o lo metti nelle righe del prospetto riscrivilo identico, l'app lo trasforma nel nome:\n${prospettoInCodici(da, a)}`;
   });
   prova("settimanaPiano", () => {
     const lun = L.lunediDi(oggi), righe = [];
@@ -3295,7 +3301,7 @@ async function chiediIA(dom) {
   // 0.86: Argon passa dalla SUA chiave (progetto col credito), se c'e'; il ripiego usa la chiave normale, gratuita
   const cg = grande && c.chiaveArgon ? { ...c, chiave: c.chiaveArgon } : c;
   try {
-    const r = await IA.chiedi({ ...dom, conf: cg, secondi: grande ? 45 : 40 });
+    const r = await IA.chiedi({ ...dom, conf: cg, secondi: Math.max(Number(dom.secondi) || 0, grande ? 45 : 40) });
     if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
     return { r, ripiego: false };
   } catch (e) {
@@ -3314,9 +3320,11 @@ async function chiediIA(dom) {
   }
 }
 async function rispostaIA(testo, conv, immagine) {
-  const sis = sistemaIA(), storia = conv.slice(0, -1);
+  const sis = sistemaIA(), storia = conv.slice(0, -1).map(m => (m && typeof m.testo === "string" ? { ...m, testo: aCodici(m.testo) } : m));
   let r, ripiego = false;
-  ({ r, ripiego } = await chiediIA({ sistema: sis, storia, testo, immagine }));
+  ({ r, ripiego } = await chiediIA({ sistema: sis, storia, testo: aCodici(testo), immagine }));
+  // 0.98: i codici [O3] tornano nomi (nelle parole e nelle azioni) prima di tutto il resto
+  r = { ...r, risposta: daCodici(r.risposta), consiglio: daCodici(r.consiglio), saluto: daCodici(r.saluto), azione: daCodiciProfondo(r.azione || null), azioni: daCodiciProfondo(Array.isArray(r.azioni) ? r.azioni : []) };
   try { window._ultimaIA = { quando: new Date().toISOString(), modello: r.modello, azione: r.azione || null, azioni: r.azioni || [], grezzo: String(r.grezzo || "").slice(0, 4000) }; } catch (e) {}   // per capire cosa ha risposto davvero (si legge dalla console)
   IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
@@ -3374,7 +3382,7 @@ async function chiediConsiglioDelGiorno() {
 "saluto": una riga sola che apre la giornata. Comincia con ${saluto()} e il mio nome (${nomeMio()}). Se c'è qualcosa di VERAMENTE meritato nella fotografia (tutte le camere chiuse, un controllo andato bene, una settimana in ordine) dillo in mezza frase, con il fatto preciso. Se non c'è niente di meritato NON inventare complimenti: metti invece una spinta corta e pratica per oggi. Massimo 18 parole.
 "risposta": in UNA frase corta com'è la situazione adesso, la cosa più importante, col numero.
 "consiglio": la cosa da fare per prima.` });
-    const c = { giorno: L.oggiISO(), saluto: String(r.saluto || "").slice(0, 160), testo: String(r.risposta || "").slice(0, 220), consiglio: String(r.consiglio || "").slice(0, 220), ora: new Date().toISOString() };
+    const c = { giorno: L.oggiISO(), saluto: daCodici(String(r.saluto || "")).slice(0, 160), testo: daCodici(String(r.risposta || "")).slice(0, 220), consiglio: daCodici(String(r.consiglio || "")).slice(0, 220), ora: new Date().toISOString() };
     if (c.testo) {
       try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); if (affari) localStorage.setItem("ricci_consiglio_affari", L.oggiISO()); } catch (e) {}
       disegna();
@@ -3438,11 +3446,14 @@ function cardIA() {
         ? "La voce vera di Google: sembra una persona. Costa meno di un centesimo al minuto parlato — con il tuo uso, circa 1,50 € al mese in tutto. Serve internet e la stessa chiave di sopra. Se non parte, parla il telefono."
         : vc.attiva ? "La voce che c'è già nel telefono: gratis, funziona anche senza internet, ma si sente che è un robot." : "Adesso la governante scrive e basta."}</span></div>
     <details class="gov-dett" style="margin-top:10px"><summary class="small">Le cose da sapere, in chiaro</summary>
-      <p class="muted small" style="margin:6px 0 0"><b>I nomi degli ospiti non escono mai.</b> Le mando camere, lavori, giorni, soldi e ritardi: mai un nome di chi dorme qui. C'è una prova automatica che lo controlla a ogni versione.</p>
-      <p class="muted small" style="margin:6px 0 0"><b>La chiave resta su questo telefono.</b> Non va nel database: le signore non la vedono e non la possono spendere. Se cambi telefono la devi rimettere.</p>
+      <p class="muted small" style="margin:6px 0 0"><b>I nomi degli ospiti viaggiano in codice.</b> Dalla 0.98 le mando il prospetto camera per camera (se no non capisce chi parte e chi resta), ma i nomi che l'app conosce diventano codici come [O3] e tornano nomi solo qui. Quando le fai leggere i messaggi di papà, i nomi NUOVI li deve leggere per forza: sono il prospetto. Telefoni ed email li tolgo prima.</p>
+      <p class="muted small" style="margin:6px 0 0"><b>La chiave resta su questo telefono.</b> Le signore non la vedono e non la possono spendere. Se vuoi, col passo 7 la metti anche sui telefoni degli altri proprietari (sta nella parte dei dati che leggono solo loro).</p>
       <p class="muted small" style="margin:6px 0 0"><b>Se cade, non si rompe niente.</b> Senza internet o con la chiave scaduta torna da sola alle parole del catalogo. Lo vedi perché sparisce il bollino IA.</p>
       <p class="muted small" style="margin:6px 0 0"><b>Gratis o a pagamento.</b> In Italia, anche col piano gratuito, Google dice di trattare i dati come quelli a pagamento (non li usa per imparare). Però le loro condizioni dicono che un'app messa a disposizione di persone in Europa deve stare sul piano a pagamento. Per questo conviene mettere la carta: si prepaga 5 € e durano mesi.</p>
       <p class="muted small" style="margin:6px 0 0"><b>Due bufale da evitare.</b> Il credito da 300 $ di Google Cloud da marzo 2026 non vale più per Gemini. E i siti che regalano "chiavi Gemini gratis" usano la chiave di qualcun altro, leggono tutto quello che scrivi e smettono di funzionare dopo pochi giorni: non usarli.</p></details>
+    ${c.chiave && S.db && S.db.modalita === "firebase" ? `<div class="ia-passo"><b>7.</b> La stessa chiave sugli altri telefoni dei proprietari
+      <div class="ia-riga"><button type="button" class="btnsm" data-ia-condividi>Metti la chiave anche sui telefoni</button><button type="button" class="btnsm ghost" data-ia-scondividi>Togli</button></div>
+      <span class="small muted">Così sul tuo telefono (e su quelli di papà e mamma) ${esc(nomeGov())} è intelligente senza rifare niente: la chiave arriva da sola quando apri l'app. Sta in una parte dei dati che possono leggere SOLO i proprietari: le signore non la vedono mai.</span></div>` : ""}
     ${c.chiave ? `<button class="nonna-link" style="margin:8px 0 0" data-ia-cancella>Cancella la chiave da questo telefono</button>` : ""}</section>`;
 }
 function collegaIA() {
@@ -3494,6 +3505,8 @@ function collegaIA() {
     IA.salvaConf({ attiva: su, chiave: (document.getElementById("iaChiave")?.value || "").trim() });
     disegna(); toast(su ? "Governante intelligente accesa" : "Spenta: torna alle parole del catalogo");
   });
+  document.querySelectorAll("[data-ia-condividi]").forEach(b => b.onclick = () => mettiChiaveSuiTelefoni());
+  document.querySelectorAll("[data-ia-scondividi]").forEach(b => b.onclick = () => togliChiaveDaiTelefoni());
   document.querySelectorAll("[data-ia-cancella]").forEach(b => b.onclick = () => { IA.cancellaConf(); provaIA = null; try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} disegna(); toast("Chiave cancellata da questo telefono"); });
   document.querySelectorAll("[data-ia-rimodello]").forEach(b => b.onclick = () => { IA.salvaConf({ modello: "" }); provaIA = null; disegna(); toast("Cerco di nuovo il modello: tocca «Prova»"); });
   document.querySelectorAll("[data-ia-prova]").forEach(b => b.onclick = async () => {
@@ -4658,6 +4671,7 @@ function disegnaFoglio() {
   else if (f.tipo === "nuovoLavoro") html = foglioNuovoLavoro(f);
   else if (f.tipo === "dettatura") html = foglioDettatura(f);
   else if (f.tipo === "inserisci") html = foglioInserisci(f);
+  else if (f.tipo === "chatPapa") html = foglioChatPapa(f);
   else if (f.tipo === "manutenzione") html = foglioManutenzione(f);
   else if (f.tipo === "nuovoMan") html = foglioNuovoLavoroMan(f);
   else if (f.tipo === "luogoPulito") html = foglioLuogoPulito(f);
@@ -4825,6 +4839,7 @@ function analizzaDettatura(f) {
   const ctx = { oggi: d.rif || L.oggiISO(), base: d.base, soggiorni: soggiorniLista() };
   let ris;
   if (f.copia) ris = { righe: copiaSettimanaScorsa(ctx), nonCapito: [], base: d.base };
+  else if (d.ia && Array.isArray(d.ia.righe)) ris = { righe: d.ia.righe.map(r => ({ ...r, motivi: [...(r.motivi || [])], assunti: [...(r.assunti || [])] })), nonCapito: [], base: d.base, sofia: true };   // 0.98: letto da Sofia
   else ris = capisciProspetto(d.testo, ctx);
   for (const r of ris.righe) {
     if (d.scelte[r.firma] != null) r.scelto = d.scelte[r.firma];
@@ -4845,7 +4860,7 @@ function testoAzioneRiga(r) {
 }
 function anteprimaDettatura(ris, f) {
   const righe = ris.righe, scelte = righe.filter(r => r.scelto && r.azione !== "niente").length;
-  if (!righe.length && !ris.nonCapito.length) return `<p class="muted" style="margin:8px 0 0">${f.copia ? "Non c'è niente da copiare: le camere della settimana scelta sono già segnate (o la settimana scorsa erano vuote)." : "Appena scrivi, qui ti faccio vedere cosa ho capito."}</p>`;
+  if (!righe.length && !ris.nonCapito.length) return `<p class="muted" style="margin:8px 0 0">${f.copia ? "Non c'è niente da copiare: le camere della settimana scelta sono già segnate (o la settimana scorsa erano vuote)." : ris.sofia ? "Nei messaggi non ho trovato soggiorni da cambiare." : "Appena scrivi, qui ti faccio vedere cosa ho capito."}</p>`;
   const riga = (r) => {
     const cls = r.azione === "niente" ? "off" : (r.dubbio || (r.motivi && r.motivi.length) ? "warn" : r.azione === "togli" ? "ko" : "ok");
     const persone = r.azione === "togli" || r.azione === "niente" ? "" : ` · ${r.persone} ${r.persone === 1 ? "persona" : "persone"}`;
@@ -4858,9 +4873,9 @@ function anteprimaDettatura(ris, f) {
       ${(r.motivi || []).map(m => `<br><span style="color:var(--todo);font-weight:700">? ${esc(m)}</span>`).join("")}
       ${confl}
       ${r.nota ? `<br><span class="muted">📝 per le signore: ${esc(r.nota)}</span>` : ""}${r.notaPrivata ? `<br><span class="muted">🔒 ${esc(r.notaPrivata)}</span>` : ""}
-      ${f.copia ? "" : `<br><span class="muted small">hai scritto: «${esc(r.testo)}»</span>`}</span></label>`;
+      ${f.copia || !r.testo ? "" : `<br><span class="muted small">${r.daSofia ? "dai messaggi" : "hai scritto"}: «${esc(r.testo)}»</span>`}</span></label>`;
   };
-  return `<div class="floorlabel" style="margin-top:12px">${f.copia ? "Ti propongo" : "Ho capito così"} <span>${scelte} da salvare</span></div>
+  return `<div class="floorlabel" style="margin-top:12px">${f.copia ? "Ti propongo" : ris.sofia ? "Il prospetto secondo " + esc(nomeGov()) : "Ho capito così"} <span>${scelte} da salvare</span></div>
     <div class="rows">${righe.map(riga).join("")}</div>
     ${ris.nonCapito.length ? `<div class="avviso" style="margin-top:10px">Non ho capito queste righe (manca il nome della camera?):<br>${ris.nonCapito.map(t => `«${esc(t)}»`).join("<br>")}</div>` : ""}`;
 }
@@ -4870,8 +4885,9 @@ function foglioDettatura(f) {
   const etich = (b) => `${L.giornoDelMese(b)}–${L.giornoDelMese(L.aggiungiGiorni(b, 6))} ${L.MESI[L.daISO(L.aggiungiGiorni(b, 6)).getUTCMonth()].slice(0, 3)}`;
   const chip = (b, nome) => `<button type="button" aria-pressed="${d.base === b}" data-dett-base="${b}">${nome}<small>${etich(b)}</small></button>`;
   const ris = analizzaDettatura(f);
-  const scelte = ris.righe.filter(r => r.scelto && r.azione !== "niente").length;
-  const leggo = !!(d.fonte && d.fonte.leggo);
+  const ds = daSalvareDettatura(ris, d);
+  const leggo = !!(d.fonte && d.fonte.leggo) || !!(d.ia && d.ia.leggo);
+  const tastoSofia = !f.copia && iaAccesa() && (!d.ia || d.ia.errore) && !leggo ? `<button type="button" class="big dt-sofia" data-dett-sofia><span class="dt-sofia-foto" aria-hidden="true"></span><span>Fammelo capire da ${esc(nomeGov())}</span></button>` : "";
   const parla = ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) ? `<button type="button" class="btnsm ghost" data-dett-parla>🎤 Parla</button>` : "";
   // 0.97: in cima da dove arriva (WhatsApp, foto); i tasti grandi Incolla da WhatsApp e Foto; niente piu' "copia la richiesta per un'IA esterna"
   return `<h3>${f.copia ? "Come la settimana scorsa" : "Il prospetto"}</h3>
@@ -4885,8 +4901,10 @@ Alba: Fondamenta tutto novembre
 Michele: libera
 Nicole: Castaldi parte giovedì">${esc(d.testo)}</textarea></div>
     <div class="dt-azioni">${parla}<button type="button" class="btnsm ghost" data-dett-pulisci>Pulisci</button></div>`}
+    ${tastoSofia}${f.copia ? "" : partiSofiaHtml(d, "testa")}
     <div id="dtAnteprima">${leggo ? "" : anteprimaDettatura(ris, f)}</div>
-    <button class="big main" data-dett-salva ${scelte && !S.attesa && !leggo ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : `Salva nel prospetto (${scelte})`}</button>
+    ${f.copia ? "" : partiSofiaHtml(d, "coda")}
+    <button class="big main" data-dett-salva ${ds.tot && !S.attesa && !leggo ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : ds.testo}</button>
     ${f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Manna, 2 persone, da lunedì a venerdì
 Aurora: Palazzo dal 12 al 16 ottobre
 Alba: Fondamenta tutto novembre
@@ -4898,12 +4916,19 @@ Fenicotteri: come la settimana scorsa
 Via Zara piano terra: D'Agostino, 3 operai, tutto il mese
 Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ultimo ospite di quella camera. Controlla sempre l'anteprima.</div></details>`}`;
 }
+// 0.98: quante cose si salvano col tasto: le righe del prospetto, le indicazioni per le signore e le abitudini di papa'
+function daSalvareDettatura(ris, d) {
+  const righe = ris.righe.filter(r => r.scelto && r.azione !== "niente").length;
+  const ind = d.ia && d.ia.indicazioni ? d.ia.indicazioni.filter(v => v.scelta).length : 0;
+  const ab = d.ia && d.ia.abitudini ? d.ia.abitudini.filter(v => v.scelta).length : 0;
+  return { righe, ind, ab, tot: righe + ind + ab, testo: ind || ab ? `Salva (${righe + ind + ab})` : `Salva nel prospetto (${righe})` };
+}
 function aggiornaAnteprimaDettatura(f) {
   const box = $("#dtAnteprima"); if (!box) return;
   const ris = analizzaDettatura(f);
   box.innerHTML = anteprimaDettatura(ris, f);
-  const scelte = ris.righe.filter(r => r.scelto && r.azione !== "niente").length;
-  const b = $("[data-dett-salva]"); if (b) { b.textContent = `Salva nel prospetto (${scelte})`; b.disabled = !scelte; b.style.opacity = scelte ? "" : ".5"; }
+  const ds = daSalvareDettatura(ris, statoDettatura());
+  const b = $("[data-dett-salva]"); if (b) { b.textContent = ds.testo; b.disabled = !ds.tot; b.style.opacity = ds.tot ? "" : ".5"; }
   collegaAnteprimaDettatura(f);
 }
 function collegaAnteprimaDettatura(f) {
@@ -4954,16 +4979,21 @@ async function salvaDettatura(f) {
   if (S.attesa) return;
   const ris = analizzaDettatura(f);
   const righe = ris.righe.filter(r => r.scelto && r.azione !== "niente");
-  if (!righe.length) { toast("Non c'è niente da salvare."); return; }
+  const d0 = statoDettatura();
+  const ind = d0.ia && d0.ia.indicazioni ? d0.ia.indicazioni.filter(v => v.scelta) : [];
+  const ab = d0.ia && d0.ia.abitudini ? d0.ia.abitudini.filter(v => v.scelta) : [];
+  if (!righe.length && !ind.length && !ab.length) { toast("Non c'è niente da salvare."); return; }
   S.attesa = true; disegnaFoglio();
   try {
-    const { ops, n } = opsRigheProspetto(righe);
-    await S.db.scrivi(ops);
+    let n = 0;
+    if (righe.length) { const x = opsRigheProspetto(righe); await S.db.scrivi(x.ops); n = x.n; }
+    const ni = await salvaIndicazioni(ind);
+    let na = 0; for (const v of ab) { try { if (await ricordaNelTaccuino(v.testo, "sofia")) na++; } catch (e) { console.warn("abitudine", e); } }
     const base = ris.base || statoDettatura().base;
     S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
     S.attesa = false; chiudiFoglio();
     S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
-    toast(`Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}. Le pulizie si aggiornano da sole.`);
+    toast([n ? `Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} alle signore` : "", na ? `${na} ${na === 1 ? "cosa" : "cose"} nel taccuino` : ""].filter(Boolean).join(" · ") + ". Le pulizie si aggiornano da sole.");
   } catch (e) { S.attesa = false; disegnaFoglio(); erroreScrittura(e); }
 }
 // Le scritture sul prospetto per le righe capite (dalla scheda "Dimmi il prospetto" o da quello che dice Sofia)
@@ -5021,7 +5051,7 @@ async function usaCondiviso({ testo, files }) {
   const excel = files.find(f => /\.(xlsx|xlsm|xls|ods)$/.test(nome(f)) || /sheet|excel/.test(tipo(f)));
   if (excel) { leggiFileExcel(excel); return; }
   const txt = files.find(f => /\.txt$/.test(nome(f)) || /^text\//.test(tipo(f)));
-  if (txt) { let t = ""; try { t = await txt.text(); } catch (e) {} usaTestoWhatsApp(t, "chat"); return; }
+  if (txt) { let t = ""; try { t = await txt.text(); } catch (e) {} apriChatPapa(t, txt.name || ""); return; }
   const foto = files.find(f => /^image\//.test(tipo(f)) || /\.(jpe?g|png|webp|heic)$/.test(nome(f)));
   if (foto) { leggiFotoProspetto(foto); return; }
   if (testo && testo.trim()) { usaTestoWhatsApp(testo, "condiviso"); return; }
@@ -5033,6 +5063,10 @@ function usaTestoWhatsApp(grezzo, come) {
   const oggi = L.oggiISO();
   const rif = w.data && w.data < oggi && L.giorniTra(w.data, oggi) <= 21 ? w.data : "";
   apriDettaturaCon(w.testo, { tipo: "whatsapp", come, messaggi: w.messaggi, chi: w.chi, data: w.data, tolte: w.tolte, nessunaCamera: !!w.nessunaCamera, intestazioni: !!w.intestazioni, rif });
+  // 0.98: i messaggi interi (con data e chi li ha scritti) restano da parte per Sofia, che li legge subito se c'e' la chiave
+  const tutti = messaggiWhatsApp(grezzo).messaggi.slice(-400);
+  const d = statoDettatura(); d.wa = { messaggi: tutti.length ? tutti : [{ data: oggi, ora: "", chi: "", testo: String(grezzo || "") }], papa: papaRicordato(), testo: d.testo };
+  if (iaAccesa() && String(grezzo || "").trim()) leggiConSofia(d.wa.messaggi, { papa: d.wa.papa });
 }
 function apriDettaturaCon(testo, fonte) {
   const rif = (fonte && fonte.rif) || "";
@@ -5088,6 +5122,7 @@ function foglioInserisci() {
     <div class="muted">Scegli da dove arriva. Prima di salvare ti faccio sempre vedere cosa ho capito.</div>
     <div class="ins-scelte">
       ${tasto("data-ins-wa", ICO_WA, "Da WhatsApp", "Hai copiato il messaggio? Tocca qui e lo incollo io", "wa")}
+      ${file("insChat", ".txt,text/plain", "📲", "Tutta la chat di papà", "Il file della chat esportata: " + esc(nomeGov()) + " legge tutto, prospetto e indicazioni")}
       ${file("insFoto", "image/*", "📷", "Foto del foglio", "Scatta o scegli la foto: la legge " + esc(nomeGov()))}
       ${tasto("data-ins-scrivi", "✍️", "Lo scrivo o lo detto", "Una riga per camera, come lo diresti a papà")}
       ${file("fileFoglio", ".xlsx,.xls,.xlsm,.ods", "📄", "File Excel di papà", "Il foglio del computer (.xlsx)")}
@@ -5098,7 +5133,7 @@ function foglioInserisci() {
       <div class="ins-passi">
         <div class="ins-passo"><b>1</b><span><b>Messaggio scritto</b> · tieni premuto il messaggio, tocca <b>Copia</b> (in alto, o nel menu ⋮), torna qui e tocca <b>Da WhatsApp</b>. Puoi copiarne anche più di uno insieme.</span></div>
         <div class="ins-passo"><b>2</b><span><b>Foto o file Excel</b> · tieni premuto (o apri la foto), tocca <b>Condividi</b> e scegli <b>Pulizie Ricci</b>: si apre qui, già pronto.</span></div>
-        <div class="ins-passo"><b>3</b><span><b>Tutto il gruppo</b> · nel gruppo tocca <b>⋮ → Altro → Esporta chat → Senza media → Pulizie Ricci</b>: prendo io gli ultimi messaggi con le camere.</span></div>
+        <div class="ins-passo"><b>3</b><span><b>Tutta la chat di papà</b> · nella chat tocca <b>⋮ → Altro → Esporta chat → Senza media</b> e scegli <b>Pulizie Ricci</b> (o salvala e toccala qui sopra): ${esc(nomeGov())} legge tutti i messaggi, il prospetto e le indicazioni.</span></div>
       </div>
       <small>Se tra le app di «Condividi» non vedi ancora Pulizie Ricci, il telefono la aggiunge entro un giorno; intanto usa la strada 1.</small>
     </section>`;
@@ -5125,6 +5160,342 @@ function fonteDettaturaHtml(d) {
     return `<div class="dt-fonte foto"><span class="dt-fonte-ico">📷</span><div><b>Letto dalla foto${f.n ? ` · ${f.n} ${f.n === 1 ? "ospite" : "ospiti"}` : ""}</b>${f.frase ? `<span>${esc(f.frase)}</span>` : ""}<small>${f.vuota ? "Non ho trovato ospiti nella foto." : "La foto può ingannare: controlla nomi e date prima di salvare."}</small></div></div>`;
   }
   return "";
+}
+
+// ===========================================================================
+//  0.98 - SOFIA LEGGE LA CHAT DI PAPÀ E CAPISCE DAVVERO IL PROSPETTO
+//  Michele: "dovrebbe leggere tutta la chat di WhatsApp di mio padre, cosi' interpreta i messaggi suoi e le indicazioni
+//  sue; poi la governante deve interpretare molto molto bene il prospetto, perche' cosi' non va bene. Trova un modello
+//  linguistico, o vedi tu cosa mettere dentro l'app".
+//  - Le regole fisse della dettatura non bastano per come scrive papa' (abbreviazioni, correzioni, messaggi spezzati):
+//    il testo lo legge Sofia col modello piu' bravo che c'e' (Argon; se manca il credito, il modello svelto) e ne tira
+//    fuori, in JSON, i soggiorni (camera, ospite, persone, arrivo, partenza, tipo), quelli da togliere, le indicazioni
+//    per le signore (giorno, camera, cosa) e le abitudini di papa' da ricordare. Poi l'app li confronta col prospetto
+//    che c'e' (completaRiga: gia' cosi' / cambia / si accavalla) e Michele spunta e salva, come sempre.
+//  - Sofia ora VEDE il prospetto camera per camera (chi, quante persone, arrivo e partenza): senza, non poteva capire
+//    "Manna parte giovedi'". I nomi degli ospiti che l'app conosce partono come CODICI [O1], [O2]... e tornano nomi
+//    nelle risposte (aCodici / daCodici): i nomi gia' noti non lasciano il telefono.
+// ===========================================================================
+const NUCLEO_RE = /\s*[·,;(\/]\s*|\s+-\s+/;
+function nucleoNome(n) { return String(n || "").split(NUCLEO_RE)[0].replace(/\d.*$/, "").replace(/\s+/g, " ").trim(); }
+let codiciCache = null;
+function codiciOspiti() {
+  const sog = soggiorniLista(), cl = S.clienti || {};
+  const firma = sog.map(s => s.nome || "").join("|") + "#" + Object.keys(cl).join("|");
+  if (codiciCache && codiciCache.firma === firma) return codiciCache;
+  const via = new Set([...S.camere.map(c => PAROLE.norm(c.nome)), ...S.camere.map(c => PAROLE.norm(c.id)), ...signore().map(z => PAROLE.norm(SIG(z.id))), PAROLE.norm(nomeGov()), PAROLE.norm(nomeMio()),
+    "michele", "papa", "ospiti", "ospite", "operai", "operaio", "tecnici", "tecnico", "booking", "famiglia", "signora", "signor", "ditta", "coppia", "libera", "libero", "zara", "trento", "via"]);
+  const nuclei = new Map();
+  const metti = (grezzo) => { const n = nucleoNome(grezzo); if (n.length < 2 || /^\?|^(ospit|qualcun|nessun)/i.test(n) || via.has(PAROLE.norm(n))) return; const k = PAROLE.norm(n); if (k && !nuclei.has(k)) nuclei.set(k, n); };
+  for (const s of sog) metti(s.nome);
+  for (const [k, v] of Object.entries(cl)) metti((v && v.nome) || k);
+  const elenco = [...nuclei.entries()].sort((a, b) => a[1].localeCompare(b[1], "it"));
+  const nomi = new Map(), codice = new Map();
+  elenco.forEach(([k, n], i) => { const c = `[O${i + 1}]`; nomi.set(c, n); codice.set(k, c); });
+  const cand = [];
+  const aggiungi = (testo, c) => { const t = String(testo || "").trim(); if (t.length >= 2 && c) cand.push({ t, c }); };
+  for (const [k, n] of elenco) aggiungi(n, codice.get(k));
+  for (const s of sog) { const c = codice.get(PAROLE.norm(nucleoNome(s.nome))); if (c) aggiungi(String(s.nome || "").trim(), c); }
+  // le parole lunghe del nome ("Rega Enzo" -> "Rega", "Enzo"), solo con la maiuscola e solo se sono di un ospite solo
+  const parole = new Map();
+  for (const [k, n] of elenco) for (const w of n.split(/\s+/)) {
+    if (w.length < 4 || !/^[A-ZÀ-Ý]/.test(w) || via.has(PAROLE.norm(w))) continue;
+    const kw = PAROLE.norm(w); if (!parole.has(kw)) parole.set(kw, { w, c: new Set() }); parole.get(kw).c.add(codice.get(k));
+  }
+  for (const { w, c } of parole.values()) if (c.size === 1) { const cc = [...c][0]; aggiungi(w, cc); if (w !== w.toUpperCase()) aggiungi(w.toUpperCase(), cc); }
+  const visti = new Set();
+  const regole = cand.filter(x => { const k = x.t + "→" + x.c; if (visti.has(k)) return false; visti.add(k); return true; })
+    .sort((a, b) => b.t.length - a.t.length).map(x => {
+      const e = x.t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/['’]/g, "['’]").replace(/\s+/g, "\\s+");
+      const molte = /\s/.test(x.t);          // piu' parole: maiuscole o minuscole non importa; una parola sola: come e' scritta
+      return { re: new RegExp(`(^|[^\\p{L}\\[])(${e})(?=$|[^\\p{L}\\]])`, molte ? "giu" : "gu"), c: x.c };
+    });
+  codiciCache = { firma, nomi, regole };
+  return codiciCache;
+}
+function aCodici(t) { let x = String(t ?? ""); if (!x) return x; for (const r of codiciOspiti().regole) x = x.replace(r.re, (m, a) => a + r.c); return x; }
+function daCodici(t) { const { nomi } = codiciOspiti(); return String(t ?? "").replace(/\[\s*O\s*(\d{1,4})\s*\]/g, (m, n) => nomi.get(`[O${n}]`) || m); }
+function daCodiciProfondo(v) { if (typeof v === "string") return daCodici(v); if (Array.isArray(v)) return v.map(daCodiciProfondo); if (v && typeof v === "object") { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = daCodiciProfondo(x); return o; } return v; }
+function senzaTelefoni(t) { return String(t || "").replace(/\+?\d(?:[\s.\-]?\d){7,}/g, "[telefono]").replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[email]"); }
+// il tipo di ospite detto a Sofia: le ditte col loro codice (sono anche clienti col nome), cosi' nessun nome esce in chiaro
+function tipoPerIA(k) { const t = TIPI_OSPITE[k]; if (!t) return k || "?"; return k === "ferr" ? "tecnici" : k === "altro" ? "turisti / Booking" : k === "unk" ? "da chiarire" : aCodici("ditta " + t.nome); }
+// il prospetto che c'e', camera per camera, coi nomi in codice (per Sofia)
+function prospettoInCodici(da, a) {
+  const per = new Map();
+  for (const s of soggiorniLista().filter(s => s.fine > da && s.inizio < a).sort((x, y) => x.inizio < y.inizio ? -1 : 1)) { const l = per.get(s.camera) || []; l.push(s); per.set(s.camera, l); }
+  return S.camere.map(c => {
+    const l = per.get(c.id) || [];
+    return `- ${c.nome} [${c.id}]: ${l.length ? l.map(s => `${aCodici(s.nome || "?")}${s.persone > 1 ? `, ${s.persone} persone` : ""}, ${tipoPerIA(s.tipo)}, arriva ${L.dataMedia(s.inizio)} (${s.inizio}) → parte ${L.dataMedia(s.fine)} (${s.fine})${s.nota ? `, nota: ${aCodici(s.nota)}` : ""}`).join(" · ") : "libera"}`;
+  }).join("\n");
+}
+
+// ---- la lettura ------------------------------------------------------------------
+const CHIAVE_PAPA = "ricci_wa_papa";
+function papaRicordato() { try { return localStorage.getItem(CHIAVE_PAPA) || ""; } catch (e) { return ""; } }
+function istruzioniLettura() {
+  const oggi = L.oggiISO(), alias = aliasPerCamera();
+  const camere = S.camere.map(c => `- ${c.id} = ${c.nome} (${c.tipo === "casa" ? "appartamento" : "camera"}${c.via ? ", " + c.via : ""}${c.zona === "p1" ? ", 1° piano" : c.zona === "p2" ? ", 2° piano" : ""}; si dice anche: ${[...new Set((alias[c.id] || []).filter(x => x !== PAROLE.norm(c.nome)))].slice(0, 7).join(", ") || "—"})`).join("\n");
+  const tipi = Object.keys(TIPI_OSPITE).map(k => `${k} = ${tipoPerIA(k)}`).join("; ");
+  const da = L.aggiungiGiorni(oggi, -14), a = L.aggiungiGiorni(oggi, 60);
+  let tacc = ""; try { tacc = taccuinoPerIA(); } catch (e) {}
+  return `Sei ${nomeGov()}, la governante de "Le Stanze di Ricci" a Lesina. Il PAPÀ di Michele fa il PROSPETTO (chi dorme in quale camera, da che giorno a che giorno) e lo scrive su WhatsApp a modo suo: abbreviazioni, errori, messaggi spezzati in tanti pezzi, correzioni ("no scusa", "anzi"), liste, note vocali trascritte, a volte solo il cognome. Il tuo lavoro è leggere TUTTI i messaggi che ti mando, nell'ordine, e capire ESATTAMENTE:
+1) il prospetto aggiornato: chi c'è in ogni camera e in che giorni;
+2) le indicazioni per le pulizie e per le signore (cosa fare, dove, quando);
+3) come scrive il papà (le sue abitudini), per capirlo sempre meglio.
+
+OGGI è ${L.dataGiornoLungo(oggi)} (${oggi}).
+
+LE CAMERE (nel JSON usa SOLO questi codici):
+${camere}
+Liù, Maria Grazia e via Ancona sono appoggi esterni: NON metterli nei soggiorni.
+
+COME SI LEGGE IL PROSPETTO:
+- "dal 12 al 16" = arriva il 12, parte la mattina del 16 (la notte del 16 non c'è). La partenza è il giorno in cui lascia la camera.
+- Le parole "oggi", "domani", "stasera", "lunedì", "la settimana prossima" valgono rispetto alla DATA DEL MESSAGGIO in cui sono scritte (ogni messaggio ha la sua data tra parentesi quadre), non rispetto a oggi.
+- I messaggi più recenti correggono quelli vecchi. Se un soggiorno è stato spostato o disdetto, vale l'ultima cosa detta.
+- Tecnici e operai arrivano di solito la domenica sera o il lunedì e partono il venerdì (a volte il sabato). Se per una settimana non dice i giorni, intende da lunedì a venerdì (partenza venerdì).
+- "x2", "2p", "2 pax", "in 2" = 2 persone. Una lista di camere con i nomi accanto è il prospetto di quella settimana.
+- Tipi di ospite (campo "tipo"): ${tipi}. I tecnici della ferrovia e delle altre ditte sono "ferr", turisti e Booking "altro", se non si capisce "unk".
+- Gli ospiti che l'app conosce già sono CODICI tra parentesi quadre, per esempio [O3]: è sempre la stessa persona. Nel JSON riscrivilo IDENTICO. I nomi nuovi scrivili come li scrive il papà (cognome).
+- Le parti tra parentesi quadre [telefono] ed [email] sono dati tolti apposta.
+- Non inventare niente: se una cosa non è chiara mettila in "dubbi" o metti "sicurezza":"bassa".
+
+IL PROSPETTO CHE C'È ADESSO NELL'APP (soggiorni dal ${L.dataMedia(da)} al ${L.dataMedia(a)}):
+${prospettoInCodici(da, a)}
+
+IL TACCUINO (cose che Michele mi ha chiesto di ricordare sempre):
+${tacc}
+
+RISPONDI SOLO con questo JSON:
+{"risposta":"3-5 frasi semplici per Michele: che periodo coprono i messaggi, cosa hai capito, cosa cambia rispetto all'app",
+ "soggiorni":[{"camera":"salvatore","nome":"[O3] oppure il cognome nuovo","persone":2,"arrivo":"AAAA-MM-GG","partenza":"AAAA-MM-GG","tipo":"ferr","nota":"cose da sapere per le pulizie su questo ospite, se dette (altrimenti vuoto)","sicurezza":"alta","dubbio":"","messaggio":"le parole del papà da cui l'hai capito, corte"}],
+ "togli":[{"camera":"alba","nome":"[O5]","arrivo":"AAAA-MM-GG","perche":"le parole del papà"}],
+ "indicazioni":[{"giorno":"AAAA-MM-GG","camera":"codice della camera oppure vuoto se vale per tutte","testo":"cosa devono fare le signore, scritto semplice e corto","messaggio":"le parole del papà"}],
+ "abitudini":["come scrive il papà, per capirlo meglio la prossima volta: una frase corta per ognuna, senza nomi di ospiti"],
+ "dubbi":["domande corte per Michele sulle cose non chiare"]}
+REGOLE DEL JSON:
+- In "soggiorni" metti TUTTI i soggiorni che secondo i messaggi ci sono con la partenza da ${L.dataMedia(L.aggiungiGiorni(oggi, -3))} in poi, anche quelli già uguali nell'app (il confronto lo faccio io). Una riga per ospite e per periodo. Le camere libere non si mettono.
+- In "togli" solo i soggiorni che sono NELL'APP e che i messaggi dicono chiaramente disdetti o finiti prima (camera, codice, data di arrivo come nell'app).
+- In "indicazioni" solo cose da fare da oggi in poi (giorno = quando vanno fatte; se non c'è un giorno preciso, il primo giorno utile).
+- Le date sempre nel formato AAAA-MM-GG. "sicurezza": "alta", "media" o "bassa".`;
+}
+// i messaggi scelti, pronti per Sofia: "[gio 23 ott 09:12] Papà: ..." (coi nomi noti in codice e senza telefoni)
+function testoPerLettura(messaggi, papa) {
+  const nomi = new Map(); let n = 1;
+  const chi = (x) => {
+    if (!x) return "";
+    if (papa && x === papa) return "Papà";
+    if (/michele/i.test(x) || x === nomeMio()) return "Michele";
+    if (!nomi.has(x)) nomi.set(x, "Persona " + (++n));
+    return nomi.get(x);
+  };
+  const righe = messaggi.map(m => `${m.data ? `[${L.GG[L.giornoSettimana(m.data)]} ${L.dataMedia(m.data)}${m.ora ? " " + m.ora : ""}] ` : ""}${m.chi ? chi(m.chi) + ": " : ""}${senzaTelefoni(aCodici(m.testo))}`);
+  let testo = righe.join("\n"), tagliati = 0;
+  const MAX = 140000;
+  while (testo.length > MAX && righe.length > 20) { righe.shift(); tagliati++; testo = righe.join("\n"); }
+  return { testo, tagliati };
+}
+function jsonDaRisposta(txt) {
+  const p = String(txt || "").replace(/```(?:json)?/gi, "").trim();
+  try { return JSON.parse(p); } catch (e) {}
+  const a = p.indexOf("{"), b = p.lastIndexOf("}");
+  if (a >= 0 && b > a) { try { return JSON.parse(p.slice(a, b + 1)); } catch (e) {} }
+  return null;
+}
+function cameraDaSofia(x) {
+  const t = String(x || "").trim(); if (!t) return null;
+  const n = PAROLE.norm(t);
+  const c = S.camere.find(c => c.id === t || PAROLE.norm(c.id) === n || PAROLE.norm(c.nome) === n);
+  if (c) return c.id;
+  const alias = aliasPerCamera();
+  for (const [id, lista] of Object.entries(alias)) if (lista.some(a => PAROLE.norm(a) === n)) return S.camere.some(c => c.id === id) ? id : null;
+  return null;
+}
+const dataIso = (x) => /^\d{4}-\d{2}-\d{2}$/.test(String(x || "").trim()) ? String(x).trim() : "";
+// il JSON di Sofia -> le righe dell'anteprima (stesse della dettatura) + indicazioni + abitudini + dubbi
+function lettoDaSofia(j) {
+  const ctx = { oggi: L.oggiISO(), soggiorni: soggiorniLista() };
+  const righe = [], dubbi = (Array.isArray(j.dubbi) ? j.dubbi : []).map(x => daCodici(String(x || "").trim())).filter(Boolean).slice(0, 12);
+  const usati = new Set();
+  (Array.isArray(j.soggiorni) ? j.soggiorni : []).slice(0, 80).forEach((x, i) => {
+    const camera = cameraDaSofia(x && x.camera), inizio = dataIso(x && x.arrivo), fine = dataIso(x && x.partenza);
+    const nome = daCodici(String((x && x.nome) || "").trim()).replace(/^\[.*\]$/, "?").slice(0, 40) || "?";
+    if (!camera || !inizio || !fine || fine <= inizio) { if (x && (x.camera || x.nome)) dubbi.push(`Non ho capito bene: ${daCodici(String(x.messaggio || `${x.camera || ""} ${x.nome || ""}`)).slice(0, 120)}`); return; }
+    const tipo = TIPI_OSPITE[x.tipo] ? x.tipo : null;
+    const persone = Math.max(1, Math.min(12, Math.round(Number(x.persone) || 0))) || null;
+    const bassa = /bassa/i.test(String(x.sicurezza || ""));
+    const r = { camera, testo: daCodici(String(x.messaggio || "")).slice(0, 160), azione: "nuovo", nome, persone, tipo, inizio, fine, nota: daCodici(String(x.nota || "")).slice(0, 160), notaPrivata: "", dubbio: bassa || nome === "?", motivi: x.dubbio ? [daCodici(String(x.dubbio)).slice(0, 160)] : [], assunti: [], scelto: !bassa, base: L.lunediDi(inizio), inizioDetto: true, fineDetta: true, tipoDetto: !!tipo, durata: null, comeScorsa: false, libera: false, haParoleParte: false, haParoleProlunga: false, daSofia: true };
+    try { completaRiga(r, ctx); } catch (e) { console.warn("riga sofia", e); }
+    if (bassa) r.scelto = false;
+    r.id = "s" + i; r.firma = `${r.azione}|${r.camera}|${r.inizio}|${r.fine}|${r.nome}`;
+    if (usati.has(r.firma)) return; usati.add(r.firma);
+    righe.push(r);
+  });
+  (Array.isArray(j.togli) ? j.togli : []).slice(0, 30).forEach((x, i) => {
+    const camera = cameraDaSofia(x && x.camera); if (!camera) return;
+    const nome = daCodici(String((x && x.nome) || "").trim()), arrivo = dataIso(x && x.arrivo);
+    const stesso = (s) => nome && PAROLE.norm(nucleoNome(s.nome)) === PAROLE.norm(nucleoNome(nome));
+    const lista = soggiorniLista().filter(s => s.camera === camera && stesso(s) && (!arrivo || s.inizio === arrivo) && s.fine >= L.aggiungiGiorni(L.oggiISO(), -3));
+    if (!lista.length) return;
+    const r = { camera, testo: daCodici(String(x.perche || "")).slice(0, 160), azione: "togli", nome: "", esistenti: lista.map(s => ({ id: s.id, nome: s.nome, inizio: s.inizio, fine: s.fine })), persone: null, tipo: null, inizio: lista[0].inizio, fine: lista[0].fine, nota: "", notaPrivata: "", dubbio: false, motivi: [], assunti: [], scelto: true, base: L.lunediDi(lista[0].inizio), daSofia: true };
+    if (lista.some(s => L.giorniTra(s.inizio, s.fine) > 9)) { r.scelto = false; r.motivi.push("è un soggiorno lungo: spuntalo tu se va tolto davvero"); }
+    r.id = "t" + i; r.firma = `togli|${camera}|${lista.map(s => s.id).join(",")}`;
+    if (usati.has(r.firma)) return; usati.add(r.firma);
+    righe.push(r);
+  });
+  const oggi = L.oggiISO();
+  const indicazioni = (Array.isArray(j.indicazioni) ? j.indicazioni : []).map((x, i) => {
+    const giorno = dataIso(x && x.giorno); const testo = daCodici(String((x && x.testo) || "").trim()).slice(0, 240);
+    if (!testo) return null;
+    const g = giorno && giorno >= oggi ? giorno : oggi;
+    const camera = cameraDaSofia(x && x.camera);
+    return { k: "i" + i, giorno: g, camera, testo, messaggio: daCodici(String((x && x.messaggio) || "")).slice(0, 160), scelta: true };
+  }).filter(Boolean).slice(0, 30);
+  const abitudini = (Array.isArray(j.abitudini) ? j.abitudini : []).map(x => senzaNomiOspiti(daCodici(String(x || "").trim())).slice(0, 200)).filter(x => x.length > 6).slice(0, 8).map((testo, i) => ({ k: "a" + i, testo, scelta: true }));
+  return { righe, indicazioni, abitudini, dubbi, risposta: daCodici(String(j.risposta || "").trim()).slice(0, 700) };
+}
+let letturaGiro = 0;
+// fa leggere a Sofia i messaggi (o un testo qualsiasi) e mette il risultato nell'anteprima del prospetto
+async function leggiConSofia(messaggi, opz = {}) {
+  const d = statoDettatura();
+  if (!iaAccesa()) { d.ia = { errore: "chiave" }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); return; }
+  const giro = ++letturaGiro;
+  const { testo, tagliati } = testoPerLettura(messaggi, opz.papa || "");
+  d.ia = { leggo: true, n: messaggi.length, tagliati };
+  if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else apriFoglio({ tipo: "dettatura" });
+  try {
+    const { r, ripiego } = await chiediIA({ sistema: istruzioniLettura(), storia: [], testo: `ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, secondi: 150, maxToken: 16000 });
+    if (giro !== letturaGiro) return;
+    const j = jsonDaRisposta(r.grezzo);
+    if (!j) throw new Error("ha risposto in un modo che non capisco. Riprova.");
+    const x = lettoDaSofia(j);
+    d.ia = { ...x, modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length, tagliati, testo: d.testo };
+    d.scelte = {}; d.comportamenti = {};
+  } catch (e) {
+    if (giro !== letturaGiro) return;
+    console.warn("lettura sofia", e);
+    d.ia = { errore: String((e && e.message) || e).slice(0, 200), n: messaggi.length };
+  }
+  if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio();
+}
+// il testo che c'e' nella casella (o i messaggi tenuti da parte se arrivano da WhatsApp) -> Sofia
+function leggiTestoConSofia() {
+  const d = statoDettatura();
+  const t = ($("#dtTesto") || {}).value ?? d.testo;
+  d.testo = String(t || "");
+  const msgs = d.wa && d.wa.messaggi && d.wa.testo === d.testo ? d.wa.messaggi : [{ data: L.oggiISO(), ora: "", chi: "", testo: d.testo }];
+  if (!d.testo.trim() && !(d.wa && d.wa.messaggi && d.wa.messaggi.length)) { toast("Prima incolla o scrivi il prospetto."); return; }
+  leggiConSofia(msgs, { papa: d.wa ? d.wa.papa : "" });
+}
+// salva le indicazioni spuntate: sulla pulizia di quel giorno in quella camera (dettagli), altrimenti nel messaggio del giorno
+async function salvaIndicazioni(lista) {
+  if (!lista.length) return 0;
+  const ops = [], perGiorno = {};
+  for (const x of lista) {
+    const p = x.camera ? Object.values(S.pulizie).find(q => q.camera === x.camera && q.data === x.giorno && q.stato !== "non_fatta") : null;
+    if (p) {
+      const dett = [p.dettagli, x.testo].filter(Boolean).join(" · ").slice(0, 400);
+      const patch = { dettagli: dett, dettagliDa: (S.utente && S.utente.nome) || "papà", dettagliOra: S.db.adesso() };
+      Object.assign(p, patch); ops.push({ tipo: "aggiorna", coll: "pulizie", id: p.id, dati: patch });
+    } else (perGiorno[x.giorno] = perGiorno[x.giorno] || []).push((x.camera ? camera(x.camera).nome + ": " : "") + x.testo);
+  }
+  if (Object.keys(perGiorno).length) {
+    const nuovo = { ...(S.messaggi || {}) };
+    for (const [g, testi] of Object.entries(perGiorno)) {
+      const prima = nuovo[g] && nuovo[g].testo ? nuovo[g].testo : "";
+      nuovo[g] = { ...(nuovo[g] || {}), testo: [prima, ...testi].filter(Boolean).join("\n").slice(0, 600), da: (S.utente && S.utente.nome) || "", ora: S.db.adesso() };
+    }
+    S.messaggi = nuovo;
+    ops.push({ tipo: "salva", coll: "impostazioni", id: "messaggi", dati: nuovo, merge: false });
+  }
+  if (ops.length) await S.db.scrivi(ops);
+  return lista.length;
+}
+// la parte dell'anteprima che viene da Sofia: chi ha letto, cosa ha capito, le indicazioni e le abitudini da spuntare
+function partiSofiaHtml(d, parte = "testa") {
+  const x = d.ia; if (!x) return "";
+  if (parte === "coda" && (x.errore || x.leggo)) return "";
+  if (x.errore === "chiave") return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>Per far leggere i messaggi a ${esc(nomeGov())} serve la chiave di Gemini su questo telefono</b><small>Altro → ${esc(nomeGov())} intelligente: incolla la chiave, oppure sul computer tocca «Metti la chiave anche sui telefoni». Intanto qui sotto c'è quello che capisco con le regole fisse.</small><button type="button" class="btnsm" data-vista-chiudi="altro">Vai ad Altro</button></div></div>`;
+  if (x.leggo) return `<div class="dt-fonte leggo"><span class="dt-giro" aria-hidden="true"></span><div><b>${esc(nomeGov())} sta leggendo ${x.n > 1 ? x.n + " messaggi" : "il testo"}…</b><small>Usa il modello più bravo che c'è: può volerci fino a un minuto. Poi controlli tu riga per riga.${x.tagliati ? ` (I ${x.tagliati} messaggi più vecchi li ho lasciati fuori: erano troppi.)` : ""}</small></div></div>`;
+  if (x.errore) return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>${esc(nomeGov())} non è riuscita a leggere</b><small>${esc(x.errore)}</small><button type="button" class="btnsm" data-dett-sofia>Riprova</button></div></div>`;
+  const modello = /argon/i.test(x.modello || "") ? "Argon" : x.modello ? "il modello svelto" : "";
+  const ind = x.indicazioni || [], ab = x.abitudini || [];
+  const riga = (v, tipo) => `<label class="row dt-riga ok" style="grid-template-columns:auto 1fr;cursor:pointer;align-items:start"><input type="checkbox" data-sofia-${tipo}="${esc(v.k)}" ${v.scelta ? "checked" : ""} style="width:24px;height:24px;margin-top:2px"><span>${tipo === "ind" ? `<b>${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}${v.camera ? " · " + esc(camera(v.camera).nome) : " · a tutte"}</b><br>` : ""}${esc(v.testo)}${v.messaggio ? `<br><span class="muted small">papà: «${esc(v.messaggio)}»</span>` : ""}</span></label>`;
+  if (parte === "testa") return `<div class="dt-fonte sofia"><span class="dt-fonte-foto" aria-hidden="true"></span><div><b>Letto da ${esc(nomeGov())}${modello ? ` (${modello})` : ""}${x.n > 1 ? ` · ${x.n} messaggi` : ""}</b>${x.risposta ? `<span>${esc(x.risposta)}</span>` : ""}${x.ripiego ? `<small>Argon non era disponibile: ho letto col modello svelto. Controlla con più attenzione.</small>` : ""}<button type="button" class="btnsm ghost" data-dett-regole>Usa le regole fisse</button></div></div>
+    ${(x.dubbi || []).length ? `<div class="dt-dubbi"><b>Non sono sicura di:</b><ul>${x.dubbi.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}`;
+  return `${ind.length ? `<div class="floorlabel" style="margin-top:12px">Indicazioni per le signore <span>${ind.filter(v => v.scelta).length} da salvare</span></div><div class="rows">${ind.map(v => riga(v, "ind")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Vanno nei dettagli della camera di quel giorno (o nel messaggio del giorno alle signore).</p>` : ""}
+    ${ab.length ? `<div class="floorlabel" style="margin-top:12px">Come scrive papà: me lo ricordo? <span>${ab.filter(v => v.scelta).length}</span></div><div class="rows">${ab.map(v => riga(v, "ab")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Le spuntate finiscono nel taccuino: la prossima volta lo capisco meglio.</p>` : ""}`;
+}
+
+// ---- il foglio "La chat di papà": file della chat esportata -> chi è papà, quanti giorni -> Sofia ------------------
+function apriChatPapa(grezzo, nomeFile) {
+  const { messaggi, intestazioni } = messaggiWhatsApp(grezzo);
+  if (!intestazioni || messaggi.length < 2) { usaTestoWhatsApp(grezzo, "condiviso"); return; }
+  const conta = {};
+  for (const m of messaggi) { const c = conta[m.chi] || (conta[m.chi] = { n: 0, camere: 0 }); c.n++; if (haCameraNelTesto(m.testo)) c.camere++; }
+  const mittenti = Object.entries(conta).filter(([k]) => k).sort((a, b) => b[1].camere - a[1].camere || b[1].n - a[1].n).map(([nome, v]) => ({ nome, ...v }));
+  const ric = papaRicordato();
+  const papa = mittenti.some(m => m.nome === ric) ? ric : (mittenti.find(m => !/michele/i.test(m.nome) && m.camere) || mittenti[0] || {}).nome || "";
+  S.chatPapa = { messaggi, mittenti, papa, giorni: 14, nomeFile: nomeFile || "" };
+  if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
+  apriFoglio({ tipo: "chatPapa" });
+}
+function messaggiScelti(c) {
+  const ultima = c.messaggi.reduce((x, m) => (m.data > x ? m.data : x), "") || L.oggiISO();
+  const da = c.giorni ? L.aggiungiGiorni(ultima > L.oggiISO() ? L.oggiISO() : ultima, -c.giorni) : "";
+  return c.messaggi.filter(m => !da || !m.data || m.data >= da);
+}
+function foglioChatPapa() {
+  const c = S.chatPapa;
+  if (!c) return `<h3>La chat di papà</h3><div class="muted">Nessuna chat caricata.</div>`;
+  const prima = c.messaggi.find(m => m.data), ultima = [...c.messaggi].reverse().find(m => m.data);
+  const scelti = messaggiScelti(c);
+  const periodi = [[7, "1 settimana"], [14, "2 settimane"], [31, "1 mese"], [92, "3 mesi"], [0, "Tutta"]];
+  return `<h3>La chat di papà</h3>
+    <div class="dt-fonte wa">${ICO_WA}<div><b>${esc(c.nomeFile || "Chat di WhatsApp")}</b><span>${c.messaggi.length} messaggi${prima && ultima ? `, dal ${esc(L.dataMedia(prima.data))} al ${esc(L.dataMedia(ultima.data))}` : ""}</span></div></div>
+    <div class="floorlabel" style="margin-top:14px">Chi scrive il prospetto?</div>
+    <div class="scelte">${c.mittenti.slice(0, 6).map(m => `<button type="button" aria-pressed="${m.nome === c.papa}" data-cp-papa="${esc(m.nome)}">${esc(m.nome)} <small>· ${m.n}</small></button>`).join("")}</div>
+    <div class="floorlabel" style="margin-top:10px">Quali messaggi leggo?</div>
+    <div class="scelte">${periodi.map(([g, t]) => `<button type="button" aria-pressed="${c.giorni === g}" data-cp-giorni="${g}">${t}</button>`).join("")}</div>
+    <p class="muted small" style="margin:6px 2px 0">Leggo <b>${scelti.length}</b> messaggi (di tutti: quelli degli altri mi servono per capire). Le parole «domani», «lunedì» le leggo col giorno del messaggio.</p>
+    <button class="big main" data-cp-leggi ${scelti.length ? "" : "disabled"}>✨ Fai leggere a ${esc(nomeGov())}</button>
+    <p class="muted small" style="margin:8px 2px 0">${esc(nomeGov())} trova chi dorme dove, le indicazioni per le signore e come scrive papà. Non salva niente: prima ti fa vedere tutto e tu spunti.${iaAccesa() ? "" : ` <b>Su questo telefono manca la chiave di Gemini</b>: senza, leggo con le regole fisse.`}</p>`;
+}
+function collegaChatPapa() {
+  const c = S.chatPapa; if (!c) return;
+  document.querySelectorAll("[data-cp-papa]").forEach(b => b.onclick = () => { c.papa = b.dataset.cpPapa; try { localStorage.setItem(CHIAVE_PAPA, c.papa); } catch (e) {} disegnaFoglio(); });
+  document.querySelectorAll("[data-cp-giorni]").forEach(b => b.onclick = () => { c.giorni = Number(b.dataset.cpGiorni) || 0; disegnaFoglio(); });
+  document.querySelectorAll("[data-cp-leggi]").forEach(b => b.onclick = () => {
+    const scelti = messaggiScelti(c); if (!scelti.length) return;
+    const testo = scelti.filter(m => !c.papa || m.chi === c.papa).map(m => m.testo).join("\n");
+    S.dett = { testo, base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte: { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: c.papa ? [c.papa] : [], data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "" }, rif: "", wa: { messaggi: scelti, papa: c.papa, testo } };
+    if (iaAccesa()) leggiConSofia(scelti, { papa: c.papa }); else apriFoglio({ tipo: "dettatura" });
+  });
+}
+
+// ---- la chiave di Gemini anche sui telefoni dei proprietari (importazioni: la leggono SOLO i proprietari) ----------
+async function mettiChiaveSuiTelefoni() {
+  const c = confIA();
+  if (!c.chiave) { toast("Su questo dispositivo non c'è ancora la chiave."); return; }
+  if (!await chiedi("Metto la chiave di Gemini anche sugli altri telefoni dei proprietari (il tuo, papà, mamma)? Le signore non la vedono mai.", { si: "Sì, mettila" })) return;
+  try {
+    await S.db.salva("importazioni", "ia-chiave", { fornitore: c.fornitore, chiave: c.chiave, chiaveArgon: c.chiaveArgon || "", qualita: c.qualita || "argon", da: (S.utente && S.utente.nome) || "", quando: S.db.adesso() }, false);
+    toast("Fatto: sugli altri telefoni dei proprietari la chiave arriva da sola all'apertura dell'app.");
+  } catch (e) { erroreScrittura(e); }
+}
+async function togliChiaveDaiTelefoni() {
+  if (!await chiedi("Tolgo la chiave condivisa? Sui telefoni dove è già arrivata resta finché non la togli lì.", { si: "Sì, togli", pericolo: true })) return;
+  try { await S.db.salva("importazioni", "ia-chiave", { chiave: "", chiaveArgon: "", tolta: S.db.adesso() }, false); toast("Chiave condivisa tolta."); } catch (e) { erroreScrittura(e); }
+}
+let chiaveCondivisaGuardata = false;
+async function prendiChiaveCondivisa() {
+  if (chiaveCondivisaGuardata || !proprietario() || !S.db || S.db.modalita !== "firebase") return;
+  chiaveCondivisaGuardata = true;
+  if (IA.accesa(confIA())) return;                               // qui c'e' gia' la sua: non la tocco
+  try {
+    const d = await S.db.leggi("importazioni", "ia-chiave");
+    if (d && d.chiave) { IA.salvaConf({ attiva: true, fornitore: d.fornitore || "gemini", chiave: d.chiave, chiaveArgon: d.chiaveArgon || "", qualita: d.qualita || "argon", modello: "", modelloSvelto: "" }); toast(`${nomeGov()} intelligente è pronta anche su questo telefono.`); disegna(); }
+  } catch (e) { console.warn("chiave condivisa", e); }
 }
 
 function foglioNota(f) {
@@ -5357,10 +5728,12 @@ function collegaFoglio() {
     document.querySelectorAll("[data-apri-motivo]").forEach(b => b.onclick = () => { const [id, st] = b.dataset.apriMotivo.split("|"); apriFoglio({ tipo: "pulizia", id, apriMotivo: st }); });
     return;
   }
+  if (f.tipo === "chatPapa") { collegaChatPapa(); return; }
   if (f.tipo === "inserisci") {
     document.querySelectorAll("[data-ins-wa]").forEach(b => b.onclick = () => incollaDaWhatsApp());
     document.querySelectorAll(".panel .insFoto").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) leggiFotoProspetto(fl); });
     document.querySelectorAll(".panel .fileFoglio").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) { chiudiFoglio(); leggiFileExcel(fl); } });
+    document.querySelectorAll(".panel .insChat").forEach(i => i.onchange = async () => { const fl = i.files && i.files[0]; i.value = ""; if (!fl) return; let t = ""; try { t = await fl.text(); } catch (e) { toast("Non riesco ad aprire questo file."); return; } apriChatPapa(t, fl.name || ""); });
     document.querySelectorAll("[data-ins-scrivi]").forEach(b => b.onclick = () => { apriDettaturaCon("", null); setTimeout(() => $("#dtTesto")?.focus(), 80); });
     document.querySelectorAll("[data-ins-copia]").forEach(b => b.onclick = () => { const d = statoDettatura(); d.scelte = {}; d.comportamenti = {}; d.fonte = null; d.rif = ""; apriFoglio({ tipo: "dettatura", copia: true }); });
     return;
@@ -5369,7 +5742,11 @@ function collegaFoglio() {
     const d = statoDettatura();
     const t = $("#dtTesto");
     let timer = null;
-    if (t) t.oninput = () => { d.testo = t.value; clearTimeout(timer); timer = setTimeout(() => aggiornaAnteprimaDettatura(f), 250); };
+    if (t) t.oninput = () => { d.testo = t.value; clearTimeout(timer); timer = setTimeout(() => { if (d.ia && !d.ia.leggo) { d.ia = null; disegnaFoglio(); } else aggiornaAnteprimaDettatura(f); }, 250); };
+    document.querySelectorAll("[data-dett-sofia]").forEach(b => b.onclick = () => leggiTestoConSofia());
+    document.querySelectorAll("[data-dett-regole]").forEach(b => b.onclick = () => { d.ia = null; d.scelte = {}; d.comportamenti = {}; disegnaFoglio(); });
+    document.querySelectorAll("[data-sofia-ind]").forEach(c => c.onchange = () => { const v = (d.ia && d.ia.indicazioni || []).find(x => x.k === c.dataset.sofiaInd); if (v) v.scelta = c.checked; disegnaFoglio(); });
+    document.querySelectorAll("[data-sofia-ab]").forEach(c => c.onchange = () => { const v = (d.ia && d.ia.abitudini || []).find(x => x.k === c.dataset.sofiaAb); if (v) v.scelta = c.checked; disegnaFoglio(); });
     document.querySelectorAll("[data-dett-base]").forEach(b => b.onclick = () => { d.base = b.dataset.dettBase; d.scelte = {}; d.comportamenti = {}; disegnaFoglio(); });
     document.querySelectorAll("[data-dett-parla]").forEach(b => b.onclick = () => parlaDettatura(f));
     document.querySelectorAll("[data-dett-incolla]").forEach(b => b.onclick = () => incollaDettatura(f));

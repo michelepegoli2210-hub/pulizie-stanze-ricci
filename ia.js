@@ -22,11 +22,11 @@ export const FORNITORI = {
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
     url: (m) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`,
     testa: (k) => ({ "content-type": "application/json", "x-goog-api-key": k }),
-    corpo: (sistema, storia, testo, m, immagine) => ({
+    corpo: (sistema, storia, testo, m, immagine, maxToken) => ({
       system_instruction: { parts: [{ text: sistema }] },
       contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })),
         { role: "user", parts: [...(immagine ? [{ inline_data: { mime_type: immagine.mime || "image/jpeg", data: immagine.dati } }] : []), { text: testo }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 4000, responseMimeType: "application/json" },
+      generationConfig: { temperature: maxToken ? 0.2 : 0.4, maxOutputTokens: maxToken || 4000, responseMimeType: "application/json" },
     }),
     leggeFoto: true,
     leggi: (j) => (((j.candidates || [])[0] || {}).content?.parts || []).map(p => p.text || "").join(""),
@@ -191,13 +191,15 @@ Le azioni che esistono, nient'altro:
    "gesto" scegli SOLO fra questi, quello che somiglia di più; se nessuno va bene metti "":
    ${elenchi.gesti}
 6) IL PROSPETTO, cioè chi c'è in quale camera e in che giorni. Quando Michele ti racconta chi è arrivato, chi c'è, chi parte, chi resta o che una camera è libera, l'azione "prospetto" è OBBLIGATORIA: senza l'azione il prospetto NON cambia, e se tu rispondessi "ho aggiornato" avresti detto una bugia. Lo trasformi in righe del prospetto, una per camera, in questo formato ESATTO (il giorno dopo "al" è il giorno di PARTENZA; mesi in italiano; se non sa il nome scrivi "ospiti"):
-   {"tipo":"prospetto","righe":["Salvatore: Manna, 2 persone, dal 19 ottobre al 25 ottobre","Aurora: ospiti, 2 persone, dal 19 ottobre al 25 ottobre","Alba: libera"]}
+   {"tipo":"prospetto","righe":["Salvatore: [O3], 2 persone, dal 19 ottobre al 25 ottobre","Aurora: Rossi, 2 persone, dal 19 ottobre al 25 ottobre","Alba: libera"]}
+   ([O3] = un ospite che c'è già nel prospetto, scritto col suo codice; Rossi = un ospite nuovo, col cognome che ha detto Michele.)
    Regole del prospetto:
    - "questa settimana", "sono venuti", "ci sono" senza altre date = da lunedì di questa settimana a sabato (partenza sabato). "La settimana prossima" = da lunedì a sabato di quella dopo. Le date le prendi dal CALENDARIO qui sotto, mai a memoria.
    - "Camera: libera" toglie chi era segnato in quella camera quella settimana. Se dice "SOLO" o "SOLTANTO" queste camere ("sono venuti soltanto Salvatore, Aurora e Michele", "non c'è niente da fare, c'è solo..."), metti le righe per quelle camere E una riga "libera" per OGNI ALTRA camera dell'elenco (tutte e tredici vanno nominate).
    - "parte giovedì" = accorcia il soggiorno che c'è; "resta fino a domenica" = lo allunga; "come la settimana scorsa" = ripeti l'ospite della settimana prima.
    - Gli ospiti fissi (ferrovia, tecnici, operai) di solito stanno da lunedì a venerdì o a sabato: se non dice il giorno, metti sabato.
    - Usa i NOMI delle camere esattamente come nell'elenco (Salvatore, Aurora, Michele, Antonio, Lella, Alba, Tramonto, Passerella, Fenicotteri, Nicole, Via Zara piano terra, Via Zara 1° e 2° piano, Via Trento 47).
+   - Nella FOTOGRAFIA c'è IL PROSPETTO CAMERA PER CAMERA, con gli ospiti scritti come CODICI tra parentesi quadre ([O3] è sempre la stessa persona). Prima di rispondere su chi c'è, chi arriva, chi parte o chi resta, guarda LÌ. Se Michele nomina un ospite già segnato (lo vedi anche lui come codice), trova la sua camera e i suoi giorni; nelle righe scrivi il CODICE identico al posto del nome ("Salvatore: [O3], 2 persone, dal 25 ottobre al 31 ottobre"). "Parte giovedì" o "resta fino a sabato" = riscrivi il soggiorno intero, con l'arrivo che c'è già e la partenza nuova. Nelle risposte a parole puoi usare i codici: l'app li trasforma nei nomi.
 7) segnare i CONTI DELLA CASA, quando Michele ti dice un prezzo o una spesa (in euro; i prezzi sono a camera a notte, le spese sono al mese; metti SOLO i numeri che ha detto lui):
    {"tipo":"conti","prezzi":{"tecnici":35,"operai":30,"booking":60},"commissioneBooking":15,"spese":{"luce":250,"gas":120,"acqua":40,"internet":30,"tasse":200,"altro":0}}
 8) RICORDARE PER SEMPRE una cosa nel tuo TACCUINO: una preferenza, un'abitudine, una regola di casa, una decisione di Michele, un accordo, un difetto di una camera, cosa sa fare bene o male una signora. Si scrive SUBITO, senza conferma, e Michele lo vede scritto:
@@ -311,7 +313,7 @@ export async function provaChiave(conf) {
 }
 
 // La domanda vera: le mando la fotografia, lo storico corto e quello che ha scritto Michele.
-export async function chiedi({ conf, sistema, storia = [], testo, immagine = null, secondi = 40 }) {
+export async function chiedi({ conf, sistema, storia = [], testo, immagine = null, secondi = 40, maxToken = 0 }) {
   const f = FORNITORI[conf.fornitore]; if (!f) throw new Error("Fornitore sconosciuto.");
   if (!conf.chiave) throw new Error("Manca la chiave.");
   if (immagine && !f.leggeFoto) throw new Error("Le foto le sa leggere solo Gemini.");
@@ -320,7 +322,7 @@ export async function chiedi({ conf, sistema, storia = [], testo, immagine = nul
   const corti = storia.slice(-12).filter(m => m && m.testo && (m.chi === "io" || m.chi === "gov")).map(m => ({ chi: m.chi, testo: String(m.testo).slice(0, 900) }));
   // il primo messaggio deve essere di Michele: se no certi server si lamentano
   while (corti.length && corti[0].chi !== "io") corti.shift();
-  const j = await chiamata(f.url(modello), f.testa(conf.chiave), f.corpo(sistema, corti, testo, modello, immagine), immagine ? Math.max(secondi, 60) : secondi);
+  const j = await chiamata(f.url(modello), f.testa(conf.chiave), f.corpo(sistema, corti, testo, modello, immagine, maxToken), immagine ? Math.max(secondi, 60) : secondi);
   const txt = f.leggi(j);
   if (!txt || !txt.trim()) throw new Error("Ha risposto vuoto.");
   return { ...leggiRisposta(txt), modello, grezzo: txt };

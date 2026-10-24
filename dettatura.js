@@ -266,7 +266,9 @@ function completa(r, ctx) {
   const oggi = ctx.oggi, base = r.base;
   const sog = (ctx.soggiorni || []).filter(s => s.camera === r.camera);
   const inSettimana = sog.filter(s => s.inizio < L.aggiungiGiorni(base, 6) && base < s.fine); // le notti da lunedì a sabato: chi arriva domenica sera è già della settimana dopo
-  const stessoNome = (s) => r.nome && s.nome && normalizzaAllineato(s.nome).trim() === normalizzaAllineato(r.nome).trim();
+  // 0.98: "D'Agostino · 3 operai" e "D'Agostino" sono lo stesso cliente (si guarda il nome prima di "·", virgole, parentesi)
+  const nucleo = (x) => normalizzaAllineato(String(x || "").split(/\s*[·,;(\/]\s*|\s+-\s+/)[0].replace(/\d.*$/, "")).replace(/\s+/g, " ").trim();
+  const stessoNome = (s) => r.nome && s.nome && (normalizzaAllineato(s.nome).trim() === normalizzaAllineato(r.nome).trim() || (nucleo(s.nome).length > 1 && nucleo(s.nome) === nucleo(r.nome)));
   const notti = (a, b) => L.giorniTra(a, b);
 
   // camera libera / non viene → tolgo quello che c'è quella settimana
@@ -482,7 +484,9 @@ function dataWhatsApp(g, m, a) {
   return iso(a, m, g);
 }
 function haCamera(riga) { const re = aliasRe(); re.lastIndex = 0; const ok = re.test(normalizzaAllineato(riga)); re.lastIndex = 0; return ok; }
-export function testoDaWhatsApp(grezzo) {
+// 0.98: i messaggi uno per uno (data, ora, chi li ha scritti, testo), senza righe di sistema, foto e messaggi eliminati.
+// Serve a Sofia per leggere la chat di papà: sa chi ha scritto cosa e in che giorno (cosi' "domani" e' il giorno dopo il messaggio).
+export function messaggiWhatsApp(grezzo) {
   const pulito = String(grezzo || "").replace(/\r\n?/g, "\n").replace(/[‎‏‪-‮⁦-⁩﻿]/g, "");
   const msgs = []; let ult = null, teste = 0;
   for (const r of pulito.split("\n")) {
@@ -491,15 +495,21 @@ export function testoDaWhatsApp(grezzo) {
     if (m && data && Number(m[4]) < 25) {
       teste++;
       const s = /^([^:]{1,60}?):\s?([\s\S]*)$/.exec(m[6] || "");
-      ult = { data, chi: s ? s[1].trim() : "", testo: s ? s[2] : "", sistema: !s };
+      ult = { data, ora: String(m[4]).padStart(2, "0") + ":" + m[5], chi: s ? s[1].trim() : "", testo: s ? s[2] : "", sistema: !s };
       msgs.push(ult); continue;
     }
-    if (ult) ult.testo += "\n" + r; else msgs.push(ult = { data: "", chi: "", testo: r, sistema: false });
+    if (ult) ult.testo += "\n" + r; else msgs.push(ult = { data: "", ora: "", chi: "", testo: r, sistema: false });
   }
-  // un messaggio solo copiato (senza intestazione): resta com'e'
-  if (!teste) return { testo: pulito.trim(), messaggi: pulito.trim() ? 1 : 0, chi: [], data: "", tolte: 0, intestazioni: false };
-  const buoni = msgs.filter(m => !m.sistema).map(m => ({ ...m, testo: m.testo.replace(/<\s*(?:questo messaggio (?:e|è) stato modificato|messaggio modificato)\s*>/gi, "").trim() }))
+  if (!teste) return { messaggi: pulito.trim() ? [{ data: "", ora: "", chi: "", testo: pulito.trim() }] : [], intestazioni: false };
+  const messaggi = msgs.filter(m => !m.sistema).map(m => ({ data: m.data, ora: m.ora, chi: m.chi, testo: m.testo.replace(/<\s*(?:questo messaggio (?:e|è) stato modificato|messaggio modificato)\s*>/gi, "").trim() }))
     .filter(m => m.testo && !RE_WA_VUOTO.test(m.testo));
+  return { messaggi, intestazioni: true };
+}
+export function haCameraNelTesto(t) { return String(t || "").split("\n").some(haCamera); }
+export function testoDaWhatsApp(grezzo) {
+  const { messaggi: buoni, intestazioni } = messaggiWhatsApp(grezzo);
+  // un messaggio solo copiato (senza intestazione): resta com'e'
+  if (!intestazioni) { const t = buoni.length ? buoni[0].testo : ""; return { testo: t, messaggi: t ? 1 : 0, chi: [], data: "", tolte: 0, intestazioni: false }; }
   const conCamera = buoni.filter(m => m.testo.split("\n").some(haCamera));
   if (!conCamera.length) {
     const ultimi = buoni.slice(-15);
@@ -517,4 +527,16 @@ export function testoDaWhatsApp(grezzo) {
     if (utili.length) tenuti.push({ ...m, righe: utili });
   }
   return { testo: tenuti.map(m => m.righe.join("\n")).join("\n"), messaggi: tenuti.length, chi: [...new Set(tenuti.map(m => m.chi).filter(Boolean))], data: ultimaData, tolte, intestazioni: true };
+}
+// 0.98: per le righe che arrivano gia' "capite" (da Sofia): stessi controlli col prospetto che c'e' (gia' cosi', cambia, si accavalla)
+export function completaRiga(r, ctx) {
+  const nomeCamera = ctx.nomeCamera || ((id) => (CAMERE.find(c => c.id === id) || { nome: id }).nome);
+  return completa(r, { ...ctx, oggi: ctx.oggi || L.oggiISO(), nomeCamera });
+}
+// 0.98: come si puo' chiamare ogni camera (per spiegarlo a Sofia): { salvatore: ["salvatore"], zara1: ["zara sopra", ...] }
+export function aliasPerCamera() {
+  aliasRe();
+  const out = {};
+  for (const [k, id] of Object.entries(_alias)) { if (!id || id === "zara?") continue; (out[id] = out[id] || []).push(k); }
+  return out;
 }
