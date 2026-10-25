@@ -1708,3 +1708,17 @@ Michele (vista la Mappa bianca): "questo va bene, però fai anche una versione p
 ### PROVE
 - prova108mappa (casella bianca con la striscia colorata, fascia della camera, pallino e nome nero, le 7 lineette col giorno scelto, "entra oggi/già dentro → fino a", libere bianche tratteggiate, i giorni semplici, legenda e aiuto, tutta la mappa nella prima schermata, piu' tutto quello della 1.0.7), piu' tutte le prove di prima.
 - prova108facile (i tre bottoni non tagliati, 13 riquadri, piene/libere uguali alla Mappa, il letto pieno/vuoto, LIBERA verde, le lune contate giuste anche da un altro giorno, la fascia blu solo nelle piene, "fino a ...", "arriva oggi", niente tagliato, i tocchi, il dito, l'italiano delle date, il telefono che si ricorda la Facile).
+
+## 82. La 1.0.9 (25 ottobre): SOFIA "PULITA" (IL DISEGNO C SCELTO DA MICHELE)
+Michele (vista la versione Facile del prospetto): "vai, applica tutto; per Sofia mi piace la pulita". Dei tre disegni (A esce dalla cornice, B dietro il bancone della reception, C pulita con la sua ombra) ha scelto la C.
+### SOFIA NELLA PRIMA SCHERMATA
+- Dietro di lei NIENTE: via la parete con le doghe, il profilo d'ottone e la targhetta RECEPTION della 1.0.7.
+- Solo una luce morbida che viene da sinistra in alto (bianco in alto a sinistra, color sabbia chiaro verso destra e in basso) e il fondo appena piu' scuro in basso, come un pavimento.
+- La SUA OMBRA sul muro, a destra e un po' in basso, sfocata e staccata; quando si inclina il telefono l'ombra si sposta al contrario, come se la luce fosse ferma nella stanza. Piu' un'ombra vicina appena accennata che la stacca dal fondo. Niente alone chiaro sui capelli.
+- L'ombra ha lo spazio per non essere tagliata a destra (prima finiva con un taglio dritto accanto alla spalla).
+- La nuvoletta torna una scheda bianca semplice: bordo sottile neutro e ombra morbida verso l'alto (via il filo d'ottone del "bancone").
+- La luce parte sotto la barra dell'ora (non la copre) e sfuma sotto la nuvoletta; sugli schermi larghi (PC) sfuma anche ai lati.
+- Tema scuro: stessa scena in scuro; corrette le scritte della nuvoletta, che nel tema scuro erano rimaste nere su fondo scuro (c'era da prima), e la parola "Ascolta".
+- Il fantasmino (Sofia piccola che parla nelle altre schermate) resta com'era.
+### PROVE
+- prova109sofia (niente parete/profilo/RECEPTION, la luce su tutta la larghezza sotto la barra, due ombre con quella lontana a destra, niente alone, l'ombra non tagliata anche col telefono inclinato, nessuno scalino ai lati della nuvoletta, nuvoletta senza ottone, il fantasmino, il tema scuro leggibile); prova108mappa aggiornata (dietro Sofia niente parete), piu' tutte le prove di prima.
