@@ -3652,3 +3652,142 @@ body.premium .tess-nome.lungo,body.semplice .tess-nome.lungo{font-size:16px}
 .sc-bar.stretta{padding:0 2px;font-size:10.5px;text-align:center;text-overflow:clip}
 /* le Piantine: il nome della camera lascia sempre il posto al prezzo (anche "Via Zara · 1° e 2° piano") */
 .tess:has(.tess-pr) .tess-nome{max-width:calc(100% - 48px)}
+
+/* ==========================================================================
+   1.0.8 · LA MAPPA BIANCA (il disegno 3, scelto da Michele: "mi piace la 3, e rendi il prospetto più chiaro e più
+   facile possibile"). Caselle bianche con la striscia del colore dell'ospite a sinistra; in alto "CAMERA SALVATORE"
+   su una fascia color pietra; il pallino colorato e il nome dell'ospite in nero; "entra oggi → fino a ven 30" /
+   "già dentro → fino a 22 nov" nel tono scuro del suo colore; in fondo le 7 lineette dei giorni qui sopra.
+   ========================================================================== */
+/* i giorni: pastiglie semplici "Oggi", "Lun 26"... */
+.mp .cd-giorni{gap:4px;margin:0 0 6px}
+.mp .cd-g.mp-g{display:flex;align-items:center;justify-content:center;height:30px;padding:0;border-radius:9px;border:1px solid #E2DCD0;background:#FFFFFF;color:#57534E;font:700 11px/1 var(--f-body);white-space:nowrap}
+.mp .cd-g.mp-g[aria-pressed="true"]{background:#1C1917;border-color:#1C1917;color:#FFFFFF}
+.mp-conta{margin:0 3px 2px;font:600 12px/1.2 var(--f-body);color:#57534E}
+.mp-conta>b{font:800 15px/1.2 var(--f-display);color:#1C1917}
+.mp-conta span b{font:800 15px/1 var(--f-display);color:#1C1917}
+.mp-t span{text-transform:uppercase}
+/* la casella */
+.mp-lato{grid-auto-rows:64px;row-gap:5px}
+.mp-c{position:relative;display:flex;flex-direction:column;justify-content:flex-start;height:64px;padding:0;background:#FFFFFF;color:#1C1917;border:1px solid #E2DCD0;border-left:6px solid var(--tc,#856535);border-radius:10px;box-shadow:0 2px 6px rgba(28,25,23,.05);overflow:hidden}
+.mp-c.dubbio{background:#FFFFFF;border-color:#F59E0B;border-left-color:var(--tc,#856535);box-shadow:0 0 0 1.5px #F59E0B}
+.mp-c.ignoto{background:#FFFFFF;border:1px dashed #B58A3A;border-left:6px solid #856535}
+.mp-c.cambio{box-shadow:0 2px 6px rgba(28,25,23,.05)}
+.mp-targa{flex:0 0 18px;height:18px;display:flex;align-items:center;gap:4px;padding:0 7px;background:#F3EFE6;border-bottom:1px solid #EAE4D7;color:#57534E}
+.mp-tn{display:flex;align-items:baseline;gap:5px;min-width:0}
+.mp-cam{font:700 7.5px/18px var(--f-body);letter-spacing:.6px;color:#9A8F80;margin:0}
+.mp-nome{font:800 10px/18px var(--f-body);letter-spacing:.4px;color:#57534E;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-corpo{flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-start;gap:0;min-width:0;padding:3px 7px 0}
+.mp-ospite{display:flex;align-items:center;gap:5px;min-width:0}
+.mp-pallino{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--tc,#856535)}
+.mp-chi{min-width:0;font:800 14.5px/1.2 var(--f-display);color:#1C1917;text-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-ospite.lungo .mp-chi{font-size:13px}
+.mp-ospite.lunghissimo .mp-chi{font-size:12px}
+.mp-info{display:block;min-width:0;margin-top:1px;font:700 10.5px/1.25 var(--f-body);color:var(--tt,#44403C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-sep{font-style:normal}
+/* le 7 lineette in fondo: i 7 giorni qui sopra */
+.mp-sette{position:absolute;left:7px;right:7px;bottom:5px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.mp-sette i{height:4px;border-radius:2px;background:#E7E1D6}
+.mp-sette i.si{box-shadow:0 3px 0 -0.5px #1C1917}
+/* la camera libera: bianca tratteggiata */
+.mp-c.libera,.mp-c.libera.parte{background:#FAF8F5;border:1.5px dashed #CEC6B6;border-left:1.5px dashed #CEC6B6;box-shadow:none;color:#8A837A}
+.mp-c.libera .mp-targa{background:#F6F3EE;border-bottom:1px dashed #DED7CA}
+.mp-c.libera .mp-nome{color:#6B6358}
+.mp-c.libera .mp-corpo{gap:1px;padding-top:4px}
+.mp-vuota{font:800 12px/1.1 var(--f-body);letter-spacing:2.5px;color:#8A837A}
+.mp-uscito{display:block;min-width:0;font:600 10.5px/1.25 var(--f-body);color:#857D72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Lella e Nicole (via Nazario Sauro): la fascia della camera a sinistra */
+.mp-c.via{flex-direction:row;align-items:stretch;height:48px;margin-top:5px;width:100%}
+.mp-c.via .mp-targa{flex:0 0 104px;height:auto;padding:0 6px 0 8px;border-bottom:0;border-right:1px solid #EAE4D7}
+.mp-c.libera.via .mp-targa{border-right:1px dashed #DED7CA;border-bottom:0}
+.mp-c.via .mp-tn{flex-direction:column;align-items:flex-start;gap:1px}
+.mp-c.via .mp-cam,.mp-c.via .mp-nome{line-height:1.15}
+.mp-c.via .mp-tn small{font:600 8.5px/1.1 var(--f-body);color:#9A8F80}
+.mp-c.via .mp-corpo{flex:1 1 auto;justify-content:center;padding:0 10px 7px}
+.mp-c.via .mp-sette{left:114px;right:10px;bottom:4px}
+/* i tre appartamenti */
+.mp-case{gap:5px}
+.mp-c.casa{height:74px;padding:0}
+.mp-c.casa .mp-targa{padding:0 5px 0 6px}
+.mp-c.casa .mp-chi{font-size:12.5px}
+.mp-c.casa .mp-ospite.lungo .mp-chi,.mp-c.casa .mp-ospite.lunghissimo .mp-chi{font-size:11.5px}
+.mp-c.casa .mp-ospite{gap:4px}
+.mp-c.casa .mp-pallino{width:8px;height:8px}
+.mp-c.casa .mp-info{white-space:normal;font-size:10px;line-height:1.25}
+.mp-c.casa .mp-sep{display:none}
+.mp-c.casa .mp-q,.mp-c.casa .mp-n{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-c.casa .mp-uscito{white-space:normal;font-size:10px}
+.mp-c.casa .mp-vuota{font-size:10.5px;letter-spacing:1.5px}
+.mp-c.casa .mp-sette{left:6px;right:6px}
+/* la legenda e la riga d'aiuto */
+.mp-leg{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:9px;font:600 11px/1.2 var(--f-body);color:#57534E}
+.mp-leg .mp-leg-pal{width:10px;height:10px;border-radius:50%}
+.mp-leg .l-libera{width:14px;height:10px;border-radius:3px;background:#FAF8F5;border:1.5px dashed #CEC6B6}
+.mp-aiuto{display:flex;align-items:flex-start;gap:7px;margin-top:7px;font:600 11px/1.35 var(--f-body);color:#78716C}
+.mp-aiuto-sette{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,9px);gap:2px;margin-top:5px}
+.mp-aiuto-sette i{height:4px;border-radius:2px;background:#E7E1D6}
+/* tema scuro */
+:root[data-theme="dark"] .mp-c{background:#1E1B18;color:#F5F1EA;border-color:#3A332B}
+:root[data-theme="dark"] .mp-targa{background:#2A2520;border-color:#3A332B}
+:root[data-theme="dark"] .mp-chi{color:#F5F1EA}
+:root[data-theme="dark"] .mp-info{color:#D6CFC4}
+:root[data-theme="dark"] .mp-c.libera{background:#1A1714;border-color:#4A4238}
+:root[data-theme="dark"] .mp .cd-g.mp-g{background:#1E1B18;color:#D6CFC4;border-color:#3A332B}
+
+/* ==========================================================================
+   1.0.8 · LA VERSIONE FACILE (Michele: "fai anche una versione proprio quasi da bambino di 3 anni"). Un riquadro
+   grande per camera: il nome, il LETTO (pieno, con la persona che dorme / vuoto), il nome di chi c'è, "fino a venerdì"
+   e una LUNA per ogni notte che resta. Niente colori da imparare: occupata = sabbia calda; libera = bianca tratteggiata
+   con LIBERA in verde.
+   ========================================================================== */
+/* i tre bottoni Mappa / Facile / Settimana */
+.seg.pr-viste.tre button{padding:0 2px;font-size:12.5px;letter-spacing:-.2px}
+.pr-riga:has(.pr-viste.tre) .pr-ins2{padding:0 11px}
+/* telefoni stretti: i tre bottoni su una riga tutta loro, sotto "+ Prospetto" e WhatsApp */
+@media (max-width:389px){.pr-riga:has(.pr-viste.tre){flex-wrap:wrap}.pr-riga:has(.pr-viste.tre) .pr-ins2{flex:1 1 auto}.seg.pr-viste.tre{flex:1 1 100%}}
+.card.mp.fa{padding:10px 12px 14px}
+.fa-titolo{margin:6px 2px 8px;font:800 22px/1.15 var(--f-display);color:#1C1917;text-align:center}
+.fa-conta{display:flex;justify-content:center;gap:8px;margin:0 0 2px}
+.fa-n{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px 0 7px;border-radius:999px;box-sizing:border-box;font:700 13px/1 var(--f-body);color:#57534E}
+.fa-n .fa-letto{width:38px;height:24px}
+.fa-n b{font:800 19px/1 var(--f-display);color:#1C1917}
+.fa-n.piene{background:#F6EAD1;border:2px solid #D9BF8C}
+.fa-n.libere{background:#FFFFFF;border:2px dashed #9CC9A9}
+.fa-n.libere b{color:#15803D}
+/* i piani */
+.fa-gruppo{margin-top:14px}
+.fa-t{margin:0 2px 12px;font:800 12px/1 var(--f-body);letter-spacing:1px;text-transform:uppercase;color:#57534E}
+.fa-griglia{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 8px}
+/* il riquadro della camera */
+.fa-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;min-width:0;min-height:136px;margin:0;padding:10px 5px 9px;border-radius:16px;box-sizing:border-box;font:inherit;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fa-c.piena{background:#F6EAD1;border:2px solid #D9BF8C;color:#1C1917;box-shadow:0 4px 10px -6px rgba(133,101,53,.55)}
+.fa-c.libera{background:#FFFFFF;border:2px dashed #9CC9A9;color:#57534E}
+.fa-c.dubbio{border-color:#F59E0B;box-shadow:0 0 0 2px rgba(245,158,11,.35)}
+.fa-c:active{transform:scale(.97)}
+.fa-nome{display:block;max-width:100%;font:800 11.5px/1.2 var(--f-body);letter-spacing:.5px;text-transform:uppercase;color:#7A6236;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fa-c.libera .fa-nome{color:#57534E}
+.fa-c .fa-letto{display:block;flex:0 0 auto;width:64px;height:40px;margin:1px 0}
+.fa-chi{display:-webkit-box;max-width:100%;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical;font:800 15px/1.15 var(--f-display);color:#1C1917;overflow-wrap:anywhere}
+.fa-libera{display:block;font:800 16px/1.15 var(--f-body);letter-spacing:2px;color:#15803D}
+.fa-fino{display:block;max-width:100%;font:700 11.5px/1.25 var(--f-body);color:#6B5A3A}
+.fa-c.libera .fa-fino{font-weight:600;color:#78716C}
+/* le notti: un pezzetto di cielo di notte in fondo al riquadro, una luna gialla per ogni notte che resta */
+.fa-lune{align-self:stretch;display:flex;justify-content:center;align-items:center;gap:2px;height:22px;margin:auto -5px -9px;padding:0 3px;border-radius:0 0 14px 14px;background:#26345C}
+.fa-lune svg{display:block;flex:0 0 auto}
+.fa-lune em{margin-left:4px;font:800 11.5px/1 var(--f-body);font-style:normal;color:#F7C948;white-space:nowrap}
+/* a capo nei punti giusti: il nome intero e la data intera vanno insieme sulla riga sotto */
+.fa-nw{display:inline-block;max-width:100%;vertical-align:top}
+.fa-notte{display:inline-flex;align-items:center;justify-content:center;width:26px;height:18px;border-radius:6px;background:#26345C}
+/* "arriva oggi": la pastiglia verde a cavallo del bordo in alto */
+.fa-arriva{position:absolute;top:-10px;left:50%;transform:translateX(-50%);padding:3px 8px;border-radius:999px;background:#15803D;color:#FFFFFF;font:800 10px/1.1 var(--f-body);font-style:normal;letter-spacing:.2px;white-space:nowrap;box-shadow:0 2px 5px rgba(21,128,61,.35)}
+.fa-aiuto{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;margin-top:14px;font:600 11.5px/1.35 var(--f-body);color:#78716C;text-align:center}
+.fa-aiuto svg{flex:0 0 auto}
+/* tema scuro */
+:root[data-theme="dark"] .fa-titolo,:root[data-theme="dark"] .fa-chi,:root[data-theme="dark"] .fa-n b{color:#F5F1EA}
+:root[data-theme="dark"] .fa-c.piena,:root[data-theme="dark"] .fa-n.piene{background:#3A2F1F;border-color:#7A6236}
+:root[data-theme="dark"] .fa-c.libera,:root[data-theme="dark"] .fa-n.libere{background:#1A1714;border-color:#3F7A52}
+:root[data-theme="dark"] .fa-nome,:root[data-theme="dark"] .fa-fino{color:#D6C7A6}
+:root[data-theme="dark"] .fa-libera,:root[data-theme="dark"] .fa-n.libere b{color:#6FD08F}
+:root[data-theme="dark"] .fa-n{color:#D6CFC4}
+:root[data-theme="dark"] .fa-t{color:#A8A29E}
+:root[data-theme="dark"] .mp .cd-g.mp-g[aria-pressed="true"]{background:#F5F1EA;border-color:#F5F1EA;color:#1C1917}

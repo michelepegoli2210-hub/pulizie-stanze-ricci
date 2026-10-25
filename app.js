@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.7";
+export const VERSIONE = "1.0.8";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -874,7 +874,7 @@ function nomeSignora() { const u = S.utente; if (u?.zona) { const n = SIG(u.zona
 const S = {
   db: null, utente: null, pronto: false,
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
-  board: { modo: "mappa", inizio: L.oggiISO() },   // 1.0.5: si apre sulla mappa delle camere; 1.0.7: la settimana parte da oggi
+  board: { modo: (() => { try { return localStorage.getItem("ricci_vista_pr") === "facile" ? "facile" : "mappa"; } catch (e) { return "mappa"; } })(), inizio: L.oggiISO() },   // 1.0.8: o la Facile, se l'ultima volta su questo telefono si e' usata quella   // 1.0.5: si apre sulla mappa delle camere; 1.0.7: la settimana parte da oggi
   camere: CAMERE.slice(), zone: ZONE, squadra: null, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
@@ -4718,15 +4718,15 @@ function vistaTabellone() {
   const noteP = Object.values(S.note).filter(n => n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
   // 1.0.5: in cima i tasti (+ Prospetto, WhatsApp) e la scelta Mappa / Settimana; poi la mappa delle camere OPPURE la
   // settimana (o il mese); in fondo i dubbi e le note
-  const modo = S.board.modo === "mese" ? "mese" : S.board.modo === "settimana" ? "settimana" : "mappa";
+  const modo = S.board.modo === "mese" ? "mese" : S.board.modo === "settimana" ? "settimana" : S.board.modo === "facile" ? "facile" : "mappa";
   const corpoMese = `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
   const pillole = `<div class="pr-numeri"><span><b>${occOggi}/${S.camere.length}</b> stanotte</span><span><b>${notti}</b> notti</span>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<span><i style="background:${TIPI_OSPITE[k]?.colore || "var(--c-altro)"}"></i><b>${v}</b> ${esc(TIPI_OSPITE[k]?.nome || k)}</span>`).join("")}</div>`;
   const azioni = puoModificare() ? `<button type="button" class="pr-ins2" data-inserisci>＋ Prospetto</button><button type="button" class="pr-wa2" data-ins-wa-subito aria-label="Il prospetto da WhatsApp">${ICO_WA}</button>` : "";
-  const viste = `<div class="seg pr-viste"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo !== "mappa"}" data-board="${modo === "mese" ? "mese" : "settimana"}">Settimana</button></div>`;
+  const viste = `<div class="seg pr-viste tre"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo === "facile"}" data-board="facile">Facile</button><button type="button" aria-pressed="${modo === "settimana" || modo === "mese"}" data-board="${modo === "mese" ? "mese" : "settimana"}">Settimana</button></div>`;
   const nav = `<section class="card flat pr-nav"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
     <div class="pr-nav-sotto">${pillole}<button type="button" class="pr-mese" data-board="${modo === "mese" ? "settimana" : "mese"}">${modo === "mese" ? "Vedi la settimana" : "Vedi il mese"}</button></div></section>`;
-  const corpo = modo === "mappa" ? mappaCamere() : modo === "settimana" ? nav + settimanaCompatta(da) : nav + corpoMese;
+  const corpo = modo === "mappa" ? mappaCamere() : modo === "facile" ? vistaFacile() : modo === "settimana" ? nav + settimanaCompatta(da) : nav + corpoMese;
   return `${puoModificare() ? bannerLettura() : ""}<div class="pr-riga">${azioni}${viste}</div>
   ${corpo}
   ${dubbi.length ? `<section class="card"><h2 style="color:var(--todo)">Da controllare (?)</h2><div class="rows">${dubbi.map(s => `<button class="row" data-sog="${esc(s.id)}"><span><b>${esc(camera(s.camera).nome)}</b> · ${esc(s.nome)}<br><span class="muted">${esc(L.dataMedia(s.inizio))} → ${esc(L.dataMedia(s.fine))}${s.notaPrivata ? " · " + esc(s.notaPrivata) : ""}</span></span><span class="s todo">?</span></button>`).join("")}</div></section>` : ""}
@@ -4773,15 +4773,18 @@ function nomeOspite(s) { const n = String((s && s.nome) || "").trim(), k = nucle
 // il nome piu' corto che si capisce: senza "Sig.ra", "Famiglia", "Ditta"... e senza il nome di battesimo ("Russo")
 function nomeCortoOspite(s) { const k = nomeOspite(s); const p = k.replace(/^(sig\.?\s*ra|sig\.?\s*na|sigg?\.?|signora|signor[ae]?|dott\.?(\s*ssa)?|famiglia|fam\.?|ditta|coppia|sposi)\s+/i, "").split(/\s+/).filter(Boolean); return p[0] || k; }
 function dopoNome(s) { const n = String((s && s.nome) || "").trim(), k = nomeOspite(s); const i = n.indexOf(k); return i < 0 || k === n ? "" : n.slice(i + k.length).replace(/^[\s·,;(\/\-]+|[)\s]+$/g, "").trim(); }
+function tonoOspite(s) { return ({ ferr: "#14532D", fond: "#1E3A8A", dago: "#7C2D12", altro: "#581C87", unk: "#78350F" })[s && TIPI_OSPITE[s.tipo] ? s.tipo : "altro"] || "#44403C"; }
 function coloreOspite(s) { return !s || s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore); }
 function mappaCamere() {
   const oggi = L.oggiISO();
   if (!S.colpo || S.colpo < oggi || L.giorniTra(oggi, S.colpo) > 6) S.colpo = oggi;
   const g = S.colpo, sog = soggiorniLista();
   const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(oggi, i));
-  const conta = (x) => ({ a: sog.filter(s => s.inizio === x).length, p: sog.filter(s => s.fine === x).length });
-  const nomeG = (x, i) => i === 0 ? "Oggi" : i === 1 ? "Domani" : L.GG[L.giornoSettimana(x)];
-  const strip = giorni.map((x, i) => { const n = conta(x); return `<button type="button" class="cd-g" aria-pressed="${x === g}" data-colpo="${x}"><span>${nomeG(x, i)}</span><b>${L.giornoDelMese(x)}</b><i>${n.a ? `<em class="in">+${n.a}</em>` : ""}${n.p ? `<em class="out">−${n.p}</em>` : ""}</i></button>`; }).join("");
+  const nomeG = (x, i) => i === 0 ? "Oggi" : `${L.GG[L.giornoSettimana(x)].replace(/^./, ch => ch.toUpperCase())} ${L.giornoDelMese(x)}`;
+  const strip = giorni.map((x, i) => `<button type="button" class="cd-g mp-g" aria-pressed="${x === g}" data-colpo="${x}">${nomeG(x, i)}</button>`).join("");
+  // le 7 lineette in fondo a ogni casella: i 7 giorni qui sopra, colorata = occupata (col colore di chi c'e'), quella del
+  // giorno scelto contornata
+  const sette = (c) => `<span class="mp-sette" aria-hidden="true">${giorni.map(d => { const o = sog.find(s => s.camera === c.id && s.inizio <= d && d < s.fine); return `<i class="${d === g ? "si" : ""}"${o ? ` style="background:${coloreOspite(o)}"` : ""}></i>`; }).join("")}</span>`;
   const stato = (c) => {
     const qui = sog.filter(s => s.camera === c.id);
     const cur = qui.find(s => s.inizio <= g && g < s.fine) || null;
@@ -4799,20 +4802,24 @@ function mappaCamere() {
     // all'inizio della riga delle notti, nel blocco colorato
     // 1.0.7 (Gemini: "per chi non conosce l'albergo ANTONIO sopra Neri Paolo sembrano due persone"): davanti al nome
     // della camera la parola "camera" (negli appartamenti "app."), piccola e chiara
-    const targa = `<span class="mp-targa">${icoPorta()}<span class="mp-tn"><i class="mp-cam">${forma === "casa" ? "app." : "camera"}</i><b class="mp-nome">${nomeC}</b>${via}</span></span>`;
+    const targa = `<span class="mp-targa"><span class="mp-tn"><i class="mp-cam">${forma === "casa" ? "app." : "camera"}</i><b class="mp-nome">${nomeC}</b>${via}</span></span>`;
     if (!s) {
-      // libera stanotte: sembra LIBERA (grigia, tratteggiata), mai piu' rossa; chi se ne va quel giorno, piccolo sotto
+      // libera: bianca tratteggiata, "LIBERA"; sotto chi se ne va quel giorno o, se no, chi entra nei prossimi giorni
       const cl = `mp-c libera${x.par ? " parte" : ""}${forma ? " " + forma : ""}`;
-      const corpo = `<span class="mp-corpo"><span class="mp-vuota">LIBERA</span>${x.par ? `<span class="mp-uscito">esce ${esc(quando(g))}: ${esc(nomeOspite(x.par))}</span>` : ""}</span>`;
+      const dopo = sog.filter(q => q.camera === c.id && q.inizio > g && q.inizio <= giorni[6]).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0];
+      const sotto = x.par ? `esce ${esc(quando(g))}: ${esc(nomeOspite(x.par))}` : dopo ? `entra ${esc(quando(dopo.inizio))}: ${esc(nomeOspite(dopo))}` : "";
+      const corpo = `<span class="mp-corpo"><span class="mp-vuota">LIBERA</span>${sotto ? `<span class="mp-uscito">${sotto}</span>` : ""}</span>`;
       const aria = `Camera ${nomeC}: libera${x.par ? ", parte " + esc(x.par.nome || "") : ""}`;
-      return puoModificare() ? `<button type="button" class="${cl}" data-cella="${esc(c.id)}|${g}" aria-label="${aria}">${targa}${corpo}</button>` : `<span class="${cl}" aria-label="${aria}">${targa}${corpo}</span>`;
+      return puoModificare() ? `<button type="button" class="${cl}" data-cella="${esc(c.id)}|${g}" aria-label="${aria}">${targa}${corpo}${sette(c)}</button>` : `<span class="${cl}" aria-label="${aria}">${targa}${corpo}${sette(c)}</span>`;
     }
     const n = Number(s.persone) || 1;
     // 1.0.7 (Gemini): frasi in italiano al posto delle sigle (→ ARRIVA, ⇄ CAMBIO) e SEMPRE il giorno in cui se ne va
     const fino = `fino a ${esc(giornoCorto(s.fine))}`;
-    const info = x.arriva ? `entra ${esc(quando(g))}<i class="mp-sep"> · </i><span class="mp-n">${fino}</span>` : x.dubbio ? `? da controllare<i class="mp-sep"> · </i><span class="mp-n">${fino}</span>` : `${fino}<i class="mp-sep"> · </i><span class="mp-n">${nottiDi(s)}</span>`;
+    // 1.0.8 (il disegno 3 scelto da Michele): "entra oggi → fino a ven 30", "già dentro → fino a 22 nov"
+    const prima = x.arriva ? `entra ${esc(quando(g))}` : x.dubbio ? "? da controllare" : "già dentro";
+    const info = `<span class="mp-q">${prima}</span><i class="mp-sep"> → </i><span class="mp-n">${fino}</span>`;
     const cl = `mp-c piena${x.arriva ? " arriva" : ""}${x.cambio ? " cambio" : ""}${x.dubbio ? " dubbio" : ""}${s.tipo === "unk" ? " ignoto" : ""}${forma ? " " + forma : ""}`;
-    return `<button type="button" class="${cl}" style="--tc:${coloreOspite(s)}" data-sog="${esc(s.id)}" aria-label="Camera ${nomeC}: ospite ${esc(s.nome || "?")}, ${nottiDi(s)}${x.cambio ? ", dopo " + esc(x.par.nome || "") : ""}">${targa}<span class="mp-corpo"><span class="mp-ospite${lung(nomeOspite(s))}">${icoPersona()}<b class="mp-chi">${esc(nomeOspite(s))}</b></span><span class="mp-info">${info}</span></span></button>`;
+    return `<button type="button" class="${cl}" style="--tc:${coloreOspite(s)};--tt:${tonoOspite(s)}" data-sog="${esc(s.id)}" aria-label="Camera ${nomeC}: ospite ${esc(s.nome || "?")}, ${nottiDi(s)}${x.cambio ? ", dopo " + esc(x.par.nome || "") : ""}">${targa}<span class="mp-corpo"><span class="mp-ospite${lung(nomeOspite(s))}"><i class="mp-pallino"></i><b class="mp-chi">${esc(nomeOspite(s))}</b></span><span class="mp-info">${info}</span></span>${sette(c)}</button>`;
   };
   const blocchi = zoneOrdinate().map(z => {
     const cam = camereZona(z.id);
@@ -4822,18 +4829,68 @@ function mappaCamere() {
     corpo += via.map(c => casella(c, "via")).join("");
     if (case_.length) corpo += `<div class="mp-case">${case_.map(c => casella(c, "casa")).join("")}</div>`;
     const qui = cam.filter(c => stato(c).cur).length;
-    return `<div class="mp-blocco"><div class="mp-t"><b>${esc(z.breve || z.nome)}${via.length ? " + " + via.map(c => esc(c.nome)).join(", ") : ""}</b><span>${qui}/${cam.length} ${case_.length && !sx.length ? "pieni" : "piene"}</span></div>${corpo}</div>`;
+    return `<div class="mp-blocco"><div class="mp-t"><b>${esc(z.breve || z.nome)}${via.length ? " + " + via.map(c => esc(c.nome)).join(", ") : ""}</b><span>${qui}/${cam.length} ${case_.length && !sx.length ? "occupati" : "occupate"}</span></div>${corpo}</div>`;
   }).join("");
   const quale = g === oggi ? "Stanotte" : g === L.aggiungiGiorni(oggi, 1) ? "Domani notte" : L.GIORNI[L.giornoSettimana(g)].replace(/^./, ch => ch.toUpperCase()) + " notte";
   // la legenda: porta = camera, omino = ospite, i colori dei tipi di ospite di quella notte, la camera libera
   const tipiNotte = [...new Set(sog.filter(s => s.inizio <= g && g < s.fine).map(s => (TIPI_OSPITE[s.tipo] ? s.tipo : "altro")))];
-  const leg = `<div class="mp-leg"><span class="mp-leg-ico">${icoPorta()}camera</span><span class="mp-leg-ico">${icoPersona()}ospite</span>${tipiNotte.map(k => `<span><i style="background:${coloreOspite({ tipo: k })}"></i>${esc(TIPI_OSPITE[k].nome)}</span>`).join("")}<span><i class="l-libera"></i>libera</span><span class="mp-leg-pm"><b>+</b> arrivano · <b>−</b> partono</span></div>`;
+  const tipi7 = [...new Set(sog.filter(s => s.inizio <= giorni[6] && giorni[0] < s.fine).map(s => (TIPI_OSPITE[s.tipo] ? s.tipo : "altro")))];
+  const leg = `<div class="mp-leg">${tipi7.map(k => `<span><i class="mp-leg-pal" style="background:${coloreOspite({ tipo: k })}"></i>${esc(TIPI_OSPITE[k].nome)}</span>`).join("")}<span><i class="l-libera"></i>libera</span></div>
+    <div class="mp-aiuto"><span class="mp-aiuto-sette" aria-hidden="true"><i style="background:#15803D"></i><i style="background:#15803D"></i><i></i></span>in fondo a ogni camera i 7 giorni qui sopra: colorato = occupata, grigio = libera. Tocca un giorno per vedere chi dorme quella notte, tocca una camera per i dettagli.</div>`;
   return `<section class="card mp" aria-label="Le camere a colpo d'occhio">
     <div class="cd-giorni" role="tablist" aria-label="Scegli il giorno">${strip}</div>
-    <div class="mp-conta"><b>${esc(quale)}</b><span><b>${piene}</b>/${S.camere.length} piene${cambi ? ` · <b>${cambi}</b> ${cambi === 1 ? "cambio" : "cambi"}` : ""}</span></div>
+    <div class="mp-conta"><b>${esc(quale)}</b><span><b>${piene}</b> ${piene === 1 ? "occupata" : "occupate"} · <b>${S.camere.length - piene}</b> ${S.camere.length - piene === 1 ? "libera" : "libere"}</span></div>
     ${blocchi}
     ${leg}
   </section>${elencoOspiti(g, quale)}`;
+}
+// ---- 1.0.8: LA VERSIONE FACILE (Michele: "fai anche una versione proprio quasi da bambino di 3 anni"). Per ogni camera
+// un riquadro grande: il nome della camera, il LETTO (con la persona che dorme, oppure vuoto), il nome di chi c'e', fino a
+// che giorno resta (il giorno scritto per intero: "fino a venerdì") e una LUNA per ogni notte che gli resta. Niente colori
+// da imparare: occupata = color sabbia col letto pieno; libera = bianca col letto vuoto e LIBERA in verde. Stessi giorni in
+// alto e stesso dito per sfogliarli; un tocco apre la camera.
+function icoLetto(pieno) {
+  const letto = `<rect x="6" y="25" width="52" height="8" rx="3" fill="${pieno ? "#8A6D32" : "#FFFFFF"}" stroke="${pieno ? "#6B4F23" : "#9CC9A9"}" stroke-width="1.5"/><rect x="4" y="12" width="6" height="26" rx="2" fill="${pieno ? "#6B4F23" : "#FFFFFF"}" stroke="${pieno ? "#6B4F23" : "#9CC9A9"}" stroke-width="1.5"/><rect x="54" y="18" width="6" height="20" rx="2" fill="${pieno ? "#6B4F23" : "#FFFFFF"}" stroke="${pieno ? "#6B4F23" : "#9CC9A9"}" stroke-width="1.5"/><rect x="12" y="17" width="13" height="8" rx="4" fill="#FFFFFF" stroke="${pieno ? "#C9B48A" : "#9CC9A9"}" stroke-width="1.2"/>`;
+  const persona = pieno ? `<circle cx="18.5" cy="13.5" r="5.2" fill="#F2C9A5" stroke="#8A5A3C" stroke-width="1"/><path d="M13.6 12.4c.6-4.2 8.6-4.6 9.8 0-2.2-1.5-6.9-1.8-9.8 0z" fill="#5B3A29"/><path d="M24 17.5h28a2.5 2.5 0 0 1 2.5 2.5v5H24z" fill="#3B6FD6"/><text x="27" y="10" font-size="8" font-weight="800" fill="#9A8F80" font-family="Montserrat,sans-serif">z</text><text x="33" y="6" font-size="6" font-weight="800" fill="#B8AE9F" font-family="Montserrat,sans-serif">z</text>` : "";
+  return `<svg class="fa-letto" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${letto}${persona}</svg>`;
+}
+function icoLuna() { return `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M7.09 1.82A6.6 6.6 0 1 0 13.88 10.42A5.6 5.6 0 0 1 7.09 1.82z" fill="#F7C948"/></svg>`; }
+function vistaFacile() {
+  const oggi = L.oggiISO();
+  if (!S.colpo || S.colpo < oggi || L.giorniTra(oggi, S.colpo) > 6) S.colpo = oggi;
+  const g = S.colpo, sog = soggiorniLista();
+  const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(oggi, i));
+  const nomeG = (x, i) => i === 0 ? "Oggi" : `${L.GG[L.giornoSettimana(x)].replace(/^./, ch => ch.toUpperCase())} ${L.giornoDelMese(x)}`;
+  const strip = giorni.map((x, i) => `<button type="button" class="cd-g mp-g" aria-pressed="${x === g}" data-colpo="${x}">${nomeG(x, i)}</button>`).join("");
+  // il giorno scritto per intero: "oggi", "domani", "venerdì"; piu' in la' la data ("22 novembre")
+  const giornoParola = (d) => d === oggi ? "oggi" : d === L.aggiungiGiorni(oggi, 1) ? "domani" : L.giorniTra(oggi, d) <= 6 ? L.GIORNI[L.giornoSettimana(d)] : `${L.giornoDelMese(d)} ${L.MESI[L.daISO(d).getUTCMonth()]}`;
+  const finoA = (d) => { const p = giornoParola(d); if (!/^\d/.test(p)) return `fino a ${p}`; const n = parseInt(p, 10); return n === 8 || n === 11 ? `fino all'${p}` : `fino al ${n === 1 ? p.replace(/^1(?=\s)/, "1°") : p}`; };
+  let piene = 0;
+  const riquadro = (c) => {
+    const qui = sog.filter(s => s.camera === c.id);
+    const s = qui.find(x => x.inizio <= g && g < x.fine) || null;
+    const nomeC = esc(c.tipo === "casa" ? (NOMI_SETTIMANA[c.id] || nomeBreveCamera(c)) : nomeBreveCamera(c));
+    if (!s) {
+      const par = qui.find(x => x.fine === g), dopo = qui.filter(x => x.inizio > g && x.inizio <= giorni[6]).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0];
+      const sotto = par ? `${g === oggi ? "oggi" : giornoParola(g)} va via: <span class="fa-nw">${esc(nomeOspite(par))}</span>` : dopo ? `arriva ${esc(giornoParola(dopo.inizio))}: <span class="fa-nw">${esc(nomeOspite(dopo))}</span>` : "";
+      const dentro = `<b class="fa-nome">${nomeC}</b>${icoLetto(false)}<b class="fa-libera">LIBERA</b>${sotto ? `<span class="fa-fino">${sotto}</span>` : ""}`;
+      return puoModificare() ? `<button type="button" class="fa-c libera" data-cella="${esc(c.id)}|${g}" aria-label="${nomeC}: libera">${dentro}</button>` : `<span class="fa-c libera">${dentro}</span>`;
+    }
+    piene++;
+    const resta = L.giorniTra(g, s.fine), lune = resta > 7 ? 1 : resta;
+    const arriva = s.inizio === g ? `<i class="fa-arriva">arriva ${g === oggi ? "oggi" : esc(giornoParola(g))}</i>` : "";
+    return `<button type="button" class="fa-c piena${s.tipo === "unk" || s.dubbio ? " dubbio" : ""}" data-sog="${esc(s.id)}" aria-label="${nomeC}: ${esc(nomeOspite(s))}, ${esc(finoA(s.fine))}, ancora ${resta} ${resta === 1 ? "notte" : "notti"}">${arriva}<b class="fa-nome">${nomeC}</b>${icoLetto(true)}<b class="fa-chi">${s.tipo === "unk" || s.dubbio ? "? " : ""}${esc(nomeOspite(s))}</b><span class="fa-fino">${esc(finoA(s.fine)).replace(/(\d+°? [a-z]+)$/, '<span class="fa-nw">$1</span>')}</span><span class="fa-lune" title="ancora ${resta} ${resta === 1 ? "notte" : "notti"}">${icoLuna().repeat(lune)}${resta > 7 ? `<em>${resta} notti</em>` : ""}</span></button>`;
+  };
+  const gruppi = zoneOrdinate().map(z => { const cam = camereZona(z.id); return `<div class="fa-gruppo"><div class="fa-t">${esc(z.breve || z.nome)}${cam.some(c => c.lato === "S") ? " + " + cam.filter(c => c.lato === "S").map(c => esc(c.nome)).join(", ") : ""}</div><div class="fa-griglia">${cam.map(riquadro).join("")}</div></div>`; }).join("");
+  const quale = g === oggi ? "stanotte" : g === L.aggiungiGiorni(oggi, 1) ? "domani notte" : L.GIORNI[L.giornoSettimana(g)] + " notte";
+  const libere = S.camere.length - piene;
+  return `<section class="card mp fa" aria-label="Chi dorme ${esc(quale)}, versione facile">
+    <div class="cd-giorni" role="tablist" aria-label="Scegli il giorno">${strip}</div>
+    <h2 class="fa-titolo">Chi dorme ${esc(quale)}?</h2>
+    <div class="fa-conta"><span class="fa-n piene">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="fa-n libere">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "libera" : "libere"}</span></div>
+    ${gruppi}
+    <div class="fa-aiuto"><span class="fa-notte" aria-hidden="true">${icoLuna()}</span>= una notte che resta · tocca una camera per vedere tutto</div>
+  </section>`;
 }
 // 1.0.6: CHI DORME quella notte, ospite per ospite (lo stesso nome in piu' camere = un ospite solo, per esempio una
 // ditta): il nome intero, quante camere e quali, quante persone, quante notti (dal ... al ...), il telefono da toccare.
@@ -6814,6 +6871,7 @@ function collega() {
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => {
     const prima = S.board.modo, nuovo = b.dataset.board, oggi = L.oggiISO();
     S.board.modo = nuovo;
+    if (nuovo === "mappa" || nuovo === "facile") { try { localStorage.setItem("ricci_vista_pr", nuovo); } catch (e) {} }
     if (nuovo === "settimana") S.board.inizio = prima === "mese" && L.primoDelMese(S.board.inizio) !== L.primoDelMese(oggi) ? L.primoDelMese(S.board.inizio) : oggi;
     disegna();
   });
