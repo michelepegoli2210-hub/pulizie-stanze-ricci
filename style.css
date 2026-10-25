@@ -3144,3 +3144,139 @@ body:has(.sheet) .sofia-mini,body:has(.conferma) .sofia-mini,body.con-tastiera .
 .sofia-fuori{height:min(310px,42svh);min-height:200px;right:-6px;bottom:calc(var(--alto-sotto,71px) + env(safe-area-inset-bottom,0px))}
 body.con-sotto .sofia-fuori{bottom:calc(var(--alto-sotto,71px) + env(safe-area-inset-bottom,0px))}
 .sofia-fuori.piatta{height:min(260px,34svh);right:8px;bottom:calc(var(--alto-sotto,71px) + 10px)}
+
+/* ==========================================================================
+   1.0.4 · SOFIA "BUSTO E POCO OLTRE" + LA NUVOLETTA A DUE STATI + LA TAVOLOZZA DI GEMINI 4 ARGON (25/10 12:24)
+   Michele: "no, andava bene prima: busto e poco oltre, cosi' si vedono tutti i movimenti; mi piace che affianco
+   compare come un fantasmino in tutte le schermate; usa Gemini per ottimizzare grafiche, filmati, impaginazione e colori".
+   ========================================================================== */
+/* ---- LA TAVOLOZZA (Gemini): fondo #F7F4EE, schede bianche, bordi #E2DCD0, testo #1C1917 e #524D46 (piu' scuro: si
+   legge al sole), oro brunito #856535, stati rosso / ambra / verde ad alto contrasto con il fondo chiaro ---- */
+body.premium,body.semplice{--bg:#F7F4EE;--line:#E2DCD0;--line2:#ECE7DD;--muted:#524D46;--muted2:#6B655D;--idle:#EFECE4;--campo:#EFECE4;
+  --todo:#B91C1C;--todo-bg:#FDF2F2;--wip:#9A5B00;--wip-bg:#FEF9E7;--done:#156534;--done-bg:#F0FDF4;--oro:#856535;--oro-bg:#FAF5E8}
+html[data-colore="oro"] body.premium,body.semplice{--accent:#856535;--accent-bg:#FAF5E8;--primary:#856535;--primary-chiaro:#9E7B46;--primary-scuro:#6E5227;--primary-border:#856535}
+body.premium .barra-sotto,body.semplice .barra-sotto{background:#FFFFFF;border-top-color:#DCD5C7}
+body.premium .bs-t[aria-pressed="true"]{color:#856535}
+body.premium .bs-t[aria-pressed="true"] .bs-ico{background:#EFECE4}
+/* i pallini d'oro: netti (prima sfocati, sembravano un difetto), con un alone pieno che respira */
+@keyframes led-netto{0%,100%{box-shadow:0 0 0 4px rgba(133,101,53,.18)}50%{box-shadow:0 0 0 7px rgba(133,101,53,.05)}}
+body.premium .led,body.semplice .led{width:10px;height:10px;background:#856535!important;opacity:1;animation:led-netto 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){body.premium .led,body.semplice .led{animation:none;box-shadow:0 0 0 4px rgba(133,101,53,.18)}}
+
+/* ---- LA CASA: Sofia 30 px piu' su (la testa resta sotto l'ora) e la nuvoletta che parte sotto la vita ----
+   H = spazio tra l'ora e i tasti in basso (673 px sul telefono di Michele). PICCOLA: dal 74,3% di H, alta fino a 16 px
+   sopra la barra (157 px): si vedono testa, spalle, braccia, la vita e le mani. GRANDE: dal 50% di H, con sotto la
+   casella per scrivere. */
+body.premium .sofia-hero{--nv-top:calc(var(--h-casa) * .743);--nv-alto:calc(var(--h-casa) * .257 - 16px)}
+body.premium .sofia-hero.nuvola-aperta{--nv-top:calc(var(--h-casa) * .5);--nv-alto:calc(var(--h-casa) * .5 - 78px)}
+body.premium .casa-scena{top:-30px}
+body.premium .casa-nuvola{top:var(--nv-top);height:var(--nv-alto);padding:16px 16px 14px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border:1.5px solid #DECFA8;border-radius:22px;box-shadow:0 -6px 24px rgba(28,25,23,.10);transition:top .26s cubic-bezier(.22,1,.36,1),height .26s cubic-bezier(.22,1,.36,1)}
+body.premium .casa-nuvola::after{bottom:-14px;margin:-26px -16px -14px}
+body.premium .casa-nuvola .casa-sal{font:800 17px/22px var(--f-display);color:#1C1917}
+body.premium .casa-nuvola .casa-riga{font:500 15px/20px var(--f-body);color:#292524;margin-top:4px}
+body.premium .casa-nuvola .casa-spinta{font:700 14.5px/19px var(--f-body);color:#856535}
+body.premium .casa-nuvola .casa-chat{margin-top:10px;padding-top:10px}
+body.premium .casa-nuvola .cc-lei{max-width:none;width:100%;box-sizing:border-box}
+/* la maniglia (in cima al centro) e "Leggi tutto ▴" (a cavallo del bordo in basso a destra; da grande "Riduci ▾" in alto) */
+.casa-maniglia,.casa-leggi{display:none}
+body.premium .casa-maniglia{display:block;position:absolute;left:50%;top:var(--nv-top);width:84px;height:18px;margin-left:-42px;padding:0;border:0;background:none;z-index:22;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:top .26s cubic-bezier(.22,1,.36,1)}
+body.premium .casa-maniglia i{display:block;width:36px;height:4px;margin:7px auto 0;border-radius:2px;background:#D5C7A9}
+body.premium .casa-leggi:not([hidden]){display:inline-flex;align-items:center;position:absolute;right:26px;top:calc(var(--nv-top) + var(--nv-alto) - 15px);height:30px;padding:0 13px;border-radius:15px;
+  border:1.5px solid #DECFA8;background:#FAF5E8;color:#856535;font:800 13px/1 var(--f-body);z-index:22;cursor:pointer;box-shadow:0 4px 10px -6px rgba(28,25,23,.35);
+  -webkit-tap-highlight-color:transparent;transition:top .26s cubic-bezier(.22,1,.36,1)}
+body.premium .nuvola-aperta .casa-leggi:not([hidden]){top:calc(var(--nv-top) - 15px)}
+body.premium .casa-leggi .cl-chiudi,body.premium .nuvola-aperta .casa-leggi .cl-apri{display:none}
+body.premium .nuvola-aperta .casa-leggi .cl-chiudi{display:inline}
+:root[data-theme="dark"] body.premium .casa-leggi{background:#2C251A;border-color:#5A4A2A;color:#D4B677}
+:root[data-theme="dark"] body.premium .casa-nuvola{border-color:#3A3228}
+/* la casella per scriverle: sotto la piega quando la nuvoletta e' piccola, dentro la schermata quando e' grande */
+body.premium .casa-scrivi-riga{transition:top .26s cubic-bezier(.22,1,.36,1)}
+body.premium .sofia-hero.nuvola-aperta .casa-scrivi-riga{top:calc(var(--h-casa) - 68px)}
+@media (prefers-reduced-motion:reduce){body.premium .casa-nuvola,body.premium .casa-maniglia,body.premium .casa-leggi,body.premium .casa-scrivi-riga{transition:none}}
+/* i tasti accanto alla testa (non coprono le mani quando gesticola): microfono, Ascolta, voce */
+body.premium .casa-lato{top:calc(var(--h-casa) * .17)}
+body.premium .casa-lato-mic{background:#1C1917;border:2px solid #C5A059;color:#E6C786;box-shadow:0 6px 16px rgba(28,25,23,.28)}
+body.premium .casa-lato .casa-ascolta{gap:4px}
+body.premium .casa-lato .casa-ascolta .cl-tondo{width:44px;height:44px;border:1.5px solid #E2DCD0}
+body.premium .casa-lato .casa-ascolta svg{color:#8C6D3F}
+body.premium .casa-lato .casa-tondo{border:1.5px solid #E2DCD0;color:#57534E}
+body.premium .casa-lato .casa-tondo:not(.spenta){background:#FAF6EE;border-color:#8C6D3F;color:#8C6D3F}
+/* i filmati: i bordi laterali sfumati (niente gomiti tagliati dritti) e un'ombra calda e leggera al posto di quella nera */
+body.premium .sofia-hero .casa-card.tre .casa-fig video{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 6%,#000 94%,transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 6%,#000 94%,transparent 100%);
+  filter:drop-shadow(0 8px 16px rgba(133,101,53,.15))}
+
+/* ---- IL FANTASMINO (Sofia che esce quando parla): 320 px, un po' fuori dal bordo destro, senza l'etichetta col nome;
+   entra da destra-basso (320 ms) ed esce scivolando giu' (220 ms); con la nuvoletta della risposta una ✕ sola ---- */
+.sofia-fuori{height:min(320px,44svh);right:-8px;opacity:0;transform:translate(24px,40px) scale(.92);transform-origin:80% 100%;transition:opacity .22s ease-in,transform .22s ease-in}
+.sofia-fuori.su{opacity:1;transform:none;transition:opacity .32s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1)}
+.sofia-fuori .sf-nome{display:none}
+body.con-sm-nuvola .sofia-fuori .sf-x{display:none}
+.sofia-fuori.tre .sf-cornice{filter:drop-shadow(-6px 8px 18px rgba(28,25,23,.25));
+  -webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent 99%),linear-gradient(to right,transparent 0,#000 6%,#000 94%,transparent 100%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to bottom,#000 80%,transparent 99%),linear-gradient(to right,transparent 0,#000 6%,#000 94%,transparent 100%);mask-composite:intersect}
+@media (prefers-reduced-motion:reduce){.sofia-fuori,.sofia-fuori.su{transition:none;transform:none}}
+/* la nuvoletta della risposta: 232 px a sinistra di Sofia, la ✕ ferma nell'angolo, il testo che si scorre (mai tagliato) */
+.sm-nuvola{left:12px;right:auto;width:232px;max-width:calc(100vw - 150px);bottom:calc(var(--alto-sotto,71px) + 17px + env(safe-area-inset-bottom,0px));max-height:330px;
+  display:flex;flex-direction:column;overflow:hidden;background:#FFFFFF;border:2px solid #8C6D3F;border-radius:20px 20px 4px 20px;padding:14px 14px 16px;
+  box-shadow:0 12px 32px rgba(28,25,23,.20);transform-origin:100% 100%;animation:smApre .32s cubic-bezier(.22,1,.36,1) .08s both}
+@keyframes smApre{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.sm-chiudi{position:absolute;top:8px;right:8px;float:none;margin:0;width:32px;height:32px;border:0;border-radius:50%;background:#F5F2EB;color:#57534E}
+.sm-testo{overflow-y:auto;overscroll-behavior:contain;max-height:235px;padding-right:4px;min-height:0}
+.sm-testo .cc-io{padding-right:34px}
+.sm-testo .cc-lei{font:600 15.5px/21px var(--f-body)}
+:root[data-theme="dark"] .sm-chiudi{background:#2A2520;color:#D6CFC4}
+@media (prefers-reduced-motion:reduce){.sm-nuvola{animation:none}}
+/* ---- LA LINGUETTA: 30 px piu' su (prima copriva prezzi e pallini) e piu' stretta da ferma (44 px) ---- */
+.sofia-mini{bottom:calc(var(--alto-sotto,71px) + 134px + env(safe-area-inset-bottom,0px))}
+.sm-pill{width:44px;height:52px;padding-left:12px;border-radius:26px 0 0 26px;color:#E6C786;box-shadow:-4px 6px 16px rgba(28,25,23,.22)}
+.sm-mic,.sm-mic svg{width:22px;height:22px}
+.sm-punto{width:7px;height:7px;background:#C5A059}
+
+/* ---- LE ALTRE SCHERMATE ---- */
+/* Piantine: la barra del corridoio piu' larga e chiara, la scritta che si legge */
+body.premium .corridoio::after,body.semplice .corridoio::after{width:24px;border-radius:12px;background:#E2DCD0;box-shadow:none}
+body.premium .corridoio::before,body.semplice .corridoio::before{font:700 9.5px var(--f-display);letter-spacing:2px;color:#524D46;text-shadow:none}
+/* Paghe: "Niente da pagare" al posto del tasto spento */
+.pill.nulla{background:var(--campo,#EFECE4);color:var(--muted,#524D46);font-weight:700}
+/* Altro: i tondi dei colori puliti, 44 px, senza la lucentezza */
+body.premium .col-opt i{width:44px;height:44px;box-shadow:0 1px 3px rgba(28,25,23,.2)}
+/* la sezione di Sofia: senza il primo riquadro; "Pensa con Argon" in una riga piccola; la casella piu' su del tondo della barra */
+.sv-regia-riga{display:flex;justify-content:flex-end;margin:0 2px -4px}
+.sv-regia-riga .sv-regia{margin-top:0}
+body.premium .sofia-vista{height:calc(100dvh - 56px - 96px - env(safe-area-inset-bottom,0px) - 38px)}
+
+/* ---- 1.0.4 · SECONDO GIRO DI GEMINI 4 ARGON (25/10 13:01): voti 7,5-9,5; i ritocchi che ha chiesto ---- */
+/* la casa: nuvoletta piccola 11 px piu' alta (dal 72,5% di H), grande dal 46% (tutto il messaggio senza tagli) */
+body.premium .sofia-hero{--nv-top:calc(var(--h-casa) * .725);--nv-alto:calc(var(--h-casa) * .275 - 16px)}
+body.premium .sofia-hero.nuvola-aperta{--nv-top:calc(var(--h-casa) * .46);--nv-alto:calc(var(--h-casa) * .54 - 78px)}
+/* in cima alla nuvoletta una sfumatura: le righe gia' lette non "spuntano" tagliate a meta' sotto la maniglia */
+body.premium .casa-nuvola::before{content:"";position:sticky;top:-16px;display:block;height:16px;margin:-16px -16px 0;background:linear-gradient(rgba(255,255,255,.97) 25%,rgba(255,255,255,0));z-index:1;pointer-events:none}
+:root[data-theme="dark"] body.premium .casa-nuvola::before{background:linear-gradient(rgba(30,27,24,.97) 40%,rgba(30,27,24,0))}
+/* le pillole in fondo al messaggio (pulizie, lavori...) nella nuvoletta no: le stesse cose sono subito sotto, nella pagina */
+body.premium .casa-nuvola .casa-info{display:none}
+/* i filmati: bordi laterali sfumati di piu' (9%): sparisce il "gradino" tra manica e fianco in qualche fotogramma */
+body.premium .sofia-hero .casa-card.tre .casa-fig video{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,#000 85%,transparent 99%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,#000 85%,transparent 99%);mask-composite:intersect}
+.sofia-fuori.tre .sf-cornice{-webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent 99%),linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 80%,transparent 99%),linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%)}
+/* la linguetta aperta ("Ti ascolto…", "pensa…"): un alone chiaro la stacca dalle scritte che ha sotto */
+.sofia-mini[data-stato="ascolto"] .sm-pill,.sofia-mini[data-stato="pensa"] .sm-pill{box-shadow:0 0 0 6px rgba(247,244,238,.85),-6px 8px 20px rgba(28,25,23,.28)}
+:root[data-theme="dark"] .sofia-mini[data-stato="ascolto"] .sm-pill,:root[data-theme="dark"] .sofia-mini[data-stato="pensa"] .sm-pill{box-shadow:0 0 0 6px rgba(20,18,16,.85),-6px 8px 20px rgba(0,0,0,.5)}
+/* la nuvoletta del fantasmino: caratteri 15 px, piu' alta (345 px), e se continua una sfumatura in fondo */
+.sm-nuvola{max-height:345px;padding:12px 14px;bottom:calc(var(--alto-sotto,71px) + 13px + env(safe-area-inset-bottom,0px))}
+.sm-testo{max-height:316px}
+.sm-testo .cc-lei{font:600 15px/19.5px var(--f-body)}
+.sm-testo.scorre:not(.fine){-webkit-mask-image:linear-gradient(to bottom,#000 86%,transparent 100%);mask-image:linear-gradient(to bottom,#000 86%,transparent 100%)}
+/* la striscia dei giorni ferma in alto: fondo pieno, un filo e una sfumatura sotto (niente lettere tagliate che spuntano) */
+body.premium header{background:#F7F4EE;border-bottom:1px solid #E2DCD0;box-shadow:0 8px 12px -6px rgba(247,244,238,.95)}
+:root[data-theme="dark"] body.premium header{background:#141210;border-bottom-color:#35302A;box-shadow:0 8px 12px -6px rgba(20,18,16,.95)}
+/* la sezione di Sofia: i comandi rapidi arrivano fino al bordo e sfumano (si capisce che si scorrono di lato) */
+body.premium .sv-chips{margin:0 -12px;padding:2px 12px;-webkit-mask-image:linear-gradient(to right,#000 88%,transparent 100%);mask-image:linear-gradient(to right,#000 88%,transparent 100%)}
+/* la vista delle signore: "da fare" senza il doppio bordo (oro su rosso); i colori della tavolozza nuova */
+body.semplice .nn-num.todo,body.semplice .nn-numeri.con-corso .nn-num.todo{border:0;background:#FDF2F2;color:#B91C1C;box-shadow:inset 0 0 0 2px rgba(185,28,28,.28)}
+body.semplice .nn-num.wip,body.semplice .nn-numeri.con-corso .nn-num.wip{border:0;background:#FEF9E7;color:#9A5B00;box-shadow:inset 0 0 0 2px #F59E0B}
+body.semplice .nn-num.done{border:0;background:#F0FDF4;color:#156534}
+/* terzo giro di Gemini ("nessun difetto bloccante", voti 9,4-10): se il messaggio ci sta tutto, niente sfumatura in fondo */
+body.premium .casa-nuvola:not(.piena)::after{display:none}

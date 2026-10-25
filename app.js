@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.3";
+export const VERSIONE = "1.0.4";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -106,7 +106,9 @@ try { fetch(FILM_PRONTO.abbina).then(r => r.ok ? r.json() : null).then(j => { if
 //  - Solo nella schermata di casa del titolare e solo dove il telefono sa mostrare la trasparenza: all'avvio si
 //    prova con un filmatino di 16x16 (meta' trasparente). Se non la sa fare (es. iPhone), Sofia resta piatta.
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
-const FILM_TRE = { parla: "cons-parla-3d.webm", riposo: "cons-riposo-3d.webm", poster: "cons-poster-3d.webp" };
+// 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
+// chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
+const FILM_TRE = { parla: "cons-parla-3d2.webm", riposo: "cons-riposo-3d2.webm", poster: "cons-poster-3d2.webp" };
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
 function sofia3dVoluta() { try { return localStorage.getItem(CHIAVE_3D) !== "no"; } catch (e) { return true; } }
@@ -997,8 +999,8 @@ function applicaTema() {
 // di serie (fondo avorio chiaro, schede bianche, oro brunito, barra dei tasti in basso); "Avorio e noce" e' la 0.96
 // esattamente com'era (tasti tondi vicino a Sofia, barra dell'ora in cima), e restano tutti gli altri.
 const SFONDI_APP = [
-  { id: "premium", nome: "Premium chiaro", come: "La proposta di Argon: bianco e avorio, oro brunito, tutto grande e pulito, i tasti in basso sotto il pollice" },
-  { id: "avorio", nome: "Avorio e noce", come: "Lo stile di prima (0.96): carta avorio, noce e oro ai lati, tasti tondi vicino a Sofia" },
+  { id: "premium", nome: "Premium chiaro", come: "Sfondo avorio luminoso, dettagli oro brunito e testi grandi" },
+  { id: "avorio", nome: "Avorio e noce", come: "Stile classico con bordi in legno scuro" },
   { id: "legno", nome: "Legno d'oro", come: "Il legno marezzato della tua foto, radica e fili d'oro, senza pietre" },
   { id: "intarsio", nome: "Intarsio con gioielli", come: "Il tuo pannello con oro, madreperla, lapislazzuli e diamanti" },
   { id: "lusso", nome: "Mogano marezzato", come: "Boiserie di mogano lucido, filetti e cornici d'oro" },
@@ -1010,11 +1012,11 @@ function legnoScelto() { return ["noce", "ebano", "intarsio", "legno", "avorio"]
 // 0.97: il Premium non e' "di legno": usa la grafica chiara di base, ripulita (body.premium in style.css)
 function premiumScelto() { return S.sfondo === "premium"; }
 const COLORI_APP = [
-  { id: "blu", nome: "Blu", g: "linear-gradient(135deg,#5A8AD6,#143880 45%,#2A56A6)" },
-  { id: "oro", nome: "Oro", g: "linear-gradient(135deg,#D9B36A,#6E4A12 45%,#A87A2C)" },
-  { id: "laguna", nome: "Laguna", g: "linear-gradient(135deg,#4FB3AC,#0C5A57 45%,#1C807A)" },
-  { id: "bordeaux", nome: "Bordeaux", g: "linear-gradient(135deg,#C2536E,#5E0F24 45%,#8E1F3A)" },
-  { id: "notte", nome: "Notte", g: "linear-gradient(135deg,#6E6E73,#1C1C1E 45%,#3A3A3C)" },
+  { id: "blu", nome: "Blu", g: "linear-gradient(135deg,#3B6FC4,#1A3F85)" },
+  { id: "oro", nome: "Oro", g: "linear-gradient(135deg,#9E7B46,#6E5227)" },
+  { id: "laguna", nome: "Laguna", g: "linear-gradient(135deg,#2A9A93,#0E5E5A)" },
+  { id: "bordeaux", nome: "Bordeaux", g: "linear-gradient(135deg,#A63A55,#6A1428)" },
+  { id: "notte", nome: "Notte", g: "linear-gradient(135deg,#55555B,#1C1C1E)" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1731,7 +1733,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Tocca «Scrivi»: le signore lo vedono in grande.</p>`}</section>`;
-  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una camera o una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + grigliaCamere(iso) + messaggio + avviso + blocchi + bottone;
+  return `<section class="card flat">${premiumScelto() ? "" : `<h2 style="margin:0">${L.dataLunga(iso)}</h2>`}<p class="muted small" style="margin:0">Tocca una camera o una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + grigliaCamere(iso) + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -2057,6 +2059,8 @@ function casaOssatura(tre) {
       <div class="casa-chat" id="casaChat" aria-live="polite"></div>
       <div class="casa-sotto" id="consSotto"></div>
     </div>
+    <button type="button" class="casa-maniglia" data-casa-apri aria-label="Apri o chiudi il messaggio" aria-expanded="false"><i aria-hidden="true"></i></button>
+    <button type="button" class="casa-leggi" data-casa-apri hidden><span class="cl-apri">Leggi tutto ▴</span><span class="cl-chiudi">Riduci ▾</span></button>
     <form class="casa-scrivi-riga" id="casaScrivi" autocomplete="off">
       <label class="casa-graffa" aria-label="Manda la foto del prospetto o il foglio Excel">${CASA_ICO.graffa}<input type="file" id="casaFile" accept="image/*,.xlsx,.xls,.xlsm,.ods" hidden></label>
       <input type="text" id="casaTesto" placeholder="Scrivi a ${esc(nomeGov())}…" autocomplete="off" enterkeyhint="send" maxlength="600">
@@ -2095,8 +2099,127 @@ function casaChatAggiorna(h) {
   if (cambiata) box.innerHTML = html;
   box.classList.toggle("vedi", !!html);
   // 1.0.2: nella nuvoletta si vede subito l'ultima cosa (senza scorrere la pagina): la conversazione, se c'e'
-  if (cambiata) { const nv = h.querySelector(".casa-nuvola"); if (nv) { const top = html ? Math.max(0, box.offsetTop - 8) : 0; try { nv.scrollTo({ top, behavior: "smooth" }); } catch (e) { nv.scrollTop = top; } } }
+  if (cambiata) { const nv = h.querySelector(".casa-nuvola"); if (nv) { const top = html ? Math.max(0, box.offsetTop + 6) : 0; try { nv.scrollTo({ top, behavior: "smooth" }); } catch (e) { nv.scrollTop = top; } } }
+  nuvolaNuovaRisposta();                    // la prima volta segna da dove si parte, poi apre alle risposte nuove
+  nuvolaLeggiAggiorna(h);
 }
+// ---- 1.0.4: LA NUVOLETTA A DUE STATI (Michele: "andava bene prima: busto e poco oltre, cosi' si vedono tutti i
+// movimenti"; impaginazione di Gemini 4 Argon). PICCOLA (di serie): sta sotto la vita di Sofia, cosi' si vedono testa,
+// spalle, braccia e mani; dentro si scorre col dito e, mentre lei parla, va da sola sulla frase che sta dicendo
+// (sottotitoli). GRANDE: un tocco su "Leggi tutto", sulla maniglia o sul testo: sale fino a meta' e compare la casella
+// per scriverle. Torna piccola con "Riduci", toccando Sofia, quando lei comincia a parlare o dopo 15 secondi che non
+// la tocchi (mai mentre scrivi). Una risposta nuova a voce spenta la apre da sola; a voce accesa resta piccola coi
+// sottotitoli e, se lei propone qualcosa (Si'/No), si apre quando ha finito di parlare.
+let nuvolaTimer = null, nuvolaUltima = null;
+function nuvolaApri(si) {
+  const h = document.getElementById("sofiaHero"); if (!h) return;
+  si = !!si && document.body.classList.contains("premium");
+  clearTimeout(nuvolaTimer); nuvolaTimer = null;
+  if (h.classList.contains("nuvola-aperta") !== si) {
+    h.classList.toggle("nuvola-aperta", si);
+    const m = h.querySelector(".casa-maniglia"); if (m) m.setAttribute("aria-expanded", si ? "true" : "false");
+  }
+  if (si) nuvolaRiarma();
+  nuvolaLeggiAggiorna(h);
+  setTimeout(() => {                                      // dopo l'animazione (260 ms)
+    nuvolaLeggiAggiorna(h);
+    // tornata piccola con una conversazione: in cima l'ultimo scambio (da grande lo scorrimento si era accorciato)
+    if (!si && !voceInCorso) { const nv = h.querySelector(".casa-nuvola"), box = h.querySelector("#casaChat.vedi"); if (nv && box) { try { nv.scrollTo({ top: Math.max(0, box.offsetTop + 6), behavior: "smooth" }); } catch (e) { nv.scrollTop = box.offsetTop + 6; } } }
+  }, 320);
+}
+function nuvolaRiarma() {
+  clearTimeout(nuvolaTimer);
+  nuvolaTimer = setTimeout(() => {
+    nuvolaTimer = null;
+    const a = document.activeElement;
+    if (a && a.id === "casaTesto") { nuvolaRiarma(); return; }   // mentre scrive resta aperta
+    nuvolaApri(false);
+  }, 15000);
+}
+function nuvolaLeggiAggiorna(h) {
+  h = h || document.getElementById("sofiaHero"); if (!h) return;
+  const nv = h.querySelector(".casa-nuvola"), b = h.querySelector(".casa-leggi"); if (!nv || !b) return;
+  const serve = h.classList.contains("nuvola-aperta") || nv.scrollHeight > nv.clientHeight + 6;
+  if (b.hidden === serve) b.hidden = !serve;
+  // la sfumatura in fondo solo se il testo continua (se ci sta tutto, l'ultima parola resta piena: Gemini, terzo giro)
+  const ultimo = [...nv.children].filter(k => k.offsetHeight > 0).pop();
+  const piena = !!ultimo && ultimo.offsetTop + ultimo.offsetHeight + 14 > nv.clientHeight + 4;
+  if (nv.classList.contains("piena") !== piena) nv.classList.toggle("piena", piena);
+}
+function nuvolaNuovaRisposta() {
+  let u; try { u = ultimoScambio(); } catch (e) { return; }
+  const k = u.lei ? String(u.lei.testo || "") + (u.tasti ? "|t" : "") : "";
+  if (nuvolaUltima === null) { nuvolaUltima = k; return; }   // all'apertura dell'app resta piccola
+  if (k === nuvolaUltima) return;
+  nuvolaUltima = k;
+  if (k && !u.pensa && !voceAccesa()) nuvolaApri(true);
+}
+function nuvolaDopoVoce() { try { if (ultimoScambio().tasti) nuvolaApri(true); } catch (e) {} }
+document.addEventListener("click", (e) => {
+  const h = document.getElementById("sofiaHero"), x = e.target;
+  if (!h || !x || !x.closest || !h.contains(x) || !document.body.classList.contains("premium")) return;
+  const aperta = h.classList.contains("nuvola-aperta");
+  if (x.closest("[data-casa-apri]")) { e.preventDefault(); nuvolaApri(!aperta); return; }
+  if (x.closest(".casa-nuvola")) {
+    if (x.closest("button, a, input, label, select, textarea")) { if (aperta) nuvolaRiarma(); return; }
+    if (!aperta) nuvolaApri(true); else nuvolaRiarma();
+    return;
+  }
+  if (x.closest(".casa-scrivi-riga, .casa-lato")) { if (aperta) nuvolaRiarma(); return; }
+  if (aperta) nuvolaApri(false);                            // un tocco su Sofia: torna piccola
+});
+// ---- 1.0.4: I SOTTOTITOLI (Gemini). Mentre Sofia parla, la nuvoletta piccola va da sola sulla frase che sta dicendo e
+// scorre piano mentre la dice: Michele legge senza togliere gli occhi da lei. Se lui la scorre col dito, lascia fare a lui.
+let sottoAnim = 0, sottoMano = 0;
+function sottotitoliFerma() { if (sottoAnim) cancelAnimationFrame(sottoAnim); sottoAnim = 0; }
+function sottotitoli(parte, buf, durata) {
+  sottotitoliFerma();
+  const h = document.getElementById("sofiaHero"), nv = h && h.querySelector(".casa-nuvola");
+  if (!nv || !nv.clientHeight || h.classList.contains("nuvola-aperta") || Date.now() - sottoMano < 3000) return;
+  const norm = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const pn = norm(parte), parole = pn.split(" ").filter(Boolean); if (!parole.length) return;
+  // tutto il testo della nuvoletta in fila (saluto, messaggio, consiglio, conversazione): una parte puo' passare dall'uno all'altro
+  const pezzi = []; let tutto = "";
+  for (const x of nv.querySelectorAll(".casa-sal, .casa-riga, .casa-spinta, .cc-io, .cc-lei:not(.cc-pensa)")) {
+    if (!x.getClientRects().length) continue;
+    const tx = norm(x.textContent); if (!tx) continue;
+    if (tutto) tutto += " ";
+    pezzi.push({ x, da: tutto.length, tx }); tutto += tx;
+  }
+  if (!pezzi.length) return;
+  const testa = parole.slice(0, Math.min(6, parole.length)).join(" ");
+  const k = tutto.lastIndexOf(testa); if (k < 0) return;    // l'ultima volta che compare: la risposta piu' recente
+  const rn = nv.getBoundingClientRect();
+  const yDi = (off) => {                                     // l'altezza della lettera numero "off" dentro la nuvoletta
+    let p = pezzi[0];
+    for (const q of pezzi) { if (q.da <= off) p = q; else break; }
+    const r = p.x.getBoundingClientRect(), dentro = Math.max(0, Math.min(1, (off - p.da) / Math.max(1, p.tx.length)));
+    return r.top - rn.top + nv.scrollTop + dentro * r.height;
+  };
+  const y0 = yDi(k), y1 = yDi(Math.min(tutto.length, k + pn.length));
+  const sec = (buf && typeof buf.duration === "number" && buf.duration > 0) ? buf.duration : (Number(durata) > 0 ? Number(durata) : pn.length * 0.068);
+  const via = nv.scrollTop, t0 = performance.now(), primo = 380, resto = Math.max(400, sec * 1000 - primo);
+  const passo = (ora) => {
+    if (!nv.isConnected || Date.now() - sottoMano < 3000 || h.classList.contains("nuvola-aperta")) { sottoAnim = 0; return; }
+    const d = ora - t0;
+    // la riga che sta dicendo resta a un terzo dall'alto (cosi' tra una parte e l'altra non salta); le misure a ogni
+    // passo, perche' se la nuvoletta si sta ancora chiudendo (260 ms) l'altezza cambia
+    const ch = nv.clientHeight, max = Math.max(0, nv.scrollHeight - ch);
+    const dove = (y) => Math.min(max, Math.max(0, y - ch * 0.3));
+    let s;
+    if (d < primo) { const q = d / primo; s = via + (dove(y0) - via) * (q * (2 - q)); }
+    else { const q = Math.min(1, (d - primo) / resto); s = dove(y0 + (y1 - y0) * q); }
+    try { nv.scrollTo({ top: s, behavior: "instant" }); } catch (e) { nv.scrollTop = s; }
+    sottoAnim = d < primo + resto ? requestAnimationFrame(passo) : 0;
+  };
+  sottoAnim = requestAnimationFrame(passo);
+}
+const manoNuvola = (e) => {
+  const nv = e.target && e.target.closest && e.target.closest("#sofiaHero .casa-nuvola"); if (!nv) return;
+  sottoMano = Date.now(); sottotitoliFerma();
+  const h = document.getElementById("sofiaHero"); if (h && h.classList.contains("nuvola-aperta")) nuvolaRiarma();
+};
+try { document.addEventListener("touchstart", manoNuvola, { passive: true }); document.addEventListener("wheel", manoNuvola, { passive: true }); } catch (e) {}
 function casaAggiorna(h) {
   const c = consiglioOggi(), u = umoreGov();
   if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
@@ -2212,6 +2335,7 @@ function disegnaCasa() {
   h.dataset.salone = saloneVoluto() ? "si" : "no";
   casaAggiorna(h);
   misuraBarre();
+  nuvolaLeggiAggiorna(h);
   if (tre) treAvvia();
 }
 
@@ -2858,11 +2982,13 @@ async function parlaConVoce(testo) {
   if (vc.motore === "google" && !vc.modello && confIA().chiave && !cercaModelloVoce) {
     cercaModelloVoce = VOCE.trovaModelloVoce(confIA().chiave).then(m => VOCE.salvaVoce({ modello: m })).catch(e => console.warn("modello voce", e)).finally(() => { cercaModelloVoce = null; });
   }
+  nuvolaApri(false);                          // 1.0.4: mentre parla la nuvoletta e' piccola (si vede lei) coi sottotitoli
   voceInCorso = true; statoCons("parla"); disegna();
   const finita = await parlaTutto(testo, { conf: vc, chiave: confIA().chiave });
   if (!finita) return;                       // fermata o sostituita da un'altra frase: ci pensa chi l'ha fermata
-  voceInCorso = false; applicaBocca(0); labialeFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna();
+  voceInCorso = false; applicaBocca(0); labialeFerma(); sottotitoliFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna();
   sofiaMini();
+  nuvolaDopoVoce();
 }
 // 0.99.3 (Michele: "quando parla il filmato e' troppo corto"): prima leggeva solo le prime 420-700 lettere e si
 // fermava (voce e filmato). Ora legge TUTTO: il testo si divide in parti che si leggono una dopo l'altra; la parte
@@ -2878,7 +3004,7 @@ async function parlaTutto(testo, { conf, chiave } = {}) {
       let fatto = false; const fine = () => { if (fatto) return; fatto = true; if (fineParteVoce === fine) fineParteVoce = null; ok(); };
       fineParteVoce = fine;
       Promise.resolve(VOCE.parla(parti[i], { conf, chiave,
-        onInizio: (buf, letto, durata) => labialeAvvia(buf, letto, durata),
+        onInizio: (buf, letto, durata) => { labialeAvvia(buf, letto, durata); sottotitoli(letto || parti[i], buf, durata); },
         onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
         onFine: fine,
         onErrore: (e) => { if (i === 0) toast(String(e && e.message || "Voce vera non disponibile") + " Per ora parla il telefono."); } })).catch(fine);
@@ -2889,7 +3015,7 @@ async function parlaTutto(testo, { conf, chiave } = {}) {
   }
   return g === giroVoce;
 }
-function zittisciVoce() { giroVoce++; VOCE.stazitta(); if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); } voceInCorso = false; applicaBocca(0); labialeFerma(true); sofiaFuori(); }
+function zittisciVoce() { sottotitoliFerma(); giroVoce++; VOCE.stazitta(); if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); } voceInCorso = false; applicaBocca(0); labialeFerma(true); sofiaFuori(); }
 // 1.0 (piano di Gemini, Michele: "mettilo in pratica"): quando Sofia PARLA e da dove sei non la vedi (prospetto, paghe,
 // in fondo alla pagina...), esce lei sullo schermo: grande, in basso a destra, sopra a tutto, col filmato che parla
 // finche' parla (dove il telefono sa fare la trasparenza e' ritagliata, altrimenti in una cornice). Un tocco la zittisce.
@@ -2974,7 +3100,12 @@ function sofiaMini() {
   const u = miniAperto ? ultimoScambio() : null;
   const html = u && u.lei && !u.pensa ? u.html : "";
   const testo = nv.querySelector(".sm-testo");
-  if (testo.innerHTML !== html) { testo.innerHTML = html; nv.scrollTop = 0; }
+  if (testo.innerHTML !== html) { testo.innerHTML = html; testo.scrollTop = 0; }
+  // 1.0.4 (Gemini): se c'e' altro da leggere, in fondo una sfumatura (sparisce quando arrivi alla fine)
+  const scorre = !!html && testo.scrollHeight > testo.clientHeight + 4;
+  testo.classList.toggle("scorre", scorre);
+  if (!testo.onscroll) testo.onscroll = () => testo.classList.toggle("fine", testo.scrollTop + testo.clientHeight >= testo.scrollHeight - 4);
+  testo.classList.toggle("fine", !scorre || testo.scrollTop + testo.clientHeight >= testo.scrollHeight - 4);
   nv.hidden = !html;
   document.body.classList.toggle("con-sm-nuvola", !!html);
   // si chiude da sola: 4 secondi dopo la fine della voce (se non ci sono tasti Si'/No); senza voce, il tempo di leggerla
@@ -4117,7 +4248,7 @@ function vistaSofia() {
   const benvenuto = `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">Dimmi pure, ${esc(nomeMio())}. Puoi scrivermi o parlarmi col microfono: cambio il prospetto, segno un guasto, scrivo alle signore. Prima di fare qualcosa ti chiedo sempre.</div></div></div>`;
   const chips = [["Chi arriva domani?", "manda"], ["Scrivi alle signore: ", "scrivi", "Scrivi alle signore…"], ["Segna un guasto: ", "scrivi", "Segna un guasto…"], ["Com'è il prospetto di questa settimana?", "manda", "Il prospetto della settimana"]];
   return `<section class="sofia-vista" aria-label="${esc(nome)}">
-    <div class="sv-testa"><span class="sv-ritratto" aria-hidden="true"></span><div><b>${esc(nome)}</b><span>${pensa ? "ci sta pensando…" : dom ? `ha ${dom === 1 ? "una cosa" : dom + " cose"} da chiederti` : "la tua governante · tutto in ordine"}</span>${regiaArgonHtml()}</div></div>
+    ${premiumScelto() ? (regiaArgonHtml() ? `<div class="sv-regia-riga">${regiaArgonHtml()}</div>` : "") : `<div class="sv-testa"><span class="sv-ritratto" aria-hidden="true"></span><div><b>${esc(nome)}</b><span>${pensa ? "ci sta pensando…" : dom ? `ha ${dom === 1 ? "una cosa" : dom + " cose"} da chiederti` : "la tua governante · tutto in ordine"}</span>${regiaArgonHtml()}</div></div>`}
     <div class="sv-tessere">
       <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">${dom ? "?" : "✓"}</span><b>${dom ? `${esc(nome)} ti chiede` : "Tutto chiaro"}</b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "nessun dubbio sulle camere"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
       <button type="button" class="sv-tessera" data-vista="governante"><span class="sv-t-ico">${ICONA("stella")}</span><b>I consigli di ${esc(nome)}</b><span>${esc(sottoCons || "tutto in ordine")}</span></button>
@@ -4660,7 +4791,7 @@ function cardContoProspetto() {
   // stima del mese: pulizie e stelle al ritmo dei giorni già coperti dal prospetto, più i lavori a parte così come sono scritti
   const giorniCoperti = L.giorniTra(m1, copertoFino) + 1;
   const stima = copertoFino < m2 && giorniCoperti > 0 && (mese.pulizie + mese.stelle) ? Math.round((mese.pulizie + mese.stelle) / giorniCoperti * giorniMese + mese.lavori) : 0;
-  return `<section class="card conto-prospetto"><h2 style="margin:0 0 4px">Il conto dal prospetto</h2><p class="muted small" style="margin:0 0 8px">Quello che costano le pulizie normali (ore standard × tariffa: 8 € in albergo, 10 € negli appartamenti) e le stelle scritte nel prospetto di adesso, fatte e da fare. Non sono le paghe già pagate: quelle stanno sotto, signora per signora.</p>
+  return `<section class="card conto-prospetto"><h2 style="margin:0 0 4px">Il conto dal prospetto</h2><p class="muted small" style="margin:0 0 8px">Pulizie normali (8 € albergo, 10 € appartamenti) e stelle del prospetto. Le paghe già pagate sono più sotto.</p>
     <div class="row one"><b>Questa settimana</b> <span class="muted small">${esc(L.dataBreve(lun))} – ${esc(L.dataBreve(dom))} · ${sett.n} pulizie</span><span>${riga(sett)}</span></div>
     <div class="row one"><b>${esc(L.meseLungo(oggi).replace(/^./, ch => ch.toUpperCase()))}</b> <span class="muted small">dal prospetto che c'è${copertoFino < m2 ? `, fino a ${esc(L.dataBreve(copertoFino))}` : ""} · ${mese.n} pulizie</span><span>${riga(mese)}</span>${copertoFino < m2 && stima ? `<span class="muted small">Se il resto del mese va come i giorni già coperti, il mese intero viene circa <b>${eur(stima)}</b>.</span>` : ""}</div></section>`;
 }
@@ -4673,7 +4804,7 @@ function vistaPaghe() {
     return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(SIG(z.id))}</h2><b style="font:800 22px var(--f-display)">${eur(totale)}</b></div>
       <div class="muted">${lista.length} ${lista.length === 1 ? "pulizia" : "pulizie"} · settimana ${L.etichettaSettimana(chiave)}</div>
       <div class="muted small" style="margin:2px 0 6px">${rigaConto(t)}</div>
-      <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${puoModificare() ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : puoModificare() ? `<button class="btnsm" data-pay="${z.id}|${chiave}" ${totale ? "" : "disabled style='opacity:.5'"}>Segna come pagata</button>` : `<span class="pill open">da pagare</span>`}</div>
+      <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${puoModificare() ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : puoModificare() ? (totale ? `<button class="btnsm" data-pay="${z.id}|${chiave}">Segna come pagata</button>` : `<span class="pill nulla">Niente da pagare</span>`) : `<span class="pill open">da pagare</span>`}</div>
       ${tp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(tp.totale)} ancora da pagare ${puoModificare() ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
       <details><summary>Dettaglio e storico</summary>${lista.length ? `<div class="rows">${lista.map(p => rigaPagaPulizia(p)).join("")}</div>` : ""}${vistaStorico(z.id)}</details></section>`;
   }).join("");
@@ -6455,7 +6586,7 @@ function collega() {
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile4", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
   document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
-  document.querySelectorAll("[data-salone]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
+  document.querySelectorAll("button[data-salone]").forEach(b => b.onclick = () => { /* 1.0.4: solo i tasti (la casa ha anche lei data-salone) */ try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
   document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
