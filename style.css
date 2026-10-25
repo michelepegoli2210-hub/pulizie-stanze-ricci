@@ -2793,3 +2793,65 @@ body.premium .dt-riga.warn{border-left-color:#D9B66A}
 body.premium .dt-riga.ko{border-left-color:#57534E}
 body.premium .dt-riga.warn{background:#FFFDF7}
 body.premium .dt-riga.ko{background:#FAFAF9}
+/* ==== 0.99.3: Sofia piu' grande e piu' "fuori" dalla cornice (Michele: "falla uscire piu' fuori e rendila piu' grande") ==== */
+body.premium .casa-card{height:min(58svh,calc(86vw * 16 / 9));max-width:90vw}
+@media (min-width:760px){body.premium .casa-card{height:min(60svh,600px)}}
+/* in 3D: piu' grande dentro la cornice, la testa che sale ben sopra il bordo e le spalle che escono dai lati */
+body.premium .casa-card.tre{--tre-scala:1.32;--tre-alza:-4%}
+body.premium .sofia-hero.sta-parlando .casa-card.tre{--tre-scala:1.35}
+body.premium .sofia-hero[data-stato="ascolto"] .casa-card.tre{--tre-scala:1.34}
+body.premium .sofia-hero .casa-card.tre .donnina.gov-fig.gov-film.casa-fig{clip-path:inset(-60% -16% var(--fin-b) -16% round 0 0 var(--fin-rag) var(--fin-rag))}
+body.premium .sofia-hero[data-tre="1"]{padding-top:96px}
+body.premium .sofia-hero[data-tre="1"] .casa-testa{margin-bottom:22px}
+
+/* 0.99.3 (Argon, giro 3): tre piani - il salone, Sofia, e la scheda del saluto che SALE sopra la base della cornice
+   (nasconde il taglio del busto); il tasto "Parla con Sofia" sta a cavallo del bordo della scheda */
+body.premium .sofia-hero .casa-mic-grande{margin-top:-60px;z-index:8}
+body.premium .sofia-hero .casa-testo{position:relative;z-index:6;margin-top:-40px;padding-top:40px;box-shadow:0 -10px 24px -16px rgba(28,25,23,.25),0 12px 28px -18px rgba(28,25,23,.3)}
+/* 0.99.3 (Argon, giro 3): la sezione di Sofia - concierge in cima, chat che riempie, comandi rapidi, casella in fondo */
+.sv-testa{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:20px;background:var(--card-pieno);border:1px solid var(--line);box-shadow:var(--shadow)}
+.sv-testa>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sv-testa b{font:800 23px/1.1 var(--f-display);letter-spacing:-.01em}
+.sv-testa span{color:var(--muted);font:600 14.5px/1.3 var(--f-body)}
+.sv-ritratto{flex:0 0 auto;width:72px;height:72px;border-radius:50%;background:#E9DCC6 url(cons-poster.webp) 50% 16%/185% auto no-repeat;box-shadow:0 0 0 2px var(--card-pieno,#fff),0 0 0 4px #C9A55A,0 10px 22px -10px rgba(28,25,23,.55)}
+.sofia-vista[data-stato="parla"] .sv-ritratto,.sofia-vista.sta-parlando .sv-ritratto{animation:cwRespira 1.8s ease-in-out infinite}
+.sv-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.sv-chips::-webkit-scrollbar{display:none}
+.sv-chips button{flex:0 0 auto;min-height:42px;padding:0 15px;border-radius:999px;border:1px solid #D5C7A9;background:#FAF6EE;color:#6E542B;font:700 14.5px var(--f-body);white-space:nowrap;cursor:pointer}
+.sv-chips button:active{background:#F3EAD6}
+body.lusso .sv-chips button{background:rgba(255,240,205,.12);border-color:rgba(214,175,92,.8);color:#F6DFA4}
+body.premium .sofia-vista{height:calc(100dvh - 56px - 96px - env(safe-area-inset-bottom,0px) - 20px);min-height:520px;margin-bottom:0}
+body.premium .sofia-vista .sv-chat{flex:1 1 0;max-height:none;min-height:160px}
+body.premium .sofia-vista .sv-scrivi{position:static}
+:root[data-theme="dark"] .sv-chips button{background:#2A2418;border-color:#5A4A2A;color:#E7D9B8}
+/* 0.99.3 (Argon): i due tasti in cima al prospetto alla stessa altezza, su una riga */
+body.premium .pr-azioni{grid-template-columns:1.35fr 1fr}
+body.premium .pr-azioni .pr-ins,body.premium .pr-azioni .pr-wa{min-height:52px;height:52px;padding:0 12px;border-radius:14px;font:800 15.5px/1.1 var(--f-display);white-space:nowrap;justify-content:center}
+body.premium .pr-azioni .pr-wa{border:1.5px solid #8A6D32;background:#FFFFFF;color:#6E542B}
+body.premium .pr-azioni .pr-wa .ico-wa{width:22px;height:22px;color:#8A6D32}
+/* 0.99.3 (Argon, giro 3) */
+/* il riassunto di Sofia in cima; il testo da correggere chiuso sotto */
+details.dt-originale{margin-top:14px;padding:4px 14px 12px;border-radius:14px;border:1px solid var(--line);background:var(--campo)}
+details.dt-originale>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;font:700 15px var(--f-body);color:var(--fg)}
+details.dt-originale>summary::before{content:none}
+details.dt-originale>summary::-webkit-details-marker{display:none}
+details.dt-originale>summary::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-3px)}
+details.dt-originale[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+/* le signore: quando una camera e' in corso, l'oro si sposta su "in corso" */
+body.semplice .nn-numeri.con-corso .nn-num.todo{background:#F7F4EE;color:#78716C;border:1px solid #E5E0D8}
+body.semplice .nn-numeri.con-corso .nn-num.wip{background:#FAF6EE;color:#8A6D32;border:2px solid #8A6D32}
+/* dentro la camera: le pillole in una griglia 2x2 ordinata; "Fatto, tutto" in oro */
+body.semplice .inizio-pillole{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+body.semplice .inizio-pillole span{display:flex;align-items:center;justify-content:center;min-height:36px;text-align:center}
+body.premium .pro-btn.verde,body.semplice .pro-btn.verde{background:#8A6D32;border-color:#8A6D32}
+/* Inserisci: anche "Da WhatsApp" in oro (era rimasta verde) */
+body.premium .ins-tasto.wa{background:#FAF6EE;border:1.5px solid #8A6D32}
+/* Oggi: le signore come selettori bassi e larghi (monogramma a sinistra), l'icona dei lavori in oro */
+body.premium .sig-plate{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;justify-items:start;min-height:72px;padding:10px 14px;border-radius:18px;text-align:left}
+body.premium .sig-plate .sig-mono{grid-row:1/3;margin:0;width:44px;height:44px;font-size:19px}
+body.premium .sig-plate .sig-nome{font:800 15px/1.2 var(--f-display);letter-spacing:0;text-transform:none;margin:0;align-self:end}
+body.premium .sig-plate .sig-sotto{font:600 13.5px/1.2 var(--f-body);align-self:start}
+body.premium .man-plate .ic{color:#8A6D32}
+/* i comandi rapidi scorrono di lato senza allargare la pagina */
+.sv-chips{width:0;min-width:100%}
+.sofia-vista{min-width:0}

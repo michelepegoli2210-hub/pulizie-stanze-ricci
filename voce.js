@@ -55,17 +55,51 @@ export function salvaVoce(patch) {
 }
 
 // ---- il testo da leggere: via le faccine e le parentesi, non si leggono ----
-export function daLeggere(t, max = MAX_CARATTERI) {
-  const s = String(t || "")
+function pulisciLettura(t) {
+  return String(t || "")
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, " ")
     .replace(/«|»|“|”/g, "")
     .replace(/\s*·\s*/g, ". ")
     .replace(/\s+/g, " ").trim();
+}
+export function daLeggere(t, max = MAX_CARATTERI) {
+  const s = pulisciLettura(t);
   if (s.length <= max) return s;
   // non si taglia a meta' parola: si chiude all'ultimo punto utile
   const pezzo = s.slice(0, max);
   const fine = Math.max(pezzo.lastIndexOf(". "), pezzo.lastIndexOf("! "), pezzo.lastIndexOf("? "));
   return fine > 140 ? pezzo.slice(0, fine + 1) : pezzo;
+}
+
+// 0.99.3 (Michele: "quando parla il filmato e' troppo corto"): prima leggeva solo le prime 420-700 lettere e poi
+// smetteva (voce e filmato) anche se la risposta era piu' lunga. Ora il testo si divide in PARTI (alla fine delle
+// frasi) che si leggono una dopo l'altra; la parte dopo si prepara mentre lei legge quella prima, cosi' non ci sono buchi.
+const MAX_TOTALE = 3200;   // circa tre minuti e mezzo: oltre, il resto si legge nella chat
+export function partiDaLeggere(t, live = true) {
+  const max = live ? MAX_CARATTERI_LIVE : MAX_CARATTERI;
+  let s = pulisciLettura(t);
+  if (s.length > MAX_TOTALE) { const p = s.slice(0, MAX_TOTALE); const k = Math.max(p.lastIndexOf(". "), p.lastIndexOf("! "), p.lastIndexOf("? ")); s = k > MAX_TOTALE / 2 ? p.slice(0, k + 1) : p; }
+  if (!s) return [];
+  const frasi = s.match(/[^.!?]+(?:[.!?]+["')\]]*|$)\s*/g) || [s];
+  const parti = []; let cur = "";
+  for (let f of frasi) {
+    f = f.trim(); if (!f) continue;
+    while (f.length > max) {                               // una frase lunghissima: si taglia a una virgola o a uno spazio
+      let k = f.lastIndexOf(", ", max); if (k < max * 0.5) k = f.lastIndexOf(" ", max); if (k < 40) k = max;
+      if (cur) { parti.push(cur); cur = ""; }
+      parti.push(f.slice(0, k + 1).trim()); f = f.slice(k + 1).trim();
+    }
+    if (!f) continue;
+    if (!cur) cur = f; else if ((cur + " " + f).length <= max) cur += " " + f; else { parti.push(cur); cur = f; }
+  }
+  if (cur) parti.push(cur);
+  return parti;
+}
+// prepara l'audio di una parte (col canale Live) e lo mette nel cassetto: quando tocca a lei parte subito
+export function preparaParte(testo, conf, chiave) {
+  const c = conf || leggiVoce();
+  if (!(c.motore === "google" && chiave && c.canale !== "tts")) return Promise.resolve(null);
+  return audioDaLive(daLeggere(testo, MAX_CARATTERI_LIVE), c, chiave, { prepara: true }).catch(() => null);
 }
 
 // ---- il motore gratis: la voce del telefono --------------------------------
@@ -221,13 +255,14 @@ function quantoSimile(a, b) {
   let c = 0; for (const w of pa) if (pb.has(w)) c++;
   return c / pa.length;
 }
-export async function audioDaLive(testo, conf, chiave) {
+export async function audioDaLive(testo, conf, chiave, { prepara = false } = {}) {
   const k = `live|${conf.voce}|${conf.tono}|${testo}`;
   if (CASSETTO.has(k)) return CASSETTO.get(k);
   let L = liveCaldo;
   if (!L || L.chiuso || L.usato || L.voce !== conf.voce || L.tono !== conf.tono) L = apriLive(conf, chiave);
   if (liveCaldo === L) liveCaldo = null;
-  L.usato = true; liveInCorso = L;
+  // 0.99.3: la parte preparata in anticipo NON e' "la voce in corso": se parte un'altra frase non si butta via
+  L.usato = true; if (!prepara) liveInCorso = L;
   try { await L.pronto; } catch (e) { if (liveInCorso === L) liveInCorso = null; throw e; }
   const pezzi = []; let trascr = "";
   const r = await new Promise((res, rej) => {

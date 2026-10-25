@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.99.2";
+export const VERSIONE = "0.99.3";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -487,6 +487,15 @@ document.addEventListener("click", (e) => {
   e.preventDefault(); e.stopPropagation();
   micCasaVai();
 }, true);
+// 0.99.3: i comandi rapidi della sezione di Sofia: una domanda parte subito, un comando riempie la casella
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-sv-chip]");
+  if (!b) return;
+  const f = document.getElementById("casaScrivi"), inp = f && f.querySelector("#casaTesto"); if (!inp) return;
+  inp.value = b.dataset.svChip;
+  if (b.dataset.svModo === "manda") { try { f.requestSubmit(); } catch (err) { f.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true })); } }
+  else { inp.focus(); try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (err) {} }
+});
 // 0.84: dalla casa si scrive e si risponde ai tasti di lei senza cambiare pagina
 document.addEventListener("submit", (e) => {
   const f = e.target && e.target.closest && e.target.closest("#casaScrivi");
@@ -1310,6 +1319,7 @@ function vistaNonnaSemplice(z) {
   if (!lavori.length) frase = iso === oggi ? "Oggi nessuna camera per te: goditi la giornata!" : "Per questo giorno non c'è niente in programma.";
   else if (tutteFatte) frase = "Tutto pulito! Sei stata bravissima.";
   else if (!pulite && !inCorso) frase = `${iso === oggi ? "Oggi hai" : "Ci sono"} ${lavori.length === 1 ? "una camera" : lavori.length + " camere"}. Una alla volta!`;
+  else if (inCorso) { const cur = lavori.find(p => p.stato === "in_corso"), dopo = lavori.length - pulite - 1; frase = `Stai pulendo ${cur ? camera(cur.camera).nome : "una camera"}.${dopo > 0 ? ` Poi ${dopo === 1 ? "ne resta una" : `ne restano ${dopo}`}.` : " È l'ultima!"}`; }
   else { const resto = lavori.length - pulite; frase = resto === 1 ? "Ne manca una sola. Ci sei quasi!" : `Ne mancano ${resto}. Stai andando benissimo!`; }
   const msg = messaggioDelGiorno(iso);
   const nIstr = istruzioniDelGiorno(iso, z).length;
@@ -1317,7 +1327,7 @@ function vistaNonnaSemplice(z) {
   const testata = `<section class="nn-testa">
     <div class="nn-ciao">${esc(saluto())}, ${esc(nomeSignora())}!</div>
     <div class="nn-frase">${esc(frase)}</div>
-    ${lavori.length ? `<div class="nn-numeri"><div class="nn-num todo"><b>${daFare}</b><span>da fare</span></div><div class="nn-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="nn-num done"><b>${pulite}</b><span>pulite</span></div></div>
+    ${lavori.length ? `<div class="nn-numeri${inCorso ? " con-corso" : ""}"><div class="nn-num todo"><b>${daFare}</b><span>da fare</span></div><div class="nn-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="nn-num done"><b>${pulite}</b><span>pulite</span></div></div>
     <div class="nn-barra" role="img" aria-label="${pulite} pulite su ${lavori.length}"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
     <div class="nn-giorno">${ICONA("calendario")}<span>${esc(giorno)}</span><button class="nn-altri" data-altri-giorni>${S.mostraGiorni ? "Torna a oggi" : "Altri giorni"}</button></div>
     ${tutteFatte && numeroWhatsApp() ? `<button class="nn-tasto fatto" style="margin-top:14px" data-whatsapp-finito="${iso}">${ICONA("spunta")}<span>Avvisa su WhatsApp che hai finito</span></button>` : ""}
@@ -2777,13 +2787,36 @@ async function parlaConVoce(testo) {
     cercaModelloVoce = VOCE.trovaModelloVoce(confIA().chiave).then(m => VOCE.salvaVoce({ modello: m })).catch(e => console.warn("modello voce", e)).finally(() => { cercaModelloVoce = null; });
   }
   voceInCorso = true; statoCons("parla"); disegna();
-  await VOCE.parla(testo, { conf: vc, chiave: confIA().chiave,
-    onInizio: (buf, letto, durata) => labialeAvvia(buf, letto, durata),
-    onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
-    onFine: () => { voceInCorso = false; applicaBocca(0); labialeFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna(); },
-    onErrore: (e) => toast(String(e && e.message || "Voce vera non disponibile") + " Per ora parla il telefono.") });
+  const finita = await parlaTutto(testo, { conf: vc, chiave: confIA().chiave });
+  if (!finita) return;                       // fermata o sostituita da un'altra frase: ci pensa chi l'ha fermata
+  voceInCorso = false; applicaBocca(0); labialeFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna();
 }
-function zittisciVoce() { VOCE.stazitta(); voceInCorso = false; applicaBocca(0); labialeFerma(true); }
+// 0.99.3 (Michele: "quando parla il filmato e' troppo corto"): prima leggeva solo le prime 420-700 lettere e si
+// fermava (voce e filmato). Ora legge TUTTO: il testo si divide in parti che si leggono una dopo l'altra; la parte
+// dopo si prepara mentre lei legge (niente buchi) e il filmato "parla" resta acceso fino all'ultima parola.
+let giroVoce = 0, fineParteVoce = null;
+async function parlaTutto(testo, { conf, chiave } = {}) {
+  if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); }
+  const g = ++giroVoce;
+  const live = conf.motore === "google" && !!chiave && conf.canale !== "tts";
+  const parti = VOCE.partiDaLeggere ? VOCE.partiDaLeggere(testo, live) : [testo];
+  for (let i = 0; i < parti.length && g === giroVoce; i++) {
+    const parte = new Promise((ok) => {
+      let fatto = false; const fine = () => { if (fatto) return; fatto = true; if (fineParteVoce === fine) fineParteVoce = null; ok(); };
+      fineParteVoce = fine;
+      Promise.resolve(VOCE.parla(parti[i], { conf, chiave,
+        onInizio: (buf, letto, durata) => labialeAvvia(buf, letto, durata),
+        onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
+        onFine: fine,
+        onErrore: (e) => { if (i === 0) toast(String(e && e.message || "Voce vera non disponibile") + " Per ora parla il telefono."); } })).catch(fine);
+    });
+    // la parte dopo si prepara DOPO aver fatto partire questa (che, partendo, zittisce i collegamenti vecchi)
+    if (live && i + 1 < parti.length && VOCE.preparaParte) VOCE.preparaParte(parti[i + 1], conf, chiave);
+    await parte;
+  }
+  return g === giroVoce;
+}
+function zittisciVoce() { giroVoce++; VOCE.stazitta(); if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); } voceInCorso = false; applicaBocca(0); labialeFerma(true); }
 
 // 0.42: parlarle col microfono, senza tastiera. Su Android funziona dentro l'app;
 // su iPhone il motore non c'è e si usa il microfono della tastiera (glielo diciamo).
@@ -3549,7 +3582,7 @@ function collegaIA() {
   // --- la voce ---
   document.querySelectorAll("[data-cons-voce]").forEach(b => b.onclick = (e) => {
     e.stopPropagation(); VOCE.sbloccaAudio();
-    if (VOCE.staParlando()) return zittisciVoce();
+    if (VOCE.staParlando() || voceInCorso) return zittisciVoce();
     const c = consiglioOggi();
     parlaConVoce([c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`, c && c.testo ? c.testo : umoreGov().testo, c && c.consiglio ? c.consiglio : spintaDelGiorno()].join(" "));
   });
@@ -3558,12 +3591,11 @@ function collegaIA() {
     VOCE.sbloccaAudio();
     const t = document.querySelector(`[data-istr-testo="${b.dataset.istrVoce}"]`)?.textContent || "";
     if (!t) return;
-    if (VOCE.staParlando()) { zittisciVoce(); return; }
+    if (VOCE.staParlando() || voceInCorso) { zittisciVoce(); return; }
     // le signore non hanno la chiave: per loro parla il telefono, gratis
     voceInCorso = true; disegna();
-    VOCE.parla(t, { conf: { ...VOCE.leggiVoce(), motore: proprietario() ? VOCE.leggiVoce().motore : "telefono", attiva: true }, chiave: proprietario() ? confIA().chiave : "",
-      onInizio: (buf, letto, durata) => labialeAvvia(buf, letto, durata),
-      onBocca: (f, tt) => { applicaBocca(f); labialeTick(f, tt); }, onFine: () => { voceInCorso = false; applicaBocca(0); labialeFerma(); disegna(); } });
+    parlaTutto(t, { conf: { ...VOCE.leggiVoce(), motore: proprietario() ? VOCE.leggiVoce().motore : "telefono", attiva: true }, chiave: proprietario() ? confIA().chiave : "" })
+      .then((finita) => { if (!finita) return; voceInCorso = false; applicaBocca(0); labialeFerma(); disegna(); });
   });
   document.querySelectorAll("[data-voce-motore]").forEach(b => b.onclick = () => {
     VOCE.sbloccaAudio(); zittisciVoce();
@@ -3890,13 +3922,19 @@ function vistaSofia() {
     return `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">${testo}</div>${tasti}</div></div>`;
   }).join("");
   const attesa = pensa ? `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei cc-pensa">${esc(nome)} ci pensa…</div></div></div>` : "";
+  // 0.99.3 (Argon, giro 3): in cima la "concierge" con il suo ritratto; se non chiede niente "Tutto chiaro"; la chat
+  // vuota comincia con un suo messaggio di benvenuto; sopra la casella i comandi rapidi da toccare; la casella in fondo
+  const benvenuto = `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">Dimmi pure, ${esc(nomeMio())}. Puoi scrivermi o parlarmi col microfono: cambio il prospetto, segno un guasto, scrivo alle signore. Prima di fare qualcosa ti chiedo sempre.</div></div></div>`;
+  const chips = [["Chi arriva domani?", "manda"], ["Scrivi alle signore: ", "scrivi", "Scrivi alle signore…"], ["Segna un guasto: ", "scrivi", "Segna un guasto…"], ["Com'è il prospetto di questa settimana?", "manda", "Il prospetto della settimana"]];
   return `<section class="sofia-vista" aria-label="${esc(nome)}">
+    <div class="sv-testa"><span class="sv-ritratto" aria-hidden="true"></span><div><b>${esc(nome)}</b><span>${pensa ? "ci sta pensando…" : dom ? `ha ${dom === 1 ? "una cosa" : dom + " cose"} da chiederti` : "la tua governante · tutto in ordine"}</span></div></div>
     <div class="sv-tessere">
-      <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">?</span><b>${esc(nome)} ti chiede</b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "niente, per adesso"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
+      <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">${dom ? "?" : "✓"}</span><b>${dom ? `${esc(nome)} ti chiede` : "Tutto chiaro"}</b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "nessun dubbio sulle camere"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
       <button type="button" class="sv-tessera" data-vista="governante"><span class="sv-t-ico">${ICONA("stella")}</span><b>I consigli di ${esc(nome)}</b><span>${esc(sottoCons || "tutto in ordine")}</span></button>
     </div>
-    <div class="sv-chat" id="svChat" aria-live="polite">${bolle || `<p class="sv-vuota">Qui resta tutta la vostra conversazione. Scrivile o tocca il microfono e parlale come a una persona: «sabato arrivano gli operai alle 8», «Passerella vuole l'aspirapolvere per sabato».</p>`}${attesa}</div>
+    <div class="sv-chat" id="svChat" aria-live="polite">${bolle || benvenuto}${attesa}</div>
     <div class="casa-sotto" id="consSotto"></div>
+    <div class="sv-chips" role="group" aria-label="Comandi rapidi">${chips.map(([t, modo, etich]) => `<button type="button" data-sv-chip="${esc(t)}" data-sv-modo="${modo}">${esc(etich || t)}</button>`).join("")}</div>
     <form class="casa-scrivi-riga sv-scrivi" id="casaScrivi" autocomplete="off">
       <label class="casa-graffa" aria-label="Manda la foto del prospetto o il foglio Excel">${CASA_ICO.graffa}<input type="file" id="casaFile" accept="image/*,.xlsx,.xls,.xlsm,.ods" hidden></label>
       <input type="text" id="casaTesto" data-keep placeholder="Scrivi a ${esc(nome)}…" autocomplete="off" enterkeyhint="send" maxlength="600">
@@ -4326,7 +4364,7 @@ function vistaTabellone() {
   const noteP = Object.values(S.note).filter(n => n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
   const corpoBoard = elenco ? elencoProspetto(da, a) : `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
-  return `${puoModificare() ? bannerLettura() : ""}${puoModificare() ? `<div class="pr-azioni"><button type="button" class="big main pr-ins" data-inserisci>＋ Inserisci il prospetto</button><button type="button" class="pr-wa" data-ins-wa-subito>${ICO_WA}<span>Incolla da<br>WhatsApp</span></button></div>` : ""}
+  return `${puoModificare() ? bannerLettura() : ""}${puoModificare() ? `<div class="pr-azioni"><button type="button" class="big main pr-ins" data-inserisci>＋ Inserisci il prospetto</button><button type="button" class="pr-wa" data-ins-wa-subito>${ICO_WA}<span>Da WhatsApp</span></button></div>` : ""}
   ${colpoDOcchio()}
   <div class="tabs"><button aria-pressed="${elenco}" data-board="elenco">Elenco</button><button aria-pressed="${sett && !elenco}" data-board="settimana">Tabellone</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
   <section class="card flat"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
@@ -4905,22 +4943,19 @@ function foglioDettatura(f) {
   const tastoSofia = !f.copia && iaAccesa() && (!d.ia || d.ia.errore) && !leggo ? `<button type="button" class="big dt-sofia" data-dett-sofia><span class="dt-sofia-foto" aria-hidden="true"></span><span>Fammelo capire da ${esc(nomeGov())}</span></button>` : "";
   const parla = ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) ? `<button type="button" class="btnsm ghost" data-dett-parla>${ICO_LINEA.mic}<span>Parla</span></button>` : "";
   // 0.97: in cima da dove arriva (WhatsApp, foto); i tasti grandi Incolla da WhatsApp e Foto; niente piu' "copia la richiesta per un'IA esterna"
-  return `<h3>${f.copia ? "Come la settimana scorsa" : "Il prospetto"}</h3>
-    ${f.copia ? `<div class="muted">Per le camere ancora vuote ripeto l'ospite della settimana prima, spostato di una settimana. Togli la spunta a chi non torna.</div>` : fonteDettaturaHtml(d) || `<div class="muted">Incolla il messaggio di WhatsApp, oppure scrivi o detta chi arriva: una riga per camera. Prima di salvare ti faccio controllare.</div>`}
-    <div class="floorlabel" style="margin-top:12px">Di che settimana parliamo?</div>
-    <div class="dt-sett">${chip(questa, "Questa")}${chip(prossima, "Prossima")}${chip(dopo, "Quella dopo")}</div>
-    ${f.copia ? "" : `<div class="dt-grandi"><button type="button" class="dt-grande wa" data-dett-incolla>${ICO_WA}<span>Incolla da WhatsApp</span></button><label class="dt-grande"><span aria-hidden="true">${ICO_LINEA.foto}</span><span>Foto del foglio</span><input class="insFoto" type="file" accept="image/*" hidden></label></div>
+  // 0.99.3 (Argon, giro 3): quando Sofia ha letto, in cima ci sono il suo riassunto e le spunte; il testo, la settimana
+  // e i tasti Incolla/Foto stanno chiusi sotto "Correggi il testo o la settimana" (servono solo se c'e' da correggere)
+  const sofiaPronta = !f.copia && !!(d.ia && !d.ia.leggo && !d.ia.errore);
+  const settimana = `<div class="floorlabel" style="margin-top:12px">Di che settimana parliamo?</div>
+    <div class="dt-sett">${chip(questa, "Questa")}${chip(prossima, "Prossima")}${chip(dopo, "Quella dopo")}</div>`;
+  const scrivere = f.copia ? "" : `<div class="dt-grandi"><button type="button" class="dt-grande wa" data-dett-incolla>${ICO_WA}<span>Incolla da WhatsApp</span></button><label class="dt-grande"><span aria-hidden="true">${ICO_LINEA.foto}</span><span>Foto del foglio</span><input class="insFoto" type="file" accept="image/*" hidden></label></div>
     <div class="campo"><label for="dtTesto">Il testo${d.fonte && d.fonte.tipo === "foto" && !leggo && d.testo ? " letto dalla foto" : ""} <span class="muted small">(puoi correggerlo)</span></label><textarea id="dtTesto" data-keep rows="5" ${leggo ? "disabled" : ""} placeholder="Salvatore: Manna, 2 persone, da lunedì a venerdì
 Aurora: Palazzo dal 12 al 16
 Alba: Fondamenta tutto novembre
 Michele: libera
 Nicole: Castaldi parte giovedì">${esc(d.testo)}</textarea></div>
-    <div class="dt-azioni">${parla}<button type="button" class="btnsm ghost" data-dett-pulisci>Pulisci</button></div>`}
-    ${tastoSofia}${f.copia ? "" : partiSofiaHtml(d, "testa")}
-    <div id="dtAnteprima">${leggo ? "" : anteprimaDettatura(ris, f)}</div>
-    ${f.copia ? "" : partiSofiaHtml(d, "coda")}
-    ${leggo ? "" : `<div class="dt-salva-fisso"><button class="big main" data-dett-salva ${ds.tot && !S.attesa ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : ds.testo}</button></div>`}
-    ${f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Manna, 2 persone, da lunedì a venerdì
+    <div class="dt-azioni">${parla}<button type="button" class="btnsm ghost" data-dett-pulisci>Pulisci</button></div>`;
+  const esempi = f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Manna, 2 persone, da lunedì a venerdì
 Aurora: Palazzo dal 12 al 16 ottobre
 Alba: Fondamenta tutto novembre
 Lella: Rahhal da domenica sera a venerdì (asciugamani doppi)
@@ -4929,7 +4964,24 @@ Nicole: Castaldi parte giovedì   → accorcio il soggiorno
 Tramonto: resta fino a domenica   → allungo il soggiorno
 Fenicotteri: come la settimana scorsa
 Via Zara piano terra: D'Agostino, 3 operai, tutto il mese
-Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ultimo ospite di quella camera. Controlla sempre l'anteprima.</div></details>`}`;
+Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ultimo ospite di quella camera. Controlla sempre l'anteprima.</div></details>`;
+  const salva = leggo ? "" : `<div class="dt-salva-fisso"><button class="big main" data-dett-salva ${ds.tot && !S.attesa ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : ds.testo}</button></div>`;
+  const testa = `<h3>${f.copia ? "Come la settimana scorsa" : "Il prospetto"}</h3>
+    ${f.copia ? `<div class="muted">Per le camere ancora vuote ripeto l'ospite della settimana prima, spostato di una settimana. Togli la spunta a chi non torna.</div>` : fonteDettaturaHtml(d) || `<div class="muted">Incolla il messaggio di WhatsApp, oppure scrivi o detta chi arriva: una riga per camera. Prima di salvare ti faccio controllare.</div>`}`;
+  if (sofiaPronta) return `${testa}
+    ${partiSofiaHtml(d, "testa")}
+    <div id="dtAnteprima">${anteprimaDettatura(ris, f)}</div>
+    ${partiSofiaHtml(d, "coda")}
+    <details class="dt-originale"><summary>Correggi il testo o la settimana</summary>${settimana}${scrivere}${esempi}</details>
+    ${salva}`;
+  return `${testa}
+    ${settimana}
+    ${scrivere}
+    ${tastoSofia}${f.copia ? "" : partiSofiaHtml(d, "testa")}
+    <div id="dtAnteprima">${leggo ? "" : anteprimaDettatura(ris, f)}</div>
+    ${f.copia ? "" : partiSofiaHtml(d, "coda")}
+    ${salva}
+    ${esempi}`;
 }
 // 0.98: quante cose si salvano col tasto: le righe del prospetto, le indicazioni per le signore e le abitudini di papa'
 function daSalvareDettatura(ris, d) {
