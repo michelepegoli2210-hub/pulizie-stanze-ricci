@@ -1554,3 +1554,21 @@ Michele (con la foto del telefono): "manca a fianco il tasto ascolta... lo vorre
 - Nella barra in basso, nella chat e nei ritratti la faccia di Sofia e' centrata sul viso (occhi al centro, mento compreso): background 50% 20% / 164%.
 ### ARGON A TRE LIVELLI
 - LIVELLI_ARGON = ["low", "medium", "high"]. "Quanto ragiona Argon" (Altro → La governante intelligente, sotto il passo 4b): "Veloce" (low: risponde subito, consuma meno credito, per le cose di tutti i giorni), "Normale" (medium, DI SERIE: prospetto, tappeti, coprimaterassi, turni), "Al massimo" (high: solo per le analisi complicate, piu' lento e piu' caro). Si manda come generationConfig.thinkingConfig.thinkingLevel.
+
+## 76. La 1.0.3 (25 ottobre): SOFIA DI NUOVO GRANDE, LA NUVOLETTA DI VETRO, LA LINGUETTA CHE TI SEGUE IN TUTTE LE SCHERMATE
+Michele: "deve essere piu' grande... a me mi piaceva la versione di prima, grande"; "si vede meno il testo, pero' non so in quale maniera potresti ottimizzare quello spazio: forse conviene mandare degli screenshot a Gemini e chiedere a lei"; "in tutte le altre schermate una piccola iconcina che mi segue, dove io posso cliccarci sopra e parlarci senza andare indietro o avanti".
+### IL GIRO CON GEMINI 4 ARGON
+- Mandate a Gemini (modello "4 Argon", conversazione "Restyling App Hotel") quattro foto: la 1.0.1 grande dal telefono di Michele, la 1.0.2, la 1.0.2 con una conversazione, il Prospetto mentre Sofia parla. Le idee prese: la nuvoletta di VETRO che copre la giacca di Sofia (viso, capelli e spalle restano liberi); i tasti accanto a lei a destra; la casella per scrivere appena sotto la piega; per le altre schermate una LINGUETTA scura col microfono d'oro attaccata al bordo destro.
+- Non presa: la sua misura di Sofia (450 px): provata, si vedeva piccola come nella 1.0.2. Sofia e' alta come nella 1.0.1 (circa 600 px sul telefono di Michele: la faccia grande uguale).
+### LA PRIMA SCHERMATA (stile Premium)
+- H = lo spazio tra la barra dell'ora e i tasti in basso (673 px sul telefono di Michele). Sofia alta 0,89 H. Accanto a lei, a destra: microfono (56 px, scuro), "Ascolta" (46 px) e la voce si'/no (40 px).
+- La nuvoletta di vetro (bianco all'88% con sfocatura) parte dal 60% di H e finisce 10 px sopra la barra in basso: il saluto in grande (20 px), il messaggio (16 px), il consiglio in oro; si scorre DENTRO e una sfumatura in fondo dice che c'e' altro. Con una conversazione va da sola sull'ultima risposta e le pillole si nascondono.
+- La casella per scriverle e' subito sotto la piega, nascosta TUTTA dietro la barra in basso (prima ne spuntava una striscia): si scorre di poco (circa 80 px) e compare.
+### LA LINGUETTA DI SOFIA (tutte le altre schermate)
+- Dove: Prospetto, Piantine, Paghe, Altro e la casa quando si scende sotto Sofia. Non c'e' dove Sofia si vede gia' (la casa in cima, la sua sezione), per le signore e nella vista "come la vede una signora". Si toglie anche quando e' aperto un foglio o una domanda, e mentre si scrive in una casella (non copre niente).
+- Com'e': scura (#1C1917) col microfono d'oro e un puntino, attaccata al bordo DESTRO, 109 px sopra la barra in basso (non tocca il tondo di Sofia al centro della barra ne' Sofia che esce in basso a destra).
+- Un tocco: si allarga ("Ti ascolto…" con le onde e la ✕ per annullare). Un altro tocco = ho finito (o si chiude da sola dopo 3 secondi di silenzio). Poi "Sofia pensa…" coi tre puntini d'oro. Poi la linguetta sparisce, esce Sofia grande in basso a destra che risponde a VOCE e a sinistra si apre la nuvoletta con la domanda ("Tu: ...") e la risposta scritta, coi tasti Si'/No quando propone qualcosa. NON si cambia pagina.
+- La nuvoletta si chiude da sola 4 secondi dopo che Sofia ha finito di parlare (senza voce: il tempo di leggerla, da 8 a 40 secondi); con i tasti Si'/No resta aperta finche' non si risponde; si chiude anche con la sua ✕.
+### PICCOLE COSE
+- Nella nuvoletta della linguetta la prima lettera della risposta non e' piu' tagliata; "Sofia pensa…" e' larga quanto la scritta (anche con nomi piu' lunghi).
+
