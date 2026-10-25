@@ -57,7 +57,7 @@
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;overflow-x:hidden}
-body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.47 var(--f-body);overflow-x:hidden;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom,0px);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.47 var(--f-body);overflow-x:clip;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom,0px);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
 button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation;letter-spacing:inherit}
 img{max-width:100%}
 [hidden]{display:none!important}
@@ -2665,3 +2665,113 @@ body.premium .card h3{font-size:19px}
 .cw-banner.leggo .dt-fonte-foto{animation:cwRespira 1.8s ease-in-out infinite}
 @keyframes cwRespira{0%,100%{box-shadow:0 0 0 2px #E7CF95,0 0 0 0 rgba(201,162,74,.55)}50%{box-shadow:0 0 0 2px #E7CF95,0 0 0 7px rgba(201,162,74,0)}}
 @media (prefers-reduced-motion:reduce){.cw-banner.leggo .dt-fonte-foto{animation:none}}
+
+/* ==== 0.99.1: i ritocchi di Argon (giro sulla 0.99) ============================================== */
+/* la testata coi giorni resta sotto la barra dell'ora, piena (non si vede il testo che passa sotto) */
+body.premium.con-ora header{top:calc(56px + env(safe-area-inset-top,0px));background:rgba(247,245,240,.96);-webkit-backdrop-filter:saturate(1.3) blur(12px);backdrop-filter:saturate(1.3) blur(12px)}
+/* il tasto Salva dell'anteprima sempre a portata: fisso in fondo al foglio mentre si scorrono le spunte */
+.dt-salva-fisso{position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom,0px));z-index:4;margin:14px -18px 0;padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(253,251,247,0) 0,var(--card-pieno,#fff) 18px);border-top:1px solid transparent}
+.dt-salva-fisso .big{margin:0;width:100%;min-height:56px;font-size:18px}
+body.premium .dt-salva-fisso{background:linear-gradient(180deg,rgba(255,255,255,0) 0,#FFFFFF 18px)}
+:root[data-theme="dark"] .dt-salva-fisso{background:linear-gradient(180deg,rgba(28,25,23,0) 0,var(--card-pieno) 18px)}
+/* la barra di avanzamento della lettura */
+.cw-prog{position:relative;display:block;height:5px;margin-top:8px;border-radius:99px;background:#E6DEC8;overflow:hidden}
+.cw-prog i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#8A6D32;transition:width .5s ease}
+.cw-prog.indet i{width:40%!important;animation:cwScorre 1.4s ease-in-out infinite}
+@keyframes cwScorre{0%{left:-40%}100%{left:100%}}
+@media (prefers-reduced-motion:reduce){.cw-prog.indet i{animation:none;left:0;width:100%!important;opacity:.5}}
+.dt-fonte.leggo .cw-prog{max-width:260px}
+:root[data-theme="dark"] .cw-prog{background:#3A3122}
+/* le chat: scelte in oro (Premium), il periodo come un comando a segmenti */
+body.premium .cw-chat[aria-pressed="true"]{border:2px solid #8A6D32;background:#FAF6EE;padding:11px 13px}
+body.premium .cw-chat[aria-pressed="true"] i{background:#8A6D32;border-color:#8A6D32}
+body.premium .cw-chat .ico-wa{color:#8A6D32}
+.seg-periodo{display:flex;gap:4px;padding:4px;border-radius:14px;background:#EFECE6}
+.seg-periodo button{flex:1 1 0;min-width:0;min-height:44px;padding:0 4px;border:0;border-radius:10px;background:transparent;color:#44403C;font:700 14.5px/1.1 var(--f-body);cursor:pointer;white-space:nowrap}
+.seg-periodo button[aria-pressed="true"]{background:#8A6D32;color:#FFFFFF;box-shadow:0 2px 6px -2px rgba(138,109,50,.55)}
+:root[data-theme="dark"] .seg-periodo{background:#2A2622}
+:root[data-theme="dark"] .seg-periodo button{color:#E7E5E4}
+body.lusso:not([data-legno="avorio"]) .seg-periodo button{color:#3A2A14}
+/* il prospetto a colpo d'occhio nel Premium: niente semaforo, oro per chi arriva, pietra per chi parte */
+body.premium .cd-gruppo.in{background:#FAF6EE}
+body.premium .cd-gruppo.in .cd-ico{background:#8A6D32}
+body.premium .cd-gruppo.out{background:#F3F1EE}
+body.premium .cd-gruppo.out .cd-ico{background:#57534E}
+body.premium .cd-gruppo.resta{background:#FFFFFF;box-shadow:inset 0 0 0 1px #E7E2DA}
+body.premium .cd-gruppo.resta .cd-ico{background:#A8A29E}
+body.premium .cd-gruppo.in .cd-chip{border-color:#E7D9B8}
+body.premium .cd-gruppo.out .cd-chip{border-color:#E2DED8}
+body.premium .cd-gruppo.resta .cd-chip{border-color:#ECE8E1}
+body.premium .cd-g em.in{background:#F3EAD6;color:#6E542B}
+body.premium .cd-g em.out{background:#ECEAE7;color:#44403C}
+body.premium .cd-g[aria-pressed="true"] em.in{background:#C9A55A;color:#1C1917}
+body.premium .cd-g[aria-pressed="true"] em.out{background:#57534E;color:#FFFFFF}
+:root[data-theme="dark"] body.premium .cd-gruppo.in,:root[data-theme="dark"] body.premium .cd-gruppo.out,:root[data-theme="dark"] body.premium .cd-gruppo.resta{background:var(--campo);box-shadow:none}
+/* i puntini che lampeggiano: oro, non rosa (Premium e signore) */
+body.premium .led,body.semplice .led{background:#B8862E!important}
+/* le signore in Oggi: monogramma al posto della figurina */
+.sig-mono{display:grid;place-items:center;width:48px;height:48px;margin:2px auto 4px;border-radius:50%;background:#FAF6EE;border:1.5px solid #8A6D32;color:#8A6D32;font:700 21px/1 var(--f-display)}
+/* le pillole sotto il saluto: due per riga, icone a tratto in oro */
+body.premium .casa-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;white-space:normal;overflow:visible;max-width:none}
+body.premium .casa-pill{justify-content:flex-start;min-height:48px;padding:6px 12px;border-radius:14px;background:#F7F4EE;border-color:#E5DEC9;font-size:15px;line-height:1.2;text-align:left;white-space:normal;min-width:0}
+.casa-pill .ico-linea{width:20px;height:20px;display:block;color:var(--oro,#8A6D32)}
+body.lusso .casa-pill .ico-linea{color:#F6DFA4}
+/* Inserisci: icone a tratto, la guida chiusa sotto "Come si fa" */
+.ins-ico .ico-linea{width:24px;height:24px;color:#8A6D32}
+body.premium .ins-ico{background:#F7F4EE}
+body.premium .ins-tasto.wa .ins-ico{background:#F7F4EE;color:#8A6D32}
+details.ins-guida>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px}
+details.ins-guida>summary::-webkit-details-marker{display:none}
+details.ins-guida>summary::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+details.ins-guida[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+details.ins-guida:not([open]){padding-top:6px;padding-bottom:6px}
+body.premium details.ins-guida{background:#FAF8F5;border-color:#E7E2DA;color:#1C1917}
+body.premium details.ins-guida .ico-wa{color:#8A6D32}
+/* le signore: l'ora grande accanto al giorno */
+#whoBtn .who-ora{font:800 19px/1 var(--f-display);font-variant-numeric:tabular-nums;margin-right:6px;letter-spacing:-.02em}
+#whoBtn:has(.who-ora){display:inline-flex;align-items:baseline;gap:0}
+/* le signore: i numeri senza semaforo; "da fare" in oro */
+body.semplice .nn-num{background:#F7F4EE;color:#78716C;border:1px solid #E5E0D8}
+body.semplice .nn-num.todo{background:#FAF6EE;color:#8A6D32;border:2px solid #8A6D32}
+/* le signore dentro la camera: un tasto Fatto solo, grande, in fondo a ogni parte */
+.sig-blocco-fatto.giu{display:none}
+body.semplice .sig-blocco-t .sig-blocco-fatto{display:none}
+body.semplice .sig-blocco-fatto.giu{display:flex;justify-content:center;width:100%;min-height:62px;margin-top:12px;border-radius:16px;background:#8A6D32;color:#FFFFFF;font:800 19px/1.15 var(--f-display);box-shadow:0 6px 16px -6px rgba(138,109,50,.5)}
+body.semplice .sig-blocco-fatto.giu.fatta{background:#F3EAD6;color:#6E542B;box-shadow:none}
+body.semplice .sig-blocco-fatto.giu:disabled{opacity:.55}
+/* ---- 0.99.1, giro 2 di Argon ---- */
+/* la guida "Come si fa": una freccia sola (niente triangolino del browser) */
+details.ins-guida>summary::before{content:none}
+/* il tasto Salva: barra piena (non copre a meta' le righe) */
+.dt-salva-fisso{background:var(--card-pieno,#fff);border-top:1px solid var(--line);box-shadow:0 -10px 18px -14px rgba(28,25,23,.35)}
+body.premium .dt-salva-fisso{background:#FFFFFF}
+/* niente piu' semaforo nel Premium e per le signore: oro = da fare, oro pieno = in corso, pietra = fatto */
+body.premium .badge.todo,body.premium .badge.tess-stato.todo,body.semplice .badge.todo,body.semplice .badge.tess-stato.todo{background:#FAF6EE;color:#6E542B;box-shadow:inset 0 0 0 1px #D5C7A9}
+body.premium .badge.todo::before,body.premium .badge.tess-stato.todo::before,body.semplice .badge.todo::before,body.semplice .badge.tess-stato.todo::before{background:#8A6D32}
+body.premium .badge.wip,body.premium .badge.tess-stato.wip,body.semplice .badge.wip,body.semplice .badge.tess-stato.wip{background:#8A6D32;color:#FFFFFF}
+body.premium .badge.wip::before,body.premium .badge.tess-stato.wip::before,body.semplice .badge.wip::before,body.semplice .badge.tess-stato.wip::before{background:#FFFFFF}
+body.premium .badge.done,body.premium .badge.tess-stato.done,body.semplice .badge.done,body.semplice .badge.tess-stato.done{background:#F1EFEC;color:#57534E}
+body.premium .badge.done::before,body.premium .badge.tess-stato.done::before,body.semplice .badge.done::before,body.semplice .badge.tess-stato.done::before{background:#A8A29E}
+body.premium .dt-riga.ok,body.semplice .dt-riga.ok{border-left-color:#8A6D32}
+body.semplice .nn-scheda{box-shadow:inset 8px 0 0 #8A6D32,0 1px 2px rgba(28,25,23,.05),0 10px 22px -14px rgba(28,25,23,.3)}
+body.semplice .nn-scheda.wip{box-shadow:inset 8px 0 0 #8A6D32,0 0 0 3px #D9C49A,0 10px 22px -14px rgba(28,25,23,.3)}
+body.semplice .nn-scheda.done{box-shadow:inset 8px 0 0 #D6D3D1,0 1px 2px rgba(28,25,23,.05);background:#FAFAF9}
+body.semplice .nn-scheda.warn{box-shadow:inset 8px 0 0 #44403C,0 1px 2px rgba(28,25,23,.05)}
+body.semplice .nn-stato{color:#6E542B;background:#FAF6EE;box-shadow:inset 0 0 0 1px #D5C7A9}
+body.semplice .nn-scheda.wip .nn-stato{color:#FFFFFF;background:#8A6D32;box-shadow:none}
+body.semplice .nn-scheda.done .nn-stato{color:#57534E;background:#F1EFEC;box-shadow:none}
+body.semplice .nn-scheda.warn .nn-stato{color:#FFFFFF;background:#44403C;box-shadow:none}
+body.semplice .nn-tasto.via,body.semplice .nn-tasto.fatto{background:#8A6D32}
+body.semplice .nn-tempo{background:#FAF6EE;color:#6E542B}
+body.semplice .inizio-testa.todo,body.semplice .inizio-testa.wip{box-shadow:inset 6px 0 0 #8A6D32}
+/* dentro la camera: le pillole (tipo, ospiti, tempo, paga) e sotto chi parte e chi arriva */
+.inizio-pillole{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.inizio-pillole span{padding:4px 10px;border-radius:8px;background:#FAF6EE;border:1px solid #D5C7A9;color:#6E542B;font:700 15px/1.25 var(--f-body)}
+.inizio-ospiti{display:block;margin-top:9px;font:600 17px/1.35 var(--f-body);color:#44403C}
+body.lusso:not([data-legno="avorio"]) .inizio-ospiti{color:inherit}
+.sig-data .who-ora{font:800 18px/1 var(--f-display);font-variant-numeric:tabular-nums;margin-right:6px}
+/* il foglio del prospetto: WhatsApp e foto in oro nel Premium (niente verde), icone a tratto */
+.dt-grande .ico-linea,.btnsm .ico-linea{width:20px;height:20px;flex:0 0 auto;color:#8A6D32}
+.btnsm:has(.ico-linea){display:inline-flex;align-items:center;gap:6px}
+body.premium .dt-grande.wa,body.premium .dt-fonte.wa,body.premium .pr-wa{background:#FAF6EE;border-color:#D5C7A9;color:#1C1917}
+body.premium .dt-grande.wa .ico-wa,body.premium .dt-fonte.wa .ico-wa,body.premium .pr-wa .ico-wa{color:#8A6D32}

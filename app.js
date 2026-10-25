@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.99.0";
+export const VERSIONE = "0.99.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1182,6 +1182,9 @@ function disegna() {
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
 }
 
+// 0.99.1: anche le signore hanno l'ora sempre in vista (accanto al giorno, in alto a destra)
+function oraAdesso() { const d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+setInterval(() => { if (document.hidden) return; const t = oraAdesso(); document.querySelectorAll(".who-ora").forEach(o => { if (o.textContent !== t) o.textContent = t; }); }, 10000);
 function disegnaTestata() {
   const u = S.utente;
   const sub = !u ? "Pulizie" : addetta() ? SIG(u.zona) : (u.ruolo === "lettura" ? "Solo lettura" : "Gestione") + (u.nome ? " · " + u.nome : "");
@@ -1190,7 +1193,9 @@ function disegnaTestata() {
   who.hidden = !u;
   $("#menuBtn").hidden = !(u && u.ruolo && !addetta());
   $("#menuBtn").setAttribute("aria-pressed", S.vista === "altro" ? "true" : "false");
-  who.textContent = S.online ? (L.dataBreve(L.oggiISO())) : "Senza rete";
+  if (!S.online) who.textContent = "Senza rete";
+  else if (u && addetta()) who.innerHTML = `<b class="who-ora">${oraAdesso()}</b><span>${esc(L.dataBreve(L.oggiISO()))}</span>`;
+  else who.textContent = L.dataBreve(L.oggiISO());
   who.className = "who" + (S.online ? "" : " off");
   // striscia dei giorni
   const el = $("#days");
@@ -1416,8 +1421,10 @@ function rigaSignora(r, p, stato, aperta, nonMotivo) {
 function bloccoSignora(b, p, statoRiga, motivoRiga, aperta) {
   const st = statoRiga(b.k), motivo = motivoRiga(b.k);
   const tasto = b.righe.length ? `<button class="sig-blocco-fatto ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>Fatto</span>`}</button>` : "";
+  // 0.99.1 (Argon): nella vista semplice il tasto e' UNO, grande, in fondo alla parte (prima si legge, poi si tocca)
+  const giu = b.righe.length ? `<button class="sig-blocco-fatto giu ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto: ${esc(b.nome.toLowerCase())}</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>✓ Fatto: ${esc(b.nome.toLowerCase())}</span>`}</button>` : "";
   return `<section class="sig-box sig-blocco ${st || ""}"><div class="sig-blocco-t"><div><div class="sig-sez-t">${esc(b.nome)}</div>${st === "non" && motivo ? `<div class="sig-non-perche">${esc(motivo)}</div>` : ""}</div>${tasto}</div>
-    <div class="sig-lista">${b.righe.map(r => rigaSignora(r, p, st, aperta, "")).join("")}${b.stelle.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
+    <div class="sig-lista">${b.righe.map(r => rigaSignora(r, p, st, aperta, "")).join("")}${b.stelle.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div>${giu}</section>`;
 }
 function foglioInizio(f) {
   const p = S.pulizie[f.id];
@@ -1445,7 +1452,11 @@ function foglioInizio(f) {
   // il tipo di ospite, piccolo, accanto al tipo di pulizia (Tecnici · Operai · Ospiti Booking): nessun'altra parola nuova
   const modoP = !fondo && !extra && c.tipo !== "comune" ? (lista?.passo?.modo || p.modo || "") : "";
   const modoTesto = modoP && G.MODI[modoP] ? G.MODI[modoP].breve : "";
-  const sottoTarga = [tipoTesto, modoTesto, oreStd || (minuti ? `circa ${minuti} minuti` : ""), quando, arrivo, p.persone && !chi ? `${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : "", insieme].filter(Boolean).join(" · ");
+  // 0.99.1 (Argon): tipo di pulizia, tipo di ospite, tempo e paga in pillole; sotto, in una frase, chi parte e chi arriva
+  const conPaga = p.minuti && p.origine !== "governante" && !extra;
+  const pillole = [tipoTesto, modoTesto, conPaga ? L.testoOre(p.minuti) : (minuti ? `circa ${minuti} minuti` : ""), conPaga && p.importo ? `Paga ${eur(p.importo)}` : ""].filter(Boolean);
+  const movimento = [quando, arrivo, p.persone && !chi ? `${p.persone} ${p.persone === 1 ? "persona" : "persone"}` : "", insieme].filter(Boolean).join(" · ");
+  const sottoTarga = `<span class="inizio-pillole">${pillole.map(x => `<span>${esc(x)}</span>`).join("")}</span>${movimento ? `<span class="inizio-ospiti">${esc(movimento.replace(/^./, ch => ch.toUpperCase()))}</span>` : ""}`;
   // "Oggi Michele dice": i dettagli del giorno, le istruzioni dell'ospite, il messaggio del giorno
   const dice = [p.dettagli, p.istruzioni].filter(Boolean);
   const diceHtml = dice.length || msg ? `<section class="sig-box"><div class="sig-sez-t">Oggi ${esc(p.dettagliDa || msg?.da || "Michele")} dice</div>${dice.map(x => `<div class="sig-dice">${esc(x)}</div>`).join("")}${msg ? `<div class="sig-dice ${dice.length ? "secondo" : ""}">${esc(msg.testo)}</div>` : ""}</section>` : "";
@@ -1453,7 +1464,7 @@ function foglioInizio(f) {
   let listaHtml = "";
   if (lista) {
     const nStelle = lista.stelle;
-    listaHtml = `<div class="sig-guida">Cosa si fa · un tasto <b>Fatto</b> per ogni blocco${nStelle ? `, le <b>★ stelle</b> si toccano una per una` : ""}</div>` + lista.blocchi.map(b => bloccoSignora(b, p, statoRiga, motivoRiga, aperta)).join("");
+    listaHtml = `<div class="sig-guida">${document.body.classList.contains("semplice") ? "Leggi ogni parte e alla fine tocca <b>Fatto</b>" : "Cosa si fa · un tasto <b>Fatto</b> per ogni blocco"}${nStelle ? `, le <b>★ stelle</b> si toccano una per una` : ""}</div>` + lista.blocchi.map(b => bloccoSignora(b, p, statoRiga, motivoRiga, aperta)).join("");
     if (lista.zona.length) listaHtml += `<section class="sig-box"><div class="sig-sez-t">Scale, corridoio e lavanderia · oggi</div><div class="sig-lista">${righeZona(lista).map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
   } else if (p.tipo === "stelle") {
     const rg = righeGiro(p); const euroG = rg.reduce((x, r) => x + (r.stella.euro || 0), 0);
@@ -1476,8 +1487,8 @@ function foglioInizio(f) {
   else if (p.stato === "problema") bottone = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Togli il problema, rimetti da pulire</button>` : ""}`;
   else if (p.stato === "non_fatta") bottone = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Rimetti da pulire</button>` : ""}`;
   return `<div class="inizio sig">
-    <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data">${esc(L.dataBreve(p.data))}</span></div>
-    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(p.tipo === "stelle" ? "⭐ Altre camere" : c.nome)}</div><div class="inizio-lavoro">${esc(p.tipo === "stelle" ? (() => { const rg = righeGiro(p); return `Le stelle di oggi · ${rg.length} ${rg.length === 1 ? "stella" : "stelle"} · ${eur(rg.reduce((x, r) => x + (r.stella.euro || 0), 0))}`; })() : sottoTarga)}</div></div>${BADGE(p)}</div>
+    <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
+    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(p.tipo === "stelle" ? "⭐ Altre camere" : c.nome)}</div><div class="inizio-lavoro">${p.tipo === "stelle" ? esc((() => { const rg = righeGiro(p); return `Le stelle di oggi · ${rg.length} ${rg.length === 1 ? "stella" : "stelle"} · ${eur(rg.reduce((x, r) => x + (r.stella.euro || 0), 0))}`; })()) : sottoTarga}</div></div>${BADGE(p)}</div>
     ${diceHtml}${listaHtml}${sempreHtml}${bidoni}
     ${bottone}
     ${aperta ? `<div class="pro-sec"><button class="nonna-link" data-non-riesco="${esc(p.id)}">Non riesco a fare una cosa</button><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}
@@ -1668,7 +1679,7 @@ function vistaOggiGestione() {
   const bottone = puoModificare() ? `<section class="card flat"><button class="big undo" data-whatsapp-piano="${iso}">Manda il piano di ${esc(quandoEtichetta(iso).toLowerCase())} su WhatsApp</button><button class="big main" data-nuovo-lavoro>+ Aggiungi un lavoro extra</button><button class="big undo" data-inserisci>＋ Inserisci il prospetto (WhatsApp, foto, Excel, a voce)</button></section>` : "";
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
-    ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Qui puoi scrivere due righe che le signore vedono in grande (es. orari di arrivo, cose da ricordare). I dettagli di una singola camera si scrivono toccando la camera.</p>`}</section>`;
+    ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Tocca «Scrivi»: le signore lo vedono in grande.</p>`}</section>`;
   return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + messaggio + avviso + blocchi + bottone;
 }
 
@@ -1678,9 +1689,9 @@ function bloccoSignoreELavori(iso) {
   const chi = signore().map(z => {
     const ls = pulizieDelGiorno(iso, z.id), f = ls.filter(p => p.stato === "fatta").length;
     const prob = ls.some(p => problemaAperto(p)) || aperti.some(m => m.zona === z.id && m.fonte === "signora" && m.data >= L.aggiungiGiorni(L.oggiISO(), -7));
-    return `<button class="piastra sig-plate" data-signora="${z.id}" aria-label="${esc(SIG(z.id))}: cosa fa questa settimana">${avatarZona(z.id, "piccola")}<span class="sig-nome">${esc(SIG(z.id))}</span><span class="sig-sotto">${ls.length ? `${f}/${ls.length} ${quandoEtichetta(iso) === "Oggi" ? "oggi" : L.dataBreve(iso)}` : "libera"}${prob ? `<span class="led mini" role="img" aria-label="problema"></span>` : ""}</span></button>`;
+    return `<button class="piastra sig-plate" data-signora="${z.id}" aria-label="${esc(SIG(z.id))}: cosa fa questa settimana">${premiumVisto() ? `<span class="sig-mono" aria-hidden="true">${esc(String(SIG(z.id) || "?").trim().slice(0, 1).toUpperCase())}</span>` : avatarZona(z.id, "piccola")}<span class="sig-nome">${esc(SIG(z.id))}</span><span class="sig-sotto">${ls.length ? `${f}/${ls.length} ${quandoEtichetta(iso) === "Oggi" ? "oggi" : L.dataBreve(iso)}` : "libera"}${prob ? `<span class="led mini" role="img" aria-label="problema"></span>` : ""}</span></button>`;
   }).join("");
-  return `<section class="card flat sig-blocco"><div class="sig-griglia">${chi}</div>
+  return `<section class="card flat sig-blocco"><div class="sig-griglia" style="grid-template-columns:repeat(${Math.min(3, signore().length) || 1},minmax(0,1fr))">${chi}</div>
     <button class="piastra p-grafite man-plate" data-vista="manutenzione">${ICONA("attrezzi")}<span class="man-testo"><b>Lavori di manutenzione</b><span>${aperti.length ? `${aperti.length} da fare` : "niente in sospeso"}</span></span>${aperti.length ? `<span class="led" role="img" aria-label="lavori da fare"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
 }
 
@@ -2027,9 +2038,9 @@ function casaAggiorna(h) {
   const man = lavoriAperti().length;
   let dom = 0; try { dom = statoChatApp().aperte.length; } catch (e) {}
   // 0.97: il riassunto e' fatto di "pillole" da toccare: pulizie -> l'elenco di oggi, lavori -> manutenzione, domande -> Sofia
-  const voci = [`<button type="button" class="casa-pill" data-casa-vai="pulizie"><span aria-hidden="true">🧹</span>${ls.length ? `<b>${fatte}/${ls.length}</b> pulizie oggi` : "nessuna pulizia oggi"}</button>`];
-  if (man) voci.push(`<button type="button" class="casa-pill" data-casa-vai="manutenzione"><span aria-hidden="true">🔧</span><b>${man}</b> ${man === 1 ? "lavoro" : "lavori"} da fare</button>`);
-  if (dom) voci.push(`<button type="button" class="casa-pill att" data-casa-vai="sofia"><span aria-hidden="true">💬</span><b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} per te</button>`);
+  const voci = [`<button type="button" class="casa-pill" data-casa-vai="pulizie"><span aria-hidden="true">${ICO_LINEA.pulizie}</span>${ls.length ? `<b>${fatte}/${ls.length}</b> pulizie oggi` : "nessuna pulizia oggi"}</button>`];
+  if (man) voci.push(`<button type="button" class="casa-pill" data-casa-vai="manutenzione"><span aria-hidden="true">${ICO_LINEA.lavori}</span><b>${man}</b> ${man === 1 ? "lavoro" : "lavori"} da fare</button>`);
+  if (dom) voci.push(`<button type="button" class="casa-pill att" data-casa-vai="sofia"><span aria-hidden="true">${ICO_LINEA.domande}</span><b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} per te</button>`);
   const q = (s) => h.querySelector(s);
   const sal = q(".casa-sal"), riga = q(".casa-riga"), spinta = q(".casa-spinta"), info = q(".casa-info");
   if (sal) { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); }
@@ -4892,13 +4903,13 @@ function foglioDettatura(f) {
   const ds = daSalvareDettatura(ris, d);
   const leggo = !!(d.fonte && d.fonte.leggo) || !!(d.ia && d.ia.leggo);
   const tastoSofia = !f.copia && iaAccesa() && (!d.ia || d.ia.errore) && !leggo ? `<button type="button" class="big dt-sofia" data-dett-sofia><span class="dt-sofia-foto" aria-hidden="true"></span><span>Fammelo capire da ${esc(nomeGov())}</span></button>` : "";
-  const parla = ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) ? `<button type="button" class="btnsm ghost" data-dett-parla>🎤 Parla</button>` : "";
+  const parla = ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) ? `<button type="button" class="btnsm ghost" data-dett-parla>${ICO_LINEA.mic}<span>Parla</span></button>` : "";
   // 0.97: in cima da dove arriva (WhatsApp, foto); i tasti grandi Incolla da WhatsApp e Foto; niente piu' "copia la richiesta per un'IA esterna"
   return `<h3>${f.copia ? "Come la settimana scorsa" : "Il prospetto"}</h3>
     ${f.copia ? `<div class="muted">Per le camere ancora vuote ripeto l'ospite della settimana prima, spostato di una settimana. Togli la spunta a chi non torna.</div>` : fonteDettaturaHtml(d) || `<div class="muted">Incolla il messaggio di WhatsApp, oppure scrivi o detta chi arriva: una riga per camera. Prima di salvare ti faccio controllare.</div>`}
     <div class="floorlabel" style="margin-top:12px">Di che settimana parliamo?</div>
     <div class="dt-sett">${chip(questa, "Questa")}${chip(prossima, "Prossima")}${chip(dopo, "Quella dopo")}</div>
-    ${f.copia ? "" : `<div class="dt-grandi"><button type="button" class="dt-grande wa" data-dett-incolla>${ICO_WA}<span>Incolla da WhatsApp</span></button><label class="dt-grande"><span aria-hidden="true">📷</span><span>Foto del foglio</span><input class="insFoto" type="file" accept="image/*" hidden></label></div>
+    ${f.copia ? "" : `<div class="dt-grandi"><button type="button" class="dt-grande wa" data-dett-incolla>${ICO_WA}<span>Incolla da WhatsApp</span></button><label class="dt-grande"><span aria-hidden="true">${ICO_LINEA.foto}</span><span>Foto del foglio</span><input class="insFoto" type="file" accept="image/*" hidden></label></div>
     <div class="campo"><label for="dtTesto">Il testo${d.fonte && d.fonte.tipo === "foto" && !leggo && d.testo ? " letto dalla foto" : ""} <span class="muted small">(puoi correggerlo)</span></label><textarea id="dtTesto" data-keep rows="5" ${leggo ? "disabled" : ""} placeholder="Salvatore: Manna, 2 persone, da lunedì a venerdì
 Aurora: Palazzo dal 12 al 16
 Alba: Fondamenta tutto novembre
@@ -4908,7 +4919,7 @@ Nicole: Castaldi parte giovedì">${esc(d.testo)}</textarea></div>
     ${tastoSofia}${f.copia ? "" : partiSofiaHtml(d, "testa")}
     <div id="dtAnteprima">${leggo ? "" : anteprimaDettatura(ris, f)}</div>
     ${f.copia ? "" : partiSofiaHtml(d, "coda")}
-    <button class="big main" data-dett-salva ${ds.tot && !S.attesa && !leggo ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : ds.testo}</button>
+    ${leggo ? "" : `<div class="dt-salva-fisso"><button class="big main" data-dett-salva ${ds.tot && !S.attesa ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : ds.testo}</button></div>`}
     ${f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Manna, 2 persone, da lunedì a venerdì
 Aurora: Palazzo dal 12 al 16 ottobre
 Alba: Fondamenta tutto novembre
@@ -4956,10 +4967,10 @@ function parlaDettatura(f) {
   try {
     const rec = new SR(); riconoscimento = rec;
     rec.lang = "it-IT"; rec.interimResults = false; rec.maxAlternatives = 1; rec.continuous = false;
-    if (b) { b.textContent = "🎙️ Ti ascolto… parla"; b.classList.add("rec"); }
+    if (b) { b.innerHTML = `${ICO_LINEA.mic}<span>Ti ascolto… parla</span>`; b.classList.add("rec"); }
     rec.onresult = (e) => { const t = uniscVoce(Array.from(e.results).map(r => r[0].transcript)); if (t) aggiungiTestoDettatura(f, t); };
     rec.onerror = () => toast("Non riesco a sentirti da qui: tocca la casella e usa il microfono 🎤 della tastiera.");
-    rec.onend = () => { riconoscimento = null; const bb = $("[data-dett-parla]"); if (bb) { bb.textContent = "🎤 Parla"; bb.classList.remove("rec"); } };
+    rec.onend = () => { riconoscimento = null; const bb = $("[data-dett-parla]"); if (bb) { bb.innerHTML = `${ICO_LINEA.mic}<span>Parla</span>`; bb.classList.remove("rec"); } };
     rec.start();
   } catch (e) { riconoscimento = null; toast("Tocca la casella e usa il microfono 🎤 della tastiera."); }
 }
@@ -5137,25 +5148,38 @@ function foglioInserisci() {
   const tasto = (attr, ico, t, sotto, cls = "") => `<button type="button" class="ins-tasto ${cls}" ${attr}><span class="ins-ico" aria-hidden="true">${ico}</span><span class="ins-t"><b>${t}</b><small>${sotto}</small></span></button>`;
   const file = (cls, accept, ico, t, sotto) => `<label class="ins-tasto"><span class="ins-ico" aria-hidden="true">${ico}</span><span class="ins-t"><b>${t}</b><small>${sotto}</small></span><input class="${cls}" type="file" accept="${accept}" ${cls === "insChat" ? "multiple" : ""} hidden></label>`;
   return `<h3>Inserisci il prospetto</h3>
-    <div class="muted">Scegli da dove arriva. Prima di salvare ti faccio sempre vedere cosa ho capito.</div>
+    <div class="muted">Scegli da dove arriva. Prima di salvare vedi sempre cosa ho capito.</div>
     <div class="ins-scelte">
       ${tasto("data-ins-wa", ICO_WA, "Da WhatsApp", "Hai copiato il messaggio? Tocca qui e lo incollo io", "wa")}
-      ${file("insChat", ".txt,.zip,text/plain,application/zip,audio/*,image/*", "📲", "Le chat di WhatsApp", "Papà e il gruppo Albergo, anche i vocali: " + esc(nomeGov()) + " ascolta e legge tutto")}
-      ${file("insFoto", "image/*", "📷", "Foto del foglio", "Scatta o scegli la foto: la legge " + esc(nomeGov()))}
-      ${tasto("data-ins-scrivi", "✍️", "Lo scrivo o lo detto", "Una riga per camera, come lo diresti a papà")}
-      ${file("fileFoglio", ".xlsx,.xls,.xlsm,.ods", "📄", "File Excel di papà", "Il foglio del computer (.xlsx)")}
-      ${tasto("data-ins-copia", "🔁", "Come la settimana scorsa", "Ripeto gli ospiti nelle camere vuote")}
+      ${file("insChat", ".txt,.zip,text/plain,application/zip,audio/*,image/*", ICO_LINEA.chat, "Le chat di WhatsApp", "Papà e il gruppo Albergo, anche i vocali: " + esc(nomeGov()) + " ascolta e legge tutto")}
+      ${file("insFoto", "image/*", ICO_LINEA.foto, "Foto del foglio", "Scatta o scegli la foto: la legge " + esc(nomeGov()))}
+      ${tasto("data-ins-scrivi", ICO_LINEA.scrivi, "Lo scrivo o lo detto", "Una riga per camera, come lo diresti a papà")}
+      ${file("fileFoglio", ".xlsx,.xls,.xlsm,.ods", ICO_LINEA.foglio, "File Excel di papà", "Il foglio del computer (.xlsx)")}
+      ${tasto("data-ins-copia", ICO_LINEA.ripeti, "Come la settimana scorsa", "Ripeto gli ospiti nelle camere vuote")}
     </div>
-    <section class="ins-guida" aria-label="Come si fa da WhatsApp">
-      <div class="ins-guida-t">${ICO_WA}<span>Da WhatsApp, in 3 tocchi</span></div>
+    <details class="ins-guida">
+      <summary class="ins-guida-t">${ICO_WA}<span>Come si fa da WhatsApp</span></summary>
       <div class="ins-passi">
         <div class="ins-passo"><b>1</b><span><b>Messaggio scritto</b> · tieni premuto il messaggio, tocca <b>Copia</b> (in alto, o nel menu ⋮), torna qui e tocca <b>Da WhatsApp</b>. Puoi copiarne anche più di uno insieme.</span></div>
         <div class="ins-passo"><b>2</b><span><b>Foto o file Excel</b> · tieni premuto (o apri la foto), tocca <b>Condividi</b> e scegli <b>Pulizie Ricci</b>: si apre qui, già pronto.</span></div>
         <div class="ins-passo"><b>3</b><span><b>Le chat intere (papà, gruppo Albergo)</b> · nella chat tocca <b>⋮ → Altro → Esporta chat → Includi file multimediali</b> (così ci sono anche i vocali) e scegli <b>Pulizie Ricci</b>, oppure salvala e toccala qui sopra. Poi fai lo stesso con l'altra chat entro mezz'ora: si aggiunge alla prima e ${esc(nomeGov())} le legge insieme, vocali compresi.</span></div>
       </div>
       <small>Se tra le app di «Condividi» non vedi ancora Pulizie Ricci, il telefono la aggiunge entro un giorno; intanto usa la strada 1.</small>
-    </section>`;
+    </details>`;
 }
+// 0.99.1 (Argon): icone a tratto, di un solo colore (l'oro brunito), al posto delle emoji del telefono
+const SVG_T = (d) => `<svg class="ico-linea" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICO_LINEA = {
+  chat: SVG_T('<path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M17 9h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v2l-3-2h-3a2 2 0 0 1-2-1.6"/><path d="M6.5 9.5h6M6.5 12h4"/>'),
+  foto: SVG_T('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>'),
+  scrivi: SVG_T('<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14 7l3 3"/>'),
+  foglio: SVG_T('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 15h6M9 18h4"/>'),
+  ripeti: SVG_T('<path d="M4 12a8 8 0 0 1 13.7-5.7L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 16"/><path d="M4 20v-4h4"/>'),
+  pulizie: SVG_T('<path d="M12 3l1.6 3.8L17.5 8l-3.9 1.2L12 13l-1.6-3.8L6.5 8l3.9-1.2z"/><path d="M18.5 14l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/><path d="M6 15l.6 1.4 1.4.6-1.4.6L6 19l-.6-1.4L4 17l1.4-.6z"/>'),
+  lavori: SVG_T('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3.6 17.2a1.6 1.6 0 0 0 2.2 2.2l5.7-5.7a4 4 0 0 0 5.2-5.4l-2.4 2.4-2.2-.4-.4-2.2z"/>'),
+  mic: SVG_T('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M9 21h6"/>'),
+  domande: SVG_T('<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M9.8 9a2.3 2.3 0 0 1 4.4.8c0 1.5-2.2 1.9-2.2 3.2"/><path d="M12 15.2h.01"/>'),
+};
 const ICO_WA = `<svg class="ico-wa" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.1 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.2-.2-.5-.3z"/></svg>`;
 // la striscia in cima all'anteprima: da dove arriva il testo e cosa c'e' da sapere
 function fonteDettaturaHtml(d) {
@@ -5164,7 +5188,8 @@ function fonteDettaturaHtml(d) {
     const quando = f.data ? L.dataGiornoLungo(f.data) : "";
     const chi = (f.chi || []).slice(0, 2).join(", ");
     const sopra = f.come === "chat" ? "Dalla chat di WhatsApp" : "Da WhatsApp";
-    const dett = [f.messaggi ? `${f.messaggi} ${f.messaggi === 1 ? "messaggio" : "messaggi"}${chi ? " di " + chi : ""}` : "", quando].filter(Boolean).join(" · ");
+    const da = f.chats && f.chats.length ? ` (${f.chats.join(" + ")})` : chi ? " di " + chi : "";
+    const dett = [f.messaggi ? `${f.messaggi} ${f.messaggi === 1 ? "messaggio" : "messaggi"}${da}` : "", quando].filter(Boolean).join(" · ");
     const note = [];
     if (f.tolte) note.push(`Ho tolto ${f.tolte} ${f.tolte === 1 ? "riga che non parla" : "righe che non parlano"} di camere (saluti, «ok», foto).`);
     if (f.rif) note.push(`Il messaggio è di ${esc(L.dataGiornoLungo(f.rif))}: «oggi», «domani» e i giorni li leggo come in quel giorno.`);
@@ -5462,12 +5487,12 @@ function partiSofiaHtml(d, parte = "testa") {
   const x = d.ia; if (!x) return "";
   if (parte === "coda" && (x.errore || x.leggo)) return "";
   if (x.errore === "chiave") return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>Per far leggere i messaggi a ${esc(nomeGov())} serve la chiave di Gemini su questo telefono</b><small>Altro → ${esc(nomeGov())} intelligente: incolla la chiave, oppure sul computer tocca «Metti la chiave anche sui telefoni». Intanto qui sotto c'è quello che capisco con le regole fisse.</small><button type="button" class="btnsm" data-vista-chiudi="altro">Vai ad Altro</button></div></div>`;
-  if (x.leggo) return `<div class="dt-fonte leggo"><span class="dt-giro" aria-hidden="true"></span><div><b>${esc(nomeGov())} sta leggendo ${x.n > 1 ? x.n + " messaggi" : "il testo"}…</b>${x.fase ? `<span>${esc(x.fase)}</span>` : ""}<small>Può volerci qualche minuto. Puoi anche uscire dall'app: quando ha finito ti arriva la notifica.${x.tagliati ? ` (I ${x.tagliati} messaggi più vecchi li ho lasciati fuori: erano troppi.)` : ""}</small></div></div>`;
+  if (x.leggo) return `<div class="dt-fonte leggo"><span class="dt-giro" aria-hidden="true"></span><div><b>${esc(nomeGov())} sta leggendo ${x.n > 1 ? x.n + " messaggi" : "il testo"}…</b>${x.fase ? `<span>${esc(x.fase)}</span>` : ""}<small>Può volerci qualche minuto. Puoi anche uscire dall'app: quando ha finito ti arriva la notifica.${x.tagliati ? ` (I ${x.tagliati} messaggi più vecchi li ho lasciati fuori: erano troppi.)` : ""}</small>${barraLettura(x)}</div></div>`;
   if (x.errore) return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>${esc(nomeGov())} non è riuscita a leggere</b><small>${esc(x.errore)}</small><button type="button" class="btnsm" data-dett-sofia>Riprova</button></div></div>`;
   const modello = nomeModello(x.modello);
   const ind = x.indicazioni || [], ab = x.abitudini || [];
   const riga = (v, tipo) => `<label class="row dt-riga ok" style="grid-template-columns:auto 1fr;cursor:pointer;align-items:start"><input type="checkbox" data-sofia-${tipo}="${esc(v.k)}" ${v.scelta ? "checked" : ""} style="width:24px;height:24px;margin-top:2px"><span>${tipo === "ind" ? `<b>${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}${v.camera ? " · " + esc(camera(v.camera).nome) : " · a tutte"}</b><br>` : ""}${esc(v.testo)}${v.messaggio ? `<br><span class="muted small">papà: «${esc(v.messaggio)}»</span>` : ""}</span></label>`;
-  if (parte === "testa") return `<div class="dt-fonte sofia"><span class="dt-fonte-foto" aria-hidden="true"></span><div><b>Letto da ${esc(nomeGov())}${modello ? ` (${modello})` : ""}${x.n > 1 ? ` · ${x.n} messaggi` : ""}</b>${x.risposta ? `<span>${esc(x.risposta)}</span>` : ""}${x.ripiego ? `<small>${confIA().chiaveArgon ? "Argon non era disponibile" : "Per Argon serve la sua chiave col credito (Altro → passo 4b)"}: ho letto con ${esc(modello || "un altro modello")}. Controlla con attenzione.</small>` : ""}<button type="button" class="btnsm ghost" data-dett-regole>Usa le regole fisse</button></div></div>
+  if (parte === "testa") return `<div class="dt-fonte sofia"><span class="dt-fonte-foto" aria-hidden="true"></span><div><b>Il riassunto di ${esc(nomeGov())}${x.n > 1 ? ` · ${x.n} messaggi` : ""}</b>${x.risposta ? `<span>${esc(x.risposta)}</span>` : ""}<small>Controlla e lascia la spunta solo su quello che è giusto.</small><button type="button" class="btnsm ghost" data-dett-regole>Usa le regole fisse</button></div></div>
     ${(x.dubbi || []).length ? `<div class="dt-dubbi"><b>Non sono sicura di:</b><ul>${x.dubbi.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}`;
   return `${ind.length ? `<div class="floorlabel" style="margin-top:12px">Indicazioni per le signore <span>${ind.filter(v => v.scelta).length} da salvare</span></div><div class="rows">${ind.map(v => riga(v, "ind")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Vanno nei dettagli della camera di quel giorno (o nel messaggio del giorno alle signore).</p>` : ""}
     ${ab.length ? `<div class="floorlabel" style="margin-top:12px">Come scrive papà: me lo ricordo? <span>${ab.filter(v => v.scelta).length}</span></div><div class="rows">${ab.map(v => riga(v, "ab")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Le spuntate finiscono nel taccuino: la prossima volta lo capisco meglio.</p>` : ""}`;
@@ -5614,7 +5639,7 @@ function foglioChatPapa() {
   const voc = scelti.filter(m => m.media && m.media.tipo === "audio"), vocOk = voc.filter(m => c.media.has(m.media.file));
   const fot = scelti.filter(m => m.media && m.media.tipo === "foto" && c.media.has(m.media.file));
   const mittenti = mittentiDi(c.chats);
-  const periodi = [[7, "1 settimana"], [14, "2 settimane"], [31, "1 mese"], [92, "3 mesi"], [0, "Tutta"]];
+  const periodi = [[7, "1 sett."], [14, "2 sett."], [31, "1 mese"], [92, "3 mesi"], [0, "Tutto"]];
   const schedaChat = (x, i) => {
     const pr = x.messaggi.find(m => m.data), ul = [...x.messaggi].reverse().find(m => m.data);
     const nv = x.messaggi.filter(m => m.media && m.media.tipo === "audio").length;
@@ -5628,11 +5653,11 @@ function foglioChatPapa() {
     <div class="floorlabel" style="margin-top:14px">Chi scrive il prospetto?</div>
     <div class="scelte">${mittenti.slice(0, 6).map(m => `<button type="button" aria-pressed="${m.nome === c.papa}" data-cp-papa="${esc(m.nome)}">${esc(m.nome)} <small>· ${m.n}</small></button>`).join("")}</div>
     <div class="floorlabel" style="margin-top:10px">Quali messaggi leggo?</div>
-    <div class="scelte">${periodi.map(([g, t]) => `<button type="button" aria-pressed="${c.giorni === g}" data-cp-giorni="${g}">${t}</button>`).join("")}</div>
-    <p class="muted small" style="margin:6px 2px 0">Leggo <b>${scelti.length}</b> messaggi${vocOk.length ? `, ascolto ${vocOk.length > MAX_VOCALI ? `gli ultimi <b>${MAX_VOCALI}</b> vocali` : `<b>${vocOk.length}</b> ${vocOk.length === 1 ? "vocale" : "vocali"}`}` : ""}${fot.length ? (fot.length === 1 ? " e guardo la foto" : ` e guardo le ultime <b>${Math.min(4, fot.length)}</b> foto`) : ""}. Le parole «domani», «lunedì» le leggo col giorno del messaggio.</p>
+    <div class="seg-periodo" role="group" aria-label="Quali messaggi leggo">${periodi.map(([g, t]) => `<button type="button" aria-pressed="${c.giorni === g}" data-cp-giorni="${g}">${t}</button>`).join("")}</div>
+    <p class="muted small" style="margin:6px 2px 0">Leggo <b>${scelti.length}</b> messaggi${vocOk.length ? `, ascolto ${vocOk.length > MAX_VOCALI ? `gli ultimi <b>${MAX_VOCALI}</b> vocali` : `<b>${vocOk.length}</b> ${vocOk.length === 1 ? "vocale" : "vocali"}`}` : ""}${fot.length ? (fot.length === 1 ? " e guardo la foto" : ` e guardo le ultime <b>${Math.min(4, fot.length)}</b> foto`) : ""}.</p>
     ${voc.length > vocOk.length ? `<div class="dt-dubbi"><b>${voc.length - vocOk.length === 1 ? "1 vocale non c'è" : `${voc.length - vocOk.length} vocali non ci sono`} nel file.</b> Per farmeli ascoltare esporta la chat con <b>«Includi file multimediali»</b>.</div>` : ""}
     <button class="big main" data-cp-leggi ${scelti.length && c.chats.some(x => x.attiva) ? "" : "disabled"}>✨ Fai leggere a ${esc(nomeGov())}</button>
-    <p class="muted small" style="margin:8px 2px 0">${esc(nomeGov())} trova chi dorme dove, le indicazioni per le signore e come scrive papà. Non salva niente: prima ti fa vedere tutto e tu spunti. Se intanto esci dall'app, quando ha finito ti arriva la notifica.${iaAccesa() ? "" : ` <b>Su questo telefono manca la chiave di Gemini</b>: senza, niente vocali e leggo con le regole fisse.`}</p>`;
+    <p class="muted small" style="margin:8px 2px 0">Non salva niente: prima ti fa vedere tutto e tu spunti. Se esci dall'app, quando ha finito ti arriva la notifica.${iaAccesa() ? "" : ` <b>Su questo telefono manca la chiave di Gemini</b>: senza, niente vocali e leggo con le regole fisse.`}</p>`;
 }
 function collegaChatPapa() {
   const c = S.chatPapa; if (!c) return;
@@ -5647,16 +5672,16 @@ async function leggiChatWA() {
   const c = S.chatPapa; if (!c) return;
   const scelti = messaggiScelti(c).map(m => ({ ...m }));
   if (!scelti.length) return;
-  const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: c.papa ? [c.papa] : [], data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "" };
+  const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: c.papa ? [c.papa] : [], chats: c.chats.filter(x => x.attiva).map(x => (x.gruppo ? x.nome : "chat con " + x.nome)), data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "" };
   const testoPapa = scelti.filter(m => m.testo && (!c.papa || m.chi === c.papa)).map(m => m.testo).join("\n");
   S.dett = { testo: testoPapa, base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte, rif: "", wa: { messaggi: scelti, papa: c.papa, testo: testoPapa } };
   if (!iaAccesa()) { apriFoglio({ tipo: "dettatura" }); return; }
   const d = S.dett;
   const voc = scelti.filter(m => m.media && m.media.tipo === "audio" && c.media.has(m.media.file)).slice(-MAX_VOCALI);
-  d.ia = { leggo: true, n: scelti.length, fase: voc.length ? `Ascolto i vocali: 0 di ${voc.length}` : "" };
+  d.ia = { leggo: true, n: scelti.length, fase: voc.length ? `Ascolto i vocali: 0 di ${voc.length}` : "", ...(voc.length ? { prog: 0 } : {}) };
   apriFoglio({ tipo: "dettatura" });
   if (voc.length) {
-    try { await trascriviVocali(voc, c.media, (fatti) => { if (S.dett !== d) return; d.ia = { ...d.ia, fase: `Ascolto i vocali: ${fatti} di ${voc.length}` }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else { const sm = $(".cw-banner.leggo small"); if (sm) sm.textContent = `${d.ia.fase}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.`; } }); }
+    try { await trascriviVocali(voc, c.media, (fatti) => { if (S.dett !== d) return; d.ia = { ...d.ia, fase: `Ascolto i vocali: ${fatti} di ${voc.length}`, prog: fatti / voc.length }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else { const sm = $(".cw-banner.leggo small"); if (sm) sm.textContent = `${d.ia.fase}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.`; const bi = $(".cw-banner.leggo .cw-prog i"); if (bi) bi.style.width = Math.round(d.ia.prog * 100) + "%"; } }); }
     catch (e) { console.warn("vocali", e); }
     if (S.dett !== d) return;
   }
@@ -5671,7 +5696,7 @@ async function leggiChatWA() {
 // i vocali condivisi da soli (tieni premuto il vocale -> Condividi -> Pulizie Ricci)
 function leggiVocaliCondivisi(audio, media) {
   const oggi = L.oggiISO();
-  S.chatPapa = { chats: [{ nome: "Vocali", messaggi: audio.map(([nome]) => ({ data: oggi, ora: "", chi: "", testo: "", media: { file: nome, tipo: "audio" } })), attiva: true }], media, papa: "", giorni: 0 };
+  S.chatPapa = { chats: [{ nome: "Vocali", gruppo: true, messaggi: audio.map(([nome]) => ({ data: oggi, ora: "", chi: "", testo: "", media: { file: nome, tipo: "audio" } })), attiva: true }], media, papa: "", giorni: 0 };
   if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
   chiediPermessoAvvisi();
   leggiChatWA();
@@ -5725,11 +5750,13 @@ function riprendiUltimaLettura() {
   S.dett = { testo: x.testo || "", base: x.base || settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte: x.fonte || null, rif: "", ia: { ...letto, modello: x.modello || "", ripiego: !!x.ripiego, n: x.n || 0, testo: x.testo || "" } };
   return true;
 }
+// la barra sottile che si riempie: coi vocali dice quanti ne ha ascoltati, nella lettura scorre (non si sa quanto manca)
+function barraLettura(x) { const det = x && typeof x.prog === "number"; return `<span class="cw-prog${det ? "" : " indet"}" aria-hidden="true"><i style="width:${det ? Math.round(x.prog * 100) : 40}%"></i></span>`; }
 function letturaInCorso() { const d = S.dett; return !!(d && d.ia && d.ia.leggo); }
 function letturaDaControllare() { const d = S.dett; return !!(d && d.ia && !d.ia.leggo && !d.ia.errore && ((d.ia.righe || []).some(r => r.azione !== "niente") || (d.ia.indicazioni || []).length)); }
 function bannerLettura() {
   if (S.foglio && S.foglio.tipo === "dettatura") return "";
-  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo le chat…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small></span><i aria-hidden="true">›</i></button>`;
+  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo le chat…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small>${barraLettura(S.dett.ia)}</span><i aria-hidden="true">›</i></button>`;
   if (!letturaDaControllare()) return "";
   const x = S.dett.ia, nr = (x.righe || []).filter(r => r.azione !== "niente").length, ni = (x.indicazioni || []).length;
   return `<button type="button" class="cw-banner" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} ha letto le chat</b><small>${[nr ? `${nr} ${nr === 1 ? "cambio" : "cambi"} nel prospetto` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} per le signore` : ""].filter(Boolean).join(" · ")}: tocca per controllare e salvare</small></span><i aria-hidden="true">›</i></button>`;
