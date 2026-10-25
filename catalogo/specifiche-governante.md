@@ -1480,3 +1480,10 @@ Michele: "ingaggia Gemini e continua il progetto: app da milioni di dollari fatt
 - Le schede delle camere: banda oro (da fare), oro con anello (in corso), pietra e sbiadita (pulita); Comincia e Ho finito in oro.
 - Dentro la camera: tipo di pulizia, tipo di ospite, tempo e paga in PILLOLE ("Cambio completo", "Ospiti Booking", "45 minuti", "Paga 6 €"), sotto in una frase chi parte e chi arriva.
 - UN SOLO TASTO FATTO PER PARTE, GRANDE, IN FONDO ("✓ Fatto: letto e biancheria"): prima si legge, poi si tocca. Il tastino in alto nella vista semplice non c'e' piu' (resta nella vista con la piantina). La guida dice "Leggi ogni parte e alla fine tocca Fatto".
+
+## 71. La 0.99.2 (25 ottobre, notte): I DUBBI DI SOFIA SI RISOLVONO CON UN TOCCO
+- Nel JSON della lettura i dubbi ora sono {"domanda", "risposte"}: Sofia propone 2-4 risposte brevi quando si possono indovinare (es. "1 persona" / "2 persone"). I dubbi vecchi (solo testo) si vedono ancora come domanda.
+- Nell'anteprima il riquadro "Da chiarire" ha i tasti delle risposte (in oro); toccandone uno si sceglie (ritoccandolo si toglie); compare "✓ Rileggi con la tua risposta / le tue N risposte".
+- RILEGGI: Sofia rilegge gli stessi messaggi (e le stesse foto) con in fondo un messaggio di Michele "Risposte di Michele ai dubbi di Sofia: - domanda → risposta"; nelle istruzioni: vale quello che dice lui e non rifà la stessa domanda. I nomi noti vanno in codice anche qui.
+- I tasti ci sono solo finché i messaggi sono in memoria (non dopo aver riaperto l'app dalla notifica il giorno dopo).
+- Premium: il riquadro dei dubbi avorio e oro; le righe dell'anteprima con la striscia oro (da salvare), oro chiaro (da controllare), pietra (da togliere); i puntini che lampeggiano oro anche nel bagliore.
