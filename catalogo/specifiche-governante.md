@@ -1572,3 +1572,38 @@ Michele: "deve essere piu' grande... a me mi piaceva la versione di prima, grand
 ### PICCOLE COSE
 - Nella nuvoletta della linguetta la prima lettera della risposta non e' piu' tagliata; "Sofia pensa…" e' larga quanto la scritta (anche con nomi piu' lunghi).
 
+## 77. La 1.0.4 (25 ottobre): SOFIA "BUSTO E POCO OLTRE", LA NUVOLETTA A DUE STATI, I SOTTOTITOLI, TRE GIRI DI GEMINI 4 ARGON
+Michele: "no, andava bene prima: busto e poco oltre, cosi' si vedono tutti i movimenti; e mi piace che affianco compare come un fantasmino in tutte le schermate, applicalo; mi raccomando, utilizza Gemini per ottimizzare tutte le grafiche, filmati, impaginamento e colori".
+### I TRE GIRI CON GEMINI 4 ARGON (conversazione "Restyling App Hotel")
+- Giro 1 (12:24): 10 foto (1.0.1 contro 1.0.3, la casa con la conversazione e piu' in basso, Prospetto con la linguetta, il fantasmino, Piantine e Paghe, Altro, la sezione di Sofia, la vista delle signore, i fotogrammi dei filmati). Nomi veri di ospiti e signore sostituiti con nomi inventati nelle foto.
+- Giro 2 (13:01): le stesse schermate rifatte; voti da 7,5 a 9,5 e 7 ritocchi.
+- Giro 3 (13:14): voti da 9,4 a 10, "nessun difetto bloccante"; fatto anche l'ultimo micro-ritocco.
+- Non prese, e perche': i tasti accanto a Sofia a 270 px (coprivano la mano quando saluta: restano accanto alla testa); il fantasmino "che non si tocca" (resta: un tocco la fa smettere); il prezzo di Lella spostato (la linguetta galleggia e passa vicino a tutto quello che sta sul bordo); il bottone "Comincia" delle signore (c'era gia', era sotto la foto); banner PROVA e iniziali L/S (ci sono solo nelle foto di prova).
+### LA CASA (stile Premium)
+- Sofia grande come la 1.0.1 e 30 px piu' su (la testa resta sotto l'ora): si vedono testa, spalle, braccia, la vita, le tasche e le mani ("busto e poco oltre").
+- La nuvoletta ha DUE stati. PICCOLA (di serie): dal 72,5% di H fino a 16 px sopra la barra in basso (169 px sul telefono di Michele): saluto 17 px, messaggio 15 px, consiglio in oro; dentro si scorre; "Leggi tutto ▴" a cavallo del bordo in basso a destra (solo se c'e' altro da leggere). GRANDE: un tocco su "Leggi tutto", sulla maniglia d'oro in cima o sul testo: sale dal 46% di H e sotto compare la casella per scrivere; "Riduci ▾" in alto a destra.
+- Torna piccola: con "Riduci", toccando Sofia, quando lei comincia a parlare, o dopo 15 secondi che non la tocchi (mai mentre scrivi nella casella).
+- Si apre da sola: una risposta nuova a voce spenta; con la voce, se lei propone qualcosa (Si'/No), quando ha finito di parlare.
+- I SOTTOTITOLI: mentre Sofia parla la nuvoletta piccola scorre da sola e la riga che sta dicendo resta a un terzo dall'alto (anche tra una parte e l'altra della voce, senza salti). Se Michele la scorre col dito, i sottotitoli lasciano fare a lui.
+- In cima e in fondo alla nuvoletta una sfumatura: le righe gia' lette non spuntano tagliate; la sfumatura in fondo c'e' solo se il testo continua. Dentro la nuvoletta non ci sono piu' le pillole (pulizie, lavori...): le stesse cose stanno subito sotto, nella pagina.
+- Tasti accanto alla testa: microfono 56 px (nero, bordo oro #C5A059, icona #E6C786), Ascolta 44 px, voce 40 px.
+- Corretto un difetto vecchio: toccare la casa faceva comparire l'avviso "Niente più sfondo dietro di lei" (il comando dei tasti del salone si attaccava anche alla casa).
+### IL FANTASMINO E LA LINGUETTA
+- Il fantasmino (Sofia che esce quando parla) resta in tutte le schermate: alto 320 px, un po' fuori dal bordo destro, senza l'etichetta col nome, ombra calda; entra da destra-basso (320 ms) ed esce scivolando giu' (220 ms). Con la nuvoletta della risposta c'e' una ✕ sola (quella della nuvoletta).
+- La nuvoletta della risposta: 232 px a sinistra di Sofia, alta fino a 345 px, caratteri 15 px; il testo si scorre e, se continua, in fondo c'e' una sfumatura.
+- La linguetta: 30 px piu' su (134 px sopra la barra: prima copriva prezzi e pallini), stretta 44 px da ferma; aperta ("Ti ascolto…", "pensa…") ha un alone chiaro che la stacca dalle scritte sotto.
+### I COLORI (la tavolozza di Gemini, contrasto AA anche al sole)
+- Fondo #F7F4EE, schede bianche, bordi #E2DCD0, testo #1C1917, testo secondario #524D46, oro brunito #856535 (fondo oro chiaro #FAF5E8), fondo secondario #EFECE4. Stati: da pulire #B91C1C su #FDF2F2, in pulizia #9A5B00 su #FEF9E7, pronta #156534 su #F0FDF4. Barra in basso bianca con filo #DCD5C7, tasto attivo oro su #EFECE4. Valgono anche nella vista delle signore.
+- I pallini d'oro (lavori, signore) netti, con un alone pieno che respira (prima erano sfocati).
+### LE ALTRE SCHERMATE
+- Oggi piu' in basso: la striscia dei giorni ferma in alto ha il fondo pieno, un filo e una sfumatura; nel Premium via il titolo con la data (c'e' gia' nell'ora e nel bollino del giorno).
+- Piantine: la barra del corridoio chiara (#E2DCD0) e larga 24 px, la scritta grigio scuro.
+- Paghe: la spiegazione del conto in due righe; con 0 euro "Niente da pagare" al posto del tasto spento.
+- Altro: tondi dei colori puliti da 44 px (niente lucentezza); negli stili parole semplici ("Sfondo avorio luminoso, dettagli oro brunito e testi grandi"; "Stile classico con bordi in legno scuro").
+- La sezione di Sofia: via il primo riquadro (la sua faccia c'era 4 volte); "Pensa con Argon" resta in una riga piccola; la casella per scrivere sta sopra il tondo della barra; i comandi rapidi arrivano al bordo e sfumano.
+- La vista delle signore: "da fare" senza il doppio bordo (oro su rosso).
+### I FILMATI
+- Sofia in 3D rifatta (dagli stessi fotogrammi e maschere, s3d/codifica3d_104.py) SENZA l'ombra nera "cotta" intorno: sul fondo chiaro sembrava un alone sporco. L'ombra ora la fa lo stile: calda e leggera. Nomi nuovi (cons-parla-3d2.webm, cons-riposo-3d2.webm, cons-poster-3d2.webp), cosi' i telefoni li riscaricano.
+- I bordi laterali del filmato sfumati (9%) e il fondo sfumato: niente gomiti tagliati dritti ne' il "gradino" tra manica e fianco in qualche fotogramma.
+- Gemini ha scritto anche il prompt per rigirarli con Veo con piu' margine ai lati: per ora non serve.
+
