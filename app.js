@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.4";
+export const VERSIONE = "1.0.5";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -160,18 +160,21 @@ const TRE = { x: 0, y: 0, tx: 0, ty: 0, ult: 0, fermoDa: 0, base: null, raf: 0, 
 function treLimita(v) { return v < -1 ? -1 : v > 1 ? 1 : v; }
 function treGiro(ora) {
   TRE.raf = 0;
-  const card = document.querySelector(".casa-card.tre");
-  if (!card || document.hidden) return;                       // riparte da sola (visibilitychange / disegnaCasa)
+  const card = document.querySelector(".casa-card.tre") || document.querySelector("#sofiaFuori.su");   // 1.0.5: anche il fantasmino
+  if (!card || document.hidden) return;                       // riparte da sola (visibilitychange / disegnaCasa / sofiaFuori)
   const dt = Math.min(0.1, Math.max(0.001, (ora - (TRE.t || ora)) / 1000)); TRE.t = ora;
   let tx = TRE.tx, ty = TRE.ty;
   const libero = (ora - TRE.ult > 2500) || (TRE.fermoDa && ora - TRE.fermoDa > 3000);
   if (libero) { const s = ora / 1000; tx = 0.5 * Math.sin(s * 0.5) + 0.12 * Math.sin(s * 1.3); ty = 0.32 * Math.sin(s * 0.33 + 1.1); }
   const k = 1 - Math.exp(-dt / (libero ? 0.7 : 0.12));
   TRE.x += (tx - TRE.x) * k; TRE.y += (ty - TRE.y) * k;
-  if (TRE.vista) { card.style.setProperty("--ex", TRE.x.toFixed(3)); card.style.setProperty("--ey", TRE.y.toFixed(3)); }
+  // 1.0.5: sulla pagina intera (casa, arco, ombra, fantasmino); la casa tiene anche le sue, come prima
+  const R = document.documentElement.style;
+  R.setProperty("--ex", TRE.x.toFixed(3)); R.setProperty("--ey", TRE.y.toFixed(3));
+  if (TRE.vista && card.classList.contains("casa-card")) { card.style.setProperty("--ex", TRE.x.toFixed(3)); card.style.setProperty("--ey", TRE.y.toFixed(3)); }
   TRE.raf = requestAnimationFrame(treGiro);
 }
-function treAvvia() { if (!TRE.raf && document.querySelector(".casa-card.tre")) TRE.raf = requestAnimationFrame(treGiro); }
+function treAvvia() { if (!TRE.raf && (document.querySelector(".casa-card.tre") || document.querySelector("#sofiaFuori.su"))) TRE.raf = requestAnimationFrame(treGiro); }
 function treOsserva(card) {
   try { if (TRE.io) TRE.io.disconnect(); } catch (e) {}
   TRE.vista = true;
@@ -529,7 +532,7 @@ document.addEventListener("click", (e) => {
   e.preventDefault(); e.stopPropagation();
   const [i, k] = String(b.dataset.casaTasto).split("|");
   b.disabled = true;
-  if (b.closest("#sofiaMiniNuvola")) { miniAperto = false; clearTimeout(miniChiudi); miniChiudi = null; setTimeout(sofiaMini, 0); }
+  if (b.closest("#sofiaMiniNuvola")) { miniAperto = false; voceTesto = ""; clearTimeout(miniChiudi); miniChiudi = null; setTimeout(sofiaMini, 0); }
   rispondiParole(Number(i), k).catch(err => console.warn("casa/tasto", err));
 }, true);
 // 0.85 - LA GRAFFETTA: il foglio Excel di papà va nella lettura del foglio che c'era già; la FOTO del prospetto
@@ -871,7 +874,7 @@ function nomeSignora() { const u = S.utente; if (u?.zona) { const n = SIG(u.zona
 const S = {
   db: null, utente: null, pronto: false,
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
-  board: { modo: "elenco", inizio: L.lunediDi(L.oggiISO()) },
+  board: { modo: "mappa", inizio: L.lunediDi(L.oggiISO()) },   // 1.0.5: si apre sulla mappa delle camere
   camere: CAMERE.slice(), zone: ZONE, squadra: null, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
@@ -2037,6 +2040,7 @@ function casaOssatura(tre) {
   // sempre in vista); in fondo la casella per scriverle. Negli altri stili resta tutto come prima.
   return `<div class="casa-testa"><span class="casa-nome">Le Stanze di Ricci</span></div>
     <div class="casa-scena">
+      <span class="casa-arco" aria-hidden="true"></span>
       <div class="casa-card${tre ? " tre" : ""}">
         ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
         ${FILM_CONS("casa-fig", tre)}
@@ -2170,17 +2174,23 @@ document.addEventListener("click", (e) => {
 });
 // ---- 1.0.4: I SOTTOTITOLI (Gemini). Mentre Sofia parla, la nuvoletta piccola va da sola sulla frase che sta dicendo e
 // scorre piano mentre la dice: Michele legge senza togliere gli occhi da lei. Se lui la scorre col dito, lascia fare a lui.
-let sottoAnim = 0, sottoMano = 0;
-function sottotitoliFerma() { if (sottoAnim) cancelAnimationFrame(sottoAnim); sottoAnim = 0; }
+// 1.0.5: anche nella nuvoletta del fantasmino (tutte le altre schermate); ognuna ha il suo movimento e il suo "dito"
+const sottoAnim = new Map();
+function sottotitoliFerma(chi) { for (const [k, a] of sottoAnim) { if (!chi || k === chi) { cancelAnimationFrame(a); sottoAnim.delete(k); } } }
 function sottotitoli(parte, buf, durata) {
-  sottotitoliFerma();
   const h = document.getElementById("sofiaHero"), nv = h && h.querySelector(".casa-nuvola");
-  if (!nv || !nv.clientHeight || h.classList.contains("nuvola-aperta") || Date.now() - sottoMano < 3000) return;
+  if (nv && !h.classList.contains("nuvola-aperta")) sottotitoliIn("casa", nv, ".casa-sal, .casa-riga, .casa-spinta, .cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => h.classList.contains("nuvola-aperta"));
+  const mt = document.querySelector("#sofiaMiniNuvola:not([hidden]) .sm-testo");
+  if (mt) sottotitoliIn("mini", mt, ".cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => !!mt.closest("[hidden]"));
+}
+function sottotitoliIn(chi, nv, sel, parte, buf, durata, basta) {
+  sottotitoliFerma(chi);
+  if (!nv || !nv.clientHeight || Date.now() - (nv._mano || 0) < 3000) return;
   const norm = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const pn = norm(parte), parole = pn.split(" ").filter(Boolean); if (!parole.length) return;
   // tutto il testo della nuvoletta in fila (saluto, messaggio, consiglio, conversazione): una parte puo' passare dall'uno all'altro
   const pezzi = []; let tutto = "";
-  for (const x of nv.querySelectorAll(".casa-sal, .casa-riga, .casa-spinta, .cc-io, .cc-lei:not(.cc-pensa)")) {
+  for (const x of nv.querySelectorAll(sel)) {
     if (!x.getClientRects().length) continue;
     const tx = norm(x.textContent); if (!tx) continue;
     if (tutto) tutto += " ";
@@ -2200,7 +2210,7 @@ function sottotitoli(parte, buf, durata) {
   const sec = (buf && typeof buf.duration === "number" && buf.duration > 0) ? buf.duration : (Number(durata) > 0 ? Number(durata) : pn.length * 0.068);
   const via = nv.scrollTop, t0 = performance.now(), primo = 380, resto = Math.max(400, sec * 1000 - primo);
   const passo = (ora) => {
-    if (!nv.isConnected || Date.now() - sottoMano < 3000 || h.classList.contains("nuvola-aperta")) { sottoAnim = 0; return; }
+    if (!nv.isConnected || Date.now() - (nv._mano || 0) < 3000 || (basta && basta())) { sottoAnim.delete(chi); return; }
     const d = ora - t0;
     // la riga che sta dicendo resta a un terzo dall'alto (cosi' tra una parte e l'altra non salta); le misure a ogni
     // passo, perche' se la nuvoletta si sta ancora chiudendo (260 ms) l'altezza cambia
@@ -2210,14 +2220,14 @@ function sottotitoli(parte, buf, durata) {
     if (d < primo) { const q = d / primo; s = via + (dove(y0) - via) * (q * (2 - q)); }
     else { const q = Math.min(1, (d - primo) / resto); s = dove(y0 + (y1 - y0) * q); }
     try { nv.scrollTo({ top: s, behavior: "instant" }); } catch (e) { nv.scrollTop = s; }
-    sottoAnim = d < primo + resto ? requestAnimationFrame(passo) : 0;
+    if (d < primo + resto) sottoAnim.set(chi, requestAnimationFrame(passo)); else sottoAnim.delete(chi);
   };
-  sottoAnim = requestAnimationFrame(passo);
+  sottoAnim.set(chi, requestAnimationFrame(passo));
 }
 const manoNuvola = (e) => {
-  const nv = e.target && e.target.closest && e.target.closest("#sofiaHero .casa-nuvola"); if (!nv) return;
-  sottoMano = Date.now(); sottotitoliFerma();
-  const h = document.getElementById("sofiaHero"); if (h && h.classList.contains("nuvola-aperta")) nuvolaRiarma();
+  const nv = e.target && e.target.closest && e.target.closest("#sofiaHero .casa-nuvola, #sofiaMiniNuvola .sm-testo"); if (!nv) return;
+  nv._mano = Date.now(); sottotitoliFerma(nv.classList.contains("sm-testo") ? "mini" : "casa");
+  const h = document.getElementById("sofiaHero"); if (h && h.contains(nv) && h.classList.contains("nuvola-aperta")) nuvolaRiarma();
 };
 try { document.addEventListener("touchstart", manoNuvola, { passive: true }); document.addEventListener("wheel", manoNuvola, { passive: true }); } catch (e) {}
 function casaAggiorna(h) {
@@ -2313,7 +2323,7 @@ function disegnaCasa() {
   let h = document.getElementById("sofiaHero");
   if (!casaAttiva()) {
     if (h) { h.remove(); window.scrollTo(0, 0); }
-    document.body.classList.remove("ha-casa");
+    document.body.classList.remove("ha-casa", "casa-in-cima");
     return;
   }
   // 0.94: se cambia il 3D (scelto in "Come si vede l'app", o la prova della trasparenza ha risposto) la scheda si rifa'
@@ -2336,6 +2346,7 @@ function disegnaCasa() {
   casaAggiorna(h);
   misuraBarre();
   nuvolaLeggiAggiorna(h);
+  casaInCima();
   if (tre) treAvvia();
 }
 
@@ -2983,10 +2994,11 @@ async function parlaConVoce(testo) {
     cercaModelloVoce = VOCE.trovaModelloVoce(confIA().chiave).then(m => VOCE.salvaVoce({ modello: m })).catch(e => console.warn("modello voce", e)).finally(() => { cercaModelloVoce = null; });
   }
   nuvolaApri(false);                          // 1.0.4: mentre parla la nuvoletta e' piccola (si vede lei) coi sottotitoli
+  voceTesto = String(testo || ""); voceFine = 0; voceDa = Date.now();   // 1.0.5: la nuvoletta del fantasmino lo mostra
   voceInCorso = true; statoCons("parla"); disegna();
   const finita = await parlaTutto(testo, { conf: vc, chiave: confIA().chiave });
   if (!finita) return;                       // fermata o sostituita da un'altra frase: ci pensa chi l'ha fermata
-  voceInCorso = false; applicaBocca(0); labialeFerma(); sottotitoliFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna();
+  voceInCorso = false; voceFine = Date.now(); applicaBocca(0); labialeFerma(); sottotitoliFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna();
   sofiaMini();
   nuvolaDopoVoce();
 }
@@ -3015,7 +3027,7 @@ async function parlaTutto(testo, { conf, chiave } = {}) {
   }
   return g === giroVoce;
 }
-function zittisciVoce() { sottotitoliFerma(); giroVoce++; VOCE.stazitta(); if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); } voceInCorso = false; applicaBocca(0); labialeFerma(true); sofiaFuori(); }
+function zittisciVoce() { sottotitoliFerma(); if (voceInCorso) voceFine = Date.now(); giroVoce++; VOCE.stazitta(); if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); } voceInCorso = false; applicaBocca(0); labialeFerma(true); sofiaFuori(); }
 // 1.0 (piano di Gemini, Michele: "mettilo in pratica"): quando Sofia PARLA e da dove sei non la vedi (prospetto, paghe,
 // in fondo alla pagina...), esce lei sullo schermo: grande, in basso a destra, sopra a tutto, col filmato che parla
 // finche' parla (dove il telefono sa fare la trasparenza e' ritagliata, altrimenti in una cornice). Un tocco la zittisce.
@@ -3043,7 +3055,7 @@ function sofiaFuori() {
   if (f && (f.dataset.tre || "") !== tre) { f.remove(); f = null; }
   if (!f) {
     f = document.createElement("button"); f.type = "button"; f.id = "sofiaFuori"; f.className = "sofia-fuori sta-parlando" + (tre ? " tre" : " piatta"); f.dataset.tre = tre; f.hidden = true;
-    f.innerHTML = `<span class="sf-cornice">${FILM_CONS("sf-fig parla", !!tre)}</span><span class="sf-nome"><i aria-hidden="true"></i>${esc(nomeGov())}</span><span class="sf-x" aria-hidden="true">✕</span>`;
+    f.innerHTML = `<span class="sf-fondo" aria-hidden="true"></span><span class="sf-cornice">${FILM_CONS("sf-fig parla", !!tre)}</span><span class="sf-nome"><i aria-hidden="true"></i>${esc(nomeGov())}</span><span class="sf-x" aria-hidden="true">✕</span>`;
     f.onclick = () => { zittisciVoce(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna(); };
     document.body.appendChild(f);
   }
@@ -3051,7 +3063,7 @@ function sofiaFuori() {
   f.classList.toggle("piccola", !!document.querySelector(".sheet"));            // con un foglio aperto si fa piu' piccola
   f.classList.toggle("alta", S.vista === "sofia" || S.vista === "governante");   // nella chat sta sopra la casella per scrivere
   clearTimeout(f._via);
-  if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); } else f.classList.add("su");
+  if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => { f.classList.add("su"); treAvvia(); })); } else { f.classList.add("su"); treAvvia(); }
   document.body.classList.add("con-sofia-fuori");
 }
 // ---- 1.0.3: LA LINGUETTA DI SOFIA (Michele: "in tutte le altre schermate una piccola iconcina che mi segue, dove posso
@@ -3061,7 +3073,10 @@ function sofiaFuori() {
 // poi sparisce ed esce Sofia grande in basso a destra che risponde a voce, con la risposta scritta nella nuvoletta a
 // sinistra (coi tasti Si'/No). Si chiude da sola 4 secondi dopo che ha finito di parlare (se non ci sono tasti), con la ✕,
 // o toccando Si'/No. Non c'e' dove Sofia si vede gia' (la casa in cima, la sua sezione) ne' per le signore.
-let miniAperto = false, miniChiudi = null, miniRisposta = "";
+let miniAperto = false, miniChiudi = null, miniRisposta = "", miniDa = 0;
+// 1.0.5: quello che Sofia sta dicendo (o ha appena detto), da quando e fino a quando: la nuvoletta del fantasmino lo mostra
+let voceTesto = "", voceDa = 0, voceFine = 0;
+const MINI_DOPO = 6000;                                     // resta 6 secondi dopo che ha finito di parlare
 function heroInVista() {
   const v = document.querySelector("#sofiaHero .gov-film"); if (!v) return false;
   const r = v.getBoundingClientRect(); return r.height > 60 && r.bottom > 90 && r.top < (window.innerHeight || 800) - 90;
@@ -3072,7 +3087,7 @@ function sofiaMini() {
   try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && !S.utente.finta && S.vista !== "sofia" && S.vista !== "governante" && !heroInVista()); } catch (e) {}
   if (!vuoi) {
     if (m) m.hidden = true; if (nv) nv.hidden = true;
-    document.body.classList.remove("con-sofia-mini");
+    document.body.classList.remove("con-sofia-mini", "con-sm-nuvola");
     if (miniAperto && !micAttivo) { miniAperto = false; clearTimeout(miniChiudi); miniChiudi = null; }
     return;
   }
@@ -3090,15 +3105,24 @@ function sofiaMini() {
     document.body.appendChild(m);
     nv = document.createElement("div"); nv.id = "sofiaMiniNuvola"; nv.className = "sm-nuvola"; nv.hidden = true;
     nv.innerHTML = `<button type="button" class="sm-chiudi" aria-label="Chiudi">✕</button><div class="sm-testo"></div>`;
-    nv.querySelector(".sm-chiudi").onclick = () => { miniAperto = false; clearTimeout(miniChiudi); miniChiudi = null; zittisciVoce(); statoCons("ferma"); disegna(); };
+    nv.querySelector(".sm-chiudi").onclick = () => { miniAperto = false; voceTesto = ""; clearTimeout(miniChiudi); miniChiudi = null; zittisciVoce(); statoCons("ferma"); disegna(); };
     document.body.appendChild(nv);
   }
   m.hidden = false; document.body.classList.add("con-sofia-mini");
   const st = document.body.dataset.cons || "";
   if ((m.dataset.stato || "") !== st) m.dataset.stato = st;   // le scritte "Ti ascolto…" e "pensa…" le mette il CSS
-  // la nuvoletta: solo per le domande fatte dalla linguetta, quando lei ha risposto
-  const u = miniAperto ? ultimoScambio() : null;
-  const html = u && u.lei && !u.pensa ? u.html : "";
+  // la nuvoletta: la risposta a una domanda fatta dalla linguetta (con "Tu: ..." e i tasti) OPPURE, 1.0.5, quello che
+  // Sofia sta dicendo da qualunque parte venga (resta per tutto il tempo che parla e 6 secondi dopo)
+  const u = ultimoScambio();
+  const recente = !!voceTesto && (voceInCorso || (voceFine >= voceDa && voceFine > 0 && Date.now() - voceFine < MINI_DOPO));
+  const nn = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  let html = "", tasti = false, chiaveN = "";
+  if (miniAperto && u.lei && !u.pensa) { html = u.html; tasti = u.tasti; chiaveN = "r|" + String(u.lei.testo || ""); }
+  else if (recente && !(miniAperto && u.pensa)) {
+    const eRisposta = u.lei && !u.pensa && nn(u.lei.testo).startsWith(nn(voceTesto).slice(0, 40));
+    if (eRisposta) { html = u.html; tasti = u.tasti; } else html = `<div class="cc-lei sm-parla">${esc(voceTesto.trim()).replace(/\n/g, "<br>")}</div>`;
+    chiaveN = "v|" + voceTesto;
+  }
   const testo = nv.querySelector(".sm-testo");
   if (testo.innerHTML !== html) { testo.innerHTML = html; testo.scrollTop = 0; }
   // 1.0.4 (Gemini): se c'e' altro da leggere, in fondo una sfumatura (sparisce quando arrivi alla fine)
@@ -3108,15 +3132,22 @@ function sofiaMini() {
   testo.classList.toggle("fine", !scorre || testo.scrollTop + testo.clientHeight >= testo.scrollHeight - 4);
   nv.hidden = !html;
   document.body.classList.toggle("con-sm-nuvola", !!html);
-  // si chiude da sola: 4 secondi dopo la fine della voce (se non ci sono tasti Si'/No); senza voce, il tempo di leggerla
-  if (html && !u.tasti && !voceInCorso && !micAttivo) {
-    const chiave = String(u.lei.testo || "");
-    if (miniRisposta !== chiave) { miniRisposta = chiave; clearTimeout(miniChiudi); miniChiudi = null; }
-    if (!miniChiudi) {
-      const ms = voceAccesa() ? 4000 : Math.min(40000, Math.max(8000, chiave.length * 70));
-      miniChiudi = setTimeout(() => { miniChiudi = null; if (!voceInCorso && !micAttivo) { miniAperto = false; sofiaMini(); } }, ms);
-    }
-  } else if (miniChiudi && (voceInCorso || micAttivo)) { clearTimeout(miniChiudi); miniChiudi = null; }
+  // si chiude da sola (1.0.5): MAI mentre parla; 6 secondi dopo che ha finito; se la voce e' accesa ma non e' ancora
+  // partita, la aspetta fino a 20 secondi; senza voce, il tempo di leggerla (da 8 a 40 secondi). Coi Si'/No aspetta.
+  if (chiaveN !== miniRisposta) { miniRisposta = chiaveN; miniDa = Date.now(); }
+  clearTimeout(miniChiudi); miniChiudi = null;
+  if (html && !tasti && !voceInCorso && !micAttivo) {
+    const lung = (testo.textContent || "").length;
+    const resta = miniFinoA(lung) - Date.now();
+    if (resta <= 0) { miniAperto = false; voceTesto = ""; nv.hidden = true; document.body.classList.remove("con-sm-nuvola"); return; }
+    miniChiudi = setTimeout(() => { miniChiudi = null; sofiaMini(); }, Math.min(resta, 1000) + 30);   // si ricontrolla ogni secondo
+  }
+}
+// fino a quando resta aperta la nuvoletta del fantasmino (se non parla e non ci sono Si'/No)
+function miniFinoA(lung) {
+  if (voceFine && voceFine >= miniDa - 1000) return voceFine + MINI_DOPO;          // ha parlato (dopo che e' comparsa): 6 s dopo la fine
+  if (voceAccesa() && Date.now() - miniDa < 20000) return miniDa + 20000;           // la voce deve ancora partire: la aspetto
+  return miniDa + Math.min(40000, Math.max(8000, lung * 70));                       // senza voce: il tempo di leggerla
 }
 // mentre scrive in una casella la linguetta si toglie di mezzo (non copre quello che scrive)
 try {
@@ -3125,6 +3156,8 @@ try {
   document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!(a && a.matches && a.matches(casella))) document.body.classList.remove("con-tastiera"); }, 60));
 } catch (e) {}
 let sofiaFuoriScroll = null;
+function casaInCima() { try { document.body.classList.toggle("casa-in-cima", (window.scrollY || 0) < 16 && !!document.getElementById("sofiaHero")); } catch (e) {} }
+try { window.addEventListener("scroll", casaInCima, { passive: true }); } catch (e) {}
 try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); sofiaMini(); }, 140); }, { passive: true }); } catch (e) {}
 
 // 0.42: parlarle col microfono, senza tastiera. Su Android funziona dentro l'app;
@@ -4683,16 +4716,109 @@ function vistaTabellone() {
   const dubbi = sog.filter(s => (s.tipo === "unk" || s.dubbio) && s.fine >= da && s.inizio < a);
   const titolo = sett ? `${L.dataLunga(da)} – ${L.dataLunga(L.aggiungiGiorni(a, -1))}` : L.meseLungo(da);
   const noteP = Object.values(S.note).filter(n => n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
-  const corpoBoard = elenco ? elencoProspetto(da, a) : `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
+  // 1.0.5: in cima i tasti (+ Prospetto, WhatsApp) e la scelta Mappa / Settimana; poi la mappa delle camere OPPURE la
+  // settimana (o il mese); in fondo i dubbi e le note
+  const modo = S.board.modo === "mese" ? "mese" : S.board.modo === "settimana" ? "settimana" : "mappa";
+  const corpoMese = `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
-  return `${puoModificare() ? bannerLettura() : ""}${puoModificare() ? `<div class="pr-azioni"><button type="button" class="big main pr-ins" data-inserisci>＋ Inserisci il prospetto</button><button type="button" class="pr-wa" data-ins-wa-subito>${ICO_WA}<span>Da WhatsApp</span></button></div>` : ""}
-  ${colpoDOcchio()}
-  <div class="tabs"><button aria-pressed="${elenco}" data-board="elenco">Elenco</button><button aria-pressed="${sett && !elenco}" data-board="settimana">Tabellone</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
-  <section class="card flat"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
-  <div class="stats"><div class="stat"><b>${occOggi}/${S.camere.length}</b><span>camere occupate oggi</span></div><div class="stat"><b>${notti}</b><span>notti nel periodo</span></div>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<div class="stat"><b style="color:${TIPI_OSPITE[k]?.colore || "inherit"}">${v}</b><span>notti ${esc(TIPI_OSPITE[k]?.nome || k)}</span></div>`).join("")}</div></section>
-  ${corpoBoard}
+  const pillole = `<div class="pr-numeri"><span><b>${occOggi}/${S.camere.length}</b> stanotte</span><span><b>${notti}</b> notti</span>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<span><i style="background:${TIPI_OSPITE[k]?.colore || "var(--c-altro)"}"></i><b>${v}</b> ${esc(TIPI_OSPITE[k]?.nome || k)}</span>`).join("")}</div>`;
+  const azioni = puoModificare() ? `<button type="button" class="pr-ins2" data-inserisci>＋ Prospetto</button><button type="button" class="pr-wa2" data-ins-wa-subito aria-label="Il prospetto da WhatsApp">${ICO_WA}</button>` : "";
+  const viste = `<div class="seg pr-viste"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo !== "mappa"}" data-board="${modo === "mese" ? "mese" : "settimana"}">Settimana</button></div>`;
+  const nav = `<section class="card flat pr-nav"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
+    <div class="pr-nav-sotto">${pillole}<button type="button" class="pr-mese" data-board="${modo === "mese" ? "settimana" : "mese"}">${modo === "mese" ? "Vedi la settimana" : "Vedi il mese"}</button></div></section>`;
+  const corpo = modo === "mappa" ? mappaCamere() : modo === "settimana" ? nav + settimanaCompatta(da) : nav + corpoMese;
+  return `${puoModificare() ? bannerLettura() : ""}<div class="pr-riga">${azioni}${viste}</div>
+  ${corpo}
   ${dubbi.length ? `<section class="card"><h2 style="color:var(--todo)">Da controllare (?)</h2><div class="rows">${dubbi.map(s => `<button class="row" data-sog="${esc(s.id)}"><span><b>${esc(camera(s.camera).nome)}</b> · ${esc(s.nome)}<br><span class="muted">${esc(L.dataMedia(s.inizio))} → ${esc(L.dataMedia(s.fine))}${s.notaPrivata ? " · " + esc(s.notaPrivata) : ""}</span></span><span class="s todo">?</span></button>`).join("")}</div></section>` : ""}
   <section class="card"><h2>Note del periodo</h2>${noteP.length ? `<div class="notes">${noteP.map(n => `<button class="row" data-nota="${esc(n.id)}"><span><b>${esc(L.dataMedia(n.data))}</b> · ${esc(n.camera ? camera(n.camera).nome : "Generale")}<br>${esc(n.testo)}</span>${n.privata ? `<span class="pill priv">privata</span>` : ""}</button>`).join("")}</div>` : `<p class="muted" style="margin:0">Nessuna nota in questo periodo.</p>`}${puoModificare() ? `<button class="big undo" data-nuova-nota>+ Scrivi una nota</button>` : ""}</section>`;
+}
+
+// ---- 1.0.5: LA MAPPA DELLE CAMERE (Michele: "in un secondo devo vedere tutte le camere mie e quali sono riempite").
+// Le 13 camere sempre allo stesso posto, come sono davvero: 1° e 2° piano col corridoio in mezzo (a sinistra e a destra
+// come nelle Piantine), Lella e Nicole in via Nazario Sauro sotto il loro piano, i tre appartamenti in fondo. PIENA: il
+// colore del tipo di ospite (bordo spesso a sinistra e fondo tinto), chi c'e' e fino a quando; LIBERA: tratteggiata.
+// ARRIVA (verde pieno), PARTE OGGI (rosso, stanotte e' libera), CAMBIO (uno parte e uno arriva lo stesso giorno),
+// dubbio (ambra). Il giorno si sceglie nella striscia (oggi e i 6 dopo). Un tocco: si apre il soggiorno, o se e' libera
+// si segna un arrivo.
+const NOMI_BREVI = { zarapt: "Zara p. terra", zara1: "Zara 1° e 2°", trento: "Trento 47" };
+function nomeBreveCamera(c) { return NOMI_BREVI[c.id] || c.nome; }
+function mappaCamere() {
+  const oggi = L.oggiISO();
+  if (!S.colpo || S.colpo < oggi || L.giorniTra(oggi, S.colpo) > 6) S.colpo = oggi;
+  const g = S.colpo, sog = soggiorniLista();
+  const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(oggi, i));
+  const conta = (x) => ({ a: sog.filter(s => s.inizio === x).length, p: sog.filter(s => s.fine === x).length });
+  const nomeG = (x, i) => i === 0 ? "Oggi" : i === 1 ? "Domani" : L.GG[L.giornoSettimana(x)];
+  const strip = giorni.map((x, i) => { const n = conta(x); return `<button type="button" class="cd-g" aria-pressed="${x === g}" data-colpo="${x}"><span>${nomeG(x, i)}</span><b>${L.giornoDelMese(x)}</b><i>${n.a ? `<em class="in">+${n.a}</em>` : ""}${n.p ? `<em class="out">−${n.p}</em>` : ""}</i></button>`; }).join("");
+  const fino = (s) => `${L.GG[L.giornoSettimana(s.fine)]} ${L.giornoDelMese(s.fine)}`;
+  const stato = (c) => {
+    const qui = sog.filter(s => s.camera === c.id);
+    const cur = qui.find(s => s.inizio <= g && g < s.fine) || null;
+    const par = qui.find(s => s.fine === g && (!cur || s.id !== cur.id)) || null;
+    return { cur, par, arriva: !!cur && cur.inizio === g, cambio: !!cur && cur.inizio === g && !!par, dubbio: !!cur && (cur.tipo === "unk" || !!cur.dubbio) };
+  };
+  let piene = 0, cambi = 0;
+  const casella = (c, forma) => {
+    const x = stato(c), s = x.cur, nome = esc(nomeBreveCamera(c));
+    if (s) piene++; if (x.cambio) cambi++;
+    const via = forma === "via" ? ` <small>via N. Sauro</small>` : "";
+    if (!s) {
+      const cl = `mp-c libera${x.par ? " parte" : ""}${forma ? " " + forma : ""}`;
+      const dentro = `${x.par ? `<i class="mp-tag parte">← PARTE</i>` : ""}<span class="mp-r1"><b class="mp-nome">${nome}${via}</b></span><span class="mp-r2">${x.par ? `<s>${esc(x.par.nome || "")}</s>` : "LIBERA"}</span>`;
+      return puoModificare() ? `<button type="button" class="${cl}" data-cella="${esc(c.id)}|${g}" aria-label="${nome}: libera${x.par ? ", parte " + esc(x.par.nome || "") : ""}">${dentro}</button>` : `<span class="${cl}">${dentro}</span>`;
+    }
+    const n = Number(s.persone) || 1;
+    const tag = x.cambio ? `<i class="mp-tag cambio">⇄ CAMBIO</i>` : x.arriva ? `<i class="mp-tag arriva">→ ARRIVA</i>` : x.dubbio ? `<i class="mp-tag dubbio">? DA VEDERE</i>` : "";
+    const chi = x.cambio ? `<s>${esc(x.par.nome || "")}</s> ➔ <b>${esc(s.nome || "")}</b>` : `<b>${esc(s.nome || "")}</b>`;
+    const tc = s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore);
+    return `<button type="button" class="mp-c piena${x.arriva ? " arriva" : ""}${x.cambio ? " cambio" : ""}${x.dubbio ? " dubbio" : ""}${s.tipo === "unk" ? " ignoto" : ""}${forma ? " " + forma : ""}" style="--tc:${tc}" data-sog="${esc(s.id)}" aria-label="${nome}: ${esc(s.nome || "")}">
+      ${tag}<span class="mp-r1"><b class="mp-nome">${nome}${via}</b><i class="mp-pers">${n}p</i></span><span class="mp-r2">${chi}<span class="mp-fino"> · fino ${esc(fino(s))}</span></span></button>`;
+  };
+  const blocchi = zoneOrdinate().map(z => {
+    const cam = camereZona(z.id);
+    const sx = cam.filter(c => c.lato === "L"), dx = cam.filter(c => c.lato === "R"), via = cam.filter(c => c.lato === "S"), case_ = cam.filter(c => !["L", "R", "S"].includes(c.lato));
+    let corpo = "";
+    if (sx.length || dx.length) corpo += `<div class="mp-piano"><div class="mp-lato">${sx.map(c => casella(c)).join("")}</div><div class="mp-corr" aria-hidden="true">corridoio</div><div class="mp-lato">${dx.map(c => casella(c)).join("")}</div></div>`;
+    corpo += via.map(c => casella(c, "via")).join("");
+    if (case_.length) corpo += `<div class="mp-case">${case_.map(c => casella(c, "casa")).join("")}</div>`;
+    const qui = cam.filter(c => stato(c).cur).length;
+    return `<div class="mp-blocco"><div class="mp-t"><b>${esc(z.breve || z.nome)}${via.length ? " + " + via.map(c => esc(c.nome)).join(", ") : ""}</b><span>${qui}/${cam.length} ${case_.length && !sx.length ? "pieni" : "piene"}</span></div>${corpo}</div>`;
+  }).join("");
+  const quale = g === oggi ? "Stanotte" : g === L.aggiungiGiorni(oggi, 1) ? "Domani notte" : L.GIORNI[L.giornoSettimana(g)].replace(/^./, ch => ch.toUpperCase()) + " notte";
+  return `<section class="card mp" aria-label="Le camere a colpo d'occhio">
+    <div class="cd-giorni" role="tablist" aria-label="Scegli il giorno">${strip}</div>
+    <div class="mp-conta"><b>${esc(quale)}</b><span><b>${piene}</b>/${S.camere.length} piene${cambi ? ` · <b>${cambi}</b> ${cambi === 1 ? "cambio" : "cambi"}` : ""}</span></div>
+    ${blocchi}
+    <div class="mp-leg"><span><i class="l-piena"></i>piena</span><span><i class="l-libera"></i>libera</span><span><i class="l-arriva"></i>arriva</span><span><i class="l-parte"></i>parte</span><span><i class="l-cambio"></i>cambio</span></div>
+  </section>`;
+}
+// ---- 1.0.5: LA SETTIMANA in un tabellone che si legge tutto senza scorrere di lato (Gemini: 84 px per la camera + 7
+// colonne uguali, una riga di 34 px per camera): ogni soggiorno e' una barra col colore del tipo di ospite
+function settimanaCompatta(da) {
+  const N = 7, a = L.aggiungiGiorni(da, N), oggi = L.oggiISO(), sog = soggiorniLista();
+  const giorni = []; for (let i = 0; i < N; i++) giorni.push(L.aggiungiGiorni(da, i));
+  const righe = ["30px"]; let html = "", r = 2;
+  html += `<div class="sc-h sc-c0" style="grid-row:1;grid-column:1">Camera</div>` + giorni.map((x, i) => `<div class="sc-h${x === oggi ? " oggi" : ""}${[0, 6].includes(L.giornoSettimana(x)) ? " we" : ""}" style="grid-row:1;grid-column:${i + 2}"><span>${L.GG[L.giornoSettimana(x)]}</span><b>${L.giornoDelMese(x)}</b></div>`).join("");
+  for (const z of zoneOrdinate()) {
+    righe.push("20px");
+    html += `<div class="sc-zona" style="grid-row:${r};grid-column:1/-1">${esc(z.breve || z.nome)}</div>`; r++;
+    for (const c of camereZona(z.id)) {
+      righe.push("34px");
+      html += `<div class="sc-fondo" style="grid-row:${r};grid-column:2/-1"></div>`;
+      html += puoModificare() ? `<button type="button" class="sc-cam" style="grid-row:${r};grid-column:1" data-cella="${esc(c.id)}|${da < oggi && oggi < a ? oggi : da}">${esc(nomeBreveCamera(c))}</button>` : `<span class="sc-cam" style="grid-row:${r};grid-column:1">${esc(nomeBreveCamera(c))}</span>`;
+      for (const s of sog.filter(s => s.camera === c.id && s.inizio < a && da < s.fine)) {
+        const i0 = Math.max(0, L.giorniTra(da, s.inizio)), i1 = Math.min(N, L.giorniTra(da, s.fine));
+        if (i1 <= i0) continue;
+        const q = s.tipo === "unk" || s.dubbio, tc = s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore);
+        html += `<button type="button" class="sc-bar${q ? " q" : ""}${s.inizio < da ? " prima" : ""}${s.fine > a ? " dopo" : ""}" style="grid-row:${r};grid-column:${i0 + 2}/${i1 + 2};--tc:${tc}" data-sog="${esc(s.id)}" title="${esc(s.nome || "")}">${q ? "? " : ""}${esc(s.nome || "")}${Number(s.persone) > 1 ? ` · ${s.persone}` : ""}</button>`;
+      }
+      r++;
+    }
+  }
+  const io = giorni.indexOf(oggi);
+  if (io >= 0) html = `<div class="sc-oggi" style="grid-row:1/${r};grid-column:${io + 2}"></div>` + html;
+  return `<section class="card sc" aria-label="La settimana"><div class="sc-griglia" style="grid-template-rows:${righe.join(" ")}">${html}</div>
+    <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}</div></section>`;
 }
 
 // 0.97 - IL PROSPETTO A COLPO D'OCCHIO (Michele: "rendi ultra super chiaro il prospetto"): per oggi (o uno dei

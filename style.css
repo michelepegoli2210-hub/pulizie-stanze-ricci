@@ -3280,3 +3280,189 @@ body.semplice .nn-num.wip,body.semplice .nn-numeri.con-corso .nn-num.wip{border:
 body.semplice .nn-num.done{border:0;background:#F0FDF4;color:#156534}
 /* terzo giro di Gemini ("nessun difetto bloccante", voti 9,4-10): se il messaggio ci sta tutto, niente sfumatura in fondo */
 body.premium .casa-nuvola:not(.piena)::after{display:none}
+
+/* ==========================================================================
+   1.0.5 · IL PROSPETTO "IN UN SECONDO" (disegno di Gemini 4 Argon, 25/10 14:06) + SOFIA PIU' 3D
+   Michele: "in un secondo devo vedere tutte le camere mie e quali sono riempite"; "Sofia falla molto piu' 3D, che esca
+   veramente fuori dallo schermo"; "la nuvola di Sofia deve stare tutto il tempo che parla, in tutte le schermate".
+   ========================================================================== */
+/* i colori dei tipi di ospite: pieni e scuri (la scritta bianca si legge) */
+body.premium,body.semplice{--c-ferr:#15803D;--c-fond:#1D4ED8;--c-dago:#C2410C;--c-altro:#7E22CE;--c-unk:#856535}
+/* la riga in cima: + Prospetto, WhatsApp, Mappa / Settimana */
+.pr-riga{display:flex;align-items:center;gap:8px;margin:2px 0 10px}
+.pr-ins2{flex:0 0 auto;height:40px;padding:0 14px;border:0;border-radius:11px;background:#856535;color:#FFFFFF;font:800 14.5px/1 var(--f-body);cursor:pointer;box-shadow:0 6px 14px -8px rgba(133,101,53,.8)}
+.pr-wa2{flex:0 0 auto;display:grid;place-items:center;width:44px;height:40px;padding:0;border:1.5px solid #856535;border-radius:11px;background:#FFFFFF;color:#1F8A45;cursor:pointer}
+.pr-wa2 svg{width:22px;height:22px}
+.seg.pr-viste{flex:1 1 auto;display:flex;height:40px;padding:3px;border-radius:11px;background:#EFECE4;box-sizing:border-box;min-width:0}
+.seg.pr-viste button{flex:1 1 0;min-width:0;border:0;border-radius:8px;background:transparent;color:#524D46;font:800 14px/1 var(--f-body);cursor:pointer}
+.seg.pr-viste button[aria-pressed="true"]{background:#FFFFFF;color:#1C1917;box-shadow:0 1px 3px rgba(28,25,23,.18)}
+/* LA MAPPA */
+.card.mp{padding:10px 12px 12px}
+.mp .cd-giorni{margin:0 0 8px}
+.mp-conta{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 2px;font:600 13px/1.2 var(--f-body);color:#524D46}
+.mp-conta>b{font:800 15px/1.2 var(--f-display);color:#1C1917}
+.mp-conta span b{color:#1C1917;font-weight:800}
+.mp-blocco{margin-top:8px}
+.mp-t{display:flex;justify-content:space-between;align-items:center;height:20px;margin-bottom:4px;font:800 11px/1 var(--f-body);letter-spacing:.8px;text-transform:uppercase;color:#524D46}
+.mp-t span{letter-spacing:.3px}
+.mp-piano{display:grid;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr);column-gap:6px}
+.mp-lato{display:grid;grid-auto-rows:58px;row-gap:6px}
+.mp-corr{display:flex;align-items:center;justify-content:center;border-radius:6px;background:#EAE4D7;color:#78716C;font:800 9px/1 var(--f-body);letter-spacing:2px;text-transform:uppercase;writing-mode:vertical-rl}
+.mp-c{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;height:58px;margin:0;padding:6px 8px 6px 9px;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--tc,#856535) 28%,transparent);border-left:5px solid var(--tc,#856535);border-radius:10px;
+  background:color-mix(in srgb,var(--tc,#856535) 10%,#FFFFFF);color:#1C1917;text-align:left;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;overflow:hidden}
+.mp-c:active{transform:scale(.98)}
+.mp-r1{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.mp-nome{min-width:0;font:800 14.5px/1.15 var(--f-display);color:#1C1917;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-nome small{margin-left:6px;font:700 10.5px/1 var(--f-body);color:#78716C}
+.mp-badge{flex:0 0 auto;padding:2px 5px;border-radius:5px;background:rgba(255,255,255,.75);color:#524D46;font:800 11px/1.2 var(--f-body);font-style:normal;white-space:nowrap}
+.mp-badge.arriva{background:#15803D;color:#FFFFFF}
+.mp-badge.parte{background:repeating-linear-gradient(135deg,#B91C1C 0 6px,#991B1B 6px 12px);color:#FFFFFF}
+.mp-badge.cambio{background:#1C1917;color:#E6C786}
+.mp-r2{min-width:0;font:600 12px/1.25 var(--f-body);color:#524D46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-r2 b{font:800 13px/1.25 var(--f-body);color:#1C1917}
+.mp-r2 s{color:#78716C;text-decoration-thickness:1.5px}
+.mp-c.libera{--tc:#CBC3B5;border:1px dashed #CBC3B5;border-left:1px dashed #CBC3B5;background:#F4F1EA}
+.mp-c.libera .mp-nome{color:#78716C}
+.mp-c.libera .mp-r2{font:700 12px/1.25 var(--f-body);letter-spacing:.5px;color:#A8A29E}
+.mp-c.libera.parte{border-color:#E8B4B4;background:#FBF4F3}
+.mp-c.libera.parte .mp-r2{letter-spacing:0;color:#78716C}
+.mp-c.ignoto{border-left:3px dashed #856535;background:#FAF6EE}
+.mp-c.dubbio{border-color:#D97706;box-shadow:0 0 0 2px rgba(217,119,6,.22);background:#FFFBEB}
+.mp-c.dubbio .mp-badge{background:#D97706;color:#FFFFFF;animation:mpDubbio 1.6s ease-in-out infinite}
+@keyframes mpDubbio{50%{opacity:.55}}
+.mp-c.cambio{box-shadow:inset 0 0 0 1px rgba(28,25,23,.12)}
+/* Lella e Nicole (via Nazario Sauro): una riga intera sotto il loro piano */
+.mp-c.via{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;height:40px;margin-top:6px;width:100%}
+.mp-c.via .mp-r1{flex:0 1 auto;justify-content:flex-start;gap:8px}
+.mp-c.via .mp-r2{flex:1 1 auto;text-align:right}
+/* i tre appartamenti affiancati */
+.mp-case{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mp-c.casa{height:68px;padding:6px 7px 6px 8px}
+.mp-c.casa .mp-r1{flex-direction:column;align-items:flex-start;gap:3px}
+.mp-c.casa .mp-nome{font-size:13.5px;max-width:100%}
+.mp-c.casa .mp-r2 .mp-fino{display:none}
+.mp-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:10px;font:600 11.5px/1.2 var(--f-body);color:#78716C}
+.mp-leg span{display:inline-flex;align-items:center;gap:5px}
+.mp-leg i{display:inline-block;width:14px;height:11px;border-radius:3px}
+.mp-leg .l-piena{background:color-mix(in srgb,#15803D 12%,#FFFFFF);border-left:4px solid #15803D}
+.mp-leg .l-libera{background:#F4F1EA;border:1px dashed #CBC3B5}
+.mp-leg .l-arriva{background:#15803D}
+.mp-leg .l-parte{background:repeating-linear-gradient(135deg,#B91C1C 0 3px,#991B1B 3px 6px)}
+.mp-leg .l-cambio{background:#1C1917}
+/* LA SETTIMANA (7 giorni senza scorrere di lato) */
+.pr-nav .navmese{margin-bottom:6px}
+.pr-nav-sotto{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pr-numeri{display:flex;flex-wrap:wrap;gap:6px}
+.pr-numeri span{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:14px;background:#EFECE4;color:#524D46;font:600 12.5px/1 var(--f-body)}
+.pr-numeri b{color:#1C1917;font-weight:800}
+.pr-numeri i{width:8px;height:8px;border-radius:50%}
+.pr-mese{border:0;background:none;color:#856535;font:800 13px/1 var(--f-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px}
+.card.sc{padding:8px}
+.sc-griglia{position:relative;display:grid;grid-template-columns:84px repeat(7,minmax(0,1fr));border:1px solid #E2DCD0;border-radius:12px;overflow:hidden;background:#FFFFFF}
+.sc-h{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:#FAF8F4;border-bottom:1px solid #E2DCD0;font:700 10.5px/1 var(--f-body);color:#78716C;text-transform:capitalize;z-index:1}
+.sc-h b{font:800 14px/1 var(--f-display);color:#1C1917}
+.sc-h.oggi b{color:#856535}
+.sc-h.we{background:#F4F1EA}
+.sc-c0{align-items:flex-start;padding-left:8px;text-transform:none}
+.sc-zona{display:flex;align-items:center;padding:0 8px;background:#F4F1EA;font:800 10.5px/1 var(--f-body);letter-spacing:.6px;text-transform:uppercase;color:#524D46;z-index:1}
+.sc-fondo{border-top:1px solid #F1ECE3;background:repeating-linear-gradient(to right,transparent 0,transparent calc(100% / 7 - 1px),#EFECE4 calc(100% / 7 - 1px),#EFECE4 calc(100% / 7))}
+.sc-cam{display:flex;align-items:center;min-width:0;padding:0 4px 0 8px;border:0;border-top:1px solid #F1ECE3;background:#FFFFFF;color:#1C1917;font:800 12.5px/1.1 var(--f-body);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;z-index:1}
+.sc-bar{align-self:center;display:block;height:24px;margin:0 2px;padding:0 6px;border:0;border-radius:6px;background:var(--tc);color:#FFFFFF;font:700 11px/24px var(--f-body);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;z-index:2;box-shadow:0 1px 2px rgba(28,25,23,.18)}
+.sc-bar.prima{margin-left:0;border-top-left-radius:0;border-bottom-left-radius:0}
+.sc-bar.dopo{margin-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
+.sc-bar.q{background:#FFFBEB;color:#92400E;border:1.5px dashed #D97706;line-height:21px}
+.sc-oggi{background:rgba(133,101,53,.07);border-left:1px solid rgba(133,101,53,.25);border-right:1px solid rgba(133,101,53,.25);z-index:0;pointer-events:none}
+:root[data-theme="dark"] .mp-c{background:color-mix(in srgb,var(--tc,#856535) 18%,#1E1B18);color:#F5F1EA}
+:root[data-theme="dark"] .mp-nome,:root[data-theme="dark"] .mp-r2 b{color:#F5F1EA}
+:root[data-theme="dark"] .mp-c.libera{background:#24201C;border-color:#4A4238}
+:root[data-theme="dark"] .sc-griglia,:root[data-theme="dark"] .sc-cam{background:#1E1B18;color:#F5F1EA}
+:root[data-theme="dark"] .sc-h,:root[data-theme="dark"] .sc-zona{background:#26221E;color:#B8B0A4}
+/* ritocco: l'evento in un'etichetta nell'angolo in alto a destra, cosi' il nome della camera resta sempre intero;
+   caselle un po' piu' basse: tutta la mappa (anche gli appartamenti) sta nella prima schermata */
+.mp .cd-giorni{margin:0 0 6px}
+.mp .cd-g{padding:5px 0 4px}
+.mp-blocco{margin-top:6px}
+.mp-t{height:18px;margin-bottom:3px}
+.mp-lato{grid-auto-rows:54px;row-gap:5px}
+.mp-c{position:relative;height:54px;gap:2px}
+.mp-c.via{height:38px;margin-top:5px}
+.mp-c.casa{height:62px}
+.mp-tag{position:absolute;top:-1px;right:-1px;padding:2px 6px 3px;border-radius:0 9px 0 8px;font:800 10px/1.15 var(--f-body);font-style:normal;letter-spacing:.3px;white-space:nowrap;z-index:1}
+.mp-tag.arriva{background:#15803D;color:#FFFFFF}
+.mp-tag.parte{background:repeating-linear-gradient(135deg,#B91C1C 0 6px,#991B1B 6px 12px);color:#FFFFFF}
+.mp-tag.cambio{background:#1C1917;color:#E6C786}
+.mp-tag.dubbio{background:#D97706;color:#FFFFFF;animation:mpDubbio 1.6s ease-in-out infinite}
+.mp-c.casa .mp-tag{font-size:9.5px;padding:2px 5px}
+.mp-r1{justify-content:flex-start;gap:6px}
+.mp-pers{flex:0 0 auto;font:700 11px/1 var(--f-body);font-style:normal;color:#78716C}
+.mp-c.via .mp-r1{flex:0 0 auto}
+.mp-c.via .mp-tag{position:static;order:2;border-radius:5px;padding:2px 6px;margin:0 2px}
+.mp-c.via .mp-r1{order:1}
+.mp-c.via .mp-r2{order:3}
+.mp-c.casa .mp-r1{flex-direction:row;align-items:center}
+.mp-c.casa .mp-pers{display:none}
+.mp-c.casa .mp-r1 .mp-nome{padding-right:0}
+.mp-conta{margin:0 2px}
+.mp-leg{margin-top:8px}
+
+/* ---- SOFIA PIU' 3D (tecniche di Gemini 4 Argon) ---- */
+/* 1) l'arco di luce dietro di lei: avorio e oro (niente marrone), piu' stretto delle sue spalle, cosi' lei ne ESCE ai
+   lati; si muove con l'occhio (lontano), lei al contrario (vicina) */
+.casa-arco{display:none}
+body.premium .sofia-hero[data-tre="1"] .casa-arco{display:block;position:absolute;left:50%;top:calc(var(--h-casa) * .15);width:224px;height:calc(var(--h-casa) * .64);
+  transform:translate(calc(-50% + var(--ex,0) * 7px),calc(var(--ey,0) * 5px));border-radius:112px 112px 16px 16px;
+  background:radial-gradient(circle at 50% 32%,#FFFFFF 0%,#F5F0E4 68%,rgba(247,244,238,0) 100%);border:1.5px solid rgba(133,101,53,.38);
+  box-shadow:inset 0 2px 12px rgba(255,255,255,.9),0 14px 34px rgba(133,101,53,.08);z-index:1;pointer-events:none}
+:root[data-theme="dark"] body.premium .sofia-hero[data-tre="1"] .casa-arco{background:radial-gradient(circle at 50% 32%,#3A332B 0%,#26211C 68%,rgba(20,18,16,0) 100%);border-color:rgba(212,182,119,.35)}
+/* 2) piu' grande del 9% dal basso: la vita resta dov'era, la testa sale fino a SFORARE la barra dell'ora (in cima alla casa) */
+body.premium .sofia-hero .casa-card.tre{--tre-scala:1.44;pointer-events:none;transform:perspective(1000px) rotateY(calc(var(--ex) * 5deg)) rotateX(calc(var(--ey) * -3.5deg))}
+body.premium .sofia-hero.sta-parlando .casa-card.tre{--tre-scala:1.47}
+body.premium .sofia-hero[data-stato="ascolto"] .casa-card.tre{--tre-scala:1.46}
+body.premium .sofia-hero .casa-card.tre .casa-fig video{translate:calc(var(--ex) * -14px) calc(var(--tre-alza) + var(--ey) * -8px);filter:none}
+body.premium.casa-in-cima .sofia-hero .casa-card.tre{z-index:32}
+body.premium.casa-in-cima .casa-nuvola,body.premium.casa-in-cima .casa-scrivi-riga{z-index:34}
+body.premium.casa-in-cima .casa-lato{z-index:35}
+body.premium.casa-in-cima .casa-maniglia,body.premium.casa-in-cima .casa-leggi{z-index:36}
+/* 3) le ombre staccate: un filo di luce sui capelli, un'ombra vicina e una lontana che si muove al contrario di lei */
+body.premium .sofia-hero[data-tre="1"] .casa-card.tre .donnina.gov-fig.gov-film.casa-fig{filter:drop-shadow(0 -2px 3px rgba(255,248,230,.85)) drop-shadow(calc(var(--ex,0) * 6px) 6px 8px rgba(28,25,23,.14)) drop-shadow(calc(var(--ex,0) * 18px - 6px) calc(18px - var(--ey,0) * 10px) 22px rgba(28,25,23,.22))}
+@media (prefers-reduced-motion:reduce){body.premium .sofia-hero .casa-card.tre{transform:none}body.premium .sofia-hero[data-tre="1"] .casa-arco{transform:translateX(-50%)}}
+/* 4) IL FANTASMINO: un cuscino d'ombra sfocato dietro di lei (la pagina sotto si attenua), lei che segue l'inclinazione,
+   scende di 14 px sopra la barra in basso e scavalca il bordo della nuvoletta */
+.sofia-fuori{bottom:calc(var(--alto-sotto,71px) - 14px + env(safe-area-inset-bottom,0px))}
+body.con-sotto .sofia-fuori{bottom:calc(var(--alto-sotto,71px) - 14px + env(safe-area-inset-bottom,0px))}
+.sofia-fuori .sf-fondo{position:absolute;left:-70px;right:-24px;top:-36px;bottom:0;z-index:-1;pointer-events:none;border-radius:50%;
+  background:radial-gradient(ellipse at 62% 64%,rgba(28,25,23,.26) 0%,rgba(247,244,238,.72) 52%,rgba(247,244,238,0) 76%);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);-webkit-mask-image:radial-gradient(ellipse at 62% 64%,#000 45%,transparent 76%);mask-image:radial-gradient(ellipse at 62% 64%,#000 45%,transparent 76%);
+  opacity:0;transition:opacity .32s ease}
+.sofia-fuori.su .sf-fondo{opacity:1}
+.sofia-fuori.piatta .sf-fondo{display:none}
+.sofia-fuori.tre .sf-cornice{transform:perspective(900px) rotateY(calc(var(--ex,0) * 6deg)) rotateX(calc(var(--ey,0) * -4deg)) translate(calc(var(--ex,0) * -8px),calc(var(--ey,0) * -5px));transform-origin:50% 100%;
+  filter:drop-shadow(0 -2px 3px rgba(255,248,230,.8)) drop-shadow(calc(var(--ex,0) * 14px - 6px) 10px 18px rgba(28,25,23,.28));
+  -webkit-mask-image:linear-gradient(to bottom,#000 88%,transparent 100%),linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to bottom,#000 88%,transparent 100%),linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%);mask-composite:intersect}
+.sm-nuvola{width:250px;max-width:calc(100vw - 130px)}
+@media (prefers-reduced-motion:reduce){.sofia-fuori.tre .sf-cornice{transform:none}}
+/* ritocco 3D: Sofia 12 px piu' su (i capelli sforano davvero la barra dell'ora); l'arco piu' largo della testa ma piu'
+   stretto delle spalle, con la cima dietro la fronte (la testa ne esce sopra, le spalle ai lati), piu' visibile */
+body.premium .casa-scena{top:-42px}
+body.premium .sofia-hero[data-tre="1"] .casa-arco{top:calc(var(--h-casa) * .19);width:240px;height:calc(var(--h-casa) * .6);border-radius:120px 120px 18px 18px;
+  background:radial-gradient(ellipse at 50% 30%,#FFFFFF 0%,#FBF7EF 42%,#EEE5D2 100%);border:2px solid rgba(133,101,53,.5);
+  box-shadow:inset 0 0 0 6px rgba(255,255,255,.55),inset 0 -40px 50px rgba(133,101,53,.10),0 18px 40px -10px rgba(133,101,53,.28)}
+.sm-nuvola{width:232px;max-width:calc(100vw - 150px)}
+/* la casa e' un livello a se' (isolation): per far sforare i capelli sopra la barra dell'ora, in cima alla casa tutta la
+   casa passa sopra la barra (la casa comincia sotto la barra: sopra ci arrivano solo i capelli, che non si toccano) */
+/* (la barra dell'ora va a livello 0 e la casa a 1: i capelli passano sopra la barra; la barra in basso (16), i fogli e gli
+   avvisi restano sopra la casa come sempre) */
+body.premium.casa-in-cima #sofiaHero{z-index:1}
+body.premium.casa-in-cima .barra-ora{z-index:0}
+/* l'arco: piu' largo delle spalle, con la cima all'altezza degli occhi: la testa ne esce sopra (fino alla barra), i lati
+   dell'arco si vedono accanto alle braccia; la sua ombra lontana ci cade sopra */
+body.premium .sofia-hero[data-tre="1"] .casa-arco{top:calc(var(--h-casa) * .226);width:300px;height:calc(var(--h-casa) * .56);border-radius:150px 150px 18px 18px}
+/* il cuscino d'ombra del fantasmino non copre la nuvoletta della risposta (prima sfocava le ultime parole) */
+.sofia-fuori .sf-fondo{left:0;right:-24px}
+/* i capelli sforano la barra dell'ora di una dozzina di pixel, sotto le cifre dell'orologio (che restano pulite) */
+body.premium .casa-scena{top:-34px}
+
+/* la scena di Sofia (che ora sale fin dentro la barra dell'ora) non deve rubare i tocchi: solo i suoi tasti li prendono */
+body.premium .casa-scena{pointer-events:none}
+body.premium .casa-lato{pointer-events:auto}
