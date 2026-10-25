@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.0";
+export const VERSIONE = "1.0.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -112,6 +112,9 @@ let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } c
 function sofia3dVoluta() { try { return localStorage.getItem(CHIAVE_3D) !== "no"; } catch (e) { return true; } }
 function motoRidotto() { try { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } }
 function sofia3d() { return sofia3dVoluta() && ALFA_OK === "si" && !motoRidotto(); }
+// 1.0.1: in 3D, di serie, NIENTE sfondo dietro di lei (il salone marrone): lei sta sulla pagina. "Il salone" lo rimette.
+const CHIAVE_SALONE = "ricci_sofia_salone";
+function saloneVoluto() { try { return localStorage.getItem(CHIAVE_SALONE) === "si"; } catch (e) { return false; } }
 const ALFA_PROVA = "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQRChYECGFOAZwEAAAAAAAJvEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEpTbuMU6uEHFO7a1OsggJZ7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiECPQAAAAAAAFlSua8yuAQAAAAAAAEPXgQFzxYjgNQZxRLWOopyBACK1nIN1bmSIgQCGhVZfVlA5g4EBI+ODhB3NZQDglLCBELqBEJqBAlPAgQFVsIRVuYEBElTDZ0CUc3OgY8CAZ8iaRaOHRU5DT0RFUkSHjUxhdmY2MC4xNi4xMDBzc+5jwItjxYjgNQZxRLWOomfIkUWjikFMUEhBX01PREVEh4ExZ8ilRaOHRU5DT0RFUkSHmExhdmM2MC4zMS4xMDIgbGlidnB4LXZwOWfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDEuMDAwMDAwMDAwAB9DtnVAkOeBAKDXoamBAAAAgkmDQgAA8AD2ADgkHBiMAAAwcAAASqf/sYDf/9KUH//9144AAHWhqaan7oEBpaKCSYNCAADwAPYAOCQcGIwAACAgAEyH///k/7///9sKDeoAoLKhk4EB9ACGAECSnABUAAADIAAAQkB1oZamlO6BAaWPhgBAkpwAVAAAAyAAAEJA+4L+DBxTu2uRu4+zgQC3iveBAfGCAcPwgQM=";
 function provaAlfa() {
   return new Promise((res) => {
@@ -2170,6 +2173,7 @@ function disegnaCasa() {
   }
   document.body.classList.add("ha-casa");
   delete h.dataset.stile;            // 0.96: le vecchie disposizioni dei tre tasti non ci sono piu'
+  h.dataset.salone = saloneVoluto() ? "si" : "no";
   casaAggiorna(h);
   if (tre) treAvvia();
 }
@@ -2270,7 +2274,9 @@ function cardStileCasa() {
       ? `Su questo telefono il 3D non si può fare: ${esc(nomeGov())} resta piatta, come prima.`
       : motoRidotto()
         ? `Il telefono è impostato per avere meno movimento: ${esc(nomeGov())} resta piatta.`
-        : `In 3D esce un po' dalla cornice e, quando muovi il telefono, il salone dietro di lei si sposta. "Piatta" la rimette esattamente com'era.`}</span>
+        : `In 3D esce un po' dalla cornice e si muove appena quando muovi il telefono. "Piatta" la rimette esattamente com'era.`}</span>
+    ${ALFA_OK === "no" || motoRidotto() || !sofia3dVoluta() ? "" : `<div class="seg" style="margin-top:8px"><button type="button" aria-pressed="${!saloneVoluto()}" data-salone="no">Senza niente dietro</button><button type="button" aria-pressed="${saloneVoluto()}" data-salone="si">Col salone dietro</button></div>
+    <span class="small muted">Senza niente dietro: lei sta sulla pagina, senza il riquadro marrone alle spalle.</span>`}
     <h3>5. Orologio e data</h3>
     <div class="seg"><button type="button" aria-pressed="${orologioVoluto()}" data-orologio-scelta="si">Sì</button><button type="button" aria-pressed="${!orologioVoluto()}" data-orologio-scelta="no">No</button></div>
     <span class="small muted">L'ora grande e il giorno nella barra in cima, in ogni schermata.</span>
@@ -3401,7 +3407,7 @@ let argonAvvisato = false;
 // Quando Michele mette la carta su Google, Argon parte da solo: non c'e' niente da cambiare nell'app.
 const ARGON_PAUSA_MS = 60 * 60 * 1000, CHIAVE_ARGON_PAUSA = "ricci_argon_pausa";
 // 1.0 (piano di Gemini: "Argon comanda, la governante esegue"): in cima alla sezione di Sofia si vede chi sta pensando
-function argonAttivo() { const c = confIA(); return !!(iaAccesa() && c.fornitore === "gemini" && c.qualita === "argon" && c.chiaveArgon && !argonInPausa()); }
+function argonAttivo() { const c = confIA(); return !!(iaAccesa() && c.fornitore === "gemini" && c.qualita === "argon" && c.chiaveArgon && /argon/i.test(c.modello || "") && !argonInPausa()); }
 function regiaArgonHtml() {
   if (!proprietario()) return "";
   if (argonAttivo()) return `<i class="sv-regia si" title="Le decisioni le prende Argon, ${esc(nomeGov())} le dice e le fa"><span aria-hidden="true"></span>Pensa con Argon</i>`;
@@ -3423,7 +3429,7 @@ async function chiediIA(dom) {
   // 0.86: Argon passa dalla SUA chiave (progetto col credito), se c'e'; il ripiego usa la chiave normale, gratuita
   const cg = grande && c.chiaveArgon ? { ...c, chiave: c.chiaveArgon } : c;
   try {
-    const r = await IA.chiedi({ ...dom, conf: cg, secondi: Math.max(Number(dom.secondi) || 0, grande ? 45 : 40) });
+    const r = await IA.chiedi({ ...dom, conf: cg, secondi: Math.max(Number(dom.secondi) || 0, grande ? 60 : 40) });
     if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
     return { r, ripiego: false };
   } catch (e) {
@@ -3555,7 +3561,10 @@ function cardIA() {
       ${c.modello ? `<span class="small muted">Sta usando ${esc(q === "argon" ? (c.modelloSvelto || "il modello svelto") + " (e Argon con la chiave del passo 4b)" : c.modello)} · <button type="button" class="nonna-link" style="min-height:0;padding:2px 8px" data-ia-rimodello>cercane un altro</button></span>` : ""}${esito}</div>
     ${q === "argon" && c.fornitore === "gemini" ? `<div class="ia-passo"><b>4b.</b> La chiave per Argon (quella del progetto col credito)
       <div class="ia-riga"><input type="password" id="iaChiaveArgon" data-keep placeholder="incolla qui la chiave per Argon" value="${esc(c.chiaveArgon || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm ghost" data-ia-incolla-argon>Incolla</button><button type="button" class="btnsm" data-ia-prova-argon ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova Argon"}</button></div>
-      ${provaArgon ? (provaArgon.ok ? `<div class="note ok" style="margin:8px 0 0">Argon funziona: «${esc(provaArgon.testo || "ci sono")}» (${esc(provaArgon.modello)}). Da adesso Sofia pensa con Argon.</div>` : `<div class="note warn" style="margin:8px 0 0">Argon non ha funzionato: ${esc(provaArgon.errore)}</div>`) : ""}
+      ${provaArgon ? (provaArgon.ok ? (/argon/i.test(provaArgon.modello || "") ? `<div class="note ok" style="margin:8px 0 0">Argon funziona: «${esc(provaArgon.testo || "ci sono")}» (${esc(provaArgon.modello)}). Da adesso Sofia pensa con Argon.</div>` : `<div class="note warn" style="margin:8px 0 0">Attenzione: con questa chiave Google NON mi dà Argon. Risponde ${esc(provaArgon.modello)}, che non è Argon. Controlla che la chiave sia del progetto col credito.</div>`) : `<div class="note warn" style="margin:8px 0 0">Argon non ha funzionato: ${esc(provaArgon.errore)}</div>`) : ""}
+      <div class="floorlabel" style="margin-top:10px">Quanto ragiona Argon</div>
+      <div class="seg"><button type="button" aria-pressed="${(c.ragionamento || "medium") !== "high"}" data-argon-livello="medium">Normale</button><button type="button" aria-pressed="${c.ragionamento === "high"}" data-argon-livello="high">Al massimo</button></div>
+      <span class="small muted">Normale è quello di serie di Google («medium»). Al massimo («high») ragiona di più: è più lento e costa di più.</span>
       <span class="small muted">Argon si paga a parte: la chiave va creata nel progetto di Google che ha il credito (su Google AI Studio: Fatturazione → Acquista crediti, poi Chiavi API → Crea chiave API in quel progetto). La chiave del passo 4 resta gratuita: se il credito finisce, Sofia continua col modello svelto e con la voce. Se lasci vuoto, Argon lo provo con la chiave del passo 4.</span></div>` : ""}
     <div class="ia-passo"><b>5.</b> Accendila<div class="seg"><button type="button" aria-pressed="${su}" data-ia-accendi="1" ${c.chiave ? "" : "disabled"}>Accesa</button><button type="button" aria-pressed="${!su}" data-ia-accendi="0">Spenta</button></div></div>
     <div class="ia-passo"><b>6.</b> La voce: te la legge ad alta voce
@@ -3646,6 +3655,7 @@ function collegaIA() {
     try { const t = (await navigator.clipboard.readText() || "").trim(); if (t) { const i = document.getElementById("iaChiaveArgon"); if (i) i.value = t; toast("Incollata: ora tocca «Prova Argon»"); } else toast("Negli appunti non c'è niente"); }
     catch (e) { toast("Tieni premuto dentro la casella e scegli «Incolla»"); document.getElementById("iaChiaveArgon")?.focus(); }
   });
+  document.querySelectorAll("[data-argon-livello]").forEach(b => b.onclick = () => { IA.salvaConf({ ragionamento: b.dataset.argonLivello === "high" ? "high" : "medium" }); disegna(); toast(b.dataset.argonLivello === "high" ? "Argon ragiona al massimo (più lento, costa di più)" : "Argon ragiona normale (come di serie)"); });
   document.querySelectorAll("[data-ia-prova-argon]").forEach(b => b.onclick = async () => {
     const chiaveArgon = (document.getElementById("iaChiaveArgon")?.value || "").trim();
     IA.salvaConf({ chiaveArgon }); iaInCorso = true; provaArgon = null; disegna();
@@ -3653,7 +3663,7 @@ function collegaIA() {
     const r = await IA.provaChiave({ ...c0, chiave: chiaveArgon || c0.chiave, qualita: "argon", modello: "" });
     iaInCorso = false; provaArgon = r;
     if (r.ok) { IA.salvaConf({ modello: r.modello }); togliPausaArgon(); }
-    disegna(); toast(r.ok ? "Argon funziona: da adesso Sofia pensa con Argon" : "Argon non ha funzionato");
+    disegna(); toast(r.ok ? (/argon/i.test(r.modello || "") ? "Argon funziona: da adesso Sofia pensa con Argon" : "Con questa chiave Google non dà Argon: guarda la scritta") : "Argon non ha funzionato");
   });
   document.querySelectorAll("[data-ia-veloce]").forEach(b => b.onclick = () => { VOCE.sbloccaAudio(); const v = VELOCI_IA[Number(b.dataset.iaVeloce)]; if (v) { b.disabled = true; parlaGov(v.chiedo, v.testo); } });
   // --- la voce ---
@@ -5922,10 +5932,10 @@ function bannerLettura() {
     const chat = nuove[0].chat || "Albergo", auto = lettorePosta() && iaAccesa();
     return `<button type="button" class="cw-banner${auto ? " leggo" : ""}" data-posta-leggi><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${nuove.length === 1 ? "Un messaggio nuovo" : nuove.length + " messaggi nuovi"} dal gruppo ${esc(chat)}</b><small>${auto ? `${esc(nomeGov())} li legge fra pochi secondi (aspetta che finiscano di scrivere).` : `Tocca: li faccio leggere a ${esc(nomeGov())}.`}</small>${auto ? barraLettura({}) : ""}</span><i aria-hidden="true">›</i></button>`;
   }
-  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo ${S.dett.fonte && S.dett.fonte.posta ? "i messaggi del gruppo" : "le chat"}…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small>${barraLettura(S.dett.ia)}</span><i aria-hidden="true">›</i></button>`;
+  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo ${S.dett.fonte && S.dett.fonte.posta ? "i messaggi di WhatsApp" : "le chat"}…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small>${barraLettura(S.dett.ia)}</span><i aria-hidden="true">›</i></button>`;
   if (!letturaDaControllare()) return "";
   const x = S.dett.ia, nr = (x.righe || []).filter(r => r.azione !== "niente").length, ni = (x.indicazioni || []).length;
-  return `<button type="button" class="cw-banner" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} ha letto ${S.dett && S.dett.fonte && S.dett.fonte.posta ? "i messaggi del gruppo" : "le chat"}</b><small>${[nr ? `${nr} ${nr === 1 ? "cambio" : "cambi"} nel prospetto` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} per le signore` : ""].filter(Boolean).join(" · ")}: tocca per controllare e salvare</small></span><i aria-hidden="true">›</i></button>`;
+  return `<button type="button" class="cw-banner" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} ha letto ${S.dett && S.dett.fonte && S.dett.fonte.posta ? "i messaggi di WhatsApp" : "le chat"}</b><small>${[nr ? `${nr} ${nr === 1 ? "cambio" : "cambi"} nel prospetto` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} per le signore` : ""].filter(Boolean).join(" · ")}: tocca per controllare e salvare</small></span><i aria-hidden="true">›</i></button>`;
 }
 
 // ---- 1.0: IL PONTE WHATSAPP (Michele: "la governante deve ricevere lei stessa i messaggi del gruppo Albergo") -----
@@ -5994,7 +6004,7 @@ async function creaPonte() {
 }
 async function togliPonte() {
   const p = pontePrincipale(); if (!p) return;
-  if (!await chiedi("Tolgo il ponte? Sofia non riceverà più i messaggi del gruppo. Sul telefono togli anche «Ponte di Sofia» da WhatsApp → Dispositivi collegati.", { si: "Sì, togli", pericolo: true })) return;
+  if (!await chiedi("Tolgo il ponte? Sofia non riceverà più i messaggi di WhatsApp. Sul telefono togli anche «Ponte di Sofia» da WhatsApp → Dispositivi collegati.", { si: "Sì, togli", pericolo: true })) return;
   const codice = codicePonte(p);
   try { await S.db.scrivi([{ tipo: "cancella", coll: "ponti", id: p.id }, ...(p.email ? [{ tipo: "cancella", coll: "ruoli", id: p.email }] : [])]); }
   catch (e) { erroreScrittura(e); return; }
@@ -6041,9 +6051,11 @@ async function leggiPosta(nuove, opz = {}) {
   if (postaInLettura) return;
   postaInLettura = true;
   try {
-    const media = new Map(), messaggi = [];
+    const media = new Map(), messaggi = [], perChat = new Map();
     for (const p of nuove) {
       let m = { data: p.data || L.oggiISO(), ora: p.ora || "", chi: p.chi || "", testo: p.testo || "" };
+      const nomeChat = p.chat || "Albergo";
+      if (!perChat.has(nomeChat)) perChat.set(nomeChat, { nome: nomeChat, messaggi: [], attiva: true, gruppo: p.gruppo !== false });
       if ((p.tipo === "audio" || p.tipo === "foto") && p.media) {
         const ext = p.tipo === "audio" ? (/mp4|m4a|aac/.test(p.mime || "") ? "m4a" : "opus") : (/png/.test(p.mime || "") ? "png" : "jpg");
         const nome = `${p.id}.${ext}`;
@@ -6051,13 +6063,15 @@ async function leggiPosta(nuove, opz = {}) {
         catch (e) { console.warn("posta media", e); }
       }
       if (!m.testo && !m.media) m.testo = p.tipo === "audio" ? "🎤 (un vocale)" : p.tipo === "foto" ? `📷 (una foto)${p.didascalia ? " " + p.didascalia : ""}` : "";
-      if (m.testo || m.media) messaggi.push(m);
+      if (m.testo || m.media) { messaggi.push(m); perChat.get(nomeChat).messaggi.push(m); }
     }
     const ids = nuove.map(p => p.id);
     if (!messaggi.length) { await segnaPostaLetta(ids); return; }
-    const chats = [{ nome: nuove[0].chat || "Albergo", messaggi, attiva: true, gruppo: true }];
+    // 1.0.1: piu' chat insieme (il gruppo Albergo e la chat privata con papa'): le chat private prima, come quando le condividi
+    const chats = [...perChat.values()].filter(c => c.messaggi.length).sort((a, b) => Number(a.gruppo) - Number(b.gruppo));
     const mittenti = mittentiDi(chats), ric = papaRicordato();
-    const papa = mittenti.some(x => x.nome === ric) ? ric : (mittenti.find(x => !/michele/i.test(x.nome) && x.camere) || {}).nome || "";
+    const privata = chats.find(c => !c.gruppo && mittenti.some(x => x.nome === c.nome));
+    const papa = mittenti.some(x => x.nome === ric) ? ric : privata ? privata.nome : (mittenti.find(x => !/michele/i.test(x.nome) && x.camere) || {}).nome || "";
     S.chatPapa = { chats, media, papa, giorni: 0 };
     if (!opz.silenzioso && S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
     await leggiChatWA({ silenzioso: !!opz.silenzioso, posta: ids });
@@ -6080,12 +6094,14 @@ function cardPonte() {
   const quando = (t) => { const d = new Date(t); const ora = d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }); return L.oggiISO() === d.toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }) ? "alle " + ora : d.toLocaleDateString("it-IT", { day: "numeric", month: "short" }) + " alle " + ora; };
   const codice = codicePonte(p), cod4 = codiceAQuattro(codice);
   const gruppi = ((p && p.gruppi) || ["Albergo"]).join(", ");
+  const privati = (p && Array.isArray(p.privati)) ? p.privati : [];
+  const cosaLegge = `il gruppo <b>${esc(gruppi)}</b>${privati.length ? " e " + privati.map(x => `la chat con <b>${esc(x.nome)}</b>`).join(", ") : ""}`;
   const senzaRegole = S.regolePonte === false;
   const testa = `<section class="card ponte-card"><div class="ia-testa"><h2 style="margin:0">Il ponte WhatsApp</h2>${p && !senzaRegole ? `<span class="ponte-stato ${acceso ? "ok" : ""}">${acceso ? "● collegato" : "spento"}</span>` : ""}</div>
-    <p class="muted small" style="margin:6px 0 10px">Così ${esc(nome)} riceve da sola i messaggi del gruppo <b>${esc(gruppi)}</b>: scritti, vocali e foto. Li legge, capisce il prospetto e ti avvisa; non salva niente senza il tuo «Salva». Il ponte è un programmino per il PC che <b>legge soltanto</b>: non scrive mai su WhatsApp e non segna i messaggi come letti. Non è un programma ufficiale di WhatsApp: usato così il rischio è basso, ma non zero.</p>`;
+    <p class="muted small" style="margin:6px 0 10px">Così ${esc(nome)} riceve da sola i messaggi di ${cosaLegge}: scritti, vocali e foto. Li legge, capisce il prospetto e ti avvisa; non salva niente senza il tuo «Salva». Il ponte è un programmino per il PC che <b>legge soltanto</b>: non scrive mai su WhatsApp e non segna i messaggi come letti. Non è un programma ufficiale di WhatsApp: usato così il rischio è basso, ma non zero.</p>`;
   if (senzaRegole) return testa + `<div class="ponte-passo"><b>Passo 1 · Le regole nuove su Firebase</b> <span class="small muted">(una volta sola, dal PC)</span>
       <ol class="ponte-passi"><li>Tocca <b>«Copia le regole»</b> qui sotto.</li><li>Apri <b>console.firebase.google.com</b> → <b>LE STANZE DI RICCI</b> → <b>Firestore Database</b> → <b>Regole</b>.</li><li>Clic dentro il testo delle regole, <b>Ctrl+A</b> (seleziona tutto), <b>Ctrl+V</b> (incolla), poi <b>Pubblica</b>.</li><li>Torna qui e tocca <b>«Fatto, controlla»</b>.</li></ol>
-      <span class="small muted">Le regole nuove danno al ponte un permesso solo: aggiungere i messaggi del gruppo nella posta di ${esc(nome)}. Il resto resta chiuso come prima.</span>
+      <span class="small muted">Le regole nuove danno al ponte un permesso solo: aggiungere i messaggi di WhatsApp nella posta di ${esc(nome)}. Il resto resta chiuso come prima.</span>
       <button type="button" class="big main" style="margin-top:12px" data-ponte-regole>Copia le regole</button>
       <button type="button" class="nonna-link" style="margin-top:8px" data-ponte-ricontrolla>Fatto, controlla</button></div></section>`;
   if (!p) return testa + `<button type="button" class="big main" data-ponte-crea>Crea il codice del ponte</button></section>`;
@@ -6104,6 +6120,10 @@ function cardPonte() {
     <div class="floorlabel" style="margin-top:12px">I gruppi che legge</div>
     <div class="ia-riga"><input type="text" id="ponteGruppi" data-keep value="${esc(gruppi)}" autocomplete="off"><button type="button" class="btnsm" data-ponte-gruppi>Salva</button></div>
     ${Array.isArray(p.gruppiVisti) && p.gruppiVisti.length ? `<span class="small muted">Gruppi che il ponte vede: ${esc(p.gruppiVisti.join(" · "))}</span>` : ""}
+    <div class="floorlabel" style="margin-top:12px">Le chat private che legge</div>
+    ${privati.map((x, i) => `<div class="ponte-privata"><span><b>${esc(x.nome)}</b> · ${esc(numeroBello(x.numero))}</span><button type="button" class="btnsm ghost" data-ponte-privata-togli="${i}">Togli</button></div>`).join("") || `<span class="small muted">Nessuna: il ponte legge solo i gruppi.</span>`}
+    ${privati.length < 6 ? `<div class="ponte-privata-nuova"><input type="text" id="ptNome" data-keep placeholder="Nome (es. Papà)" value="${privati.length ? "" : "Papà"}" autocomplete="off"><input type="tel" id="ptNumero" data-keep placeholder="Il suo numero" inputmode="tel" autocomplete="off"><button type="button" class="btnsm" data-ponte-privata>Aggiungi</button></div>` : ""}
+    <span class="small muted">Il ponte legge SOLO le chat private che metti qui: le riconosce dal numero di telefono. Tutte le altre chat non le guarda.</span>
     <div class="floorlabel" style="margin-top:12px">Chi legge la posta</div>
     <div class="seg"><button type="button" aria-pressed="${lettorePosta()}" data-ponte-lettore="1">${esc(nome)} legge qui</button><button type="button" aria-pressed="${!lettorePosta()}" data-ponte-lettore="0">Su questo telefono no</button></div>
     <span class="small muted">Sceglilo su UN telefono solo (il tuo): lì ${esc(nome)} legge da sola appena arrivano i messaggi.${iaAccesa() ? "" : " <b>Su questo telefono manca la chiave di Gemini.</b>"}</span>
@@ -6126,7 +6146,28 @@ function collegaPonte() {
     try { await S.db.aggiorna("ponti", p.id, { gruppi }); toast("Fatto: il ponte legge " + gruppi.join(", ") + " (al prossimo segnale, entro 5 minuti)."); } catch (e) { erroreScrittura(e); }
   });
   document.querySelectorAll("[data-posta-leggi]").forEach(b => b.onclick = () => { const nuove = postaNuova(); if (nuove.length) leggiPosta(nuove, { silenzioso: false }); });
+  document.querySelectorAll("[data-ponte-privata]").forEach(b => b.onclick = async () => {
+    const p = pontePrincipale(); if (!p) return;
+    const nomeC = String(($("#ptNome") || {}).value || "").trim().slice(0, 30), numero = numeroPulito(($("#ptNumero") || {}).value);
+    if (!nomeC) return toast("Scrivi il nome (es. Papà)");
+    if (!numero) return toast("Scrivi il numero di telefono, con tutte le cifre (es. 333 1234567)");
+    const privati = (Array.isArray(p.privati) ? p.privati : []).filter(x => x.numero !== numero).concat([{ nome: nomeC, numero }]).slice(0, 6);
+    try { await S.db.aggiorna("ponti", p.id, { privati }); const n = $("#ptNumero"); if (n) n.value = ""; toast(`Fatto: il ponte legge anche la chat con ${nomeC} (al prossimo segnale, entro 5 minuti).`); } catch (e) { erroreScrittura(e); }
+  });
+  document.querySelectorAll("[data-ponte-privata-togli]").forEach(b => b.onclick = async () => {
+    const p = pontePrincipale(); if (!p) return;
+    const privati = (Array.isArray(p.privati) ? p.privati : []).filter((x, i) => i !== Number(b.dataset.pontePrivataTogli));
+    try { await S.db.aggiorna("ponti", p.id, { privati }); toast("Tolta: il ponte non legge più quella chat."); } catch (e) { erroreScrittura(e); }
+  });
 }
+// i numeri delle chat private: solo cifre, col prefisso dell'Italia (39) se manca; "" se non sembra un numero
+function numeroPulito(v) {
+  let c = String(v || "").replace(/\D/g, "");
+  if (c.startsWith("00")) c = c.slice(2);
+  if (c.length === 10 && c.startsWith("3")) c = "39" + c;
+  return c.length >= 9 && c.length <= 15 ? c : "";
+}
+function numeroBello(n) { const c = String(n || ""); return c.startsWith("39") && c.length === 12 ? `+39 ${c.slice(2, 5)} ${c.slice(5, 8)} ${c.slice(8)}` : "+" + c; }
 
 // ---- la chiave di Gemini anche sui telefoni dei proprietari (importazioni: la leggono SOLO i proprietari) ----------
 async function mettiChiaveSuiTelefoni() {
@@ -6311,6 +6352,7 @@ function collega() {
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile4", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
   document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
+  document.querySelectorAll("[data-salone]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
   document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });

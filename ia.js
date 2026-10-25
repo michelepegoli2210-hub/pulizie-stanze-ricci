@@ -26,7 +26,7 @@ export const FORNITORI = {
       system_instruction: { parts: [{ text: sistema }] },
       contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })),
         { role: "user", parts: [...(immagine ? (Array.isArray(immagine) ? immagine : [immagine]).filter(x => x && x.dati).map(x => ({ inline_data: { mime_type: x.mime || "image/jpeg", data: x.dati } })) : []), { text: testo }] }],
-      generationConfig: { temperature: maxToken ? 0.2 : 0.4, maxOutputTokens: maxToken || 4000, responseMimeType: "application/json" },
+      generationConfig: configGemini(m, maxToken),
     }),
     leggeFoto: true,
     leggi: (j) => (((j.candidates || [])[0] || {}).content?.parts || []).map(p => p.text || "").join(""),
@@ -68,9 +68,23 @@ export const FORNITORI = {
   },
 };
 export const FORNITORE_BASE = "gemini";
+// 1.0.1 - GEMINI 4 ARGON (documentazione di Google, ottobre 2026: ai.google.dev/gemini-api/docs/generate-content/latest-model
+// e .../generate-content/thinking): Argon ragiona SEMPRE (non si spegne) e i token del ragionamento CONTANO nel tetto
+// maxOutputTokens; se il tetto e' basso la risposta arriva tagliata o vuota e il ragionamento si paga lo stesso.
+// Quindi, solo per Argon: tetto 32768 (il massimo di una risposta intera, non a pezzi), il livello di ragionamento
+// scritto chiaro (thinkingLevel: "medium" = quello di serie di Google; "high" = al massimo, se scelto in Altro) e
+// niente temperature (per Argon Google la ignora). Per gli altri modelli resta tutto come prima.
+export const LIVELLI_ARGON = ["medium", "high"];
+export function configGemini(m, maxToken) {
+  if (/argon/i.test(String(m || ""))) {
+    const lv = leggiConf().ragionamento;
+    return { maxOutputTokens: 32768, responseMimeType: "application/json", thinkingConfig: { thinkingLevel: LIVELLI_ARGON.includes(lv) ? lv : "medium" } };
+  }
+  return { temperature: maxToken ? 0.2 : 0.4, maxOutputTokens: maxToken || 4000, responseMimeType: "application/json" };
+}
 // chiaveArgon (0.86): una seconda chiave, facoltativa, di un progetto Google COL CREDITO, usata solo per Argon.
 // La chiave normale resta quella gratuita: se il credito finisce, Sofia continua col modello svelto e la voce.
-export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", chiaveArgon: "", qualita: "argon", modelloSvelto: "", ultimo: "", errori: 0, v: 3 };
+export const CONF_BASE = { attiva: false, fornitore: FORNITORE_BASE, modello: "", chiave: "", chiaveArgon: "", qualita: "argon", ragionamento: "medium", modelloSvelto: "", ultimo: "", errori: 0, v: 3 };
 // Il numero di versione dentro il nome del modello ("gemini-3.8-flash" -> 3.8): serve a pescare sempre il piu nuovo
 export function versioneModello(nome) { const m = String(nome).match(/(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; }
 export function scegliModello(tutti, fornitore, qualita = "svelta") {
