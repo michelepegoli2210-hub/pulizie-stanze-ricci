@@ -9,7 +9,9 @@ rules_version = '2';
 //   - le SIGNORE vedono solo le pulizie e i pagamenti della LORO zona e possono
 //     cambiare SOLO lo stato di una pulizia (fatta / non fatta / problema + nota);
 //   - i PROPRIETARI possono leggere e scrivere tutto;
-//   - "lettura" vede tutto ma non cambia niente.
+//   - "lettura" vede tutto ma non cambia niente;
+//   - il PONTE WhatsApp (ruolo "ponte", un utente tutto suo creato dall'app) può SOLO aggiungere i messaggi
+//     del gruppo nella "posta" di Sofia e dire che è acceso; non legge e non cambia nient'altro.
 // ============================================================================
 service cloud.firestore {
   match /databases/{db}/documents {
@@ -28,6 +30,7 @@ service cloud.firestore {
     function proprietario() { return ruolo() == "proprietario"; }
     function puoLeggereTutto() { return ruolo() == "proprietario" || ruolo() == "lettura"; }
     function addetta() { return ruolo() == "addetta"; }
+    function ponte() { return ruolo() == "ponte"; }
     function miaZona() { return scheda().zona; }
     // La controllatrice di turno (scritta dai proprietari in impostazioni/controlli)
     function sonoControllatrice() {
@@ -122,6 +125,30 @@ service cloud.firestore {
       allow create, update: if proprietario()
         || (addetta() && request.resource.data.zona == miaZona() && request.resource.data.dati is string && request.resource.data.dati.size() < 400000);
       allow delete: if proprietario();
+    }
+
+    // Il ponte WhatsApp (1.0): un programmino sul PC che LEGGE SOLTANTO il gruppo "Albergo".
+    // Ha un utente suo (ruolo "ponte"): vede solo la SUA scheda in "ponti" (i gruppi da leggere) e ci scrive
+    // solo il suo "battito"; nella "posta" può solo AGGIUNGERE messaggi (non leggerli, cambiarli o cancellarli).
+    // I proprietari vedono tutto, segnano letto e cancellano.
+    match /ponti/{id} {
+      allow read: if proprietario() || (ponte() && id == email().split("@")[0]);
+      allow create, delete: if proprietario();
+      allow update: if proprietario()
+        || (ponte() && id == email().split("@")[0]
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["vivo", "stato", "contati", "numero", "versione", "gruppiVisti"]));
+    }
+    match /posta/{id} {
+      allow read, update, delete: if proprietario();
+      allow create: if ponte()
+        && request.resource.data.keys().hasOnly(["chat", "gruppo", "chi", "mio", "ts", "data", "ora", "tipo", "testo", "didascalia", "durata", "mime", "media", "storico"])
+        && request.resource.data.testo is string && request.resource.data.testo.size() < 8000;
+    }
+    match /posta_media/{id} {
+      allow read, delete: if proprietario();
+      allow create: if ponte()
+        && request.resource.data.keys().hasOnly(["mime", "dati", "ts"])
+        && request.resource.data.dati is string && request.resource.data.dati.size() < 1000000;
     }
 
     // Tutto il resto: chiuso.

@@ -2855,3 +2855,117 @@ body.premium .man-plate .ic{color:#8A6D32}
 /* i comandi rapidi scorrono di lato senza allargare la pagina */
 .sv-chips{width:0;min-width:100%}
 .sofia-vista{min-width:0}
+/* ---- 1.0: il ponte WhatsApp (Altro) ---- */
+.ponte-card .ponte-stato{font:800 13px var(--f-body);padding:4px 10px;border-radius:999px;background:var(--campo);color:var(--muted)}
+.ponte-card .ponte-stato.ok{background:#ECFDF3;color:#067647}
+.ponte-codice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:16px;background:#FAF6EE;border:1.5px solid #8A6D32}
+.ponte-codice span{font:700 14px var(--f-body);color:#6E542B}
+.ponte-codice b{font:800 28px/1 var(--f-display);letter-spacing:.08em;color:#1C1917;font-variant-numeric:tabular-nums}
+.ponte-info{margin-top:10px;font:600 15px/1.4 var(--f-body)}
+.ponte-passi{margin:10px 0 0;padding-left:22px;font:500 15.5px/1.45 var(--f-body)}
+.ponte-passi li{margin:6px 0}
+.ponte-passi a{color:var(--oro,#8A6D32)}
+:root[data-theme="dark"] .ponte-codice{background:#2A2418;border-color:#8A6D32}
+:root[data-theme="dark"] .ponte-codice b{color:#F5F1EA}
+.ponte-codice{flex-direction:column;align-items:flex-start;gap:4px}
+.ponte-codice b{white-space:nowrap;font-size:32px}
+/* 1.0: il codice ha 16 lettere (XXXX-XXXX-XXXX-XXXX): sta su una riga anche sul telefono piccolo */
+.ponte-codice b{font-size:clamp(16px,5vw,30px);letter-spacing:.04em;max-width:100%;overflow-wrap:anywhere;white-space:normal}
+.ponte-passo{margin:4px 0 12px;padding:14px 16px;border-radius:16px;background:#FFF8E6;border:1.5px solid #D9A400}
+.ponte-passo .ponte-passi{margin-top:6px}
+.ponte-passo .big{width:100%}
+.ponte-mostra{margin-top:10px}
+.ponte-mostra summary{cursor:pointer;font:700 15px var(--f-body);color:var(--oro,#8A6D32);padding:6px 0}
+.ponte-mostra .ponte-codice{margin-top:6px}
+.regole-testo{width:100%;box-sizing:border-box;font:12px/1.45 ui-monospace,Consolas,monospace;padding:10px;border-radius:12px;border:1px solid var(--linea,#E7E2DA);background:var(--campo,#FAF8F5);color:inherit;resize:vertical}
+:root[data-theme="dark"] .ponte-passo{background:#2B2410;border-color:#8A6D32}
+
+/* ==========================================================================
+   1.0 · IL PIANO DI GEMINI (Michele: "mettilo in pratica")
+   ========================================================================== */
+/* ---- Sofia che ESCE sullo schermo quando parla e da dove sei non si vede ---- */
+.sofia-fuori{position:fixed;right:max(10px,2%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:9999;height:45vh;max-height:540px;min-height:240px;aspect-ratio:9/16;width:auto;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;
+  opacity:0;transform:translateY(28px) scale(.92);transform-origin:80% 100%;transition:opacity .38s ease,transform .45s cubic-bezier(.2,.8,.2,1);-webkit-tap-highlight-color:transparent}
+body.con-sotto .sofia-fuori{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+body.con-sotto .sofia-fuori.alta{bottom:calc(156px + env(safe-area-inset-bottom,0px))}
+.sofia-fuori.su{opacity:1;transform:none}
+.sofia-fuori[hidden]{display:none}
+.sofia-fuori.piccola{height:28vh;min-height:170px}
+.sofia-fuori .sf-cornice{position:absolute;inset:0;display:block}
+.sofia-fuori .donnina.gov-fig.gov-film.sf-fig{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0;background:none;box-shadow:none;filter:none;overflow:hidden}
+.sofia-fuori .sf-fig video{object-fit:cover;object-position:50% 0}
+/* in 3D e' ritagliata: niente cornice, lei "fuori" dallo schermo con un'ombra morbida */
+.sofia-fuori.tre .sf-cornice{filter:drop-shadow(0 16px 22px rgba(28,25,23,.38)) drop-shadow(0 2px 3px rgba(28,25,23,.25));-webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent 99%);mask-image:linear-gradient(to bottom,#000 80%,transparent 99%)}
+/* piatta (telefoni senza trasparenza): un ritratto con la cornice d'oro */
+.sofia-fuori.piatta{height:36vh;aspect-ratio:3/4}
+.sofia-fuori.piatta.piccola{height:24vh}
+.sofia-fuori.piatta .sf-cornice{border-radius:22px;overflow:hidden;background:#1C1917;box-shadow:0 0 0 2.5px #B89A5A,0 20px 44px -14px rgba(28,25,23,.6)}
+.sofia-fuori.piatta .sf-fig video{object-position:50% 14%}
+.sofia-fuori .sf-nome{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:rgba(28,25,23,.88);color:#fff;font:700 13.5px/1 var(--f-body,system-ui);white-space:nowrap;box-shadow:0 6px 16px -6px rgba(0,0,0,.5)}
+.sofia-fuori .sf-nome i{width:9px;height:9px;border-radius:50%;background:#34C759;animation:consPulsa 1.1s ease-in-out infinite}
+.sofia-fuori .sf-x{position:absolute;top:6%;right:2px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.95);color:#1C1917;font:800 14px/1 system-ui;box-shadow:0 4px 12px rgba(0,0,0,.28)}
+.sofia-fuori.piatta .sf-x{top:-10px;right:-8px}
+.sofia-fuori:focus-visible{outline:3px solid var(--oro,#8A6D32);outline-offset:4px;border-radius:22px}
+@media (prefers-reduced-motion:reduce){.sofia-fuori{transition:none;transform:none}}
+
+/* ---- le camere di oggi a colpo d'occhio: rosso da pulire, giallo in pulizia, verde pronta ---- */
+.cg-card .head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cg-conta{display:inline-flex;gap:10px;font:800 16px/1 var(--f-body);font-variant-numeric:tabular-nums}
+.cg-n{display:inline-flex;align-items:center;gap:5px}
+.cg-n i,.cg-legenda i{width:11px;height:11px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.cg-n.todo i,.cg-legenda i.todo{background:#DC2626}
+.cg-n.wip i,.cg-legenda i.wip{background:#F59E0B}
+.cg-n.done i,.cg-legenda i.done{background:#16A34A}
+.cg-griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:12px}
+.cg{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:58px;padding:9px 10px 9px 13px;border-radius:14px;border:0;text-align:left;cursor:pointer;position:relative;overflow:hidden;font:inherit}
+.cg::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
+.cg b{font:800 15px/1.15 var(--f-display);color:inherit;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cg span{font:700 12.5px/1.1 var(--f-body);opacity:.92}
+.cg.todo{background:#FEE2E2;color:#991B1B}.cg.todo::before{background:#DC2626}
+.cg.wip{background:#FEF3C7;color:#92400E;box-shadow:inset 0 0 0 2px #F59E0B}.cg.wip::before{background:#F59E0B}
+.cg.done{background:#DCFCE7;color:#166534}.cg.done::before{background:#16A34A}
+.cg.warn{background:#F3E8FF;color:#6B21A8}.cg.warn::before{background:#9333EA}
+.cg.skip{background:#F5F5F4;color:#57534E}.cg.skip::before{background:#A8A29E}
+.cg:active{transform:scale(.98)}
+.cg-legenda{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font:600 13px var(--f-body);color:var(--muted)}
+.cg-legenda span{display:inline-flex;align-items:center;gap:6px}
+:root[data-theme="dark"] .cg.todo{background:#3B1515;color:#FCA5A5}
+:root[data-theme="dark"] .cg.wip{background:#3A2A0C;color:#FCD34D}
+:root[data-theme="dark"] .cg.done{background:#11301C;color:#86EFAC}
+:root[data-theme="dark"] .cg.warn{background:#2E1A44;color:#D8B4FE}
+:root[data-theme="dark"] .cg.skip{background:#26231F;color:#C8C0B4}
+
+/* ---- i colori degli stati tornano rosso / giallo / verde (la parola accanto c'e' sempre; l'oro resta per tasti e dettagli) ---- */
+body.premium .badge.todo,body.premium .badge.tess-stato.todo,body.semplice .badge.todo,body.semplice .badge.tess-stato.todo{background:var(--todo-bg);color:var(--todo);box-shadow:none}
+body.premium .badge.todo::before,body.premium .badge.tess-stato.todo::before,body.semplice .badge.todo::before,body.semplice .badge.tess-stato.todo::before{background:var(--todo-dot)}
+body.premium .badge.wip,body.premium .badge.tess-stato.wip,body.semplice .badge.wip,body.semplice .badge.tess-stato.wip{background:var(--wip-bg);color:var(--wip);box-shadow:inset 0 0 0 1px var(--wip-dot)}
+body.premium .badge.wip::before,body.premium .badge.tess-stato.wip::before,body.semplice .badge.wip::before,body.semplice .badge.tess-stato.wip::before{background:var(--wip-dot)}
+body.premium .badge.done,body.premium .badge.tess-stato.done,body.semplice .badge.done,body.semplice .badge.tess-stato.done{background:var(--done-bg);color:var(--done);box-shadow:none}
+body.premium .badge.done::before,body.premium .badge.tess-stato.done::before,body.semplice .badge.done::before,body.semplice .badge.tess-stato.done::before{background:var(--done-dot)}
+body.semplice .nn-num,body.semplice .nn-numeri.con-corso .nn-num{border:0}
+body.semplice .nn-num.todo{background:#FEE2E2;color:#991B1B}
+body.semplice .nn-num.wip{background:#FEF3C7;color:#92400E;box-shadow:inset 0 0 0 2px #F59E0B}
+body.semplice .nn-num.done{background:#DCFCE7;color:#166534}
+body.semplice .nn-numeri.con-corso .nn-num.todo{background:#FEF2F2;color:#B91C1C}
+body.semplice .nn-numeri.con-corso .nn-num.wip{background:#FEF3C7;color:#92400E;box-shadow:inset 0 0 0 2px #F59E0B}
+body.semplice .nn-scheda{box-shadow:inset 8px 0 0 #DC2626,0 1px 2px rgba(28,25,23,.05),0 10px 22px -14px rgba(28,25,23,.3)}
+body.semplice .nn-scheda.wip{box-shadow:inset 8px 0 0 #F59E0B,0 0 0 3px #FCD34D,0 10px 22px -14px rgba(28,25,23,.3)}
+body.semplice .nn-scheda.done{box-shadow:inset 8px 0 0 #16A34A,0 1px 2px rgba(28,25,23,.05);background:#FBFEFC}
+body.semplice .nn-scheda.warn{box-shadow:inset 8px 0 0 #9333EA,0 1px 2px rgba(28,25,23,.05)}
+body.semplice .nn-stato{color:#991B1B;background:#FEE2E2;box-shadow:none}
+body.semplice .nn-scheda.wip .nn-stato{color:#92400E;background:#FEF3C7}
+body.semplice .nn-scheda.done .nn-stato{color:#166534;background:#DCFCE7}
+body.semplice .nn-scheda.warn .nn-stato{color:#6B21A8;background:#F3E8FF}
+body.semplice .inizio-testa.todo{box-shadow:inset 6px 0 0 #DC2626}
+body.semplice .inizio-testa.wip{box-shadow:inset 6px 0 0 #F59E0B}
+body.semplice .inizio-testa.done{box-shadow:inset 6px 0 0 #16A34A}
+
+/* 1.0: col tema scuro la barra dell'ora era chiara con le scritte chiare (non si leggevano) */
+:root[data-theme="dark"] body.premium .barra-ora{background:rgba(20,18,16,.94);border-bottom-color:var(--line)}
+:root[data-theme="dark"] body.premium .bo-menu{background:var(--card);border-color:var(--line);color:var(--fg)}
+/* 1.0: chi pensa - "Pensa con Argon" (verde) oppure "Modello svelto · Argon spento" (grigio) */
+.sv-regia{display:inline-flex;align-items:center;gap:6px;margin-top:5px;padding:3px 10px 3px 8px;border-radius:999px;background:var(--campo,#F3F0E8);color:var(--muted);font:700 12.5px/1.2 var(--f-body);font-style:normal;width:max-content;max-width:100%}
+.sv-regia span{width:8px;height:8px;border-radius:50%;background:#A8A29E;flex:0 0 auto}
+.sv-regia.si{background:#DCFCE7;color:#166534}
+.sv-regia.si span{background:#16A34A}
+:root[data-theme="dark"] .sv-regia.si{background:#11301C;color:#86EFAC}

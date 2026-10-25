@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.99.3";
+export const VERSIONE = "1.0.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -346,6 +346,8 @@ function filmVigila() {
     const forzato = document.body.dataset.cons || "";
     let suono = false; try { suono = VOCE.staParlando(); } catch (e) {}
     for (const b of document.querySelectorAll(".gov-film")) {
+      // 1.0: una Sofia nascosta (quella che "esce" quando parla, a riposo) non consuma batteria
+      if (b.closest("[hidden]")) { for (const v of b.querySelectorAll("video")) if (!v.paused) { try { v.pause(); } catch (e) {} } continue; }
       const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
       const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
@@ -1011,6 +1013,7 @@ async function avvia() {
   window.addEventListener("online", () => { S.online = true; disegna(); });
   window.addEventListener("offline", () => { S.online = false; disegna(); });
   S.db.onUtente((u) => {
+    if (u && u.ruolo === "ponte") u = { ...u, ruolo: null, ponte: true }; // 1.0: l'accesso del ponte WhatsApp serve solo al programmino sul PC
     const prima = S.veroUtente || S.utente;
     const stessaPersona = prima && u && prima.uid === u.uid && prima.ruolo === u.ruolo && prima.zona === u.zona;
     if (S.veroUtente && stessaPersona) { S.veroUtente = u; S.pronto = true; disegna(); return; } // sto guardando come la signora: resto lì
@@ -1089,6 +1092,9 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "economia", d => { S.economia = { ...(d || {}) }; delete S.economia.id; disegna(); }));
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); }));
+  // 1.0: il ponte WhatsApp e la posta di Sofia (solo i proprietari; finche' le regole non ci sono, niente errori a schermo:
+  // la scheda del ponte mostra il passo 1, "le regole nuove")
+  if (proprietario()) { ascoltaPonte(); S.stop.push(fermaPonte); }
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
@@ -1180,6 +1186,7 @@ function disegna() {
   if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
   disegnaCasa();
+  sofiaFuori();
   orologioAvvia();
   barraSotto();
   collega();
@@ -1236,6 +1243,7 @@ function vistaAccesso() {
     <p class="muted small" style="margin-top:12px">Si entra una volta sola: il telefono se lo ricorda. Se hai dimenticato la password, chiedi a Michele.</p></section>`;
 }
 function vistaNonAttivo() {
+  if (S.utente && S.utente.ponte) return `<section class="card"><h2>Questo è l'accesso del ponte</h2><p>Serve solo al programmino «Il ponte di Sofia» sul PC, non all'app. Esci ed entra col tuo nome.</p><button class="big undo" data-esci>Esci</button></section>`;
   return `<section class="card"><h2>Accesso non ancora attivato</h2><p>Sei entrato come <b>${esc(S.utente.login || S.utente.email || S.utente.uid)}</b>, ma non è ancora scritto chi sei (proprietario o signora delle pulizie).</p><p class="muted">Chiedi a Michele di aggiungerti in ⋯ → Persone e accessi, poi riapri l'app.</p><button class="big undo" data-esci>Esci</button></section>`;
 }
 
@@ -1676,6 +1684,24 @@ function vistaProprietario() {
   return tabs + corpo;
 }
 
+// 1.0 (piano di Gemini): le camere del giorno a colpo d'occhio - rosso = da pulire, giallo = la stanno pulendo,
+// verde = pronta (viola = problema, grigio = non fatta). Una casella per camera (se ha piu' lavori conta il piu' indietro).
+const ORDINE_STATO = { problema: 0, da_fare: 1, in_corso: 2, non_fatta: 3, fatta: 4 };
+const NOME_STATO_GRIGLIA = { todo: "Da pulire", wip: "In pulizia", done: "Pronta", warn: "Problema", skip: "Non fatta" };
+function grigliaCamere(iso) {
+  const tutte = signore().flatMap(z => pulizieDelGiorno(iso, z.id));
+  if (!tutte.length) return "";
+  const ord = (p) => ORDINE_STATO[p.stato] ?? 1;
+  const perCamera = new Map();
+  for (const p of tutte) { const k = p.camera || p.id, x = perCamera.get(k); if (!x || ord(p) < ord(x)) perCamera.set(k, p); }
+  const lista = [...perCamera.values()].sort((a, b) => (ord(a) - ord(b)) || String(camera(a.camera).nome).localeCompare(String(camera(b.camera).nome)));
+  const cls = (p) => (STATI[p.stato] || STATI.da_fare).cls;
+  const conta = (c) => lista.filter(p => cls(p) === c).length;
+  const sotto = (p) => p.stato === "in_corso" && p.inizio ? "dalle " + L.oraBreve(p.inizio) : p.stato === "fatta" && p.ora ? "pronta " + L.oraBreve(p.ora) : NOME_STATO_GRIGLIA[cls(p)];
+  return `<section class="card cg-card"><div class="head"><h2 style="margin:0">Le camere di ${esc(quandoEtichetta(iso).toLowerCase())}</h2><span class="cg-conta" aria-label="${conta("todo")} da pulire, ${conta("wip")} in pulizia, ${conta("done")} pronte">${["todo", "wip", "done"].map(c => `<span class="cg-n ${c}"><i aria-hidden="true"></i>${conta(c)}</span>`).join("")}</span></div>
+    <div class="cg-griglia">${lista.map(p => `<button type="button" class="cg ${cls(p)}" data-pul="${esc(p.id)}" aria-label="${esc(camera(p.camera).nome)}: ${esc(NOME_STATO_GRIGLIA[cls(p)])}"><b>${esc(camera(p.camera).nome)}</b><span>${esc(sotto(p))}</span></button>`).join("")}</div>
+    <div class="cg-legenda" aria-hidden="true"><span><i class="todo"></i>Da pulire</span><span><i class="wip"></i>In pulizia</span><span><i class="done"></i>Pronta</span></div></section>`;
+}
 function vistaOggiGestione() {
   const iso = S.giorno;
   const blocchi = signore().map(z => {
@@ -1690,7 +1716,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Tocca «Scrivi»: le signore lo vedono in grande.</p>`}</section>`;
-  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + messaggio + avviso + blocchi + bottone;
+  return `<section class="card flat"><h2 style="margin:0">${L.dataLunga(iso)}</h2><p class="muted small" style="margin:0">Tocca una camera o una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + grigliaCamere(iso) + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -2229,7 +2255,7 @@ function cardStileCasa() {
   if (!proprietario()) return "";
   return `<section class="card come-si-vede">
     <h2>Come si vede l'app</h2>
-    <p class="muted small" style="margin:0 0 6px">Cinque cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
+    <p class="muted small" style="margin:0 0 6px">Sei cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
     <h3>1. Il colore</h3>
     <div class="col-scelte">${COLORI_APP.map(k => `<button type="button" class="col-opt" aria-pressed="${coloreAttivo() === k.id}" data-colore-app="${k.id}"><i style="background:${k.g}"></i>${esc(k.nome)}</button>`).join("")}</div>
     <span class="small muted">Cambia il colore dei tasti e dei collegamenti. Tutto il resto resta com'è.</span>
@@ -2248,6 +2274,9 @@ function cardStileCasa() {
     <h3>5. Orologio e data</h3>
     <div class="seg"><button type="button" aria-pressed="${orologioVoluto()}" data-orologio-scelta="si">Sì</button><button type="button" aria-pressed="${!orologioVoluto()}" data-orologio-scelta="no">No</button></div>
     <span class="small muted">L'ora grande e il giorno nella barra in cima, in ogni schermata.</span>
+    <h3>6. Quando ${esc(nomeGov())} parla</h3>
+    <div class="seg"><button type="button" aria-pressed="${sofiaFuoriVoluta()}" data-sofia-fuori="si">Esce sullo schermo</button><button type="button" aria-pressed="${!sofiaFuoriVoluta()}" data-sofia-fuori="no">Resta al suo posto</button></div>
+    <span class="small muted">Se parla mentre sei in un'altra schermata, esce grande in basso a destra finché parla. Un tocco su di lei la fa smettere.</span>
   </section>`;
 }
 function cardConsuela() {
@@ -2816,7 +2845,47 @@ async function parlaTutto(testo, { conf, chiave } = {}) {
   }
   return g === giroVoce;
 }
-function zittisciVoce() { giroVoce++; VOCE.stazitta(); if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); } voceInCorso = false; applicaBocca(0); labialeFerma(true); }
+function zittisciVoce() { giroVoce++; VOCE.stazitta(); if (fineParteVoce) { const f = fineParteVoce; fineParteVoce = null; f(); } voceInCorso = false; applicaBocca(0); labialeFerma(true); sofiaFuori(); }
+// 1.0 (piano di Gemini, Michele: "mettilo in pratica"): quando Sofia PARLA e da dove sei non la vedi (prospetto, paghe,
+// in fondo alla pagina...), esce lei sullo schermo: grande, in basso a destra, sopra a tutto, col filmato che parla
+// finche' parla (dove il telefono sa fare la trasparenza e' ritagliata, altrimenti in una cornice). Un tocco la zittisce.
+// Si spegne in "Come si vede l'app" -> "6. Quando parla".
+const CHIAVE_FUORI = "ricci_sofia_fuori";
+function sofiaFuoriVoluta() { try { return localStorage.getItem(CHIAVE_FUORI) !== "no"; } catch (e) { return true; } }
+function sofiaInVista() {
+  const alto = window.innerHeight || 800;
+  for (const el of document.querySelectorAll("#app .gov-film, #sofiaHero .gov-film, .sheet .gov-film")) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 40 && r.height > 60 && r.bottom > 90 && r.top < alto - 90) return true;
+  }
+  return false;
+}
+function sofiaFuori() {
+  let f = document.getElementById("sofiaFuori");
+  let vuoi = false;
+  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && !addetta() && sofiaFuoriVoluta() && !sofiaInVista()); } catch (e) {}
+  if (!vuoi) {
+    document.body.classList.remove("con-sofia-fuori");
+    if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) f.hidden = true; }, 420); }
+    return;
+  }
+  const tre = sofia3d() ? "1" : "";
+  if (f && (f.dataset.tre || "") !== tre) { f.remove(); f = null; }
+  if (!f) {
+    f = document.createElement("button"); f.type = "button"; f.id = "sofiaFuori"; f.className = "sofia-fuori sta-parlando" + (tre ? " tre" : " piatta"); f.dataset.tre = tre; f.hidden = true;
+    f.innerHTML = `<span class="sf-cornice">${FILM_CONS("sf-fig parla", !!tre)}</span><span class="sf-nome"><i aria-hidden="true"></i>${esc(nomeGov())}</span><span class="sf-x" aria-hidden="true">✕</span>`;
+    f.onclick = () => { zittisciVoce(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna(); };
+    document.body.appendChild(f);
+  }
+  f.setAttribute("aria-label", nomeGov() + " sta parlando: tocca per farla smettere");
+  f.classList.toggle("piccola", !!document.querySelector(".sheet"));            // con un foglio aperto si fa piu' piccola
+  f.classList.toggle("alta", S.vista === "sofia" || S.vista === "governante");   // nella chat sta sopra la casella per scrivere
+  clearTimeout(f._via);
+  if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); } else f.classList.add("su");
+  document.body.classList.add("con-sofia-fuori");
+}
+let sofiaFuoriScroll = null;
+try { window.addEventListener("scroll", () => { if (!voceInCorso) return; clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(sofiaFuori, 140); }, { passive: true }); } catch (e) {}
 
 // 0.42: parlarle col microfono, senza tastiera. Su Android funziona dentro l'app;
 // su iPhone il motore non c'è e si usa il microfono della tastiera (glielo diciamo).
@@ -3331,6 +3400,14 @@ let argonAvvisato = false;
 // se Argon ci mette troppo, si risponde col modello svelto ma Argon resta il primo della volta dopo.
 // Quando Michele mette la carta su Google, Argon parte da solo: non c'e' niente da cambiare nell'app.
 const ARGON_PAUSA_MS = 60 * 60 * 1000, CHIAVE_ARGON_PAUSA = "ricci_argon_pausa";
+// 1.0 (piano di Gemini: "Argon comanda, la governante esegue"): in cima alla sezione di Sofia si vede chi sta pensando
+function argonAttivo() { const c = confIA(); return !!(iaAccesa() && c.fornitore === "gemini" && c.qualita === "argon" && c.chiaveArgon && !argonInPausa()); }
+function regiaArgonHtml() {
+  if (!proprietario()) return "";
+  if (argonAttivo()) return `<i class="sv-regia si" title="Le decisioni le prende Argon, ${esc(nomeGov())} le dice e le fa"><span aria-hidden="true"></span>Pensa con Argon</i>`;
+  if (iaAccesa()) return `<i class="sv-regia" title="Per Argon serve la chiave col credito: Altro → La governante intelligente, passo 4b"><span aria-hidden="true"></span>Modello svelto · Argon spento</i>`;
+  return "";
+}
 function argonInPausa() { try { return Number(localStorage.getItem(CHIAVE_ARGON_PAUSA) || 0) > Date.now(); } catch (e) { return false; } }
 function pausaArgon(ms = ARGON_PAUSA_MS) { try { localStorage.setItem(CHIAVE_ARGON_PAUSA, String(Date.now() + ms)); } catch (e) {} }
 function togliPausaArgon() { try { localStorage.removeItem(CHIAVE_ARGON_PAUSA); } catch (e) {} argonAvvisato = false; }
@@ -3927,7 +4004,7 @@ function vistaSofia() {
   const benvenuto = `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">Dimmi pure, ${esc(nomeMio())}. Puoi scrivermi o parlarmi col microfono: cambio il prospetto, segno un guasto, scrivo alle signore. Prima di fare qualcosa ti chiedo sempre.</div></div></div>`;
   const chips = [["Chi arriva domani?", "manda"], ["Scrivi alle signore: ", "scrivi", "Scrivi alle signore…"], ["Segna un guasto: ", "scrivi", "Segna un guasto…"], ["Com'è il prospetto di questa settimana?", "manda", "Il prospetto della settimana"]];
   return `<section class="sofia-vista" aria-label="${esc(nome)}">
-    <div class="sv-testa"><span class="sv-ritratto" aria-hidden="true"></span><div><b>${esc(nome)}</b><span>${pensa ? "ci sta pensando…" : dom ? `ha ${dom === 1 ? "una cosa" : dom + " cose"} da chiederti` : "la tua governante · tutto in ordine"}</span></div></div>
+    <div class="sv-testa"><span class="sv-ritratto" aria-hidden="true"></span><div><b>${esc(nome)}</b><span>${pensa ? "ci sta pensando…" : dom ? `ha ${dom === 1 ? "una cosa" : dom + " cose"} da chiederti` : "la tua governante · tutto in ordine"}</span>${regiaArgonHtml()}</div></div>
     <div class="sv-tessere">
       <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">${dom ? "?" : "✓"}</span><b>${dom ? `${esc(nome)} ti chiede` : "Tutto chiaro"}</b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "nessun dubbio sulle camere"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
       <button type="button" class="sv-tessera" data-vista="governante"><span class="sv-t-ico">${ICONA("stella")}</span><b>I consigli di ${esc(nome)}</b><span>${esc(sottoCons || "tutto in ordine")}</span></button>
@@ -4645,7 +4722,7 @@ function cardOrarioBase() {
 // ---- altro ---------------------------------------------------------------------------
 function vistaAltro() {
   const r = S.regole;
-  return cardStileCasa() + cardIA() + cardTaccuino() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardStileCasa() + cardIA() + cardPonte() + cardTaccuino() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -4720,6 +4797,7 @@ function disegnaFoglio() {
   else if (f.tipo === "nota") html = foglioNota(f);
   else if (f.tipo === "nuovoLavoro") html = foglioNuovoLavoro(f);
   else if (f.tipo === "dettatura") html = foglioDettatura(f);
+  else if (f.tipo === "regole") html = foglioRegole(f);
   else if (f.tipo === "inserisci") html = foglioInserisci(f);
   else if (f.tipo === "chatPapa") html = foglioChatPapa(f);
   else if (f.tipo === "manutenzione") html = foglioManutenzione(f);
@@ -5058,6 +5136,7 @@ async function salvaDettatura(f) {
     let na = 0; for (const v of ab) { try { if (await ricordaNelTaccuino(v.testo, "sofia")) na++; } catch (e) { console.warn("abitudine", e); } }
     const base = ris.base || statoDettatura().base;
     if (d0.ia) togliUltimaLettura();
+    if (Array.isArray(d0.postaIds) && d0.postaIds.length) cancellaPosta(d0.postaIds);
     S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
     S.attesa = false; chiudiFoglio();
     S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
@@ -5239,7 +5318,7 @@ function fonteDettaturaHtml(d) {
   if (f.tipo === "whatsapp") {
     const quando = f.data ? L.dataGiornoLungo(f.data) : "";
     const chi = (f.chi || []).slice(0, 2).join(", ");
-    const sopra = f.come === "chat" ? "Dalla chat di WhatsApp" : "Da WhatsApp";
+    const sopra = f.posta ? "Dal gruppo WhatsApp, arrivato da solo (il ponte)" : f.come === "chat" ? "Dalla chat di WhatsApp" : "Da WhatsApp";
     const da = f.chats && f.chats.length ? ` (${f.chats.join(" + ")})` : chi ? " di " + chi : "";
     const dett = [f.messaggi ? `${f.messaggi} ${f.messaggi === 1 ? "messaggio" : "messaggi"}${da}` : "", quando].filter(Boolean).join(" · ");
     const note = [];
@@ -5750,18 +5829,18 @@ function collegaChatPapa() {
   document.querySelectorAll(".cwAggiungi").forEach(i => i.onchange = async () => { const fl = [...(i.files || [])]; i.value = ""; if (fl.length) await apriChatWA(fl); });
 }
 // la lettura delle chat: prima i vocali (trascritti), poi le foto, poi tutto insieme a Sofia
-async function leggiChatWA() {
+async function leggiChatWA(opz = {}) {
   const c = S.chatPapa; if (!c) return;
   const scelti = messaggiScelti(c).map(m => ({ ...m }));
   if (!scelti.length) return;
-  const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: c.papa ? [c.papa] : [], chats: c.chats.filter(x => x.attiva).map(x => (x.gruppo ? x.nome : "chat con " + x.nome)), data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "" };
+  const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: c.papa ? [c.papa] : [], chats: c.chats.filter(x => x.attiva).map(x => (x.gruppo ? x.nome : "chat con " + x.nome)), data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "", ...(opz.posta ? { posta: true } : {}) };
   const testoPapa = scelti.filter(m => m.testo && (!c.papa || m.chi === c.papa)).map(m => m.testo).join("\n");
-  S.dett = { testo: testoPapa, base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte, rif: "", wa: { messaggi: scelti, papa: c.papa, testo: testoPapa } };
-  if (!iaAccesa()) { apriFoglio({ tipo: "dettatura" }); return; }
+  S.dett = { testo: testoPapa, base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte, rif: "", wa: { messaggi: scelti, papa: c.papa, testo: testoPapa }, ...(opz.posta ? { postaIds: opz.posta } : {}) };
+  if (!iaAccesa()) { if (!opz.silenzioso) apriFoglio({ tipo: "dettatura" }); return; }
   const d = S.dett;
   const voc = scelti.filter(m => m.media && m.media.tipo === "audio" && c.media.has(m.media.file)).slice(-MAX_VOCALI);
   d.ia = { leggo: true, n: scelti.length, fase: voc.length ? `Ascolto i vocali: 0 di ${voc.length}` : "", ...(voc.length ? { prog: 0 } : {}) };
-  apriFoglio({ tipo: "dettatura" });
+  if (opz.silenzioso) { if (!S.foglio) disegna(); } else apriFoglio({ tipo: "dettatura" });
   if (voc.length) {
     try { await trascriviVocali(voc, c.media, (fatti) => { if (S.dett !== d) return; d.ia = { ...d.ia, fase: `Ascolto i vocali: ${fatti} di ${voc.length}`, prog: fatti / voc.length }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else { const sm = $(".cw-banner.leggo small"); if (sm) sm.textContent = `${d.ia.fase}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.`; const bi = $(".cw-banner.leggo .cw-prog i"); if (bi) bi.style.width = Math.round(d.ia.prog * 100) + "%"; } }); }
     catch (e) { console.warn("vocali", e); }
@@ -5838,10 +5917,215 @@ function letturaInCorso() { const d = S.dett; return !!(d && d.ia && d.ia.leggo)
 function letturaDaControllare() { const d = S.dett; return !!(d && d.ia && !d.ia.leggo && !d.ia.errore && ((d.ia.righe || []).some(r => r.azione !== "niente") || (d.ia.indicazioni || []).length)); }
 function bannerLettura() {
   if (S.foglio && S.foglio.tipo === "dettatura") return "";
-  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo le chat…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small>${barraLettura(S.dett.ia)}</span><i aria-hidden="true">›</i></button>`;
+  const nuove = postaNuova();
+  if (nuove.length && !letturaInCorso() && !letturaDaControllare()) {
+    const chat = nuove[0].chat || "Albergo", auto = lettorePosta() && iaAccesa();
+    return `<button type="button" class="cw-banner${auto ? " leggo" : ""}" data-posta-leggi><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${nuove.length === 1 ? "Un messaggio nuovo" : nuove.length + " messaggi nuovi"} dal gruppo ${esc(chat)}</b><small>${auto ? `${esc(nomeGov())} li legge fra pochi secondi (aspetta che finiscano di scrivere).` : `Tocca: li faccio leggere a ${esc(nomeGov())}.`}</small>${auto ? barraLettura({}) : ""}</span><i aria-hidden="true">›</i></button>`;
+  }
+  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo ${S.dett.fonte && S.dett.fonte.posta ? "i messaggi del gruppo" : "le chat"}…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small>${barraLettura(S.dett.ia)}</span><i aria-hidden="true">›</i></button>`;
   if (!letturaDaControllare()) return "";
   const x = S.dett.ia, nr = (x.righe || []).filter(r => r.azione !== "niente").length, ni = (x.indicazioni || []).length;
-  return `<button type="button" class="cw-banner" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} ha letto le chat</b><small>${[nr ? `${nr} ${nr === 1 ? "cambio" : "cambi"} nel prospetto` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} per le signore` : ""].filter(Boolean).join(" · ")}: tocca per controllare e salvare</small></span><i aria-hidden="true">›</i></button>`;
+  return `<button type="button" class="cw-banner" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} ha letto ${S.dett && S.dett.fonte && S.dett.fonte.posta ? "i messaggi del gruppo" : "le chat"}</b><small>${[nr ? `${nr} ${nr === 1 ? "cambio" : "cambi"} nel prospetto` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} per le signore` : ""].filter(Boolean).join(" · ")}: tocca per controllare e salvare</small></span><i aria-hidden="true">›</i></button>`;
+}
+
+// ---- 1.0: IL PONTE WHATSAPP (Michele: "la governante deve ricevere lei stessa i messaggi del gruppo Albergo") -----
+// Sul PC di Michele gira "Il ponte di Sofia" (cartella ponte/: Node + Baileys). LEGGE SOLTANTO il gruppo "Albergo"
+// (mai scrive, non segna come letto) e mette ogni messaggio nella "posta" (testo) e in "posta_media" (vocali e foto).
+// Il ponte entra in Firebase con un UTENTE SUO (ruolo "ponte"), creato qui con «Crea il codice del ponte». Le regole gli
+// permettono soltanto di AGGIUNGERE messaggi alla posta e di scrivere il suo battito in ponti/{utente} (gruppi da leggere).
+// Il codice ha 16 lettere: le prime 6 sono il nome dell'utente (ponte-xxxxxx), le altre 10 la sua password; si scrive
+// una volta nella pagina del ponte sul PC e resta salvato solo sul telefono che l'ha creato (non nel database).
+// Sul telefono "lettore" (quello dove si crea il codice, o scelto qui) Sofia legge la posta DA SOLA: quando arrivano
+// messaggi nuovi e per 40 secondi non ne arrivano altri, ascolta i vocali, guarda le foto, legge col prospetto e
+// avvisa (notifica se l'app e' dietro). L'anteprima si salva come sempre; dopo il salvataggio la posta si cancella.
+const CHIAVE_LETTORE = "ricci_posta_lettore", CHIAVE_CODICE_PONTE = "ricci_ponte_codice", ATTESA_POSTA = (Number(window.__attesaPosta) || 40) * 1000, ALFABETO_PONTE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function lettorePosta() { try { return localStorage.getItem(CHIAVE_LETTORE) === "1"; } catch (e) { return false; } }
+// 32 lettere e numeri senza quelli che si confondono (niente I, O, 0, 1): 256 e' multiplo di 32, quindi nessuna lettera e' piu' probabile
+function lettereACaso(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x => ALFABETO_PONTE[x % ALFABETO_PONTE.length]).join(""); }
+function pontePrincipale() { return Object.values(S.ponti || {}).sort((a, b) => String(b.creato || "").localeCompare(String(a.creato || "")))[0] || null; }
+function codicePonte(p) { if (!p) return ""; try { const c = JSON.parse(localStorage.getItem(CHIAVE_CODICE_PONTE) || "null"); return c && c.utente === p.id && /^[A-Z0-9]{16}$/.test(c.codice || "") ? c.codice : ""; } catch (e) { return ""; } }
+const codiceAQuattro = (c) => (String(c || "").match(/.{1,4}/g) || []).join("-");
+// la posta e le schede dei ponti: si ascoltano a parte, cosi' dopo le regole nuove si riparte senza riaprire l'app
+let stopPonte = [];
+function fermaPonte() { for (const f of stopPonte) { try { f(); } catch (e) {} } stopPonte = []; }
+function ascoltaPonte() {
+  fermaPonte();
+  if (!S.db || !proprietario()) return;
+  stopPonte.push(S.db.ascolta("ponti", {}, (m) => { S.ponti = m || {}; S.regolePonte = true; disegna(); }, (e) => { if (/permission|insufficient/i.test(String(e && (e.code || e.message)))) S.regolePonte = false; disegna(); }));
+  stopPonte.push(S.db.ascolta("posta", {}, (m) => postaRicevuta(m), () => {}));
+}
+// gli accessi di Firebase (gli stessi che usa l'app per entrare), chiamati diretti: NON cambiano chi e' entrato nell'app
+async function chiamaAccessi(azione, corpo) {
+  const chiave = (window.FIREBASE_CONFIG || {}).apiKey || "";
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:${azione}?key=${encodeURIComponent(chiave)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((j && j.error && j.error.message) || ("errore " + r.status));
+  return j;
+}
+const negato = (e) => /permission|insufficient/i.test(String(e && (e.code || e.message)));
+async function creaPonte() {
+  const vero = S.db.modalita === "firebase";
+  if (vero && !(window.FIREBASE_CONFIG || {}).apiKey) { toast("Manca la configurazione di Firebase."); return; }
+  const nome6 = lettereACaso(6), password = lettereACaso(10), utente = "ponte-" + nome6.toLowerCase(), email = emailDi(utente), codice = nome6 + password;
+  // 1) la scheda del ponte: se su Firebase mancano le regole nuove ci si ferma qui (e la scheda mostra il passo 1)
+  try { await S.db.salva("ponti", utente, { creato: S.db.adesso(), da: (S.utente && S.utente.nome) || "", gruppi: ["Albergo"], contati: 0, email }, false); }
+  catch (e) { if (negato(e)) { S.regolePonte = false; disegna(); toast("Prima ci vogliono le regole nuove su Firebase: guarda il passo 1."); } else erroreScrittura(e); return; }
+  // 2) l'utente del ponte su Firebase (nome + password): la password sta solo nel codice, mai nel database
+  let manuale = false;
+  if (vero) {
+    try { await chiamaAccessi("signUp", { email, password, returnSecureToken: true }); }
+    catch (e) {
+      if (/ADMIN_ONLY|OPERATION_NOT_ALLOWED|PASSWORD_LOGIN_DISABLED/.test(e.message)) manuale = true;
+      else {
+        try { await S.db.cancella("ponti", utente); } catch (x) {}
+        toast(/TOO_MANY|QUOTA/.test(e.message) ? "Firebase dice: troppi tentativi. Riprova fra un'ora." : /fetch|network/i.test(e.message) ? "Senza internet non ci riesco: riprova." : "Non riesco a creare l'accesso del ponte (" + e.message + ").");
+        return;
+      }
+    }
+  }
+  // 3) chi e': ruolo "ponte" (le regole gli danno solo la posta e il battito)
+  try {
+    await S.db.salva("ruoli", email, { login: utente, nome: "Ponte WhatsApp", ruolo: "ponte", zona: null, creato: S.db.adesso() }, false);
+    if (manuale) await S.db.aggiorna("ponti", utente, { manuale: true });
+  } catch (e) { erroreScrittura(e); return; }
+  try { localStorage.setItem(CHIAVE_CODICE_PONTE, JSON.stringify({ utente, codice, email })); localStorage.setItem(CHIAVE_LETTORE, "1"); } catch (e) {}
+  toast(`Codice del ponte: ${codiceAQuattro(codice)}. Ora sul PC avvia il ponte e scrivilo lì.`);
+  disegna();
+}
+async function togliPonte() {
+  const p = pontePrincipale(); if (!p) return;
+  if (!await chiedi("Tolgo il ponte? Sofia non riceverà più i messaggi del gruppo. Sul telefono togli anche «Ponte di Sofia» da WhatsApp → Dispositivi collegati.", { si: "Sì, togli", pericolo: true })) return;
+  const codice = codicePonte(p);
+  try { await S.db.scrivi([{ tipo: "cancella", coll: "ponti", id: p.id }, ...(p.email ? [{ tipo: "cancella", coll: "ruoli", id: p.email }] : [])]); }
+  catch (e) { erroreScrittura(e); return; }
+  // senza scheda in "ruoli" il ponte non puo' piu' fare niente; se il codice e' su questo telefono cancello anche il suo utente
+  if (codice && p.email && S.db.modalita === "firebase") {
+    try { const j = await chiamaAccessi("signInWithPassword", { email: p.email, password: codice.slice(6), returnSecureToken: true }); await chiamaAccessi("delete", { idToken: j.idToken }); }
+    catch (e) { console.warn("utente del ponte", e); }
+  }
+  try { localStorage.removeItem(CHIAVE_CODICE_PONTE); } catch (e) {}
+  toast("Ponte tolto.");
+}
+async function copiaRegole() {
+  let testo = "";
+  try { const r = await fetch("firestore.rules", { cache: "no-store" }); if (r.ok) testo = await r.text(); } catch (e) {}
+  if (!/function ponte\(\)/.test(testo)) { toast("Non riesco a prendere le regole: c'è internet?"); return; }
+  try { await navigator.clipboard.writeText(testo); toast("Regole copiate. Ora su Firebase: clic nel testo, Ctrl+A, Ctrl+V e Pubblica."); }
+  catch (e) { apriFoglio({ tipo: "regole", testo }); }
+}
+function foglioRegole(f) {
+  return `<h3>Le regole di Firebase</h3>
+    <p class="muted small" style="margin:0 0 8px">Il telefono non mi lascia copiare da solo: tocca il riquadro, seleziona tutto e copia.</p>
+    <textarea class="regole-testo" readonly rows="12" onfocus="this.select()">${esc(f.testo || "")}</textarea>`;
+}
+function postaNuova() { return Object.values(S.posta || {}).filter(p => p && !p.letto).sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0)); }
+const postaArrivo = new Map(); let postaTimer = null, postaInLettura = false, ultimoArrivoPosta = 0;
+function postaRicevuta(m) {
+  S.posta = m || {};
+  for (const id of Object.keys(S.posta)) if (!postaArrivo.has(id)) { postaArrivo.set(id, Date.now()); ultimoArrivoPosta = Date.now(); }
+  guardaPosta();
+}
+function guardaPosta() {
+  clearTimeout(postaTimer);
+  const nuove = postaNuova();
+  if (nuove.length && lettorePosta() && iaAccesa() && !postaInLettura && !letturaInCorso() && !letturaDaControllare()) {
+    const attesa = ATTESA_POSTA - (Date.now() - ultimoArrivoPosta);
+    if (attesa > 0) postaTimer = setTimeout(guardaPosta, attesa + 250);
+    else { leggiPosta(nuove, { silenzioso: true }); return; }
+  }
+  if (lettorePosta()) pulisciPostaVecchia();
+  disegna();
+}
+function b64InByte(b64) { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+async function leggiPosta(nuove, opz = {}) {
+  if (postaInLettura) return;
+  postaInLettura = true;
+  try {
+    const media = new Map(), messaggi = [];
+    for (const p of nuove) {
+      let m = { data: p.data || L.oggiISO(), ora: p.ora || "", chi: p.chi || "", testo: p.testo || "" };
+      if ((p.tipo === "audio" || p.tipo === "foto") && p.media) {
+        const ext = p.tipo === "audio" ? (/mp4|m4a|aac/.test(p.mime || "") ? "m4a" : "opus") : (/png/.test(p.mime || "") ? "png" : "jpg");
+        const nome = `${p.id}.${ext}`;
+        try { const x = await S.db.leggi("posta_media", p.id); if (x && x.dati) { media.set(nome, { file: new File([b64InByte(x.dati)], nome, { type: x.mime || p.mime || mimeDi(nome) }) }); m = { ...m, testo: "", media: { file: nome, tipo: p.tipo }, ...(p.didascalia ? { didascalia: p.didascalia } : {}) }; } }
+        catch (e) { console.warn("posta media", e); }
+      }
+      if (!m.testo && !m.media) m.testo = p.tipo === "audio" ? "🎤 (un vocale)" : p.tipo === "foto" ? `📷 (una foto)${p.didascalia ? " " + p.didascalia : ""}` : "";
+      if (m.testo || m.media) messaggi.push(m);
+    }
+    const ids = nuove.map(p => p.id);
+    if (!messaggi.length) { await segnaPostaLetta(ids); return; }
+    const chats = [{ nome: nuove[0].chat || "Albergo", messaggi, attiva: true, gruppo: true }];
+    const mittenti = mittentiDi(chats), ric = papaRicordato();
+    const papa = mittenti.some(x => x.nome === ric) ? ric : (mittenti.find(x => !/michele/i.test(x.nome) && x.camere) || {}).nome || "";
+    S.chatPapa = { chats, media, papa, giorni: 0 };
+    if (!opz.silenzioso && S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
+    await leggiChatWA({ silenzioso: !!opz.silenzioso, posta: ids });
+    if (S.dett && S.dett.postaIds === ids && S.dett.ia && !S.dett.ia.errore) await segnaPostaLetta(ids);
+  } catch (e) { console.warn("posta", e); }
+  finally { postaInLettura = false; disegna(); }
+}
+async function segnaPostaLetta(ids) { try { await S.db.scrivi(ids.filter(id => S.posta && S.posta[id]).map(id => ({ tipo: "aggiorna", coll: "posta", id, dati: { letto: true } }))); } catch (e) { console.warn("posta letta", e); } }
+async function cancellaPosta(ids) { try { await S.db.scrivi(ids.flatMap(id => [{ tipo: "cancella", coll: "posta", id }, { tipo: "cancella", coll: "posta_media", id }])); } catch (e) { console.warn("posta via", e); } }
+let postaPulita = 0;
+function pulisciPostaVecchia() {
+  if (Date.now() - postaPulita < 3600 * 1000) return; postaPulita = Date.now();
+  const vecchie = Object.values(S.posta || {}).filter(p => p && p.letto && Date.now() - (Number(p.ts) || 0) > 7 * 86400000).map(p => p.id);
+  if (vecchie.length) cancellaPosta(vecchie);
+}
+function cardPonte() {
+  if (!proprietario()) return "";
+  const p = pontePrincipale(), nome = nomeGov();
+  const vivo = p && p.vivo ? Number(p.vivo) : 0, acceso = vivo && Date.now() - vivo < 12 * 60 * 1000;
+  const quando = (t) => { const d = new Date(t); const ora = d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }); return L.oggiISO() === d.toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }) ? "alle " + ora : d.toLocaleDateString("it-IT", { day: "numeric", month: "short" }) + " alle " + ora; };
+  const codice = codicePonte(p), cod4 = codiceAQuattro(codice);
+  const gruppi = ((p && p.gruppi) || ["Albergo"]).join(", ");
+  const senzaRegole = S.regolePonte === false;
+  const testa = `<section class="card ponte-card"><div class="ia-testa"><h2 style="margin:0">Il ponte WhatsApp</h2>${p && !senzaRegole ? `<span class="ponte-stato ${acceso ? "ok" : ""}">${acceso ? "● collegato" : "spento"}</span>` : ""}</div>
+    <p class="muted small" style="margin:6px 0 10px">Così ${esc(nome)} riceve da sola i messaggi del gruppo <b>${esc(gruppi)}</b>: scritti, vocali e foto. Li legge, capisce il prospetto e ti avvisa; non salva niente senza il tuo «Salva». Il ponte è un programmino per il PC che <b>legge soltanto</b>: non scrive mai su WhatsApp e non segna i messaggi come letti. Non è un programma ufficiale di WhatsApp: usato così il rischio è basso, ma non zero.</p>`;
+  if (senzaRegole) return testa + `<div class="ponte-passo"><b>Passo 1 · Le regole nuove su Firebase</b> <span class="small muted">(una volta sola, dal PC)</span>
+      <ol class="ponte-passi"><li>Tocca <b>«Copia le regole»</b> qui sotto.</li><li>Apri <b>console.firebase.google.com</b> → <b>LE STANZE DI RICCI</b> → <b>Firestore Database</b> → <b>Regole</b>.</li><li>Clic dentro il testo delle regole, <b>Ctrl+A</b> (seleziona tutto), <b>Ctrl+V</b> (incolla), poi <b>Pubblica</b>.</li><li>Torna qui e tocca <b>«Fatto, controlla»</b>.</li></ol>
+      <span class="small muted">Le regole nuove danno al ponte un permesso solo: aggiungere i messaggi del gruppo nella posta di ${esc(nome)}. Il resto resta chiuso come prima.</span>
+      <button type="button" class="big main" style="margin-top:12px" data-ponte-regole>Copia le regole</button>
+      <button type="button" class="nonna-link" style="margin-top:8px" data-ponte-ricontrolla>Fatto, controlla</button></div></section>`;
+  if (!p) return testa + `<button type="button" class="big main" data-ponte-crea>Crea il codice del ponte</button></section>`;
+  const scatola = codice ? `<div class="ponte-codice"><span>Il codice del ponte</span><b>${esc(cod4)}</b></div>` : "";
+  const codiceHtml = !codice ? `<div class="ponte-info">Il codice l'hai creato su un altro telefono o PC: lo trovi lì (Altro → Il ponte WhatsApp). Se l'hai perso, tocca «Togli il ponte» qui sotto e creane uno nuovo.</div>`
+    : acceso ? `<details class="ponte-mostra"><summary>Mostra il codice del ponte</summary>${scatola}</details>` : scatola;
+  const manca = p.manuale && codice ? `<div class="ponte-passo"><b>Manca un passo su Firebase</b> <span class="small muted">(lì è chiusa la creazione di accessi dall'app)</span><ol class="ponte-passi"><li>console.firebase.google.com → <b>Authentication</b> → <b>Utenti</b> → <b>Aggiungi utente</b></li><li>Email: <b>${esc(p.email || "")}</b></li><li>Password: <b>${esc(codice.slice(6))}</b></li></ol></div>` : "";
+  const passi = `<ol class="ponte-passi">
+      <li>Sul PC <a href="ponte/ponte-di-sofia.zip" download><b>scarica il ponte</b></a>, apri lo zip ed estrai la cartella (tasto destro → Estrai tutto).</li>
+      <li>Nella cartella fai doppio clic su <b>«Avvia il ponte di Sofia»</b>. Si apre una pagina: scrivi il codice${codice ? ` <b>${esc(cod4)}</b>` : ""} e tocca Collega.</li>
+      <li>Sul telefono: WhatsApp → <b>⋮</b> → <b>Dispositivi collegati</b> → <b>Collega un dispositivo</b>, e inquadra il quadrato della pagina.</li>
+    </ol>`;
+  return testa + `${manca}${codiceHtml}
+    <div class="ponte-info">${acceso ? `✓ Il ponte è acceso · ultimo segnale ${quando(vivo)} · ${Number(p.contati) || 0} messaggi passati a ${esc(nome)}` : vivo ? `Il ponte è spento dal ${quando(vivo)}: i messaggi aspettano e arrivano quando riaccendi il PC.` : "Il ponte non si è ancora collegato."}</div>
+    ${acceso ? `<details class="ponte-mostra"><summary>Come si rimette su un altro PC</summary>${passi}</details>` : passi}
+    <div class="floorlabel" style="margin-top:12px">I gruppi che legge</div>
+    <div class="ia-riga"><input type="text" id="ponteGruppi" data-keep value="${esc(gruppi)}" autocomplete="off"><button type="button" class="btnsm" data-ponte-gruppi>Salva</button></div>
+    ${Array.isArray(p.gruppiVisti) && p.gruppiVisti.length ? `<span class="small muted">Gruppi che il ponte vede: ${esc(p.gruppiVisti.join(" · "))}</span>` : ""}
+    <div class="floorlabel" style="margin-top:12px">Chi legge la posta</div>
+    <div class="seg"><button type="button" aria-pressed="${lettorePosta()}" data-ponte-lettore="1">${esc(nome)} legge qui</button><button type="button" aria-pressed="${!lettorePosta()}" data-ponte-lettore="0">Su questo telefono no</button></div>
+    <span class="small muted">Sceglilo su UN telefono solo (il tuo): lì ${esc(nome)} legge da sola appena arrivano i messaggi.${iaAccesa() ? "" : " <b>Su questo telefono manca la chiave di Gemini.</b>"}</span>
+    <button type="button" class="nonna-link" style="margin-top:10px" data-ponte-togli>Togli il ponte</button>
+  </section>`;
+}
+function collegaPonte() {
+  document.querySelectorAll("[data-ponte-crea]").forEach(b => b.onclick = async () => { if (b.disabled) return; b.disabled = true; try { await creaPonte(); } finally { b.disabled = false; } });
+  document.querySelectorAll("[data-ponte-regole]").forEach(b => b.onclick = () => copiaRegole());
+  document.querySelectorAll("[data-ponte-ricontrolla]").forEach(b => b.onclick = () => {
+    S.regolePonte = undefined; ascoltaPonte(); toast("Controllo le regole…");
+    setTimeout(() => { if (S.regolePonte === true) toast("Le regole nuove ci sono: ora tocca «Crea il codice del ponte»."); else if (S.regolePonte === false) toast("Le regole nuove non ci sono ancora: hai toccato «Pubblica»?"); else toast("Firebase non risponde: c'è internet?"); }, 3000);
+  });
+  document.querySelectorAll("[data-ponte-togli]").forEach(b => b.onclick = () => togliPonte());
+  document.querySelectorAll("[data-ponte-lettore]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_LETTORE, b.dataset.ponteLettore === "1" ? "1" : "0"); } catch (e) {} disegna(); guardaPosta(); });
+  document.querySelectorAll("[data-ponte-gruppi]").forEach(b => b.onclick = async () => {
+    const p = pontePrincipale(); if (!p) return;
+    const gruppi = String(($("#ponteGruppi") || {}).value || "").split(/[,;\n]/).map(x => x.trim()).filter(Boolean).slice(0, 6);
+    if (!gruppi.length) return toast("Scrivi almeno un gruppo (es. Albergo)");
+    try { await S.db.aggiorna("ponti", p.id, { gruppi }); toast("Fatto: il ponte legge " + gruppi.join(", ") + " (al prossimo segnale, entro 5 minuti)."); } catch (e) { erroreScrittura(e); }
+  });
+  document.querySelectorAll("[data-posta-leggi]").forEach(b => b.onclick = () => { const nuove = postaNuova(); if (nuove.length) leggiPosta(nuove, { silenzioso: false }); });
 }
 
 // ---- la chiave di Gemini anche sui telefoni dei proprietari (importazioni: la leggono SOLO i proprietari) ----------
@@ -5998,6 +6282,7 @@ function collega() {
   document.querySelectorAll("[data-giro-scegli]").forEach(b => b.onclick = () => apriFoglio({ tipo: "giroScegli" }));
   document.querySelectorAll("[data-colpo]").forEach(b => b.onclick = () => { S.colpo = b.dataset.colpo; disegna(); });
   document.querySelectorAll("[data-apri-lettura]").forEach(b => b.onclick = () => { if (!letturaDaControllare() && !letturaInCorso()) riprendiUltimaLettura(); apriFoglio({ tipo: "dettatura" }); });
+  collegaPonte();
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
@@ -6026,6 +6311,7 @@ function collega() {
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile4", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
   document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
+  document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
@@ -6539,7 +6825,8 @@ async function seminaPersone() {
   } catch (e) { console.error(e); }
 }
 function vistaPersone() {
-  const lista = Object.values(S.ruoli).sort((a, b) => (a.ruolo + a.login).localeCompare(b.ruolo + b.login));
+  const lista = Object.values(S.ruoli).filter(r => r.ruolo !== "ponte").sort((a, b) => (a.ruolo + a.login).localeCompare(b.ruolo + b.login));
+  const ponti = Object.values(S.ruoli).filter(r => r.ruolo === "ponte").length;
   const mod = puoModificare();
   const selRuolo = (r, v) => `<select data-ruolo-sel="${esc(r.id)}" ${mod ? "" : "disabled"}>${[["proprietario", "Proprietario"], ["addetta", "Signora delle pulizie"], ["lettura", "Solo lettura"]].map(([k, n]) => `<option value="${k}" ${v === k ? "selected" : ""}>${n}</option>`).join("")}</select>`;
   const selZona = (r, v) => `<select data-zona-sel="${esc(r.id)}" ${mod ? "" : "disabled"}><option value="">— zona —</option>${zoneOrdinate().map(z => `<option value="${z.id}" ${v === z.id ? "selected" : ""}>${esc(z.nome)}</option>`).join("")}</select>`;
@@ -6547,7 +6834,7 @@ function vistaPersone() {
     <div class="rows">${lista.map(r => `<div class="row one"><span><b>${esc(r.login || r.id.split("@")[0])}</b> · <input type="text" value="${esc(r.nome || "")}" data-nome-sel="${esc(r.id)}" style="width:60%;min-height:40px;padding:6px 10px;display:inline-block" ${mod ? "" : "disabled"}><br><span style="display:inline-flex;gap:6px;flex-wrap:wrap;margin-top:6px">${selRuolo(r, r.ruolo)}${r.ruolo === "addetta" ? selZona(r, r.zona) : ""}${mod ? `<button class="btnsm ghost" data-ruolo-del="${esc(r.id)}">Togli</button>` : ""}</span></span></div>`).join("") || `<p class="muted">Nessuna persona ancora.</p>`}</div>
     ${mod ? `<details style="margin-top:10px"><summary>Aggiungi una persona</summary><form id="formPersona"><div class="due"><div class="campo"><label for="pLogin">Nome per entrare (senza spazi)</label><input id="pLogin" type="text" autocapitalize="none" placeholder="es. maria" required></div><div class="campo"><label for="pNome">Come la chiamiamo</label><input id="pNome" type="text" placeholder="es. Maria" required></div></div>
       <div class="due"><div class="campo"><label for="pRuolo">Ruolo</label><select id="pRuolo"><option value="addetta">Signora delle pulizie</option><option value="proprietario">Proprietario</option><option value="lettura">Solo lettura</option></select></div><div class="campo"><label for="pZona">Zona (per le signore)</label><select id="pZona"><option value="">—</option>${zoneOrdinate().map(z => `<option value="${z.id}">${esc(z.nome)}</option>`).join("")}</select></div></div>
-      <button class="big main" type="submit">Aggiungi</button><p class="muted small" style="margin:8px 0 0">Poi crea l'accesso con la stessa email (<i>nome</i>@${esc(window.DOMINIO_ACCESSO || "stanzericci.app")}) e una password nella console Firebase.</p></form></details>` : ""}</section>`;
+      <button class="big main" type="submit">Aggiungi</button><p class="muted small" style="margin:8px 0 0">Poi crea l'accesso con la stessa email (<i>nome</i>@${esc(window.DOMINIO_ACCESSO || "stanzericci.app")}) e una password nella console Firebase.</p></form></details>` : ""}${ponti ? `<p class="muted small" style="margin:10px 0 0">C'è anche il <b>Ponte WhatsApp</b>: si gestisce in Altro → Il ponte WhatsApp.</p>` : ""}</section>`;
 }
 function collegaPersone() {
   const salvaCampo = (id, patch) => S.db.aggiorna("ruoli", id, patch).then(() => toast("Salvato")).catch(erroreScrittura);
