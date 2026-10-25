@@ -72,9 +72,9 @@ export const FORNITORE_BASE = "gemini";
 // e .../generate-content/thinking): Argon ragiona SEMPRE (non si spegne) e i token del ragionamento CONTANO nel tetto
 // maxOutputTokens; se il tetto e' basso la risposta arriva tagliata o vuota e il ragionamento si paga lo stesso.
 // Quindi, solo per Argon: tetto 32768 (il massimo di una risposta intera, non a pezzi), il livello di ragionamento
-// scritto chiaro (thinkingLevel: "medium" = quello di serie di Google; "high" = al massimo, se scelto in Altro) e
+// scritto chiaro (thinkingLevel: "low" = veloce, "medium" = quello di serie di Google, "high" = al massimo; si sceglie in Altro) e
 // niente temperature (per Argon Google la ignora). Per gli altri modelli resta tutto come prima.
-export const LIVELLI_ARGON = ["medium", "high"];
+export const LIVELLI_ARGON = ["low", "medium", "high"];   // 1.0.2: anche "low" (Veloce), per le risposte di tutti i giorni
 export function configGemini(m, maxToken) {
   if (/argon/i.test(String(m || ""))) {
     const lv = leggiConf().ragionamento;

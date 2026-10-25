@@ -2981,3 +2981,65 @@ body.semplice .inizio-testa.done{box-shadow:inset 6px 0 0 #16A34A}
 .sofia-hero[data-salone="no"] .casa-card.tre::after,.sofia-hero[data-salone="no"] .casa-card.tre::before{display:none}
 .sofia-hero[data-salone="no"] .casa-card.tre .casa-fondo,.sofia-hero[data-salone="no"] .casa-card.tre .tre-luce{display:none}
 .sofia-hero[data-salone="no"] .casa-card.tre .donnina.gov-fig.gov-film.casa-fig,body.premium .sofia-hero[data-salone="no"] .casa-card.tre .donnina.gov-fig.gov-film.casa-fig{clip-path:inset(-60% -18% 0 -18%)}
+
+/* ==========================================================================
+   1.0.2 · LA PRIMA SCHERMATA DI SOFIA (Michele, dalla foto del telefono): "il tasto ascolta lo vorrei alla prima
+   schermata", "non riesco a leggere quello che mi scrive perche' devo sempre scorrere, poi non vedo piu' la sua
+   immagine", "il tasto parla con Sofia... forse soltanto il microfono", "la faccia nel tondo non e' centrata".
+   ========================================================================== */
+/* negli stili di prima i contenitori nuovi non si vedono (tutto resta com'era); i tasti stanno in fila sotto il messaggio */
+.casa-scena,.casa-nuvola{display:contents}
+.sofia-hero .casa-card{order:1}
+.sofia-hero .casa-mic-grande{order:2}
+.sofia-hero .nav-tondi.in-casa{order:3}
+.sofia-hero .casa-testo,.sofia-hero #consSotto{order:4}
+.casa-lato{order:5;display:flex;align-items:center;justify-content:center;gap:10px}
+.sofia-hero .casa-chat{order:6}
+.sofia-hero .casa-scrivi-riga{order:7}
+.casa-lato-mic{display:none}
+.casa-ascolta .cl-tondo{display:contents;font-style:normal}
+
+/* PREMIUM: la casa e' UNA schermata (sotto l'ora, sopra i tasti): in alto Sofia con accanto il microfono e "Ascolta",
+   sotto la nuvoletta col suo messaggio (si scorre DENTRO, lei resta in vista), in fondo la casella per scriverle */
+body.premium .sofia-hero{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;align-items:stretch;justify-items:center;gap:8px;
+  height:calc(100svh - var(--alto-ora,56px) - var(--alto-sotto,84px));min-height:470px;padding:4px 12px 10px;box-sizing:border-box;--casa-sovra:84px}
+body.premium .sofia-hero[data-tre="1"]{padding-top:4px}
+body.premium .casa-scena{display:block;position:relative;width:min(100%,520px);min-height:0;z-index:2}
+body.premium .sofia-hero .casa-card{position:absolute;left:0;right:0;bottom:calc(-1 * var(--casa-sovra));margin:0 auto;height:calc(100% + var(--casa-sovra));width:auto;max-width:none;max-height:none}
+/* in 3D la testa esce sopra la scheda (il filmato e' piu' grande della scheda): la scheda e' piu' bassa, cosi' la testa resta dentro */
+body.premium .sofia-hero .casa-card.tre{height:calc((100% + var(--casa-sovra)) / 1.36)}
+body.premium .casa-mic-grande,body.premium .sofia-hero .nav-tondi{display:none}
+/* i tasti accanto a lei: il microfono (solo l'icona), Ascolta, la voce si'/no */
+body.premium .casa-lato{position:absolute;right:2px;bottom:10px;z-index:9;flex-direction:column;gap:12px}
+body.premium .casa-lato-mic{display:grid;place-items:center;width:62px;height:62px;padding:0;border:0;border-radius:50%;background:var(--fg);color:#E7CF95;cursor:pointer;box-shadow:0 0 0 4px var(--bg),0 12px 24px -10px rgba(28,25,23,.65)}
+body.premium .casa-lato-mic svg{width:28px;height:28px}
+body.premium .sofia-hero[data-stato="ascolto"] .casa-lato-mic{background:#15803D;color:#fff;animation:consPulsa 1.3s ease-in-out infinite}
+body.premium .sofia-hero[data-stato="pensa"] .casa-lato-mic{background:#B45309;color:#fff}
+body.premium .casa-lato .casa-ascolta{display:flex;flex-direction:column;align-items:center;gap:4px;height:auto;padding:0;border:0;background:none;color:var(--fg);font:800 12.5px/1 var(--f-body);cursor:pointer}
+body.premium .casa-lato .casa-ascolta .cl-tondo{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:#FFFFFF;border:1px solid var(--line);box-shadow:0 8px 18px -10px rgba(28,25,23,.55)}
+body.premium .casa-lato .casa-ascolta svg{width:24px;height:24px;color:var(--oro,#8A6D32)}
+body.premium .sofia-hero.sta-parlando .casa-lato .casa-ascolta .cl-tondo{background:var(--fg);border-color:var(--fg)}
+body.premium .sofia-hero.sta-parlando .casa-lato .casa-ascolta svg{color:#E7CF95}
+body.premium .casa-lato .casa-tondo{width:42px;height:42px;background:#FFFFFF;border:1px solid var(--line);color:var(--fg);box-shadow:0 6px 14px -8px rgba(28,25,23,.5)}
+/* la nuvoletta: tutto il messaggio (niente piu' frasi tagliate coi puntini), la conversazione e quello che sente */
+body.premium .casa-nuvola{display:block;position:relative;z-index:6;width:min(100%,560px);max-height:min(36svh,340px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  background:#FFFFFF;border:1px solid var(--line);border-radius:20px;padding:14px 16px 12px;box-sizing:border-box;box-shadow:0 -10px 24px -16px rgba(28,25,23,.25),0 12px 28px -18px rgba(28,25,23,.3)}
+body.premium .sofia-hero .casa-nuvola .casa-testo{position:static;margin:0;padding:0;width:auto;background:none;border:0;border-radius:0;box-shadow:none;z-index:auto}
+body.premium .casa-nuvola .casa-sal,body.premium .casa-nuvola .casa-riga{display:block;-webkit-line-clamp:unset;line-clamp:unset;overflow:visible}
+body.premium .casa-nuvola .casa-sal{font:800 19px/1.25 var(--f-display)}
+body.premium .casa-nuvola .casa-riga{font:500 16px/1.45 var(--f-body);margin-top:6px}
+body.premium .casa-nuvola .casa-spinta{margin-top:6px}
+body.premium .casa-nuvola .casa-info{margin-top:10px}
+body.premium .casa-nuvola .casa-chat{max-width:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2,#EEEAE2)}
+body.premium .casa-nuvola .casa-sotto{margin-top:10px}
+body.premium .casa-scrivi-riga{width:min(100%,560px)}
+:root[data-theme="dark"] body.premium .casa-nuvola,:root[data-theme="dark"] body.premium .casa-lato .casa-ascolta .cl-tondo,:root[data-theme="dark"] body.premium .casa-lato .casa-tondo{background:var(--card);border-color:var(--line)}
+/* telefoni bassi: la nuvoletta un po' piu' piccola, Sofia resta grande abbastanza */
+@media (max-height:700px){body.premium .casa-nuvola{max-height:32svh}body.premium .sofia-hero{--casa-sovra:64px}body.premium .casa-lato-mic{width:56px;height:56px}body.premium .casa-lato .casa-ascolta .cl-tondo{width:46px;height:46px}}
+@media (min-width:760px){body.premium .casa-nuvola{max-height:min(34svh,360px)}}
+
+/* la faccia di Sofia nei tondi (barra in basso, chat, ritratto): centrata sul viso, mento compreso */
+.bs-sofia .bs-foto,.sv-foto,.sv-ritratto,.dt-sofia-foto,.dt-fonte-foto{background-position:50% 20%;background-size:164% auto}
+/* Argon: tre tasti */
+.seg.seg3{display:flex;width:100%}
+.seg.seg3 button{flex:1 1 0;min-width:0}

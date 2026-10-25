@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.1";
+export const VERSIONE = "1.0.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -351,7 +351,7 @@ function filmVigila() {
     for (const b of document.querySelectorAll(".gov-film")) {
       // 1.0: una Sofia nascosta (quella che "esce" quando parla, a riposo) non consuma batteria
       if (b.closest("[hidden]")) { for (const v of b.querySelectorAll("video")) if (!v.paused) { try { v.pause(); } catch (e) {} } continue; }
-      const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando");
+      const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando") || (voceInCorso && !!b.closest("#sofiaHero, #sofiaFuori, .sofia-vista"));
       const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
       const pensa = !parla && !ascolta && forzato === "pensa";
@@ -366,6 +366,10 @@ function filmVigila() {
 }
 filmVigila();
 let micCasa = null, micAttivo = false;
+// 1.0.2 (Michele: "esce il filmato che parla per 2 secondi e poi non parla piu'"): dopo una risposta col microfono
+// un orologio di 3 secondi rimetteva Sofia "ferma" anche se la voce andava avanti (la risposta parla da sola, senza
+// aspettare). Ora torna ferma solo se ha davvero finito di parlare; quando finisce ci pensa parlaConVoce.
+function fermaSeZitta() { let suono = false; try { suono = VOCE.staParlando(); } catch (e) {} if (!voceInCorso && !suono) statoCons("ferma"); }
 function statoCons(s) {
   document.querySelectorAll(".card.consuela, .sofia-hero, .sofia-vista").forEach(c => {
     c.dataset.stato = s || "";
@@ -379,6 +383,7 @@ function sottoCons(t, fantasma) {
   z.textContent = t || "";
   z.classList.toggle("fantasma", !!fantasma);
   z.classList.toggle("vedi", !!t);
+  if (t) { const nv = z.closest(".casa-nuvola"); if (nv) nv.scrollTop = nv.scrollHeight; }   // 1.0.2: quello che sente si vede subito
   clearTimeout(z._t);
   if (t && !fantasma) z._t = setTimeout(() => z.classList.remove("vedi"), 9000);
 }
@@ -465,14 +470,14 @@ function micCasaVai() {
   r.onerror = () => {
     micAttivo = false;
     statoCons("errore"); sottoCons("Non ho sentito bene, riprova.");
-    setTimeout(() => statoCons("ferma"), 2600);
+    setTimeout(fermaSeZitta, 2600);
   };
   r.onend = async () => {
     micAttivo = false; clearTimeout(silenzio);
     const t = finale.trim();
     if (!t) { statoCons("ferma"); sottoCons(""); return; }
     // un "sì" o un "no" a una proposta appena fatta: vale come il tocco sul tasto
-    try { if (await casaRispostaVoce(t)) { statoCons("parla"); sottoCons(ultimaDiLei() || "Fatto."); setTimeout(() => statoCons("ferma"), 3200); return; } } catch (e) {}
+    try { if (await casaRispostaVoce(t)) { statoCons("parla"); sottoCons(ultimaDiLei() || "Fatto."); setTimeout(fermaSeZitta, 3200); return; } } catch (e) {}
     statoCons("pensa"); sottoCons("ci penso…", true);
     diciUnAttimo();
     try {
@@ -482,7 +487,7 @@ function micCasaVai() {
     } catch (e) {
       statoCons("errore"); sottoCons("Non sono riuscita a rispondere.");
     }
-    setTimeout(() => statoCons("ferma"), 3200);
+    setTimeout(fermaSeZitta, 3200);
   };
   try { r.start(); } catch (e) { micAttivo = false; statoCons("ferma"); sottoCons(""); }
 }
@@ -2018,25 +2023,33 @@ function casaOssatura(tre) {
   // 0.96: niente piu' fila di tre tasti in fondo. Il tasto per parlarle e' ATTACCATO alla sua cornice, in basso al
   // centro (Michele: "il tasto per interagire con Sofia deve stare piu' vicino a lei"); subito sotto, i tasti delle
   // sezioni; "Ascolta" (lei legge il messaggio) e' sulla targa del messaggio; la conversazione e la casella dopo.
+  // 1.0.2 (Michele): nello stile Premium la casa e' UNA schermata: Sofia in alto con accanto il microfono (solo
+  // l'icona) e "Ascolta"; sotto la nuvoletta col suo messaggio e la conversazione, che si scorre DENTRO (lei resta
+  // sempre in vista); in fondo la casella per scriverle. Negli altri stili resta tutto come prima.
   return `<div class="casa-testa"><span class="casa-nome">Le Stanze di Ricci</span></div>
-    <div class="casa-card${tre ? " tre" : ""}">
-      ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
-      ${FILM_CONS("casa-fig", tre)}
+    <div class="casa-scena">
+      <div class="casa-card${tre ? " tre" : ""}">
+        ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
+        ${FILM_CONS("casa-fig", tre)}
+      </div>
+      <div class="casa-lato">
+        <button type="button" class="casa-lato-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
+        <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio"><i class="cl-tondo">${CASA_ICO.onda}</i><span>Ascolta</span></button>
+        <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
+      </div>
     </div>
     <button type="button" class="casa-mic-grande casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}<span>Parla con ${esc(nomeGov())}</span></button>
     ${NAV_HTML("oggi", true)}
-    <div class="casa-testo">
-      <b class="casa-sal"></b>
-      <p class="casa-riga"></p>
-      <p class="casa-spinta"></p>
-      <div class="casa-sotto" id="consSotto"></div>
-      <div class="casa-info"></div>
-      <div class="casa-testo-tasti">
-        <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
-        <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio">${CASA_ICO.onda}<span>Ascolta il messaggio</span></button>
+    <div class="casa-nuvola" id="casaNuvola">
+      <div class="casa-testo">
+        <b class="casa-sal"></b>
+        <p class="casa-riga"></p>
+        <p class="casa-spinta"></p>
+        <div class="casa-info"></div>
       </div>
+      <div class="casa-chat" id="casaChat" aria-live="polite"></div>
+      <div class="casa-sotto" id="consSotto"></div>
     </div>
-    <div class="casa-chat" id="casaChat" aria-live="polite"></div>
     <form class="casa-scrivi-riga" id="casaScrivi" autocomplete="off">
       <label class="casa-graffa" aria-label="Manda la foto del prospetto o il foglio Excel">${CASA_ICO.graffa}<input type="file" id="casaFile" accept="image/*,.xlsx,.xls,.xlsm,.ods" hidden></label>
       <input type="text" id="casaTesto" placeholder="Scrivi a ${esc(nomeGov())}…" autocomplete="off" enterkeyhint="send" maxlength="600">
@@ -2066,8 +2079,11 @@ function casaChatAggiorna(h) {
     else if (lei.scelto) pezzi.push(`<div class="cc-scelto">${esc(lei.scelto)}</div>`);
   }
   const html = pezzi.join("");
-  if (box.innerHTML !== html) box.innerHTML = html;
+  const cambiata = box.innerHTML !== html;
+  if (cambiata) box.innerHTML = html;
   box.classList.toggle("vedi", !!html);
+  // 1.0.2: nella nuvoletta si vede subito l'ultima cosa (senza scorrere la pagina): la conversazione, se c'e'
+  if (cambiata) { const nv = h.querySelector(".casa-nuvola"); if (nv) nv.scrollTop = html ? Math.max(0, box.offsetTop - 8) : 0; }
 }
 function casaAggiorna(h) {
   const c = consiglioOggi(), u = umoreGov();
@@ -2150,6 +2166,14 @@ function cambiaStileCasa(v) {
   const h = document.getElementById("sofiaHero"); if (h) h.dataset.stile = stileCasa();
   disegna();
 }
+function misuraBarre() {
+  try {
+    const bo = document.getElementById("barraOra"), bs = document.getElementById("barraSotto"), r = document.documentElement.style;
+    const a = bo && !bo.hidden ? Math.round(bo.getBoundingClientRect().height) : 0, s = bs && !bs.hidden ? Math.round(bs.getBoundingClientRect().height) : 0;
+    if (r.getPropertyValue("--alto-ora") !== a + "px") r.setProperty("--alto-ora", a + "px");
+    if (r.getPropertyValue("--alto-sotto") !== s + "px") r.setProperty("--alto-sotto", s + "px");
+  } catch (e) {}
+}
 function disegnaCasa() {
   let h = document.getElementById("sofiaHero");
   if (!casaAttiva()) {
@@ -2175,6 +2199,7 @@ function disegnaCasa() {
   delete h.dataset.stile;            // 0.96: le vecchie disposizioni dei tre tasti non ci sono piu'
   h.dataset.salone = saloneVoluto() ? "si" : "no";
   casaAggiorna(h);
+  misuraBarre();
   if (tre) treAvvia();
 }
 
@@ -3563,8 +3588,8 @@ function cardIA() {
       <div class="ia-riga"><input type="password" id="iaChiaveArgon" data-keep placeholder="incolla qui la chiave per Argon" value="${esc(c.chiaveArgon || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btnsm ghost" data-ia-incolla-argon>Incolla</button><button type="button" class="btnsm" data-ia-prova-argon ${iaInCorso ? "disabled" : ""}>${iaInCorso ? "Provo…" : "Prova Argon"}</button></div>
       ${provaArgon ? (provaArgon.ok ? (/argon/i.test(provaArgon.modello || "") ? `<div class="note ok" style="margin:8px 0 0">Argon funziona: «${esc(provaArgon.testo || "ci sono")}» (${esc(provaArgon.modello)}). Da adesso Sofia pensa con Argon.</div>` : `<div class="note warn" style="margin:8px 0 0">Attenzione: con questa chiave Google NON mi dà Argon. Risponde ${esc(provaArgon.modello)}, che non è Argon. Controlla che la chiave sia del progetto col credito.</div>`) : `<div class="note warn" style="margin:8px 0 0">Argon non ha funzionato: ${esc(provaArgon.errore)}</div>`) : ""}
       <div class="floorlabel" style="margin-top:10px">Quanto ragiona Argon</div>
-      <div class="seg"><button type="button" aria-pressed="${(c.ragionamento || "medium") !== "high"}" data-argon-livello="medium">Normale</button><button type="button" aria-pressed="${c.ragionamento === "high"}" data-argon-livello="high">Al massimo</button></div>
-      <span class="small muted">Normale è quello di serie di Google («medium»). Al massimo («high») ragiona di più: è più lento e costa di più.</span>
+      <div class="seg seg3"><button type="button" aria-pressed="${c.ragionamento === "low"}" data-argon-livello="low">Veloce</button><button type="button" aria-pressed="${!["low", "high"].includes(c.ragionamento)}" data-argon-livello="medium">Normale</button><button type="button" aria-pressed="${c.ragionamento === "high"}" data-argon-livello="high">Al massimo</button></div>
+      <span class="small muted"><b>Veloce</b> («low»): risponde subito e consuma meno credito, per le cose di tutti i giorni. <b>Normale</b> («medium», quello di serie): per prospetto, tappeti, coprimaterassi e turni. <b>Al massimo</b> («high»): solo per le analisi complicate, è più lento e costa di più.</span>
       <span class="small muted">Argon si paga a parte: la chiave va creata nel progetto di Google che ha il credito (su Google AI Studio: Fatturazione → Acquista crediti, poi Chiavi API → Crea chiave API in quel progetto). La chiave del passo 4 resta gratuita: se il credito finisce, Sofia continua col modello svelto e con la voce. Se lasci vuoto, Argon lo provo con la chiave del passo 4.</span></div>` : ""}
     <div class="ia-passo"><b>5.</b> Accendila<div class="seg"><button type="button" aria-pressed="${su}" data-ia-accendi="1" ${c.chiave ? "" : "disabled"}>Accesa</button><button type="button" aria-pressed="${!su}" data-ia-accendi="0">Spenta</button></div></div>
     <div class="ia-passo"><b>6.</b> La voce: te la legge ad alta voce
@@ -3655,7 +3680,7 @@ function collegaIA() {
     try { const t = (await navigator.clipboard.readText() || "").trim(); if (t) { const i = document.getElementById("iaChiaveArgon"); if (i) i.value = t; toast("Incollata: ora tocca «Prova Argon»"); } else toast("Negli appunti non c'è niente"); }
     catch (e) { toast("Tieni premuto dentro la casella e scegli «Incolla»"); document.getElementById("iaChiaveArgon")?.focus(); }
   });
-  document.querySelectorAll("[data-argon-livello]").forEach(b => b.onclick = () => { IA.salvaConf({ ragionamento: b.dataset.argonLivello === "high" ? "high" : "medium" }); disegna(); toast(b.dataset.argonLivello === "high" ? "Argon ragiona al massimo (più lento, costa di più)" : "Argon ragiona normale (come di serie)"); });
+  document.querySelectorAll("[data-argon-livello]").forEach(b => b.onclick = () => { const lv = IA.LIVELLI_ARGON.includes(b.dataset.argonLivello) ? b.dataset.argonLivello : "medium"; IA.salvaConf({ ragionamento: lv }); disegna(); toast(lv === "high" ? "Argon ragiona al massimo (più lento, costa di più)" : lv === "low" ? "Argon veloce: risponde subito e consuma meno" : "Argon ragiona normale (come di serie)"); });
   document.querySelectorAll("[data-ia-prova-argon]").forEach(b => b.onclick = async () => {
     const chiaveArgon = (document.getElementById("iaChiaveArgon")?.value || "").trim();
     IA.salvaConf({ chiaveArgon }); iaInCorso = true; provaArgon = null; disegna();
