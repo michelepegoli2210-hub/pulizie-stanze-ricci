@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.2";
+export const VERSIONE = "1.0.3";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -365,7 +365,8 @@ function filmVigila() {
   }, 150);
 }
 filmVigila();
-let micCasa = null, micAttivo = false;
+let micCasa = null, micAttivo = false, micAnnullato = false;
+function annullaMic() { micAnnullato = true; try { micCasa && micCasa.abort(); } catch (e) {} micAttivo = false; statoCons("ferma"); sottoCons(""); miniAperto = false; sofiaMini(); }
 // 1.0.2 (Michele: "esce il filmato che parla per 2 secondi e poi non parla piu'"): dopo una risposta col microfono
 // un orologio di 3 secondi rimetteva Sofia "ferma" anche se la voce andava avanti (la risposta parla da sola, senza
 // aspettare). Ora torna ferma solo se ha davvero finito di parlare; quando finisce ci pensa parlaConVoce.
@@ -376,6 +377,8 @@ function statoCons(s) {
     c.classList.toggle("sta-parlando", s === "parla");
   });
   document.body.dataset.cons = (s === "parla") ? "parla" : (s === "ascolto") ? "ascolto" : (s === "pensa") ? "pensa" : "";
+  // 1.0.3: la linguetta conosce solo ascolta / pensa / parla (con "ferma" o "errore" torna piccola)
+  const m = document.getElementById("sofiaMini"); if (m) m.dataset.stato = document.body.dataset.cons;
 }
 function sottoCons(t, fantasma) {
   const z = document.getElementById("consSotto");
@@ -453,7 +456,7 @@ function micCasaVai() {
   if (!R) { toast("Qui il microfono non si apre: usa quello della tastiera"); return; }
   if (micAttivo && micCasa) { try { micCasa.stop(); } catch (e) {} return; }
   const r = new R();
-  micCasa = r; micAttivo = true;
+  micCasa = r; micAttivo = true; micAnnullato = false;
   // 0.84: si ascolta finché parla (anche frasi lunghe, con le pause): si chiude da sola dopo 3 secondi di silenzio,
   // oppure quando tocca di nuovo il tasto
   r.lang = "it-IT"; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
@@ -469,11 +472,13 @@ function micCasaVai() {
   };
   r.onerror = () => {
     micAttivo = false;
+    if (micAnnullato) return;
     statoCons("errore"); sottoCons("Non ho sentito bene, riprova.");
     setTimeout(fermaSeZitta, 2600);
   };
   r.onend = async () => {
     micAttivo = false; clearTimeout(silenzio);
+    if (micAnnullato) { statoCons("ferma"); sottoCons(""); return; }
     const t = finale.trim();
     if (!t) { statoCons("ferma"); sottoCons(""); return; }
     // un "sì" o un "no" a una proposta appena fatta: vale come il tocco sul tasto
@@ -522,6 +527,7 @@ document.addEventListener("click", (e) => {
   e.preventDefault(); e.stopPropagation();
   const [i, k] = String(b.dataset.casaTasto).split("|");
   b.disabled = true;
+  if (b.closest("#sofiaMiniNuvola")) { miniAperto = false; clearTimeout(miniChiudi); miniChiudi = null; setTimeout(sofiaMini, 0); }
   rispondiParole(Number(i), k).catch(err => console.warn("casa/tasto", err));
 }, true);
 // 0.85 - LA GRAFFETTA: il foglio Excel di papà va nella lettura del foglio che c'era già; la FOTO del prospetto
@@ -1195,6 +1201,7 @@ function disegna() {
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
   disegnaCasa();
   sofiaFuori();
+  sofiaMini();
   orologioAvvia();
   barraSotto();
   collega();
@@ -2058,8 +2065,7 @@ function casaOssatura(tre) {
 }
 // 0.84 - UNA PORTA SOLA: l'ultimo scambio con lei sta qui, sotto il filmato, coi tasti "Sì, fallo / No"
 // a portata di pollice. Prima la proposta finiva nella pagina della chat e dalla casa non si vedeva.
-function casaChatAggiorna(h) {
-  const box = h.querySelector("#casaChat"); if (!box) return;
+function ultimoScambio() {
   const conv = conversazione();
   const n = conv.length;
   const ultimo = n ? conv[n - 1] : null;
@@ -2069,7 +2075,7 @@ function casaChatAggiorna(h) {
   const mio = [...conv].reverse().find(m => m.chi === "io");
   const lei = [...conv].reverse().find(m => m.chi === "gov");
   const iMio = mio ? conv.lastIndexOf(mio) : -1, iLei = lei ? conv.lastIndexOf(lei) : -1;
-  if (!ultimo) { box.innerHTML = ""; box.classList.remove("vedi"); return; }
+  if (!ultimo) return { html: "", tasti: false, pensa: false, lei: null, mio: null };
   if (mio && iMio > iLei - 2) pezzi.push(`<div class="cc-io">${esc(corto(mio.testo, 160))}</div>`);
   if (govScrive || (ultimo && ultimo.chi === "io")) pezzi.push(`<div class="cc-lei cc-pensa">${esc(nomeGov())} ci pensa…</div>`);
   else if (lei && iLei >= iMio) {
@@ -2078,12 +2084,18 @@ function casaChatAggiorna(h) {
     if (tasti) pezzi.push(`<div class="cc-tasti">${tasti.slice(0, 6).map(t => `<button type="button" class="${t.k === "si" ? "cc-si" : t.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(iLei))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("")}</div>`);
     else if (lei.scelto) pezzi.push(`<div class="cc-scelto">${esc(lei.scelto)}</div>`);
   }
-  const html = pezzi.join("");
+  const pensa = !!(govScrive || (ultimo && ultimo.chi === "io"));
+  const risposta = !pensa && lei && iLei >= iMio ? lei : null;
+  return { html: pezzi.join(""), tasti: !!(risposta && Array.isArray(risposta.tasti) && risposta.tasti.length), pensa, lei: risposta, mio: mio || null };
+}
+function casaChatAggiorna(h) {
+  const box = h.querySelector("#casaChat"); if (!box) return;
+  const html = ultimoScambio().html;
   const cambiata = box.innerHTML !== html;
   if (cambiata) box.innerHTML = html;
   box.classList.toggle("vedi", !!html);
   // 1.0.2: nella nuvoletta si vede subito l'ultima cosa (senza scorrere la pagina): la conversazione, se c'e'
-  if (cambiata) { const nv = h.querySelector(".casa-nuvola"); if (nv) nv.scrollTop = html ? Math.max(0, box.offsetTop - 8) : 0; }
+  if (cambiata) { const nv = h.querySelector(".casa-nuvola"); if (nv) { const top = html ? Math.max(0, box.offsetTop - 8) : 0; try { nv.scrollTo({ top, behavior: "smooth" }); } catch (e) { nv.scrollTop = top; } } }
 }
 function casaAggiorna(h) {
   const c = consiglioOggi(), u = umoreGov();
@@ -2850,6 +2862,7 @@ async function parlaConVoce(testo) {
   const finita = await parlaTutto(testo, { conf: vc, chiave: confIA().chiave });
   if (!finita) return;                       // fermata o sostituita da un'altra frase: ci pensa chi l'ha fermata
   voceInCorso = false; applicaBocca(0); labialeFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna();
+  sofiaMini();
 }
 // 0.99.3 (Michele: "quando parla il filmato e' troppo corto"): prima leggeva solo le prime 420-700 lettere e si
 // fermava (voce e filmato). Ora legge TUTTO: il testo si divide in parti che si leggono una dopo l'altra; la parte
@@ -2915,8 +2928,73 @@ function sofiaFuori() {
   if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); } else f.classList.add("su");
   document.body.classList.add("con-sofia-fuori");
 }
+// ---- 1.0.3: LA LINGUETTA DI SOFIA (Michele: "in tutte le altre schermate una piccola iconcina che mi segue, dove posso
+// cliccarci sopra e parlarci senza andare indietro o avanti"). Misure di Gemini 4 Argon: una linguetta scura col microfono
+// d'oro attaccata al bordo DESTRO, 109 px sopra la barra in basso (non tocca il tondo di Sofia al centro ne' Sofia che esce
+// in basso a destra). Un tocco: si allarga e ascolta ("Ti ascolto…" con le onde, ✕ per annullare), poi "Sofia pensa…",
+// poi sparisce ed esce Sofia grande in basso a destra che risponde a voce, con la risposta scritta nella nuvoletta a
+// sinistra (coi tasti Si'/No). Si chiude da sola 4 secondi dopo che ha finito di parlare (se non ci sono tasti), con la ✕,
+// o toccando Si'/No. Non c'e' dove Sofia si vede gia' (la casa in cima, la sua sezione) ne' per le signore.
+let miniAperto = false, miniChiudi = null, miniRisposta = "";
+function heroInVista() {
+  const v = document.querySelector("#sofiaHero .gov-film"); if (!v) return false;
+  const r = v.getBoundingClientRect(); return r.height > 60 && r.bottom > 90 && r.top < (window.innerHeight || 800) - 90;
+}
+function sofiaMini() {
+  let m = document.getElementById("sofiaMini"), nv = document.getElementById("sofiaMiniNuvola");
+  let vuoi = false;
+  try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && !S.utente.finta && S.vista !== "sofia" && S.vista !== "governante" && !heroInVista()); } catch (e) {}
+  if (!vuoi) {
+    if (m) m.hidden = true; if (nv) nv.hidden = true;
+    document.body.classList.remove("con-sofia-mini");
+    if (miniAperto && !micAttivo) { miniAperto = false; clearTimeout(miniChiudi); miniChiudi = null; }
+    return;
+  }
+  if (!m) {
+    m = document.createElement("div"); m.id = "sofiaMini"; m.className = "sofia-mini";
+    m.innerHTML = `<button type="button" class="sm-pill" aria-label="Parla con ${esc(nomeGov())}"><span class="sm-mic">${CASA_ICO.mic}<i class="sm-punto"></i></span><span class="sm-onde" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sm-puntini" aria-hidden="true"><i></i><i></i><i></i></span><span class="sm-scritta" data-nome="${esc(nomeGov())}"></span></button><button type="button" class="sm-annulla" aria-label="Annulla">✕</button>`;
+    m.querySelector(".sm-pill").onclick = () => {
+      try { VOCE.sbloccaAudio(); } catch (e) {}
+      if (micAttivo && micCasa) { try { micCasa.stop(); } catch (e) {} return; }     // tocco mentre ascolta = ho finito
+      if (voceInCorso) { zittisciVoce(); statoCons("ferma"); }
+      miniAperto = true; miniRisposta = ""; clearTimeout(miniChiudi); miniChiudi = null;
+      micCasaVai(); sofiaMini();
+    };
+    m.querySelector(".sm-annulla").onclick = () => annullaMic();
+    document.body.appendChild(m);
+    nv = document.createElement("div"); nv.id = "sofiaMiniNuvola"; nv.className = "sm-nuvola"; nv.hidden = true;
+    nv.innerHTML = `<button type="button" class="sm-chiudi" aria-label="Chiudi">✕</button><div class="sm-testo"></div>`;
+    nv.querySelector(".sm-chiudi").onclick = () => { miniAperto = false; clearTimeout(miniChiudi); miniChiudi = null; zittisciVoce(); statoCons("ferma"); disegna(); };
+    document.body.appendChild(nv);
+  }
+  m.hidden = false; document.body.classList.add("con-sofia-mini");
+  const st = document.body.dataset.cons || "";
+  if ((m.dataset.stato || "") !== st) m.dataset.stato = st;   // le scritte "Ti ascolto…" e "pensa…" le mette il CSS
+  // la nuvoletta: solo per le domande fatte dalla linguetta, quando lei ha risposto
+  const u = miniAperto ? ultimoScambio() : null;
+  const html = u && u.lei && !u.pensa ? u.html : "";
+  const testo = nv.querySelector(".sm-testo");
+  if (testo.innerHTML !== html) { testo.innerHTML = html; nv.scrollTop = 0; }
+  nv.hidden = !html;
+  document.body.classList.toggle("con-sm-nuvola", !!html);
+  // si chiude da sola: 4 secondi dopo la fine della voce (se non ci sono tasti Si'/No); senza voce, il tempo di leggerla
+  if (html && !u.tasti && !voceInCorso && !micAttivo) {
+    const chiave = String(u.lei.testo || "");
+    if (miniRisposta !== chiave) { miniRisposta = chiave; clearTimeout(miniChiudi); miniChiudi = null; }
+    if (!miniChiudi) {
+      const ms = voceAccesa() ? 4000 : Math.min(40000, Math.max(8000, chiave.length * 70));
+      miniChiudi = setTimeout(() => { miniChiudi = null; if (!voceInCorso && !micAttivo) { miniAperto = false; sofiaMini(); } }, ms);
+    }
+  } else if (miniChiudi && (voceInCorso || micAttivo)) { clearTimeout(miniChiudi); miniChiudi = null; }
+}
+// mentre scrive in una casella la linguetta si toglie di mezzo (non copre quello che scrive)
+try {
+  const casella = "input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=file]):not([type=range]), textarea, select, [contenteditable]";
+  document.addEventListener("focusin", (e) => { const x = e.target; if (x && x.matches && x.matches(casella)) document.body.classList.add("con-tastiera"); });
+  document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!(a && a.matches && a.matches(casella))) document.body.classList.remove("con-tastiera"); }, 60));
+} catch (e) {}
 let sofiaFuoriScroll = null;
-try { window.addEventListener("scroll", () => { if (!voceInCorso) return; clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(sofiaFuori, 140); }, { passive: true }); } catch (e) {}
+try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); sofiaMini(); }, 140); }, { passive: true }); } catch (e) {}
 
 // 0.42: parlarle col microfono, senza tastiera. Su Android funziona dentro l'app;
 // su iPhone il motore non c'è e si usa il microfono della tastiera (glielo diciamo).

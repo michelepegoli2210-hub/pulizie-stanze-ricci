@@ -3043,3 +3043,104 @@ body.premium .casa-scrivi-riga{width:min(100%,560px)}
 /* Argon: tre tasti */
 .seg.seg3{display:flex;width:100%}
 .seg.seg3 button{flex:1 1 0;min-width:0}
+
+/* ==========================================================================
+   1.0.3 · SOFIA GRANDE COME PRIMA + LA LINGUETTA CHE TI SEGUE (misure dal giro con Gemini 4 Argon, 25/10 11:25)
+   Michele: "deve essere piu' grande, mi piaceva la versione di prima"; "in tutte le altre schermate una piccola
+   iconcina che mi segue, dove posso cliccarci sopra e parlarci senza andare indietro o avanti".
+   ========================================================================== */
+/* LA CASA (Premium): H = lo spazio tra la barra dell'ora e i tasti in basso (673 px sul telefono di Michele).
+   Sofia GRANDE come nella 1.0.1 (alta 0,89 H, circa 600 px: Argon proponeva 450 px, ma si vedeva piccola come nella
+   1.0.2); dal 60% di H in giu' la nuvoletta di VETRO le copre la giacca (viso, capelli e spalle restano liberi); i tasti
+   accanto a lei a destra; la casella per scriverle appena sotto la piega, nascosta TUTTA dietro la barra in basso (prima
+   ne spuntava una striscia di 5 px): si scorre di poco e compare. */
+body.premium .sofia-hero{display:block;position:relative;width:100%;max-width:560px;margin:0 auto;padding:0;box-sizing:border-box;
+  --h-casa:max(470px,calc(100svh - var(--alto-ora,56px) - var(--alto-sotto,71px)));height:calc(var(--h-casa) + 80px);min-height:0}
+body.premium .sofia-hero[data-tre="1"]{padding-top:0}
+body.premium .casa-scena{position:absolute;left:0;right:0;top:6px;width:auto;height:calc(var(--h-casa) * .89);z-index:auto;min-height:0}
+body.premium .sofia-hero .casa-card{position:absolute;left:0;right:0;bottom:0;margin:0 auto;height:100%;width:auto;max-width:none;max-height:none;z-index:10}
+body.premium .sofia-hero .casa-card.tre{height:calc(100% / 1.36)}
+/* i tasti: microfono 56, Ascolta 46 (con la scritta sotto), voce 40 */
+body.premium .casa-lato{position:absolute;top:calc(var(--h-casa) * .2);right:14px;bottom:auto;z-index:25;display:flex;flex-direction:column;align-items:center;gap:10px}
+body.premium .casa-lato-mic{width:56px;height:56px;background:#1C1917;border:2px solid #D5C7A9;color:#D5C7A9;box-shadow:0 6px 16px rgba(28,25,23,.25)}
+body.premium .casa-lato-mic svg{width:26px;height:26px}
+body.premium .sofia-hero[data-stato="ascolto"] .casa-lato-mic{background:#15803D;border-color:#86EFAC;color:#fff}
+body.premium .sofia-hero[data-stato="pensa"] .casa-lato-mic{background:#B45309;border-color:#FCD34D;color:#fff}
+body.premium .casa-lato .casa-ascolta{gap:3px;font:700 11px/1 var(--f-body);color:#1C1917}
+body.premium .casa-lato .casa-ascolta .cl-tondo{width:46px;height:46px;background:#FFFFFF;border:1.5px solid #E6E1D6;box-shadow:0 6px 14px -8px rgba(28,25,23,.45)}
+body.premium .casa-lato .casa-ascolta svg{width:22px;height:22px;color:#8C6D3F}
+body.premium .casa-lato .casa-tondo{width:40px;height:40px;background:#FFFFFF;border:1px solid #E6E1D6;color:#57534E}
+body.premium .casa-lato .casa-tondo:not(.spenta){border-color:#8C6D3F;color:#8C6D3F}
+/* la nuvoletta di vetro: dal 60% di H in giu', finisce 10 px sopra la barra in basso (sul telefono di Michele 259 px) */
+body.premium .casa-nuvola{position:absolute;left:12px;right:12px;top:calc(var(--h-casa) * .6);height:calc(var(--h-casa) * .4 - 10px);max-height:none;width:auto;z-index:20;
+  overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border:1.5px solid #E5DEC9;border-radius:24px;padding:18px 18px 16px;box-shadow:0 -8px 28px rgba(28,25,23,.08),0 12px 24px rgba(28,25,23,.06)}
+/* in fondo una sfumatura: si capisce che c'e' altro da leggere scorrendo dentro */
+body.premium .casa-nuvola::after{content:"";position:sticky;display:block;bottom:-16px;height:26px;margin:-26px -18px -16px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.95));pointer-events:none}
+body.premium .casa-nuvola .casa-sal{font:800 20px/27px var(--f-display);color:#1C1917}
+body.premium .casa-nuvola .casa-riga{font:500 16px/22px var(--f-body);color:#292524}
+body.premium .casa-nuvola .casa-spinta{font:700 15.5px/22px var(--f-body);color:#8C6D3F}
+/* quando c'e' una conversazione le pillole non servono (si vedeva "1 domanda per te" tagliato) */
+body.premium .casa-nuvola:has(.casa-chat.vedi) .casa-info{display:none}
+body.premium .casa-scrivi-riga{position:absolute;left:12px;right:12px;top:calc(var(--h-casa) + 14px);height:52px;width:auto;margin:0}
+:root[data-theme="dark"] body.premium .casa-nuvola{background:rgba(30,27,24,.9)}
+:root[data-theme="dark"] body.premium .casa-nuvola::after{background:linear-gradient(rgba(30,27,24,0),rgba(30,27,24,.95))}
+/* telefoni bassi (sotto 700 px): un po' piu' di nuvoletta, i tasti piu' piccoli */
+@media (max-height:700px){body.premium .casa-lato{top:calc(var(--h-casa) * .16);gap:8px}body.premium .casa-lato-mic{width:50px;height:50px}body.premium .casa-lato .casa-ascolta .cl-tondo{width:42px;height:42px}}
+
+/* LA LINGUETTA: sul bordo destro, 109 px sopra la barra in basso; scura col microfono d'oro */
+.sofia-mini{position:fixed;right:0;bottom:calc(var(--alto-sotto,71px) + 109px + env(safe-area-inset-bottom,0px));z-index:18;display:flex;align-items:center;transition:opacity .25s ease,transform .25s ease}
+.sofia-mini[hidden]{display:none}
+/* sopra la barra in basso (16) ma sotto i fogli (20) e le domande (40); con un foglio aperto o mentre scrivi si toglie */
+body:has(.sheet) .sofia-mini,body:has(.conferma) .sofia-mini,body.con-tastiera .sofia-mini{display:none}
+.sm-pill{display:flex;align-items:center;gap:10px;width:52px;height:56px;padding:0 0 0 14px;box-sizing:border-box;overflow:hidden;border:2px solid #8C6D3F;border-right:0;border-radius:28px 0 0 28px;background:#1C1917;color:#D5C7A9;cursor:pointer;
+  box-shadow:-4px 6px 18px rgba(28,25,23,.22);transition:width .2s ease;-webkit-tap-highlight-color:transparent;font:700 15px/1 var(--f-body);white-space:nowrap}
+.sm-mic{position:relative;flex:0 0 auto;display:grid;place-items:center;width:24px;height:24px;border-radius:50%}
+.sm-mic svg{width:24px;height:24px}
+.sm-punto{position:absolute;top:-2px;right:-3px;width:8px;height:8px;border-radius:50%;background:#C9A55A;box-shadow:0 0 0 2px #1C1917}
+.sm-onde,.sm-puntini,.sm-scritta{display:none}
+.sm-scritta{color:#FAF8F5}
+.sm-annulla{display:none;position:absolute;right:10px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#FAF8F5;font:800 13px/1 system-ui;cursor:pointer}
+/* mentre ascolta: si allarga (196 px), microfono che pulsa, quattro onde, "Ti ascolto…" e la ✕ per annullare */
+.sofia-mini[data-stato="ascolto"] .sm-pill{width:196px;padding-right:44px}
+.sofia-mini[data-stato="ascolto"] .sm-mic{background:#8C6D3F;color:#fff;box-shadow:0 0 0 6px rgba(140,109,63,.3);animation:consPulsa 1.1s ease-in-out infinite}
+.sofia-mini[data-stato="ascolto"] .sm-onde{display:inline-flex;align-items:center;gap:3px;height:20px}
+.sm-onde i{display:block;width:3px;height:8px;border-radius:2px;background:#D5C7A9;animation:smOnda .9s ease-in-out infinite}
+.sm-onde i:nth-child(2){animation-delay:.15s}.sm-onde i:nth-child(3){animation-delay:.3s}.sm-onde i:nth-child(4){animation-delay:.45s}
+@keyframes smOnda{0%,100%{height:6px}50%{height:18px}}
+.sofia-mini[data-stato="ascolto"] .sm-scritta{display:inline}
+.sofia-mini[data-stato="ascolto"] .sm-scritta::before{content:"Ti ascolto…"}
+.sofia-mini[data-stato="ascolto"] .sm-annulla{display:grid;place-items:center}
+/* mentre pensa: larga quanto la scritta, tre puntini d'oro e "Sofia pensa…" */
+.sofia-mini[data-stato="pensa"] .sm-pill{width:auto;max-width:calc(100vw - 24px);padding-right:18px}
+.sofia-mini[data-stato="pensa"] .sm-puntini{display:inline-flex;gap:4px}
+.sm-puntini i{display:block;width:6px;height:6px;border-radius:50%;background:#C9A55A;animation:smPunto 1s ease-in-out infinite}
+.sm-puntini i:nth-child(2){animation-delay:.18s}.sm-puntini i:nth-child(3){animation-delay:.36s}
+@keyframes smPunto{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+.sofia-mini[data-stato="pensa"] .sm-scritta{display:inline;color:#D5C7A9}
+.sofia-mini[data-stato="pensa"] .sm-scritta::before{content:attr(data-nome) " pensa…"}
+.sofia-mini[data-stato="pensa"] .sm-mic{display:none}
+/* mentre risponde la linguetta sparisce: esce Sofia grande in basso a destra */
+.sofia-mini[data-stato="parla"],body.con-sofia-fuori .sofia-mini{opacity:0;pointer-events:none;transform:translateX(20px)}
+@media (prefers-reduced-motion:reduce){.sm-pill{transition:none}.sm-onde i,.sm-puntini i,.sofia-mini[data-stato="ascolto"] .sm-mic{animation:none}}
+/* la nuvoletta con la risposta: a sinistra di Sofia, sopra la barra in basso */
+.sm-nuvola{position:fixed;left:12px;right:176px;bottom:calc(var(--alto-sotto,71px) + 25px + env(safe-area-inset-bottom,0px));max-height:290px;z-index:19;overflow-y:auto;overscroll-behavior:contain;
+  background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:2px solid #8C6D3F;border-radius:20px 20px 4px 20px;padding:14px 16px;box-sizing:border-box;box-shadow:0 12px 32px rgba(28,25,23,.22);
+  animation:smSu .28s ease-out}
+.sm-nuvola[hidden]{display:none}
+@keyframes smSu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.sm-chiudi{position:sticky;top:-6px;float:right;margin:-6px -8px 4px 8px;width:30px;height:30px;border-radius:50%;border:1.5px solid #E6E1D6;background:#FFFFFF;color:#1C1917;font:800 13px/1 system-ui;cursor:pointer;z-index:2}
+.sm-testo .cc-io{font:500 13px/1.35 var(--f-body);color:var(--muted,#57534E);background:none;padding:0;margin:0 0 6px;border:0;box-shadow:none;max-width:none;text-align:left}
+.sm-testo .cc-io::before{content:"Tu: ";font-weight:700}
+.sm-testo .cc-lei{font:600 15.5px/1.4 var(--f-body);color:#1C1917;background:none;border:0;padding:0 0 0 1px;box-shadow:none;max-width:none;max-height:none;overflow:visible}
+.sm-testo .cc-tasti{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.sm-testo .cc-tasti button{height:42px;border-radius:10px;font:700 15px var(--f-body);padding:0 8px}
+.sm-testo .cc-tasti .cc-si{background:#8C6D3F;color:#FFFFFF;border:0}
+.sm-testo .cc-tasti .cc-no{background:#FAF6EE;border:1.5px solid #D5C7A9;color:#57534E}
+.sm-testo .cc-tasti button:not(.cc-si):not(.cc-no){background:#FFFFFF;border:1.5px solid #D5C7A9;color:#1C1917}
+:root[data-theme="dark"] .sm-nuvola{background:rgba(30,27,24,.96)}
+:root[data-theme="dark"] .sm-testo .cc-lei{color:#F5F1EA}
+/* Sofia che esce quando parla: le misure di Argon (310 px, attaccata alla barra in basso, un po' fuori dal bordo destro) */
+.sofia-fuori{height:min(310px,42svh);min-height:200px;right:-6px;bottom:calc(var(--alto-sotto,71px) + env(safe-area-inset-bottom,0px))}
+body.con-sotto .sofia-fuori{bottom:calc(var(--alto-sotto,71px) + env(safe-area-inset-bottom,0px))}
+.sofia-fuori.piatta{height:min(260px,34svh);right:8px;bottom:calc(var(--alto-sotto,71px) + 10px)}
