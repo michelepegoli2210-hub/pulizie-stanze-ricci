@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.98.1";
+export const VERSIONE = "0.98.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -4859,8 +4859,10 @@ function testoAzioneRiga(r) {
   return `Arriva ${G(r.inizio)} → parte ${G(r.fine)} (${n(r.inizio, r.fine)} ${n(r.inizio, r.fine) === 1 ? "notte" : "notti"})`;
 }
 function anteprimaDettatura(ris, f) {
-  const righe = ris.righe, scelte = righe.filter(r => r.scelto && r.azione !== "niente").length;
-  if (!righe.length && !ris.nonCapito.length) return `<p class="muted" style="margin:8px 0 0">${f.copia ? "Non c'è niente da copiare: le camere della settimana scelta sono già segnate (o la settimana scorsa erano vuote)." : ris.sofia ? "Nei messaggi non ho trovato soggiorni da cambiare." : "Appena scrivi, qui ti faccio vedere cosa ho capito."}</p>`;
+  // 0.98.1: Sofia rimanda anche i soggiorni gia' giusti (per confrontarli): quelli non si elencano, si contano e basta
+  const giaGiuste = ris.sofia ? ris.righe.filter(r => r.azione === "niente") : [];
+  const righe = ris.sofia ? ris.righe.filter(r => r.azione !== "niente") : ris.righe, scelte = righe.filter(r => r.scelto && r.azione !== "niente").length;
+  if (!righe.length && !ris.nonCapito.length) return `<p class="muted" style="margin:8px 0 0">${f.copia ? "Non c'è niente da copiare: le camere della settimana scelta sono già segnate (o la settimana scorsa erano vuote)." : ris.sofia ? `Nel prospetto non c'è niente da cambiare${giaGiuste.length ? `: i ${giaGiuste.length} soggiorni dei messaggi sono già segnati così` : ""}.` : "Appena scrivi, qui ti faccio vedere cosa ho capito."}</p>`;
   const riga = (r) => {
     const cls = r.azione === "niente" ? "off" : (r.dubbio || (r.motivi && r.motivi.length) ? "warn" : r.azione === "togli" ? "ko" : "ok");
     const persone = r.azione === "togli" || r.azione === "niente" ? "" : ` · ${r.persone} ${r.persone === 1 ? "persona" : "persone"}`;
@@ -4877,6 +4879,7 @@ function anteprimaDettatura(ris, f) {
   };
   return `<div class="floorlabel" style="margin-top:12px">${f.copia ? "Ti propongo" : ris.sofia ? "Il prospetto secondo " + esc(nomeGov()) : "Ho capito così"} <span>${scelte} da salvare</span></div>
     <div class="rows">${righe.map(riga).join("")}</div>
+    ${giaGiuste.length ? `<p class="muted small" style="margin:6px 2px 0">✓ Altri ${giaGiuste.length} ${giaGiuste.length === 1 ? "soggiorno dei messaggi è" : "soggiorni dei messaggi sono"} già segnati così nell'app.</p>` : ""}
     ${ris.nonCapito.length ? `<div class="avviso" style="margin-top:10px">Non ho capito queste righe (manca il nome della camera?):<br>${ris.nonCapito.map(t => `«${esc(t)}»`).join("<br>")}</div>` : ""}`;
 }
 function foglioDettatura(f) {
