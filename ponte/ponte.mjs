@@ -4,6 +4,7 @@
 //
 //  Come funziona, in parole semplici:
 //   - si collega a WhatsApp come un "dispositivo collegato" (come WhatsApp Web): si inquadra il codice una volta;
+//   - legge anche le chat private scelte nell'app (es. quella col papa'), riconosciute dal numero di telefono;
 //   - quando nel gruppo arriva un messaggio (scritto, vocale o foto) lo mette nella "posta" di Sofia (il database
 //     dell'app); l'app lo legge da sola, ascolta i vocali, capisce il prospetto e ti avvisa;
 //   - NON scrive mai niente su WhatsApp, non segna i messaggi come letti, non ti fa risultare "online";
@@ -18,7 +19,7 @@ import http from "node:http";
 import { exec } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const VERSIONE = "1.0.0";
+export const VERSIONE = "1.0.1";
 const CARTELLA = path.dirname(fileURLToPath(import.meta.url));
 const DATI = process.env.PONTE_DATI || CARTELLA;            // dove il ponte tiene le sue cose (accesso, WhatsApp, messaggi visti)
 const FILE_CONF = path.join(DATI, "config.json");
@@ -42,6 +43,17 @@ function salvaConf(c) { fs.writeFileSync(FILE_CONF, JSON.stringify(c, null, 2));
 
 // ---------------------------------------------------------------------------------- nomi e date
 export const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+// le chat private si riconoscono dal NUMERO (le ultime 10 cifre: vale con e senza +39)
+export const soloCifre = (s) => String(s || "").replace(/\D/g, "");
+export function numeroCombacia(a, b) {
+  const x = soloCifre(a), y = soloCifre(b);
+  if (x.length < 8 || y.length < 8) return false;
+  const n = Math.min(10, x.length, y.length);
+  return x.slice(-n) === y.slice(-n);
+}
+export function privataPerNumeri(numeri, privati) {
+  return (privati || []).find(p => p && p.numero && (numeri || []).some(n => numeroCombacia(n, p.numero))) || null;
+}
 export function chatGiusta(nome, gruppi) {
   const n = norm(nome); if (!n) return false;
   return (gruppi || []).some(g => { const x = norm(g); return x && (n === x || n.includes(x)); });
@@ -119,7 +131,12 @@ async function gettoneValido() {
   return gettone.id;
 }
 const intestazioni = async (extra = {}) => ({ ...extra, Authorization: "Bearer " + await gettoneValido() });
-function confDaSalvare() { const c = stato.conf; return { utente: c.utente, email: c.email, rientro: c.rientro, gruppi: c.gruppi }; }
+function confDaSalvare() { const c = stato.conf; return { utente: c.utente, email: c.email, rientro: c.rientro, gruppi: c.gruppi, privati: c.privati || [] }; }
+// le chat private scelte nell'app: [{ nome: "Papa'", numero: "393331234567" }]
+function prendiPrivati(d) {
+  const nuovi = Array.isArray(d && d.privati) ? d.privati.filter(p => p && p.numero).map(p => ({ nome: String(p.nome || "Chat").slice(0, 40), numero: soloCifre(p.numero) })).slice(0, 6) : [];
+  if (JSON.stringify(nuovi) !== JSON.stringify(stato.conf.privati || [])) { stato.conf.privati = nuovi; privatiVisti.clear(); }
+}
 export async function fsLeggi(percorso) {
   const r = await fetch(`${baseFs()}/${percorso}?${chiaveFs()}`, { headers: await intestazioni() });
   if (r.status === 404 || r.status === 403) return null;
@@ -198,6 +215,19 @@ export async function deposita(p, scarica) {
 
 // ---------------------------------------------------------------------------------- WhatsApp
 let sock = null, bw = null, giro = 0, faseWA = "";
+const privatiVisti = new Map();        // chat (anche nel formato nuovo @lid) -> chat privata scelta nell'app
+// i numeri di telefono di un indirizzo WhatsApp: quello vero (@s.whatsapp.net) o, per quelli nuovi (@lid), quello collegato
+async function numeriDi(...jids) {
+  const out = [];
+  for (const j of jids) {
+    if (!j) continue;
+    if (/@s\.whatsapp\.net$/.test(j)) out.push(numero(j));
+    else if (/@lid$/.test(j) && sock && sock.signalRepository && sock.signalRepository.lidMapping) {
+      try { const pn = await sock.signalRepository.lidMapping.getPNForLID(j); if (pn) out.push(numero(pn)); } catch (e) {}
+    }
+  }
+  return out;
+}
 // ferma WhatsApp (il ponte e' stato tolto nell'app): i messaggi restano da parte su WhatsApp e arrivano col codice nuovo
 function fermaWhatsApp() {
   giro++;
@@ -211,19 +241,35 @@ async function nomeGruppo(jid) {
 }
 async function chatDi(m) {
   const jid = m.key && m.key.remoteJid; if (!jid) return null;
-  if (jid === "status@broadcast" || jid.endsWith("@newsletter")) return null;
+  if (jid === "status@broadcast" || jid.endsWith("@newsletter") || jid.endsWith("@broadcast")) return null;
   if (bw.isJidGroup(jid)) {
     const nome = await nomeGruppo(jid);
     if (nome && !stato.gruppiVisti.includes(nome)) { stato.gruppiVisti.push(nome); if (stato.gruppiVisti.length > 40) stato.gruppiVisti.shift(); }
     return chatGiusta(nome, stato.conf.gruppi) ? { chat: nome, gruppo: true } : null;
   }
-  return null;                          // le chat private non si leggono (si potranno aggiungere dall'app)
+  // 1.0.1: le chat private SOLO se scelte nell'app (es. Papa'), riconosciute dal numero. Tutte le altre: non si guardano.
+  const privati = stato.conf.privati || [];
+  if (!privati.length) return null;
+  let p = privatiVisti.get(jid);
+  if (!p) {
+    // per i miei messaggi l'indirizzo "alt" e' il mio, non il suo: si guarda solo quello della chat
+    p = privataPerNumeri(await numeriDi(jid, m.key.fromMe ? null : m.key.remoteJidAlt), privati);
+    if (p) { privatiVisti.set(jid, p); if (m.key.remoteJidAlt && !m.key.fromMe) privatiVisti.set(m.key.remoteJidAlt, p); }
+  }
+  return p ? { chat: p.nome, gruppo: false, nomeLui: p.nome } : null;
 }
-async function trattaMessaggio(m, storico) {
+// solo per le prove automatiche: un WhatsApp finto al posto di quello vero
+export function _provaWA(b, s) { bw = b; sock = s; }
+export async function trattaMessaggio(m, storico) {
   try {
     const dove = await chatDi(m); if (!dove) return;
     const p = daMessaggio(m, { ...dove, normalizza: bw.normalizeMessageContent, tipoDi: bw.getContentType }); if (!p) return;
     if (storico) p.storico = true;
+    // chi scrive: nella chat privata e' lui (col nome scelto nell'app); nel gruppo, se il numero e' di una chat scelta, quel nome
+    if (!p.mio) {
+      if (dove.nomeLui) p.chi = dove.nomeLui;
+      else if (dove.gruppo && (stato.conf.privati || []).length) { const x = privataPerNumeri(await numeriDi(m.key.participantAlt, m.key.participant), stato.conf.privati); if (x) p.chi = x.nome; }
+    }
     if (visti.has(p.id)) return;
     const s = sock;
     const scarica = (p.tipo === "audio" || p.tipo === "foto") ? () => bw.downloadMediaMessage(m, "buffer", {}, { logger: bw.logger, reuploadRequest: s.updateMediaMessage }) : null;
@@ -248,7 +294,7 @@ async function avviaWhatsApp() {
       stato.qr = u.qr; stato.fase = faseWA = "qr"; annota("Inquadra il codice con WhatsApp: Dispositivi collegati → Collega un dispositivo (lo trovi anche su http://localhost:" + PORTA + ")");
       try { const qt = (await import("qrcode-terminal")).default; qt.generate(u.qr, { small: true }); } catch (e) {}
     }
-    if (u.connection === "open") { stato.fase = faseWA = "collegato"; stato.qr = ""; stato.errore = ""; stato.numero = numero(sock.user && sock.user.id); annota(`Collegato a WhatsApp. Leggo soltanto: ${(stato.conf.gruppi || []).join(", ")}`); battito(); }
+    if (u.connection === "open") { stato.fase = faseWA = "collegato"; stato.qr = ""; stato.errore = ""; stato.numero = numero(sock.user && sock.user.id); annota(`Collegato a WhatsApp. Leggo soltanto: ${cosaLeggo()}`); battito(); }
     if (u.connection === "close") {
       const codice = u.lastDisconnect && u.lastDisconnect.error && u.lastDisconnect.error.output && u.lastDisconnect.error.output.statusCode;
       if (codice === bw.DisconnectReason.loggedOut) {
@@ -283,6 +329,7 @@ export async function battito() {
     if (!d) { ponteTolto("Nell'app il ponte non c'è più."); return; }
     tolto = 0;
     if (Array.isArray(d.gruppi) && d.gruppi.length) stato.conf.gruppi = d.gruppi.map(String);
+    prendiPrivati(d);
     await fsAggiorna(`ponti/${stato.conf.utente}`, { vivo: Date.now(), stato: stato.fase, contati: stato.contati, numero: stato.numero ? stato.numero.slice(-4) : "", versione: VERSIONE, gruppiVisti: stato.gruppiVisti.slice(-15) });
     if (daRiprovare.length && !giroRiprova) riprova();
   } catch (e) {
@@ -303,11 +350,15 @@ async function giro(){ try { const r = await fetch('/stato'); const s = await r.
 giro(); setInterval(() => { if (!document.activeElement || document.activeElement.id !== 'cod') giro(); }, 2500);
 </script></body></html>`;
 }
+function cosaLeggo() {
+  const g = (stato.conf.gruppi || []).join(", "), p = (stato.conf.privati || []).map(x => "la chat con " + x.nome).join(", ");
+  return [g ? "il gruppo " + g : "", p].filter(Boolean).join(" e ");
+}
 async function htmlStato() {
   const s = stato, reg = `<div class="box"><b>Cosa è successo</b><div class="reg">${esc(s.registro.slice(-14).join("\n"))}</div></div>`;
   if (s.fase === "codice") return `<div class="box"><div class="big">1. Il codice del ponte</div><p>Nell'app: <b>Altro → Il ponte WhatsApp → Crea il codice del ponte</b>. Scrivilo qui sotto (16 lettere e numeri).</p>${s.errore ? `<p class="err">${esc(s.errore)}</p>` : ""}<form id="fcod"><input id="cod" autocomplete="off" placeholder="ABCD-EFGH-JKLM-NPQR" maxlength="24"><button>Collega</button></form></div>` + reg;
   if (s.fase === "qr") { const img = await paginaQr(); return `<div class="box"><div class="big">2. Inquadra il codice con WhatsApp</div><ol><li>Sul telefono apri WhatsApp → <b>⋮</b> → <b>Dispositivi collegati</b> → <b>Collega un dispositivo</b>.</li><li>Inquadra il quadrato qui sotto.</li></ol>${img ? `<img src="${img}" alt="codice da inquadrare">` : "<p>Preparo il codice…</p>"}<p class="sotto">Il codice cambia ogni tanto: se non va, aspetta il nuovo.</p></div>` + reg; }
-  if (s.fase === "collegato") return `<div class="box ok"><div class="big">✓ Collegato</div><p>Leggo soltanto: <b>${esc((s.conf.gruppi || []).join(", "))}</b>. Messaggi passati a Sofia: <b>${s.contati}</b>${s.ultimo ? ` · l'ultimo alle ${new Date(s.ultimo).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}` : ""}.</p><p>Lascia aperta la finestra nera del ponte (puoi ridurla a icona). Se spegni il PC, i messaggi aspettano e arrivano quando lo riaccendi.</p><button id="avvio" class="chiaro">Fallo partire da solo quando accendo il PC</button></div>` + reg;
+  if (s.fase === "collegato") return `<div class="box ok"><div class="big">✓ Collegato</div><p>Leggo soltanto: <b>${esc(cosaLeggo())}</b>. Messaggi passati a Sofia: <b>${s.contati}</b>${s.ultimo ? ` · l'ultimo alle ${new Date(s.ultimo).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}` : ""}.</p><p>Lascia aperta la finestra nera del ponte (puoi ridurla a icona). Se spegni il PC, i messaggi aspettano e arrivano quando lo riaccendi.</p><button id="avvio" class="chiaro">Fallo partire da solo quando accendo il PC</button></div>` + reg;
   if (s.fase === "errore") return `<div class="box"><p class="err">${esc(s.errore)}</p></div>` + reg;
   return `<div class="box"><div class="big">Un attimo…</div><p>${s.fase === "ricollego" ? "Mi ricollego a WhatsApp." : "Preparo il ponte."}</p></div>` + reg;
 }
@@ -353,6 +404,7 @@ export async function usaCodice(codice) {
     const d = await fsLeggi(`ponti/${x.utente}`);
     if (!d) return { ok: false, errore: "Nell'app questo ponte non c'è (o mancano le regole nuove su Firebase)." };
     stato.conf.gruppi = Array.isArray(d.gruppi) && d.gruppi.length ? d.gruppi.map(String) : ["Albergo"];
+    prendiPrivati(d);
     salvaConf(confDaSalvare());
   } catch (e) { return { ok: false, errore: e.message }; }
   annota("Codice giusto: ora collego WhatsApp.");
@@ -377,7 +429,7 @@ async function main() {
   if (process.platform === "win32" && !process.env.PONTE_NO_BROWSER) exec(`start "" "http://localhost:${PORTA}"`);
   setInterval(battito, 5 * 60 * 1000);
   if (!stato.conf.utente || !stato.conf.rientro) { stato.fase = "codice"; annota("Scrivi il codice del ponte nella pagina che si è aperta."); return; }
-  try { await gettoneValido(); const d = await fsLeggi(`ponti/${stato.conf.utente}`); if (!d) throw new Error("Il ponte è stato tolto nell'app: scrivi un codice nuovo."); if (Array.isArray(d.gruppi) && d.gruppi.length) stato.conf.gruppi = d.gruppi.map(String); }
+  try { await gettoneValido(); const d = await fsLeggi(`ponti/${stato.conf.utente}`); if (!d) throw new Error("Il ponte è stato tolto nell'app: scrivi un codice nuovo."); if (Array.isArray(d.gruppi) && d.gruppi.length) stato.conf.gruppi = d.gruppi.map(String); prendiPrivati(d); }
   catch (e) { stato.fase = "codice"; stato.errore = e.message; annota(e.message); return; }
   partiWhatsApp();
 }

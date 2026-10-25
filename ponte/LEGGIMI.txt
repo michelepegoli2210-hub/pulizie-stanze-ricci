@@ -5,7 +5,8 @@ scritti, vocali e foto. Sofia li ascolta, capisce il prospetto e ti avvisa. Non 
 senza il tuo "Salva".
 
 IL PONTE LEGGE SOLTANTO: non scrive mai niente su WhatsApp, non segna i messaggi come letti,
-non ti fa risultare "online". Legge solo i gruppi scelti nell'app (di serie "Albergo").
+non ti fa risultare "online". Legge solo i gruppi scelti nell'app (di serie "Albergo") e le chat
+private che metti nell'app (es. quella con Papa': la riconosce dal numero). Le altre chat non le guarda.
 
 COME SI ACCENDE (la prima volta)
 0. Una volta sola: le regole nuove su Firebase. Nell'app: Altro -> Il ponte WhatsApp.
