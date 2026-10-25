@@ -1607,3 +1607,29 @@ Michele: "no, andava bene prima: busto e poco oltre, cosi' si vedono tutti i mov
 - I bordi laterali del filmato sfumati (9%) e il fondo sfumato: niente gomiti tagliati dritti ne' il "gradino" tra manica e fianco in qualche fotogramma.
 - Gemini ha scritto anche il prompt per rigirarli con Veo con piu' margine ai lati: per ora non serve.
 
+## 78. La 1.0.5 (25 ottobre): IL PROSPETTO "IN UN SECONDO" (LA MAPPA DELLE CAMERE), SOFIA MOLTO PIU' 3D, LA NUVOLETTA PER TUTTO IL TEMPO CHE PARLA
+Michele (la casa 1.0.4 "va bene cosi'"): "la nuvola di Sofia deve stare per piu' tempo, tutto il tempo che parla, in tutte le schermate"; "il prospetto lo devi migliorare: io devo vedere piu' chiaramente tutto; in un secondo devo vedere tutte le camere mie e quali sono riempite; chiedi a Gemini, fai un disegno, vedi tu"; "Sofia falla molto piu' 3D, che esca veramente fuori dallo schermo".
+### IL GIRO CON GEMINI 4 ARGON (14:06)
+- Mandate 5 foto (il Prospetto di prima e tutta la sua pagina, le Piantine, Sofia nella casa e il fantasmino, i fotogrammi dei filmati) con l'elenco delle 13 camere e dove sono. Gemini: la pagina di prima falliva perche' raggruppava le camere per evento (arrivano, partono, restano, libere): ogni giorno le camere cambiavano posto e una camera col cambio compariva due volte. Serve una mappa fissa che ricalchi l'albergo.
+- Il giro di controllo finale non e' stato fatto con Argon: il limite di Gemini di oggi si e' esaurito (torna alle 17:05) e Gemini e' passato da solo a "Flash-Lite". Le prove le ho fatte io (sotto).
+### IL PROSPETTO NUOVO
+- In cima una riga sola: "＋ Prospetto" (oro), il tasto WhatsApp e la scelta "Mappa / Settimana". Si apre sulla MAPPA.
+- LA MAPPA: le 13 camere sempre allo stesso posto, come sono davvero. 1° piano col corridoio in mezzo: a sinistra Salvatore e Michele, a destra Aurora e Antonio; sotto, Lella (via N. Sauro). 2° piano: a sinistra Alba e Passerella, a destra Tramonto e Fenicotteri; sotto, Nicole (via N. Sauro). In fondo i tre appartamenti affiancati (Zara p. terra, Zara 1° e 2°, Trento 47). Ogni piano dice quante sono piene (es. 4/5).
+- PIENA: bordo spesso a sinistra e fondo tinto col colore del tipo di ospite (tecnici verde #15803D, Fondamenta blu #1D4ED8, D'Agostino arancio #C2410C, altri viola #7E22CE, da chiarire tratteggiato oro), il nome della camera, le persone (1p, 2p...), chi c'e' e fino a quando. LIBERA: grigia e tratteggiata, "LIBERA". Nell'angolo un'etichetta: "→ ARRIVA" (verde), "← PARTE" (rosso a righe: stanotte e' libera, col nome di chi parte barrato), "⇄ CAMBIO" (nera e oro: chi parte barrato ➔ chi arriva), "? DA VEDERE" (ambra che pulsa). Il nome della camera non viene mai tagliato.
+- Sopra la mappa la striscia dei giorni (oggi e i 6 dopo, con +arrivi −partenze) e il conto: "Stanotte 10/13 piene · 1 cambio". Un tocco su una camera piena apre il suo soggiorno; su una libera, il foglio per segnare un arrivo. In fondo una piccola legenda.
+- Senza il banner di prova tutta la mappa, appartamenti compresi, sta nella prima schermata del telefono di Michele.
+- LA SETTIMANA: un tabellone di 7 colonne uguali (84 px per il nome della camera) e 13 righe da 34 px: si legge tutto senza scorrere di lato; ogni soggiorno e' una barra col colore del tipo di ospite (bianca la scritta), i giorni di oggi evidenziati. Sopra: la settimana (‹ ›) e i numeri in pillole piccole (stanotte, notti, i due tipi di ospite piu' presenti). "Vedi il mese" porta al tabellone del mese di prima.
+- Tolti: i quattro gruppi (Arrivano, Partono, Restano, Libere) e l'elenco lungo; i quattro riquadri grandi dei numeri sono diventati pillole.
+### SOFIA MOLTO PIU' 3D (tecniche di Gemini)
+- Dietro di lei un ARCO di luce avorio con il filo d'oro (niente marrone), piu' largo delle spalle, con la cima all'altezza degli occhi: la testa ne esce sopra.
+- Piu' grande del 9% (dal basso: la vita resta dov'era) e i capelli SFORANO di una dozzina di pixel la barra dell'ora, sotto le cifre dell'orologio (che restano pulite) e senza coprire il tasto ⋯. Solo quando sei in cima alla casa; scendendo tutto torna sotto la barra.
+- Le ombre: un filo di luce sui capelli, un'ombra vicina e un'ombra lontana che si sposta al contrario di lei.
+- Col giroscopio (o, da fermo, un respiro lento) lei si sposta fino a 14 px e ruota fino a 5°, l'arco va al contrario (7 px), l'ombra di 18 px: i piani si separano.
+- Nel FANTASMINO: dietro di lei un cuscino d'ombra sfocato (la pagina sotto si attenua, ma non la nuvoletta della risposta), lei scende di 14 px sopra la barra in basso e segue anche lei l'inclinazione del telefono.
+### LA NUVOLETTA PER TUTTO IL TEMPO CHE PARLA
+- In tutte le schermate (tranne dove Sofia si vede gia': la casa in cima e la sua sezione), quando Sofia parla c'e' sempre la nuvoletta con le sue parole, anche se la domanda non e' partita dalla linguetta (per esempio se le hai chiesto qualcosa nella sua sezione e poi sei andato nel Prospetto).
+- Non si chiude MAI mentre parla, e se la voce parte in ritardo la aspetta (fino a 20 secondi); si chiude 6 secondi dopo che ha finito (prima 4). Coi tasti Si'/No aspetta la risposta; la ✕ la chiude e la fa smettere.
+- I sottotitoli anche qui: la nuvoletta scorre da sola sulla frase che sta dicendo (se la scorri col dito, lascia fare a te).
+### PROVE
+- schermate105 (la casa 3D: capelli sopra la barra ma non sulle cifre, il tasto ⋯ che si tocca, l'arco, busto e poco oltre, le due nuvolette), prova105mini (la linguetta, la nuvoletta per tutto il tempo che parla, la voce in ritardo, i 6 secondi), prova105mappa (13 camere al loro posto, i conti di arrivi/partenze/cambi uguali ai dati, domani, i tocchi, la settimana senza scorrere, il mese), piu' tutte le prove di prima.
+
