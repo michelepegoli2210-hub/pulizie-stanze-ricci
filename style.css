@@ -2641,3 +2641,27 @@ body.premium .card h3{font-size:19px}
 .dt-dubbi li{margin:3px 0}
 :root[data-theme="dark"] .dt-fonte.sofia{background:#2A2418;border-color:#5A4A2A}
 :root[data-theme="dark"] .dt-dubbi{background:#2A2210;border-color:#7A5A12;color:#FCD34D}
+/* 0.99 · le chat di WhatsApp (papà, gruppo Albergo) e il riquadro "Sofia ha letto le chat" */
+.cw-chats{display:grid;gap:8px;margin-top:10px}
+.cw-chat{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--card-pieno);color:var(--fg);text-align:left;cursor:pointer;font:inherit}
+.cw-chat span{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
+.cw-chat b{font:800 17px/1.2 var(--f-display)}
+.cw-chat small{font:500 13.5px/1.3 var(--f-body);color:var(--muted)}
+.cw-chat i{display:grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);font-style:normal;font-weight:800;color:#fff}
+.cw-chat[aria-pressed="true"]{border-color:#86D9A4;background:#F0FBF4}
+.cw-chat[aria-pressed="true"] i{background:#16A34A;border-color:#16A34A}
+.cw-chat[aria-pressed="false"]{opacity:.7}
+.cw-banner{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:16px;border:1px solid #E7D9B8;background:#FBF7EE;color:#1C1917;text-align:left;cursor:pointer;font:inherit;box-shadow:0 8px 18px -12px rgba(28,25,23,.35)}
+.cw-banner span:not(.dt-fonte-foto){display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
+.cw-banner b{font:800 16px/1.2 var(--f-display)}
+.cw-banner small{font:600 13.5px/1.3 var(--f-body);color:#6B5A3A}
+.cw-banner i{font-style:normal;font-size:26px;color:#8A6D32}
+:root[data-theme="dark"] .cw-chat[aria-pressed="true"]{background:#10261A;border-color:#1F5A35}
+:root[data-theme="dark"] .cw-banner{background:#2A2418;border-color:#5A4A2A;color:#F5F1EA}
+.cw-aggiungi{display:flex;align-items:center;justify-content:center;min-height:48px;margin-top:8px;padding:0 14px;border:1.5px dashed #CDBB92;border-radius:14px;color:#6B5A3A;font:700 15px/1.2 var(--f-body);cursor:pointer;background:transparent}
+.cw-aggiungi:active{background:#FBF7EE}
+:root[data-theme="dark"] .cw-aggiungi{border-color:#5A4A2A;color:#E7D9B8}
+/* 0.99: mentre legge, l'anello dorato intorno a Sofia "respira" */
+.cw-banner.leggo .dt-fonte-foto{animation:cwRespira 1.8s ease-in-out infinite}
+@keyframes cwRespira{0%,100%{box-shadow:0 0 0 2px #E7CF95,0 0 0 0 rgba(201,162,74,.55)}50%{box-shadow:0 0 0 2px #E7CF95,0 0 0 7px rgba(201,162,74,0)}}
+@media (prefers-reduced-motion:reduce){.cw-banner.leggo .dt-fonte-foto{animation:none}}

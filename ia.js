@@ -25,7 +25,7 @@ export const FORNITORI = {
     corpo: (sistema, storia, testo, m, immagine, maxToken) => ({
       system_instruction: { parts: [{ text: sistema }] },
       contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })),
-        { role: "user", parts: [...(immagine ? [{ inline_data: { mime_type: immagine.mime || "image/jpeg", data: immagine.dati } }] : []), { text: testo }] }],
+        { role: "user", parts: [...(immagine ? (Array.isArray(immagine) ? immagine : [immagine]).filter(x => x && x.dati).map(x => ({ inline_data: { mime_type: x.mime || "image/jpeg", data: x.dati } })) : []), { text: testo }] }],
       generationConfig: { temperature: maxToken ? 0.2 : 0.4, maxOutputTokens: maxToken || 4000, responseMimeType: "application/json" },
     }),
     leggeFoto: true,

@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "0.98.2";
+const VERSIONE = "0.99.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
@@ -27,6 +27,17 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("message", (e) => { if (e.data?.tipo === "attiva") self.skipWaiting(); });
+
+// 0.99: la notifica di Sofia ("ha letto le chat"): toccandola si apre l'app sull'anteprima da controllare
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || "./index.html", self.registration.scope).href;
+  e.waitUntil((async () => {
+    const finestre = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} return; } }
+    if (self.clients.openWindow) await self.clients.openWindow(url);
+  })());
+});
 
 // ---- filmati: cache-first, a pezzi, scaricati per intero una volta sola ----------------------
 const VIDEO = /\.(mp4|webm)$/i;
@@ -83,10 +94,22 @@ async function riceviCondiviso(req) {
     const c = await caches.open(CONDIVISI);
     for (const k of await c.keys()) await c.delete(k);
     const testo = ["titolo", "testo", "link"].map((k) => fd.get(k)).filter((x) => typeof x === "string" && x.trim()).join("\n");
-    const file = fd.getAll("file").filter((f) => f && typeof f === "object" && f.size);
+    // 0.99: dalla chat esportata possono arrivare tanti file (il .txt o lo zip, i vocali, le foto). Tengo sempre
+    // chat ed Excel, poi i vocali e poi le foto, i più recenti per primi, fino a 300 file e 250 MB; i video no.
+    const tipoDi = (f) => {
+      const n = String(f.name || "").toLowerCase(), t = String(f.type || "");
+      if (/^video\//.test(t) || /\.(mp4|3gp|mov|webm)$/.test(n)) return 9;
+      if (/\.(txt|zip|xlsx|xls|xlsm|ods)$/.test(n) || /^text\/|zip|sheet|excel/.test(t)) return 0;
+      if (/^audio\//.test(t) || /\.(opus|ogg|m4a|mp3|aac|wav|amr)$/.test(n)) return 1;
+      return 2;
+    };
+    const tutti = fd.getAll("file").filter((f) => f && typeof f === "object" && f.size).map((f, i) => ({ f, i, t: tipoDi(f) })).filter((x) => x.t < 9);
+    tutti.sort((a, b) => a.t - b.t || String(b.f.name || "").localeCompare(String(a.f.name || "")) || a.i - b.i);
+    const file = []; let peso = 0;
+    for (const x of tutti) { if (file.length >= 300) break; if (x.t > 0 && peso + x.f.size > 250e6) continue; file.push(x.f); peso += x.f.size; }
     const info = { quando: Date.now(), testo, file: [] };
     let i = 0;
-    for (const f of file.slice(0, 12)) {
+    for (const f of file) {
       const k = new URL("./condiviso/" + (i++), self.registration.scope).href;
       await c.put(k, new Response(f, { headers: { "Content-Type": f.type || "application/octet-stream" } }));
       info.file.push({ k, nome: f.name || "", tipo: f.type || "", peso: f.size });

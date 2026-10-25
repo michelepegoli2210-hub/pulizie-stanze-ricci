@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.98.2";
+export const VERSIONE = "0.99.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1178,6 +1178,7 @@ function disegna() {
   avviaCronometri();
   const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
   if (condivisoAtteso) guardaCondiviso();
+  if (letturaAttesa) guardaLettura();
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
 }
 
@@ -4314,7 +4315,7 @@ function vistaTabellone() {
   const noteP = Object.values(S.note).filter(n => n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
   const corpoBoard = elenco ? elencoProspetto(da, a) : `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
-  return `${puoModificare() ? `<div class="pr-azioni"><button type="button" class="big main pr-ins" data-inserisci>＋ Inserisci il prospetto</button><button type="button" class="pr-wa" data-ins-wa-subito>${ICO_WA}<span>Incolla da<br>WhatsApp</span></button></div>` : ""}
+  return `${puoModificare() ? bannerLettura() : ""}${puoModificare() ? `<div class="pr-azioni"><button type="button" class="big main pr-ins" data-inserisci>＋ Inserisci il prospetto</button><button type="button" class="pr-wa" data-ins-wa-subito>${ICO_WA}<span>Incolla da<br>WhatsApp</span></button></div>` : ""}
   ${colpoDOcchio()}
   <div class="tabs"><button aria-pressed="${elenco}" data-board="elenco">Elenco</button><button aria-pressed="${sett && !elenco}" data-board="settimana">Tabellone</button><button aria-pressed="${!sett}" data-board="mese">Mese</button></div>
   <section class="card flat"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
@@ -4655,7 +4656,7 @@ function vistaAvvisi() {
 //  Fogli (pannelli dal basso)
 // ---------------------------------------------------------------------------
 function elFoglio() { let s = $(".sheet"); if (!s) { s = document.createElement("div"); s.className = "sheet"; document.body.appendChild(s); s.onclick = e => { if (e.target === s) chiudiFoglio(); }; } return s; }
-function chiudiFoglio() { S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); }
+function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); }
 function apriFoglio(f) { S.foglio = f; disegnaFoglio(); }
 
 function disegnaFoglio() {
@@ -4993,6 +4994,7 @@ async function salvaDettatura(f) {
     const ni = await salvaIndicazioni(ind);
     let na = 0; for (const v of ab) { try { if (await ricordaNelTaccuino(v.testo, "sofia")) na++; } catch (e) { console.warn("abitudine", e); } }
     const base = ris.base || statoDettatura().base;
+    if (d0.ia) togliUltimaLettura();
     S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
     S.attesa = false; chiudiFoglio();
     S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
@@ -5027,7 +5029,19 @@ function opsRigheProspetto(righe) {
 //  Il testo copiato da WhatsApp ha davanti "[25/10/26, 09:12] Nome:": lo pulisce testoDaWhatsApp (dettatura.js).
 //  I testi NON vanno all'intelligenza artificiale (li capisce l'app con le sue regole): solo la foto, che a parole non si legge.
 // ---------------------------------------------------------------------------
-let condivisoAtteso = false;
+let condivisoAtteso = false, letturaAttesa = false;
+try {
+  const u0 = new URL(location.href);
+  if (u0.searchParams.has("lettura")) { letturaAttesa = true; u0.searchParams.delete("lettura"); history.replaceState(null, "", u0.pathname + u0.search + u0.hash); }
+} catch (e) {}
+try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.tipo === "apriLettura") { letturaAttesa = true; disegna(); } }); } catch (e) {}
+function guardaLettura() {
+  if (!letturaAttesa || !S.pronto || !proprietario() || !S.caricati.soggiorni) return;
+  letturaAttesa = false;
+  if (!letturaDaControllare() && !letturaInCorso() && !riprendiUltimaLettura()) return;
+  if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
+  apriFoglio({ tipo: "dettatura" });
+}
 try {
   const u = new URL(location.href);
   if (u.searchParams.has("condiviso")) { condivisoAtteso = true; u.searchParams.delete("condiviso"); history.replaceState(null, "", u.pathname + u.search + u.hash); }
@@ -5053,8 +5067,9 @@ async function usaCondiviso({ testo, files }) {
   const nome = f => String(f.name || "").toLowerCase(), tipo = f => String(f.type || "");
   const excel = files.find(f => /\.(xlsx|xlsm|xls|ods)$/.test(nome(f)) || /sheet|excel/.test(tipo(f)));
   if (excel) { leggiFileExcel(excel); return; }
-  const txt = files.find(f => /\.txt$/.test(nome(f)) || /^text\//.test(tipo(f)));
-  if (txt) { let t = ""; try { t = await txt.text(); } catch (e) {} apriChatPapa(t, txt.name || ""); return; }
+  // 0.99: la chat esportata (.txt o .zip "con i media") e i vocali condivisi -> Le chat di WhatsApp / Sofia ascolta
+  if (files.some(f => /\.(txt|zip)$/.test(nome(f)) || /^text\/|zip/.test(tipo(f)))) { await apriChatWA(files); return; }
+  if (files.some(f => /^audio\//.test(tipo(f)) || /\.(opus|ogg|m4a|mp3|aac|wav)$/.test(nome(f)))) { await apriChatWA(files); return; }
   const foto = files.find(f => /^image\//.test(tipo(f)) || /\.(jpe?g|png|webp|heic)$/.test(nome(f)));
   if (foto) { leggiFotoProspetto(foto); return; }
   if (testo && testo.trim()) { usaTestoWhatsApp(testo, "condiviso"); return; }
@@ -5067,7 +5082,7 @@ function usaTestoWhatsApp(grezzo, come) {
   const rif = w.data && w.data < oggi && L.giorniTra(w.data, oggi) <= 21 ? w.data : "";
   apriDettaturaCon(w.testo, { tipo: "whatsapp", come, messaggi: w.messaggi, chi: w.chi, data: w.data, tolte: w.tolte, nessunaCamera: !!w.nessunaCamera, intestazioni: !!w.intestazioni, rif });
   // 0.98: i messaggi interi (con data e chi li ha scritti) restano da parte per Sofia, che li legge subito se c'e' la chiave
-  const tutti = messaggiWhatsApp(grezzo).messaggi.slice(-400);
+  const tutti = messaggiWhatsApp(grezzo).messaggi.map(m => (m.media ? { ...m, testo: (m.media.tipo === "audio" ? "🎤 (un vocale: qui non c'è)" : "📷 (una foto: qui non c'è)") + (m.didascalia ? " " + m.didascalia : "") } : m)).slice(-400);
   const d = statoDettatura(); d.wa = { messaggi: tutti.length ? tutti : [{ data: oggi, ora: "", chi: "", testo: String(grezzo || "") }], papa: papaRicordato(), testo: d.testo };
   if (iaAccesa() && String(grezzo || "").trim()) leggiConSofia(d.wa.messaggi, { papa: d.wa.papa });
 }
@@ -5120,12 +5135,12 @@ async function leggiFotoProspetto(file) {
 // La scelta "da dove arriva il prospetto": un foglio con le strade, la prima e' WhatsApp
 function foglioInserisci() {
   const tasto = (attr, ico, t, sotto, cls = "") => `<button type="button" class="ins-tasto ${cls}" ${attr}><span class="ins-ico" aria-hidden="true">${ico}</span><span class="ins-t"><b>${t}</b><small>${sotto}</small></span></button>`;
-  const file = (cls, accept, ico, t, sotto) => `<label class="ins-tasto"><span class="ins-ico" aria-hidden="true">${ico}</span><span class="ins-t"><b>${t}</b><small>${sotto}</small></span><input class="${cls}" type="file" accept="${accept}" hidden></label>`;
+  const file = (cls, accept, ico, t, sotto) => `<label class="ins-tasto"><span class="ins-ico" aria-hidden="true">${ico}</span><span class="ins-t"><b>${t}</b><small>${sotto}</small></span><input class="${cls}" type="file" accept="${accept}" ${cls === "insChat" ? "multiple" : ""} hidden></label>`;
   return `<h3>Inserisci il prospetto</h3>
     <div class="muted">Scegli da dove arriva. Prima di salvare ti faccio sempre vedere cosa ho capito.</div>
     <div class="ins-scelte">
       ${tasto("data-ins-wa", ICO_WA, "Da WhatsApp", "Hai copiato il messaggio? Tocca qui e lo incollo io", "wa")}
-      ${file("insChat", ".txt,text/plain", "📲", "Tutta la chat di papà", "Il file della chat esportata: " + esc(nomeGov()) + " legge tutto, prospetto e indicazioni")}
+      ${file("insChat", ".txt,.zip,text/plain,application/zip,audio/*,image/*", "📲", "Le chat di WhatsApp", "Papà e il gruppo Albergo, anche i vocali: " + esc(nomeGov()) + " ascolta e legge tutto")}
       ${file("insFoto", "image/*", "📷", "Foto del foglio", "Scatta o scegli la foto: la legge " + esc(nomeGov()))}
       ${tasto("data-ins-scrivi", "✍️", "Lo scrivo o lo detto", "Una riga per camera, come lo diresti a papà")}
       ${file("fileFoglio", ".xlsx,.xls,.xlsm,.ods", "📄", "File Excel di papà", "Il foglio del computer (.xlsx)")}
@@ -5136,7 +5151,7 @@ function foglioInserisci() {
       <div class="ins-passi">
         <div class="ins-passo"><b>1</b><span><b>Messaggio scritto</b> · tieni premuto il messaggio, tocca <b>Copia</b> (in alto, o nel menu ⋮), torna qui e tocca <b>Da WhatsApp</b>. Puoi copiarne anche più di uno insieme.</span></div>
         <div class="ins-passo"><b>2</b><span><b>Foto o file Excel</b> · tieni premuto (o apri la foto), tocca <b>Condividi</b> e scegli <b>Pulizie Ricci</b>: si apre qui, già pronto.</span></div>
-        <div class="ins-passo"><b>3</b><span><b>Tutta la chat di papà</b> · nella chat tocca <b>⋮ → Altro → Esporta chat → Senza media</b> e scegli <b>Pulizie Ricci</b> (o salvala e toccala qui sopra): ${esc(nomeGov())} legge tutti i messaggi, il prospetto e le indicazioni.</span></div>
+        <div class="ins-passo"><b>3</b><span><b>Le chat intere (papà, gruppo Albergo)</b> · nella chat tocca <b>⋮ → Altro → Esporta chat → Includi file multimediali</b> (così ci sono anche i vocali) e scegli <b>Pulizie Ricci</b>, oppure salvala e toccala qui sopra. Poi fai lo stesso con l'altra chat entro mezz'ora: si aggiunge alla prima e ${esc(nomeGov())} le legge insieme, vocali compresi.</span></div>
       </div>
       <small>Se tra le app di «Condividi» non vedi ancora Pulizie Ricci, il telefono la aggiunge entro un giorno; intanto usa la strada 1.</small>
     </section>`;
@@ -5261,6 +5276,7 @@ COME SI LEGGE IL PROSPETTO:
 - Tipi di ospite (campo "tipo"): ${tipi}. I tecnici della ferrovia e delle altre ditte sono "ferr", turisti e Booking "altro", se non si capisce "unk".
 - Gli ospiti che l'app conosce già sono CODICI tra parentesi quadre, per esempio [O3]: è sempre la stessa persona. Nel JSON riscrivilo IDENTICO. I nomi nuovi scrivili come li scrive il papà (cognome).
 - Le parti tra parentesi quadre [telefono] ed [email] sono dati tolti apposta.
+- Se i messaggi vengono da più chat, davanti c'è la chat tra parentesi tonde: "(chat con Papà)" è la chat privata tra Michele e il papà; un nome da solo, per esempio "(Albergo)", è un gruppo (Albergo = il gruppo dell'albergo con la famiglia e le signore). I messaggi che cominciano con 🎤 sono vocali trascritti (possono avere qualche parola sbagliata: [?] = non si capiva).
 - Non inventare niente: se una cosa non è chiara mettila in "dubbi" o metti "sicurezza":"bassa".
 
 IL PROSPETTO CHE C'È ADESSO NELL'APP (soggiorni dal ${L.dataMedia(da)} al ${L.dataMedia(a)}):
@@ -5284,15 +5300,14 @@ REGOLE DEL JSON:
 }
 // i messaggi scelti, pronti per Sofia: "[gio 23 ott 09:12] Papà: ..." (coi nomi noti in codice e senza telefoni)
 function testoPerLettura(messaggi, papa) {
-  const nomi = new Map(); let n = 1;
+  // chi scrive: "Papà" per chi fa il prospetto, "Michele" per lui; gli altri col nome della rubrica (signore, famiglia)
   const chi = (x) => {
     if (!x) return "";
     if (papa && x === papa) return "Papà";
     if (/michele/i.test(x) || x === nomeMio()) return "Michele";
-    if (!nomi.has(x)) nomi.set(x, "Persona " + (++n));
-    return nomi.get(x);
+    return aCodici(x).slice(0, 30);
   };
-  const righe = messaggi.map(m => `${m.data ? `[${L.GG[L.giornoSettimana(m.data)]} ${L.dataMedia(m.data)}${m.ora ? " " + m.ora : ""}] ` : ""}${m.chi ? chi(m.chi) + ": " : ""}${senzaTelefoni(aCodici(m.testo))}`);
+  const righe = messaggi.map(m => `${m.data ? `[${L.dataMedia(m.data)}${m.ora ? " " + m.ora : ""}] ` : ""}${m.chat ? `(${m.chat}) ` : ""}${m.chi ? chi(m.chi) + ": " : ""}${senzaTelefoni(aCodici(m.testo))}`);
   let testo = righe.join("\n"), tagliati = 0;
   const MAX = 140000;
   while (testo.length > MAX && righe.length > 20) { righe.shift(); tagliati++; testo = righe.join("\n"); }
@@ -5381,26 +5396,33 @@ function nomeModello(m) { const x = String(m || "").toLowerCase(); return /argon
 let letturaGiro = 0;
 // fa leggere a Sofia i messaggi (o un testo qualsiasi) e mette il risultato nell'anteprima del prospetto
 async function leggiConSofia(messaggi, opz = {}) {
-  const d = statoDettatura();
+  const d = opz.d || statoDettatura();
   if (!iaAccesa()) { d.ia = { errore: "chiave" }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); return; }
   const giro = ++letturaGiro;
   const { testo, tagliati } = testoPerLettura(messaggi, opz.papa || "");
-  d.ia = { leggo: true, n: messaggi.length, tagliati };
-  if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else apriFoglio({ tipo: "dettatura" });
+  const immagini = Array.isArray(opz.immagini) ? opz.immagini.filter(x => x && x.dati) : [];
+  d.ia = { leggo: true, n: messaggi.length, tagliati, fase: immagini.length ? `Leggo i messaggi e guardo ${immagini.length === 1 ? "la foto" : immagini.length + " foto"}` : "" };
+  // se il foglio l'hai chiuso tu mentre ascoltava i vocali, non lo riapro: si aggiorna la striscia "sta leggendo"
+  if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else if (!opz.d) apriFoglio({ tipo: "dettatura" }); else if (!S.foglio) disegna();
   try {
-    const { r, ripiego } = await chiediLettura({ sistema: istruzioniLettura(), storia: [], testo: `ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, secondi: 150, maxToken: 16000 });
+    const { r, ripiego } = await chiediLettura({ sistema: istruzioniLettura(), storia: [], testo: `${immagini.length ? `Ti mando anche ${immagini.length === 1 ? "una foto" : immagini.length + " foto"} della chat (numerate nell'ordine, nei messaggi trovi "foto n. 1"...): se sono il prospetto scritto a mano o stampato, leggile come il resto.\n` : ""}ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, immagine: immagini.length ? immagini.map(x => ({ mime: x.mime, dati: x.dati })) : null, secondi: 150, maxToken: 16000 });
     if (giro !== letturaGiro) return;
     const j = jsonDaRisposta(r.grezzo);
     if (!j) throw new Error("ha risposto in un modo che non capisco. Riprova.");
     const x = lettoDaSofia(j);
     d.ia = { ...x, modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length, tagliati, testo: d.testo };
     d.scelte = {}; d.comportamenti = {};
+    // 0.99: la lettura resta da parte 3 ore e, se l'app non e' davanti agli occhi, arriva la notifica
+    salvaUltimaLettura(j, { modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length, testo: d.testo, base: d.base, fonte: d.fonte || null });
+    const nr = x.righe.filter(q => q.azione !== "niente").length, ni = x.indicazioni.length;
+    avvisaSulTelefono(`${nomeGov()} ha letto ${messaggi.length > 1 ? messaggi.length + " messaggi" : "il messaggio"}`, nr || ni ? [nr ? `${nr} ${nr === 1 ? "cambio" : "cambi"} nel prospetto` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} per le signore` : ""].filter(Boolean).join(" · ") + ". Tocca per controllare e salvare." : "Nel prospetto è già tutto giusto.");
   } catch (e) {
     if (giro !== letturaGiro) return;
     console.warn("lettura sofia", e);
     d.ia = { errore: String((e && e.message) || e).slice(0, 200), n: messaggi.length };
+    avvisaSulTelefono(`${nomeGov()} non è riuscita a leggere`, "Apri l'app e riprova.");
   }
-  if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio();
+  if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else if (!S.foglio && S.dett === d) disegna();
 }
 // il testo che c'e' nella casella (o i messaggi tenuti da parte se arrivano da WhatsApp) -> Sofia
 function leggiTestoConSofia() {
@@ -5440,7 +5462,7 @@ function partiSofiaHtml(d, parte = "testa") {
   const x = d.ia; if (!x) return "";
   if (parte === "coda" && (x.errore || x.leggo)) return "";
   if (x.errore === "chiave") return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>Per far leggere i messaggi a ${esc(nomeGov())} serve la chiave di Gemini su questo telefono</b><small>Altro → ${esc(nomeGov())} intelligente: incolla la chiave, oppure sul computer tocca «Metti la chiave anche sui telefoni». Intanto qui sotto c'è quello che capisco con le regole fisse.</small><button type="button" class="btnsm" data-vista-chiudi="altro">Vai ad Altro</button></div></div>`;
-  if (x.leggo) return `<div class="dt-fonte leggo"><span class="dt-giro" aria-hidden="true"></span><div><b>${esc(nomeGov())} sta leggendo ${x.n > 1 ? x.n + " messaggi" : "il testo"}…</b><small>Usa il modello più bravo che c'è: può volerci fino a un minuto. Poi controlli tu riga per riga.${x.tagliati ? ` (I ${x.tagliati} messaggi più vecchi li ho lasciati fuori: erano troppi.)` : ""}</small></div></div>`;
+  if (x.leggo) return `<div class="dt-fonte leggo"><span class="dt-giro" aria-hidden="true"></span><div><b>${esc(nomeGov())} sta leggendo ${x.n > 1 ? x.n + " messaggi" : "il testo"}…</b>${x.fase ? `<span>${esc(x.fase)}</span>` : ""}<small>Può volerci qualche minuto. Puoi anche uscire dall'app: quando ha finito ti arriva la notifica.${x.tagliati ? ` (I ${x.tagliati} messaggi più vecchi li ho lasciati fuori: erano troppi.)` : ""}</small></div></div>`;
   if (x.errore) return `<div class="dt-fonte avviso"><span class="dt-fonte-ico">✨</span><div><b>${esc(nomeGov())} non è riuscita a leggere</b><small>${esc(x.errore)}</small><button type="button" class="btnsm" data-dett-sofia>Riprova</button></div></div>`;
   const modello = nomeModello(x.modello);
   const ind = x.indicazioni || [], ab = x.abitudini || [];
@@ -5451,50 +5473,266 @@ function partiSofiaHtml(d, parte = "testa") {
     ${ab.length ? `<div class="floorlabel" style="margin-top:12px">Come scrive papà: me lo ricordo? <span>${ab.filter(v => v.scelta).length}</span></div><div class="rows">${ab.map(v => riga(v, "ab")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Le spuntate finiscono nel taccuino: la prossima volta lo capisco meglio.</p>` : ""}`;
 }
 
-// ---- il foglio "La chat di papà": file della chat esportata -> chi è papà, quanti giorni -> Sofia ------------------
-function apriChatPapa(grezzo, nomeFile) {
-  const { messaggi, intestazioni } = messaggiWhatsApp(grezzo);
-  if (!intestazioni || messaggi.length < 2) { usaTestoWhatsApp(grezzo, "condiviso"); return; }
+// ---- 0.99: LE CHAT DI WHATSAPP (papà e il gruppo "Albergo"), CON I VOCALI E LE FOTO, E L'AVVISO SUL TELEFONO -----------
+// Michele: "esporta la chat con papà e il gruppo albergo; deve sentire anche i vocali e mandarmi le notifiche sul telefono".
+// - WhatsApp non lascia leggere le chat a nessuna app: si esportano dal telefono (Esporta chat -> Includi media), anche
+//   tutte e due insieme, e si danno all'app (Condividi -> Pulizie Ricci, oppure il file da "Le chat di WhatsApp").
+// - I VOCALI li ascolta Gemini (trascrizione parola per parola, 6 per volta) e diventano messaggi come gli altri, al loro
+//   posto nella chat; le ULTIME FOTO della chat (fino a 4) le guarda insieme ai messaggi (spesso sono il foglio di papà).
+// - Quando ha finito e l'app non e' davanti agli occhi, arriva la NOTIFICA sul telefono (e su Telegram, se c'e' la tua
+//   chat negli avvisi); toccandola si apre l'anteprima. L'ultima lettura resta da parte 3 ore, anche se l'app si chiude.
+const RE_FILE_MEDIA = /\.(opus|ogg|m4a|mp3|aac|wav|jpe?g|png|webp)$/i;
+function mimeDi(nome) {
+  const x = String(nome || "").toLowerCase().split(".").pop();
+  return ({ opus: "audio/ogg", ogg: "audio/ogg", m4a: "audio/mp4", mp3: "audio/mp3", aac: "audio/aac", wav: "audio/wav", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" })[x] || "application/octet-stream";
+}
+// lo zip della chat esportata "con i media": si apre qui, senza librerie (directory centrale + DecompressionStream).
+// Si legge A PEZZI (file.slice): lo zip del gruppo con tante foto può essere grande e non lo carico tutto in memoria.
+async function leggiZip(file) {
+  const tot = file.size, pezzo = async (da, a) => new Uint8Array(await file.slice(da, a).arrayBuffer());
+  const coda = await pezzo(Math.max(0, tot - 66000), tot), dc = new DataView(coda.buffer);
+  let e = -1; for (let i = coda.length - 22; i >= 0; i--) if (dc.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("non è uno zip");
+  const n = dc.getUint16(e + 10, true), dimCD = dc.getUint32(e + 12, true), offCD = dc.getUint32(e + 16, true);
+  if (offCD === 0xffffffff || offCD + dimCD > tot) throw new Error("zip troppo grande o rovinato");
+  const cd = await pezzo(offCD, offCD + dimCD), dv = new DataView(cd.buffer), dec = new TextDecoder();
+  const voci = [];
+  for (let k = 0, p = 0; k < n && p + 46 <= cd.length; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const metodo = dv.getUint16(p + 10, true), dimC = dv.getUint32(p + 20, true), dim = dv.getUint32(p + 24, true);
+    const ln = dv.getUint16(p + 28, true), le = dv.getUint16(p + 30, true), lc = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+    const nome = dec.decode(cd.subarray(p + 46, p + 46 + ln));
+    p += 46 + ln + le + lc;
+    if (!nome.endsWith("/")) voci.push({ nome: nome.split("/").pop(), metodo, dimC, dim, off });
+  }
+  const estrai = async (x) => {
+    const h = await pezzo(x.off, x.off + 30), dh = new DataView(h.buffer);
+    if (h.length < 30 || dh.getUint32(0, true) !== 0x04034b50) throw new Error("zip rovinato");
+    const ini = x.off + 30 + dh.getUint16(26, true) + dh.getUint16(28, true), dati = file.slice(ini, ini + x.dimC);
+    if (x.metodo === 0) return dati;
+    if (x.metodo === 8) return await new Response(dati.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob();
+    throw new Error("compressione che non conosco");
+  };
+  return { voci, estrai };
+}
+function nomeChatDaFile(nome) {
+  const x = String(nome || "").replace(/\.(txt|zip)$/i, "").replace(/^_?chat$/i, "");
+  const m = /(?:chat\s+whatsapp\s+con|whatsapp\s+chat\s+(?:with|con|-)|chat\s+di\s+whatsapp\s+con|chat\s+con)\s*-?\s*(.+)$/i.exec(x);
+  return (m ? m[1] : x).replace(/[_]+/g, " ").trim() || "Chat";
+}
+async function blobMedia(m) { return m.file ? m.file : await m.z.estrai(m.v); }
+function inBase64(blob) { return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = ko; r.readAsDataURL(blob); }); }
+// i file arrivati (zip, .txt, vocali, foto) -> le chat con i loro messaggi e i media per nome di file
+async function raccogliChat(files) {
+  const chats = [], media = new Map();
+  // gruppo = lo dicono le righe di sistema, oppure scrivono più di due persone (la chat privata con papà ne ha due)
+  // la stessa chat arrivata due volte (esportata di nuovo): vale l'ultima
+  const aggiungiTxt = (nome, testo) => {
+    const { messaggi, intestazioni, gruppo } = messaggiWhatsApp(testo);
+    if (!intestazioni || !messaggi.length) return;
+    const nuova = { nome: nomeChatDaFile(nome), messaggi, attiva: true, gruppo: !!gruppo || new Set(messaggi.map(m => m.chi).filter(Boolean)).size > 2 };
+    const i = chats.findIndex(x => x.nome === nuova.nome); if (i >= 0) chats[i] = nuova; else chats.push(nuova);
+  };
+  for (const f of files) {
+    const n = String(f.name || "").toLowerCase(), t = String(f.type || "");
+    if (/\.zip$/.test(n) || /zip/.test(t)) {
+      try {
+        const z = await leggiZip(f);
+        for (const v of z.voci) {
+          if (/\.txt$/i.test(v.nome)) { const txt = await (await z.estrai(v)).text(); aggiungiTxt(/^_?chat\.txt$/i.test(v.nome) ? f.name : v.nome, txt); }
+          else if (RE_FILE_MEDIA.test(v.nome)) media.set(v.nome, { z, v });
+        }
+      } catch (e) { console.warn("zip", e); toast("Non riesco ad aprire lo zip della chat: " + String(e.message || e)); }
+    } else if (/\.txt$/.test(n) || /^text\//.test(t)) aggiungiTxt(f.name || "chat.txt", await f.text());
+    else if (RE_FILE_MEDIA.test(n) || /^(audio|image)\//.test(t)) media.set(f.name || ("file-" + media.size), { file: f });
+  }
+  return { chats, media };
+}
+function mittentiDi(chats) {
   const conta = {};
-  for (const m of messaggi) { const c = conta[m.chi] || (conta[m.chi] = { n: 0, camere: 0 }); c.n++; if (haCameraNelTesto(m.testo)) c.camere++; }
-  const mittenti = Object.entries(conta).filter(([k]) => k).sort((a, b) => b[1].camere - a[1].camere || b[1].n - a[1].n).map(([nome, v]) => ({ nome, ...v }));
-  const ric = papaRicordato();
+  for (const c of chats.filter(c => c.attiva)) for (const m of c.messaggi) { if (!m.chi) continue; const x = conta[m.chi] || (conta[m.chi] = { n: 0, camere: 0 }); x.n++; if (m.testo && haCameraNelTesto(m.testo)) x.camere++; }
+  return Object.entries(conta).sort((a, b) => b[1].camere - a[1].camere || b[1].n - a[1].n).map(([nome, v]) => ({ nome, ...v }));
+}
+// Le chat arrivano UNA ALLA VOLTA (ogni "Condividi" riapre l'app da capo): le tengo da parte mezz'ora in una cache,
+// cosi' la seconda (il gruppo Albergo) si aggiunge alla prima (papa') e Sofia le legge insieme.
+const CACHE_CHAT = "ricci-chat-wa", MEZZORA = 30 * 60 * 1000;
+const eFileChat = (f) => /\.(txt|zip)$/i.test(String(f.name || "")) || /^text\/|zip/.test(String(f.type || ""));
+async function chatTenute() {
+  try {
+    const c = await caches.open(CACHE_CHAT), r = await c.match(new URL("./chatwa/info", location.href).href);
+    const info = r ? await r.json() : null;
+    if (!info || Date.now() - (Number(info.quando) || 0) > MEZZORA) { if (info) await caches.delete(CACHE_CHAT); return []; }
+    const out = [];
+    for (const f of info.file || []) { const x = await c.match(f.k); if (x) out.push(new File([await x.blob()], f.nome || "file", { type: f.tipo || "" })); }
+    return out;
+  } catch (e) { return []; }
+}
+async function tieniChat(files) {
+  try {
+    await caches.delete(CACHE_CHAT);
+    const c = await caches.open(CACHE_CHAT), info = { quando: Date.now(), file: [] };
+    let i = 0;
+    for (const f of files) { const k = new URL("./chatwa/" + (i++), location.href).href; await c.put(k, new Response(f, { headers: { "Content-Type": f.type || "application/octet-stream" } })); info.file.push({ k, nome: f.name || "", tipo: f.type || "" }); }
+    await c.put(new URL("./chatwa/info", location.href).href, new Response(JSON.stringify(info), { headers: { "Content-Type": "application/json" } }));
+  } catch (e) { console.warn("tieni chat", e); }
+}
+async function apriChatWA(files, opz = {}) {
+  const conChat = files.some(eFileChat);
+  let tutti = files;
+  if (conChat && opz.unisci !== false) {
+    const prima = await chatTenute();
+    if (prima.length) { const nomi = new Set(files.map(f => f.name)); tutti = [...prima.filter(f => !nomi.has(f.name)), ...files]; }
+  }
+  const { chats, media } = await raccogliChat(tutti);
+  if (chats.length) tieniChat(tutti);
+  if (!chats.length) {
+    const audio = [...media.entries()].filter(([k]) => /\.(opus|ogg|m4a|mp3|aac|wav)$/i.test(k));
+    if (audio.length) { leggiVocaliCondivisi(audio, media); return; }
+    const foto = [...media.values()].find(m => m.file && /^image\//.test(m.file.type || ""));
+    if (foto) { leggiFotoProspetto(foto.file); return; }
+    toast("In questi file non trovo una chat di WhatsApp."); return;
+  }
+  const mittenti = mittentiDi(chats), ric = papaRicordato();
   const papa = mittenti.some(m => m.nome === ric) ? ric : (mittenti.find(m => !/michele/i.test(m.nome) && m.camere) || mittenti[0] || {}).nome || "";
-  S.chatPapa = { messaggi, mittenti, papa, giorni: 14, nomeFile: nomeFile || "" };
+  S.chatPapa = { chats, media, papa, giorni: 14 };
   if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
   apriFoglio({ tipo: "chatPapa" });
 }
+function apriChatPapa(grezzo, nomeFile) { apriChatWA([new File([String(grezzo || "")], nomeFile || "Chat WhatsApp.txt", { type: "text/plain" })]); }
+// i messaggi delle chat scelte nel periodo, in ordine di tempo; con piu' chat ogni messaggio dice da quale viene
 function messaggiScelti(c) {
-  const ultima = c.messaggi.reduce((x, m) => (m.data > x ? m.data : x), "") || L.oggiISO();
+  const attive = c.chats.filter(x => x.attiva);
+  const tutti = attive.flatMap(x => x.messaggi.map(m => ({ ...m, chat: attive.length > 1 ? (x.gruppo ? x.nome : "chat con " + x.nome) : "" })));
+  const ultima = tutti.reduce((x, m) => (m.data > x ? m.data : x), "") || L.oggiISO();
   const da = c.giorni ? L.aggiungiGiorni(ultima > L.oggiISO() ? L.oggiISO() : ultima, -c.giorni) : "";
-  return c.messaggi.filter(m => !da || !m.data || m.data >= da);
+  return tutti.filter(m => !da || !m.data || m.data >= da).sort((a, b) => ((a.data || "") + (a.ora || "")).localeCompare((b.data || "") + (b.ora || "")));
 }
 function foglioChatPapa() {
   const c = S.chatPapa;
-  if (!c) return `<h3>La chat di papà</h3><div class="muted">Nessuna chat caricata.</div>`;
-  const prima = c.messaggi.find(m => m.data), ultima = [...c.messaggi].reverse().find(m => m.data);
+  if (!c) return `<h3>Le chat di WhatsApp</h3><div class="muted">Nessuna chat caricata.</div>`;
   const scelti = messaggiScelti(c);
+  const voc = scelti.filter(m => m.media && m.media.tipo === "audio"), vocOk = voc.filter(m => c.media.has(m.media.file));
+  const fot = scelti.filter(m => m.media && m.media.tipo === "foto" && c.media.has(m.media.file));
+  const mittenti = mittentiDi(c.chats);
   const periodi = [[7, "1 settimana"], [14, "2 settimane"], [31, "1 mese"], [92, "3 mesi"], [0, "Tutta"]];
-  return `<h3>La chat di papà</h3>
-    <div class="dt-fonte wa">${ICO_WA}<div><b>${esc(c.nomeFile || "Chat di WhatsApp")}</b><span>${c.messaggi.length} messaggi${prima && ultima ? `, dal ${esc(L.dataMedia(prima.data))} al ${esc(L.dataMedia(ultima.data))}` : ""}</span></div></div>
+  const schedaChat = (x, i) => {
+    const pr = x.messaggi.find(m => m.data), ul = [...x.messaggi].reverse().find(m => m.data);
+    const nv = x.messaggi.filter(m => m.media && m.media.tipo === "audio").length;
+    return `<button type="button" class="cw-chat" aria-pressed="${x.attiva}" data-cw-chat="${i}">${ICO_WA}<span><b>${esc(x.nome)}</b><small>${x.messaggi.length} messaggi${nv ? ` · ${nv} ${nv === 1 ? "vocale" : "vocali"}` : ""}${pr && ul ? (pr.data === ul.data ? ` · ${esc(L.dataMedia(pr.data))}` : ` · dal ${esc(L.dataMedia(pr.data))} al ${esc(L.dataMedia(ul.data))}`) : ""}</small></span><i aria-hidden="true">${x.attiva ? "✓" : ""}</i></button>`;
+  };
+  return `<h3>Le chat di WhatsApp</h3>
+    <div class="muted">Tocca una chat per leggerla o lasciarla fuori.</div>
+    <div class="cw-chats">${c.chats.map(schedaChat).join("")}</div>
+    <label class="cw-aggiungi">＋ Aggiungi un'altra chat<input type="file" class="cwAggiungi" multiple accept=".txt,.zip,text/plain,application/zip,audio/*,image/*" hidden></label>
+    ${c.chats.length === 1 ? `<p class="muted small" style="margin:6px 2px 0">Per leggere anche l'altra chat (il gruppo Albergo o papà): esportala allo stesso modo e scegli <b>Pulizie Ricci</b> entro mezz'ora. Si aggiunge qui.</p>` : ""}
     <div class="floorlabel" style="margin-top:14px">Chi scrive il prospetto?</div>
-    <div class="scelte">${c.mittenti.slice(0, 6).map(m => `<button type="button" aria-pressed="${m.nome === c.papa}" data-cp-papa="${esc(m.nome)}">${esc(m.nome)} <small>· ${m.n}</small></button>`).join("")}</div>
+    <div class="scelte">${mittenti.slice(0, 6).map(m => `<button type="button" aria-pressed="${m.nome === c.papa}" data-cp-papa="${esc(m.nome)}">${esc(m.nome)} <small>· ${m.n}</small></button>`).join("")}</div>
     <div class="floorlabel" style="margin-top:10px">Quali messaggi leggo?</div>
     <div class="scelte">${periodi.map(([g, t]) => `<button type="button" aria-pressed="${c.giorni === g}" data-cp-giorni="${g}">${t}</button>`).join("")}</div>
-    <p class="muted small" style="margin:6px 2px 0">Leggo <b>${scelti.length}</b> messaggi (di tutti: quelli degli altri mi servono per capire). Le parole «domani», «lunedì» le leggo col giorno del messaggio.</p>
-    <button class="big main" data-cp-leggi ${scelti.length ? "" : "disabled"}>✨ Fai leggere a ${esc(nomeGov())}</button>
-    <p class="muted small" style="margin:8px 2px 0">${esc(nomeGov())} trova chi dorme dove, le indicazioni per le signore e come scrive papà. Non salva niente: prima ti fa vedere tutto e tu spunti.${iaAccesa() ? "" : ` <b>Su questo telefono manca la chiave di Gemini</b>: senza, leggo con le regole fisse.`}</p>`;
+    <p class="muted small" style="margin:6px 2px 0">Leggo <b>${scelti.length}</b> messaggi${vocOk.length ? `, ascolto ${vocOk.length > MAX_VOCALI ? `gli ultimi <b>${MAX_VOCALI}</b> vocali` : `<b>${vocOk.length}</b> ${vocOk.length === 1 ? "vocale" : "vocali"}`}` : ""}${fot.length ? (fot.length === 1 ? " e guardo la foto" : ` e guardo le ultime <b>${Math.min(4, fot.length)}</b> foto`) : ""}. Le parole «domani», «lunedì» le leggo col giorno del messaggio.</p>
+    ${voc.length > vocOk.length ? `<div class="dt-dubbi"><b>${voc.length - vocOk.length === 1 ? "1 vocale non c'è" : `${voc.length - vocOk.length} vocali non ci sono`} nel file.</b> Per farmeli ascoltare esporta la chat con <b>«Includi file multimediali»</b>.</div>` : ""}
+    <button class="big main" data-cp-leggi ${scelti.length && c.chats.some(x => x.attiva) ? "" : "disabled"}>✨ Fai leggere a ${esc(nomeGov())}</button>
+    <p class="muted small" style="margin:8px 2px 0">${esc(nomeGov())} trova chi dorme dove, le indicazioni per le signore e come scrive papà. Non salva niente: prima ti fa vedere tutto e tu spunti. Se intanto esci dall'app, quando ha finito ti arriva la notifica.${iaAccesa() ? "" : ` <b>Su questo telefono manca la chiave di Gemini</b>: senza, niente vocali e leggo con le regole fisse.`}</p>`;
 }
 function collegaChatPapa() {
   const c = S.chatPapa; if (!c) return;
+  document.querySelectorAll("[data-cw-chat]").forEach(b => b.onclick = () => { const x = c.chats[Number(b.dataset.cwChat)]; if (x) x.attiva = !x.attiva; const ms = mittentiDi(c.chats); if (!ms.some(m => m.nome === c.papa)) c.papa = (ms[0] || {}).nome || ""; disegnaFoglio(); });
   document.querySelectorAll("[data-cp-papa]").forEach(b => b.onclick = () => { c.papa = b.dataset.cpPapa; try { localStorage.setItem(CHIAVE_PAPA, c.papa); } catch (e) {} disegnaFoglio(); });
   document.querySelectorAll("[data-cp-giorni]").forEach(b => b.onclick = () => { c.giorni = Number(b.dataset.cpGiorni) || 0; disegnaFoglio(); });
-  document.querySelectorAll("[data-cp-leggi]").forEach(b => b.onclick = () => {
-    const scelti = messaggiScelti(c); if (!scelti.length) return;
-    const testo = scelti.filter(m => !c.papa || m.chi === c.papa).map(m => m.testo).join("\n");
-    S.dett = { testo, base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte: { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: c.papa ? [c.papa] : [], data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "" }, rif: "", wa: { messaggi: scelti, papa: c.papa, testo } };
-    if (iaAccesa()) leggiConSofia(scelti, { papa: c.papa }); else apriFoglio({ tipo: "dettatura" });
-  });
+  document.querySelectorAll("[data-cp-leggi]").forEach(b => b.onclick = () => { chiediPermessoAvvisi(); leggiChatWA(); });
+  document.querySelectorAll(".cwAggiungi").forEach(i => i.onchange = async () => { const fl = [...(i.files || [])]; i.value = ""; if (fl.length) await apriChatWA(fl); });
+}
+// la lettura delle chat: prima i vocali (trascritti), poi le foto, poi tutto insieme a Sofia
+async function leggiChatWA() {
+  const c = S.chatPapa; if (!c) return;
+  const scelti = messaggiScelti(c).map(m => ({ ...m }));
+  if (!scelti.length) return;
+  const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: c.papa ? [c.papa] : [], data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "" };
+  const testoPapa = scelti.filter(m => m.testo && (!c.papa || m.chi === c.papa)).map(m => m.testo).join("\n");
+  S.dett = { testo: testoPapa, base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte, rif: "", wa: { messaggi: scelti, papa: c.papa, testo: testoPapa } };
+  if (!iaAccesa()) { apriFoglio({ tipo: "dettatura" }); return; }
+  const d = S.dett;
+  const voc = scelti.filter(m => m.media && m.media.tipo === "audio" && c.media.has(m.media.file)).slice(-MAX_VOCALI);
+  d.ia = { leggo: true, n: scelti.length, fase: voc.length ? `Ascolto i vocali: 0 di ${voc.length}` : "" };
+  apriFoglio({ tipo: "dettatura" });
+  if (voc.length) {
+    try { await trascriviVocali(voc, c.media, (fatti) => { if (S.dett !== d) return; d.ia = { ...d.ia, fase: `Ascolto i vocali: ${fatti} di ${voc.length}` }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else { const sm = $(".cw-banner.leggo small"); if (sm) sm.textContent = `${d.ia.fase}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.`; } }); }
+    catch (e) { console.warn("vocali", e); }
+    if (S.dett !== d) return;
+  }
+  const did = (m) => (m.didascalia ? " " + m.didascalia : "");
+  for (const m of scelti) if (m.media && !m.testo) m.testo = m.media.tipo === "audio" ? "🎤 (un vocale che non ho ascoltato)" : "📷 (una foto)" + did(m);
+  const foto = scelti.filter(m => m.media && m.media.tipo === "foto" && c.media.has(m.media.file)).slice(-4);
+  const immagini = [];
+  for (const m of foto) { try { const b = await blobMedia(c.media.get(m.media.file)); immagini.push(await fotoPiccola(new File([b], m.media.file, { type: mimeDi(m.media.file) }))); m.testo = `📷 (foto n. ${immagini.length}: la vedi tra le immagini)${did(m)}`; } catch (e) { console.warn("foto chat", e); } }
+  d.wa.messaggi = scelti;
+  await leggiConSofia(scelti.filter(m => m.testo), { papa: c.papa, immagini, d });
+}
+// i vocali condivisi da soli (tieni premuto il vocale -> Condividi -> Pulizie Ricci)
+function leggiVocaliCondivisi(audio, media) {
+  const oggi = L.oggiISO();
+  S.chatPapa = { chats: [{ nome: "Vocali", messaggi: audio.map(([nome]) => ({ data: oggi, ora: "", chi: "", testo: "", media: { file: nome, tipo: "audio" } })), attiva: true }], media, papa: "", giorni: 0 };
+  if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
+  chiediPermessoAvvisi();
+  leggiChatWA();
+}
+const MAX_VOCALI = 60;
+async function trascriviVocali(vocali, media, avanza) {
+  const nomiCamere = S.camere.map(c => c.nome.replace(" · ", " ")).join(", ");
+  const lotti = []; for (let i = 0; i < vocali.length; i += 6) lotti.push(vocali.slice(i, i + 6));
+  let fatti = 0, prossimo = 0;
+  const lavora = async () => {
+    while (prossimo < lotti.length) {
+      const lotto = lotti[prossimo++], parti = [];
+      for (const m of lotto) {
+        try { const b = await blobMedia(media.get(m.media.file)); if (b.size > 6e6) { m.testo = "🎤 (vocale troppo lungo da ascoltare)"; continue; } parti.push({ m, mime: mimeDi(m.media.file), dati: await inBase64(b) }); }
+        catch (e) { console.warn("vocale", e); }
+      }
+      if (parti.length) {
+        const sistema = `Trascrivi in italiano, parola per parola, questi ${parti.length} messaggi vocali di WhatsApp, nell'ordine in cui te li mando. Sono di una famiglia che gestisce un piccolo albergo a Lesina: parlano di camere (${nomiCamere}), di ospiti (cognomi), di giorni, date, pulizie. Non riassumere e non inventare: se una parola non si capisce scrivi [?]. Rispondi SOLO con questo JSON: {"vocali":["trascrizione del primo","trascrizione del secondo"]}`;
+        try {
+          const { r } = await chiediLettura({ sistema, storia: [], testo: `Ecco ${parti.length === 1 ? "il vocale" : `i ${parti.length} vocali, nell'ordine`}.`, immagine: parti.map(p => ({ mime: p.mime, dati: p.dati })), secondi: 120, maxToken: 8000 });
+          const j = jsonDaRisposta(r.grezzo), lista = j && Array.isArray(j.vocali) ? j.vocali : [];
+          parti.forEach((p, k) => { const t = String(lista[k] || "").trim(); p.m.testo = t ? `🎤 (vocale) ${t}` : "🎤 (un vocale che non ho capito)"; });
+        } catch (e) { console.warn("trascrizione", e); parti.forEach(p => { p.m.testo = "🎤 (un vocale che non sono riuscita ad ascoltare)"; }); }
+      }
+      fatti += lotto.length; avanza(fatti);
+    }
+  };
+  await Promise.all([lavora(), lavora()]);
+}
+// ---- l'avviso sul telefono (notifica dell'app; e Telegram, se c'e' la tua chat negli avvisi) ------------------------------
+async function chiediPermessoAvvisi() { try { if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission(); } catch (e) {} }
+async function avvisaSulTelefono(titolo, corpo) {
+  let fatto = false;
+  try {
+    if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) { await reg.showNotification(titolo, { body: corpo, icon: "icon-192.png", badge: "icon-192.png", tag: "sofia-lettura", renotify: true, data: { url: "./index.html?lettura=1" } }); fatto = true; }
+    }
+  } catch (e) { console.warn("notifica", e); }
+  try { if (S.avvisi && S.avvisi.token && S.avvisi.chatMio) await inviaTelegram(`👩 ${titolo}\n${corpo}`, "sofiaLettura", { aMe: true }); } catch (e) {}
+  return fatto;
+}
+// l'ultima lettura resta da parte 3 ore: se l'app si chiude, la ritrovi (si ricalcola col prospetto di quel momento)
+const CHIAVE_LETTURA = "ricci_ultima_lettura";
+function salvaUltimaLettura(j, extra) { try { localStorage.setItem(CHIAVE_LETTURA, JSON.stringify({ quando: Date.now(), j, ...extra })); } catch (e) {} }
+function togliUltimaLettura() { try { localStorage.removeItem(CHIAVE_LETTURA); } catch (e) {} }
+function riprendiUltimaLettura() {
+  let x = null; try { x = JSON.parse(localStorage.getItem(CHIAVE_LETTURA) || "null"); } catch (e) {}
+  if (!x || !x.j || Date.now() - (Number(x.quando) || 0) > 3 * 3600 * 1000) return false;
+  const letto = lettoDaSofia(x.j);
+  S.dett = { testo: x.testo || "", base: x.base || settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte: x.fonte || null, rif: "", ia: { ...letto, modello: x.modello || "", ripiego: !!x.ripiego, n: x.n || 0, testo: x.testo || "" } };
+  return true;
+}
+function letturaInCorso() { const d = S.dett; return !!(d && d.ia && d.ia.leggo); }
+function letturaDaControllare() { const d = S.dett; return !!(d && d.ia && !d.ia.leggo && !d.ia.errore && ((d.ia.righe || []).some(r => r.azione !== "niente") || (d.ia.indicazioni || []).length)); }
+function bannerLettura() {
+  if (S.foglio && S.foglio.tipo === "dettatura") return "";
+  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo le chat…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small></span><i aria-hidden="true">›</i></button>`;
+  if (!letturaDaControllare()) return "";
+  const x = S.dett.ia, nr = (x.righe || []).filter(r => r.azione !== "niente").length, ni = (x.indicazioni || []).length;
+  return `<button type="button" class="cw-banner" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} ha letto le chat</b><small>${[nr ? `${nr} ${nr === 1 ? "cambio" : "cambi"} nel prospetto` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} per le signore` : ""].filter(Boolean).join(" · ")}: tocca per controllare e salvare</small></span><i aria-hidden="true">›</i></button>`;
 }
 
 // ---- la chiave di Gemini anche sui telefoni dei proprietari (importazioni: la leggono SOLO i proprietari) ----------
@@ -5650,6 +5888,7 @@ function collega() {
   document.querySelectorAll("[data-superficie]").forEach(b => b.onclick = () => apriFoglio({ tipo: "superficie", id: b.dataset.superficie, tipoSup: b.dataset.tipo }));
   document.querySelectorAll("[data-giro-scegli]").forEach(b => b.onclick = () => apriFoglio({ tipo: "giroScegli" }));
   document.querySelectorAll("[data-colpo]").forEach(b => b.onclick = () => { S.colpo = b.dataset.colpo; disegna(); });
+  document.querySelectorAll("[data-apri-lettura]").forEach(b => b.onclick = () => { if (!letturaDaControllare() && !letturaInCorso()) riprendiUltimaLettura(); apriFoglio({ tipo: "dettatura" }); });
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
@@ -5757,7 +5996,7 @@ function collegaFoglio() {
     document.querySelectorAll("[data-ins-wa]").forEach(b => b.onclick = () => incollaDaWhatsApp());
     document.querySelectorAll(".panel .insFoto").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) leggiFotoProspetto(fl); });
     document.querySelectorAll(".panel .fileFoglio").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) { chiudiFoglio(); leggiFileExcel(fl); } });
-    document.querySelectorAll(".panel .insChat").forEach(i => i.onchange = async () => { const fl = i.files && i.files[0]; i.value = ""; if (!fl) return; let t = ""; try { t = await fl.text(); } catch (e) { toast("Non riesco ad aprire questo file."); return; } apriChatPapa(t, fl.name || ""); });
+    document.querySelectorAll(".panel .insChat").forEach(i => i.onchange = async () => { const fl = [...(i.files || [])]; i.value = ""; if (!fl.length) return; chiediPermessoAvvisi(); await apriChatWA(fl); });
     document.querySelectorAll("[data-ins-scrivi]").forEach(b => b.onclick = () => { apriDettaturaCon("", null); setTimeout(() => $("#dtTesto")?.focus(), 80); });
     document.querySelectorAll("[data-ins-copia]").forEach(b => b.onclick = () => { const d = statoDettatura(); d.scelte = {}; d.comportamenti = {}; d.fonte = null; d.rif = ""; apriFoglio({ tipo: "dettatura", copia: true }); });
     return;

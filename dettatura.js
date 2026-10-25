@@ -476,6 +476,7 @@ Non aggiungere nient'altro: niente spiegazioni, niente tabelle.`;
 // (il prospetto piu' recente) e, dentro, solo le righe con una camera o con "settimana prossima" e simili.
 const RE_WA_TESTA = /^\[?\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4}),?\s+(\d{1,2})[:.](\d{2})(?:[:.]\d{2})?(?:\s*[ap]\.?\s?m\.?)?\s*\]?\s*(?:[-–]\s*)?(.*)$/i;
 const RE_WA_VUOTO = /^(?:<[^>]*>|\(?file allegato\)?|null|media omess[io]|immagine omessa|video omesso|audio omesso|sticker omesso|gif omessa|documento omesso|questo messaggio (?:e|è) stato eliminato|hai eliminato questo messaggio|messaggio eliminato)$/i;
+const RE_WA_MEDIA = /^(?:<\s*(?:allegato|attached|allegati)\s*:\s*)?([^<>:\n]{3,80}?\.(?:opus|ogg|m4a|mp3|aac|wav|amr|jpe?g|png|webp))\s*>?\s*(?:\((?:file allegato|file attached|allegato)\))?$/i;
 const RE_WA_DIRETTIVA = /^(?:la )?(?:settimana prossima|prossima settimana|settimana dopo|questa settimana|settimana corrente|tra (?:due|2) settimane)\b/;
 function dataWhatsApp(g, m, a) {
   g = Number(g); m = Number(m); a = Number(a); if (a < 100) a += 2000;
@@ -488,7 +489,7 @@ function haCamera(riga) { const re = aliasRe(); re.lastIndex = 0; const ok = re.
 // Serve a Sofia per leggere la chat di papà: sa chi ha scritto cosa e in che giorno (cosi' "domani" e' il giorno dopo il messaggio).
 export function messaggiWhatsApp(grezzo) {
   const pulito = String(grezzo || "").replace(/\r\n?/g, "\n").replace(/[‎‏‪-‮⁦-⁩﻿]/g, "");
-  const msgs = []; let ult = null, teste = 0;
+  const msgs = []; let ult = null, teste = 0, gruppo = false;
   for (const r of pulito.split("\n")) {
     const m = RE_WA_TESTA.exec(r);
     const data = m ? dataWhatsApp(m[1], m[2], m[3]) : "";
@@ -496,18 +497,31 @@ export function messaggiWhatsApp(grezzo) {
       teste++;
       const s = /^([^:]{1,60}?):\s?([\s\S]*)$/.exec(m[6] || "");
       ult = { data, ora: String(m[4]).padStart(2, "0") + ":" + m[5], chi: s ? s[1].trim() : "", testo: s ? s[2] : "", sistema: !s };
+      // e' un gruppo? le righe di sistema lo dicono ("Michele ha creato il gruppo", "ha cambiato il nome del gruppo"...)
+      if (!s && /\bgrupp[oi]\b|\bgroup\b/i.test(m[6] || "")) gruppo = true;
       msgs.push(ult); continue;
     }
     if (ult) ult.testo += "\n" + r; else msgs.push(ult = { data: "", ora: "", chi: "", testo: r, sistema: false });
   }
   if (!teste) return { messaggi: pulito.trim() ? [{ data: "", ora: "", chi: "", testo: pulito.trim() }] : [], intestazioni: false };
-  const messaggi = msgs.filter(m => !m.sistema).map(m => ({ data: m.data, ora: m.ora, chi: m.chi, testo: m.testo.replace(/<\s*(?:questo messaggio (?:e|è) stato modificato|messaggio modificato)\s*>/gi, "").trim() }))
-    .filter(m => m.testo && !RE_WA_VUOTO.test(m.testo));
-  return { messaggi, intestazioni: true };
+  const messaggi = msgs.filter(m => !m.sistema).map(m => {
+    const testo = m.testo.replace(/<\s*(?:questo messaggio (?:e|è) stato modificato|messaggio modificato)\s*>/gi, "").trim();
+    // 0.99: i vocali e le foto della chat esportata "con i media": "PTT-20261025-WA0001.opus (file allegato)" (Android)
+    // oppure "<allegato: 00000012-AUDIO-2026-10-25.opus>" (iPhone). Il testo lo mette poi Sofia (trascrizione) o resta la foto.
+    // la foto con la didascalia: il nome del file sulla prima riga, la didascalia sotto
+    const righe = testo.split("\n"), md = RE_WA_MEDIA.exec(righe[0].trim());
+    if (md) {
+      const file = md[1].trim(), did = righe.slice(1).join("\n").trim();
+      return { data: m.data, ora: m.ora, chi: m.chi, testo: "", media: { file, tipo: /\.(opus|ogg|m4a|mp3|aac|wav|amr)$/i.test(file) ? "audio" : "foto" }, ...(did ? { didascalia: did } : {}) };
+    }
+    return { data: m.data, ora: m.ora, chi: m.chi, testo };
+  }).filter(m => m.media || (m.testo && !RE_WA_VUOTO.test(m.testo)));
+  return { messaggi, intestazioni: true, gruppo };
 }
 export function haCameraNelTesto(t) { return String(t || "").split("\n").some(haCamera); }
 export function testoDaWhatsApp(grezzo) {
-  const { messaggi: buoni, intestazioni } = messaggiWhatsApp(grezzo);
+  const { messaggi: tutti, intestazioni } = messaggiWhatsApp(grezzo);
+  const buoni = tutti.map(m => (!m.testo && m.didascalia ? { ...m, testo: m.didascalia } : m)).filter(m => m.testo);
   // un messaggio solo copiato (senza intestazione): resta com'e'
   if (!intestazioni) { const t = buoni.length ? buoni[0].testo : ""; return { testo: t, messaggi: t ? 1 : 0, chi: [], data: "", tolte: 0, intestazioni: false }; }
   const conCamera = buoni.filter(m => m.testo.split("\n").some(haCamera));

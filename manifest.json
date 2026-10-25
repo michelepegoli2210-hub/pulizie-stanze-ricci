@@ -51,7 +51,15 @@
             "application/vnd.ms-excel.sheet.macroEnabled.12",
             ".xlsm",
             "application/vnd.oasis.opendocument.spreadsheet",
-            ".ods"
+            ".ods",
+            "audio/*",
+            ".opus",
+            ".ogg",
+            ".m4a",
+            ".mp3",
+            "application/zip",
+            "application/x-zip-compressed",
+            ".zip"
           ]
         }
       ]
