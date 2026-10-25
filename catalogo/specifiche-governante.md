@@ -1658,3 +1658,28 @@ Michele (sulla mappa della 1.0.5, risposta 2: "i colori devono essere piu' forti
 - La colonna delle camere come le targhette (maiuscolo, fondo avorio, 92 px: FENICOTTERI intera), barre un po' piu' alte, nelle barre il nome pulito dell'ospite.
 ### PROVE
 - prova106mappa (targhetta chiara in maiuscolo con la porta, ospite bianco e piu' grande con l'omino, colore pieno, libera grigia tratteggiata, nessun nome tagliato anche a 360 px, tutta la mappa nella prima schermata, conti uguali ai dati, "Chi dorme" con camere, persone, notti e telefono, domani, i tocchi, il telefono che si salva, la settimana), prova106lettura (numeri mai a Gemini, segnaposto e numero rimesso, nome completo, nome di camera mai ospite, chat di Sofia senza telefoni), prova106parser (15 casi delle regole fisse), piu' tutte le prove di prima.
+
+## 80. La 1.0.7 (25 ottobre): SOFIA SENZA "SANTINO" E IL PROSPETTO CHE CAPISCE CHIUNQUE (DUE GIRI DI GEMINI 4 ARGON)
+Michele: "per adesso Sofia sembra veramente quasi un'immagine religiosa: ottimizziamo quella parte" e "chiedi a Gemini come rendere più ottimizzato il prospetto e le piantine: in un secondo si deve sapere, senza alcun dubbio, tutto il prospetto; lo deve poter leggere anche una persona che non c'entra niente con l'albergo: chi c'è nella camera, giorno per giorno, per quanto tempo rimane, il nome".
+### I DUE GIRI CON GEMINI 4 ARGON (17:13 e 17:16, foto con nomi inventati)
+- Sofia: il "santino" lo facevano quattro cose insieme: l'arco a tutto sesto intorno alla testa (nicchia/aureola), la luce che si apriva dal centro dietro la nuca, il filo di luce chiaro sui capelli, la simmetria perfetta (lei al centro dentro l'arco al centro). In un hotel moderno l'architettura dietro e' dritta, orizzontale o asimmetrica.
+- Prospetto, la critica severa di Gemini: ANTONIO sopra "Neri Paolo" sembrano due persone (la porticina da sola non basta); le camere che si liberano sembravano piene e in allarme (rosa, "← PARTE" rosso, nome barrato); "⇄ CAMBIO" non diceva chi era partito; con l'etichetta mancava la data di uscita ("5 notti" senza "fino a"); nella settimana i nomi tagliati ("Ro...", "Si...") e la domenica mostrava la settimana gia' finita; nelle Piantine "Fenicotteri" finiva sopra il prezzo.
+- Gemini proponeva anche caselle bianche con una striscia colorata a sinistra invece del colore pieno: NON l'ho fatto, perche' Michele aveva chiesto i colori piu' forti (lo chiedo a lui).
+### SOFIA
+- Via l'arco, via la luce dal centro e il filo chiaro sui capelli. Dietro di lei una PARETE da boutique hotel a linee dritte: boiserie a doghe sottili a sinistra, pannello liscio a destra, profilo d'ottone in cima all'altezza delle spalle (la testa esce sopra), luce di traverso da una finestra, angoli appena arrotondati (16 px) e la targhetta RECEPTION. Si sposta al contrario del telefono (10 px).
+- La sua ombra cade sulla parete, staccata da lei, e si sposta il doppio (26 px): lei sembra 4 cm davanti al muro. Su di lei solo un'ombra di lato che segue il telefono.
+- La nuvoletta del messaggio fa da "bancone" davanti a lei: filo d'ottone in cima e un'ombra che sale sulla vita di Sofia.
+- Il fantasmino nelle altre schermate: girato verso la sua nuvoletta (-7°), appena inclinato (-1,5°), ombra decisa di lato.
+### IL PROSPETTO PER CHI NON CONOSCE L'ALBERGO
+- Sulla targhetta, davanti al nome, la parola CAMERA (negli appartamenti APP.): "CAMERA SALVATORE", "APP. ZARA TERRA".
+- Frasi in italiano al posto delle sigle, e sempre il giorno in cui se ne va: "entra oggi · fino a ven 30", "fino a 22 nov · 31 notti", "? da controllare · fino a ...". Negli appartamenti il giorno e le notti su due righe intere.
+- LIBERA e' sempre grigia e tratteggiata, anche se quel giorno qualcuno se ne va: sotto, piccolo, "esce oggi: Famiglia Bianchi". Niente piu' rosso.
+- "Chi dorme stanotte": "entra oggi al posto di Sposi Marino · ..."; date e notti non si spezzano a meta'; le camere con "camera"/"app." davanti.
+- La legenda spiega anche i numeri sotto i giorni: "+ arrivano · − partono".
+- Col dito si sfogliano i giorni sulla mappa: verso sinistra il giorno dopo, verso destra quello prima (fino a 6 giorni avanti).
+- LA SETTIMANA parte da OGGI (i prossimi 7 giorni), non dal lunedi' gia' passato. Il nome che non sta nella barra si scrive accanto, nei giorni liberi; se non c'e' posto da nessuna parte (una notte sola tra due ospiti) c'e' il cognome solo, piu' piccolo ("Russo" invece di "Si...").
+### LE PIANTINE
+- I nomi delle camere non vanno piu' sopra il prezzo (Fenicotteri, Passerella, Salvatore piu' piccoli; i nomi lunghi degli appartamenti lasciano il posto al prezzo).
+- Gemini propone di rifare le Piantine con la stessa griglia di 13 caselle del Prospetto (con gli appartamenti), che invece di chi dorme mostra cosa pulire: da chiedere a Michele.
+### PROVE
+- prova107mappa (CAMERA/APP. sulle targhette, "fino a" in ogni camera piena, frasi al posto delle sigle, libere grigie con "esce oggi", "al posto di" nella lista, la settimana da oggi senza nomi tagliati, il dito che sfoglia i giorni, le Piantine senza nomi sopra il prezzo, la parete dritta dietro Sofia con il profilo d'ottone e senza alone), piu' tutte le prove di prima.
