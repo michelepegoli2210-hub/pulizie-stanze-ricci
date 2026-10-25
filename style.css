@@ -3816,3 +3816,204 @@ body.premium .sofia-hero[data-tre="1"] .casa-nuvola{border:1px solid #E2DCD0;box
 :root[data-theme="dark"] body.premium .casa-nuvola .casa-riga{color:#D6CFC4}
 :root[data-theme="dark"] body.premium .casa-nuvola .casa-spinta{color:#D4B677}
 :root[data-theme="dark"] body.premium .casa-lato .casa-ascolta span{color:#D6CFC4}
+
+/* ==========================================================================
+   1.1.0 · LA CASA CON LE DUE LINGUETTE (la soluzione B di Gemini, scelta da Michele) E LA CHAT TRASPARENTE
+   Michele: "e' un po' scomodo chattare con Sofia e leggere le notizie principali"; poi, vista la B: "quando si apre la
+   chat dovrebbe vedersi come sfondo trasparente piu' scuro Sofia... il segreto e' la trasparenza della schermata chat e
+   Sofia che si vede di sotto, pero' si deve leggere benissimo tutto".
+   Sotto Sofia un riquadro con due linguette: NOTIZIE DI OGGI (di serie: il saluto e le righe coi numeri veri, ognuna
+   porta alla sua pagina, poi il messaggio di Sofia) e CHAT (col numerino delle risposte nuove). Toccando "Chat" (o
+   quando le chiedi qualcosa, a voce o scrivendo) la chat sale fino al mento di Sofia: lei resta DIETRO, velata di
+   scuro, e continua a muoversi e a parlare; le scritte stanno in fumetti pieni, bianchi e dorati, grandi. In fondo la
+   casella per scriverle col microfono. "Notizie di oggi" o un tocco su Sofia: si torna alle notizie, sempre intere.
+   ========================================================================== */
+.casa-schede,.casa-righe,.casa-velo{display:none}
+/* le misure: notizie dal 63,5% di H (sotto la vita) fin quasi alla barra; chat dal 36% (sotto il mento) */
+body.premium .sofia-hero{--nv-top:calc(var(--h-casa) * .635);--nv-alto:calc(var(--h-casa) * .365 - 12px)}
+body.premium .sofia-hero.nuvola-aperta{--nv-top:calc(var(--h-casa) * .36);--nv-alto:calc(var(--h-casa) * .64 - 82px)}
+/* il riquadro: in cima le linguette, sotto una parte sola che si scorre col dito */
+body.premium .casa-nuvola{display:flex;flex-direction:column;overflow:hidden;padding:10px 12px 10px;border-radius:22px}
+body.premium .casa-nuvola::before,body.premium .casa-nuvola::after{display:none}
+body.premium .casa-maniglia,body.premium .casa-leggi:not([hidden]){display:none}
+body.premium .casa-schede{display:flex;flex:0 0 auto;gap:6px;margin:0 0 10px}
+body.premium .cs-tab{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 8px;border:0;border-radius:13px;background:#F3EFE6;color:#57534E;
+  font:800 15px/1 var(--f-body);white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,color .2s}
+body.premium .cs-tab .ico-linea{flex:0 0 auto;width:20px;height:20px}
+body.premium .cs-tab[aria-selected="true"]{background:#1C1917;color:#FFFFFF}
+body.premium .cs-conta{flex:0 0 auto;min-width:21px;height:21px;padding:0 6px;border-radius:11px;box-sizing:border-box;background:#B91C1C;color:#FFFFFF;font:800 12px/21px var(--f-body);font-style:normal;text-align:center}
+body.premium .cs-conta[hidden]{display:none}
+/* LE NOTIZIE DI OGGI */
+body.premium .casa-nuvola .casa-testo{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 2px 2px}
+body.premium .casa-nuvola .casa-sal{display:block;font:800 17px/22px var(--f-display);color:#1C1917}
+body.premium .casa-righe{display:grid;gap:4px;margin:8px 0 2px}
+body.premium .cr-riga{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;margin:0;padding:3px 6px 3px 2px;border:0;border-radius:12px;background:transparent;color:#292524;
+  font:600 16px/1.3 var(--f-body);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+body.premium .cr-riga:active{background:#F3EFE6}
+body.premium .cr-riga b{font-weight:800;color:#1C1917}
+body.premium .cr-ico{flex:0 0 32px;height:32px;border-radius:10px;display:grid;place-items:center}
+body.premium .cr-ico .ico-linea{width:19px;height:19px}
+body.premium .cr-ico.verde{background:#E7F3EB;color:#15803D}
+body.premium .cr-ico.arancio{background:#FBEDE3;color:#C2410C}
+body.premium .cr-ico.blu{background:#E9EFFB;color:#1D4ED8}
+body.premium .cr-ico.oro{background:#F6EEDC;color:#856535}
+body.premium .cr-ico.rosso{background:#FBE8E8;color:#B91C1C}
+body.premium .casa-nuvola .casa-riga{display:block;margin:8px 0 0;font:500 16px/1.45 var(--f-body);color:#292524}
+body.premium .casa-nuvola .casa-spinta{display:block;margin:6px 0 0;font:700 15.5px/1.4 var(--f-body);color:#856535}
+/* LA CHAT: si vede solo quando e' aperta */
+body.premium .casa-nuvola .casa-chat,body.premium .casa-nuvola .casa-sotto{display:none}
+body.premium .nuvola-aperta .casa-nuvola .casa-testo{display:none}
+body.premium .nuvola-aperta .casa-nuvola .casa-chat{display:flex;flex-direction:column;gap:9px;flex:1 1 auto;min-height:0;max-width:none;margin:0;padding:2px 2px 6px;border:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+body.premium .nuvola-aperta .casa-nuvola .casa-chat>:first-child{margin-top:auto}
+body.premium .nuvola-aperta .casa-nuvola .casa-sotto.vedi{display:block;flex:0 0 auto;margin-top:6px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.92);color:#1C1917;font:600 15px/1.35 var(--f-body)}
+/* il velo scuro sopra Sofia: lei si vede sotto, piu' scura, e continua a muoversi */
+body.premium .casa-velo{display:block;position:absolute;left:0;right:0;top:0;height:calc(var(--h-casa) + 80px);z-index:33;pointer-events:none;opacity:0;transition:opacity .26s ease;
+  background:linear-gradient(180deg,rgba(14,12,10,.30) 0%,rgba(14,12,10,.58) 34%,rgba(14,12,10,.70) 100%)}
+body.premium .sofia-hero.nuvola-aperta .casa-velo{opacity:1;pointer-events:auto}
+body.premium .sofia-hero.nuvola-aperta .casa-nuvola{z-index:34;background:transparent;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:2px 12px 4px}
+body.premium .sofia-hero.nuvola-aperta .cs-tab{background:rgba(255,255,255,.16);color:#FFFFFF;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.42)}
+body.premium .sofia-hero.nuvola-aperta .cs-tab[aria-selected="true"]{background:#FFFFFF;color:#1C1917;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+body.premium .casa-lato{transition:opacity .2s ease}
+body.premium .sofia-hero.nuvola-aperta .casa-lato{opacity:0;pointer-events:none}
+/* i fumetti: pieni (non trasparenti) e grandi, cosi' si leggono benissimo sopra Sofia */
+body.premium .casa-chat .sv-riga{display:flex;align-items:flex-end;gap:8px;max-width:100%}
+body.premium .casa-chat .sv-io{justify-content:flex-end}
+body.premium .casa-chat .sv-colonna{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:calc(100% - 46px)}
+body.premium .casa-chat .sv-foto{flex:0 0 32px;width:32px;height:32px;background-image:url(cons-poster-3d2.webp);background-size:185% auto;background-position:50% 16%;box-shadow:0 0 0 2px #C5A059,0 3px 8px rgba(0,0,0,.35)}
+body.premium .casa-chat .cc-io{max-width:84%;width:auto;margin:0;padding:10px 14px;border-radius:18px 18px 5px 18px;background:#EFD9A2;color:#1C1917;font:600 16px/1.4 var(--f-body);box-shadow:0 3px 10px rgba(0,0,0,.28);text-shadow:none}
+body.premium .casa-chat .cc-lei{max-width:100%;width:auto;margin:0;padding:10px 14px;border-radius:18px 18px 18px 5px;background:#FFFFFF;color:#1C1917;font:500 16px/1.45 var(--f-body);box-shadow:0 3px 10px rgba(0,0,0,.28);text-shadow:none}
+body.premium .casa-chat .cc-lei.cc-pensa{font-style:italic;color:#57534E}
+body.premium .casa-chat .cc-tasti{display:flex;flex-wrap:wrap;gap:6px}
+body.premium .casa-chat .cc-tasti button{min-height:44px;padding:0 16px;border:0;border-radius:13px;background:#FFFFFF;color:#1C1917;font:800 15px/1 var(--f-body);box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer}
+body.premium .casa-chat .cc-tasti .cc-si{background:#1C1917;color:#FFFFFF;box-shadow:inset 0 0 0 2px #C5A059,0 3px 10px rgba(0,0,0,.3)}
+body.premium .casa-chat .cc-scelto{align-self:flex-start;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.2);color:#FFFFFF;font:700 13.5px/1.3 var(--f-body)}
+/* la casella per scriverle, in fondo: graffetta, casella bianca, microfono, manda */
+body.premium .sofia-hero.nuvola-aperta .casa-scrivi-riga{z-index:35;top:calc(var(--h-casa) - 66px);gap:7px}
+body.premium .sofia-hero.nuvola-aperta .casa-scrivi-riga input{border-color:#FFFFFF;background:#FFFFFF;color:#1C1917;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+body.premium .sofia-hero.nuvola-aperta .casa-graffa{background:rgba(255,255,255,.95);border-color:#FFFFFF;color:#57534E}
+body.premium .casa-f-mic{width:50px;height:50px;box-shadow:inset 0 0 0 2px #C5A059,0 4px 14px rgba(0,0,0,.3)}
+body.premium .sofia-hero[data-stato="ascolto"] .casa-f-mic{background:linear-gradient(180deg,#A8EBC0,#2FBF6A);color:#FFFFFF;animation:consPulsa 1.3s ease-in-out infinite}
+body.premium .sofia-hero.nuvola-aperta .casa-manda{background:#C5A059;color:#1C1917}
+/* (sotto la piega, quando la chat e' chiusa, la casella non serve: c'e' la linguetta "Chat") */
+@media (prefers-reduced-motion:reduce){body.premium .casa-velo,body.premium .casa-lato,body.premium .cs-tab{transition:none}}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .cs-tab{background:#2A2520;color:#D6CFC4}
+:root[data-theme="dark"] body.premium .cs-tab[aria-selected="true"]{background:#F5F1EA;color:#1C1917}
+:root[data-theme="dark"] body.premium .cr-riga{color:#E7E1D6}
+:root[data-theme="dark"] body.premium .cr-riga b{color:#FFFFFF}
+:root[data-theme="dark"] body.premium .cr-riga:active{background:#2A2520}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga{color:#D6CFC4}
+/* in cima alle notizie un saluto corto; il messaggio di Sofia (saluto lungo, testo, consiglio) viene dopo le righe */
+.casa-ciao{display:none}
+body.premium .casa-nuvola .casa-ciao{display:block;font:800 18px/23px var(--f-display);color:#1C1917}
+body.premium .casa-nuvola .casa-sal{margin-top:10px;padding-top:10px;border-top:1px solid #EEE7DA;font:700 16px/1.4 var(--f-display);color:#1C1917}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao{color:#F5F1EA}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-sal{border-top-color:#3A3228}
+/* la chat: in cima i fumetti vecchi sfumano sotto le linguette, non si tagliano di netto */
+body.premium .nuvola-aperta .casa-nuvola .casa-chat{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 26px);mask-image:linear-gradient(to bottom,transparent 0,#000 26px);padding-top:14px}
+
+/* ==========================================================================
+   1.1.0 · LA SCHERMATA FACILISSIMA DELLE SIGNORE (Michele: "come se avessero 3 anni e non riescono a capire").
+   Una camera alla volta, grandissima: ADESSO PULISCI + il nome, il disegno di cosa fare, i segni (porta, valigia,
+   foglietto) e UN tasto gigante (COMINCIA verde -> HO FINITO). In cima i pallini delle camere (verde = pulita, arancio =
+   la stai facendo, grigio = da fare) e "2 su 4". Sotto le altre camere (DOPO), grandi, coi disegni.
+   ========================================================================== */
+.seg.seg-tre button{font-size:13.5px;padding:0 4px}
+.bb-testa{margin:4px 0 12px;padding:16px 16px 14px;border-radius:22px;background:#FFFFFF;border:1px solid #E6E2D8;box-shadow:0 2px 10px -4px rgba(28,25,23,.12)}
+.bb-ciao-riga{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.bb-ciao{font:800 30px/1.1 var(--f-display);color:#1C1917;letter-spacing:-.01em}
+.bb-ciao-riga .donnina{flex:0 0 auto;width:74px;height:74px}
+.bb-pallini{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.bb-pal{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#E7E3DB;color:#FFFFFF;font:800 22px/1 var(--f-display);box-shadow:inset 0 -3px 0 rgba(0,0,0,.08)}
+.bb-pal.fatta{background:#16A34A}
+.bb-pal.corso{background:#F59E0B;font-size:30px;animation:bbPulsa 1.6s ease-in-out infinite}
+.bb-pal.prob{background:#9333EA}
+@keyframes bbPulsa{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.bb-conta{margin-top:10px;font:700 20px/1.2 var(--f-body);color:#44403C}
+.bb-conta b{font:800 26px/1 var(--f-display);color:#1C1917}
+/* il messaggio di Michele */
+.bb-msg{margin:0 0 12px;padding:14px 16px;border-radius:20px;background:#FEF3C7;border:2px solid #FCD34D}
+.bb-msg-t{font:800 18px/1.25 var(--f-display);color:#92400E}
+.bb-msg-x{margin-top:6px;font:700 20px/1.35 var(--f-body);color:#1C1917}
+.bb-msg.bidoni{background:#ECFDF5;border-color:#6EE7B7}
+.bb-msg.bidoni .bb-msg-t{color:#065F46}
+/* LA CAMERA DI ADESSO */
+.bb-ora{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 0 14px;padding:18px 16px 16px;border-radius:26px;background:#FFFFFF;border:3px solid #D6D3CD;text-align:center;box-shadow:0 6px 18px -8px rgba(28,25,23,.25)}
+.bb-ora.todo{border-color:#1C1917}
+.bb-ora.wip{border-color:#F59E0B;background:#FFFBEB}
+.bb-ora.warn{border-color:#9333EA;background:#FAF5FF}
+.bb-ora.festa{border-color:#16A34A;background:#F0FDF4}
+.bb-ora.vuota{border-color:#E6E2D8;background:#FFFFFF}
+.bb-quale{font:800 15px/1 var(--f-body);letter-spacing:2px;color:#78716C}
+.bb-nome{font:800 46px/1.02 var(--f-display);letter-spacing:-.01em;color:#1C1917;text-transform:uppercase;word-break:break-word}
+.bb-nome.piccolo{font-size:32px;text-transform:none}
+.bb-disegno{font-size:96px;line-height:1.05;filter:drop-shadow(0 6px 8px rgba(0,0,0,.15))}
+.bb-cosa{font:800 24px/1.2 var(--f-body);color:#44403C}
+.bb-segni{display:flex;flex-direction:column;gap:8px;width:100%}
+.bb-segno{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 12px;border-radius:16px;background:#F5F3EF;font-size:30px;line-height:1}
+.bb-segno b{font:800 19px/1.25 var(--f-body);color:#1C1917;text-align:left}
+.bb-tasto{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;min-height:92px;margin-top:4px;border:0;border-radius:24px;color:#FFFFFF;font:800 32px/1 var(--f-display);letter-spacing:.02em;cursor:pointer;
+  box-shadow:0 4px 0 rgba(0,0,0,.18),0 14px 24px -12px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent}
+.bb-tasto:active{transform:translateY(2px) scale(.99);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.bb-tasto.via{background:#16A34A}
+.bb-tasto.fatto{background:#15803D}
+.bb-t-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.22);font-size:30px;line-height:1}
+.bb-tempo{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border-radius:18px;background:#FEF3C7;color:#92400E;font:800 34px/1 var(--f-display)}
+.bb-tempo b{font-variant-numeric:tabular-nums}
+.bb-tempo.prob{font:700 19px/1.3 var(--f-body);background:#F3E8FF;color:#6B21A8}
+.bb-due{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.bb-pic{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:92px;padding:8px;border-radius:20px;border:2px solid #E6E2D8;background:#FFFFFF;color:#1C1917;cursor:pointer}
+.bb-pic span{font-size:36px;line-height:1}
+.bb-pic b{font:800 17px/1.15 var(--f-body)}
+/* DOPO: le altre camere */
+.bb-titolo{margin:6px 4px 8px;font:800 16px/1 var(--f-body);letter-spacing:2px;color:#78716C}
+.bb-dopo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.bb-cam{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:132px;padding:12px 8px;border-radius:20px;border:2px solid #E6E2D8;background:#FFFFFF;color:#1C1917;text-align:center;cursor:pointer}
+.bb-cam-dis{font-size:46px;line-height:1.1}
+.bb-cam b{font:800 21px/1.1 var(--f-display);text-transform:uppercase;word-break:break-word}
+.bb-cam span:last-child{font:700 15px/1.2 var(--f-body);color:#57534E}
+.bb-cam.fatta{border-color:#86EFAC;background:#F0FDF4}
+.bb-cam.fatta span:last-child{color:#166534}
+.bb-cam.prob{border-color:#D8B4FE;background:#FAF5FF}
+.bb-cam.corso{border-color:#FCD34D;background:#FFFBEB}
+.bb-giorni{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0 18px;font:700 16px/1.2 var(--f-body);color:#57534E}
+/* tema scuro */
+:root[data-theme="dark"] .bb-testa,:root[data-theme="dark"] .bb-ora,:root[data-theme="dark"] .bb-cam,:root[data-theme="dark"] .bb-pic{background:#1E1B18;border-color:#3A332B}
+:root[data-theme="dark"] .bb-ciao,:root[data-theme="dark"] .bb-nome,:root[data-theme="dark"] .bb-cam,:root[data-theme="dark"] .bb-pic,:root[data-theme="dark"] .bb-conta b{color:#F5F1EA}
+:root[data-theme="dark"] .bb-cosa,:root[data-theme="dark"] .bb-conta{color:#D6CFC4}
+:root[data-theme="dark"] .bb-segno{background:#2A2520}
+:root[data-theme="dark"] .bb-segno b{color:#F5F1EA}
+/* piu' raccolta: il tasto gigante si vede subito, senza scorrere */
+.bb-testa{padding:12px 14px 12px;margin-bottom:10px}
+.bb-ciao{font-size:28px}
+.bb-ciao-riga .donnina{width:58px;height:58px}
+.bb-pallini{gap:8px;margin-top:8px;align-items:center}
+.bb-pal{width:34px;height:34px;font-size:19px}
+.bb-pal.corso{font-size:26px}
+.bb-conta{margin-top:6px;font-size:18px}
+.bb-conta b{font-size:22px}
+.bb-ora{gap:8px;padding:14px 14px 14px}
+.bb-nome{font-size:44px}
+.bb-cosa-riga{display:flex;align-items:center;justify-content:center;gap:12px}
+.bb-cosa-riga .bb-disegno{font-size:64px;line-height:1}
+.bb-cosa-riga .bb-cosa{font-size:23px;text-align:left}
+.bb-segni{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:8px}
+.bb-segno{padding:8px 12px;font-size:24px}
+.bb-segno b{font-size:17px}
+/* LA SCHEDA DI SOFIA (in basso): la stessa chat trasparente, con Sofia dietro, velata di scuro; fumetti pieni */
+body.premium .sofia-vista{position:relative;padding:10px 10px 10px;border-radius:24px;box-sizing:border-box;
+  background:linear-gradient(180deg,rgba(14,12,10,.36) 0%,rgba(14,12,10,.62) 34%,rgba(14,12,10,.76) 100%),url(cons-poster-3d2.webp) 50% 18px/min(118%,480px) auto no-repeat,radial-gradient(ellipse 90% 70% at 16% 14%,#FFFFFF 0%,#FAF7F1 38%,#F3EEE5 72%,#ECE5D9 100%)}
+body.premium .sofia-vista .sv-chat{background:transparent;box-shadow:none;padding:6px 2px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 18px);mask-image:linear-gradient(to bottom,transparent 0,#000 18px)}
+body.premium .sofia-vista .sv-chat .sv-foto{background-image:url(cons-poster-3d2.webp);background-size:185% auto;background-position:50% 16%;box-shadow:0 0 0 2px #C5A059,0 3px 8px rgba(0,0,0,.35)}
+body.premium .sofia-vista .sv-chat .cc-io{max-width:84%;padding:10px 14px;border-radius:18px 18px 5px 18px;background:#EFD9A2;color:#1C1917;font:600 16px/1.4 var(--f-body);box-shadow:0 3px 10px rgba(0,0,0,.28);text-shadow:none}
+body.premium .sofia-vista .sv-chat .cc-lei{padding:10px 14px;border-radius:18px 18px 18px 5px;background:#FFFFFF;color:#1C1917;font:500 16px/1.45 var(--f-body);box-shadow:0 3px 10px rgba(0,0,0,.28);text-shadow:none}
+body.premium .sofia-vista .sv-chat .cc-lei.cc-pensa{font-style:italic;color:#57534E}
+body.premium .sofia-vista .sv-chat .cc-tasti button{min-height:44px;padding:0 16px;border:0;border-radius:13px;background:#FFFFFF;color:#1C1917;font:800 15px/1 var(--f-body);box-shadow:0 3px 10px rgba(0,0,0,.25)}
+body.premium .sofia-vista .sv-chat .cc-tasti .cc-si{background:#1C1917;color:#FFFFFF;box-shadow:inset 0 0 0 2px #C5A059,0 3px 10px rgba(0,0,0,.3)}
+body.premium .sofia-vista .sv-chat .cc-scelto{padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.2);color:#FFFFFF;font:700 13.5px/1.3 var(--f-body)}
+body.premium .sofia-vista .sv-chips button{background:rgba(255,255,255,.95);border-color:#FFFFFF;color:#1C1917}
+body.premium .sofia-vista .sv-scrivi input{background:#FFFFFF;border-color:#FFFFFF;color:#1C1917}
+body.premium .sofia-vista .casa-graffa{background:rgba(255,255,255,.95);border-color:#FFFFFF;color:#57534E}
+body.premium .sofia-vista .casa-manda{background:#C5A059;color:#1C1917}
+body.premium .sofia-vista .casa-sotto.vedi{padding:6px 12px;border-radius:12px;background:rgba(255,255,255,.92);color:#1C1917}
+body.premium .sofia-vista .sv-mic{box-shadow:inset 0 0 0 2px #C5A059,0 4px 14px rgba(0,0,0,.3)}

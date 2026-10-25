@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.9";
+export const VERSIONE = "1.1.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -557,7 +557,7 @@ async function casaAllegato(file) {
   } catch (e) { console.warn("foto", e); msg = { chi: "gov", testo: "Non sono riuscita a leggere la foto: " + String(e.message || e), ora: S.db.adesso() }; }
   govScrive = false;
   salvaConversazione([...conversazione(), msg]);
-  if (voceAccesa() && msg && msg.testo) parlaConVoce(String(msg.testo).split("\n")[0]);
+  if (voceAccesa() && msg && msg.testo) parlaConVoce(String(msg.testo).split("\n")[0], { inChat: true });
 }
 // la foto rimpicciolita (lato lungo 1800 punti, JPEG): basta per leggere e non pesa
 async function fotoPiccola(file) {
@@ -1187,6 +1187,7 @@ function disegna() {
   disegnaTestata();
   document.body.classList.toggle("nonna", !!(S.utente && addetta()));
   document.body.classList.toggle("semplice", !!(S.utente && addetta() && vistaSignoreSemplice()));
+  document.body.classList.toggle("facilissima", !!(S.utente && addetta() && vistaSignoreFacile()));
   document.body.classList.toggle("vista-manutenzione", !!(S.utente && !addetta() && S.vista === "manutenzione"));
   document.body.classList.toggle("vista-signora", !!(S.utente && !addetta() && (S.vista === "signora" || S.vista === "governante")));
   applicaTema();
@@ -1275,7 +1276,7 @@ function vistaAddetta() {
   let corpo;
   if (S.vista === "soldi") corpo = vistaSoldi(z) + `<section class="card center"><button class="big undo" data-esci>Esci dall'app (poi serve di nuovo la password)</button></section>`;
   else if (S.vista === "controlli" && ctrl) corpo = vistaControlliCollega(z);
-  else corpo = vistaSignoreSemplice() ? vistaNonnaSemplice(z) : vistaNonnaOggi(z);
+  else corpo = vistaSignoreFacile() ? vistaBimbo(z) : vistaSignoreSemplice() ? vistaNonnaSemplice(z) : vistaNonnaOggi(z);
   return corpo + nav;
 }
 
@@ -1336,6 +1337,78 @@ function vistaNonnaOggi(z) {
 // "Ho sbagliato" per tornare indietro) -> verde "Pulita alle 11:20". Toccando la scheda si apre la lista della camera.
 // Il titolare sceglie in Altro -> "La schermata delle signore" se usare questa (di serie) o quella con la piantina.
 function vistaSignoreSemplice() { return !(S.gov && S.gov.vistaSignore === "classica"); }
+function vistaSignoreFacile() { return !!(S.gov && S.gov.vistaSignore === "facile"); }
+// ---- 1.1.0: LA SCHERMATA FACILISSIMA ("come se avessero 3 anni"). UNA CAMERA ALLA VOLTA, grandissima: "ADESSO PULISCI"
+// e il nome della camera, il disegno di cosa fare (letto = cambio completo, scopa = ripasso, casetta = appartamento,
+// stella = stelle), i segni (porta = l'ospite parte, valigia = arriva, foglietto = c'e' un messaggio) e UN tasto gigante:
+// COMINCIA (verde) -> HO FINITO (con il tempo che passa). In cima una fila di pallini, uno per camera (verde = pulita,
+// arancio = la stai facendo, grigio = da fare), e "2 su 4". "Ascolta": il telefono le legge cosa deve fare. Sotto, le
+// altre camere in grande (DOPO). Gli stessi tasti di sempre: niente di nuovo da imparare per l'app.
+function disegnoLavoro(p) {
+  if (p.tipo === "stelle") return "⭐";
+  if (camera(p.camera).tipo === "casa") return "🏠";
+  return p.tipo === "totale" || p.tipo === "totale_casa" ? "🛏️" : "🧹";
+}
+function vistaBimbo(z) {
+  const iso = S.giorno, oggi = L.oggiISO();
+  const lavori = pulizieDelGiorno(iso, z);
+  const ordine = (p) => p.stato === "in_corso" ? 0 : p.stato === "da_fare" ? 1 : (p.stato === "problema" || p.stato === "non_fatta") ? 2 : 3;
+  const lista = [...lavori].sort((a, b) => ordine(a) - ordine(b) || ordineCamera(a.camera) - ordineCamera(b.camera));
+  const pulite = lavori.filter(p => p.stato === "fatta").length;
+  const tutte = lavori.length > 0 && pulite === lavori.length;
+  const ora = tutte ? null : lista[0] || null;
+  const nomeDi = (p) => p.tipo === "stelle" ? "Altre camere" : nomeBreveCamera(camera(p.camera));   // "Zara 1° e 2°", non "Via Zara · 1° e 2° piano"
+  const g = iso === oggi ? "oggi" : L.GIORNI[L.giornoSettimana(iso)];
+  const pallini = [...lavori].sort((a, b) => ordineCamera(a.camera) - ordineCamera(b.camera)).map(p => {
+    const k = p.stato === "fatta" ? "fatta" : p.stato === "in_corso" ? "corso" : (p.stato === "problema" || p.stato === "non_fatta") ? "prob" : "";
+    return `<span class="bb-pal ${k}" title="${esc(nomeDi(p))}">${k === "fatta" ? "✓" : k === "corso" ? "•" : ""}</span>`;
+  }).join("");
+  const variante = !lavori.length ? "saluto" : tutte ? "festa" : pulite ? "secchio" : "scopa";
+  const testa = `<section class="bb-testa">
+    <div class="bb-ciao-riga"><div class="bb-ciao">Ciao ${esc(nomeSignora())}!</div>${DONNINA(variante, "media")}</div>
+    ${lavori.length ? `<div class="bb-pallini" role="img" aria-label="${pulite} pulite su ${lavori.length}">${pallini}</div><div class="bb-conta"><b>${pulite}</b> su <b>${lavori.length}</b> ${lavori.length === 1 ? "camera pulita" : "camere pulite"}</div>` : ""}
+  </section>`;
+  const msg = messaggioDelGiorno(iso);
+  const messaggio = msg ? `<section class="bb-msg"><div class="bb-msg-t">📣 ${esc(msg.da || "Michele")} ti scrive</div><div class="bb-msg-x">${esc(msg.testo)}</div></section>` : "";
+  let grande, parlato = "";
+  if (!lavori.length) {
+    grande = `<section class="bb-ora vuota"><div class="bb-disegno">☀️</div><div class="bb-nome piccolo">${iso === oggi ? "Oggi niente camere" : "Niente camere"}</div><div class="bb-cosa">Riposati!</div></section>`;
+    parlato = iso === oggi ? "Oggi non ci sono camere per te. Riposati!" : "Per questo giorno non ci sono camere.";
+  } else if (tutte) {
+    grande = `<section class="bb-ora festa"><div class="bb-disegno">✅</div><div class="bb-nome">BRAVA!</div><div class="bb-cosa">Hai pulito tutto</div>
+      ${numeroWhatsApp() ? `<button class="bb-tasto fatto" data-whatsapp-finito="${iso}"><span class="bb-t-ico">📲</span><span>DILLO SU WHATSAPP</span></button>` : ""}</section>`;
+    parlato = "Brava! Hai pulito tutte le camere.";
+  } else {
+    const p = ora, id = esc(p.id), nome = nomeDi(p);
+    const segni = [p.partenza ? `<span class="bb-segno">🚪<b>Parte ${esc(g)}</b></span>` : p.arrivo ? `<span class="bb-segno">🧳<b>Arriva ${esc(g)}</b></span>` : "",
+      p.dettagli || p.istruzioni ? `<span class="bb-segno">📝<b>C'è un messaggio</b></span>` : ""].filter(Boolean).join("");
+    const inizio = S.regole.richiediInizio !== false;
+    let tasto;
+    if (p.stato === "in_corso") tasto = `<div class="bb-tempo" data-crono="${esc(p.inizio || "")}" data-crono-std="0" data-crono-tetto="0" data-crono-euro="0">⏱️ <b class="crono-n">${esc(testoCrono(p.inizio))}</b></div><button class="bb-tasto fatto" data-fatta="${id}"><span class="bb-t-ico">✓</span><span>HO FINITO</span></button>`;
+    else if (p.stato === "da_fare") tasto = inizio ? `<button class="bb-tasto via" data-nn-comincia="${id}"><span class="bb-t-ico">▶</span><span>COMINCIA</span></button>` : `<button class="bb-tasto fatto" data-fatta="${id}"><span class="bb-t-ico">✓</span><span>HO FINITO</span></button>`;
+    else tasto = `${p.nota ? `<div class="bb-tempo prob">⚠️ ${esc(p.nota)}</div>` : ""}<button class="bb-tasto fatto" data-fatta="${id}"><span class="bb-t-ico">✓</span><span>ADESSO È PULITA</span></button>`;
+    grande = `<section class="bb-ora ${statoClasse(p)}">
+      <div class="bb-quale">${p.stato === "in_corso" ? "ADESSO STAI PULENDO" : (p.stato === "problema" || p.stato === "non_fatta") ? "DA SISTEMARE" : "ADESSO PULISCI"}</div>
+      <div class="bb-nome">${esc(nome)}</div>
+      <div class="bb-cosa-riga"><span class="bb-disegno" aria-hidden="true">${disegnoLavoro(p)}</span><span class="bb-cosa">${esc(titoloLavoro(p))}</span></div>
+      ${tasto}
+      ${segni ? `<div class="bb-segni">${segni}</div>` : ""}
+      <div class="bb-due"><button class="bb-pic" data-dettagli="${id}"><span>👀</span><b>Guarda cosa fare</b></button><button class="bb-pic" data-istr-voce="bimbo"><span>🔊</span><b>Ascolta</b></button></div>
+    </section>`;
+    parlato = [p.stato === "in_corso" ? `Stai pulendo ${nome}.` : `Adesso pulisci ${nome}.`, `${titoloLavoro(p)}.`, p.partenza ? `L'ospite parte ${g}.` : p.arrivo ? `Arriva un ospite ${g}.` : "", p.dettagli ? `C'è un messaggio per te: ${p.dettagli}.` : "",
+      p.stato === "in_corso" ? "Quando hai finito, tocca il tasto verde: ho finito." : "Per cominciare, tocca il tasto verde: comincia."].filter(Boolean).join(" ");
+  }
+  const dopo = lista.filter(p => p !== ora);
+  const altre = dopo.length ? `<div class="bb-titolo">${tutte ? "LE TUE CAMERE" : "DOPO"}</div><div class="bb-dopo">${dopo.map(p => {
+    const k = p.stato === "fatta" ? "fatta" : (p.stato === "problema" || p.stato === "non_fatta") ? "prob" : p.stato === "in_corso" ? "corso" : "";
+    return `<button class="bb-cam ${k}" data-dettagli="${esc(p.id)}"><span class="bb-cam-dis" aria-hidden="true">${k === "fatta" ? "✅" : k === "prob" ? "⚠️" : disegnoLavoro(p)}</span><b>${esc(nomeDi(p))}</b><span>${k === "fatta" ? `Pulita ${p.ora ? esc(L.oraBreve(p.ora)) : ""}` : k === "prob" ? "Da sistemare" : esc(titoloBase(p))}</span></button>`;
+  }).join("")}</div>` : "";
+  const spiegazioni = istruzioniDelGiorno(iso, z).map((x, i) => cardIstruzione(x, i)).join("");
+  const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
+  const bidoni = rif && z === "ap" ? `<div class="bb-msg bidoni"><div class="bb-msg-t">🗑️ Stasera fuori i bidoni</div><div class="bb-msg-x">${esc(rif.cosa.replace(/^./, c => c.toUpperCase()))}</div></div>` : "";
+  const giorni = `<div class="bb-giorni"><button class="nn-altri" data-altri-giorni>${S.mostraGiorni ? "Torna a oggi" : "Altri giorni"}</button>${iso !== oggi ? `<span>${esc(L.dataLunga(iso))}</span>` : ""}</div>`;
+  return testa + messaggio + grande + `<span hidden data-istr-testo="bimbo">${esc(parlato)}</span>` + cardDaRifare(z) + cardControlliOggi(z) + bidoni + spiegazioni + altre + giorni;
+}
 function vistaNonnaSemplice(z) {
   const iso = S.giorno, oggi = L.oggiISO();
   const lavori = pulizieDelGiorno(iso, z);
@@ -2053,8 +2126,15 @@ function casaOssatura(tre) {
     </div>
     <button type="button" class="casa-mic-grande casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}<span>Parla con ${esc(nomeGov())}</span></button>
     ${NAV_HTML("oggi", true)}
+    <span class="casa-velo" aria-hidden="true"></span>
     <div class="casa-nuvola" id="casaNuvola">
+      <div class="casa-schede" role="tablist" aria-label="Notizie o chat">
+        <button type="button" role="tab" class="cs-tab" data-casa-scheda="notizie" aria-selected="true">${ICO_LINEA.foglio}<span>Notizie di oggi</span></button>
+        <button type="button" role="tab" class="cs-tab" data-casa-scheda="chat" aria-selected="false">${ICO_LINEA.chat}<span>Chat</span><i class="cs-conta" hidden></i></button>
+      </div>
       <div class="casa-testo">
+        <b class="casa-ciao"></b>
+        <div class="casa-righe"></div>
         <b class="casa-sal"></b>
         <p class="casa-riga"></p>
         <p class="casa-spinta"></p>
@@ -2068,6 +2148,7 @@ function casaOssatura(tre) {
     <form class="casa-scrivi-riga" id="casaScrivi" autocomplete="off">
       <label class="casa-graffa" aria-label="Manda la foto del prospetto o il foglio Excel">${CASA_ICO.graffa}<input type="file" id="casaFile" accept="image/*,.xlsx,.xls,.xlsm,.ods" hidden></label>
       <input type="text" id="casaTesto" placeholder="Scrivi a ${esc(nomeGov())}…" autocomplete="off" enterkeyhint="send" maxlength="600">
+      <button type="button" class="sv-mic casa-f-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
       <button type="submit" class="casa-manda" aria-label="Manda">${CASA_ICO.manda}</button>
     </form>`;
 }
@@ -2096,16 +2177,57 @@ function ultimoScambio() {
   const risposta = !pensa && lei && iLei >= iMio ? lei : null;
   return { html: pezzi.join(""), tasti: !!(risposta && Array.isArray(risposta.tasti) && risposta.tasti.length), pensa, lei: risposta, mio: mio || null };
 }
+// 1.1.0: nello stile Premium la chat della casa e' la conversazione vera (come nella scheda di Sofia), non solo
+// l'ultimo scambio: fumetti pieni, leggibili sopra Sofia velata
+function bolleCasa(max = 40) {
+  const conv = conversazione();
+  const ultimi = conv.slice(-max), base = conv.length - ultimi.length;
+  let iLei = -1; for (let i = conv.length - 1; i >= 0; i--) { if (conv[i].chi === "gov") { iLei = i; break; } }
+  const pensa = govScrive || (conv.length && conv[conv.length - 1].chi === "io");
+  const bolle = ultimi.map((m, j) => {
+    const i = base + j;
+    const testo = esc(String(m.testo || "").trim()).replace(/\n/g, "<br>");
+    if (m.chi === "io") return `<div class="sv-riga sv-io"><div class="cc-io">${testo}</div></div>`;
+    const tasti = (i === iLei && !pensa && Array.isArray(m.tasti) && m.tasti.length)
+      ? `<div class="cc-tasti">${m.tasti.slice(0, 6).map(x => `<button type="button" class="${x.k === "si" ? "cc-si" : x.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(i))}|${esc(String(x.k))}">${esc(x.testo)}</button>`).join("")}</div>`
+      : (m.scelto ? `<div class="cc-scelto">${esc(m.scelto)}</div>` : "");
+    return `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">${testo}</div>${tasti}</div></div>`;
+  }).join("");
+  const attesa = pensa ? `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei cc-pensa">${esc(nomeGov())} ci pensa…</div></div></div>` : "";
+  const vuota = `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">Dimmi pure, ${esc(nomeMio())}: scrivimi qui sotto o tocca il microfono e parlami.</div></div></div>`;
+  return (bolle || vuota) + attesa;
+}
+function chatGiu(h) {
+  const box = (h || document).querySelector("#casaChat"); if (!box) return;
+  try { box.scrollTo({ top: box.scrollHeight, behavior: "instant" }); } catch (e) { box.scrollTop = box.scrollHeight; }
+}
+// il numerino rosso sulla linguetta "Chat": le risposte di Sofia arrivate da quando l'hai guardata l'ultima volta
+const CHIAVE_CHAT_VISTI = "ricci_chat_visti";
+function chatContaAggiorna(h) {
+  const b = h && h.querySelector(".cs-conta"); if (!b) return;
+  const conv = conversazione();
+  let visti = 0; try { visti = Number(localStorage.getItem(CHIAVE_CHAT_VISTI)) || 0; } catch (e) {}
+  if (visti > conv.length || h.classList.contains("nuvola-aperta")) { visti = conv.length; try { localStorage.setItem(CHIAVE_CHAT_VISTI, String(visti)); } catch (e) {} }
+  const nuovi = conv.slice(visti).filter(m => m.chi === "gov").length;
+  const tx = nuovi > 9 ? "9+" : String(nuovi);
+  if (b.hidden === !!nuovi) b.hidden = !nuovi;
+  if (nuovi && b.textContent !== tx) b.textContent = tx;
+}
 function casaChatAggiorna(h) {
   const box = h.querySelector("#casaChat"); if (!box) return;
-  const html = ultimoScambio().html;
+  const premium = document.body.classList.contains("premium");
+  const html = premium ? bolleCasa() : ultimoScambio().html;
   const cambiata = box.innerHTML !== html;
   if (cambiata) box.innerHTML = html;
   box.classList.toggle("vedi", !!html);
   // 1.0.2: nella nuvoletta si vede subito l'ultima cosa (senza scorrere la pagina): la conversazione, se c'e'
-  if (cambiata) { const nv = h.querySelector(".casa-nuvola"); if (nv) { const top = html ? Math.max(0, box.offsetTop + 6) : 0; try { nv.scrollTo({ top, behavior: "smooth" }); } catch (e) { nv.scrollTop = top; } } }
+  if (cambiata) {
+    if (premium) chatGiu(h);
+    else { const nv = h.querySelector(".casa-nuvola"); if (nv) { const top = html ? Math.max(0, box.offsetTop + 6) : 0; try { nv.scrollTo({ top, behavior: "smooth" }); } catch (e) { nv.scrollTop = top; } } }
+  }
   nuvolaNuovaRisposta();                    // la prima volta segna da dove si parte, poi apre alle risposte nuove
   nuvolaLeggiAggiorna(h);
+  chatContaAggiorna(h);
 }
 // ---- 1.0.4: LA NUVOLETTA A DUE STATI (Michele: "andava bene prima: busto e poco oltre, cosi' si vedono tutti i
 // movimenti"; impaginazione di Gemini 4 Argon). PICCOLA (di serie): sta sotto la vita di Sofia, cosi' si vedono testa,
@@ -2123,6 +2245,10 @@ function nuvolaApri(si) {
     h.classList.toggle("nuvola-aperta", si);
     const m = h.querySelector(".casa-maniglia"); if (m) m.setAttribute("aria-expanded", si ? "true" : "false");
   }
+  // 1.1.0: le linguette dicono quale parte si vede; aprendo la chat si va all'ultimo messaggio e il numerino si azzera
+  h.querySelectorAll("[data-casa-scheda]").forEach(b => b.setAttribute("aria-selected", (b.dataset.casaScheda === "chat") === si ? "true" : "false"));
+  if (si) { chatGiu(h); setTimeout(() => chatGiu(h), 60); }
+  chatContaAggiorna(h);
   if (si) nuvolaRiarma();
   nuvolaLeggiAggiorna(h);
   setTimeout(() => {                                      // dopo l'animazione (260 ms)
@@ -2138,7 +2264,7 @@ function nuvolaRiarma() {
     const a = document.activeElement;
     if (a && a.id === "casaTesto") { nuvolaRiarma(); return; }   // mentre scrive resta aperta
     nuvolaApri(false);
-  }, 15000);
+  }, 120000);
 }
 function nuvolaLeggiAggiorna(h) {
   h = h || document.getElementById("sofiaHero"); if (!h) return;
@@ -2152,21 +2278,23 @@ function nuvolaLeggiAggiorna(h) {
 }
 function nuvolaNuovaRisposta() {
   let u; try { u = ultimoScambio(); } catch (e) { return; }
-  const k = u.lei ? String(u.lei.testo || "") + (u.tasti ? "|t" : "") : "";
+  const k = u.lei ? String(u.lei.testo || "") + (u.tasti ? "|t" : "") : (u.pensa && u.mio ? "pensa|" + String(u.mio.testo || "") : "");
   if (nuvolaUltima === null) { nuvolaUltima = k; return; }   // all'apertura dell'app resta piccola
   if (k === nuvolaUltima) return;
   nuvolaUltima = k;
-  if (k && !u.pensa && !voceAccesa()) nuvolaApri(true);
+  if (k) nuvolaApri(true);
 }
 function nuvolaDopoVoce() { try { if (ultimoScambio().tasti) nuvolaApri(true); } catch (e) {} }
 document.addEventListener("click", (e) => {
   const h = document.getElementById("sofiaHero"), x = e.target;
   if (!h || !x || !x.closest || !h.contains(x) || !document.body.classList.contains("premium")) return;
   const aperta = h.classList.contains("nuvola-aperta");
+  const sch = x.closest("[data-casa-scheda]");
+  if (sch) { e.preventDefault(); nuvolaApri(sch.dataset.casaScheda === "chat"); return; }
   if (x.closest("[data-casa-apri]")) { e.preventDefault(); nuvolaApri(!aperta); return; }
   if (x.closest(".casa-nuvola")) {
     if (x.closest("button, a, input, label, select, textarea")) { if (aperta) nuvolaRiarma(); return; }
-    if (!aperta) nuvolaApri(true); else nuvolaRiarma();
+    if (aperta) nuvolaRiarma();
     return;
   }
   if (x.closest(".casa-scrivi-riga, .casa-lato")) { if (aperta) nuvolaRiarma(); return; }
@@ -2179,7 +2307,10 @@ const sottoAnim = new Map();
 function sottotitoliFerma(chi) { for (const [k, a] of sottoAnim) { if (!chi || k === chi) { cancelAnimationFrame(a); sottoAnim.delete(k); } } }
 function sottotitoli(parte, buf, durata) {
   const h = document.getElementById("sofiaHero"), nv = h && h.querySelector(".casa-nuvola");
-  if (nv && !h.classList.contains("nuvola-aperta")) sottotitoliIn("casa", nv, ".casa-sal, .casa-riga, .casa-spinta, .cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => h.classList.contains("nuvola-aperta"));
+  if (nv && document.body.classList.contains("premium")) {
+    const aperta = h.classList.contains("nuvola-aperta"), box = h.querySelector(aperta ? "#casaChat" : ".casa-nuvola .casa-testo");
+    if (box) sottotitoliIn("casa", box, aperta ? ".cc-io, .cc-lei:not(.cc-pensa)" : ".casa-sal, .casa-riga, .casa-spinta", parte, buf, durata, () => h.classList.contains("nuvola-aperta") !== aperta);
+  } else if (nv && !h.classList.contains("nuvola-aperta")) sottotitoliIn("casa", nv, ".casa-sal, .casa-riga, .casa-spinta, .cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => h.classList.contains("nuvola-aperta"));
   const mt = document.querySelector("#sofiaMiniNuvola:not([hidden]) .sm-testo");
   if (mt) sottotitoliIn("mini", mt, ".cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => !!mt.closest("[hidden]"));
 }
@@ -2225,11 +2356,17 @@ function sottotitoliIn(chi, nv, sel, parte, buf, durata, basta) {
   sottoAnim.set(chi, requestAnimationFrame(passo));
 }
 const manoNuvola = (e) => {
-  const nv = e.target && e.target.closest && e.target.closest("#sofiaHero .casa-nuvola, #sofiaMiniNuvola .sm-testo"); if (!nv) return;
+  const nv = e.target && e.target.closest && e.target.closest("#sofiaHero #casaChat, #sofiaHero .casa-nuvola .casa-testo, #sofiaHero .casa-nuvola, #sofiaMiniNuvola .sm-testo"); if (!nv) return;
   nv._mano = Date.now(); sottotitoliFerma(nv.classList.contains("sm-testo") ? "mini" : "casa");
   const h = document.getElementById("sofiaHero"); if (h && h.contains(nv) && h.classList.contains("nuvola-aperta")) nuvolaRiarma();
 };
 try { document.addEventListener("touchstart", manoNuvola, { passive: true }); document.addEventListener("wheel", manoNuvola, { passive: true }); } catch (e) {}
+document.addEventListener("focusin", (e) => {
+  if (!e.target || e.target.id !== "casaTesto") return;
+  const h = document.getElementById("sofiaHero"); if (!h || !h.contains(e.target)) return;
+  if (document.body.classList.contains("premium") && !h.classList.contains("nuvola-aperta")) nuvolaApri(true);
+  setTimeout(() => chatGiu(h), 350); setTimeout(() => chatGiu(h), 800);
+});
 function casaAggiorna(h) {
   const c = consiglioOggi(), u = umoreGov();
   if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
@@ -2243,6 +2380,9 @@ function casaAggiorna(h) {
   if (dom) voci.push(`<button type="button" class="casa-pill att" data-casa-vai="sofia"><span aria-hidden="true">${ICO_LINEA.domande}</span><b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} per te</button>`);
   const q = (s) => h.querySelector(s);
   const sal = q(".casa-sal"), riga = q(".casa-riga"), spinta = q(".casa-spinta"), info = q(".casa-info");
+  const righe = q(".casa-righe"), ciao = q(".casa-ciao");
+  if (righe) { const hh = righeNotizie(ls, fatte, man, dom); if (righe.innerHTML !== hh) righe.innerHTML = hh; }
+  if (ciao) { const tc = `${saluto()}, ${nomeMio()}!`; if (ciao.textContent !== tc) ciao.textContent = tc; }
   if (sal) { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); }
   if (riga) riga.textContent = c && c.testo ? c.testo : u.testo;
   if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
@@ -2266,6 +2406,23 @@ function casaAggiorna(h) {
   h.dataset.umore = u.v;
   h.classList.toggle("sta-parlando", !!voceInCorso);
   h.classList.toggle("con-ia", !!c);
+}
+// 1.1.0: le notizie di oggi a righe (Gemini: "per punti, non un romanzo"): un'icona colorata e poche parole, ognuna
+// porta alla sua pagina. Sono numeri presi dall'app, non scritti dall'IA: sempre giusti.
+const icoArrivi = () => SVG_T('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M9 14.5l2 2 4-4"/>');
+const icoLettoLinea = () => SVG_T('<path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7M3 15h18M3 18v2M21 18v2"/><path d="M6 9V7a1.5 1.5 0 0 1 1.5-1.5H11A1.5 1.5 0 0 1 12.5 7v2"/>');
+function righeNotizie(ls, fatte, man, dom) {
+  const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
+  const arrivi = sog.filter(s => s.inizio === domani);
+  const nomi = [...new Set(arrivi.map(s => nomeCortoOspite(s)))];
+  const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
+  const r = (ico, tono, html, vai) => `<button type="button" class="cr-riga" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t">${html}</span></button>`;
+  const out = [r(ICO_LINEA.pulizie, "verde", ls.length ? `Pulizie oggi: <b>${fatte}</b> fatte su <b>${ls.length}</b>` : `Pulizie oggi: <b>nessuna</b>`, "pulizie")];
+  if (man) out.push(r(ICO_LINEA.lavori, "arancio", `Lavori da fare: <b>${man}</b>`, "manutenzione"));
+  out.push(r(icoArrivi(), "blu", arrivi.length ? `Domani ${arrivi.length === 1 ? "arriva" : "arrivano"} <b>${arrivi.length}</b>: ${esc(nomi.slice(0, 3).join(", "))}${nomi.length > 3 ? "…" : ""}` : "Domani non arriva nessuno", "prospetto"));
+  out.push(r(icoLettoLinea(), "oro", `Stanotte <b>${piene}</b> ${piene === 1 ? "camera piena" : "camere piene"}, <b>${libere}</b> ${libere === 1 ? "libera" : "libere"}`, "prospetto"));
+  if (dom) out.push(r(ICO_LINEA.domande, "rosso", `<b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te`, "sofia"));
+  return out.join("");
 }
 // ---- lei ti parla appena apri l'app -------------------------------------
 // I telefoni non lasciano partire un suono da soli: se il browser dice di no,
@@ -2570,7 +2727,7 @@ async function parlaGov(testo, perIA) {
   }
   govScrive = false;
   salvaConversazione([...conversazione(), msg]); // idem: prima si vede, poi si salva
-  if (voceAccesa() && msg && msg.testo) parlaConVoce(msg.testo);
+  if (voceAccesa() && msg && msg.testo) parlaConVoce(msg.testo, { inChat: true });
 }
 // La risposta della governante: per le domande risponde subito, per le cose da fare chiede conferma
 async function rispostaGov(r) {
@@ -2986,14 +3143,16 @@ function labialeFerma(subito) {
   if (labiali.length) labialeVitaVia();
 }
 if (LABIALE_ACCESO) setTimeout(() => { try { BOCCA.precarica().catch(() => {}); } catch (e) {} }, 4000);
-async function parlaConVoce(testo) {
+async function parlaConVoce(testo, opz = {}) {
   let vc = VOCE.leggiVoce(); if (!vc.attiva) return;
   // il modello della voce TTS (la riserva del canale Live) si cerca una volta sola, senza
   // far aspettare la frase: 0.67, la frase parte col canale Live anche senza modello
   if (vc.motore === "google" && !vc.modello && confIA().chiave && !cercaModelloVoce) {
     cercaModelloVoce = VOCE.trovaModelloVoce(confIA().chiave).then(m => VOCE.salvaVoce({ modello: m })).catch(e => console.warn("modello voce", e)).finally(() => { cercaModelloVoce = null; });
   }
-  nuvolaApri(false);                          // 1.0.4: mentre parla la nuvoletta e' piccola (si vede lei) coi sottotitoli
+  // 1.0.4: mentre parla la nuvoletta e' piccola (si vede lei) coi sottotitoli. 1.1.0: se risponde nella chat, la chat
+  // resta aperta (lei parla dietro, velata, e la chat va sulla frase che dice); le notizie si leggono nelle Notizie
+  if (!opz.inChat) nuvolaApri(false);
   voceTesto = String(testo || ""); voceFine = 0; voceDa = Date.now();   // 1.0.5: la nuvoletta del fantasmino lo mostra
   voceInCorso = true; statoCons("parla"); disegna();
   const finita = await parlaTutto(testo, { conf: vc, chiave: confIA().chiave });
@@ -5248,8 +5407,8 @@ function vistaAltro() {
     <div class="rows">${S.camere.map(c => `<div class="row one"><span><b>${esc(c.nome)}</b><br><input type="text" data-keep id="pm_${esc(c.id)}" data-promemoria="${esc(c.id)}" value="${esc(S.promemoria?.[c.id] || "")}" placeholder="niente di particolare" ${puoModificare() ? "" : "disabled"} style="margin-top:4px"></span></div>`).join("")}</div>
     <p class="muted small" style="margin:8px 0 0">Si salva da solo quando esci dalla casella. Più cose: separale con una virgola.</p></section>
   <section class="card"><h2>La schermata delle signore</h2>
-    <p class="muted small" style="margin:0 0 8px"><b>Semplice</b> (di serie dalla 0.97): una scheda grande per camera con un tasto solo, COMINCIA e poi HO FINITO. <b>Con la piantina</b>: quella di prima, le camere al loro posto nel corridoio. Vale per i telefoni di tutte le signore.</p>
-    <div class="seg"><button type="button" aria-pressed="${vistaSignoreSemplice()}" data-vista-signore="semplice" ${puoModificare() ? "" : "disabled"}>Semplice</button><button type="button" aria-pressed="${!vistaSignoreSemplice()}" data-vista-signore="classica" ${puoModificare() ? "" : "disabled"}>Con la piantina</button></div>
+    <p class="muted small" style="margin:0 0 8px"><b>Facilissima</b> (come per un bambino): una camera alla volta, grandissima, coi disegni (letto, scopa, porta, valigia) e un tasto gigante, COMINCIA e poi HO FINITO; "Ascolta" le legge cosa fare. <b>Semplice</b> (di serie dalla 0.97): una scheda grande per camera con un tasto solo. <b>Con la piantina</b>: le camere al loro posto nel corridoio. Vale per i telefoni di tutte le signore.</p>
+    <div class="seg seg-tre"><button type="button" aria-pressed="${vistaSignoreFacile()}" data-vista-signore="facile" ${puoModificare() ? "" : "disabled"}>Facilissima</button><button type="button" aria-pressed="${vistaSignoreSemplice() && !vistaSignoreFacile()}" data-vista-signore="semplice" ${puoModificare() ? "" : "disabled"}>Semplice</button><button type="button" aria-pressed="${!vistaSignoreSemplice()}" data-vista-signore="classica" ${puoModificare() ? "" : "disabled"}>Con la piantina</button></div>
     <h3 style="font-size:17px;margin:14px 0 6px">Guarda l'app come la vedono loro</h3><p class="muted small" style="margin:0 0 8px">Per provare la loro parte sul tuo telefono, con i dati veri. Attenzione: quello che tocchi lì vale davvero (una camera segnata pulita resta pulita; c'è sempre "Ho sbagliato").</p>
     <div class="pick">${signore().map(z => `<button class="big undo" data-come-signora="${z.id}">👩‍🔧 ${esc(SIG(z.id))}</button>`).join("")}</div>
     <p class="muted small" style="margin:8px 0 0">Per giocare senza toccare niente di vero c'è la modalità prova: apri il link dell'app con <b>?prova=1</b> alla fine.</p></section>
@@ -6770,7 +6929,7 @@ function collega() {
   document.querySelectorAll("[data-pul]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.pul }));
   document.querySelectorAll("[data-fatta]").forEach(b => b.onclick = () => segnaFatta(b.dataset.fatta));
   document.querySelectorAll("[data-nn-comincia]").forEach(b => b.onclick = () => { const p = S.pulizie[b.dataset.nnComincia]; if (!p || p.stato !== "da_fare") return; apriFoglio({ tipo: "inizio", id: p.id }); cambiaStato(p, "in_corso", "", { tieniFoglio: true }); toast(`Buon lavoro! Quando hai finito tocca "Fatto, tutto" (o "Ho finito" sulla scheda).`); });
-  document.querySelectorAll("[data-vista-signore]").forEach(b => b.onclick = async () => { const v = b.dataset.vistaSignore; await salvaGov({ vistaSignore: v }); toast(v === "classica" ? "Le signore vedono di nuovo la piantina" : "Le signore vedono la schermata semplice"); });
+  document.querySelectorAll("[data-vista-signore]").forEach(b => b.onclick = async () => { const v = b.dataset.vistaSignore; await salvaGov({ vistaSignore: v }); toast(v === "classica" ? "Le signore vedono di nuovo la piantina" : v === "facile" ? "Le signore vedono la schermata facilissima" : "Le signore vedono la schermata semplice"); });
   document.querySelectorAll("[data-problema]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: b.dataset.problema, apriMotivo: "problema" }));
   // INIZIA apre la schermata grande con tutti i dettagli; da lì si preme "HO CAPITO, COMINCIO!"
   document.querySelectorAll("[data-inizia],[data-dettagli]").forEach(b => b.onclick = () => { const id = b.dataset.inizia || b.dataset.dettagli; if (S.pulizie[id]) apriFoglio({ tipo: "inizio", id }); });
