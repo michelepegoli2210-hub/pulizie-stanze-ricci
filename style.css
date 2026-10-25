@@ -2775,3 +2775,21 @@ body.lusso:not([data-legno="avorio"]) .inizio-ospiti{color:inherit}
 .btnsm:has(.ico-linea){display:inline-flex;align-items:center;gap:6px}
 body.premium .dt-grande.wa,body.premium .dt-fonte.wa,body.premium .pr-wa{background:#FAF6EE;border-color:#D5C7A9;color:#1C1917}
 body.premium .dt-grande.wa .ico-wa,body.premium .dt-fonte.wa .ico-wa,body.premium .pr-wa .ico-wa{color:#8A6D32}
+/* ---- 0.99.2: i dubbi di Sofia con le risposte da toccare; i puntini oro anche quando "respirano" ---- */
+.dt-dubbio{display:grid;gap:8px;padding:10px 0 4px;border-top:1px solid rgba(138,109,50,.2)}
+.dt-dubbi>b+.dt-dubbio{border-top:0;padding-top:6px}
+.dt-dubbio>span{font:600 16px/1.35 var(--f-body)}
+.dt-risposte{display:flex;flex-wrap:wrap;gap:8px}
+.dt-risposte button{min-height:46px;padding:0 16px;border-radius:12px;border:1.5px solid #8A6D32;background:#FFFFFF;color:#6E542B;font:700 16px/1.1 var(--f-body);cursor:pointer}
+.dt-risposte button[aria-pressed="true"]{background:#8A6D32;color:#FFFFFF}
+.dt-rileggi{margin-top:12px;width:100%}
+:root[data-theme="dark"] .dt-risposte button{background:transparent;color:#E7D9B8}
+@keyframes led-oro{0%,100%{opacity:1;box-shadow:0 0 6px 2px rgba(184,134,46,.9),0 0 14px 6px rgba(184,134,46,.45)}50%{opacity:.35;box-shadow:0 0 0 0 rgba(184,134,46,0)}}
+body.premium .led,body.semplice .led,body.premium .day.problema .dot,body.semplice .day.problema .dot{background:#B8862E!important;animation-name:led-oro}
+body.premium .dt-dubbi{background:#FAF6EE;border:1.5px solid #D5C7A9;color:#44403C}
+body.premium .dt-riga.ok,body.premium .dt-riga.warn,body.premium .dt-riga.ko{box-shadow:none}
+body.premium .dt-riga.ok{border-left-color:#8A6D32}
+body.premium .dt-riga.warn{border-left-color:#D9B66A}
+body.premium .dt-riga.ko{border-left-color:#57534E}
+body.premium .dt-riga.warn{background:#FFFDF7}
+body.premium .dt-riga.ko{background:#FAFAF9}

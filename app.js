@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "0.99.1";
+export const VERSIONE = "0.99.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5302,7 +5302,8 @@ COME SI LEGGE IL PROSPETTO:
 - Gli ospiti che l'app conosce già sono CODICI tra parentesi quadre, per esempio [O3]: è sempre la stessa persona. Nel JSON riscrivilo IDENTICO. I nomi nuovi scrivili come li scrive il papà (cognome).
 - Le parti tra parentesi quadre [telefono] ed [email] sono dati tolti apposta.
 - Se i messaggi vengono da più chat, davanti c'è la chat tra parentesi tonde: "(chat con Papà)" è la chat privata tra Michele e il papà; un nome da solo, per esempio "(Albergo)", è un gruppo (Albergo = il gruppo dell'albergo con la famiglia e le signore). I messaggi che cominciano con 🎤 sono vocali trascritti (possono avere qualche parola sbagliata: [?] = non si capiva).
-- Non inventare niente: se una cosa non è chiara mettila in "dubbi" o metti "sicurezza":"bassa".
+- Non inventare niente: se una cosa non è chiara mettila in "dubbi" (con le risposte possibili, così Michele risponde con un tocco) o metti "sicurezza":"bassa".
+- Se tra i messaggi c'è "Risposte di Michele ai dubbi", vale quello che dice lui: usalo e non rifare la stessa domanda.
 
 IL PROSPETTO CHE C'È ADESSO NELL'APP (soggiorni dal ${L.dataMedia(da)} al ${L.dataMedia(a)}):
 ${prospettoInCodici(da, a)}
@@ -5316,7 +5317,7 @@ RISPONDI SOLO con questo JSON:
  "togli":[{"camera":"alba","nome":"[O5]","arrivo":"AAAA-MM-GG","perche":"le parole del papà"}],
  "indicazioni":[{"giorno":"AAAA-MM-GG","camera":"codice della camera oppure vuoto se vale per tutte","testo":"cosa devono fare le signore, scritto semplice e corto","messaggio":"le parole del papà"}],
  "abitudini":["come scrive il papà, per capirlo meglio la prossima volta: una frase corta per ognuna, senza nomi di ospiti"],
- "dubbi":["domande corte per Michele sulle cose non chiare"]}
+ "dubbi":[{"domanda":"domanda corta per Michele su una cosa non chiara","risposte":["2-4 risposte brevi possibili, se si possono indovinare (es. 1 persona, 2 persone)"]}]}
 REGOLE DEL JSON:
 - In "soggiorni" metti TUTTI i soggiorni che secondo i messaggi ci sono con la partenza da ${L.dataMedia(L.aggiungiGiorni(oggi, -3))} in poi, anche quelli già uguali nell'app (il confronto lo faccio io). Una riga per ospite e per periodo. Le camere libere non si mettono.
 - In "togli" solo i soggiorni che sono NELL'APP e che i messaggi dicono chiaramente disdetti o finiti prima (camera, codice, data di arrivo come nell'app).
@@ -5358,12 +5359,20 @@ const dataIso = (x) => /^\d{4}-\d{2}-\d{2}$/.test(String(x || "").trim()) ? Stri
 // il JSON di Sofia -> le righe dell'anteprima (stesse della dettatura) + indicazioni + abitudini + dubbi
 function lettoDaSofia(j) {
   const ctx = { oggi: L.oggiISO(), soggiorni: soggiorniLista() };
-  const righe = [], dubbi = (Array.isArray(j.dubbi) ? j.dubbi : []).map(x => daCodici(String(x || "").trim())).filter(Boolean).slice(0, 12);
+  const righe = [], dubbi = (Array.isArray(j.dubbi) ? j.dubbi : []).map(x => {
+    if (x && typeof x === "object") {
+      const domanda = daCodici(String(x.domanda || x.testo || "").trim()).slice(0, 200);
+      const risposte = (Array.isArray(x.risposte) ? x.risposte : []).map(r => daCodici(String(r || "").trim()).slice(0, 40)).filter(Boolean).slice(0, 4);
+      return domanda ? { domanda, risposte } : null;
+    }
+    const domanda = daCodici(String(x || "").trim()).slice(0, 200);
+    return domanda ? { domanda, risposte: [] } : null;
+  }).filter(Boolean).slice(0, 12);
   const usati = new Set();
   (Array.isArray(j.soggiorni) ? j.soggiorni : []).slice(0, 80).forEach((x, i) => {
     const camera = cameraDaSofia(x && x.camera), inizio = dataIso(x && x.arrivo), fine = dataIso(x && x.partenza);
     const nome = daCodici(String((x && x.nome) || "").trim()).replace(/^\[.*\]$/, "?").slice(0, 40) || "?";
-    if (!camera || !inizio || !fine || fine <= inizio) { if (x && (x.camera || x.nome)) dubbi.push(`Non ho capito bene: ${daCodici(String(x.messaggio || `${x.camera || ""} ${x.nome || ""}`)).slice(0, 120)}`); return; }
+    if (!camera || !inizio || !fine || fine <= inizio) { if (x && (x.camera || x.nome)) dubbi.push({ domanda: `Non ho capito bene: ${daCodici(String(x.messaggio || `${x.camera || ""} ${x.nome || ""}`)).slice(0, 120)}`, risposte: [] }); return; }
     const tipo = TIPI_OSPITE[x.tipo] ? x.tipo : null;
     const persone = Math.max(1, Math.min(12, Math.round(Number(x.persone) || 0))) || null;
     const bassa = /bassa/i.test(String(x.sicurezza || ""));
@@ -5424,6 +5433,7 @@ async function leggiConSofia(messaggi, opz = {}) {
   const d = opz.d || statoDettatura();
   if (!iaAccesa()) { d.ia = { errore: "chiave" }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); return; }
   const giro = ++letturaGiro;
+  d.ultimaLettura = { messaggi, papa: opz.papa || "", immagini: Array.isArray(opz.immagini) ? opz.immagini : [] };
   const { testo, tagliati } = testoPerLettura(messaggi, opz.papa || "");
   const immagini = Array.isArray(opz.immagini) ? opz.immagini.filter(x => x && x.dati) : [];
   d.ia = { leggo: true, n: messaggi.length, tagliati, fase: immagini.length ? `Leggo i messaggi e guardo ${immagini.length === 1 ? "la foto" : immagini.length + " foto"}` : "" };
@@ -5482,6 +5492,26 @@ async function salvaIndicazioni(lista) {
   if (ops.length) await S.db.scrivi(ops);
   return lista.length;
 }
+// 0.99.2 (Argon): i dubbi di Sofia con le risposte da toccare; poi "Rileggi con le tue risposte" (Sofia rilegge tutto
+// con in fondo il messaggio di Michele con le risposte: vale quello che dice lui)
+function dubbiHtml(d) {
+  const x = d.ia, lista = (x && x.dubbi) || []; if (!lista.length) return "";
+  const r = d.risposteDubbi || {}, puoRileggere = !!(d.ultimaLettura && d.ultimaLettura.messaggi && d.ultimaLettura.messaggi.length);
+  const scelte = Object.keys(r).length;
+  return `<div class="dt-dubbi"><b>Da chiarire${lista.length > 1 ? ` (${lista.length})` : ""}:</b>${lista.map((q, i) => {
+    const t = typeof q === "string" ? q : q.domanda, risp = (q && q.risposte) || [];
+    return `<div class="dt-dubbio"><span>${esc(t)}</span>${puoRileggere && risp.length ? `<div class="dt-risposte">${risp.map((a, k) => `<button type="button" aria-pressed="${r[i] === a}" data-dubbio="${i}|${k}">${esc(a)}</button>`).join("")}</div>` : ""}</div>`;
+  }).join("")}${scelte ? `<button type="button" class="big main dt-rileggi" data-dubbi-rileggi>✓ Rileggi con ${scelte === 1 ? "la tua risposta" : `le tue ${scelte} risposte`}</button>` : ""}</div>`;
+}
+async function rileggiConRisposte() {
+  const d = statoDettatura(), u = d.ultimaLettura, lista = (d.ia && d.ia.dubbi) || [], r = d.risposteDubbi || {};
+  if (!u || !u.messaggi || !Object.keys(r).length) return;
+  const testo = "Risposte di Michele ai dubbi di " + nomeGov() + ":\n" + Object.entries(r).map(([i, a]) => `- ${(lista[i] && (lista[i].domanda || lista[i])) || "?"} → ${a}`).join("\n");
+  const adesso = new Date(), ora = String(adesso.getHours()).padStart(2, "0") + ":" + String(adesso.getMinutes()).padStart(2, "0");
+  const msgs = [...u.messaggi.filter(m => !/^Risposte di Michele ai dubbi/.test(m.testo || "")), { data: L.oggiISO(), ora, chi: "Michele", testo, chat: u.messaggi.some(m => m.chat) ? "chat con Sofia" : "" }];
+  d.risposteDubbi = {};
+  await leggiConSofia(msgs, { papa: u.papa, immagini: u.immagini, d });
+}
 // la parte dell'anteprima che viene da Sofia: chi ha letto, cosa ha capito, le indicazioni e le abitudini da spuntare
 function partiSofiaHtml(d, parte = "testa") {
   const x = d.ia; if (!x) return "";
@@ -5493,7 +5523,7 @@ function partiSofiaHtml(d, parte = "testa") {
   const ind = x.indicazioni || [], ab = x.abitudini || [];
   const riga = (v, tipo) => `<label class="row dt-riga ok" style="grid-template-columns:auto 1fr;cursor:pointer;align-items:start"><input type="checkbox" data-sofia-${tipo}="${esc(v.k)}" ${v.scelta ? "checked" : ""} style="width:24px;height:24px;margin-top:2px"><span>${tipo === "ind" ? `<b>${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}${v.camera ? " · " + esc(camera(v.camera).nome) : " · a tutte"}</b><br>` : ""}${esc(v.testo)}${v.messaggio ? `<br><span class="muted small">papà: «${esc(v.messaggio)}»</span>` : ""}</span></label>`;
   if (parte === "testa") return `<div class="dt-fonte sofia"><span class="dt-fonte-foto" aria-hidden="true"></span><div><b>Il riassunto di ${esc(nomeGov())}${x.n > 1 ? ` · ${x.n} messaggi` : ""}</b>${x.risposta ? `<span>${esc(x.risposta)}</span>` : ""}<small>Controlla e lascia la spunta solo su quello che è giusto.</small><button type="button" class="btnsm ghost" data-dett-regole>Usa le regole fisse</button></div></div>
-    ${(x.dubbi || []).length ? `<div class="dt-dubbi"><b>Non sono sicura di:</b><ul>${x.dubbi.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}`;
+    ${dubbiHtml(d)}`;
   return `${ind.length ? `<div class="floorlabel" style="margin-top:12px">Indicazioni per le signore <span>${ind.filter(v => v.scelta).length} da salvare</span></div><div class="rows">${ind.map(v => riga(v, "ind")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Vanno nei dettagli della camera di quel giorno (o nel messaggio del giorno alle signore).</p>` : ""}
     ${ab.length ? `<div class="floorlabel" style="margin-top:12px">Come scrive papà: me lo ricordo? <span>${ab.filter(v => v.scelta).length}</span></div><div class="rows">${ab.map(v => riga(v, "ab")).join("")}</div><p class="muted small" style="margin:4px 2px 0">Le spuntate finiscono nel taccuino: la prossima volta lo capisco meglio.</p>` : ""}`;
 }
@@ -6035,6 +6065,8 @@ function collegaFoglio() {
     if (t) t.oninput = () => { d.testo = t.value; clearTimeout(timer); timer = setTimeout(() => { if (d.ia && !d.ia.leggo) { d.ia = null; disegnaFoglio(); } else aggiornaAnteprimaDettatura(f); }, 250); };
     document.querySelectorAll("[data-dett-sofia]").forEach(b => b.onclick = () => leggiTestoConSofia());
     document.querySelectorAll("[data-dett-regole]").forEach(b => b.onclick = () => { d.ia = null; d.scelte = {}; d.comportamenti = {}; disegnaFoglio(); });
+    document.querySelectorAll("[data-dubbio]").forEach(b => b.onclick = () => { const [i, k] = b.dataset.dubbio.split("|").map(Number); const q = ((d.ia && d.ia.dubbi) || [])[i]; const a = q && q.risposte && q.risposte[k]; if (!a) return; d.risposteDubbi = d.risposteDubbi || {}; if (d.risposteDubbi[i] === a) delete d.risposteDubbi[i]; else d.risposteDubbi[i] = a; disegnaFoglio(); });
+    document.querySelectorAll("[data-dubbi-rileggi]").forEach(b => b.onclick = () => rileggiConRisposte());
     document.querySelectorAll("[data-sofia-ind]").forEach(c => c.onchange = () => { const v = (d.ia && d.ia.indicazioni || []).find(x => x.k === c.dataset.sofiaInd); if (v) v.scelta = c.checked; disegnaFoglio(); });
     document.querySelectorAll("[data-sofia-ab]").forEach(c => c.onchange = () => { const v = (d.ia && d.ia.abitudini || []).find(x => x.k === c.dataset.sofiaAb); if (v) v.scelta = c.checked; disegnaFoglio(); });
     document.querySelectorAll("[data-dett-base]").forEach(b => b.onclick = () => { d.base = b.dataset.dettBase; d.scelte = {}; d.comportamenti = {}; disegnaFoglio(); });
