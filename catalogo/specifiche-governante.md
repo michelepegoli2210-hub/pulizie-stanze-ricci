@@ -1461,3 +1461,22 @@ Michele: "esporta chat con papa' e gruppo albergo [...] deve sentire anche i voc
 - La lettura resta da parte 3 ore (anche se l'app si chiude): con ?lettura=1 o dalla notifica si ritrova, ricalcolata col prospetto di quel momento.
 - Nel prospetto, col foglio chiuso: la striscia "Sofia sta leggendo le chat... Ascolto i vocali: 6 di 14" (l'anello dorato respira) e poi "Sofia ha letto le chat: 3 cambi nel prospetto · 2 indicazioni: tocca per controllare e salvare". Chiudere il foglio mentre ascolta non ferma niente e non lo fa riaprire da solo.
 - Onesto: se si esce dall'app per molti minuti Android puo' fermarla; per una lettura normale (uno o due minuti) arriva la notifica.
+
+## 70. La 0.99.1 (25 ottobre, notte): DUE GIRI DI ARGON ("OTTIMIZZAZIONE AD OLTRANZA") SULLA 0.99
+Michele: "ingaggia Gemini e continua il progetto: app da milioni di dollari fatta dal web designer migliore del mondo". Argon (Gemini 4) ha visto 10 schermate due volte; queste sono le correzioni applicate. Quelle NON applicate e perche': Sofia piu' piccola (Michele l'ha voluta grande); compenso e tipo di ospite tolti alle signore (restano, ma in pillole); i tasti rapidi sotto i dubbi di Sofia (da fare).
+### BUG VERO
+- L'OROLOGIO NON RESTAVA IN CIMA: il body aveva overflow-x:hidden e quindi la barra dell'ora (sticky) scorreva via con la pagina. Ora overflow-x:clip: la barra con ora e data resta sempre in alto in tutte le schermate del titolare, e la striscia dei giorni sta subito sotto (56 px), piena.
+### PREMIUM (titolare)
+- Oro brunito unico accento: il prospetto a colpo d'occhio senza semaforo (Arrivano oro, Partono pietra, Restano bianco; i numerini dei giorni oro e pietra); i badge degli stati (Da pulire = bordo oro, In corso = oro pieno, Pulita = pietra); i puntini che lampeggiano oro; WhatsApp (Incolla da WhatsApp, la striscia "Dalla chat di WhatsApp", le chat scelte) in avorio e oro invece del verde.
+- Icone a tratto in oro (SVG fatte a mano, ICO_LINEA) al posto delle emoji: Inserisci il prospetto, le pillole sotto il saluto, Foto del foglio, Parla.
+- Le signore in Oggi: monogramma (L, S) al posto della figurina; tante colonne quante sono le signore.
+- Pillole sotto il saluto: due per riga.
+- Testi corti: Messaggio alle signore ("Nessun messaggio per oggi. Tocca «Scrivi»: le signore lo vedono in grande."), Inserisci ("Prima di salvare vedi sempre cosa ho capito"), la guida di WhatsApp chiusa sotto "Come si fa da WhatsApp" (una freccia sola).
+- Le chat di WhatsApp: le schede scelte in oro, il periodo come comando a segmenti (1 sett., 2 sett., 1 mese, 3 mesi, Tutto), sotto il tasto due righe sole.
+- La lettura: barra di avanzamento (coi vocali si riempie, poi scorre) nella striscia e nel foglio; "Il riassunto di Sofia · N messaggi" senza nomi di modelli o chiavi; "Controlla e lascia la spunta solo su quello che è giusto."; il tasto Salva fisso in fondo al foglio mentre si scorrono le spunte (barra piena); la striscia verde delle righe diventa oro; nella testata della lettura "6 messaggi (chat con Papà + Albergo)".
+### LE SIGNORE (vista semplice)
+- L'ora grande accanto al giorno, in alto a destra, anche dentro la camera.
+- I numeri (da fare / in corso / pulite) senza semaforo: "da fare" col bordo oro.
+- Le schede delle camere: banda oro (da fare), oro con anello (in corso), pietra e sbiadita (pulita); Comincia e Ho finito in oro.
+- Dentro la camera: tipo di pulizia, tipo di ospite, tempo e paga in PILLOLE ("Cambio completo", "Ospiti Booking", "45 minuti", "Paga 6 €"), sotto in una frase chi parte e chi arriva.
+- UN SOLO TASTO FATTO PER PARTE, GRANDE, IN FONDO ("✓ Fatto: letto e biancheria"): prima si legge, poi si tocca. Il tastino in alto nella vista semplice non c'e' piu' (resta nella vista con la piantina). La guida dice "Leggi ogni parte e alla fine tocca Fatto".
