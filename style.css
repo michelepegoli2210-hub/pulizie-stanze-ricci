@@ -3587,3 +3587,68 @@ body.premium .casa-lato{pointer-events:auto}
 :root[data-theme="dark"] .os-riga{background:#1E1B18;border-color:#3A332B}
 :root[data-theme="dark"] .os-nome,:root[data-theme="dark"] .os-t b,:root[data-theme="dark"] .os-dati b{color:#F5F1EA}
 :root[data-theme="dark"] .os-dati,:root[data-theme="dark"] .mp-leg{color:#B8B0A4}
+
+/* ==========================================================================
+   1.0.7 · SOFIA SENZA "SANTINO" E IL PROSPETTO PER CHI NON CONOSCE L'ALBERGO (Gemini 4 Argon, 25/10 17:13 e 17:16)
+   Michele: "per adesso Sofia sembra quasi un'immagine religiosa"; "il prospetto lo deve poter capire subito anche una
+   persona che non c'entra niente con l'albergo: chi c'è nella camera, giorno per giorno, per quanto tempo rimane, il nome".
+   ========================================================================== */
+/* SOFIA: via l'arco (nicchia/aureola) e il filo di luce sui capelli. Dietro di lei una parete da boutique hotel a linee
+   DRITTE: boiserie a doghe a sinistra, pannello liscio a destra, profilo d'ottone in cima all'altezza delle spalle (la
+   testa esce sopra), luce di traverso da una finestra, la targhetta RECEPTION; si sposta al contrario del telefono.
+   La sua ombra cade sulla parete, staccata, e si sposta il doppio di lei. */
+body.premium .sofia-hero[data-tre="1"] .casa-arco{left:22px;right:22px;width:auto;top:calc(var(--h-casa) * .24);height:calc(var(--h-casa) * .38);border-radius:16px;
+  border:1px solid #DFD7C8;border-top:2.5px solid #C5A059;overflow:hidden;
+  background:linear-gradient(125deg,rgba(255,255,255,.85) 0%,rgba(244,239,229,.2) 48%,rgba(218,208,192,.45) 100%),linear-gradient(90deg,rgba(243,238,228,0) 0,rgba(243,238,228,0) 54%,#F3EEE4 54%,#F3EEE4 100%),repeating-linear-gradient(90deg,#E2D9C7 0,#E2D9C7 1px,transparent 1px,transparent 22px),#F1ECE1;
+  box-shadow:inset 0 18px 28px -12px rgba(28,25,23,.08),0 20px 40px rgba(28,25,23,.07);
+  transform:translate(calc(var(--ex,0) * -10px),calc(var(--ey,0) * -6px))}
+.casa-arco .ca-ombra,.casa-arco .ca-targa{display:none}
+body.premium .sofia-hero[data-tre="1"] .casa-arco .ca-ombra{display:block;position:absolute;top:-4%;left:50%;width:250px;height:340px;border-radius:45% 45% 20% 20%;
+  background:radial-gradient(ellipse at 50% 42%,rgba(28,25,23,.30) 0%,rgba(28,25,23,.10) 48%,transparent 72%);filter:blur(16px);
+  transform:translate(calc(-50% + var(--ex,0) * -26px + 12px),calc(var(--ey,0) * -14px + 10px))}
+body.premium .sofia-hero[data-tre="1"] .casa-arco .ca-targa{display:block;position:absolute;top:12px;left:12px;font:800 8px/1 var(--f-body);letter-spacing:1.6px;color:#8C6D3F;opacity:.7}
+/* lei: niente alone chiaro sopra la testa, solo un'ombra di lato che si sposta col telefono */
+body.premium .sofia-hero[data-tre="1"] .casa-card.tre .donnina.gov-fig.gov-film.casa-fig{filter:drop-shadow(calc(var(--ex,0) * -8px + 6px) 10px 12px rgba(28,25,23,.20))}
+/* la nuvoletta e' il "bancone" davanti a lei: filo d'ottone in cima e la sua ombra che sale sulla vita di Sofia */
+body.premium .sofia-hero[data-tre="1"] .casa-nuvola{border-top:3px solid #C5A059;box-shadow:0 -14px 24px -6px rgba(28,25,23,.20),0 16px 32px rgba(28,25,23,.10)}
+:root[data-theme="dark"] body.premium .sofia-hero[data-tre="1"] .casa-arco{background:linear-gradient(125deg,rgba(255,255,255,.07) 0%,rgba(0,0,0,0) 50%,rgba(0,0,0,.22) 100%),linear-gradient(90deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 54%,#2B2620 54%,#2B2620 100%),repeating-linear-gradient(90deg,#3A332B 0,#3A332B 1px,transparent 1px,transparent 22px),#28231E;border-color:#3A332B;border-top-color:#B8955A}
+@media (prefers-reduced-motion:reduce){body.premium .sofia-hero[data-tre="1"] .casa-arco{transform:none}body.premium .sofia-hero[data-tre="1"] .casa-arco .ca-ombra{transform:translateX(-50%)}}
+/* il fantasmino: girato verso la sua nuvoletta (-7 gradi), appena inclinato, ombra decisa di lato (niente alone chiaro) */
+.sofia-fuori.tre .sf-cornice{transform:perspective(900px) rotateY(calc(-7deg + var(--ex,0) * -4deg)) rotateZ(-1.5deg) rotateX(calc(var(--ey,0) * -3deg)) translate(calc(var(--ex,0) * 8px),calc(var(--ey,0) * 5px));
+  filter:drop-shadow(-10px 6px 14px rgba(28,25,23,.30))}
+@media (prefers-reduced-motion:reduce){.sofia-fuori.tre .sf-cornice{transform:rotateY(-7deg) rotateZ(-1.5deg)}}
+
+/* IL PROSPETTO PER CHI NON CONOSCE L'ALBERGO */
+/* davanti al nome della camera la parola "camera" (negli appartamenti "app."), piccola e grigia */
+.mp-cam{flex:0 0 auto;margin-right:-2px;font:700 8.5px/21px var(--f-body);font-style:normal;letter-spacing:.6px;text-transform:uppercase;color:#9A8F80}
+.mp-c.via .mp-cam{line-height:1}
+.mp-c.casa .mp-targa .ico-porta{display:none}
+@media (max-width:380px){.mp-lato .mp-cam{display:none}}
+/* libera stanotte: grigia e tratteggiata anche se quel giorno qualcuno se ne va (niente piu' rosso che sembra un allarme) */
+.mp-c.libera.parte{border-color:#C3BAAB;background:#ECE8E1}
+.mp-c.libera .mp-corpo{gap:2px}
+.mp-vuota{font:800 12px/1 var(--f-body);letter-spacing:2.5px;color:#7A7268}
+.mp-uscito{display:block;min-width:0;font:600 10.5px/1.25 var(--f-body);color:#857D72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-c.casa .mp-uscito{white-space:normal;font-size:10px}
+.os-entra{color:#15803D}
+/* la settimana: il nome che non sta nella barra si scrive accanto, nei giorni liberi (mai piu' "Ro...") */
+.sc-bar.corta{padding:0}
+.sc-fuori{align-self:center;min-width:0;height:26px;margin:0 2px;padding:0 3px;border:0;background:none;color:#1C1917;font:800 11.5px/26px var(--f-display);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;z-index:2}
+.sc-fuori.sx{text-align:right}
+:root[data-theme="dark"] .sc-fuori{color:#F5F1EA}
+:root[data-theme="dark"] .mp-c.libera.parte{background:#24201C;border-color:#4A4238}
+/* le Piantine: i nomi lunghi (Fenicotteri, Passerella, Salvatore) piu' piccoli, cosi' non vanno sopra il prezzo */
+body.premium .tess-nome.lungo,body.semplice .tess-nome.lungo{font-size:16px}
+/* negli appartamenti il giorno e le notti su due righe intere; i numeri sotto i giorni spiegati nella legenda */
+.mp-sep{font-style:normal}
+.mp-c.casa .mp-info{display:block;white-space:normal}
+.mp-c.casa .mp-sep{display:none}
+.mp-c.casa .mp-n{display:block}
+.mp-leg-pm b{font-weight:800;color:#1C1917}
+/* "Chi dorme": date e notti non si spezzano a meta'; nelle camere la parola "camera" / "app." */
+.os-per,.os-dati b{white-space:nowrap}
+.os-cam-t{font:700 8.5px/1 var(--f-body);font-style:normal;letter-spacing:.6px;color:#9A8F80}
+/* la settimana: nelle barre di una notte sola il cognome, piu' piccolo e centrato */
+.sc-bar.stretta{padding:0 2px;font-size:10.5px;text-align:center;text-overflow:clip}
+/* le Piantine: il nome della camera lascia sempre il posto al prezzo (anche "Via Zara · 1° e 2° piano") */
+.tess:has(.tess-pr) .tess-nome{max-width:calc(100% - 48px)}

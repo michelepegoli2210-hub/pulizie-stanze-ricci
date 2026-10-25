@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.6";
+export const VERSIONE = "1.0.7";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -874,7 +874,7 @@ function nomeSignora() { const u = S.utente; if (u?.zona) { const n = SIG(u.zona
 const S = {
   db: null, utente: null, pronto: false,
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
-  board: { modo: "mappa", inizio: L.lunediDi(L.oggiISO()) },   // 1.0.5: si apre sulla mappa delle camere
+  board: { modo: "mappa", inizio: L.oggiISO() },   // 1.0.5: si apre sulla mappa delle camere; 1.0.7: la settimana parte da oggi
   camere: CAMERE.slice(), zone: ZONE, squadra: null, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
@@ -2040,7 +2040,7 @@ function casaOssatura(tre) {
   // sempre in vista); in fondo la casella per scriverle. Negli altri stili resta tutto come prima.
   return `<div class="casa-testa"><span class="casa-nome">Le Stanze di Ricci</span></div>
     <div class="casa-scena">
-      <span class="casa-arco" aria-hidden="true"></span>
+      <span class="casa-arco" aria-hidden="true"><i class="ca-ombra"></i><b class="ca-targa">RECEPTION</b></span>
       <div class="casa-card${tre ? " tre" : ""}">
         ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
         ${FILM_CONS("casa-fig", tre)}
@@ -4770,6 +4770,8 @@ function giornoCorto(d) { return Math.abs(L.giorniTra(L.oggiISO(), d)) <= 6 ? `$
 function periodoCorto(a, b) { const o = L.oggiISO(), vicino = (d) => Math.abs(L.giorniTra(o, d)) <= 6; const f = (d) => vicino(a) && vicino(b) ? `${L.GG[L.giornoSettimana(d)]} ${L.giornoDelMese(d)}` : `${L.giornoDelMese(d)} ${L.MESI[L.daISO(d).getUTCMonth()].slice(0, 3)}`; return `dal ${f(a)} al ${f(b)}`; }
 // il nome dell'ospite pulito ("D'Agostino · 3 operai" -> "D'Agostino") e quello che c'era scritto dopo ("3 operai")
 function nomeOspite(s) { const n = String((s && s.nome) || "").trim(), k = nucleoNome(n); return k.length >= 2 ? k : (n || "?"); }
+// il nome piu' corto che si capisce: senza "Sig.ra", "Famiglia", "Ditta"... e senza il nome di battesimo ("Russo")
+function nomeCortoOspite(s) { const k = nomeOspite(s); const p = k.replace(/^(sig\.?\s*ra|sig\.?\s*na|sigg?\.?|signora|signor[ae]?|dott\.?(\s*ssa)?|famiglia|fam\.?|ditta|coppia|sposi)\s+/i, "").split(/\s+/).filter(Boolean); return p[0] || k; }
 function dopoNome(s) { const n = String((s && s.nome) || "").trim(), k = nomeOspite(s); const i = n.indexOf(k); return i < 0 || k === n ? "" : n.slice(i + k.length).replace(/^[\s·,;(\/\-]+|[)\s]+$/g, "").trim(); }
 function coloreOspite(s) { return !s || s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore); }
 function mappaCamere() {
@@ -4787,6 +4789,7 @@ function mappaCamere() {
     return { cur, par, arriva: !!cur && cur.inizio === g, cambio: !!cur && cur.inizio === g && !!par, dubbio: !!cur && (cur.tipo === "unk" || !!cur.dubbio) };
   };
   let piene = 0, cambi = 0;
+  const quando = (d) => d === oggi ? "oggi" : d === L.aggiungiGiorni(oggi, 1) ? "domani" : giornoCorto(d);
   const lung = (x) => { const n = String(x || "").length; return n > 19 ? " lunghissimo" : n > 14 ? " lungo" : ""; };
   const casella = (c, forma) => {
     const x = stato(c), s = x.cur, nomeC = esc(forma === "casa" ? (NOMI_SETTIMANA[c.id] || nomeBreveCamera(c)) : nomeBreveCamera(c));
@@ -4794,17 +4797,20 @@ function mappaCamere() {
     const via = forma === "via" ? `<small>via N. Sauro</small>` : "";
     // la targhetta e' solo la camera (cosi' il suo nome non si taglia mai); ARRIVA, PARTE, CAMBIO e DA VEDERE stanno
     // all'inizio della riga delle notti, nel blocco colorato
-    const targa = `<span class="mp-targa">${icoPorta()}<span class="mp-tn"><b class="mp-nome">${nomeC}</b>${via}</span></span>`;
+    // 1.0.7 (Gemini: "per chi non conosce l'albergo ANTONIO sopra Neri Paolo sembrano due persone"): davanti al nome
+    // della camera la parola "camera" (negli appartamenti "app."), piccola e chiara
+    const targa = `<span class="mp-targa">${icoPorta()}<span class="mp-tn"><i class="mp-cam">${forma === "casa" ? "app." : "camera"}</i><b class="mp-nome">${nomeC}</b>${via}</span></span>`;
     if (!s) {
+      // libera stanotte: sembra LIBERA (grigia, tratteggiata), mai piu' rossa; chi se ne va quel giorno, piccolo sotto
       const cl = `mp-c libera${x.par ? " parte" : ""}${forma ? " " + forma : ""}`;
-      const corpo = `<span class="mp-corpo">${x.par ? `<span class="mp-ospite"><s class="mp-chi">${esc(nomeOspite(x.par))}</s></span><span class="mp-info"><i class="mp-tag parte">← PARTE</i> poi libera</span>` : `<span class="mp-vuota">LIBERA</span>`}</span>`;
+      const corpo = `<span class="mp-corpo"><span class="mp-vuota">LIBERA</span>${x.par ? `<span class="mp-uscito">esce ${esc(quando(g))}: ${esc(nomeOspite(x.par))}</span>` : ""}</span>`;
       const aria = `Camera ${nomeC}: libera${x.par ? ", parte " + esc(x.par.nome || "") : ""}`;
       return puoModificare() ? `<button type="button" class="${cl}" data-cella="${esc(c.id)}|${g}" aria-label="${aria}">${targa}${corpo}</button>` : `<span class="${cl}" aria-label="${aria}">${targa}${corpo}</span>`;
     }
     const n = Number(s.persone) || 1;
-    const tag = x.cambio ? `<i class="mp-tag cambio">⇄ CAMBIO</i>` : x.arriva ? `<i class="mp-tag arriva">→ ARRIVA</i>` : x.dubbio ? `<i class="mp-tag dubbio">? DA VEDERE</i>` : "";
-    // con l'etichetta: solo le notti (nella casella non c'e' posto per tutto; il resto e' in "Chi dorme" qui sotto)
-    const info = tag ? `${tag} ${nottiDi(s)}` : `${nottiDi(s)} · fino ${esc(giornoCorto(s.fine))}${n > 1 ? ` · ${n} pers.` : ""}`;
+    // 1.0.7 (Gemini): frasi in italiano al posto delle sigle (→ ARRIVA, ⇄ CAMBIO) e SEMPRE il giorno in cui se ne va
+    const fino = `fino a ${esc(giornoCorto(s.fine))}`;
+    const info = x.arriva ? `entra ${esc(quando(g))}<i class="mp-sep"> · </i><span class="mp-n">${fino}</span>` : x.dubbio ? `? da controllare<i class="mp-sep"> · </i><span class="mp-n">${fino}</span>` : `${fino}<i class="mp-sep"> · </i><span class="mp-n">${nottiDi(s)}</span>`;
     const cl = `mp-c piena${x.arriva ? " arriva" : ""}${x.cambio ? " cambio" : ""}${x.dubbio ? " dubbio" : ""}${s.tipo === "unk" ? " ignoto" : ""}${forma ? " " + forma : ""}`;
     return `<button type="button" class="${cl}" style="--tc:${coloreOspite(s)}" data-sog="${esc(s.id)}" aria-label="Camera ${nomeC}: ospite ${esc(s.nome || "?")}, ${nottiDi(s)}${x.cambio ? ", dopo " + esc(x.par.nome || "") : ""}">${targa}<span class="mp-corpo"><span class="mp-ospite${lung(nomeOspite(s))}">${icoPersona()}<b class="mp-chi">${esc(nomeOspite(s))}</b></span><span class="mp-info">${info}</span></span></button>`;
   };
@@ -4821,7 +4827,7 @@ function mappaCamere() {
   const quale = g === oggi ? "Stanotte" : g === L.aggiungiGiorni(oggi, 1) ? "Domani notte" : L.GIORNI[L.giornoSettimana(g)].replace(/^./, ch => ch.toUpperCase()) + " notte";
   // la legenda: porta = camera, omino = ospite, i colori dei tipi di ospite di quella notte, la camera libera
   const tipiNotte = [...new Set(sog.filter(s => s.inizio <= g && g < s.fine).map(s => (TIPI_OSPITE[s.tipo] ? s.tipo : "altro")))];
-  const leg = `<div class="mp-leg"><span class="mp-leg-ico">${icoPorta()}camera</span><span class="mp-leg-ico">${icoPersona()}ospite</span>${tipiNotte.map(k => `<span><i style="background:${coloreOspite({ tipo: k })}"></i>${esc(TIPI_OSPITE[k].nome)}</span>`).join("")}<span><i class="l-libera"></i>libera</span></div>`;
+  const leg = `<div class="mp-leg"><span class="mp-leg-ico">${icoPorta()}camera</span><span class="mp-leg-ico">${icoPersona()}ospite</span>${tipiNotte.map(k => `<span><i style="background:${coloreOspite({ tipo: k })}"></i>${esc(TIPI_OSPITE[k].nome)}</span>`).join("")}<span><i class="l-libera"></i>libera</span><span class="mp-leg-pm"><b>+</b> arrivano · <b>−</b> partono</span></div>`;
   return `<section class="card mp" aria-label="Le camere a colpo d'occhio">
     <div class="cd-giorni" role="tablist" aria-label="Scegli il giorno">${strip}</div>
     <div class="mp-conta"><b>${esc(quale)}</b><span><b>${piene}</b>/${S.camere.length} piene${cambi ? ` · <b>${cambi}</b> ${cambi === 1 ? "cambio" : "cambi"}` : ""}</span></div>
@@ -4833,7 +4839,9 @@ function mappaCamere() {
 // ditta): il nome intero, quante camere e quali, quante persone, quante notti (dal ... al ...), il telefono da toccare.
 function elencoOspiti(g, quale) {
   const ordine = new Map(zoneOrdinate().flatMap(z => camereZona(z.id)).map((c, i) => [c.id, i]));
-  const qui = soggiorniLista().filter(s => s.inizio <= g && g < s.fine).sort((a, b) => (ordine.get(a.camera) ?? 99) - (ordine.get(b.camera) ?? 99));
+  const oggi = L.oggiISO(), tutti = soggiorniLista();
+  const quando = (d) => d === oggi ? "oggi" : d === L.aggiungiGiorni(oggi, 1) ? "domani" : giornoCorto(d);
+  const qui = tutti.filter(s => s.inizio <= g && g < s.fine).sort((a, b) => (ordine.get(a.camera) ?? 99) - (ordine.get(b.camera) ?? 99));
   if (!qui.length) return "";
   const gruppi = new Map();
   for (const s of qui) { const k = PAROLE.norm(nucleoNome(s.nome || "")) || "?" + s.id; if (!gruppi.has(k)) gruppi.set(k, []); gruppi.get(k).push(s); }
@@ -4842,13 +4850,16 @@ function elencoOspiti(g, quale) {
     const nome = nomeOspite(lungo), resto = dopoNome(lungo);
     const pers = l.reduce((x, s) => x + (Number(s.persone) || 1), 0);
     const uguali = l.every(s => s.inizio === l[0].inizio && s.fine === l[0].fine);
-    const quando = uguali ? `<b>${nottiDi(l[0])}</b> · ${esc(periodoCorto(l[0].inizio, l[0].fine))}` : `fino ${esc(giornoCorto(l.map(s => s.fine).sort().pop()))}`;
+    const periodo = uguali ? `<b>${nottiDi(l[0])}</b> · <span class="os-per">${esc(periodoCorto(l[0].inizio, l[0].fine))}</span>` : `<span class="os-per">fino a ${esc(giornoCorto(l.map(s => s.fine).sort().pop()))}</span>`;
+    // chi entra quel giorno (e chi c'era prima in quella camera)
+    const nuovo = l.find(s => s.inizio === g), prima = nuovo ? tutti.find(x => x.camera === nuovo.camera && x.fine === g && x.id !== nuovo.id) : null;
+    const entra = nuovo ? `<b class="os-entra">entra ${esc(quando(g))}</b>${prima ? ` al posto di ${esc(nomeOspite(prima))}` : ""} · ` : "";
     const tel = l.map(telefonoDi).find(Boolean);
     const dubbio = l.some(s => s.tipo === "unk" || s.dubbio);
-    const camere = l.map(s => `<button type="button" class="os-cam" data-sog="${esc(s.id)}">${icoPorta()}<b>${esc(nomeBreveCamera(camera(s.camera)))}</b>${uguali ? "" : `<small>${nottiDi(s)} · fino ${esc(giornoCorto(s.fine))}</small>`}</button>`).join("");
+    const camere = l.map(s => `<button type="button" class="os-cam" data-sog="${esc(s.id)}">${icoPorta()}<i class="os-cam-t">${camera(s.camera).tipo === "casa" ? "app." : "camera"}</i><b>${esc(nomeBreveCamera(camera(s.camera)))}</b>${uguali ? "" : `<small>${nottiDi(s)} · fino ${esc(giornoCorto(s.fine))}</small>`}</button>`).join("");
     return `<div class="os-riga${dubbio ? " dubbio" : ""}" style="--tc:${coloreOspite(l[0])}">
       <div class="os-testa"><span class="os-ico">${icoPersona()}</span><b class="os-nome">${dubbio ? "? " : ""}${esc(nome)}${resto ? ` <small>· ${esc(resto)}</small>` : ""}</b></div>
-      <div class="os-dati">${l.length > 1 ? `<b>${l.length} camere</b> · ` : ""}${pers} ${pers === 1 ? "persona" : "persone"} · ${quando}</div>
+      <div class="os-dati">${entra}${l.length > 1 ? `<b>${l.length} camere</b> · ` : ""}${pers} ${pers === 1 ? "persona" : "persone"} · ${periodo}</div>
       <div class="os-camere">${camere}${tel ? `<a class="os-tel" href="${esc(telHref(tel))}" aria-label="Chiama ${esc(nome)}: ${esc(telBello(tel))}">${icoTel()}<span>${esc(telBello(tel))}</span><b>Chiama</b></a>` : ""}</div>
     </div>`;
   }).join("");
@@ -4872,12 +4883,20 @@ function settimanaCompatta(da) {
       html += `<div class="sc-fondo" style="grid-row:${r};grid-column:2/-1"></div>`;
       const nomeSc = esc(NOMI_SETTIMANA[c.id] || nomeBreveCamera(c));
       html += puoModificare() ? `<button type="button" class="sc-cam" style="grid-row:${r};grid-column:1" data-cella="${esc(c.id)}|${da < oggi && oggi < a ? oggi : da}">${nomeSc}</button>` : `<span class="sc-cam" style="grid-row:${r};grid-column:1">${nomeSc}</span>`;
-      for (const s of sog.filter(s => s.camera === c.id && s.inizio < a && da < s.fine)) {
-        const i0 = Math.max(0, L.giorniTra(da, s.inizio)), i1 = Math.min(N, L.giorniTra(da, s.fine));
-        if (i1 <= i0) continue;
-        const q = s.tipo === "unk" || s.dubbio, tc = s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore);
-        html += `<button type="button" class="sc-bar${q ? " q" : ""}${s.inizio < da ? " prima" : ""}${s.fine > a ? " dopo" : ""}" style="grid-row:${r};grid-column:${i0 + 2}/${i1 + 2};--tc:${tc}" data-sog="${esc(s.id)}" title="${esc(s.nome || "")}">${q ? "? " : ""}${esc(nomeOspite(s))}${Number(s.persone) > 1 ? ` · ${s.persone}` : ""}</button>`;
-      }
+      const qui = sog.filter(s => s.camera === c.id && s.inizio < a && da < s.fine).map(s => ({ s, i0: Math.max(0, L.giorniTra(da, s.inizio)), i1: Math.min(N, L.giorniTra(da, s.fine)) })).filter(x => x.i1 > x.i0).sort((x, y) => x.i0 - y.i0);
+      qui.forEach((x, k) => {
+        const s = x.s, q = s.tipo === "unk" || s.dubbio, tc = s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore);
+        const testo = `${q ? "? " : ""}${nomeOspite(s)}${Number(s.persone) > 1 ? ` · ${s.persone}` : ""}`;
+        // il nome sta nella barra? (stima: 6,8 px a lettera, 40 px a giorno) se no, si scrive accanto, nei giorni liberi
+        const serve = testo.length * 6.8 + 12, giorno = 40, larga = x.i1 - x.i0;
+        const dopo = (k + 1 < qui.length ? qui[k + 1].i0 : N) - x.i1, primaL = x.i0 - (k > 0 ? qui[k - 1].i1 : 0);
+        const fuori = larga * giorno >= serve ? "" : dopo > 0 && (larga + dopo) * giorno >= serve ? "dx" : primaL > 0 && (larga + primaL) * giorno >= serve ? "sx" : dopo >= primaL && dopo > 0 ? "dx" : primaL > 0 ? "sx" : "";
+        const stretta = !fuori && larga * giorno < serve;   // non c'e' posto da nessuna parte: il cognome solo, piu' piccolo
+        const dentro = fuori ? "" : stretta ? `${q ? "? " : ""}${nomeCortoOspite(s)}` : testo;
+        html += `<button type="button" class="sc-bar${q ? " q" : ""}${fuori ? " corta" : ""}${stretta ? " stretta" : ""}${s.inizio < da ? " prima" : ""}${s.fine > a ? " dopo" : ""}" style="grid-row:${r};grid-column:${x.i0 + 2}/${x.i1 + 2};--tc:${tc}" data-sog="${esc(s.id)}" title="${esc(s.nome || "")}" aria-label="${esc(testo)}">${esc(dentro)}</button>`;
+        if (fuori === "dx") html += `<button type="button" class="sc-fuori" style="grid-row:${r};grid-column:${x.i1 + 2}/${x.i1 + 2 + dopo}" data-sog="${esc(s.id)}">${esc(testo)}</button>`;
+        if (fuori === "sx") html += `<button type="button" class="sc-fuori sx" style="grid-row:${r};grid-column:${x.i0 + 2 - primaL}/${x.i0 + 2}" data-sog="${esc(s.id)}">${esc(testo)}</button>`;
+      });
       r++;
     }
   }
@@ -6776,9 +6795,28 @@ function collega() {
   document.querySelectorAll("[data-superficie]").forEach(b => b.onclick = () => apriFoglio({ tipo: "superficie", id: b.dataset.superficie, tipoSup: b.dataset.tipo }));
   document.querySelectorAll("[data-giro-scegli]").forEach(b => b.onclick = () => apriFoglio({ tipo: "giroScegli" }));
   document.querySelectorAll("[data-colpo]").forEach(b => b.onclick = () => { S.colpo = b.dataset.colpo; disegna(); });
+  // 1.0.7 (Gemini): sulla mappa si sfogliano i giorni col dito, come le pagine di un libro
+  const mpc = document.querySelector(".card.mp");
+  if (mpc) {
+    let x0 = null, y0 = 0;
+    mpc.addEventListener("touchstart", (e) => { const q = e.touches[0]; x0 = q.clientX; y0 = q.clientY; }, { passive: true });
+    mpc.addEventListener("touchend", (e) => {
+      if (x0 == null) return; const q = e.changedTouches[0], dx = q.clientX - x0, dy = q.clientY - y0; x0 = null;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+      const oggi = L.oggiISO(), n = Math.max(0, Math.min(6, L.giorniTra(oggi, S.colpo || oggi) + (dx < 0 ? 1 : -1))), nuovo = L.aggiungiGiorni(oggi, n);
+      if (nuovo !== S.colpo) { S.colpo = nuovo; disegna(); }
+    }, { passive: true });
+  }
   document.querySelectorAll("[data-apri-lettura]").forEach(b => b.onclick = () => { if (!letturaDaControllare() && !letturaInCorso()) riprendiUltimaLettura(); apriFoglio({ tipo: "dettatura" }); });
   collegaPonte();
-  document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => { S.board.modo = b.dataset.board; if (S.board.modo !== "mese") S.board.inizio = L.lunediDi(S.board.inizio); disegna(); });
+  // 1.0.7 (Gemini): la settimana parte da OGGI (i prossimi 7 giorni), non dal lunedi' gia' passato; dal mese di un altro
+  // mese si comincia dal primo di quel mese
+  document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => {
+    const prima = S.board.modo, nuovo = b.dataset.board, oggi = L.oggiISO();
+    S.board.modo = nuovo;
+    if (nuovo === "settimana") S.board.inizio = prima === "mese" && L.primoDelMese(S.board.inizio) !== L.primoDelMese(oggi) ? L.primoDelMese(S.board.inizio) : oggi;
+    disegna();
+  });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });
   document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.pay.split("|"); segnaPagata(z, k, true); });
   document.querySelectorAll("[data-unpay]").forEach(b => b.onclick = () => { const [z, k] = b.dataset.unpay.split("|"); segnaPagata(z, k, false); });
