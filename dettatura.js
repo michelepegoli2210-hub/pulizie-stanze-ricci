@@ -124,7 +124,7 @@ function capisciRiga(seg, ctx) {
   const consuma = (m, da = 0, a = null) => { const i0 = m.index + da, i1 = a == null ? m.index + m[0].length : a; w = w.slice(0, i0) + " ".repeat(i1 - i0) + w.slice(i1); };
   const consumaDa = (i) => { w = w.slice(0, i) + " ".repeat(w.length - i); };
   const motivi = [], assunti = [];
-  const r = { camera: seg.camera, testo: pulisci(seg.o), azione: "nuovo", nome: "", persone: null, tipo: null, inizio: null, fine: null, nota: "", notaPrivata: "", dubbio: false, motivi, assunti, scelto: true, base };
+  const r = { camera: seg.camera, testo: pulisci(seg.o), azione: "nuovo", nome: "", persone: null, tipo: null, inizio: null, fine: null, nota: "", notaPrivata: "", telefono: "", dubbio: false, motivi, assunti, scelto: true, base };
   const cerca = (re) => { re.lastIndex = 0; return re.exec(w); };
   const cercaTutti = (re) => { const out = []; re.lastIndex = 0; let m; while ((m = re.exec(w))) out.push(m); return out; };
   let durata = null, haParoleProlunga = false, haParoleParte = false, comeScorsa = false, libera = false;
@@ -148,11 +148,18 @@ function capisciRiga(seg, ctx) {
     if (/(^|[^a-z])(dal|al|da|a)\s+\d|\d{1,2}\s*[\/.]\s*\d|lunedi|martedi|mercoledi|giovedi|venerdi|sabato|domenica|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre|notti|settiman/.test(tn) && !/privat|riservat|euro|prezzo|paga|tel|cell/.test(tn)) continue;
     const priv = /^(privat[oa]|riservato|solo per noi)\s*:?/.test(tn) || DIZIONARIO_EXCEL.parolePrivate.some(pp => new RegExp(`(^|[^a-z])${pp}`).test(tn)) || /\d(?:[\s.]?\d){7,}/.test(tn);
     t = t.replace(/^(privat[oa]|riservato|solo per noi)\s*:?\s*/i, "");
+    // 1.0.6: il telefono tra parentesi va nel suo campo; il resto (se c'e') resta una nota
+    const tels = t.match(/\+?\d(?:[\s.\-]?\d){8,}/g) || [];
+    for (const x of tels) { if (!r.telefono) r.telefono = pulisci(x); else r.notaPrivata = (r.notaPrivata ? r.notaPrivata + " · " : "") + "tel. " + pulisci(x); t = t.replace(x, " "); }
+    if (tels.length) t = pulisci(t.replace(/(^|\s)(tel|cell|telefono|cellulare|numero|num)\.?\s*:?(?=\s|$)/gi, " "));
     if (t) { if (priv) r.notaPrivata = (r.notaPrivata ? r.notaPrivata + " · " : "") + t; else r.nota = (r.nota ? r.nota + " · " : "") + t; }
     consuma(mm);
   }
   // 1b) telefoni e prezzi: sono privati, e non devono essere scambiati per date
-  for (const mm of cercaTutti(/\+?\d(?:[\s.]?\d){7,}/g)) { r.notaPrivata = (r.notaPrivata ? r.notaPrivata + " · " : "") + "tel. " + pulisci(seg.o.slice(mm.index, mm.index + mm[0].length)); consuma(mm); }
+  // 1.0.6: il primo numero da 9 cifre in su e' il telefono dell'ospite (campo suo, lo vedono solo i proprietari)
+  for (const mm of cercaTutti(/\+?\d(?:[\s.\-]?\d){8,}/g)) { const num = pulisci(seg.o.slice(mm.index, mm.index + mm[0].length)); if (!r.telefono) r.telefono = num; else r.notaPrivata = (r.notaPrivata ? r.notaPrivata + " · " : "") + "tel. " + num; consuma(mm); }
+  // (una data scritta coi punti, "12.10.2026", non e' un telefono: resta una data)
+  for (const mm of cercaTutti(/\+?\d(?:[\s.]?\d){7,}/g)) { if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(mm[0].trim())) continue; r.notaPrivata = (r.notaPrivata ? r.notaPrivata + " · " : "") + "tel. " + pulisci(seg.o.slice(mm.index, mm.index + mm[0].length)); consuma(mm); }
   for (const mm of cercaTutti(/(\d+(?:[.,]\d+)?)\s*(?:euro|eur|€)(?![a-z])/g)) { r.notaPrivata = (r.notaPrivata ? r.notaPrivata + " · " : "") + pulisci(seg.o.slice(mm.index, mm.index + mm[0].length)); consuma(mm); }
 
   // 2) date: prima i periodi espliciti (da … a …), poi i pezzi singoli
@@ -255,11 +262,26 @@ function capisciRiga(seg, ctx) {
   let nome = pulisci(parole.join(" "));
   if (/\?/.test(nome) || /\?/.test(n)) { r.dubbio = true; nome = pulisci(nome.replace(/\?/g, "")); motivi.push("c'è un punto di domanda: da controllare"); }
   nome = titolo(nome);
-  if (nome.length > 40) nome = nome.slice(0, 40).trim();
+  if (nome.length > 48) nome = nome.slice(0, 48).trim();
   r.nome = nome;
   Object.assign(r, { durata, haParoleProlunga, haParoleParte, comeScorsa, libera, inizioDetto, fineDetta });
   return r;
 }
+
+// ---- 1.0.6: "Pignatelli" e "Pignatelli Antonio" (o "Famiglia Bianchi" e "Bianchi") sono lo stesso ospite ----------
+const TITOLI_NOME = new Set(["sig", "sigg", "sigra", "ra", "na", "ri", "signor", "signora", "signori", "dott", "dottor", "dottore", "dottssa", "ing", "avv", "geom", "prof", "fam", "famiglia", "ditta", "coppia", "sposi"]);
+function paroleDelNome(x) { return normalizzaAllineato(String(x || "").split(/\s*[·,;(\/]\s*|\s+-\s+/)[0]).replace(/[^a-z' ]/g, " ").split(/\s+/).filter(w => w.length > 1 && !TITOLI_NOME.has(w)); }
+export function nomiCompatibili(a, b) {
+  const A = paroleDelNome(a), B = paroleDelNome(b);
+  if (!A.length || !B.length) return false;
+  const [corto, lungo] = A.length <= B.length ? [A, B] : [B, A];
+  return corto.every(w => lungo.includes(w));
+}
+// a e' piu' completo di b (ha qualche parola in piu' e le altre sono le stesse)?
+function nomePiuCompleto(a, b) { return !!a && a !== "?" && paroleDelNome(a).length > paroleDelNome(b).length && nomiCompatibili(a, b); }
+const cifre = (x) => String(x || "").replace(/\D/g, "");
+function telefonoNelTesto(x) { const m = String(x || "").match(/\+?\d(?:[\s.\-]?\d){8,}/); return m ? m[0] : ""; }
+function telefonoNuovo(r, e) { return !!r.telefono && cifre(r.telefono) !== cifre((e && e.telefono) || telefonoNelTesto(e && e.notaPrivata)); }
 
 // ---- completa la riga guardando il prospetto che c'è già ----------------------
 function completa(r, ctx) {
@@ -268,7 +290,7 @@ function completa(r, ctx) {
   const inSettimana = sog.filter(s => s.inizio < L.aggiungiGiorni(base, 6) && base < s.fine); // le notti da lunedì a sabato: chi arriva domenica sera è già della settimana dopo
   // 0.98: "D'Agostino · 3 operai" e "D'Agostino" sono lo stesso cliente (si guarda il nome prima di "·", virgole, parentesi)
   const nucleo = (x) => normalizzaAllineato(String(x || "").split(/\s*[·,;(\/]\s*|\s+-\s+/)[0].replace(/\d.*$/, "")).replace(/\s+/g, " ").trim();
-  const stessoNome = (s) => r.nome && s.nome && (normalizzaAllineato(s.nome).trim() === normalizzaAllineato(r.nome).trim() || (nucleo(s.nome).length > 1 && nucleo(s.nome) === nucleo(r.nome)));
+  const stessoNome = (s) => r.nome && s.nome && (normalizzaAllineato(s.nome).trim() === normalizzaAllineato(r.nome).trim() || (nucleo(s.nome).length > 1 && nucleo(s.nome) === nucleo(r.nome)) || nomiCompatibili(s.nome, r.nome));
   const notti = (a, b) => L.giorniTra(a, b);
 
   // camera libera / non viene → tolgo quello che c'è quella settimana
@@ -297,14 +319,15 @@ function completa(r, ctx) {
     const copertura = conNome.find(s => s.inizio < r.fine && r.fine < s.fine) || conNome.find(s => s.inizio < r.fine && s.fine === r.fine);
     const daAllungare = conNome.filter(s => s.fine <= r.fine && s.fine >= L.aggiungiGiorni(oggi, -7) && s.inizio < r.fine).sort((a, b) => a.fine < b.fine ? 1 : -1)[0];
     if (copertura && (r.haParoleParte || !r.haParoleProlunga)) {
-      r.azione = "accorcia"; r.esistente = { id: copertura.id, nome: copertura.nome, inizio: copertura.inizio, fine: copertura.fine }; r.inizio = copertura.inizio; r.nome = r.nome || copertura.nome; r.persone = r.persone ?? copertura.persone; r.tipo = r.tipo || copertura.tipo;
-      if (copertura.fine === r.fine) { r.azione = "niente"; r.scelto = false; r.motivi.push("partiva già quel giorno"); }
+      r.azione = "accorcia"; r.esistente = { id: copertura.id, nome: copertura.nome, inizio: copertura.inizio, fine: copertura.fine }; r.inizio = copertura.inizio; r.nomeMeglio = nomePiuCompleto(r.nome, copertura.nome); r.telefonoNuovo = telefonoNuovo(r, copertura); if (!r.nomeMeglio) r.nome = copertura.nome || r.nome; r.persone = r.persone ?? copertura.persone; r.tipo = r.tipo || copertura.tipo;
+      if (copertura.fine === r.fine) { if (r.nomeMeglio || r.telefonoNuovo) { r.azione = "aggiorna"; r.persone = copertura.persone || r.persone || 1; } else { r.azione = "niente"; r.scelto = false; r.motivi.push("partiva già quel giorno"); } }
       return r;
     }
     if (daAllungare && (r.haParoleProlunga || !r.haParoleParte)) {
       r.azione = daAllungare.fine === r.fine ? "niente" : "prolunga";
       if (r.azione === "niente") { r.scelto = false; r.motivi.push("partiva già quel giorno"); }
-      r.esistente = { id: daAllungare.id, nome: daAllungare.nome, inizio: daAllungare.inizio, fine: daAllungare.fine }; r.inizio = daAllungare.inizio; r.nome = r.nome || daAllungare.nome; r.persone = r.persone ?? daAllungare.persone; r.tipo = r.tipo || daAllungare.tipo;
+      r.esistente = { id: daAllungare.id, nome: daAllungare.nome, inizio: daAllungare.inizio, fine: daAllungare.fine }; r.inizio = daAllungare.inizio; r.nomeMeglio = nomePiuCompleto(r.nome, daAllungare.nome); r.telefonoNuovo = telefonoNuovo(r, daAllungare); if (!r.nomeMeglio) r.nome = daAllungare.nome || r.nome; r.persone = r.persone ?? daAllungare.persone; r.tipo = r.tipo || daAllungare.tipo;
+      if (r.azione === "niente" && (r.nomeMeglio || r.telefonoNuovo)) { r.azione = "aggiorna"; r.scelto = true; r.motivi = r.motivi.filter(m => m !== "partiva già quel giorno"); r.persone = daAllungare.persone || r.persone || 1; }
       return r;
     }
   }
@@ -359,7 +382,9 @@ function completa(r, ctx) {
     const e = uguali[0];
     if (!personeDette) r.persone = e.persone || 1;
     if (!r.tipoDetto && e.tipo) r.tipo = e.tipo;
-    if (e.inizio === r.inizio && e.fine === r.fine && (e.persone || 1) === r.persone && (!r.nota || (e.nota || "") === r.nota)) { r.azione = "niente"; r.scelto = false; r.motivi.push("era già segnato così"); }
+    r.nomeMeglio = nomePiuCompleto(r.nome, e.nome); r.telefonoNuovo = telefonoNuovo(r, e);
+    if (!r.nomeMeglio && e.nome) r.nome = e.nome;     // il nome resta quello che c'e' (se non e' piu' completo)
+    if (e.inizio === r.inizio && e.fine === r.fine && (e.persone || 1) === r.persone && (!r.nota || (e.nota || "") === r.nota) && !r.nomeMeglio && !r.telefonoNuovo) { r.azione = "niente"; r.scelto = false; r.motivi.push("era già segnato così"); }
     else { r.azione = "aggiorna"; r.esistente = { id: e.id, nome: e.nome, inizio: e.inizio, fine: e.fine }; }
     return r;
   }
@@ -461,8 +486,9 @@ export function copiaSettimanaScorsa(ctx) {
 export function richiestaPerIA() {
   const nomi = CAMERE.map(c => c.nome.replace(" · ", " ")).join(", ");
   return `Guarda la foto (o il file) del prospetto delle camere e scrivimi SOLO un elenco, una riga per camera, in questo formato esatto:
-Camera: Nome ospite, N persone, dal GG mese al GG mese
+Camera: Cognome Nome dell'ospite, N persone, dal GG mese al GG mese
 (il giorno dopo "al" è il giorno di PARTENZA; usa i nomi dei mesi in italiano).
+Scrivi il nome dell'ospite COMPLETO, come è scritto. Se accanto c'è un numero di telefono, aggiungilo alla fine della riga così: tel. 333 1234567.
 Le camere si chiamano esattamente: ${nomi}.
 Se una camera è libera scrivi "Camera: libera". Se non sei sicuro di un nome o di una data metti un punto di domanda accanto.
 Non aggiungere nient'altro: niente spiegazioni, niente tabelle.`;

@@ -3466,3 +3466,124 @@ body.premium .casa-scena{top:-34px}
 /* la scena di Sofia (che ora sale fin dentro la barra dell'ora) non deve rubare i tocchi: solo i suoi tasti li prendono */
 body.premium .casa-scena{pointer-events:none}
 body.premium .casa-lato{pointer-events:auto}
+
+/* ==========================================================================
+   1.0.6 · LA MAPPA COI NOMI BEN DISTINTI E I COLORI PIENI + CHI DORME STANOTTE
+   Michele: "i colori devono essere più forti"; "le camere vengono chiamate con nomi di persone: il nome della camera
+   dev'essere ben distinto dal nome della persona che viene"; "per quante camere e per quante notti"; "scrivimi bene il
+   nome della persona e, se lo trovi, il numero di telefono".
+   Ogni casella: in alto la TARGHETTA chiara della camera (porta + nome in maiuscolo, come la targa sulla porta); sotto il
+   blocco col colore PIENO del tipo di ospite: omino + nome dell'ospite grande in bianco, poi le notti.
+   ========================================================================== */
+.card.mp{padding:8px 9px 12px}
+.mp .cd-g{padding:4px 0 3px}
+.mp .cd-g b{font-size:16.5px}
+.mp-blocco{margin-top:5px}
+.mp-piano{grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);column-gap:5px}
+.mp-corr{font-size:8px;letter-spacing:1.5px;border-radius:5px}
+.mp-lato{grid-auto-rows:58px;row-gap:5px}
+.mp-c{position:relative;display:flex;flex-direction:column;justify-content:flex-start;gap:0;height:58px;padding:0;border:1.5px solid var(--tc,#856535);border-radius:11px;
+  background:var(--tc,#856535);color:#FFFFFF;box-shadow:0 2px 6px -3px rgba(28,25,23,.45);overflow:hidden}
+.mp-c.dubbio{border-color:#F59E0B;background:var(--tc,#856535);box-shadow:0 0 0 2px #F59E0B,0 2px 6px -3px rgba(28,25,23,.45)}
+.mp-c.ignoto{border:1.5px solid #856535;background:repeating-linear-gradient(135deg,#856535 0 8px,#735624 8px 16px)}
+.mp-c.cambio{box-shadow:0 2px 6px -3px rgba(28,25,23,.45)}
+/* la targhetta della camera */
+.mp-targa{flex:0 0 21px;display:flex;align-items:center;gap:5px;min-width:0;height:21px;padding:0 6px 0 7px;box-sizing:border-box;background:#FBF8F2;color:#3B3226;border-bottom:1px solid rgba(28,25,23,.10)}
+.mp-targa .ico-porta{flex:0 0 auto;width:12px;height:12px;color:#8A6D32}
+.mp-tn{flex:1 1 auto;display:flex;align-items:baseline;gap:6px;min-width:0}
+.mp-nome{min-width:0;font:800 10.5px/21px var(--f-body);letter-spacing:.5px;text-transform:uppercase;color:#3B3226;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-tn small{flex:0 0 auto;margin:0;font:600 9.5px/1 var(--f-body);letter-spacing:0;color:#857B6E;white-space:nowrap}
+/* il blocco colorato: l'ospite */
+.mp-corpo{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0;padding:1px 7px 3px 8px}
+.mp-ospite{display:flex;align-items:center;gap:5px;min-width:0}
+.mp-ospite .ico-persona{flex:0 0 auto;width:13px;height:13px;color:rgba(255,255,255,.92)}
+.mp-chi{min-width:0;font:800 15px/1.2 var(--f-display);color:#FFFFFF;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 1px rgba(0,0,0,.18)}
+.mp-ospite.lungo .mp-chi{font-size:13.5px}
+.mp-ospite.lunghissimo .mp-chi{font-size:12px}
+.mp-info{display:block;min-width:0;font:700 10.5px/1.35 var(--f-body);color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-info s{text-decoration-thickness:1.5px}
+/* ARRIVA, PARTE, CAMBIO, DA VEDERE: all'inizio della riga delle notti, con un filo bianco (si vedono su ogni colore) */
+.mp-info .mp-tag,.mp-c.via .mp-info .mp-tag,.mp-c.casa .mp-info .mp-tag{position:static;display:inline-block;vertical-align:1px;margin:0 3px 0 0;padding:1px 5px;border-radius:5px;font:800 9px/1.3 var(--f-body);letter-spacing:.3px;box-shadow:0 0 0 1.5px #FFFFFF;order:0}
+.mp-c.piena .mp-info .mp-tag.arriva{background:#FFFFFF;color:#15803D;box-shadow:none}
+.mp-c.piena .mp-info .mp-tag.dubbio{background:#FDE68A;color:#78350F;box-shadow:none}
+.mp-c.piena .mp-info .mp-tag.cambio{background:#1C1917;color:#F3D78A;box-shadow:0 0 0 1.5px rgba(255,255,255,.85)}
+.mp-c.libera .mp-info .mp-tag{box-shadow:none}
+/* la camera libera: grigia tratteggiata */
+.mp-c.libera{border:1.5px dashed #C3BAAB;background:#ECE8E1;color:#8A847B;box-shadow:none}
+.mp-c.libera .mp-targa{background:#FBF8F2;border-bottom:1px dashed #D6CEC1}
+.mp-c.libera .mp-nome{color:#6B6358}
+.mp-c.libera .ico-porta{color:#A8A29E}
+.mp-vuota{font:800 11px/1 var(--f-body);letter-spacing:2.5px;color:#A1998C}
+.mp-c.libera.parte{border-color:#E0A3A3;background:#FBECEB}
+.mp-c.libera.parte .mp-chi{font:700 13px/1.2 var(--f-display);color:#8B5E5E;text-shadow:none;text-decoration-thickness:1.5px}
+.mp-c.libera.parte .mp-info{color:#9A6B6B}
+/* Lella e Nicole (via Nazario Sauro): la targhetta a sinistra, l'ospite a destra */
+.mp-c.via{flex-direction:row;align-items:stretch;justify-content:flex-start;gap:0;height:42px;margin-top:5px;width:100%}
+.mp-c.via .mp-targa{flex:0 0 104px;height:auto;padding:0 6px 0 8px;border-bottom:0;border-right:1px solid rgba(28,25,23,.10)}
+.mp-c.libera.via .mp-targa{border-right:1px dashed #D6CEC1;border-bottom:0}
+.mp-c.via .mp-tn{flex-direction:column;align-items:flex-start;gap:1px}
+.mp-c.via .mp-nome{line-height:1.15}
+.mp-c.via .mp-corpo{flex:1 1 auto;padding:2px 10px 3px}
+.mp-c.via .mp-vuota{align-self:flex-start}
+/* i tre appartamenti affiancati */
+.mp-case{gap:5px}
+.mp-c.casa{height:72px;padding:0}
+.mp-c.casa .mp-targa{padding:0 4px 0 6px;gap:4px}
+.mp-c.casa .mp-nome{font-size:10px;letter-spacing:.2px}
+.mp-c.casa .mp-corpo{padding:2px 6px 4px}
+.mp-c.casa .mp-chi{font-size:12.5px}
+.mp-c.casa .mp-ospite{gap:4px}
+.mp-c.casa .mp-ospite .ico-persona{width:12px;height:12px}
+.mp-c.casa .mp-ospite.lungo .mp-chi,.mp-c.casa .mp-ospite.lunghissimo .mp-chi{font-size:11.5px}
+.mp-c.casa .mp-info{white-space:normal;font-size:10px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mp-c.casa .mp-vuota{font-size:10px;letter-spacing:1.5px}
+/* la legenda */
+.mp-leg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:10px;font:700 11.5px/1.2 var(--f-body);color:#57534E}
+.mp-leg span{display:inline-flex;align-items:center;gap:5px}
+.mp-leg i{display:inline-block;width:14px;height:11px;border-radius:3px}
+.mp-leg .l-libera{background:#ECE8E1;border:1.5px dashed #C3BAAB}
+.mp-leg-ico{color:#3B3226}
+.mp-leg-ico svg{width:13px;height:13px;color:#8A6D32}
+/* CHI DORME STANOTTE */
+.card.os{padding:12px 11px 4px}
+.os-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 2px 9px}
+.os-t b{font:800 16px/1.2 var(--f-display);color:#1C1917}
+.os-t span{font:700 12px/1.2 var(--f-body);color:#78716C;white-space:nowrap}
+.os-riga{margin:0 0 7px;padding:9px 10px 9px 11px;border:1px solid #E7E1D6;border-left:6px solid var(--tc,#856535);border-radius:12px;background:#FFFFFF}
+.os-riga.dubbio{border-color:#F59E0B;border-left-color:var(--tc,#856535)}
+.os-testa{display:flex;align-items:center;gap:8px;min-width:0}
+.os-ico{flex:0 0 auto;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--tc,#856535);color:#FFFFFF}
+.os-ico svg{width:14px;height:14px}
+.os-nome{min-width:0;font:800 17px/1.2 var(--f-display);color:#1C1917;overflow-wrap:anywhere}
+.os-nome small{font:600 12.5px/1.2 var(--f-body);color:#78716C}
+.os-dati{margin:3px 0 0 32px;font:600 12.5px/1.4 var(--f-body);color:#57534E}
+.os-dati b{color:#1C1917;font-weight:800}
+.os-camere{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0 32px}
+.os-cam{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:3px 9px;border:1px solid #E2D9C8;border-radius:8px;background:#FBF8F2;color:#3B3226;font:800 10.5px/1.2 var(--f-body);letter-spacing:.5px;text-transform:uppercase;cursor:pointer}
+.os-cam svg{flex:0 0 auto;width:12px;height:12px;color:#8A6D32}
+.os-cam small{margin-left:3px;font:600 10.5px/1.2 var(--f-body);letter-spacing:0;text-transform:none;color:#78716C}
+.os-tel{display:inline-flex;align-items:center;gap:7px;margin:0;padding:3px 3px 3px 9px;min-height:30px;box-sizing:border-box;border:1px solid #BBE5C8;border-radius:10px;background:#F0FBF4;color:#14532D;text-decoration:none;font:700 14px/1 var(--f-body)}
+.os-tel svg{color:#15803D}
+.os-tel b{margin-left:3px;padding:5px 9px;border-radius:7px;background:#15803D;color:#FFFFFF;font:800 12.5px/1 var(--f-body)}
+/* il soggiorno: "Camera SALVATORE", il telefono con Chiama */
+.sog-camera{display:flex;align-items:center;gap:8px}
+.sog-camera .ico-porta{flex:0 0 auto;width:20px;height:20px;color:#8A6D32}
+.sog-camera b{text-transform:uppercase;letter-spacing:.8px}
+.sog-tel{display:flex;align-items:center;gap:8px}
+.sog-tel input{flex:1 1 auto;min-width:0}
+.sog-chiama{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:50px;box-sizing:border-box;padding:0 16px;border-radius:10px;background:#15803D;border:0;color:#FFFFFF;text-decoration:none;font:800 14px/1 var(--f-body)}
+.sog-chiama svg{width:16px;height:16px}
+/* la settimana: la colonna delle camere come le targhette (maiuscolo, fondo avorio), barre piu' alte e piu' piene */
+.sc-griglia{grid-template-columns:92px repeat(7,minmax(0,1fr))}
+.sc-cam{padding:0 3px 0 7px;background:#FBF8F2;color:#3B3226;font:800 10px/1.1 var(--f-body);letter-spacing:.3px;text-transform:uppercase}
+.sc-bar{height:26px;font:800 11.5px/26px var(--f-display);box-shadow:0 1px 3px rgba(28,25,23,.28)}
+.sc-bar.q{line-height:23px}
+/* tema scuro */
+:root[data-theme="dark"] .mp-c{background:var(--tc,#856535);color:#FFFFFF}
+:root[data-theme="dark"] .mp-targa,:root[data-theme="dark"] .os-cam,:root[data-theme="dark"] .sc-cam{background:#2A2520;color:#EADFC8;border-color:rgba(255,255,255,.08)}
+:root[data-theme="dark"] .mp-nome,:root[data-theme="dark"] .mp-c.libera .mp-nome{color:#EADFC8}
+:root[data-theme="dark"] .mp-c.libera{background:#24201C;border-color:#4A4238}
+:root[data-theme="dark"] .mp-c.libera .mp-targa{background:#2A2520}
+:root[data-theme="dark"] .os-riga{background:#1E1B18;border-color:#3A332B}
+:root[data-theme="dark"] .os-nome,:root[data-theme="dark"] .os-t b,:root[data-theme="dark"] .os-dati b{color:#F5F1EA}
+:root[data-theme="dark"] .os-dati,:root[data-theme="dark"] .mp-leg{color:#B8B0A4}

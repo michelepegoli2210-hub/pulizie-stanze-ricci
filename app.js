@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.0.5";
+export const VERSIONE = "1.0.6";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -4735,13 +4735,43 @@ function vistaTabellone() {
 
 // ---- 1.0.5: LA MAPPA DELLE CAMERE (Michele: "in un secondo devo vedere tutte le camere mie e quali sono riempite").
 // Le 13 camere sempre allo stesso posto, come sono davvero: 1° e 2° piano col corridoio in mezzo (a sinistra e a destra
-// come nelle Piantine), Lella e Nicole in via Nazario Sauro sotto il loro piano, i tre appartamenti in fondo. PIENA: il
-// colore del tipo di ospite (bordo spesso a sinistra e fondo tinto), chi c'e' e fino a quando; LIBERA: tratteggiata.
-// ARRIVA (verde pieno), PARTE OGGI (rosso, stanotte e' libera), CAMBIO (uno parte e uno arriva lo stesso giorno),
-// dubbio (ambra). Il giorno si sceglie nella striscia (oggi e i 6 dopo). Un tocco: si apre il soggiorno, o se e' libera
-// si segna un arrivo.
+// come nelle Piantine), Lella e Nicole in via Nazario Sauro sotto il loro piano, i tre appartamenti in fondo.
+// ---- 1.0.6: TARGHETTA della camera e NOME dell'ospite ben distinti, colori pieni (Michele: "le camere vengono chiamate
+// con nomi di persone: il nome della camera dev'essere ben distinto dal nome della persona che viene, che è presente";
+// "i colori devono essere più forti"; "per quante camere e per quante notti è occupata"; "scrivimi bene il nome della
+// persona e, se lo trovi, il numero di telefono"). Ogni casella: in alto la targhetta chiara della camera (la porta e il
+// NOME IN MAIUSCOLO, come la targa sulla porta); sotto, il blocco col colore PIENO del tipo di ospite, con l'omino e il
+// nome dell'ospite grande in bianco, poi le notti e il giorno in cui parte. Libera: grigia tratteggiata. ARRIVA, PARTE,
+// CAMBIO e DA VEDERE sono scritti nella targhetta (in via N. Sauro e negli appartamenti nel blocco). Sotto la mappa:
+// CHI DORME quella notte, ospite per ospite: quante camere, quante persone, quante notti, il telefono da toccare.
 const NOMI_BREVI = { zarapt: "Zara p. terra", zara1: "Zara 1° e 2°", trento: "Trento 47" };
 function nomeBreveCamera(c) { return NOMI_BREVI[c.id] || c.nome; }
+function icoPorta() { return `<svg class="ico-porta" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 21V4.2a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1V21"/><path d="M4 21h16"/><circle cx="14.2" cy="12.4" r="1.15" fill="currentColor" stroke="none"/></svg>`; }
+function icoPersona() { return `<svg class="ico-persona" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.7a7.5 7.5 0 0 1 15 0"/></svg>`; }
+function icoTel() { return `<svg class="ico-tel" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.2 3.5h3.1l1.6 4-2.1 1.4a11 11 0 0 0 5.3 5.3l1.4-2.1 4 1.6v3.1a2 2 0 0 1-2.2 2A16.4 16.4 0 0 1 3.2 5.7a2 2 0 0 1 2-2.2z"/></svg>`; }
+// il telefono dell'ospite: nel campo "telefono" del soggiorno, oppure scritto nella nota privata ("tel. 333 ...") dal
+// prospetto, dal foglio Excel o a mano. Solo numeri da 9 a 13 cifre (niente date, niente codici lunghi).
+function telefonoPulito(x) {
+  const re = /(^|[^\w])(\+?\d(?:[\s.\-]?\d){8,14})(?!\w)/g; let m;
+  while ((m = re.exec(String(x || "")))) { const n = m[2].replace(/\D/g, "").length; if (n >= 9 && n <= 13) return m[2].replace(/\s+/g, " ").trim(); }
+  return "";
+}
+function telefonoDi(s) { return s ? (telefonoPulito(s.telefono) || telefonoPulito(s.notaPrivata)) : ""; }
+function telBello(x) {
+  let d = String(x || "").replace(/[^\d+]/g, ""), pre = "";
+  if (d.startsWith("+39")) { pre = "+39 "; d = d.slice(3); } else if (d.startsWith("0039")) { pre = "+39 "; d = d.slice(4); } else if (d.startsWith("+")) return String(x || "").trim();
+  if (/^3\d{9}$/.test(d)) return pre + d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6);
+  return pre + d;
+}
+function telHref(x) { return "tel:" + String(x || "").replace(/[^\d+]/g, ""); }
+function nottiDi(s) { const n = L.giorniTra(s.inizio, s.fine); return `${n} ${n === 1 ? "notte" : "notti"}`; }
+function giornoCorto(d) { return Math.abs(L.giorniTra(L.oggiISO(), d)) <= 6 ? `${L.GG[L.giornoSettimana(d)]} ${L.giornoDelMese(d)}` : `${L.giornoDelMese(d)} ${L.MESI[L.daISO(d).getUTCMonth()].slice(0, 3)}`; }
+// un periodo: "dal dom 25 al ven 30" se e' tutto vicino, altrimenti "dal 22 ott al 22 nov" (stesso modo per tutte e due)
+function periodoCorto(a, b) { const o = L.oggiISO(), vicino = (d) => Math.abs(L.giorniTra(o, d)) <= 6; const f = (d) => vicino(a) && vicino(b) ? `${L.GG[L.giornoSettimana(d)]} ${L.giornoDelMese(d)}` : `${L.giornoDelMese(d)} ${L.MESI[L.daISO(d).getUTCMonth()].slice(0, 3)}`; return `dal ${f(a)} al ${f(b)}`; }
+// il nome dell'ospite pulito ("D'Agostino · 3 operai" -> "D'Agostino") e quello che c'era scritto dopo ("3 operai")
+function nomeOspite(s) { const n = String((s && s.nome) || "").trim(), k = nucleoNome(n); return k.length >= 2 ? k : (n || "?"); }
+function dopoNome(s) { const n = String((s && s.nome) || "").trim(), k = nomeOspite(s); const i = n.indexOf(k); return i < 0 || k === n ? "" : n.slice(i + k.length).replace(/^[\s·,;(\/\-]+|[)\s]+$/g, "").trim(); }
+function coloreOspite(s) { return !s || s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore); }
 function mappaCamere() {
   const oggi = L.oggiISO();
   if (!S.colpo || S.colpo < oggi || L.giorniTra(oggi, S.colpo) > 6) S.colpo = oggi;
@@ -4750,7 +4780,6 @@ function mappaCamere() {
   const conta = (x) => ({ a: sog.filter(s => s.inizio === x).length, p: sog.filter(s => s.fine === x).length });
   const nomeG = (x, i) => i === 0 ? "Oggi" : i === 1 ? "Domani" : L.GG[L.giornoSettimana(x)];
   const strip = giorni.map((x, i) => { const n = conta(x); return `<button type="button" class="cd-g" aria-pressed="${x === g}" data-colpo="${x}"><span>${nomeG(x, i)}</span><b>${L.giornoDelMese(x)}</b><i>${n.a ? `<em class="in">+${n.a}</em>` : ""}${n.p ? `<em class="out">−${n.p}</em>` : ""}</i></button>`; }).join("");
-  const fino = (s) => `${L.GG[L.giornoSettimana(s.fine)]} ${L.giornoDelMese(s.fine)}`;
   const stato = (c) => {
     const qui = sog.filter(s => s.camera === c.id);
     const cur = qui.find(s => s.inizio <= g && g < s.fine) || null;
@@ -4758,21 +4787,26 @@ function mappaCamere() {
     return { cur, par, arriva: !!cur && cur.inizio === g, cambio: !!cur && cur.inizio === g && !!par, dubbio: !!cur && (cur.tipo === "unk" || !!cur.dubbio) };
   };
   let piene = 0, cambi = 0;
+  const lung = (x) => { const n = String(x || "").length; return n > 19 ? " lunghissimo" : n > 14 ? " lungo" : ""; };
   const casella = (c, forma) => {
-    const x = stato(c), s = x.cur, nome = esc(nomeBreveCamera(c));
+    const x = stato(c), s = x.cur, nomeC = esc(forma === "casa" ? (NOMI_SETTIMANA[c.id] || nomeBreveCamera(c)) : nomeBreveCamera(c));
     if (s) piene++; if (x.cambio) cambi++;
-    const via = forma === "via" ? ` <small>via N. Sauro</small>` : "";
+    const via = forma === "via" ? `<small>via N. Sauro</small>` : "";
+    // la targhetta e' solo la camera (cosi' il suo nome non si taglia mai); ARRIVA, PARTE, CAMBIO e DA VEDERE stanno
+    // all'inizio della riga delle notti, nel blocco colorato
+    const targa = `<span class="mp-targa">${icoPorta()}<span class="mp-tn"><b class="mp-nome">${nomeC}</b>${via}</span></span>`;
     if (!s) {
       const cl = `mp-c libera${x.par ? " parte" : ""}${forma ? " " + forma : ""}`;
-      const dentro = `${x.par ? `<i class="mp-tag parte">← PARTE</i>` : ""}<span class="mp-r1"><b class="mp-nome">${nome}${via}</b></span><span class="mp-r2">${x.par ? `<s>${esc(x.par.nome || "")}</s>` : "LIBERA"}</span>`;
-      return puoModificare() ? `<button type="button" class="${cl}" data-cella="${esc(c.id)}|${g}" aria-label="${nome}: libera${x.par ? ", parte " + esc(x.par.nome || "") : ""}">${dentro}</button>` : `<span class="${cl}">${dentro}</span>`;
+      const corpo = `<span class="mp-corpo">${x.par ? `<span class="mp-ospite"><s class="mp-chi">${esc(nomeOspite(x.par))}</s></span><span class="mp-info"><i class="mp-tag parte">← PARTE</i> poi libera</span>` : `<span class="mp-vuota">LIBERA</span>`}</span>`;
+      const aria = `Camera ${nomeC}: libera${x.par ? ", parte " + esc(x.par.nome || "") : ""}`;
+      return puoModificare() ? `<button type="button" class="${cl}" data-cella="${esc(c.id)}|${g}" aria-label="${aria}">${targa}${corpo}</button>` : `<span class="${cl}" aria-label="${aria}">${targa}${corpo}</span>`;
     }
     const n = Number(s.persone) || 1;
     const tag = x.cambio ? `<i class="mp-tag cambio">⇄ CAMBIO</i>` : x.arriva ? `<i class="mp-tag arriva">→ ARRIVA</i>` : x.dubbio ? `<i class="mp-tag dubbio">? DA VEDERE</i>` : "";
-    const chi = x.cambio ? `<s>${esc(x.par.nome || "")}</s> ➔ <b>${esc(s.nome || "")}</b>` : `<b>${esc(s.nome || "")}</b>`;
-    const tc = s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore);
-    return `<button type="button" class="mp-c piena${x.arriva ? " arriva" : ""}${x.cambio ? " cambio" : ""}${x.dubbio ? " dubbio" : ""}${s.tipo === "unk" ? " ignoto" : ""}${forma ? " " + forma : ""}" style="--tc:${tc}" data-sog="${esc(s.id)}" aria-label="${nome}: ${esc(s.nome || "")}">
-      ${tag}<span class="mp-r1"><b class="mp-nome">${nome}${via}</b><i class="mp-pers">${n}p</i></span><span class="mp-r2">${chi}<span class="mp-fino"> · fino ${esc(fino(s))}</span></span></button>`;
+    // con l'etichetta: solo le notti (nella casella non c'e' posto per tutto; il resto e' in "Chi dorme" qui sotto)
+    const info = tag ? `${tag} ${nottiDi(s)}` : `${nottiDi(s)} · fino ${esc(giornoCorto(s.fine))}${n > 1 ? ` · ${n} pers.` : ""}`;
+    const cl = `mp-c piena${x.arriva ? " arriva" : ""}${x.cambio ? " cambio" : ""}${x.dubbio ? " dubbio" : ""}${s.tipo === "unk" ? " ignoto" : ""}${forma ? " " + forma : ""}`;
+    return `<button type="button" class="${cl}" style="--tc:${coloreOspite(s)}" data-sog="${esc(s.id)}" aria-label="Camera ${nomeC}: ospite ${esc(s.nome || "?")}, ${nottiDi(s)}${x.cambio ? ", dopo " + esc(x.par.nome || "") : ""}">${targa}<span class="mp-corpo"><span class="mp-ospite${lung(nomeOspite(s))}">${icoPersona()}<b class="mp-chi">${esc(nomeOspite(s))}</b></span><span class="mp-info">${info}</span></span></button>`;
   };
   const blocchi = zoneOrdinate().map(z => {
     const cam = camereZona(z.id);
@@ -4785,15 +4819,46 @@ function mappaCamere() {
     return `<div class="mp-blocco"><div class="mp-t"><b>${esc(z.breve || z.nome)}${via.length ? " + " + via.map(c => esc(c.nome)).join(", ") : ""}</b><span>${qui}/${cam.length} ${case_.length && !sx.length ? "pieni" : "piene"}</span></div>${corpo}</div>`;
   }).join("");
   const quale = g === oggi ? "Stanotte" : g === L.aggiungiGiorni(oggi, 1) ? "Domani notte" : L.GIORNI[L.giornoSettimana(g)].replace(/^./, ch => ch.toUpperCase()) + " notte";
+  // la legenda: porta = camera, omino = ospite, i colori dei tipi di ospite di quella notte, la camera libera
+  const tipiNotte = [...new Set(sog.filter(s => s.inizio <= g && g < s.fine).map(s => (TIPI_OSPITE[s.tipo] ? s.tipo : "altro")))];
+  const leg = `<div class="mp-leg"><span class="mp-leg-ico">${icoPorta()}camera</span><span class="mp-leg-ico">${icoPersona()}ospite</span>${tipiNotte.map(k => `<span><i style="background:${coloreOspite({ tipo: k })}"></i>${esc(TIPI_OSPITE[k].nome)}</span>`).join("")}<span><i class="l-libera"></i>libera</span></div>`;
   return `<section class="card mp" aria-label="Le camere a colpo d'occhio">
     <div class="cd-giorni" role="tablist" aria-label="Scegli il giorno">${strip}</div>
     <div class="mp-conta"><b>${esc(quale)}</b><span><b>${piene}</b>/${S.camere.length} piene${cambi ? ` · <b>${cambi}</b> ${cambi === 1 ? "cambio" : "cambi"}` : ""}</span></div>
     ${blocchi}
-    <div class="mp-leg"><span><i class="l-piena"></i>piena</span><span><i class="l-libera"></i>libera</span><span><i class="l-arriva"></i>arriva</span><span><i class="l-parte"></i>parte</span><span><i class="l-cambio"></i>cambio</span></div>
-  </section>`;
+    ${leg}
+  </section>${elencoOspiti(g, quale)}`;
+}
+// 1.0.6: CHI DORME quella notte, ospite per ospite (lo stesso nome in piu' camere = un ospite solo, per esempio una
+// ditta): il nome intero, quante camere e quali, quante persone, quante notti (dal ... al ...), il telefono da toccare.
+function elencoOspiti(g, quale) {
+  const ordine = new Map(zoneOrdinate().flatMap(z => camereZona(z.id)).map((c, i) => [c.id, i]));
+  const qui = soggiorniLista().filter(s => s.inizio <= g && g < s.fine).sort((a, b) => (ordine.get(a.camera) ?? 99) - (ordine.get(b.camera) ?? 99));
+  if (!qui.length) return "";
+  const gruppi = new Map();
+  for (const s of qui) { const k = PAROLE.norm(nucleoNome(s.nome || "")) || "?" + s.id; if (!gruppi.has(k)) gruppi.set(k, []); gruppi.get(k).push(s); }
+  const righe = [...gruppi.values()].map(l => {
+    const lungo = l.slice().sort((a, b) => String(b.nome || "").length - String(a.nome || "").length)[0];
+    const nome = nomeOspite(lungo), resto = dopoNome(lungo);
+    const pers = l.reduce((x, s) => x + (Number(s.persone) || 1), 0);
+    const uguali = l.every(s => s.inizio === l[0].inizio && s.fine === l[0].fine);
+    const quando = uguali ? `<b>${nottiDi(l[0])}</b> · ${esc(periodoCorto(l[0].inizio, l[0].fine))}` : `fino ${esc(giornoCorto(l.map(s => s.fine).sort().pop()))}`;
+    const tel = l.map(telefonoDi).find(Boolean);
+    const dubbio = l.some(s => s.tipo === "unk" || s.dubbio);
+    const camere = l.map(s => `<button type="button" class="os-cam" data-sog="${esc(s.id)}">${icoPorta()}<b>${esc(nomeBreveCamera(camera(s.camera)))}</b>${uguali ? "" : `<small>${nottiDi(s)} · fino ${esc(giornoCorto(s.fine))}</small>`}</button>`).join("");
+    return `<div class="os-riga${dubbio ? " dubbio" : ""}" style="--tc:${coloreOspite(l[0])}">
+      <div class="os-testa"><span class="os-ico">${icoPersona()}</span><b class="os-nome">${dubbio ? "? " : ""}${esc(nome)}${resto ? ` <small>· ${esc(resto)}</small>` : ""}</b></div>
+      <div class="os-dati">${l.length > 1 ? `<b>${l.length} camere</b> · ` : ""}${pers} ${pers === 1 ? "persona" : "persone"} · ${quando}</div>
+      <div class="os-camere">${camere}${tel ? `<a class="os-tel" href="${esc(telHref(tel))}" aria-label="Chiama ${esc(nome)}: ${esc(telBello(tel))}">${icoTel()}<span>${esc(telBello(tel))}</span><b>Chiama</b></a>` : ""}</div>
+    </div>`;
+  }).join("");
+  const nOsp = gruppi.size, nCam = qui.length;
+  return `<section class="card os" aria-label="Chi dorme ${esc(quale.toLowerCase())}"><div class="os-t"><b>Chi dorme ${esc(quale.toLowerCase())}</b><span>${nOsp} ${nOsp === 1 ? "ospite" : "ospiti"} · ${nCam} ${nCam === 1 ? "camera" : "camere"}</span></div>${righe}</section>`;
 }
 // ---- 1.0.5: LA SETTIMANA in un tabellone che si legge tutto senza scorrere di lato (Gemini: 84 px per la camera + 7
 // colonne uguali, una riga di 34 px per camera): ogni soggiorno e' una barra col colore del tipo di ospite
+// 1.0.6: nella colonna delle camere i nomi in maiuscoletto (come le targhette della mappa): gli appartamenti piu' corti
+const NOMI_SETTIMANA = { zarapt: "Zara terra", zara1: "Zara 1°-2°", trento: "Trento 47" };
 function settimanaCompatta(da) {
   const N = 7, a = L.aggiungiGiorni(da, N), oggi = L.oggiISO(), sog = soggiorniLista();
   const giorni = []; for (let i = 0; i < N; i++) giorni.push(L.aggiungiGiorni(da, i));
@@ -4805,12 +4870,13 @@ function settimanaCompatta(da) {
     for (const c of camereZona(z.id)) {
       righe.push("34px");
       html += `<div class="sc-fondo" style="grid-row:${r};grid-column:2/-1"></div>`;
-      html += puoModificare() ? `<button type="button" class="sc-cam" style="grid-row:${r};grid-column:1" data-cella="${esc(c.id)}|${da < oggi && oggi < a ? oggi : da}">${esc(nomeBreveCamera(c))}</button>` : `<span class="sc-cam" style="grid-row:${r};grid-column:1">${esc(nomeBreveCamera(c))}</span>`;
+      const nomeSc = esc(NOMI_SETTIMANA[c.id] || nomeBreveCamera(c));
+      html += puoModificare() ? `<button type="button" class="sc-cam" style="grid-row:${r};grid-column:1" data-cella="${esc(c.id)}|${da < oggi && oggi < a ? oggi : da}">${nomeSc}</button>` : `<span class="sc-cam" style="grid-row:${r};grid-column:1">${nomeSc}</span>`;
       for (const s of sog.filter(s => s.camera === c.id && s.inizio < a && da < s.fine)) {
         const i0 = Math.max(0, L.giorniTra(da, s.inizio)), i1 = Math.min(N, L.giorniTra(da, s.fine));
         if (i1 <= i0) continue;
         const q = s.tipo === "unk" || s.dubbio, tc = s.tipo === "unk" ? "var(--c-unk)" : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore);
-        html += `<button type="button" class="sc-bar${q ? " q" : ""}${s.inizio < da ? " prima" : ""}${s.fine > a ? " dopo" : ""}" style="grid-row:${r};grid-column:${i0 + 2}/${i1 + 2};--tc:${tc}" data-sog="${esc(s.id)}" title="${esc(s.nome || "")}">${q ? "? " : ""}${esc(s.nome || "")}${Number(s.persone) > 1 ? ` · ${s.persone}` : ""}</button>`;
+        html += `<button type="button" class="sc-bar${q ? " q" : ""}${s.inizio < da ? " prima" : ""}${s.fine > a ? " dopo" : ""}" style="grid-row:${r};grid-column:${i0 + 2}/${i1 + 2};--tc:${tc}" data-sog="${esc(s.id)}" title="${esc(s.nome || "")}">${q ? "? " : ""}${esc(nomeOspite(s))}${Number(s.persone) > 1 ? ` · ${s.persone}` : ""}</button>`;
       }
       r++;
     }
@@ -5302,9 +5368,11 @@ function foglioSoggiorno(f) {
   const nomi = [...new Set(soggiorniLista().map(x => x.nome).filter(n => n && n !== "?"))].sort();
   const clienteNoto = d.nome ? L.clienteDi(d.nome, S.clienti) : null, nomeCl = L.nomeCliente(d.nome) || "";
   const modoSog = L.modoSoggiorno(d, S.clienti), ricordaSog = !L.NOMI_MODI.includes(d.modo);
-  return `<h3>${esc(c.nome)}</h3><div class="muted">${s ? "Cambia il soggiorno" : "Nuovo arrivo"} · la notte della partenza non si conta</div>
+  const tel = telefonoDi(d);
+  return `<h3 class="sog-camera">${icoPorta()}<span>Camera <b>${esc(c.nome)}</b></span></h3><div class="muted">${s ? "Cambia il soggiorno" : "Nuovo arrivo"} · la notte della partenza non si conta</div>
     <form id="formSog">
-      <div class="campo"><label for="sNome">Chi c'è (nome o ditta)</label><input id="sNome" type="text" list="nomiNoti" value="${esc(d.nome)}" placeholder="es. Manna" ${mod ? "" : "disabled"} required><datalist id="nomiNoti">${nomi.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="campo"><label for="sNome">Ospite: nome e cognome (o ditta)</label><input id="sNome" type="text" list="nomiNoti" value="${esc(d.nome)}" placeholder="es. Manna Giuseppe" ${mod ? "" : "disabled"} required><datalist id="nomiNoti">${nomi.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="campo"><label for="sTel">Telefono dell'ospite (solo proprietari: le signore non lo vedono)</label><div class="sog-tel"><input id="sTel" type="text" inputmode="tel" autocomplete="off" value="${esc(d.telefono || tel || "")}" placeholder="es. 333 123 4567" ${mod ? "" : "disabled"}>${tel ? `<a class="sog-chiama" href="${esc(telHref(tel))}">${icoTel()}Chiama</a>` : ""}</div></div>
       <div class="due"><div class="campo"><label for="sInizio">Arriva il</label><input id="sInizio" type="date" value="${d.inizio}" ${mod ? "" : "disabled"} required></div><div class="campo"><label for="sFine">Parte il</label><input id="sFine" type="date" value="${d.fine}" ${mod ? "" : "disabled"} required></div></div>
       <div class="due"><div class="campo"><label for="sTipo">Tipo</label><select id="sTipo" ${mod ? "" : "disabled"}>${Object.entries(TIPI_OSPITE).map(([k, t]) => `<option value="${k}" ${d.tipo === k ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></div><div class="campo"><label for="sPers">Persone</label><input id="sPers" type="number" min="1" max="10" value="${d.persone || 1}" ${mod ? "" : "disabled"}></div></div>
       <div class="campo"><label>Tipo di ospite per le pulizie</label><div class="modi-scelta">${L.NOMI_MODI.map(k => `<button type="button" class="modo-btn modo-${k}" aria-pressed="${modoSog === k}" data-sog-modo="${k}" ${mod ? "" : "disabled"}><b>${esc(G.MODI[k].nome)}</b><span>${esc(MODO_BREVE[k])}</span></button>`).join("")}</div>
@@ -5352,6 +5420,7 @@ function testoAzioneRiga(r) {
   if (r.azione === "togli") return `Tolgo ${r.esistenti.map(e => `${e.nome} (${G(e.inizio)} → ${G(e.fine)})`).join(", ")}`;
   if (r.azione === "accorcia") return `Parte prima: ${G(r.fine)} invece di ${G(r.esistente.fine)}`;
   if (r.azione === "prolunga") return `Resta fino a ${G(r.fine)} (prima partiva ${G(r.esistente.fine)})`;
+  if (r.azione === "aggiorna" && r.esistente.inizio === r.inizio && r.esistente.fine === r.fine && (r.nomeMeglio || r.telefonoNuovo)) return `Stessi giorni (${periodo(r.inizio, r.fine)}). Aggiungo ${[r.nomeMeglio ? `il nome completo: ${r.nome} (prima: ${r.esistente.nome})` : "", r.telefonoNuovo ? "il telefono" : ""].filter(Boolean).join(" e ")}`;
   if (r.azione === "aggiorna") return `Cambio: ${periodo(r.esistente.inizio, r.esistente.fine)} diventa ${periodo(r.inizio, r.fine)}`;
   if (r.azione === "niente") return "Niente da cambiare";
   return `Arriva ${G(r.inizio)} → parte ${G(r.fine)} (${n(r.inizio, r.fine)} ${n(r.inizio, r.fine) === 1 ? "notte" : "notti"})`;
@@ -5372,6 +5441,7 @@ function anteprimaDettatura(ris, f) {
       ${(r.assunti || []).map(a => `<br><span style="color:var(--wip);font-weight:600">${esc(a)}</span>`).join("")}
       ${(r.motivi || []).map(m => `<br><span style="color:var(--todo);font-weight:700">? ${esc(m)}</span>`).join("")}
       ${confl}
+      ${r.telefono ? `<br><span class="muted">📞 telefono: <b>${esc(telBello(r.telefono))}</b> (solo per voi)</span>` : ""}
       ${r.nota ? `<br><span class="muted">📝 per le signore: ${esc(r.nota)}</span>` : ""}${r.notaPrivata ? `<br><span class="muted">🔒 ${esc(r.notaPrivata)}</span>` : ""}
       ${f.copia || !r.testo ? "" : `<br><span class="muted small">${r.daSofia ? "dai messaggi" : "hai scritto"}: «${esc(r.testo)}»</span>`}</span></label>`;
   };
@@ -5519,11 +5589,12 @@ function opsRigheProspetto(righe) {
     let n = 0;
     righe.forEach((r, i) => {
       if (r.azione === "togli") { for (const e of r.esistenti) ops.push({ tipo: "cancella", coll: "soggiorni", id: e.id }); n += r.esistenti.length; return; }
-      if (r.azione === "accorcia" || r.azione === "prolunga") { ops.push({ tipo: "aggiorna", coll: "soggiorni", id: r.esistente.id, dati: { fine: r.fine, mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } }); n++; return; }
-      if (r.azione === "aggiorna") { ops.push({ tipo: "aggiorna", coll: "soggiorni", id: r.esistente.id, dati: { inizio: r.inizio, fine: r.fine, persone: r.persone || 1, tipo: r.tipo, ...(r.nota ? { nota: r.nota } : {}), ...(r.notaPrivata ? { notaPrivata: r.notaPrivata } : {}), mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } }); n++; return; }
+      const extra = { ...(r.telefono ? { telefono: r.telefono } : {}), ...(r.nomeMeglio && r.nome && r.nome !== "?" ? { nome: r.nome } : {}) };
+      if (r.azione === "accorcia" || r.azione === "prolunga") { ops.push({ tipo: "aggiorna", coll: "soggiorni", id: r.esistente.id, dati: { fine: r.fine, ...extra, mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } }); n++; return; }
+      if (r.azione === "aggiorna") { ops.push({ tipo: "aggiorna", coll: "soggiorni", id: r.esistente.id, dati: { inizio: r.inizio, fine: r.fine, persone: r.persone || 1, tipo: r.tipo, ...(r.nota ? { nota: r.nota } : {}), ...(r.notaPrivata ? { notaPrivata: r.notaPrivata } : {}), ...extra, mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } }); n++; return; }
       if (r.conflitti && r.comportamento === "sostituisci") for (const c of r.conflitti) ops.push({ tipo: "cancella", coll: "soggiorni", id: c.id });
       const id = `dt_${r.camera}_${r.inizio}_${Date.now().toString(36)}${i}`;
-      ops.push({ tipo: "salva", coll: "soggiorni", id, merge: false, dati: { camera: r.camera, inizio: r.inizio, fine: r.fine, nome: r.nome, tipo: r.tipo, persone: r.persone || 1, supplemento: 0, nota: r.nota || "", notaPrivata: r.notaPrivata || "", dubbio: !!r.dubbio, motivi: r.motivi || [], testoOriginale: r.testo || "", origine: r.copia ? "copia" : "dettatura", mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } });
+      ops.push({ tipo: "salva", coll: "soggiorni", id, merge: false, dati: { camera: r.camera, inizio: r.inizio, fine: r.fine, nome: r.nome, tipo: r.tipo, persone: r.persone || 1, supplemento: 0, nota: r.nota || "", notaPrivata: r.notaPrivata || "", telefono: r.telefono || "", dubbio: !!r.dubbio, motivi: r.motivi || [], testoOriginale: r.testo || "", origine: r.copia ? "copia" : "dettatura", mesi: mesiCoperti(r.inizio, r.fine), modificato: adesso, da } });
       n++;
     });
     return { ops, n };
@@ -5631,7 +5702,7 @@ async function leggiFotoProspetto(file) {
   try {
     const img = await fotoPiccola(file);
     const nomi = S.camere.map(c => c.nome.replace(" · ", " ")).join(", ");
-    const sistema = `Sei bravissima a leggere i prospetti (scritti a mano o stampati) di un piccolo albergo: righe = camere, colonne = giorni. Rispondi SOLO con questo JSON: {"risposta":"una frase corta: che giorni copre la foto e quanti ospiti hai letto","righe":["Camera: Nome ospite, N persone, dal GG mese al GG mese"]}. Una riga per ogni ospite. Il giorno dopo "al" è il giorno di PARTENZA (la mattina in cui lascia la camera). Mesi scritti in italiano. Le camere si chiamano esattamente: ${nomi}. Non scrivere righe per le camere libere. Se non leggi bene un nome o una data metti un punto di domanda subito dopo il nome. Oggi è ${L.dataLunga(L.oggiISO())}.`;
+    const sistema = `Sei bravissima a leggere i prospetti (scritti a mano o stampati) di un piccolo albergo: righe = camere, colonne = giorni. Rispondi SOLO con questo JSON: {"risposta":"una frase corta: che giorni copre la foto e quanti ospiti hai letto","righe":["Camera: Cognome Nome dell'ospite, N persone, dal GG mese al GG mese"]}. Una riga per ogni ospite. Scrivi il nome dell'ospite COMPLETO, come è scritto (cognome e nome se ci sono tutti e due). Se accanto all'ospite c'è un numero di telefono, mettilo alla fine della riga così: tel. 333 1234567. Il giorno dopo "al" è il giorno di PARTENZA (la mattina in cui lascia la camera). Mesi scritti in italiano. Le camere si chiamano esattamente: ${nomi}. Non scrivere righe per le camere libere. Se non leggi bene un nome o una data metti un punto di domanda subito dopo il nome. Oggi è ${L.dataLunga(L.oggiISO())}.`;
     const { r } = await chiediLettura({ sistema, storia: [], testo: "Ecco la foto del prospetto: leggila camera per camera.", immagine: img, secondi: 90, maxToken: 8000 });
     if (giro !== fotoInLettura) return;
     const x = righeFotoDaRisposta(r.grezzo);
@@ -5761,6 +5832,24 @@ function aCodici(t) { let x = String(t ?? ""); if (!x) return x; for (const r of
 function daCodici(t) { const { nomi } = codiciOspiti(); return String(t ?? "").replace(/\[\s*O\s*(\d{1,4})\s*\]/g, (m, n) => nomi.get(`[O${n}]`) || m); }
 function daCodiciProfondo(v) { if (typeof v === "string") return daCodici(v); if (Array.isArray(v)) return v.map(daCodiciProfondo); if (v && typeof v === "object") { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = daCodiciProfondo(x); return o; } return v; }
 function senzaTelefoni(t) { return String(t || "").replace(/\+?\d(?:[\s.\-]?\d){7,}/g, "[telefono]").replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[email]"); }
+// 1.0.6: i telefoni diventano segnaposto numerati ([telefono1], [telefono2]...); la tabella segnaposto -> numero resta
+// qui sul telefono, cosi' Sofia puo' dire di chi e' il numero senza mai vederlo
+function telefoniInSegnaposto(t, mappa) {
+  return String(t || "").replace(/\+?\d(?:[\s.\-]?\d){7,}/g, (m) => {
+    for (const [k, v] of mappa) if (v === m.trim()) return k;
+    const k = `[telefono${mappa.size + 1}]`; mappa.set(k, m.trim()); return k;
+  }).replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[email]");
+}
+// nel JSON di Sofia: il segnaposto del campo "telefono" torna il numero vero (solo li': note e messaggi restano coi segnaposto)
+function rimettiTelefoni(j, mappa) {
+  if (!j || !Array.isArray(j.soggiorni)) return j;
+  for (const x of j.soggiorni) {
+    if (!x || typeof x !== "object") continue;
+    const m = /\[\s*telefono\s*(\d{1,3})\s*\]/i.exec(String(x.telefono || ""));
+    x.telefono = m && mappa ? (mappa.get(`[telefono${m[1]}]`) || "") : "";
+  }
+  return j;
+}
 // il tipo di ospite detto a Sofia: le ditte col loro codice (sono anche clienti col nome), cosi' nessun nome esce in chiaro
 function tipoPerIA(k) { const t = TIPI_OSPITE[k]; if (!t) return k || "?"; return k === "ferr" ? "tecnici" : k === "altro" ? "turisti / Booking" : k === "unk" ? "da chiarire" : aCodici("ditta " + t.nome); }
 // il prospetto che c'e', camera per camera, coi nomi in codice (per Sofia)
@@ -5800,8 +5889,11 @@ COME SI LEGGE IL PROSPETTO:
 - Tecnici e operai arrivano di solito la domenica sera o il lunedì e partono il venerdì (a volte il sabato). Se per una settimana non dice i giorni, intende da lunedì a venerdì (partenza venerdì).
 - "x2", "2p", "2 pax", "in 2" = 2 persone. Una lista di camere con i nomi accanto è il prospetto di quella settimana.
 - Tipi di ospite (campo "tipo"): ${tipi}. I tecnici della ferrovia e delle altre ditte sono "ferr", turisti e Booking "altro", se non si capisce "unk".
-- Gli ospiti che l'app conosce già sono CODICI tra parentesi quadre, per esempio [O3]: è sempre la stessa persona. Nel JSON riscrivilo IDENTICO. I nomi nuovi scrivili come li scrive il papà (cognome).
-- Le parti tra parentesi quadre [telefono] ed [email] sono dati tolti apposta.
+- Gli ospiti che l'app conosce già sono CODICI tra parentesi quadre, per esempio [O3]: è sempre la stessa persona. Nel JSON riscrivilo IDENTICO; se accanto al codice c'è anche il nome di battesimo (per esempio "[O3] Antonio"), scrivilo tutto: "[O3] Antonio".
+- Il NOME DELL'OSPITE scrivilo COMPLETO e preciso, come lo scrive il papà: cognome e nome se ci sono tutti e due, con "Sig.ra", "Famiglia", "Ditta" se li scrive. Non accorciarlo e non inventarlo.
+- ATTENZIONE: le CAMERE hanno nomi di persona (Salvatore, Michele, Aurora, Antonio, Lella, Alba, Nicole). "in Antonio", "ad Aurora", "Salvatore:" sono le camere, non gli ospiti: il nome di una camera non va MAI nel campo "nome". Michele è anche il figlio, quello che usa l'app.
+- I numeri di telefono li ho tolti io: al loro posto c'è un segnaposto numerato, [telefono1], [telefono2]... Se il telefono è dell'ospite di un soggiorno (scritto accanto al suo nome o nello stesso messaggio), metti il suo segnaposto IDENTICO nel campo "telefono" di quel soggiorno; altrimenti lascia "telefono" vuoto.
+- [email] è un indirizzo email tolto apposta.
 - Se i messaggi vengono da più chat, davanti c'è la chat tra parentesi tonde: "(chat con Papà)" è la chat privata tra Michele e il papà; un nome da solo, per esempio "(Albergo)", è un gruppo (Albergo = il gruppo dell'albergo con la famiglia e le signore). I messaggi che cominciano con 🎤 sono vocali trascritti (possono avere qualche parola sbagliata: [?] = non si capiva).
 - Non inventare niente: se una cosa non è chiara mettila in "dubbi" (con le risposte possibili, così Michele risponde con un tocco) o metti "sicurezza":"bassa".
 - Se tra i messaggi c'è "Risposte di Michele ai dubbi", vale quello che dice lui: usalo e non rifare la stessa domanda.
@@ -5814,7 +5906,7 @@ ${tacc}
 
 RISPONDI SOLO con questo JSON:
 {"risposta":"3-5 frasi semplici per Michele: che periodo coprono i messaggi, cosa hai capito, cosa cambia rispetto all'app",
- "soggiorni":[{"camera":"salvatore","nome":"[O3] oppure il cognome nuovo","persone":2,"arrivo":"AAAA-MM-GG","partenza":"AAAA-MM-GG","tipo":"ferr","nota":"cose da sapere per le pulizie su questo ospite, se dette (altrimenti vuoto)","sicurezza":"alta","dubbio":"","messaggio":"le parole del papà da cui l'hai capito, corte"}],
+ "soggiorni":[{"camera":"salvatore","nome":"[O3] oppure il nome nuovo completo (cognome e nome)","telefono":"[telefono1] oppure vuoto","persone":2,"arrivo":"AAAA-MM-GG","partenza":"AAAA-MM-GG","tipo":"ferr","nota":"cose da sapere per le pulizie su questo ospite, se dette (altrimenti vuoto)","sicurezza":"alta","dubbio":"","messaggio":"le parole del papà da cui l'hai capito, corte"}],
  "togli":[{"camera":"alba","nome":"[O5]","arrivo":"AAAA-MM-GG","perche":"le parole del papà"}],
  "indicazioni":[{"giorno":"AAAA-MM-GG","camera":"codice della camera oppure vuoto se vale per tutte","testo":"cosa devono fare le signore, scritto semplice e corto","messaggio":"le parole del papà"}],
  "abitudini":["come scrive il papà, per capirlo meglio la prossima volta: una frase corta per ognuna, senza nomi di ospiti"],
@@ -5834,11 +5926,12 @@ function testoPerLettura(messaggi, papa) {
     if (/michele/i.test(x) || x === nomeMio()) return "Michele";
     return aCodici(x).slice(0, 30);
   };
-  const righe = messaggi.map(m => `${m.data ? `[${L.dataMedia(m.data)}${m.ora ? " " + m.ora : ""}] ` : ""}${m.chat ? `(${m.chat}) ` : ""}${m.chi ? chi(m.chi) + ": " : ""}${senzaTelefoni(aCodici(m.testo))}`);
+  const telefoni = new Map();
+  const righe = messaggi.map(m => `${m.data ? `[${L.dataMedia(m.data)}${m.ora ? " " + m.ora : ""}] ` : ""}${m.chat ? `(${m.chat}) ` : ""}${m.chi ? chi(m.chi) + ": " : ""}${telefoniInSegnaposto(aCodici(m.testo), telefoni)}`);
   let testo = righe.join("\n"), tagliati = 0;
   const MAX = 140000;
   while (testo.length > MAX && righe.length > 20) { righe.shift(); tagliati++; testo = righe.join("\n"); }
-  return { testo, tagliati };
+  return { testo, tagliati, telefoni };
 }
 function jsonDaRisposta(txt) {
   const p = String(txt || "").replace(/```(?:json)?/gi, "").trim();
@@ -5872,12 +5965,13 @@ function lettoDaSofia(j) {
   const usati = new Set();
   (Array.isArray(j.soggiorni) ? j.soggiorni : []).slice(0, 80).forEach((x, i) => {
     const camera = cameraDaSofia(x && x.camera), inizio = dataIso(x && x.arrivo), fine = dataIso(x && x.partenza);
-    const nome = daCodici(String((x && x.nome) || "").trim()).replace(/^\[.*\]$/, "?").slice(0, 40) || "?";
+    let nome = daCodici(String((x && x.nome) || "").trim()).replace(/^\[.*\]$/, "?").slice(0, 48) || "?";
+    if (nome !== "?" && S.camere.some(c => PAROLE.norm(c.nome) === PAROLE.norm(nome) || PAROLE.norm(c.id) === PAROLE.norm(nome))) nome = "?";
     if (!camera || !inizio || !fine || fine <= inizio) { if (x && (x.camera || x.nome)) dubbi.push({ domanda: `Non ho capito bene: ${daCodici(String(x.messaggio || `${x.camera || ""} ${x.nome || ""}`)).slice(0, 120)}`, risposte: [] }); return; }
     const tipo = TIPI_OSPITE[x.tipo] ? x.tipo : null;
     const persone = Math.max(1, Math.min(12, Math.round(Number(x.persone) || 0))) || null;
     const bassa = /bassa/i.test(String(x.sicurezza || ""));
-    const r = { camera, testo: daCodici(String(x.messaggio || "")).slice(0, 160), azione: "nuovo", nome, persone, tipo, inizio, fine, nota: daCodici(String(x.nota || "")).slice(0, 160), notaPrivata: "", dubbio: bassa || nome === "?", motivi: x.dubbio ? [daCodici(String(x.dubbio)).slice(0, 160)] : [], assunti: [], scelto: !bassa, base: L.lunediDi(inizio), inizioDetto: true, fineDetta: true, tipoDetto: !!tipo, durata: null, comeScorsa: false, libera: false, haParoleParte: false, haParoleProlunga: false, daSofia: true };
+    const r = { camera, testo: daCodici(String(x.messaggio || "")).slice(0, 160), azione: "nuovo", nome, persone, tipo, inizio, fine, nota: daCodici(String(x.nota || "")).slice(0, 160), notaPrivata: "", telefono: telefonoPulito(x.telefono), dubbio: bassa || nome === "?", motivi: x.dubbio ? [daCodici(String(x.dubbio)).slice(0, 160)] : [], assunti: [], scelto: !bassa, base: L.lunediDi(inizio), inizioDetto: true, fineDetta: true, tipoDetto: !!tipo, durata: null, comeScorsa: false, libera: false, haParoleParte: false, haParoleProlunga: false, daSofia: true };
     try { completaRiga(r, ctx); } catch (e) { console.warn("riga sofia", e); }
     if (bassa) r.scelto = false;
     r.id = "s" + i; r.firma = `${r.azione}|${r.camera}|${r.inizio}|${r.fine}|${r.nome}`;
@@ -5935,7 +6029,7 @@ async function leggiConSofia(messaggi, opz = {}) {
   if (!iaAccesa()) { d.ia = { errore: "chiave" }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); return; }
   const giro = ++letturaGiro;
   d.ultimaLettura = { messaggi, papa: opz.papa || "", immagini: Array.isArray(opz.immagini) ? opz.immagini : [] };
-  const { testo, tagliati } = testoPerLettura(messaggi, opz.papa || "");
+  const { testo, tagliati, telefoni } = testoPerLettura(messaggi, opz.papa || "");
   const immagini = Array.isArray(opz.immagini) ? opz.immagini.filter(x => x && x.dati) : [];
   d.ia = { leggo: true, n: messaggi.length, tagliati, fase: immagini.length ? `Leggo i messaggi e guardo ${immagini.length === 1 ? "la foto" : immagini.length + " foto"}` : "" };
   // se il foglio l'hai chiuso tu mentre ascoltava i vocali, non lo riapro: si aggiorna la striscia "sta leggendo"
@@ -5943,7 +6037,7 @@ async function leggiConSofia(messaggi, opz = {}) {
   try {
     const { r, ripiego } = await chiediLettura({ sistema: istruzioniLettura(), storia: [], testo: `${immagini.length ? `Ti mando anche ${immagini.length === 1 ? "una foto" : immagini.length + " foto"} della chat (numerate nell'ordine, nei messaggi trovi "foto n. 1"...): se sono il prospetto scritto a mano o stampato, leggile come il resto.\n` : ""}ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, immagine: immagini.length ? immagini.map(x => ({ mime: x.mime, dati: x.dati })) : null, secondi: 150, maxToken: 16000 });
     if (giro !== letturaGiro) return;
-    const j = jsonDaRisposta(r.grezzo);
+    const j = rimettiTelefoni(jsonDaRisposta(r.grezzo), telefoni);
     if (!j) throw new Error("ha risposto in un modo che non capisco. Riprova.");
     const x = lettoDaSofia(j);
     d.ia = { ...x, modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length, tagliati, testo: d.testo };
@@ -7146,7 +7240,7 @@ async function salvaSoggiorno(f) {
   const altri = soggiorniLista().filter(s => s.camera === cam && s.id !== f.id && s.inizio < fine && inizio < s.fine);
   if (altri.length && !await chiedi(`In ${camera(cam).nome} in quei giorni c'è già ${altri.map(a => a.nome).join(", ")}. Salvo lo stesso?`, { si: "Sì, salva lo stesso" })) return;
   const modo = document.querySelector('[data-sog-modo][aria-pressed="true"]')?.dataset.sogModo || "", ricorda = document.querySelector('[data-sog-ricorda][aria-pressed="true"]')?.dataset.sogRicorda !== "0";
-  const d = { camera: cam, inizio, fine, nome, tipo: $("#sTipo").value, persone: Number($("#sPers").value) || 1, supplemento: Math.max(0, Number($("#sSup").value) || 0), nota: $("#sNota").value.trim(), notaPrivata: $("#sPriv").value.trim(), dubbio: $("#sTipo").value === "unk", origine: f.id ? (S.soggiorni[f.id].origine || "mano") : "mano", mesi: mesiCoperti(inizio, fine), modificato: S.db.adesso(), da: S.utente.nome || "" };
+  const d = { camera: cam, inizio, fine, nome, tipo: $("#sTipo").value, persone: Number($("#sPers").value) || 1, supplemento: Math.max(0, Number($("#sSup").value) || 0), nota: $("#sNota").value.trim(), notaPrivata: $("#sPriv").value.trim(), telefono: ($("#sTel")?.value || "").trim(), dubbio: $("#sTipo").value === "unk", origine: f.id ? (S.soggiorni[f.id].origine || "mano") : "mano", mesi: mesiCoperti(inizio, fine), modificato: S.db.adesso(), da: S.utente.nome || "" };
   // il tipo di ospite: sul soggiorno se è solo per stavolta, altrimenti ricordato per quel nome (e il soggiorno lo eredita)
   if (L.NOMI_MODI.includes(modo)) { if (ricorda) { const nomeCl = L.nomeCliente(nome) || nome, k = L.normNome(nomeCl); if (k && (L.clienteDi(nome, S.clienti)?.modo !== modo)) { S.clienti = { ...S.clienti, [k]: { modo, nome: nomeCl, aggiornato: L.oggiISO() } }; try { await S.db.salva("impostazioni", "clienti", { [k]: S.clienti[k] }, true); } catch (e) { erroreScrittura(e); } } d.modo = ""; } else d.modo = modo; }
   const id = f.id || `${inizio}_${cam}_${Date.now().toString(36)}`;
