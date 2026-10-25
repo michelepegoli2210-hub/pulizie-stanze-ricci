@@ -1,0 +1,33 @@
+IL PONTE DI SOFIA
+=================
+Fa arrivare a Sofia (l'app Pulizie Ricci) i messaggi del gruppo WhatsApp "Albergo":
+scritti, vocali e foto. Sofia li ascolta, capisce il prospetto e ti avvisa. Non salva niente
+senza il tuo "Salva".
+
+IL PONTE LEGGE SOLTANTO: non scrive mai niente su WhatsApp, non segna i messaggi come letti,
+non ti fa risultare "online". Legge solo i gruppi scelti nell'app (di serie "Albergo").
+
+COME SI ACCENDE (la prima volta)
+0. Una volta sola: le regole nuove su Firebase. Nell'app: Altro -> Il ponte WhatsApp.
+   Se la scheda mostra "Passo 1", segui le sue istruzioni (Copia le regole -> Firebase ->
+   Regole -> incolla -> Pubblica).
+1. Nell'app: Altro -> Il ponte WhatsApp -> "Crea il codice del ponte".
+   Esce un codice di 16 lettere e numeri (es. ABCD-EFGH-JKLM-NPQR).
+2. Sul PC estrai lo zip (tasto destro -> Estrai tutto) e fai doppio clic su "Avvia il ponte di Sofia".
+   Se Windows dice "Windows ha protetto il PC": tocca "Ulteriori informazioni" -> "Esegui comunque".
+   La prima volta, se manca, installa Node.js (se chiede di accettare le condizioni premi Y e Invio;
+   se Windows chiede il permesso rispondi Si), poi chiudi la finestra e rifai doppio clic.
+3. Si apre la pagina del ponte (http://localhost:3939): scrivi il codice e tocca "Collega".
+4. Sul telefono: WhatsApp -> menu (3 puntini) -> Dispositivi collegati -> Collega un dispositivo,
+   e inquadra il quadrato della pagina. Fatto.
+5. Nella pagina tocca "Fallo partire da solo quando accendo il PC".
+
+DA SAPERE
+- La finestra nera del ponte deve restare aperta (si puo' ridurre a icona).
+- Se il PC e' spento i messaggi aspettano: quando lo riaccendi arrivano tutti.
+- Il codice serve una volta sola: il ponte lo usa per entrare e poi si ricorda l'accesso
+  (la password non resta scritta sul PC). Il codice resta nell'app sul telefono dove l'hai creato.
+- Non e' un programma ufficiale di WhatsApp: usato cosi' (solo lettura) il rischio e' basso, ma non zero.
+  Se vuoi stare piu' tranquillo, collegalo a un numero solo per l'albergo invece che al tuo.
+- Per spegnerlo per sempre: nell'app "Togli il ponte" e sul telefono, in Dispositivi collegati,
+  tocca il dispositivo del ponte -> Esci.

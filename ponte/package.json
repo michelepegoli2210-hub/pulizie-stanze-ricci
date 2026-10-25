@@ -1,0 +1,16 @@
+{
+  "name": "ponte-di-sofia",
+  "version": "1.0.0",
+  "description": "Legge (solo legge) il gruppo WhatsApp Albergo e passa i messaggi a Sofia, nell'app Pulizie Ricci",
+  "type": "module",
+  "main": "ponte.mjs",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node ponte.mjs" },
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "pino": "^9.0.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
