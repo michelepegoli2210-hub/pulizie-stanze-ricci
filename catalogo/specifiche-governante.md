@@ -1683,3 +1683,28 @@ Michele: "per adesso Sofia sembra veramente quasi un'immagine religiosa: ottimiz
 - Gemini propone di rifare le Piantine con la stessa griglia di 13 caselle del Prospetto (con gli appartamenti), che invece di chi dorme mostra cosa pulire: da chiedere a Michele.
 ### PROVE
 - prova107mappa (CAMERA/APP. sulle targhette, "fino a" in ogni camera piena, frasi al posto delle sigle, libere grigie con "esce oggi", "al posto di" nella lista, la settimana da oggi senza nomi tagliati, il dito che sfoglia i giorni, le Piantine senza nomi sopra il prezzo, la parete dritta dietro Sofia con il profilo d'ottone e senza alone), piu' tutte le prove di prima.
+
+## 81. La 1.0.8 (25 ottobre): IL PROSPETTO "MAPPA BIANCA" (IL DISEGNO 3 SCELTO DA MICHELE)
+Michele (dopo la 1.0.7): "il prospetto ancora non è molto chiaro, e non mi piace ancora il 3D di Sofia: fammi vedere un disegno". Gli ho fatto vedere tre disegni per il Prospetto (1 Registro: una riga per camera con i 7 giorni; 2 Calendario: giorno per giorno; 3 Mappa bianca: come prima ma con caselle bianche, l'idea di Gemini) e tre per Sofia (A esce dalla cornice, B dietro il bancone della reception, C pulita con la sua ombra). Michele: "mi piace la 3, e rendi il prospetto più chiaro e più facile possibile". Per Sofia non ha ancora scelto.
+### LA MAPPA BIANCA
+- Caselle BIANCHE con una striscia di 6 px del colore dell'ospite a sinistra (tecnici verde, Fondamenta blu, D'Agostino arancio, altri viola, da chiarire oro tratteggiato).
+- In alto, su una fascia color pietra, "CAMERA SALVATORE" ("APP. ZARA TERRA" negli appartamenti, "via N. Sauro" sotto Lella e Nicole).
+- Il pallino colorato e il nome dell'ospite in NERO, grande.
+- Sotto, nel tono scuro del suo colore: "entra oggi → fino a ven 30" oppure "già dentro → fino a 22 nov" (negli appartamenti su due righe).
+- In fondo a ogni casella le 7 LINEETTE dei giorni qui sopra (oggi e i 6 dopo): colorata = occupata (col colore di chi c'è), grigia = libera; quella del giorno scelto ha una riga scura sotto. Così si vede subito, camera per camera, chi c'è giorno per giorno e quanto resta.
+- LIBERA: bianca tratteggiata, "L I B E R A"; sotto chi esce quel giorno ("esce oggi: Famiglia Bianchi") oppure chi entra nei prossimi giorni ("entra domani: Bruno").
+- I giorni in alto sono pastiglie semplici: "Oggi", "Lun 26", "Mar 27"... (via i numerini +/−). In cima: "Stanotte · 10 occupate · 3 libere"; ogni piano "4/5 OCCUPATE".
+- La legenda: i colori degli ospiti della settimana e LIBERA; sotto una riga d'aiuto: "in fondo a ogni camera i 7 giorni qui sopra: colorato = occupata, grigio = libera. Tocca un giorno per vedere chi dorme quella notte, tocca una camera per i dettagli."
+- Restano: il dito che sfoglia i giorni, "Chi dorme stanotte" coi telefoni, la Settimana da oggi, il mese.
+### LA VERSIONE FACILE (terzo bottone: Mappa · Facile · Settimana)
+Michele (vista la Mappa bianca): "questo va bene, però fai anche una versione proprio quasi da bambino di 3 anni".
+- In cima, grande: "Chi dorme stanotte?" (o "domani notte", "mercoledì notte"...) e due pastiglie con il disegno del letto: "10 piene" (letto pieno) e "3 libere" (letto vuoto, verde).
+- Un RIQUADRO GRANDE per camera, 3 per riga, divisi per piano (1° PIANO + LELLA, 2° PIANO + NICOLE, APPARTAMENTI). Dentro, dall'alto: il NOME DELLA CAMERA; il disegno del LETTO; il nome di chi c'è; "fino a venerdì" (il giorno scritto per intero; piu' in la' "fino al 22 novembre", "fino all'8 novembre", "fino al 1° dicembre"); in fondo un pezzetto di CIELO DI NOTTE (fascia blu) con una LUNA gialla per ogni notte che resta (oltre 7 notti: 6 lune e "+22").
+- Occupata = riquadro color sabbia, letto marrone con la persona che dorme, la coperta blu e le "z z". Libera = riquadro bianco tratteggiato verde, letto vuoto, LIBERA in verde; sotto "oggi va via: Famiglia Bianchi" oppure "arriva domani: Bruno".
+- Chi entra quel giorno ha la pastiglia verde "arriva oggi" a cavallo del bordo in alto. Il nome "da chiarire" ha il "?" davanti e il bordo arancio.
+- Niente colori da imparare (i tipi di ospite restano nella Mappa). Stessi giorni in alto, stesso dito per sfogliarli, un tocco sulla camera apre il soggiorno (o "Nuovo arrivo" se e' libera).
+- Il telefono si ricorda se l'ultima volta si e' usata la Mappa o la Facile (una signora che usa sempre la Facile la ritrova aperta); la Settimana no.
+- Sotto: "(luna) = una notte che resta · tocca una camera per vedere tutto".
+### PROVE
+- prova108mappa (casella bianca con la striscia colorata, fascia della camera, pallino e nome nero, le 7 lineette col giorno scelto, "entra oggi/già dentro → fino a", libere bianche tratteggiate, i giorni semplici, legenda e aiuto, tutta la mappa nella prima schermata, piu' tutto quello della 1.0.7), piu' tutte le prove di prima.
+- prova108facile (i tre bottoni non tagliati, 13 riquadri, piene/libere uguali alla Mappa, il letto pieno/vuoto, LIBERA verde, le lune contate giuste anche da un altro giorno, la fascia blu solo nelle piene, "fino a ...", "arriva oggi", niente tagliato, i tocchi, il dito, l'italiano delle date, il telefono che si ricorda la Facile).
