@@ -1487,3 +1487,21 @@ Michele: "ingaggia Gemini e continua il progetto: app da milioni di dollari fatt
 - RILEGGI: Sofia rilegge gli stessi messaggi (e le stesse foto) con in fondo un messaggio di Michele "Risposte di Michele ai dubbi di Sofia: - domanda → risposta"; nelle istruzioni: vale quello che dice lui e non rifà la stessa domanda. I nomi noti vanno in codice anche qui.
 - I tasti ci sono solo finché i messaggi sono in memoria (non dopo aver riaperto l'app dalla notifica il giorno dopo).
 - Premium: il riquadro dei dubbi avorio e oro; le righe dell'anteprima con la striscia oro (da salvare), oro chiaro (da controllare), pietra (da togliere); i puntini che lampeggiano oro anche nel bagliore.
+
+## 72. La 0.99.3 (25 ottobre, notte): SOFIA PIU' GRANDE E "FUORI" DALLA CORNICE, LEGGE TUTTO, TERZO GIRO DI ARGON
+Michele: "la governante falla uscire piu' fuori e rendila piu' grande e quando parla il filmato e' troppo corto"; "la grafica e l'impaginazione la devi ancora migliorare".
+### SOFIA NELLA CASA (Premium)
+- Cornice piu' alta (58% dello schermo, fino a 600 px sul computer). In 3D Sofia e' ingrandita 1,32 volte (1,35 mentre parla) e alzata del 4%: la TESTA esce sopra il bordo della cornice e le SPALLE escono dai lati (il ritaglio della figura lascia uscire 60% sopra e 16% ai lati); sopra la cornice c'e' spazio (96 px) perche' la testa non finisca sotto la barra dell'ora.
+- Tre piani (Argon): il salone, Sofia, e la scheda del saluto che SALE sopra la base della cornice (-40 px) e nasconde il taglio del busto; il tasto "Parla con Sofia" sta a cavallo del bordo della scheda.
+### SOFIA LEGGE TUTTO (era il "filmato troppo corto")
+- Prima la voce leggeva solo le prime 420 lettere (voce TTS) o 700 (canale Live) e poi smetteva: voce e filmato finivano prima della risposta. Ora il testo si divide in PARTI alla fine delle frasi (voce.js partiDaLeggere, fino a 3200 lettere, circa tre minuti e mezzo) che si leggono una dopo l'altra; mentre legge una parte, la parte dopo si prepara col canale Live (preparaParte, nel cassetto: parte subito, senza buchi). La parte preparata non viene buttata via se ne parte un'altra (non e' "la voce in corso").
+- Il filmato "parla" resta acceso fino all'ultima parola (voceInCorso resta vero tra una parte e l'altra). Toccando di nuovo il tasto (o il microfono) si ferma tutto, anche tra due parti.
+- Vale anche per le spiegazioni lette alle signore.
+### TERZO GIRO DI ARGON
+- La sezione di Sofia: in cima la "concierge" col suo ritratto grande (anello oro) e lo stato ("la tua governante · tutto in ordine" / "ha 2 cose da chiederti" / "ci sta pensando…"); se non chiede niente il riquadro dice "Tutto chiaro · nessun dubbio sulle camere"; la chat vuota comincia con un suo messaggio ("Dimmi pure, Michele…"); sopra la casella i COMANDI RAPIDI da toccare (Chi arriva domani? · Scrivi alle signore… · Segna un guasto… · Il prospetto della settimana: le domande partono subito, i comandi riempiono la casella); la chat riempie lo schermo e la casella sta in fondo, sopra la barra.
+- L'anteprima dopo la lettura di Sofia: IN CIMA il suo riassunto, i dubbi e le spunte; il testo, la settimana e i tasti Incolla/Foto stanno chiusi sotto "Correggi il testo o la settimana".
+- Prospetto: "＋ Inserisci il prospetto" e "Da WhatsApp" alla stessa altezza, su una riga.
+- Oggi: le signore come selettori bassi e larghi (monogramma a sinistra, nome e conteggio a destra); l'icona dei lavori in oro.
+- Inserisci: anche "Da WhatsApp" in oro.
+- Signore: quando una camera e' in corso la frase dice "Stai pulendo Aurora. Poi ne restano 2." e l'oro passa su "in corso"; dentro la camera le pillole in una griglia 2x2; "Fatto, tutto" in oro.
+- NON fatto (scelte di Michele): il tasto "Chiudi" in fondo ai fogli resta; "Ho finito" resta anche nella scheda della camera (chiede "le hai fatte tutte?").
