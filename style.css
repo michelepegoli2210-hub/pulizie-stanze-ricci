@@ -4878,3 +4878,37 @@ body.premium .casa-nuvola .casa-spinta,body.premium .casa-nuvola>.casa-spinta{ba
 :root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(20,18,16,.36) 0%,rgba(20,18,16,.56) 100%)}
 :root[data-theme="dark"] body.premium .cr-riga{background:rgba(30,27,24,.42);text-shadow:0 1px 2px rgba(0,0,0,.7)}
 :root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao{text-shadow:0 0 10px rgba(14,12,10,.9),0 1px 2px rgba(0,0,0,.7)}
+/* ============================================================================
+   1.6.3 (Michele, 27/10 notte): "piu' trasparente la parte con Notizie di oggi, e si deve leggere tutto molto molto
+   meglio; la pietra deve essere fatta proprio d'ambra". Il riquadro e' quasi solo vetro; la leggibilita' la fanno le
+   scritte: piu' grandi, piu' nere, con un alone bianco pieno attorno alle lettere (si leggono anche sulla giacca blu).
+   ============================================================================ */
+/* la pietra d'ambra: alone caldo color miele che respira */
+body.premium .bs-diamante svg{filter:drop-shadow(0 0 7px rgba(255,170,60,.8));animation:am-respiro 5s ease-in-out infinite}
+body.premium .bs-sofia[aria-pressed="true"] .bs-diamante svg{filter:drop-shadow(0 0 10px rgba(255,190,90,.95))}
+@keyframes am-respiro{0%,100%{filter:drop-shadow(0 0 5px rgba(255,170,60,.6))}50%{filter:drop-shadow(0 0 11px rgba(255,185,80,.95))}}
+@media (prefers-reduced-motion:reduce){body.premium .bs-diamante svg{animation:none}}
+/* il riquadro: quasi solo vetro (16 -> 6%), sfocatura leggera, la cornice d'oro resta */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(165deg,rgba(255,255,255,.16) 0%,rgba(250,248,245,.06) 100%);-webkit-backdrop-filter:blur(9px) saturate(140%);backdrop-filter:blur(9px) saturate(140%);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),inset 0 44px 36px -14px rgba(250,248,245,.22),0 14px 30px rgba(15,23,42,.12)}
+/* le linguette: l'incasso sparisce quasi; "Chat" nero con l'alone; la scelta blu notte di vetro */
+body.premium .casa-schede{background:rgba(255,255,255,.06);border-color:rgba(212,175,106,.45)}
+body.premium .cs-tab{color:#0B1222;font-weight:700;font-size:16.5px;text-shadow:0 0 2px #FFFFFF,0 0 6px #FFFFFF,0 0 12px rgba(255,255,255,.9)}
+body.premium .cs-tab[aria-selected="true"]{text-shadow:0 1px 2px rgba(0,0,0,.45)}
+/* il saluto: piu' grande e piu' nero, alone bianco pieno */
+body.premium .casa-nuvola .casa-ciao{font-size:28px;font-weight:700;color:#0B1222;text-shadow:0 1px 0 #FFFFFF,0 0 3px #FFFFFF,0 0 8px #FFFFFF,0 0 16px rgba(255,255,255,.95)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:24px}
+/* le righe: vetro leggerissimo (18%), scritte piu' grandi (21 px) e piu' nere, alone bianco pieno; numeri 22 px */
+body.premium .cr-riga{background:rgba(255,255,255,.18);border-color:rgba(154,116,50,.4);border-left-color:#8C621E;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 6px rgba(15,23,42,.05);font-size:21px;font-weight:700;color:#0B1222;text-shadow:0 1px 0 #FFFFFF,0 0 3px #FFFFFF,0 0 7px #FFFFFF,0 0 14px rgba(255,255,255,.95)}
+body.premium .cr-riga b{font-size:22px;color:#000000}
+body.premium .cr-ico,body.premium .cr-ico.verde,body.premium .cr-ico.arancio,body.premium .cr-ico.blu,body.premium .cr-ico.oro{background:linear-gradient(135deg,rgba(255,252,244,.72) 0%,rgba(245,236,214,.62) 100%);border-color:rgba(154,116,50,.5);color:#6B4A14}
+body.premium .cr-ico .ico2{stroke-width:2}
+body.premium .cr-va{color:#8C621E;text-shadow:0 0 4px #FFFFFF}
+/* la pillola dei numeri e il cerchietto: piu' netti */
+body.premium .cs-mini{color:#0B1222;background:linear-gradient(180deg,rgba(255,255,255,.75) 0%,rgba(212,175,106,.35) 100%)}
+/* il consiglio: resta blu notte di vetro, la scritta avorio piu' grande con l'ombra scura */
+body.premium .casa-nuvola .casa-spinta,body.premium .casa-nuvola>.casa-spinta{font-size:18.5px;font-weight:700;color:#FFFDF7;text-shadow:0 1px 2px rgba(0,0,0,.7),0 0 6px rgba(0,0,0,.55)}
+/* tema scuro: alone scuro al posto di quello bianco */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(20,18,16,.22) 0%,rgba(20,18,16,.4) 100%)}
+:root[data-theme="dark"] body.premium .cs-tab,:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao,:root[data-theme="dark"] body.premium .cr-riga{color:#FFFFFF;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 6px rgba(0,0,0,.9),0 0 12px rgba(0,0,0,.8)}
+:root[data-theme="dark"] body.premium .cr-riga{background:rgba(30,27,24,.3)}
+:root[data-theme="dark"] body.premium .cr-riga b{color:#FFFFFF}
