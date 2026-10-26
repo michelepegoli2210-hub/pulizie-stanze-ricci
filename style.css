@@ -4681,10 +4681,26 @@ body.premium .bs-sofia[aria-pressed="true"] .bs-stella::after{content:"";positio
 body.premium .bs-sofia .bs-gioiello .nav-conta{top:-7px;right:-12px}
 :root[data-theme="dark"] body.premium .bs-gioiello.bs-stella{box-shadow:none}
 /* il corsivo (prova di Gemini, scelta A): il saluto e il consiglio di Sofia in Cormorant Garamond corsivo; le righe coi numeri restano dritte */
-@font-face{font-family:"Cormorant Garamond";font-style:italic;font-weight:600;font-display:swap;src:url(fonts/cormorant-garamond-latin-600-italic.woff2) format("woff2")}
-@font-face{font-family:"Cormorant Garamond";font-style:italic;font-weight:700;font-display:swap;src:url(fonts/cormorant-garamond-latin-700-italic.woff2) format("woff2")}
 body.premium .casa-nuvola .casa-ciao{font:italic 600 26px/1.15 "Cormorant Garamond",Georgia,serif;letter-spacing:-.01em;text-shadow:0 1px 0 rgba(255,255,255,.9),0 0 10px rgba(247,244,238,.98)}
 body.premium .casa-nuvola .casa-spinta{font:italic 700 19px/1.15 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em;padding-top:8px;padding-bottom:8px}
 /* da tendina chiusa il saluto in corsivo si stringe un po' (26 -> 22 px): deve starci intero accanto alla pillola */
 body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:22px}
 body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{font-size:12.5px;padding:0 9px}
+/* ============================================================================
+   1.5.3 (Michele, 26/10 notte: "il corsivo lo devi fare molto piu' visibile"): un corsivo vero, a mano e in grassetto
+   (Dancing Script 700), piu' grande, anche sul nome in alto; le righe si stringono di 2 px per farci stare tutto
+   ============================================================================ */
+@font-face{font-family:"Dancing Script";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/dancing-script-latin-700-normal.woff2) format("woff2")}
+/* il saluto: grande, in grassetto, blu notte con l'alone chiaro dietro */
+body.premium .casa-nuvola .casa-ciao{font:700 32px/1.1 "Dancing Script",cursive;letter-spacing:0;text-shadow:0 1px 0 rgba(255,255,255,.95),0 0 12px rgba(247,244,238,1),0 0 4px rgba(247,244,238,1)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:24px}
+/* il consiglio di Sofia: corsivo a mano in avorio sul blu */
+body.premium .casa-nuvola .casa-spinta{font:700 21px/1.15 "Dancing Script",cursive;letter-spacing:.005em;padding-top:7px;padding-bottom:7px}
+/* il nome in alto: "Le Stanze di Ricci" scritto a mano, in oro (non piu' maiuscolo spaziato) */
+body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{font:700 21px/1 "Dancing Script",cursive;letter-spacing:0;text-transform:none;color:#9A7432;text-shadow:0 1px 0 rgba(255,255,255,.9)}
+body.premium .bo-marca b.bo-m2{margin-left:.25em}
+body.premium .bo-marca::after{margin-top:3px}
+@media (max-width:370px){body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{font-size:18px}}
+:root[data-theme="dark"] body.premium .bo-marca b,:root[data-theme="dark"] body.premium .bo-marca b.bo-m2{color:#D4AF6A;text-shadow:none}
+/* le righe delle notizie: 40 px invece di 42, cosi' le tre righe e il consiglio restano in vista insieme */
+body.premium .cr-riga{min-height:40px}

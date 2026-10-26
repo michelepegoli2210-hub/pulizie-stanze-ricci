@@ -3,14 +3,14 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.5.2";
+const VERSIONE = "1.5.3";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./cons-parla.mp4", "./cons-riposo.mp4", "./cons-film.json", "./cons-poster.webp", "./cons-poster-3d2.webp", "./cons-fondo-3d.webp", "./avorio-parete.webp", "./cornice-noce.webp", "./fonts/atkinson-hyperlegible-next-latin-400-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-600-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-800-normal.woff2",
   "./bocca.js", "./viso.js", "./cons-base.webp", "./cons-indica.webp", "./cons-cuore.webp", "./cons-pollice.webp", "./cons-osx.webp", "./cons-odx.webp", "./cons-osu.webp", "./cons-scena.webp", "./cons-saluto.webp", "./cons-riposo.webp", "./cons-b1.webp", "./cons-b2.webp", "./cons-b3.webp", "./cons-occhi.webp", "./cons-felice.webp", "./cons-testa.webp", "./cons-testa-occhi.webp",
-  "./marmo-blu.webp", "./marmo-avorio.webp", "./fonts/cormorant-garamond-latin-600-italic.woff2", "./fonts/cormorant-garamond-latin-700-italic.woff2",
+  "./marmo-blu.webp", "./marmo-avorio.webp", "./fonts/dancing-script-latin-700-normal.woff2",
   "./fonts/montserrat-latin-500-normal.woff2", "./fonts/montserrat-latin-600-normal.woff2", "./fonts/montserrat-latin-700-normal.woff2", "./fonts/montserrat-latin-800-normal.woff2",
   "./legno-oro-parete.webp", "./cornice-legno.webp", "./radica.webp", "./legno-oro.webp", "./fascia-mogano.webp", "./fonts/playfair-display-latin-600-normal.woff2", "./fonts/playfair-display-latin-400-italic.woff2",
 ];
