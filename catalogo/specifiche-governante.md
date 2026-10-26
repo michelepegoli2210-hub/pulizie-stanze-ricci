@@ -1877,3 +1877,9 @@ Michele, vista la 1.6.1: "togli il rubino e metti la pietra filosofale, e rendi 
 - Il tasto Sofia: via il rubino tondo; un cristallo grezzo rosso sangue, allungato e sfaccettato, che brilla dall'interno (disegno nostro, SVG 48 px: sette faccette a ventaglio dal cuore, luce che viene da dentro, riflesso di vetro, profilo chiaro, alone caldo sul marmo, una scintilla che respira). L'alone rosso respira piano (5 s), fermo con «riduci il movimento».
 - Più vetro: il riquadro 30→14% (sfocatura 12), le righe 36%, i quadratini delle icone al 60%, l'incasso delle linguette 10%, la linguetta scelta e il consiglio blu notte più leggeri (56→42% e 52→40%). Per restare leggibili sul blu della giacca, il saluto e le righe hanno un velo di luce chiara dietro le lettere (`text-shadow`).
 - Prove: le stesse della 1.6.1 (pietra da 48 px).
+
+## 95. La 1.6.3 (27 ottobre, notte): QUASI SOLO VETRO, SCRITTE CHE SI LEGGONO "MOLTO MOLTO MEGLIO", LA PIETRA D'AMBRA
+Michele: "deve essere più trasparente la parte che contiene Notizie di oggi, e si deve leggere tutto molto molto meglio; e la pietra filosofale deve essere di colore ambra, anzi fatta proprio d'ambra".
+- Il riquadro delle Notizie è quasi solo vetro (16→6%, sfocatura 9), l'incasso delle linguette al 6%, le righe al 18%, i quadratini delle icone al 70%. La leggibilità non la fa più il fondo ma la scritta: Cormorant 700 (saluto 28 px, righe 21 px coi numeri 22 px in nero, linguette 16,5 px) in blu-nero #0B1222 con un alone bianco pieno attorno alle lettere (quattro ombre bianche sovrapposte): si legge anche sopra la giacca blu di Sofia. Il consiglio resta blu notte di vetro con la scritta avorio in 700 e l'ombra scura. Nel tema scuro l'alone è nero.
+- La pietra: la stessa pietra filosofale ma d'ambra (resina levigata color miele e arancio che brilla da dentro, con le piccole inclusioni scure e due bollicine, il riflesso lucido, l'alone caldo che respira). SVG nostro, 48 px.
+- Prove: le stesse della 1.6.2.
