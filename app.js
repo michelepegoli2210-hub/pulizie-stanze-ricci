@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.1.0";
+export const VERSIONE = "1.1.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2206,8 +2206,9 @@ const CHIAVE_CHAT_VISTI = "ricci_chat_visti";
 function chatContaAggiorna(h) {
   const b = h && h.querySelector(".cs-conta"); if (!b) return;
   const conv = conversazione();
-  let visti = 0; try { visti = Number(localStorage.getItem(CHIAVE_CHAT_VISTI)) || 0; } catch (e) {}
-  if (visti > conv.length || h.classList.contains("nuvola-aperta")) { visti = conv.length; try { localStorage.setItem(CHIAVE_CHAT_VISTI, String(visti)); } catch (e) {} }
+  // la prima volta su questo telefono si parte da zero (non "9+" per tutti i messaggi vecchi)
+  let visti = null; try { const v = localStorage.getItem(CHIAVE_CHAT_VISTI); visti = v === null ? null : (Number(v) || 0); } catch (e) { visti = 0; }
+  if (visti === null || visti > conv.length || h.classList.contains("nuvola-aperta")) { visti = conv.length; try { localStorage.setItem(CHIAVE_CHAT_VISTI, String(visti)); } catch (e) {} }
   const nuovi = conv.slice(visti).filter(m => m.chi === "gov").length;
   const tx = nuovi > 9 ? "9+" : String(nuovi);
   if (b.hidden === !!nuovi) b.hidden = !nuovi;
