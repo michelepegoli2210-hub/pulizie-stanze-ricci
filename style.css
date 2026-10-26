@@ -4398,3 +4398,158 @@ body.premium .bs-sofia .nav-conta{position:static;min-width:0;height:16px;paddin
 body.premium .bs-t{font:700 13.5px/1.1 var(--f-ui)}
 body.premium .bs-sofia .bs-n{font-size:13.5px}
 @media (max-width:375px){body.premium .bs-t{font-size:11.8px;letter-spacing:-.2px}body.premium .bs-sofia .bs-n{font-size:11.8px}}
+/* ==========================================================================
+   1.4.0 (Gemini, 26/10 sera — "progetto esecutivo": da 6,5 a 9,8) · VETRO, MARMO E ORO.
+   Michele: «il quadratino blu "Notizie di oggi" e la barra blu del consiglio molto piu' trasparenti; tutti i riquadri
+   sotto Sofia traslucidi, che si intraveda dietro; il sotto rifatto, piu' tridimensionale e premium; le parti blu piu'
+   marmo con venature dorate, molto elegante; l'orologio sta troppo vicino ai capelli e non mi piace il font dei numeri;
+   il tasto di Sofia: una stella d'oro zecchino che gira su se stessa e butta un po' di polvere di stelle, ma poca».
+   Due tele di marmo generate in casa (marmo-blu.webp e marmo-avorio.webp: solo venature e nuvole, fondo trasparente).
+   ========================================================================== */
+/* ---- il marmo blu notte con venature d'oro ("Portoro"): un mixin a quattro strati (luce in alto a sinistra, scudo
+   di leggibilita', tela delle venature, base blu notte) ---- */
+.marmo{background-color:#0F172A;background-image:radial-gradient(120% 90% at 15% 0%,rgba(212,175,106,.16) 0%,transparent 55%),linear-gradient(180deg,rgba(15,23,42,.30) 0%,rgba(15,23,42,.55) 50%,rgba(9,14,26,.78) 100%),url(marmo-blu.webp),linear-gradient(145deg,#16223D 0%,#0F172A 55%,#080D1A 100%);background-size:100% 100%,100% 100%,256px 256px,100% 100%;background-blend-mode:screen,normal,normal,normal;color:#FAF8F5}
+/* ---- la barra dell'ora: cristallo avorio, il logo a sinistra, data e ora a destra (lontane dai capelli), i numeri in
+   Playfair come un quadrante d'orologio; Sofia scende di 14 px cosi' i capelli sfiorano il filo d'oro senza entrare
+   sotto le scritte ---- */
+body.premium .barra-ora{display:grid;grid-template-columns:minmax(0,1fr) auto auto 40px;align-items:center;gap:12px;padding:env(safe-area-inset-top,0px) 12px 0 14px;min-height:calc(56px + env(safe-area-inset-top,0px));background:rgba(250,248,245,.90);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-bottom:1px solid rgba(212,175,106,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 6px 18px -10px rgba(15,23,42,.12)}
+body.premium .bo-marca{display:block;min-width:0;line-height:1}
+body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{display:inline;font:700 12.5px/1.15 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:#9A7432;white-space:nowrap}
+body.premium .bo-marca b.bo-m2{margin-left:.35em}
+body.premium .bo-marca small{display:none}
+body.premium .bo-marca::after{content:"";display:block;width:36px;height:1.5px;margin-top:5px;background:linear-gradient(90deg,#9A7432,transparent)}
+body.premium .bo-data{order:2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin:0;font:700 11px/1.1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:rgba(15,23,42,.75)}
+body.premium .bo-data .bo-g{font:inherit;color:#9A7432}
+body.premium .bo-ora{order:3;font:600 28px/1 var(--f-titoli);font-variant-numeric:lining-nums tabular-nums;letter-spacing:-.02em;color:#0F172A;text-shadow:0 1px 0 #FFFFFF}
+body.premium .bo-ora i{font-style:normal;color:#9A7432;margin:0 1px;position:relative;top:-2px}
+body.premium .bo-menu{order:4;position:static;width:40px;height:40px;margin:0;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(243,238,228,.85) 100%);border:1px solid rgba(154,116,50,.35);border-bottom:2px solid rgba(154,116,50,.5);box-shadow:inset 0 1px 0 #FFFFFF,0 2px 5px rgba(15,23,42,.08);color:#9A7432;font-size:20px;line-height:1}
+@media (max-width:370px){body.premium .bo-marca b{font-size:11px;letter-spacing:.1em}body.premium .bo-ora{font-size:25px}body.premium .barra-ora{gap:8px}}
+body.premium.senza-orologio .barra-ora{grid-template-columns:minmax(0,1fr) 40px}
+body.premium .sofia-hero .casa-card.tre{--tre-alza:calc(-4% + 20px)}
+/* la striscia dei giorni: cristallo come la barra; il giorno scelto in marmo */
+body.premium.con-ora header{background:rgba(250,248,245,.84);-webkit-backdrop-filter:blur(12px) saturate(1.3);backdrop-filter:blur(12px) saturate(1.3);border-bottom:1px solid rgba(212,175,106,.32);box-shadow:0 8px 16px -8px rgba(15,23,42,.10)}
+body.premium .day{background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(243,238,228,.88) 100%);border:1px solid rgba(154,116,50,.28);border-bottom:2px solid rgba(154,116,50,.42);box-shadow:inset 0 1px 0 #FFFFFF,0 2px 5px rgba(15,23,42,.06)}
+body.premium .day[aria-pressed="true"]{background-color:#0F172A;background-image:radial-gradient(120% 90% at 15% 0%,rgba(212,175,106,.18) 0%,transparent 55%),linear-gradient(180deg,rgba(15,23,42,.25) 0%,rgba(9,14,26,.7) 100%),url(marmo-blu.webp),linear-gradient(145deg,#16223D 0%,#0F172A 55%,#080D1A 100%);background-size:100% 100%,100% 100%,180px 180px,100% 100%;background-blend-mode:screen,normal,normal,normal;border:1px solid #D4AF6A;border-bottom:2px solid #060913;box-shadow:inset 0 1px 0 rgba(255,240,200,.35),0 6px 14px rgba(15,23,42,.25);color:#FAF8F5;--tx:#FAF8F5}
+/* ---- LE NOTIZIE sopra Sofia: cristallo piu' limpido; la linguetta scelta e il consiglio in vetro zaffiro (si vede la
+   giacca di Sofia dietro); le righe in vetro bianco ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(165deg,rgba(255,255,255,.46) 0%,rgba(250,248,245,.26) 100%);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(212,175,106,.55);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.85),0 14px 30px rgba(15,23,42,.12)}
+body.premium .casa-schede{background:rgba(255,255,255,.14);border-color:rgba(212,175,106,.35)}
+body.premium .cs-tab{background:rgba(255,255,255,.34)}
+body.premium .cs-tab[aria-selected="true"]{background:linear-gradient(135deg,rgba(15,23,42,.66) 0%,rgba(22,34,61,.50) 100%);-webkit-backdrop-filter:blur(10px) saturate(180%);backdrop-filter:blur(10px) saturate(180%);border:1.2px solid #D4AF6A;box-shadow:inset 0 1px 1px rgba(255,255,255,.35),0 4px 12px rgba(15,23,42,.22);color:#FAF8F5;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+body.premium .casa-nuvola .casa-spinta{background:linear-gradient(90deg,rgba(15,23,42,.66) 0%,rgba(18,28,52,.52) 100%);-webkit-backdrop-filter:blur(12px) saturate(170%);backdrop-filter:blur(12px) saturate(170%);border:1px solid rgba(212,175,106,.65);box-shadow:inset 0 1px 1px rgba(212,175,106,.35),0 -6px 14px rgba(247,244,238,.35);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+body.premium .cr-riga{background:rgba(255,255,255,.56);border:1px solid rgba(154,116,50,.28);border-left:3px solid #9A7432;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(15,23,42,.05)}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-sal,body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-riga{background:rgba(255,255,255,.62)}
+/* ---- SOTTO SOFIA: lo sfondo non e' piu' avorio piatto ma marmo Calacatta con tre globi di luce FERMI (cosi' i vetri che
+   scorrono sopra lo sfocano davvero) ---- */
+body.premium main{background:transparent}
+body.premium{background-color:#FAF8F5;background-image:radial-gradient(circle 220px at 85% 280px,rgba(212,175,106,.26) 0%,transparent 70%),radial-gradient(circle 260px at 12% 540px,rgba(15,23,42,.08) 0%,transparent 70%),radial-gradient(circle 200px at 75% 780px,rgba(154,116,50,.20) 0%,transparent 70%),url(marmo-avorio.webp);background-size:100% 100%,100% 100%,100% 100%,360px 360px;background-attachment:fixed,fixed,fixed,fixed}
+/* il vetro chiaro a 4 ombre (avviso, fisarmoniche, schede dei lavori) e il marmo 3D (cruscotto) */
+.o13-avv,.o13-acc,.m13-riga{background:linear-gradient(160deg,rgba(255,255,255,.64) 0%,rgba(250,248,245,.45) 100%);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(212,175,106,.48);border-radius:22px;box-shadow:inset 0 2px 1px 0 rgba(255,255,255,.95),inset 0 -2px 2px 0 rgba(154,116,50,.18),0 3px 6px -1px rgba(15,23,42,.08),0 14px 28px -6px rgba(15,23,42,.14),0 6px 16px -2px rgba(154,116,50,.12)}
+.o13-acc.aperta{border-color:rgba(212,175,106,.75);box-shadow:inset 0 2px 1px 0 rgba(255,255,255,.95),inset 0 -2px 2px 0 rgba(154,116,50,.18),0 3px 6px -1px rgba(15,23,42,.08),0 18px 34px -6px rgba(15,23,42,.18),0 6px 16px -2px rgba(154,116,50,.14)}
+/* 1 · l'avviso: targa in cristallo con la barra d'oro a sinistra e il testo in un riquadro incassato */
+.o13-avv{position:relative;overflow:hidden;padding:12px 14px 12px 18px}
+.o13-avv::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#D4AF6A,#9A7432)}
+.o13-avv.vuoto{border-style:solid}
+.o13-avv-corpo{margin-top:2px;padding:10px 12px;border-radius:12px;background:rgba(250,248,245,.55);box-shadow:inset 0 1px 3px rgba(15,23,42,.06)}
+.o13-avv-testo{font:600 18.5px/1.38 var(--f-lettura)}
+.o13-avv-ico{background:rgba(255,255,255,.7);box-shadow:inset 0 1px 0 #FFFFFF}
+.o13-detta{background:radial-gradient(circle at 30% 25%,#22304D 0%,#0F172A 100%);border:1px solid #D4AF6A;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -2px 3px rgba(0,0,0,.45),0 3px 8px rgba(15,23,42,.22)}
+.o13-detta:active,.o13-mfis-mic:active{transform:translateY(1px);box-shadow:inset 0 2px 4px rgba(0,0,0,.45)}
+/* 2 · il cruscotto: monolite di marmo blu notte traslucido */
+.o13-cr{background-color:rgba(15,23,42,.78);background-image:radial-gradient(120% 90% at 15% 0%,rgba(212,175,106,.16) 0%,transparent 55%),linear-gradient(145deg,rgba(15,23,42,.62) 0%,rgba(9,14,26,.74) 100%),url(marmo-blu.webp);background-size:100% 100%,100% 100%,256px 256px;background-blend-mode:screen,normal,normal;-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border:1.2px solid #D4AF6A;border-radius:24px;box-shadow:inset 0 1.5px 1px 0 rgba(255,240,200,.45),inset 0 -3px 4px 0 rgba(0,0,0,.65),0 16px 32px -6px rgba(15,23,42,.42),0 4px 10px 0 rgba(15,23,42,.25),0 0 0 1px rgba(212,175,106,.20)}
+.o13-cr-sopra{padding:14px 16px 13px}
+.o13-cr-tit{font:700 15px/1.2 var(--f-ui);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.o13-cr-num{font:600 36px/1 var(--f-titoli);background:linear-gradient(180deg,#FFF6D6 0%,#F0D27A 45%,#C9A35C 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
+.o13-cr-num em{font-size:17px;color:#D4AF6A;-webkit-text-fill-color:#D4AF6A;margin:0 5px}
+.o13-cr-num.nessuna{font-size:20px}
+.o13-cr-barra{height:10px;margin:2px 0 9px;background:rgba(0,0,0,.45);border:1px solid rgba(212,175,106,.3);border-radius:99px;box-shadow:inset 0 2px 4px rgba(0,0,0,.8)}
+.o13-cr-barra i{background:linear-gradient(90deg,#9A7432 0%,#D4AF6A 55%,#FFF2B2 100%);box-shadow:0 0 8px rgba(243,227,184,.45)}
+.o13-cr-leg{color:#D6DCE6;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.o13-cr-guasti{background:rgba(255,255,255,.08);border-top:1px solid rgba(212,175,106,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.o13-cr-guasti.ok{background:rgba(52,211,153,.07)}
+.o13-cr-gico{background:rgba(212,175,106,.18);border-color:rgba(212,175,106,.6);color:#F3D68E;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.o13-cr-gico .ico2 .acc{stroke:#F3D68E;fill:rgba(243,214,142,.25)}
+.o13-cr-gt{text-shadow:0 1px 2px rgba(0,0,0,.4)}
+/* 3 · le fisarmoniche: moneta d'oro, cerchietto 3D, filetto d'oro sotto la testata aperta, righe scolpite */
+.o13-acc-testa,.o13-acc.aperta .o13-acc-testa{background:transparent}
+.o13-acc.aperta .o13-acc-testa{background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(250,248,245,.88) 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(212,175,106,.35);box-shadow:0 10px 12px -12px rgba(15,23,42,.25)}
+.o13-acc.aperta .o13-acc-dentro{padding-top:12px}
+.o13-mono{width:46px;height:46px;background:radial-gradient(circle at 30% 30%,#FFFDF7 0%,#E6D2AC 60%,#C5A059 100%);border:1.5px solid #D4AF6A;box-shadow:inset 0 2px 2px #FFFFFF,inset 0 -2px 3px rgba(154,116,50,.35),0 4px 8px rgba(154,116,50,.25);color:#6B4F1D;font:700 21px/1 var(--f-titoli)}
+.o13-giu{background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(243,238,228,.88) 100%);border:1px solid rgba(154,116,50,.35);border-bottom:2px solid rgba(154,116,50,.5);box-shadow:inset 0 1px 0 #FFFFFF,0 2px 5px rgba(15,23,42,.08)}
+.o13-acc.aperta .o13-giu{background:radial-gradient(circle at 30% 25%,#22304D 0%,#0F172A 100%);border:1px solid #D4AF6A;border-bottom:2px solid #060913;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 8px rgba(15,23,42,.25);color:#F3E3B8}
+.o13-pill span{background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(243,238,228,.85) 100%);border:1px solid rgba(154,116,50,.35);border-bottom:2px solid rgba(154,116,50,.5);box-shadow:inset 0 1px 0 #FFFFFF,0 2px 5px rgba(15,23,42,.08)}
+.o13-pill span.done{background:linear-gradient(180deg,#F2FDF6 0%,#DDF5E6 100%);border-color:rgba(16,185,129,.4);border-bottom-color:rgba(16,185,129,.55)}
+.o13-riga{background:rgba(255,255,255,.68);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(154,116,50,.30);border-bottom:3px solid rgba(154,116,50,.45);border-radius:16px;box-shadow:inset 0 1.5px 0 0 #FFFFFF,0 4px 10px -2px rgba(15,23,42,.07);transition:transform .12s cubic-bezier(.2,0,0,1),box-shadow .12s ease}
+.o13-riga::before{width:4px;background:linear-gradient(180deg,#F0D27A,#D4AF6A)}
+.o13-riga.wip::before{background:linear-gradient(180deg,#F59E0B,#D97706)}
+.o13-riga.done::before{background:linear-gradient(180deg,#34D399,#10B981)}
+.o13-riga.done{background:rgba(240,253,246,.72)}
+.o13-riga.warn::before{background:linear-gradient(180deg,#F87171,#B91C1C)}
+.o13-riga:active,.o13-pill span:active,.o13-giu:active{transform:translateY(2px);border-bottom-width:1px;box-shadow:inset 0 2px 4px rgba(15,23,42,.2),0 1px 2px rgba(15,23,42,.1)}
+.o13-st{background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(250,243,227,.9) 100%);border:1px solid #DEC89A;border-bottom:2px solid rgba(154,116,50,.5);box-shadow:inset 0 1px 0 #FFFFFF,0 2px 4px rgba(15,23,42,.08)}
+.o13-st.done{background:linear-gradient(180deg,#F2FDF6 0%,#DDF5E6 100%)}
+.o13-st.wip{background:linear-gradient(180deg,#FFF7E0 0%,#FDEBC0 100%)}
+.o13-sett{background:rgba(250,245,232,.7);border-top:1px solid rgba(212,175,106,.35)}
+/* 4 · i tasti: lingotto d'oro e cristallo, con lo spessore sotto; premuti affondano di 2 px */
+.o13-extra{background:linear-gradient(180deg,#D4AF6A 0%,#9A7432 90%,#7D5C22 100%);border:1px solid #E5C888;border-bottom:3.5px solid #634716;border-radius:16px;box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 18px -4px rgba(154,116,50,.45),0 2px 4px rgba(15,23,42,.2);transition:all .1s ease}
+.o13-wa{background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(243,238,228,.9) 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(154,116,50,.4);border-bottom:3px solid rgba(154,116,50,.55);border-radius:16px;box-shadow:inset 0 1.5px 0 #FFFFFF,0 6px 14px -4px rgba(15,23,42,.12);transition:all .1s ease}
+.o13-tasto:active{transform:translateY(2px);border-bottom-width:1px;box-shadow:inset 0 2px 4px rgba(15,23,42,.2),0 1px 2px rgba(15,23,42,.1)}
+/* 5 · la pagina Lavori: schede in cristallo con la barra d'oro; «Risolto» in marmo blu notte con lo spessore */
+.m13-riga{padding:12px 12px 12px 18px;border-radius:18px}
+.m13-riga::before{background:linear-gradient(180deg,#D4AF6A,#9A7432)}
+.m13-riga.fatto::before{background:linear-gradient(180deg,#34D399,#10B981)}
+.m13-ok{background-color:#0F172A;background-image:radial-gradient(120% 90% at 15% 0%,rgba(212,175,106,.18) 0%,transparent 55%),linear-gradient(180deg,rgba(15,23,42,.25) 0%,rgba(9,14,26,.7) 100%),url(marmo-blu.webp),linear-gradient(145deg,#16223D 0%,#0F172A 55%,#080D1A 100%);background-size:100% 100%,100% 100%,160px 160px,100% 100%;background-blend-mode:screen,normal,normal,normal;border:1px solid #D4AF6A;border-bottom:3px solid #060913;box-shadow:inset 0 1px 0 rgba(255,240,200,.35),0 6px 14px rgba(15,23,42,.28);transition:all .1s ease}
+.m13-ok:active{transform:translateY(2px);border-bottom-width:1px;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}
+.o13-lico{background:rgba(255,255,255,.72);box-shadow:inset 0 1px 0 #FFFFFF}
+.o13-lav-piu{background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,#FDEBC0 100%);border-bottom:2px solid #D97706;box-shadow:inset 0 1px 0 #FFFFFF,0 2px 5px rgba(15,23,42,.08)}
+/* 6 · la barra in basso: cristallo avorio; al centro il GIOIELLO di Sofia: disco di marmo blu notte con la doppia
+   ghiera d'oro, la stella d'oro zecchino a quattro punte che gira (10 s, con un respiro a ogni quarto) e cinque
+   granelli di polvere d'oro che nascono vicino alle punte, salgono di pochi pixel e svaniscono ---- */
+body.premium .barra-sotto{background:rgba(250,248,245,.80);-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);border-top:1px solid rgba(212,175,106,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 -8px 24px rgba(15,23,42,.08)}
+.bs-gioiello{position:relative;display:grid;place-items:center;width:64px;height:64px;margin-top:-26px;border-radius:50%;background-color:#0F172A;background-image:radial-gradient(120% 90% at 15% 0%,rgba(212,175,106,.18) 0%,transparent 55%),linear-gradient(180deg,rgba(15,23,42,.2) 0%,rgba(9,14,26,.6) 100%),url(marmo-blu.webp),linear-gradient(145deg,#16223D 0%,#0F172A 55%,#080D1A 100%);background-size:100% 100%,100% 100%,170px 170px,100% 100%;background-position:center;background-blend-mode:screen,normal,normal,normal;border:2.5px solid #D4AF6A;box-shadow:0 0 0 3px #FAF8F5,0 8px 20px rgba(15,23,42,.38),inset 0 2px 4px rgba(255,235,180,.45),inset 0 -3px 6px rgba(0,0,0,.7);overflow:visible}
+.bs-sofia[aria-pressed="true"] .bs-gioiello{box-shadow:0 0 0 3px #FAF8F5,0 0 0 4.5px #D4AF6A,0 8px 20px rgba(15,23,42,.42),inset 0 2px 4px rgba(255,235,180,.45),inset 0 -3px 6px rgba(0,0,0,.7)}
+.bs-gioiello svg{width:56px;height:56px;overflow:visible}
+.bs-gioiello .st-gira{transform-origin:32px 32px;animation:st-gioiello 10s cubic-bezier(.45,.05,.55,.95) infinite}
+@keyframes st-gioiello{0%{transform:rotate(0deg) scale(1)}20%{transform:rotate(90deg) scale(1.06)}25%{transform:rotate(90deg) scale(1)}100%{transform:rotate(360deg) scale(1)}}
+.bs-gioiello .st-polvere circle{opacity:0;transform-box:fill-box;transform-origin:center;animation:st-soffio 4.5s ease-out infinite}
+.bs-gioiello .st-polvere .p1{animation-delay:.2s;--dx:-5px;--dy:-7px}
+.bs-gioiello .st-polvere .p2{animation-delay:1.4s;--dx:6px;--dy:-6px}
+.bs-gioiello .st-polvere .p3{animation-delay:2.3s;--dx:5px;--dy:6px}
+.bs-gioiello .st-polvere .p4{animation-delay:3.1s;--dx:-6px;--dy:5px}
+.bs-gioiello .st-polvere .p5{animation-delay:3.9s;--dx:0px;--dy:-8px}
+@keyframes st-soffio{0%,15%{opacity:0;transform:translate(0,0) scale(.3)}35%{opacity:.9;transform:translate(calc(var(--dx) * .5),calc(var(--dy) * .5)) scale(1.1)}70%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}100%{opacity:0}}
+body.premium .bs-sofia .bs-gioiello .nav-conta{position:absolute;top:-4px;right:-6px;min-width:24px;height:22px;padding:0 6px;border-radius:999px;background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);border:1.5px solid #D4AF6A;color:#FAF8F5;font:800 11.5px/19px var(--f-ui);font-style:normal;box-shadow:0 3px 6px rgba(15,23,42,.35)}
+body.premium .bs-sofia .bs-n{display:block;height:auto;color:#64748B}
+body.premium .bs-sofia[aria-pressed="true"] .bs-n{color:#0F172A}
+@media (prefers-reduced-motion:reduce){.bs-gioiello .st-gira,.bs-gioiello .st-polvere circle{animation:none!important}.bs-gioiello .st-polvere .p1,.bs-gioiello .st-polvere .p3{opacity:.65}}
+/* tema scuro */
+:root[data-theme="dark"] body.premium{background-color:#141210;background-image:radial-gradient(circle 220px at 85% 280px,rgba(212,175,106,.12) 0%,transparent 70%),radial-gradient(circle 200px at 75% 780px,rgba(154,116,50,.10) 0%,transparent 70%),url(marmo-blu.webp)}
+:root[data-theme="dark"] .o13-avv,:root[data-theme="dark"] .o13-acc,:root[data-theme="dark"] .m13-riga{background:linear-gradient(160deg,rgba(40,36,30,.72) 0%,rgba(28,25,21,.62) 100%);border-color:rgba(212,175,106,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 28px -6px rgba(0,0,0,.4)}
+:root[data-theme="dark"] .o13-avv-corpo{background:rgba(20,18,16,.45)}
+:root[data-theme="dark"] .o13-acc.aperta .o13-acc-testa{background:rgba(30,27,24,.92)}
+:root[data-theme="dark"] .o13-riga{background:rgba(36,32,26,.75);border-color:rgba(212,175,106,.25);border-bottom-color:rgba(212,175,106,.4)}
+:root[data-theme="dark"] .o13-riga.done{background:rgba(26,38,32,.75)}
+:root[data-theme="dark"] .o13-pill span,:root[data-theme="dark"] .o13-st,:root[data-theme="dark"] .o13-giu,:root[data-theme="dark"] .o13-wa,:root[data-theme="dark"] body.premium .day,:root[data-theme="dark"] body.premium .bo-menu{background:linear-gradient(180deg,rgba(48,43,36,.95) 0%,rgba(34,30,25,.9) 100%);border-color:rgba(212,175,106,.3);border-bottom-color:rgba(212,175,106,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);color:#E7E1D6}
+:root[data-theme="dark"] body.premium .barra-ora,:root[data-theme="dark"] body.premium.con-ora header,:root[data-theme="dark"] body.premium .barra-sotto{background:rgba(20,18,16,.86)}
+:root[data-theme="dark"] body.premium .bo-ora{color:#F5F1EA;text-shadow:none}
+:root[data-theme="dark"] body.premium .bo-data{color:rgba(245,241,234,.75)}
+:root[data-theme="dark"] .bs-gioiello{box-shadow:0 0 0 3px #1E1B18,0 8px 20px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,235,180,.35),inset 0 -3px 6px rgba(0,0,0,.7)}
+:root[data-theme="dark"] .o13-sett{background:rgba(40,36,30,.7)}
+/* le righe delle Notizie sfumano PRIMA di passare sotto il consiglio (che ora e' trasparente): niente scritte che si
+   sovrappongono; il consiglio resta intero */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-testo{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - var(--sp,41px) - 30px),transparent calc(100% - var(--sp,41px) - 4px),transparent calc(100% - var(--sp,41px)),#000 calc(100% - var(--sp,41px)));mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - var(--sp,41px) - 30px),transparent calc(100% - var(--sp,41px) - 4px),transparent calc(100% - var(--sp,41px)),#000 calc(100% - var(--sp,41px)))}
+body.premium .casa-nuvola .casa-righe{padding-bottom:24px;margin-bottom:0}
+/* il consiglio di Sofia sta FUORI dalla parte che scorre (figlio del riquadro, dopo le notizie): le righe non gli
+   passano piu' sotto, cosi' puo' essere di vetro zaffiro davvero; nella chat non c'e' */
+body.premium .casa-nuvola>.casa-spinta{position:relative;order:5;flex:0 0 auto;margin:8px 0 0;z-index:2}
+body.premium .sofia-hero.nuvola-aperta .casa-nuvola>.casa-spinta,body.premium .sofia-hero.nuvola-aperta:not(.msg-aperto) .casa-nuvola>.casa-spinta{display:none}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-testo,body.premium .sofia-hero.msg-aperto:not(.nuvola-aperta) .casa-nuvola .casa-testo{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 18px),transparent 100%)}
+body.premium .casa-nuvola .casa-righe{padding-bottom:10px}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-righe{margin-bottom:10px}
+body.premium .casa-nuvola .casa-spinta{display:block;-webkit-line-clamp:unset;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-spinta{white-space:normal}
+/* la testata della signora aperta: quasi piena (le righe che le passano sotto non si leggono attraverso) */
+.o13-acc.aperta .o13-acc-testa{background:linear-gradient(180deg,rgba(255,255,255,.97) 0%,rgba(250,248,245,.95) 100%)}
+body.premium .casa-nuvola>.casa-spinta{position:relative;bottom:auto;box-shadow:inset 0 1px 1px rgba(212,175,106,.35),0 4px 12px rgba(15,23,42,.18)}
+/* la scheda Sofia: l'altezza segue la barra in basso misurata (col gioiello la barra e' un po' piu' alta) */
+body.premium .sofia-vista{height:calc(100dvh - var(--alto-ora,56px) - var(--alto-sotto,71px) - env(safe-area-inset-bottom,0px))}

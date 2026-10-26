@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.3.0";
+export const VERSIONE = "1.4.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -229,17 +229,19 @@ function orologioGira() {
   if (document.hidden) return;
   const d = new Date();
   const ora = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-  const o = bo.querySelector(".bo-ora"); if (o && o.textContent !== ora) o.textContent = ora;
+  // 1.4.0 (Gemini): nello stile Premium i due punti sono d'oro (un <i>), i numeri in Playfair come un quadrante
+  const o = bo.querySelector(".bo-ora"); if (o && o.textContent !== ora) { if (premiumVisto()) { o.textContent = ""; o.append(ora.slice(0, 2)); const pp = document.createElement("i"); pp.textContent = ":"; o.append(pp, ora.slice(3)); } else o.textContent = ora; }
   const k = d.toDateString();
   if (bo.dataset.giorno !== k) {
     bo.dataset.giorno = k;
     const g = bo.querySelector(".bo-g"), dd = bo.querySelector(".bo-d");
-    if (g) g.textContent = d.toLocaleDateString("it-IT", { weekday: "long" });
-    if (dd) dd.textContent = d.toLocaleDateString("it-IT", { day: "numeric", month: "long" });
+    const corta = premiumVisto();
+    if (g) g.textContent = d.toLocaleDateString("it-IT", { weekday: corta ? "short" : "long" }).replace(/\.$/, "");
+    if (dd) dd.textContent = d.toLocaleDateString("it-IT", { day: "numeric", month: corta ? "short" : "long" }).replace(/\.$/, "");
   }
   bo.setAttribute("aria-label", "Sono le " + d.getHours() + " e " + String(d.getMinutes()).padStart(2, "0") + ", " + d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" }));
 }
-function orologioAvvia() { if (!barraOra()) return; orologioGira(); if (!orologioTimer) orologioTimer = setInterval(orologioGira, 1000); }
+function orologioAvvia() { const bo = barraOra(); if (!bo) return; const st = premiumVisto() ? "p" : "n"; if (bo.dataset.stile !== st) { bo.dataset.stile = st; delete bo.dataset.giorno; const o = bo.querySelector(".bo-ora"); if (o) o.textContent = ""; } orologioGira(); if (!orologioTimer) orologioTimer = setInterval(orologioGira, 1000); }
 try { document.addEventListener("visibilitychange", () => { if (!document.hidden) orologioGira(); }); } catch (e) {}
 // 0.96: i tasti delle sezioni, tondi, VICINO A SOFIA (Michele: "vicino alla governante ci devono essere anche i tasti
 // prospetto e gli altri che ci sono giu'") e in cima a ogni sezione. "Sofia" e' la sezione della governante, a parte.
@@ -290,6 +292,9 @@ function NAV_HTML(v, inCasa) {
 // 0.97 - PREMIUM: i tasti delle sezioni in una barra fissa IN BASSO, sotto il pollice (come le app di lusso), con
 // Sofia al centro (la sua faccia). Negli altri stili restano i tasti tondi vicino a Sofia (0.96).
 const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], ["sofia", "", ""], ["piantine", "Piantine", "mappa"], ["paghe", "Paghe", "euro"]];
+// la stella d'oro zecchino a quattro punte (curva astroidale), sfaccettata, coi raggi piccoli in diagonale e cinque
+// granelli di polvere d'oro (fuori dal gruppo che gira). Disegno nostro.
+const STELLA_ORO = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="oroZ" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF8DC"/><stop offset=".25" stop-color="#F7DC8A"/><stop offset=".5" stop-color="#D4AF6A"/><stop offset=".78" stop-color="#9A7432"/><stop offset="1" stop-color="#FFE599"/></linearGradient><filter id="oroL" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#D4AF6A" flood-opacity=".65"/></filter></defs><g class="st-polvere"><circle class="p1" cx="18" cy="18" r="1.4" fill="#FFF8DC"/><circle class="p2" cx="47" cy="16" r="1.1" fill="#F7DC8A"/><circle class="p3" cx="49" cy="44" r="1.5" fill="#FFF8DC"/><circle class="p4" cx="16" cy="45" r="1" fill="#D4AF6A"/><circle class="p5" cx="32" cy="10" r="1.2" fill="#FFF8DC"/></g><g class="st-gira" filter="url(#oroL)"><path d="M32 20 L34.5 29.5 L44 32 L34.5 34.5 L32 44 L29.5 34.5 L20 32 L29.5 29.5 Z" fill="#9A7432" opacity=".75" transform="rotate(45 32 32)"/><path d="M32 9 C33.8 24.5 39.5 30.2 55 32 C39.5 33.8 33.8 39.5 32 55 C30.2 39.5 24.5 33.8 9 32 C24.5 30.2 30.2 24.5 32 9 Z" fill="url(#oroZ)" stroke="#FFF8DC" stroke-width=".6"/><path d="M32 9 L35 29 L55 32 L32 32 Z" fill="#FFFDF5" opacity=".45"/><path d="M32 55 L29 35 L9 32 L32 32 Z" fill="#5E4314" opacity=".35"/><circle cx="32" cy="32" r="2.2" fill="#FFFFFF"/></g></svg>`;
 function barraSotto() {
   let b = document.getElementById("barraSotto");
   let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && premiumVisto()); } catch (e) {}
@@ -301,7 +306,9 @@ function barraSotto() {
     const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
     // 1.3.0 (Gemini, scelta B di Michele): la sua faccia nel doppio anello blu notte e oro; il numerino delle domande
     // sta accanto al nome, in una pillola piccola: non le copre piu' la faccia
-    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia bs-sofia-b" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-foto"></span><span class="bs-n">${esc(nomeGov())}${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</span></button>`;
+    // 1.4.0 (Michele: "una stella d'oro zecchino che gira su se stessa e butta un po' di polvere di stelle, ma poca"):
+    // via la sua faccia doppione; il disco di marmo blu notte con la doppia ghiera d'oro e la stella che gira
+    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-gioiello">${STELLA_ORO}${conta}</span><span class="bs-n">${esc(nomeGov())}</span></button>`;
     const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
     return `<button type="button" class="bs-t" data-bs="${k}" aria-pressed="${att}"><span class="bs-ico">${ic2 ? ico2(ic2) : NAV_ICO[ic]}</span><span class="bs-n">${esc(n)}</span></button>`;
   }).join("");
@@ -2255,9 +2262,9 @@ function casaOssatura(tre) {
         <div class="casa-righe"></div>
         <b class="casa-sal"></b>
         <p class="casa-riga"></p>
-        <p class="casa-spinta"></p>
         <div class="casa-info"></div>
       </div>
+      <p class="casa-spinta"></p>
       <div class="casa-chat" id="casaChat" aria-live="polite"></div>
       <div class="casa-sotto" id="consSotto"></div>
     </div>
@@ -2516,7 +2523,7 @@ function casaAggiorna(h) {
   if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
   // 1.2.0: l'altezza del consiglio (una riga chiuso, due o tre aperto) serve allo stile per sfumare il testo che gli
   // scorre dietro proprio sopra la barra blu (Gemini: "spuntano mezze lettere sopra il bordo d'oro")
-  if (spinta && !spinta._alto && window.ResizeObserver) { const sc = spinta.parentElement; spinta._alto = new ResizeObserver(() => { try { sc.style.setProperty("--sp", spinta.getBoundingClientRect().height.toFixed(2) + "px"); } catch (e) {} }); spinta._alto.observe(spinta); }
+  // 1.4.0: il consiglio sta FUORI dal riquadro che scorre (niente righe che gli passano sotto: ora e' trasparente)
   if (info) { const hh = voci.join(""); if (info.innerHTML !== hh) info.innerHTML = hh; }
   const mic = q(".casa-t-mic");
   if (mic) mic.setAttribute("aria-label", "Dillo a " + nomeGov());
@@ -3376,6 +3383,7 @@ function sofiaMini() {
   let m = document.getElementById("sofiaMini"), nv = document.getElementById("sofiaMiniNuvola");
   let vuoi = false;
   try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && !S.utente.finta && S.vista !== "sofia" && S.vista !== "governante" && !heroInVista()); } catch (e) {}
+  try { if (vuoi && premiumVisto() && ["oggi", "manutenzione", "signora"].includes(S.vista) && !miniAperto && !micAttivo && !voceInCorso && !["ascolto", "pensa", "parla"].includes(document.body.dataset.cons || "")) vuoi = false; } catch (e) {}
   if (!vuoi) {
     if (m) m.hidden = true; if (nv) nv.hidden = true;
     document.body.classList.remove("con-sofia-mini", "con-sm-nuvola");
