@@ -4800,3 +4800,53 @@ body.premium .casa-lato .casa-ascolta span{font:700 11.5px/1 "Plus Jakarta Sans"
 :root[data-theme="dark"] body.premium .bs-t{color:#A89F91}
 :root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"],:root[data-theme="dark"] body.premium .bs-sofia .bs-n{color:#F3E3B8}
 :root[data-theme="dark"] body.premium .bs-ico .ico2{color:#CFC6B8}
+/* ============================================================================
+   1.6.1 (Michele, 26/10 notte, con la sua foto): "metti questo font, la pietra rossa al posto del diamante, e
+   ricordati che dove si trova Sofia tutti i riquadri devono essere trasparenti". Si torna al cristallo: il riquadro,
+   le righe (coi loro quadratini), le linguette e il consiglio lasciano intravedere Sofia dietro. Il carattere della
+   prima pagina e' Cormorant Garamond dappertutto (linguette e barra comprese), con le cifre "antiche" come in foto;
+   nel saluto il nome e' in corsivo. L'unico corsivo a mano resta il nome in alto.
+   ============================================================================ */
+@font-face{font-family:"Cormorant Garamond";font-style:italic;font-weight:600;font-display:swap;src:url(fonts/cormorant-garamond-latin-600-italic.woff2) format("woff2")}
+/* ---- il riquadro: di nuovo cristallo (si intravede Sofia), una cornice d'oro sola ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(165deg,rgba(255,255,255,.46) 0%,rgba(250,248,245,.26) 100%);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 44px 36px -14px rgba(250,248,245,.45),0 14px 30px rgba(15,23,42,.12)}
+/* le linguette: incasso di cristallo, la scelta blu notte di vetro col filo d'oro; scritte in Cormorant */
+body.premium .casa-schede{background:rgba(255,255,255,.16);border:1px solid rgba(212,175,106,.4)}
+body.premium .cs-tab{font:700 16px/1 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em;color:#1E293B}
+body.premium .cs-tab[aria-selected="true"]{background:linear-gradient(135deg,rgba(15,23,42,.72) 0%,rgba(22,34,61,.56) 100%);-webkit-backdrop-filter:blur(10px) saturate(180%);backdrop-filter:blur(10px) saturate(180%);border:1px solid #D4AF6A;color:#FAF8F5;box-shadow:inset 0 1px 1px rgba(255,255,255,.3),0 3px 8px rgba(15,23,42,.22);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+/* il saluto: «Buonasera, Michele!» col nome in corsivo, come nella foto */
+body.premium .casa-nuvola .casa-ciao{font:600 26px/1.1 "Cormorant Garamond",Georgia,serif;letter-spacing:-.005em;color:#0F172A;text-shadow:0 1px 0 rgba(255,255,255,.9),0 0 10px rgba(247,244,238,.95)}
+body.premium .casa-nuvola .casa-ciao i{font-style:italic;font-weight:600}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:23px}
+body.premium .cs-mini{font:700 14px/24px "Cormorant Garamond",Georgia,serif;background:linear-gradient(180deg,rgba(255,255,255,.7) 0%,rgba(212,175,106,.32) 100%);border-color:rgba(212,175,106,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+body.premium .cs-freccia{background:rgba(212,175,106,.22);border:1px solid rgba(212,175,106,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 5px rgba(15,23,42,.08)}
+/* le righe: cristallo bianco (si intravede dietro), il filo d'oro a sinistra, i quadratini beige delle icone come in foto;
+   Cormorant 600 con le cifre antiche (lo 0 piccolo e il 7 che scende), i numeri in 700 */
+body.premium .cr-riga{min-height:42px;padding:0 10px 0 8px;background:rgba(255,255,255,.56);border:1px solid rgba(154,116,50,.3);border-left:3px solid #9A7432;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(15,23,42,.05);font:600 19.5px/1.1 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;color:#1E293B}
+body.premium .cr-riga::before{display:none}
+body.premium .cr-riga b{font-weight:700;font-size:20px;color:#0F172A}
+body.premium .cr-ico,body.premium .cr-ico.verde,body.premium .cr-ico.arancio,body.premium .cr-ico.blu,body.premium .cr-ico.oro{flex:0 0 32px;width:32px;height:32px;margin-right:10px;border-radius:10px;background:linear-gradient(135deg,rgba(250,245,232,.9) 0%,rgba(239,230,208,.85) 100%);border:1px solid rgba(154,116,50,.35);box-shadow:none;color:#856226}
+body.premium .cr-ico.rosso{flex:0 0 32px;width:32px;height:32px;margin-right:10px;border-radius:10px;background:var(--blu-notte);border:1px solid #D4AF6A;color:#F3E3B8}
+body.premium .cr-ico .ico2{width:21px;height:21px;stroke-width:1.8}
+body.premium .cr-ico .ico2 .acc{fill:rgba(212,175,106,.22);stroke:#856226}
+body.premium .cr-ico.rosso .ico2 .acc{fill:rgba(243,227,184,.25);stroke:#F3E3B8}
+body.premium .cr-va{font:800 21px/1 "Plus Jakarta Sans",system-ui,sans-serif;color:#9A7432}
+/* il consiglio: blu notte di vetro (si intravede dietro) col filo d'oro */
+body.premium .casa-nuvola .casa-spinta,body.premium .casa-nuvola>.casa-spinta{background:linear-gradient(90deg,rgba(15,23,42,.68) 0%,rgba(18,28,52,.54) 100%);-webkit-backdrop-filter:blur(12px) saturate(170%);backdrop-filter:blur(12px) saturate(170%);border:1px solid rgba(212,175,106,.7);box-shadow:inset 0 1px 1px rgba(212,175,106,.35),0 4px 12px rgba(15,23,42,.18);text-shadow:0 1px 2px rgba(0,0,0,.4);font:600 18px/1.2 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums}
+/* ---- la barra: le scritte in Cormorant (come in foto), un filo piu' grandi perche' il carattere e' piccolo di suo ---- */
+body.premium .bs-t{font:700 14.5px/1 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em}
+body.premium .bs-sofia .bs-n{font:700 14.5px/1 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em}
+@media (max-width:375px){body.premium .bs-t,body.premium .bs-sofia .bs-n{font-size:13px}}
+/* ---- la pietra rossa (rubino a taglio brillante) sul disco di marmo blu ---- */
+body.premium .bs-diamante svg{width:44px;height:44px;filter:drop-shadow(0 0 5px rgba(255,90,110,.45))}
+body.premium .bs-sofia[aria-pressed="true"] .bs-diamante svg{filter:drop-shadow(0 0 8px rgba(255,120,140,.75))}
+/* ---- tema scuro ---- */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(20,18,16,.52) 0%,rgba(20,18,16,.74) 100%);border-color:rgba(212,175,106,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 44px 36px -14px rgba(20,18,16,.6),0 12px 32px rgba(0,0,0,.4)}
+:root[data-theme="dark"] body.premium .casa-schede{background:rgba(255,255,255,.06);border-color:rgba(212,175,106,.35)}
+:root[data-theme="dark"] body.premium .cs-tab{color:#CFC6B8}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao{color:#F5F1EA;text-shadow:0 0 10px rgba(14,12,10,.9)}
+:root[data-theme="dark"] body.premium .cr-riga{background:rgba(30,27,24,.6);border-color:rgba(212,175,106,.35);border-left-color:#C5A059;color:#E7E1D6;box-shadow:none}
+:root[data-theme="dark"] body.premium .cr-riga b{color:#FFFFFF}
+:root[data-theme="dark"] body.premium .cr-ico,:root[data-theme="dark"] body.premium .cr-ico.verde,:root[data-theme="dark"] body.premium .cr-ico.arancio,:root[data-theme="dark"] body.premium .cr-ico.blu,:root[data-theme="dark"] body.premium .cr-ico.oro{background:#2A2520;border-color:rgba(212,175,106,.35);color:#E2C27E}
+:root[data-theme="dark"] body.premium .cr-ico .ico2 .acc{fill:rgba(212,175,106,.22);stroke:#E2C27E}
+:root[data-theme="dark"] body.premium .cs-mini{background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(212,175,106,.28) 100%);color:#F5F1EA;box-shadow:none}
