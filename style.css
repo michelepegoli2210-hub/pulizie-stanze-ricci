@@ -4850,3 +4850,31 @@ body.premium .bs-sofia[aria-pressed="true"] .bs-diamante svg{filter:drop-shadow(
 :root[data-theme="dark"] body.premium .cr-ico,:root[data-theme="dark"] body.premium .cr-ico.verde,:root[data-theme="dark"] body.premium .cr-ico.arancio,:root[data-theme="dark"] body.premium .cr-ico.blu,:root[data-theme="dark"] body.premium .cr-ico.oro{background:#2A2520;border-color:rgba(212,175,106,.35);color:#E2C27E}
 :root[data-theme="dark"] body.premium .cr-ico .ico2 .acc{fill:rgba(212,175,106,.22);stroke:#E2C27E}
 :root[data-theme="dark"] body.premium .cs-mini{background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(212,175,106,.28) 100%);color:#F5F1EA;box-shadow:none}
+/* ============================================================================
+   1.6.2 (Michele, 26/10 notte): "togli il rubino e metti la pietra filosofale, e rendi piu' trasparenti quelle
+   sezioni". Il tasto Sofia e' un cristallo grezzo rosso sangue che brilla da dentro; nella prima pagina il riquadro,
+   le righe, le linguette e il consiglio sono ancora piu' di vetro (si vede Sofia dietro); le scritte tengono un velo
+   di luce chiara dietro per restare leggibili sul blu della giacca.
+   ============================================================================ */
+/* la pietra filosofale: piu' grande della pietra di prima, con l'alone rosso che respira piano */
+body.premium .bs-diamante svg{width:48px;height:48px;filter:drop-shadow(0 0 7px rgba(255,70,50,.75));animation:pf-respiro 5s ease-in-out infinite}
+body.premium .bs-sofia[aria-pressed="true"] .bs-diamante svg{filter:drop-shadow(0 0 10px rgba(255,90,70,.95))}
+@keyframes pf-respiro{0%,100%{filter:drop-shadow(0 0 5px rgba(255,70,50,.55))}50%{filter:drop-shadow(0 0 10px rgba(255,80,60,.9))}}
+@media (prefers-reduced-motion:reduce){body.premium .bs-diamante svg{animation:none}}
+body.pagina-nascosta .bs-diamante svg{animation-play-state:paused}
+/* il riquadro: piu' vetro (30 -> 14%), sfocatura piu' leggera */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(165deg,rgba(255,255,255,.30) 0%,rgba(250,248,245,.14) 100%);-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.7),inset 0 44px 36px -14px rgba(250,248,245,.32),0 14px 30px rgba(15,23,42,.12)}
+/* le linguette: l'incasso quasi invisibile, la scelta blu notte piu' di vetro */
+body.premium .casa-schede{background:rgba(255,255,255,.10);border-color:rgba(212,175,106,.4)}
+body.premium .cs-tab[aria-selected="true"]{background:linear-gradient(135deg,rgba(15,23,42,.56) 0%,rgba(22,34,61,.42) 100%)}
+/* il saluto e le righe: vetro piu' chiaro (36%), le scritte con un velo di luce dietro */
+body.premium .casa-nuvola .casa-ciao{text-shadow:0 1px 0 rgba(255,255,255,.9),0 0 10px rgba(255,253,248,1),0 0 4px rgba(255,253,248,1)}
+body.premium .cr-riga{background:rgba(255,255,255,.36);border-color:rgba(154,116,50,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 6px rgba(15,23,42,.05);text-shadow:0 1px 0 rgba(255,255,255,.85),0 0 6px rgba(255,253,248,.9)}
+body.premium .cr-ico,body.premium .cr-ico.verde,body.premium .cr-ico.arancio,body.premium .cr-ico.blu,body.premium .cr-ico.oro{background:linear-gradient(135deg,rgba(250,245,232,.62) 0%,rgba(239,230,208,.55) 100%)}
+body.premium .cs-mini{background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(212,175,106,.26) 100%)}
+/* il consiglio: blu notte di vetro piu' leggero */
+body.premium .casa-nuvola .casa-spinta,body.premium .casa-nuvola>.casa-spinta{background:linear-gradient(90deg,rgba(15,23,42,.52) 0%,rgba(18,28,52,.40) 100%)}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(20,18,16,.36) 0%,rgba(20,18,16,.56) 100%)}
+:root[data-theme="dark"] body.premium .cr-riga{background:rgba(30,27,24,.42);text-shadow:0 1px 2px rgba(0,0,0,.7)}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao{text-shadow:0 0 10px rgba(14,12,10,.9),0 1px 2px rgba(0,0,0,.7)}
