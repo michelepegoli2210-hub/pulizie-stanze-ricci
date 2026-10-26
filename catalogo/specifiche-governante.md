@@ -1871,3 +1871,9 @@ Michele, vista la 1.6.0, manda una foto rielaborata della prima pagina e dice: "
 - Carattere: Cormorant Garamond su tutta la prima pagina, linguette e barra comprese (linguette 700 da 16, saluto 600 da 26 col nome in corsivo «Buonasera, *Michele!*» come in foto, righe 600 da 19,5 coi numeri 700 da 20 e le cifre "antiche" come in foto — lo 0 piccolo, il 7 che scende —, consiglio 600 da 18, etichette della barra 700 da 14,5). Il corsivo 600 di Cormorant torna in `fonts/` solo per il nome nel saluto. Il resto dell'app resta come nella 1.6.0 (Plus Jakarta per le etichette, Cormorant per i titoli).
 - Il tasto Sofia: un rubino a taglio brillante visto dall'alto (disegno nostro, SVG 44 px: tavola ottagonale, 16 faccette rosse alternate chiare e scure, filetti di luce bianchi, alone caldo, una scintilla che respira) sul disco di marmo blu notte con la ghiera d'oro, come nella foto.
 - Prove: le stesse della 1.6.0 (il tasto Sofia è ancora `.bs-diamante` con una scintilla `dm-respiro`).
+
+## 94. La 1.6.2 (26 ottobre, notte): LA PIETRA FILOSOFALE E PIÙ VETRO
+Michele, vista la 1.6.1: "togli il rubino e metti la pietra filosofale, e rendi più trasparenti quelle sezioni".
+- Il tasto Sofia: via il rubino tondo; un cristallo grezzo rosso sangue, allungato e sfaccettato, che brilla dall'interno (disegno nostro, SVG 48 px: sette faccette a ventaglio dal cuore, luce che viene da dentro, riflesso di vetro, profilo chiaro, alone caldo sul marmo, una scintilla che respira). L'alone rosso respira piano (5 s), fermo con «riduci il movimento».
+- Più vetro: il riquadro 30→14% (sfocatura 12), le righe 36%, i quadratini delle icone al 60%, l'incasso delle linguette 10%, la linguetta scelta e il consiglio blu notte più leggeri (56→42% e 52→40%). Per restare leggibili sul blu della giacca, il saluto e le righe hanno un velo di luce chiara dietro le lettere (`text-shadow`).
+- Prove: le stesse della 1.6.1 (pietra da 48 px).
