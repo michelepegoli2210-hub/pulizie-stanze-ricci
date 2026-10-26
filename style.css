@@ -4017,3 +4017,173 @@ body.premium .sofia-vista .casa-graffa{background:rgba(255,255,255,.95);border-c
 body.premium .sofia-vista .casa-manda{background:#C5A059;color:#1C1917}
 body.premium .sofia-vista .casa-sotto.vedi{padding:6px 12px;border-radius:12px;background:rgba(255,255,255,.92);color:#1C1917}
 body.premium .sofia-vista .sv-mic{box-shadow:inset 0 0 0 2px #C5A059,0 4px 14px rgba(0,0,0,.3)}
+
+/* ==========================================================================
+   1.2.0 · LA PRIMA PAGINA "DA UN MILIONE DI DOLLARI" (Gemini 4 Argon, 26/10 10:41 — voto: adesso 7,2, cosi' 9,8)
+   Michele: "anche la sezione Notizie di oggi (linguette, pulizie, lavori da fare, domani...) deve essere trasparente
+   per poter vedere dietro Sofia; e i bordini dorati, la qualita' premium da applicazione da un milione di dollari, il
+   font, l'impaginazione: fatti aiutare da Gemini, come farebbe il miglior web designer del mondo".
+   Gemini: niente "muro bianco": il riquadro delle Notizie e' CRISTALLO caldo (si vede Sofia dietro) con il filetto
+   d'oro; dentro, ogni riga e' una pillola d'avorio quasi piena (contrasto AAA) con l'accento d'oro a sinistra e la
+   freccia a destra; via le iconcine pastello (oro e blu notte); il saluto in Playfair Display (hotel 5 stelle); il
+   consiglio di Sofia in una barra blu notte col filetto d'oro; nella chat il velo BLU NOTTE che lascia luminoso il
+   viso di Sofia e scende scuro solo dal petto in giu'; via le faccine piccole accanto ai fumetti (Sofia e' gia' li'
+   dietro); fumetti d'avorio col bordo d'oro (Sofia) e d'oro champagne (Michele); tre font: Playfair per i titoli,
+   Montserrat per tasti ed etichette, Atkinson Hyperlegible per leggere.
+   ========================================================================== */
+body.premium{--blu-notte:#0F172A;--blu-notte2:#1E293B;--oro-pieno:#9A7432;--oro-ch:#D4AF6A;--oro-luce:#F3E3B8;
+  --f-titoli:"Playfair Display",Georgia,serif;--f-ui:"Montserrat",system-ui,sans-serif;--f-lettura:"Atkinson Hyperlegible Next","Montserrat",system-ui,sans-serif}
+/* la barra dell'ora: cristallo avorio col filo d'oro */
+body.premium .barra-ora{background:rgba(247,244,238,.90);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(154,116,50,.28)}
+body.premium .bo-marca b{font:800 13px/1.15 var(--f-ui);letter-spacing:1.4px;color:#856226}
+body.premium .bo-ora{font:800 28px/1 var(--f-lettura);letter-spacing:-.5px;color:var(--blu-notte)}
+body.premium .bo-data{font:600 13.5px/1.15 var(--f-lettura);color:#475569}
+body.premium .bo-g{color:var(--blu-notte)}
+/* la barra in basso: bianca a cristallo col filo d'oro; il medaglione di Sofia con l'anello d'oro sfumato */
+body.premium .barra-sotto{background:rgba(255,255,255,.95);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1.5px solid rgba(212,175,106,.45);box-shadow:0 -6px 24px rgba(15,23,42,.06)}
+body.premium .bs-sofia .bs-foto{border:2.5px solid transparent;background:url(cons-poster-3d2.webp) 50% 16%/185% auto no-repeat padding-box,linear-gradient(135deg,#E5C888 0%,#9A7432 50%,#F0DCAC 100%) border-box;box-shadow:0 4px 14px rgba(154,116,50,.35)}
+body.premium .bs-sofia[aria-pressed="true"] .bs-foto{box-shadow:0 0 0 2px #FFFFFF,0 0 0 3.5px #D4AF6A,0 4px 14px rgba(154,116,50,.4)}
+/* i tasti accanto a Sofia: il microfono blu notte col doppio anello d'oro; Ascolta e voce in cristallo avorio */
+body.premium .casa-lato-mic{width:58px;height:58px;background:radial-gradient(circle at 30% 30%,#1E293B 0%,#0F172A 100%);border:2px solid #D4AF6A;color:#F3E3B8;box-shadow:0 0 0 3px rgba(212,175,106,.18),0 8px 20px rgba(15,23,42,.28)}
+body.premium .casa-lato .casa-ascolta .cl-tondo,body.premium .casa-lato .casa-tondo{width:44px;height:44px;background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.2px solid rgba(154,116,50,.45);color:#856226;box-shadow:0 4px 12px rgba(15,23,42,.10)}
+body.premium .casa-lato .casa-ascolta svg{width:21px;height:21px}
+body.premium .casa-lato .casa-ascolta{font:700 11px/1 var(--f-ui);letter-spacing:.3px;color:var(--blu-notte)}
+/* LE NOTIZIE: cristallo caldo (si vede Sofia dietro) col filetto d'oro, dal 56% di H (433 px) fin quasi alla barra */
+body.premium .sofia-hero{--nv-top:calc(var(--h-casa) * .56);--nv-alto:calc(var(--h-casa) * .44 - 18px)}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{padding:12px 14px 12px;border-radius:26px;
+  background:linear-gradient(180deg,rgba(255,253,248,.48) 0%,rgba(247,244,238,.68) 100%);-webkit-backdrop-filter:blur(9px) saturate(120%);backdrop-filter:blur(9px) saturate(120%);
+  border:1.5px solid rgba(197,160,89,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 12px 32px rgba(15,23,42,.14)}
+/* le linguette: un "interruttore" di lusso; quella scelta blu notte col filo d'oro */
+body.premium .casa-schede{display:grid;grid-template-columns:1fr 1fr;gap:6px;height:46px;padding:4px;margin:0 0 10px;box-sizing:border-box;background:rgba(15,23,42,.08);border:1px solid rgba(154,116,50,.30);border-radius:16px}
+body.premium .cs-tab{height:auto;border:1px solid transparent;border-radius:12px;background:rgba(255,255,255,.45);color:var(--blu-notte);font:600 15px/1 var(--f-ui);letter-spacing:.2px}
+body.premium .cs-tab[aria-selected="true"]{background:var(--blu-notte);border-color:#D4AF6A;color:#FAF8F5;font-weight:700;box-shadow:0 3px 10px rgba(15,23,42,.22)}
+body.premium .cs-tab .ico-linea{width:19px;height:19px}
+/* dentro: il saluto, le pillole, il consiglio di Sofia, il suo messaggio; si scorre col dito (sfuma in fondo) */
+body.premium .casa-nuvola .casa-testo{display:flex;flex-direction:column;align-items:stretch;gap:0;text-align:left;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent 100%);mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent 100%);padding-bottom:12px}
+body.premium .casa-nuvola .casa-ciao{order:1;margin:2px 0 9px;font:600 21px/1.2 var(--f-titoli);letter-spacing:-.2px;color:var(--blu-notte);text-align:center;text-shadow:0 1px 2px rgba(255,255,255,.9)}
+body.premium .casa-nuvola .casa-righe{order:2;display:grid;gap:6px;margin:0 0 8px}
+body.premium .casa-nuvola .casa-spinta{order:3}
+body.premium .casa-nuvola .casa-sal{order:4}
+body.premium .casa-nuvola .casa-riga{order:5}
+body.premium .casa-nuvola .casa-info{order:6}
+body.premium .cr-riga{min-height:46px;padding:0 12px 0 8px;gap:0;background:rgba(255,253,249,.86);border:1px solid rgba(197,160,89,.45);border-left:3.5px solid #9A7432;border-radius:14px;box-shadow:0 2px 8px rgba(15,23,42,.05);
+  color:var(--blu-notte);font:600 16.5px/1.25 var(--f-lettura);transition:transform .12s ease,background .12s ease}
+body.premium .cr-riga:active{transform:scale(.985);background:rgba(250,245,232,.96)}
+body.premium .cr-riga b{font-weight:800;color:#0F172A}
+body.premium .cr-ico,body.premium .cr-ico.verde,body.premium .cr-ico.arancio,body.premium .cr-ico.blu,body.premium .cr-ico.oro{flex:0 0 32px;width:32px;height:32px;margin-right:10px;border-radius:10px;box-sizing:border-box;background:linear-gradient(135deg,#FAF5E8 0%,#EFE6D0 100%);border:1px solid rgba(154,116,50,.35);color:#856226}
+body.premium .cr-ico.rosso{flex:0 0 32px;width:32px;height:32px;margin-right:10px;border-radius:10px;box-sizing:border-box;background:var(--blu-notte);border:1px solid #D4AF6A;color:#F3E3B8}
+body.premium .cr-t{flex:1 1 auto;min-width:0}
+body.premium .cr-va{flex:0 0 auto;margin-left:8px;font:800 22px/1 var(--f-ui);color:#9A7432}
+/* il consiglio di Sofia: una barra blu notte col filetto d'oro */
+body.premium .casa-nuvola .casa-spinta{display:flex;align-items:flex-start;gap:9px;margin:0 0 8px;padding:10px 12px;border-radius:12px;background:rgba(15,23,42,.88);border:1px solid #D4AF6A;color:#FAF8F5;font:600 16px/1.38 var(--f-lettura)}
+body.premium .casa-nuvola .casa-spinta::before{content:"✦";flex:0 0 auto;color:#D4AF6A;font-size:15px;line-height:1.45}
+/* il messaggio di Sofia: una pillola d'avorio piu' grande (saluto lungo + testo) */
+body.premium .casa-nuvola .casa-sal{margin:0;padding:12px 14px 3px;border:1px solid rgba(197,160,89,.45);border-bottom:0;border-radius:14px 14px 0 0;background:rgba(255,253,249,.86);font:700 16.5px/1.35 var(--f-lettura);color:var(--blu-notte)}
+body.premium .casa-nuvola .casa-riga{margin:0;padding:2px 14px 12px;border:1px solid rgba(197,160,89,.45);border-top:0;border-radius:0 0 14px 14px;background:rgba(255,253,249,.86);font:400 16.5px/1.45 var(--f-lettura);color:var(--blu-notte2)}
+/* LA CHAT APERTA: velo BLU NOTTE graduale (il viso di Sofia resta luminoso), sfocatura leggerissima */
+body.premium .casa-velo{background:linear-gradient(180deg,rgba(15,23,42,.06) 0%,rgba(15,23,42,.38) 32%,rgba(15,23,42,.76) 65%,rgba(15,23,42,.88) 100%)}
+body.premium .sofia-hero.nuvola-aperta .casa-velo{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+body.premium .sofia-hero.nuvola-aperta .casa-schede{background:rgba(15,23,42,.35);border-color:rgba(212,175,106,.45)}
+body.premium .sofia-hero.nuvola-aperta .cs-tab{background:rgba(255,255,255,.12);border-color:transparent;color:#FAF8F5;box-shadow:none}
+body.premium .sofia-hero.nuvola-aperta .cs-tab[aria-selected="true"]{background:#FAF8F5;border-color:#D4AF6A;color:var(--blu-notte);box-shadow:0 3px 10px rgba(0,0,0,.25)}
+/* via le faccine piccole accanto ai fumetti: Sofia e' gia' grande li' dietro (e nella barra in basso) */
+body.premium .casa-chat .sv-foto,body.premium .sofia-vista .sv-chat .sv-foto{display:none}
+body.premium .casa-chat .sv-colonna,body.premium .sofia-vista .sv-chat .sv-colonna{max-width:92%}
+/* i fumetti preziosi: Sofia d'avorio col bordo d'oro a sinistra; Michele d'oro champagne */
+body.premium .casa-chat .cc-lei,body.premium .sofia-vista .sv-chat .cc-lei{background:#FAF8F5;border:1px solid #DFD5C0;border-left:4px solid #9A7432;border-radius:6px 20px 20px 20px;padding:14px 16px;font:400 17px/1.42 var(--f-lettura);color:var(--blu-notte);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+body.premium .casa-chat .cc-lei.cc-pensa,body.premium .sofia-vista .sv-chat .cc-lei.cc-pensa{font-style:italic;color:#475569}
+body.premium .casa-chat .cc-io,body.premium .sofia-vista .sv-chat .cc-io{background:linear-gradient(135deg,#F3E3B8 0%,#E4C887 100%);border:1px solid #C5A059;border-radius:20px 20px 4px 20px;padding:10px 16px;font:600 16.5px/1.4 var(--f-lettura);color:var(--blu-notte);box-shadow:0 6px 18px rgba(0,0,0,.18)}
+body.premium .casa-chat .cc-tasti button,body.premium .sofia-vista .sv-chat .cc-tasti button{border:1px solid #DFD5C0;background:#FAF8F5;color:var(--blu-notte);font:700 15.5px/1 var(--f-ui)}
+body.premium .casa-chat .cc-tasti .cc-si,body.premium .sofia-vista .sv-chat .cc-tasti .cc-si{background:var(--blu-notte);border-color:#D4AF6A;color:#FAF8F5}
+/* la casella per scriverle: bianca col filetto d'oro; manda in oro; il microfono come quello accanto a Sofia */
+body.premium .sofia-hero.nuvola-aperta .casa-scrivi-riga input,body.premium .sofia-vista .sv-scrivi input{height:52px;min-height:52px;background:rgba(255,255,255,.94);border:1.5px solid #D4AF6A;border-radius:26px;padding:0 18px;font:400 16.5px var(--f-lettura);color:var(--blu-notte);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+body.premium .sofia-hero.nuvola-aperta .casa-manda,body.premium .sofia-vista .casa-manda{background:linear-gradient(135deg,#B38B45 0%,#856226 100%);color:#FFFFFF}
+body.premium .casa-f-mic,body.premium .sofia-vista .sv-mic{background:radial-gradient(circle at 30% 30%,#1E293B 0%,#0F172A 100%);color:#F3E3B8;box-shadow:inset 0 0 0 2px #D4AF6A,0 6px 16px rgba(0,0,0,.3)}
+/* la scheda Sofia: lo stesso velo blu notte */
+body.premium .sofia-vista{background:linear-gradient(180deg,rgba(15,23,42,.22) 0%,rgba(15,23,42,.56) 34%,rgba(15,23,42,.80) 100%),url(cons-poster-3d2.webp) 50% 18px/min(118%,480px) auto no-repeat,radial-gradient(ellipse 90% 70% at 16% 14%,#FFFFFF 0%,#FAF7F1 38%,#F3EEE5 72%,#ECE5D9 100%)}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(20,18,16,.52) 0%,rgba(20,18,16,.74) 100%);border-color:rgba(212,175,106,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 32px rgba(0,0,0,.4)}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao{color:#F5F1EA;text-shadow:none}
+:root[data-theme="dark"] body.premium .cr-riga,:root[data-theme="dark"] body.premium .casa-nuvola .casa-sal,:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga{background:rgba(30,27,24,.88);border-color:rgba(212,175,106,.38);color:#E7E1D6}
+:root[data-theme="dark"] body.premium .cr-riga{border-left-color:#C5A059}
+:root[data-theme="dark"] body.premium .cr-riga b,:root[data-theme="dark"] body.premium .casa-nuvola .casa-sal{color:#FFFFFF}
+:root[data-theme="dark"] body.premium .cr-ico{background:#2A2520;border-color:rgba(212,175,106,.35);color:#E2C27E}
+:root[data-theme="dark"] body.premium .casa-schede{background:rgba(255,255,255,.06);border-color:rgba(212,175,106,.35)}
+:root[data-theme="dark"] body.premium .cs-tab{background:rgba(255,255,255,.06);color:#E7E1D6}
+:root[data-theme="dark"] body.premium .cs-tab[aria-selected="true"]{background:#F5F1EA;color:#0F172A}
+/* ritocchi dopo la prima foto: Sofia piu' riconoscibile dietro il cristallo (sfocatura 5 px); il saluto con un alone
+   avorio (si legge anche sopra la giacca blu); le notizie sfumano anche in alto sotto le linguette; nella chat il viso
+   di Sofia resta NITIDO (niente sfocatura sul velo, basta il blu notte) */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(255,253,248,.40) 0%,rgba(247,244,238,.64) 100%);-webkit-backdrop-filter:blur(5px) saturate(120%);backdrop-filter:blur(5px) saturate(120%)}
+body.premium .casa-nuvola .casa-ciao{text-shadow:0 0 10px rgba(255,253,248,.98),0 0 4px rgba(255,253,248,.98),0 1px 2px rgba(255,255,255,.9)}
+body.premium .casa-nuvola .casa-testo{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 16px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 16px),transparent 100%);padding-top:4px}
+body.premium .sofia-hero.nuvola-aperta .casa-velo{-webkit-backdrop-filter:none;backdrop-filter:none}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao{text-shadow:0 0 10px rgba(14,12,10,.9)}
+/* ---- secondo giro di Gemini (26/10 10:51 — voto 8,7, dopo questi ritocchi 9,9) ---- */
+/* 1) Notizie: il consiglio di Sofia si vede SUBITO, senza scorrere: righe piu' basse (42 px), saluto 20 px, riquadro
+   dal 424 px; il consiglio resta attaccato in fondo al riquadro anche quando le righe sono tante (si scorrono dietro);
+   il messaggio lungo (un doppione delle righe) si apre solo toccando il consiglio */
+body.premium .sofia-hero{--nv-top:calc(var(--h-casa) * .547);--nv-alto:calc(var(--h-casa) * .453 - 17px)}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{padding:10px 12px 10px}
+body.premium .casa-schede{margin-bottom:8px}
+body.premium .casa-nuvola .casa-ciao{margin:0 0 7px;font-size:20px;text-shadow:0 0 10px rgba(247,244,238,.98),0 1px 2px rgba(255,255,255,1)}
+body.premium .casa-nuvola .casa-righe{gap:6px;margin-bottom:6px}
+body.premium .cr-riga{min-height:42px;padding:0 14px 0 6px;border:1px solid rgba(197,160,89,.55);border-left:3px solid #9A7432;border-radius:14px}
+body.premium .casa-nuvola .casa-testo{padding-bottom:0;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 100%)}
+body.premium .casa-nuvola .casa-spinta{position:sticky;bottom:0;z-index:2;min-height:40px;margin:0;padding:9px 34px 9px 12px;background:linear-gradient(90deg,#0F172A 0%,#1E293B 100%);border:1.2px solid #D4AF6A;border-radius:12px;font:600 16px/1.32 var(--f-lettura);cursor:pointer;box-shadow:0 -6px 14px rgba(247,244,238,.65)}
+body.premium .casa-nuvola .casa-spinta::after{content:"▾";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#D4AF6A;font-size:14px;transition:transform .2s ease}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-spinta::after{transform:translateY(-50%) rotate(180deg)}
+body.premium .casa-nuvola .casa-sal,body.premium .casa-nuvola .casa-riga{display:none}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-sal{display:block;order:2;margin-top:2px}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-riga{display:block;order:2;margin-bottom:8px}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-righe{order:3}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-spinta{order:4}
+/* 2) chat: il velo e' TRASPARENTE fino al mento (viso e sfondo avorio luminosi), poi scende blu notte */
+body.premium .casa-velo{background:linear-gradient(180deg,rgba(15,23,42,0) 0%,rgba(15,23,42,0) 32%,rgba(15,23,42,.55) 46%,rgba(15,23,42,.85) 70%,rgba(15,23,42,.94) 100%)}
+/* 4) la chat comincia 8 px sotto le linguette; i fumetti sfumano in trasparenza (niente striscia scura sopra) */
+body.premium .nuvola-aperta .casa-nuvola .casa-chat{margin-top:8px;padding-top:14px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22px,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 22px,#000 100%)}
+/* 3) scheda Sofia: le due tessere in alto basse (56 px, icona a sinistra, numerino a destra): la faccia di Sofia si
+   vede tutta dietro; il riquadro va da bordo a bordo (niente "finestra dentro la finestra") */
+body.premium .sofia-vista{margin-left:-12px;margin-right:-12px;width:calc(100% + 24px);max-width:none;border-radius:0}
+body.premium .sofia-vista .sv-tessere{gap:8px}
+body.premium .sofia-vista .sv-tessera{flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;height:56px;min-height:0;padding:0 12px;text-align:left;background:#FAF8F5;border:1.5px solid #D4AF6A;border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+body.premium .sofia-vista .sv-tessera>span:not(.sv-t-ico){display:none}
+body.premium .sofia-vista .sv-tessera b{font:700 14.5px/1.15 var(--f-ui);color:var(--blu-notte)}
+body.premium .sofia-vista .sv-t-ico{flex:0 0 auto;width:32px;height:32px;font-size:16px}
+body.premium .sofia-vista .sv-tessera .nav-conta{position:static;margin-left:auto}
+/* le parti delle notizie non si schiacciano (prima il consiglio veniva tagliato): si scorre il riquadro */
+body.premium .casa-nuvola .casa-testo>*{flex-shrink:0}
+/* il consiglio al massimo su due righe (intero quando si apre il messaggio) */
+body.premium .casa-nuvola .casa-spinta{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+body.premium .casa-nuvola .casa-spinta::before{position:absolute;left:12px;top:9px}
+body.premium .casa-nuvola .casa-spinta{padding-left:32px}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-spinta{-webkit-line-clamp:unset;display:block}
+/* scheda Sofia (Gemini, seconda via): fondo pulito blu notte con una luce d'oro morbida in alto, senza il ritratto
+   dietro (le tessere e i fumetti le coprivano la faccia: restava "un occhio solitario"); Sofia grande e' in casa */
+body.premium .sofia-vista{background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(212,175,106,.22) 0%,rgba(212,175,106,0) 70%),linear-gradient(180deg,#1E293B 0%,#0F172A 100%)}
+/* il consiglio su UNA riga (col ▾: toccandolo si apre tutto), cosi' le prime tre righe e il consiglio stanno insieme.
+   Una riga sola con i puntini (nowrap): con il "line-clamp" la seconda riga spuntava sotto, nel margine */
+body.premium .sofia-hero:not(.msg-aperto) .casa-nuvola .casa-spinta{display:block;-webkit-line-clamp:unset;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-spinta{white-space:normal}
+/* scheda Sofia da bordo a bordo ANCHE in alto e in basso: tocca la barra dell'ora e arriva fin sopra la barra delle
+   schede (prima restavano due strisce avorio, 12 px sopra e 51 px sotto); la casella per scrivere scende vicino al
+   pollice. 71 px = altezza della barra in basso (6 + 59 + 6) */
+body.premium .sofia-vista{margin-top:-12px;height:calc(100dvh - 56px - 71px - env(safe-area-inset-bottom,0px));margin-bottom:-25px}
+/* tema scuro: l'ora e la data tornano chiare (erano blu notte su fondo scuro: non si vedevano); il consiglio senza
+   l'alone avorio sopra */
+:root[data-theme="dark"] body.premium .bo-ora,:root[data-theme="dark"] body.premium .bo-g{color:#F5F1EA}
+:root[data-theme="dark"] body.premium .bo-data{color:#C9BFAE}
+:root[data-theme="dark"] body.premium .bo-marca b{color:#D4AF6A}
+:root[data-theme="dark"] body.premium .barra-ora{border-bottom-color:rgba(212,175,106,.30)}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-spinta{box-shadow:0 -6px 14px rgba(20,18,16,.75)}
+/* ---- terzo giro di Gemini (26/10 11:19 — voto finale 9,6 "PRONTA", tre micro-difetti) ---- */
+/* 1) messaggio aperto: il testo che scorre dietro il consiglio sfuma 24 px PRIMA della barra blu ed e' invisibile negli
+   ultimi 4 px (non spuntano mezze lettere sopra il bordo d'oro); in fondo alle righe 26 px d'aria, cosi' l'ultima riga
+   si legge intera */
+body.premium .sofia-hero.msg-aperto:not(.nuvola-aperta) .casa-nuvola .casa-testo{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - var(--sp,62px) - 28px),transparent calc(100% - var(--sp,62px) - 4px),transparent calc(100% - var(--sp,62px)),#000 calc(100% - var(--sp,62px)));mask-image:linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - var(--sp,62px) - 28px),transparent calc(100% - var(--sp,62px) - 4px),transparent calc(100% - var(--sp,62px)),#000 calc(100% - var(--sp,62px)))}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-righe{margin-bottom:26px}
+/* 2) i fumetti bianchi non sfumano piu' sul blu (la sfumatura lunga li faceva grigi, "bruciati"): bordo netto, appena
+   ammorbidito (6 px); i comandi rapidi della scheda Sofia senza sfumatura a destra: escono dallo schermo puliti */
+body.premium .nuvola-aperta .casa-nuvola .casa-chat{padding-top:10px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 6px,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 6px,#000 100%)}
+body.premium .sofia-vista .sv-chat{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 6px);mask-image:linear-gradient(to bottom,transparent 0,#000 6px)}
+body.premium .sofia-vista .sv-chips{margin:0 -10px;padding:2px 10px;min-width:calc(100% + 20px);box-sizing:border-box;-webkit-mask-image:none;mask-image:none}

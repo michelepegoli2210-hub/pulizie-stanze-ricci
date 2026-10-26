@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.1.1";
+export const VERSIONE = "1.2.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -601,6 +601,7 @@ document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest && e.target.closest("[data-casa-parla]");
   if (!t) return;
   e.preventDefault(); e.stopPropagation();
+  { const hh = document.getElementById("sofiaHero"); if (hh) hh.classList.add("msg-aperto"); }
   benvenutoSofia();
 }, true);
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
@@ -2292,6 +2293,13 @@ document.addEventListener("click", (e) => {
   const aperta = h.classList.contains("nuvola-aperta");
   const sch = x.closest("[data-casa-scheda]");
   if (sch) { e.preventDefault(); nuvolaApri(sch.dataset.casaScheda === "chat"); return; }
+  // 1.2.0 (Gemini): il messaggio lungo di Sofia non sta piu' sotto le righe (era un doppione): si apre toccando il consiglio
+  if (!aperta && x.closest(".casa-nuvola .casa-spinta")) {
+    const su = !h.classList.contains("msg-aperto"); h.classList.toggle("msg-aperto", su);
+    // il messaggio compare in cima (sotto il saluto): si torna su per leggerlo dall'inizio; richiuso, si riparte dalla prima riga
+    const sc = h.querySelector(".casa-nuvola .casa-testo"); if (sc) setTimeout(() => { try { sc.scrollTo({ top: 0, behavior: "smooth" }); } catch (er) { sc.scrollTop = 0; } }, 40);
+    return;
+  }
   if (x.closest("[data-casa-apri]")) { e.preventDefault(); nuvolaApri(!aperta); return; }
   if (x.closest(".casa-nuvola")) {
     if (x.closest("button, a, input, label, select, textarea")) { if (aperta) nuvolaRiarma(); return; }
@@ -2310,7 +2318,9 @@ function sottotitoli(parte, buf, durata) {
   const h = document.getElementById("sofiaHero"), nv = h && h.querySelector(".casa-nuvola");
   if (nv && document.body.classList.contains("premium")) {
     const aperta = h.classList.contains("nuvola-aperta"), box = h.querySelector(aperta ? "#casaChat" : ".casa-nuvola .casa-testo");
-    if (box) sottotitoliIn("casa", box, aperta ? ".cc-io, .cc-lei:not(.cc-pensa)" : ".casa-sal, .casa-riga, .casa-spinta", parte, buf, durata, () => h.classList.contains("nuvola-aperta") !== aperta);
+    // 1.2.0: il consiglio e' attaccato in fondo al riquadro (sempre in vista): non si insegue, se no il riquadro
+    // scorre oltre la fine del messaggio mentre lei lo legge
+    if (box) sottotitoliIn("casa", box, aperta ? ".cc-io, .cc-lei:not(.cc-pensa)" : ".casa-sal, .casa-riga", parte, buf, durata, () => h.classList.contains("nuvola-aperta") !== aperta);
   } else if (nv && !h.classList.contains("nuvola-aperta")) sottotitoliIn("casa", nv, ".casa-sal, .casa-riga, .casa-spinta, .cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => h.classList.contains("nuvola-aperta"));
   const mt = document.querySelector("#sofiaMiniNuvola:not([hidden]) .sm-testo");
   if (mt) sottotitoliIn("mini", mt, ".cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => !!mt.closest("[hidden]"));
@@ -2387,6 +2397,9 @@ function casaAggiorna(h) {
   if (sal) { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); }
   if (riga) riga.textContent = c && c.testo ? c.testo : u.testo;
   if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
+  // 1.2.0: l'altezza del consiglio (una riga chiuso, due o tre aperto) serve allo stile per sfumare il testo che gli
+  // scorre dietro proprio sopra la barra blu (Gemini: "spuntano mezze lettere sopra il bordo d'oro")
+  if (spinta && !spinta._alto && window.ResizeObserver) { const sc = spinta.parentElement; spinta._alto = new ResizeObserver(() => { try { sc.style.setProperty("--sp", spinta.getBoundingClientRect().height.toFixed(2) + "px"); } catch (e) {} }); spinta._alto.observe(spinta); }
   if (info) { const hh = voci.join(""); if (info.innerHTML !== hh) info.innerHTML = hh; }
   const mic = q(".casa-t-mic");
   if (mic) mic.setAttribute("aria-label", "Dillo a " + nomeGov());
@@ -2417,7 +2430,8 @@ function righeNotizie(ls, fatte, man, dom) {
   const arrivi = sog.filter(s => s.inizio === domani);
   const nomi = [...new Set(arrivi.map(s => nomeCortoOspite(s)))];
   const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
-  const r = (ico, tono, html, vai) => `<button type="button" class="cr-riga" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t">${html}</span></button>`;
+  // 1.2.0 (Gemini): ogni riga e' una "pillola" con la freccia a destra: si capisce subito che si tocca
+  const r = (ico, tono, html, vai) => `<button type="button" class="cr-riga" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t">${html}</span><span class="cr-va" aria-hidden="true">›</span></button>`;
   const out = [r(ICO_LINEA.pulizie, "verde", ls.length ? `Pulizie oggi: <b>${fatte}</b> fatte su <b>${ls.length}</b>` : `Pulizie oggi: <b>nessuna</b>`, "pulizie")];
   if (man) out.push(r(ICO_LINEA.lavori, "arancio", `Lavori da fare: <b>${man}</b>`, "manutenzione"));
   out.push(r(icoArrivi(), "blu", arrivi.length ? `Domani ${arrivi.length === 1 ? "arriva" : "arrivano"} <b>${arrivi.length}</b>: ${esc(nomi.slice(0, 3).join(", "))}${nomi.length > 3 ? "…" : ""}` : "Domani non arriva nessuno", "prospetto"));
