@@ -4648,3 +4648,24 @@ body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola::before{content:"";dis
 body.premium .casa-nuvola .casa-saluto{padding-left:6px}
 body.premium .cs-mini{line-height:24px}
 body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{padding:0 11px}
+/* ============================================================================
+   1.5.1 (la biglia piu' biglia, Michele 26/10 notte): il marmo gonfiato a sfera, la luce di vetro, l'ombra a terra
+   ============================================================================ */
+/* il globo: il cerchio col filtro che gonfia il nastro di marmo (le venature si stringono ai bordi, come su una biglia) */
+.bg-globo{position:absolute;inset:0;z-index:1;border-radius:50%;overflow:hidden;filter:url(#sferaFiltro);transform:translateZ(0)}
+.bg-marmo{top:-9px;height:76px;background-position:0 -20px;animation-duration:14s}
+/* la lente: una goccia di luce nitida in alto a sinistra col suo puntino, il bordo che si scurisce come il vetro, un
+   riflesso caldo in basso (la luce che passa attraverso la biglia e rimbalza sulla barra) */
+.bg-lente{background:radial-gradient(ellipse 30% 17% at 31% 19%,rgba(255,255,255,.96) 0%,rgba(255,255,255,.55) 45%,rgba(255,255,255,0) 100%),radial-gradient(circle 4px at 44% 33%,rgba(255,255,255,.75) 0%,rgba(255,255,255,0) 100%),radial-gradient(ellipse 40% 16% at 56% 90%,rgba(255,236,190,.42) 0%,rgba(212,175,106,.18) 50%,rgba(212,175,106,0) 100%),radial-gradient(circle at 50% 50%,rgba(0,0,0,0) 56%,rgba(2,6,23,.38) 78%,rgba(2,6,23,.72) 94%,rgba(2,6,23,.85) 100%);box-shadow:inset -8px -10px 16px rgba(2,6,23,.80),inset 3px 3px 6px rgba(255,255,255,.30),inset 0 0 0 1px rgba(212,175,106,.35),inset 0 -1px 2px rgba(255,236,190,.35)}
+/* l'ombra a terra sotto la biglia: la appoggia sulla barra come un oggetto vero */
+body.premium .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #FAF8F5,0 10px 12px -6px rgba(15,23,42,.55),0 8px 16px rgba(15,23,42,.28),0 2px 3px rgba(15,23,42,.22),inset 0 1px 2px rgba(255,255,255,.85)}
+body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #FAF8F5,0 0 0 3.5px #D4AF6A,0 10px 12px -6px rgba(15,23,42,.55),0 8px 16px rgba(15,23,42,.3),0 2px 3px rgba(15,23,42,.22),inset 0 1px 2px rgba(255,255,255,.85)}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #1E1B18,0 10px 12px -6px rgba(0,0,0,.7),0 8px 16px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.7)}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #1E1B18,0 0 0 3.5px #D4AF6A,0 10px 12px -6px rgba(0,0,0,.7),0 8px 16px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.7)}
+body.pagina-nascosta .bg-marmo{animation-play-state:paused}
+/* un po' piu' grande (64 -> 68 px): si vede meglio che e' una sfera; la barra resta alta uguale */
+body.premium .bs-gioiello.bs-biglia{width:68px;height:68px;margin-top:-30px}
+.bg-sfera{width:62px;height:62px}
+.bg-marmo{width:252px;height:80px;background-size:126px 126px;background-position:0 -22px}
+@keyframes bg-gira{to{transform:translate3d(-126px,0,0)}}
+body.premium .bs-biglia svg{width:48px;height:48px;margin:-24px 0 0 -24px}
