@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.4.0";
+export const VERSIONE = "1.5.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -295,6 +295,7 @@ const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], [
 // la stella d'oro zecchino a quattro punte (curva astroidale), sfaccettata, coi raggi piccoli in diagonale e cinque
 // granelli di polvere d'oro (fuori dal gruppo che gira). Disegno nostro.
 const STELLA_ORO = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="oroZ" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF8DC"/><stop offset=".25" stop-color="#F7DC8A"/><stop offset=".5" stop-color="#D4AF6A"/><stop offset=".78" stop-color="#9A7432"/><stop offset="1" stop-color="#FFE599"/></linearGradient><filter id="oroL" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#D4AF6A" flood-opacity=".65"/></filter></defs><g class="st-polvere"><circle class="p1" cx="18" cy="18" r="1.4" fill="#FFF8DC"/><circle class="p2" cx="47" cy="16" r="1.1" fill="#F7DC8A"/><circle class="p3" cx="49" cy="44" r="1.5" fill="#FFF8DC"/><circle class="p4" cx="16" cy="45" r="1" fill="#D4AF6A"/><circle class="p5" cx="32" cy="10" r="1.2" fill="#FFF8DC"/></g><g class="st-gira" filter="url(#oroL)"><path d="M32 20 L34.5 29.5 L44 32 L34.5 34.5 L32 44 L29.5 34.5 L20 32 L29.5 29.5 Z" fill="#9A7432" opacity=".75" transform="rotate(45 32 32)"/><path d="M32 9 C33.8 24.5 39.5 30.2 55 32 C39.5 33.8 33.8 39.5 32 55 C30.2 39.5 24.5 33.8 9 32 C24.5 30.2 30.2 24.5 32 9 Z" fill="url(#oroZ)" stroke="#FFF8DC" stroke-width=".6"/><path d="M32 9 L35 29 L55 32 L32 32 Z" fill="#FFFDF5" opacity=".45"/><path d="M32 55 L29 35 L9 32 L32 32 Z" fill="#5E4314" opacity=".35"/><circle cx="32" cy="32" r="2.2" fill="#FFFFFF"/></g></svg>`;
+document.addEventListener("visibilitychange", () => { try { document.body.classList.toggle("pagina-nascosta", document.hidden); } catch (e) {} });
 function barraSotto() {
   let b = document.getElementById("barraSotto");
   let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && premiumVisto()); } catch (e) {}
@@ -308,7 +309,9 @@ function barraSotto() {
     // sta accanto al nome, in una pillola piccola: non le copre piu' la faccia
     // 1.4.0 (Michele: "una stella d'oro zecchino che gira su se stessa e butta un po' di polvere di stelle, ma poca"):
     // via la sua faccia doppione; il disco di marmo blu notte con la doppia ghiera d'oro e la stella che gira
-    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-gioiello">${STELLA_ORO}${conta}</span><span class="bs-n">${esc(nomeGov())}</span></button>`;
+    // 1.5.0 (Michele: "una sorta di biglia che ruota su se stessa, quindi piu' 3D"; Gemini): la sfera di marmo blu
+    // notte che gira, la stella d'oro ferma nel cuore, la lente di cristallo sopra, la ghiera d'oro tornita
+    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-gioiello bs-biglia"><span class="bg-sfera" aria-hidden="true"><span class="bg-marmo"></span>${STELLA_ORO}<span class="bg-lente"></span></span>${conta}</span><span class="bs-n">${esc(nomeGov())}</span></button>`;
     const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
     return `<button type="button" class="bs-t" data-bs="${k}" aria-pressed="${att}"><span class="bs-ico">${ic2 ? ico2(ic2) : NAV_ICO[ic]}</span><span class="bs-n">${esc(n)}</span></button>`;
   }).join("");
@@ -2257,8 +2260,8 @@ function casaOssatura(tre) {
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="notizie" aria-selected="true">${ICO_LINEA.foglio}<span>Notizie di oggi</span></button>
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="chat" aria-selected="false">${ICO_LINEA.chat}<span>Chat</span><i class="cs-conta" hidden></i></button>
       </div>
+      <button type="button" class="casa-saluto" data-tenda aria-expanded="true" aria-label="Apri o chiudi le notizie"><b class="casa-ciao"></b><i class="cs-mini" hidden></i><span class="cs-freccia" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
       <div class="casa-testo">
-        <b class="casa-ciao"></b>
         <div class="casa-righe"></div>
         <b class="casa-sal"></b>
         <p class="casa-riga"></p>
@@ -2362,6 +2365,41 @@ function casaChatAggiorna(h) {
 // per scriverle. Torna piccola con "Riduci", toccando Sofia, quando lei comincia a parlare o dopo 15 secondi che non
 // la tocchi (mai mentre scrivi). Una risposta nuova a voce spenta la apre da sola; a voce accesa resta piccola coi
 // sottotitoli e, se lei propone qualcosa (Si'/No), si apre quando ha finito di parlare.
+// 1.5.0 (Michele: "tutto il menu Buonasera Michele deve poter essere a tendina"; Gemini): il riquadro delle Notizie si
+// chiude come una tendina e restano solo le linguette e il saluto (108 px sopra la barra): Sofia si vede intera.
+// Si apre e si chiude toccando il saluto o il cerchietto con la freccia, scorrendo col dito sulla testata, o toccando
+// Sofia. La chat aperta la tiene sempre alta (lo fa lo stile). La scelta resta in memoria; con un'eccezione: la prima
+// volta che apri l'app la mattina (6-10) e ci sono lavori da fare, si apre da sola.
+const CHIAVE_TENDA = "ricci_tenda";
+function tendaChiusaMemoria() { try { return localStorage.getItem(CHIAVE_TENDA) === "0"; } catch (e) { return false; } }
+function tendaVuoleChiusa() {
+  if (!tendaChiusaMemoria()) return false;
+  try {
+    const ora = new Date().getHours(), g = L.oggiISO();
+    if (ora >= 6 && ora < 10 && localStorage.getItem("ricci_tenda_giorno") !== g && lavoriAperti().length) { localStorage.setItem("ricci_tenda_giorno", g); return false; }
+  } catch (e) {}
+  return true;
+}
+function tendaApri(si, ricorda) {
+  const h = document.getElementById("sofiaHero"); if (!h) return;
+  si = !!si;
+  h.classList.toggle("tenda-chiusa", !si);
+  const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", si ? "true" : "false");
+  if (ricorda !== false) { try { localStorage.setItem(CHIAVE_TENDA, si ? "1" : "0"); } catch (e) {} }
+  setTimeout(() => { try { nuvolaLeggiAggiorna(h); } catch (e) {} }, 380);
+}
+let tendaDito = null;
+document.addEventListener("touchstart", (e) => {
+  const x = e.target && e.target.closest && e.target.closest("#sofiaHero .casa-schede, #sofiaHero .casa-saluto");
+  tendaDito = x && e.touches && e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, { passive: true });
+document.addEventListener("touchend", (e) => {
+  if (!tendaDito || !e.changedTouches || !e.changedTouches[0]) { tendaDito = null; return; }
+  const dx = e.changedTouches[0].clientX - tendaDito.x, dy = e.changedTouches[0].clientY - tendaDito.y; tendaDito = null;
+  if (Math.abs(dy) < 35 || Math.abs(dy) < Math.abs(dx)) return;
+  const h = document.getElementById("sofiaHero"); if (!h || h.classList.contains("nuvola-aperta")) return;
+  tendaApri(dy < 0);
+}, { passive: true });
 let nuvolaTimer = null, nuvolaUltima = null;
 function nuvolaApri(si) {
   const h = document.getElementById("sofiaHero"); if (!h) return;
@@ -2416,7 +2454,8 @@ document.addEventListener("click", (e) => {
   if (!h || !x || !x.closest || !h.contains(x) || !document.body.classList.contains("premium")) return;
   const aperta = h.classList.contains("nuvola-aperta");
   const sch = x.closest("[data-casa-scheda]");
-  if (sch) { e.preventDefault(); nuvolaApri(sch.dataset.casaScheda === "chat"); return; }
+  if (sch) { e.preventDefault(); nuvolaApri(sch.dataset.casaScheda === "chat"); if (sch.dataset.casaScheda === "notizie" && h.classList.contains("tenda-chiusa")) tendaApri(true); return; }
+  if (x.closest("[data-tenda]")) { e.preventDefault(); if (aperta) nuvolaApri(false); else tendaApri(h.classList.contains("tenda-chiusa")); return; }
   // 1.2.0 (Gemini): il messaggio lungo di Sofia non sta piu' sotto le righe (era un doppione): si apre toccando il consiglio
   if (!aperta && x.closest(".casa-nuvola .casa-spinta")) {
     const su = !h.classList.contains("msg-aperto"); h.classList.toggle("msg-aperto", su);
@@ -2432,6 +2471,7 @@ document.addEventListener("click", (e) => {
   }
   if (x.closest(".casa-scrivi-riga, .casa-lato")) { if (aperta) nuvolaRiarma(); return; }
   if (aperta) nuvolaApri(false);                            // un tocco su Sofia: torna piccola
+  else if (!x.closest("button, a, input, label, select, textarea")) tendaApri(h.classList.contains("tenda-chiusa"));   // 1.5.0: ...o alza/abbassa la tendina
 });
 // ---- 1.0.4: I SOTTOTITOLI (Gemini). Mentre Sofia parla, la nuvoletta piccola va da sola sulla frase che sta dicendo e
 // scorre piano mentre la dice: Michele legge senza togliere gli occhi da lei. Se lui la scorre col dito, lascia fare a lui.
@@ -2518,6 +2558,13 @@ function casaAggiorna(h) {
   const righe = q(".casa-righe"), ciao = q(".casa-ciao");
   if (righe) { const hh = righeNotizie(ls, fatte, man, dom); if (righe.innerHTML !== hh) righe.innerHTML = hh; }
   if (ciao) { const tc = `${saluto()}, ${nomeMio()}!`; if (ciao.textContent !== tc) ciao.textContent = tc; }
+  // 1.5.0 (Gemini): da tendina chiusa, accanto al saluto, i due numeri vitali in una pillola ("0/8 · 2 lavori")
+  const mini = q(".cs-mini");
+  if (mini) {
+    const parti = [ls.length ? `${fatte}/${ls.length}` : "0 pulizie"];
+    if (man) parti.push(`${man} ${man === 1 ? "lavoro" : "lavori"}`); else if (dom) parti.push(`${dom} ${dom === 1 ? "domanda" : "domande"}`);
+    const tm = parti.join(" · "); if (mini.textContent !== tm) mini.textContent = tm; mini.hidden = false;
+  }
   if (sal) { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); }
   if (riga) riga.textContent = c && c.testo ? c.testo : u.testo;
   if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
@@ -2631,6 +2678,7 @@ function disegnaCasa() {
     h.className = "sofia-hero";
     h.dataset.tre = tre;
     h.innerHTML = casaOssatura(!!tre);
+    if (tendaVuoleChiusa()) { h.classList.add("tenda-chiusa"); const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", "false"); }
     const t = document.querySelector("header");
     document.body.insertBefore(h, t || document.body.firstChild);
     window.scrollTo(0, 0);

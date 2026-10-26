@@ -4553,3 +4553,98 @@ body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-spinta{white-space:normal
 body.premium .casa-nuvola>.casa-spinta{position:relative;bottom:auto;box-shadow:inset 0 1px 1px rgba(212,175,106,.35),0 4px 12px rgba(15,23,42,.18)}
 /* la scheda Sofia: l'altezza segue la barra in basso misurata (col gioiello la barra e' un po' piu' alta) */
 body.premium .sofia-vista{height:calc(100dvh - var(--alto-ora,56px) - var(--alto-sotto,71px) - env(safe-area-inset-bottom,0px))}
+/* ============================================================================
+   1.5.0 (Gemini, 26/10 notte): la biglia di Sofia, le Notizie a tendina, i widget premium
+   ============================================================================ */
+/* ---- LE NOTIZIE A TENDINA: la testata (linguette + saluto) resta sempre; il resto scende e sale come una tendina ---- */
+.casa-saluto{display:none}
+body.premium .casa-nuvola .casa-saluto{display:flex;align-items:center;gap:8px;flex:0 0 auto;width:100%;min-height:28px;margin:0 0 6px;padding:0 0 0 4px;border:0;background:none;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;color:inherit}
+body.premium .casa-nuvola .casa-saluto .casa-ciao{order:0;flex:1 1 auto;min-width:0;margin:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.premium .cs-mini{order:1}
+body.premium .cs-freccia{order:2}
+body.premium .cs-mini{flex:0 0 auto;max-width:0;padding:0;opacity:0;transform:scale(.9);overflow:hidden;white-space:nowrap;border-radius:99px;border:0 solid rgba(212,175,106,.6);background:linear-gradient(180deg,rgba(255,255,255,.7) 0%,rgba(212,175,106,.32) 100%);color:#0F172A;font:700 13px/22px var(--f-ui);font-style:normal;letter-spacing:.01em;box-shadow:inset 0 1px 0 rgba(255,255,255,.8);transition:opacity 220ms ease,transform 220ms ease,max-width 340ms cubic-bezier(.22,1,.36,1),padding 340ms cubic-bezier(.22,1,.36,1)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{max-width:62%;padding:0 10px;border-width:1px;opacity:1;transform:none}
+body.premium .cs-freccia{flex:0 0 auto;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:rgba(212,175,106,.22);border:1px solid rgba(212,175,106,.65);color:#0F172A;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 5px rgba(15,23,42,.08);transition:transform 340ms cubic-bezier(.22,1,.36,1),background 220ms ease}
+body.premium .cs-freccia svg{width:17px;height:17px}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-freccia{transform:rotate(180deg);background:linear-gradient(180deg,#E9CC8A 0%,#C9A35A 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 3px 7px rgba(154,116,50,.35)}
+body.premium .sofia-hero.nuvola-aperta .casa-saluto{display:none}
+/* la testata della tendina vuole il suo spazio: si stringono i margini (righe, linguette, cuscino in alto) cosi' le tre righe e il consiglio si vedono insieme come prima, col riquadro dove stava */
+body.premium .casa-righe{margin-top:2px}
+body.premium .casa-schede{margin-bottom:6px}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{padding-top:8px}
+/* il riquadro: da chiuso 108 px appoggiati dove stava il bordo in basso (sale e scende in 340 ms, molla morbida) */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{transition:top 340ms cubic-bezier(.22,1,.36,1),height 340ms cubic-bezier(.22,1,.36,1)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 108px);height:108px}
+body.premium .casa-nuvola .casa-testo,body.premium .casa-nuvola>.casa-spinta{transition:opacity 240ms ease 100ms}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-testo,body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola>.casa-spinta{opacity:0;pointer-events:none;transition:opacity 160ms ease}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-leggi{display:none}
+@media (prefers-reduced-motion:reduce){body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola,body.premium .cs-freccia,body.premium .cs-mini,body.premium .casa-nuvola .casa-testo,body.premium .casa-nuvola>.casa-spinta{transition:none}}
+:root[data-theme="dark"] body.premium .cs-mini{background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(212,175,106,.28) 100%);color:#F5F1EA;box-shadow:none}
+:root[data-theme="dark"] body.premium .cs-freccia{color:#F3E3B8;background:rgba(212,175,106,.18);box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-freccia{color:#1C1917}
+
+/* ---- LA BIGLIA DI SOFIA: una sfera vera. Il marmo e' un nastro largo due volte che scorre dentro il cerchio (solo
+        transform: lo muove la GPU, niente ridisegno); la stella d'oro sta ferma nel cuore; sopra, la lente di cristallo
+        con la luce in alto a sinistra, l'ombra in basso a destra e il riflesso d'oro della barra; la ghiera d'oro tornita ---- */
+body.premium .bs-gioiello.bs-biglia{display:block;width:64px;height:64px;margin-top:-26px;padding:3px;box-sizing:border-box;border:0;border-radius:50%;background:conic-gradient(from 135deg,#F7E7CE 0deg,#D4AF6A 70deg,#7A581B 150deg,#D4AF6A 240deg,#FFF8E7 310deg,#F7E7CE 360deg);box-shadow:0 0 0 3px #FAF8F5,0 8px 14px rgba(15,23,42,.32),0 2px 3px rgba(15,23,42,.22),inset 0 1px 2px rgba(255,255,255,.85);overflow:visible}
+body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-biglia{box-shadow:0 0 0 3px #FAF8F5,0 0 0 4.5px #D4AF6A,0 8px 14px rgba(15,23,42,.36),0 2px 3px rgba(15,23,42,.22),inset 0 1px 2px rgba(255,255,255,.85)}
+.bg-sfera{position:relative;display:block;width:58px;height:58px;border-radius:50%;overflow:hidden;background:#090E1A;transform:translateZ(0);isolation:isolate}
+.bg-marmo{position:absolute;top:0;left:0;width:236px;height:58px;z-index:1;background:url(marmo-biglia.webp) 0 -30px/118px 118px repeat-x;will-change:transform;animation:bg-gira 18s linear infinite}
+@keyframes bg-gira{to{transform:translate3d(-118px,0,0)}}
+body.premium .bs-biglia svg{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;z-index:2;overflow:visible;filter:drop-shadow(0 2px 4px rgba(0,0,0,.7))}
+.bg-lente{position:absolute;inset:0;z-index:3;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 28% 24%,rgba(255,255,255,.72) 0%,rgba(255,255,255,.18) 16%,transparent 38%),radial-gradient(circle at 72% 78%,rgba(212,175,106,.35) 0%,transparent 45%);box-shadow:inset -8px -10px 16px rgba(2,6,23,.88),inset 4px 5px 10px rgba(255,255,255,.22),inset 0 0 6px rgba(15,23,42,.9),inset -2px -2px 4px rgba(212,175,106,.45)}
+body.pagina-nascosta .bg-marmo,body.pagina-nascosta .bs-gioiello .st-gira,body.pagina-nascosta .bs-gioiello .st-polvere circle{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.bg-marmo{animation:none}}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-biglia{box-shadow:0 0 0 3px #1E1B18,0 8px 14px rgba(0,0,0,.5),0 2px 3px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.7)}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-biglia{box-shadow:0 0 0 3px #1E1B18,0 0 0 4.5px #D4AF6A,0 8px 14px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.7)}
+
+/* ---- I QUATTRO WIDGET (Oggi, Prospetto, Piantine, Paghe): tessere da gioielleria. A riposo un medaglione di
+        cristallo avorio con l'icona a doppio tono (traccia ardesia, cuore d'oro tenue); scelto, il medaglione diventa
+        marmo blu notte bordato d'oro, con la perla d'oro sotto: il gemello della biglia ---- */
+body.premium .barra-sotto{grid-template-columns:1fr 1fr 76px 1fr 1fr;padding-top:5px;background:linear-gradient(180deg,rgba(250,248,245,.86) 0%,rgba(242,236,225,.92) 100%);-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);border-top:1.5px solid rgba(212,175,106,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 -6px 24px rgba(15,23,42,.08)}
+body.premium .bs-t{gap:5px;min-height:60px;font:600 12.5px/1 var(--f-ui);letter-spacing:.01em;color:#475569;transition:color .2s ease}
+body.premium .bs-t[aria-pressed="true"]{font-weight:700;color:#0F172A}
+body.premium .bs-ico{position:relative;width:50px;height:34px;border-radius:13px;background:linear-gradient(180deg,rgba(255,255,255,.85) 0%,rgba(243,237,226,.65) 100%);border:1px solid rgba(212,175,106,.35);box-shadow:0 2px 5px rgba(15,23,42,.06),inset 0 1px 0 rgba(255,255,255,.95);transition:transform 260ms cubic-bezier(.34,1.56,.64,1),background .22s ease,box-shadow .22s ease,border-color .22s ease}
+body.premium .bs-ico .ico2{width:22px;height:22px;stroke-width:1.85;color:#475569;transition:color .22s ease}
+body.premium .bs-t .ico2 .acc{fill:rgba(212,175,106,.28);stroke:#9A732E;stroke-width:1.6;transition:fill .22s ease,stroke .22s ease}
+body.premium .bs-t[aria-pressed="true"] .bs-ico{background:radial-gradient(circle at 30% 25%,#1E293B 0%,#0F172A 75%);border:1.5px solid #D4AF6A;transform:translateY(-2px);box-shadow:0 6px 14px rgba(15,23,42,.24),inset 0 1px 2px rgba(255,255,255,.32),inset 0 -2px 4px rgba(212,175,106,.25)}
+body.premium .bs-t[aria-pressed="true"] .bs-ico .ico2{color:#FAF8F5;stroke-width:2}
+body.premium .bs-t[aria-pressed="true"] .ico2 .acc{fill:#D4AF6A;stroke:#F7E7CE}
+body.premium .bs-t[aria-pressed="true"] .bs-ico::after{content:"";position:absolute;left:50%;bottom:-7px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#D4AF6A;box-shadow:0 0 5px 1px rgba(212,175,106,.8)}
+body.premium .bs-t:active .bs-ico{transform:scale(.92)}
+body.premium .bs-t[aria-pressed="true"]:active .bs-ico{transform:translateY(-2px) scale(.92)}
+body.premium .bs-sofia .bs-n{font-size:12.5px}
+@media (max-width:375px){body.premium .bs-t{font-size:11.5px;letter-spacing:0}body.premium .bs-sofia .bs-n{font-size:11.5px}body.premium .bs-ico{width:46px}}
+@media (prefers-reduced-motion:reduce){body.premium .bs-ico{transition:none}}
+:root[data-theme="dark"] body.premium .barra-sotto{background:linear-gradient(180deg,rgba(24,21,18,.88) 0%,rgba(20,18,16,.94) 100%)}
+:root[data-theme="dark"] body.premium .bs-t{color:#A89F91}
+:root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"]{color:#F3E3B8}
+:root[data-theme="dark"] body.premium .bs-ico{background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.04) 100%);border-color:rgba(212,175,106,.35);box-shadow:0 2px 5px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+:root[data-theme="dark"] body.premium .bs-ico .ico2{color:#A89F91}
+:root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"] .bs-ico{background:radial-gradient(circle at 30% 25%,#22304D 0%,#0F172A 75%);box-shadow:0 6px 14px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.25),inset 0 -2px 4px rgba(212,175,106,.25)}
+:root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"] .bs-ico .ico2{color:#FAF8F5}
+/* ---- il terzo giro di Gemini (voto 9,1): cinque ritocchi ---- */
+/* 1) dietro al saluto si intravedeva la giacca blu: un velo di luce avorio in alto nel riquadro (ma resta trasparente: Michele lo vuole cosi') */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.85),inset 0 44px 36px -14px rgba(250,248,245,.55),0 14px 30px rgba(15,23,42,.12)}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 44px 36px -14px rgba(20,18,16,.6),0 12px 32px rgba(0,0,0,.4)}
+/* 2) la luce sulla biglia: una goccia nitida (non una nebbia), il filo d'oro dentro, l'anello avorio esterno piu' sottile */
+.bg-lente{background:radial-gradient(ellipse 34% 20% at 30% 20%,rgba(255,255,255,.88) 0%,rgba(255,255,255,.35) 55%,transparent 100%),radial-gradient(circle at 72% 82%,rgba(212,175,106,.42) 0%,transparent 42%);box-shadow:inset -10px -12px 18px rgba(2,6,23,.92),inset 3px 3px 6px rgba(255,255,255,.35),inset 0 0 0 1px rgba(212,175,106,.35)}
+body.premium .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #FAF8F5,0 8px 14px rgba(15,23,42,.32),0 2px 3px rgba(15,23,42,.22),inset 0 1px 2px rgba(255,255,255,.85)}
+body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #FAF8F5,0 0 0 3.5px #D4AF6A,0 8px 14px rgba(15,23,42,.36),0 2px 3px rgba(15,23,42,.22),inset 0 1px 2px rgba(255,255,255,.85)}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #1E1B18,0 8px 14px rgba(0,0,0,.5),0 2px 3px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.7)}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-biglia{box-shadow:0 0 0 2px #1E1B18,0 0 0 3.5px #D4AF6A,0 8px 14px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.7)}
+/* 3) la perla d'oro toccava la scritta "Oggi": diventa un lingottino luminoso sul filo in basso del medaglione; la scritta "Sofia" piu' nobile */
+body.premium .bs-t[aria-pressed="true"] .bs-ico::after{bottom:-2px;width:16px;height:3px;margin-left:-8px;border-radius:99px;background:#F3E5AB;box-shadow:0 0 6px #D4AF6A}
+body.premium .bs-sofia .bs-n{font-weight:700;color:#334155;letter-spacing:.02em}
+body.premium .bs-sofia[aria-pressed="true"] .bs-n{color:#0F172A}
+:root[data-theme="dark"] body.premium .bs-sofia .bs-n{color:#C9BFAF}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-n{color:#F3E3B8}
+/* 4) la stella gira piano e continua (24 s, diversa dai 18 s del marmo) con un respiro, e un alone d'oro fisso da perno */
+.bs-gioiello .st-gira{animation:st-gioiello 24s linear infinite}
+@keyframes st-gioiello{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(1.06)}100%{transform:rotate(360deg) scale(1)}}
+body.premium .bs-biglia svg{filter:drop-shadow(0 2px 4px rgba(2,6,23,.85)) drop-shadow(0 0 6px rgba(212,175,106,.45))}
+/* 5) la manigliona d'oro sopra le linguette (si capisce che si trascina), il saluto a piombo col tab, la pillola bilanciata */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola::before{content:"";display:block;position:absolute;left:50%;top:3px;width:36px;height:3px;margin:0 0 0 -18px;border-radius:99px;background:rgba(212,175,106,.75);box-shadow:0 1px 0 rgba(255,255,255,.7)}
+body.premium .casa-nuvola .casa-saluto{padding-left:6px}
+body.premium .cs-mini{line-height:24px}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{padding:0 11px}
