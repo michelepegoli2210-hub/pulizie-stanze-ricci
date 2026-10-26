@@ -4705,3 +4705,98 @@ body.pagina-nascosta .bs-diamante .dm-glint path{animation-play-state:paused}
 body.premium .bs-sofia .bs-gioiello .nav-conta{top:-5px;right:-8px}
 :root[data-theme="dark"] body.premium .bs-gioiello.bs-diamante{box-shadow:0 0 0 2.5px #1E1B18,0 6px 14px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,235,180,.35),inset 0 -3px 6px rgba(0,0,0,.7)}
 :root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-diamante{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 4px #D4AF6A,0 6px 14px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,235,180,.35),inset 0 -3px 6px rgba(0,0,0,.7)}
+/* ============================================================================
+   1.6.0 (Gemini, "diagnosi spietata" del 26/10 notte, su richiesta di Michele: "non so cosa non mi piace ma non mi
+   piace: fallo rifare a Gemini, concorso mondiale di app di lusso"). Due famiglie sole: Cormorant Garamond (la voce
+   nobile: ora, saluto, righe, consiglio) e Plus Jakarta Sans (le etichette corte: data, linguette, barra, pillole);
+   l'unico corsivo e' il nome in alto. Via le cornici a matrioska, via il grigio topo, via l'alone dietro al saluto,
+   via la sottolineatura mozzata; il diamante e' un brillante bianco e platino sul marmo blu.
+   ============================================================================ */
+@font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/plus-jakarta-sans-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/plus-jakarta-sans-latin-700-normal.woff2) format("woff2")}
+/* ---- A) il sistema dei caratteri: in tutto lo stile Premium le etichette e il testo passano a Plus Jakarta Sans
+        (via Montserrat e Atkinson), i titoli e i numeri grandi a Cormorant Garamond (via Playfair) ---- */
+body.premium{--f-titoli:"Cormorant Garamond",Georgia,serif;--f-ui:"Plus Jakarta Sans","Montserrat",system-ui,sans-serif;--f-lettura:"Plus Jakarta Sans","Montserrat",system-ui,sans-serif;--f-body:"Plus Jakarta Sans","Montserrat",system-ui,sans-serif;--f-display:"Plus Jakarta Sans","Montserrat",system-ui,sans-serif}
+/* ---- B) la barra dell'ora: pulizia assoluta. Il nome in corsivo d'oro brunito, senza la sottolineatura mozzata;
+        la data piccola e nitida; l'ora in Cormorant 700 da 32 px, cifre allineate ---- */
+body.premium .barra-ora{background-color:#FAF7F2;background-image:linear-gradient(180deg,#FFFFFF 0%,#FAF7F2 100%);-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:1px solid rgba(212,175,106,.45);box-shadow:none}
+body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{font:700 24px/1 "Dancing Script",cursive;letter-spacing:.01em;text-transform:none;color:#8C621E;text-shadow:none}
+body.premium .bo-marca::after{display:none}
+body.premium .bo-data{font:700 11px/1.15 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#785A28;gap:1px}
+body.premium .bo-data .bo-g{color:#785A28}
+body.premium .bo-ora{font:700 32px/1 "Cormorant Garamond",Georgia,serif;font-variant-numeric:lining-nums tabular-nums;letter-spacing:-.02em;color:#0F172A;text-shadow:none}
+body.premium .bo-ora i{color:#B38B45;font-style:normal}
+@media (max-width:370px){body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{font-size:20px}body.premium .bo-ora{font-size:27px}}
+:root[data-theme="dark"] body.premium .barra-ora{background-color:#1A1714;background-image:linear-gradient(180deg,#1E1B18 0%,#17150F 100%);border-bottom-color:rgba(212,175,106,.4)}
+:root[data-theme="dark"] body.premium .bo-marca b,:root[data-theme="dark"] body.premium .bo-marca b.bo-m2{color:#D4AF6A}
+:root[data-theme="dark"] body.premium .bo-data,:root[data-theme="dark"] body.premium .bo-data .bo-g{color:#C9B27E}
+:root[data-theme="dark"] body.premium .bo-ora{color:#F5F1EA}
+/* ---- C) il riquadro delle Notizie: avorio setoso compatto (niente piu' giacca che traspare dietro al saluto),
+        una sola cornice d'oro, niente maniglia ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{padding:10px 12px 12px;border-radius:24px;background:linear-gradient(180deg,rgba(252,250,246,.96) 0%,rgba(245,240,231,.99) 100%);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1.5px solid #D4AF6A;box-shadow:0 -12px 32px rgba(15,23,42,.14),inset 0 1px 0 #FFFFFF}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola::before{display:none}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{padding-bottom:10px}
+/* le linguette: un incasso unico scavato nell'avorio; la scelta e' blu notte col filo d'oro (non piu' grigio topo) */
+body.premium .casa-schede{display:grid;grid-template-columns:1.15fr .85fr;gap:0;height:auto;padding:3px;margin:0 0 4px;background:#EAE3D5;border:1px solid rgba(212,175,106,.4);border-radius:14px;box-sizing:border-box}
+body.premium .cs-tab{height:36px;padding:0 8px;border:1px solid transparent;border-radius:11px;background:transparent;color:#334155;font:700 14.5px/1 "Plus Jakarta Sans",system-ui,sans-serif;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;text-shadow:none}
+body.premium .cs-tab[aria-selected="true"]{background:linear-gradient(180deg,#1E293B 0%,#0F172A 100%);border:1px solid #D4AF6A;color:#FAF8F5;box-shadow:0 3px 8px rgba(15,23,42,.22)}
+body.premium .cs-tab .ico-linea{width:18px;height:18px}
+body.premium .cs-conta{font:800 12px/21px "Plus Jakarta Sans",system-ui,sans-serif}
+/* la riga del saluto (il comando della tendina): Cormorant 700 da 25 px, senza aloni */
+body.premium .casa-nuvola .casa-saluto{min-height:30px;margin:0 0 4px;padding:3px 2px 1px 4px}
+body.premium .casa-nuvola .casa-ciao{font:700 25px/1.1 "Cormorant Garamond",Georgia,serif;letter-spacing:-.01em;color:#0F172A;text-shadow:none}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:22px}
+body.premium .cs-mini{font:700 13.5px/24px "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:0;background:linear-gradient(180deg,#FAF6EE 0%,#EFE5D4 100%);border-color:rgba(212,175,106,.75);color:#0F172A;box-shadow:inset 0 1px 0 #FFFFFF}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{font-size:13px;padding:0 11px}
+body.premium .cs-freccia{background:#F3EBDB;border:1px solid rgba(212,175,106,.7);box-shadow:inset 0 1px 0 #FFFFFF,0 2px 5px rgba(15,23,42,.08)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-freccia{background:linear-gradient(180deg,#1E293B 0%,#0F172A 100%);border-color:#D4AF6A;color:#F3E5AB;box-shadow:0 3px 7px rgba(15,23,42,.3)}
+/* le righe: una lastra bianca per riga, un filetto d'oro sottile, l'icona nuda in oro brunito (via i quadratini beige
+   e la mezzaluna marrone); testo Cormorant 600 da 19,5 px, numeri 700 */
+body.premium .casa-righe{gap:5px;margin:0 0 2px}
+body.premium .casa-nuvola .casa-testo{padding-top:2px}
+body.premium .cr-riga{position:relative;min-height:42px;padding:0 10px 0 12px;gap:0;border-radius:13px;background:#FFFFFF;border:1px solid rgba(212,175,106,.48);border-left-width:1px;box-shadow:0 2px 6px rgba(15,23,42,.04);font:600 19.5px/1.1 "Cormorant Garamond",Georgia,serif;letter-spacing:0;font-variant-numeric:lining-nums tabular-nums;color:#1E293B}
+body.premium .cr-riga::before{content:"";flex:0 0 3px;width:3px;height:22px;margin-right:10px;border-radius:99px;background:linear-gradient(180deg,#D4AF6A 0%,#9A7029 100%)}
+body.premium .cr-riga b{font-weight:700;font-size:20.5px;color:#0F172A}
+body.premium .cr-ico,body.premium .cr-ico.verde,body.premium .cr-ico.arancio,body.premium .cr-ico.blu,body.premium .cr-ico.oro,body.premium .cr-ico.rosso{flex:0 0 24px;width:24px;height:24px;margin-right:10px;border-radius:0;background:none;border:0;box-shadow:none;color:#8C621E}
+body.premium .cr-ico .ico2{width:22px;height:22px;stroke-width:1.9}
+body.premium .cr-ico .ico2 .acc{fill:rgba(212,175,106,.18);stroke:#8C621E}
+body.premium .cr-ico.rosso{color:#0F172A}
+body.premium .cr-ico.rosso .ico2 .acc{fill:rgba(15,23,42,.14);stroke:#0F172A}
+body.premium .cr-va{font:800 21px/1 "Plus Jakarta Sans",system-ui,sans-serif;color:#9A7029}
+/* il consiglio di Sofia: blu notte e oro (non piu' grigio spento), Cormorant 600 dritto da 18 px */
+body.premium .casa-nuvola .casa-spinta,body.premium .casa-nuvola>.casa-spinta{min-height:40px;margin:4px 0 0;padding:8px 32px 8px 32px;border-radius:12px;background:linear-gradient(90deg,#0F172A 0%,#1E293B 100%);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid #D4AF6A;color:#FAF8F5;font:600 18px/1.2 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em;font-variant-numeric:lining-nums;text-shadow:none;box-shadow:0 3px 8px rgba(15,23,42,.18)}
+body.premium .casa-nuvola .casa-spinta::before{top:8px;font-size:15px;line-height:1.5}
+/* ---- D) il tasto Sofia: il brillante bianco e platino sul disco di marmo blu notte (fermo); una scintilla sola ---- */
+body.premium .bs-diamante svg{width:40px;height:40px;filter:drop-shadow(0 0 4px rgba(255,255,255,.35))}
+body.premium .bs-sofia[aria-pressed="true"] .bs-diamante svg{filter:drop-shadow(0 0 6px rgba(255,251,235,.7))}
+.bs-diamante .dm-glint{opacity:.95;animation:dm-respiro 5s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.bs-diamante .dm-glint path,.bs-diamante .dm-glint circle{opacity:1;animation:none}
+@keyframes dm-respiro{0%,100%{opacity:.45}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.bs-diamante .dm-glint{animation:none;opacity:.9}}
+/* ---- E) i quattro tasti della barra: etichette tutte in Plus Jakarta 700; icone a riposo piu' calde; il lingottino
+        d'oro incastonato a filo nel medaglione scelto ---- */
+body.premium .bs-t{font:700 12.5px/1 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:.01em;color:#334155}
+body.premium .bs-t[aria-pressed="true"]{color:#0F172A}
+body.premium .bs-sofia .bs-n{font:700 12.5px/1 "Plus Jakarta Sans",system-ui,sans-serif;color:#0F172A;letter-spacing:.01em}
+body.premium .bs-ico .ico2{color:#1E293B}
+body.premium .bs-t .ico2 .acc{fill:rgba(212,175,106,.38);stroke:#9A732E}
+body.premium .bs-t[aria-pressed="true"] .bs-ico .ico2{color:#FAF8F5}
+body.premium .bs-t[aria-pressed="true"] .ico2 .acc{fill:#D4AF6A;stroke:#F7E7CE}
+body.premium .bs-t[aria-pressed="true"] .bs-ico::after{bottom:0;width:18px;height:2.5px;margin-left:-9px;border-radius:99px 99px 0 0}
+body.premium .bs-sofia .bs-gioiello .nav-conta{font:800 11.5px/19px "Plus Jakarta Sans",system-ui,sans-serif}
+/* ---- la scheda di Sofia e l'ascolto: "Ascolta" in Plus Jakarta ---- */
+body.premium .casa-lato .casa-ascolta span{font:700 11.5px/1 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:.02em}
+/* ---- tema scuro ---- */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(30,27,24,.96) 0%,rgba(23,21,15,.99) 100%);border-color:rgba(212,175,106,.7);box-shadow:0 -12px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}
+:root[data-theme="dark"] body.premium .casa-schede{background:#141210;border-color:rgba(212,175,106,.35)}
+:root[data-theme="dark"] body.premium .cs-tab{color:#CFC6B8}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao{color:#F5F1EA}
+:root[data-theme="dark"] body.premium .cr-riga{background:#26221D;border-color:rgba(212,175,106,.4);color:#E7E1D6;box-shadow:none}
+:root[data-theme="dark"] body.premium .cr-riga b{color:#FFFFFF}
+:root[data-theme="dark"] body.premium .cr-ico,:root[data-theme="dark"] body.premium .cr-ico.rosso{color:#E2C27E;background:none;border:0}
+:root[data-theme="dark"] body.premium .cr-ico .ico2 .acc,:root[data-theme="dark"] body.premium .cr-ico.rosso .ico2 .acc{fill:rgba(212,175,106,.22);stroke:#E2C27E}
+:root[data-theme="dark"] body.premium .cs-mini{background:linear-gradient(180deg,#2A2520 0%,#1E1B18 100%);color:#F5F1EA;box-shadow:none}
+:root[data-theme="dark"] body.premium .cs-freccia{background:#2A2520;color:#F3E3B8;box-shadow:none}
+:root[data-theme="dark"] body.premium .bs-t{color:#A89F91}
+:root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"],:root[data-theme="dark"] body.premium .bs-sofia .bs-n{color:#F3E3B8}
+:root[data-theme="dark"] body.premium .bs-ico .ico2{color:#CFC6B8}
