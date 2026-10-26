@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.2.0";
+export const VERSIONE = "1.3.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -243,6 +243,29 @@ function orologioAvvia() { if (!barraOra()) return; orologioGira(); if (!orologi
 try { document.addEventListener("visibilitychange", () => { if (!document.hidden) orologioGira(); }); } catch (e) {}
 // 0.96: i tasti delle sezioni, tondi, VICINO A SOFIA (Michele: "vicino alla governante ci devono essere anche i tasti
 // prospetto e gli altri che ci sono giu'") e in cima a ogni sezione. "Sofia" e' la sezione della governante, a parte.
+// 1.3.0 (Gemini): UNA famiglia sola di icone per tutta l'app: linea continua da 1.8, punte tonde, e un dettaglio
+// pieno d'oro chiaro (classe "acc"). Si colorano col CSS (currentColor). Funzione (non costante): si puo' usare dappertutto.
+function ico2(k) {
+  const D = {
+    oggi: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2.5v3M16 2.5v3"/><path class="acc" d="M12 12.3l1.2 2.4 2.6.4-1.9 1.8.4 2.6-2.3-1.2-2.3 1.2.4-2.6-1.9-1.8 2.6-.4z"/>',
+    prospetto: '<rect class="acc" x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/>',
+    piantine: '<path class="acc" d="M14 3h5a2 2 0 0 1 2 2v7h-7z"/><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 12h11M14 3v9M10 12v9"/>',
+    paghe: '<circle class="acc" cx="12" cy="12" r="9"/><path d="M15 8.8a3.6 3.6 0 0 0-5.3 2.4v1.6A3.6 3.6 0 0 0 15 15.2M7.6 11h5.2M7.6 13.4h4.4"/>',
+    stella: '<path class="acc" d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"/><circle cx="12" cy="12" r="1.8"/>',
+    campanello: '<path class="acc" d="M4.5 17h15a1 1 0 0 0 1-1v-.6a8.5 8.5 0 0 0-17 0v.6a1 1 0 0 0 1 1z"/><path d="M10 4.5h4M12 4.5v2.4M2.5 20h19"/>',
+    chiave: '<path class="acc" d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',
+    valigia: '<rect x="3" y="7.5" width="18" height="12.5" rx="2.5"/><path d="M9 7.5V5.5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path class="acc" d="M3 12.5h18v2.5H3z"/>',
+    letto: '<path d="M3 18.5v-11M3 14h18v4.5M21 14v-1.5a3 3 0 0 0-3-3h-7.5V14"/><circle class="acc" cx="7" cy="11.2" r="2.1"/>',
+    domanda: '<path class="acc" d="M4 4.5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-5 4v-4H4a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/><path d="M9.9 8.8a2.3 2.3 0 0 1 4.4.8c0 1.5-2.3 1.8-2.3 3"/><path d="M12 14.6h.01"/>',
+    megafono: '<path class="acc" d="M3 10.5v3a1 1 0 0 0 1 1h2.5l8.5 5V4.5l-8.5 5H4a1 1 0 0 0-1 1z"/><path d="M6.5 14.5l1.4 5h2.8l-1.2-4.3M18.5 9a4.2 4.2 0 0 1 0 6"/>',
+    mic: '<rect class="acc" x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',
+    penna: '<path class="acc" d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 7l3 3"/>',
+    manda: '<path class="acc" d="M21.5 2.5 15 21.5l-4-8.5-8.5-4z"/><path d="M21.5 2.5 11 13"/>',
+    piu: '<path d="M12 5v14M5 12h14"/>',
+    spunta: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  };
+  return `<svg class="ico2 ico2-${k}" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${D[k] || ""}</svg>`;
+}
 const NAV_ICO = {
   cal: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h3v3h-3z"/></svg>`,
   lista: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2.8h6v3H9zM8.5 10.5h7M8.5 14h7M8.5 17.5h4.5"/></svg>`,
@@ -276,8 +299,11 @@ function barraSotto() {
   const html = BS_VOCI.map(([k, n, ic]) => {
     const att = v === k || (k === "sofia" && v === "governante") || (k === "oggi" && (v === "manutenzione" || v === "signora"));
     const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
-    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-foto">${conta}</span><span class="bs-n">${esc(nomeGov())}</span></button>`;
-    return `<button type="button" class="bs-t" data-bs="${k}" aria-pressed="${att}"><span class="bs-ico">${NAV_ICO[ic]}</span><span class="bs-n">${esc(n)}</span></button>`;
+    // 1.3.0 (Gemini, scelta B di Michele): la sua faccia nel doppio anello blu notte e oro; il numerino delle domande
+    // sta accanto al nome, in una pillola piccola: non le copre piu' la faccia
+    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia bs-sofia-b" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-foto"></span><span class="bs-n">${esc(nomeGov())}${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</span></button>`;
+    const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
+    return `<button type="button" class="bs-t" data-bs="${k}" aria-pressed="${att}"><span class="bs-ico">${ic2 ? ico2(ic2) : NAV_ICO[ic]}</span><span class="bs-n">${esc(n)}</span></button>`;
   }).join("");
   if (b.dataset.html !== html) {
     b.innerHTML = html; b.dataset.html = html;
@@ -1798,6 +1824,7 @@ function grigliaCamere(iso) {
 }
 function vistaOggiGestione() {
   const iso = S.giorno;
+  if (premiumScelto()) return vistaOggiPremium(iso);
   const blocchi = signore().map(z => {
     const ls = pulizieDelGiorno(iso, z.id);
     if (!ls.length) return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><span class="muted">niente</span></div></section>`;
@@ -1825,8 +1852,98 @@ function bloccoSignoreELavori(iso) {
     <button class="piastra p-grafite man-plate" data-vista="manutenzione">${ICONA("attrezzi")}<span class="man-testo"><b>Lavori di manutenzione</b><span>${aperti.length ? `${aperti.length} da fare` : "niente in sospeso"}</span></span>${aperti.length ? `<span class="led" role="img" aria-label="lavori da fare"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
 }
 
+
+// ---- 1.3.0 (Gemini, 26/10): DA SOFIA IN GIU' — LA SOLUZIONE B SCELTA DA MICHELE ("cruscotto a fisarmonica") -------
+// Michele: "la parte messaggi alle signore non va bene, i lavori da fare, le icone, il tasto centrale Sofia, la grafica
+// da Sofia in giu'". Primo giro di Gemini (voto 5,5): via il doppione delle camere (caselle rosa + liste), via il rosa e
+// il viola, tutto blu notte, oro e avorio come la parte alta. Michele ha scelto la B ("mi piace molto, ma migliorala
+// ancora molto"). Secondo giro (7,8 -> 10): avviso su due righe intere col "Detta" piccolo; le due piastre blu notte fuse
+// in un cruscotto solo (pulizie sopra, guasti sotto); fisarmoniche con la testata che resta in vista e righe compatte su
+// due righe; "La settimana di..." come barra in fondo; i due tasti mai coperti dalla barra; linguetta del microfono in
+// basso e trasparente mentre si scorre; barra dell'ora coperta; pagina Lavori senza scatola nella scatola.
+function inizialeSig(z) { return String(SIG(z) || "?").trim().slice(0, 1).toUpperCase(); }
+function avvisiSig(z, ls) { const ap = lavoriAperti(), da = L.aggiungiGiorni(L.oggiISO(), -7); return ls.filter(p => problemaAperto(p)).length + ap.filter(m => m.zona === z && m.fonte === "signora" && (m.data || "") >= da && !m.pulizia).length; }
+function vistaOggiPremium(iso) {
+  const zone = signore();
+  const tutte = zone.flatMap(z => pulizieDelGiorno(iso, z.id));
+  const fatte = tutte.filter(p => p.stato === "fatta").length, inCorso = tutte.filter(p => p.stato === "in_corso").length;
+  const tasti = puoModificare() ? `<section class="o13-tasti"><button type="button" class="o13-tasto o13-wa" data-whatsapp-piano="${iso}">${ico2("manda")}<span>Piano su WhatsApp</span></button><button type="button" class="o13-tasto o13-extra" data-nuovo-lavoro>${ico2("piu")}<span>Lavoro extra</span></button></section>` : "";
+  return `<div class="o13">${avviso130(iso)}${cruscotto130(iso, tutte.length, fatte, inCorso)}${fisarmoniche130(iso, zone)}${tasti}</div>`;
+}
+// l'avviso alle signore: etichetta e "Detta" piccolo sulla prima riga, sotto il testo intero su due righe (Gemini: "un
+// avviso che non si legge a colpo d'occhio tradisce la sua funzione"); un tocco sul testo lo apre per cambiarlo
+function avviso130(iso) {
+  const m = messaggioDelGiorno(iso), q = quandoEtichetta(iso), mod = puoModificare();
+  return `<section class="o13-avv ${m ? "" : "vuoto"}"><div class="o13-avv-testa"><span class="o13-avv-ico">${ico2("megafono")}</span><span class="o13-avv-eti">Avviso alle signore<em> · ${esc(q)}</em></span>${mod ? `<button type="button" class="o13-detta" data-msg-detta="${iso}" aria-label="Detta l'avviso alle signore">${ico2("mic")}<span>Detta</span></button>` : ""}</div>
+    <button type="button" class="o13-avv-corpo" data-msg-giorno="${iso}" aria-label="${m ? "Leggi o cambia l'avviso" : "Scrivi l'avviso"}">${m ? `<p class="o13-avv-testo">${esc(m.testo)}</p><span class="o13-avv-meta">${esc(m.da || "")}${m.ora ? " · " + L.oraBreve(m.ora) : ""} · lo vedono in cima alla loro schermata</span>` : `<p class="o13-avv-testo vuoto">Nessun avviso per ${esc(q.toLowerCase())}. Tocca «Detta» e parla, oppure tocca qui per scriverlo.</p>`}</button></section>`;
+}
+// il cruscotto: UNA piastra blu notte (Gemini: le due impilate erano "un muro nero"): sopra le pulizie di oggi con la
+// barra d'oro (vuota davvero quando e' 0 su 7), sotto la fascia dei guasti che porta ai Lavori
+function cruscotto130(iso, n, f, inCorso) {
+  const q = quandoEtichetta(iso).toLowerCase(), ap = lavoriAperti(), g = ap.length;
+  const nome = (m) => m.camera ? camera(m.camera).nome : "In generale";
+  const pc = n ? Math.round(f / n * 100) : 0, daFare = n - f - inCorso;
+  const sopra = n ? `<div class="o13-cr-testa"><span class="o13-cr-tit">Pulizie di ${esc(q)}</span><span class="o13-cr-num"><strong>${f}</strong><em>su</em>${n}</span></div><div class="o13-cr-barra" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${f}"><i style="width:${pc}%"></i></div><div class="o13-cr-leg"><span class="todo"><b>${daFare}</b> da fare</span>${inCorso ? `<span class="wip"><b>${inCorso}</b> in corso</span>` : ""}<span class="done"><b>${f}</b> ${f === 1 ? "pronta" : "pronte"}</span></div>`
+    : `<div class="o13-cr-testa"><span class="o13-cr-tit">Pulizie di ${esc(q)}</span><span class="o13-cr-num nessuna">nessuna</span></div>`;
+  return `<section class="o13-cr"><div class="o13-cr-sopra">${sopra}</div><button type="button" class="o13-cr-guasti ${g ? "" : "ok"}" data-vista="manutenzione"><span class="o13-cr-gico">${ico2("chiave")}</span><span class="o13-cr-gt">${g ? `<strong>${g} ${g === 1 ? "guasto" : "guasti"}:</strong> ${esc([...new Set(ap.map(nome))].slice(0, 3).join(", "))}${ap.length > 3 ? "…" : ""}` : `<strong>Nessun guasto</strong> · tutto a posto`}</span><span class="o13-va" aria-hidden="true">›</span></button></section>`;
+}
+// la pillola dello stato di una pulizia (Gemini: pallino oro = da fare, ambra che pulsa = in corso, smeraldo = pronta)
+function statoPillola130(p) {
+  const st = STATI[p.stato] || STATI.da_fare;
+  const testo = p.stato === "fatta" ? `Pulita${p.ora ? " " + L.oraBreve(p.ora) : ""}` : p.stato === "in_corso" ? `Dalle ${L.oraBreve(p.inizio)}` : st.testo;
+  return `<span class="o13-st ${st.cls}"><i aria-hidden="true"></i>${esc(testo)}<b aria-hidden="true">›</b></span>`;
+}
+// una pulizia, compatta su due righe: nome + stato; tipo + ospite (le note e i dettagli, se ci sono, sotto)
+function riga130(p) {
+  const c = camera(p.camera), st = STATI[p.stato] || STATI.da_fare;
+  const guasto = lavoriAperti().some(m => m.camera && m.camera === p.camera);
+  const mi = p.stato === "fatta" ? minutiPulizia(p) : null;
+  return `<button type="button" class="o13-riga ${st.cls}" data-pul="${esc(p.id)}"><span class="o13-r1"><b>${esc(c.nome)}</b>${guasto ? `<span class="o13-guasto">${ico2("chiave")}Guasto</span>` : ""}${statoPillola130(p)}</span><span class="o13-r2"><span class="o13-tipo">${p.origine === "governante" ? "★ " : ""}${esc(titoloLavoro(p))}</span>${p.ospite ? `<span class="o13-osp">${esc(p.ospite)}</span>` : ""}${mi != null ? `<span class="o13-osp">${mi} min</span>` : ""}</span>${p.dettagli ? `<span class="o13-dett">${esc(p.dettagli)}</span>` : ""}${p.nota ? `<span class="o13-dett">“${esc(p.nota)}”</span>` : ""}</button>`;
+}
+// le fisarmoniche: una per signora. Chiusa: le pillole delle camere coi pallini; aperta (si apre scivolando): le righe
+// e, in fondo, la barra "La settimana di Anna". La testata resta in vista anche quando si scorre dentro la lista aperta.
+function fisarmoniche130(iso, zone) {
+  if (!zone.length) return "";
+  return zone.map(z => { const ls = pulizieDelGiorno(iso, z.id), f = ls.filter(p => p.stato === "fatta").length, prob = avvisiSig(z.id, ls), aperta = !!(S.oggiAperte && S.oggiAperte[z.id]);
+    const pill = (p) => { const k = (STATI[p.stato] || STATI.da_fare).cls; return `<span class="${k}">${k === "done" ? "✓ " : ""}${esc(camera(p.camera).nome)}</span>`; };
+    return `<section class="o13-acc ${aperta ? "aperta" : ""}" data-acc="${z.id}"><button type="button" class="o13-acc-testa" data-oggi-apri="${z.id}" aria-expanded="${aperta}" aria-controls="acc-${z.id}"><span class="o13-mono">${esc(inizialeSig(z.id))}</span><span class="o13-acc-t"><b>${esc(SIG(z.id))}</b><span>${ls.length ? `${f} di ${ls.length} ${ls.length === 1 ? "pulita" : "pulite"}` : "niente da pulire"}${prob ? ` · <em>${prob} ${prob === 1 ? "avviso" : "avvisi"}</em>` : ""}</span></span><span class="o13-giu" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
+      ${ls.length ? `<div class="o13-pill">${ls.map(pill).join("")}</div>` : ""}
+      <div class="o13-acc-corpo" id="acc-${z.id}"><div class="o13-acc-dentro"><div class="o13-righe">${ls.length ? ls.map(riga130).join("") : `<p class="o13-vuoto">Niente da pulire ${esc(quandoEtichetta(iso).toLowerCase())}.</p>`}</div><button type="button" class="o13-sett" data-signora="${z.id}"><span>La settimana di ${esc(SIG(z.id))}</span><span class="o13-va" aria-hidden="true">›</span></button></div></div></section>`;
+  }).join("");
+}
+// la pagina dei lavori (Gemini): niente spiegazioni lunghe, "Risolto" direttamente sulla riga
+function vistaManutenzionePremium() {
+  const aperti = lavoriAperti(), fatti = lavoriFatti();
+  const riga = (m, fatto) => { const c = m.camera ? camera(m.camera) : null;
+    const quando = fatto ? `Fatto ${m.fatto ? L.dataGiornoLungo(m.fatto.slice(0, 10)) : ""}${m.fattoDa ? " · " + m.fattoDa : ""}` : `${m.stato === "chiamato" ? "Tecnico chiamato · " : ""}segnalato ${m.data ? L.dataGiornoLungo(m.data) : ""}${m.da ? " da " + m.da : ""}`;
+    return `<div class="m13-riga ${fatto ? "fatto" : ""}"><button type="button" class="m13-apri" data-man="${esc(m.id)}"><span class="m13-dove">${c ? esc(c.nome) : "In generale"}</span><b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<span class="m13-nota">${esc(m.nota)}</span>` : ""}<span class="m13-quando">${esc(quando)}</span></button>${!fatto && puoModificare() ? `<button type="button" class="m13-ok" data-man-risolto="${esc(m.id)}">${ico2("spunta")}<span>Risolto</span></button>` : ""}</div>`; };
+  return `<section class="m13-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><div class="m13-tit"><span class="o13-lico">${ico2("chiave")}</span><h2>Lavori da fare${aperti.length ? ` <span>(${aperti.length})</span>` : ""}</h2>${puoModificare() ? `<button type="button" class="o13-lav-piu" data-nuovo-man>${ico2("piu")}<span>Guasto</span></button>` : ""}</div></section>
+    <section class="m13-lista">${aperti.length ? aperti.map(m => riga(m, false)).join("") : `<p class="m13-vuoto">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
+    ${fatti.length ? `<section class="m13-fatti"><details><summary>Fatti (${fatti.length})</summary><div class="m13-lista">${fatti.slice(0, 40).map(m => riga(m, true)).join("")}</div></details></section>` : ""}`;
+}
+// "Detta": si apre il foglio del messaggio e il telefono scrive mentre Michele parla (poi tocca "Manda alle signore")
+function dettaMessaggio(giorno) {
+  apriFoglio({ tipo: "messaggio", giorno });
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const ta = () => document.getElementById("msgTesto");
+  if (!R) { setTimeout(() => { const x = ta(); if (x) x.focus(); }, 80); toast("Per dettare usa il microfono della tastiera"); return; }
+  setTimeout(() => {
+    const x = ta(); if (!x) return;
+    const prima = x.value.trim() ? x.value.trim() + " " : "";
+    let r; try { r = new R(); } catch (e) { x.focus(); return; }
+    r.lang = "it-IT"; r.interimResults = true; r.continuous = true;
+    let silenzio = null; const riarma = (ms) => { clearTimeout(silenzio); silenzio = setTimeout(() => { try { r.stop(); } catch (e) {} }, ms); };
+    x.classList.add("detta-viva"); x.placeholder = "Parla adesso: scrivo io…";
+    r.onresult = (e) => { let s = ""; for (let i = 0; i < e.results.length; i++) s += e.results[i][0].transcript; const y = ta(); if (y) y.value = (prima + s.trim()).replace(/^./, c => c.toUpperCase()); riarma(3000); };
+    r.onerror = () => { const y = ta(); if (y) { y.classList.remove("detta-viva"); y.focus(); } };
+    r.onend = () => { clearTimeout(silenzio); const y = ta(); if (y) { y.classList.remove("detta-viva"); y.placeholder = ""; } };
+    try { r.start(); riarma(9000); } catch (e) { x.classList.remove("detta-viva"); x.focus(); }
+  }, 120);
+}
+
 // ---- Manutenzione: tutti i problemi e i lavori da fare, in un posto solo -----------------
 function vistaManutenzione() {
+  if (premiumScelto()) return vistaManutenzionePremium();
   const aperti = lavoriAperti(), fatti = lavoriFatti();
   const riga = (m) => { const c = m.camera ? camera(m.camera) : null; const p = m.pulizia ? S.pulizie[m.pulizia] : null;
     return `<button class="row man-riga" data-man="${esc(m.id)}"><span>${c ? `<b>${esc(c.nome)}</b> · ` : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<br><span class="muted">${esc(m.nota)}</span>` : ""}<br><span class="muted small">${m.stato === "fatto" ? `Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""} · ` : ""}segnalato ${esc(L.dataGiornoLungo(m.data || m.creato?.slice(0, 10) || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}${m.foto ? " · 📷 foto" : ""}${p && p.stato !== "problema" ? " · camera poi ripulita" : ""}</span></span>${m.stato === "fatto" ? `<span class="badge done">Fatto</span>` : `<span class="badge warn">Da fare</span>`}</button>`; };
@@ -2432,11 +2549,11 @@ function righeNotizie(ls, fatte, man, dom) {
   const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
   // 1.2.0 (Gemini): ogni riga e' una "pillola" con la freccia a destra: si capisce subito che si tocca
   const r = (ico, tono, html, vai) => `<button type="button" class="cr-riga" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t">${html}</span><span class="cr-va" aria-hidden="true">›</span></button>`;
-  const out = [r(ICO_LINEA.pulizie, "verde", ls.length ? `Pulizie oggi: <b>${fatte}</b> fatte su <b>${ls.length}</b>` : `Pulizie oggi: <b>nessuna</b>`, "pulizie")];
-  if (man) out.push(r(ICO_LINEA.lavori, "arancio", `Lavori da fare: <b>${man}</b>`, "manutenzione"));
-  out.push(r(icoArrivi(), "blu", arrivi.length ? `Domani ${arrivi.length === 1 ? "arriva" : "arrivano"} <b>${arrivi.length}</b>: ${esc(nomi.slice(0, 3).join(", "))}${nomi.length > 3 ? "…" : ""}` : "Domani non arriva nessuno", "prospetto"));
-  out.push(r(icoLettoLinea(), "oro", `Stanotte <b>${piene}</b> ${piene === 1 ? "camera piena" : "camere piene"}, <b>${libere}</b> ${libere === 1 ? "libera" : "libere"}`, "prospetto"));
-  if (dom) out.push(r(ICO_LINEA.domande, "rosso", `<b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te`, "sofia"));
+  const out = [r(ico2("campanello"), "verde", ls.length ? `Pulizie oggi: <b>${fatte}</b> fatte su <b>${ls.length}</b>` : `Pulizie oggi: <b>nessuna</b>`, "pulizie")];
+  if (man) out.push(r(ico2("chiave"), "arancio", `Lavori da fare: <b>${man}</b>`, "manutenzione"));
+  out.push(r(ico2("valigia"), "blu", arrivi.length ? `Domani ${arrivi.length === 1 ? "arriva" : "arrivano"} <b>${arrivi.length}</b>: ${esc(nomi.slice(0, 3).join(", "))}${nomi.length > 3 ? "…" : ""}` : "Domani non arriva nessuno", "prospetto"));
+  out.push(r(ico2("letto"), "oro", `Stanotte <b>${piene}</b> ${piene === 1 ? "camera piena" : "camere piene"}, <b>${libere}</b> ${libere === 1 ? "libera" : "libere"}`, "prospetto"));
+  if (dom) out.push(r(ico2("domanda"), "rosso", `<b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te`, "sofia"));
   return out.join("");
 }
 // ---- lei ti parla appena apri l'app -------------------------------------
@@ -3333,6 +3450,9 @@ let sofiaFuoriScroll = null;
 function casaInCima() { try { document.body.classList.toggle("casa-in-cima", (window.scrollY || 0) < 16 && !!document.getElementById("sofiaHero")); } catch (e) {} }
 try { window.addEventListener("scroll", casaInCima, { passive: true }); } catch (e) {}
 try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); sofiaMini(); }, 140); }, { passive: true }); } catch (e) {}
+// 1.3.0 (Gemini): mentre si scorre, la linguetta del microfono si fa trasparente e si ritira (non copre i tasti a destra)
+let scorreT = null;
+try { window.addEventListener("scroll", () => { document.body.classList.add("scorre"); clearTimeout(scorreT); scorreT = setTimeout(() => document.body.classList.remove("scorre"), 600); }, { passive: true }); } catch (e) {}
 
 // 0.42: parlarle col microfono, senza tastiera. Su Android funziona dentro l'app;
 // su iPhone il motore non c'è e si usa il microfono della tastiera (glielo diciamo).
@@ -6984,6 +7104,14 @@ function collega() {
   document.querySelectorAll("[data-whatsapp-settimana]").forEach(b => b.onclick = () => apriWhatsApp(testoPianoSettimana(b.dataset.whatsappSettimana, S.sigSett)));
   document.querySelectorAll("[data-man]").forEach(b => b.onclick = () => apriFoglio({ tipo: "manutenzione", id: b.dataset.man }));
   document.querySelectorAll("[data-nuovo-man]").forEach(b => b.onclick = () => apriFoglio({ tipo: "nuovoMan" }));
+  // 1.3.0: le linguette delle signore, le fisarmoniche, "Risolto" sulla riga, "Detta" e le frasi pronte del messaggio
+  document.querySelectorAll("[data-oggi-apri]").forEach(b => b.onclick = () => {
+    const z = b.dataset.oggiApri, acc = b.closest(".o13-acc"); S.oggiAperte = { ...(S.oggiAperte || {}) }; S.oggiAperte[z] = !S.oggiAperte[z];
+    if (acc) { acc.classList.toggle("aperta", S.oggiAperte[z]); b.setAttribute("aria-expanded", S.oggiAperte[z] ? "true" : "false"); }
+  });
+  document.querySelectorAll("[data-man-risolto]").forEach(b => b.onclick = () => { if (!puoModificare()) return; const id = b.dataset.manRisolto; aggiornaManutenzione(id, { stato: "fatto", fatto: S.db.adesso(), fattoDa: S.utente.nome || "" }, "Segnato come risolto"); });
+  document.querySelectorAll("[data-msg-detta]").forEach(b => b.onclick = () => { if (!puoModificare()) return; dettaMessaggio(b.dataset.msgDetta); });
+  document.querySelectorAll("[data-msg-frase]").forEach(b => b.onclick = () => { if (!puoModificare()) return; const [g, fr] = b.dataset.msgFrase.split("|"); const m = messaggioDelGiorno(g); const base = m ? m.testo.trim().replace(/[.!]?$/, ".") : ""; apriFoglio({ tipo: "messaggio", giorno: g, testo: (base ? base + " " : "") + fr + "." }); });
   // la governante
   document.querySelectorAll("[data-gov-tab]").forEach(b => b.onclick = () => { S.govTab = b.dataset.govTab; disegna(); });
   collegaIA();

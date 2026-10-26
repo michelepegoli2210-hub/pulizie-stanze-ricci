@@ -4187,3 +4187,214 @@ body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-righe{margin-bottom:26px}
 body.premium .nuvola-aperta .casa-nuvola .casa-chat{padding-top:10px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 6px,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 6px,#000 100%)}
 body.premium .sofia-vista .sv-chat{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 6px);mask-image:linear-gradient(to bottom,transparent 0,#000 6px)}
 body.premium .sofia-vista .sv-chips{margin:0 -10px;padding:2px 10px;min-width:calc(100% + 20px);box-sizing:border-box;-webkit-mask-image:none;mask-image:none}
+/* ==========================================================================
+   1.3.0 (Gemini, 26/10) · DA SOFIA IN GIU' — LA SOLUZIONE B SCELTA DA MICHELE, col secondo giro di Gemini (7,8 -> 10).
+   Michele: "il messaggio alle signore non va, i lavori da fare, le icone, il tasto centrale Sofia, la grafica da Sofia in
+   giu'... app da un milione di dollari". Tutto blu notte, oro e avorio come la parte alta; via il rosa e il viola; via il
+   doppione delle camere. Ritmo: 12 px tra i blocchi. Caratteri: Playfair per i numeri grandi e i monogrammi, Montserrat
+   per nomi, tasti ed etichette, Atkinson per leggere.
+   ========================================================================== */
+/* le icone: una famiglia sola (linea 1.8, punte tonde, dettaglio pieno d'oro chiaro) */
+.ico2{width:22px;height:22px;flex:0 0 auto}
+.ico2 .acc{fill:rgba(212,175,106,.30);stroke:#9A7432}
+body.premium .bs-ico .ico2{width:25px;height:25px}
+body.premium .bs-t .ico2 .acc{fill:rgba(212,175,106,.22);stroke:currentColor}
+body.premium .bs-t[aria-pressed="true"] .ico2 .acc{fill:rgba(212,175,106,.45);stroke:#9A7432}
+body.premium .bs-t{color:#64748B}
+body.premium .bs-t[aria-pressed="true"]{color:#0F172A}
+body.premium .bs-t[aria-pressed="true"] .bs-ico{background:#F3EEE3;box-shadow:inset 0 0 0 1px rgba(212,175,106,.45)}
+body.premium .cr-ico .ico2{width:21px;height:21px}
+/* la barra dell'ora coperta (niente scritte fantasma dietro il cristallo); la striscia dei giorni staccata da cio' che
+   scorre sotto con un'ombra morbida */
+body.premium .barra-ora{background:rgba(250,248,245,.98)}
+body.premium.con-ora header{background:#FAF8F5;border-bottom:1px solid #E5DEC9;box-shadow:0 8px 16px -6px rgba(15,23,42,.07)}
+body.premium .day[aria-pressed="true"]{background:#0F172A;border-color:#D4AF6A;box-shadow:inset 0 0 0 1px #D4AF6A,0 6px 14px rgba(15,23,42,.22);color:#FAF8F5;--tx:#FAF8F5}
+body.premium .day[aria-pressed="true"] .dot{background:#F3E3B8}
+@media (max-width:375px){body.premium .day.arrow{flex:0 0 26px;min-width:26px;padding:6px 0 5px}}
+/* la pagina Oggi da Sofia in giu' */
+.o13{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;width:100%;min-width:0}
+.o13>*{min-width:0}
+:where(.o13) button{font:inherit;-webkit-tap-highlight-color:transparent}
+.o13-va{flex:0 0 auto;color:#C5A059;font:400 24px/1 var(--f-ui)}
+/* 1 · l'avviso alle signore: etichetta e "Detta" piccolo sopra, il testo intero su due righe sotto */
+.o13-avv{padding:12px 14px 12px;border-radius:18px;background:linear-gradient(180deg,#FFFFFF 0%,#FAF6EC 100%);border:1.5px solid #D4AF6A;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+.o13-avv-testa{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.o13-avv-ico{display:grid;place-items:center;flex:0 0 auto;width:28px;height:28px;border-radius:9px;background:#FAF5E8;border:1px solid rgba(197,160,89,.45);color:#9A7432}
+.o13-avv-ico .ico2{width:17px;height:17px}
+.o13-avv-eti{flex:1 1 auto;min-width:0;font:800 11.5px/1.2 var(--f-ui);letter-spacing:.9px;text-transform:uppercase;color:#9A7432;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.o13-avv-eti em{font-style:normal;color:#B8A27A}
+.o13-detta{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;height:32px;padding:0 12px 0 9px;border-radius:99px;background:#0F172A;border:1px solid #D4AF6A;color:#F3E3B8;font:700 12.5px/1 var(--f-ui);cursor:pointer;box-shadow:0 3px 8px rgba(15,23,42,.18)}
+.o13-detta .ico2{width:15px;height:15px}
+.o13-detta .ico2 .acc{fill:rgba(212,175,106,.35);stroke:#D4AF6A}
+.o13-avv-corpo{display:block;width:100%;padding:0;border:0;background:none;text-align:left;cursor:pointer}
+.o13-avv-testo{margin:0;font:700 16px/1.35 var(--f-lettura);color:#0F172A;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.o13-avv-testo.vuoto{font-weight:400;font-style:italic;color:#64748B}
+.o13-avv-meta{display:block;margin-top:5px;font:400 12.5px/1.3 var(--f-lettura);color:#8C8475;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.o13-avv.vuoto{border-style:dashed;border-color:rgba(212,175,106,.7)}
+/* 2 · il cruscotto: pulizie sopra, guasti sotto, una piastra sola */
+.o13-cr{border-radius:20px;background:linear-gradient(165deg,#162038 0%,#0F172A 100%);border:1.5px solid #D4AF6A;box-shadow:0 10px 26px rgba(15,23,42,.18);overflow:hidden;color:#FAF8F5}
+.o13-cr-sopra{padding:13px 16px 12px}
+.o13-cr-testa{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.o13-cr-tit{font:700 15px/1.2 var(--f-ui);letter-spacing:.2px;color:#FAF8F5}
+.o13-cr-num{font:600 26px/1 var(--f-titoli);font-variant-numeric:lining-nums tabular-nums;color:#F3E3B8}
+.o13-cr-num em{font-size:16px;font-style:italic;color:#D4AF6A;margin:0 4px}
+.o13-cr-num.nessuna{font-size:19px}
+.o13-cr-barra{height:7px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin-bottom:8px}
+.o13-cr-barra i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#D4AF6A 0%,#F3E3B8 100%);transition:width .4s cubic-bezier(.22,1,.36,1)}
+.o13-cr-leg{display:flex;flex-wrap:wrap;gap:4px 16px;font:400 14px/1.2 var(--f-lettura);color:#CBD5E1}
+.o13-cr-leg b{font-weight:700;color:#FAF8F5}
+.o13-cr-leg span{display:inline-flex;align-items:center;gap:6px}
+.o13-cr-leg span::before{content:"";width:8px;height:8px;border-radius:50%;background:#D4AF6A}
+.o13-cr-leg .wip::before{background:#F59E0B}
+.o13-cr-leg .done::before{background:#34D399}
+.o13-cr-guasti{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:9px 14px 9px 16px;border:0;border-top:1px solid rgba(212,175,106,.32);background:rgba(212,175,106,.14);color:#FAF8F5;text-align:left;cursor:pointer}
+.o13-cr-guasti.ok{background:rgba(52,211,153,.08);border-top-color:rgba(52,211,153,.25)}
+.o13-cr-gico{display:grid;place-items:center;flex:0 0 auto;width:28px;height:28px;border-radius:9px;background:rgba(212,175,106,.16);border:1px solid rgba(212,175,106,.45);color:#D4AF6A}
+.o13-cr-gico .ico2{width:16px;height:16px}
+.o13-cr-gico .ico2 .acc{fill:rgba(212,175,106,.25);stroke:#D4AF6A}
+.o13-cr-guasti.ok .o13-cr-gico{color:#34D399;border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.12)}
+.o13-cr-guasti.ok .o13-cr-gico .ico2 .acc{stroke:#34D399;fill:rgba(52,211,153,.2)}
+.o13-cr-gt{flex:1 1 auto;min-width:0;font:400 15px/1.3 var(--f-lettura);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.o13-cr-gt strong{font-weight:700;color:#F3E3B8}
+.o13-cr-guasti .o13-va{color:#D4AF6A;font-size:22px;font-weight:700}
+/* 3 · le fisarmoniche */
+.o13-acc{padding:4px 12px 12px;border-radius:20px;background:#FFFFFF;border:1.5px solid #ECE6DA;box-shadow:0 6px 18px rgba(15,23,42,.05);transition:border-color .25s ease,box-shadow .25s ease}
+.o13-acc.aperta{border-color:#D4AF6A;box-shadow:0 10px 28px rgba(15,23,42,.09)}
+.o13-acc-testa{display:flex;align-items:center;gap:10px;width:100%;min-height:64px;padding:0;border:0;background:#FFFFFF;text-align:left;cursor:pointer}
+.o13-acc.aperta .o13-acc-testa{position:sticky;top:calc(var(--alto-ora,56px) + 73px + env(safe-area-inset-top,0px));z-index:3;margin:-4px -12px 0;padding:6px 12px 2px;width:calc(100% + 24px);background:#FFFFFF;border-radius:18px 18px 0 0;box-shadow:0 10px 12px -12px rgba(15,23,42,.25)}
+.o13-mono{display:grid;place-items:center;flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFFDF8 0%,#F3E3B8 55%,#D4AF6A 100%);border:1.5px solid #C5A059;box-shadow:inset 0 1px 0 #FFFFFF,0 2px 6px rgba(154,116,50,.25);color:#6B4F1D;font:700 20px/1 var(--f-titoli)}
+.o13-acc-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.o13-acc-t b{font:800 18px/1.1 var(--f-ui);color:#0F172A}
+.o13-acc-t span{font:600 14.5px/1.2 var(--f-lettura);color:#64748B}
+.o13-acc-t em{font-style:normal;color:#B45309}
+.o13-giu{flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#FAF5E8;border:1px solid rgba(197,160,89,.45);color:#856226;transition:transform .26s cubic-bezier(.22,1,.36,1),background .2s ease,color .2s ease}
+.o13-acc.aperta .o13-giu{transform:rotate(180deg);background:#0F172A;border-color:#D4AF6A;color:#F3E3B8}
+.o13-pill{display:flex;flex-wrap:wrap;gap:6px;max-height:120px;opacity:1;transition:opacity .2s ease,max-height .26s ease,margin .26s ease}
+.o13-acc.aperta .o13-pill{max-height:0;opacity:0;overflow:hidden;pointer-events:none}
+.o13-pill span{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:#FAF8F5;border:1px solid #E7E1D4;font:600 14px/1 var(--f-lettura);color:#0F172A}
+.o13-pill span::before{content:"";width:7px;height:7px;border-radius:50%;background:#9A7432}
+.o13-pill span.wip::before{background:#D97706;animation:o13-pulsa 1.4s ease-in-out infinite}
+.o13-pill span.done{background:#ECFDF5;border-color:#A7F3D0;color:#047857}
+.o13-pill span.done::before{display:none}
+.o13-pill span.warn::before{background:#B91C1C}
+.o13-pill span.skip::before{background:#94A3B8}
+@keyframes o13-pulsa{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.6}}
+@media (max-width:375px){.o13-pill span{height:30px;padding:0 11px;font-size:13.5px}.o13-avv-eti em{display:none}}
+.o13-acc-corpo{display:grid;grid-template-rows:0fr;transition:grid-template-rows .26s cubic-bezier(.22,1,.36,1)}
+.o13-acc.aperta .o13-acc-corpo{grid-template-rows:1fr}
+.o13-acc-dentro{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.o13-acc.aperta .o13-acc-dentro{padding-top:8px}
+.o13-righe{display:flex;flex-direction:column;gap:8px}
+/* le righe delle camere: due righe, la barretta dritta a sinistra (dentro, cosi' non fa la "parentesi") */
+.o13-riga{position:relative;display:flex;flex-direction:column;gap:6px;width:100%;padding:11px 12px 11px 16px;border-radius:14px;background:#FAF8F5;border:1px solid #E5DEC9;text-align:left;cursor:pointer;overflow:hidden}
+.o13-riga::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#9A7432}
+.o13-riga.wip::before{background:#D97706}.o13-riga.done::before{background:#15803D}.o13-riga.warn::before{background:#B91C1C}.o13-riga.skip::before{background:#94A3B8}
+.o13-riga.done{background:#F6FBF7}
+.o13-r1{display:flex;align-items:center;gap:8px;min-width:0}
+.o13-r1 b{flex:1 1 auto;min-width:0;font:800 17px/1.15 var(--f-ui);color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.o13-st{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;height:26px;padding:0 6px 0 10px;border-radius:99px;background:#FAF3E3;border:1px solid #DEC89A;color:#9A7432;font:700 13px/1 var(--f-ui);white-space:nowrap}
+.o13-st i{width:7px;height:7px;border-radius:50%;background:#9A7432}
+.o13-st b{font:400 18px/1 var(--f-ui);color:#C5A059;margin-left:2px}
+.o13-st.wip{background:#FEF3C7;border-color:#D97706;color:#B45309}.o13-st.wip i{background:#D97706;animation:o13-pulsa 1.4s ease-in-out infinite}
+.o13-st.done{background:#ECFDF5;border-color:#6EE7B7;color:#047857}.o13-st.done i{background:#10B981}
+.o13-st.warn{background:#FEF2F2;border-color:#FCA5A5;color:#B91C1C}.o13-st.warn i{background:#DC2626}
+.o13-st.skip{background:#F1F5F9;border-color:#CBD5E1;color:#475569}.o13-st.skip i{background:#94A3B8}
+.o13-r2{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px}
+.o13-tipo{padding:2px 8px;border-radius:6px;background:#FFFFFF;border:1px solid #E2DCD0;font:600 13.5px/1.35 var(--f-lettura);color:#57534E}
+.o13-osp{font:600 15px/1.3 var(--f-lettura);color:#334155}
+.o13-dett{font:italic 400 14px/1.35 var(--f-lettura);color:#8C6D3F;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.o13-guasto{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;height:23px;padding:0 9px 0 7px;border-radius:999px;background:#FEF3C7;border:1px solid #D97706;color:#92400E;font:700 12px/1 var(--f-ui)}
+.o13-guasto .ico2{width:14px;height:14px}
+.o13-guasto .ico2 .acc{fill:rgba(217,119,6,.2);stroke:#B45309}
+.o13-vuoto{margin:4px 2px;font:400 16px/1.4 var(--f-lettura);color:#64748B}
+.o13-sett{display:flex;align-items:center;justify-content:space-between;gap:8px;width:calc(100% + 24px);min-height:46px;margin:10px -12px -12px;padding:10px 14px 10px 16px;border:0;border-top:1px solid #E5DEC9;border-radius:0 0 18px 18px;background:#FAF5E8;color:#6B4F1D;font:700 14.5px/1.2 var(--f-ui);cursor:pointer}
+.o13-sett .o13-va{color:#9A7432}
+/* 4 · i due tasti in fondo: mai coperti dalla barra in basso */
+.o13-tasti{display:grid;grid-template-columns:1.15fr 1fr;gap:10px;margin:2px 0 56px}
+.o13-tasto{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:52px;padding:0 10px;border-radius:14px;font:700 14.5px/1.1 var(--f-ui);text-align:center;cursor:pointer}
+.o13-tasto .ico2{width:19px;height:19px}
+.o13-wa{background:#FFFFFF;border:1.5px solid #C5A059;color:#0F172A}
+.o13-wa .ico2{color:#9A7432}
+.o13-extra{background:linear-gradient(135deg,#C9A35C 0%,#B38B45 45%,#856226 100%);border:1px solid #D4AF6A;color:#FFFFFF;text-shadow:0 1px 1px rgba(60,40,10,.25);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 16px rgba(133,98,38,.25)}
+.o13-extra .ico2{stroke-width:2.4}
+/* 5 · la linguetta del microfono: blu notte col filo d'oro, piu' piccola, in basso sopra la barra; mentre si scorre si
+   ritira e si fa trasparente (non copre mai i tasti a destra delle card) */
+body.premium .sofia-mini{bottom:calc(var(--alto-sotto,71px) + 14px + env(safe-area-inset-bottom,0px));z-index:21;transition:opacity .2s ease,transform .2s ease}
+body.premium .sm-pill{width:42px;height:46px;padding-left:11px;border-radius:23px 0 0 23px;background:radial-gradient(circle at 35% 30%,#1E293B 0%,#0F172A 100%);border-color:#D4AF6A;color:#F3E3B8;box-shadow:-4px 6px 16px rgba(15,23,42,.25)}
+body.premium .sm-pill .sm-mic svg{width:20px;height:20px}
+body.premium.scorre .sofia-mini:not([data-stato="ascolto"]):not([data-stato="pensa"]){opacity:.45;transform:translateX(14px)}
+body.premium .sm-nuvola{bottom:calc(var(--alto-sotto,71px) + 66px + env(safe-area-inset-bottom,0px))}
+/* 6 · la pagina Lavori: niente scatola nella scatola, righe larghe, la barretta dritta */
+.m13-testa{display:flex;flex-direction:column;gap:8px}
+.m13-testa .indietro{align-self:flex-start}
+.m13-tit{display:flex;align-items:center;gap:10px}
+.m13-tit h2{flex:1 1 auto;margin:0;font:600 24px/1.1 var(--f-titoli);color:#0F172A}
+.m13-tit h2 span{font-size:19px;color:#9A7432}
+.o13-lico{display:grid;place-items:center;flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:#FFFBEB;border:1px solid rgba(217,119,6,.45);color:#92400E}
+.o13-lico .ico2 .acc{fill:rgba(217,119,6,.18);stroke:#B45309}
+.o13-lav-piu{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;height:42px;padding:0 14px 0 10px;border-radius:12px;background:#FFFBEB;border:1px solid #D97706;color:#92400E;font:700 14.5px/1 var(--f-ui);cursor:pointer}
+.o13-lav-piu .ico2{width:18px;height:18px}
+.m13-lista{display:flex;flex-direction:column;gap:10px}
+.m13-riga{position:relative;display:flex;align-items:center;gap:10px;padding:12px 12px 12px 16px;border-radius:14px;background:#FFFFFF;border:1px solid #E5DEC9;box-shadow:0 2px 8px rgba(15,23,42,.04);overflow:hidden}
+.m13-riga::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C27803}
+.m13-riga.fatto::before{background:#15803D}
+.m13-riga.fatto{opacity:.85}
+.m13-apri{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;padding:0;border:0;background:none;text-align:left;cursor:pointer}
+.m13-dove{font:700 12px/1.1 var(--f-ui);letter-spacing:1px;text-transform:uppercase;color:#9A7432}
+.m13-apri b{font:700 17px/1.25 var(--f-lettura);color:#0F172A}
+.m13-nota{font:400 15px/1.35 var(--f-lettura);color:#475569}
+.m13-quando{font:400 13.5px/1.3 var(--f-lettura);color:#64748B}
+.m13-ok{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;height:44px;padding:0 13px 0 10px;border-radius:12px;background:#0F172A;border:1px solid #D4AF6A;color:#FAF8F5;font:700 14.5px/1 var(--f-ui);cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.18)}
+.m13-ok .ico2{width:18px;height:18px;stroke-width:2.4;color:#D4AF6A}
+.m13-vuoto{margin:4px 2px;font:400 16px/1.4 var(--f-lettura);color:#64748B}
+.m13-fatti summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;font:700 16px/1 var(--f-ui);color:#856226;cursor:pointer}
+.m13-fatti .m13-lista{margin-top:8px}
+/* 7 · il tasto centrale Sofia: la sua faccia nel doppio anello blu notte e oro; il numero accanto al nome, allineato
+   alle altre voci */
+body.premium .bs-sofia .bs-foto{border:2px solid #0F172A;box-shadow:0 0 0 2px #D4AF6A,0 0 0 4px #FFFFFF,0 6px 16px rgba(15,23,42,.25)}
+body.premium .bs-sofia[aria-pressed="true"] .bs-foto{box-shadow:0 0 0 2px #D4AF6A,0 0 0 4px #FFFFFF,0 0 0 5.5px #D4AF6A,0 6px 16px rgba(15,23,42,.3)}
+body.premium .bs-sofia .bs-n{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:16px;overflow:visible;color:#64748B}
+body.premium .bs-sofia[aria-pressed="true"] .bs-n{color:#0F172A}
+body.premium .bs-sofia .nav-conta{position:static;min-width:0;height:16px;padding:0 5px;border-radius:99px;background:#0F172A;border:1px solid #D4AF6A;color:#F3E3B8;box-shadow:none;font:800 10px/14px var(--f-ui);font-style:normal}
+/* tema scuro */
+:root[data-theme="dark"] .o13-avv{background:linear-gradient(180deg,#1E1B18 0%,#191714 100%);border-color:rgba(212,175,106,.6)}
+:root[data-theme="dark"] .o13-avv-testo{color:#F5F1EA}
+:root[data-theme="dark"] .o13-avv-ico{background:#2A2520;border-color:rgba(212,175,106,.35)}
+:root[data-theme="dark"] .o13-acc{background:#1E1B18;border-color:#35302A}
+:root[data-theme="dark"] .o13-acc-testa,:root[data-theme="dark"] .o13-acc.aperta .o13-acc-testa{background:#1E1B18}
+:root[data-theme="dark"] .o13-acc-t b{color:#F5F1EA}
+:root[data-theme="dark"] .o13-pill span{background:#2A2520;border-color:#3D372F;color:#E7E1D6}
+:root[data-theme="dark"] .o13-pill span.done{background:rgba(16,185,129,.12);border-color:rgba(110,231,183,.35);color:#6EE7B7}
+:root[data-theme="dark"] .o13-giu{background:#2A2520;border-color:rgba(212,175,106,.35);color:#D4AF6A}
+:root[data-theme="dark"] .o13-riga{background:#242019;border-color:#3D372F}
+:root[data-theme="dark"] .o13-riga.done{background:#1F2620}
+:root[data-theme="dark"] .o13-r1 b{color:#F5F1EA}
+:root[data-theme="dark"] .o13-tipo{background:#2A2520;border-color:#3D372F;color:#D6CDBF}
+:root[data-theme="dark"] .o13-osp{color:#C9BFAE}
+:root[data-theme="dark"] .o13-st{background:rgba(212,175,106,.12);border-color:rgba(212,175,106,.4);color:#E2C27E}
+:root[data-theme="dark"] .o13-st.done{background:rgba(16,185,129,.14);border-color:rgba(110,231,183,.35);color:#6EE7B7}
+:root[data-theme="dark"] .o13-sett{background:#2A2520;border-top-color:#3D372F;color:#E2C27E}
+:root[data-theme="dark"] .o13-wa{background:#1E1B18;color:#F5F1EA}
+:root[data-theme="dark"] .m13-riga{background:#1E1B18;border-color:#3D372F}
+:root[data-theme="dark"] .m13-apri b{color:#F5F1EA}
+:root[data-theme="dark"] .m13-tit h2{color:#F5F1EA}
+:root[data-theme="dark"] body.premium.con-ora header{background:#141210;border-bottom-color:#35302A;box-shadow:0 8px 16px -6px rgba(0,0,0,.4)}
+:root[data-theme="dark"] body.premium .barra-ora{background:rgba(20,18,16,.98)}
+:root[data-theme="dark"] body.premium .bs-sofia .bs-foto{box-shadow:0 0 0 2px #D4AF6A,0 0 0 4px #1E1B18,0 6px 16px rgba(0,0,0,.4)}
+:root[data-theme="dark"] .o13-lico{background:#2A2520;border-color:rgba(217,119,6,.4);color:#F59E0B}
+:root[data-theme="dark"] .o13-lav-piu{background:#2A2520;color:#F59E0B}
+/* tema scuro: la striscia dei giorni (prima: scritte bianche su bianco) e la voce scelta della barra in basso */
+:root[data-theme="dark"] body.premium .day{background:#1E1B18;color:#F5F1EA;--tx:#F5F1EA;box-shadow:inset 0 0 0 1px #35302A}
+:root[data-theme="dark"] body.premium .day .dot{background:#9A7432}
+:root[data-theme="dark"] body.premium .day[aria-pressed="true"]{background:#0F172A;box-shadow:inset 0 0 0 1px #D4AF6A,0 6px 14px rgba(0,0,0,.4)}
+:root[data-theme="dark"] body.premium .bs-t{color:#A89F91}
+:root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"]{color:#F3E3B8}
+:root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"] .bs-ico{background:#2A2520;box-shadow:inset 0 0 0 1px rgba(212,175,106,.45)}
+:root[data-theme="dark"] body.premium .bs-t[aria-pressed="true"] .ico2 .acc{stroke:#D4AF6A}
+:root[data-theme="dark"] body.premium .bs-sofia .bs-n{color:#A89F91}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-n{color:#F3E3B8}
+:root[data-theme="dark"] body.premium .barra-ora{background:rgba(20,18,16,1)}
+/* terzo giro (Gemini 3.1 Pro, Argon non rispondeva): le scritte della barra in basso piu' grandi e leggibili */
+body.premium .bs-t{font:700 13.5px/1.1 var(--f-ui)}
+body.premium .bs-sofia .bs-n{font-size:13.5px}
+@media (max-width:375px){body.premium .bs-t{font-size:11.8px;letter-spacing:-.2px}body.premium .bs-sofia .bs-n{font-size:11.8px}}
