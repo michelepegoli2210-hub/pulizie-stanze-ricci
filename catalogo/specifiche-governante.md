@@ -1864,3 +1864,10 @@ Michele, con la 1.5.5 sul telefono: "Non so bene cosa non mi piace, ma non mi pi
 - Etichette tutte in Plus Jakarta 700 da 12,5 px (blu notte quella scelta e «Sofia», #334155 le altre); icone a riposo con la traccia blu notte e il cuore champagne più caldo (38%); il lingottino d'oro incastonato a filo nel bordo in basso del medaglione scelto (18×2,5 px).
 ### PROVE
 - prova150tenda e prova130oggi aggiornate (brillante bianco senza azzurro, una scintilla, etichette 700, icone a riposo). Tutte le altre prove di prima.
+
+## 93. La 1.6.1 (26 ottobre, notte): LA FOTO DI MICHELE — CRISTALLO, CORMORANT DAPPERTUTTO, LA PIETRA ROSSA
+Michele, vista la 1.6.0, manda una foto rielaborata della prima pagina e dice: "metti questo font e la pietra rossa sotto al posto del diamante, e ricordati che dove si trova Sofia tutti i riquadri devono essere trasparenti".
+- Trasparenza: nella prima pagina tutto torna cristallo come nella 1.5.x (il riquadro 46→26% con sfocatura 14, le righe bianche al 56% col filo d'oro a sinistra e i quadratini beige delle icone, le linguette in un incasso di cristallo con la scelta blu notte di vetro, il consiglio blu notte di vetro). La regola di Michele è fissata: dove c'è Sofia, i riquadri si vedono attraverso.
+- Carattere: Cormorant Garamond su tutta la prima pagina, linguette e barra comprese (linguette 700 da 16, saluto 600 da 26 col nome in corsivo «Buonasera, *Michele!*» come in foto, righe 600 da 19,5 coi numeri 700 da 20 e le cifre "antiche" come in foto — lo 0 piccolo, il 7 che scende —, consiglio 600 da 18, etichette della barra 700 da 14,5). Il corsivo 600 di Cormorant torna in `fonts/` solo per il nome nel saluto. Il resto dell'app resta come nella 1.6.0 (Plus Jakarta per le etichette, Cormorant per i titoli).
+- Il tasto Sofia: un rubino a taglio brillante visto dall'alto (disegno nostro, SVG 44 px: tavola ottagonale, 16 faccette rosse alternate chiare e scure, filetti di luce bianchi, alone caldo, una scintilla che respira) sul disco di marmo blu notte con la ghiera d'oro, come nella foto.
+- Prove: le stesse della 1.6.0 (il tasto Sofia è ancora `.bs-diamante` con una scintilla `dm-respiro`).
