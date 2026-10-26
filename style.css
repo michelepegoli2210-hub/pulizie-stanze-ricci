@@ -4670,37 +4670,38 @@ body.premium .bs-gioiello.bs-biglia{width:68px;height:68px;margin-top:-30px}
 @keyframes bg-gira{to{transform:translate3d(-126px,0,0)}}
 body.premium .bs-biglia svg{width:48px;height:48px;margin:-24px 0 0 -24px}
 /* ============================================================================
-   1.5.2 (Michele, 26/10 notte): via la biglia (prendeva troppa vista rispetto a Sofia), resta la stella d'oro;
-   il corsivo sulla prima pagina (saluto e consiglio in Cormorant Garamond corsivo)
-   ============================================================================ */
-/* la stella d'oro da sola, leggera: niente disco, niente ghiera, niente ombra a terra; gira piano come prima (24 s) */
-body.premium .bs-gioiello.bs-stella{position:relative;display:grid;place-items:center;width:56px;height:56px;margin-top:-18px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
-body.premium .bs-stella svg{position:static;width:50px;height:50px;margin:0;overflow:visible;filter:drop-shadow(0 2px 3px rgba(15,23,42,.35)) drop-shadow(0 0 7px rgba(212,175,106,.40))}
-body.premium .bs-sofia[aria-pressed="true"] .bs-stella svg{filter:drop-shadow(0 2px 3px rgba(15,23,42,.35)) drop-shadow(0 0 10px rgba(212,175,106,.75))}
-body.premium .bs-sofia[aria-pressed="true"] .bs-stella::after{content:"";position:absolute;left:50%;bottom:-5px;width:16px;height:3px;margin-left:-8px;border-radius:99px;background:#F3E5AB;box-shadow:0 0 6px #D4AF6A}
-body.premium .bs-sofia .bs-gioiello .nav-conta{top:-7px;right:-12px}
-:root[data-theme="dark"] body.premium .bs-gioiello.bs-stella{box-shadow:none}
-/* il corsivo (prova di Gemini, scelta A): il saluto e il consiglio di Sofia in Cormorant Garamond corsivo; le righe coi numeri restano dritte */
-body.premium .casa-nuvola .casa-ciao{font:italic 600 26px/1.15 "Cormorant Garamond",Georgia,serif;letter-spacing:-.01em;text-shadow:0 1px 0 rgba(255,255,255,.9),0 0 10px rgba(247,244,238,.98)}
-body.premium .casa-nuvola .casa-spinta{font:italic 700 19px/1.15 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em;padding-top:8px;padding-bottom:8px}
-/* da tendina chiusa il saluto in corsivo si stringe un po' (26 -> 22 px): deve starci intero accanto alla pillola */
-body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:22px}
-body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{font-size:12.5px;padding:0 9px}
-/* ============================================================================
-   1.5.3 (Michele, 26/10 notte: "il corsivo lo devi fare molto piu' visibile"): un corsivo vero, a mano e in grassetto
-   (Dancing Script 700), piu' grande, anche sul nome in alto; le righe si stringono di 2 px per farci stare tutto
+   1.5.5 (Michele, 26/10 notte): "la due mi piace di piu' (Cormorant sulle righe); togli il corsivo pero'; metti di nuovo
+   blu marmorizzato con vene d'oro e il pulsante Sofia deve essere un diamante vero; unico corsivo: Le Stanze di Ricci"
    ============================================================================ */
 @font-face{font-family:"Dancing Script";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/dancing-script-latin-700-normal.woff2) format("woff2")}
-/* il saluto: grande, in grassetto, blu notte con l'alone chiaro dietro */
-body.premium .casa-nuvola .casa-ciao{font:700 32px/1.1 "Dancing Script",cursive;letter-spacing:0;text-shadow:0 1px 0 rgba(255,255,255,.95),0 0 12px rgba(247,244,238,1),0 0 4px rgba(247,244,238,1)}
-body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:24px}
-/* il consiglio di Sofia: corsivo a mano in avorio sul blu */
-body.premium .casa-nuvola .casa-spinta{font:700 21px/1.15 "Dancing Script",cursive;letter-spacing:.005em;padding-top:7px;padding-bottom:7px}
-/* il nome in alto: "Le Stanze di Ricci" scritto a mano, in oro (non piu' maiuscolo spaziato) */
+@font-face{font-family:"Cormorant Garamond";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-garamond-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Cormorant Garamond";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/cormorant-garamond-latin-700-normal.woff2) format("woff2")}
+/* ---- l'unico corsivo: il nome in alto, scritto a mano in oro ---- */
 body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{font:700 21px/1 "Dancing Script",cursive;letter-spacing:0;text-transform:none;color:#9A7432;text-shadow:0 1px 0 rgba(255,255,255,.9)}
 body.premium .bo-marca b.bo-m2{margin-left:.25em}
 body.premium .bo-marca::after{margin-top:3px}
 @media (max-width:370px){body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{font-size:18px}}
 :root[data-theme="dark"] body.premium .bo-marca b,:root[data-theme="dark"] body.premium .bo-marca b.bo-m2{color:#D4AF6A;text-shadow:none}
-/* le righe delle notizie: 40 px invece di 42, cosi' le tre righe e il consiglio restano in vista insieme */
-body.premium .cr-riga{min-height:40px}
+/* ---- il saluto, le righe e il consiglio: Cormorant Garamond dritto (la "due"), cifre allineate e grandi ---- */
+body.premium .casa-nuvola .casa-ciao{font:700 28px/1.1 "Cormorant Garamond",Georgia,serif;letter-spacing:0;font-variant-numeric:lining-nums;text-shadow:0 1px 0 rgba(255,255,255,.95),0 0 10px rgba(247,244,238,1)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:23px}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{font-size:12.5px;padding:0 9px}
+body.premium .cr-riga{min-height:40px;font:600 19px/1.1 "Cormorant Garamond",Georgia,serif;letter-spacing:0;font-variant-numeric:lining-nums tabular-nums}
+body.premium .cr-riga b{font-weight:700;font-size:20.5px}
+body.premium .casa-nuvola .casa-spinta{font:700 19px/1.15 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em;font-variant-numeric:lining-nums;padding-top:7px;padding-bottom:7px}
+/* ---- il tasto Sofia: il disco di marmo blu notte con le venature d'oro (come nella 1.4.0) e sopra un diamante
+        sfaccettato, bianco-ghiaccio, con tre scintille che si accendono a turno; la ghiera d'oro; il numerino ---- */
+body.premium .bs-gioiello.bs-diamante{position:relative;display:grid;place-items:center;width:58px;height:58px;margin-top:-22px;padding:0;border-radius:50%;background-color:#0F172A;background-image:radial-gradient(120% 90% at 15% 0%,rgba(212,175,106,.22) 0%,transparent 55%),linear-gradient(180deg,rgba(15,23,42,.15) 0%,rgba(9,14,26,.55) 100%),url(marmo-biglia.webp),linear-gradient(145deg,#16223D 0%,#0F172A 55%,#080D1A 100%);background-size:100% 100%,100% 100%,116px 116px,100% 100%;background-position:center,center,-20px -30px,center;background-blend-mode:screen,normal,normal,normal;border:2px solid #D4AF6A;box-shadow:0 0 0 2.5px #FAF8F5,0 6px 14px rgba(15,23,42,.32),inset 0 2px 4px rgba(255,235,180,.45),inset 0 -3px 6px rgba(0,0,0,.7);overflow:visible}
+body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-diamante{box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 4px #D4AF6A,0 6px 14px rgba(15,23,42,.36),inset 0 2px 4px rgba(255,235,180,.45),inset 0 -3px 6px rgba(0,0,0,.7)}
+body.premium .bs-diamante svg{position:static;width:44px;height:44px;margin:0;overflow:visible;filter:drop-shadow(0 0 5px rgba(190,225,255,.55))}
+body.premium .bs-sofia[aria-pressed="true"] .bs-diamante svg{filter:drop-shadow(0 0 7px rgba(210,235,255,.85))}
+.bs-diamante .dm-glint path{opacity:0;transform-box:fill-box;transform-origin:center;animation:dm-scintilla 4.2s ease-in-out infinite}
+.bs-diamante .dm-glint .g1{animation-delay:.3s}
+.bs-diamante .dm-glint .g2{animation-delay:1.8s}
+.bs-diamante .dm-glint .g3{animation-delay:3s}
+@keyframes dm-scintilla{0%,100%{opacity:0;transform:scale(.3) rotate(0)}10%{opacity:1;transform:scale(1.1) rotate(20deg)}22%{opacity:0;transform:scale(.3) rotate(45deg)}}
+@media (prefers-reduced-motion:reduce){.bs-diamante .dm-glint path{animation:none;opacity:.7}}
+body.pagina-nascosta .bs-diamante .dm-glint path{animation-play-state:paused}
+body.premium .bs-sofia .bs-gioiello .nav-conta{top:-5px;right:-8px}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-diamante{box-shadow:0 0 0 2.5px #1E1B18,0 6px 14px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,235,180,.35),inset 0 -3px 6px rgba(0,0,0,.7)}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-diamante{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 4px #D4AF6A,0 6px 14px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,235,180,.35),inset 0 -3px 6px rgba(0,0,0,.7)}
