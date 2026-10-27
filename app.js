@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.6.6";
+export const VERSIONE = "1.7.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -216,7 +216,7 @@ function barraOra() {
   document.body.classList.toggle("senza-orologio", !orologioVoluto());
   if (!b) {
     b = document.createElement("div"); b.id = "barraOra"; b.className = "barra-ora"; b.setAttribute("aria-live", "off");
-    b.innerHTML = `<span class="bo-marca" aria-label="Le Stanze di Ricci"><b>Le Stanze</b><b class="bo-m2">di Ricci</b><small>Pulizie</small></span><b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
+    b.innerHTML = `<button type="button" class="bo-indietro" data-indietro aria-label="Indietro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Indietro</span></button><span class="bo-marca" aria-label="Le Stanze di Ricci"><b>Le Stanze</b><b class="bo-m2">di Ricci</b><small>Pulizie</small></span><b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
     document.body.insertBefore(b, document.body.firstChild);
   }
   b.hidden = false; document.body.classList.add("con-ora");
@@ -255,6 +255,12 @@ function ico2(k) {
     paghe: '<circle class="acc" cx="12" cy="12" r="9"/><path d="M15 8.8a3.6 3.6 0 0 0-5.3 2.4v1.6A3.6 3.6 0 0 0 15 15.2M7.6 11h5.2M7.6 13.4h4.4"/>',
     stella: '<path class="acc" d="M12 2.5l2.6 6.9 6.9 2.6-6.9 2.6L12 21.5l-2.6-6.9L2.5 12l6.9-2.6z"/><circle cx="12" cy="12" r="1.8"/>',
     campanello: '<path class="acc" d="M4.5 17h15a1 1 0 0 0 1-1v-.6a8.5 8.5 0 0 0-17 0v.6a1 1 0 0 0 1 1z"/><path d="M10 4.5h4M12 4.5v2.4M2.5 20h19"/>',
+    // 1.7.0 (Gemini Argon): le icone delle righe delle Notizie, squadrate e coerenti con quello che c'e' scritto
+    pulizie2: '<path class="acc" d="M18.5 3.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/><path d="M7 4h5v3H7zM5 4h7M12 5.5l2.5 1.5"/><path d="M7 7l-1.5 3.5v9.5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9.5L12 7"/><path d="M5.5 15h8"/>',
+    lavori2: '<path d="M8 7V4.5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V7"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h6.5M14.5 12H21"/><rect class="acc" x="9.5" y="10" width="5" height="4" rx="1"/>',
+    arrivi2: '<path d="M7.5 7V3.5h5V7"/><rect x="5" y="7" width="10" height="12" rx="1.5"/><path d="M10 7v12M7 19v2M13 19v2"/><path class="acc" d="M17 13h4.5m0 0l-2.5-2.5m2.5 2.5l-2.5 2.5"/>',
+    camere2: '<path d="M4 11V5.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 5.5V11"/><rect class="acc" x="6.5" y="7.5" width="4.5" height="3.5" rx=".8"/><rect class="acc" x="13" y="7.5" width="4.5" height="3.5" rx=".8"/><rect x="3" y="11" width="18" height="6" rx="1.5"/><path d="M5 17v3M19 17v3"/>',
+    domande2: '<path class="acc" d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v10a1.5 1.5 0 0 1-1.5 1.5H8l-4 3.5V5.5Z"/><path d="M10.2 8.5a2 2 0 0 1 3.8.7c0 1.3-2 1.8-2 3M12 14.8h.01"/>',
     chiave: '<path class="acc" d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',
     valigia: '<rect x="3" y="7.5" width="18" height="12.5" rx="2.5"/><path d="M9 7.5V5.5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path class="acc" d="M3 12.5h18v2.5H3z"/>',
     letto: '<path d="M3 18.5v-11M3 14h18v4.5M21 14v-1.5a3 3 0 0 0-3-3h-7.5V14"/><circle class="acc" cx="7" cy="11.2" r="2.1"/>',
@@ -294,7 +300,7 @@ function NAV_HTML(v, inCasa) {
 const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], ["sofia", "", ""], ["piantine", "Piantine", "mappa"], ["paghe", "Paghe", "euro"]];
 // la stella d'oro zecchino a quattro punte (curva astroidale), sfaccettata, coi raggi piccoli in diagonale e cinque
 // granelli di polvere d'oro (fuori dal gruppo che gira). Disegno nostro.
-const ORO_STELLA = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="osOmbra" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5A4010"/><stop offset="1" stop-color="#7A5A1E"/></linearGradient><linearGradient id="osCorpo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9CC7A"/><stop offset=".5" stop-color="#CDA43C"/><stop offset="1" stop-color="#A07A24"/></linearGradient></defs><g class="dm-glint"><path d="M33 13 C34.6 26.5 39.5 31.4 53 33 C39.5 34.6 34.6 39.5 33 53 C31.4 39.5 26.5 34.6 13 33 C26.5 31.4 31.4 26.5 33 13 Z" fill="#FFF0BE" opacity=".8"/><path d="M32 12 C33.6 25.5 38.5 30.4 52 32 C38.5 33.6 33.6 38.5 32 52 C30.4 38.5 25.5 33.6 12 32 C25.5 30.4 30.4 25.5 32 12 Z" fill="url(#osOmbra)" opacity=".9"/><path d="M32 13.5 C33.5 26 38 30.5 50.5 32 C38 33.5 33.5 38 32 50.5 C30.5 38 26 33.5 13.5 32 C26 30.5 30.5 26 32 13.5 Z" fill="url(#osCorpo)"/><circle cx="32" cy="32" r="2" fill="#FFF8E1" opacity=".9"/></g></svg>`;
+const ORO_STELLA = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="osOmbra" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3D2B0E"/><stop offset="1" stop-color="#5A4218"/></linearGradient><linearGradient id="osCorpo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A3512"/><stop offset=".5" stop-color="#6B4E1E"/><stop offset="1" stop-color="#D9B878"/></linearGradient></defs><g class="dm-glint"><path d="M33 13 C34.6 26.5 39.5 31.4 53 33 C39.5 34.6 34.6 39.5 33 53 C31.4 39.5 26.5 34.6 13 33 C26.5 31.4 31.4 26.5 33 13 Z" fill="none" stroke="#FFF3D6" stroke-width="1.3" opacity=".65"/><path d="M32 12 C33.6 25.5 38.5 30.4 52 32 C38.5 33.6 33.6 38.5 32 52 C30.4 38.5 25.5 33.6 12 32 C25.5 30.4 30.4 25.5 32 12 Z" fill="url(#osOmbra)" opacity=".9"/><path d="M32 13.5 C33.5 26 38 30.5 50.5 32 C38 33.5 33.5 38 32 50.5 C30.5 38 26 33.5 13.5 32 C26 30.5 30.5 26 32 13.5 Z" fill="url(#osCorpo)"/><circle cx="32" cy="32" r="2" fill="#FFF8E1" opacity=".9"/></g></svg>`;
 const DIAMANTE = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="amCuore" cx=".46" cy=".42" r=".6"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".95"/><stop offset=".3" stop-color="#FFC25A" stop-opacity=".8"/><stop offset="1" stop-color="#FF9A1F" stop-opacity="0"/></radialGradient><linearGradient id="amA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8891A"/></linearGradient><linearGradient id="amB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7A531"/><stop offset="1" stop-color="#B85A0C"/></linearGradient><linearGradient id="amC" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9721A"/><stop offset="1" stop-color="#7A3A06"/></linearGradient><linearGradient id="amD" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFE09A"/><stop offset="1" stop-color="#F29A22"/></linearGradient><radialGradient id="amAlone" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB03B" stop-opacity=".6"/><stop offset="1" stop-color="#FFB03B" stop-opacity="0"/></radialGradient><radialGradient id="amLucido" cx=".35" cy=".25" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".75"/><stop offset=".45" stop-color="#FFFFFF" stop-opacity=".12"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs><circle cx="32" cy="33" r="27" fill="url(#amAlone)"/><polygon points="33,9 48,21 50,39 40,57 27,58 14,42 18,19" fill="rgba(2,6,23,.5)" transform="translate(1,3)"/><polygon points="33,6 48,20 33,30" fill="url(#amA)"/><polygon points="48,20 50,38 33,30" fill="url(#amB)"/><polygon points="50,38 40,56 33,30" fill="url(#amC)"/><polygon points="40,56 28,58 33,30" fill="#9C4A08"/><polygon points="28,58 14,42 33,30" fill="url(#amB)"/><polygon points="14,42 18,18 33,30" fill="url(#amD)"/><polygon points="18,18 33,6 33,30" fill="#FFCB6B"/><circle cx="32" cy="31" r="15" fill="url(#amCuore)"/><g fill="#5A2A05" opacity=".55"><circle cx="38" cy="36" r=".9"/><circle cx="27" cy="40" r=".7"/><circle cx="41" cy="27" r=".6"/><circle cx="30" cy="48" r=".8"/><ellipse cx="24" cy="33" rx="1.3" ry=".6" transform="rotate(-30 24 33)"/></g><g fill="#FFFFFF" opacity=".5"><circle cx="36" cy="44" r=".8"/><circle cx="22" cy="27" r=".6"/></g><path d="M33,6 L33,30 M48,20 L33,30 M50,38 L33,30 M40,56 L33,30 M28,58 L33,30 M14,42 L33,30 M18,18 L33,30" fill="none" stroke="#FFF3D6" stroke-opacity=".32" stroke-width=".7"/><polygon points="33,6 48,20 50,38 40,56 28,58 14,42 18,18" fill="url(#amLucido)"/><polygon points="33,6 48,20 50,38 40,56 28,58 14,42 18,18" fill="none" stroke="#FFF1CC" stroke-opacity=".85" stroke-width=".9" stroke-linejoin="round"/><path d="M21,19 L32,9 L32,16 L24,24 Z" fill="#FFFFFF" opacity=".5"/><g class="dm-glint" transform="translate(25,16)"><path d="M0,-5.5 C0.4,-1.4 1.4,-0.4 5.5,0 C1.4,0.4 0.4,1.4 0,5.5 C-0.4,1.4 -1.4,0.4 -5.5,0 C-1.4,-0.4 -0.4,-1.4 0,-5.5 Z" fill="#FFFFFF"/><circle cx="0" cy="0" r="1.3" fill="#FFF8E6"/></g></svg>`;
 const STELLA_ORO = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="oroZ" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF8DC"/><stop offset=".25" stop-color="#F7DC8A"/><stop offset=".5" stop-color="#D4AF6A"/><stop offset=".78" stop-color="#9A7432"/><stop offset="1" stop-color="#FFE599"/></linearGradient><filter id="oroL" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#D4AF6A" flood-opacity=".65"/></filter></defs><g class="st-polvere"><circle class="p1" cx="18" cy="18" r="1.4" fill="#FFF8DC"/><circle class="p2" cx="47" cy="16" r="1.1" fill="#F7DC8A"/><circle class="p3" cx="49" cy="44" r="1.5" fill="#FFF8DC"/><circle class="p4" cx="16" cy="45" r="1" fill="#D4AF6A"/><circle class="p5" cx="32" cy="10" r="1.2" fill="#FFF8DC"/></g><g class="st-gira" filter="url(#oroL)"><path d="M32 20 L34.5 29.5 L44 32 L34.5 34.5 L32 44 L29.5 34.5 L20 32 L29.5 29.5 Z" fill="#9A7432" opacity=".75" transform="rotate(45 32 32)"/><path d="M32 9 C33.8 24.5 39.5 30.2 55 32 C39.5 33.8 33.8 39.5 32 55 C30.2 39.5 24.5 33.8 9 32 C24.5 30.2 30.2 24.5 32 9 Z" fill="url(#oroZ)" stroke="#FFF8DC" stroke-width=".6"/><path d="M32 9 L35 29 L55 32 L32 32 Z" fill="#FFFDF5" opacity=".45"/><path d="M32 55 L29 35 L9 32 L32 32 Z" fill="#5E4314" opacity=".35"/><circle cx="32" cy="32" r="2.2" fill="#FFFFFF"/></g></svg>`;
 document.addEventListener("visibilitychange", () => { try { document.body.classList.toggle("pagina-nascosta", document.hidden); } catch (e) {} });
@@ -642,7 +648,7 @@ document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest && e.target.closest("[data-casa-parla]");
   if (!t) return;
   e.preventDefault(); e.stopPropagation();
-  { const hh = document.getElementById("sofiaHero"); if (hh) { hh.classList.add("msg-aperto"); if (hh.classList.contains("tenda-chiusa")) tendaApri(true, false); } }   // 1.6.5: si legge anche a tendina chiusa
+  messaggioApri(true);   // 1.6.5: si legge anche a tendina chiusa; 1.7.0: Indietro lo richiude
   benvenutoSofia();
 }, true);
 function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
@@ -1259,6 +1265,7 @@ function disegna() {
   if (condivisoAtteso) guardaCondiviso();
   if (letturaAttesa) guardaLettura();
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
+  try { indietroVista(); } catch (e) {}   // 1.7.0
 }
 
 // 0.99.1: anche le signore hanno l'ora sempre in vista (accanto al giorno, in alto a destra)
@@ -2261,6 +2268,7 @@ function casaOssatura(tre) {
     ${NAV_HTML("oggi", true)}
     <span class="casa-velo" aria-hidden="true"></span>
     <div class="casa-nuvola" id="casaNuvola">
+      <span class="casa-vene" aria-hidden="true"></span>
       <div class="casa-schede" role="tablist" aria-label="Notizie o chat">
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="notizie" aria-selected="true">${ICO_LINEA.foglio}<span>Notizie di oggi</span></button>
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="chat" aria-selected="false">${ICO_LINEA.chat}<span>Chat</span><i class="cs-conta" hidden></i></button>
@@ -2389,23 +2397,118 @@ function tendaApri(si, ricorda) {
   const h = document.getElementById("sofiaHero"); if (!h) return;
   si = !!si;
   h.classList.toggle("tenda-chiusa", !si);
-  if (!si) h.classList.remove("msg-aperto");   // 1.6.5
+  if (!si) messaggioApri(false);   // 1.6.5
   const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", si ? "true" : "false");
   if (ricorda !== false) { try { localStorage.setItem(CHIAVE_TENDA, si ? "1" : "0"); } catch (e) {} }
   setTimeout(() => { try { nuvolaLeggiAggiorna(h); } catch (e) {} }, 380);
 }
+// 1.7.0 (Michele: "in ogni menu', ogni cosa che apro, devo poter tornare indietro"): la pila delle cose aperte. Ogni cosa
+// che si apre (una schermata, la chat, il messaggio di Sofia, un foglio) mette una pagina nella storia del browser: il
+// tasto Indietro di Android la toglie e richiude la cosa invece di buttare fuori dall'app; la pillola «Indietro» in alto a
+// sinistra fa lo stesso. Se la cosa si chiude da sola (dalla sua X), la pagina di storia si toglie da sola.
+const INDIETRO = { pila: [], daPop: false };
+function indietroApri(nome, chiudi) {
+  INDIETRO.pila.push({ nome, chiudi });
+  try { history.pushState({ ricci: nome, n: INDIETRO.pila.length }, ""); } catch (e) {}
+  indietroTasto();
+}
+function indietroChiudi(nome) {
+  const i = INDIETRO.pila.map(x => x.nome).lastIndexOf(nome); if (i < 0) return;
+  INDIETRO.pila.splice(i, 1);
+  if (history.state && history.state.ricci === nome) { INDIETRO.daPop = true; try { history.back(); } catch (e) { INDIETRO.daPop = false; } }
+  indietroTasto();
+}
+function indietro() {
+  const x = INDIETRO.pila.pop(); if (!x) return false;
+  if (history.state && history.state.ricci === x.nome) { INDIETRO.daPop = true; try { history.back(); } catch (e) { INDIETRO.daPop = false; } }
+  try { x.chiudi(); } catch (e) {}
+  indietroTasto(); return true;
+}
+window.addEventListener("popstate", () => {
+  if (INDIETRO.daPop) { INDIETRO.daPop = false; indietroTasto(); return; }      // era il nostro history.back(): gia' chiuso
+  const x = INDIETRO.pila.pop(); if (x) { try { x.chiudi(); } catch (e) {} }
+  indietroTasto();
+});
+function indietroTasto() {
+  const si = INDIETRO.pila.length > 0;
+  try { document.body.classList.toggle("con-indietro", si); const b = document.querySelector("#barraOra .bo-indietro"); if (b) b.hidden = !si; } catch (e) {}
+}
+document.addEventListener("click", (e) => { const b = e.target && e.target.closest && e.target.closest("[data-indietro]"); if (!b) return; e.preventDefault(); e.stopPropagation(); indietro(); }, true);
+// le schermate: ogni schermata diversa da «Oggi» si lascia con Indietro (si torna a Oggi); da una schermata all'altra la
+// voce resta una sola, cosi' Indietro non deve essere premuto dieci volte
+let vistaPrima = null;
+function indietroVista() {
+  const v = S.vista || "oggi"; if (v === vistaPrima) return;
+  vistaPrima = v;
+  const k = INDIETRO.pila.map(x => x.nome).indexOf("vista");
+  if (v === "oggi") { if (k >= 0) indietroChiudi("vista"); return; }
+  const chiudi = () => { S.vista = "oggi"; try { disegna(); } catch (e) {} window.scrollTo(0, 0); };
+  if (k >= 0) INDIETRO.pila[k].chiudi = chiudi; else indietroApri("vista", chiudi);
+}
+// 1.7.0: la tendina a misura (Michele: "devo poter scegliere piu' facilmente la tendina, quanto la voglio sopra a Sofia"):
+// trascinando la testata col dito il riquadro segue il dito; lasciato, resta li' (e la misura resta in memoria); un colpo
+// secco in giu' la chiude, in su la riapre. La misura e' una frazione dell'altezza della casa (vale su ogni telefono).
+const CHIAVE_TENDA_TOP = "ricci_tenda_top";
 let tendaDito = null;
+function tendaLimiti(h) {
+  const nv = h.querySelector(".casa-nuvola"), hr = h.getBoundingClientRect(), r = nv.getBoundingClientRect();
+  const fondo = r.bottom - hr.top, hc = fondo + 17;                 // il bordo in basso non si muove mai
+  const lato = h.querySelector(".casa-lato"); const lb = lato ? lato.getBoundingClientRect().bottom - hr.top : 0;
+  return { fondo, hc, min: Math.max(lb + 10, hc * .3), chiusa: fondo - 108, def: hc * .547 };
+}
+function tendaMisuraMemoria() { try { const v = parseFloat(localStorage.getItem(CHIAVE_TENDA_TOP)); return v >= .25 && v <= .9 ? v : null; } catch (e) { return null; } }
+function tendaMisuraApplica(h) { const v = tendaMisuraMemoria(); if (h && v) h.style.setProperty("--tenda-top", `calc(var(--h-casa) * ${v.toFixed(4)})`); }
+function tendaMisura(h, top) {
+  const L = tendaLimiti(h); top = Math.min(L.chiusa - 60, Math.max(L.min, top));
+  const v = top / L.hc; try { localStorage.setItem(CHIAVE_TENDA_TOP, v.toFixed(4)); } catch (e) {}
+  h.style.setProperty("--tenda-top", `calc(var(--h-casa) * ${v.toFixed(4)})`);
+}
 document.addEventListener("touchstart", (e) => {
   const x = e.target && e.target.closest && e.target.closest("#sofiaHero .casa-schede, #sofiaHero .casa-saluto");
-  tendaDito = x && e.touches && e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+  const h = document.getElementById("sofiaHero");
+  if (!x || !h || h.classList.contains("nuvola-aperta") || !e.touches || !e.touches[0]) { tendaDito = null; return; }
+  const hr = h.getBoundingClientRect(), r = h.querySelector(".casa-nuvola").getBoundingClientRect();
+  tendaDito = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), top0: r.top - hr.top, chiusa: h.classList.contains("tenda-chiusa"), mosso: false };
+}, { passive: true });
+document.addEventListener("touchmove", (e) => {
+  if (!tendaDito || !e.touches || !e.touches[0]) return;
+  const h = document.getElementById("sofiaHero"); if (!h) { tendaDito = null; return; }
+  const dy = e.touches[0].clientY - tendaDito.y, dx = e.touches[0].clientX - tendaDito.x;
+  if (!tendaDito.mosso) {
+    if (Math.abs(dy) < 8 || Math.abs(dy) < Math.abs(dx)) return;
+    tendaDito.mosso = true; h.classList.add("tenda-trascina");
+    if (tendaDito.chiusa) { h.classList.remove("tenda-chiusa"); const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", "true"); }
+    tendaDito.lim = tendaLimiti(h);
+  }
+  const L = tendaDito.lim, top = Math.min(L.chiusa, Math.max(L.min, tendaDito.top0 + dy));
+  h.style.setProperty("--tenda-top", top + "px");
 }, { passive: true });
 document.addEventListener("touchend", (e) => {
-  if (!tendaDito || !e.changedTouches || !e.changedTouches[0]) { tendaDito = null; return; }
-  const dx = e.changedTouches[0].clientX - tendaDito.x, dy = e.changedTouches[0].clientY - tendaDito.y; tendaDito = null;
-  if (Math.abs(dy) < 35 || Math.abs(dy) < Math.abs(dx)) return;
-  const h = document.getElementById("sofiaHero"); if (!h || h.classList.contains("nuvola-aperta")) return;
-  tendaApri(dy < 0);
+  if (!tendaDito) return; const d = tendaDito; tendaDito = null;
+  const h = document.getElementById("sofiaHero"); if (!h) return;
+  const tt = e.changedTouches && e.changedTouches[0]; const dy = tt ? tt.clientY - d.y : 0, dx = tt ? tt.clientX - d.x : 0, dt = Date.now() - d.t;
+  const colpo = dt < 320 && Math.abs(dy) >= 35 && Math.abs(dy) > Math.abs(dx);
+  if (!d.mosso) { if (colpo && !h.classList.contains("nuvola-aperta")) tendaApri(dy < 0); return; }   // un tocco: lo fa il click; un colpo secco: apre/chiude
+  h.classList.remove("tenda-trascina");
+  const L = d.lim || tendaLimiti(h), top = d.top0 + dy;
+  if ((colpo && dy > 0) || top > L.chiusa - 60) { tendaMisuraApplica(h); if (!tendaMisuraMemoria()) h.style.removeProperty("--tenda-top"); tendaApri(false); return; }
+  if (colpo && dy < 0) { tendaMisura(h, d.chiusa ? (tendaMisuraMemoria() ? tendaMisuraMemoria() * L.hc : L.def) : L.min); }
+  else tendaMisura(h, top);
+  if (d.chiusa) tendaApri(true);
 }, { passive: true });
+// 1.7.0: il messaggio di Sofia (tocco sul consiglio o «Ascolta»): si apre e si chiude da qui; Indietro lo richiude
+function messaggioApri(si) {
+  const h = document.getElementById("sofiaHero"); if (!h) return;
+  si = !!si;
+  if (h.classList.contains("msg-aperto") === si) return;
+  h.classList.toggle("msg-aperto", si);
+  const sc = h.querySelector(".casa-nuvola .casa-testo");
+  if (si) {
+    if (h.classList.contains("tenda-chiusa")) tendaApri(true, false);
+    indietroApri("messaggio", () => messaggioApri(false));
+    if (sc) setTimeout(() => { try { sc.scrollTo({ top: 0, behavior: "smooth" }); } catch (er) { sc.scrollTop = 0; } }, 40);
+  } else { indietroChiudi("messaggio"); if (sc) sc.scrollTop = 0; }
+}
 let nuvolaTimer = null, nuvolaUltima = null;
 function nuvolaApri(si) {
   const h = document.getElementById("sofiaHero"); if (!h) return;
@@ -2413,6 +2516,7 @@ function nuvolaApri(si) {
   clearTimeout(nuvolaTimer); nuvolaTimer = null;
   if (h.classList.contains("nuvola-aperta") !== si) {
     h.classList.toggle("nuvola-aperta", si);
+    if (si) indietroApri("chat", () => nuvolaApri(false)); else indietroChiudi("chat");   // 1.7.0
     const m = h.querySelector(".casa-maniglia"); if (m) m.setAttribute("aria-expanded", si ? "true" : "false");
   }
   // 1.1.0: le linguette dicono quale parte si vede; aprendo la chat si va all'ultimo messaggio e il numerino si azzera
@@ -2461,12 +2565,10 @@ document.addEventListener("click", (e) => {
   const aperta = h.classList.contains("nuvola-aperta");
   const sch = x.closest("[data-casa-scheda]");
   if (sch) { e.preventDefault(); nuvolaApri(sch.dataset.casaScheda === "chat"); if (sch.dataset.casaScheda === "notizie" && h.classList.contains("tenda-chiusa")) tendaApri(true); return; }
-  if (x.closest("[data-tenda]")) { e.preventDefault(); if (aperta) nuvolaApri(false); else if (h.classList.contains("msg-aperto") && !h.classList.contains("tenda-chiusa")) { h.classList.remove("msg-aperto"); const sc = h.querySelector(".casa-nuvola .casa-testo"); if (sc) sc.scrollTop = 0; } else tendaApri(h.classList.contains("tenda-chiusa")); return; }   // 1.6.5
+  if (x.closest("[data-tenda]")) { e.preventDefault(); if (aperta) nuvolaApri(false); else if (h.classList.contains("msg-aperto") && !h.classList.contains("tenda-chiusa")) messaggioApri(false); else tendaApri(h.classList.contains("tenda-chiusa")); return; }   // 1.6.5, 1.7.0
   // 1.2.0 (Gemini): il messaggio lungo di Sofia non sta piu' sotto le righe (era un doppione): si apre toccando il consiglio
   if (!aperta && x.closest(".casa-nuvola .casa-spinta")) {
-    const su = !h.classList.contains("msg-aperto"); h.classList.toggle("msg-aperto", su);
-    // il messaggio compare in cima (sotto il saluto): si torna su per leggerlo dall'inizio; richiuso, si riparte dalla prima riga
-    const sc = h.querySelector(".casa-nuvola .casa-testo"); if (sc) setTimeout(() => { try { sc.scrollTo({ top: 0, behavior: "smooth" }); } catch (er) { sc.scrollTop = 0; } }, 40);
+    messaggioApri(!h.classList.contains("msg-aperto"));   // 1.7.0: si apre e si chiude da messaggioApri (Indietro lo sa)
     return;
   }
   if (x.closest("[data-casa-apri]")) { e.preventDefault(); nuvolaApri(!aperta); return; }
@@ -2609,11 +2711,11 @@ function righeNotizie(ls, fatte, man, dom) {
   const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
   // 1.2.0 (Gemini): ogni riga e' una "pillola" con la freccia a destra: si capisce subito che si tocca
   const r = (ico, tono, html, vai) => `<button type="button" class="cr-riga" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t">${html}</span><span class="cr-va" aria-hidden="true">›</span></button>`;
-  const out = [r(ico2("campanello"), "verde", ls.length ? `Pulizie oggi: <b>${fatte}</b> fatte su <b>${ls.length}</b>` : `Pulizie oggi: <b>nessuna</b>`, "pulizie")];
-  if (man) out.push(r(ico2("chiave"), "arancio", `Lavori da fare: <b>${man}</b>`, "manutenzione"));
-  out.push(r(ico2("valigia"), "blu", arrivi.length ? `Domani ${arrivi.length === 1 ? "arriva" : "arrivano"} <b>${arrivi.length}</b>: ${esc(nomi.slice(0, 3).join(", "))}${nomi.length > 3 ? "…" : ""}` : "Domani non arriva nessuno", "prospetto"));
-  out.push(r(ico2("letto"), "oro", `Stanotte <b>${piene}</b> ${piene === 1 ? "camera piena" : "camere piene"}, <b>${libere}</b> ${libere === 1 ? "libera" : "libere"}`, "prospetto"));
-  if (dom) out.push(r(ico2("domanda"), "rosso", `<b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te`, "sofia"));
+  const out = [r(ico2("pulizie2"), "verde", ls.length ? `Pulizie oggi: <b>${fatte}</b> fatte su <b>${ls.length}</b>` : `Pulizie oggi: <b>nessuna</b>`, "pulizie")];
+  if (man) out.push(r(ico2("lavori2"), "arancio", `Lavori da fare: <b>${man}</b>`, "manutenzione"));
+  out.push(r(ico2("arrivi2"), "blu", arrivi.length ? `Domani ${arrivi.length === 1 ? "arriva" : "arrivano"} <b>${arrivi.length}</b>: ${esc(nomi.slice(0, 3).join(", "))}${nomi.length > 3 ? "…" : ""}` : "Domani non arriva nessuno", "prospetto"));
+  out.push(r(ico2("camere2"), "oro", `Stanotte <b>${piene}</b> ${piene === 1 ? "camera piena" : "camere piene"}, <b>${libere}</b> ${libere === 1 ? "libera" : "libere"}`, "prospetto"));
+  if (dom) out.push(r(ico2("domande2"), "rosso", `<b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te`, "sofia"));
   return out.join("");
 }
 // ---- lei ti parla appena apri l'app -------------------------------------
@@ -2684,6 +2786,7 @@ function disegnaCasa() {
     h.className = "sofia-hero";
     h.dataset.tre = tre;
     h.innerHTML = casaOssatura(!!tre);
+    tendaMisuraApplica(h);   // 1.7.0: la misura scelta col dito
     if (tendaVuoleChiusa()) { h.classList.add("tenda-chiusa"); const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", "false"); }
     const t = document.querySelector("header");
     document.body.insertBefore(h, t || document.body.firstChild);
@@ -5650,8 +5753,8 @@ function vistaAvvisi() {
 //  Fogli (pannelli dal basso)
 // ---------------------------------------------------------------------------
 function elFoglio() { let s = $(".sheet"); if (!s) { s = document.createElement("div"); s.className = "sheet"; document.body.appendChild(s); s.onclick = e => { if (e.target === s) chiudiFoglio(); }; } return s; }
-function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); }
-function apriFoglio(f) { S.foglio = f; disegnaFoglio(); }
+function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); }
+function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); }
 
 function disegnaFoglio() {
   const f = S.foglio; if (!f) return;
