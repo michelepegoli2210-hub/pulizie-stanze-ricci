@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.9.1";
+export const VERSIONE = "1.10.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -649,11 +649,12 @@ document.addEventListener("click", (e) => {
 }, true);
 function casaVaiPagina(k) {
   if (k === "arrivi" || k === "camere") k = "prospetto";
+  if (k === "domani") { const d = L.aggiungiGiorni(L.oggiISO(), 1); S.giorno = d; S.settimana = L.lunediDi(d); k = "prospetto"; }   // 1.10.0
   if (k === "pulizie") { const a = document.getElementById("app"); const top = a ? a.getBoundingClientRect().top + window.scrollY - 70 : window.innerHeight; window.scrollTo({ top, behavior: "smooth" }); return; }
   S.vista = k; disegna(); window.scrollTo(0, 0);
 }
 // 1.7.1: il dettaglio di una riga, scritto grande dentro il riquadro di Sofia
-const DETTAGLI = { pulizie: 1, manutenzione: 1, arrivi: 1, camere: 1, sofia: 1 };
+const DETTAGLI = { pulizie: 1, manutenzione: 1, arrivi: 1, camere: 1, sofia: 1, domani: 1 };
 function dettaglioApri(k) {
   const h = document.getElementById("sofiaHero"); if (!h || h.classList.contains("nuvola-aperta")) return false;
   h.dataset.dettaglio = k;
@@ -688,6 +689,14 @@ function dettaglioHtml(k, ls, fatte) {
     righe = piene.map(cm => { const s = L.ospiteIl(sog, cm.id, oggi); return r(`<b>${esc(cm.nome)}</b> · ${esc(s ? nomeCortoOspite(s) : "")}${s && s.fine ? `<small>fino a ${esc(giornoParlato(s.fine))}</small>` : ""}`); });
     if (libere.length) righe.push(r(`<b>Libere:</b> ${esc(libere.map(cm => cm.nome).join(", "))}`));
     sofia = dice(c && c.testo ? c.testo : ""); tasto = pagina("prospetto", "Apri il prospetto");
+  } else if (k === "domani") {
+    // 1.10.0: le pulizie di domani, per le telefonate alle signore
+    const dm = pulizieDelGiorno(domani), perSig = {};
+    dm.forEach(p => { const s = SIG(p.zona); perSig[s] = (perSig[s] || 0) + 1; });
+    titolo = dm.length ? `Domani, ${esc(L.dataGiornoLungo(domani))}: <b>${dm.length}</b> ${dm.length === 1 ? "pulizia" : "pulizie"}` : `Domani, ${esc(L.dataGiornoLungo(domani))}: nessuna pulizia`;
+    if (dm.length) righe.push(r(`<b>Da chiamare:</b> ${esc(Object.entries(perSig).map(([s, n]) => `${s} (${n} ${n === 1 ? "camera" : "camere"})`).join(", "))}`));
+    righe = righe.concat(dm.map(p => r(`<b>${esc(camera(p.camera).nome)}</b> · ${esc(SIG(p.zona))} · ${esc(statoTesto(p))}`)));
+    sofia = dice(c && c.testo ? c.testo : ""); tasto = pagina("domani", "Apri il prospetto di domani");
   } else if (k === "sofia") {
     let ap = []; try { ap = statoChatApp().aperte; } catch (e) {}
     titolo = ap.length ? `<b>${ap.length}</b> ${ap.length === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te` : `Nessuna domanda di ${esc(nomeGov())}`;
@@ -2326,6 +2335,7 @@ function casaOssatura(tre) {
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="notizie" aria-selected="true">${ICO_LINEA.foglio}<span>Notizie di oggi</span></button>
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="chat" aria-selected="false">${ICO_LINEA.chat}<span>Chat</span><i class="cs-conta" hidden></i></button>
       </div>
+      <button type="button" class="cr-riga cr-tess cs-domani" data-casa-vai="domani" aria-label="Le pulizie di domani"></button>
       <button type="button" class="casa-saluto" data-tenda aria-expanded="true" aria-label="Apri o chiudi le notizie"><b class="casa-ciao"></b><i class="cs-mini" hidden></i><span class="cs-freccia" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
       <div class="casa-testo">
         <div class="casa-righe"></div>
@@ -2497,7 +2507,7 @@ function indietroVista() {
   if (v !== "oggi") for (const n of ["messaggio", "chat"]) { const j = INDIETRO.pila.map(x => x.nome).lastIndexOf(n); if (j >= 0) { INDIETRO.pila.splice(j, 1); if (history.state && history.state.ricci === n) riusa = true; } }   // 1.7.1
   const k = INDIETRO.pila.map(x => x.nome).indexOf("vista");
   if (v === "oggi") { if (k >= 0) indietroChiudi("vista"); return; }
-  const chiudi = () => { S.vista = "oggi"; try { disegna(); } catch (e) {} window.scrollTo(0, 0); };
+  const chiudi = () => { S.vista = "oggi"; S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); try { disegna(); } catch (e) {} window.scrollTo(0, 0); };   // 1.10.0: si torna a Sofia (oggi) anche dal prospetto di domani
   if (k >= 0) INDIETRO.pila[k].chiudi = chiudi; else indietroApri("vista", chiudi, riusa);
 }
 // 1.7.0: la tendina a misura (Michele: "devo poter scegliere piu' facilmente la tendina, quanto la voglio sopra a Sofia"):
@@ -2511,7 +2521,7 @@ function tendaLimiti(h) {
   const lb = Math.max(...[".casa-lato", ".casa-lato-sx"].map(s => { const e = h.querySelector(s); return e && getComputedStyle(e).display !== "none" ? e.getBoundingClientRect().bottom - hr.top : 0; }));
   const min = Math.max(lb + 10, hc * .36);
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
-  return { fondo, hc, min, chiusa: fondo - 76, def: hc * .60, scatti: [min, hc * .60, hc * .70] };
+  return { fondo, hc, min, chiusa: fondo - 108, def: hc * .60, scatti: [min, hc * .60, hc * .70] };
 }
 function tendaScatto(L, top) { let m = L.scatti[0]; for (const s of L.scatti) if (Math.abs(s - top) < Math.abs(m - top)) m = s; return m; }
 function tendaMisuraMemoria() { try { const v = parseFloat(localStorage.getItem(CHIAVE_TENDA_TOP)); return v >= .25 && v <= .9 ? v : null; } catch (e) { return null; } }
@@ -2735,7 +2745,19 @@ function casaAggiorna(h) {
   if (mini) {
     const parti = [ls.length ? `${fatte}/${ls.length} pulizie` : "0 pulizie"];   // 1.6.6: senza il saluto accanto, si spiega da sola
     if (man) parti.push(`${man} ${man === 1 ? "lavoro" : "lavori"}`); else if (dom) parti.push(`${dom} ${dom === 1 ? "domanda" : "domande"}`);
-    const tm = parti.join(" · "); if (mini.textContent !== tm) mini.textContent = tm; mini.hidden = false;
+    const tm = "Oggi: " + parti.join(" · "); if (mini.textContent !== tm) mini.textContent = tm; mini.hidden = false;   // 1.10.0: «Oggi:» davanti, perche' sopra c'e' domani
+  }
+  // 1.10.0 (Michele: "quando chiudo la tendina qualcosa mi deve dire: le pulizie del giorno dopo, per fare le chiamate"):
+  // la tessera «Domani» nella striscia chiusa: quante pulizie e per quale signora; un tocco apre il dettaglio
+  const cd = q(".cs-domani");
+  if (cd) {
+    const domani = L.aggiungiGiorni(oggi, 1), dm = pulizieDelGiorno(domani), perSig = {};
+    dm.forEach(p => { const s = SIG(p.zona); perSig[s] = (perSig[s] || 0) + 1; });
+    const chi = Object.entries(perSig).map(([s, n]) => `${s} ${n}`).join(", ");
+    const quando = L.dataGiornoLungo(domani).replace(/^(\S{3})\S*/, "$1");
+    const hh = `<span class="cr-ico verde" aria-hidden="true">${ico2("pulizie3")}</span><span class="cr-t"><small class="cr-l">Domani · ${esc(quando)}</small><b class="cr-v">${dm.length ? `${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}: ${esc(chi)}` : "nessuna pulizia"}</b></span><span class="cr-va" aria-hidden="true">›</span>`;
+    if (cd.innerHTML !== hh) cd.innerHTML = hh;
+    cd.classList.toggle("att", dm.length > 0);
   }
   const det = h.dataset.dettaglio ? dettaglioHtml(h.dataset.dettaglio, ls, fatte) : null;   // 1.7.1
   if (sal) { if (det) { if (sal.innerHTML !== det.titolo) sal.innerHTML = det.titolo; sal.classList.remove("lunga"); } else { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); } }

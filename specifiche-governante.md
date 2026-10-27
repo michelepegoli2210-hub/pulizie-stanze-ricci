@@ -1953,3 +1953,10 @@ Michele, vista la 1.9.0: "le due anguille devono andare nella stessa direzione; 
 - La firma: le due anguille nuotano tutte e due verso destra, parallele, una davanti in alto e una dietro in basso (stessa onda, una lunghezza d'onda di distanza), nel riquadro 150×16 (prima 150×14, specchiate una contro l'altra).
 - Il tasto d'oro: via il puntino chiaro al centro della stella incisa.
 - Prove: le stesse della 1.9.0 (prova120casa misura il fondo delle tessere dal colore di base, non dalla trasparenza).
+
+## 105. La 1.10.0 (27 ottobre): IL VETRO QUASI NUDO; DA CHIUSA LA STRISCIA DICE LE PULIZIE DI DOMANI
+Michele, vista la 1.9.1: "ancora più trasparente, anche le tessere e il messaggio. E quando chiudo la tendina mi resta soltanto mezza scritta delle pulizie: non va bene, qualcosa mi deve dire, qualcosa di principale: le pulizie da fare il giorno dopo, per fare le chiamate. Anzi, fammi mettere questo".
+- Il vetro: velo 6-22% (era 12-32), sfocatura 7 px (era 9); scuro 10-32%. Le lastre del messaggio al 50%, le tessere al 54%, quelle d'oro al 62% (scuro 42/46/58%); dietro le lettere un alone chiaro (text-shadow) così si leggono anche sopra la giacca blu e i capelli di Sofia.
+- La striscia chiusa (108 px invece di 76): in cima la tessera «Domani · mer 28 ott — 3 pulizie: Lucia 3» (quante pulizie e quante per ogni signora, dal prospetto; d'oro se ce ne sono; «nessuna pulizia» se no), sotto la riga di oggi («Oggi: 0/7 pulizie · 2 lavori») con la freccia che apre. Un tocco sulla tessera apre il dettaglio «Domani, mercoledì 28 ott: 3 pulizie» nel riquadro grande: «Da chiamare: Lucia (3 camere)», poi le righe camera · signora · tipo, e il tasto «Apri il prospetto di domani» (il prospetto sulla settimana di domani).
+- «Indietro» da una pagina riporta sempre a Sofia (oggi), anche quando si veniva dal prospetto di domani (prima restava sul giorno di domani, senza di lei).
+- Prove: prova150tenda (striscia chiusa 108 px con la tessera «Domani», il tocco apre il dettaglio e la tessera sparisce da aperta; «Oggi:» davanti al riassunto), prova120casa (le tessere contate solo se visibili). Le altre come nella 1.9.1.
