@@ -5109,3 +5109,39 @@ body.premium .bs-sofia::before{background:radial-gradient(circle,rgba(255,200,10
 :root[data-theme="dark"] body.premium .cr-ico .ico2 .acc{fill:rgba(212,175,106,.28);stroke:#E5C888}
 :root[data-theme="dark"] body.premium .casa-nuvola .casa-spinta,:root[data-theme="dark"] body.premium .casa-nuvola>.casa-spinta{background-color:#131C31;background-image:radial-gradient(120% 90% at 15% 0%,rgba(212,175,106,.18) 0%,transparent 55%),linear-gradient(90deg,rgba(19,28,49,.66) 0%,rgba(19,28,49,.74) 100%),url(marmo-blu.webp),linear-gradient(90deg,#131C31 0%,#1B2744 100%);background-size:100% 100%,100% 100%,220px 220px,100% 100%;background-position:center,center,10px -30px,center;background-repeat:no-repeat,no-repeat,repeat,no-repeat;background-blend-mode:screen,normal,normal,normal;border-color:rgba(212,175,106,.5);color:#FAF3E0}
 :root[data-theme="dark"] body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-sal,:root[data-theme="dark"] body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-riga{background:rgba(6,9,17,.95);border-color:rgba(212,175,106,.55);color:#FFFFFF;text-shadow:none;box-shadow:inset 0 2px 12px rgba(0,0,0,.7)}
+/* ============================================================================
+   1.7.1 (Michele, 27/10 mattina: un filo piu' trasparente, oro piu' chiaro, la tendina a scatti con la presa, il dettaglio
+   delle righe). Michele: "rendilo leggermente piu' trasparente, sempre sfocato, verso il sotto; il bottone leggermente piu'
+   chiaro, si deve capire che e' oro; la tendina deve essere piu' utilizzabile e leggermente piu' bassa; quando clicco su un
+   settore, esempio Pulizie oggi, devo poterlo vedere bene, soprattutto i consigli di Sofia".
+   ============================================================================ */
+/* ---- il riquadro: un filo piu' trasparente in alto (si intravede Sofia), pieno verso il fondo dove ci sono le scritte ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background-color:rgba(243,238,229,.86);background-image:linear-gradient(180deg,rgba(250,248,245,.72) 0%,rgba(246,242,234,.86) 45%,rgba(243,238,229,.94) 100%);padding-top:16px}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background-color:rgba(7,10,19,.86);background-image:linear-gradient(180deg,rgba(11,16,29,.70) 0%,rgba(9,13,24,.86) 45%,rgba(7,10,19,.94) 100%)}
+/* la presa in cima (si trascina da li', come un cassetto) e il cerchietto allineato alle linguette piu' in basso */
+body.premium .casa-nuvola .casa-presa{position:absolute;top:5px;left:50%;width:42px;height:5px;margin-left:-21px;border-radius:99px;z-index:2;background:linear-gradient(90deg,#C9A35A 0%,#EBD29A 50%,#C9A35A 100%);box-shadow:0 1px 2px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.6);touch-action:none;cursor:grab}
+body.premium .sofia-hero.nuvola-aperta .casa-nuvola .casa-presa{display:none}
+body.premium .sofia-hero:not(.tenda-chiusa):not(.nuvola-aperta) .casa-nuvola .casa-saluto{top:16px}
+/* la misura di partenza un filo piu' bassa (58% invece di 54,7%): Sofia respira di piu' */
+body.premium .sofia-hero:not(.nuvola-aperta):not(.msg-aperto){--nv-top:var(--tenda-top,calc(var(--h-casa) * .58));--nv-alto:calc(var(--h-casa) - 17px - var(--nv-top))}
+/* ---- il bottone: oro satinato un po' piu' chiaro (si capisce che e' oro), sempre anodizzato e bombato ---- */
+body.premium .bs-gioiello.bs-oro{background:radial-gradient(120% 90% at 50% 18%,rgba(245,226,170,.36) 0%,rgba(245,226,170,0) 55%),linear-gradient(175deg,#DDBB74 0%,#B8923F 52%,#7D5B1F 100%)}
+body.premium .bs-sofia:active .bs-oro{background:radial-gradient(120% 90% at 50% 18%,rgba(232,204,150,.2) 0%,rgba(232,204,150,0) 55%),linear-gradient(175deg,#9A7432 0%,#866527 50%,#5E431B 100%)}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-oro{background:radial-gradient(120% 90% at 50% 18%,rgba(240,214,150,.3) 0%,rgba(240,214,150,0) 55%),linear-gradient(175deg,#CFAA5E 0%,#A07C34 54%,#5E431B 100%)}
+/* ---- il dettaglio di una riga nel riquadro grande ---- */
+body.premium .casa-nuvola .casa-riga .dt-r{display:block;padding:8px 0;border-top:1px solid rgba(197,160,89,.32);font:600 20px/1.3 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;color:#0F172A}
+body.premium .casa-nuvola .casa-riga .dt-r:first-child,body.premium .casa-nuvola .casa-riga .dt-sofia+.dt-r{border-top:0;padding-top:2px}
+body.premium .casa-nuvola .casa-riga .dt-r b{font-weight:700}
+body.premium .casa-nuvola .casa-riga .dt-r small{display:block;margin-top:1px;font:600 14px/1.2 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:.01em;color:#785A28}
+body.premium .casa-nuvola .casa-riga .dt-vuoto{color:#64748B;font-style:italic}
+body.premium .casa-nuvola .casa-riga .dt-sofia{display:block;margin:2px 0 10px;padding:10px 12px 10px 36px;position:relative;border-radius:12px;background:rgba(212,175,106,.14);border:1px solid rgba(212,175,106,.5);font:600 19px/1.35 "Cormorant Garamond",Georgia,serif;font-style:italic;color:#0F172A}
+body.premium .casa-nuvola .casa-riga .dt-sofia i{position:absolute;left:12px;top:10px;font-style:normal;color:#9A7432}
+body.premium .casa-nuvola .casa-riga .dt-pagina{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:12px;padding:0 14px;height:44px;border-radius:12px;background:linear-gradient(180deg,#1E293B 0%,#0F172A 100%);border:1px solid #D4AF6A;color:#FAF8F5;font:700 16px/1 "Plus Jakarta Sans",system-ui,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+body.premium .casa-nuvola .casa-riga .dt-pagina span{font-size:22px;line-height:1;color:#D4AF6A}
+body.premium .sofia-hero.con-dettaglio .casa-nuvola .casa-sal{padding-bottom:8px}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga .dt-r{color:#FFFFFF;border-top-color:rgba(212,175,106,.28)}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga .dt-r small{color:#E5C888}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga .dt-sofia{background:rgba(212,175,106,.12);border-color:rgba(212,175,106,.45);color:#FAF3E0}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga .dt-sofia i{color:#E5C888}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga .dt-pagina{background:linear-gradient(180deg,#F7ECD4 0%,#E6D2A4 100%);color:#0F172A}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga .dt-pagina span{color:#0F172A}
