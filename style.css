@@ -5220,3 +5220,64 @@ body.premium .casa-nuvola .casa-sal.lunga{font-size:20px}
 :root[data-theme="dark"] body.premium .casa-nuvola .casa-sal,:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga{background:rgba(20,28,46,.8);border-color:rgba(212,175,106,.38);color:#FAF8F5}
 /* la misura di partenza: il riquadro un po' piu' basso (60%), cosi' Sofia si vede bene; a scatti come prima */
 body.premium .sofia-hero:not(.nuvola-aperta):not(.msg-aperto){--nv-top:var(--tenda-top,calc(var(--h-casa) * .60));--nv-alto:calc(var(--h-casa) - 17px - var(--nv-top))}
+/* ============================================================================
+   1.9.0 (Michele, 27/10, con Gemini Argon: le notizie tornano nel riquadro, in tessere; via la chat; la firma con le
+   anguille; la barra stretta). Michele: "rimetti le notizie nel riquadro sotto (i widget a lato erano disordinati); Sofia
+   grande come adesso; appena apro devo vedere in un secondo pulizie, manutenzioni, chi arriva e chi c'e', e i suggerimenti
+   di Sofia; via la chat dal riquadro; due anguille come una firma sotto Le Stanze di Ricci; la barra in alto piu' stretta".
+   ============================================================================ */
+/* ---- la barra in alto: 44 px (Gemini), il nome 21 px con la firma delle anguille sotto, l'ora 26 px, il tasto 32 px ---- */
+body.premium .barra-ora{grid-template-columns:minmax(0,1fr) auto auto 32px;gap:10px;height:calc(44px + env(safe-area-inset-top,0px));min-height:0;padding-left:12px;padding-right:10px;overflow:hidden}
+body.premium.senza-orologio .barra-ora{grid-template-columns:minmax(0,1fr) 32px}
+body.premium .bo-marca{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;line-height:1;padding-top:1px}
+body.premium .bo-marca b,body.premium .bo-marca b.bo-m2{font:700 21px/1 "Dancing Script",cursive;letter-spacing:.01em;color:#8C621E}
+body.premium .bo-marca .bo-nome{display:block;white-space:nowrap;line-height:1;height:22px}
+body.premium .bo-marca b{display:inline}
+body.premium .bo-marca .bo-m2{margin-left:.28em}
+body.premium .bo-marca .bo-anguille{display:block;width:146px;height:12px;margin:0 0 0 2px}
+body.premium .bo-data{font-size:10px;line-height:1.05;gap:1px}
+body.premium .bo-ora{font-size:26px;font-weight:700}
+body.premium .bo-menu{width:32px;height:32px;font-size:17px}
+body.premium .bo-indietro{height:32px;padding:0 12px 0 8px;font-size:13.5px}
+/* Sofia: la testa 12 px piu' lontana dalla barra (la barra e' piu' bassa di 12, la figura scende di 12) */
+body.premium .casa-scena{top:-18px}
+/* la luce dietro di lei resta attaccata alla barra (la scena e' scesa di 16: la luce risale di 16 dentro la scena) */
+body.premium .sofia-hero[data-tre="1"] .casa-arco{top:18px}
+/* ---- il riquadro: niente linguette ne' cerchietto da aperto (la presa in cima apre e chiude; da chiuso resta la riga col
+   riassunto e la freccia); il messaggio del giorno in cima, le quattro tessere sotto, il consiglio in fondo ---- */
+body.premium .casa-nuvola .casa-schede{display:none}
+body.premium .sofia-hero:not(.tenda-chiusa):not(.nuvola-aperta) .casa-nuvola .casa-saluto{display:none}
+body.premium .casa-nuvola .casa-presa{top:6px;width:44px;margin-left:-22px}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{padding-top:17px}
+/* il messaggio del giorno: una lastra, 1 riga di saluto + 2 righe di testo (il resto si legge toccando o con «Ascolta») */
+body.premium .casa-nuvola .casa-sal{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:clip;overflow-clip-margin:content-box;padding:8px 13px 7px;font:700 18.5px/1.25 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;border-radius:14px;border-bottom:1px solid rgba(154,116,50,.35);background:rgba(255,255,255,.84);border-color:rgba(154,116,50,.35)}
+body.premium .casa-nuvola .casa-riga{display:none;margin:0;padding:1px 13px 8px;font:600 18px/1.28 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;border-radius:0 0 14px 14px;background:rgba(255,255,255,.84);border-color:rgba(154,116,50,.35)}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-riga,body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-sal{display:block;-webkit-line-clamp:unset;overflow:visible}
+/* le tessere 2x2 (Gemini): icona in un quadratino, etichetta piccola in alto, valore grande sotto, freccetta a destra */
+body.premium .casa-nuvola .casa-righe{display:grid;grid-template-columns:1fr 1fr;gap:7px;order:4;margin:7px 0 2px}
+body.premium .casa-nuvola .cr-riga.cr-tess{position:relative;min-height:0;height:44px;padding:0 7px 0 7px;margin:0;border-radius:13px;display:flex;align-items:center;gap:8px;text-align:left;background:rgba(255,255,255,.88);border:1px solid rgba(154,116,50,.32);box-shadow:0 2px 5px rgba(15,23,42,.04);font:inherit;color:#0F172A;text-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+body.premium .casa-nuvola .cr-riga.cr-tess:active{transform:scale(.97)}
+body.premium .casa-nuvola .cr-riga.cr-tess.att{border:1.4px solid #C59B49;background:linear-gradient(135deg,rgba(255,252,242,.96) 0%,rgba(247,238,218,.92) 100%) rgba(252,247,236,.94);box-shadow:inset 3px 0 0 #C59B49,0 2px 6px rgba(154,116,50,.12)}
+body.premium .casa-nuvola .cr-riga.cr-tess.larga{grid-column:1/-1}
+body.premium .casa-nuvola .cr-tess .cr-ico,body.premium .casa-nuvola .cr-tess .cr-ico.verde,body.premium .casa-nuvola .cr-tess .cr-ico.arancio,body.premium .casa-nuvola .cr-tess .cr-ico.blu,body.premium .casa-nuvola .cr-tess .cr-ico.oro,body.premium .casa-nuvola .cr-tess .cr-ico.rosso{flex:0 0 32px;width:32px;height:32px;margin:0;border-radius:9px;background:#F4EFE4;border:1px solid rgba(154,116,50,.35);color:#6E501F;box-shadow:none}
+body.premium .casa-nuvola .cr-tess .cr-ico .ico2{width:20px;height:20px;stroke-width:1.8}
+body.premium .casa-nuvola .cr-tess .cr-ico .ico2 .acc{fill:rgba(212,175,106,.35);stroke:#9A7432}
+body.premium .casa-nuvola .cr-tess .cr-t{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;gap:1px}
+body.premium .casa-nuvola .cr-tess .cr-l{display:block;font:700 10.5px/1.1 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.premium .casa-nuvola .cr-tess.att .cr-l{color:#8C621E}
+body.premium .casa-nuvola .cr-tess .cr-v{display:block;font:700 18px/1.15 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.premium .casa-nuvola .cr-tess .cr-va{font:700 18px/1 "Cormorant Garamond",Georgia,serif;color:#9A7432;margin-left:2px;text-shadow:none}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-sal,:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga{background:rgba(20,28,46,.78);border-color:rgba(212,175,106,.38);color:#F1EDE4}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-sal{color:#FFFFFF}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-riga.cr-tess{background:rgba(20,28,46,.84);border-color:rgba(212,175,106,.28);color:#FAF8F5;box-shadow:none}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-riga.cr-tess.att{border:1.4px solid #D4AF6A;background:linear-gradient(135deg,rgba(28,38,62,.92) 0%,rgba(20,28,46,.92) 100%) rgba(24,33,54,.92);box-shadow:inset 3px 0 0 #D4AF6A,0 2px 8px rgba(0,0,0,.35)}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-ico,:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-ico.verde,:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-ico.arancio,:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-ico.blu,:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-ico.oro,:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-ico.rosso{background:rgba(212,175,106,.14);border-color:rgba(212,175,106,.42);color:#E5C888}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-ico .ico2 .acc{fill:rgba(212,175,106,.28);stroke:#E5C888}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-l{color:#94A3B8}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess.att .cr-l{color:#D4AF6A}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-v{color:#FAF8F5}
+:root[data-theme="dark"] body.premium .casa-nuvola .cr-tess .cr-va{color:#D4AF6A}
+/* da chiuso il riquadro e' piu' basso (76 px: la presa, la riga col riassunto e la freccia) */
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 76px);height:76px}
+body.premium .sofia-hero.msg-aperto .casa-nuvola .casa-sal{border-radius:20px 20px 0 0;border-bottom:0}

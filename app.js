@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.8.0";
+export const VERSIONE = "1.9.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -216,7 +216,7 @@ function barraOra() {
   document.body.classList.toggle("senza-orologio", !orologioVoluto());
   if (!b) {
     b = document.createElement("div"); b.id = "barraOra"; b.className = "barra-ora"; b.setAttribute("aria-live", "off");
-    b.innerHTML = `<button type="button" class="bo-indietro" data-indietro aria-label="Indietro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Indietro</span></button><span class="bo-marca" aria-label="Le Stanze di Ricci"><b>Le Stanze</b><b class="bo-m2">di Ricci</b><small>Pulizie</small></span><b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
+    b.innerHTML = `<button type="button" class="bo-indietro" data-indietro aria-label="Indietro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Indietro</span></button><span class="bo-marca" aria-label="Le Stanze di Ricci"><span class="bo-nome"><b>Le Stanze</b><b class="bo-m2">di Ricci</b></span><small>Pulizie</small><svg class="bo-anguille" viewBox="0 0 150 14" aria-hidden="true"><defs><linearGradient id="agOro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B8912F"/><stop offset=".5" stop-color="#E9CF8E"/><stop offset="1" stop-color="#B8912F"/></linearGradient></defs><g stroke="url(#agOro)" stroke-linecap="round" fill="none"><path pathLength="100" d="M 7 7 C 16 2.6, 26 2.6, 36 6.8 C 46 11, 56 11, 66 6.8 C 76 2.6, 86 3.4, 97 7.6" stroke-width=".9"/><path pathLength="100" d="M 7 7 C 16 2.6, 26 2.6, 36 6.8 C 46 11, 56 11, 66 6.8 C 76 2.6, 86 3.4, 97 7.6" stroke-width="1.7" stroke-dasharray="66 34"/><path pathLength="100" d="M 7 7 C 16 2.6, 26 2.6, 36 6.8 C 46 11, 56 11, 66 6.8 C 76 2.6, 86 3.4, 97 7.6" stroke-width="2.5" stroke-dasharray="30 70"/><path d="M 13 7.9 q 1.6 1.8 3 2.6" stroke-width="1" opacity=".8"/></g><ellipse cx="7.6" cy="6.6" rx="3.6" ry="2.2" transform="rotate(-16 7.6 6.6)" fill="#C9A24F"/><circle cx="8.6" cy="6" r=".65" fill="#FFF8E1"/><g transform="translate(150 1) scale(-1 1)" stroke="url(#agOro)" stroke-linecap="round" fill="none"><path pathLength="100" d="M 7 7 C 16 2.6, 26 2.6, 36 6.8 C 46 11, 56 11, 66 6.8 C 76 2.6, 86 3.4, 97 7.6" stroke-width=".9"/><path pathLength="100" d="M 7 7 C 16 2.6, 26 2.6, 36 6.8 C 46 11, 56 11, 66 6.8 C 76 2.6, 86 3.4, 97 7.6" stroke-width="1.7" stroke-dasharray="66 34"/><path pathLength="100" d="M 7 7 C 16 2.6, 26 2.6, 36 6.8 C 46 11, 56 11, 66 6.8 C 76 2.6, 86 3.4, 97 7.6" stroke-width="2.5" stroke-dasharray="30 70"/><path d="M 13 7.9 q 1.6 1.8 3 2.6" stroke-width="1" opacity=".8"/></g><ellipse cx="142.4" cy="7.6" rx="3.6" ry="2.2" transform="rotate(16 142.4 7.6)" fill="#C9A24F"/><circle cx="141.4" cy="7" r=".65" fill="#FFF8E1"/></svg></span><b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
     document.body.insertBefore(b, document.body.firstChild);
   }
   b.hidden = false; document.body.classList.add("con-ora");
@@ -2310,13 +2310,6 @@ function casaOssatura(tre) {
         ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
         ${FILM_CONS("casa-fig", tre)}
       </div>
-      <div class="casa-lato-sx" role="group" aria-label="Le notizie di oggi">
-        <button type="button" class="cw" data-casa-vai="pulizie" aria-label="Pulizie di oggi">${ico2("pulizie3")}<i class="cw-conta" hidden></i></button>
-        <button type="button" class="cw" data-casa-vai="manutenzione" aria-label="Lavori da fare">${ico2("lavori2")}<i class="cw-conta" hidden></i></button>
-        <button type="button" class="cw" data-casa-vai="arrivi" aria-label="Arrivi e partenze di domani">${ico2("arrivi2")}<i class="cw-conta" hidden></i></button>
-        <button type="button" class="cw" data-casa-vai="camere" aria-label="Camere piene stanotte">${ico2("camere2")}<i class="cw-conta" hidden></i></button>
-        <button type="button" class="cw" data-casa-vai="sofia" aria-label="Domande di ${esc(nomeGov())}">${ico2("domande2")}<i class="cw-conta" hidden></i></button>
-      </div>
       <div class="casa-lato">
         <button type="button" class="casa-lato-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
         <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio"><i class="cl-tondo">${CASA_ICO.onda}</i><span>Ascolta</span></button>
@@ -2518,7 +2511,7 @@ function tendaLimiti(h) {
   const lb = Math.max(...[".casa-lato", ".casa-lato-sx"].map(s => { const e = h.querySelector(s); return e && getComputedStyle(e).display !== "none" ? e.getBoundingClientRect().bottom - hr.top : 0; }));
   const min = Math.max(lb + 10, hc * .36);
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
-  return { fondo, hc, min, chiusa: fondo - 108, def: hc * .60, scatti: [min, hc * .60, hc * .70] };
+  return { fondo, hc, min, chiusa: fondo - 76, def: hc * .60, scatti: [min, hc * .60, hc * .70] };
 }
 function tendaScatto(L, top) { let m = L.scatti[0]; for (const s of L.scatti) if (Math.abs(s - top) < Math.abs(m - top)) m = s; return m; }
 function tendaMisuraMemoria() { try { const v = parseFloat(localStorage.getItem(CHIAVE_TENDA_TOP)); return v >= .25 && v <= .9 ? v : null; } catch (e) { return null; } }
@@ -2652,7 +2645,7 @@ document.addEventListener("click", (e) => {
 // scorre piano mentre la dice: Michele legge senza togliere gli occhi da lei. Se lui la scorre col dito, lascia fare a lui.
 // 1.0.5: anche nella nuvoletta del fantasmino (tutte le altre schermate); ognuna ha il suo movimento e il suo "dito"
 const sottoAnim = new Map();
-function sottotitoliFerma(chi) { for (const [k, a] of sottoAnim) { if (!chi || k === chi) { cancelAnimationFrame(a); sottoAnim.delete(k); } } }
+function sottotitoliFerma(chi) { for (const [k, a] of sottoAnim) { if (!chi || k === chi) { if (a && typeof a === "object") clearTimeout(a.t); else cancelAnimationFrame(a); sottoAnim.delete(k); } } }
 function sottotitoli(parte, buf, durata) {
   const h = document.getElementById("sofiaHero"), nv = h && h.querySelector(".casa-nuvola");
   if (nv && document.body.classList.contains("premium")) {
@@ -2664,9 +2657,13 @@ function sottotitoli(parte, buf, durata) {
   const mt = document.querySelector("#sofiaMiniNuvola:not([hidden]) .sm-testo");
   if (mt) sottotitoliIn("mini", mt, ".cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => !!mt.closest("[hidden]"));
 }
-function sottotitoliIn(chi, nv, sel, parte, buf, durata, basta) {
+function sottotitoliIn(chi, nv, sel, parte, buf, durata, basta, giro) {
   sottotitoliFerma(chi);
-  if (!nv || !nv.clientHeight || Date.now() - (nv._mano || 0) < 3000) return;
+  if (!nv || Date.now() - (nv._mano || 0) < 3000) return;
+  // 1.9.0: con la tendina chiusa e «Ascolta», il riquadro si sta ancora aprendo (260 ms) quando lei comincia: si riprova
+  // tra poco (fino a 5 volte) invece di rinunciare ai sottotitoli per tutta la prima parte
+  giro = giro || 0;
+  if (!nv.clientHeight) { if (giro < 5) sottoAnim.set(chi, { t: setTimeout(() => sottotitoliIn(chi, nv, sel, parte, buf, durata, basta, giro + 1), 120) }); return; }
   const norm = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const pn = norm(parte), parole = pn.split(" ").filter(Boolean); if (!parole.length) return;
   // tutto il testo della nuvoletta in fila (saluto, messaggio, consiglio, conversazione): una parte puo' passare dall'uno all'altro
@@ -2689,7 +2686,7 @@ function sottotitoliIn(chi, nv, sel, parte, buf, durata, basta) {
   };
   const y0 = yDi(k), y1 = yDi(Math.min(tutto.length, k + pn.length));
   const sec = (buf && typeof buf.duration === "number" && buf.duration > 0) ? buf.duration : (Number(durata) > 0 ? Number(durata) : pn.length * 0.068);
-  const via = nv.scrollTop, t0 = performance.now(), primo = 380, resto = Math.max(400, sec * 1000 - primo);
+  const via = nv.scrollTop, t0 = performance.now() - giro * 120, primo = 380, resto = Math.max(400, sec * 1000 - primo);
   const passo = (ora) => {
     if (!nv.isConnected || Date.now() - (nv._mano || 0) < 3000 || (basta && basta())) { sottoAnim.delete(chi); return; }
     const d = ora - t0;
@@ -2732,14 +2729,6 @@ function casaAggiorna(h) {
   const sal = q(".casa-sal"), riga = q(".casa-riga"), spinta = q(".casa-spinta"), info = q(".casa-info");
   const righe = q(".casa-righe"), ciao = q(".casa-ciao");
   if (righe) { const hh = righeNotizie(ls, fatte, man, dom); if (righe.innerHTML !== hh) righe.innerHTML = hh; }
-  // 1.8.0: i numerini sui widget accanto a lei (pulizie ancora da fare, lavori, arrivi di domani, camere piene, domande)
-  try {
-    const oggiW = L.oggiISO(), domaniW = L.aggiungiGiorni(oggiW, 1), sogW = soggiorniLista();
-    const arrW = sog_conta(sogW, domaniW), pieneW = S.camere.filter(cm => L.ospiteIl(sogW, cm.id, oggiW)).length;
-    const numeri = { pulizie: ls.length ? (ls.length - fatte ? String(ls.length - fatte) : "\u2713") : "", manutenzione: man ? String(man) : "", arrivi: arrW ? String(arrW) : "", camere: pieneW ? String(pieneW) : "", sofia: dom ? String(dom) : "" };
-    const urgenti = { manutenzione: !!man, sofia: !!dom, pulizie: !!(ls.length - fatte) };
-    h.querySelectorAll(".casa-lato-sx .cw").forEach(b => { const k = b.dataset.casaVai, c = b.querySelector(".cw-conta"); if (!c) return; const v = numeri[k] || ""; if (c.textContent !== v) c.textContent = v; c.hidden = !v; b.classList.toggle("att", !!urgenti[k] && !!v); b.classList.toggle("vuoto", !v); });
-  } catch (e) {}
   if (ciao) { const tc = `${saluto()}, ${nomeMio()}!`; if (ciao.dataset.testo !== tc) { ciao.dataset.testo = tc; ciao.innerHTML = `${esc(saluto())}, <i>${esc(nomeMio())}!</i>`; } }
   // 1.5.0 (Gemini): da tendina chiusa, accanto al saluto, i due numeri vitali in una pillola ("0/8 · 2 lavori")
   const mini = q(".cs-mini");
@@ -2786,14 +2775,15 @@ function righeNotizie(ls, fatte, man, dom) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
   const arrivi = sog.filter(s => s.inizio === domani);
   const nomi = [...new Set(arrivi.map(s => nomeCortoOspite(s)))];
-  const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
-  // 1.2.0 (Gemini): ogni riga e' una "pillola" con la freccia a destra: si capisce subito che si tocca
-  const r = (ico, tono, html, vai) => `<button type="button" class="cr-riga" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t">${html}</span><span class="cr-va" aria-hidden="true">›</span></button>`;
-  const out = [r(ico2("pulizie3"), "verde", ls.length ? `Pulizie oggi: <b>${fatte}</b> fatte su <b>${ls.length}</b>` : `Pulizie oggi: <b>nessuna</b>`, "pulizie")];
-  if (man) out.push(r(ico2("lavori2"), "arancio", `Lavori da fare: <b>${man}</b>`, "manutenzione"));
-  out.push(r(ico2("arrivi2"), "blu", arrivi.length ? `Domani ${arrivi.length === 1 ? "arriva" : "arrivano"} <b>${arrivi.length}</b>: ${esc(nomi.slice(0, 3).join(", "))}${nomi.length > 3 ? "…" : ""}` : "Domani non arriva nessuno", "arrivi"));
-  out.push(r(ico2("camere2"), "oro", `Stanotte <b>${piene}</b> ${piene === 1 ? "camera piena" : "camere piene"}, <b>${libere}</b> ${libere === 1 ? "libera" : "libere"}`, "camere"));
-  if (dom) out.push(r(ico2("domande2"), "rosso", `<b>${dom}</b> ${dom === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te`, "sofia"));
+  const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length;
+  // 1.9.0 (Gemini): quattro tessere 2x2 (icona, etichetta piccola, valore grande, freccetta); d'oro quelle che chiedono
+  // attenzione; un tocco apre il dettaglio nel riquadro grande. Le domande di Sofia, se ci sono, in una quinta tessera larga.
+  const r = (ico, tono, etichetta, valore, vai, att, larga) => `<button type="button" class="cr-riga cr-tess${att ? " att" : ""}${larga ? " larga" : ""}" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t"><small class="cr-l">${etichetta}</small><b class="cr-v">${valore}</b></span><span class="cr-va" aria-hidden="true">›</span></button>`;
+  const out = [r(ico2("pulizie3"), "verde", "Pulizie oggi", ls.length ? `${fatte} fatte su ${ls.length}` : "nessuna", "pulizie", ls.length - fatte > 0)];
+  out.push(r(ico2("lavori2"), "arancio", "Lavori", man ? `${man} da fare` : "nessuno", "manutenzione", man > 0));
+  out.push(r(ico2("arrivi2"), "blu", "Arrivi domani", arrivi.length ? `${arrivi.length} · ${esc(nomi.slice(0, 2).join(", "))}${nomi.length > 2 ? "…" : ""}` : "nessuno", "arrivi", false));
+  out.push(r(ico2("camere2"), "oro", "Camere piene", `${piene} su ${S.camere.length}`, "camere", false));
+  if (dom) out.push(r(ico2("domande2"), "rosso", esc(nomeGov()) + " chiede", `${dom} ${dom === 1 ? "domanda" : "domande"} per te`, "sofia", true, true));
   return out.join("");
 }
 // ---- lei ti parla appena apri l'app -------------------------------------
