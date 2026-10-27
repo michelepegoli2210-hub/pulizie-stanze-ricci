@@ -5327,3 +5327,24 @@ body.premium .casa-nuvola .cs-domani .cr-v{font-size:17px}
 body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 108px);height:108px}
 body.premium .casa-nuvola .cs-mini{text-shadow:0 0 6px rgba(255,255,255,.9)}
 :root[data-theme="dark"] body.premium .casa-nuvola .cs-mini{text-shadow:0 0 6px rgba(0,0,0,.8)}
+/* ============================================================================
+   1.10.1 (Michele, 27/10): "assicurati che tutti i video si vedano al completo, anche nella chat, anche quando si riduce
+   l'icona, anche quando fa il fantasmino, in qualsiasi contesto".
+   ============================================================================ */
+/* ---- la pagina di Sofia (tasto d'oro): lei c'e' sempre, in cima, intera: lo stesso filmato trasparente della casa
+   (riposo; «parla» quando parla), senza cornice, con la sua ombra; sotto le due tessere, la chat, i comandi, la casella ---- */
+body.premium .sofia-vista .sv-figura{flex:0 0 auto;height:min(30svh,260px);display:flex;justify-content:center;align-items:flex-end;margin:-2px 0 4px;pointer-events:none;overflow:visible}
+body.premium .sofia-vista .sv-figura .donnina.gov-fig.gov-film.sv-fig{position:relative;width:auto;height:100%;aspect-ratio:9/16;flex:0 0 auto;border-radius:0;background:none;box-shadow:none;overflow:hidden;filter:drop-shadow(0 14px 22px rgba(0,0,0,.45)) drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+body.premium .sofia-vista .sv-figura .sv-fig video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%;transform:none}
+/* se Sofia e' "piatta" (senza trasparenza) il filmato sta in una scheda tonda bordata d'oro */
+body.premium .sofia-vista .sv-figura .sv-fig:not([data-tre]){border-radius:22px;overflow:hidden;background:#1C1917;box-shadow:0 0 0 2.5px #B89A5A,0 20px 44px -14px rgba(0,0,0,.6);filter:none}
+body.premium .sofia-vista .sv-figura .sv-fig:not([data-tre]) video{object-fit:cover;object-position:50% 14%}
+/* con poco spazio in altezza (finestra bassa) la figura si accorcia, la chat tiene almeno 150 px */
+@media (max-height:640px){body.premium .sofia-vista .sv-figura{height:min(24svh,180px)}}
+body.premium .sofia-vista .sv-chat{min-height:150px}
+/* ---- Sofia che esce (altre pagine, mentre parla): il filmato intero (contain, niente ritaglio), senza la sfumatura che le
+   tagliava il busto; appoggiata sulla barra in basso, come in casa; sopra a tutto ---- */
+.sofia-fuori .sf-fig video{object-fit:contain;object-position:50% 100%}
+.sofia-fuori.tre .sf-cornice{-webkit-mask-image:none;mask-image:none;filter:drop-shadow(0 14px 22px rgba(28,25,23,.36)) drop-shadow(0 2px 3px rgba(28,25,23,.25))}
+.sofia-fuori,body.con-sotto .sofia-fuori{bottom:calc(var(--alto-sotto,71px) - 2px + env(safe-area-inset-bottom,0px))}
+body.con-sotto .sofia-fuori.alta{bottom:calc(var(--alto-sotto,71px) + 112px + env(safe-area-inset-bottom,0px))}
