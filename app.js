@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.6.5";
+export const VERSIONE = "1.6.6";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2567,7 +2567,7 @@ function casaAggiorna(h) {
   // 1.5.0 (Gemini): da tendina chiusa, accanto al saluto, i due numeri vitali in una pillola ("0/8 · 2 lavori")
   const mini = q(".cs-mini");
   if (mini) {
-    const parti = [ls.length ? `${fatte}/${ls.length}` : "0 pulizie"];
+    const parti = [ls.length ? `${fatte}/${ls.length} pulizie` : "0 pulizie"];   // 1.6.6: senza il saluto accanto, si spiega da sola
     if (man) parti.push(`${man} ${man === 1 ? "lavoro" : "lavori"}`); else if (dom) parti.push(`${dom} ${dom === 1 ? "domanda" : "domande"}`);
     const tm = parti.join(" · "); if (mini.textContent !== tm) mini.textContent = tm; mini.hidden = false;
   }
