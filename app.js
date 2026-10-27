@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.7.2";
+export const VERSIONE = "1.8.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -301,7 +301,7 @@ function NAV_HTML(v, inCasa) {
 const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], ["sofia", "", ""], ["piantine", "Piantine", "mappa"], ["paghe", "Paghe", "euro"]];
 // la stella d'oro zecchino a quattro punte (curva astroidale), sfaccettata, coi raggi piccoli in diagonale e cinque
 // granelli di polvere d'oro (fuori dal gruppo che gira). Disegno nostro.
-const ORO_STELLA = `<svg viewBox="0 0 46 46" aria-hidden="true"><defs><linearGradient id="isSun" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#FFF2B2"/><stop offset="1" stop-color="#E6AF2E"/></linearGradient><linearGradient id="isShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C98A14"/><stop offset="1" stop-color="#6B4204"/></linearGradient><linearGradient id="isMid" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#9E6508"/><stop offset="1" stop-color="#FFD86B"/></linearGradient></defs><g class="dm-glint"><path d="M23 7 C24.7 18 28 21.3 39 23 C28 24.7 24.7 28 23 39 C21.3 28 18 24.7 7 23 C18 21.3 21.3 18 23 7 Z" fill="none" stroke="#593502" stroke-width="1.6" opacity=".65" transform="translate(0.5,0.8)"/><path d="M23 7 L23 23 L7 23 C18 21.3 21.3 18 23 7 Z" fill="url(#isSun)"/><path d="M23 7 C24.7 18 28 21.3 39 23 L23 23 Z" fill="url(#isMid)"/><path d="M7 23 L23 23 L23 39 C21.3 28 18 24.7 7 23 Z" fill="url(#isMid)"/><path d="M23 23 L39 23 C28 24.7 24.7 28 23 39 Z" fill="url(#isShade)"/><path d="M23 7 L23 39 M7 23 L39 23" stroke="#FFFDF5" stroke-width=".75" opacity=".85"/><circle cx="23" cy="23" r="1.4" fill="#FFFFFF"/></g></svg>`;
+const ORO_STELLA = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="osOmbra" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3D2B0E"/><stop offset="1" stop-color="#5A4218"/></linearGradient><linearGradient id="osCorpo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A3512"/><stop offset=".5" stop-color="#6B4E1E"/><stop offset="1" stop-color="#D9B878"/></linearGradient></defs><g class="dm-glint"><path d="M33 13 C34.6 26.5 39.5 31.4 53 33 C39.5 34.6 34.6 39.5 33 53 C31.4 39.5 26.5 34.6 13 33 C26.5 31.4 31.4 26.5 33 13 Z" fill="none" stroke="#FFF3D6" stroke-width="1.3" opacity=".65"/><path d="M32 12 C33.6 25.5 38.5 30.4 52 32 C38.5 33.6 33.6 38.5 32 52 C30.4 38.5 25.5 33.6 12 32 C25.5 30.4 30.4 25.5 32 12 Z" fill="url(#osOmbra)" opacity=".9"/><path d="M32 13.5 C33.5 26 38 30.5 50.5 32 C38 33.5 33.5 38 32 50.5 C30.5 38 26 33.5 13.5 32 C26 30.5 30.5 26 32 13.5 Z" fill="url(#osCorpo)"/><circle cx="32" cy="32" r="2" fill="#FFF8E1" opacity=".9"/></g></svg>`;
 const DIAMANTE = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="amCuore" cx=".46" cy=".42" r=".6"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".95"/><stop offset=".3" stop-color="#FFC25A" stop-opacity=".8"/><stop offset="1" stop-color="#FF9A1F" stop-opacity="0"/></radialGradient><linearGradient id="amA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8891A"/></linearGradient><linearGradient id="amB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7A531"/><stop offset="1" stop-color="#B85A0C"/></linearGradient><linearGradient id="amC" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9721A"/><stop offset="1" stop-color="#7A3A06"/></linearGradient><linearGradient id="amD" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFE09A"/><stop offset="1" stop-color="#F29A22"/></linearGradient><radialGradient id="amAlone" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB03B" stop-opacity=".6"/><stop offset="1" stop-color="#FFB03B" stop-opacity="0"/></radialGradient><radialGradient id="amLucido" cx=".35" cy=".25" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".75"/><stop offset=".45" stop-color="#FFFFFF" stop-opacity=".12"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs><circle cx="32" cy="33" r="27" fill="url(#amAlone)"/><polygon points="33,9 48,21 50,39 40,57 27,58 14,42 18,19" fill="rgba(2,6,23,.5)" transform="translate(1,3)"/><polygon points="33,6 48,20 33,30" fill="url(#amA)"/><polygon points="48,20 50,38 33,30" fill="url(#amB)"/><polygon points="50,38 40,56 33,30" fill="url(#amC)"/><polygon points="40,56 28,58 33,30" fill="#9C4A08"/><polygon points="28,58 14,42 33,30" fill="url(#amB)"/><polygon points="14,42 18,18 33,30" fill="url(#amD)"/><polygon points="18,18 33,6 33,30" fill="#FFCB6B"/><circle cx="32" cy="31" r="15" fill="url(#amCuore)"/><g fill="#5A2A05" opacity=".55"><circle cx="38" cy="36" r=".9"/><circle cx="27" cy="40" r=".7"/><circle cx="41" cy="27" r=".6"/><circle cx="30" cy="48" r=".8"/><ellipse cx="24" cy="33" rx="1.3" ry=".6" transform="rotate(-30 24 33)"/></g><g fill="#FFFFFF" opacity=".5"><circle cx="36" cy="44" r=".8"/><circle cx="22" cy="27" r=".6"/></g><path d="M33,6 L33,30 M48,20 L33,30 M50,38 L33,30 M40,56 L33,30 M28,58 L33,30 M14,42 L33,30 M18,18 L33,30" fill="none" stroke="#FFF3D6" stroke-opacity=".32" stroke-width=".7"/><polygon points="33,6 48,20 50,38 40,56 28,58 14,42 18,18" fill="url(#amLucido)"/><polygon points="33,6 48,20 50,38 40,56 28,58 14,42 18,18" fill="none" stroke="#FFF1CC" stroke-opacity=".85" stroke-width=".9" stroke-linejoin="round"/><path d="M21,19 L32,9 L32,16 L24,24 Z" fill="#FFFFFF" opacity=".5"/><g class="dm-glint" transform="translate(25,16)"><path d="M0,-5.5 C0.4,-1.4 1.4,-0.4 5.5,0 C1.4,0.4 0.4,1.4 0,5.5 C-0.4,1.4 -1.4,0.4 -5.5,0 C-1.4,-0.4 -0.4,-1.4 0,-5.5 Z" fill="#FFFFFF"/><circle cx="0" cy="0" r="1.3" fill="#FFF8E6"/></g></svg>`;
 const STELLA_ORO = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="oroZ" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF8DC"/><stop offset=".25" stop-color="#F7DC8A"/><stop offset=".5" stop-color="#D4AF6A"/><stop offset=".78" stop-color="#9A7432"/><stop offset="1" stop-color="#FFE599"/></linearGradient><filter id="oroL" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#D4AF6A" flood-opacity=".65"/></filter></defs><g class="st-polvere"><circle class="p1" cx="18" cy="18" r="1.4" fill="#FFF8DC"/><circle class="p2" cx="47" cy="16" r="1.1" fill="#F7DC8A"/><circle class="p3" cx="49" cy="44" r="1.5" fill="#FFF8DC"/><circle class="p4" cx="16" cy="45" r="1" fill="#D4AF6A"/><circle class="p5" cx="32" cy="10" r="1.2" fill="#FFF8DC"/></g><g class="st-gira" filter="url(#oroL)"><path d="M32 20 L34.5 29.5 L44 32 L34.5 34.5 L32 44 L29.5 34.5 L20 32 L29.5 29.5 Z" fill="#9A7432" opacity=".75" transform="rotate(45 32 32)"/><path d="M32 9 C33.8 24.5 39.5 30.2 55 32 C39.5 33.8 33.8 39.5 32 55 C30.2 39.5 24.5 33.8 9 32 C24.5 30.2 30.2 24.5 32 9 Z" fill="url(#oroZ)" stroke="#FFF8DC" stroke-width=".6"/><path d="M32 9 L35 29 L55 32 L32 32 Z" fill="#FFFDF5" opacity=".45"/><path d="M32 55 L29 35 L9 32 L32 32 Z" fill="#5E4314" opacity=".35"/><circle cx="32" cy="32" r="2.2" fill="#FFFFFF"/></g></svg>`;
 document.addEventListener("visibilitychange", () => { try { document.body.classList.toggle("pagina-nascosta", document.hidden); } catch (e) {} });
@@ -2310,6 +2310,13 @@ function casaOssatura(tre) {
         ${tre ? `<span class="casa-fondo" aria-hidden="true"></span><span class="tre-luce" aria-hidden="true"></span>` : ""}
         ${FILM_CONS("casa-fig", tre)}
       </div>
+      <div class="casa-lato-sx" role="group" aria-label="Le notizie di oggi">
+        <button type="button" class="cw" data-casa-vai="pulizie" aria-label="Pulizie di oggi">${ico2("pulizie3")}<i class="cw-conta" hidden></i></button>
+        <button type="button" class="cw" data-casa-vai="manutenzione" aria-label="Lavori da fare">${ico2("lavori2")}<i class="cw-conta" hidden></i></button>
+        <button type="button" class="cw" data-casa-vai="arrivi" aria-label="Arrivi e partenze di domani">${ico2("arrivi2")}<i class="cw-conta" hidden></i></button>
+        <button type="button" class="cw" data-casa-vai="camere" aria-label="Camere piene stanotte">${ico2("camere2")}<i class="cw-conta" hidden></i></button>
+        <button type="button" class="cw" data-casa-vai="sofia" aria-label="Domande di ${esc(nomeGov())}">${ico2("domande2")}<i class="cw-conta" hidden></i></button>
+      </div>
       <div class="casa-lato">
         <button type="button" class="casa-lato-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
         <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio"><i class="cl-tondo">${CASA_ICO.onda}</i><span>Ascolta</span></button>
@@ -2508,10 +2515,10 @@ let tendaDito = null;
 function tendaLimiti(h) {
   const nv = h.querySelector(".casa-nuvola"), hr = h.getBoundingClientRect(), r = nv.getBoundingClientRect();
   const fondo = r.bottom - hr.top, hc = fondo + 17;                 // il bordo in basso non si muove mai
-  const lato = h.querySelector(".casa-lato"); const lb = lato ? lato.getBoundingClientRect().bottom - hr.top : 0;
+  const lb = Math.max(...[".casa-lato", ".casa-lato-sx"].map(s => { const e = h.querySelector(s); return e && getComputedStyle(e).display !== "none" ? e.getBoundingClientRect().bottom - hr.top : 0; }));
   const min = Math.max(lb + 10, hc * .36);
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
-  return { fondo, hc, min, chiusa: fondo - 108, def: hc * .58, scatti: [min, hc * .58, hc * .68] };
+  return { fondo, hc, min, chiusa: fondo - 108, def: hc * .60, scatti: [min, hc * .60, hc * .70] };
 }
 function tendaScatto(L, top) { let m = L.scatti[0]; for (const s of L.scatti) if (Math.abs(s - top) < Math.abs(m - top)) m = s; return m; }
 function tendaMisuraMemoria() { try { const v = parseFloat(localStorage.getItem(CHIAVE_TENDA_TOP)); return v >= .25 && v <= .9 ? v : null; } catch (e) { return null; } }
@@ -2725,6 +2732,14 @@ function casaAggiorna(h) {
   const sal = q(".casa-sal"), riga = q(".casa-riga"), spinta = q(".casa-spinta"), info = q(".casa-info");
   const righe = q(".casa-righe"), ciao = q(".casa-ciao");
   if (righe) { const hh = righeNotizie(ls, fatte, man, dom); if (righe.innerHTML !== hh) righe.innerHTML = hh; }
+  // 1.8.0: i numerini sui widget accanto a lei (pulizie ancora da fare, lavori, arrivi di domani, camere piene, domande)
+  try {
+    const oggiW = L.oggiISO(), domaniW = L.aggiungiGiorni(oggiW, 1), sogW = soggiorniLista();
+    const arrW = sog_conta(sogW, domaniW), pieneW = S.camere.filter(cm => L.ospiteIl(sogW, cm.id, oggiW)).length;
+    const numeri = { pulizie: ls.length ? (ls.length - fatte ? String(ls.length - fatte) : "\u2713") : "", manutenzione: man ? String(man) : "", arrivi: arrW ? String(arrW) : "", camere: pieneW ? String(pieneW) : "", sofia: dom ? String(dom) : "" };
+    const urgenti = { manutenzione: !!man, sofia: !!dom, pulizie: !!(ls.length - fatte) };
+    h.querySelectorAll(".casa-lato-sx .cw").forEach(b => { const k = b.dataset.casaVai, c = b.querySelector(".cw-conta"); if (!c) return; const v = numeri[k] || ""; if (c.textContent !== v) c.textContent = v; c.hidden = !v; b.classList.toggle("att", !!urgenti[k] && !!v); b.classList.toggle("vuoto", !v); });
+  } catch (e) {}
   if (ciao) { const tc = `${saluto()}, ${nomeMio()}!`; if (ciao.dataset.testo !== tc) { ciao.dataset.testo = tc; ciao.innerHTML = `${esc(saluto())}, <i>${esc(nomeMio())}!</i>`; } }
   // 1.5.0 (Gemini): da tendina chiusa, accanto al saluto, i due numeri vitali in una pillola ("0/8 · 2 lavori")
   const mini = q(".cs-mini");
@@ -2766,6 +2781,7 @@ function casaAggiorna(h) {
 // porta alla sua pagina. Sono numeri presi dall'app, non scritti dall'IA: sempre giusti.
 const icoArrivi = () => SVG_T('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M9 14.5l2 2 4-4"/>');
 const icoLettoLinea = () => SVG_T('<path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7M3 15h18M3 18v2M21 18v2"/><path d="M6 9V7a1.5 1.5 0 0 1 1.5-1.5H11A1.5 1.5 0 0 1 12.5 7v2"/>');
+function sog_conta(sog, giorno) { return sog.filter(s => s.inizio === giorno).length; }
 function righeNotizie(ls, fatte, man, dom) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
   const arrivi = sog.filter(s => s.inizio === domani);

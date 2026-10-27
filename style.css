@@ -5178,3 +5178,45 @@ body.premium .bs-sofia::before{background:radial-gradient(circle,rgba(255,205,10
 :root[data-theme="dark"] body.premium .bs-gioiello.bs-oro{background:linear-gradient(118deg,rgba(255,255,255,0) 36%,rgba(255,255,255,.75) 44%,rgba(255,255,255,.95) 48%,rgba(255,255,255,.5) 52%,rgba(255,255,255,0) 60%),linear-gradient(180deg,#FFF3C4 0%,#F7CB49 30%,#DB9D16 48%,#7A4E06 51%,#BE8410 68%,#EEC247 86%,#FADC78 100%);box-shadow:0 0 0 2.5px #1E1B18,0 8px 18px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.4),inset 0 2px 3px rgba(255,255,255,.85),inset 0 -4px 8px rgba(70,40,0,.65),0 0 22px rgba(255,200,80,.35)}
 :root[data-theme="dark"] body.premium .bs-sofia:active .bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 2px 6px rgba(0,0,0,.5),inset 0 3px 6px rgba(70,40,0,.6),0 0 10px rgba(255,200,80,.2)}
 :root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 4.5px #D4AF6A,0 8px 18px rgba(0,0,0,.6),inset 0 2px 3px rgba(255,255,255,.85),inset 0 -4px 8px rgba(70,40,0,.65)}
+/* ============================================================================
+   1.8.0 (Michele, 27/10: i widget accanto a Sofia, sotto solo le sue parole; l'oro satinato vero). Michele: "il pulsante
+   e' troppo lucido: torna a quello di prima ma si capisca che e' oro vero; proviamo i widget laterali: piccole icone con
+   le notifiche accanto alla signora, come il microfono; la cosa principale e' Sofia, si deve vedere bene; sotto restano
+   solo le notifiche e i suggerimenti che mi scrive lei".
+   ============================================================================ */
+/* ---- il bottone: l'oro satinato della 1.7.1, un filo piu' luminoso (si capisce che e' oro vero): una velatura di luce
+   calda in alto, l'oro un po' piu' pieno, lo smusso sottile lucido ---- */
+body.premium .bs-gioiello.bs-oro{border:0;background:radial-gradient(120% 80% at 50% 14%,rgba(255,240,196,.5) 0%,rgba(255,236,180,0) 55%),radial-gradient(70% 40% at 30% 24%,rgba(255,255,245,.38) 0%,rgba(255,255,245,0) 100%),linear-gradient(175deg,#E6C275 0%,#C29A42 52%,#86631F 100%);box-shadow:0 0 0 2.5px #FAF8F5,inset 0 2.5px 4px rgba(255,246,220,.5),inset 0 -4px 7px rgba(0,0,0,.6),inset 0 0 10px rgba(0,0,0,.3),0 6px 16px rgba(0,0,0,.32),0 0 18px rgba(212,175,106,.34);transition:transform .14s cubic-bezier(.2,.8,.2,1),box-shadow .14s ease}
+body.premium .bs-oro::before{content:"";position:absolute;inset:0;z-index:1;border-radius:50%;padding:1.6px;background:linear-gradient(165deg,#FFF2CC 0%,#D4AE62 28%,#8A6426 65%,#4A3612 88%,#A98038 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;box-shadow:none;pointer-events:none}
+body.premium .bs-oro::after{content:"";position:absolute;inset:2px;z-index:0;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.1) 0%,rgba(255,255,255,0) 60%);animation:none;pointer-events:none}
+body.premium .bs-oro svg{filter:none}
+body.premium .bs-sofia:active .bs-oro{transform:translateY(1px) scale(.95);background:radial-gradient(120% 80% at 50% 14%,rgba(255,240,196,.25) 0%,rgba(255,236,180,0) 55%),linear-gradient(175deg,#A07C34 0%,#8A6628 50%,#5E431B 100%);box-shadow:0 0 0 2.5px #FAF8F5,inset 0 3px 6px rgba(0,0,0,.7),inset 0 -1px 3px rgba(232,204,150,.25),0 2px 8px rgba(0,0,0,.4),0 0 10px rgba(212,175,106,.22)}
+body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 4.5px #D4AF6A,inset 0 2.5px 4px rgba(255,246,220,.5),inset 0 -4px 7px rgba(0,0,0,.6),inset 0 0 10px rgba(0,0,0,.3),0 6px 16px rgba(0,0,0,.34),0 0 18px rgba(212,175,106,.38)}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-oro{background:radial-gradient(120% 80% at 50% 14%,rgba(255,236,180,.4) 0%,rgba(255,236,180,0) 55%),radial-gradient(70% 40% at 30% 24%,rgba(255,255,240,.3) 0%,rgba(255,255,240,0) 100%),linear-gradient(175deg,#D8B462 0%,#A9843A 54%,#634A1C 100%);box-shadow:0 0 0 2.5px #1E1B18,inset 0 2px 3.5px rgba(255,240,205,.4),inset 0 -4px 8px rgba(0,0,0,.8),0 6px 18px rgba(0,0,0,.65),0 0 22px rgba(212,175,106,.3)}
+:root[data-theme="dark"] body.premium .bs-sofia:active .bs-oro{box-shadow:0 0 0 2.5px #1E1B18,inset 0 3px 6px rgba(0,0,0,.8),0 2px 8px rgba(0,0,0,.5),0 0 10px rgba(212,175,106,.2)}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 4.5px #D4AF6A,inset 0 2px 3.5px rgba(255,240,205,.4),inset 0 -4px 8px rgba(0,0,0,.8),0 6px 18px rgba(0,0,0,.65)}
+/* ---- i widget accanto a Sofia (colonna a sinistra, come il microfono a destra): tondi di vetro da 44 px con l'icona e il
+   numerino; d'oro quelli che chiedono attenzione (lavori, domande, pulizie da fare) ---- */
+body.premium .casa-lato-sx{position:absolute;left:14px;top:calc(var(--h-casa) * .17);z-index:25;display:flex;flex-direction:column;align-items:center;gap:9px;pointer-events:auto;transition:opacity .2s ease}
+@media (max-height:700px){body.premium .casa-lato-sx{top:calc(var(--h-casa) * .16);gap:7px}}
+body.premium .casa-lato-sx .cw{position:relative;display:grid;place-items:center;width:44px;height:44px;padding:0;border-radius:50%;background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.2px solid rgba(154,116,50,.45);color:#856226;box-shadow:0 4px 12px rgba(15,23,42,.10);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+body.premium .casa-lato-sx .cw:active{transform:scale(.94)}
+body.premium .casa-lato-sx .cw .ico2{width:22px;height:22px;stroke-width:1.8}
+body.premium .casa-lato-sx .cw .ico2 .acc{fill:rgba(212,175,106,.35);stroke:#9A7432}
+body.premium .casa-lato-sx .cw.vuoto{color:#A09484;border-color:rgba(154,116,50,.28)}
+body.premium .casa-lato-sx .cw.vuoto .ico2 .acc{fill:rgba(212,175,106,.18);stroke:#B9A27A}
+body.premium .casa-lato-sx .cw-conta{position:absolute;top:-5px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);border:1.5px solid #D4AF6A;color:#FAF8F5;font:800 11px/17px "Plus Jakarta Sans",system-ui,sans-serif;font-style:normal;text-align:center;box-shadow:0 2px 5px rgba(15,23,42,.3)}
+body.premium .casa-lato-sx .cw.att .cw-conta{background:linear-gradient(180deg,#F1DEA6 0%,#C9A24F 100%);border-color:#9A7432;color:#0F172A}
+body.premium .sofia-hero.nuvola-aperta .casa-lato-sx,body.premium .sofia-hero.msg-aperto .casa-lato-sx{opacity:0;pointer-events:none}
+:root[data-theme="dark"] body.premium .casa-lato-sx .cw{background:rgba(30,27,24,.78);border-color:rgba(212,175,106,.4);color:#E5C888;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+:root[data-theme="dark"] body.premium .casa-lato-sx .cw .ico2 .acc{fill:rgba(212,175,106,.28);stroke:#E5C888}
+:root[data-theme="dark"] body.premium .casa-lato-sx .cw.vuoto{color:#8E8679;border-color:rgba(212,175,106,.22)}
+:root[data-theme="dark"] body.premium .casa-lato-sx .cw.vuoto .ico2 .acc{fill:rgba(212,175,106,.12);stroke:#8E8679}
+/* ---- sotto Sofia restano solo le sue parole: il messaggio del giorno (sempre in vista) e il consiglio; le righe escono ---- */
+body.premium .casa-nuvola .casa-righe{display:none}
+body.premium .casa-nuvola .casa-sal{display:block;order:2;margin:0;padding:10px 14px 2px;border:1px solid rgba(197,160,89,.5);border-bottom:0;border-radius:16px 16px 0 0;background:rgba(255,253,249,.86);font:700 20px/1.3 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;color:#0F172A;text-shadow:none}
+body.premium .casa-nuvola .casa-riga{display:block;order:3;margin:0 0 8px;padding:2px 14px 10px;border:1px solid rgba(197,160,89,.5);border-top:0;border-radius:0 0 16px 16px;background:rgba(255,253,249,.86);font:600 19px/1.35 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;color:#0F172A;text-shadow:none}
+body.premium .casa-nuvola .casa-sal.lunga{font-size:20px}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-sal,:root[data-theme="dark"] body.premium .casa-nuvola .casa-riga{background:rgba(20,28,46,.8);border-color:rgba(212,175,106,.38);color:#FAF8F5}
+/* la misura di partenza: il riquadro un po' piu' basso (60%), cosi' Sofia si vede bene; a scatti come prima */
+body.premium .sofia-hero:not(.nuvola-aperta):not(.msg-aperto){--nv-top:var(--tenda-top,calc(var(--h-casa) * .60));--nv-alto:calc(var(--h-casa) - 17px - var(--nv-top))}
