@@ -4912,3 +4912,55 @@ body.premium .casa-nuvola .casa-spinta,body.premium .casa-nuvola>.casa-spinta{fo
 :root[data-theme="dark"] body.premium .cs-tab,:root[data-theme="dark"] body.premium .casa-nuvola .casa-ciao,:root[data-theme="dark"] body.premium .cr-riga{color:#FFFFFF;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 6px rgba(0,0,0,.9),0 0 12px rgba(0,0,0,.8)}
 :root[data-theme="dark"] body.premium .cr-riga{background:rgba(30,27,24,.3)}
 :root[data-theme="dark"] body.premium .cr-riga b{color:#FFFFFF}
+/* ============================================================================
+   1.6.4 (Michele, 27/10 notte, con la foto della 1.2.0): "un tasto molto tridimensionale di alluminio satinato color
+   oro al posto delle pietre, un pulsante proprio da schiacciare, tutto d'oro; e la parte sotto Sofia rifalla come
+   nella 1.2.0 (notizie, chat, scritte) ma piu' trasparente, col font di adesso".
+   ============================================================================ */
+/* ---- il tasto d'oro satinato: una ghiera tornita a cono, la faccia bombata satinata "a cerchi" (come le manopole di
+   alluminio), la stella incisa tono su tono; si schiaccia davvero (scende di 2 px) ---- */
+body.premium .bs-gioiello.bs-oro{position:relative;display:grid;place-items:center;width:58px;height:58px;margin-top:-22px;padding:0;border:0;border-radius:50%;background:conic-gradient(from 210deg,#F2E2B4 0deg,#B8913F 60deg,#E6CB8A 120deg,#A47F32 180deg,#EFD9A0 240deg,#B08A3A 300deg,#F2E2B4 360deg);box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 3.5px rgba(154,116,50,.25),0 10px 18px rgba(15,23,42,.36),0 3px 5px rgba(15,23,42,.28),inset 0 0 0 1px rgba(120,86,24,.55);overflow:visible;transition:transform .12s ease,box-shadow .12s ease}
+body.premium .bs-oro::before{content:"";position:absolute;inset:5px;z-index:0;border-radius:50%;pointer-events:none;background-color:#C9A24F;background-image:radial-gradient(circle at 38% 30%,rgba(255,250,232,.70) 0%,rgba(255,244,214,.30) 22%,rgba(0,0,0,0) 48%),radial-gradient(circle at 60% 72%,rgba(70,46,8,0) 40%,rgba(70,46,8,.42) 100%),repeating-conic-gradient(from 0deg,rgba(255,255,255,.14) 0deg .9deg,rgba(0,0,0,0) .9deg 1.6deg,rgba(60,40,6,.12) 1.6deg 2.1deg,rgba(0,0,0,0) 2.1deg 3deg),conic-gradient(from 200deg,#D9B86C 0deg,#B9933F 70deg,#E9D29A 150deg,#B48D3C 230deg,#DCBD72 300deg,#D9B86C 360deg);box-shadow:inset 0 1.5px 2px rgba(255,255,255,.75),inset 0 -3px 5px rgba(70,46,8,.5),0 1px 1px rgba(255,255,255,.55),0 0 0 1px rgba(90,64,16,.45)}
+body.premium .bs-oro::after{content:"";position:absolute;inset:5px;z-index:1;border-radius:50%;pointer-events:none;background:radial-gradient(ellipse 58% 40% at 32% 20%,rgba(255,255,255,.34) 0%,rgba(255,255,255,0) 100%)}
+body.premium .bs-oro svg{position:relative;z-index:2;width:46px;height:46px;margin:0;overflow:visible;filter:none;animation:none}
+body.premium .bs-sofia .bs-gioiello .nav-conta{top:-5px;right:-8px;z-index:3}
+body.premium .bs-sofia:active .bs-oro{transform:translateY(2px);box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 3.5px rgba(154,116,50,.25),0 3px 6px rgba(15,23,42,.33),0 1px 2px rgba(15,23,42,.28),inset 0 0 0 1px rgba(120,86,24,.55)}
+body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 4.5px #D4AF6A,0 10px 18px rgba(15,23,42,.38),0 3px 5px rgba(15,23,42,.28),inset 0 0 0 1px rgba(120,86,24,.55)}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 3.5px rgba(212,175,106,.3),0 10px 18px rgba(0,0,0,.55),0 3px 5px rgba(0,0,0,.4),inset 0 0 0 1px rgba(120,86,24,.55)}
+:root[data-theme="dark"] body.premium .bs-sofia:active .bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 3.5px rgba(212,175,106,.3),0 3px 6px rgba(0,0,0,.5),inset 0 0 0 1px rgba(120,86,24,.55)}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 4.5px #D4AF6A,0 10px 18px rgba(0,0,0,.55),inset 0 0 0 1px rgba(120,86,24,.55)}
+/* ---- la parte sotto Sofia come nella 1.2.0, ma piu' trasparente e col font di adesso ---- */
+/* il riquadro: cristallo chiaro (30 -> 48%), sfocatura leggera, cornice d'oro */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(255,253,248,.30) 0%,rgba(247,244,238,.48) 100%);-webkit-backdrop-filter:blur(6px) saturate(130%);backdrop-filter:blur(6px) saturate(130%);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.7),0 14px 30px rgba(15,23,42,.12)}
+/* le linguette: l'incasso leggero, "Chat" su vetro bianco, "Notizie" blu notte col filo d'oro */
+body.premium .casa-schede{background:rgba(15,23,42,.07);border:1px solid rgba(154,116,50,.3);padding:3px;border-radius:16px;grid-template-columns:1fr 1fr}
+body.premium .cs-tab{height:36px;border-radius:12px;background:rgba(255,255,255,.34);color:#0F172A;font:700 16px/1 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em;text-shadow:none}
+body.premium .cs-tab[aria-selected="true"]{background:linear-gradient(180deg,rgba(30,41,59,.9) 0%,rgba(15,23,42,.88) 100%);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid #D4AF6A;color:#FAF8F5;box-shadow:0 3px 10px rgba(15,23,42,.22);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+/* il saluto: al centro come nella 1.2.0 (col cerchietto della tendina piccolo e discreto a destra) */
+body.premium .casa-nuvola .casa-saluto{position:relative;justify-content:center;min-height:30px;margin:0 0 4px;padding:1px 30px}
+body.premium .casa-nuvola .casa-saluto .casa-ciao{flex:0 1 auto;text-align:center;font:700 26px/1.1 "Cormorant Garamond",Georgia,serif;letter-spacing:-.005em;color:#0F172A;text-shadow:0 0 10px rgba(247,244,238,.98),0 1px 2px rgba(255,255,255,1),0 0 3px rgba(255,255,255,.9)}
+body.premium .casa-nuvola .casa-saluto .casa-ciao i{font-style:italic}
+body.premium .cs-freccia{position:absolute;right:0;top:50%;margin-top:-13px;width:26px;height:26px;background:rgba(255,255,255,.4);border:1px solid rgba(212,175,106,.6);color:#0F172A;box-shadow:none}
+body.premium .cs-freccia svg{width:15px;height:15px}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-saluto{justify-content:flex-start;padding:1px 30px 1px 4px}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-ciao{font-size:23px;text-align:left}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-freccia{background:linear-gradient(180deg,#E9CC8A 0%,#C9A35A 100%);color:#0F172A}
+body.premium .cs-mini{position:absolute;right:32px;top:50%;transform:translateY(-50%) scale(.9);font:700 13.5px/24px "Cormorant Garamond",Georgia,serif;color:#0F172A;background:linear-gradient(180deg,rgba(255,255,255,.8) 0%,rgba(212,175,106,.3) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .cs-mini{transform:translateY(-50%)}
+/* le righe: come nella 1.2.0 (bianche col filo d'oro e i quadratini), ma al 50% invece dell'86; scritte Cormorant 700 */
+body.premium .cr-riga{min-height:42px;padding:0 12px 0 6px;background:rgba(255,253,249,.50);border:1px solid rgba(197,160,89,.6);border-left:3px solid #9A7432;border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 8px rgba(15,23,42,.05);font:700 20px/1.1 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums proportional-nums;color:#0F172A;text-shadow:0 1px 0 rgba(255,255,255,.8),0 0 5px rgba(255,255,255,.8)}
+body.premium .cr-riga b{font-size:21px;color:#0F172A}
+body.premium .cr-ico,body.premium .cr-ico.verde,body.premium .cr-ico.arancio,body.premium .cr-ico.blu,body.premium .cr-ico.oro{background:linear-gradient(135deg,rgba(250,245,232,.9) 0%,rgba(239,230,208,.85) 100%);border-color:rgba(154,116,50,.4);color:#856226}
+body.premium .cr-ico .ico2{stroke-width:1.8}
+body.premium .cr-va{color:#9A7432;text-shadow:none}
+/* il consiglio: blu notte quasi pieno come nella 1.2.0 (82%), scritta avorio Cormorant 700 da 18 px */
+body.premium .casa-nuvola .casa-spinta,body.premium .casa-nuvola>.casa-spinta{background:linear-gradient(90deg,rgba(15,23,42,.84) 0%,rgba(30,41,59,.78) 100%);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1.2px solid #D4AF6A;color:#FAF8F5;font:700 18px/1.2 "Cormorant Garamond",Georgia,serif;font-variant-numeric:oldstyle-nums;text-shadow:0 1px 2px rgba(0,0,0,.45);box-shadow:0 4px 12px rgba(15,23,42,.18)}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola{background:linear-gradient(180deg,rgba(20,18,16,.4) 0%,rgba(20,18,16,.6) 100%)}
+:root[data-theme="dark"] body.premium .casa-schede{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] body.premium .cs-tab{background:rgba(255,255,255,.08);color:#E7E1D6}
+:root[data-theme="dark"] body.premium .casa-nuvola .casa-saluto .casa-ciao{color:#F5F1EA;text-shadow:0 0 10px rgba(14,12,10,.9),0 1px 2px rgba(0,0,0,.7)}
+:root[data-theme="dark"] body.premium .cr-riga{background:rgba(30,27,24,.5);border-color:rgba(212,175,106,.4);border-left-color:#C5A059;color:#F5F1EA;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+:root[data-theme="dark"] body.premium .cr-riga b{color:#FFFFFF}
+:root[data-theme="dark"] body.premium .cs-freccia{background:rgba(255,255,255,.1);color:#F3E3B8}
+:root[data-theme="dark"] body.premium .cs-mini{background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(212,175,106,.28) 100%);color:#F5F1EA;box-shadow:none}
