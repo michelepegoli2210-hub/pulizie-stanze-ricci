@@ -5348,3 +5348,15 @@ body.premium .sofia-vista .sv-chat{min-height:150px}
 .sofia-fuori.tre .sf-cornice{-webkit-mask-image:none;mask-image:none;filter:drop-shadow(0 14px 22px rgba(28,25,23,.36)) drop-shadow(0 2px 3px rgba(28,25,23,.25))}
 .sofia-fuori,body.con-sotto .sofia-fuori{bottom:calc(var(--alto-sotto,71px) - 2px + env(safe-area-inset-bottom,0px))}
 body.con-sotto .sofia-fuori.alta{bottom:calc(var(--alto-sotto,71px) + 112px + env(safe-area-inset-bottom,0px))}
+/* ============================================================================
+   1.10.2 (Michele, 27/10): "anche la chat deve essere trasparente: si deve vedere Sofia bene, la sua silhouette".
+   ============================================================================ */
+/* la chat nel riquadro: il velo scuro quasi via (resta un filo in basso per leggere i fumetti), i fumetti all'80% con
+   l'alone chiaro dietro le lettere: dietro si vede Sofia, intera */
+body.premium .sofia-hero.nuvola-aperta .casa-velo{background:linear-gradient(180deg,rgba(15,23,42,0) 0%,rgba(15,23,42,0) 30%,rgba(15,23,42,.14) 48%,rgba(15,23,42,.30) 72%,rgba(15,23,42,.42) 100%)}
+:root[data-theme="dark"] body.premium .sofia-hero.nuvola-aperta .casa-velo{background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,.20) 48%,rgba(0,0,0,.40) 72%,rgba(0,0,0,.52) 100%)}
+body.premium .casa-chat .cc-lei{background:rgba(250,248,245,.80);text-shadow:0 0 6px rgba(255,255,255,.9),0 0 2px rgba(255,255,255,.8)}
+body.premium .casa-chat .cc-io{background:linear-gradient(135deg,rgba(243,227,184,.84) 0%,rgba(228,200,135,.84) 100%)}
+body.premium .casa-chat .cc-lei.cc-pensa{background:rgba(250,248,245,.72)}
+/* tema scuro: in chat il riquadro non ha bordo ne' fondo (si vedeva una cornice sottile attorno ai fumetti) */
+:root[data-theme="dark"] body.premium .sofia-hero.nuvola-aperta .casa-nuvola{background:transparent;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}

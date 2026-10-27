@@ -1968,3 +1968,9 @@ Michele: "assicurati che tutti i video si vedano al completo, anche nella chat, 
 - Sofia che esce (altre pagine): il filmato intero (object-fit contain, niente ritaglio) e via la sfumatura che le scioglieva il busto; appoggiata sulla barra in basso (bottom = barra − 2 px) come in casa.
 - Sui filmati nuovi (ascolta, ferma elegante, indica giù, parla nuovo): li genera Michele in Gemini («Crea video», verticale, con la foto di Sofia e il testo che gli ho dato), li scarica e li attacca; qui si tagliano, si ritaglia lo sfondo (s3d) e si montano. Il labiale vero non si può fare con un filmato già girato: il filmato «parla» scorre mentre esce la voce.
 - Prove: le stesse della 1.10.0 (prova120casa e schermate105 guardano la pagina di Sofia: la figura in cima non cambia le misure della scheda).
+
+## 107. La 1.10.2 (27 ottobre): LA CHAT TRASPARENTE
+Michele: "anche la chat deve essere trasparente: si deve vedere Sofia bene, la sua silhouette".
+- La chat nel riquadro (quella che si apre col tasto d'oro o quando Sofia risponde): via il velo scuro che la copriva (resta un filo d'ombra in basso, 14→42%, per leggere i fumetti); i fumetti di Sofia avorio all'80% e quelli di Michele oro champagne all'84%, con l'alone chiaro dietro le lettere. Dietro si vede Sofia intera. Tema scuro: niente bordo né fondo attorno ai fumetti (si vedeva una cornice sottile).
+- Prove: prova120casa accetta i fumetti all'80%.
+- Nello stesso giro Michele ha chiesto la parte delle signore nuova (minimale, Sofia fantasma, lo standard, la verifica): il progetto di Gemini Argon è in dev/gemini-1110-signore.md; si costruisce dopo la sua risposta.
