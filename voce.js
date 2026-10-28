@@ -38,6 +38,11 @@ export const CONF_BASE = { attiva: false, motore: "google", voce: "Autonoe", mod
 const CHIAVE_LOCALE = "ricci_voce";
 const MAX_CARATTERI = 420; // con la voce TTS: piu' corto = risponde prima. Il testo intero resta nella chat
 const MAX_CARATTERI_LIVE = 700; // col canale Live si puo' leggere di piu': genera sette volte piu' svelto di quanto parla
+// 1.11.0 (Michele: "quando Sofia parla ogni tanto si blocca"): parti piu' corte (una o due frasi). Se il canale Live si
+// pianta a meta' si perde poco e si riprende subito dal punto giusto; la parte dopo e' gia' pronta mentre lei parla.
+const PARTE_LIVE = 360;
+let liveGuastoFino = 0, ttsGuastoFino = 0;   // un canale che non va non si riprova per un po' (niente attese lunghe ripetute)
+let giroStop = 0;                            // cresce a ogni "zitta": una frase che stava aspettando non parte piu'
 
 export function leggiVoce() {
   let salvato = {};
@@ -76,7 +81,7 @@ export function daLeggere(t, max = MAX_CARATTERI) {
 // frasi) che si leggono una dopo l'altra; la parte dopo si prepara mentre lei legge quella prima, cosi' non ci sono buchi.
 const MAX_TOTALE = 3200;   // circa tre minuti e mezzo: oltre, il resto si legge nella chat
 export function partiDaLeggere(t, live = true) {
-  const max = live ? MAX_CARATTERI_LIVE : MAX_CARATTERI;
+  const max = live ? PARTE_LIVE : MAX_CARATTERI;
   let s = pulisciLettura(t);
   if (s.length > MAX_TOTALE) { const p = s.slice(0, MAX_TOTALE); const k = Math.max(p.lastIndexOf(". "), p.lastIndexOf("! "), p.lastIndexOf("? ")); s = k > MAX_TOTALE / 2 ? p.slice(0, k + 1) : p; }
   if (!s) return [];
@@ -96,10 +101,17 @@ export function partiDaLeggere(t, live = true) {
   return parti;
 }
 // prepara l'audio di una parte (col canale Live) e lo mette nel cassetto: quando tocca a lei parte subito
+// 1.11.0: la parte che si sta preparando e' in questo elenco: chi la vuole la ASPETTA, non apre un secondo collegamento
+const IN_PREPARAZIONE = new Map();
 export function preparaParte(testo, conf, chiave) {
   const c = conf || leggiVoce();
-  if (!(c.motore === "google" && chiave && c.canale !== "tts")) return Promise.resolve(null);
-  return audioDaLive(daLeggere(testo, MAX_CARATTERI_LIVE), c, chiave, { prepara: true }).catch(() => null);
+  if (!(c.motore === "google" && chiave && c.canale !== "tts") || Date.now() < liveGuastoFino) return Promise.resolve(null);
+  const t = daLeggere(testo, MAX_CARATTERI_LIVE), k = `live|${c.voce}|${c.tono}|${t}`;
+  if (CASSETTO.has(k)) return Promise.resolve(CASSETTO.get(k));
+  if (IN_PREPARAZIONE.has(k)) return IN_PREPARAZIONE.get(k);
+  const p = audioDaLive(t, c, chiave, { prepara: true }).catch(() => null).finally(() => IN_PREPARAZIONE.delete(k));
+  IN_PREPARAZIONE.set(k, p);
+  return p;
 }
 
 // ---- il motore gratis: la voce del telefono --------------------------------
@@ -146,7 +158,7 @@ export async function audioDaGoogle(testo, conf, chiave) {
     response_format: { type: "audio" },
     generation_config: { speech_config: [{ voice: conf.voce || "Sulafat" }] },
   };
-  const stop = new AbortController(); const t = setTimeout(() => stop.abort(), 30000);
+  const stop = new AbortController(); const t = setTimeout(() => stop.abort(), 15000);   // 1.11.0: 15 s (prima 30)
   let j, r;
   try {
     try {
@@ -213,7 +225,7 @@ function apriLive(conf, chiave) {
   const ws = new WebSocket(LIVE_URL + "?key=" + encodeURIComponent(chiave));
   const L = { ws, usato: false, chiuso: false, annullato: false, voce: conf.voce, tono: conf.tono, nato: Date.now(), ascolta: null, modello: LIVE_MODELLI[0] };
   L.pronto = new Promise((res, rej) => {
-    const t = setTimeout(() => rej(new Error("La voce Live non risponde.")), 8000);
+    const t = setTimeout(() => rej(new Error("La voce Live non risponde.")), 6000);   // 1.11.0: 6 s (prima 8)
     ws.onopen = () => ws.send(JSON.stringify({ setup: {
       model: "models/" + L.modello,
       generationConfig: { responseModalities: ["AUDIO"], speechConfig: { languageCode: "it-IT", voiceConfig: { prebuiltVoiceConfig: { voiceName: conf.voce || CONF_BASE.voce } } } },
@@ -323,6 +335,8 @@ export async function parlaLive(testo, conf, chiave, { onInizio, onBocca, onFine
   const prof = new ProfiloVivo(testo);
   const pezzi = [], fonti = [];
   let trascr = "", nextT = 0, t0 = 0, partito = false, generato = false, vivo = true;
+  // 1.11.0: i guardiani. completo = il server ha detto "ho finito"; troncata = si e' piantato o si e' chiuso prima
+  let completo = false, troncata = false, ultimoPezzo = 0, ultimoCt = -1, ctFermoDa = 0;
   const ritardo = Math.min(0.25, Number(ctx.outputLatency) || 0);
   return new Promise((res) => {
     const spegni = () => {
@@ -336,26 +350,38 @@ export async function parlaLive(testo, conf, chiave, { onInizio, onBocca, onFine
       if (fermaOra === ferma) fermaOra = null;
       onBocca?.(0, 0);
     };
-    const finisci = () => { if (!vivo) return; spegni(); onFine?.(); res({ wav: wavDaPcm(pezzi), trascr: trascr.trim() }); };
+    const finisci = () => { if (!vivo) return; spegni(); if (!troncata) onFine?.(); res({ wav: wavDaPcm(pezzi), trascr: trascr.trim(), troncata }); };
     const fallisci = (msg) => { if (!vivo) return; spegni(); res({ errore: new Error(msg) }); };
     const ferma = () => { L.annullato = true; if (!vivo) return; spegni(); res({ annullata: true }); };
-    const tMax = setTimeout(() => { if (!partito) fallisci("La voce Live ci ha messo troppo."); }, 12000);
+    const tMax = setTimeout(() => { if (!partito) fallisci("La voce Live ci ha messo troppo."); }, 8000);   // 1.11.0: 8 s (prima 12)
     const giro = () => {
       if (!vivo) return;
       an.getByteTimeDomainData(dati);
       let s = 0; for (let i = 0; i < dati.length; i++) { const v = (dati[i] - 128) / 128; s += v * v; }
       const forza = Math.min(1, Math.sqrt(s / dati.length) * 3.4);
       onBocca?.(forza, Math.max(0, ctx.currentTime - t0 - ritardo));
-      if (generato && ctx.currentTime >= nextT + 0.06) { finisci(); return; }
+      const adesso = performance.now(), ct = ctx.currentTime;
+      // 1.11.0: l'orologio dell'audio fermo (il telefono ha sospeso l'audio): si prova a ripartire, poi si chiude
+      if (ct !== ultimoCt) { ultimoCt = ct; ctFermoDa = adesso; }
+      else if (adesso - ctFermoDa > 1200) {
+        try { if (ctx.state !== "running") ctx.resume(); } catch (e) {}
+        if (adesso - ctFermoDa > 4500) { troncata = false; finisci(); return; }
+      }
+      // 1.11.0: il canale Live si e' piantato: niente audio nuovo da 3,5 secondi e quello arrivato e' gia' stato detto
+      if (partito && !generato && adesso - ultimoPezzo > 3500 && ct >= nextT - 0.02) {
+        troncata = true; generato = true; prof.chiudi();
+        L.ascolta = null; try { L.ws.close(); } catch (e) {}
+      }
+      if (generato && ct >= nextT + 0.06) { finisci(); return; }
     };
     const tic = battito(giro);
     L.ascolta = (j) => {
-      if (j.chiuso) { if (L.annullato) ferma(); else if (partito) { generato = true; prof.chiudi(); } else fallisci("La voce Live si e' interrotta."); return; }
+      if (j.chiuso) { if (L.annullato) ferma(); else if (partito) { if (!completo) troncata = true; generato = true; prof.chiudi(); } else fallisci("La voce Live si e' interrotta."); return; }
       const sc = j.serverContent; if (!sc) return;
       for (const p of (sc.modelTurn?.parts || [])) if (p.inlineData?.data) {
         const b = atob(p.inlineData.data), u = new Uint8Array(b.length);
         for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
-        pezzi.push(u);
+        pezzi.push(u); ultimoPezzo = performance.now();
         const f32 = pcmAFloat(u); if (!f32.length) continue;
         const ab = ctx.createBuffer(1, f32.length, RATE); ab.copyToChannel(f32, 0);
         if (!partito) {
@@ -370,7 +396,7 @@ export async function parlaLive(testo, conf, chiave, { onInizio, onBocca, onFine
         prof.aggiungi(f32, RATE);
       }
       if (sc.outputTranscription?.text) { trascr += sc.outputTranscription.text; prof.trascrizione(trascr); }
-      if (sc.generationComplete || sc.turnComplete) { generato = true; prof.chiudi(); if (!partito) fallisci("Dalla voce Live non e' arrivato audio."); }
+      if (sc.generationComplete || sc.turnComplete) { completo = true; generato = true; prof.chiudi(); if (!partito) fallisci("Dalla voce Live non e' arrivato audio."); }
     };
     try { L.ws.send(JSON.stringify({ clientContent: { turns: [{ role: "user", parts: [{ text: testo }] }], turnComplete: true } })); }
     catch (e) { fallisci("Non riesco a mandare il testo alla voce Live."); }
@@ -387,12 +413,17 @@ export async function audioPronto(testo, conf, chiave) {
 let ctxAudio = null, fermaOra = null;
 export function sbloccaAudio() {
   try {
-    if (!ctxAudio) ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+    if (!ctxAudio) {
+      ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+      // 1.11.0: se il telefono sospende l'audio mentre lei parla (un avviso, un'altra app), si riparte da soli
+      try { ctxAudio.onstatechange = () => { try { if (ctxAudio.state !== "running" && fermaOra && !document.hidden) ctxAudio.resume().catch(() => {}); } catch (e) {} }; } catch (e) {}
+    }
     if (ctxAudio.state === "suspended") ctxAudio.resume();
   } catch (e) {}
   return ctxAudio;
 }
 export function stazitta() {
+  giroStop++;
   try { fermaOra?.(); } catch (e) {} fermaOra = null;
   try { window.speechSynthesis?.cancel(); } catch (e) {}
   try { if (liveInCorso) { liveInCorso.annullato = true; liveInCorso.ws.close(); liveInCorso = null; } } catch (e) {}
@@ -415,13 +446,20 @@ export async function suona(arrayBuffer, { onBocca, onFine, onInizio } = {}) {
   // il tempo si misura sull'orologio dell'audio, non su quello dello schermo:
   // cosi' la bocca segue il suono anche se il telefono e' lento o va a scatti.
   const ritardo = Math.min(0.25, Number(ctx.outputLatency) || 0);
-  let t0 = ctx.currentTime;
+  let t0 = ctx.currentTime, ultimoCt = -1, fermoDa = performance.now();
   const giro = () => {
     if (!vivo) return;
     an.getByteTimeDomainData(dati);
     let s = 0; for (let i = 0; i < dati.length; i++) { const v = (dati[i] - 128) / 128; s += v * v; }
     const forza = Math.min(1, Math.sqrt(s / dati.length) * 3.4);
     onBocca?.(forza, Math.max(0, ctx.currentTime - t0 - ritardo));
+    // 1.11.0: l'audio sospeso dal telefono: si prova a ripartire; se resta fermo si chiude (Sofia non resta bloccata)
+    const ct = ctx.currentTime, adesso = performance.now();
+    if (ct !== ultimoCt) { ultimoCt = ct; fermoDa = adesso; }
+    else if (adesso - fermoDa > 1200) {
+      try { if (ctx.state !== "running") ctx.resume(); } catch (e) {}
+      if (adesso - fermoDa > 4500) { try { src.onended = null; src.stop(); } catch (e) {} chiudi(); }
+    }
   };
   const tic = battito(giro);
   const chiudi = () => { if (!vivo) return; vivo = false; tic.ferma(); onBocca?.(0, buf.duration); fermaOra = null; onFine?.(); };
@@ -429,6 +467,7 @@ export async function suona(arrayBuffer, { onBocca, onFine, onInizio } = {}) {
   fermaOra = () => { vivo = false; tic.ferma(); try { src.stop(); } catch (e) {} onBocca?.(0, 0); };
   t0 = ctx.currentTime;
   src.start(); tic.via();
+  setTimeout(chiudi, (buf.duration + 6) * 1000);   // 1.11.0: se "finito" non arriva mai, si chiude lo stesso
 }
 // 0.68.3: il battito del labiale. requestAnimationFrame da solo NON basta: se la
 // finestra e' coperta o il telefono risparmia, scende a 1-2 al secondo e la bocca
@@ -444,10 +483,33 @@ function battito(fn) {
   };
 }
 
+// 1.11.0: quello che resta da dire quando la voce Live si e' fermata a meta'. Si cerca nel testo il punto dove arriva la
+// trascrizione (le ultime 4, 3 o 2 parole, vicino a dove dovrebbero essere); se non si trova si riparte dall'inizio della
+// frase in corso: meglio ripetere tre parole che saltarne dieci.
+export function restoDaLeggere(testo, trascr) {
+  const s = String(testo || "");
+  const norm = (w) => String(w).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
+  const pt = []; for (const m of s.matchAll(/\S+/g)) { const w = norm(m[0]); if (w) pt.push({ w, i: m.index, f: m.index + m[0].length }); }
+  const tw = String(trascr || "").split(/\s+/).map(norm).filter(Boolean);
+  if (!pt.length) return "";
+  if (!tw.length) return s.trim();
+  const atteso = Math.min(pt.length, tw.length);
+  for (let k = Math.min(4, tw.length); k >= 2; k--) {
+    const coda = tw.slice(-k); let meglio = -1, dist = 1e9;
+    for (let j = 0; j + k <= pt.length; j++) {
+      let ok = true; for (let q = 0; q < k; q++) if (pt[j + q].w !== coda[q]) { ok = false; break; }
+      if (ok) { const d = Math.abs(j + k - atteso); if (d < dist) { dist = d; meglio = j; } }
+    }
+    if (meglio >= 0 && dist <= 12) return s.slice(pt[meglio + k - 1].f).replace(/^[\s,.;:!?»"')\]]+/, "").trim();
+  }
+  const p = pt[Math.max(0, Math.min(pt.length - 1, atteso - 2))].i;
+  const prima = s.slice(0, p), k2 = Math.max(prima.lastIndexOf(". "), prima.lastIndexOf("! "), prima.lastIndexOf("? "));
+  return s.slice(k2 >= 0 ? k2 + 2 : 0).trim();
+}
 // La voce giusta, con la rete di sicurezza: Google, e se non va il telefono
-export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, onInizio } = {}) {
+export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, onInizio, ripresa = false } = {}) {
   const c = conf || leggiVoce();
-  const live = c.motore === "google" && !!chiave && c.canale !== "tts";
+  const live = c.motore === "google" && !!chiave && c.canale !== "tts" && Date.now() >= liveGuastoFino;
   const t = daLeggere(testo, live ? MAX_CARATTERI_LIVE : MAX_CARATTERI); if (!t) { onFine?.(); return; }
   if (c.motore === "google" && chiave) {
     // onInizio riceve anche il testo LETTO davvero (tagliato come fa daLeggere, o la
@@ -457,20 +519,37 @@ export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, on
     if (live) {
       const k = `live|${c.voce}|${c.tono}|${t}`;
       try {
+        // 1.11.0: se questa parte si sta gia' preparando si aspetta lei (al massimo 7 secondi), non si apre un altro collegamento
+        if (!CASSETTO.has(k) && IN_PREPARAZIONE.has(k)) {
+          const g1 = giroStop;
+          await Promise.race([IN_PREPARAZIONE.get(k), new Promise(r => setTimeout(r, 7000))]);
+          if (g1 !== giroStop) { onFine?.(); return; }      // nel frattempo l'hanno fatta smettere
+        }
         if (CASSETTO.has(k)) { const r = CASSETTO.get(k); await suona(r.wav, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, r.trascr || t) }); return; }
         const r = await parlaLive(t, c, chiave, { onInizio, onBocca, onFine });
         if (r.annullata) return;
         if (r.errore) throw r.errore;
+        if (r.troncata) {
+          // 1.11.0: si e' piantata a meta': si riprende da dove si era fermata (una volta sola), con un collegamento nuovo
+          const resto = ripresa ? "" : restoDaLeggere(t, r.trascr);
+          console.warn("voce live: interrotta, riprendo da:", resto.slice(0, 60));
+          if (resto && resto.length >= 6) return parla(resto, { conf: c, chiave, onBocca, onFine, onErrore, onInizio, ripresa: true });
+          onFine?.(); return;
+        }
         // nel cassetto solo se ha letto davvero il nostro testo
         if (r.wav && (!r.trascr || quantoSimile(t, r.trascr) >= 0.5)) { if (CASSETTO.size > 40) CASSETTO.clear(); CASSETTO.set(k, r); }
         else if (r.trascr) console.warn("voce live: letto altro", r.trascr.slice(0, 80));
         return;
-      } catch (e) { if (e && e.annullata) { onFine?.(); return; } console.warn("voce live", e); }
+      } catch (e) { if (e && e.annullata) { onFine?.(); return; } console.warn("voce live", e); liveGuastoFino = Date.now() + 45000; }
     }
-    if (c.modello) {
-      const tt = daLeggere(t);
-      try { const a = await audioDaGoogle(tt, c, chiave); await suona(a, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, tt) }); return; }
-      catch (e) { console.warn("voce google", e); onErrore?.(e); }
+    if (c.modello && Date.now() >= ttsGuastoFino) {
+      const tt = daLeggere(t), g1 = giroStop;
+      try {
+        const a = await audioDaGoogle(tt, c, chiave);
+        if (g1 !== giroStop) { onFine?.(); return; }
+        await suona(a, { onBocca, onFine, onInizio: (buf) => onInizio?.(buf, tt) }); return;
+      }
+      catch (e) { console.warn("voce google", e); ttsGuastoFino = Date.now() + 5 * 60000; onErrore?.(e); }
     }
   }
   // ripiego: la voce del telefono (gratis, anche senza internet)
@@ -488,5 +567,6 @@ export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, on
   const chiudi = () => { if (!vivo) return; vivo = false; clearInterval(tic); onBocca?.(0, durata); fermaOra = null; onFine?.(); };
   fermaOra = () => { vivo = false; clearInterval(tic); onBocca?.(0, 0); try { window.speechSynthesis?.cancel(); } catch (e) {} };
   setTimeout(parti, 1500);
+  setTimeout(chiudi, Math.max(8000, durata * 1800 + 4000));   // 1.11.0: se il telefono non dice "ho finito", si chiude lo stesso
   parlaTelefono(t, { onInizio: parti, onFine: chiudi });
 }

@@ -297,8 +297,10 @@ function messaggioChiaro(stato, m) {
   if (stato === 402 || /payment required|prepay|credit balance|insufficient.*(credit|balance)/i.test(m)) return "Il credito per Argon è finito: ricaricalo su aistudio.google.com/billing (Acquista crediti).";
   if ((stato === 429 || /quota|exceeded/i.test(m)) && /billing|plan|free.?tier|limit: 0/i.test(m)) return "Questo modello non ha chiamate gratuite: Argon vuole una chiave di un progetto col credito (vedi la guida).";
   if (stato === 429 || /rate limit|exceeded|quota/i.test(m)) return "Troppe domande in poco tempo: riprova tra un minuto.";
-  if (stato === 404 || /not found|model/i.test(m)) return "Quel modello non esiste più: tocca «Prova la chiave» e lo ricerco.";
-  if (stato >= 500) return "Il loro server non risponde. Riprova tra poco.";
+  // 1.11.0: prima "The model is overloaded" (503, frequente col gratuito) diventava «Quel modello non esiste più» per via
+  // della parola "model": adesso il server sovraccarico si riconosce prima, e "non esiste" solo quando lo dice davvero
+  if (stato >= 500 || /overloaded|unavailable|try again later|internal error|deadline/i.test(m)) return "Il loro server non risponde. Riprova tra poco.";
+  if (stato === 404 || /not found|is not supported|does not exist|no longer available/i.test(m)) return "Quel modello non esiste più: tocca «Prova la chiave» e lo ricerco.";
   return m.slice(0, 160);
 }
 

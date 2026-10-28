@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.10.2";
+export const VERSIONE = "1.11.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -216,7 +216,7 @@ function barraOra() {
   document.body.classList.toggle("senza-orologio", !orologioVoluto());
   if (!b) {
     b = document.createElement("div"); b.id = "barraOra"; b.className = "barra-ora"; b.setAttribute("aria-live", "off");
-    b.innerHTML = `<button type="button" class="bo-indietro" data-indietro aria-label="Indietro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Indietro</span></button><span class="bo-marca" aria-label="Le Stanze di Ricci"><span class="bo-nome"><b>Le Stanze</b><b class="bo-m2">di Ricci</b></span><small>Pulizie</small><svg class="bo-anguille" viewBox="0 0 150 16" aria-hidden="true"><defs><linearGradient id="agOro" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B8912F"/><stop offset=".5" stop-color="#E9CF8E"/><stop offset="1" stop-color="#B8912F"/></linearGradient></defs><g transform="translate(146 5)"><g stroke="url(#agOro)" stroke-linecap="round" fill="none"><path pathLength="100" d="M 0 0 C -10 -4.2, -20 -4.2, -30 0 C -40 4.2, -50 4.2, -60 0 C -70 -4.2, -78 -3.2, -86 0.6" stroke-width=".9"/><path pathLength="100" d="M 0 0 C -10 -4.2, -20 -4.2, -30 0 C -40 4.2, -50 4.2, -60 0 C -70 -4.2, -78 -3.2, -86 0.6" stroke-width="1.7" stroke-dasharray="66 34"/><path pathLength="100" d="M 0 0 C -10 -4.2, -20 -4.2, -30 0 C -40 4.2, -50 4.2, -60 0 C -70 -4.2, -78 -3.2, -86 0.6" stroke-width="2.5" stroke-dasharray="30 70"/><path d="M -7 1.2 q -1.6 1.9 -3.2 2.7" stroke-width="1" opacity=".8"/></g><ellipse cx="-1.2" cy="0" rx="3.7" ry="2.2" transform="rotate(-8 -1.2 0)" fill="#C9A24F"/><circle cx="0.2" cy="-0.5" r=".65" fill="#FFF8E1"/></g><g transform="translate(88 11)"><g stroke="url(#agOro)" stroke-linecap="round" fill="none"><path pathLength="100" d="M 0 0 C -10 -4.2, -20 -4.2, -30 0 C -40 4.2, -50 4.2, -60 0 C -70 -4.2, -78 -3.2, -86 0.6" stroke-width=".9"/><path pathLength="100" d="M 0 0 C -10 -4.2, -20 -4.2, -30 0 C -40 4.2, -50 4.2, -60 0 C -70 -4.2, -78 -3.2, -86 0.6" stroke-width="1.7" stroke-dasharray="66 34"/><path pathLength="100" d="M 0 0 C -10 -4.2, -20 -4.2, -30 0 C -40 4.2, -50 4.2, -60 0 C -70 -4.2, -78 -3.2, -86 0.6" stroke-width="2.5" stroke-dasharray="30 70"/><path d="M -7 1.2 q -1.6 1.9 -3.2 2.7" stroke-width="1" opacity=".8"/></g><ellipse cx="-1.2" cy="0" rx="3.7" ry="2.2" transform="rotate(-8 -1.2 0)" fill="#C9A24F"/><circle cx="0.2" cy="-0.5" r=".65" fill="#FFF8E1"/></g></svg></span><b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
+    b.innerHTML = `<button type="button" class="bo-indietro" data-indietro aria-label="Indietro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Indietro</span></button><span class="bo-marca" aria-label="Le Stanze di Ricci"><span class="bo-nome"><b>Le Stanze</b><b class="bo-m2">di Ricci</b></span><small>Pulizie</small><svg class="bo-logo" viewBox="96 22 648 286" aria-hidden="true"><path class="lg-oro" d="M144.0 248.0C145.4 247.1 148.8 244.5 152.1 242.4C155.5 240.3 159.0 238.1 164.0 235.5C169.0 232.9 174.6 229.9 181.9 227.0C189.1 224.1 197.8 220.7 207.5 218.1C217.2 215.6 229.2 213.1 240.0 211.8C250.8 210.4 262.7 209.9 272.5 209.9C282.3 209.8 290.8 210.7 298.8 211.5C306.7 212.3 313.1 213.5 320.0 214.9C326.9 216.3 333.3 218.0 340.0 219.9C346.7 221.8 353.3 223.9 360.0 226.2C366.7 228.6 373.4 231.1 380.0 233.8C386.6 236.4 393.3 239.2 399.4 242.0C405.4 244.8 411.1 247.6 416.2 250.2C421.4 252.9 427.7 256.7 430.0 258.0L430.0 258.0C425.6 257.3 412.0 255.1 403.8 253.8C395.5 252.6 387.9 251.5 380.6 250.4C373.3 249.4 366.8 248.6 360.0 247.4C353.2 246.2 346.7 244.8 340.0 243.2C333.3 241.7 326.9 239.7 320.0 237.8C313.1 236.0 306.7 233.9 298.8 232.2C290.8 230.5 282.3 228.7 272.5 227.7C262.7 226.7 250.8 226.0 240.0 226.1C229.2 226.3 217.2 227.4 207.5 228.7C197.8 230.0 189.1 232.1 181.9 233.9C174.6 235.7 169.0 237.8 164.0 239.5C159.0 241.2 155.5 242.8 152.1 244.2C148.8 245.6 145.4 247.4 144.0 248.0ZM254.0 298.0C256.2 296.4 262.4 291.5 267.1 288.2C271.9 285.0 276.8 281.7 282.4 278.6C287.9 275.6 294.1 272.4 300.4 269.9C306.6 267.3 313.4 265.0 320.0 263.3C326.6 261.6 333.3 260.5 340.0 259.7C346.7 258.9 353.3 258.7 360.0 258.6C366.7 258.5 373.3 258.8 380.0 259.1C386.7 259.4 393.3 259.9 400.0 260.4C406.7 260.9 413.3 261.4 420.0 262.1C426.7 262.7 433.1 263.3 440.0 264.1C446.9 264.8 453.3 265.6 461.2 266.6C469.2 267.6 477.5 268.8 487.5 270.0C497.5 271.2 509.2 272.9 521.2 273.8C533.3 274.8 547.1 275.8 560.0 275.7C572.9 275.5 586.7 274.7 598.8 272.9C610.8 271.1 622.5 268.1 632.5 264.9C642.5 261.7 650.8 257.3 658.8 253.8C666.7 250.3 673.2 246.4 680.0 243.7C686.8 240.9 693.4 238.7 699.4 237.2C705.4 235.8 711.2 235.1 716.1 234.8C721.0 234.6 725.0 235.1 728.6 235.8C732.3 236.4 736.4 238.5 738.0 239.0L738.0 239.0C736.5 239.9 732.3 242.8 729.2 244.6C726.2 246.4 723.1 248.2 719.9 249.9C716.7 251.5 713.3 252.9 710.0 254.4C706.7 255.9 703.4 257.1 700.0 258.9C696.6 260.7 693.3 262.7 689.4 265.2C685.4 267.8 681.5 270.9 676.2 274.1C671.0 277.2 665.4 280.8 658.1 283.9C650.8 287.0 642.4 290.3 632.5 292.7C622.6 295.1 610.8 297.2 598.8 298.3C586.7 299.4 572.9 299.8 560.0 299.5C547.1 299.2 533.3 297.8 521.2 296.4C509.2 295.1 497.5 293.0 487.5 291.3C477.5 289.7 469.2 288.0 461.2 286.6C453.3 285.1 446.9 283.9 440.0 282.7C433.1 281.4 426.7 280.2 420.0 279.1C413.3 277.9 406.7 276.7 400.0 275.8C393.3 274.9 386.7 274.1 380.0 273.6C373.3 273.0 366.7 272.7 360.0 272.6C353.3 272.6 346.7 272.8 340.0 273.3C333.3 273.9 326.6 274.8 320.0 276.0C313.4 277.2 306.6 278.8 300.4 280.5C294.1 282.2 287.9 284.1 282.4 286.1C276.8 288.0 271.9 290.0 267.1 292.0C262.4 294.0 256.2 297.0 254.0 298.0ZM556.5 209H574V249H556.5ZM535 107h22a2 2 0 0 1 2 2v21a2 2 0 0 1-2 2h-22a2 2 0 0 1-2-2v-21a2 2 0 0 1 2-2zM564 107h22a2 2 0 0 1 2 2v21a2 2 0 0 1-2 2h-22a2 2 0 0 1-2-2v-21a2 2 0 0 1 2-2zM535 137h22a2 2 0 0 1 2 2v21a2 2 0 0 1-2 2h-22a2 2 0 0 1-2-2v-21a2 2 0 0 1 2-2zM564 137h22a2 2 0 0 1 2 2v21a2 2 0 0 1-2 2h-22a2 2 0 0 1-2-2v-21a2 2 0 0 1 2-2z"/><path class="lg-blu" d="M104.0 272.0C108.2 268.6 119.4 259.0 129.0 251.8C138.6 244.6 149.7 236.2 161.5 228.9C173.3 221.5 186.9 213.6 200.0 207.8C213.1 202.0 226.7 197.3 240.0 194.1C253.3 190.8 266.7 189.2 280.0 188.5C293.3 187.8 306.7 188.6 320.0 189.9C333.3 191.2 346.7 193.7 360.0 196.4C373.3 199.1 386.7 202.6 400.0 206.1C413.3 209.5 426.7 213.4 440.0 217.2C453.3 221.1 466.7 225.2 480.0 228.9C493.3 232.5 506.6 236.3 520.0 239.0C533.4 241.7 546.9 244.1 560.2 245.1C573.4 246.2 587.4 246.2 599.5 245.2C611.6 244.2 623.7 241.8 632.9 239.2C642.2 236.7 649.5 233.2 655.2 230.0C660.9 226.8 664.1 223.3 667.2 220.0C670.3 216.7 671.9 213.3 673.6 210.0C675.3 206.7 676.4 203.3 677.3 200.0C678.2 196.7 678.8 193.3 679.1 190.0C679.4 186.7 679.5 183.3 679.2 180.0C679.0 176.7 678.4 173.3 677.4 170.0C676.5 166.7 675.2 163.3 673.6 160.0C672.0 156.7 670.0 153.3 667.8 150.1C665.6 146.8 663.1 143.5 660.5 140.5C657.9 137.5 655.1 134.6 652.3 131.8C649.6 129.1 645.4 125.3 644.0 124.0L675.0 124.0C676.2 125.3 679.7 129.1 682.0 131.8C684.3 134.6 686.7 137.5 689.0 140.5C691.3 143.5 693.7 146.8 695.9 150.1C698.0 153.3 700.3 156.7 702.0 160.0C703.7 163.3 705.3 166.7 706.3 170.0C707.4 173.3 708.0 176.7 708.3 180.0C708.7 183.3 708.6 186.7 708.4 190.0C708.1 193.3 707.6 196.7 706.7 200.0C705.8 203.3 704.6 206.7 702.9 210.0C701.3 213.3 699.3 216.7 696.9 220.0C694.4 223.3 691.7 226.7 688.1 230.0C684.6 233.3 680.8 236.7 675.6 240.0C670.5 243.3 664.8 246.7 657.4 249.8C650.0 252.8 641.3 255.9 631.4 258.1C621.5 260.4 609.8 262.3 597.9 263.2C585.9 264.2 572.5 264.3 559.8 263.8C547.0 263.3 533.3 261.8 521.2 260.1C509.2 258.5 497.7 256.2 487.5 254.1C477.3 251.9 469.2 249.7 460.0 247.0C450.8 244.3 442.7 241.4 432.5 238.0C422.3 234.6 410.8 230.3 398.8 226.5C386.7 222.7 373.1 218.3 360.0 215.0C346.9 211.7 333.3 208.7 320.0 206.9C306.7 205.1 293.3 204.0 280.0 204.3C266.7 204.6 253.3 206.0 240.0 208.8C226.7 211.6 213.1 216.0 200.0 220.9C186.9 225.9 173.3 232.7 161.5 238.6C149.7 244.6 138.6 251.2 129.0 256.8C119.4 262.3 108.2 269.5 104.0 272.0ZM254.0 297.0C255.1 295.6 258.1 291.7 260.8 288.9C263.4 286.0 266.3 283.0 269.7 279.8C273.1 276.7 277.1 273.2 281.2 270.0C285.3 266.8 289.9 263.3 294.5 260.4C299.1 257.4 303.9 254.5 308.7 252.4C313.5 250.2 318.3 248.5 323.2 247.4C328.1 246.4 333.1 246.1 338.2 246.0C343.4 245.9 351.4 246.8 354.0 247.0L354.0 247.0C352.0 247.9 347.2 250.4 342.1 252.6C336.9 254.9 330.0 257.5 322.9 260.4C315.9 263.3 307.0 266.8 299.9 270.0C292.8 273.2 286.0 276.7 280.4 279.8C274.7 283.0 270.5 286.0 266.1 288.9C261.7 291.7 256.0 295.6 254.0 297.0ZM627 68H660V118L627 90ZM525 251V188H594V251H574V209H546V251ZM440 238V126.6L559.8 28.1L677.2 126H645.9L560.4 51.3L461.2 134V238Z"/><path class="lg-pinna" d="M699 257.5q-3.5 8.5-12.5 10.5q4.8-6.8 12.5-10.5z"/><path class="lg-occhio" d="M723.2 240a2.1 2.1 0 1 1-4.2 0a2.1 2.1 0 1 1 4.2 0z"/><path class="lg-branchia" d="M706.5 235.5q-4.2 9.5-.6 19.5"/></svg></span><b class="bo-ora">--:--</b><span class="bo-data"><b class="bo-g"></b><span class="bo-d"></span></span><button type="button" class="bo-menu" data-vista="altro" aria-label="Altro: impostazioni, persone, come si vede l'app">\u22ef</button>`;
     document.body.insertBefore(b, document.body.firstChild);
   }
   b.hidden = false; document.body.classList.add("con-ora");
@@ -387,13 +387,54 @@ function filmUno(quale, box) {
   }
   // pronto = gia' al punto giusto e con l'immagine; se il salto non risponde in 3 s si va lo stesso (mai un nero)
   const pronto = (p.pronto && giu.readyState >= 2) || (Date.now() - p.da > 3000 && giu.readyState >= 3);
-  if (!pronto) return;                        // ci riprova filmVigila fra 150 ms
+  if (!pronto) {                              // ci riprova filmVigila fra 150 ms
+    // 1.11.0: il filmato da preparare non si carica (errore, niente dati) entro 6 secondi: si ricomincia da capo; alla
+    // terza volta si cambia direttamente quello in vista (senza dissolvenza): Sofia si muove comunque, non resta ferma
+    if (giu.error || Date.now() - p.da > 6000) {
+      box._prep = null; box._prepFalliti = (box._prepFalliti || 0) + 1;
+      console.warn("filmato: preparazione fallita", quale, box._prepFalliti);
+      if (box._prepFalliti >= 3) {
+        box._prepFalliti = 0;
+        try { su.src = filmFile(box)[quale]; su.loop = true; su.load(); su.play().catch(() => {}); box.dataset.film = quale; } catch (e) {}
+      } else { try { giu.removeAttribute("src"); giu.load(); } catch (e) {} }
+    }
+    return;
+  }
+  box._prepFalliti = 0;
   box.dataset.occupato = "1"; box._prep = null;
   giu.play().catch(() => {});
   giu.classList.remove("giu");
   su.classList.add("giu");
   box.dataset.film = quale;
   setTimeout(() => { try { su.pause(); } catch (e) {} box.dataset.occupato = ""; }, FILM_DISSOLVENZA + 80);
+}
+// 1.11.0 (Michele: "quando Sofia parla ogni tanto si blocca"): un filmato che risulta "in corsa" ma e' fermo sullo stesso
+// fotogramma (la decodifica si e' piantata) riceve una spinta; dopo tre spinte inutili si ricarica dal punto dov'era
+function filmSpinta(v) {
+  const ora = Date.now(), ct = Number(v.currentTime) || 0;
+  if (v._ct !== ct) { v._ct = ct; v._ctDa = ora; v._spinte = 0; return; }
+  if (!v._ctDa) { v._ctDa = ora; return; }
+  if (ora - v._ctDa < 1600) return;
+  v._ctDa = ora; v._spinte = (v._spinte || 0) + 1;
+  console.warn("filmato fermo: spinta", v._spinte);
+  try {
+    if (v._spinte >= 3) {
+      v._spinte = 0;
+      v.addEventListener("loadedmetadata", () => { try { v.currentTime = ct; } catch (e) {} v.play().catch(() => {}); }, { once: true });
+      v.load(); return;
+    }
+    const d = Number(v.duration) || 0; v.currentTime = d ? (ct + 0.15) % d : ct + 0.15;
+  } catch (e) {}
+  v.play().catch(() => {});
+}
+// 1.11.0: il filmato in vista e' fermo e il telefono ha buttato via i dati (succede tornando dallo sfondo): dopo 2,5 s
+// si ricarica dal punto dov'era e riparte
+function filmRianima(v) {
+  const ora = Date.now();
+  if (!v._fermoDa) { v._fermoDa = ora; return; }
+  if (ora - v._fermoDa < 2500) return;
+  v._fermoDa = ora;
+  try { const t = Number(v.currentTime) || 0; v.addEventListener("loadedmetadata", () => { try { v.currentTime = t; } catch (e) {} v.play().catch(() => {}); }, { once: true }); v.load(); } catch (e) {}
 }
 function filmVigila() {
   if (filmTimer) return;
@@ -413,18 +454,23 @@ function filmVigila() {
       // il filmato in vista gira da solo (loop): se per qualche motivo si e' fermato, riparte
       if (su && !su.loop) su.loop = true;
       if (su && su.paused && !b.dataset.occupato && su.readyState >= 2) su.play().catch(() => {});
+      else if (su && su.paused && !b.dataset.occupato) filmRianima(su);   // 1.11.0: fermo e senza immagine (dopo lo sfondo)
+      if (su && !su.paused) su._fermoDa = 0;
+      if (su && !su.paused && !b.dataset.occupato && b.offsetWidth > 0) filmSpinta(su);   // 1.11.0
       if ((b.dataset.film || "") !== quale) filmUno(quale, b);
     }
   }, 150);
 }
 filmVigila();
 let micCasa = null, micAttivo = false, micAnnullato = false;
-function annullaMic() { micAnnullato = true; try { micCasa && micCasa.abort(); } catch (e) {} micAttivo = false; statoCons("ferma"); sottoCons(""); miniAperto = false; sofiaMini(); }
+let modoVoce = false, modoVoceT = null, statoConsUltimo = "";   // 1.11.0: il modo voce (col microfono niente testo)
+function annullaMic() { micAnnullato = true; try { micCasa && micCasa.abort(); } catch (e) {} micAttivo = false; statoCons("ferma"); sottoCons(""); miniAperto = false; sofiaMini(); if (modoVoce) modoVoceDopo(1500); }
 // 1.0.2 (Michele: "esce il filmato che parla per 2 secondi e poi non parla piu'"): dopo una risposta col microfono
 // un orologio di 3 secondi rimetteva Sofia "ferma" anche se la voce andava avanti (la risposta parla da sola, senza
 // aspettare). Ora torna ferma solo se ha davvero finito di parlare; quando finisce ci pensa parlaConVoce.
 function fermaSeZitta() { let suono = false; try { suono = VOCE.staParlando(); } catch (e) {} if (!voceInCorso && !suono) statoCons("ferma"); }
 function statoCons(s) {
+  statoConsUltimo = s || "";
   document.querySelectorAll(".card.consuela, .sofia-hero, .sofia-vista").forEach(c => {
     c.dataset.stato = s || "";
     c.classList.toggle("sta-parlando", s === "parla");
@@ -432,6 +478,7 @@ function statoCons(s) {
   document.body.dataset.cons = (s === "parla") ? "parla" : (s === "ascolto") ? "ascolto" : (s === "pensa") ? "pensa" : "";
   // 1.0.3: la linguetta conosce solo ascolta / pensa / parla (con "ferma" o "errore" torna piccola)
   const m = document.getElementById("sofiaMini"); if (m) m.dataset.stato = document.body.dataset.cons;
+  voceBarra();
 }
 function sottoCons(t, fantasma) {
   const z = document.getElementById("consSotto");
@@ -454,27 +501,88 @@ function ultimaDiLei() {
   } catch (e) {}
   return "";
 }
-// "Un attimo…" gia' pronto: si prepara mentre Michele sta ancora parlando, cosi'
-// quando smette lei risponde SUBITO qualcosa e non resta muta ad aspettare l'IA.
-let vocePronta = null, voceInPreparazione = false;
+// 1.11.0 (Michele: "appena ho finito di parlare lei mi dice «un attimo»: non me lo dire piu', e' ripetitivo"): niente piu'
+// «Un attimo.» a voce. Mentre lui parla si apre soltanto il collegamento della voce, cosi' la risposta vera parte subito.
 async function scaldaRisposta() {
   const vc = VOCE.leggiVoce(), c = confIA();
   if (!vc.attiva || vc.motore !== "google" || !c.chiave) return;
-  if (vocePronta || voceInPreparazione) { VOCE.scaldaLive(vc, c.chiave); return; }
-  voceInPreparazione = true;
-  try { vocePronta = await VOCE.audioPronto("Un attimo.", vc, c.chiave); } catch (e) {}
-  voceInPreparazione = false;
-  VOCE.scaldaLive(vc, c.chiave); // il collegamento per la risposta vera, gia' aperto
+  VOCE.scaldaLive(vc, c.chiave);
 }
-function diciUnAttimo() {
-  if (!vocePronta) return false;
+// ---- 1.11.0: IL MODO VOCE (Michele: "quando premo il microfono per parlare con Sofia non voglio vedere il testo: voglio
+// vedere il suo corpo che si muove; se voglio il testo premo un tasto; se mi chiede conferma, i tasti Si'/No vanno bene").
+// Col microfono la chat non si apre: nella casa sparisce il riquadro (notizie, chat, casella) e si vede Sofia intera; in
+// basso una barra scura con le onde (ti ascolto / parla), i puntini (ci penso), il microfono, «Testo» e la X. Se lei
+// propone qualcosa, sopra la barra i tasti grandi (Si', fallo / No). Nella pagina di Sofia si nasconde la chat e lei si
+// fa grande; nelle altre schermate la nuvoletta della linguetta mostra solo i tasti. Si esce con «Testo» (si apre la chat
+// col testo), con la X, scrivendo, o da solo 20 secondi dopo che lei ha finito (3 minuti se aspetta un Si'/No).
+const ICO_TESTO = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 11h16"/><path d="M4 16h10"/></svg>`;
+function modoVoceVia() {
+  if (!document.body.classList.contains("premium") || !voceAccesa()) return;
+  clearTimeout(modoVoceT); modoVoceT = null;
+  modoVoce = true; document.body.classList.add("modo-voce");
+  try { nuvolaApri(false); messaggioApri(false); } catch (e) {}
+  voceBarra(); try { sofiaMini(); } catch (e) {}
+}
+function modoVoceFine(leggi) {
+  clearTimeout(modoVoceT); modoVoceT = null;
+  modoVoce = false; document.body.classList.remove("modo-voce");
+  voceBarra(); try { sofiaMini(); } catch (e) {}
+  const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
+  if (!leggi) return;
+  if (S.vista === "oggi" && document.getElementById("sofiaHero")) nuvolaApri(true);
+  else if (S.vista !== "sofia" && S.vista !== "governante") { miniAperto = true; try { sofiaMini(); } catch (e) {} }
+}
+function modoVoceDopo(ms) {
+  clearTimeout(modoVoceT); modoVoceT = null;
+  if (!modoVoce) return;
+  let tasti = false; try { const c = conversazione(), u = c[c.length - 1]; tasti = !!(u && u.chi === "gov" && Array.isArray(u.tasti) && u.tasti.length); } catch (e) {}
+  modoVoceT = setTimeout(() => { modoVoceT = null; if (micAttivo || voceInCorso || govScrive) { modoVoceDopo(ms); return; } modoVoceFine(false); }, ms || (tasti ? 180000 : 20000));
+  voceBarra();
+}
+// dopo un Si'/No (toccato o detto) nel modo voce: lei DICE com'e' andata (senza testo non lo vedrebbe)
+function parlaUltima() {
+  let m = null; try { const c = conversazione(); m = c[c.length - 1]; } catch (e) {}
+  if (m && m.chi === "gov" && m.testo && voceAccesa()) parlaConVoce(m.testo, { inChat: true });
+  else { fermaSeZitta(); modoVoceDopo(); }
+}
+function voceBarraDove() {
+  try { return S.vista === "sofia" || (S.vista === "oggi" && !!document.getElementById("sofiaHero") && heroInVista()); } catch (e) { return false; }
+}
+function voceBarra() {
   try {
-    statoCons("parla");
-    VOCE.suona(vocePronta, { onInizio: (buf) => labialeAvvia(buf, "Un attimo."), onBocca: (f, t) => { applicaBocca(f); labialeTick(f, t); },
-      onFine: () => { applicaBocca(0); labialeFerma(); statoCons("pensa"); } });
-    return true;
-  } catch (e) { return false; }
+    let b = document.getElementById("voceBarra");
+    const vuoi = modoVoce && voceBarraDove();
+    document.body.classList.toggle("con-voce-barra", vuoi);
+    if (!vuoi) { if (b && !b.hidden) b.hidden = true; return; }
+    if (!b) {
+      b = document.createElement("div"); b.id = "voceBarra"; b.className = "voce-barra"; b.hidden = true;
+      b.innerHTML = `<div class="vb-tasti"></div><div class="vb-riga"><button type="button" class="vb-testo" data-vb-testo aria-label="Fammi leggere il testo">${ICO_TESTO}<span>Testo</span></button><span class="vb-stato"><i class="vb-onde" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i><i class="vb-puntini" aria-hidden="true"><i></i><i></i><i></i></i><b class="vb-scritta" aria-live="polite"></b></span><button type="button" class="vb-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button><button type="button" class="vb-chiudi" data-vb-chiudi aria-label="Chiudi">✕</button></div>`;
+      document.body.appendChild(b);
+    }
+    if (b.hidden) b.hidden = false;
+    const st = micAttivo ? "ascolto" : statoConsUltimo === "errore" ? "errore" : (document.body.dataset.cons || (voceInCorso ? "parla" : ""));
+    if ((b.dataset.stato || "") !== st) b.dataset.stato = st;
+    const scritte = { ascolto: "Ti ascolto…", pensa: "Ci penso…", parla: "", errore: "Non ho sentito bene, riprova" };
+    const scr = st in scritte ? scritte[st] : "Tocca e parla";
+    const sb = b.querySelector(".vb-scritta"); if (sb.textContent !== scr) sb.textContent = scr;
+    // i tasti della proposta (Si', fallo / No): solo quando lei ha davvero finito di pensare
+    const conv = conversazione(), n = conv.length, ultimo = n ? conv[n - 1] : null;
+    const pensa = govScrive || (ultimo && ultimo.chi === "io");
+    const tasti = (!pensa && ultimo && ultimo.chi === "gov" && Array.isArray(ultimo.tasti) && ultimo.tasti.length) ? ultimo.tasti.slice(0, 4) : [];
+    const html = tasti.map(t => `<button type="button" class="${t.k === "si" ? "vb-si" : t.k === "no" ? "vb-no" : "vb-altro"}" data-casa-tasto="${esc(String(n - 1))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("");
+    const box = b.querySelector(".vb-tasti"); if (box.innerHTML !== html) box.innerHTML = html;
+    b.classList.toggle("con-tasti", !!html);
+  } catch (e) { console.warn("voceBarra", e); }
 }
+document.addEventListener("click", (e) => {
+  const x = e.target && e.target.closest && e.target.closest("[data-vb-testo], [data-vb-chiudi]");
+  if (!x) return;
+  e.preventDefault(); e.stopPropagation();
+  if (x.hasAttribute("data-vb-testo")) { modoVoceFine(true); return; }
+  if (micAttivo) annullaMic();
+  if (voceInCorso) { zittisciVoce(); statoCons("ferma"); }
+  modoVoceFine(false);
+}, true);
 // Lo scaldamotore: la prima domanda non deve pagare la ricerca del modello
 setTimeout(async () => {
   try {
@@ -508,8 +616,11 @@ function micCasaVai() {
   const R = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!R) { toast("Qui il microfono non si apre: usa quello della tastiera"); return; }
   if (micAttivo && micCasa) { try { micCasa.stop(); } catch (e) {} return; }
+  // 1.11.0: se lei sta parlando, il tocco sul microfono la ferma (se no il microfono sente lei)
+  if (voceInCorso) { try { zittisciVoce(); } catch (e) {} }
   const r = new R();
   micCasa = r; micAttivo = true; micAnnullato = false;
+  modoVoceVia();   // 1.11.0: col microfono niente testo, si vede lei
   // 0.84: si ascolta finché parla (anche frasi lunghe, con le pause): si chiude da sola dopo 3 secondi di silenzio,
   // oppure quando tocca di nuovo il tasto
   r.lang = "it-IT"; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
@@ -528,22 +639,24 @@ function micCasaVai() {
     if (micAnnullato) return;
     statoCons("errore"); sottoCons("Non ho sentito bene, riprova.");
     setTimeout(fermaSeZitta, 2600);
+    if (modoVoce) modoVoceDopo(7000);
   };
   r.onend = async () => {
     micAttivo = false; clearTimeout(silenzio);
     if (micAnnullato) { statoCons("ferma"); sottoCons(""); return; }
     const t = finale.trim();
-    if (!t) { statoCons("ferma"); sottoCons(""); return; }
+    // 1.11.0: dopo un errore ("Non ho sentito bene") la scritta resta il tempo di leggerla (prima spariva subito)
+    if (!t) { if (statoConsUltimo === "errore") { if (modoVoce) modoVoceDopo(7000); return; } statoCons("ferma"); sottoCons(""); if (modoVoce) modoVoceDopo(5000); return; }
     // un "sì" o un "no" a una proposta appena fatta: vale come il tocco sul tasto
-    try { if (await casaRispostaVoce(t)) { statoCons("parla"); sottoCons(ultimaDiLei() || "Fatto."); setTimeout(fermaSeZitta, 3200); return; } } catch (e) {}
+    try { if (await casaRispostaVoce(t)) { if (modoVoce) { parlaUltima(); return; } statoCons("parla"); sottoCons(ultimaDiLei() || "Fatto."); setTimeout(fermaSeZitta, 3200); return; } } catch (e) {}
     statoCons("pensa"); sottoCons("ci penso…", true);
-    diciUnAttimo();
     try {
       await parlaGov(t);
       statoCons("parla");
       sottoCons("");                            // 0.84: la risposta si legge nel riquadro della conversazione, qui sotto
     } catch (e) {
       statoCons("errore"); sottoCons("Non sono riuscita a rispondere.");
+      if (modoVoce) modoVoceDopo(7000);
     }
     setTimeout(fermaSeZitta, 3200);
   };
@@ -581,7 +694,7 @@ document.addEventListener("click", (e) => {
   const [i, k] = String(b.dataset.casaTasto).split("|");
   b.disabled = true;
   if (b.closest("#sofiaMiniNuvola")) { miniAperto = false; voceTesto = ""; clearTimeout(miniChiudi); miniChiudi = null; setTimeout(sofiaMini, 0); }
-  rispondiParole(Number(i), k).catch(err => console.warn("casa/tasto", err));
+  rispondiParole(Number(i), k).then(() => { if (modoVoce) parlaUltima(); }).catch(err => console.warn("casa/tasto", err));   // 1.11.0
 }, true);
 // 0.85 - LA GRAFFETTA: il foglio Excel di papà va nella lettura del foglio che c'era già; la FOTO del prospetto
 // la legge Sofia (Gemini vede le immagini) e propone le righe, come quando glielo dici a voce.
@@ -624,8 +737,12 @@ async function casaRispostaVoce(t) {
   if (!m || m.chi !== "gov" || !Array.isArray(m.tasti) || !m.tasti.length || !m.azione) return false;
   const x = String(t || "").trim().toLowerCase();
   const fine = "(?![a-zà-ÿ])";   // non \b: dopo la "ì" di "sì" il \b non scatta
-  if (new RegExp("^(s[iì]|va bene|vai|fallo|falla|ok|okay|certo|confermo|conferma|d'accordo|perfetto|esatto|giusto)" + fine).test(x) && x.length < 40) { await rispondiParole(i, "si"); return true; }
-  if (new RegExp("^(no|lascia|niente|non farlo|non fare|annulla|aspetta)" + fine).test(x) && x.length < 40) { await rispondiParole(i, "no"); return true; }
+  // 1.11.0: «sì, però aggiungi anche Alba» o «no, mettilo domani» non sono un sì o un no e basta: c'e' una modifica, e
+  // allora la frase va all'IA (prima la proposta vecchia partiva lo stesso e la modifica si perdeva)
+  const dopo = x.replace(/[^\p{L}\p{N}' ]+/gu, " ").split(/\s+/).filter(Boolean).slice(1);
+  const modifica = dopo.some(w => ["ma", "però", "pero", "invece", "anche", "aggiungi", "cambia", "togli", "metti", "mettilo", "mettila", "sposta", "tranne", "solo", "aspetta"].includes(w));
+  if (!modifica && new RegExp("^(s[iì]|va bene|vai|fallo|falla|ok|okay|certo|confermo|conferma|d'accordo|perfetto|esatto|giusto)" + fine).test(x) && x.length < 40) { await rispondiParole(i, "si"); return true; }
+  if (!modifica && new RegExp("^(no|lascia|niente|non farlo|non fare|annulla|aspetta)" + fine).test(x) && x.length < 40) { await rispondiParole(i, "no"); return true; }
   if (m.azione.tipo === "gruppo" && /^(una per una|una alla volta|una a una|una ad una)/.test(x)) { await rispondiParole(i, "una"); return true; }
   return false;
 }
@@ -1317,6 +1434,7 @@ function disegna() {
   disegnaCasa();
   sofiaFuori();
   sofiaMini();
+  voceBarra();   // 1.11.0
   orologioAvvia();
   barraSotto();
   collega();
@@ -2583,6 +2701,8 @@ let nuvolaTimer = null, nuvolaUltima = null;
 function nuvolaApri(si) {
   const h = document.getElementById("sofiaHero"); if (!h) return;
   si = !!si && document.body.classList.contains("premium");
+  // 1.11.0: se la chat si apre (per qualunque strada), il modo voce finisce: chat aperta e modo voce non stanno insieme
+  if (si && modoVoce) { modoVoce = false; clearTimeout(modoVoceT); modoVoceT = null; document.body.classList.remove("modo-voce"); voceBarra(); }
   clearTimeout(nuvolaTimer); nuvolaTimer = null;
   if (h.classList.contains("nuvola-aperta") !== si) {
     h.classList.toggle("nuvola-aperta", si);
@@ -2626,13 +2746,15 @@ function nuvolaNuovaRisposta() {
   if (nuvolaUltima === null) { nuvolaUltima = k; return; }   // all'apertura dell'app resta piccola
   if (k === nuvolaUltima) return;
   nuvolaUltima = k;
-  if (k) nuvolaApri(true);
+  if (k && !modoVoce) nuvolaApri(true);   // 1.11.0: nel modo voce la chat non si apre da sola
 }
-function nuvolaDopoVoce() { try { if (ultimoScambio().tasti) nuvolaApri(true); } catch (e) {} }
+function nuvolaDopoVoce() { if (modoVoce) { modoVoceDopo(); return; } try { if (ultimoScambio().tasti) nuvolaApri(true); } catch (e) {} }
 document.addEventListener("click", (e) => {
   const h = document.getElementById("sofiaHero"), x = e.target;
   if (!h || !x || !x.closest || !h.contains(x) || !document.body.classList.contains("premium")) return;
   const aperta = h.classList.contains("nuvola-aperta");
+  // 1.11.0: nel modo voce un tocco su Sofia la fa smettere di parlare (la tendina e la chat non si toccano)
+  if (modoVoce && !x.closest("button, a, input, label, select, textarea")) { if (voceInCorso) { zittisciVoce(); statoCons("ferma"); modoVoceDopo(); } return; }
   const sch = x.closest("[data-casa-scheda]");
   if (sch) { e.preventDefault(); nuvolaApri(sch.dataset.casaScheda === "chat"); if (sch.dataset.casaScheda === "notizie" && h.classList.contains("tenda-chiusa")) tendaApri(true); return; }
   if (x.closest("[data-tenda], .casa-presa")) { e.preventDefault(); if (aperta) nuvolaApri(false); else if (h.classList.contains("msg-aperto") && !h.classList.contains("tenda-chiusa")) messaggioApri(false); else tendaApri(h.classList.contains("tenda-chiusa")); return; }   // 1.6.5, 1.7.0, 1.7.1
@@ -2720,6 +2842,7 @@ const manoNuvola = (e) => {
 try { document.addEventListener("touchstart", manoNuvola, { passive: true }); document.addEventListener("wheel", manoNuvola, { passive: true }); } catch (e) {}
 document.addEventListener("focusin", (e) => {
   if (!e.target || e.target.id !== "casaTesto") return;
+  if (modoVoce) modoVoceFine(false);   // 1.11.0: se scrive, si torna al testo
   const h = document.getElementById("sofiaHero"); if (!h || !h.contains(e.target)) return;
   if (document.body.classList.contains("premium") && !h.classList.contains("nuvola-aperta")) nuvolaApri(true);
   setTimeout(() => chatGiu(h), 350); setTimeout(() => chatGiu(h), 800);
@@ -3109,7 +3232,7 @@ async function parlaGov(testo, perIA) {
   if (!msg) {
     let r;
     try { r = PAROLE.capisci(t, ctxParole()); } catch (e) { console.warn("parole", e); r = { tipo: "boh", testo: "Mi sono persa. Riprova con parole semplici." }; }
-    msg = await rispostaGov(r);
+    try { msg = await rispostaGov(r); } catch (e) { console.warn("parole/risposta", e); msg = { chi: "gov", testo: "Non ho capito bene: riprova con parole semplici.", ora: S.db.adesso() }; }   // 1.11.0
   }
   govScrive = false;
   salvaConversazione([...conversazione(), msg]); // idem: prima si vede, poi si salva
@@ -3538,9 +3661,10 @@ async function parlaConVoce(testo, opz = {}) {
   }
   // 1.0.4: mentre parla la nuvoletta e' piccola (si vede lei) coi sottotitoli. 1.1.0: se risponde nella chat, la chat
   // resta aperta (lei parla dietro, velata, e la chat va sulla frase che dice); le notizie si leggono nelle Notizie
-  if (!opz.inChat) nuvolaApri(false);
+  if (!opz.inChat || modoVoce) nuvolaApri(false);   // 1.11.0: nel modo voce la chat resta chiusa
   voceTesto = String(testo || ""); voceFine = 0; voceDa = Date.now();   // 1.0.5: la nuvoletta del fantasmino lo mostra
   voceInCorso = true; statoCons("parla"); disegna();
+  if (modoVoce) { clearTimeout(modoVoceT); modoVoceT = null; }   // 1.11.0: mentre parla il modo voce non scade
   const finita = await parlaTutto(testo, { conf: vc, chiave: confIA().chiave });
   if (!finita) return;                       // fermata o sostituita da un'altra frase: ci pensa chi l'ha fermata
   voceInCorso = false; voceFine = Date.now(); applicaBocca(0); labialeFerma(); sottotitoliFerma(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna();
@@ -3558,7 +3682,10 @@ async function parlaTutto(testo, { conf, chiave } = {}) {
   const parti = VOCE.partiDaLeggere ? VOCE.partiDaLeggere(testo, live) : [testo];
   for (let i = 0; i < parti.length && g === giroVoce; i++) {
     const parte = new Promise((ok) => {
-      let fatto = false; const fine = () => { if (fatto) return; fatto = true; if (fineParteVoce === fine) fineParteVoce = null; ok(); };
+      // 1.11.0: la guardia. Se per qualunque motivo la parte non dice mai "ho finito", dopo un tempo largo si va avanti:
+      // Sofia non resta mai bloccata con la bocca che si muove e senza voce
+      let fatto = false, guardia = null; const fine = () => { if (fatto) return; fatto = true; clearTimeout(guardia); if (fineParteVoce === fine) fineParteVoce = null; ok(); };
+      guardia = setTimeout(() => { console.warn("voce: parte bloccata, vado avanti"); try { VOCE.stazitta(); } catch (e) {} fine(); }, Math.max(20000, parti[i].length * 110 + 15000));
       fineParteVoce = fine;
       Promise.resolve(VOCE.parla(parti[i], { conf, chiave,
         onInizio: (buf, letto, durata) => { labialeAvvia(buf, letto, durata); sottotitoli(letto || parti[i], buf, durata); },
@@ -3669,6 +3796,8 @@ function sofiaMini() {
     if (eRisposta) { html = u.html; tasti = u.tasti; } else html = `<div class="cc-lei sm-parla">${esc(voceTesto.trim()).replace(/\n/g, "<br>")}</div>`;
     chiaveN = "v|" + voceTesto;
   }
+  // 1.11.0: nel modo voce niente testo nella nuvoletta: solo i tasti Si'/No (se ci sono) e «Leggi il testo»
+  if (modoVoce && html) html = `${tasti ? ((html.match(/<div class="cc-tasti">[\s\S]*?<\/div>/) || [""])[0]) : ""}<button type="button" class="sm-leggi" data-vb-testo>Leggi il testo</button>`;
   const testo = nv.querySelector(".sm-testo");
   if (testo.innerHTML !== html) { testo.innerHTML = html; testo.scrollTop = 0; }
   // 1.0.4 (Gemini): se c'e' altro da leggere, in fondo una sfumatura (sparisce quando arrivi alla fine)
@@ -3704,7 +3833,7 @@ try {
 let sofiaFuoriScroll = null;
 function casaInCima() { try { document.body.classList.toggle("casa-in-cima", (window.scrollY || 0) < 16 && !!document.getElementById("sofiaHero")); } catch (e) {} }
 try { window.addEventListener("scroll", casaInCima, { passive: true }); } catch (e) {}
-try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); sofiaMini(); }, 140); }, { passive: true }); } catch (e) {}
+try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); sofiaMini(); voceBarra(); }, 140); }, { passive: true }); } catch (e) {}
 // 1.3.0 (Gemini): mentre si scorre, la linguetta del microfono si fa trasparente e si ritira (non copre i tasti a destra)
 let scorreT = null;
 try { window.addEventListener("scroll", () => { document.body.classList.add("scorre"); clearTimeout(scorreT); scorreT = setTimeout(() => document.body.classList.remove("scorre"), 600); }, { passive: true }); } catch (e) {}
@@ -4238,23 +4367,40 @@ async function confSvelta(c) {
   if (!v.modello) { const t = await IA.trovaModello(v); v.modello = t.modello; IA.salvaConf({ modelloSvelto: t.modello }); }
   return v;
 }
+// 1.11.0 (Michele: "risolvi i bug, non so se e' dovuto al modello gratuito"): col modello gratuito capita che il server
+// dica "sovraccarico", che risponda vuoto o "troppe domande". Prima, su Argon, questi errori NON passavano al modello
+// svelto e la risposta la dava il catalogo delle parole (che capisce poco); col modello svelto non si riprovava mai.
+// Adesso: errore veloce del modello svelto -> si riprova UNA volta dopo 2,5 secondi; Argon sovraccarico o vuoto ->
+// risponde lo svelto e Argon si riposa 2 minuti.
+async function chiediConRiprova(dom, conf) {
+  try { return await IA.chiedi({ ...dom, conf }); }
+  catch (e) {
+    const m = String((e && e.message) || "");
+    if ((e && e.name === "AbortError") || !/troppe domande|server non risponde|risposto vuoto/i.test(m)) throw e;
+    console.warn("IA: riprovo tra 2,5 secondi", m);
+    await new Promise(r => setTimeout(r, 2500));
+    return IA.chiedi({ ...dom, conf });
+  }
+}
 async function chiediIA(dom) {
   const c = confIA();
   const grande = c.qualita !== "svelta";
-  if (grande && argonInPausa()) return { r: await IA.chiedi({ ...dom, conf: await confSvelta(c) }), ripiego: true };
+  if (grande && argonInPausa()) return { r: await chiediConRiprova(dom, await confSvelta(c)), ripiego: true };
   // 0.86: Argon passa dalla SUA chiave (progetto col credito), se c'e'; il ripiego usa la chiave normale, gratuita
   const cg = grande && c.chiaveArgon ? { ...c, chiave: c.chiaveArgon } : c;
   try {
-    const r = await IA.chiedi({ ...dom, conf: cg, secondi: Math.max(Number(dom.secondi) || 0, grande ? 60 : 40) });
+    const r = grande ? await IA.chiedi({ ...dom, conf: cg, secondi: Math.max(Number(dom.secondi) || 0, 60) })
+      : await chiediConRiprova({ ...dom, secondi: Math.max(Number(dom.secondi) || 0, 40) }, cg);
     if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
     return { r, ripiego: false };
   } catch (e) {
     const m = String((e && e.message) || ""), lento = !!(e && e.name === "AbortError");
     const credito = /credito/i.test(m), gratis = /chiamate gratuite/i.test(m), troppe = /troppe domande/i.test(m);
-    if (!grande || !(lento || credito || gratis || troppe)) throw e;
+    const server = /server non risponde|risposto vuoto/i.test(m);   // 1.11.0: sovraccarico o risposta vuota
+    if (!grande || !(lento || credito || gratis || troppe || server)) throw e;
     if (credito || gratis) pausaArgon(ARGON_PAUSA_MS);         // un'ora: finche' non si ricarica non serve riprovare
-    else if (troppe) pausaArgon(2 * 60 * 1000);                // due minuti
-    const r = await IA.chiedi({ ...dom, conf: await confSvelta(c) });
+    else if (troppe || server) pausaArgon(2 * 60 * 1000);      // due minuti
+    const r = await chiediConRiprova(dom, await confSvelta(c));
     if ((credito || gratis) && !argonAvvisato) {
       argonAvvisato = true;
       toast(credito ? "Il credito per Argon è finito: ricaricalo su Google (Fatturazione → Acquista crediti). Intanto ti rispondo col modello svelto."
