@@ -134,7 +134,8 @@ export function calendarioInParole(oggi) {
   const righe = [`Oggi è ${inParole(oggi)} (${oggi}).`];
   righe.push(`Questa settimana: da lunedì ${piuGiorni(lun, 0)} a domenica ${piuGiorni(lun, 6)} (sabato è ${piuGiorni(lun, 5)}).`);
   righe.push(`La settimana prossima: da lunedì ${piuGiorni(lun, 7)} a domenica ${piuGiorni(lun, 13)} (sabato è ${piuGiorni(lun, 12)}).`);
-  righe.push("I prossimi giorni: " + [1, 2, 3, 4, 5, 6, 7].map(n => `${inParole(piuGiorni(oggi, n))} = ${piuGiorni(oggi, n)}`).join("; ") + ".");
+  // 1.13.0 (Argon): quattordici giorni già calcolati, così il modello veloce non sbaglia "giovedì" o "dal 6 all'8"
+  righe.push("I prossimi 14 giorni: " + Array.from({ length: 14 }, (_, i) => i + 1).map(n => `${inParole(piuGiorni(oggi, n))} = ${piuGiorni(oggi, n)}`).join("; ") + ".");
   return righe.join("\n");
 }
 
@@ -221,6 +222,39 @@ Le azioni che esistono, nient'altro:
    Una frase corta, al presente, che si capisca anche fra sei mesi. MAI il nome di un ospite: scrivi la camera ("l'ospite di Alba"). Segna solo quello che vale anche in futuro (le cose di oggi vanno nelle altre azioni). Quando Michele dice «ricordati», «tieni a mente», «d'ora in poi», «sempre», «mai», è quasi sempre una cosa da taccuino. Non segnare due volte una cosa che c'è già.
 9) DIMENTICARE una cosa del taccuino, quando Michele dice che non vale più o è cambiata (se cambia: prima "dimentica" la vecchia, poi "ricorda" la nuova):
    {"tipo":"dimentica","quale":"M3"}
+   Il messaggio del punto 4 si può anche TOGLIERE o ALLUNGARE: {"tipo":"messaggio","modo":"togli","giorno":"${foto.oggi}"} · {"tipo":"messaggio","modo":"aggiungi","giorno":"${foto.oggi}","testo":"Portate su i cuscini nuovi"}
+LE MANI NUOVE (1.13.0): con queste COMPILI l'app al posto di Michele. Usale ogni volta che lui ti dice una cosa che va scritta da qualche parte: se ti limiti a rispondere a parole, nell'app non cambia niente.
+10) UN SOGGIORNO di UNA camera (arrivo nuovo, date cambiate, partito, non è venuto). Per tante camere insieme o la settimana intera usa invece il "prospetto" (punto 6):
+   {"tipo":"soggiorno","camera":"alba","ospite":"Rossi","dal":"${piuGiorni(foto.oggi, 8)}","al":"${piuGiorni(foto.oggi, 10)}","persone":2,"modo":"booking"}
+   {"tipo":"soggiorno","camera":"aurora","stato":"partito"}   (chi c'è oggi parte oggi; se è partito un altro giorno metti "al")
+   {"tipo":"soggiorno","camera":"alba","ospite":"[O4]","stato":"annullato"}   (non è venuto: il soggiorno si toglie)
+   "al" è il giorno della PARTENZA. "modo" ("tecnici", "operai", "booking") solo se Michele lo dice. Un ospite che c'è già nel prospetto si scrive col suo CODICE [O..]; uno nuovo col cognome che dice Michele.
+11) CHI PULISCE COSA, IN UN GIORNO (sposta una pulizia a un'altra signora, o la fa fare a tutte e due insieme):
+   {"tipo":"assegna","giorno":"${foto.oggi}","dove":["zara1"],"chi":["p1","p2"]}
+   "chi" = una o due sigle delle signore (vedi LE SIGNORE). Con due signore e una pulizia sola, la pulizia si divide a metà, ore e soldi. NON scrivere un messaggio al posto di questa azione.
+12) UN INCARICO PAGATO a una signora, in un giorno (anche senza camera, per esempio "comprare i detersivi"):
+   {"tipo":"incarico","giorno":"${foto.oggi}","chi":"p1","dove":"nicole","cosa":"Lavare le tende","euro":3}
+   Se Michele non dice gli euro, metti "minuti" invece di "euro" (si paga a ore standard).
+13) LA SCHEDA DI UN OSPITE, che vale in tutti i suoi soggiorni, anche futuri:
+   {"tipo":"ospite","chi":"[O3]","modo":"operai","istruzioni":"Fuma: finestra aperta venti minuti e deodorante a ogni pulizia","supplemento":1.5,"notaPrivata":"Paga in contanti il venerdì"}
+   "istruzioni" le leggono le signore a ogni pulizia; "supplemento" = euro in più a ogni pulizia (ospite impegnativo); "notaPrivata" la vede solo Michele. Metti SOLO i campi che dice lui. Se dice "quello di Antonio", metti "camera":"antonio" al posto di "chi". Mai numeri di telefono.
+14) LA SCHEDA DI UNA CAMERA:
+   {"tipo":"camera","camera":"fenicotteri","frigo":false,"balcone":true,"strada":false,"grande":true,"signora":"p2","nota":"Anticalcare sui vetri della doccia"}
+   Solo i campi che dice. "nota" = la cosa da fare SEMPRE in quella camera (la signora la legge a ogni pulizia); "nota":"" la toglie. "signora" = chi la pulisce di solito. Se una camera non ha il frigo, la rifinitura del frigo lì non compare più.
+15) LA NOTA DI UN GIORNO in una camera (vale solo per quella pulizia):
+   {"tipo":"dettagli","camera":"alba","giorno":"${piuGiorni(foto.oggi, 1)}","testo":"Cambiate anche il coprimaterasso"}
+16) SOLDI IN PIÙ O IN MENO NELLA BUSTA DELLA SETTIMANA (una riga a parte, col motivo; mai la parola "multa"):
+   {"tipo":"busta","chi":"p2","euro":2,"motivo":"Impegno extra"}   ·   {"tipo":"busta","chi":"p1","euro":-2,"motivo":"Rifinitura non fatta"}
+17) LA MANUTENZIONE: {"tipo":"manutenzione","modo":"apri","camera":"alba","cosa":"Lo scarico della doccia è lento"} · {"tipo":"manutenzione","modo":"chiudi","camera":"alba","cosa":"scarico"}
+18) ARGONCLOUD, LA DIREZIONE: {"tipo":"direzione","presente":true,"giorno":"${foto.oggi}"} ("oggi ci sono io") · {"tipo":"direzione","visto":"p2","giorno":"${foto.oggi}"} (il Visto della direzione) · {"tipo":"direzione","nonFatta":"frigo","camera":"alba"} (una rifinitura «vista» ma non fatta)
+19) LA PAGA SEGNATA COME PAGATA: {"tipo":"pagata","chi":"p1","settimana":"questa"} ("scorsa" per quella prima)
+20) IL LISTINO (solo queste voci): {"tipo":"listino","voce":"tariffa_albergo","valore":8.5} · {"tipo":"listino","voce":"tariffa_appartamenti","valore":10} · {"tipo":"listino","voce":"obiettivo_rifiniture","valore":25} · {"tipo":"listino","voce":"minuti","camera":"aurora","pulizia":"totale","valore":50}
+21) ANNULLARE L'ULTIMA COSA FATTA ("annulla", "ho sbagliato, torna indietro"): {"tipo":"annulla"}
+REGOLE DELLE MANI NUOVE:
+- Le date le prendi SEMPRE dal CALENDARIO (quattordici giorni già calcolati). Se Michele dice il nome del giorno di OGGI (oggi è giovedì e dice «giovedì») e non si capisce se è oggi o la settimana dopo, non mettere azioni: CHIEDI con due risposte numerate («1) oggi, giovedì 29 · 2) giovedì prossimo, 5 novembre»).
+- Sui soldi non indovinare mai: se non è chiaro quanto o a chi, chiedi una cosa sola con le risposte numerate.
+- Prima di scrivere guarda LE SCHEDE e I MESSAGGI nella fotografia: se è già così, dillo e non mettere l'azione.
+- Non puoi: aggiungere o togliere camere, cambiare l'app, cancellare paghe già segnate, scrivere numeri di telefono. Se te lo chiede, dillo.
 ESEMPI DI COSE CHE DICE MICHELE E COSA FAI TU:
 - "i tecnici pagano 35 euro a notte e Booking si prende il 15 per cento" → azione "conti" con prezzi.tecnici 35 e commissioneBooking 15.
 - "questa settimana non c'è niente da fare in albergo, sono venuti soltanto Salvatore, Aurora e Michele" → azione "prospetto": quelle tre camere con "ospiti" da lunedì a sabato di questa settimana, e TUTTE le altre dieci "libera".
@@ -229,6 +263,14 @@ ESEMPI DI COSE CHE DICE MICHELE E COSA FAI TU:
 - "in Alba è arrivato Rossi, resta fino a mercoledì" → azione "prospetto" con "Alba: Rossi, dal <oggi> al <mercoledì>".
 - "questa settimana ci sono solo Salvatore e Aurora, di' alle signore che sabato viene il fabbro e ricordati che Aurora vuole sempre due cuscini" → TRE azioni nella lista: "prospetto" (Salvatore e Aurora, tutte le altre libere), "messaggio" per sabato, "ricorda" dei cuscini.
 - "d'ora in poi le tende si lavano ogni due mesi" → "ricorda".
+- "mi hanno prenotato su Booking Alba dal 6 all'8, due persone" → "soggiorno" (camera alba, ospite "ospiti" se non dice il nome, modo booking, le date dal calendario).
+- "il tecnico di Aurora è andato via" → "soggiorno" con "stato":"partito".
+- "giovedì Selena e Lucia lavorano insieme in via Zara" → "assegna" (giorno = quel giovedì, dove zara1, chi le due sigle). NON un messaggio.
+- "in Antonio c'è uno che fuma: finestra aperta e deodorante ogni volta" → "ospite" con "camera":"antonio" e le "istruzioni".
+- "Fenicotteri non ha il frigo, Salvatore ha il balcone" → DUE azioni "camera".
+- "questa settimana metti 2 euro in più a Selena" → "busta" (+2). "Togli 2 euro a Lucia" → "busta" (-2).
+- "giovedì Lucia deve lavare le tende di Nicole, dalle 3 euro" → "incarico".
+- "togli il messaggio di oggi alle signore" → "messaggio" con "modo":"togli".
 In "dove" usa SOLO le sigle dell'elenco delle camere. Se dice "tutte", mettile tutte. Se non capisci dove, lascia "dove" vuoto: te lo chiede l'app. Se Michele chiede più cose, mettile TUTTE nella lista "azioni": non sceglierne una sola.
 Prima di proporre una spesa, guarda quanto è già stato speso questa settimana e dillo nella risposta.
 
@@ -270,6 +312,9 @@ ${elenchi.taccuino || "Ancora vuoto."}
 
 IL CALENDARIO (per le date: "sabato", "questa settimana", "domani")
 ${calendarioInParole(foto.oggi)}
+
+LE SIGNORE (sigla = nome)
+${elenchi.signore || ""}
 
 LE CAMERE (sigla = nome, chi la pulisce)
 ${elenchi.camere}
@@ -357,7 +402,9 @@ export function leggiRisposta(txt) {
   const c = String(o.consiglio ?? "").trim();
   const sal = String(o.saluto ?? "").trim();
   // 0.85: "prospetto" mancava e veniva buttata via. 0.88: piu' azioni in una risposta ("azioni": [...]) e il taccuino
-  const valide = ["aggiungi", "fatto", "togli", "messaggio", "istruzione", "prospetto", "conti", "ricorda", "dimentica"];
+  const valide = ["aggiungi", "fatto", "togli", "messaggio", "istruzione", "prospetto", "conti", "ricorda", "dimentica",
+    // 1.13.0: le mani nuove di Sofia
+    "soggiorno", "assegna", "incarico", "ospite", "camera", "dettagli", "busta", "manutenzione", "direzione", "pagata", "listino", "annulla"];
   const lista = [...(o.azione && typeof o.azione === "object" && !Array.isArray(o.azione) ? [o.azione] : []), ...(Array.isArray(o.azioni) ? o.azioni : Array.isArray(o.azione) ? o.azione : [])];
   const viste = new Set(), azioni = [];
   for (const x of lista) { if (!x || typeof x !== "object" || !valide.includes(x.tipo)) continue; const k = JSON.stringify(x); if (viste.has(k)) continue; viste.add(k); azioni.push(x); if (azioni.length >= 8) break; }

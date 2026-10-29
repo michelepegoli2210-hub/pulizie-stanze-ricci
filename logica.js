@@ -251,6 +251,8 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
   }
   if (!tipo) return null;
   const notePubbliche = note.filter(n => n.camera === camera.id && n.data === iso && !n.privata).map(n => n.testo);
+  // 1.13.0: la scheda del cliente (detta a Sofia): l'istruzione fissa per le signore e il supplemento valgono in tutti i suoi soggiorni
+  const cliente = chi ? clienteDi(chi.nome, clienti) : null;
   // il prossimo che arriva in questa camera (da oggi in poi, escluso chi c'è già)
   const prossimo = soggiorni.filter(s => s.camera === camera.id && s.inizio >= iso && (!occ || s.id !== occ.id)).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0] || null;
   return {
@@ -266,9 +268,9 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
     prossimoArrivo: prossimo ? prossimo.inizio : null,
     prossimoNome: prossimo ? (prossimo.nome || "") : "",
     prossimoPersone: prossimo ? (prossimo.persone || null) : null,
-    istruzioni: [chi?.nota || "", ...notePubbliche].filter(Boolean).join(" · "),
+    istruzioni: [chi?.nota || "", cliente && cliente.istruzioni && cliente.istruzioni !== chi?.nota ? cliente.istruzioni : "", ...notePubbliche].filter(Boolean).join(" · "),
     persone: chi?.persone || null,
-    supplemento: Number(chi?.supplemento || 0),
+    supplemento: Number(chi?.supplemento || 0) || Number((cliente && cliente.supplemento) || 0),
     zona: (regola && regola.zona) || zonaDi(camera, r),
     insieme: (regola && regola.insieme) || "",
     parte: (regola && regola.parte) || "",
@@ -331,6 +333,7 @@ export function differenzePiano(attese, esistenti) {
     const campi = ["tipo","titolo","ospite","soggiorno","partenza","arrivo","parteIl","prossimoArrivo","prossimoNome","prossimoPersone","istruzioni","importo","minuti","zona","persone","insieme","modo","parte","fisso"];
     const patch = {};
     for (const k of campi) {
+      if (e.zonaFissa && (k === "zona" || k === "insieme" || k === "importo" || k === "minuti")) continue;   // 1.13.0: l'ha decisa Michele (con Sofia)
       const va = a[k] ?? null, ve = e[k] ?? null;
       if (JSON.stringify(va) !== JSON.stringify(ve)) patch[k] = va;
     }
@@ -339,6 +342,7 @@ export function differenzePiano(attese, esistenti) {
   }
   for (const [id, e] of Object.entries(esistenti)) {
     if (e.origine === "auto" && e.stato === "da_fare" && !attMap.has(id)) cancella.push(id);
+    else if (e.origine === "sofia" && e.legataA && e.stato === "da_fare" && !attMap.has(e.legataA) && (!esistenti[e.legataA] || (esistenti[e.legataA].origine === "auto" && esistenti[e.legataA].stato === "da_fare"))) cancella.push(id);   // la metà "insieme" va via con la sua pulizia
   }
   return { crea, aggiorna, cancella };
 }
@@ -536,8 +540,10 @@ export function totaleSettimana(pulizie, zona, chiave, regole, controlli, listin
   // 1.12.0 ArgonCloud: i «Visti» dati (3 € l'uno, al massimo 3 a settimana) e le rifiniture che aspettano ancora il Visto
   const vs = extra && extra.argon ? vistiSettimana(extra.visti, zona, chiave, extra.argon) : null;
   let attesa = 0, nonPagate = 0; for (const p of l) { const r = p.rifinitureArgon; if (!r) continue; if (r.stato === "attesa") attesa += r.dichiarate; if (r.tolti) nonPagate += r.tolti; if (r.stato === "sospese") nonPagate += r.dichiarate; }
-  const totale = Math.round((pulizieTot + bonus.importo + ctrl.importo + (vs ? vs.importo : 0)) * 100) / 100;
-  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), pulizie: pulizieTot, ore: Math.round(ore * 100) / 100, stelle: Math.round(stelle * 100) / 100, tagli: Math.round(tagli * 100) / 100, minuti, controlliFatti: ctrl, bonus, visti: vs, rifinitureAttesa: Math.round(attesa * 100) / 100, rifinitureNonPagate: Math.round(nonPagate * 100) / 100, totale };
+  // 1.13.0: premi e rettifiche della direzione, una riga ciascuno (pagamenti, tipo "rettifica")
+  const rett = rettificheSettimana(extra && extra.rettifiche, zona, chiave);
+  const totale = Math.round((pulizieTot + bonus.importo + ctrl.importo + (vs ? vs.importo : 0) + rett.euro) * 100) / 100;
+  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), pulizie: pulizieTot, ore: Math.round(ore * 100) / 100, stelle: Math.round(stelle * 100) / 100, tagli: Math.round(tagli * 100) / 100, minuti, controlliFatti: ctrl, bonus, visti: vs, rettifiche: rett, rifinitureAttesa: Math.round(attesa * 100) / 100, rifinitureNonPagate: Math.round(nonPagate * 100) / 100, totale };
 }
 export function storicoMensile(pulizie, zona, regole, controlli, listino = null, extra = null) {
   const mesi = {};
@@ -550,7 +556,7 @@ export function storicoMensile(pulizie, zona, regole, controlli, listino = null,
     mesi[k].settimane[p.settimana] = (mesi[k].settimane[p.settimana] || 0) + p.finale;
   }
   // bonus (vecchio) e controlli fatti, per settimana
-  for (const k of Object.keys(mesi)) for (const sk of Object.keys(mesi[k].settimane)) { const b = bonusControllatrice(controlli, zona, sk, regole), c = controlliFattiSettimana(controlli, zona, sk, listino); const v = extra && extra.argon ? vistiSettimana(extra.visti, zona, sk, extra.argon).importo : 0; const piu = b.importo + c.importo + v; if (piu) { mesi[k].settimane[sk] += piu; mesi[k].totale += piu; } }
+  for (const k of Object.keys(mesi)) for (const sk of Object.keys(mesi[k].settimane)) { const b = bonusControllatrice(controlli, zona, sk, regole), c = controlliFattiSettimana(controlli, zona, sk, listino); const v = extra && extra.argon ? vistiSettimana(extra.visti, zona, sk, extra.argon).importo : 0; const piu = b.importo + c.importo + v + rettificheSettimana(extra && extra.rettifiche, zona, sk).euro; if (piu) { mesi[k].settimane[sk] += piu; mesi[k].totale += piu; } }
   return mesi;
 }
 
@@ -751,3 +757,8 @@ export function fiutoArgon(visti, a, iso) {
 }
 // Falsi Visti nel mese di una signora (chi ha firmato): al secondo scatta la proposta della sospensione
 export function smentitiNelMese(visti, zona, iso) { const m = meseDi(iso); return Object.values(visti || {}).filter(v => v && v.vistoDa === zona && v.smentito && meseDi(v.data) === m); }
+// 1.13.0 · le voci in busta dette a Sofia («2 euro in più a Selena questa settimana»): una riga ciascuna, con la causale
+export function rettificheSettimana(rettifiche, zona, chiave) {
+  const lista = (Array.isArray(rettifiche) ? rettifiche : Object.values(rettifiche || {})).filter(r => r && r.tipo === "rettifica" && r.zona === zona && r.settimana === chiave && Number(r.euro));
+  return { lista, euro: Math.round(lista.reduce((s, r) => s + Number(r.euro), 0) * 100) / 100 };
+}

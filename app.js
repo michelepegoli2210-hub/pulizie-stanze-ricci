@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.12.1";
+export const VERSIONE = "1.13.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -568,7 +568,7 @@ function voceBarra() {
     // i tasti della proposta (Si', fallo / No): solo quando lei ha davvero finito di pensare
     const conv = conversazione(), n = conv.length, ultimo = n ? conv[n - 1] : null;
     const pensa = govScrive || (ultimo && ultimo.chi === "io");
-    const tasti = (!pensa && ultimo && ultimo.chi === "gov" && Array.isArray(ultimo.tasti) && ultimo.tasti.length) ? ultimo.tasti.slice(0, 4) : [];
+    const tasti = (!pensa && ultimo && ultimo.chi === "gov" && tastiAttivi(ultimo).length) ? tastiAttivi(ultimo).slice(0, 4) : [];
     const html = tasti.map(t => `<button type="button" class="${t.k === "si" ? "vb-si" : t.k === "no" ? "vb-no" : "vb-altro"}" data-casa-tasto="${esc(String(n - 1))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("");
     const box = b.querySelector(".vb-tasti"); if (box.innerHTML !== html) box.innerHTML = html;
     b.classList.toggle("con-tasti", !!html);
@@ -1105,7 +1105,7 @@ const S = {
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
   board: { modo: (() => { try { return localStorage.getItem("ricci_vista_pr") === "facile" ? "facile" : "mappa"; } catch (e) { return "mappa"; } })(), inizio: L.oggiISO() },   // 1.0.8: o la Facile, se l'ultima volta su questo telefono si e' usata quella   // 1.0.5: si apre sulla mappa delle camere; 1.0.7: la settimana parte da oggi
   camere: CAMERE.slice(), zone: ZONE, squadra: null, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
-  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, argon: null, argonGiro: undefined, visti: {}, pulizieAltre: {}, argonErrore: "", impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
+  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, clientiPrivati: {}, argon: null, argonGiro: undefined, visti: {}, pulizieAltre: {}, argonErrore: "", impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
   gov: null, clienti: {}, chat: { risposte: {}, conta: {}, automatiche: {}, conversazione: [] }, spesa: { voci: {} }, registro: {}, govSett: G.settimanaGovernante(), govTab: "consigli", tab: { vista: "posti", zona: "", regola: "", soloRosse: false, prova: false },
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
@@ -1117,7 +1117,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const eur = L.eur;
 
-function camera(id) { return S.camere.find(c => c.id === id) || G.LUOGHI_COMUNI.find(l => l.id === id) || (id === "stelle" ? { id, nome: "Rifiniture in altre camere", zona: L.listinoCompleto(S.listino).zonaStelle, tipo: "comune" } : CAMERE_TOLTE[id] ? { id, nome: CAMERE_TOLTE[id].nome, zona: "ap", tipo: "casa", tolta: true } : { id, nome: id, zona: "?", tipo: "camera" }); }
+function camera(id) { if (!id) return { id: "", nome: "Lavoro generale", zona: "?", tipo: "comune" }; return S.camere.find(c => c.id === id) || G.LUOGHI_COMUNI.find(l => l.id === id) || (id === "stelle" ? { id, nome: "Rifiniture in altre camere", zona: L.listinoCompleto(S.listino).zonaStelle, tipo: "comune" } : CAMERE_TOLTE[id] ? { id, nome: CAMERE_TOLTE[id].nome, zona: "ap", tipo: "casa", tolta: true } : { id, nome: id, zona: "?", tipo: "camera" }); }
 function camereZona(z) { return S.camere.filter(c => c.zona === z).sort((a, b) => (a.ordine || 0) - (b.ordine || 0)); }
 function zoneOrdinate() { return Object.entries(S.zone).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0)).map(([k, v]) => ({ id: k, ...v })); }
 // ---- Le signore (0.36): una per zona di lavoro, col suo nome. Michele le cambia in Paghe → "Le signore".
@@ -1358,6 +1358,8 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "economia", d => { S.economia = { ...(d || {}) }; delete S.economia.id; disegna(); }));
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); }));
+  // 1.13.0: le note private dei clienti (dette a Sofia): stanno in "importazioni", che le signore non leggono
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "clienti-privati", d => { S.clientiPrivati = { ...(d || {}) }; delete S.clientiPrivati.id; delete S.clientiPrivati.aggiornato; disegna(); }));
   // 1.0: il ponte WhatsApp e la posta di Sofia (solo i proprietari; finche' le regole non ci sono, niente errori a schermo:
   // la scheda del ponte mostra il passo 1, "le regole nuove")
   if (proprietario()) { ascoltaPonte(); S.stop.push(fermaPonte); }
@@ -1903,7 +1905,7 @@ function vistaSoldi(z) {
     <div>${lista.length} ${lista.length === 1 ? "pulizia fatta" : "pulizie fatte"}${t.minuti ? ` · ${esc(L.testoOre(t.minuti))} standard` : ""} · ${pagato ? `<span class="pill paid">✓ Pagata ${esc(pagato.quando || "")}</span>` : `<span class="pill open">Si paga sabato alle 14</span>`}</div>
     <div class="small" style="margin-top:6px;opacity:.92">${rigaConto(t)}</div></section>`;
   const spiega = `<section class="card"><h2 style="margin:0 0 4px">Come si conta</h2><p class="muted small" style="margin:0">Ogni camera vale le sue ore standard: ${eur(tariffa.albergo)} l'ora in albergo${z === "ap" || zoneOrdinate().some(x => x.id === z && /appart/i.test(x.nome)) ? `, ${eur(tariffa.appartamenti)} l'ora negli appartamenti` : ""}. Finisci prima, prendi lo stesso. ${argonLei() ? `Le rifiniture ⭐ si pagano una a una, appena arriva il Visto. Ogni Visto che dai vale ${eur(argonConf().vistoEuro)} (fino a ${argonConf().vistiMax} a settimana).` : "Le rifiniture ⭐ si pagano una a una. Se un controllo trova qualcosa non fatto, lo puoi rifare entro sabato alle 14 e non perdi niente."}</p></section>`;
-  const elenco = `<section class="card"><h2>Cosa hai fatto questa settimana</h2>${lista.length ? `<div class="rows">${lista.map(p => rigaPagaPulizia(p)).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. Ogni camera che segni pulita compare qui con le sue ore e il suo importo.</p>`}</section>`;
+  const elenco = `<section class="card"><h2>Cosa hai fatto questa settimana</h2>${lista.length ? `<div class="rows">${lista.map(p => rigaPagaPulizia(p)).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. Ogni camera che segni pulita compare qui con le sue ore e il suo importo.</p>`}${righeBusta(t)}</section>`;
   return wallet + elenco + spiega + vistaStorico(z);
 }
 function vistaStorico(z) {
@@ -2019,7 +2021,7 @@ function cardDaRifare(z) {
 function argonConf() { return L.argonCompleto(S.argon); }
 function cloudAttivo(iso = L.oggiISO()) { return L.argonVale(S.argon, iso); }
 function argonLei() { return addetta() && cloudAttivo(); }
-function extraPaga() { return { visti: S.visti || {}, argon: argonConf() }; }
+function extraPaga() { return { visti: S.visti || {}, argon: argonConf(), rettifiche: Object.values(S.pagamenti || {}).filter(x => x && x.tipo === "rettifica") }; }
 function zoneAttive() { return signore().map(z => z.id); }
 let memoVede = new Map();   // si svuota a ogni disegna (come memoRif)
 function chiVedeIl(zona, iso) { const k = `${zona}|${iso}`; if (!memoVede.has(k)) memoVede.set(k, L.chiVede(argonConf(), zona, iso, pulizieTutte(), S.camere, zoneAttive())); return memoVede.get(k); }
@@ -2933,7 +2935,7 @@ function ultimoScambio() {
   if (mio && iMio > iLei - 2) pezzi.push(`<div class="cc-io">${esc(corto(mio.testo, 160))}</div>`);
   if (govScrive || (ultimo && ultimo.chi === "io")) pezzi.push(`<div class="cc-lei cc-pensa">${esc(nomeGov())} ci pensa…</div>`);
   else if (lei && iLei >= iMio) {
-    const tasti = Array.isArray(lei.tasti) && lei.tasti.length ? lei.tasti : null;
+    const tasti = tastiAttivi(lei).length ? tastiAttivi(lei) : null;
     pezzi.push(`<div class="cc-lei">${esc(String(lei.testo || "").trim()).replace(/\n/g, "<br>")}</div>`);
     if (tasti) pezzi.push(`<div class="cc-tasti">${tasti.slice(0, 6).map(t => `<button type="button" class="${t.k === "si" ? "cc-si" : t.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(iLei))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("")}</div>`);
     else if (lei.scelto) pezzi.push(`<div class="cc-scelto">${esc(lei.scelto)}</div>`);
@@ -2953,8 +2955,8 @@ function bolleCasa(max = 40) {
     const i = base + j;
     const testo = esc(String(m.testo || "").trim()).replace(/\n/g, "<br>");
     if (m.chi === "io") return `<div class="sv-riga sv-io"><div class="cc-io">${testo}</div></div>`;
-    const tasti = (i === iLei && !pensa && Array.isArray(m.tasti) && m.tasti.length)
-      ? `<div class="cc-tasti">${m.tasti.slice(0, 6).map(x => `<button type="button" class="${x.k === "si" ? "cc-si" : x.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(i))}|${esc(String(x.k))}">${esc(x.testo)}</button>`).join("")}</div>`
+    const tasti = (i === iLei && !pensa && tastiAttivi(m).length)
+      ? `<div class="cc-tasti">${tastiAttivi(m).slice(0, 6).map(x => `<button type="button" class="${x.k === "si" ? "cc-si" : x.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(i))}|${esc(String(x.k))}">${esc(x.testo)}</button>`).join("")}</div>`
       : (m.scelto ? `<div class="cc-scelto">${esc(m.scelto)}</div>` : "");
     return `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">${testo}</div>${tasti}</div></div>`;
   }).join("");
@@ -3635,7 +3637,7 @@ function foglioChat(f) {
   const conv = conversazione().map((m, i) => m.chi === "io"
     ? `<div class="chat-msg me"><div class="chat-bolla">${esc(m.testo)}</div></div>`
     : m.fatto ? `<div class="chat-fatto">${esc(m.testo)}</div>`
-    : bollaGov(`${m.ia ? `<span class="ia-bollo" title="risposta dell'intelligenza artificiale">IA</span>` : ""}${escNl(m.testo)}`, (m.tasti && m.tasti.length) ? `<div class="chat-tasti ${m.tasti.length === 2 ? "due" : m.tasti.length === 4 ? "quattro" : ""}">${m.tasti.map(t => `<button type="button" class="chat-tasto" data-conv="${i}|${esc(t.k)}">${esc(t.testo)}</button>`).join("")}</div>` : (m.scelto ? `<div class="chat-scelto">→ ${esc(m.scelto)}</div>` : ""))).join("");
+    : bollaGov(`${m.ia ? `<span class="ia-bollo" title="risposta dell'intelligenza artificiale">IA</span>` : ""}${escNl(m.testo)}`, tastiAttivi(m).length ? `<div class="chat-tasti ${tastiAttivi(m).length === 2 ? "due" : tastiAttivi(m).length === 4 ? "quattro" : ""}">${tastiAttivi(m).map(t => `<button type="button" class="chat-tasto" data-conv="${i}|${esc(t.k)}">${esc(t.testo)}</button>`).join("")}</div>` : (m.scelto ? `<div class="chat-scelto">→ ${esc(m.scelto)}</div>` : ""))).join("");
   const scrive = govScrive ? bollaGov(`<span class="chat-punti"><i></i><i></i><i></i></span>`) : "";
   const parla = mod ? `<form class="chat-parla" id="formParla"><textarea id="parlaGov" rows="1" placeholder="Scrivi, o tocca il microfono e parla…" data-keep aria-label="Scrivi a ${esc(nomeGov())}"></textarea><button class="chat-mic" type="button" data-mic aria-pressed="false" aria-label="Parla con ${esc(nomeGov())}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button><button class="chat-invia" type="submit" aria-label="Manda a ${esc(nomeGov())}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
     ${iaAccesa() ? `<div class="chat-veloci">${VELOCI_IA.map((v, i) => `<button type="button" class="chat-veloce" data-ia-veloce="${i}">${esc(v.tasto)}</button>`).join("")}</div>` : ""}
@@ -3774,7 +3776,9 @@ function testoPiano(giorno, chi) {
 async function rispondiParole(i, k) {
   const conv = conversazione(); const msg = conv[i]; if (!msg) return;
   const coda = Array.isArray(msg.coda) ? msg.coda : [];   // 0.88: le altre proposte in fila ("Una per una")
-  const chiudi = async (testo, fatto) => { const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: testo }; if (fatto) nuovo.push({ chi: "gov", testo: fatto, fatto: true, ora: S.db.adesso() }); if (coda.length) nuovo.push(propostaInCoda(coda)); await salvaConversazione(nuovo); };
+  const chiudi = async (testo, fatto, extra) => { const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: testo }; if (fatto) nuovo.push({ chi: "gov", testo: fatto, fatto: true, ora: S.db.adesso(), ...(extra || {}) }); if (coda.length) nuovo.push(propostaInCoda(coda)); await salvaConversazione(nuovo); };
+  // 1.13.0: «↩ Annulla» sotto il «Fatto»
+  if (k === "annulla" && msg.giornale) { let esito = ""; try { esito = await annullaGiornale(msg.giornale); } catch (e) { console.warn("annulla", e); esito = "Non ci sono riuscita, riprova tra un attimo."; } const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: "Annulla" }; nuovo.push({ chi: "gov", testo: esito, fatto: true, ora: S.db.adesso() }); return salvaConversazione(nuovo); }
   if (k === "no") return chiudi("No", coda.length ? "Va bene, questa la lascio." : "Va bene, non faccio niente.");
   if (k === "una" && msg.azione && msg.azione.tipo === "gruppo" && (msg.azione.azioni || []).length) { const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: "Una per una" }; nuovo.push(propostaInCoda(msg.azione.azioni)); return salvaConversazione(nuovo); }
   // "quale?" → scelgo la regola e rifaccio la proposta
@@ -3811,11 +3815,427 @@ async function rispondiParole(i, k) {
   }
   // conferma: lo faccio davvero
   if (msg.azione && k === "si") {
-    let fatto = "";
-    try { fatto = await eseguiParole(msg.azione); } catch (e) { console.warn("parole/azione", e); fatto = "Non ci sono riuscita, riprova tra un attimo."; }
-    return chiudi("Sì", fatto);
+    let fatto = "", gid = null;
+    const annullo = msg.azione.tipo === "annulla" || (msg.azione.tipo === "gruppo" && (msg.azione.azioni || []).every(x => x.tipo === "annulla"));
+    try {
+      if (annullo) fatto = await eseguiParole(msg.azione);
+      else { const r = await conGiornale(() => eseguiParole(msg.azione), riassuntoAzione(msg.azione)); fatto = r.esito; gid = r.id; }
+    } catch (e) { console.warn("parole/azione", e); fatto = "Non ci sono riuscita, riprova tra un attimo."; }
+    if (gid) setTimeout(disegna, ANNULLA_MS + 500);
+    return chiudi("Sì", fatto, gid ? { giornale: gid, tasti: [{ k: "annulla", testo: "↩ Annulla" }], annullaFino: Date.now() + ANNULLA_MS } : null);
   }
 }
+// ============================================================================
+//  1.13.0 · LE MANI DI SOFIA (specifiche §110). Michele, 29/10: "parlando a Sofia lei deve poter compilare l'anagrafe di una camera
+//  e di un cliente, il prospetto, incaricare le signore, +2 euro a Selena questa settimana… tutti i tasti che già ci sono, come
+//  parlo con Claude". Progetto fatto con Argon (giro F): niente azione generica "cambia campo" (col modello veloce inventerebbe
+//  campi e romperebbe i dati); comandi PRECISI, ognuno controllato qui prima del «Sì, fallo»; dopo il Sì si salva com'era prima,
+//  così «Annulla» rimette tutto a posto (ultime 10 modifiche). I numeri di telefono non passano mai.
+// ============================================================================
+const TIPI_MANI = new Set(["soggiorno", "assegna", "incarico", "ospite", "camera", "dettagli", "busta", "manutenzione", "direzione", "pagata", "listino", "annulla"]);
+const SIGLE_MODI = ["tecnici", "operai", "booking"];
+function zonaDaIA(x) {
+  const s = String(x || "").trim(); if (!s) return null; const n = PAROLE.norm(s);
+  const z = signore().find(z => z.id === s) || signore().find(z => PAROLE.norm(SIG(z.id)) === n) || signore().find(z => n.includes(PAROLE.norm(SIG(z.id))));
+  return z ? z.id : null;
+}
+function zoneDaIA(x) { const l = Array.isArray(x) ? x : x ? [x] : []; return [...new Set(l.map(zonaDaIA).filter(Boolean))]; }
+function unaCamera(x) { return camereDaIA(x)[0] || null; }
+const dataIA = (d, oggiSeVuota = true) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || "")) ? d : (oggiSeVuota ? L.oggiISO() : null);
+const euroIA = (v) => { if (v == null || v === "") return null; const x = Number(String(v).replace(",", ".").replace(/[^\d.\-]/g, "")); return isFinite(x) ? Math.round(x * 100) / 100 : null; };
+function quandoTesto(iso) { const o = L.oggiISO(); return iso === o ? "oggi" : iso === L.aggiungiGiorni(o, 1) ? "domani" : iso === L.aggiungiGiorni(o, -1) ? "ieri" : L.dataGiornoLungo(iso); }
+function chiaveCliente(nome) { const nc = L.nomeCliente(nome) || String(nome || "").trim(); return { k: L.normNome(nc), nome: nc }; }
+const stessoOspite = (a, b) => { const x = L.normNome(L.nomeCliente(a)), y = L.normNome(L.nomeCliente(b)); return !!x && !!y && (x === y || L.normNome(a).startsWith(y + " ") || L.normNome(b).startsWith(x + " ")); };
+// il soggiorno di una camera in un giorno (chi c'è o, se nessuno, il prossimo che arriva), facoltativamente di un ospite preciso
+function soggiornoDi(camId, quando, nome) {
+  const lista = soggiorniLista().filter(s => s.camera === camId && (!nome || stessoOspite(s.nome, nome)));
+  return lista.find(s => s.inizio <= quando && quando < s.fine) || lista.filter(s => s.inizio >= quando).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0] || null;
+}
+const DM = (iso) => L.dataMedia(iso);
+const NON = (testo) => ({ tipo: "nonPosso", testo });
+
+// --- dall'IA a un comando controllato ---------------------------------------------------------------------------------------
+function azioneManiDaIA(a) {
+  const oggi = L.oggiISO();
+  switch (a.tipo) {
+    case "soggiorno": {
+      const cam = unaCamera(a.camera || a.dove); if (!cam) return null;
+      const st = String(a.stato || "").toLowerCase();
+      const stato = /partit|andat|via|uscit|lascia/.test(st) ? "partito" : /annull|venut|cancell|disdett|toglie/.test(st) ? "annullato" : "";
+      const nome = String(a.ospite || a.nome || a.chi || "").trim().replace(/^\[O\d+\]$/, "");
+      if (stato === "partito") {
+        const quando = dataIA(a.al || a.giorno);
+        const s = soggiornoDi(cam, L.aggiungiGiorni(quando, -1), nome);
+        if (!s || s.inizio >= quando || s.fine < quando) return NON(`In ${camera(cam).nome} non trovo nessuno che possa partire ${quandoTesto(quando)}.`);
+        if (s.fine === quando) return NON(`In ${camera(cam).nome} ${s.nome} parte già ${quandoTesto(quando)}: nel prospetto è giusto così.`);
+        return { tipo: "soggiorno", modo: "partito", id: s.id, camera: cam, nome: s.nome, fine: quando, prima: s.fine };
+      }
+      if (stato === "annullato") {
+        const s = soggiornoDi(cam, L.aggiungiGiorni(oggi, -1), nome);
+        if (!s) return NON(`In ${camera(cam).nome} non trovo il soggiorno da togliere.`);
+        return { tipo: "soggiorno", modo: "annullato", id: s.id, camera: cam, nome: s.nome, inizio: s.inizio, fine: s.fine };
+      }
+      const dal = dataIA(a.dal || a.inizio, false), al = dataIA(a.al || a.fine, false);
+      const modo = SIGLE_MODI.includes(String(a.modo || "").toLowerCase()) ? String(a.modo).toLowerCase() : "";
+      const persone = Math.max(0, Math.min(12, Math.round(Number(a.persone) || 0))) || null;
+      const es = nome ? soggiorniLista().filter(s => s.camera === cam && stessoOspite(s.nome, nome) && s.fine >= L.aggiungiGiorni(oggi, -1)).sort((x, y) => x.inizio < y.inizio ? -1 : 1)[0] : null;
+      if (es) {
+        const inizio = dal || es.inizio, fine = al || es.fine;
+        if (fine <= inizio) return NON(`Per ${camera(cam).nome} la partenza deve venire dopo l'arrivo.`);
+        if (inizio === es.inizio && fine === es.fine && (!persone || persone === es.persone) && (!modo || modo === es.modo)) return NON(`In ${camera(cam).nome} ${es.nome} è già segnato così (${DM(es.inizio)}→${DM(es.fine)}).`);
+        return { tipo: "soggiorno", modo: "cambia", id: es.id, camera: cam, nome: es.nome, inizio, fine, persone: persone || es.persone || 1, modoOspite: modo, prima: { inizio: es.inizio, fine: es.fine, persone: es.persone || 1 } };
+      }
+      if (!dal || !al) return NON(`Per ${camera(cam).nome} mi servono il giorno di arrivo e quello di partenza.`);
+      if (al <= dal) return NON(`Per ${camera(cam).nome} la partenza deve venire dopo l'arrivo.`);
+      const altri = soggiorniLista().filter(s => s.camera === cam && s.inizio < al && dal < s.fine).map(s => s.nome);
+      return { tipo: "soggiorno", modo: "nuovo", camera: cam, nome: nome || "Ospiti", inizio: dal, fine: al, persone: persone || 1, modoOspite: modo, altri };
+    }
+    case "assegna": {
+      const giorno = dataIA(a.giorno), camere = camereDaIA(a.dove || a.camere || a.camera), chi = zoneDaIA(a.chi || a.signore || a.signora).slice(0, 2);
+      if (!camere.length || !chi.length) return null;
+      const righe = camere.map(id => ({ camera: id, ps: Object.values(S.pulizie).filter(p => p.data === giorno && p.camera === id && p.stato !== "fatta" && p.stato !== "non_fatta" && p.tipo !== "extra" && p.tipo !== "stelle" && p.origine !== "governante" && !p.legataA).sort((x, y) => x.id.length - y.id.length || (x.id < y.id ? -1 : 1)) }));
+      const senza = righe.filter(r => !r.ps.length).map(r => camera(r.camera).nome), con = righe.filter(r => r.ps.length);
+      if (!con.length) return NON(`${quandoTesto(giorno).replace(/^./, c => c.toUpperCase())} in ${senza.join(", ")} non c'è nessuna pulizia da assegnare. Se va fatta, dimmi che lavoro è e la metto come incarico.`);
+      const gia = con.every(r => chi.length === 1 ? r.ps.every(p => p.zona === chi[0] && !p.insieme) : r.ps.length >= 2 && r.ps.slice(0, 2).every((p, i) => p.zona === chi[i]));
+      if (gia) return NON(`${quandoTesto(giorno).replace(/^./, c => c.toUpperCase())} è già così: ${con.map(r => camera(r.camera).nome).join(", ")} ${chi.length === 1 ? "la fa " + SIG(chi[0]) : "la fanno " + chi.map(SIG).join(" e ")}.`);
+      return { tipo: "assegna", giorno, chi, righe: con.map(r => ({ camera: r.camera, ids: r.ps.map(p => p.id), divisa: chi.length === 2 && r.ps.length === 1 })), senza };
+    }
+    case "incarico": {
+      const giorno = dataIA(a.giorno), chi = zonaDaIA(a.chi || a.signora); if (!chi || giorno < oggi) return null;
+      const cosa = senzaTelefoni(String(a.cosa || a.testo || "")).trim().slice(0, 120); if (!cosa) return null;
+      const cam = unaCamera(a.dove || a.camera);
+      const tariffa = L.listinoCompleto(S.listino).tariffe[cam && camera(cam).tipo === "casa" ? "appartamenti" : "albergo"] || 8;
+      let euro = euroIA(a.euro), minuti = Math.round(Number(a.minuti) || 0);
+      if (euro != null && (euro <= 0 || euro > 200)) return null;
+      if (euro == null) { if (!minuti) minuti = 30; euro = L.euroDaMinuti(minuti, tariffa); }
+      if (!minuti) minuti = Math.max(5, Math.round(euro / tariffa * 60 / 5) * 5);
+      return { tipo: "incarico", giorno, chi, camera: cam, cosa, euro, minuti };
+    }
+    case "ospite": {
+      let nome = String(a.chi || a.ospite || a.nome || "").trim();
+      if ((!nome || /^\[O\d+\]$/.test(nome)) && (a.camera || a.dove)) { const cam = unaCamera(a.camera || a.dove); const s = cam ? soggiornoDi(cam, oggi) : null; if (s) nome = s.nome; }
+      if (!nome || /^\[O\d+\]$/.test(nome)) return NON("Non ho capito di quale ospite parli: dimmi il nome o la camera.");
+      const { k, nome: nc } = chiaveCliente(nome); if (!k) return null;
+      const cambi = {};
+      const modo = String(a.modo || "").toLowerCase(); if (SIGLE_MODI.includes(modo)) cambi.modo = modo;
+      if (a.istruzioni != null) cambi.istruzioni = senzaTelefoni(String(a.istruzioni)).replace(/\s+/g, " ").trim().slice(0, 200);
+      if (a.supplemento != null) { const e = euroIA(a.supplemento); if (e != null && e >= 0 && e <= 30) cambi.supplemento = e; }
+      if (a.notaPrivata != null) cambi.notaPrivata = senzaTelefoni(String(a.notaPrivata)).replace(/\s+/g, " ").trim().slice(0, 300);
+      if (!Object.keys(cambi).length) return null;
+      return { tipo: "ospite", k, nome: nc, cambi };
+    }
+    case "camera": {
+      const cam = unaCamera(a.camera || a.dove); if (!cam) return null; const c = camera(cam), fl = flagsGov(), cambi = {};
+      for (const [k, f] of [["frigo", "frigo"], ["balcone", "balconi"], ["strada", "strada"]]) if (typeof a[k] === "boolean" && !!(fl[f] || {})[cam] !== a[k]) cambi[f] = a[k];
+      if (typeof a.grande === "boolean" && c.tipo !== "casa" && (L.tagliaCamera(S.listino, cam) === "G") !== a.grande) cambi.taglia = a.grande ? "G" : "P";
+      if (a.signora || a.chi) { const z = zonaDaIA(a.signora || a.chi); if (z && signoraDiCamera(cam) !== z) cambi.signora = z; }
+      if (a.nota != null) { const t = senzaTelefoni(String(a.nota)).replace(/\s+/g, " ").trim().slice(0, 200); if (t !== String((S.promemoria || {})[cam] || "")) cambi.nota = t; }
+      if (!Object.keys(cambi).length) return (typeof a.frigo === "boolean" || typeof a.balcone === "boolean" || typeof a.strada === "boolean" || typeof a.grande === "boolean" || a.nota != null || a.signora) ? NON(`La scheda di ${c.nome} è già così.`) : null;
+      return { tipo: "camera", camera: cam, cambi };
+    }
+    case "dettagli": {
+      const cam = unaCamera(a.camera || a.dove), giorno = dataIA(a.giorno), testo = senzaTelefoni(String(a.testo || "")).replace(/\s+/g, " ").trim().slice(0, 300);
+      if (!cam || !testo) return null;
+      const p = Object.values(S.pulizie).filter(p => p.data === giorno && p.camera === cam && p.stato !== "non_fatta" && p.tipo !== "extra" && !p.legataA).sort((x, y) => (x.parte || "") < (y.parte || "") ? -1 : 1)[0];
+      if (!p) return NON(`${quandoTesto(giorno).replace(/^./, c => c.toUpperCase())} in ${camera(cam).nome} non c'è nessuna pulizia: la nota non saprei dove metterla. Se vuoi, la scrivo nel messaggio del giorno.`);
+      return { tipo: "dettagli", id: p.id, camera: cam, giorno, testo, prima: p.dettagli || "" };
+    }
+    case "busta": {
+      const chi = zonaDaIA(a.chi || a.signora), euro = euroIA(a.euro);
+      if (!chi || euro == null || euro === 0 || Math.abs(euro) > 100) return null;
+      const ora = L.settimanaCorrente(); let settimana = /scors|prima/i.test(String(a.settimana || "")) ? L.settimanaPrecedente(ora) : ora, nota = "";
+      if (S.pagamenti[`${chi}_${settimana}`]) {
+        if (settimana !== ora && !S.pagamenti[`${chi}_${ora}`]) { settimana = ora; nota = "la settimana scorsa è già pagata: la metto in questa"; }
+        else return NON(`La settimana ${L.etichettaSettimana(settimana)} di ${SIG(chi)} è già segnata come pagata: lì non aggiungo voci.`);
+      }
+      const motivo = senzaTelefoni(String(a.motivo || a.causale || "")).replace(/\s+/g, " ").trim().slice(0, 80) || (euro > 0 ? "Impegno extra" : "Lavoro non eseguito");
+      return { tipo: "busta", chi, euro, motivo, settimana, nota };
+    }
+    case "manutenzione": {
+      const modo = /chiud|risolt|sistemat|aggiust|fatt|riparat/i.test(String(a.modo || "")) ? "chiudi" : "apri";
+      const cam = unaCamera(a.camera || a.dove), cosa = senzaTelefoni(String(a.cosa || a.testo || "")).replace(/\s+/g, " ").trim().slice(0, 140);
+      if (modo === "apri") return cosa ? { tipo: "manutenzione", modo, camera: cam, cosa } : null;
+      const aperti = lavoriAperti().filter(m => !cam || m.camera === cam);
+      const parole = PAROLE.norm(cosa).split(" ").filter(w => w.length >= 4);
+      const scelti = parole.length ? aperti.filter(m => parole.some(w => PAROLE.norm(`${m.titolo || ""} ${m.nota || ""}`).includes(w))) : [];
+      const lista = scelti.length ? scelti : aperti.length === 1 ? aperti : [];
+      if (!lista.length) return NON(`Non trovo un lavoro aperto${cam ? " in " + camera(cam).nome : ""}${cosa ? " su «" + cosa + "»" : ""}${aperti.length > 1 ? ` (ce ne sono ${aperti.length}: dimmi quale)` : ""}.`);
+      return { tipo: "manutenzione", modo, camera: cam, ids: lista.slice(0, 3).map(m => m.id), titoli: lista.slice(0, 3).map(m => `${m.titolo || "Lavoro"}${m.camera ? " (" + camera(m.camera).nome + ")" : ""}`) };
+    }
+    case "direzione": {
+      const giorno = dataIA(a.giorno);
+      if (!S.argon || !S.argon.attivo) return NON("ArgonCloud è spento: prima si accende in Paghe.");
+      if (typeof a.presente === "boolean") return { tipo: "direzione", modo: "presente", giorno, presente: a.presente };
+      if (a.visto) {
+        const z = zonaDaIA(a.visto); if (!z) return null; const id = L.idVisto(z, giorno), v = (S.visti || {})[id];
+        if (!v || !v.finitoOra) return NON(`${SIG(z)} ${quandoTesto(giorno)} non ha ancora premuto «Ho finito»: il Visto si dà dopo.`);
+        if (v.vistoOra) return NON(`Il ${pianoBreve(z)} di ${quandoTesto(giorno)} ha già il Visto di ${v.vistoNome || v.vistoDa}.`);
+        return { tipo: "direzione", modo: "visto", id, zona: z, giorno };
+      }
+      if (a.nonFatta) {
+        const cam = unaCamera(a.camera || a.dove), parole = PAROLE.norm(String(a.nonFatta)).split(" ").filter(w => w.length >= 3);
+        const da = L.aggiungiGiorni(a.giorno ? giorno : oggi, a.giorno ? 0 : -7), fino = a.giorno ? giorno : oggi;
+        for (const v of Object.values(S.visti || {}).filter(v => v && v.data >= da && v.data <= fino).sort((x, y) => x.data < y.data ? 1 : -1)) {
+          const r = (v.rifiniture || []).find(r => (!cam || r.camera === cam) && !(v.difetti || []).some(d => d.k === r.k) && (!parole.length || parole.some(w => PAROLE.norm(`${r.nome} ${r.luogoNome}`).includes(w))));
+          if (r) { const id = v.id || L.idVisto(v.zona, v.data); return { tipo: "direzione", modo: "nonFatta", id, voce: { k: r.k, pulizia: r.pulizia, camera: r.camera, nome: testoRif(r), euro: r.euro, rif: true }, firmato: !!(v.vistoOra && v.vistoDa && v.vistoDa !== "direzione"), vistoNome: v.vistoNome || "", rodaggio: !!v.rodaggio, finitoDa: v.finitoDa || SIG(v.zona), giorno: v.data }; }
+        }
+        return NON(`Non trovo una rifinitura «${a.nonFatta}»${cam ? " in " + camera(cam).nome : ""} tra quelle finite di recente.`);
+      }
+      return null;
+    }
+    case "pagata": {
+      const chi = zonaDaIA(a.chi || a.signora); if (!chi) return null;
+      const chiave = /scors|prima/i.test(String(a.settimana || "")) ? L.settimanaPrecedente(L.settimanaCorrente()) : L.settimanaCorrente();
+      if (S.pagamenti[`${chi}_${chiave}`]) return NON(`La settimana ${L.etichettaSettimana(chiave)} di ${SIG(chi)} è già segnata come pagata.`);
+      const t = L.totaleSettimana(S.pulizie, chi, chiave, S.regole, S.controlli, S.listino, extraPaga());
+      return { tipo: "pagata", chi, chiave, totale: t.totale, n: t.lista.length };
+    }
+    case "listino": {
+      const voce = String(a.voce || "").toLowerCase(), v = euroIA(a.valore), l = L.listinoCompleto(S.listino); if (v == null) return null;
+      if (voce === "tariffa_albergo" || voce === "tariffa_appartamenti") {
+        if (v < 4 || v > 25) return NON("Una tariffa così non la metto: dimmi un numero tra 4 e 25 euro l'ora.");
+        const k = voce.endsWith("albergo") ? "albergo" : "appartamenti";
+        return { tipo: "listino", campo: ["tariffe", k], valore: v, prima: l.tariffe[k], testo: `la tariffa dell'ora ${k === "albergo" ? "in albergo" : "negli appartamenti"}`, unita: "€" };
+      }
+      if (voce === "obiettivo_rifiniture") {
+        if (v < 0 || v > 150) return null;
+        return { tipo: "listino", campo: ["obiettivoStelle"], valore: Math.round(v), prima: l.obiettivoStelle, testo: "l'obiettivo delle rifiniture a settimana", unita: "€" };
+      }
+      if (voce === "minuti") {
+        const cam = unaCamera(a.camera || a.dove); if (!cam) return null; const c = camera(cam), tot = /tot|cambio|complet/i.test(String(a.pulizia || ""));
+        const k = c.tipo === "casa" ? (tot ? "totale_casa" : "casa") : (tot ? "totale" : "ripasso"), min = Math.round(v / 5) * 5;
+        if (min < 5 || min > 300) return null;
+        return { tipo: "listino", campo: ["perCasa", cam, k], valore: min, prima: L.minutiPulizia(l, c, k), testo: `i minuti del ${tot ? "cambio completo" : "ripasso"} di ${c.nome}`, unita: "min", euro: L.euroDaMinuti(min, L.tariffaDi(l, c)) };
+      }
+      return null;
+    }
+    case "annulla": {
+      const g = ultimoGiornale();
+      return g ? { tipo: "annulla", id: g.id, testo: g.testo } : NON("Non ho niente da annullare: non ho fatto modifiche di recente.");
+    }
+  }
+  return null;
+}
+
+// --- la proposta, in parole -------------------------------------------------------------------------------------------------
+function propostaMani(a) {
+  const conf = " Confermo?";
+  switch (a.tipo) {
+    case "messaggio":
+      return a.modo === "togli" ? `Tolgo il messaggio di ${quandoTesto(a.giorno)} alle signore: «${a.testo}».${conf}` : `Aggiungo al messaggio di ${quandoTesto(a.giorno)} alle signore: «${a.testo}».${conf}`;
+    case "soggiorno": {
+      const cam = camera(a.camera).nome, modo = a.modoOspite ? ` (${G.MODI[a.modoOspite]?.nome || a.modoOspite}, solo per questo soggiorno)` : "";
+      if (a.modo === "partito") return `${cam}: ${a.nome} parte ${quandoTesto(a.fine)} invece di ${DM(a.prima)}. Le pulizie si rifanno da sole.${conf}`;
+      if (a.modo === "annullato") return `Tolgo dal prospetto ${a.nome} in ${cam} (${DM(a.inizio)}→${DM(a.fine)}): non è venuto. Le sue pulizie spariscono.${conf}`;
+      if (a.modo === "cambia") return `${cam}: ${a.nome} ${DM(a.inizio)}→${DM(a.fine)}${a.persone !== a.prima.persone ? `, ${a.persone} ${a.persone === 1 ? "persona" : "persone"}` : ""}${modo} (prima ${DM(a.prima.inizio)}→${DM(a.prima.fine)}). Le pulizie si rifanno da sole.${conf}`;
+      return `Metto nel prospetto ${cam}: ${a.nome}, ${a.persone} ${a.persone === 1 ? "persona" : "persone"}, ${DM(a.inizio)}→${DM(a.fine)}${modo}.${a.altri.length ? ` Attenzione: in quei giorni lì c'è già ${a.altri.join(", ")} (non lo tolgo).` : ""} Le pulizie si fanno da sole.${conf}`;
+    }
+    case "assegna": {
+      const dove = a.righe.map(r => camera(r.camera).nome).join(", "), chi = a.chi.map(SIG).join(" e ");
+      const divise = a.righe.filter(r => r.divisa).map(r => camera(r.camera).nome);
+      return `${quandoTesto(a.giorno).replace(/^./, c => c.toUpperCase())} ${dove}: ${a.chi.length === 2 ? `insieme ${chi}` : `la fa ${chi}`}.${divise.length ? ` In ${divise.join(", ")} la pulizia si divide a metà, ore e soldi.` : ""}${a.senza.length ? ` In ${a.senza.join(", ")} quel giorno non c'è niente da pulire.` : ""} Il piano automatico non lo cambia più.${conf}`;
+    }
+    case "incarico":
+      return `${quandoTesto(a.giorno).replace(/^./, c => c.toUpperCase())} ${SIG(a.chi)}: «${a.cosa}»${a.camera ? " in " + camera(a.camera).nome : ""}, ${eur(a.euro)} (${L.testoOre(a.minuti)}). Lo trova nella sua giornata.${conf}`;
+    case "ospite": {
+      const c = a.cambi, parti = [];
+      if (c.modo) parti.push(`tipo ${G.MODI[c.modo]?.nome || c.modo}`);
+      if (c.istruzioni != null) parti.push(c.istruzioni ? `alle signore, a ogni pulizia: «${c.istruzioni}»` : "tolgo l'istruzione per le signore");
+      if (c.supplemento != null) parti.push(c.supplemento ? `${eur(c.supplemento)} in più a ogni pulizia` : "niente supplemento");
+      if (c.notaPrivata != null) parti.push(c.notaPrivata ? `nota privata (solo tu): «${c.notaPrivata}»` : "tolgo la nota privata");
+      return `Scheda di ${a.nome}: ${parti.join("; ")}. Vale per tutti i suoi soggiorni, anche quelli futuri.${conf}`;
+    }
+    case "camera": {
+      const c = a.cambi, parti = [], nome = camera(a.camera).nome;
+      if (c.frigo != null) parti.push(c.frigo ? "ha il frigo" : "non ha il frigo");
+      if (c.balconi != null) parti.push(c.balconi ? "ha il balcone" : "non ha il balcone");
+      if (c.strada != null) parti.push(c.strada ? "è sulla strada" : "non è sulla strada");
+      if (c.taglia) parti.push(c.taglia === "P" ? "è piccola" : "è grande");
+      if (c.signora) parti.push(`di solito la pulisce ${SIG(c.signora)}`);
+      if (c.nota != null) parti.push(c.nota ? `nota fissa per le signore: «${c.nota}»` : "tolgo la nota fissa");
+      return `Scheda di ${nome}: ${parti.join("; ")}.${c.taglia ? " La paga di quella camera cambia dalle prossime pulizie." : ""}${conf}`;
+    }
+    case "dettagli":
+      return `Nota per ${quandoTesto(a.giorno)} in ${camera(a.camera).nome}: «${a.testo}». La signora la legge aprendo la camera.${a.prima ? ` (Prima c'era: «${a.prima}».)` : ""}${conf}`;
+    case "busta":
+      return `Nella busta di ${SIG(a.chi)}, settimana ${L.etichettaSettimana(a.settimana)}: ${a.euro > 0 ? `★ Premio extra direzione +${eur(a.euro)}` : `Rettifica −${eur(-a.euro)}`} («${a.motivo}»). È una riga a parte, la vede anche lei.${a.nota ? ` (${a.nota})` : ""}${conf}`;
+    case "manutenzione":
+      return a.modo === "apri" ? `Apro un lavoro di manutenzione${a.camera ? " in " + camera(a.camera).nome : ""}: «${a.cosa}».${conf}` : `Segno sistemato: ${a.titoli.join(", ")}.${conf}`;
+    case "direzione":
+      if (a.modo === "presente") return `Segno che ${quandoTesto(a.giorno)} ${a.presente ? "ci sei tu in albergo: le rifiniture si fanno anche se una signora è sola" : "non ci sei in albergo"}.${conf}`;
+      if (a.modo === "visto") return `Do il Visto della direzione al ${pianoBreve(a.zona)} di ${quandoTesto(a.giorno)}: le rifiniture entrano in busta.${conf}`;
+      return `Segno «${a.voce.nome}» (${DM(a.giorno)}) non fatta: non si paga a ${a.finitoDa}${a.firmato ? ` e ${a.vistoNome} perde i ${eur(argonConf().vistoEuro)} del Visto` : ""}${a.rodaggio ? " (siamo in rodaggio: la segno ma non tolgo soldi)" : ""}.${conf}`;
+    case "pagata":
+      return `Segno pagata la settimana ${L.etichettaSettimana(a.chiave)} di ${SIG(a.chi)}: ${eur(a.totale)} per ${a.n} ${a.n === 1 ? "lavoro" : "lavori"}.${conf}`;
+    case "listino": {
+      const f = (x) => a.unita === "€" ? eur(x) : `${x} minuti`;
+      return `Cambio ${a.testo}: da ${f(a.prima)} a ${f(a.valore)}${a.euro != null ? ` (${eur(a.euro)} a pulizia)` : ""}. Vale dalle prossime pulizie, quelle già fatte non cambiano.${conf}`;
+    }
+    case "annulla":
+      return `Annullo l'ultima cosa che ho fatto: «${a.testo}». Torna tutto com'era prima.${conf}`;
+  }
+  return "Confermo?";
+}
+
+// --- il lavoro vero (dopo il «Sì») ------------------------------------------------------------------------------------------
+async function eseguiMani(a) {
+  const oggi = L.oggiISO(), adesso = S.db.adesso();
+  switch (a.tipo) {
+    case "messaggio": {
+      const nuovo = {}; const limite = L.aggiungiGiorni(oggi, -60);
+      for (const [k, v] of Object.entries(S.messaggi || {})) if (k >= limite && v && typeof v === "object") nuovo[k] = { ...v };
+      const g = nuovo[a.giorno] || {};
+      if (a.modo === "togli") { delete g.testo; delete g.da; delete g.ora; if ((g.istruzioni || []).length) nuovo[a.giorno] = g; else delete nuovo[a.giorno]; }
+      else nuovo[a.giorno] = { ...g, testo: g.testo ? `${g.testo} · ${a.testo}` : a.testo, da: "la governante", ora: adesso };
+      S.messaggi = nuovo; await S.db.salva("impostazioni", "messaggi", nuovo, false); disegna();
+      if (a.modo !== "togli") inviaTelegram(testoMessaggioGiorno(a.giorno, nuovo[a.giorno].testo), "messaggio");
+      return a.modo === "togli" ? `Fatto: il messaggio di ${quandoTesto(a.giorno)} non c'è più.` : `Fatto: le signore lo leggono ${quandoTesto(a.giorno)} in cima alla loro schermata.`;
+    }
+    case "soggiorno": {
+      const s = a.id ? S.soggiorni[a.id] : null;
+      if (a.modo === "partito") { await S.db.aggiorna("soggiorni", a.id, { fine: a.fine, mesi: mesiCoperti(s ? s.inizio : a.fine, a.fine), modificato: adesso }); return `Fatto: ${a.nome} in ${camera(a.camera).nome} parte ${quandoTesto(a.fine)}. Le pulizie si rifanno da sole.`; }
+      if (a.modo === "annullato") { await S.db.cancella("soggiorni", a.id); return `Fatto: ${a.nome} tolto da ${camera(a.camera).nome}.`; }
+      if (a.modo === "cambia") { await S.db.aggiorna("soggiorni", a.id, { inizio: a.inizio, fine: a.fine, persone: a.persone, mesi: mesiCoperti(a.inizio, a.fine), modificato: adesso, ...(a.modoOspite ? { modo: a.modoOspite } : {}) }); return `Fatto: ${camera(a.camera).nome}, ${a.nome} ${DM(a.inizio)}→${DM(a.fine)}. Le pulizie si rifanno da sole.`; }
+      const id = `${a.inizio}_${a.camera}_${Date.now().toString(36)}`;
+      await S.db.salva("soggiorni", id, { camera: a.camera, inizio: a.inizio, fine: a.fine, nome: a.nome, tipo: a.modoOspite === "tecnici" ? "ferr" : "altro", persone: a.persone, supplemento: 0, nota: "", notaPrivata: "", telefono: "", dubbio: false, origine: "sofia", mesi: mesiCoperti(a.inizio, a.fine), modificato: adesso, da: nomeGov(), ...(a.modoOspite ? { modo: a.modoOspite } : {}) }, false);
+      return `Fatto: ${camera(a.camera).nome}, ${a.nome} ${DM(a.inizio)}→${DM(a.fine)} è nel prospetto. Le pulizie si fanno da sole.`;
+    }
+    case "assegna": {
+      const ops = [];
+      for (const r of a.righe) {
+        const ps = r.ids.map(id => S.pulizie[id]).filter(Boolean); if (!ps.length) continue;
+        if (a.chi.length === 1) for (const p of ps) ops.push({ tipo: "aggiorna", coll: "pulizie", id: p.id, dati: { zona: a.chi[0], insieme: "", zonaFissa: true } });
+        else if (ps.length >= 2) ps.slice(0, 2).forEach((p, i) => ops.push({ tipo: "aggiorna", coll: "pulizie", id: p.id, dati: { zona: a.chi[i], insieme: a.chi[1 - i], zonaFissa: true } }));
+        else {
+          const p = ps[0], min = Number(p.minuti) || 0, imp = Number(p.importo) || 0, metaMin = Math.round(min / 2), metaEur = L.mezziEuro(imp / 2);
+          ops.push({ tipo: "aggiorna", coll: "pulizie", id: p.id, dati: { zona: a.chi[0], insieme: a.chi[1], zonaFissa: true, minuti: min - metaMin, importo: Math.round((imp - metaEur) * 100) / 100 } });
+          const id2 = `${p.id}_insieme`; const { id: _x, ...resto } = p;
+          ops.push({ tipo: "salva", coll: "pulizie", id: id2, merge: false, dati: { ...resto, id: id2, zona: a.chi[1], insieme: a.chi[0], zonaFissa: true, minuti: metaMin, importo: metaEur, origine: "sofia", legataA: p.id, stato: "da_fare", ora: null, inizio: null, rifiniture: [], extraRifiniture: 0, spuntate: [], nonFatte: [], creato: adesso, da: nomeGov() } });
+        }
+      }
+      if (!ops.length) return "Quelle pulizie non ci sono più: non ho cambiato niente.";
+      await S.db.scrivi(ops);
+      for (const o of ops) { if (o.tipo === "aggiorna" && S.pulizie[o.id]) Object.assign(S.pulizie[o.id], o.dati); else if (o.tipo === "salva") S.pulizie[o.id] = { ...o.dati }; }
+      disegna();
+      return `Fatto: ${quandoTesto(a.giorno)} ${a.righe.map(r => camera(r.camera).nome).join(", ")} ${a.chi.length === 2 ? "le fanno " + a.chi.map(SIG).join(" e ") : "la fa " + SIG(a.chi[0])}. Lo vedono nella loro giornata.`;
+    }
+    case "incarico": {
+      const id = `${a.giorno}_${a.camera || "generale"}_inc${Date.now().toString(36)}`;
+      const dati = { id, data: a.giorno, camera: a.camera || null, zona: a.chi, tipo: "extra", titolo: a.cosa, passi: [], minuti: a.minuti, importo: a.euro, stato: "da_fare", origine: "mano", creato: adesso, da: nomeGov() };
+      await S.db.salva("pulizie", id, dati, false); S.pulizie[id] = dati; disegna();
+      return `Fatto: ${SIG(a.chi)} lo trova ${quandoTesto(a.giorno)} nella sua giornata (${eur(a.euro)}).`;
+    }
+    case "ospite": {
+      const c = a.cambi, pubblico = { ...((S.clienti || {})[a.k] || {}), nome: a.nome, aggiornato: oggi };
+      for (const f of ["modo", "istruzioni", "supplemento"]) if (c[f] != null) { if (c[f] === "" || c[f] === 0) delete pubblico[f]; else pubblico[f] = c[f]; }
+      const tutti = { ...(S.clienti || {}), [a.k]: pubblico }; S.clienti = tutti;
+      await S.db.salva("impostazioni", "clienti", tutti, false);
+      if (c.notaPrivata != null) {
+        const priv = { ...(S.clientiPrivati || {}) }; if (c.notaPrivata) priv[a.k] = { nome: a.nome, nota: c.notaPrivata, aggiornato: oggi }; else delete priv[a.k];
+        S.clientiPrivati = priv; await S.db.salva("importazioni", "clienti-privati", priv, false);
+      }
+      disegna(); pianifica();
+      return `Fatto: la scheda di ${a.nome} è aggiornata. Le signore la vedono nelle sue camere da adesso.`;
+    }
+    case "camera": {
+      const c = a.cambi, cam = a.camera, fatti = [];
+      const flag = {}; for (const f of ["frigo", "balconi", "strada"]) if (c[f] != null) { const x = { ...(flagsGov()[f] || {}) }; if (c[f]) x[cam] = true; else delete x[cam]; flag[f] = x; }
+      if (Object.keys(flag).length) { await salvaGov(flag); fatti.push("dotazioni"); }
+      if (c.taglia) { const l = JSON.parse(JSON.stringify(S.listino)); l.taglia = { ...(l.taglia || {}), [cam]: c.taglia }; S.listino = L.listinoCompleto(l); await S.db.salva("impostazioni", "listino", { ...S.listino, aggiornato: adesso }, false); fatti.push("grandezza"); }
+      if (c.signora) {
+        const sq = squadra(), nuovo = { ...(S.squadra || {}) };
+        for (const z of Object.keys(sq)) { const cur = new Set(sq[z].camere || []); const prima = cur.has(cam); if (z === c.signora) cur.add(cam); else cur.delete(cam); if (prima !== cur.has(cam) || z === c.signora) nuovo[z] = { ...sq[z], camere: [...cur] }; }
+        S.squadra = nuovo; await S.db.salva("impostazioni", "squadra", { ...nuovo, aggiornato: adesso }, false); fatti.push("signora");
+      }
+      if (c.nota != null) { const pr = { ...(S.promemoria || {}) }; if (c.nota) pr[cam] = c.nota; else delete pr[cam]; delete pr.id; S.promemoria = pr; await S.db.salva("impostazioni", "promemoria", pr, false); fatti.push("nota"); }
+      disegna(); pianifica();
+      return `Fatto: la scheda di ${camera(cam).nome} è aggiornata.`;
+    }
+    case "dettagli": {
+      const p = S.pulizie[a.id]; if (!p) return "Quella pulizia non c'è più.";
+      await salvaDettagliSilenzioso(p, a.testo); disegna();
+      return `Fatto: ${quandoTesto(a.giorno)} in ${camera(a.camera).nome} la signora legge «${a.testo}».`;
+    }
+    case "busta": {
+      const id = `rett_${a.chi}_${Date.now().toString(36)}`;
+      const dati = { tipo: "rettifica", zona: a.chi, settimana: a.settimana, euro: a.euro, causale: a.motivo, data: oggi, ora: adesso, da: nomeGov() };
+      await S.db.salva("pagamenti", id, dati, false); S.pagamenti[id] = { id, ...dati }; disegna();
+      return `Fatto: nella busta di ${SIG(a.chi)} c'è la riga ${a.euro > 0 ? "+" : "−"}${eur(Math.abs(a.euro))} («${a.motivo}»).`;
+    }
+    case "manutenzione": {
+      if (a.modo === "apri") {
+        const id = `man_${Date.now()}`, c = a.camera ? camera(a.camera) : null;
+        const voce = { pulizia: null, camera: a.camera || null, zona: c ? c.zona : null, data: oggi, titolo: a.cosa, nota: "", da: nomeGov(), fonte: "sofia", foto: false, stato: "aperto", creato: adesso, fatto: null, fattoDa: "" };
+        await S.db.salva("manutenzione", id, voce, false); S.manutenzione[id] = { id, ...voce }; disegna();
+        return `Fatto: il lavoro «${a.cosa}» è nella manutenzione.`;
+      }
+      for (const id of a.ids) if (S.manutenzione[id]) { const patch = { stato: "fatto", fatto: adesso, fattoDa: nomeGov() }; Object.assign(S.manutenzione[id], patch); await S.db.aggiorna("manutenzione", id, patch); }
+      disegna();
+      return `Fatto: ${a.titoli.join(", ")} ${a.titoli.length === 1 ? "è segnato sistemato" : "sono segnati sistemati"}.`;
+    }
+    case "direzione": {
+      if (a.modo === "presente") { const p = { ...argonConf().presenze }; if (a.presente) p[a.giorno] = true; else delete p[a.giorno]; for (const k of Object.keys(p)) if (k < L.aggiungiGiorni(oggi, -30)) delete p[k]; await salvaArgon({ presenze: p }); return `Fatto: ${quandoTesto(a.giorno)} ${a.presente ? "ci sei tu" : "non ci sei"}.`; }
+      if (a.modo === "visto") { await daiVisto(a.id); return `Fatto: Visto della direzione al ${pianoBreve(a.zona)}.`; }
+      const v = S.visti[a.id]; if (!v) return "Quel lavoro non lo trovo più.";
+      await segnaDifetto(a.id, a.voce, "no", v.vistoDa && v.vistoDa !== "direzione" ? v.vistoDa : altraSignora(v.zona));
+      return `Fatto: «${a.voce.nome}» segnata non fatta.`;
+    }
+    case "pagata": {
+      const id = `${a.chi}_${a.chiave}`;
+      await S.db.salva("pagamenti", id, { zona: a.chi, settimana: a.chiave, importo: a.totale, pulizie: a.n, quando: new Date().toLocaleDateString("it-IT", { day: "numeric", month: "short", timeZone: "Europe/Rome" }), istante: adesso, da: S.utente.nome || "" }, false);
+      return `Fatto: la settimana ${L.etichettaSettimana(a.chiave)} di ${SIG(a.chi)} è segnata pagata (${eur(a.totale)}).`;
+    }
+    case "listino": {
+      const l = JSON.parse(JSON.stringify(S.listino)); let o = l;
+      for (let i = 0; i < a.campo.length - 1; i++) { o[a.campo[i]] = { ...(o[a.campo[i]] || {}) }; o = o[a.campo[i]]; }
+      o[a.campo[a.campo.length - 1]] = a.valore;
+      S.listino = L.listinoCompleto(l); await S.db.salva("impostazioni", "listino", { ...S.listino, aggiornato: adesso }, false); disegna(); pianifica();
+      return `Fatto: ${a.testo} adesso ${a.unita === "€" ? eur(a.valore) : a.valore + " minuti"}.`;
+    }
+    case "annulla": return annullaGiornale(a.id);
+  }
+  return "Fatto.";
+}
+
+// --- «Annulla l'ultima»: prima di ogni «Sì» si tiene com'era (ultime 10 modifiche, su questo telefono) ---------------------
+let GIORNALI = (() => { try { const g = JSON.parse(localStorage.getItem("ricci_giornali") || "[]"); return Array.isArray(g) ? g : []; } catch (e) { return []; } })();
+function salvaGiornali() {
+  GIORNALI = GIORNALI.slice(-10);
+  for (const n of [10, 3, 1]) { try { localStorage.setItem("ricci_giornali", JSON.stringify(GIORNALI.slice(-n))); return; } catch (e) {} }
+}
+function ultimoGiornale() { const g = GIORNALI[GIORNALI.length - 1]; return g && !g.annullato ? g : null; }
+function riassuntoAzione(a) { if (!a) return ""; if (a.tipo === "gruppo") return (a.azioni || []).map(x => riassuntoAzione(x)).join(" · "); return propostaDi(a).replace(/\s*Confermo( tutto)?\?\s*$/, "").replace(/\s+/g, " ").slice(0, 140); }
+async function conGiornale(fn, testo) {
+  const vero = S.db, voci = [], viste = new Set();
+  const prima = async (coll, id) => { const k = coll + "/" + id; if (viste.has(k)) return; viste.add(k); let d = null; try { d = await vero.leggi(coll, id); } catch (e) {} if (d) { d = { ...d }; delete d.id; } voci.push({ coll, id, d }); };
+  const proxy = Object.create(vero);
+  proxy.salva = async (coll, id, dati, merge) => { await prima(coll, id); return vero.salva(coll, id, dati, merge); };
+  proxy.aggiorna = async (coll, id, patch) => { await prima(coll, id); return vero.aggiorna(coll, id, patch); };
+  proxy.cancella = async (coll, id) => { await prima(coll, id); return vero.cancella(coll, id); };
+  proxy.scrivi = async (ops) => { for (const o of ops) await prima(o.coll, o.id); return vero.scrivi(ops); };
+  S.db = proxy;
+  let esito;
+  try { esito = await fn(); } finally { if (S.db === proxy) S.db = vero; }
+  const utili = voci.filter(v => !(v.coll === "impostazioni" && v.id === "chat"));
+  if (!utili.length) return { esito, id: null };
+  const g = { id: "g" + Date.now().toString(36), quando: vero.adesso(), testo: String(testo || "").slice(0, 200), voci: utili };
+  GIORNALI.push(g); salvaGiornali();
+  return { esito, id: g.id };
+}
+async function annullaGiornale(id) {
+  const g = GIORNALI.find(x => x.id === id);
+  if (!g || g.annullato) return "Quella modifica l'ho già annullata (o non la trovo più).";
+  if (ultimoGiornale() !== g) return "Posso annullare solo l'ultima cosa fatta.";
+  const ops = [...g.voci].reverse().map(v => v.d ? { tipo: "salva", coll: v.coll, id: v.id, dati: v.d, merge: false } : { tipo: "cancella", coll: v.coll, id: v.id });
+  await S.db.scrivi(ops);
+  for (const v of g.voci) { const box = { pulizie: S.pulizie, soggiorni: S.soggiorni, manutenzione: S.manutenzione, pagamenti: S.pagamenti, visti: S.visti }[v.coll]; if (box) { if (v.d) box[v.id] = { id: v.id, ...v.d }; else delete box[v.id]; } }
+  g.annullato = true; salvaGiornali(); disegna(); try { pianifica(); } catch (e) {}
+  return `Annullato: «${g.testo.slice(0, 120)}». È tutto com'era prima.`;
+}
+// il tasto «↩ Annulla» resta 30 secondi sotto il «Fatto»
+const ANNULLA_MS = 30000;
+function tastiAttivi(m) { const t = Array.isArray(m && m.tasti) ? m.tasti : []; return t.filter(x => x.k !== "annulla" || (m.annullaFino && Date.now() < m.annullaFino)); }
+
 // Qui la governante fa davvero le cose
 async function eseguiParole(a) {
   if (a.tipo === "gruppo") {          // 0.88: piu' cose confermate con un tocco solo, una dopo l'altra
@@ -3826,6 +4246,7 @@ async function eseguiParole(a) {
     }
     return esiti.join("\n");
   }
+  if (TIPI_MANI.has(a.tipo) || (a.tipo === "messaggio" && a.modo && a.modo !== "imposta")) return eseguiMani(a);   // 1.13.0
   if (a.tipo === "messaggio") { await scriviMessaggio(a.giorno, a.testo); return `Fatto: le signore lo leggono ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)} in cima alla loro schermata.`; }
   if (a.tipo === "fatto") {
     const regole = [a.regola, ...(a.altre || [])], n = [];
@@ -4328,7 +4749,8 @@ function elenchiIA() {
     return `${c.id} = ${c.nome} (${che}, ${S.zone[z]?.nome || z}${SIG(z) ? ", la pulisce " + SIG(z) : ""}${modo})`;
   }).join("\n");
   const regole = regoleGov().map(r => `${r.codice} ${r.posto}/${r.superficie}${r.regola && r.regola !== r.superficie ? ": " + r.regola : ""}${r.ogni ? ` (${G.etichettaOgni(r.ogni).toLowerCase()})` : ""}`).join("\n");
-  return { camere, regole, nome: nomeGov(), gesti: GESTI.ELENCO_GESTI, taccuino: taccuinoPerIA() };
+  const signoreIA = signore().map(z => `${z.id} = ${SIG(z.id)} (${z.zonaNome})`).join(" · ");   // 1.13.0
+  return { camere, regole, nome: nomeGov(), gesti: GESTI.ELENCO_GESTI, taccuino: taccuinoPerIA(), signore: signoreIA };
 }
 
 // --- la fotografia della casa, adesso (mai i nomi degli ospiti) ------------
@@ -4377,6 +4799,11 @@ function fotografiaIA() {
       `- ${x.codice} ${x.nome} (si rifà ${G.etichettaOgni(x.ogni).toLowerCase()}): ${x.mai.length ? `mai fatta in ${x.mai.length} ${x.mai.length === 1 ? "posto" : "posti"} (${x.mai.slice(0, 5).join(", ")}${x.mai.length > 5 ? "…" : ""})` : ""}${x.mai.length && x.tardi.length ? "; " : ""}${x.tardi.length ? `in ritardo: ${x.tardi.slice(0, 5).map(t => `${t.nome} ${t.giorni} gg fa`).join(", ")}${x.tardi.length > 5 ? "…" : ""}` : ""}`).join("\n") : "";
   });
   prova("tabellone", () => { const t = tabellone(); return t ? `TABELLONE: copertura ${t.copertura}%, buchi ${t.buchi}.` : ""; });
+  // 1.13.0: le schede (per le mani nuove: prima di scrivere guarda se è già così)
+  prova("schedeCamere", () => { const fl = flagsGov(); return "LE SCHEDE DELLE CAMERE (grandezza, dotazioni, chi la pulisce di solito, nota fissa per le signore):\n" + S.camere.map(c => { const d = [(fl.frigo || {})[c.id] ? "frigo" : "", (fl.balconi || {})[c.id] ? "balcone" : "", (fl.strada || {})[c.id] ? "sulla strada" : ""].filter(Boolean); const sz = signoraDiCamera(c.id); return `- ${c.id} = ${c.nome}: ${c.tipo === "casa" ? "appartamento" : (L.tagliaCamera(S.listino, c.id) === "P" ? "piccola" : "grande")}${d.length ? ", " + d.join(", ") : ""}${sz ? ", di solito " + SIG(sz) : ""}${(S.promemoria || {})[c.id] ? `, nota fissa: «${aCodici(senzaTelefoni(S.promemoria[c.id]))}»` : ""}`; }).join("\n"); });
+  prova("schedeClienti", () => { const v = Object.entries(S.clienti || {}).filter(([, x]) => x && (x.modo || x.istruzioni || x.supplemento)); return v.length ? "LE SCHEDE DEI CLIENTI (in codice):\n" + v.slice(0, 40).map(([k, x]) => `- ${aCodici(x.nome || k)}: ${x.modo ? (G.MODI[x.modo]?.nome || x.modo) : "tipo non scritto"}${x.istruzioni ? `, alle signore: «${aCodici(senzaTelefoni(x.istruzioni))}»` : ""}${x.supplemento ? `, +${eur(x.supplemento)} a pulizia` : ""}`).join("\n") : ""; });
+  prova("messaggiSignore", () => { const o = L.oggiISO(), d = L.aggiungiGiorni(o, 1); const r = [o, d].map(g => { const m = messaggioDelGiorno(g); return m ? `${g === o ? "oggi" : "domani"}: «${aCodici(senzaTelefoni(m.testo))}»` : ""; }).filter(Boolean); return r.length ? "MESSAGGI ALLE SIGNORE GIÀ SCRITTI: " + r.join(" · ") + "." : "MESSAGGI ALLE SIGNORE: nessuno per oggi e domani."; });
+  prova("vociBusta", () => { const ch = L.settimanaCorrente(); const r = Object.values(S.pagamenti || {}).filter(x => x && x.tipo === "rettifica" && x.settimana === ch); return r.length ? "VOCI IN BUSTA QUESTA SETTIMANA: " + r.map(x => `${SIG(x.zona)} ${x.euro > 0 ? "+" : "−"}${eur(Math.abs(x.euro))} (${x.causale})`).join(" · ") + "." : ""; });
   prova("manutenzione", () => {
     const ap = lavoriAperti(); if (!ap.length) return "MANUTENZIONE: niente aperto.";
     return `MANUTENZIONE APERTA (${ap.length}): ` + ap.slice(0, 6).map(m => `${m.titolo}${m.camera ? " in " + camera(m.camera).nome : ""} (da ${L.giorniTra(m.data, oggi)} giorni)`).join(" · ") + ".";
@@ -4583,7 +5010,16 @@ const MESI_PAROLE = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno
 function dateInParole(t) { return String(t).replace(/(\d{4})-(\d{2})-(\d{2})/g, (m, y, mo, d) => `${Number(d)} ${MESI_PAROLE[Number(mo) - 1] || mo} ${y}`); }
 function azioneDaIA(a) {
   if (!a || !a.tipo) return null;
-  if (a.tipo === "messaggio") { const t = String(a.testo || "").trim(); return t ? { tipo: "messaggio", giorno: dataBuona(a.giorno), testo: t.slice(0, 300) } : null; }
+  if (TIPI_MANI.has(a.tipo)) return azioneManiDaIA(a);   // 1.13.0
+  if (a.tipo === "messaggio") {
+    const modo = /togli|cancell|svuot|elimin|leva/i.test(String(a.modo || "")) ? "togli" : /aggiung|allung/i.test(String(a.modo || "")) ? "aggiungi" : "imposta";
+    let giorno = dataBuona(a.giorno);
+    if (modo === "togli") { const m = messaggioDelGiorno(giorno); return m ? { tipo: "messaggio", modo, giorno, testo: m.testo } : { tipo: "nonPosso", testo: `Per ${quandoTesto(giorno)} non c'è nessun messaggio alle signore da togliere.` }; }
+    let t = String(a.testo || "").trim(); if (!t) return null;
+    // 1.13.0 (Michele: "oggi c'è ancora quel messaggio di domani"): «Domani…» nel messaggio di oggi era per domani; le signore lo leggono quella mattina, senza "domani"
+    if (/^domani\b/i.test(t)) { if (giorno === L.oggiISO()) giorno = L.aggiungiGiorni(giorno, 1); t = "Oggi " + t.replace(/^domani\b[\s,]*/i, ""); }
+    return { tipo: "messaggio", modo, giorno, testo: t.slice(0, 300) };
+  }
   if (a.tipo === "istruzione") {
     const passi = (Array.isArray(a.passi) ? a.passi : []).map(x => ({
       testo: String((x && (x.testo || x)) || "").trim().slice(0, 180),
@@ -4768,6 +5204,7 @@ function cardTaccuino() {
 }
 // La proposta di UNA azione, in parole (con "Confermo?" in fondo)
 function propostaDi(a) {
+  if (TIPI_MANI.has(a.tipo) || (a.tipo === "messaggio" && a.modo && a.modo !== "imposta")) return propostaMani(a);   // 1.13.0
   if (a.tipo === "togli") return testoTogli(a);
   if (a.tipo === "messaggio") return `Scrivo alle signore, per ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)}: «${a.testo}». Confermo?`;
   if (a.tipo === "istruzione") return `Lascio a ${a.zona === "tutte" ? "tutte le signore" : SIG(a.zona)}, per ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)}, la spiegazione «${a.titolo}» in ${a.passi.length} ${a.passi.length === 1 ? "passo" : "passi"}:\n${a.passi.map((x, i) => `${i + 1}. ${x.testo}`).join("\n")}\nCon i disegnini che fanno vedere il gesto. Confermo?`;
@@ -4856,7 +5293,7 @@ async function chiediIA(dom) {
 async function rispostaIA(testo, conv, immagine) {
   const sis = sistemaIA(), storia = conv.slice(0, -1).map(m => (m && typeof m.testo === "string" ? { ...m, testo: aCodici(m.testo) } : m));
   let r, ripiego = false;
-  ({ r, ripiego } = await chiediIA({ sistema: sis, storia, testo: aCodici(testo), immagine }));
+  ({ r, ripiego } = await chiediIA({ sistema: sis, storia, testo: aCodici(senzaTelefoni(testo)), immagine }));   // 1.13.0: i numeri di telefono non partono mai
   // 0.98: i codici [O3] tornano nomi (nelle parole e nelle azioni) prima di tutto il resto
   r = { ...r, risposta: daCodici(r.risposta), consiglio: daCodici(r.consiglio), saluto: daCodici(r.saluto), azione: daCodiciProfondo(r.azione || null), azioni: daCodiciProfondo(Array.isArray(r.azioni) ? r.azioni : []) };
   try { window._ultimaIA = { quando: new Date().toISOString(), modello: r.modello, azione: r.azione || null, azioni: r.azioni || [], grezzo: String(r.grezzo || "").slice(0, 4000) }; } catch (e) {}   // per capire cosa ha risposto davvero (si legge dalla console)
@@ -4882,6 +5319,7 @@ async function rispostaIA(testo, conv, immagine) {
   const pronte = [], spiega = [], senzaDove = [];
   for (const a of az) {
     if (a.tipo === "prospettoVuoto") spiega.push(testoProspettoVuoto(a));
+    else if (a.tipo === "nonPosso") spiega.push(a.testo);   // 1.13.0
     else if ((a.tipo === "fatto" || a.tipo === "aggiungi") && !(a.camere || []).length) senzaDove.push(a);
     else pronte.push(a);
   }
@@ -4896,7 +5334,7 @@ async function rispostaIA(testo, conv, immagine) {
   if (pronte.length === 1) return { ...base, testo: `${sopra}\n\n${propostaDi(pronte[0])}${manca}`, tasti: SI_NO(), azione: pronte[0] };
   // 0.88 - PIU' COSE IN UN MESSAGGIO: una proposta sola con tutto, un tocco solo per confermare (o una per una)
   const elenco = pronte.map((a, i) => `${i + 1}. ${propostaDi(a).replace(/\s*Confermo\?\s*$/, "")}`).join("\n");
-  return { ...base, testo: `${sopra}\n\nFaccio queste ${pronte.length} cose:\n${elenco}${manca}\nConfermo tutto?`, tasti: [{ k: "si", testo: "Sì, tutto" }, { k: "una", testo: "Una per una" }, { k: "no", testo: "No, lascia" }], azione: { tipo: "gruppo", azioni: pronte } };
+  return { ...base, testo: `${sopra}\n\nFaccio queste ${pronte.length} cose:\n${elenco}${manca}\nConfermo tutto?`, tasti: [{ k: "si", testo: `Sì, fai tutto (${pronte.length})` }, { k: "una", testo: "Una per una" }, { k: "no", testo: "No, lascia" }], azione: { tipo: "gruppo", azioni: pronte } };
 }
 
 // --- il consiglio del giorno: lei guarda la casa e dice la sua, una volta al giorno
@@ -5409,8 +5847,8 @@ function vistaSofia() {
     const i = base + j;
     const testo = esc(String(m.testo || "").trim()).replace(/\n/g, "<br>");
     if (m.chi === "io") return `<div class="sv-riga sv-io"><div class="cc-io">${testo}</div></div>`;
-    const tasti = (i === iLei && !pensa && Array.isArray(m.tasti) && m.tasti.length)
-      ? `<div class="cc-tasti">${m.tasti.slice(0, 6).map(t => `<button type="button" class="${t.k === "si" ? "cc-si" : t.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(i))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("")}</div>`
+    const tasti = (i === iLei && !pensa && tastiAttivi(m).length)
+      ? `<div class="cc-tasti">${tastiAttivi(m).slice(0, 6).map(t => `<button type="button" class="${t.k === "si" ? "cc-si" : t.k === "no" ? "cc-no" : ""}" data-casa-tasto="${esc(String(i))}|${esc(String(t.k))}">${esc(t.testo)}</button>`).join("")}</div>`
       : (m.scelto ? `<div class="cc-scelto">${esc(m.scelto)}</div>` : "");
     return `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">${testo}</div>${tasti}</div></div>`;
   }).join("");
@@ -6214,9 +6652,14 @@ function vistaPaghe() {
       <div class="muted small" style="margin:2px 0 6px">${rigaConto(t)}</div>
       <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${puoModificare() ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : puoModificare() ? (totale ? `<button class="btnsm" data-pay="${z.id}|${chiave}">Segna come pagata</button>` : `<span class="pill nulla">Niente da pagare</span>`) : `<span class="pill open">da pagare</span>`}</div>
       ${tp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(tp.totale)} ancora da pagare ${puoModificare() ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
-      <details><summary>Dettaglio e storico</summary>${lista.length ? `<div class="rows">${lista.map(p => rigaPagaPulizia(p)).join("")}</div>` : ""}${vistaStorico(z.id)}</details></section>`;
+      <details><summary>Dettaglio e storico</summary>${lista.length ? `<div class="rows">${lista.map(p => rigaPagaPulizia(p)).join("")}</div>` : ""}${righeBusta(t)}${vistaStorico(z.id)}</details></section>`;
   }).join("");
   return cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + (cloudAttivo() ? "" : cardControlliSettimana()) + cardSignore() + cardOrarioBase();
+}
+// 1.13.0: le righe dei premi e delle rettifiche dette a Sofia, una per una con la causale (le vede anche la signora)
+function righeBusta(t) {
+  const l = (t && t.rettifiche && t.rettifiche.lista) || []; if (!l.length) return "";
+  return `<div class="rows busta-voci">${l.map(r => `<div class="row busta-voce ${r.euro > 0 ? "piu" : "meno"}"><span><b>${r.euro > 0 ? "★ Premio extra direzione" : "Rettifica"}</b><br><span class="muted small">${esc(r.causale || "")} · ${esc(L.dataBreve(r.data || t.lista?.[0]?.data || L.oggiISO()))}</span></span><span class="s ${r.euro > 0 ? "done" : "warn"}">${r.euro > 0 ? "+" : "−"}${eur(Math.abs(r.euro))}</span></div>`).join("")}</div>`;
 }
 // "68 € di ore standard (8 ore e mezza) + stelle 27 € + 2 controlli 5 € − tagli 1,20 € = 98,80 €"
 function rigaConto(t) {
@@ -6224,6 +6667,7 @@ function rigaConto(t) {
   if (t.stelle) pezzi.push(`rifiniture <b>${eur(t.stelle)}</b>`);
   if (t.visti && t.visti.pagati) pezzi.push(`${t.visti.pagati} ${t.visti.pagati === 1 ? "Visto" : "Visti"} <b>${eur(t.visti.euroVisti)}</b>${t.visti.n > t.visti.pagati ? ` <span class="small">(${t.visti.n} dati${t.visti.smentiti ? `, ${t.visti.smentiti} smentit${t.visti.smentiti === 1 ? "o" : "i"}` : ""})</span>` : ""}`);
   if (t.visti && t.visti.rifatte) pezzi.push(`rifiniture fatte per la collega <b>${eur(t.visti.rifatte)}</b>`);
+  if (t.rettifiche && t.rettifiche.lista.length) pezzi.push(`${t.rettifiche.euro >= 0 ? "premi" : "rettifiche"} <b>${t.rettifiche.euro >= 0 ? "" : "−"}${eur(Math.abs(t.rettifiche.euro))}</b>`);
   if (t.controlliFatti && t.controlliFatti.n) pezzi.push(`${t.controlliFatti.n} ${t.controlliFatti.n === 1 ? "controllo" : "controlli"} <b>${eur(t.controlliFatti.importo)}</b>${t.controlliFatti.smentiti ? ` (${t.controlliFatti.smentiti} smentit${t.controlliFatti.smentiti === 1 ? "o" : "i"})` : ""}`);
   if (t.bonus && t.bonus.importo) pezzi.push(`bonus <b>${eur(t.bonus.importo)}</b>`);
   let r = pezzi.join(" + ");
@@ -6603,6 +7047,7 @@ function foglioSoggiorno(f) {
       <div class="campo"><label for="sSup">Supplemento per ogni pulizia (€) — ospite impegnativo</label><input id="sSup" type="number" min="0" step="0.5" value="${d.supplemento || 0}" ${mod ? "" : "disabled"}></div>
       <div class="campo"><label for="sNota">Istruzioni per le signore (le vedono)</label><input id="sNota" type="text" value="${esc(d.nota || "")}" placeholder="es. asciugamani doppi, lettino in più" ${mod ? "" : "disabled"}></div>
       <div class="campo"><label for="sPriv">Nota privata (solo proprietari: telefoni, prezzi…)</label><input id="sPriv" type="text" value="${esc(d.notaPrivata || "")}" ${mod ? "" : "disabled"}></div>
+      ${(() => { const cl = clienteNoto, pv = d.nome ? (S.clientiPrivati || {})[L.normNome(nomeCl)] : null; const r = [cl && cl.istruzioni ? `alle signore, sempre: «${esc(cl.istruzioni)}»` : "", cl && cl.supplemento ? `${eur(cl.supplemento)} in più a ogni pulizia` : "", pv && pv.nota ? `nota privata: «${esc(pv.nota)}»` : ""].filter(Boolean); return r.length ? `<p class="note info" style="margin:6px 0 0">La scheda di ${esc(nomeCl)}: ${r.join(" · ")}. Si cambia parlando con ${esc(nomeGov())}.</p>` : ""; })()}
       ${mod ? `<button class="big main" type="submit">Salva</button>` : ""}
     </form>
     ${s && mod ? `<div class="due" style="margin-top:10px"><button class="big undo" data-sog-azione="parteoggi">Parte oggi</button><button class="big undo" data-sog-azione="elimina">Non è venuto (elimina)</button></div>` : ""}`;
