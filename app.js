@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.12.0";
+export const VERSIONE = "1.12.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2140,7 +2140,6 @@ async function hoFinito() {
   const nonChiuse = lavori.filter(p => p.stato === "problema" || p.stato === "non_fatta");
   const rif = rifinitureOggi(z, iso).filter(r => !nonChiuse.some(p => p.id === r.pulizia));   // le camere col problema restano aperte: le loro rifiniture no
   const scelta = await confermaHoFinito(lavori, rif, nonChiuse); if (!scelta) return;
-  if (S.utente.finta) { toast("Stai guardando come la signora: il tasto funziona così, ma qui non salvo niente."); return; }
   const chiuse = lavori.filter(p => p.stato !== "problema" && p.stato !== "non_fatta");
   // 1) le camere si chiudono come col «Ho finito» di ogni camera: lista fatta per intero, le rifiniture non fatte segnate
   //    (anche il giro delle rifiniture nelle altre camere quando oggi è vuoto, e quindi nascosto: la giornata è chiusa)
@@ -2224,7 +2223,6 @@ async function daiVisto(id) {
     if (!L.argonOrario(S.argon)) { toast("Il Visto si dà solo in orario di lavoro."); return; }
   } else if (!proprietario()) return;
   if (addetta() && !await confermaVisto(v)) return;
-  if (S.utente.finta) { toast("Stai guardando come la signora: qui il Visto non si salva."); return; }
   const patch = { vistoOra: S.db.adesso(), vistoDa: addetta() ? S.utente.zona : "direzione", vistoNome: addetta() ? SIG(S.utente.zona) : (S.utente.nome || "Direzione") };
   S.visti[id] = { ...v, ...patch }; disegna();
   try { await S.db.aggiorna("visti", id, patch); } catch (e) { erroreScrittura(e); return; }
@@ -2244,7 +2242,6 @@ function segnalaVisto(id) {
   document.body.appendChild(el);
   el.querySelectorAll("[data-r]").forEach(b => b.onclick = async () => {
     const x = voci.find(y => y.k === b.dataset.r); el.remove(); if (!x) return;
-    if (S.utente.finta) { toast("Stai guardando come la signora: qui non mando niente."); return; }
     const seg = { k: x.k, testo: x.testo, euro: x.euro || 0, da: SIG(S.utente.zona), zona: S.utente.zona, ora: S.db.adesso() };
     S.visti[id] = { ...v, segnalato: seg }; disegna();
     try { await S.db.aggiorna("visti", id, { segnalato: seg }); toast("Detto a Michele. Grazie."); } catch (e) { erroreScrittura(e); }
@@ -8276,6 +8273,7 @@ function apriWhatsApp(testo, numero) {
 }
 // Telegram: manda un messaggio al gruppo (se configurato). Non blocca mai l'app se qualcosa va storto.
 async function inviaTelegram(testo, tipo, { manuale = false, aMe = false } = {}) {
+  if (S.utente && S.utente.finta) aMe = true;   // 1.12.1: «come la signora» (prove di Michele) gli avvisi vanno solo a lui, mai nel gruppo delle signore
   const a = S.avvisi;
   const dove = aMe ? (a && a.chatMio) : (a && a.chat);
   if (!a || !a.token || !dove) { if (manuale) toast(aMe ? "Prima metti la TUA chat in ⋯ → Avvisi automatici." : "Prima compila token e gruppo in ⋯ → Avvisi automatici."); return false; }
