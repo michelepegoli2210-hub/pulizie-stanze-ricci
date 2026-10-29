@@ -5437,3 +5437,101 @@ body.premium .bo-marca .bo-logo{display:block;flex:0 0 auto;width:86px;height:38
 :root[data-theme="dark"] .bo-logo .lg-occhio{fill:#0F1B33}
 :root[data-theme="dark"] .bo-logo .lg-branchia{stroke:#0F1B33}
 @media (max-width:370px){body.premium .bo-marca .bo-logo{width:72px;height:32px;margin-left:-34px}}
+
+/* ============================================================================
+   1.12.0 (Michele, 29/10): ARGONCLOUD. La schermata della signora in due tasti («Ho finito» per chi pulisce, «Visto» per chi
+   c'è dopo), le rifiniture col prodotto e "è a posto se", il patto e le 11 Regole, la scheda della direzione in Paghe.
+   Stesso stile chiaro delle schermate "a prova di nonna" (.nn-*): bianco, scritte grandi, un tasto per volta.
+   ============================================================================ */
+.ag-testa{padding-bottom:14px}
+.ag-ciao-riga{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ag-ciao-riga>div{flex:1 1 auto;min-width:0}
+.ag-ciao-riga .donnina{flex:0 0 auto}
+.ag-ascolta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;margin-top:14px;border:0;border-radius:16px;background:#0F1B33;color:#F3D58C;font:800 20px var(--f-display);cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.12),0 10px 20px -10px rgba(0,0,0,.45)}
+.ag-ascolta .ic{width:28px;height:28px}
+.ag-ascolta:active{transform:scale(.985)}
+.ag-testa .nn-giorno{margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 8px;font:600 15px var(--f-body);color:#78716C}
+.ag-rodaggio{font:700 12px var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:#8C621E;background:#FBF1D6;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.ag-box{background:#FFFFFF;border:1px solid #E6E2D8;border-radius:20px;padding:14px 14px 10px;box-shadow:0 1px 2px rgba(28,25,23,.05),0 10px 22px -14px rgba(28,25,23,.25)}
+.ag-box.oro{border-color:#E2BE6E;background:#FFFDF6}
+.ag-box.oro.vuota{background:#FAF8F3;border-style:dashed}
+.ag-tit{font:800 17px var(--f-body);letter-spacing:.02em;color:#1C1917;margin:0 2px 8px}
+.ag-box.oro .ag-tit{color:#7A5A16}
+.ag-aiuto{font:600 15px/1.35 var(--f-body);color:#78716C;margin:8px 2px 4px}
+.ag-aiuto.centro{text-align:center;margin-top:-2px}
+.ag-cam{display:grid;grid-template-columns:44px 1fr 20px;align-items:center;gap:10px;width:100%;min-height:66px;margin:0 0 8px;padding:10px 10px 10px 8px;border:1px solid #E6E2D8;border-radius:16px;background:#FAFAF9;text-align:left;cursor:pointer;color:#1C1917}
+.ag-cam:last-of-type{margin-bottom:0}
+.ag-cam.fatta{background:#F0FDF4;border-color:#BBF7D0}
+.ag-cam.prob{background:#FEF3C7;border-color:#FCD34D}
+.ag-cam-dis{font-size:30px;line-height:1;text-align:center}
+.ag-cam-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ag-cam-t b{font:800 22px/1.15 var(--f-display);color:#1C1917}
+.ag-cam-t span{font:600 15px/1.3 var(--f-body);color:#57534E}
+.ag-cam-va{font:700 26px var(--f-display);color:#A8A29E;text-align:center}
+.ag-rif{display:flex;flex-direction:column;gap:3px;padding:10px 4px;border-top:1px solid #F0E6CF}
+.ag-rif:first-of-type{border-top:0}
+.ag-rif b{font:800 20px/1.2 var(--f-display);color:#1C1917}
+.ag-rif span{font:600 15px/1.35 var(--f-body);color:#57534E}
+.ag-rif .ag-ok{color:#7A5A16;font-style:italic}
+.ag-finito{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:88px;border:0;border-radius:22px;margin-top:4px;background:linear-gradient(180deg,#F3D58C,#C9A24F 55%,#9C7A2E);color:#1E1608;font:800 32px var(--f-display);letter-spacing:.02em;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.15),0 14px 28px -12px rgba(120,86,20,.6)}
+.ag-finito .ic{width:36px;height:36px}
+.ag-finito:active{transform:scale(.985)}
+.ag-stato{display:flex;align-items:center;gap:12px;min-height:72px;padding:14px 16px;border-radius:18px;background:#FEF3C7;color:#92400E;font:700 18px/1.3 var(--f-body)}
+.ag-stato .ic{width:30px;height:30px;flex:0 0 auto}
+.ag-stato.visto{background:#DCFCE7;color:#166534}
+.ag-piede{text-align:center;padding:6px 0 10px}
+/* il Visto di chi c'è dopo */
+.ag-visto{border:2px solid #15803D;border-radius:22px;padding:14px}
+.ag-visto-t{display:flex;align-items:center;gap:10px}
+.ag-visto-t .ic{width:30px;height:30px;color:#15803D;flex:0 0 auto}
+.ag-visto-t b{display:block;font:800 22px/1.15 var(--f-display);color:#1C1917}
+.ag-visto-t span{display:block;font:600 15px/1.3 var(--f-body);color:#57534E;margin-top:2px}
+.ag-punti{display:flex;flex-direction:column;gap:8px;margin:6px 0 12px}
+.ag-punto{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:14px;background:#F5F5F4;border-left:5px solid #A8A29E}
+.ag-punto.rif{background:#FFFBEB;border-left-color:#C9A24F}
+.ag-punto b{font:800 18px/1.2 var(--f-display);color:#1C1917}
+.ag-punto span{font:600 15px/1.35 var(--f-body);color:#44403C}
+.ag-serve{display:inline-block;vertical-align:middle;margin-left:6px;padding:2px 8px;border-radius:999px;background:#DC2626;color:#fff;font:800 11px var(--f-body);text-transform:uppercase;letter-spacing:.05em}
+.ag-tasto{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:80px;border:0;border-radius:20px;font:800 28px var(--f-display);letter-spacing:.02em;cursor:pointer;color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.12),0 12px 24px -10px rgba(0,0,0,.5)}
+.ag-tasto .ic{width:34px;height:34px}
+.ag-tasto.visto{background:#15803D}
+.ag-tasto[disabled]{background:#A8A29E;color:#F5F5F4;box-shadow:none;cursor:default;font-size:22px}
+.ag-visto-sotto{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-top:8px;font:600 15px/1.3 var(--f-body);color:#57534E}
+.ag-visto-sotto .nonna-link{margin-top:0;padding-left:0}
+.ag-sospesa{border-color:#FCA5A5;background:#FEF2F2}
+/* la conferma di «Ho finito» e del Visto */
+.ag-conferma .chiusura-t span{font:800 20px/1.25 var(--f-display)}
+.ag-dice{font:600 19px/1.4 var(--f-body);color:#1C1917;background:#FFFBEB;border-left:4px solid #C9A24F;border-radius:0 12px 12px 0;padding:10px 12px;margin:6px 0 10px}
+.ag-conferma .chiusura-voce small{text-transform:none;letter-spacing:0;font-size:14px;color:#57534E}
+.ag-conferma .ag-voce{cursor:default;background:var(--campo)}
+.ag-conferma .ag-voce>span:first-child{font-size:22px}
+.ag-difetti{display:flex;flex-direction:column;gap:8px}
+.ag-difetto{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:var(--campo)}
+.ag-difetto b{font:800 17px/1.25 var(--f-body)}
+.ag-difetto b small{font:600 13px var(--f-body);color:var(--muted)}
+.ag-difetto-tasti{display:flex;gap:8px;flex-wrap:wrap}
+/* la scheda della camera con ArgonCloud: si legge */
+.ag-nota-foglio{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:16px;background:#FFFBEB;border:1px solid #FCD34D;color:#1C1917;font:600 17px/1.35 var(--f-body)}
+.ag-nota-foglio .ic{width:28px;height:28px;flex:0 0 auto;color:#8C621E}
+body.argon .sig-riga[disabled]{opacity:1}
+body.argon .sig-blocco-fatto{display:none}
+/* il patto e le 11 Regole */
+.patto h3{font:800 26px/1.1 var(--f-display);margin:0 0 2px}
+.patto .ag-ascolta{margin:10px 0 12px;min-height:52px;font-size:18px}
+.patto-r{display:flex;gap:12px;align-items:flex-start;margin:0 0 12px}
+.patto-r i{flex:0 0 12px;height:12px;border-radius:50%;background:#C9A24F;margin-top:9px}
+.patto-r p{margin:0;font:600 18px/1.4 var(--f-body);color:#1C1917}
+.patto-r p b{color:#0F1B33}
+.patto-regole{display:flex;flex-direction:column;gap:8px}
+.patto-regola{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:14px;background:#F5F5F4}
+.patto-regola.grave{background:#FFFBEB}
+.patto-regola b{font:800 22px/1.1 var(--f-display);color:#0F1B33}
+.patto-regola span{font:600 17px/1.35 var(--f-body);color:#1C1917}
+body.premium .sheet .panel .patto,body.semplice .sheet .panel .patto{padding-bottom:8px}
+/* la direzione (Paghe) */
+.argon-card .ag-giorni{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.argon-card .ag-giorni button{min-width:40px;min-height:34px;border-radius:999px;border:1px solid var(--line);background:var(--campo);color:var(--ink);font:700 13px var(--f-body);cursor:pointer}
+.argon-card .ag-giorni button[aria-pressed="true"]{background:#0F1B33;color:#F3D58C;border-color:#0F1B33}
+.argon-card .ag-riga-tasti{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
+.argon-card .row.one{display:flex;flex-direction:column;align-items:stretch}
+.argon-card .pill.paid{background:#DCFCE7;color:#166534}

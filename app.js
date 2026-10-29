@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.11.0";
+export const VERSIONE = "1.12.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -771,7 +771,7 @@ function casaVaiPagina(k) {
   S.vista = k; disegna(); window.scrollTo(0, 0);
 }
 // 1.7.1: il dettaglio di una riga, scritto grande dentro il riquadro di Sofia
-const DETTAGLI = { pulizie: 1, manutenzione: 1, arrivi: 1, camere: 1, sofia: 1, domani: 1 };
+const DETTAGLI = { pulizie: 1, manutenzione: 1, arrivi: 1, camere: 1, sofia: 1, domani: 1, argon: 1 };
 function dettaglioApri(k) {
   const h = document.getElementById("sofiaHero"); if (!h || h.classList.contains("nuvola-aperta")) return false;
   h.dataset.dettaglio = k;
@@ -814,6 +814,9 @@ function dettaglioHtml(k, ls, fatte) {
     if (dm.length) righe.push(r(`<b>Da chiamare:</b> ${esc(Object.entries(perSig).map(([s, n]) => `${s} (${n} ${n === 1 ? "camera" : "camere"})`).join(", "))}`));
     righe = righe.concat(dm.map(p => r(`<b>${esc(camera(p.camera).nome)}</b> · ${esc(SIG(p.zona))} · ${esc(statoTesto(p))}`)));
     sofia = dice(c && c.testo ? c.testo : ""); tasto = pagina("domani", "Apri il prospetto di domani");
+  } else if (k === "argon") {
+    const a = argonTesseraValore();
+    titolo = `ArgonCloud: <b>${esc(a.v)}</b>`; righe = dettaglioArgon(); tasto = pagina("paghe", "Apri ArgonCloud");
   } else if (k === "sofia") {
     let ap = []; try { ap = statoChatApp().aperte; } catch (e) {}
     titolo = ap.length ? `<b>${ap.length}</b> ${ap.length === 1 ? "domanda" : "domande"} di ${esc(nomeGov())} per te` : `Nessuna domanda di ${esc(nomeGov())}`;
@@ -1102,7 +1105,7 @@ const S = {
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
   board: { modo: (() => { try { return localStorage.getItem("ricci_vista_pr") === "facile" ? "facile" : "mappa"; } catch (e) { return "mappa"; } })(), inizio: L.oggiISO() },   // 1.0.8: o la Facile, se l'ultima volta su questo telefono si e' usata quella   // 1.0.5: si apre sulla mappa delle camere; 1.0.7: la settimana parte da oggi
   camere: CAMERE.slice(), zone: ZONE, squadra: null, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
-  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
+  pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, argon: null, argonGiro: undefined, visti: {}, pulizieAltre: {}, argonErrore: "", impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
   gov: null, clienti: {}, chat: { risposte: {}, conta: {}, automatiche: {}, conversazione: [] }, spesa: { voci: {} }, registro: {}, govSett: G.settimanaGovernante(), govTab: "consigli", tab: { vista: "posti", zona: "", regola: "", soloRosse: false, prova: false },
   spunte: (() => { try { return JSON.parse(localStorage.getItem("ricci_spunte") || "{}"); } catch (e) { return {}; } })(),
@@ -1114,7 +1117,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const eur = L.eur;
 
-function camera(id) { return S.camere.find(c => c.id === id) || G.LUOGHI_COMUNI.find(l => l.id === id) || (id === "stelle" ? { id, nome: "Stelle in altre camere", zona: L.listinoCompleto(S.listino).zonaStelle, tipo: "comune" } : CAMERE_TOLTE[id] ? { id, nome: CAMERE_TOLTE[id].nome, zona: "ap", tipo: "casa", tolta: true } : { id, nome: id, zona: "?", tipo: "camera" }); }
+function camera(id) { return S.camere.find(c => c.id === id) || G.LUOGHI_COMUNI.find(l => l.id === id) || (id === "stelle" ? { id, nome: "Rifiniture in altre camere", zona: L.listinoCompleto(S.listino).zonaStelle, tipo: "comune" } : CAMERE_TOLTE[id] ? { id, nome: CAMERE_TOLTE[id].nome, zona: "ap", tipo: "casa", tolta: true } : { id, nome: id, zona: "?", tipo: "camera" }); }
 function camereZona(z) { return S.camere.filter(c => c.zona === z).sort((a, b) => (a.ordine || 0) - (b.ordine || 0)); }
 function zoneOrdinate() { return Object.entries(S.zone).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0)).map(([k, v]) => ({ id: k, ...v })); }
 // ---- Le signore (0.36): una per zona di lavoro, col suo nome. Michele le cambia in Paghe → "Le signore".
@@ -1287,12 +1290,28 @@ function esciComeSignora() {
   S.utente = S.veroUtente; S.veroUtente = null; S.vista = "altro"; chiudiFoglio();
   aggiornaAscoltoAltrui(); disegna();
 }
-function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; S.messaggi = {}; S.avvisi = null; S.promemoria = {}; S.taccuino = []; }
+function fermaAscolto() { for (const f of S.stop) { try { f(); } catch (e) {} } S.stop = []; if (stopAltrui) { stopAltrui(); stopAltrui = null; } S.caricati = { pulizie: false, soggiorni: false, ruoli: false }; S.pulizie = {}; S.pagamenti = {}; S.soggiorni = {}; S.note = {}; S.ruoli = {}; S.controlli = {}; S.controlliA = {}; S.controlliB = {}; S.fattiAltrui = {}; S.impControlli = null; S.messaggi = {}; S.avvisi = null; S.promemoria = {}; S.taccuino = []; if (stopArgon) { stopArgon(); stopArgon = null; } S.visti = {}; S.pulizieAltre = {}; S.argon = null; S.argonGiro = undefined; S.argonErrore = ""; }
 let stopAltrui = null;
+// 1.12.0 ArgonCloud: i Visti (tutti) e, per le signore, le pulizie delle colleghe (per sapere chi c'è in albergo e dare il Visto).
+// Si ascoltano solo da acceso; se le regole di Firestore non sono ancora quelle nuove, niente avvisi a schermo: lo vede Michele in Paghe.
+let stopArgon = null;
+function aggiornaAscoltoArgon() {
+  const serve = !!(S.argon && S.argon.attivo && S.utente && S.db);
+  if (!serve && stopArgon) { stopArgon(); stopArgon = null; S.visti = {}; S.pulizieAltre = {}; S.argonGiro = undefined; }
+  if (serve && !stopArgon) {
+    const oggi = L.oggiISO(), stops = [];
+    const silenzio = (e) => { console.warn("argon", e?.code || e); S.argonErrore = e?.code || "errore"; disegna(); };
+    stops.push(S.db.ascolta("visti", { where: [["data", ">=", S.argon.da || L.aggiungiGiorni(oggi, -70)]] }, (m) => { S.visti = m; S.argonErrore = ""; disegna(); argonVenerdi(); }, silenzio));
+    if (proprietario()) stops.push(S.db.ascoltaDoc("importazioni", "argon-giro", (d) => { S.argonGiro = d ? { ...d } : null; disegna(); argonVenerdi(); }, silenzio));   // la cosa da guardare del venerdì: solo i proprietari
+    if (addetta()) stops.push(S.db.ascolta("pulizie", { where: [["__id__", ">=", L.aggiungiGiorni(oggi, -8)], ["__id__", "<", L.aggiungiGiorni(oggi, 8)]] }, (m) => { const z = S.utente.zona; S.pulizieAltre = Object.fromEntries(Object.entries(m).filter(([, p]) => p && p.zona !== z)); disegna(); }, silenzio));
+    stopArgon = () => { for (const f of stops) { try { f(); } catch (e) {} } };
+  }
+}
 // Dalla 0.35 i controlli li decide l'orario di base (LISTINO.controlli): oggi ho controlli se la mia zona ha una quota per questo giorno
-function pulizieTutte() { return { ...S.fattiAltrui, ...S.pulizie }; }
+function pulizieTutte() { return { ...S.fattiAltrui, ...S.pulizieAltre, ...S.pulizie }; }
 function controlliOggi(zona = S.utente?.zona, iso = L.oggiISO()) { return L.controlliDaFare({ zona, iso, listino: S.listino, pulizie: pulizieTutte(), controlli: S.controlli, camere: S.camere, regole: S.regole, adesso: new Date() }); }
-function sonoControllatrice() { if (!addetta()) return false; const l = L.listinoCompleto(S.listino); const q = (l.controlli || {})[S.utente.zona] || {}; return Object.values(q).some(n => Number(n) > 0); }
+// 1.12.0: con ArgonCloud acceso niente controlli incrociati per le signore
+function sonoControllatrice() { if (!addetta() || argonLei()) return false; const l = L.listinoCompleto(S.listino); const q = (l.controlli || {})[S.utente.zona] || {}; return Object.values(q).some(n => Number(n) > 0); }
 // La controllatrice vede le camere FATTE dalle colleghe degli ultimi giorni (solo quelle, solo mentre è di turno)
 function aggiornaAscoltoAltrui() {
   const serve = sonoControllatrice();
@@ -1320,6 +1339,8 @@ function avviaAscolto() {
   // impostazioni condivise
   S.stop.push(db.ascoltaDoc("impostazioni", "camere", d => { if (d?.lista?.length) { const lista = d.lista.filter(c => !CAMERE_TOLTE[c.id]).map(c => { const b = CAMERE.find(x => x.id === c.id); return b ? { ...c, nome: b.nome, piani: b.piani, posti: b.posti ?? c.posti } : c; }); S.camere = [...lista, ...CAMERE.filter(c => !lista.some(x => x.id === c.id))]; } if (d?.zone) S.zone = d.zone; disegna(); pianifica(); }));
   S.stop.push(db.ascoltaDoc("impostazioni", "controlli", d => { S.impControlli = d || null; if (d) delete S.impControlli.id; aggiornaAscoltoAltrui(); aggiornaControllatrice(); disegna(); }));
+  // 1.12.0 ArgonCloud: le impostazioni del metodo (le leggono anche le signore: non stanno nel listino)
+  S.stop.push(db.ascoltaDoc("impostazioni", "argon", d => { S.argon = d ? { ...d } : null; if (S.argon) delete S.argon.id; aggiornaAscoltoArgon(); disegna(); pianifica(); argonVenerdi(); }));
   if (addetta()) {
     S.stop.push(db.ascolta("controlli", { where: [["zonaControllata", "==", u.zona]] }, (m) => { S.controlliA = m; S.controlli = { ...S.controlliA, ...S.controlliB }; disegna(); }, mostraErrore));
     S.stop.push(db.ascolta("controlli", { where: [["zonaControllatrice", "==", u.zona]] }, (m) => { S.controlliB = m; S.controlli = { ...S.controlliA, ...S.controlliB }; disegna(); }, mostraErrore));
@@ -1409,11 +1430,12 @@ async function eseguiPiano() {
 function disegna() {
   const app = $("#app");
   if (!app) return;
-  memoProposte = new Map(); memoRif = new Map(); memoLista = new Map(); ctxMemo = null;
+  memoProposte = new Map(); memoRif = new Map(); memoLista = new Map(); ctxMemo = null; memoVede = new Map();
   disegnaTestata();
   document.body.classList.toggle("nonna", !!(S.utente && addetta()));
   document.body.classList.toggle("semplice", !!(S.utente && addetta() && vistaSignoreSemplice()));
   document.body.classList.toggle("facilissima", !!(S.utente && addetta() && vistaSignoreFacile()));
+  document.body.classList.toggle("argon", !!(S.utente && argonLei()));
   document.body.classList.toggle("vista-manutenzione", !!(S.utente && !addetta() && S.vista === "manutenzione"));
   document.body.classList.toggle("vista-signora", !!(S.utente && !addetta() && (S.vista === "signora" || S.vista === "governante")));
   applicaTema();
@@ -1504,7 +1526,7 @@ function vistaAddetta() {
   let corpo;
   if (S.vista === "soldi") corpo = vistaSoldi(z) + `<section class="card center"><button class="big undo" data-esci>Esci dall'app (poi serve di nuovo la password)</button></section>`;
   else if (S.vista === "controlli" && ctrl) corpo = vistaControlliCollega(z);
-  else corpo = vistaSignoreFacile() ? vistaBimbo(z) : vistaSignoreSemplice() ? vistaNonnaSemplice(z) : vistaNonnaOggi(z);
+  else corpo = argonLei() ? vistaArgon(z) : vistaSignoreFacile() ? vistaBimbo(z) : vistaSignoreSemplice() ? vistaNonnaSemplice(z) : vistaNonnaOggi(z);   // 1.12.0 ArgonCloud
   return corpo + nav;
 }
 
@@ -1545,7 +1567,7 @@ function vistaNonnaOggi(z) {
   const testata = `<section class="pro-testa">
     <div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">${esc(saluto())}, ${esc(nomeSignora())}!</div><div class="pro-frase">${esc(frase)}</div></div>${DONNINA(variante, "media")}</div>
     <div class="pro-riepilogo"><div class="pro-num"><b>${lavori.length}</b><span>camere</span></div><div class="pro-num done"><b>${pulite}</b><span>pulite</span></div><div class="pro-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="pro-num todo"><b>${daFare}</b><span>da pulire</span></div></div>
-    ${(() => { const std = lavori.filter(p => p.minuti && p.origine !== "governante" && p.tipo !== "extra"); const min = std.reduce((s, p) => s + (Number(p.minuti) || 0), 0), eu = std.reduce((s, p) => s + (Number(p.importo) || 0), 0); return min ? `<div class="pro-ore">${ICONA("orologio")}<span>${esc(L.testoOre(min))} standard · <b>${eur(eu)}</b>${lavori.some(p => rifinitureDi(p).some(r => r.euro)) ? " + le stelle" : ""}</span></div>` : ""; })()}
+    ${(() => { const std = lavori.filter(p => p.minuti && p.origine !== "governante" && p.tipo !== "extra"); const min = std.reduce((s, p) => s + (Number(p.minuti) || 0), 0), eu = std.reduce((s, p) => s + (Number(p.importo) || 0), 0); return min ? `<div class="pro-ore">${ICONA("orologio")}<span>${esc(L.testoOre(min))} standard · <b>${eur(eu)}</b>${lavori.some(p => rifinitureDi(p).some(r => r.euro)) ? " + le rifiniture" : ""}</span></div>` : ""; })()}
     ${lavori.length ? `<div class="bar bar-grande"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
     <div class="pro-data-riga"><div class="pro-data">${ICONA("calendario")}<span>${["Oggi", "Domani", "Ieri"].includes(quando) ? esc(quando) + " · " + esc(L.dataLunga(iso)) : esc(L.dataLunga(iso).replace(/^./, ch => ch.toUpperCase()))}</span></div><button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi" : "Altri giorni"}</button></div>
     ${messaggio}${istruzioniDelGiorno(iso, z).length ? `<div class="pro-msg dentro istr-avviso">${ICONA("stella")}<span><b>${esc(nomeGov())} ti ha lasciato ${istruzioniDelGiorno(iso, z).length === 1 ? "una spiegazione" : istruzioniDelGiorno(iso, z).length + " spiegazioni"}</b>: le trovi qui sotto, coi disegni.</span></div>` : ""}${tutteFatte && numeroWhatsApp() ? `<button class="pro-btn verde" style="margin-top:12px;min-height:56px;font-size:15px" data-whatsapp-finito="${iso}">${ICONA("spunta")}<span>Avvisa su WhatsApp che hai finito</span></button>` : ""}</section>`;
@@ -1675,7 +1697,7 @@ function schedaNonna(p) {
   const c = camera(p.camera), id = esc(p.id), cls = statoClasse(p);
   const stelle = p.tipo === "stelle";
   const nome = stelle ? "⭐ Altre camere" : c.nome;
-  let cosa = stelle ? (() => { const rg = righeGiro(p); return `${rg.length} ${rg.length === 1 ? "stella" : "stelle"} da fare`; })() : (p.origine === "governante" ? "⭐ " : "") + titoloLavoro(p);
+  let cosa = stelle ? (() => { const rg = righeGiro(p); return `${rg.length} ${rg.length === 1 ? "rifinitura" : "rifiniture"} da fare`; })() : (p.origine === "governante" ? "⭐ " : "") + titoloLavoro(p);
   const g = p.data === L.oggiISO() ? "oggi" : L.GIORNI[L.giornoSettimana(p.data)];
   const info = [p.partenza ? `${ICONA("esci")}L'ospite parte ${g}` : p.arrivo ? `${ICONA("entra")}Arriva un ospite ${g}` : "", p.dettagli || p.istruzioni ? `${ICONA("nota")}C'è un messaggio per te` : "", testoRifiniture(p) && !stelle ? `⭐ ${esc(testoRifiniture(p))}` : ""].filter(Boolean);
   const statoParola = p.stato === "fatta" ? "Pulita" : p.stato === "in_corso" ? "La stai facendo" : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? "Non fatta" : "Da fare";
@@ -1721,7 +1743,7 @@ function lavoriInPiu(z, iso, rs) {
 function tesseraLavoro(p, perSignora) {
   const c = camera(p.camera), cls = statoClasse(p), fondo = p.origine === "governante";
   if (p.tipo === "stelle") { const rg = p.stato === "fatta" ? (p.rifiniture || []).filter(r => r.euro) : rifinitureDi(p); const euroG = p.stato === "fatta" ? Number(p.extraRifiniture) || 0 : rg.reduce((x, r) => x + (r.euro || 0), 0); const stato = p.stato === "fatta" ? `Fatte ${L.oraBreve(p.ora)}` : (STATI[p.stato] || STATI.da_fare).testo; const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
-    return `<button class="tess ${cls} fondo" ${attr}>${!perSignora ? `<span class="tess-pr">${eur(euroG)}</span>` : ""}<span class="tess-nome">⭐ Altre camere</span><span class="tess-lavoro">${rg.length} ${rg.length === 1 ? "stella" : "stelle"}${perSignora && euroG ? ` · ${eur(euroG)}` : ""}</span><span class="tess-osp">${esc([...new Set(rg.map(r => r.luogoNome || camera(r.luogo).nome))].slice(0, 3).join(", "))}</span><span class="badge ${cls} tess-stato">${stato}</span>${perSignora && p.stato !== "fatta" ? `<span class="tess-az">Tocca per vedere</span>` : ""}</button>`; }
+    return `<button class="tess ${cls} fondo" ${attr}>${!perSignora ? `<span class="tess-pr">${eur(euroG)}</span>` : ""}<span class="tess-nome">⭐ Altre camere</span><span class="tess-lavoro">${rg.length} ${rg.length === 1 ? "rifinitura" : "rifiniture"}${perSignora && euroG ? ` · ${eur(euroG)}` : ""}</span><span class="tess-osp">${esc([...new Set(rg.map(r => r.luogoNome || camera(r.luogo).nome))].slice(0, 3).join(", "))}</span><span class="badge ${cls} tess-stato">${stato}</span>${perSignora && p.stato !== "fatta" ? `<span class="tess-az">Tocca per vedere</span>` : ""}</button>`; }
   const stato = p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : (STATI[p.stato] || STATI.da_fare).testo;
   const azione = perSignora ? (p.stato === "da_fare" ? "Tocca per iniziare" : p.stato === "in_corso" ? "Tocca quando hai finito" : "") : "";
   const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
@@ -1759,9 +1781,9 @@ function rigaSignora(r, p, stato, aperta, nonMotivo) {
 // Un blocco della lista: titolo grande, un solo tasto Fatto, le righe dentro, poi le stelle del blocco (da toccare una per una)
 function bloccoSignora(b, p, statoRiga, motivoRiga, aperta) {
   const st = statoRiga(b.k), motivo = motivoRiga(b.k);
-  const tasto = b.righe.length ? `<button class="sig-blocco-fatto ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>Fatto</span>`}</button>` : "";
+  const tasto = b.righe.length && !argonLei() ? `<button class="sig-blocco-fatto ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>Fatto</span>`}</button>` : "";
   // 0.99.1 (Argon): nella vista semplice il tasto e' UNO, grande, in fondo alla parte (prima si legge, poi si tocca)
-  const giu = b.righe.length ? `<button class="sig-blocco-fatto giu ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto: ${esc(b.nome.toLowerCase())}</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>✓ Fatto: ${esc(b.nome.toLowerCase())}</span>`}</button>` : "";
+  const giu = b.righe.length && !argonLei() ? `<button class="sig-blocco-fatto giu ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto: ${esc(b.nome.toLowerCase())}</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>✓ Fatto: ${esc(b.nome.toLowerCase())}</span>`}</button>` : "";
   return `<section class="sig-box sig-blocco ${st || ""}"><div class="sig-blocco-t"><div><div class="sig-sez-t">${esc(b.nome)}</div>${st === "non" && motivo ? `<div class="sig-non-perche">${esc(motivo)}</div>` : ""}</div>${tasto}</div>
     <div class="sig-lista">${b.righe.map(r => rigaSignora(r, p, st, aperta, "")).join("")}${b.stelle.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div>${giu}</section>`;
 }
@@ -1774,7 +1796,7 @@ function foglioInizio(f) {
   const sempre = promemoriaCamera(p.camera);
   const fondo = p.origine === "governante", extra = p.tipo === "extra";
   const lista = listaDi(p), sp = spunteDi(p.id);
-  const aperta = (p.stato === "da_fare" || p.stato === "in_corso") && addetta();
+  const aperta = (p.stato === "da_fare" || p.stato === "in_corso") && addetta() && !argonLei();   // 1.12.0 ArgonCloud: si legge, non si tocca
   const chiusa = p.stato === "fatta";
   const salvate = new Set(p.spuntate || []), nonSalvate = Object.fromEntries((p.nonFatte || []).map(x => [x.k, x.motivo || ""]));
   const statoRiga = k => chiusa ? (nonSalvate[k] != null ? "non" : salvate.has(k) || !(p.spuntate || []).length ? "fatta" : "") : sp.non[k] ? "non" : sp.fatte[k] ? "fatta" : "";
@@ -1803,11 +1825,11 @@ function foglioInizio(f) {
   let listaHtml = "";
   if (lista) {
     const nStelle = lista.stelle;
-    listaHtml = `<div class="sig-guida">${document.body.classList.contains("semplice") ? "Leggi ogni parte e alla fine tocca <b>Fatto</b>" : "Cosa si fa · un tasto <b>Fatto</b> per ogni blocco"}${nStelle ? `, le <b>★ stelle</b> si toccano una per una` : ""}</div>` + lista.blocchi.map(b => bloccoSignora(b, p, statoRiga, motivoRiga, aperta)).join("");
+    listaHtml = `<div class="sig-guida">${argonLei() ? "Leggi ogni parte. Qui non si tocca niente: alla fine del giro c'è solo <b>«Ho finito»</b>" : document.body.classList.contains("semplice") ? "Leggi ogni parte e alla fine tocca <b>Fatto</b>" : "Cosa si fa · un tasto <b>Fatto</b> per ogni blocco"}${nStelle && !argonLei() ? `, le <b>★ rifiniture</b> si toccano una per una` : nStelle ? `. Le <b>★ rifiniture</b> si pagano dopo il Visto` : ""}</div>` + lista.blocchi.map(b => bloccoSignora(b, p, statoRiga, motivoRiga, aperta)).join("");
     if (lista.zona.length) listaHtml += `<section class="sig-box"><div class="sig-sez-t">Scale, corridoio e lavanderia · oggi</div><div class="sig-lista">${righeZona(lista).map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
   } else if (p.tipo === "stelle") {
     const rg = righeGiro(p); const euroG = rg.reduce((x, r) => x + (r.stella.euro || 0), 0);
-    listaHtml = `<div class="sig-guida">Le ★ stelle di oggi nelle altre camere: entra, fai la cosa scritta, tocca la riga. Niente da pulire oltre questo.${euroG ? ` In tutto <b>${eur(euroG)}</b>.` : ""}</div><section class="sig-box"><div class="sig-sez-t">Camera per camera</div><div class="sig-lista">${rg.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
+    listaHtml = `<div class="sig-guida">Le ★ rifiniture di oggi nelle altre camere: entra, fai la cosa scritta${argonLei() ? "" : ", tocca la riga"}. Niente da pulire oltre questo.${euroG ? ` In tutto <b>${eur(euroG)}</b>.` : ""}</div><section class="sig-box"><div class="sig-sez-t">Camera per camera</div><div class="sig-lista">${rg.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
   } else if (fondo) {
     const r = { k: "G0", tipo: "stella", n: 1, testo: p.titolo, sotto: `${p.minuti || 0} min`, codici: [], stella: { regola: p.regola, luogo: p.camera, come: p.come || "", controllo: "", prodotto: "", note: "" } };
     listaHtml = `<section class="sig-box"><div class="sig-sez-t">Oggi in questa camera · a camera vuota${p.perche?.length ? ` · ${esc(p.perche[0])}` : ""}</div><div class="sig-lista">${rigaSignora(r, p, statoRiga("G0"), aperta, motivoRiga("G0"))}</div></section>`;
@@ -1825,9 +1847,11 @@ function foglioInizio(f) {
   else if (p.stato === "fatta") bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${minutiPulizia(p) != null ? ` · ci hai messo ${esc(L.testoOre(minutiPulizia(p)))}` : ""}${p.minuti ? ` · pagata ${esc(L.testoOre(p.minuti))}, ${eur(p.importo)}` : ""} · brava!</span></div>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>` : ""}`;
   else if (p.stato === "problema") bottone = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Togli il problema, rimetti da pulire</button>` : ""}`;
   else if (p.stato === "non_fatta") bottone = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Rimetti da pulire</button>` : ""}`;
+  if (argonLei() && p.stato !== "fatta") bottone = `<div class="ag-nota-foglio">${ICONA("altoparlante")}<span>Leggi, poi pulisci col telefono in tasca. Quando hai finito tutto il giro, torna indietro e tocca <b>«Ho finito»</b>.</span></div>${(p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}`;
+  else if (argonLei()) bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b> · brava!</span></div>`;
   return `<div class="inizio sig">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
-    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(p.tipo === "stelle" ? "⭐ Altre camere" : c.nome)}</div><div class="inizio-lavoro">${p.tipo === "stelle" ? esc((() => { const rg = righeGiro(p); return `Le stelle di oggi · ${rg.length} ${rg.length === 1 ? "stella" : "stelle"} · ${eur(rg.reduce((x, r) => x + (r.stella.euro || 0), 0))}`; })()) : sottoTarga}</div></div>${BADGE(p)}</div>
+    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(p.tipo === "stelle" ? "⭐ Altre camere" : c.nome)}</div><div class="inizio-lavoro">${p.tipo === "stelle" ? esc((() => { const rg = righeGiro(p); return `Le rifiniture di oggi · ${rg.length} ${rg.length === 1 ? "rifinitura" : "rifiniture"} · ${eur(rg.reduce((x, r) => x + (r.stella.euro || 0), 0))}`; })()) : sottoTarga}</div></div>${BADGE(p)}</div>
     ${diceHtml}${listaHtml}${sempreHtml}${bidoni}
     ${bottone}
     ${aperta ? `<div class="pro-sec"><button class="nonna-link" data-non-riesco="${esc(p.id)}">Non riesco a fare una cosa</button><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}
@@ -1872,18 +1896,18 @@ function vistaSettimanaLista(z) {
 
 function vistaSoldi(z) {
   const chiave = L.settimanaCorrente();
-  const t = L.totaleSettimana(S.pulizie, z, chiave, S.regole, S.controlli, S.listino), { lista, totale } = t;
+  const t = L.totaleSettimana(S.pulizie, z, chiave, S.regole, S.controlli, S.listino, extraPaga()), { lista, totale } = t;
   const pagato = S.pagamenti[`${z}_${chiave}`];
   const tariffa = L.listinoCompleto(S.listino).tariffe;
   const wallet = `<section class="wallet"><div class="lbl">Questa settimana · ${L.etichettaSettimana(chiave)}</div><div class="amt">${eur(totale)}</div>
     <div>${lista.length} ${lista.length === 1 ? "pulizia fatta" : "pulizie fatte"}${t.minuti ? ` · ${esc(L.testoOre(t.minuti))} standard` : ""} · ${pagato ? `<span class="pill paid">✓ Pagata ${esc(pagato.quando || "")}</span>` : `<span class="pill open">Si paga sabato alle 14</span>`}</div>
     <div class="small" style="margin-top:6px;opacity:.92">${rigaConto(t)}</div></section>`;
-  const spiega = `<section class="card"><h2 style="margin:0 0 4px">Come si conta</h2><p class="muted small" style="margin:0">Ogni camera vale le sue ore standard: ${eur(tariffa.albergo)} l'ora in albergo${z === "ap" || zoneOrdinate().some(x => x.id === z && /appart/i.test(x.nome)) ? `, ${eur(tariffa.appartamenti)} l'ora negli appartamenti` : ""}. Finisci prima, prendi lo stesso. Le stelle ⭐ si pagano una a una. Se un controllo trova qualcosa non fatto, lo puoi rifare entro sabato alle 14 e non perdi niente.</p></section>`;
+  const spiega = `<section class="card"><h2 style="margin:0 0 4px">Come si conta</h2><p class="muted small" style="margin:0">Ogni camera vale le sue ore standard: ${eur(tariffa.albergo)} l'ora in albergo${z === "ap" || zoneOrdinate().some(x => x.id === z && /appart/i.test(x.nome)) ? `, ${eur(tariffa.appartamenti)} l'ora negli appartamenti` : ""}. Finisci prima, prendi lo stesso. ${argonLei() ? `Le rifiniture ⭐ si pagano una a una, appena arriva il Visto. Ogni Visto che dai vale ${eur(argonConf().vistoEuro)} (fino a ${argonConf().vistiMax} a settimana).` : "Le rifiniture ⭐ si pagano una a una. Se un controllo trova qualcosa non fatto, lo puoi rifare entro sabato alle 14 e non perdi niente."}</p></section>`;
   const elenco = `<section class="card"><h2>Cosa hai fatto questa settimana</h2>${lista.length ? `<div class="rows">${lista.map(p => rigaPagaPulizia(p)).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. Ogni camera che segni pulita compare qui con le sue ore e il suo importo.</p>`}</section>`;
   return wallet + elenco + spiega + vistaStorico(z);
 }
 function vistaStorico(z) {
-  const mesi = L.storicoMensile(S.pulizie, z, S.regole, S.controlli, S.listino);
+  const mesi = L.storicoMensile(S.pulizie, z, S.regole, S.controlli, S.listino, extraPaga());
   const chiavi = Object.keys(mesi).sort().reverse();
   return `<section class="card"><h2>Storico</h2>${chiavi.length ? chiavi.map(k => { const m = mesi[k], [y, mm] = k.split("-");
     return `<div class="month"><div class="row" style="background:transparent;padding:4px 0"><b style="font:800 17px var(--f-display);text-transform:capitalize">${L.MESI[+mm - 1]} ${y}</b><span class="s">${eur(m.totale)} · ${m.n} pulizie</span></div>${Object.keys(m.settimane).sort().reverse().map(sk => { const pd = S.pagamenti[`${z}_${sk}`]; return `<div class="row"><span>Settimana ${L.etichettaSettimana(sk)} ${pd ? `<span class="pill paid">pagata</span>` : `<span class="pill open">da pagare</span>`}</span><span class="s">${eur(m.settimane[sk])}</span></div>`; }).join("")}</div>`; }).join("") : `<p class="muted" style="margin:0">Lo storico si riempie da solo, settimana dopo settimana.</p>`}</section>`;
@@ -1943,7 +1967,7 @@ function foglioControllo(f) {
     <p class="ctrl-aiuto">Guarda e rispondi: <b>SÌ</b> se è a posto, <b>NO</b> se non lo è. Quando dici NO, fai la foto. Il voto lo calcola l'app.</p>
     <div class="ctrl-lista">${standard.map(riga).join("")}</div>
     ${richieste.length ? `<div class="floorlabel" style="margin-top:12px">Le richieste di Michele per questa camera</div><div class="ctrl-lista">${richieste.map(riga).join("")}</div>` : ""}
-    ${stelle.length ? `<div class="floorlabel" style="margin-top:12px">Le stelle che ha segnato fatte</div><p class="muted small" style="margin:0 0 6px">Per ognuna c'è scritto com'è fatta bene. Una stella non fatta non si paga e si toglie una seconda volta (se non la rifà entro sabato alle 14).</p><div class="ctrl-lista">${stelle.map(rigaStella).join("")}</div>` : ""}
+    ${stelle.length ? `<div class="floorlabel" style="margin-top:12px">Le rifiniture che ha segnato fatte</div><p class="muted small" style="margin:0 0 6px">Per ognuna c'è scritto com'è fatta bene. Una stella non fatta non si paga e si toglie una seconda volta (se non la rifà entro sabato alle 14).</p><div class="ctrl-lista">${stelle.map(rigaStella).join("")}</div>` : ""}
     <div class="ctrl-esito ${esito}"><div class="ctrl-esito-t">${senzaRisposta ? `Mancano ${senzaRisposta} risposte` : esito === "bene" ? "✅ Bene" : esito === "cosicosi" ? "🟡 Così così" : "🔴 Male"}</div><div class="small">${senzaRisposta ? "Rispondi a tutte le righe." : esc(esitoTesto)}${!senzaRisposta && punteggio ? ` · ${punteggio} ${punteggio === 1 ? "punto" : "punti"}` : ""}${stelleKo.length ? ` · ${stelleKo.length} ${stelleKo.length === 1 ? "stella non fatta" : "stelle non fatte"} (−${eur(stelleKo.reduce((x, st) => x + 2 * st.euro, 0))})` : ""}${fotoManca.length ? `<br><b>Manca la foto</b> su ${fotoManca.length} NO.` : ""}</div></div>
     <button class="big ok" id="salvaControllo" ${pronto ? "" : "disabled"}>${mio ? "Conferma il mio controllo" : "Conferma il controllo"}</button>`;
 }
@@ -1985,6 +2009,426 @@ function cardDaRifare(z) {
   const righe = lista.map(({ controllo: c, voci, scade }) => `<div class="rif-blocco"><div class="rif-t"><b>${esc(camera(c.camera).nome)}</b> · ${esc(L.dataBreve(c.data))} · entro ${esc(L.GIORNI[scade.getDay()])} alle ${scade.getHours()}</div>${voci.map(v => `<div class="rif-voce"><span>${v.tipo === "stella" ? "⭐ " : ""}${esc(v.testo)}${v.euro ? ` <span class="muted small">(${eur(v.euro)})</span>` : ""}<br><span class="muted small">${v.tipo === "stella" ? "non fatta: rifalla e fai la foto" : "non a posto: sistemalo e fai la foto"}</span></span><label class="pro-btn verde piccolo">📷 Rifatto<input type="file" accept="image/*" capture="environment" hidden data-rifatto="${esc(c.pulizia)}|${esc(v.id)}"></label></div>`).join("")}</div>`).join("");
   return `<section class="card rif-card"><div class="ctrl-card-t">${ICONA("avviso")}<b>Da rifare entro sabato alle 14</b></div><p class="muted small" style="margin:0 0 8px">Il controllo ha trovato queste cose non a posto. Se le rifai in tempo e mandi la foto, non perdi niente.</p>${righe}</section>`;
 }
+
+// ============================================================================
+//  1.12.0 · ARGONCLOUD (specifiche §109) — le schermate. La testa (chi vede, soldi, scelta del venerdì, fiuto) sta in logica.js.
+//  Due tasti: la signora preme solo «Ho finito» (Sofia le ha letto camere e rifiniture la mattina, e gliele rilegge alla fine);
+//  chi c'è dopo in albergo guarda i punti scritti sopra il tasto e preme «Visto» (3 €). Le rifiniture entrano in busta col Visto.
+//  La direzione: «Visto direzione» (senza soldi), «Ho trovato non fatto», il giro del venerdì alle 12:30, il fiuto di Sofia.
+// ============================================================================
+function argonConf() { return L.argonCompleto(S.argon); }
+function cloudAttivo(iso = L.oggiISO()) { return L.argonVale(S.argon, iso); }
+function argonLei() { return addetta() && cloudAttivo(); }
+function extraPaga() { return { visti: S.visti || {}, argon: argonConf() }; }
+function zoneAttive() { return signore().map(z => z.id); }
+let memoVede = new Map();   // si svuota a ogni disegna (come memoRif)
+function chiVedeIl(zona, iso) { const k = `${zona}|${iso}`; if (!memoVede.has(k)) memoVede.set(k, L.chiVede(argonConf(), zona, iso, pulizieTutte(), S.camere, zoneAttive())); return memoVede.get(k); }
+function nomiChiVede(set) { return [...set].map(z => z === "direzione" ? "la direzione" : SIG(z)); }
+function vistoDelGiorno(zona, iso = L.oggiISO()) { return L.vistoDi(S.visti, zona, iso); }
+function pianoBreve(z) { return S.zone[z]?.breve || z; }
+function altraSignora(z) { return zoneAttive().find(x => x !== z) || null; }
+// Sofia legge (anche per le signore, col telefono): stesso motore del tasto «Ascolta»
+function argonLeggi(testo, forza = false) {
+  try { VOCE.sbloccaAudio(); } catch (e) {}
+  if (!testo) return;
+  if (VOCE.staParlando() || voceInCorso) { zittisciVoce(); if (!forza) return; }   // un tocco su «Ascolta» mentre parla la ferma; «forza» = ferma e dice questo
+  voceInCorso = true; disegna();
+  parlaTutto(testo, { conf: { ...VOCE.leggiVoce(), motore: proprietario() ? VOCE.leggiVoce().motore : "telefono", attiva: true }, chiave: proprietario() ? confIA().chiave : "" })
+    .then((finita) => { if (!finita) return; voceInCorso = false; applicaBocca(0); labialeFerma(); disegna(); });
+}
+// Le rifiniture pagate di oggi della signora, come le vede chi firma: nome, prodotto, "è a posto se" (dal catalogo)
+function rifinitureOggi(z, iso) {
+  const out = [];
+  for (const p of pulizieDelGiorno(iso, z)) {
+    const lista = p.stato === "fatta" && p.rifiniture ? stelleSalvate(p) : rifinitureDi(p);
+    for (const r of lista) {
+      if (r.sempre || !r.euro) continue;
+      const l = camera(r.luogo || p.camera);
+      out.push({ k: chiaveStella(r), pulizia: p.id, camera: r.luogo || p.camera, luogoNome: r.luogoNome || l.nome, nome: r.parte ? `${r.superficie}: ${r.parte}` : (r.superficie || r.nome), euro: Number(r.euro) || 0, controllo: r.controllo || "", prodotto: r.prodotto && !/^nessuno/i.test(r.prodotto) ? r.prodotto : "", come: r.come || "" });
+    }
+  }
+  return out;
+}
+function testoRif(r) { return `${r.luogoNome} · ${r.nome}`; }
+function elencoParlato(xs) { return xs.length <= 1 ? xs.join("") : xs.slice(0, -1).join(", ") + " e " + xs[xs.length - 1]; }
+// a voce: camera per camera, senza i due punti e le parentesi ("In Alba: filtro del phon col disinfettante, …")
+function nomeParlato(r, conProdotto) { return r.nome.replace(/\s*\([^)]*\)\s*/g, " ").replace(/:\s*/g, " ").replace(/\s+/g, " ").trim().toLowerCase() + (conProdotto && r.prodotto ? `, con ${r.prodotto.toLowerCase()}` : ""); }
+function rifinitureParlate(rif, conProdotto = false) {
+  const per = new Map(); for (const r of rif) { if (!per.has(r.luogoNome)) per.set(r.luogoNome, []); per.get(r.luogoNome).push(nomeParlato(r, conProdotto)); }
+  return [...per.entries()].map(([l, xs]) => `In ${l}: ${conProdotto ? xs.join("; ") : elencoParlato(xs)}.`).join(" ");
+}
+// Quello che Sofia dice la mattina: camere in ordine, rifiniture col prodotto, chi le vede, il tasto da toccare
+function parlatoArgon(lavori, rif, vedono, finito, v) {
+  const nome = nomeSignora();
+  if (!lavori.length) return `${saluto()} ${nome}. Oggi non ci sono camere per te. Riposati!`;
+  if (finito) return v && v.vistoOra ? `${nome}, hai finito e ${v.vistoNome || "la direzione"} ha dato il Visto. Le rifiniture sono in busta. Brava!` : (rif.length ? `${nome}, hai finito. Le rifiniture di oggi aspettano il Visto di ${elencoParlato(vedono) || "chi passa dopo"}. Puoi andare.` : `${nome}, hai finito. Brava, puoi andare.`);
+  const cam = lavori.filter(p => p.tipo !== "stelle").map(p => `${nomeBreveCamera(camera(p.camera))}, ${titoloBase(p).toLowerCase()}${p.partenza ? ", l'ospite parte" : p.arrivo ? ", arriva un ospite" : ""}`);
+  return [`${saluto()} ${nome}.`, cam.length ? `Oggi hai ${cam.length === 1 ? "una camera" : cam.length + " camere"}: ${elencoParlato(cam)}.` : "",
+    rif.length ? `E ${rif.length === 1 ? "una rifinitura" : rif.length + " rifiniture"}. ${rifinitureParlate(rif, true)} ${vedono.length ? `Le vede ${elencoParlato(vedono)}.` : ""}` : (vedono.length ? "Oggi niente rifiniture." : "Oggi sei sola in albergo: solo le camere, niente rifiniture."),
+    "Lavora tranquilla col telefono in tasca. Quando hai finito tutto il giro, tocca il tasto grande: Ho finito."].filter(Boolean).join(" ");
+}
+// ---- la schermata della signora ------------------------------------------------------------------------------------------
+function vistaArgon(z) {
+  const iso = L.oggiISO(), c = argonConf();
+  const lavori = pulizieDelGiorno(iso, z);
+  const v = vistoDelGiorno(z, iso), finito = !!(v && v.finitoOra);
+  const rif = finito ? (v.rifiniture || []) : rifinitureOggi(z, iso);
+  const euroRif = Math.round(rif.reduce((s, r) => s + (Number(r.euro) || 0), 0) * 100) / 100;
+  const vedono = nomiChiVede(chiVedeIl(z, iso));
+  const sosp = L.argonSospesa(S.argon, z, iso) ? (S.argon.sospensioni || {})[z] : null;
+  const camere = lavori.filter(p => p.tipo !== "stelle"), daChiudere = lavori.filter(p => p.stato === "da_fare" || p.stato === "in_corso");
+  let frase, variante;
+  if (!lavori.length) { frase = "Oggi nessuna camera per te: goditi la giornata!"; variante = "saluto"; }
+  else if (finito && v.vistoOra) { frase = `Hai finito, e ${v.vistoNome || "la direzione"} ha dato il Visto. Brava!`; variante = "festa"; }
+  else if (finito) { frase = rif.length ? `Hai finito alle ${L.oraBreve(v.finitoOra)}. Le rifiniture aspettano il Visto.` : `Hai finito alle ${L.oraBreve(v.finitoOra)}. Brava!`; variante = "festa"; }
+  else { frase = `Oggi ${camere.length === 1 ? "una camera" : camere.length + " camere"}${rif.length ? ` e ${rif.length === 1 ? "una rifinitura" : rif.length + " rifiniture"}` : ""}.`; if (rif.length && vedono.length) frase += ` Le vede ${vedono.join(" e ")}.`; else if (!sosp && !vedono.length) frase += " Oggi sei sola: solo le camere."; variante = "scopa"; }
+  const parlato = parlatoArgon(lavori, rif, vedono, finito, v);
+  const testa = `<section class="nn-testa ag-testa">
+    <div class="ag-ciao-riga"><div><div class="nn-ciao">${esc(saluto())}, ${esc(nomeSignora())}!</div><div class="nn-frase">${esc(frase)}</div></div>${DONNINA(variante, "media")}</div>
+    <button class="ag-ascolta" data-istr-voce="argon">${ICONA("altoparlante")}<span>Ascolta ${esc(nomeGov())}</span></button>
+    <span hidden data-istr-testo="argon">${esc(parlato)}</span>
+    <div class="nn-giorno"><span>${esc(L.dataLunga(iso).replace(/^./, ch => ch.toUpperCase()))}</span>${L.argonRodaggio(S.argon, iso) ? `<span class="ag-rodaggio">prime due settimane: si impara</span>` : ""}</div>
+  </section>`;
+  const msg = messaggioDelGiorno(iso);
+  const messaggio = msg ? `<section class="nn-msg"><div class="nn-msg-t">${ICONA("nota")}<span>${esc(msg.da || "Michele")} ti scrive</span></div><div class="nn-msg-x">${esc(msg.testo)}</div></section>` : "";
+  const sospesa = sosp ? `<section class="nn-avviso ag-sospesa">${ICONA("avviso")}<span><b>Fino a ${esc(L.dataLunga(sosp.a))}: solo le camere.</b> Niente rifiniture e niente Visti, per tutte. Poi si ricomincia.</span></section>` : "";
+  const ordine = (p) => p.tipo === "stelle" ? 1 : 0;
+  const righeCamere = [...lavori].sort((a, b) => ordine(a) - ordine(b) || ordineCamera(a.camera) - ordineCamera(b.camera)).map(p => {
+    const stelle = p.tipo === "stelle", nome = stelle ? "Altre camere" : nomeBreveCamera(camera(p.camera));
+    const sotto = stelle ? "solo le rifiniture" : [titoloBase(p) + parteTesto(p), p.partenza ? "l'ospite parte" : p.arrivo ? "arriva un ospite" : "", p.dettagli || p.istruzioni ? "c'è un messaggio" : ""].filter(Boolean).join(" · ");
+    const st = p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
+    return `<button class="ag-cam ${st}" data-dettagli="${esc(p.id)}"><span class="ag-cam-dis" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : disegnoLavoro(p)}</span><span class="ag-cam-t"><b>${esc(nome)}</b><span>${esc(st === "fatta" ? `Pulita${p.ora ? " alle " + L.oraBreve(p.ora) : ""}` : st === "prob" ? (p.nota || "Da sistemare") : sotto)}</span></span><span class="ag-cam-va" aria-hidden="true">›</span></button>`;
+  }).join("");
+  const boxCamere = lavori.length ? `<section class="ag-box"><div class="ag-tit">${camere.length === 1 ? "La camera di oggi" : "Le camere di oggi"}</div>${righeCamere}<p class="ag-aiuto">Tocca una camera per leggere cosa si fa. Non c'è niente da premere dentro.</p></section>` : "";
+  const righeRif = rif.map(r => `<div class="ag-rif"><b>⭐ ${esc(testoRif(r))}</b>${r.prodotto ? `<span>Prodotto: ${esc(r.prodotto)}</span>` : ""}${r.come && !finito ? `<span>Come: ${esc(r.come)}</span>` : ""}${r.controllo ? `<span class="ag-ok">È a posto se: ${esc(r.controllo.charAt(0).toLowerCase() + r.controllo.slice(1))}</span>` : ""}</div>`).join("");
+  const boxRif = !lavori.length ? "" : rif.length ? `<section class="ag-box oro"><div class="ag-tit">${rif.length === 1 ? "La rifinitura di oggi" : `Le rifiniture di oggi`} · ${eur(euroRif)}</div>${righeRif}<p class="ag-aiuto">${finito ? (v.vistoOra ? `Viste da ${esc(v.vistoNome || "la direzione")} alle ${esc(L.oraBreve(v.vistoOra))}: in busta.` : `Entrano in busta appena ${esc(vedono.join(" o ") || "la direzione")} dà il Visto.`) : `Si pagano a parte, dopo il Visto di ${esc(vedono.join(" o ") || "chi passa dopo")}.`}</p></section>`
+    : G.regoleStelle(ctxGov()).zona !== z ? "" : `<section class="ag-box oro vuota"><div class="ag-tit">Rifiniture</div><p class="ag-aiuto">${sosp ? "In questi giorni niente rifiniture." : vedono.length ? "Oggi nessuna rifinitura in programma." : "Oggi sei sola in albergo: solo le camere. Le rifiniture si fanno quando c'è chi le vede."}</p></section>`;
+  let tasto = "";
+  const aperteDopo = finito ? lavori.filter(p => p.stato === "da_fare" || p.stato === "in_corso") : [];
+  if (aperteDopo.length) tasto = `<section class="ag-stato">${ICONA("avviso")}<span><b>Dopo il tuo «Ho finito» è arrivato un lavoro nuovo:</b> ${esc(aperteDopo.map(p => p.tipo === "stelle" ? "rifiniture in altre camere" : nomeBreveCamera(camera(p.camera))).join(", "))}.</span></section><button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO ANCHE QUESTO</span></button>`;
+  else if (lavori.length && !finito) tasto = `<button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO</span></button><p class="ag-aiuto centro">${daChiudere.length ? "Quando hai fatto tutto il giro e le rifiniture." : "Le camere sono già segnate: tocca per chiudere la giornata."}</p>`;
+  else if (finito) tasto = `<section class="ag-stato ${v.vistoOra ? "visto" : ""}">${v.vistoOra ? `${ICONA("spunta")}<span><b>Visto da ${esc(v.vistoNome || "la direzione")}</b> alle ${esc(L.oraBreve(v.vistoOra))}${rif.length ? ` · rifiniture in busta` : ""}</span>` : `${ICONA("orologio")}<span><b>Hai finito alle ${esc(L.oraBreve(v.finitoOra))}.</b>${rif.length ? ` Le rifiniture aspettano il Visto di ${esc(vedono.join(" o ") || "chi passa dopo")}.` : " Brava!"}</span>`}</section>`;
+  const spiegazioni = istruzioniDelGiorno(iso, z).map((x, i) => cardIstruzione(x, i)).join("");
+  const rifiuti = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
+  const bidoni = rifiuti && z === "ap" ? `<div class="nn-avviso">${ICONA("bidone")}<span>Stasera fuori i bidoni: <b>${esc(rifiuti.cosa.replace(/^./, ch => ch.toUpperCase()))}</b></span></div>` : "";
+  const patto = `<div class="ag-piede"><button class="nonna-link" data-patto>Il patto e le 11 Regole</button></div>`;
+  return testa + cardVisto(z) + sospesa + messaggio + spiegazioni + boxCamere + boxRif + tasto + bidoni + patto;
+}
+// «Ho finito»: Sofia rilegge le rifiniture del giorno; si tolgono quelle non fatte; poi tutto si chiude in un colpo
+function confermaHoFinito(lavori, rif, nonChiuse) {
+  const domanda = rif.length ? `Hai fatto le rifiniture? ${rifinitureParlate(rif)} Se sì, tocca: sì, ho finito. Ed esci pure.` : "Hai finito tutto il giro? Se sì, tocca: sì, ho finito.";
+  argonLeggi(domanda, true);
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>${rif.length ? `${esc(nomeGov())} ti rilegge le rifiniture di oggi` : "Hai finito tutto il giro?"}</span></div>
+      <p class="ag-dice">${rif.length ? `Le hai fatte tutte? Se ne manca una, toglile la spunta.` : "Hai finito tutto il giro?"}</p>
+      ${rif.length ? `<div class="chiusura-voci">${rif.map(r => `<label class="chiusura-voce"><input type="checkbox" checked data-voce="${esc(r.k)}@${esc(r.pulizia)}"><span>${esc(testoRif(r))}<small>${eur(r.euro)}</small></span></label>`).join("")}</div>` : ""}
+      ${nonChiuse.length ? `<p class="muted small" style="margin:6px 0">${esc(nonChiuse.map(p => camera(p.camera).nome).join(", "))}: ${nonChiuse.length === 1 ? "resta col suo problema, non la segno pulita" : "restano col loro problema, non le segno pulite"}.</p>` : ""}
+      <button class="big ok" data-si>Sì, ho finito ✓</button><button class="big undo" data-no>Aspetta, torno su</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("[data-si]").onclick = () => { const non = new Set([...el.querySelectorAll("[data-voce]")].filter(x => !x.checked).map(x => x.dataset.voce)); el.remove(); ok({ nonFatte: non }); };
+    el.querySelector("[data-no]").onclick = () => { el.remove(); zittisciVoce(); ok(null); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); zittisciVoce(); ok(null); } };
+  });
+}
+async function hoFinito() {
+  if (!addetta()) return;
+  const z = S.utente.zona, iso = L.oggiISO(), c = argonConf();
+  const lavori = pulizieDelGiorno(iso, z); if (!lavori.length) return;
+  if (!L.argonOrario(S.argon)) { toast(`Il tasto funziona dalle ${c.oreDa} alle ${c.oreA}.`); return; }
+  const nonChiuse = lavori.filter(p => p.stato === "problema" || p.stato === "non_fatta");
+  const rif = rifinitureOggi(z, iso).filter(r => !nonChiuse.some(p => p.id === r.pulizia));   // le camere col problema restano aperte: le loro rifiniture no
+  const scelta = await confermaHoFinito(lavori, rif, nonChiuse); if (!scelta) return;
+  if (S.utente.finta) { toast("Stai guardando come la signora: il tasto funziona così, ma qui non salvo niente."); return; }
+  const chiuse = lavori.filter(p => p.stato !== "problema" && p.stato !== "non_fatta");
+  // 1) le camere si chiudono come col «Ho finito» di ogni camera: lista fatta per intero, le rifiniture non fatte segnate
+  //    (anche il giro delle rifiniture nelle altre camere quando oggi è vuoto, e quindi nascosto: la giornata è chiusa)
+  //    Niente attese tra una camera e l'altra: lo schermo si aggiorna subito e il salvataggio va per conto suo (anche senza rete).
+  const attese = [];
+  for (const p of Object.values(S.pulizie)) if (p && p.data === iso && p.zona === z && p.tipo === "stelle" && p.stato === "da_fare" && !lavori.includes(p)) attese.push(cambiaStato(p, "fatta", "", { tieniFoglio: true, zitto: true }));
+  for (const p of chiuse) {
+    if (p.stato === "fatta") continue;
+    const sp = spunteDi(p.id);
+    for (const r of righeDi(p)) { if (r.tipo === "stella" && scelta.nonFatte.has(`${r.k}@${p.id}`)) { sp.non[r.k] = "non fatta"; delete sp.fatte[r.k]; } else if (!sp.non[r.k]) sp.fatte[r.k] = true; }
+    registraPuliziaFatta(p);
+    attese.push(cambiaStato(p, "fatta", "", { tieniFoglio: true, zitto: true }));
+  }
+  // 2) il documento del Visto: cosa c'è da guardare, scritto sopra il tasto di chi c'è dopo
+  const fatte = rif.filter(r => !scelta.nonFatte.has(`${r.k}@${r.pulizia}`));
+  const id = L.idVisto(z, iso);
+  const v = { zona: z, data: iso, settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga), finitoOra: S.db.adesso(), finitoDa: SIG(z),
+    camere: chiuse.filter(p => p.tipo !== "stelle" && camera(p.camera).tipo !== "casa").map(p => ({ id: p.id, camera: p.camera, nome: camera(p.camera).nome, titolo: titoloLavoro(p), arrivo: !!p.arrivo, comune: camera(p.camera).tipo === "comune" || p.tipo === "fisso" })),   // solo l'albergo: gli appartamenti nessuno li può guardare
+    rifiniture: fatte, euroRifiniture: Math.round(fatte.reduce((s, r) => s + (r.euro || 0), 0) * 100) / 100, rodaggio: L.argonRodaggio(S.argon, iso) };
+  S.visti[id] = { ...(S.visti[id] || {}), ...v, id }; disegna(); window.scrollTo(0, 0);
+  S.db.salva("visti", id, v, true).catch(erroreScrittura);
+  Promise.all(attese).catch(() => {});
+  const vedono = nomiChiVede(chiVedeIl(z, iso));
+  inviaTelegram(`🏁 ${v.finitoDa} ha finito il ${pianoBreve(z)} alle ${L.oraBreve(v.finitoOra)}: ${v.camere.length} ${v.camere.length === 1 ? "camera" : "camere"}${fatte.length ? `, ${fatte.length} rifiniture (${eur(v.euroRifiniture)}) in attesa del Visto` : ""}.`, "pulita");
+  setTimeout(() => argonLeggi(fatte.length ? `Brava ${nomeSignora()}. Hai finito. Le rifiniture aspettano il Visto di ${elencoParlato(vedono) || "chi passa dopo"}. Puoi andare.` : `Brava ${nomeSignora()}, hai finito. Puoi andare.`, true), 400);
+}
+// ---- il «Visto» di chi c'è dopo ----------------------------------------------------------------------------------------
+// Chi può dare il Visto: la collega in albergo quel giorno (o oggi, se il Visto si dà il giorno dopo); la direzione sempre.
+// Un giorno da sola senza rifiniture non chiede nessun Visto ("da sola: solo le camere").
+function serveVisto(v) { return (v.rifiniture || []).length > 0 || chiVedeIl(v.zona, v.data).size > 0; }
+function vistiDaDare(z) {
+  const oggi = L.oggiISO(), ieri = L.aggiungiGiorni(oggi, -1);
+  return Object.values(S.visti || {}).filter(v => v && v.finitoOra && !v.vistoOra && (!z || v.zona !== z) && (v.data === oggi || v.data === ieri) && ((v.camere || []).length || (v.rifiniture || []).length)
+    && (z ? (chiVedeIl(v.zona, v.data).has(z) || chiVedeIl(v.zona, oggi).has(z)) : serveVisto(v))).sort((a, b) => (a.finitoOra < b.finitoOra ? -1 : 1));
+}
+// I punti scritti sopra il tasto: le rifiniture col loro "è a posto se" e, per le camere senza, un punto nascosto a caso (stabile)
+function puntiDelVisto(v) {
+  const out = [], conRif = new Set((v.rifiniture || []).map(r => r.camera));
+  for (const r of v.rifiniture || []) { const cam = (v.camere || []).find(x => x.camera === r.camera); out.push({ rif: true, nome: testoRif(r), testo: r.controllo ? `Guarda: ${r.controllo.charAt(0).toLowerCase() + r.controllo.slice(1)}` : (r.come ? `Com'è fatta bene: ${r.come}` : "Guarda che sia fatta davvero"), serve: !!(cam && cam.arrivo), euro: r.euro }); }
+  for (const cam of v.camere || []) { if (conRif.has(cam.camera)) continue; out.push({ rif: false, nome: `${cam.nome} · ${cam.titolo}`, testo: L.puntoNascosto(v.data, cam.camera, !!cam.comune), serve: !!cam.arrivo }); }
+  return out;
+}
+let timerVisto = null;
+function cardVisto(z) {
+  const lista = vistiDaDare(z); if (!lista.length) return "";
+  const c = argonConf(), adesso = new Date();
+  return lista.map(v => {
+    const id = v.id || L.idVisto(v.zona, v.data);
+    const sblocco = new Date(new Date(v.finitoOra).getTime() + c.minutiVisto * 60000);
+    const grigio = addetta() && adesso < sblocco, fuoriOrario = addetta() && !L.argonOrario(S.argon, adesso);
+    if (grigio) { clearTimeout(timerVisto); timerVisto = setTimeout(disegna, Math.min(60000, sblocco - adesso + 500)); }
+    const mancano = Math.max(1, Math.ceil((sblocco - adesso) / 60000));
+    const punti = puntiDelVisto(v), sosp = L.argonSospesa(S.argon, addetta() ? z : v.zona, v.data);
+    return `<section class="card ag-visto"><div class="ag-visto-t">${ICONA("lista")}<div><b>Il Visto del ${esc(pianoBreve(v.zona))}</b><span>${esc(v.finitoDa || SIG(v.zona))} ha finito alle ${esc(L.oraBreve(v.finitoOra))}${v.data !== L.oggiISO() ? " · ieri" : ""}</span></div></div>
+      <p class="ag-aiuto">Sali e guarda questi punti. Se manca qualcosa, diglielo subito a voce: lo sistema prima di uscire.</p>
+      <div class="ag-punti">${punti.map(x => `<div class="ag-punto ${x.rif ? "rif" : ""}"><b>${x.rif ? "⭐ " : ""}${esc(x.nome)}${x.serve ? ` <span class="ag-serve">serve oggi</span>` : ""}</b><span>${esc(x.testo)}</span></div>`).join("")}</div>
+      <button class="ag-tasto visto" data-dai-visto="${esc(id)}" ${grigio || fuoriOrario ? "disabled" : ""}>${ICONA("spunta")}<span>${grigio ? `VISTO · tra ${mancano} min` : fuoriOrario ? "VISTO · in orario di lavoro" : addetta() ? "VISTO" : "VISTO DIREZIONE"}</span></button>
+      ${addetta() ? `<div class="ag-visto-sotto"><span>${sosp ? "In questi giorni il Visto non si paga." : `${eur(c.vistoEuro)} per te (fino a ${c.vistiMax} a settimana).`}</span><button class="nonna-link" data-visto-segnala="${esc(id)}">Manca qualcosa e lei è già uscita</button></div>` : ""}</section>`;
+  }).join("");
+}
+function confermaVisto(v) {
+  const punti = puntiDelVisto(v);
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>Hai guardato ${punti.length === 1 ? "il punto" : `tutti e ${punti.length} i punti`}?</span></div>
+      <p class="ag-dice">Col Visto dici: è tutto a posto. Se la direzione trova qualcosa non fatto, perdi i tuoi ${eur(argonConf().vistoEuro)}.</p>
+      <button class="big ok" data-si>Sì, è tutto a posto: Visto ✓</button><button class="big undo" data-no>Aspetta, controllo</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("[data-si]").onclick = () => { el.remove(); ok(true); };
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(false); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(false); } };
+  });
+}
+async function daiVisto(id) {
+  const v = S.visti[id]; if (!v || v.vistoOra) return;
+  const c = argonConf();
+  if (addetta()) {
+    if (v.zona === S.utente.zona) return;
+    if (new Date() - new Date(v.finitoOra) < c.minutiVisto * 60000) { toast("Aspetta un momento: prima sali a guardare."); return; }
+    if (!L.argonOrario(S.argon)) { toast("Il Visto si dà solo in orario di lavoro."); return; }
+  } else if (!proprietario()) return;
+  if (addetta() && !await confermaVisto(v)) return;
+  if (S.utente.finta) { toast("Stai guardando come la signora: qui il Visto non si salva."); return; }
+  const patch = { vistoOra: S.db.adesso(), vistoDa: addetta() ? S.utente.zona : "direzione", vistoNome: addetta() ? SIG(S.utente.zona) : (S.utente.nome || "Direzione") };
+  S.visti[id] = { ...v, ...patch }; disegna();
+  try { await S.db.aggiorna("visti", id, patch); } catch (e) { erroreScrittura(e); return; }
+  toast(addetta() ? `Visto dato. ${eur(c.vistoEuro)} in busta per te.` : "Visto della direzione dato: rifiniture in busta.");
+  inviaTelegram(`👁 Visto ${addetta() ? "di " + patch.vistoNome : "della direzione"} al ${pianoBreve(v.zona)} (${v.finitoDa || SIG(v.zona)}) alle ${L.oraBreve(patch.vistoOra)}${(v.rifiniture || []).length ? `: ${v.rifiniture.length} rifiniture confermate (${eur(v.euroRifiniture)})` : ""}.`, "pulita");
+}
+// "Manca qualcosa e lei è già uscita": si dice a Michele (solo a lui) cosa manca; se la camera serve oggi la sistema chi controlla
+function segnalaVisto(id) {
+  const v = S.visti[id]; if (!v) return;
+  const voci = [...(v.rifiniture || []).map(r => ({ k: r.k, testo: testoRif(r), euro: r.euro })), ...(v.camere || []).map(cm => ({ k: "cam:" + cm.camera, testo: `${cm.nome}: la camera`, euro: 0 }))];
+  const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+  const el = document.createElement("div"); el.className = "conferma";
+  el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>Cosa manca?</span></div>
+    <p class="muted" style="margin:0 0 6px">Lo dico solo a Michele. Se la camera serve oggi, sistemala tu: Michele sposta i soldi a te.</p>
+    <div class="chiusura-voci sig-scelta">${voci.map(x => `<button class="big undo" data-r="${esc(x.k)}">${esc(x.testo)}</button>`).join("")}</div>
+    <button class="big close" data-no>Lascia stare</button></div>`;
+  document.body.appendChild(el);
+  el.querySelectorAll("[data-r]").forEach(b => b.onclick = async () => {
+    const x = voci.find(y => y.k === b.dataset.r); el.remove(); if (!x) return;
+    if (S.utente.finta) { toast("Stai guardando come la signora: qui non mando niente."); return; }
+    const seg = { k: x.k, testo: x.testo, euro: x.euro || 0, da: SIG(S.utente.zona), zona: S.utente.zona, ora: S.db.adesso() };
+    S.visti[id] = { ...v, segnalato: seg }; disegna();
+    try { await S.db.aggiorna("visti", id, { segnalato: seg }); toast("Detto a Michele. Grazie."); } catch (e) { erroreScrittura(e); }
+    inviaTelegram(`✋ ${seg.da}: nel ${pianoBreve(v.zona)} (${v.finitoDa}) manca «${x.testo}»${x.euro ? ` (${eur(x.euro)})` : ""}. ${v.finitoDa} è già uscita.`, "argon", { aMe: true });
+  });
+  el.querySelector("[data-no]").onclick = () => el.remove();
+  el.onclick = (e) => { if (e.target === el) el.remove(); };
+}
+// ---- il patto e le 11 Regole (Sofia le legge) ---------------------------------------------------------------------------
+function foglioPatto() {
+  const righe = L.PATTO.map(([t, x]) => `<div class="patto-r"><i></i><p><b>${esc(t)}</b> ${esc(x)}</p></div>`).join("");
+  const regole = L.REGOLE_11.map(r => `<div class="patto-regola ${r.grave ? "grave" : ""}"><b>${r.n}${r.grave ? "★" : ""}</b><span>${esc(r.testo)}</span></div>`).join("");
+  const parlatoPatto = L.PATTO.map(([t, x]) => `${t} ${x}`).join(" ");
+  const parlatoRegole = "Le 11 regole. " + L.REGOLE_11.map(r => `${r.n}. ${r.testo}`).join(" ");
+  return `<div class="patto"><h3>Il patto di pulizia</h3><p class="muted">Le Stanze di Ricci · da leggere insieme il primo giorno</p>
+    <button class="ag-ascolta" data-argon-voce="patto">${ICONA("altoparlante")}<span>${esc(nomeGov())} legge il patto</span></button><span hidden data-argon-testo="patto">${esc(parlatoPatto)}</span>
+    ${righe}
+    <h3 style="margin-top:18px">Le 11 Regole: cos'è «pulito»</h3><p class="muted">★ = conta doppio</p>
+    <button class="ag-ascolta" data-argon-voce="regole">${ICONA("altoparlante")}<span>${esc(nomeGov())} legge le regole</span></button><span hidden data-argon-testo="regole">${esc(parlatoRegole)}</span>
+    <div class="patto-regole">${regole}</div></div>`;
+}
+// ---- la direzione --------------------------------------------------------------------------------------------------------
+async function salvaArgon(patch) {
+  if (!proprietario()) return;
+  const nuovo = { ...(S.argon || {}), ...patch }; delete nuovo.id; S.argon = nuovo; aggiornaAscoltoArgon(); disegna();
+  try { await S.db.salva("impostazioni", "argon", { ...nuovo, aggiornato: S.db.adesso() }, false); } catch (e) { erroreScrittura(e); }
+}
+async function accendiArgon() {
+  const oggi = L.oggiISO(), l = JSON.parse(JSON.stringify(S.listino));
+  try { await S.db.leggiTutti("visti", { where: [["data", ">=", oggi]] }); S.argonErrore = ""; }
+  catch (e) { S.argonErrore = e?.code || "errore"; disegna(); toast("Prima incolla in Firebase le regole nuove (file firestore.rules): senza, le signore non possono dare il Visto."); return; }
+  const prima = JSON.parse(JSON.stringify(l.controlli || {}));
+  for (const z of Object.keys(l.controlli || {})) for (const d of Object.keys(l.controlli[z] || {})) l.controlli[z][d] = 0;
+  await salvaArgon({ ...L.argonCompleto(S.argon), attivo: true, da: oggi, rodaggioFino: L.aggiungiGiorni(oggi, 13), controlliPrima: prima, sospensioni: {} });
+  await salvaListino(l);
+  toast("ArgonCloud acceso: due settimane di rodaggio, si paga tutto.");
+}
+async function spegniArgon() {
+  const l = JSON.parse(JSON.stringify(S.listino)); const prima = S.argon && S.argon.controlliPrima;
+  await salvaArgon({ attivo: false });
+  if (prima) { l.controlli = prima; await salvaListino(l); }
+  toast("ArgonCloud spento: si torna a come prima.");
+}
+// «Ho trovato non fatto»: la rifinitura non si paga e chi ha firmato perde i 3 €; oppure "l'ha fatta la collega" (la camera serviva): i soldi passano a lei
+function difettoVisto(id) {
+  const v = S.visti[id]; if (!v || !proprietario()) return;
+  const altra = v.vistoDa && v.vistoDa !== "direzione" ? v.vistoDa : altraSignora(v.zona);
+  const voci = [...(v.rifiniture || []).filter(r => !(v.difetti || []).some(d => d.k === r.k)).map(r => ({ k: r.k, pulizia: r.pulizia, camera: r.camera, nome: testoRif(r), euro: r.euro, rif: true })), ...(v.camere || []).map(cm => ({ k: "cam:" + cm.camera, pulizia: cm.id, camera: cm.camera, nome: `${cm.nome}: la camera`, euro: 0, rif: false }))];
+  const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+  const el = document.createElement("div"); el.className = "conferma";
+  el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>${esc(pianoBreve(v.zona))} di ${esc(L.dataBreve(v.data))}: cosa hai trovato?</span></div>
+    <p class="muted small" style="margin:0 0 8px">${v.vistoOra && v.vistoDa !== "direzione" ? `Visto da ${esc(v.vistoNome || SIG(v.vistoDa))} alle ${esc(L.oraBreve(v.vistoOra))}: «non fatta» le toglie ${eur(argonConf().vistoEuro)} e a ${esc(v.finitoDa || SIG(v.zona))} la rifinitura.` : "Non c'è ancora il Visto di una collega: si toglie solo la rifinitura."}${v.rodaggio ? " Siamo in rodaggio: lo segno, ma non tolgo niente." : ""}</p>
+    <div class="ag-difetti">${voci.map((x, i) => `<div class="ag-difetto"><b>${x.rif ? "⭐ " : ""}${esc(x.nome)}${x.euro ? ` <small>${eur(x.euro)}</small>` : ""}</b><div class="ag-difetto-tasti"><button class="btnsm" data-d="${i}|no">Non fatta</button>${x.rif && altra ? `<button class="btnsm ghost" data-d="${i}|rifatta">L'ha fatta ${esc(SIG(altra))}</button>` : ""}</div></div>`).join("")}</div>
+    <button class="big close" data-no>Lascia stare</button></div>`;
+  document.body.appendChild(el);
+  el.querySelectorAll("[data-d]").forEach(b => b.onclick = async () => { const [i, modo] = b.dataset.d.split("|"); el.remove(); await segnaDifetto(id, voci[+i], modo, altra); });
+  el.querySelector("[data-no]").onclick = () => el.remove();
+  el.onclick = (e) => { if (e.target === el) el.remove(); };
+}
+async function segnaDifetto(id, x, modo, altra) {
+  const v = S.visti[id]; if (!v || !x) return;
+  const d = { k: x.k, pulizia: x.pulizia, camera: x.camera, nome: x.nome, euro: x.euro || 0, quando: S.db.adesso(), da: S.utente.nome || "Michele", rifattaDa: modo === "rifatta" ? altra : null };
+  const firmato = !!(v.vistoOra && v.vistoDa && v.vistoDa !== "direzione");
+  const patch = { difetti: [...(v.difetti || []), d], smentito: firmato ? true : !!v.smentito, smentitoOra: firmato ? (v.smentitoOra || S.db.adesso()) : (v.smentitoOra || null) };
+  S.visti[id] = { ...v, ...patch }; disegna();
+  try { await S.db.aggiorna("visti", id, patch); } catch (e) { erroreScrittura(e); return; }
+  toast(modo === "rifatta" ? `Segnato: ${x.nome} l'ha fatta ${SIG(altra)}. I soldi passano a lei.` : `Segnato: ${x.nome} non fatta.${firmato ? ` ${v.vistoNome || SIG(v.vistoDa)} perde ${eur(argonConf().vistoEuro)}.` : ""}`);
+  // la seconda volta nello stesso mese: due settimane senza rifiniture e senza Visti, per tutte e due (Michele decide col tasto)
+  if (firmato && !v.rodaggio && L.smentitiNelMese(S.visti, v.vistoDa, v.data).length >= 2 && !L.argonSospesa(S.argon, v.vistoDa, L.oggiISO())) proponiSospensione(v.vistoDa, v.data);
+}
+function proponiSospensione(zona, iso) {
+  const oggi = L.oggiISO(), fino = L.aggiungiGiorni(oggi, 13);
+  const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+  const el = document.createElement("div"); el.className = "conferma";
+  el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>Secondo falso Visto di ${esc(SIG(zona))} a ${esc(L.MESI[+iso.slice(5, 7) - 1])}</span></div>
+    <p class="ag-dice">Come da patto: due settimane senza rifiniture e senza Visti, per tutte e due. Solo le ore. Da oggi a ${esc(L.dataLunga(fino))}.</p>
+    <button class="big ok" data-si>Sì, applica le due settimane</button><button class="big undo" data-no>Non adesso</button></div>`;
+  document.body.appendChild(el);
+  el.querySelector("[data-si]").onclick = async () => { el.remove(); const s = {}; for (const z of zoneAttive()) s[z] = { da: oggi, a: fino, perche: `secondo falso Visto di ${SIG(zona)} a ${L.MESI[+iso.slice(5, 7) - 1]}` }; await salvaArgon({ sospensioni: s }); toast(`Fino a ${L.dataBreve(fino)}: solo le ore, per tutte.`); inviaTelegram(`⛔ Da oggi fino a ${L.dataLunga(fino)}: niente rifiniture e niente Visti, per tutte. Solo le ore.`, "argon"); };
+  el.querySelector("[data-no]").onclick = () => el.remove();
+  el.onclick = (e) => { if (e.target === el) el.remove(); };
+}
+// Il giro del venerdì: alle 12:30 Sofia dice a Michele (solo a lui) quale cosa guardare, scelta a caso tra quelle «viste»
+function testoGiro(g) {
+  if (!g || g.vuoto) return "";
+  const cam = camera(g.camera).nome;
+  return g.tipo === "camera" ? `👁 Il giro del venerdì: guarda ${cam} (${g.perche}). Due minuti, entro domenica.` : `👁 Il giro del venerdì: guarda ${cam}, ${g.nome}${g.controllo ? ` (${g.controllo.charAt(0).toLowerCase() + g.controllo.slice(1)})` : ""}. ${g.perche.charAt(0).toUpperCase() + g.perche.slice(1)}. Due minuti, entro domenica.`;
+}
+let venerdiInCorso = false;
+// Il giro vale da venerdì alle 12:30 a domenica sera (se Michele apre l'app solo sabato, gliela dico sabato)
+function venerdiDi(iso = L.oggiISO()) { const wd = L.giornoSettimana(iso); return wd === 5 ? iso : wd === 6 ? L.aggiungiGiorni(iso, -1) : wd === 0 ? L.aggiungiGiorni(iso, -2) : null; }
+function giroArgon() { const g = S.argonGiro && S.argonGiro.giro, v = venerdiDi(); return g && v && g.venerdi === v ? g : null; }
+async function salvaGiro(giro, avvisoVenerdi) {
+  const dati = { ...(S.argonGiro || {}), giro, ...(avvisoVenerdi ? { avvisoVenerdi } : {}) }; S.argonGiro = dati; disegna();
+  try { await S.db.salva("importazioni", "argon-giro", { ...dati, aggiornato: S.db.adesso() }, false); } catch (e) { console.warn("giro", e?.code || e); }
+}
+async function argonVenerdi() {
+  if (!proprietario() || !S.argon || !S.argon.attivo || S.utente?.finta || venerdiInCorso || S.argonGiro === undefined) return;
+  const oggi = L.oggiISO(), venerdi = venerdiDi(oggi);
+  if (!venerdi || (S.argonGiro && S.argonGiro.avvisoVenerdi === venerdi)) return;
+  const ora = Number(new Date().toLocaleString("it-IT", { hour: "2-digit", hour12: false, timeZone: "Europe/Rome" })), min = Number(new Date().toLocaleString("it-IT", { minute: "2-digit", timeZone: "Europe/Rome" }));
+  if (venerdi === oggi && (ora < 12 || (ora === 12 && min < 30))) return;
+  venerdiInCorso = true;
+  try {
+    const scelta = L.sceltaDirezione({ visti: S.visti, pulizie: S.pulizie, iso: oggi, vedeIl: (z, d) => chiVedeIl(z, d).size > 0 });
+    const giro = scelta ? { venerdi, ...scelta, esito: null } : { venerdi, vuoto: true };
+    await salvaGiro(giro, venerdi);
+    if (scelta) await inviaTelegram(testoGiro(giro), "argon", { aMe: true });
+  } catch (e) { console.warn("venerdì", e); } finally { venerdiInCorso = false; }
+}
+function argonTesseraValore() {
+  const da = vistiDaDare(null).length, g = giroArgon();
+  if (da) return { v: `${da} ${da === 1 ? "Visto da dare" : "Visti da dare"}`, att: true };
+  if (g && !g.vuoto && !g.esito) return { v: `guarda ${camera(g.camera).nome}`, att: true };
+  const seg = Object.values(S.visti || {}).filter(v => v && v.segnalato && !(v.difetti || []).length && v.data >= L.aggiungiGiorni(L.oggiISO(), -3)).length;
+  if (seg) return { v: `${seg} ${seg === 1 ? "segnalazione" : "segnalazioni"}`, att: true };
+  return { v: "tutto a posto", att: false };
+}
+function dettaglioArgon() {
+  const r = (html) => `<span class="dt-r">${html}</span>`;
+  const righe = [];
+  for (const v of vistiDaDare(null)) righe.push(r(`<b>${esc(pianoBreve(v.zona))}</b> · ${esc(v.finitoDa || SIG(v.zona))} ha finito alle ${esc(L.oraBreve(v.finitoOra))}${(v.rifiniture || []).length ? ` · ${v.rifiniture.length} rifiniture ${eur(v.euroRifiniture)}` : ""}<small>aspetta il Visto${(() => { const w = nomiChiVede(chiVedeIl(v.zona, v.data)); return w.length ? " di " + esc(w.join(" o ")) : ""; })()}</small>`));
+  const g = giroArgon();
+  if (g && !g.vuoto && !g.esito) righe.push(r(`<b>Il giro del venerdì:</b> ${esc(testoGiro(g).replace(/^👁 Il giro del venerdì: /, ""))}`));
+  for (const v of Object.values(S.visti || {}).filter(v => v && v.segnalato && v.data >= L.aggiungiGiorni(L.oggiISO(), -3))) righe.push(r(`<b>${esc(v.segnalato.da)}:</b> nel ${esc(pianoBreve(v.zona))} manca «${esc(v.segnalato.testo)}»`));
+  for (const f of L.fiutoArgon(S.visti, S.argon, L.oggiISO()).slice(0, 3)) righe.push(r(`<b>Fiuto ·</b> ${esc(f.testo)}`));
+  return righe;
+}
+// Paghe → ArgonCloud: accendere, le regole in numeri, i Visti della settimana, la direzione
+function cardArgon() {
+  if (!puoModificare()) return "";
+  const c = argonConf(), oggi = L.oggiISO(), chiave = L.settimanaCorrente();
+  const regole = `<p class="muted small" style="margin:0 0 8px">Due tasti. La signora preme solo <b>«Ho finito»</b>: ${esc(nomeGov())} le legge la mattina camere e rifiniture (col prodotto) e gliele rilegge alla fine. Chi c'è dopo in albergo guarda i punti scritti sopra il tasto e preme <b>«Visto»</b> (${eur(c.vistoEuro)}, fino a ${c.vistiMax} a settimana). Le rifiniture entrano in busta solo dopo il Visto e si fanno solo nei giorni in cui c'è chi le vede. Cosa «vista» e trovata non fatta: rifinitura non pagata e ${eur(c.vistoEuro)} tolti a chi ha firmato; la seconda volta nel mese, due settimane di sole ore per tutte e due. Ogni venerdì alle 12:30 ${esc(nomeGov())} ti dice una cosa da guardare.</p>`;
+  if (!c.attivo) return `<section class="card argon-card"><h2 style="margin:0 0 4px">ArgonCloud</h2>${regole}
+    ${S.argonErrore ? `<div class="note warn">Prima incolla le regole nuove di Firestore (file firestore.rules), altrimenti le signore non possono scrivere il Visto.</div>` : ""}
+    <button class="big main" data-argon-accendi>Accendi ArgonCloud</button><button class="big undo" data-patto>Leggi il patto e le 11 Regole</button>
+    <p class="muted small" style="margin:6px 0 0">Da acceso: i controlli incrociati si fermano, le prime due settimane sono rodaggio (si paga tutto, le mancanze si segnano senza togliere niente).</p></section>`;
+  const num = (lab, k, step = 1, unita = "") => `<label for="ag_${k}">${lab}</label><span class="unita"><input id="ag_${k}" type="number" min="0" step="${step}" value="${c[k]}" data-argon-num="${k}"><small>${unita}</small></span>`;
+  const gg = [1, 2, 3, 4, 5, 6];
+  const giri = [...signore().map(z => ({ id: z.id, nome: SIG(z.id) })), { id: "direzione", nome: "La direzione (tu o papà)" }].map(x => `<div class="row" style="grid-template-columns:1fr auto"><span>${esc(x.nome)}</span><span class="ag-giorni">${gg.map(d => `<button aria-pressed="${(c.giriVisto[x.id] || []).map(Number).includes(d)}" data-argon-giro="${x.id}|${d}">${L.GG[d]}</button>`).join("")}</span></div>`).join("");
+  const settimana = Object.values(S.visti || {}).filter(v => v && v.finitoOra && (v.settimana || L.chiaveSettimana(v.finitoOra, S.regole.chiusuraPaga)) === chiave).sort((a, b) => (a.finitoOra < b.finitoOra ? 1 : -1));
+  const rigaV = v => { const id = v.id || L.idVisto(v.zona, v.data); const nRif = (v.rifiniture || []).length, dif = (v.difetti || []).length;
+    return `<div class="row one ag-riga-v"><span><b>${esc(L.dataBreve(v.data))} · ${esc(pianoBreve(v.zona))}</b> (${esc(v.finitoDa || SIG(v.zona))}) finito alle ${esc(L.oraBreve(v.finitoOra))} · ${(v.camere || []).length} camere${nRif ? ` · ${nRif} rifiniture ${eur(v.euroRifiniture)}` : ""}<br><span class="muted small">${v.vistoOra ? `Visto da ${esc(v.vistoNome || v.vistoDa)} alle ${esc(L.oraBreve(v.vistoOra))}` : serveVisto(v) ? "aspetta il Visto" : "da sola: solo le camere, nessun Visto"}${v.smentito ? ` · <b style="color:var(--warn)">smentito</b>` : ""}${dif ? ` · ${v.difetti.map(d => `${d.nome}${d.rifattaDa ? " → " + SIG(d.rifattaDa) : " non fatta"}`).join(", ")}` : ""}${v.segnalato ? ` · ✋ ${esc(v.segnalato.da)}: manca «${esc(v.segnalato.testo)}»` : ""}${v.rodaggio ? " · rodaggio" : ""}</span></span>
+      <span class="ag-riga-tasti">${!v.vistoOra ? `<button class="btnsm" data-dai-visto="${esc(id)}">Visto direzione</button>` : ""}<button class="btnsm ghost" data-visto-difetto="${esc(id)}">Ho trovato non fatto</button></span></div>`; };
+  const g = giroArgon(), giroAperto = g && !g.vuoto;
+  const giro = giroAperto ? `<div class="floorlabel" style="margin-top:12px">Il giro del venerdì</div><div class="row one"><span>${esc(testoGiro(g).replace(/^👁 /, ""))}${g.esito ? `<br><span class="muted small">${g.esito === "ok" ? "Era a posto ✓" : "Trovato non fatto"}</span>` : ""}</span>${!g.esito ? `<span class="ag-riga-tasti"><button class="btnsm" data-argon-giro-esito="ok">Era a posto</button><button class="btnsm ghost" data-argon-giro-esito="no">Non fatto</button></span>` : ""}</div>` : "";
+  const fiuto = L.fiutoArgon(S.visti, S.argon, oggi);
+  const fiutoHtml = fiuto.length ? `<div class="floorlabel" style="margin-top:12px">Il fiuto di ${esc(nomeGov())} (lo vedi solo tu)</div>${fiuto.map(f => `<div class="row one"><span>${esc(f.testo)}</span></div>`).join("")}` : "";
+  const sosp = Object.entries(c.sospensioni).filter(([, s]) => s && s.a >= oggi);
+  const sospHtml = sosp.length ? `<div class="note warn">Sospensione fino a ${esc(L.dataLunga(sosp[0][1].a))}: solo le ore (${esc(sosp[0][1].perche || "")}). <button class="btnsm ghost" data-argon-sosp-togli>Togli</button></div>` : "";
+  const presente = !!c.presenze[oggi];
+  return `<section class="card argon-card"><div class="head"><h2 style="margin:0">ArgonCloud</h2><span class="pill ${L.argonRodaggio(S.argon, oggi) ? "open" : "paid"}">${L.argonRodaggio(S.argon, oggi) ? `rodaggio fino al ${esc(L.dataBreve(c.rodaggioFino))}` : "acceso"}</span></div>
+    <p class="muted small" style="margin:2px 0 8px">Acceso dal ${esc(L.dataLunga(c.da))}. ${S.argonErrore ? "<b>Le regole nuove di Firestore non sono ancora incollate: i Visti non si salvano.</b>" : ""}</p>
+    ${sospHtml}
+    <div class="row"><span>Oggi ci sono io in albergo (le rifiniture si fanno anche se la signora è sola)</span><span class="seg"><button aria-pressed="${presente}" data-argon-presenza="1">Sì</button><button aria-pressed="${!presente}" data-argon-presenza="0">No</button></span></div>
+    <div class="floorlabel" style="margin-top:10px">Questa settimana</div>
+    ${settimana.length ? settimana.map(rigaV).join("") : `<p class="muted small" style="margin:0">Ancora nessun «Ho finito».</p>`}
+    ${giro}${fiutoHtml}
+    <details style="margin-top:10px"><summary>Le regole in numeri</summary>
+      <div class="listino" style="margin-top:8px">${num("Soldi per ogni Visto", "vistoEuro", 0.5, "€")}${num("Visti pagati a settimana, a testa", "vistiMax", 1, "")}${num("Il Visto si accende dopo", "minutiVisto", 1, "min")}${num("I tasti funzionano dalle", "oreDa", 1, "")}${num("…alle", "oreA", 1, "")}</div>
+      <div class="floorlabel" style="margin-top:10px">Chi passa per il Visto, anche senza camere in albergo</div>
+      <p class="muted small" style="margin:0 0 6px">Nei giorni segnati le rifiniture si fanno lo stesso: c'è chi le vede. Negli altri giorni conta chi ha camere in albergo quel giorno.</p>
+      <div class="rows">${giri}</div>
+      <button class="big undo" data-patto style="margin-top:10px">Leggi il patto e le 11 Regole</button>
+      <button class="big undo" data-argon-spegni>Spegni ArgonCloud</button></details>
+    ${regole}</section>`;
+}
+// i tasti di ArgonCloud (schermate e fogli)
+function collegaArgon() {
+  document.querySelectorAll("[data-ho-finito]").forEach(b => b.onclick = () => hoFinito());
+  document.querySelectorAll("[data-dai-visto]").forEach(b => b.onclick = () => daiVisto(b.dataset.daiVisto));
+  document.querySelectorAll("[data-visto-segnala]").forEach(b => b.onclick = () => segnalaVisto(b.dataset.vistoSegnala));
+  document.querySelectorAll("[data-visto-difetto]").forEach(b => b.onclick = () => difettoVisto(b.dataset.vistoDifetto));
+  document.querySelectorAll("[data-patto]").forEach(b => b.onclick = () => apriFoglio({ tipo: "patto" }));
+  document.querySelectorAll("[data-argon-voce]").forEach(b => b.onclick = () => argonLeggi(document.querySelector(`[data-argon-testo="${b.dataset.argonVoce}"]`)?.textContent || ""));
+  document.querySelectorAll("[data-argon-accendi]").forEach(b => b.onclick = () => accendiArgon());
+  document.querySelectorAll("[data-argon-spegni]").forEach(b => b.onclick = () => spegniArgon());
+  document.querySelectorAll("[data-argon-num]").forEach(i => i.onchange = () => { const k = i.dataset.argonNum, v = Number(i.value); if (!Number.isFinite(v) || v < 0) return; salvaArgon({ [k]: v }); });
+  document.querySelectorAll("[data-argon-giro]").forEach(b => b.onclick = () => { const [z, d] = b.dataset.argonGiro.split("|"); const g = { ...argonConf().giriVisto }; const cur = (g[z] || []).map(Number); g[z] = cur.includes(+d) ? cur.filter(x => x !== +d) : [...cur, +d].sort(); salvaArgon({ giriVisto: g }); });
+  document.querySelectorAll("[data-argon-presenza]").forEach(b => b.onclick = () => { const p = { ...argonConf().presenze }; const oggi = L.oggiISO(); if (b.dataset.argonPresenza === "1") p[oggi] = true; else delete p[oggi]; for (const k of Object.keys(p)) if (k < L.aggiungiGiorni(oggi, -30)) delete p[k]; salvaArgon({ presenze: p }); });
+  document.querySelectorAll("[data-argon-sosp-togli]").forEach(b => b.onclick = () => salvaArgon({ sospensioni: {} }));
+  document.querySelectorAll("[data-argon-giro-esito]").forEach(b => b.onclick = () => { const g = giroArgon(); if (!g) return; const esito = b.dataset.argonGiroEsito; salvaGiro({ ...g, esito, esitoOra: S.db.adesso() }); if (esito === "no") { const id = g.visto || (g.zona && g.data ? L.idVisto(g.zona, g.data) : ""); if (id && S.visti[id]) difettoVisto(id); else toast("Segnato. Diglielo tu a voce: quella camera non aveva il Visto."); } });
+}
+setInterval(() => { try { argonVenerdi(); } catch (e) {} }, 5 * 60 * 1000);
 
 // ---- schermate dei proprietari ---------------------------------------------------
 function vistaProprietario() {
@@ -2200,7 +2644,7 @@ function vistaSignora(z) {
   const tutte = giorni.flatMap(g => pulizieDelGiorno(g, z));
   const fatte = tutte.filter(p => p.stato === "fatta").length, problemi = tutte.filter(p => problemaAperto(p)).length;
   const chiavePaga = L.chiaveSettimana(new Date(giorni[3] + "T12:00:00"), S.regole.chiusuraPaga);
-  const paga = L.totaleSettimana(S.pulizie, z, chiavePaga, S.regole, S.controlli);
+  const paga = L.totaleSettimana(S.pulizie, z, chiavePaga, S.regole, S.controlli, S.listino, extraPaga());
   const ctrl = L.zonaControllatrice(S.impControlli, chiavePaga, signore().map(x => x.id)) === z;
   const camere = camereZona(z).map(c => c.nome).join(", ");
   const giornoCard = (g) => { const ls = pulizieDelGiorno(g, z); const msg = messaggioDelGiorno(g); const et = quandoEtichetta(g);
@@ -2252,7 +2696,9 @@ function flagsGov() { return { balconi: (S.gov && S.gov.balconi) || { salvatore:
 let ctxMemo = null;
 function escluseStelle() { const w = L.settimanaCorrente(); const e = (S.gov && S.gov.stelleEscluse && S.gov.stelleEscluse[w]) || []; return new Set(Array.isArray(e) ? e : []); }
 function ctxGov(lun) { if (!lun && ctxMemo) return ctxMemo; const c = ctxGovNuovo(lun); if (!lun) ctxMemo = c; return c; }
-function ctxGovNuovo(lun) { return { listino: L.listinoCompleto(S.listino), escluse: escluseStelle(), lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov(), inizio: (S.gov && S.gov.inizio) || null, materiali: (S.gov && S.gov.materiali) || {}, imp: S.gov, meteo: (S.gov && S.gov.meteo) || {}, regoleBase: S.regole, clienti: S.clienti, ora: oraRoma() }; }
+function ctxGovNuovo(lun) { return { listino: L.listinoCompleto(S.listino), escluse: escluseStelle(), lun: lun || S.govSett, oggi: L.oggiISO(), camere: S.camere, luoghi: G.LUOGHI_COMUNI, soggiorni: soggiorniLista(), pulizie: S.pulizie, regole: regoleGov(), registro: S.registro, soglie: soglieGov(), rinvii: (S.gov && S.gov.rinvii) || {}, flags: flagsGov(), inizio: (S.gov && S.gov.inizio) || null, materiali: (S.gov && S.gov.materiali) || {}, imp: S.gov, meteo: (S.gov && S.gov.meteo) || {}, regoleBase: S.regole, clienti: S.clienti, ora: oraRoma(),
+  // 1.12.0 ArgonCloud: rifiniture solo nei giorni in cui c'è chi le vede; niente in sospensione
+  argon: S.argon && S.argon.attivo ? { vede: (z, d) => !L.argonVale(S.argon, d) || chiVedeIl(z, d).size > 0, sospesa: (z, d) => L.argonSospesa(S.argon, z, d) } : null }; }
 let memoProposte = new Map(), memoRif = new Map(), memoLista = new Map();
 function proposteGov(lun) { const k = lun || S.govSett; if (!memoProposte.has(k)) memoProposte.set(k, G.proposteSettimana(ctxGov(k))); return memoProposte.get(k); }
 // le rifiniture dentro una pulizia normale (per la signora, per la controllatrice e per la paga)
@@ -2281,8 +2727,8 @@ function salvaSpunte() { try { const oggi = L.oggiISO(); for (const k of Object.
 function chiaveStella(r) { return r.comune ? (r.sempre ? "Zgiorno" : `Z${r.regola}|${r.luogo}`) : r.giro ? `S${r.regola}|${r.luogo}` : `S${r.regola}`; }
 // nella domanda finale e nella lista della controllatrice: le istruzioni fisse, le rifiniture a ritmo e le poche cose "sempre" segnate per la domanda
 function sempreDi(p) { return [...promemoriaCamera(p.camera), ...rifinitureDi(p).filter(r => !r.sempre || r.domanda).map(r => `⭐ ${r.nome}`)]; }
-function testoRifiniture(p) { const rf = rifinitureDi(p).filter(r => !r.sempre && !r.comune); return rf.length ? `${rf.length} ${rf.length === 1 ? "stella" : "stelle"} · ${rf.reduce((n, r) => n + r.minuti, 0)} min` : ""; }
-function testoStelleFatte(p) { const n = (p.rifiniture || []).filter(r => r.euro).length; return n ? `${n} ${n === 1 ? "stella" : "stelle"}` : ""; }
+function testoRifiniture(p) { const rf = rifinitureDi(p).filter(r => !r.sempre && !r.comune); return rf.length ? `${rf.length} ${rf.length === 1 ? "rifinitura" : "rifiniture"} · ${rf.reduce((n, r) => n + r.minuti, 0)} min` : ""; }
+function testoStelleFatte(p) { const n = (p.rifiniture || []).filter(r => r.euro).length; return n ? `${n} ${n === 1 ? "rifinitura" : "rifiniture"}` : ""; }
 function idPuliziaGov(c) { return `${c.data}_${c.luogo}_g_${c.regola}`; }
 function haProposteNuove() { try { return localStorage.getItem("ricci_gov_visto") !== S.govSett; } catch (e) { return true; } }
 function ledGovernante() { if (!proprietario()) return false; const r = proposteGov(G.settimanaGovernante()); return r.inRitardo.length > 0 || (r.proposte.length > 0 && haProposteNuove()) || mappaGov().buchi > 0; }
@@ -2928,6 +3374,7 @@ function righeNotizie(ls, fatte, man, dom) {
   out.push(r(ico2("lavori2"), "arancio", "Lavori", man ? `${man} da fare` : "nessuno", "manutenzione", man > 0));
   out.push(r(ico2("arrivi2"), "blu", "Arrivi domani", arrivi.length ? `${arrivi.length} · ${esc(nomi.slice(0, 2).join(", "))}${nomi.length > 2 ? "…" : ""}` : "nessuno", "arrivi", false));
   out.push(r(ico2("camere2"), "oro", "Camere piene", `${piene} su ${S.camere.length}`, "camere", false));
+  if (cloudAttivo()) { const a = argonTesseraValore(); out.push(r(ico2("spunta"), "verde", "ArgonCloud", esc(a.v), "argon", a.att, true)); }   // 1.12.0
   if (dom) out.push(r(ico2("domande2"), "rosso", esc(nomeGov()) + " chiede", `${dom} ${dom === 1 ? "domanda" : "domande"} per te`, "sofia", true, true));
   return out.join("");
 }
@@ -3311,7 +3758,7 @@ function testoQuando(regola, camere) {
 }
 function testoConto(chi) {
   const chiave = L.settimanaCorrente(), righe = signore().filter(z => !chi || z.id === chi).map(z => {
-    const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino);
+    const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino, extraPaga());
     return `${SIG(z.id)} ${eur(t.totale)} (${t.lista.length} ${t.lista.length === 1 ? "lavoro" : "lavori"}${t.stelle ? `, stelle ${eur(t.stelle)}` : ""})`;
   });
   const c = contoProspetto(L.lunediDi(L.oggiISO()), L.aggiungiGiorni(L.lunediDi(L.oggiISO()), 6));
@@ -3905,7 +4352,7 @@ function fotografiaIA() {
   prova("settimana", () => {
     const chiave = L.settimanaCorrente();
     return "SOLDI GIÀ MATURATI QUESTA SETTIMANA: " + signore().map(z => {
-      const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino);
+      const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino, extraPaga());
       return `${SIG(z.id)} ${eur(t.totale)} (ore ${eur(t.ore)}${t.stelle ? ", stelle " + eur(t.stelle) : ""}${t.controlliFatti && t.controlliFatti.importo ? ", controlli " + eur(t.controlliFatti.importo) : ""}${t.tagli ? ", tagliati " + eur(t.tagli) : ""})`;
     }).join(" · ") + ". Di solito spendo circa 100 € a testa a settimana: è il tetto.";
   });
@@ -4019,7 +4466,7 @@ function fotografiaIA() {
   prova("paghe", () => {
     const chiave = L.settimanaPrecedente(L.settimanaCorrente()), righe = [];
     for (const z of signore()) {
-      const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino);
+      const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino, extraPaga());
       if (!t.totale) continue;
       const pg = (S.pagamenti || {})[`${z.id}_${chiave}`];
       righe.push(`${SIG(z.id)} ${eur(t.totale)}: ${pg ? `segnata pagata${pg.quando ? " il " + pg.quando : ""}` : "NON ANCORA SEGNATA COME PAGATA"}`);
@@ -5762,9 +6209,9 @@ function cardContoProspetto() {
 function vistaPaghe() {
   const chiave = L.settimanaCorrente();
   const blocchi = signore().map(z => {
-    const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino), { lista, totale } = t;
+    const t = L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino, extraPaga()), { lista, totale } = t;
     const pd = S.pagamenti[`${z.id}_${chiave}`];
-    const prec = L.settimanaPrecedente(chiave), tp = L.totaleSettimana(S.pulizie, z.id, prec, S.regole, S.controlli, S.listino), pp = S.pagamenti[`${z.id}_${prec}`];
+    const prec = L.settimanaPrecedente(chiave), tp = L.totaleSettimana(S.pulizie, z.id, prec, S.regole, S.controlli, S.listino, extraPaga()), pp = S.pagamenti[`${z.id}_${prec}`];
     return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(SIG(z.id))}</h2><b style="font:800 22px var(--f-display)">${eur(totale)}</b></div>
       <div class="muted">${lista.length} ${lista.length === 1 ? "pulizia" : "pulizie"} · settimana ${L.etichettaSettimana(chiave)}</div>
       <div class="muted small" style="margin:2px 0 6px">${rigaConto(t)}</div>
@@ -5772,23 +6219,28 @@ function vistaPaghe() {
       ${tp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(tp.totale)} ancora da pagare ${puoModificare() ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
       <details><summary>Dettaglio e storico</summary>${lista.length ? `<div class="rows">${lista.map(p => rigaPagaPulizia(p)).join("")}</div>` : ""}${vistaStorico(z.id)}</details></section>`;
   }).join("");
-  return (puoModificare() ? cardContoProspetto() : "") + blocchi + cardControlliSettimana() + cardSignore() + cardOrarioBase();
+  return cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + (cloudAttivo() ? "" : cardControlliSettimana()) + cardSignore() + cardOrarioBase();
 }
 // "68 € di ore standard (8 ore e mezza) + stelle 27 € + 2 controlli 5 € − tagli 1,20 € = 98,80 €"
 function rigaConto(t) {
   const pezzi = [`<b>${eur(t.ore)}</b> di ore standard${t.minuti ? ` (${esc(L.testoOre(t.minuti))})` : ""}`];
-  if (t.stelle) pezzi.push(`stelle <b>${eur(t.stelle)}</b>`);
+  if (t.stelle) pezzi.push(`rifiniture <b>${eur(t.stelle)}</b>`);
+  if (t.visti && t.visti.pagati) pezzi.push(`${t.visti.pagati} ${t.visti.pagati === 1 ? "Visto" : "Visti"} <b>${eur(t.visti.euroVisti)}</b>${t.visti.n > t.visti.pagati ? ` <span class="small">(${t.visti.n} dati${t.visti.smentiti ? `, ${t.visti.smentiti} smentit${t.visti.smentiti === 1 ? "o" : "i"}` : ""})</span>` : ""}`);
+  if (t.visti && t.visti.rifatte) pezzi.push(`rifiniture fatte per la collega <b>${eur(t.visti.rifatte)}</b>`);
   if (t.controlliFatti && t.controlliFatti.n) pezzi.push(`${t.controlliFatti.n} ${t.controlliFatti.n === 1 ? "controllo" : "controlli"} <b>${eur(t.controlliFatti.importo)}</b>${t.controlliFatti.smentiti ? ` (${t.controlliFatti.smentiti} smentit${t.controlliFatti.smentiti === 1 ? "o" : "i"})` : ""}`);
   if (t.bonus && t.bonus.importo) pezzi.push(`bonus <b>${eur(t.bonus.importo)}</b>`);
   let r = pezzi.join(" + ");
   if (t.tagli) r += ` − tagli dei controlli <b>${eur(t.tagli)}</b>`;
-  return r + ` = <b>${eur(t.totale)}</b>`;
+  r += ` = <b>${eur(t.totale)}</b>`;
+  if (t.rifinitureAttesa) r += ` · <span class="small">${eur(t.rifinitureAttesa)} di rifiniture aspettano il Visto</span>`;
+  if (t.rifinitureNonPagate) r += ` · <span class="small" style="color:var(--warn)">${eur(t.rifinitureNonPagate)} di rifiniture non pagate</span>`;
+  return r;
 }
 // Una riga della paga: posto, lavoro, ore standard · €, stelle, esito del controllo
 function rigaPagaPulizia(p) {
   const e = p.esito;
   const esitoHtml = e ? `<br><span class="small" style="color:${e.esito === "bene" ? "var(--done)" : "var(--warn)"}">Controllo: ${esc(L.nomeEsito(e.esito, S.regole))}${e.recuperato && e.esitoScritto !== e.esito ? " (rifatto in tempo)" : ""}${e.stelleNonFatte.length ? ` · ${e.stelleNonFatte.length} ${e.stelleNonFatte.length === 1 ? "stella non fatta" : "stelle non fatte"} −${eur(e.penaleStelle)}` : ""}</span>` : (p.voto != null ? `<br><span class="muted small">voto ${esc(p.voto)}</span>` : "");
-  return `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}<br><span class="muted">${p.minuti ? esc(L.testoOre(p.minuti)) + " · " : ""}${eur(p.importo)}${minutiPulizia(p) != null && p.minuti ? ` <span class="small">(ci ha messo ${esc(L.testoOre(minutiPulizia(p)))})</span>` : ""}${p.extraRifiniture ? ` + ${esc(testoStelleFatte(p))} ${eur(p.extraRifiniture)}` : ""} · ${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span>${p.nonFatte?.length ? `<br><span class="small" style="color:var(--warn)">Non fatto: ${esc(p.nonFatte.map(x => x.testo + (x.motivo ? " (" + x.motivo + ")" : "")).join(", "))}</span>` : ""}${esitoHtml}</span><span class="s done">${eur(p.finale)}</span></div>`;
+  return `<div class="row"><span><b>${esc(camera(p.camera).nome)}</b> · ${esc(titoloLavoro(p))}<br><span class="muted">${p.minuti ? esc(L.testoOre(p.minuti)) + " · " : ""}${eur(p.importo)}${minutiPulizia(p) != null && p.minuti ? ` <span class="small">(ci ha messo ${esc(L.testoOre(minutiPulizia(p)))})</span>` : ""}${p.extraRifiniture ? ` + ${esc(testoStelleFatte(p))} ${eur(p.extraRifiniture)}` : ""}${p.rifinitureArgon && p.rifinitureArgon.stato === "attesa" ? ` + ${eur(p.rifinitureArgon.dichiarate)} di rifiniture <span class="small">(aspettano il Visto)</span>` : p.rifinitureArgon && p.rifinitureArgon.stato === "sospese" ? ` <span class="small" style="color:var(--warn)">(rifiniture ${eur(p.rifinitureArgon.dichiarate)} non pagate: sospensione)</span>` : p.rifinitureArgon && p.rifinitureArgon.tolti ? ` <span class="small" style="color:var(--warn)">(−${eur(p.rifinitureArgon.tolti)} trovate non fatte)</span>` : ""} · ${esc(L.dataBreve(p.data))}${p.ora ? " alle " + L.oraBreve(p.ora) : ""}</span>${p.nonFatte?.length ? `<br><span class="small" style="color:var(--warn)">Non fatto: ${esc(p.nonFatte.map(x => x.testo + (x.motivo ? " (" + x.motivo + ")" : "")).join(", "))}</span>` : ""}${esitoHtml}</span><span class="s done">${eur(p.finale)}</span></div>`;
 }
 // I controlli della settimana, signora per signora: ricevuti (con gli esiti) e fatti (con i soldi)
 function cardControlliSettimana() {
@@ -5863,7 +6315,7 @@ function cardSignore() {
   const chiave = L.settimanaCorrente();
   const riga = (z) => {
     const v = sq[z.id] || {}, attiva = v.attiva !== false;
-    const t = attiva ? L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino) : null;
+    const t = attiva ? L.totaleSettimana(S.pulizie, z.id, chiave, S.regole, S.controlli, S.listino, extraPaga()) : null;
     const sue = (v.camere || []).map(id => camera(id).nome);
     const lav = attiva ? Object.values(S.pulizie).filter(p => p.zona === z.id && p.data >= L.aggiungiGiorni(L.oggiISO(), -1) && p.data <= L.aggiungiGiorni(L.oggiISO(), 6)) : [];
     const camereSett = [...new Set(lav.map(p => camera(p.camera).nome))];
@@ -5999,6 +6451,7 @@ function disegnaFoglio() {
   let html = "";
   if (f.tipo === "pulizia") html = foglioPulizia(f);
   else if (f.tipo === "inizio") html = foglioInizio(f);
+  else if (f.tipo === "patto") html = foglioPatto(f);
   else if (f.tipo === "messaggio") html = foglioMessaggio(f);
   else if (f.tipo === "controllo") html = foglioControllo(f);
   else if (f.tipo === "soggiorno") html = foglioSoggiorno(f);
@@ -7448,6 +7901,7 @@ function foglioNuovoLavoro(f) {
 //  Collegamento dei bottoni
 // ---------------------------------------------------------------------------
 function collega() {
+  collegaArgon();   // 1.12.0
   document.querySelectorAll("[data-prova]").forEach(b => b.onclick = () => { const [r, z, n] = b.dataset.prova.split("|"); S.db.entraProva(r, z || null, n); });
   const form = $("#formAccesso");
   if (form) form.onsubmit = async (e) => {
@@ -7631,6 +8085,7 @@ function collegaFoglio() {
   avviaCronometri();
   if (S.foglio && S.foglio.tipo === "chat") collegaChat();
   const f = S.foglio; if (!f) return;
+  collegaArgon();   // 1.12.0
   document.querySelectorAll("[data-chiudi]").forEach(b => b.onclick = chiudiFoglio);
   document.querySelectorAll("[data-rif-no]").forEach(b => b.onclick = async () => { const [id, regola, luogo] = b.dataset.rifNo.split("|"); const p = S.pulizie[id]; if (!p) return; const stella = rifinitureDi(p).find(r => r.regola === regola && (r.luogo || p.camera) === luogo) || null; const motivo = await scegliMotivoRifinitura(stella); if (motivo) saltaRifinitura(p, regola, luogo, motivo); });
   document.querySelectorAll("[data-giro-inizia]").forEach(b => b.onclick = () => iniziaGiro(b.dataset.giroInizia));
@@ -7914,7 +8369,7 @@ function confermaFinito(p) {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
     const el = document.createElement("div"); el.className = "conferma";
     el.innerHTML = `<div class="conferma-box chiusura" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>${lista ? (voci.length === 1 ? `In <b>${esc(c.nome)}</b> manca un tocco: ${voci[0].blocco ? "questo blocco l'hai fatto?" : "questa l'hai fatta?"}` : `In <b>${esc(c.nome)}</b> non hai toccato tutto. Questi li hai fatti?`) : `Sei sicura che in <b>${esc(c.nome)}</b> tutto sia stato fatto al meglio?`}</span></div>
-      ${voci.length ? `<p class="muted" style="margin:0 0 6px">${lista ? "Tocca quelle che hai fatto:" : "Spunta una per una:"}</p><div class="chiusura-voci">${voci.map(v => `<label class="chiusura-voce"><input type="checkbox" data-voce="${esc(v.id)}"><span>${esc(v.testo)}${v.stella || /^⭐/.test(v.testo) ? ` <small>stella</small>` : v.blocco ? ` <small>blocco</small>` : v.fissa ? ` <small>sempre in ${esc(c.nome)}</small>` : lista ? "" : ` <small>oggi</small>`}</span></label>`).join("")}</div>` : ""}
+      ${voci.length ? `<p class="muted" style="margin:0 0 6px">${lista ? "Tocca quelle che hai fatto:" : "Spunta una per una:"}</p><div class="chiusura-voci">${voci.map(v => `<label class="chiusura-voce"><input type="checkbox" data-voce="${esc(v.id)}"><span>${esc(v.testo)}${v.stella || /^⭐/.test(v.testo) ? ` <small>rifinitura</small>` : v.blocco ? ` <small>blocco</small>` : v.fissa ? ` <small>sempre in ${esc(c.nome)}</small>` : lista ? "" : ` <small>oggi</small>`}</span></label>`).join("")}</div>` : ""}
       <button class="big ok" data-si ${voci.length && !lista ? "disabled" : ""}>${voci.length ? "Sì, le ho fatte tutte ✓" : "Sì, è tutta a posto ✓"}</button>${lista ? `<button class="big skip" data-parte>Chiudi lo stesso: quelle senza spunta non le ho fatte</button>` : ""}<button class="big undo" data-no>Aspetta, controllo</button></div>`;
     document.body.appendChild(el);
     const bSi = el.querySelector("[data-si]"), bParte = el.querySelector("[data-parte]");
@@ -7985,7 +8440,7 @@ async function cambiaStato(p, stato, nota, opz = {}) {
     let testoWa = "";
     if (stato === "problema") { testoWa = `⚠️ Problema in ${camera(p.camera).nome} (${chi}): ${nota || "senza dettagli"}${foto ? " · c'è una foto nell'app" : ""}`; inviaTelegram(testoWa, "problema"); }
     else if (stato === "non_fatta") { testoWa = `⛔ ${camera(p.camera).nome} non fatta (${chi}): ${nota || "senza motivo"}`; inviaTelegram(testoWa, "problema"); }
-    else if (stato === "fatta") inviaTelegram(`✅ ${camera(p.camera).nome} pulita alle ${L.oraBreve(adesso)} (${chi})`, "pulita");
+    else if (stato === "fatta" && !opz.zitto) inviaTelegram(`✅ ${camera(p.camera).nome} pulita alle ${L.oraBreve(adesso)} (${chi})`, "pulita");   // 1.12.0: col «Ho finito» parte un messaggio solo
     if (testoWa && addetta() && numeroWhatsApp()) { toast("Vuoi avvisare anche su WhatsApp?", { testo: "Avvisa", fai: () => { apriWhatsApp(testoWa, numeroWhatsApp()); const t = $(".toast"); if (t) t.remove(); } }); setTimeout(() => { const t = $(".toast"); if (t && /WhatsApp/.test(t.textContent)) t.remove(); }, 15000); }
   }
   catch (e) { erroreScrittura(e); }
@@ -8012,7 +8467,7 @@ async function segnaPagata(zona, chiave, si) {
   const id = `${zona}_${chiave}`;
   try {
     if (si) {
-      const { lista, totale } = L.totaleSettimana(S.pulizie, zona, chiave, S.regole, S.controlli);
+      const { lista, totale } = L.totaleSettimana(S.pulizie, zona, chiave, S.regole, S.controlli, S.listino, extraPaga());
       if (!await chiedi(`Segno come pagata la settimana ${L.etichettaSettimana(chiave)} della signora ${S.zone[zona]?.breve || zona}: ${eur(totale)} per ${lista.length} pulizie?`, { si: "Sì, pagata" })) return;
       await S.db.salva("pagamenti", id, { zona, settimana: chiave, importo: totale, pulizie: lista.length, quando: new Date().toLocaleDateString("it-IT", { day: "numeric", month: "short", timeZone: "Europe/Rome" }), istante: S.db.adesso(), da: S.utente.nome || S.utente.email || "" }, false);
       toast("Segnata come pagata");

@@ -71,17 +71,15 @@ service cloud.firestore {
       allow write: if proprietario();
     }
 
-    // Pulizie: le signore vedono la loro zona e cambiano SOLO stato, ora, nota, settimana, segnatoDa, foto, stelle fatte, righe spuntate e non fatte.
-    // La controllatrice di turno vede anche le camere FATTE dalle colleghe (per dare il voto).
+    // Pulizie: le signore le vedono tutte (1.12.0 ArgonCloud: per sapere se la collega è in albergo e dare il «Visto»)
+    // e cambiano SOLO quelle della loro zona: stato, ora, nota, settimana, segnatoDa, foto, stelle fatte, righe spuntate e non fatte.
     match /pulizie/{id} {
-      allow read: if puoLeggereTutto()
-        || (addetta() && resource.data.zona == miaZona())
-        || (resource.data.stato == "fatta" && sonoControllatrice());
+      allow read: if puoLeggereTutto() || addetta();
       allow create, delete: if proprietario();
       allow update: if proprietario()
         || (addetta()
             && resource.data.zona == miaZona()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "inizio", "nota", "settimana", "segnatoDa", "foto", "rifiniture", "extraRifiniture", "spuntate", "nonFatte"])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["stato", "ora", "inizio", "nota", "settimana", "segnatoDa", "foto", "rifiniture", "extraRifiniture", "spuntate", "nonFatte", "minutiVeri"])
             && request.resource.data.stato in ["da_fare", "in_corso", "fatta", "non_fatta", "problema"]);
     }
 
@@ -99,6 +97,22 @@ service cloud.firestore {
         || (sonoControllatrice()
             && resource.data.zonaControllatrice == miaZona()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["voto", "punti", "nota", "ora", "controllatrice", "settimana", "richieste", "nonFatte"]));
+      allow delete: if proprietario();
+    }
+
+    // 1.12.0 ArgonCloud · i «Visti»: un documento per signora e giorno (zona_data). Chi pulisce lo crea col suo «Ho finito»
+    // (camere e rifiniture del giorno); la collega di un'ALTRA zona ci mette solo il suo «Visto» (o una segnalazione);
+    // i proprietari tutto (Visto della direzione, difetti trovati, smentite). Le signore li leggono tutti: servono per il Visto e per la busta.
+    match /visti/{id} {
+      allow read: if puoLeggereTutto() || addetta();
+      allow create: if proprietario()
+        || (addetta() && request.resource.data.zona == miaZona() && !("vistoOra" in request.resource.data) && !("difetti" in request.resource.data));
+      allow update: if proprietario()
+        || (addetta() && resource.data.zona == miaZona()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["finitoOra", "finitoDa", "camere", "rifiniture", "euroRifiniture", "settimana", "punti", "rodaggio"]))
+        || (addetta() && resource.data.zona != miaZona()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["vistoOra", "vistoDa", "vistoNome", "segnalato"])
+            && (!("vistoDa" in request.resource.data.diff(resource.data).affectedKeys()) || request.resource.data.vistoDa == miaZona()));
       allow delete: if proprietario();
     }
 

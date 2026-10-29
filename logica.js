@@ -502,11 +502,14 @@ export function richiami(controlli, regole) {
 }
 
 // ---- Conti ------------------------------------------------------------------
-export function pulizieFatte(pulizie, regole, controlli) {
+export function pulizieFatte(pulizie, regole, controlli, extra = null) {
+  const ag = extra && extra.argon, visti = (extra && extra.visti) || {};
   return Object.values(pulizie).filter(p => p.stato === "fatta").map(p => {
     const c = controlli ? controlli[p.id] : null;
     const voto = votoCheConta(c);
     const pp = { ...p, voto: voto != null ? voto : (p.voto ?? null), settimana: p.settimana || chiaveSettimana(p.ora || p.data + "T12:00:00") };
+    // 1.12.0 ArgonCloud: le rifiniture entrano in busta solo dopo il «Visto» (vedi rifiniturePagate)
+    if (ag && argonVale(ag, p.data)) { const rp = rifiniturePagate(p, vistoDi(visti, p.zona, p.data), ag); pp.rifinitureArgon = rp; pp.extraRifiniture = rp.euro; }
     pp.finale = importoFinale(pp, regole, c);
     pp.esito = c && (c.esito || c.esitoProprietario) ? esitoChePaga(c, regole) : null;
     return pp;
@@ -519,8 +522,8 @@ export function controlliFattiSettimana(controlli, zona, chiave, listino) {
   const smentiti = miei.filter(c => c.smentito).length;
   return { n: miei.length, smentiti, importo: Math.max(0, miei.length - smentiti) * euro, lista: miei };
 }
-export function totaleSettimana(pulizie, zona, chiave, regole, controlli, listino = null) {
-  const l = pulizieFatte(pulizie, regole, controlli).filter(p => p.zona === zona && p.settimana === chiave);
+export function totaleSettimana(pulizie, zona, chiave, regole, controlli, listino = null, extra = null) {
+  const l = pulizieFatte(pulizie, regole, controlli, extra).filter(p => p.zona === zona && p.settimana === chiave);
   const bonus = bonusControllatrice(controlli, zona, chiave, regole);
   const ctrl = controlliFattiSettimana(controlli, zona, chiave, listino);
   let ore = 0, stelle = 0, tagli = 0, minuti = 0;
@@ -530,12 +533,15 @@ export function totaleSettimana(pulizie, zona, chiave, regole, controlli, listin
     tagli += Math.round((quota + st - p.finale) * 100) / 100;
   }
   const pulizieTot = l.reduce((s, p) => s + p.finale, 0);
-  const totale = Math.round((pulizieTot + bonus.importo + ctrl.importo) * 100) / 100;
-  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), pulizie: pulizieTot, ore: Math.round(ore * 100) / 100, stelle: Math.round(stelle * 100) / 100, tagli: Math.round(tagli * 100) / 100, minuti, controlliFatti: ctrl, bonus, totale };
+  // 1.12.0 ArgonCloud: i «Visti» dati (3 € l'uno, al massimo 3 a settimana) e le rifiniture che aspettano ancora il Visto
+  const vs = extra && extra.argon ? vistiSettimana(extra.visti, zona, chiave, extra.argon) : null;
+  let attesa = 0, nonPagate = 0; for (const p of l) { const r = p.rifinitureArgon; if (!r) continue; if (r.stato === "attesa") attesa += r.dichiarate; if (r.tolti) nonPagate += r.tolti; if (r.stato === "sospese") nonPagate += r.dichiarate; }
+  const totale = Math.round((pulizieTot + bonus.importo + ctrl.importo + (vs ? vs.importo : 0)) * 100) / 100;
+  return { lista: l.sort((a, b) => (a.ora || "") < (b.ora || "") ? -1 : 1), pulizie: pulizieTot, ore: Math.round(ore * 100) / 100, stelle: Math.round(stelle * 100) / 100, tagli: Math.round(tagli * 100) / 100, minuti, controlliFatti: ctrl, bonus, visti: vs, rifinitureAttesa: Math.round(attesa * 100) / 100, rifinitureNonPagate: Math.round(nonPagate * 100) / 100, totale };
 }
-export function storicoMensile(pulizie, zona, regole, controlli, listino = null) {
+export function storicoMensile(pulizie, zona, regole, controlli, listino = null, extra = null) {
   const mesi = {};
-  for (const p of pulizieFatte(pulizie, regole, controlli)) {
+  for (const p of pulizieFatte(pulizie, regole, controlli, extra)) {
     if (p.zona !== zona) continue;
     const m = (p.ora ? partiRoma(p.ora) : null);
     const k = m ? `${m.y}-${String(m.m).padStart(2, "0")}` : meseDi(p.data);
@@ -544,7 +550,7 @@ export function storicoMensile(pulizie, zona, regole, controlli, listino = null)
     mesi[k].settimane[p.settimana] = (mesi[k].settimane[p.settimana] || 0) + p.finale;
   }
   // bonus (vecchio) e controlli fatti, per settimana
-  for (const k of Object.keys(mesi)) for (const sk of Object.keys(mesi[k].settimane)) { const b = bonusControllatrice(controlli, zona, sk, regole), c = controlliFattiSettimana(controlli, zona, sk, listino); const piu = b.importo + c.importo; if (piu) { mesi[k].settimane[sk] += piu; mesi[k].totale += piu; } }
+  for (const k of Object.keys(mesi)) for (const sk of Object.keys(mesi[k].settimane)) { const b = bonusControllatrice(controlli, zona, sk, regole), c = controlliFattiSettimana(controlli, zona, sk, listino); const v = extra && extra.argon ? vistiSettimana(extra.visti, zona, sk, extra.argon).importo : 0; const piu = b.importo + c.importo + v; if (piu) { mesi[k].settimane[sk] += piu; mesi[k].totale += piu; } }
   return mesi;
 }
 
@@ -583,3 +589,165 @@ export function daRifare(controlli, zona, regole, adesso = new Date()) {
   }
   return out.sort((a, b) => (a.controllo.data < b.controllo.data ? 1 : -1));
 }
+
+// ============================================================================
+//  1.12.0 · ARGONCLOUD (specifiche §109). Il metodo delle signore in due tasti: «Ho finito» (chi pulisce) e «Visto»
+//  (chi c'è dopo). Le rifiniture (le stelle, chiamate così per le signore) si pagano solo dopo il Visto; chi dà il Visto
+//  prende 3 € (al massimo 3 a settimana); le rifiniture si fanno solo nei giorni in cui c'è chi le vede; falso Visto trovato
+//  dalla direzione: rifinitura non pagata e 3 € tolti a chi ha firmato; la seconda volta nello stesso mese, due settimane
+//  senza rifiniture e senza Visti per tutte e due. Le impostazioni stanno in impostazioni/argon (le leggono anche le signore).
+// ============================================================================
+export const ARGON_BASE = {
+  attivo: false, da: null, rodaggioFino: null,            // acceso da quando; le prime due settimane sono rodaggio (si paga tutto)
+  vistoEuro: 3, vistiMax: 3,                               // € a Visto, Visti pagati a settimana a testa
+  minutiVisto: 3,                                          // il tasto «Visto» resta grigio per tanti minuti dopo «Ho finito»
+  oreDa: 6, oreA: 20,                                      // i due tasti funzionano solo in queste ore (Roma)
+  giriVisto: { p1: [3] },                                  // chi passa per il Visto anche senza camere in albergo: zona → giorni (0 dom … 6 sab); "direzione" se Michele vuole
+  presenze: {},                                            // giorni in cui la direzione c'è ("oggi ci sono io"): iso → true
+  sospensioni: {},                                         // zona → { da, a, perche }: niente rifiniture né Visti
+};
+// (la cosa da guardare del venerdì sta in importazioni/argon-giro: la leggono solo i proprietari, mai le signore)
+export function argonCompleto(a) {
+  const out = { ...ARGON_BASE, ...(a || {}) };
+  out.giriVisto = { ...ARGON_BASE.giriVisto, ...((a && a.giriVisto) || {}) };
+  out.presenze = { ...((a && a.presenze) || {}) }; out.sospensioni = { ...((a && a.sospensioni) || {}) };
+  for (const k of ["vistoEuro", "vistiMax", "minutiVisto", "oreDa", "oreA"]) out[k] = Number(out[k]);
+  return out;
+}
+export function argonVale(a, iso) { return !!(a && a.attivo && a.da && iso && iso >= a.da); }
+export function argonRodaggio(a, iso) { return argonVale(a, iso) && !!a.rodaggioFino && iso <= a.rodaggioFino; }
+export function argonSospesa(a, zona, iso) { const s = a && a.sospensioni && a.sospensioni[zona]; return !!(s && s.da && s.a && iso >= s.da && iso <= s.a); }
+export function argonOrario(a, adesso = new Date()) { const c = argonCompleto(a), h = partiRoma(adesso).h; return h >= c.oreDa && h < c.oreA; }
+export function idVisto(zona, iso) { return `${zona}_${iso}`; }
+export function vistoDi(visti, zona, iso) { return (visti || {})[idVisto(zona, iso)] || null; }
+// Chi vede le rifiniture della signora "zona" in un giorno: le altre signore con lavori IN ALBERGO quel giorno (non appartamenti),
+// chi ha il giro del Visto in quel giorno della settimana, la direzione se ha detto "ci sono". Torna l'insieme (vuoto = nessuno).
+export function chiVede(a, zona, iso, pulizie, camere = [], zoneAttive = null) {
+  const out = new Set(); if (!a) return out;
+  const c = argonCompleto(a), wd = giornoSettimana(iso);
+  if (c.presenze[iso]) out.add("direzione");
+  const casa = new Set((camere || []).filter(x => x.tipo === "casa").map(x => x.id));
+  for (const p of Object.values(pulizie || {})) {
+    if (!p || p.data !== iso || !p.zona || p.zona === zona || p.stato === "non_fatta" || p.tipo === "stelle" || casa.has(p.camera)) continue;
+    if (zoneAttive && !zoneAttive.includes(p.zona)) continue;
+    out.add(p.zona);
+  }
+  for (const [z, gg] of Object.entries(c.giriVisto)) {
+    if (z === zona || !Array.isArray(gg) || !gg.map(Number).includes(wd)) continue;
+    if (z !== "direzione" && zoneAttive && !zoneAttive.includes(z)) continue;
+    out.add(z);
+  }
+  return out;
+}
+// Quanto si paga delle rifiniture di una pulizia: tutto se ArgonCloud non c'era; niente finché manca il Visto (in attesa);
+// tolte quelle trovate non fatte dalla direzione; in rodaggio tutto; in sospensione niente.
+export function rifiniturePagate(p, visto, a) {
+  const dich = Math.round((Number(p.extraRifiniture) || 0) * 100) / 100;
+  if (!argonVale(a, p.data) || !dich) return { euro: dich, stato: "libere", dichiarate: dich, tolti: 0 };
+  if (argonSospesa(a, p.zona, p.data)) return { euro: 0, stato: "sospese", dichiarate: dich, tolti: 0 };
+  const dif = ((visto && visto.difetti) || []).filter(d => d.pulizia === p.id);
+  const tolti = Math.round(dif.reduce((s, d) => s + (Number(d.euro) || 0), 0) * 100) / 100;
+  if (argonRodaggio(a, p.data)) return { euro: dich, stato: "rodaggio", dichiarate: dich, tolti: 0, difetti: dif.length };
+  if (!visto || !visto.vistoOra) return { euro: 0, stato: "attesa", dichiarate: dich, tolti: 0 };
+  return { euro: Math.max(0, Math.round((dich - tolti) * 100) / 100), stato: dif.length ? "difetti" : "viste", dichiarate: dich, tolti, difetti: dif.length };
+}
+// I Visti dati da una signora in una settimana di paga: 3 € l'uno fino a 3; persi se la direzione li ha smentiti (non in rodaggio);
+// più le rifiniture fatte al posto della collega (la camera serviva): quei soldi passano a chi le ha fatte.
+export function vistiSettimana(visti, zona, chiave, a) {
+  const c = argonCompleto(a);
+  const sett = v => v.settimana || chiaveSettimana(v.finitoOra || v.vistoOra || v.data + "T12:00:00");
+  // il Visto si paga nella settimana in cui è stato dato (chi lo dà la mattina dopo lo trova nella sua busta di quella settimana)
+  const miei = Object.values(visti || {}).filter(v => v && v.vistoDa === zona && v.vistoOra && chiaveSettimana(v.vistoOra) === chiave).sort((x, y) => (x.vistoOra < y.vistoOra ? -1 : 1));
+  const validi = miei.filter(v => (!v.smentito || argonRodaggio(a, v.data)) && !argonSospesa(a, zona, v.data));
+  const pagati = Math.min(validi.length, c.vistiMax || 0);
+  let rifatte = 0; for (const v of Object.values(visti || {})) { if (!v || sett(v) !== chiave) continue; for (const d of v.difetti || []) if (d.rifattaDa === zona) rifatte += Number(d.euro) || 0; }
+  const euroVisti = Math.round(pagati * c.vistoEuro * 100) / 100;
+  return { n: miei.length, smentiti: miei.filter(v => v.smentito).length, pagati, euroVisti, rifatte: Math.round(rifatte * 100) / 100, importo: Math.round((euroVisti + rifatte) * 100) / 100, lista: miei };
+}
+// Le 11 Regole: cos'è «pulito». ★ = grave (Michele, 27/10). Sofia le legge il primo giorno; stanno sempre nel Patto.
+export const REGOLE_11 = [
+  { n: 1,  grave: true,  testo: "Letto: lenzuola tirate, niente capelli né macchie; al cambio, biancheria pulita davvero." },
+  { n: 2,  grave: true,  testo: "Water: dentro, sotto il bordo, dietro la base; acqua limpida, coperchio giù." },
+  { n: 3,  grave: false, testo: "Lavandino e specchio asciugati: niente gocce, schizzi, aloni." },
+  { n: 4,  grave: true,  testo: "Doccia: piletta senza capelli; vetro e piastrelle asciutti, senza calcare né muffa." },
+  { n: 5,  grave: false, testo: "Asciugamani puliti, carta igienica (due rotoli), sapone pieno." },
+  { n: 6,  grave: true,  testo: "Cestini vuoti, puliti dentro, sacchetto nuovo." },
+  { n: 7,  grave: false, testo: "Polvere: comodini, testiera, tavolo, TV, mensole: col dito non resta niente." },
+  { n: 8,  grave: false, testo: "Pavimento lavato, anche sotto il letto e negli angoli." },
+  { n: 9,  grave: false, testo: "Armadi e cassetti vuoti e puliti, grucce al posto." },
+  { n: 10, grave: false, testo: "Finestre, davanzali e balcone." },
+  { n: 11, grave: true,  testo: "Ordine e aria: tutto ordinato e simmetrico, niente fuori posto; nessun odore di muffa, chiuso o fumo." },
+];
+// Il patto di pulizia (Argon, giro C): si legge insieme il primo giorno, col caffè.
+export const PATTO = [
+  ["Benvenuta.", "Qui non contiamo i minuti con l'orologio: paghiamo il risultato, perfetto per l'ospite."],
+  ["Lo standard.", "Una camera è pronta quando rispetta le 11 Regole. Sofia te le legge, e le trovi sempre scritte nell'app."],
+  ["La mattina.", "Appena arrivi ascolta Sofia: ti dice quali camere fare, in che ordine, e quali rifiniture ci sono oggi, con il prodotto giusto."],
+  ["Le rifiniture.", "Sono i lavori extra, pagati a parte. Più rifiniture fai bene, più sale la tua busta."],
+  ["Un tasto solo.", "Lavora tranquilla col telefono in tasca. Quando hai finito tutto il giro e le tue rifiniture, premi «Ho finito». Sofia ti rilegge le rifiniture del giorno, per sicurezza."],
+  ["Il Visto di uscita.", "Prima di andare via, chi è in albergo dopo di te (o la direzione) dà uno sguardo ai punti del giorno e preme «Visto». Vale 3 euro per chi lo dà."],
+  ["Aiuto reciproco.", "Se manca un dettaglio, ce lo diciamo subito a voce e lo sistemiamo in due minuti prima del «Visto», senza perdere un centesimo."],
+  ["Se sei da sola.", "Nei giorni in cui sei sola in albergo fai solo le camere: le rifiniture si fanno quando c'è chi le vede."],
+  ["I soldi.", "Le ore delle camere sono fisse. Le rifiniture entrano in busta appena arriva il «Visto»."],
+  ["Lealtà.", "Se la direzione trova non fatto un lavoro già «visto», quella rifinitura non si paga, e chi ha dato il «Visto» senza guardare perde i suoi 3 euro."],
+  ["Squadra.", "Chi finisce lascia il piano impeccabile a chi entra dopo. Zero discussioni: parla l'app, e decide Michele."],
+];
+// Il punto nascosto da toccare prima del Visto (Argon, il manuale del ladro): sopra il tasto c'è scritto DOVE mettere il dito.
+// Per le rifiniture è il loro "è a posto se"; per una camera senza rifiniture ne scegliamo uno a caso, stabile per quel giorno.
+export const PUNTI_NASCOSTI = [
+  "Abbassati e guarda sotto il letto: niente polvere, niente briciole",
+  "Alza il coperchio e guarda sotto il bordo del water",
+  "Guarda la piletta della doccia: niente capelli",
+  "Passa il dito sulla testiera del letto e sopra il comodino",
+  "Apri l'armadio: vuoto, pulito, grucce al posto",
+  "Guarda dentro il cestino del bagno: sacchetto nuovo e cestino pulito",
+  "Guarda lo specchio di lato, controluce: niente aloni",
+  "Entra e senti l'aria: niente odore di chiuso o di fumo",
+];
+export const PUNTI_NASCOSTI_COMUNI = [
+  "Guarda gli angoli delle scale e passa il dito sulla ringhiera",
+  "Guarda lo zerbino e il vetro del portone",
+  "Guarda negli angoli del corridoio e dietro le porte",
+];
+export function puntoNascosto(iso, cameraId, comune = false) { const l = comune ? PUNTI_NASCOSTI_COMUNI : PUNTI_NASCOSTI; return l[hashTesto(`${iso}|${cameraId}`) % l.length]; }
+// L'occhio della direzione: ogni venerdì Sofia sceglie a caso UNA cosa da guardare tra quelle «viste» negli ultimi 7 giorni
+// (e la dice solo a Michele). Pesa di più: una rifinitura del mercoledì su cose che durano (frigo, sopra l'armadio, battiscopa…),
+// una camera chiusa da sola il sabato (nessuno l'ha vista). A caso, ma stabile per tutta la settimana.
+export function sceltaDirezione({ visti = {}, pulizie = {}, iso, vedeIl = null }) {
+  const da = aggiungiGiorni(iso, -7), cand = [];
+  for (const v of Object.values(visti)) {
+    if (!v || !v.vistoOra || v.data < da || v.data > iso) continue;
+    const wd = giornoSettimana(v.data), chi = v.vistoNome || v.vistoDa;
+    for (const r of v.rifiniture || []) {
+      if ((v.difetti || []).some(d => d.k === r.k)) continue;
+      const dura = /frigo|armadio|battiscop|zoccol|sotto|dietro|guarnizion|piletta|cappa|termosifon|lampad|plafon|griglia|filtro/i.test(`${r.nome} ${r.controllo || ""}`);
+      cand.push({ tipo: "rifinitura", peso: (wd === 3 ? 3 : 1) + (dura ? 2 : 0), visto: v.id || idVisto(v.zona, v.data), zona: v.zona, data: v.data, k: r.k, camera: r.camera, nome: r.nome, luogoNome: r.luogoNome || "", controllo: r.controllo || "", perche: `rifinitura di ${GIORNI[wd]}, vista da ${chi}` });
+    }
+  }
+  for (const p of Object.values(pulizie)) {
+    if (!p || p.stato !== "fatta" || p.data < da || p.data > iso || giornoSettimana(p.data) !== 6 || p.tipo === "stelle" || p.tipo === "fisso" || p.origine === "governante") continue;
+    if (vedeIl && vedeIl(p.zona, p.data)) continue;
+    cand.push({ tipo: "camera", peso: 3, zona: p.zona, data: p.data, camera: p.camera, pulizia: p.id, perche: "camera chiusa da sola sabato" });
+  }
+  if (!cand.length) return null;
+  const tot = cand.reduce((s, c) => s + c.peso, 0); let x = hashTesto(`direzione|${iso}`) % tot;
+  for (const c of cand) { x -= c.peso; if (x < 0) return c; }
+  return cand[0];
+}
+// Il fiuto di Sofia: tre allarmi silenziosi che vede solo la direzione (Argon, il manuale del ladro).
+export function fiutoArgon(visti, a, iso) {
+  const out = [], c = argonCompleto(a), da = aggiungiGiorni(iso, -30);
+  const lista = Object.values(visti || {}).filter(v => v && v.vistoOra && v.finitoOra && v.data >= da && v.data <= iso && v.vistoDa !== "direzione");
+  for (const v of lista) {
+    const s = Math.round((new Date(v.vistoOra) - new Date(v.finitoOra)) / 1000);
+    // il tasto si accende dopo minutiVisto: un Visto nei due minuti dopo l'accensione è "premuto appena possibile", non guardato
+    if (s >= 0 && s < c.minutiVisto * 60 + 120) out.push({ tipo: "teletrasporto", data: v.data, zona: v.vistoDa, testo: `Teletrasporto: Visto di ${v.vistoNome || v.vistoDa} dato ${s < 60 ? s + " secondi" : Math.round(s / 60) + " minuti"} dopo «Ho finito» (${dataBreve(v.data)}), appena il tasto si è acceso: probabile firma senza salire.` });
+  }
+  const ult = Object.values(visti || {}).filter(v => v && v.vistoOra && v.data >= aggiungiGiorni(iso, -21) && v.data <= iso);
+  if (ult.length >= 9 && !ult.some(v => (v.difetti || []).length || v.segnalato)) out.push({ tipo: "perfezione", testo: `Perfezione sospetta: ${ult.length} Visti in tre settimane senza mai una mancanza. Oggi guarda tu una cosa «vista».` });
+  const cop = lista.filter(v => v.smentito);
+  if (cop.length) out.push({ tipo: "copertura", testo: `Copertura: ${cop.length} ${cop.length === 1 ? "difetto trovato" : "difetti trovati"} su cose «viste» negli ultimi 30 giorni. Probabile firma tra colleghe senza guardare.` });
+  return out;
+}
+// Falsi Visti nel mese di una signora (chi ha firmato): al secondo scatta la proposta della sospensione
+export function smentitiNelMese(visti, zona, iso) { const m = meseDi(iso); return Object.values(visti || {}).filter(v => v && v.vistoDa === zona && v.smentito && meseDi(v.data) === m); }

@@ -524,13 +524,20 @@ export function budgetStelleOggi(zona, iso, ctx) {
   const rs = regoleStelle(ctx); if (zona !== rs.zona || !rs.obiettivo) return { oggi: Infinity, resto: Infinity, giorni: 1 };
   ctx._memoStelleEuro = ctx._memoStelleEuro || {};
   const giorni = giorniSettimanaPaga(iso);
-  const haLavori = d => Object.values(ctx.pulizie || {}).some(p => p.data === d && p.zona === zona && p.stato !== "non_fatta" && (NORMALE(p) || p.tipo === "stelle"));
+  // 1.12.0 ArgonCloud: le rifiniture si fanno solo nei giorni in cui c'è chi le vede (la collega in albergo, il suo giro del
+  // Visto, la direzione); nei giorni da sola solo le camere. L'obiettivo della settimana si divide tra i giorni "visti".
+  // Con la sospensione (secondo falso Visto nel mese) niente rifiniture per due settimane.
+  const ag = ctx.argon || null;
+  const vede = d => !ag || typeof ag.vede !== "function" || ag.vede(zona, d);
+  if (ag && typeof ag.sospesa === "function" && ag.sospesa(zona, iso)) return { oggi: 0, resto: 0, giorni: 1, spesi: 0, sospesa: true };
+  const haLavori = d => vede(d) && Object.values(ctx.pulizie || {}).some(p => p.data === d && p.zona === zona && p.stato !== "non_fatta" && (NORMALE(p) || p.tipo === "stelle"));
   let spesi = 0;
   for (const d of giorni) { if (d >= iso) break; if (!haLavori(d)) continue;
     if (ctx._memoStelleEuro[d] == null) { let e = 0; const m = rifinitureDelGiorno(zona, d, ctx); for (const [pid, rf] of Object.entries(m)) { const p = (ctx.pulizie || {})[pid]; e += p && p.stato === "fatta" ? Number(p.extraRifiniture) || 0 : rf.filter(r => !r.sempre).reduce((x, r) => x + (r.euro || 0), 0); } ctx._memoStelleEuro[d] = e; }
     spesi += ctx._memoStelleEuro[d]; }
   const resto = Math.max(0, rs.obiettivo - spesi);
   const restanti = giorni.filter(d => d >= iso && haLavori(d)).length || 1;
+  if (!vede(iso)) return { oggi: 0, resto, giorni: restanti, spesi, sola: true };
   return { oggi: Math.ceil(resto / restanti * 2) / 2, resto, giorni: restanti, spesi };
 }
 export function rifinitureDelGiorno(zona, iso, ctx) {
