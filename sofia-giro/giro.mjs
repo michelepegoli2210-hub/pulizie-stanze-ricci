@@ -11,13 +11,15 @@
 //   - 15:00-16:59: le pulizie di oggi ancora da segnare: un promemoria gentile (mai rimproveri)
 //   - dalle 20: il bollettino della sera al titolare (oggi, quello che Sofia ha fatto da sola, i guasti, domani, cosa aspetta il «Sì»)
 //   - 7-21: se il ponte WhatsApp c'era e tace da più di 40 minuti, lo dice al titolare (una volta al giorno)
+//  1.17.0: al titolare scrive anche (o solo) con gli AVVISI SUL TELEFONO (Web Push, importazioni/push-sofia): basta il tasto
+//  «Accendi gli avvisi su questo telefono» nell'app, niente Telegram. Le iscrizioni scadute (404/410) si tolgono da sole.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
 import { LUOGHI_COMUNI } from "../governante.js";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.16.0";
+export const VERSIONE_GIRO = "1.17.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -116,14 +118,27 @@ export function testoBollettino(st, oggi, domani) {
 }
 
 // ---- il giro ------------------------------------------------------------------------------------------
-export async function giro({ db, telegram, adesso = new Date() }) {
+export async function giro({ db, telegram, push = null, adesso = new Date() }) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
   const esiti = [];
   const [stato0, avvisi] = await Promise.all([db.doc("importazioni", "giro-sofia"), db.doc("impostazioni", "avvisi")]);
   const fatti = stato0 && stato0.giorno === oggi ? { ...(stato0.fatti || {}) } : {};
   const a = avvisi || {};
-  const puoGruppo = !!(a.token && a.chat), puoMe = !!(a.token && a.chatMio);
+  const puoGruppo = !!(a.token && a.chat), tgMe = !!(a.token && a.chatMio);
   const manda = async (dove, testo, cosa) => { const okk = await telegram(a.token, dove, testo); esiti.push(`${cosa}${okk ? "" : " (Telegram non ha risposto)"}`); return okk; };
+  // 1.17.0: gli avvisi sul telefono del titolare (si legge il documento solo se c'è qualcosa da dirgli)
+  let ps = null;
+  const iscrizioni = () => Object.entries((ps && ps.iscrizioni) || {}).filter(([, v]) => v && v.sub && v.sub.endpoint && (v.chi || "titolare") === "titolare");
+  const mandaMe = async (testo, cosa, titolo = "Sofia", urgente = false) => {
+    let okk = false;
+    if (tgMe) okk = (await telegram(a.token, a.chatMio, testo)) || okk;
+    if (push && ps && ps.vapidPublic && ps.vapidPrivato) {
+      const finite = [];
+      for (const [id, v] of iscrizioni()) { const r = await push(ps, v.sub, { titolo, testo, urgente }); if (r && r.ok) okk = true; else if (r && r.finita) finite.push(id); }
+      if (finite.length) { const resto = Object.fromEntries(Object.entries(ps.iscrizioni || {}).filter(([id]) => !finite.includes(id))); await db.sostituisci("importazioni", "push-sofia", "iscrizioni", resto); ps.iscrizioni = resto; esiti.push(`tolte ${finite.length} iscrizioni scadute`); }
+    }
+    esiti.push(`${cosa}${okk ? "" : " (non è arrivato)"}`); return okk;
+  };
   const oraPiano = MIN(Number(a.oraPiano) || 7);
   const dentro = (da, a2) => t.minuti >= da && t.minuti < a2;
   const serve = {
@@ -145,6 +160,8 @@ export async function giro({ db, telegram, adesso = new Date() }) {
       if (cose.includes("argon")) p.push(db.doc("impostazioni", "argon").then(x => st.argon = x));
       await Promise.all(p);
     };
+    if (serve.piano || serve.allarme || serve.bollettino || serve.ponte) ps = await db.doc("importazioni", "push-sofia");
+    const puoMe = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
     const servono = new Set(["base"]);
     if (serve.piano) servono.add("piano");
     if (serve.chiusura) servono.add("argon");
@@ -153,17 +170,20 @@ export async function giro({ db, telegram, adesso = new Date() }) {
     const k = st.pulizie ? casa(st) : null;
 
     if (serve.piano) {
-      if (!puoGruppo || a.pianoMattina === false) { fatti.piano = "spento"; }
-      else if (a.ultimoPiano === oggi) { fatti.piano = "app"; }
+      const alGruppo = puoGruppo && a.pianoMattina !== false;
+      if (a.ultimoPiano === oggi) { fatti.piano = "app"; }
       else if (!k.delGiorno(oggi).length) { fatti.piano = "vuoto"; }
+      else if (!alGruppo && !puoMe) { fatti.piano = "spento"; }
       else {
-        await db.merge("impostazioni", "avvisi", { ultimoPiano: oggi });   // prima il segno, come l'app: niente doppioni
-        await manda(a.chat, testoPianoGiorno(st, oggi), "piano del giorno alle signore");
+        if (alGruppo) {
+          await db.merge("impostazioni", "avvisi", { ultimoPiano: oggi });   // prima il segno, come l'app: niente doppioni
+          await manda(a.chat, testoPianoGiorno(st, oggi), "piano del giorno alle signore");
+        }
         fatti.piano = t.hhmm;
         if (puoMe) {
           const n = k.signore().map(z => { const c = k.delGiorno(oggi, z.id).filter(p => p.stato !== "fatta").length; return c ? `${k.SIG(z.id)} ${c}` : ""; }).filter(Boolean).join(", ");
           const arr = [...new Set(k.arriviDi(oggi))].map(c => k.camera(c).nome);
-          await manda(a.chatMio, `☀️ Piano mandato alle signore: ${n}.${arr.length ? ` Arrivi oggi: ${arr.join(", ")}.` : ""}`, "tre righe al titolare");
+          await mandaMe(`${alGruppo ? "☀️ Piano mandato alle signore" : "☀️ Oggi"}: ${n}.${arr.length ? ` Arrivi oggi: ${arr.join(", ")}.` : ""}`, "tre righe al titolare", "Sofia · il piano di oggi");
         }
       }
     }
@@ -177,7 +197,7 @@ export async function giro({ db, telegram, adesso = new Date() }) {
     }
     if (serve.allarme) {
       const ls = arriviNonPronti(st, oggi);
-      if (ls.length && puoMe) await manda(a.chatMio, `⚠️ ${ls.map(p => k.camera(p.camera).nome).join(", ")}: oggi ${ls.length === 1 ? "arriva un ospite e la camera non risulta" : "arrivano ospiti e le camere non risultano"} ancora ${ls.length === 1 ? "pronta" : "pronte"}.`, "avviso arrivi al titolare");
+      if (ls.length && puoMe) await mandaMe(`⚠️ ${ls.map(p => k.camera(p.camera).nome).join(", ")}: oggi ${ls.length === 1 ? "arriva un ospite e la camera non risulta" : "arrivano ospiti e le camere non risultano"} ancora ${ls.length === 1 ? "pronta" : "pronte"}.`, "avviso arrivi al titolare", "Sofia · camera non pronta", true);
       fatti.allarme = ls.length ? t.hhmm : "niente";
     }
     if (serve.chiusura) {
@@ -189,7 +209,7 @@ export async function giro({ db, telegram, adesso = new Date() }) {
       fatti.chiusura = righe.length ? t.hhmm : "niente";
     }
     if (serve.bollettino) {
-      if (puoMe && a.giroBollettino !== false) await manda(a.chatMio, testoBollettino(st, oggi, domani), "bollettino della sera");
+      if (puoMe && a.giroBollettino !== false) await mandaMe(testoBollettino(st, oggi, domani), "bollettino della sera", "Sofia · il bollettino della sera");
       fatti.bollettino = puoMe ? t.hhmm : "spento";
     }
     if (serve.ponte) {
@@ -197,7 +217,7 @@ export async function giro({ db, telegram, adesso = new Date() }) {
       if (ponti.length) {
         const vivo = Math.max(...ponti.map(p => Number(p.vivo)));
         if (adesso.getTime() - vivo > 40 * 60 * 1000) {
-          if (puoMe) await manda(a.chatMio, `📵 Il ponte WhatsApp non dà segni dalle ${oraRoma(new Date(vivo)).hhmm}: il PC è acceso? Finché è spento, i messaggi del gruppo aspettano.`, "avviso ponte spento");
+          if (puoMe) await mandaMe(`📵 Il ponte WhatsApp non dà segni dalle ${oraRoma(new Date(vivo)).hhmm}: il PC è acceso? Finché è spento, i messaggi del gruppo aspettano.`, "avviso ponte spento", "Sofia · il ponte WhatsApp");
           fatti.ponte = t.hhmm;
         }
       } else fatti.ponte = "nessun ponte";
@@ -218,6 +238,16 @@ export function dbAdmin(fs) {
     soggiorniDa: async (iso) => comeOggetto(await fs.collection("soggiorni").where("fine", ">=", iso).get()),
     guastiAperti: async () => comeOggetto(await fs.collection("manutenzione").where("stato", "!=", "fatto").get()),
     merge: (c, id, dati) => fs.collection(c).doc(id).set(dati, { merge: true }),
+    sostituisci: (c, id, campo, valore) => fs.collection(c).doc(id).update({ [campo]: valore }),
+  };
+}
+// 1.17.0: un avviso sul telefono (Web Push). Le chiavi VAPID le ha create l'app nel telefono del titolare (importazioni/push-sofia).
+export function pushVero(webpush) {
+  return async (chiavi, sub, dati) => {
+    try {
+      await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800) }), { TTL: 6 * 3600, urgency: dati.urgente ? "high" : "normal", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      return { ok: true };
+    } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message)); return { ok: false, finita: s === 404 || s === 410 }; }
   };
 }
 export async function telegramVero(token, chat, testo) {
@@ -234,7 +264,8 @@ async function main() {
   const { initializeApp, cert } = await import("firebase-admin/app");
   const { getFirestore } = await import("firebase-admin/firestore");
   initializeApp({ credential: cert(JSON.parse(sa)) });
-  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, adesso: new Date() });
+  const webpush = (await import("web-push")).default;
+  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date() });
   console.log("Sofia sempre accesa:", JSON.stringify(esito));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(e => { console.error("Sofia sempre accesa: errore", e && e.message); process.exitCode = 1; });
