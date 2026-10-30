@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.13.2";
+export const VERSIONE = "1.13.3";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -174,7 +174,10 @@ function treGiro(ora) {
   if (TRE.vista && card.classList.contains("casa-card")) { card.style.setProperty("--ex", TRE.x.toFixed(3)); card.style.setProperty("--ey", TRE.y.toFixed(3)); }
   TRE.raf = requestAnimationFrame(treGiro);
 }
-function treAvvia() { if (!TRE.raf && (document.querySelector(".casa-card.tre") || document.querySelector("#sofiaFuori.su"))) TRE.raf = requestAnimationFrame(treGiro); }
+// 1.13.3 (Michele, 30/10: "vorrei che non si muovesse più quando muovo il telefono e quando muovo il cursore"): Sofia in 3D
+// resta FERMA: niente giroscopio, niente mouse, niente respiro da sola. Il 3D resta (esce dalla cornice, con la sua ombra).
+const TRE_FERMO = true;
+function treAvvia() { if (TRE_FERMO) return; if (!TRE.raf && (document.querySelector(".casa-card.tre") || document.querySelector("#sofiaFuori.su"))) TRE.raf = requestAnimationFrame(treGiro); }
 function treOsserva(card) {
   try { if (TRE.io) TRE.io.disconnect(); } catch (e) {}
   TRE.vista = true;
@@ -1353,12 +1356,12 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "clienti", d => { S.clienti = { ...(d || {}) }; delete S.clienti.id; disegna(); pianifica(); }));
   // la chat con la governante: le risposte date, i conteggi per "impara", le cose che fa da sola
   S.stop.push(db.ascoltaDoc("impostazioni", "spesa", d => { const x = { ...(d || {}) }; delete x.id; S.spesa = { voci: x.voci || {} }; disegna(); }));
-  S.stop.push(db.ascoltaDoc("impostazioni", "chat", d => { const x = { ...(d || {}) }; delete x.id; S.chat = { risposte: x.risposte || {}, conta: x.conta || {}, automatiche: x.automatiche || {}, conversazione: Array.isArray(x.conversazione) ? x.conversazione : [] }; disegna(); governanteDaSola(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "chat", d => { const x = { ...(d || {}) }; delete x.id; S.chat = { risposte: x.risposte || {}, conta: x.conta || {}, automatiche: x.automatiche || {}, conversazione: Array.isArray(x.conversazione) ? x.conversazione : [] }; disegna(); governanteDaSola(); setTimeout(guastiDalTaccuino, 2500); }));
   // messaggi del giorno dei proprietari alle signore (un documento, una voce per giorno)
   S.stop.push(db.ascoltaDoc("impostazioni", "messaggi", d => { S.messaggi = { ...(d || {}) }; delete S.messaggi.id; disegna(); }));
   S.stop.push(db.ascoltaDoc("impostazioni", "economia", d => { S.economia = { ...(d || {}) }; delete S.economia.id; disegna(); }));
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
-  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); }));
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); setTimeout(guastiDalTaccuino, 2500); }));
   // 1.13.0: le note private dei clienti (dette a Sofia): stanno in "importazioni", che le signore non leggono
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "clienti-privati", d => { S.clientiPrivati = { ...(d || {}) }; delete S.clientiPrivati.id; delete S.clientiPrivati.aggiornato; disegna(); }));
   // 1.0: il ponte WhatsApp e la posta di Sofia (solo i proprietari; finche' le regole non ci sono, niente errori a schermo:
@@ -3559,7 +3562,7 @@ function cardStileCasa() {
       ? `Su questo telefono il 3D non si può fare: ${esc(nomeGov())} resta piatta, come prima.`
       : motoRidotto()
         ? `Il telefono è impostato per avere meno movimento: ${esc(nomeGov())} resta piatta.`
-        : `In 3D esce un po' dalla cornice e si muove appena quando muovi il telefono. "Piatta" la rimette esattamente com'era.`}</span>
+        : `In 3D esce un po' dalla cornice, con la sua ombra, e resta ferma: non si muove col telefono né col mouse. "Piatta" la rimette esattamente com'era.`}</span>
     ${ALFA_OK === "no" || motoRidotto() || !sofia3dVoluta() ? "" : `<div class="seg" style="margin-top:8px"><button type="button" aria-pressed="${!saloneVoluto()}" data-salone="no">Senza niente dietro</button><button type="button" aria-pressed="${saloneVoluto()}" data-salone="si">Col salone dietro</button></div>
     <span class="small muted">Senza niente dietro: lei sta sulla pagina, senza il riquadro marrone alle spalle.</span>`}
     <h3>5. Orologio e data</h3>
@@ -4061,7 +4064,7 @@ function propostaMani(a) {
     case "busta":
       return `Nella busta di ${SIG(a.chi)}, settimana ${L.etichettaSettimana(a.settimana)}: ${a.euro > 0 ? `★ Premio extra direzione +${eur(a.euro)}` : `Rettifica −${eur(-a.euro)}`} («${a.motivo}»). È una riga a parte, la vede anche lei.${a.nota ? ` (${a.nota})` : ""}${conf}`;
     case "manutenzione":
-      return a.modo === "apri" ? `Apro un lavoro di manutenzione${a.camera ? " in " + camera(a.camera).nome : ""}: «${a.cosa}».${conf}` : `Segno sistemato: ${a.titoli.join(", ")}.${conf}`;
+      return a.modo === "apri" ? `Apro un lavoro di manutenzione${a.camera ? " in " + camera(a.camera).nome : ""}: «${a.cosa}».${a.daTaccuino ? " Dal taccuino lo tolgo." : ""}${conf}` : `Segno sistemato: ${a.titoli.join(", ")}.${conf}`;
     case "direzione":
       if (a.modo === "presente") return `Segno che ${quandoTesto(a.giorno)} ${a.presente ? "ci sei tu in albergo: le rifiniture si fanno anche se una signora è sola" : "non ci sei in albergo"}.${conf}`;
       if (a.modo === "visto") return `Do il Visto della direzione al ${pianoBreve(a.zona)} di ${quandoTesto(a.giorno)}: le rifiniture entrano in busta.${conf}`;
@@ -4167,8 +4170,10 @@ async function eseguiMani(a) {
       if (a.modo === "apri") {
         const id = `man_${Date.now()}`, c = a.camera ? camera(a.camera) : null;
         const voce = { pulizia: null, camera: a.camera || null, zona: c ? c.zona : null, data: oggi, titolo: a.cosa, nota: "", da: nomeGov(), fonte: "sofia", foto: false, stato: "aperto", creato: adesso, fatto: null, fattoDa: "" };
-        await S.db.salva("manutenzione", id, voce, false); S.manutenzione[id] = { id, ...voce }; disegna();
-        return `Fatto: il lavoro «${a.cosa}» è nella manutenzione.`;
+        await S.db.salva("manutenzione", id, voce, false); S.manutenzione[id] = { id, ...voce };
+        if (a.daTaccuino && taccuinoVoci().some(y => y.id === a.daTaccuino)) await salvaTaccuino(taccuinoVoci().filter(y => y.id !== a.daTaccuino));   // 1.13.3
+        disegna();
+        return `Fatto: il lavoro «${a.cosa}» è nella manutenzione${a.daTaccuino ? " e non è più nel taccuino" : ""}.`;
       }
       for (const id of a.ids) if (S.manutenzione[id]) { const patch = { stato: "fatto", fatto: adesso, fattoDa: nomeGov() }; Object.assign(S.manutenzione[id], patch); await S.db.aggiorna("manutenzione", id, patch); }
       disegna();
@@ -4997,7 +5002,7 @@ function camereDaIA(dove) {
     if (/^tutt/i.test(s)) { tutte.forEach(c => ids.add(c.id)); continue; }
     const per = tutte.find(c => c.id === s) || tutte.find(c => PAROLE.norm(c.nome) === PAROLE.norm(s));
     if (per) { ids.add(per.id); continue; }
-    try { for (const id of PAROLE.trovaLuoghi(s, ctxParole())) ids.add(id); } catch (e) {}
+    try { for (const id of (PAROLE.trovaLuoghi(s, ctxParole()).camere || [])) ids.add(id); } catch (e) {}   // 1.13.3
   }
   return [...ids];
 }
@@ -5291,6 +5296,60 @@ async function chiediIA(dom) {
     return { r, ripiego: true };
   }
 }
+// 1.13.3 (Michele, 30/10: "le ho segnalato una manutenzione e l'ha segnata nel taccuino invece che nelle manutenzioni"):
+// una cosa ROTTA o DA AGGIUSTARE va sempre nei lavori di manutenzione, mai nel taccuino. Le istruzioni di Sofia ora lo dicono
+// chiaro (prima dicevano il contrario: "un difetto di una camera" nel taccuino); in più l'app fa da rete: se l'IA prova a
+// segnarla nel taccuino, o non mette nessuna azione, diventa la proposta «Apro un lavoro di manutenzione…» col «Sì, fallo».
+const RX_GUASTO = new RegExp([
+  "\\brott[oaie]\\b", "\\bguast[oi]\\b", "\\bnon funzion", "\\bnon (?:va|vanno) piu\\b",
+  "\\b(?:luc[ei]|lampadin\\w*|tv|televisor\\w*|condizionator\\w*|clima|wi ?fi|internet|frigo\\w*|phon|asciugacapelli|caldaia|boiler|scaldabagno|lavatric\\w*|serratur\\w*|citofono|campanello|telecomando|tapparell\\w*|persian\\w*|doccia|scarico|sciacquone|cancello|porta|finestra|rubinett\\w*|presa|prese|interruttor\\w*|termosifon\\w*|ascensore|chiave)(?: \\S+){0,3} non (?:va|vanno|parte|partono|si accende|si accendono|scarica|tira|raffredda|scalda|chiude|apre|prende|carica)\\b(?! bene)",
+  "\\bnon si (?:accende|accendono|apre|aprono|chiude|chiudono|spegne|spengono|scarica|alza|alzano|abbassa|abbassano)\\b",
+  "\\bperde (?:acqua|gas|olio)\\b", "\\b(?:rubinett\\w*|scarico|tubo|tubi|wc|water|lavandino|doccia|bidet|termosifon\\w*|caldaia|condizionator\\w*|lavatric\\w*|boiler|scaldabagno|cassetta|sifone|frigo\\w*) (?:che )?perd(?:e|ono)\\b",
+  "\\bgocciol", "\\bintasat", "\\botturat", "\\bbruciat[oaie]\\b", "\\bfulminat[oaie]\\b",
+  "\\bda (?:aggiustare|riparare)\\b", "\\b(?:va|vanno) (?:aggiustat|riparat)",
+  "\\binfiltrazion", "\\bperdita d.?acqua\\b", "\\bmacchi[ae] d.?umido\\b", "\\ballagat",
+  "\\b(?:scollat|crepat|incrinat|sfondat|scheggiat|spaccat)[oaie]\\b",
+  "\\b(?:salta|saltata|e saltata) la corrente\\b", "\\bnon c.?e (?:acqua calda|corrente|luce)\\b", "\\bmanca l.?acqua calda\\b",
+  "\\bfa rumore\\b", "\\b(?:serve|chiamare|chiama|chiamo|chiamato) (?:l'|l |il |un )?(?:idraulico|elettricista|fabbro|tecnico della caldaia)\\b",
+].join("|"));
+const RX_RISOLTO = /\b(?:e stat[oaie]|sono stat[ie]|ha|hanno|ho|abbiamo) (?:aggiustat|riparat|sistemat|cambiat|sostituit)|\bnon (?:perde|perdono|gocciola|gocciolano) piu\b|\bfunziona di nuovo\b|\b(?:ora|adesso) funziona\b|\btornat[oaie] a funzionare\b|\brisolt[oaie]\b/;
+const RX_DOMANDA = /^(?:ci sono|c.?e qualche|quali|quanti|quante|cosa|che cosa|come|quando|dove|perche|chi|hai|sai)\b/;
+function sembraGuasto(t) {
+  const n = PAROLE.norm(t);
+  if (!n || !RX_GUASTO.test(n)) return false;
+  if (RX_RISOLTO.test(n) && !/\b(?:va|vanno|da) (?:aggiust|ripar)/.test(n)) return false;   // "l'idraulico l'ha aggiustato": è chiuso, non aperto
+  return true;
+}
+function sembraDomanda(t) { const s = String(t || "").trim(); return /\?\s*$/.test(s) || RX_DOMANDA.test(PAROLE.norm(s)); }
+function guastoDaTesto(t) {
+  const cosa = senzaTelefoni(String(t || "")).replace(RX_RICORDA, "").replace(/\s+/g, " ").trim().replace(/^./, c => c.toUpperCase()).slice(0, 140);
+  let cam = null;
+  try {
+    const ids = PAROLE.trovaLuoghi(cosa, ctxParole()).camere || [];
+    const scelte = ids.length > 1 ? ids.filter(id => PAROLE.norm(camera(id).nome) !== "michele") : ids;   // "Michele" è anche lui, non solo la camera
+    if (scelte.length === 1) cam = scelte[0];
+  } catch (e) {}
+  return { tipo: "manutenzione", modo: "apri", camera: cam, cosa };
+}
+// i guasti finiti nel taccuino prima della 1.13.3: Sofia propone UNA volta di spostarli nei lavori (poi restano segnati "guastoVisto")
+let guastiTaccInCorso = false;
+async function guastiDalTaccuino() {
+  if (guastiTaccInCorso || !proprietario() || (S.utente && S.utente.finta) || !S.chat || !Array.isArray(S.taccuino)) return;
+  const voci = taccuinoVoci().filter(v => !v.guastoVisto && sembraGuasto(v.testo));
+  if (!voci.length) return;
+  guastiTaccInCorso = true;
+  try {
+    const ids = new Set(voci.map(v => v.id));
+    await salvaTaccuino(taccuinoVoci().map(v => ids.has(v.id) ? { ...v, guastoVisto: true } : v));
+    const azioni = voci.slice(0, 6).map(v => ({ ...guastoDaTesto(v.testo), daTaccuino: v.id }));
+    const uno = azioni.length === 1;
+    const righe = azioni.map((a, i) => `${uno ? "" : (i + 1) + ". "}«${a.cosa}»${a.camera ? " (" + camera(a.camera).nome + ")" : ""}`).join("\n");
+    const testo = `Ho ricontrollato il taccuino: ${uno ? "questa è un guasto, va nei lavori di manutenzione" : `queste ${azioni.length} cose sono guasti, vanno nei lavori di manutenzione`}, non nel taccuino.\n${righe}\n${uno ? "La sposto? Dal taccuino la tolgo." : "Le sposto? Dal taccuino le tolgo."}`;
+    const msg = { chi: "gov", ora: S.db.adesso(), testo, tasti: uno ? SI_NO() : [{ k: "si", testo: `Sì, spostale (${azioni.length})` }, { k: "una", testo: "Una per una" }, { k: "no", testo: "No, lascia" }], azione: uno ? azioni[0] : { tipo: "gruppo", azioni } };
+    await salvaConversazione([...conversazione(), msg]);
+  } catch (e) { console.warn("guasti nel taccuino", e); }
+  finally { guastiTaccInCorso = false; }
+}
 async function rispostaIA(testo, conv, immagine) {
   const sis = sistemaIA(), storia = conv.slice(0, -1).map(m => (m && typeof m.testo === "string" ? { ...m, testo: aCodici(m.testo) } : m));
   let r, ripiego = false;
@@ -5302,19 +5361,23 @@ async function rispostaIA(testo, conv, immagine) {
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
   const grezze = Array.isArray(r.azioni) && r.azioni.length ? r.azioni : r.azione ? [r.azione] : [];
   // 0.88 - il taccuino si scrive subito (non cambia niente nella casa): Michele lo vede scritto sotto la risposta
-  const note = [];
+  const note = [], guasti = [];   // 1.13.3: un guasto non va nel taccuino, diventa una proposta di manutenzione
+  const haMan = grezze.some(g => g && g.tipo === "manutenzione");
   for (const g of grezze) {
     try {
-      if (g.tipo === "ricorda") { const t = await ricordaNelTaccuino(g.testo || g.cosa); if (t) note.push(`📒 Me lo segno nel taccuino: «${t}»`); }
+      if (g.tipo === "ricorda" && sembraGuasto(g.testo || g.cosa)) { if (!haMan) guasti.push(guastoDaTesto(g.testo || g.cosa)); }
+      else if (g.tipo === "ricorda") { const t = await ricordaNelTaccuino(g.testo || g.cosa); if (t) note.push(`📒 Me lo segno nel taccuino: «${t}»`); }
       else if (g.tipo === "dimentica") { const via = await dimenticaDalTaccuino(g.quale || g.codice || g.testo); if (via.length) note.push(`🗑️ Tolto dal taccuino: «${via.join("», «")}»`); }
     } catch (e) { console.warn("taccuino", e); }
   }
   if (!immagine && !grezze.length && RX_RICORDA.test(String(testo || ""))) {
-    try { const t = await ricordaNelTaccuino(String(testo).replace(RX_RICORDA, ""), "michele"); if (t) note.push(`📒 Me lo segno nel taccuino: «${t}»`); } catch (e) { console.warn("taccuino", e); }
+    const resto = String(testo).replace(RX_RICORDA, "");
+    if (sembraGuasto(resto)) guasti.push(guastoDaTesto(resto));   // 1.13.3: «ricordati che in Alba il rubinetto perde» = un lavoro
+    else { try { const t = await ricordaNelTaccuino(resto, "michele"); if (t) note.push(`📒 Me lo segno nel taccuino: «${t}»`); } catch (e) { console.warn("taccuino", e); } }
   }
   const dice = [r.risposta, r.consiglio && r.consiglio !== r.risposta ? "💡 " + r.consiglio : "", note.join("\n")].filter(Boolean).join("\n\n");
-  let az = grezze.filter(g => g.tipo !== "ricorda" && g.tipo !== "dimentica").map(g => { try { return azioneDaIA(g); } catch (e) { console.warn("azione/IA", e); return null; } }).filter(Boolean);
-  if (!az.length && !immagine && !note.length) { try { const a = azioneDalleParole(testo); if (a) az = [a]; } catch (e) { console.warn("parole/prospetto", e); } if (!az.length) console.info("prospetto/parole: niente da proporre per:", String(testo).slice(0, 80)); }
+  let az = [...grezze.filter(g => g.tipo !== "ricorda" && g.tipo !== "dimentica"), ...guasti].map(g => { try { return azioneDaIA(g); } catch (e) { console.warn("azione/IA", e); return null; } }).filter(Boolean);
+  if (!az.length && !immagine && !note.length) { try { const a = azioneDalleParole(testo); if (a) az = [a]; } catch (e) { console.warn("parole/prospetto", e); } if (!az.length && sembraGuasto(testo) && !sembraDomanda(testo)) { try { const a = azioneDaIA(guastoDaTesto(testo)); if (a) az = [a]; } catch (e) { console.warn("guasto", e); } } if (!az.length) console.info("prospetto/parole: niente da proporre per:", String(testo).slice(0, 80)); }
   if (!az.length) return { ...base, testo: dice };
   // quello che non si puo' proporre cosi' com'e': il prospetto che e' gia' giusto, i lavori senza "dove"
   const pronte = [], spiega = [], senzaDove = [];
