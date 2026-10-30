@@ -5535,3 +5535,15 @@ body.premium .sheet .panel .patto,body.semplice .sheet .panel .patto{padding-bot
 .argon-card .ag-riga-tasti{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
 .argon-card .row.one{display:flex;flex-direction:column;align-items:stretch}
 .argon-card .pill.paid{background:#DCFCE7;color:#166534}
+
+/* ---- 1.13.2 · IL TASTO DI SOFIA: moneta BLU NOTTE (come l'icona dell'app) con la STELLA D'ORO sfaccettata.
+   La 1 delle tre proposte, scelta da Michele il 30/10. Anello bianco e filo d'oro come prima; premuto = più scuro e un po' giù ---- */
+body.premium .bs-gioiello.bs-oro{background:radial-gradient(110% 80% at 50% 10%,rgba(150,178,235,.40) 0%,rgba(150,178,235,0) 55%),linear-gradient(175deg,#2D4372 0%,#18284D 52%,#0A1428 100%);box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 3.5px rgba(154,116,50,.3),inset 0 2px 3px rgba(255,255,255,.22),inset 0 -5px 9px rgba(0,0,0,.55),0 9px 16px rgba(15,23,42,.38),0 3px 5px rgba(15,23,42,.28)}
+body.premium .bs-oro::before{padding:2px}
+body.premium .bs-oro svg{width:48px;height:48px;filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.55)) drop-shadow(0 0 5px rgba(255,214,120,.35))}
+body.premium .bs-sofia:active .bs-oro{transform:translateY(1px) scale(.95);background:radial-gradient(110% 80% at 50% 10%,rgba(150,178,235,.22) 0%,rgba(150,178,235,0) 55%),linear-gradient(175deg,#22355C 0%,#132140 52%,#081022 100%);box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 3.5px rgba(154,116,50,.3),inset 0 3px 6px rgba(0,0,0,.6),0 2px 6px rgba(15,23,42,.35)}
+body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #FAF8F5,0 0 0 4.5px #D4AF6A,inset 0 2px 3px rgba(255,255,255,.22),inset 0 -5px 9px rgba(0,0,0,.55),0 9px 16px rgba(15,23,42,.4),0 0 16px rgba(212,175,106,.35)}
+:root[data-theme="dark"] body.premium .bs-gioiello.bs-oro{background:radial-gradient(110% 80% at 50% 10%,rgba(160,188,245,.42) 0%,rgba(160,188,245,0) 55%),linear-gradient(175deg,#34507F 0%,#1C2E57 52%,#0D1830 100%);box-shadow:0 0 0 2.5px #1E1B18,0 0 0 3.5px rgba(212,175,106,.45),inset 0 2px 3px rgba(255,255,255,.2),inset 0 -5px 9px rgba(0,0,0,.6),0 9px 18px rgba(0,0,0,.6)}
+:root[data-theme="dark"] body.premium .bs-sofia:active .bs-oro{background:radial-gradient(110% 80% at 50% 10%,rgba(160,188,245,.22) 0%,rgba(160,188,245,0) 55%),linear-gradient(175deg,#283F68 0%,#162545 52%,#0A1326 100%);box-shadow:0 0 0 2.5px #1E1B18,0 0 0 3.5px rgba(212,175,106,.45),inset 0 3px 6px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.5)}
+:root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 4.5px #D4AF6A,inset 0 2px 3px rgba(255,255,255,.2),inset 0 -5px 9px rgba(0,0,0,.6),0 9px 18px rgba(0,0,0,.6),0 0 18px rgba(212,175,106,.3)}
+.bs-gioiello.bs-oro svg{width:50px;height:50px;filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.55))}
