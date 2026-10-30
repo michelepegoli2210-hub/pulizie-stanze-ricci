@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.16.0";
+const VERSIONE = "1.17.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
@@ -35,9 +35,16 @@ self.addEventListener("notificationclick", (e) => {
   const url = new URL((e.notification.data && e.notification.data.url) || "./index.html", self.registration.scope).href;
   e.waitUntil((async () => {
     const finestre = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} return; } }
+    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} if (!(e.notification.data && e.notification.data.push)) { try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} } return; } }
     if (self.clients.openWindow) await self.clients.openWindow(url);
   })());
+});
+
+// 1.17.0 GLI AVVISI DI SOFIA SUL TELEFONO (Web Push): li manda il giro sempre acceso (sofia-giro), qui si mostrano
+self.addEventListener("push", (e) => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { testo: e.data ? e.data.text() : "" }; }
+  const titolo = String(d.titolo || "Sofia").slice(0, 80), testo = String(d.testo || "Apri l'app: Sofia ti ha scritto.").slice(0, 1800);
+  e.waitUntil(self.registration.showNotification(titolo, { body: testo, icon: "icon-192.png", badge: "icon-192.png", tag: "sofia-" + Date.now(), data: { url: "./index.html", push: true } }));
 });
 
 // ---- filmati: cache-first, a pezzi, scaricati per intero una volta sola ----------------------

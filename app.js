@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.16.0";
+export const VERSIONE = "1.17.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1362,6 +1362,7 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "economia", d => { S.economia = { ...(d || {}) }; delete S.economia.id; disegna(); }));
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); setTimeout(guastiDalTaccuino, 2500); }));
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "sofia-autonomia", d => { S.autonomia = d ? { livello: d.livello } : null; if (S.vista === "altro") disegna(); }));   // 1.15.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "registro-sofia", d => { S.registroSofia = Array.isArray(d?.voci) ? d.voci : []; if (S.vista === "altro") disegna(); }));   // 1.15.0
@@ -5549,12 +5550,88 @@ async function segnaAnnullataNelRegistro(giornale) {
 }
 // 1.16.0 SOFIA SEMPRE ACCESA: la scheda in Altro. Il giro lo fa GitHub ogni mezz'ora (sofia-giro/giro.mjs) con la chiave che mette
 // Michele; qui si vede se gira e cosa ha fatto oggi, e si spengono i promemoria alle signore o il bollettino della sera.
+// 1.17.0 GLI AVVISI DI SOFIA SUL TELEFONO (Michele, 31/10: "io non so fare niente: più fai tu e più riesce"): niente Telegram, niente bot.
+// Un tasto: l'app chiede il permesso delle notifiche, iscrive questo telefono al servizio di avvisi del browser (Web Push) e salva
+// l'iscrizione in importazioni/push-sofia (lo leggono solo i titolari). Le chiavi VAPID le crea l'app la prima volta, qui nel telefono,
+// e restano nel database: nessuno le deve copiare. Il giro sempre acceso (sofia-giro) le usa per mandare gli avvisi al titolare.
+const B64U = {
+  da: (buf) => { const b = new Uint8Array(buf); let s = ""; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+  a: (s) => { const p = String(s).replace(/-/g, "+").replace(/_/g, "/"); const b = atob(p + "===".slice((p.length + 3) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); },
+};
+function idTelefono() { try { let v = localStorage.getItem("ricci_id_telefono"); if (!v) { v = "t" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); localStorage.setItem("ricci_id_telefono", v); } return v; } catch (e) { return "t0"; } }
+function nomeTelefono() { const u = navigator.userAgent || ""; const m = /Android[^;)]*;\s*([^;)]+)/.exec(u); if (m) return m[1].replace(/\s*Build.*$/, "").trim() || "Telefono Android"; return /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Windows/.test(u) ? "Computer Windows" : /Mac/.test(u) ? "Mac" : "Telefono"; }
+function avvisiTelefonoPossibili() { return "serviceWorker" in navigator && "PushManager" in window && typeof Notification !== "undefined"; }
+function avvisiTelefonoAttivi() { const p = S.pushSofia; return !!(avvisiTelefonoPossibili() && Notification.permission === "granted" && p && p.iscrizioni && p.iscrizioni[idTelefono()]); }
+async function chiaviPush() {
+  let p = S.pushSofia; if (!p) { try { p = await S.db.leggi("importazioni", "push-sofia"); } catch (e) { p = null; } }
+  if (p && p.vapidPublic && p.vapidPrivato) return p;
+  const k = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const nuove = { vapidPublic: B64U.da(await crypto.subtle.exportKey("raw", k.publicKey)), vapidPrivato: (await crypto.subtle.exportKey("jwk", k.privateKey)).d, creato: S.db.adesso() };
+  await S.db.salva("importazioni", "push-sofia", nuove, true);
+  S.pushSofia = { ...(p || {}), ...nuove };
+  return S.pushSofia;
+}
+let accendoAvvisi = false;
+async function accendiAvvisiTelefono() {
+  if (accendoAvvisi) return false;
+  if (!avvisiTelefonoPossibili()) { toast("Questo telefono non sa ricevere gli avvisi dell'app (prova da Chrome)."); return false; }
+  accendoAvvisi = true;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { toast("Senza il permesso delle notifiche Sofia non ti può scrivere. Se hai toccato «Non consentire», si cambia dal lucchetto in alto, vicino all'indirizzo."); return false; }
+    const p = await chiaviPush();
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (sub) { let k = ""; try { k = sub.options && sub.options.applicationServerKey ? B64U.da(sub.options.applicationServerKey) : ""; } catch (e) {} if (k && k !== p.vapidPublic) { try { await sub.unsubscribe(); } catch (e) {} sub = null; } }
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: B64U.a(p.vapidPublic) });
+    const id = idTelefono(), voce = { sub: JSON.parse(JSON.stringify(sub)), chi: "titolare", nome: nomeTelefono(), quando: S.db.adesso() };
+    await S.db.salva("importazioni", "push-sofia", { iscrizioni: { [id]: voce } }, true);
+    S.pushSofia = { ...(S.pushSofia || {}), iscrizioni: { ...((S.pushSofia || {}).iscrizioni || {}), [id]: voce } };
+    try { await reg.showNotification("Sofia", { body: "Fatto: da adesso ti scrivo anche qui, sul telefono.", icon: "icon-192.png", tag: "sofia-prova", data: { push: true } }); } catch (e) {}
+    toast("Avvisi accesi su questo telefono ✓");
+    disegna(); return true;
+  } catch (e) { console.warn("avvisi telefono", e); toast("Non ci sono riuscita: " + String((e && e.message) || e).slice(0, 90)); return false; }
+  finally { accendoAvvisi = false; }
+}
+async function provaAvvisoTelefono() {
+  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification("Sofia", { body: "Prova: gli avvisi su questo telefono funzionano.", icon: "icon-192.png", tag: "sofia-prova", data: { push: true } }); toast("Guarda le notifiche del telefono"); }
+  catch (e) { toast("Non riesco a mostrare l'avviso: " + String((e && e.message) || e).slice(0, 80)); }
+}
+function cardAvvisiTelefono() {
+  if (!proprietario()) return "";
+  const on = avvisiTelefonoAttivi(), n = Object.keys((S.pushSofia || {}).iscrizioni || {}).length;
+  if (on) return `<section class="card avt-card avt-on"><h2>Avvisi di ${esc(nomeGov())} sul telefono</h2><p class="small" style="margin:0 0 8px">Accesi su questo telefono ✓${n > 1 ? ` (e su ${n - 1} ${n - 1 === 1 ? "altro" : "altri"})` : ""}. Quando ${esc(nomeGov())} è sempre accesa, ti scrive qui il piano del mattino, gli avvisi urgenti e il bollettino della sera.</p><button type="button" class="btnsm ghost" data-prova-telefono>Prova: mandami un avviso</button></section>`;
+  return `<section class="card avt-card"><h2>Avvisi di ${esc(nomeGov())} sul telefono</h2>
+    <p class="small" style="margin:0 0 10px">${esc(nomeGov())} ti scrive sul telefono come un messaggio, anche ad app chiusa (e sull'orologio). Niente Telegram, niente codici: tocca il tasto e poi «Consenti».</p>
+    ${avvisiTelefonoPossibili() ? `<button type="button" class="big main avt-tasto" data-accendi-telefono>🔔 Accendi gli avvisi su questo telefono</button>` : `<p class="note warn" style="margin:0">Questo browser non sa ricevere gli avvisi: aprila con Chrome.</p>`}
+  </section>`;
+}
+// 1.17.0: la chiave di «Sofia sempre accesa» in pochi tocchi: i link giusti già pronti e il file della chiave che si copia da solo
+// (l'app lo legge e lo mette negli appunti, non lo salva da nessuna parte); il nome del segreto si copia con un tasto.
+const LINK_FIREBASE_CHIAVE = "https://console.firebase.google.com/project/le-stanze-di-ricci/settings/serviceaccounts/adminsdk";
+const LINK_GITHUB_SEGRETO = "https://github.com/michelepegoli2210-hub/pulizie-stanze-ricci/settings/secrets/actions/new";
+function passiChiaveGiro() {
+  return `<ol class="giro-passi">
+    <li><b>Al PC</b>, apri Firebase: <a class="btnsm" href="${LINK_FIREBASE_CHIAVE}" target="_blank" rel="noopener">1 · Apri Firebase</a><br><span class="small muted">Tocca «Genera nuova chiave privata», poi «Genera chiave»: si scarica un file.</span></li>
+    <li>Fai copiare il file all'app: <label class="btnsm">2 · Scegli il file scaricato<input type="file" accept=".json,application/json" data-chiave-file hidden></label><br><span class="small muted">L'app lo copia negli appunti e non lo salva da nessuna parte.</span></li>
+    <li>Apri GitHub: <a class="btnsm" href="${LINK_GITHUB_SEGRETO}" target="_blank" rel="noopener">3 · Apri GitHub</a> <button type="button" class="btnsm ghost" data-copia-nome-segreto>Copia il nome</button><br><span class="small muted">Nella prima casella incolla il nome (FIREBASE_SA), nella casella grande incolla la chiave (tasto destro → Incolla), poi «Add secret». Entro mezz'ora parte da sola.</span></li>
+  </ol>`;
+}
+async function copiaChiaveGiro(file) {
+  if (!file) return;
+  let testo = ""; try { testo = await file.text(); } catch (e) { toast("Non riesco ad aprire il file."); return; }
+  let j = null; try { j = JSON.parse(testo); } catch (e) { j = null; }
+  if (!j || j.type !== "service_account" || !j.private_key || !j.client_email) { toast("Questo non è il file della chiave: scegli quello scaricato da Firebase (finisce con .json)."); return; }
+  if (j.project_id && j.project_id !== "le-stanze-di-ricci") { toast(`Questa chiave è di un altro progetto (${j.project_id}): serve quella di le-stanze-di-ricci.`); return; }
+  try { await navigator.clipboard.writeText(testo); toast("Chiave copiata ✓ Adesso apri GitHub (passo 3) e incollala nella casella grande."); }
+  catch (e) { toast("Il browser non mi lascia copiare: riprova toccando di nuovo il passo 2."); }
+}
 function cardSempreAccesa() {
   if (!proprietario()) return "";
   const g = S.giroSofia, a = S.avvisi || {};
   if (!g) return `<section class="card giro-card"><h2>${esc(nomeGov())} sempre accesa</h2>
     <p class="note info" style="margin:0 0 8px">Spenta, per ora. Quando è accesa lavora da sola ogni mezz'ora, anche se nessuno apre l'app: alle 7 manda il piano alle signore e a te tre righe; verso mezzogiorno, se una camera dove arriva un ospite non è pronta, dà la priorità alle signore (e alle 13:30 avvisa te); alle 15 ricorda con gentilezza le pulizie da segnare; alle 20 ti manda il bollettino della sera. Non usa Gemini: non costa niente.</p>
-    <p class="small" style="margin:0"><b>Per accenderla</b> servono due passi che fai tu (cinque minuti, ti guido io): 1) in Firebase scarichi la «chiave dell'account di servizio»; 2) in GitHub la incolli come segreto <b>FIREBASE_SA</b>. Da lì parte da sola.</p></section>`;
+    <p class="small" style="margin:0 0 6px"><b>Per accenderla</b> (una volta sola, dal PC, ti guido io):</p>${passiChiaveGiro()}</section>`;
   const min = g.ultimo ? (Date.now() - new Date(g.ultimo).getTime()) / 60000 : Infinity;
   const h = Number(new Date().toLocaleString("it-IT", { hour: "2-digit", hour12: false, timeZone: "Europe/Rome" })) % 24;
   const viva = min < 80 || ((h < 7 || h >= 23) && min < 10 * 60);
@@ -7188,7 +7265,7 @@ function cardOrarioBase() {
 // ---- altro ---------------------------------------------------------------------------
 function vistaAltro() {
   const r = S.regole;
-  return cardStileCasa() + cardIA() + cardPonte() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -8863,6 +8940,10 @@ function collega() {
     disegna();
   });
   document.querySelectorAll("[data-colore-app]").forEach(b => b.onclick = () => { S.colore = b.dataset.coloreApp; try { localStorage.setItem("ricci_colore", S.colore); } catch (e) {} applicaTema(); disegna(); toast("Colore: " + ((COLORI_APP.find(k => k.id === S.colore) || {}).nome || S.colore)); });
+  document.querySelectorAll("[data-accendi-telefono]").forEach(b => b.onclick = () => accendiAvvisiTelefono());   // 1.17.0
+  document.querySelectorAll("[data-prova-telefono]").forEach(b => b.onclick = () => provaAvvisoTelefono());
+  document.querySelectorAll("[data-chiave-file]").forEach(i => i.onchange = () => { const f = i.files && i.files[0]; i.value = ""; copiaChiaveGiro(f); });
+  document.querySelectorAll("[data-copia-nome-segreto]").forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText("FIREBASE_SA"); toast("Nome copiato: FIREBASE_SA"); } catch (e) { toast("Il nome è: FIREBASE_SA"); } });
   document.querySelectorAll("[data-giro-sw]").forEach(c => c.onchange = async () => { const k = c.dataset.giroSw; try { await S.db.salva("impostazioni", "avvisi", { [k]: !!c.checked }, true); S.avvisi = { ...(S.avvisi || {}), [k]: !!c.checked }; toast(c.checked ? "Acceso" : "Spento"); } catch (e) { erroreScrittura(e); } });   // 1.16.0
   document.querySelectorAll("[data-autonomia]").forEach(b => b.onclick = async () => { const l = b.dataset.autonomia; try { await S.db.salva("importazioni", "sofia-autonomia", { livello: l, aggiornato: S.db.adesso() }, false); S.autonomia = { livello: l }; disegna(); toast(l === "chiede" ? "Ti chiederà tutto" : "Fatto"); } catch (e) { erroreScrittura(e); } });   // 1.15.0
   document.querySelectorAll("[data-lez-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.lezTogli; try { await salvaLezioni(lezioniVoci().filter(x => x.id !== id)); disegna(); toast("Lezione tolta"); } catch (e) { erroreScrittura(e); } });   // 1.14.0 (C)
