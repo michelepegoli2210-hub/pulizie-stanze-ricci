@@ -1,0 +1,40 @@
+# Sofia sempre accesa (1.16.0): il giro automatico di Sofia, ogni mezz'ora, anche ad app chiusa.
+# Parte da solo quando c'è il segreto FIREBASE_SA (la chiave dell'account di servizio di Firebase, la mette Michele).
+# Gli orari sono in UTC (alle :05 e alle :35, dalle 4 alle 21): il giro guarda l'ora di Roma e decide da solo cosa fare.
+name: Sofia sempre accesa
+on:
+  schedule:
+    - cron: "5,35 4-21 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: sofia-giro
+  cancel-in-progress: false
+jobs:
+  giro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      HA_CHIAVE: ${{ secrets.FIREBASE_SA != '' }}
+    steps:
+      - name: Manca la chiave
+        if: env.HA_CHIAVE != 'true'
+        run: echo "Sofia sempre accesa - manca il segreto FIREBASE_SA, il giro non parte."
+      - uses: actions/checkout@v4
+        if: env.HA_CHIAVE == 'true'
+      - uses: actions/setup-node@v4
+        if: env.HA_CHIAVE == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sofia-giro/package-lock.json
+      - name: Le dipendenze
+        if: env.HA_CHIAVE == 'true'
+        working-directory: sofia-giro
+        run: npm ci --omit=dev --no-audit --no-fund
+      - name: Il giro di Sofia
+        if: env.HA_CHIAVE == 'true'
+        run: node sofia-giro/giro.mjs
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
