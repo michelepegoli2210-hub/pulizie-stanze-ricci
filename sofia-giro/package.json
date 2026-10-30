@@ -1,0 +1,12 @@
+{
+  "name": "sofia-giro",
+  "private": true,
+  "type": "module",
+  "description": "Sofia sempre accesa: il giro automatico di Sofia (Pulizie · Stanze di Ricci)",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}
