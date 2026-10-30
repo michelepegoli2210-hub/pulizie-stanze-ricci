@@ -5547,3 +5547,13 @@ body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0
 :root[data-theme="dark"] body.premium .bs-sofia:active .bs-oro{background:radial-gradient(110% 80% at 50% 10%,rgba(160,188,245,.22) 0%,rgba(160,188,245,0) 55%),linear-gradient(175deg,#283F68 0%,#162545 52%,#0A1326 100%);box-shadow:0 0 0 2.5px #1E1B18,0 0 0 3.5px rgba(212,175,106,.45),inset 0 3px 6px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.5)}
 :root[data-theme="dark"] body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0 2.5px #1E1B18,0 0 0 4.5px #D4AF6A,inset 0 2px 3px rgba(255,255,255,.2),inset 0 -5px 9px rgba(0,0,0,.6),0 9px 18px rgba(0,0,0,.6),0 0 18px rgba(212,175,106,.3)}
 .bs-gioiello.bs-oro svg{width:50px;height:50px;filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.55))}
+/* ---- 1.15.0 · cosa fa Sofia da sola (Altro) e il guasto urgente ---- */
+.aut-seg{display:flex;flex-wrap:wrap;gap:6px}
+.aut-seg button{flex:1 1 45%;min-height:44px}
+.m13-urg{display:inline-block;align-self:flex-start;margin:2px 0;padding:1px 9px;border-radius:99px;background:#B91C1C;color:#fff;font:700 11.5px/1.7 var(--f-ui, system-ui);letter-spacing:.02em}
+/* ---- 1.16.0 · Sofia sempre accesa (Altro) ---- */
+.giro-oggi{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px;font:500 15px/1.35 var(--f-body)}
+.giro-oggi small{color:var(--muted)}
+.giro-sws{display:grid;gap:6px}
+.giro-sw{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r3, 12px);background:var(--campo);font:600 15px/1.3 var(--f-body)}
+.giro-sw input{width:22px;height:22px}
