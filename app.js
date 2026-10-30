@@ -16,7 +16,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.13.3";
+export const VERSIONE = "1.14.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1362,6 +1362,7 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "economia", d => { S.economia = { ...(d || {}) }; delete S.economia.id; disegna(); }));
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); setTimeout(guastiDalTaccuino, 2500); }));
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lezioni-sofia", d => { S.lezioni = Array.isArray(d?.voci) ? d.voci : []; if (S.vista === "altro") disegna(); }));   // 1.14.0 (C)
   // 1.13.0: le note private dei clienti (dette a Sofia): stanno in "importazioni", che le signore non leggono
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "clienti-privati", d => { S.clientiPrivati = { ...(d || {}) }; delete S.clientiPrivati.id; delete S.clientiPrivati.aggiornato; disegna(); }));
   // 1.0: il ponte WhatsApp e la posta di Sofia (solo i proprietari; finche' le regole non ci sono, niente errori a schermo:
@@ -3676,7 +3677,13 @@ async function parlaGov(testo, perIA) {
   let msg = null;
   // prima prova la governante intelligente; se non c'è o non risponde, si torna alle parole del catalogo
   if (iaAccesa()) {
-    try { msg = await rispostaIA(perIA || t, conv); }
+    // 1.14.0 (C): è una correzione? Sofia lo sa subito, e la lezione si segna
+    let corr = null; try { corr = correzioneDi(t, conv); } catch (e) { corr = null; }
+    if (corr) {
+      S.correzioneAperta = { ...corr, quando: Date.now(), id: null };
+      if (!corr.dopoNo) salvaLezione(corr).then(id => { if (S.correzioneAperta && S.correzioneAperta.correzione === corr.correzione) S.correzioneAperta.id = id; }).catch(e => console.warn("lezione", e));
+    }
+    try { msg = await rispostaIA(perIA || t, conv, null, corr ? { nota: notaCorrezione(corr) } : {}); }
     catch (e) { console.warn("ia", e); msg = null; toast("La governante intelligente non risponde: " + String(e.message || e)); }
   }
   if (!msg) {
@@ -3783,7 +3790,14 @@ async function rispondiParole(i, k) {
   const chiudi = async (testo, fatto, extra) => { const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: testo }; if (fatto) nuovo.push({ chi: "gov", testo: fatto, fatto: true, ora: S.db.adesso(), ...(extra || {}) }); if (coda.length) nuovo.push(propostaInCoda(coda)); await salvaConversazione(nuovo); };
   // 1.13.0: «↩ Annulla» sotto il «Fatto»
   if (k === "annulla" && msg.giornale) { let esito = ""; try { esito = await annullaGiornale(msg.giornale); } catch (e) { console.warn("annulla", e); esito = "Non ci sono riuscita, riprova tra un attimo."; } const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: "Annulla" }; nuovo.push({ chi: "gov", testo: esito, fatto: true, ora: S.db.adesso() }); return salvaConversazione(nuovo); }
-  if (k === "no") return chiudi("No", coda.length ? "Va bene, questa la lascio." : "Va bene, non faccio niente.");
+  if (k === "no") {
+    // 1.14.0 (C): dopo il «No» a una sua proposta Sofia chiede cosa era giusto; il messaggio dopo diventa la correzione
+    if (msg.ia && msg.azione && !coda.length) {
+      let detto = ""; for (let q = i - 1; q >= 0; q--) if (conv[q] && conv[q].chi === "io") { detto = String(conv[q].testo || ""); break; }
+      if (detto) return chiudi("No", "Va bene, non faccio niente. Se ho capito male, dimmi cosa era giusto: lo rifaccio e me lo segno tra le mie lezioni.", { aspettaCorrezione: { detto: lezBreve(detto), sbaglio: lezBreve("proposta: " + riassuntoAzione(msg.azione)) } });
+    }
+    return chiudi("No", coda.length ? "Va bene, questa la lascio." : "Va bene, non faccio niente.");
+  }
   if (k === "una" && msg.azione && msg.azione.tipo === "gruppo" && (msg.azione.azioni || []).length) { const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: "Una per una" }; nuovo.push(propostaInCoda(msg.azione.azioni)); return salvaConversazione(nuovo); }
   // "quale?" → scelgo la regola e rifaccio la proposta
   if (msg.scelteRegole) {
@@ -3826,6 +3840,7 @@ async function rispondiParole(i, k) {
       else { const r = await conGiornale(() => eseguiParole(msg.azione), riassuntoAzione(msg.azione)); fatto = r.esito; gid = r.id; }
     } catch (e) { console.warn("parole/azione", e); fatto = "Non ci sono riuscita, riprova tra un attimo."; }
     if (gid) setTimeout(disegna, ANNULLA_MS + 500);
+    try { const ca = S.correzioneAperta; if (ca && !annullo && Date.now() - ca.quando < 20 * 60 * 1000) { const giusto = riassuntoAzione(msg.azione); if (ca.id) await completaLezione(ca.id, giusto); else await salvaLezione({ ...ca, giusto }); S.correzioneAperta = null; } } catch (e) { console.warn("lezione", e); }   // 1.14.0 (C)
     return chiudi("Sì", fatto, gid ? { giornale: gid, tasti: [{ k: "annulla", testo: "↩ Annulla" }], annullaFino: Date.now() + ANNULLA_MS } : null);
   }
 }
@@ -4756,7 +4771,7 @@ function elenchiIA() {
   }).join("\n");
   const regole = regoleGov().map(r => `${r.codice} ${r.posto}/${r.superficie}${r.regola && r.regola !== r.superficie ? ": " + r.regola : ""}${r.ogni ? ` (${G.etichettaOgni(r.ogni).toLowerCase()})` : ""}`).join("\n");
   const signoreIA = signore().map(z => `${z.id} = ${SIG(z.id)} (${z.zonaNome})`).join(" · ");   // 1.13.0
-  return { camere, regole, nome: nomeGov(), gesti: GESTI.ELENCO_GESTI, taccuino: taccuinoPerIA(), signore: signoreIA };
+  return { camere, regole, nome: nomeGov(), gesti: GESTI.ELENCO_GESTI, taccuino: taccuinoPerIA(), signore: signoreIA, lezioni: lezioniPerIA() };
 }
 
 // --- la fotografia della casa, adesso (mai i nomi degli ospiti) ------------
@@ -5243,7 +5258,7 @@ function argonAttivo() { const c = confIA(); return !!(iaAccesa() && c.fornitore
 function regiaArgonHtml() {
   if (!proprietario()) return "";
   if (argonAttivo()) return `<i class="sv-regia si" title="Le decisioni le prende Argon, ${esc(nomeGov())} le dice e le fa"><span aria-hidden="true"></span>Pensa con Argon</i>`;
-  if (iaAccesa()) return `<i class="sv-regia" title="Per Argon serve la chiave col credito: Altro → La governante intelligente, passo 4b"><span aria-hidden="true"></span>Modello svelto · Argon spento</i>`;
+  if (iaAccesa()) return `<i class="sv-regia" title="Per Argon serve la chiave col credito: Altro → La governante intelligente, passo 4b"><span aria-hidden="true"></span>Svelta + sveglia · Argon spento</i>`;
   return "";
 }
 function argonInPausa() { try { return Number(localStorage.getItem(CHIAVE_ARGON_PAUSA) || 0) > Date.now(); } catch (e) { return false; } }
@@ -5254,6 +5269,42 @@ async function confSvelta(c) {
   if (!v.modello) { const t = await IA.trovaModello(v); v.modello = t.modello; IA.salvaConf({ modelloSvelto: t.modello }); }
   return v;
 }
+// 1.14.0 (A) IL CERVELLO GRANDE QUANDO C'È DA SEGNARE (Michele, 30/10: "falla ancora più intelligente", scelta «tutte e tre»):
+// per le chiacchiere resta il modello svelto (meno di un secondo); quando Michele dice una cosa da segnare, prima il modello
+// "sveglio" (il flash, gratis, ragiona molto di più), poi lo svelto se non risponde in 20 secondi o se Google dice basta.
+const CHIAVE_SVEGLIA_PAUSA = "ricci_sveglia_pausa";
+function svegliaInPausa() { try { return Number(localStorage.getItem(CHIAVE_SVEGLIA_PAUSA) || 0) > Date.now(); } catch (e) { return false; } }
+function pausaSveglia(ms) { try { localStorage.setItem(CHIAVE_SVEGLIA_PAUSA, String(Date.now() + ms)); } catch (e) {} }
+async function confSveglia(c) {
+  const v = { ...c, qualita: "sveglia", modello: c.modelloSveglio || "" };
+  if (!v.modello) { const t = await IA.trovaModello(v); v.modello = t.modello; IA.salvaConf({ modelloSveglio: t.modello }); }
+  return v;
+}
+// il ripiego quando Argon non c'è: se c'è da segnare il modello sveglio, se no (o se non risponde) lo svelto
+async function chiediPiccola(dom, c) {
+  if (dom.cervello && !svegliaInPausa()) {
+    try {
+      const cs = await confSveglia(c);
+      if (cs.modello && cs.modello !== (c.modelloSvelto || "")) { const r = await IA.chiedi({ ...dom, conf: cs, secondi: 20 }); return { ...r, cervello: true }; }
+    } catch (e) {
+      const m = String((e && e.message) || "");
+      console.warn("IA: il modello sveglio non risponde, uso lo svelto", m);
+      pausaSveglia(/troppe domande|chiamate gratuite|credito/i.test(m) ? 15 * 60 * 1000 : 2 * 60 * 1000);
+    }
+  }
+  return chiediConRiprova(dom, await confSvelta(c));
+}
+// c'è qualcosa da segnare? (camere, signore, giorni, soldi, arrivi, guasti, verbi del fare): allora serve il cervello grande
+const RX_DA_FARE = /\b(?:segna\w*|metti\w*|togli\w*|aggiung\w*|spost\w*|cambi\w*|scriv\w*|avvis\w*|incaric\w*|ricordat\w*|d'ora in poi|annull\w*|cancell\w*|prenot\w*|arriv\w*|part[eio]\w*|andat[oaie] via|rest[ao] fino|insieme|euro|soldi|paga\w*|busta|premio|frigo\w*|balcon\w*|fuma\w*|domani|dopodomani|lunedi|martedi|mercoledi|giovedi|venerdi|sabato|domenica|settimana)\b/;
+function serveCervello(t) {
+  const s = String(t || ""), n = PAROLE.norm(s);
+  if (n.length < 12) return false;                       // "ciao", "grazie", "sì"
+  if (sembraGuasto(s) || RX_DA_FARE.test(n)) return true;
+  if (nominaSignore(n)) return true;
+  try { if ((PAROLE.trovaLuoghi(s, ctxParole()).camere || []).length) return true; } catch (e) {}
+  return false;
+}
+function nominaSignore(n) { try { return signore().filter(z => { const k = PAROLE.norm(SIG(z.id)); return k.length > 2 && n.includes(k); }).length; } catch (e) { return 0; } }
 // 1.11.0 (Michele: "risolvi i bug, non so se e' dovuto al modello gratuito"): col modello gratuito capita che il server
 // dica "sovraccarico", che risponda vuoto o "troppe domande". Prima, su Argon, questi errori NON passavano al modello
 // svelto e la risposta la dava il catalogo delle parole (che capisce poco); col modello svelto non si riprovava mai.
@@ -5272,13 +5323,14 @@ async function chiediConRiprova(dom, conf) {
 async function chiediIA(dom) {
   const c = confIA();
   const grande = c.qualita !== "svelta";
-  if (grande && argonInPausa()) return { r: await chiediConRiprova(dom, await confSvelta(c)), ripiego: true };
+  if (grande && argonInPausa()) return { r: await chiediPiccola(dom, c), ripiego: true };   // 1.14.0: sveglio se c'è da segnare
   // 0.86: Argon passa dalla SUA chiave (progetto col credito), se c'e'; il ripiego usa la chiave normale, gratuita
   const cg = grande && c.chiaveArgon ? { ...c, chiave: c.chiaveArgon } : c;
   try {
     const r = grande ? await IA.chiedi({ ...dom, conf: cg, secondi: Math.max(Number(dom.secondi) || 0, 60) })
+      : dom.cervello ? await chiediPiccola({ ...dom, secondi: Math.max(Number(dom.secondi) || 0, 40) }, c)   // 1.14.0
       : await chiediConRiprova({ ...dom, secondi: Math.max(Number(dom.secondi) || 0, 40) }, cg);
-    if (r.modello && r.modello !== c.modello) IA.salvaConf({ modello: r.modello });
+    if (r.modello && r.modello !== c.modello && !r.cervello) IA.salvaConf({ modello: r.modello });
     return { r, ripiego: false };
   } catch (e) {
     const m = String((e && e.message) || ""), lento = !!(e && e.name === "AbortError");
@@ -5287,7 +5339,7 @@ async function chiediIA(dom) {
     if (!grande || !(lento || credito || gratis || troppe || server)) throw e;
     if (credito || gratis) pausaArgon(ARGON_PAUSA_MS);         // un'ora: finche' non si ricarica non serve riprovare
     else if (troppe || server) pausaArgon(2 * 60 * 1000);      // due minuti
-    const r = await chiediConRiprova(dom, await confSvelta(c));
+    const r = await chiediPiccola(dom, c);   // 1.14.0: sveglio se c'è da segnare, se no svelto
     if ((credito || gratis) && !argonAvvisato) {
       argonAvvisato = true;
       toast(credito ? "Il credito per Argon è finito: ricaricalo su Google (Fatturazione → Acquista crediti). Intanto ti rispondo col modello svelto."
@@ -5350,13 +5402,129 @@ async function guastiDalTaccuino() {
   } catch (e) { console.warn("guasti nel taccuino", e); }
   finally { guastiTaccInCorso = false; }
 }
-async function rispostaIA(testo, conv, immagine) {
+// 1.14.0 (B) IL RICONTROLLO: dopo la risposta l'app guarda se manca l'azione per una cosa che Michele ha detto (un guasto, chi
+// arriva o parte, le due signore insieme, i soldi a una signora, l'abitudine di un ospite, com'è fatta una camera, una cosa da
+// dire alle signore, o «te lo segno» senza azione). Se manca, glielo dice e lei rifà il JSON completo (una volta sola, col
+// modello sveglio). Si tiene la seconda risposta solo se è meglio; se ha perso pezzi, si aggiungono solo le azioni mancanti.
+const RX_ARRIVI = /\b(?:arriv\w*|prenotat\w*|prenotazion\w*|booking|viene a dormire|vengono a dormire|e partit\w*|sono partit\w*|parte|partono|andat[oaie] via|va via|vanno via|rest[ao] fino|restano fino|si ferm[ae]\w* fino|non e venut\w*|non sono venut\w*|disdett\w*|check ?in|check ?out)\b/;
+const RX_OSPITI_CONTESTO = /\b(?:ospit\w*|client\w*|person[ae]|camer[ae]|notti|notte|booking|dormire|tecnic[io]|operai|ferrovi\w*)\b/;
+const RX_TUTTE_E_DUE = /\b(?:tutte e due|tutte e 2|entrambe|le due signore)\b/;
+const RX_SOLDI = /\b(?:euro|soldi|premio)\b/;
+const RX_OSPITE_ABITUDINE = /\b(?:fuma|fumano|fumator\w*|allergic\w*|vuole sempre|vogliono sempre|chiede sempre|chiedono sempre|paga in contanti|pagano in contanti)\b/;
+const RX_DOTAZIONE = /\b(?:frigo\w*|balcon\w*|sulla strada)\b/;
+const RX_HA = /\b(?:ha|hanno|non ha|non hanno|c'e|manca|mancano|senza)\b/;
+const RX_ALLE_SIGNORE = /\b(?:di'|di|dite|dica|dille|digli|avvisa\w*|scrivi\w*|ricorda\w*) alle (?:signore|ragazze|donne)\b/;
+const RX_PROMESSA = /\b(?:te lo metto|te la metto|lo segno|la segno|lo metto|la metto|ho segnato|ho messo|ho aggiornato|lo aggiungo|la aggiungo|lo sposto|la sposto|te lo segno|te la segno|segnato)\b/;
+function mancanzeRisposta(testo, r) {
+  const s = String(testo || ""), n = PAROLE.norm(s);
+  if (!n || sembraDomanda(s)) return [];
+  const az = (Array.isArray(r && r.azioni) ? r.azioni : []).filter(Boolean);
+  const ha = (...tipi) => az.some(a => tipi.includes(a.tipo));
+  let camere = 0; try { camere = (PAROLE.trovaLuoghi(s, ctxParole()).camere || []).length; } catch (e) {}
+  const out = [];
+  if (sembraGuasto(s) && !ha("manutenzione")) out.push({ k: "manutenzione", testo: 'il GUASTO: azione "manutenzione" con "modo":"apri" (punto 17). Mai nel taccuino.' });
+  if (RX_ARRIVI.test(n) && (camere || RX_OSPITI_CONTESTO.test(n)) && !ha("soggiorno", "prospetto")) out.push({ k: "soggiorno", testo: 'chi arriva o chi parte: azione "soggiorno" (punto 10) o "prospetto" (punto 6). Senza, il prospetto non cambia.' });
+  if (/\binsieme\b/.test(n) && (nominaSignore(n) >= 2 || RX_TUTTE_E_DUE.test(n)) && !ha("assegna")) out.push({ k: "assegna", testo: 'le due signore che lavorano insieme: azione "assegna" (punto 11) con le due sigle, non un messaggio.' });
+  if ((RX_SOLDI.test(n) || /€/.test(s)) && nominaSignore(n) && !ha("busta", "incarico", "pagata", "listino", "conti")) out.push({ k: "busta", testo: 'i soldi alla signora: azione "busta" (punto 16) per euro in più o in meno nella settimana, o "incarico" (punto 12) per un lavoro pagato.' });
+  if (RX_OSPITE_ABITUDINE.test(n) && !ha("ospite", "camera")) out.push({ k: "ospite", testo: 'quello che fa o vuole l\'ospite: azione "ospite" (punto 13), con "camera" se non sai il suo codice.' });
+  if (RX_DOTAZIONE.test(n) && RX_HA.test(n) && camere && !ha("camera")) out.push({ k: "camera", testo: 'com\'è fatta la camera: azione "camera" (punto 14).' });
+  if (RX_ALLE_SIGNORE.test(n) && !ha("messaggio", "istruzione", "dettagli", "incarico", "assegna", "aggiungi")) out.push({ k: "messaggio", testo: 'la cosa da dire alle signore: azione "messaggio" (punto 4), nel giorno giusto.' });
+  const risp = String((r && r.risposta) || "").trim();
+  if (!az.length && !/\?\s*$/.test(risp) && RX_PROMESSA.test(PAROLE.norm(risp))) out.push({ k: "promessa", testo: 'hai scritto che lo fai, ma nel JSON non c\'è nessuna azione: senza l\'azione nell\'app non cambia niente.' });
+  return out;
+}
+function notaControllo(manca, r) {
+  const prima = JSON.stringify({ risposta: String((r && r.risposta) || "").slice(0, 300), azioni: ((r && r.azioni) || []).slice(0, 8) });
+  return `[CONTROLLO DELL'APP — non lo ha scritto Michele] Ho ricontrollato la tua risposta: mancava qualcosa.\n${manca.map((m, i) => `${i + 1}) ${m.testo}`).join("\n")}\nLa tua risposta di prima era: ${prima}\nRifai il JSON COMPLETO: tutte le azioni giuste (anche quelle di prima che andavano bene) e la risposta per Michele. Se una di queste cose davvero non va fatta, non metterla e spiega perché nella risposta.`;
+}
+function scegliRisposta(r1, r2, manca) {
+  const tipi = (r) => (Array.isArray(r.azioni) ? r.azioni : []).filter(a => a && !(a.tipo === "ricorda" && sembraGuasto(a.testo || a.cosa))).map(a => a.tipo);
+  const conta = (l) => l.reduce((m, x) => { m[x] = (m[x] || 0) + 1; return m; }, {});
+  const c1 = conta(tipi(r1)), c2 = conta(tipi(r2));
+  if (Object.keys(c1).every(k => (c2[k] || 0) >= c1[k])) return r2;            // la seconda ha tutto quello di prima, e in più quello che mancava
+  const servono = new Set(manca.flatMap(m => m.k === "soggiorno" ? ["soggiorno", "prospetto"] : m.k === "busta" ? ["busta", "incarico"] : m.k === "ospite" ? ["ospite", "camera"] : [m.k]));
+  const nuove = (Array.isArray(r2.azioni) ? r2.azioni : []).filter(a => a && servono.has(a.tipo));
+  const azioni = [...(Array.isArray(r1.azioni) ? r1.azioni : []), ...nuove].slice(0, 8);
+  return { ...r1, azioni, azione: azioni[0] || null };
+}
+// 1.14.0 (C) LE LEZIONI DI SOFIA: quando Michele la corregge («no, hai sbagliato: va nelle manutenzioni»), l'app si segna cosa le
+// aveva detto, cosa aveva fatto lei e cosa era giusto (la proposta che poi Michele conferma col «Sì», o le sue parole). Le ultime
+// lezioni vanno nelle sue istruzioni a ogni domanda: la volta dopo lo fa giusto. Stanno in importazioni/lezioni-sofia (le vede
+// solo il titolare) e si tolgono da Altro → Le lezioni di Sofia. Dopo un «No» a una sua proposta, lei chiede cosa era giusto.
+const LEZIONI_MAX = 40, LEZIONI_IA = 12;
+function lezioniVoci() { return Array.isArray(S.lezioni) ? S.lezioni.filter(v => v && v.detto) : []; }
+async function salvaLezioni(voci) { const p = voci.slice(-LEZIONI_MAX); S.lezioni = p; await S.db.salva("importazioni", "lezioni-sofia", { voci: p, aggiornato: S.db.adesso() }, false); }
+function lezBreve(t, n = 200) { const s = senzaTelefoni(String(t || "")).replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+async function salvaLezione(l) {
+  const voce = { id: "l" + Date.now().toString(36) + Math.floor(Math.random() * 1000), quando: L.oggiISO(), detto: lezBreve(l.detto), sbaglio: lezBreve(l.sbaglio), correzione: lezBreve(l.correzione), giusto: lezBreve(l.giusto || "") };
+  await salvaLezioni([...lezioniVoci(), voce]);
+  return voce.id;
+}
+async function completaLezione(id, giusto) { const v = lezioniVoci(); if (!v.some(x => x.id === id)) return; await salvaLezioni(v.map(x => x.id === id ? { ...x, giusto: lezBreve(giusto) } : x)); }
+function lezioniPerIA() {
+  const v = lezioniVoci().slice(-LEZIONI_IA); if (!v.length) return "";
+  return v.map(x => `- Michele: «${aCodici(x.detto)}» → tu: ${aCodici(x.sbaglio)} → GIUSTO: ${aCodici(x.giusto || ("come ha detto lui: «" + x.correzione + "»"))}`).join("\n");
+}
+const RX_CORREZIONE = /^(?:no\b|nono\b|ma no\b|sbagliat|hai sbagliato|non (?:e|era) (?:cosi|giusto|questo|quello)\b|non (?:volevo|dovevi|devi)\b|non hai capito|ti ho detto|ti avevo detto|guarda che|attenta|invece|doveva|dovevi|andava)|\b(?:hai sbagliato|non dovevi|non nel taccuino|non era quello|hai capito male)\b/;
+function quelloDiLei(g) {
+  if (g.azione) return "proposta: " + riassuntoAzione(g.azione);
+  const nota = /📒 Me lo segno nel taccuino: «([^»]+)»/.exec(g.testo || "");
+  if (nota) return `segnato nel taccuino: «${nota[1]}»`;
+  if (g.fatto) return "fatto: " + String(g.testo || "").replace(/\s+/g, " ").slice(0, 160);
+  return "risposta: «" + String(g.testo || "").replace(/\s+/g, " ").slice(0, 160) + "»";
+}
+// Michele sta correggendo l'ultima cosa di Sofia? (conv finisce col suo messaggio nuovo)
+function correzioneDi(t, conv) {
+  const n = PAROLE.norm(t);
+  let j = conv.length - 2; while (j >= 0 && conv[j].chi !== "gov") j--;
+  if (j < 0) return null;
+  const g = conv[j], quando = g.ora ? new Date(g.ora).getTime() : 0;
+  if (quando && Date.now() - quando > 45 * 60 * 1000) return null;
+  if (g.aspettaCorrezione) return { detto: g.aspettaCorrezione.detto, sbaglio: g.aspettaCorrezione.sbaglio, correzione: t, dopoNo: true };
+  const resto = n.replace(/^(?:no|nono|ma no)\b\s*/, "");
+  if (!RX_CORREZIONE.test(n) || resto.length < 10 || /^(?:grazie|va bene|ok|okay|niente|lascia|tranquilla|basta|non importa|fa niente)\b/.test(resto)) return null;   // «no», «no grazie», «no, va bene così» non insegnano niente
+  if (!(g.ia || g.fatto || g.azione)) return null;
+  let i = j - 1; while (i >= 0 && conv[i].chi !== "io") i--;
+  const detto = i >= 0 ? String(conv[i].testo || "") : "";
+  return detto ? { detto, sbaglio: quelloDiLei(g), correzione: t } : null;
+}
+function notaCorrezione(c) {
+  return c.dopoNo
+    ? `[NOTA DELL'APP — non lo ha scritto Michele] Michele aveva detto NO alla tua proposta (${c.sbaglio}) per la sua richiesta «${c.detto}». Se questo messaggio spiega cosa era giusto, rimedia adesso con le azioni giuste: diventa una delle TUE LEZIONI. Se invece parla d'altro, rispondi normalmente e lascia stare questa nota.`
+    : `[NOTA DELL'APP — non lo ha scritto Michele] Michele ti sta CORREGGENDO. Prima ti aveva detto: «${c.detto}». Tu prima: ${c.sbaglio}. Ha ragione lui: rimedia adesso con le azioni giuste. Se avevi scritto nel taccuino una cosa sbagliata, toglila con "dimentica". Questa correzione resta tra LE TUE LEZIONI.`;
+}
+function cardLezioni() {
+  if (!proprietario()) return "";
+  const v = lezioniVoci().slice().reverse();
+  return `<section class="card tacc-card lez-card"><h2>Le lezioni di ${esc(nomeGov())}</h2>
+    <p class="muted small" style="margin:0 0 8px">Quando la correggi («no, hai sbagliato: va nelle manutenzioni»), ${esc(nomeGov())} si segna qui l'errore e cosa era giusto, e la volta dopo lo fa bene. Se una lezione è sbagliata, toglila.</p>
+    ${v.length ? `<ol class="tacc-lista">${v.map(y => `<li><span class="tacc-testo">«${esc(y.detto)}» → ${esc(y.giusto || y.correzione)}<small>${esc(L.dataBreve(y.quando))} · prima: ${esc(y.sbaglio)}</small></span><button type="button" class="btnsm ghost" data-lez-togli="${esc(y.id)}">Togli</button></li>`).join("")}</ol>` : `<p class="note info" style="margin:0">Ancora nessuna: quando sbaglia e la correggi, la lezione compare qui.</p>`}
+  </section>`;
+}
+async function rispostaIA(testo, conv, immagine, opz = {}) {
   const sis = sistemaIA(), storia = conv.slice(0, -1).map(m => (m && typeof m.testo === "string" ? { ...m, testo: aCodici(m.testo) } : m));
   let r, ripiego = false;
-  ({ r, ripiego } = await chiediIA({ sistema: sis, storia, testo: aCodici(senzaTelefoni(testo)), immagine }));   // 1.13.0: i numeri di telefono non partono mai
+  // 1.14.0: la nota dell'app (una correzione di Michele) va solo all'IA; il cervello grande se c'è qualcosa da segnare
+  const testoIA = aCodici(senzaTelefoni(testo)) + (opz.nota ? "\n\n" + aCodici(senzaTelefoni(opz.nota)) : "");
+  const cervello = !immagine && (!!opz.nota || serveCervello(testo));
+  ({ r, ripiego } = await chiediIA({ sistema: sis, storia, testo: testoIA, immagine, cervello }));   // 1.13.0: i numeri di telefono non partono mai
+  // 1.14.0 (B) IL RICONTROLLO (una volta; un guasto da solo lo sistema già la rete della 1.13.3, senza perdere tempo)
+  let ricontrollo = null;
+  if (!immagine) {
+    const tutte = mancanzeRisposta(testo, r), manca = tutte.length === 1 && tutte[0].k === "manutenzione" ? [] : tutte;
+    if (manca.length) {
+      try { sottoCons("ricontrollo…", true); } catch (e) {}
+      try {
+        const r2 = (await chiediIA({ sistema: sis, storia, testo: testoIA + "\n\n" + notaControllo(manca, r), cervello: true })).r;
+        const manca2 = mancanzeRisposta(testo, r2);
+        ricontrollo = { manca: manca.map(m => m.k), dopo: manca2.map(m => m.k), modello: r2.modello };
+        if (manca2.length < manca.length) r = scegliRisposta(r, r2, manca);
+      } catch (e) { console.warn("ricontrollo", e); ricontrollo = { manca: manca.map(m => m.k), errore: String((e && e.message) || e) }; }
+    }
+  }
   // 0.98: i codici [O3] tornano nomi (nelle parole e nelle azioni) prima di tutto il resto
   r = { ...r, risposta: daCodici(r.risposta), consiglio: daCodici(r.consiglio), saluto: daCodici(r.saluto), azione: daCodiciProfondo(r.azione || null), azioni: daCodiciProfondo(Array.isArray(r.azioni) ? r.azioni : []) };
-  try { window._ultimaIA = { quando: new Date().toISOString(), modello: r.modello, azione: r.azione || null, azioni: r.azioni || [], grezzo: String(r.grezzo || "").slice(0, 4000) }; } catch (e) {}   // per capire cosa ha risposto davvero (si legge dalla console)
+  try { window._ultimaIA = { quando: new Date().toISOString(), modello: r.modello, cervello, ricontrollo, azione: r.azione || null, azioni: r.azioni || [], grezzo: String(r.grezzo || "").slice(0, 4000) }; } catch (e) {}   // per capire cosa ha risposto davvero (si legge dalla console)
   IA.salvaConf({ errori: 0, ultimo: new Date().toISOString() });
   const base = { chi: "gov", ora: S.db.adesso(), ia: true };
   const grezze = Array.isArray(r.azioni) && r.azioni.length ? r.azioni : r.azione ? [r.azione] : [];
@@ -6887,7 +7055,7 @@ function cardOrarioBase() {
 // ---- altro ---------------------------------------------------------------------------
 function vistaAltro() {
   const r = S.regole;
-  return cardStileCasa() + cardIA() + cardPonte() + cardTaccuino() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardStileCasa() + cardIA() + cardPonte() + cardTaccuino() + cardLezioni() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -8562,6 +8730,7 @@ function collega() {
     disegna();
   });
   document.querySelectorAll("[data-colore-app]").forEach(b => b.onclick = () => { S.colore = b.dataset.coloreApp; try { localStorage.setItem("ricci_colore", S.colore); } catch (e) {} applicaTema(); disegna(); toast("Colore: " + ((COLORI_APP.find(k => k.id === S.colore) || {}).nome || S.colore)); });
+  document.querySelectorAll("[data-lez-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.lezTogli; try { await salvaLezioni(lezioniVoci().filter(x => x.id !== id)); disegna(); toast("Lezione tolta"); } catch (e) { erroreScrittura(e); } });   // 1.14.0 (C)
   document.querySelectorAll("[data-tacc-togli]").forEach(b => b.onclick = async () => { const id = b.dataset.taccTogli; try { await salvaTaccuino(taccuinoVoci().filter(x => x.id !== id)); toast("Tolto dal taccuino"); } catch (e) { erroreScrittura(e); } });
   document.querySelectorAll("[data-tacc-aggiungi]").forEach(b => b.onclick = async () => { const i = $("#taccNuovo"); const t = String((i && i.value) || "").trim(); if (!t) return; if (i) i.value = ""; try { const fatto = await ricordaNelTaccuino(t, "michele"); toast(fatto ? "Segnato nel taccuino" : "C'è già"); } catch (e) { if (i) i.value = t; erroreScrittura(e); } });
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile4", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });

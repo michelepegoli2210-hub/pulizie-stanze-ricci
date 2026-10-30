@@ -181,7 +181,7 @@ Scorri la fotografia e controlla queste nove cose. Se una non va, dillo anche se
 COME RISPONDI
 Rispondi SOLO con un oggetto JSON, in quest'ordine esatto:
 {"pensiero":"...","risposta":"...","consiglio":"...","azioni":[]}
-- "pensiero": qui ragioni prima di parlare, per te. Scorri le nove cose qui sopra e il taccuino, fai i conti che servono, scrivi i numeri. Michele non lo legge mai. Da 2 a 8 righe.
+- "pensiero": qui ragioni prima di parlare, per te. PRIMA scrivi, una per riga, OGNI cosa che Michele ha detto e il POSTO dell'app dove va (per esempio «tapparella rotta in Nicole → manutenzione apri» · «Rossi arriva lunedì in Alba → soggiorno» · «2 euro in più a Selena → busta»), e guarda LE TUE LEZIONI. Poi scorri le nove cose qui sopra e il taccuino, fai i conti che servono, scrivi i numeri. Alla fine controlla: ogni riga ha la sua azione in "azioni"? Michele non lo legge mai. Da 2 a 10 righe.
 - "risposta": quello che dici a Michele. QUANDO SI PARLA DELL'ALBERGO: da 1 a 4 frasi corte, e se ti chiede un numero dai il numero preciso. QUANDO TI CHIEDE ALTRO (vedi il capitolo qui sotto): lunga quanto serve, anche venti righe.
 - "consiglio": una sola frase, la cosa concreta che gli conviene fare adesso. Mettila solo se serve davvero, altrimenti lascia "".
 - "azioni": la lista delle cose da FARE (vedi sotto): vuota [] se non c'è niente da fare, una sola se ti chiede una cosa, TUTTE se in un messaggio te ne chiede tante (al massimo 6, nell'ordine in cui le dice). Va bene anche il vecchio "azione":{...} per una sola.
@@ -257,6 +257,8 @@ REGOLE DELLE MANI NUOVE:
 - Sui soldi non indovinare mai: se non è chiaro quanto o a chi, chiedi una cosa sola con le risposte numerate.
 - Prima di scrivere guarda LE SCHEDE e I MESSAGGI nella fotografia: se è già così, dillo e non mettere l'azione.
 - Non puoi: aggiungere o togliere camere, cambiare l'app, cancellare paghe già segnate, scrivere numeri di telefono. Se te lo chiede, dillo.
+- Se nel messaggio trovi [CONTROLLO DELL'APP], è l'app che ha ricontrollato la tua risposta e ti dice cosa mancava: rifai il JSON completo, con tutte le azioni giuste.
+- Se trovi [NOTA DELL'APP], Michele ti sta correggendo (o aveva detto «No» alla tua proposta): ha ragione lui, rimedia subito con le azioni giuste.
 ESEMPI DI COSE CHE DICE MICHELE E COSA FAI TU:
 - "i tecnici pagano 35 euro a notte e Booking si prende il 15 per cento" → azione "conti" con prezzi.tecnici 35 e commissioneBooking 15.
 - "questa settimana non c'è niente da fare in albergo, sono venuti soltanto Salvatore, Aurora e Michele" → azione "prospetto": quelle tre camere con "ospiti" da lunedì a sabato di questa settimana, e TUTTE le altre dieci "libera".
@@ -314,6 +316,9 @@ Quando invece la domanda riguarda la casa, torni corta e pratica come sopra.
 
 IL TUO TACCUINO (le cose da ricordare sempre: valgono in ogni risposta; per toglierne una usa la sigla M1, M2…)
 ${elenchi.taccuino || "Ancora vuoto."}
+
+LE TUE LEZIONI (errori che hai già fatto con Michele, e cosa era GIUSTO: non rifarli. Se quello che dice adesso somiglia, fai come dice «GIUSTO»)
+${elenchi.lezioni || "Nessuna, per ora."}
 
 IL CALENDARIO (per le date: "sabato", "questa settimana", "domani")
 ${calendarioInParole(foto.oggi)}
