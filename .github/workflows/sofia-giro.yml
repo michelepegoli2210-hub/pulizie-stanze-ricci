@@ -2,10 +2,11 @@
 # Parte da solo quando c'è il segreto FIREBASE_SA (la chiave dell'account di servizio di Firebase, la mette Michele).
 # Gli orari sono in UTC (alle :05 e alle :35, dalle 4 alle 21): il giro guarda l'ora di Roma e decide da solo cosa fare.
 # 1.17.1: dal tasto «Run workflow», con la casella «prova» spuntata, parte SOLO un avviso di prova sul telefono.
+# 1.18.0: ogni 10 minuti (alle :05, :15, :25...): così legge le chat del ponte poco dopo che arrivano (serve GEMINI_CHIAVE).
 name: Sofia sempre accesa
 on:
   schedule:
-    - cron: "5,35 4-21 * * *"
+    - cron: "5-59/10 4-21 * * *"
   workflow_dispatch:
     inputs:
       prova:
@@ -20,7 +21,7 @@ concurrency:
 jobs:
   giro:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 15
     env:
       HA_CHIAVE: ${{ secrets.FIREBASE_SA != '' }}
     steps:
@@ -44,4 +45,5 @@ jobs:
         run: node sofia-giro/giro.mjs
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          GEMINI_CHIAVE: ${{ secrets.GEMINI_CHIAVE }}
           PROVA_AVVISO: ${{ inputs.prova }}
