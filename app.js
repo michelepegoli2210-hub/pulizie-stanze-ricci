@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.19.0";
+export const VERSIONE = "1.20.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1137,12 +1137,12 @@ function proprietario() { return S.utente?.ruolo === "proprietario"; }
 function addetta() { return S.utente?.ruolo === "addetta"; }
 function puoModificare() { return proprietario(); }
 function soggiorniLista() { return Object.values(S.soggiorni); }
-function pulizieDelGiorno(iso, zona) { return Object.values(S.pulizie).filter(p => p.data === iso && (!zona || p.zona === zona) && giroVisibile(p)).sort((a, b) => ordineCamera(a.camera) - ordineCamera(b.camera)); }
+function pulizieDelGiorno(iso, zona) { return Object.values(S.pulizie).filter(p => p.data === iso && (!zona || p.zona === zona) && giroVisibile(p) && !p.nonServe).sort((a, b) => ordineCamera(a.camera) - ordineCamera(b.camera)); }   // 1.20.0: senza quelle che non servono
 // il giro delle stelle nelle altre camere compare solo se la governante ci ha messo qualcosa (o se è già stato fatto)
 function giroVisibile(p) { if (!p || p.tipo !== "stelle") return true; if (p.stato === "fatta") return (p.rifiniture || []).length > 0; try { return rifinitureDi(p).length > 0; } catch (e) { return false; } }
 function ordineCamera(id) { return camera(id).ordine || 99; }
 function statoClasse(p) { return !p ? "" : (STATI[p.stato] || STATI.da_fare).cls; }
-function statoTesto(p) { return p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : p.stato === "in_corso" ? `In corso da ${L.oraBreve(p.inizio)}` : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? "Non fatta" : p.titolo; }
+function statoTesto(p) { return p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : p.stato === "in_corso" ? `In corso da ${L.oraBreve(p.inizio)}` : p.stato === "problema" ? "Problema" : p.stato === "non_fatta" ? (p.nonServe ? "Non serve" : "Non fatta") : p.titolo; }
 // Il cronometro (0.36): mentre la signora pulisce, il tempo che passa, grande, accanto al tempo standard pagato.
 // Il cronometro serve a vedere i tempi veri e tarare l'orario di base: la paga resta sulle ore standard (si cambia in Paghe).
 function cronometroHtml(p) {
@@ -2913,6 +2913,7 @@ function casaOssatura(tre) {
       <button type="button" class="casa-saluto" data-tenda aria-expanded="true" aria-label="Apri o chiudi le notizie"><b class="casa-ciao"></b><i class="cs-mini" hidden></i><span class="cs-freccia" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
       <div class="casa-testo">
         <div class="casa-righe"></div>
+        <div class="casa-msg-testa"><span class="cmt-chi"></span><button type="button" class="cmt-rispondi" data-cons-mic aria-label="Rispondi a ${esc(nomeGov())} a voce: dille una novità">${CASA_ICO.mic}<span>Rispondi</span></button></div>
         <b class="casa-sal"></b>
         <p class="casa-riga"></p>
         <p class="casa-spinta"></p>
@@ -3325,7 +3326,7 @@ function casaAggiorna(h) {
   const c = consiglioOggi(), u = umoreGov();
   if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
   const oggi = L.oggiISO();
-  const ls = pulizieDelGiorno(oggi), fatte = ls.filter(p => p.stato === "fatta").length;
+  const ls = pulizieDelGiorno(oggi).filter(p => p.tipo !== "stelle"), fatte = ls.filter(p => p.stato === "fatta").length;   // 1.20.0: senza il giro delle stelle
   const man = lavoriAperti().length;
   let dom = 0; try { dom = statoChatApp().aperte.length; } catch (e) {}
   // 0.97: il riassunto e' fatto di "pillole" da toccare: pulizie -> l'elenco di oggi, lavori -> manutenzione, domande -> Sofia
@@ -3360,6 +3361,7 @@ function casaAggiorna(h) {
   if (sal) { if (det) { if (sal.innerHTML !== det.titolo) sal.innerHTML = det.titolo; sal.classList.remove("lunga"); } else { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); } }
   // 1.19.0: sopra il messaggio, chi l'ha scritto e a che ora (Michele vedeva «Buongiorno… entro le 14» alle 20:20 e non capiva)
   if (sal) { const qq = !det && c && c.ora ? `${nomeGov()} · alle ${L.oraBreve(c.ora)}` : ""; if ((sal.dataset.quando || "") !== qq) sal.dataset.quando = qq; }
+  { const cc = q(".cmt-chi"); if (cc) { const tc = det ? "" : c && c.ora ? `${nomeGov()} · alle ${L.oraBreve(c.ora)}` : nomeGov(); if (cc.textContent !== tc) cc.textContent = tc; } }   // 1.20.0: sopra il messaggio, col tasto «Rispondi»
   if (riga) { if (det) { if (riga.innerHTML !== det.html) riga.innerHTML = det.html; } else riga.textContent = c && c.testo ? c.testo : u.testo; }
   h.classList.toggle("con-dettaglio", !!det);
   if (spinta) { spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno(); spinta.classList.toggle("da-fare", !!(c && c.consiglio)); }   // 1.19.0: «Per prima cosa» solo sul consiglio vero
@@ -3879,7 +3881,15 @@ async function rispondiParole(i, k) {
 //  campi e romperebbe i dati); comandi PRECISI, ognuno controllato qui prima del «Sì, fallo»; dopo il Sì si salva com'era prima,
 //  così «Annulla» rimette tutto a posto (ultime 10 modifiche). I numeri di telefono non passano mai.
 // ============================================================================
-const TIPI_MANI = new Set(["soggiorno", "assegna", "incarico", "ospite", "camera", "dettagli", "busta", "manutenzione", "direzione", "pagata", "listino", "annulla"]);
+const TIPI_MANI = new Set(["soggiorno", "assegna", "incarico", "ospite", "camera", "dettagli", "busta", "manutenzione", "direzione", "pagata", "listino", "annulla", "pulizie"]);   // 1.20.0: «pulizie»
+// 1.20.0: «questa settimana» per le paghe. La settimana della paga si chiude il sabato alle 14 (Regole): dal sabato alle 14 a
+// tutta la domenica «questa settimana» e' quella appena chiusa (Michele il sabato sera dice «questa» per quella finita)
+function settimanaDiQuesta(adesso = new Date()) {
+  const ch = (S.regole && S.regole.chiusuraPaga) || { giorno: 6, ora: 14 }, cor = L.chiaveSettimana(adesso, ch);
+  const oggi = adesso.toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }), wd = new Date(oggi + "T12:00:00Z").getUTCDay();
+  const h = Number(adesso.toLocaleString("it-IT", { hour: "2-digit", hour12: false, timeZone: "Europe/Rome" })) % 24;
+  return (wd === ch.giorno && h >= ch.ora) || wd === (ch.giorno + 1) % 7 ? L.settimanaPrecedente(cor) : cor;
+}
 const SIGLE_MODI = ["tecnici", "operai", "booking"];
 function zonaDaIA(x) {
   const s = String(x || "").trim(); if (!s) return null; const n = PAROLE.norm(s);
@@ -4032,10 +4042,33 @@ function azioneManiDaIA(a) {
     }
     case "pagata": {
       const chi = zonaDaIA(a.chi || a.signora); if (!chi) return null;
-      const chiave = /scors|prima/i.test(String(a.settimana || "")) ? L.settimanaPrecedente(L.settimanaCorrente()) : L.settimanaCorrente();
+      const chiave = /scors|prima/i.test(String(a.settimana || "")) ? L.settimanaPrecedente(settimanaDiQuesta()) : settimanaDiQuesta();   // 1.20.0
       if (S.pagamenti[`${chi}_${chiave}`]) return NON(`La settimana ${L.etichettaSettimana(chiave)} di ${SIG(chi)} è già segnata come pagata.`);
       const t = L.totaleSettimana(S.pulizie, chi, chiave, S.regole, S.controlli, S.listino, extraPaga());
       return { tipo: "pagata", chi, chiave, totale: t.totale, n: t.lista.length };
+    }
+    case "pulizie": {   // 1.20.0: le pulizie fatte, che non servono, o da rimettere
+      const m = PAROLE.norm(a.modo || "");
+      const modo = /non|serv|bisogno|salt|togl/.test(m) ? "non_serve" : /da ?fare|rimett|ripristin|torn/.test(m) ? "da_fare" : /fatt|finit|pulit/.test(m) ? "fatte" : null;
+      if (!modo) return null;
+      let da = null, al = null;
+      if (a.giorno) { da = al = dataIA(a.giorno, false); if (!da) return null; }
+      else if (a.dal || a.al) { da = dataIA(a.dal, false) || dataIA(a.al, false); al = dataIA(a.al, false) || da; if (!da) return null; }
+      else if (a.settimana) { const lun = L.lunediDi(oggi); if (/scors|prima|passat/i.test(String(a.settimana))) { da = L.aggiungiGiorni(lun, -7); al = L.aggiungiGiorni(lun, -1); } else { da = lun; al = L.aggiungiGiorni(lun, 6); } }
+      else if (modo === "fatte") { da = al = oggi; }
+      else return NON(modo === "non_serve" ? "Dimmi il giorno e la camera della pulizia che non serve: così tolgo quella giusta." : "Dimmi il giorno e la camera della pulizia da rimettere.");
+      if (da > al) [da, al] = [al, da];
+      if (modo === "fatte") { if (da > oggi) return NON("Quelle pulizie sono ancora da fare: le segno fatte quando le hanno fatte."); if (al > oggi) al = oggi; }
+      const chi = zoneDaIA(a.chi || a.signora || a.signore), dove = camereDaIA(a.dove || a.camera || a.camere);
+      if (modo !== "fatte" && !dove.length && !chi.length) return NON("Dimmi quale camera (o quale signora): così tolgo la pulizia giusta.");
+      const vale = modo === "da_fare" ? (p) => p.stato !== "da_fare" && p.stato !== "in_corso" : (p) => p.stato === "da_fare" || p.stato === "in_corso";
+      const ps = Object.values(S.pulizie).filter(p => p && p.data >= da && p.data <= al && p.tipo !== "stelle" && (!chi.length || chi.includes(p.zona)) && (!dove.length || dove.includes(p.camera)) && vale(p))
+        .sort((x, y) => x.data < y.data ? -1 : x.data > y.data ? 1 : ordineCamera(x.camera) - ordineCamera(y.camera));
+      const quando = da === al ? quandoTesto(da) : `da ${L.dataGiornoLungo(da)} a ${L.dataGiornoLungo(al)}`, dc = dove.length ? ` in ${dove.map(c => camera(c).nome).join(", ")}` : "";
+      if (!ps.length) return NON(modo === "fatte" ? `${quando.charAt(0).toUpperCase() + quando.slice(1)}${dc} non c'è nessuna pulizia da segnare: sono già tutte segnate.` : modo === "non_serve" ? `Non trovo una pulizia da fare ${quando}${dc}.` : `Non trovo una pulizia da rimettere ${quando}${dc}.`);
+      const perSig = {}; for (const p of ps) perSig[p.zona] = (perSig[p.zona] || 0) + 1;
+      const stelle = modo === "fatte" ? Object.values(S.pulizie).filter(p => p && p.tipo === "stelle" && p.data >= da && p.data <= al && (p.stato === "da_fare" || p.stato === "in_corso") && (!chi.length || chi.includes(p.zona))).length : 0;
+      return { tipo: "pulizie", modo, da, al, ids: ps.map(p => p.id), n: ps.length, perSig, camere: [...new Set(ps.map(p => p.camera))], stelle };
     }
     case "listino": {
       const voce = String(a.voce || "").toLowerCase(), v = euroIA(a.valore), l = L.listinoCompleto(S.listino); if (v == null) return null;
@@ -4113,7 +4146,17 @@ function propostaMani(a) {
       if (a.modo === "visto") return `Do il Visto della direzione al ${pianoBreve(a.zona)} di ${quandoTesto(a.giorno)}: le rifiniture entrano in busta.${conf}`;
       return `Segno «${a.voce.nome}» (${DM(a.giorno)}) non fatta: non si paga a ${a.finitoDa}${a.firmato ? ` e ${a.vistoNome} perde i ${eur(argonConf().vistoEuro)} del Visto` : ""}${a.rodaggio ? " (siamo in rodaggio: la segno ma non tolgo soldi)" : ""}.${conf}`;
     case "pagata":
+      if (!a.n) return `Segno pagata la settimana ${L.etichettaSettimana(a.chiave)} di ${SIG(a.chi)} (il conto lo faccio quando la segno, dopo le pulizie).${conf}`;   // 1.20.0
       return `Segno pagata la settimana ${L.etichettaSettimana(a.chiave)} di ${SIG(a.chi)}: ${eur(a.totale)} per ${a.n} ${a.n === 1 ? "lavoro" : "lavori"}.${conf}`;
+    case "pulizie": {   // 1.20.0
+      const quando = a.da === a.al ? quandoTesto(a.da) : `da ${L.dataGiornoLungo(a.da)} a ${L.dataGiornoLungo(a.al)}`;
+      const chi = Object.entries(a.perSig || {}).map(([z, n]) => `${SIG(z)} ${n}`).join(", ");
+      const dove = a.camere && a.camere.length <= 4 ? ` (${a.camere.map(c => camera(c).nome).join(", ")})` : "";
+      const una = a.n === 1;
+      if (a.modo === "fatte") return `Segno fatte ${una ? "1 pulizia" : a.n + " pulizie"} ${quando}${dove}: ${chi}. Entrano nella paga della loro settimana.${a.stelle ? " Il giro delle stelle (le rifiniture) lo segnano le signore nell'app." : ""}${conf}`;
+      if (a.modo === "non_serve") return `Tolgo ${una ? "la pulizia" : a.n + " pulizie"} ${quando}${dove} (${chi}): ${una ? "non si fa e non si paga, la signora non la vede più" : "non si fanno e non si pagano, le signore non le vedono più"}.${conf}`;
+      return `Rimetto da fare ${una ? "la pulizia" : a.n + " pulizie"} ${quando}${dove} (${chi}).${conf}`;
+    }
     case "listino": {
       const f = (x) => a.unita === "€" ? eur(x) : `${x} minuti`;
       return `Cambio ${a.testo}: da ${f(a.prima)} a ${f(a.valore)}${a.euro != null ? ` (${eur(a.euro)} a pulizia)` : ""}. Vale dalle prossime pulizie, quelle già fatte non cambiano.${conf}`;
@@ -4229,8 +4272,30 @@ async function eseguiMani(a) {
       await segnaDifetto(a.id, a.voce, "no", v.vistoDa && v.vistoDa !== "direzione" ? v.vistoDa : altraSignora(v.zona));
       return `Fatto: «${a.voce.nome}» segnata non fatta.`;
     }
+    case "pulizie": {   // 1.20.0: lo stato delle pulizie (si guarda com'e' ADESSO: se e' gia' cosi', non si tocca)
+      const ops = [], chi = `${S.utente.nome || "Michele"} (con ${nomeGov()})`;
+      for (const id of a.ids || []) {
+        const p = S.pulizie[id]; if (!p) continue;
+        const aperta = p.stato === "da_fare" || p.stato === "in_corso";
+        let dati = null;
+        if (a.modo === "fatte" && aperta) dati = { stato: "fatta", ora: adesso, settimana: L.chiaveSettimana(new Date(p.data + "T12:00:00"), S.regole.chiusuraPaga), segnatoDa: chi, nonServe: false };
+        else if (a.modo === "non_serve" && aperta) dati = { stato: "non_fatta", nonServe: true, nota: "Non serve", ora: adesso, settimana: null, inizio: null, segnatoDa: chi };
+        else if (a.modo === "da_fare" && !aperta) dati = { stato: "da_fare", nonServe: false, nota: "", ora: null, settimana: null, inizio: null, segnatoDa: chi };
+        if (dati) ops.push({ tipo: "aggiorna", coll: "pulizie", id, dati });
+      }
+      if (!ops.length) return "Quelle pulizie erano già così: non ho cambiato niente.";
+      await S.db.scrivi(ops);
+      for (const o of ops) if (S.pulizie[o.id]) Object.assign(S.pulizie[o.id], o.dati);
+      disegna(); if (a.modo === "da_fare") pianifica();
+      const n = ops.length;
+      return a.modo === "fatte" ? `Fatto: ${n === 1 ? "1 pulizia segnata fatta" : n + " pulizie segnate fatte"}. Le trovi nelle paghe della loro settimana.` : a.modo === "non_serve" ? `Fatto: ${n === 1 ? "quella pulizia non c'è più" : n + " pulizie tolte"}: non si ${n === 1 ? "fa" : "fanno"} e non si ${n === 1 ? "paga" : "pagano"}.` : `Fatto: ${n === 1 ? "la pulizia è di nuovo da fare" : n + " pulizie di nuovo da fare"}.`;
+    }
     case "pagata": {
       const id = `${a.chi}_${a.chiave}`;
+      // 1.20.0: il conto si rifà adesso (se prima, nella stessa conferma, ha segnato le pulizie fatte, ci sono anche quelle)
+      if (S.pagamenti[id]) return `La settimana ${L.etichettaSettimana(a.chiave)} di ${SIG(a.chi)} era già segnata pagata.`;
+      { const t = L.totaleSettimana(S.pulizie, a.chi, a.chiave, S.regole, S.controlli, S.listino, extraPaga()); a = { ...a, totale: t.totale, n: t.lista.length }; }
+      if (!a.n) return `Nella settimana ${L.etichettaSettimana(a.chiave)} ${SIG(a.chi)} non ha pulizie fatte: non c'è niente da segnare pagato.`;
       await S.db.salva("pagamenti", id, { zona: a.chi, settimana: a.chiave, importo: a.totale, pulizie: a.n, quando: new Date().toLocaleDateString("it-IT", { day: "numeric", month: "short", timeZone: "Europe/Rome" }), istante: adesso, da: S.utente.nome || "" }, false);
       return `Fatto: la settimana ${L.etichettaSettimana(a.chiave)} di ${SIG(a.chi)} è segnata pagata (${eur(a.totale)}).`;
     }
@@ -4924,7 +4989,7 @@ function fotografiaIA() {
   prova("signore30", () => {
     const da = L.aggiungiGiorni(oggi, -30), ctrl = Object.values(S.controlli || {}), righe = [];
     for (const z of signore()) {
-      const ls = Object.values(S.pulizie).filter(p => p.zona === z.id && p.data >= da && p.data <= oggi);
+      const ls = Object.values(S.pulizie).filter(p => p.zona === z.id && p.data >= da && p.data <= oggi && !p.nonServe);   // 1.20.0: quelle che non servivano non sono «non fatte»
       if (!ls.length) { righe.push(`${SIG(z.id)}: nessuna pulizia negli ultimi 30 giorni`); continue; }
       const fatte = ls.filter(p => p.stato === "fatta"), non = ls.filter(p => p.stato === "non_fatta").length, prob = ls.filter(p => p.stato === "problema").length;
       const vecchie = ls.filter(p => p.stato === "da_fare" && p.data < oggi).length;
@@ -5416,6 +5481,11 @@ const RX_ARRIVI = /\b(?:arriv\w*|prenotat\w*|prenotazion\w*|booking|viene a dorm
 const RX_OSPITI_CONTESTO = /\b(?:ospit\w*|client\w*|person[ae]|camer[ae]|notti|notte|booking|dormire|tecnic[io]|operai|ferrovi\w*)\b/;
 const RX_TUTTE_E_DUE = /\b(?:tutte e due|tutte e 2|entrambe|le due signore)\b/;
 const RX_SOLDI = /\b(?:euro|soldi|premio)\b/;
+// 1.20.0: le pulizie fatte, quelle che non servono, la paga data
+const RX_PULIZIE_FATTE = /\b(?:hanno (?:fatto|finito|pulito)|ha (?:fatto|finito|pulito)|sono (?:state )?(?:fatte|finite|pulite)|e (?:stata )?(?:fatta|finita|pulita)|tutte fatte|tutto fatto|gia fatt[ae]|segna\w* (?:come )?fatt[ae])\b/;
+const RX_PULIZIE_DI = /\b(?:pulizi\w*|camer\w*|stanz\w*|signore|ragazze|settimana)\b/;
+const RX_NON_SERVE = /\b(?:non serve|non servono|non c'?e (?:piu )?bisogno|non va fatta|non vanno fatte|non si fa piu|non si fa|non si fanno|non la fate|non le fate|saltala|saltale|lasciala stare|lasciale stare)\b/;
+const RX_PAGATE = /\b(?:pagat[aeio]|le ho pagate|li ho pagati|ho pagato)\b/;
 const RX_OSPITE_ABITUDINE = /\b(?:fuma|fumano|fumator\w*|allergic\w*|vuole sempre|vogliono sempre|chiede sempre|chiedono sempre|paga in contanti|pagano in contanti)\b/;
 const RX_DOTAZIONE = /\b(?:frigo\w*|balcon\w*|sulla strada)\b/;
 const RX_HA = /\b(?:ha|hanno|non ha|non hanno|c'e|manca|mancano|senza)\b/;
@@ -5435,6 +5505,10 @@ function mancanzeRisposta(testo, r) {
   if (RX_OSPITE_ABITUDINE.test(n) && !ha("ospite", "camera")) out.push({ k: "ospite", testo: 'quello che fa o vuole l\'ospite: azione "ospite" (punto 13), con "camera" se non sai il suo codice.' });
   if (RX_DOTAZIONE.test(n) && RX_HA.test(n) && camere && !ha("camera")) out.push({ k: "camera", testo: 'com\'è fatta la camera: azione "camera" (punto 14).' });
   if (RX_ALLE_SIGNORE.test(n) && !ha("messaggio", "istruzione", "dettagli", "incarico", "assegna", "aggiungi")) out.push({ k: "messaggio", testo: 'la cosa da dire alle signore: azione "messaggio" (punto 4), nel giorno giusto.' });
+  // 1.20.0
+  if (RX_PULIZIE_FATTE.test(n) && (RX_PULIZIE_DI.test(n) || nominaSignore(n) || camere) && !ha("pulizie", "fatto")) out.push({ k: "pulizie", testo: 'le pulizie FATTE: azione "pulizie" con "modo":"fatte" (punto 22), con "settimana" o "giorno", e "dove"/"chi" solo se li dice.' });
+  if (RX_NON_SERVE.test(n) && (RX_PULIZIE_DI.test(n) || camere) && !ha("pulizie", "soggiorno", "prospetto")) out.push({ k: "pulizie", testo: 'la pulizia che NON SERVE: azione "pulizie" con "modo":"non_serve" (punto 22), col giorno e la camera.' });
+  if (RX_PAGATE.test(n) && (nominaSignore(n) || /\b(?:signore|ragazze)\b/.test(n)) && !ha("pagata")) out.push({ k: "pagata", testo: 'la paga data: azione "pagata" (punto 19), una per ogni signora, DOPO le "pulizie" fatte.' });
   const risp = String((r && r.risposta) || "").trim();
   if (!az.length && !/\?\s*$/.test(risp) && RX_PROMESSA.test(PAROLE.norm(risp))) out.push({ k: "promessa", testo: 'hai scritto che lo fai, ma nel JSON non c\'è nessuna azione: senza l\'azione nell\'app non cambia niente.' });
   return out;
@@ -6753,7 +6827,7 @@ function vistaTabellone() {
       }
       for (const p of Object.values(S.pulizie).filter(p => p.camera === c.id && p.data >= da && p.data < a)) {
         const cls = p.stato === "fatta" ? "ok" : p.stato === "problema" ? "ko" : p.stato === "non_fatta" ? "sk" : (p.tipo.startsWith("totale") ? "T" : "");
-        const txt = p.stato === "fatta" ? "✓" : p.stato === "problema" ? "!" : p.stato === "non_fatta" ? "✗" : (TIPI_PULIZIA[p.tipo]?.breve || "LAV");
+        const txt = p.stato === "fatta" ? "✓" : p.stato === "problema" ? "!" : p.stato === "non_fatta" ? (p.nonServe ? "–" : "✗") : (TIPI_PULIZIA[p.tipo]?.breve || "LAV");   // 1.20.0
         html += `<span class="cl ${cls}" style="grid-column:${L.giorniTra(da, p.data) + 2};grid-row:${riga}" title="${esc(p.titolo)}">${txt}</span>`;
       }
       riga++;

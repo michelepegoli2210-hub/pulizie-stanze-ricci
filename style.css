@@ -5663,3 +5663,28 @@ body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-mini{
 :root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-l{color:#CBD5E1}
 :root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-v,
 :root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-mini{color:#F8FAFC;background:#131B2D}
+/* ============================================================================
+   1.20.0 (Michele, 31/10 sera): "devo poter dire a Sofia le novità del momento (le signore hanno fatto tutte le pulizie
+   della settimana, sono state pagate, una pulizia non serve): modificare tutto anche a voce e mentre leggo".
+   Sopra il messaggio, nella testata della lastra: chi l'ha scritto e a che ora, e il tasto «🎤 Rispondi» (lo stesso
+   microfono di Sofia: un tocco e le parli, senza cambiare pagina).
+   ============================================================================ */
+.casa-msg-testa{display:none}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-msg-testa{order:0;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:8px 9px 0 15px;background:#FFFFFF;border:1.5px solid #D6BC85;border-bottom:0;border-radius:18px 18px 0 0}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cmt-chi{min-width:0;font:700 13px/1.2 var(--f-lettura);color:#8C621E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cmt-rispondi{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px 0 11px;margin:0;border:0;border-radius:18px;background:#0F172A;color:#FFFFFF;font:700 15px/1 var(--f-lettura);box-shadow:0 2px 6px rgba(15,23,42,.18);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cmt-rispondi svg{width:18px;height:18px;flex:0 0 auto;color:#D4AF6A}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cmt-rispondi:active{transform:scale(.95)}
+/* il saluto non ha piu' la riga «chi e quando» (sta nella testata) ne' il bordo di sopra */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal.lunga{border-top:0;border-radius:0;padding-top:5px}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal::before{display:none}
+/* nel dettaglio di una notizia la testata non c'e': il titolo torna in cima alla lastra */
+body.premium .sofia-hero.con-dettaglio:not(.nuvola-aperta) .casa-nuvola .casa-msg-testa{display:none}
+body.premium .sofia-hero.con-dettaglio:not(.nuvola-aperta) .casa-nuvola .casa-sal{border-top:1.5px solid #D6BC85;border-radius:18px 18px 0 0;padding-top:12px}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-msg-testa{background:#131B2D;border-color:rgba(212,175,106,.5)}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cmt-chi{color:#D4AF6A}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cmt-rispondi{background:#F3E9D3;color:#0F172A;box-shadow:0 2px 8px rgba(0,0,0,.45)}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cmt-rispondi svg{color:#8C621E}
+:root[data-theme="dark"] body.premium .sofia-hero.con-dettaglio:not(.nuvola-aperta) .casa-nuvola .casa-sal{border-top-color:rgba(212,175,106,.5)}

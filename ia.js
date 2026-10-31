@@ -249,9 +249,15 @@ LE MANI NUOVE (1.13.0): con queste COMPILI l'app al posto di Michele. Usale ogni
 17) LA MANUTENZIONE, cioè i lavori da fare (la lista «Lavori di manutenzione» dell'app). Quando Michele dice che una cosa è ROTTA, non funziona, non si accende, non si chiude, perde, gocciola, è bruciata, è intasata, va aggiustata o riparata, o che serve l'idraulico, l'elettricista o il fabbro → "apri" (con la camera se la dice; se è di tutta la casa, come la caldaia o il cancello, senza "camera"). Quando dice che è stata aggiustata, riparata o sistemata → "chiudi". È OBBLIGATORIA: senza l'azione il lavoro NON compare nella lista. MAI nel taccuino.
    {"tipo":"manutenzione","modo":"apri","camera":"alba","cosa":"Lo scarico della doccia è lento"} · {"tipo":"manutenzione","modo":"apri","cosa":"La caldaia fa rumore"} · {"tipo":"manutenzione","modo":"chiudi","camera":"alba","cosa":"scarico"}
 18) ARGONCLOUD, LA DIREZIONE: {"tipo":"direzione","presente":true,"giorno":"${foto.oggi}"} ("oggi ci sono io") · {"tipo":"direzione","visto":"p2","giorno":"${foto.oggi}"} (il Visto della direzione) · {"tipo":"direzione","nonFatta":"frigo","camera":"alba"} (una rifinitura «vista» ma non fatta)
-19) LA PAGA SEGNATA COME PAGATA: {"tipo":"pagata","chi":"p1","settimana":"questa"} ("scorsa" per quella prima)
+19) LA PAGA SEGNATA COME PAGATA: {"tipo":"pagata","chi":"p1","settimana":"questa"} ("scorsa" per quella prima). Una azione per OGNI signora: «le ho pagate» con due signore = due azioni. Se nello stesso messaggio dice anche che le pulizie sono fatte, PRIMA l'azione "pulizie" (punto 22), POI le "pagata".
 20) IL LISTINO (solo queste voci): {"tipo":"listino","voce":"tariffa_albergo","valore":8.5} · {"tipo":"listino","voce":"tariffa_appartamenti","valore":10} · {"tipo":"listino","voce":"obiettivo_rifiniture","valore":25} · {"tipo":"listino","voce":"minuti","camera":"aurora","pulizia":"totale","valore":50}
 21) ANNULLARE L'ULTIMA COSA FATTA ("annulla", "ho sbagliato, torna indietro"): {"tipo":"annulla"}
+22) LE PULIZIE FATTE, O CHE NON SERVONO (le pulizie delle camere nella giornata delle signore; NON è il punto 2, quello è per una rifinitura del catalogo come C14). Quando Michele dice che le signore hanno FATTO o FINITO delle pulizie (anche «tutte quelle di questa settimana»), o che una pulizia NON SERVE, non c'è bisogno, non si fa più, o di rimetterla:
+   {"tipo":"pulizie","modo":"fatte","settimana":"questa"}   (tutte quelle non ancora segnate, da lunedì a oggi; "scorsa" = la settimana prima)
+   {"tipo":"pulizie","modo":"fatte","giorno":"${foto.oggi}","dove":["alba","tramonto"],"chi":"p2"}   ("dove" e "chi" solo se li dice)
+   {"tipo":"pulizie","modo":"non_serve","giorno":"${piuGiorni(foto.oggi, 1)}","dove":["alba"]}   (non si fa e non si paga; la signora non la vede più)
+   {"tipo":"pulizie","modo":"da_fare","giorno":"${piuGiorni(foto.oggi, 1)}","dove":["alba"]}   (la rimette da fare, se aveva sbagliato)
+   Per "non_serve" e "da_fare" servono il giorno e la camera (o la signora): se non li dice, chiedili con le risposte numerate.
 REGOLE DELLE MANI NUOVE:
 - Le date le prendi SEMPRE dal CALENDARIO (quattordici giorni già calcolati). Se Michele dice il nome del giorno di OGGI (oggi è giovedì e dice «giovedì») e non si capisce se è oggi o la settimana dopo, non mettere azioni: CHIEDI con due risposte numerate («1) oggi, giovedì 29 · 2) giovedì prossimo, 5 novembre»).
 - Sui soldi non indovinare mai: se non è chiaro quanto o a chi, chiedi una cosa sola con le risposte numerate.
@@ -416,7 +422,9 @@ export function leggiRisposta(txt) {
   // 0.85: "prospetto" mancava e veniva buttata via. 0.88: piu' azioni in una risposta ("azioni": [...]) e il taccuino
   const valide = ["aggiungi", "fatto", "togli", "messaggio", "istruzione", "prospetto", "conti", "ricorda", "dimentica",
     // 1.13.0: le mani nuove di Sofia
-    "soggiorno", "assegna", "incarico", "ospite", "camera", "dettagli", "busta", "manutenzione", "direzione", "pagata", "listino", "annulla"];
+    "soggiorno", "assegna", "incarico", "ospite", "camera", "dettagli", "busta", "manutenzione", "direzione", "pagata", "listino", "annulla",
+    // 1.20.0: lo stato delle pulizie (fatte, non servono, da fare)
+    "pulizie"];
   const lista = [...(o.azione && typeof o.azione === "object" && !Array.isArray(o.azione) ? [o.azione] : []), ...(Array.isArray(o.azioni) ? o.azioni : Array.isArray(o.azione) ? o.azione : [])];
   const viste = new Set(), azioni = [];
   for (const x of lista) { if (!x || typeof x !== "object" || !valide.includes(x.tipo)) continue; const k = JSON.stringify(x); if (viste.has(k)) continue; viste.add(k); azioni.push(x); if (azioni.length >= 8) break; }
