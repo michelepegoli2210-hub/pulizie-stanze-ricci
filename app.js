@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.18.0";
+export const VERSIONE = "1.18.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5617,12 +5617,28 @@ function cardSempreAccesa() {
   const voce = (k, t) => { const x = f[k]; const fatto = x && /^\d/.test(String(x)); return `<li>${fatto ? "✅" : x === "app" ? "✅" : x ? "➖" : "⏳"} ${t}${fatto ? ` <small>alle ${esc(x)}</small>` : x === "app" ? " <small>(l'ha mandato l'app)</small>" : x === "niente" ? " <small>(non serviva)</small>" : ""}</li>`; };
   const sw = (k, t) => `<label class="giro-sw"><span>${t}</span><input type="checkbox" data-giro-sw="${k}" ${a[k] === false ? "" : "checked"}></label>`;
   return `<section class="card giro-card"><h2>${esc(nomeGov())} sempre accesa</h2>
-    <p class="note ${viva ? "ok" : "warn"}" style="margin:0 0 8px">${viva ? `Accesa ✓ · ultimo giro alle ${esc(L.oraBreve(g.ultimo))}` : `Ferma dalle ${esc(L.oraBreve(g.ultimo))} del ${esc(L.dataBreve(String(g.ultimo).slice(0, 10)))}: su GitHub → Actions → «Sofia sempre accesa» controlla che sia abilitata (GitHub la spegne se il progetto non cambia per 60 giorni).`}</p>
+    <p class="note ${viva ? "ok" : "warn"}" style="margin:0 0 8px">${viva ? `Accesa ✓ · ultimo giro alle ${esc(L.oraBreve(g.ultimo))}` : `Ferma dalle ${esc(L.oraBreve(g.ultimo))} del ${esc(L.dataBreve(String(g.ultimo).slice(0, 10)))}: GitHub a volte la fa partire con ore di ritardo${g.spinta ? " e il PC è spento (o il ponte è fermo)" : ""}. Se resta ferma più di un giorno: su GitHub → Actions → «Sofia sempre accesa» controlla che sia abilitata.`}</p>
+    ${rigaSpinta(g)}
     <p class="small muted" style="margin:0 0 4px">Oggi:</p>
     <ul class="giro-oggi">${voce("piano", a.token && a.chat ? "Piano del giorno alle signore (dalle 7)" : "Il piano del giorno a te (dalle 7)")}${voce("arrivi", "Priorità alle camere con un arrivo (12:30)")}${voce("allarme", "Avviso a te se una camera non è pronta (13:30)")}${voce("chiusura", "Promemoria delle pulizie da segnare (15:00)")}${voce("bollettino", "Bollettino della sera a te (20:00)")}</ul>
     ${rigaLetturaGiro(g, a)}
     <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}</div>
   </section>`;
+}
+// 1.18.1: LA SPINTA DAL PC. L'orario di GitHub è «quando può» (il 31/10 nessun giro dalle 12:29 alle 17:14): il ponte sul
+// PC (1.1.0, con una chiave di GitHub che mette Michele nella sua pagina) fa partire il giro ogni 10 minuti e 5 minuti dopo
+// i messaggi nuovi. Il giro lo scrive in giro-sofia.spinta {ultima, scade}.
+function rigaSpinta(g) {
+  const s = (g && g.spinta) || null;
+  const min = s && s.ultima ? (Date.now() - new Date(s.ultima).getTime()) / 60000 : Infinity;
+  let scade = "";
+  if (s && /^\d{4}-\d{2}-\d{2}$/.test(String(s.scade || ""))) {
+    const gg = Math.round((new Date(s.scade + "T12:00:00").getTime() - Date.now()) / 86400000);
+    if (gg <= 21) scade = ` <b>⚠️ La chiave di GitHub del PC ${gg < 0 ? "è scaduta" : "scade"} il ${esc(L.dataBreve(s.scade))}</b>: rifalla dalla pagina del ponte sul PC (2 minuti).`;
+  }
+  if (min < 40) return `<p class="small" style="margin:0 0 8px">💻 La fa partire anche il PC: ogni 10 minuti e subito dopo i messaggi nuovi (l'ultima volta alle ${esc(L.oraBreve(s.ultima))}).${scade}</p>`;
+  if (s && s.ultima) return `<p class="small muted" style="margin:0 0 8px">💻 Il PC non la fa partire dalle ${esc(L.oraBreve(s.ultima))}${min > 20 * 60 ? ` del ${esc(L.dataBreve(String(s.ultima).slice(0, 10)))}` : ""} (PC spento o ponte fermo): intanto la fa partire GitHub, quando può.${scade}</p>`;
+  return `<p class="note info" style="margin:0 0 8px">⏱️ Adesso la fa partire solo GitHub, «quando può»: a volte con ore di ritardo. Con la <b>spinta dal PC</b> parte ogni 10 minuti e subito dopo i messaggi nuovi: si accende dalla <a href="http://localhost:3939" target="_blank" rel="noopener">pagina del ponte</a> sul PC (una chiave di GitHub, 2 minuti).</p>`;
 }
 // 1.18.0: la lettura delle chat fatta dal giro (ogni 10 minuti, anche ad app chiusa)
 function rigaLetturaGiro(g, a) {
@@ -7314,7 +7330,16 @@ function vistaAvvisi() {
 // ---------------------------------------------------------------------------
 function elFoglio() { let s = $(".sheet"); if (!s) { s = document.createElement("div"); s.className = "sheet"; document.body.appendChild(s); s.onclick = e => { if (e.target === s) chiudiFoglio(); }; } return s; }
 function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); }
-function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); }
+function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); if (f && f.tipo === "dettatura") segnaVista(); }
+// 1.18.1: il foglio di una lettura condivisa (fatta dal giro, da questo o da un altro telefono) l'hai aperto: lo segno, così il
+// giro non ti manda l'avviso «ho letto» per una lettura che hai già visto. Una volta sola per lettura.
+let vistaSegnata = "";
+function segnaVista() {
+  const x = S.letturaCondivisa, d = S.dett;
+  if (!x || !d || !d.condivisa || x.lid !== d.condivisa || x.stato !== "da_controllare" || x.vista || x.avvisata || vistaSegnata === x.lid) return;
+  vistaSegnata = x.lid;
+  S.db.aggiorna("importazioni", "lettura-sofia", { vista: new Date().toISOString() }).catch(e => console.warn("lettura vista", e));
+}
 
 function disegnaFoglio() {
   const f = S.foglio; if (!f) return;
@@ -8684,13 +8709,15 @@ function cardPonte() {
   const scatola = codice ? `<div class="ponte-codice"><span>Il codice del ponte</span><b>${esc(cod4)}</b></div>` : "";
   const codiceHtml = !codice ? `<div class="ponte-info">Il codice l'hai creato su un altro telefono o PC: lo trovi lì (Altro → Il ponte WhatsApp). Se l'hai perso, tocca «Togli il ponte» qui sotto e creane uno nuovo.</div>`
     : acceso ? `<details class="ponte-mostra"><summary>Mostra il codice del ponte</summary>${scatola}</details>` : scatola;
-  const manca = p.manuale && codice ? `<div class="ponte-passo"><b>Manca un passo su Firebase</b> <span class="small muted">(lì è chiusa la creazione di accessi dall'app)</span><ol class="ponte-passi"><li>console.firebase.google.com → <b>Authentication</b> → <b>Utenti</b> → <b>Aggiungi utente</b></li><li>Email: <b>${esc(p.email || "")}</b></li><li>Password: <b>${esc(codice.slice(6))}</b></li></ol></div>` : "";
+  const manca = p.manuale && codice && !vivo ? `<div class="ponte-passo"><b>Manca un passo su Firebase</b> <span class="small muted">(lì è chiusa la creazione di accessi dall'app)</span><ol class="ponte-passi"><li>console.firebase.google.com → <b>Authentication</b> → <b>Utenti</b> → <b>Aggiungi utente</b></li><li>Email: <b>${esc(p.email || "")}</b></li><li>Password: <b>${esc(codice.slice(6))}</b></li></ol></div>` : "";
   const passi = `<ol class="ponte-passi">
       <li>Sul PC <a href="ponte/ponte-di-sofia.zip" download><b>scarica il ponte</b></a>, apri lo zip ed estrai la cartella (tasto destro → Estrai tutto).</li>
       <li>Nella cartella fai doppio clic su <b>«Avvia il ponte di Sofia»</b>. Si apre una pagina: scrivi il codice${codice ? ` <b>${esc(cod4)}</b>` : ""} e tocca Collega.</li>
       <li>Sul telefono: WhatsApp → <b>⋮</b> → <b>Dispositivi collegati</b> → <b>Collega un dispositivo</b>, e inquadra il quadrato della pagina.</li>
     </ol>`;
-  return testa + `${manca}${codiceHtml}
+  const vNum = (v) => String(v || "0").split(".").map(Number).reduce((s, x) => s * 1000 + (x || 0), 0);
+  const aggiorna = acceso && p.versione && vNum(p.versione) < vNum("1.1.0") ? `<div class="ponte-passo"><b>C'è il ponte nuovo (1.1.0)</b> <span class="small muted">(una volta sola: dopo si aggiorna da solo)</span><ol class="ponte-passi"><li>Sul PC <a href="ponte/ponte-di-sofia.zip" download><b>scarica il ponte nuovo</b></a>.</li><li>Apri lo zip e fai doppio clic su <b>«Avvia il ponte di Sofia»</b>: ferma da solo quello vecchio e riparte.</li><li>Nella pagina del ponte c'è il <b>riquadro giallo</b> per la spinta dal PC: così ${esc(nome)} parte ogni 10 minuti.</li></ol></div>` : "";
+  return testa + `${manca}${aggiorna}${codiceHtml}
     <div class="ponte-info">${acceso ? `✓ Il ponte è acceso · ultimo segnale ${quando(vivo)} · ${Number(p.contati) || 0} messaggi passati a ${esc(nome)}` : vivo ? `Il ponte è spento dal ${quando(vivo)}: i messaggi aspettano e arrivano quando riaccendi il PC.` : "Il ponte non si è ancora collegato."}</div>
     ${acceso ? `<details class="ponte-mostra"><summary>Come si rimette su un altro PC</summary>${passi}</details>` : passi}
     <div class="floorlabel" style="margin-top:12px">I gruppi che legge</div>
