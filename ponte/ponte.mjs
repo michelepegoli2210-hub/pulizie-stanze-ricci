@@ -12,6 +12,12 @@
 //  Attenzione: non e' un programma ufficiale di WhatsApp. Usato cosi' (solo lettura) il rischio e' basso, ma non zero.
 //
 //  Si avvia con "Avvia il ponte di Sofia.bat". Si guarda su http://localhost:3939
+//  1.1.0: LA SPINTA DAL PC. L'orario di GitHub fa partire il giro di Sofia «quando può» (il 31/10 niente dalle 12:29 alle
+//  17:14). Con una chiave di GitHub (solo «Actions» del progetto pulizie-stanze-ricci, la incolla Michele nella pagina del
+//  ponte) il ponte fa partire lui il giro: ogni 10 minuti (dalle 6 alle 23) e 5 minuti e mezzo dopo l'ultimo messaggio nuovo
+//  (il giro legge le chat quando da 5 minuti nessuno scrive). La chiave resta solo qui sul PC (config.json).
+//  E IL PONTE SI AGGIORNA DA SOLO: ogni 6 ore guarda sul sito se c'è un ponte più nuovo; se c'è lo scarica, controlla che
+//  sia un programma valido e riparte (il file .bat lo fa ripartire); se il nuovo non parte, il .bat rimette quello di prima.
 // =====================================================================================================
 import fs from "node:fs";
 import path from "node:path";
@@ -19,7 +25,7 @@ import http from "node:http";
 import { exec } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const VERSIONE = "1.0.3";
+export const VERSIONE = "1.1.0";
 const CARTELLA = path.dirname(fileURLToPath(import.meta.url));
 const DATI = process.env.PONTE_DATI || CARTELLA;            // dove il ponte tiene le sue cose (accesso, WhatsApp, messaggi visti)
 const FILE_CONF = path.join(DATI, "config.json");
@@ -29,10 +35,17 @@ const SITO = process.env.PONTE_SITO || "https://michelepegoli2210-hub.github.io/
 const PORTA = Number(process.env.PONTE_PORTA || 3939);
 const MAX_MEDIA = 700 * 1024;               // il database tiene documenti fino a 1 MB: i file oltre 700 KB non passano
 const GIORNI_STORICO = 7;                   // al primo collegamento: i messaggi del gruppo degli ultimi 7 giorni
+// 1.1.0: la spinta dal PC (GitHub) e l'aggiornamento da solo
+const REPO = process.env.PONTE_REPO || "michelepegoli2210-hub/pulizie-stanze-ricci";
+const API_GH = () => process.env.PONTE_GH_BASE || "https://api.github.com";
+const RAW = () => process.env.PONTE_RAW_BASE || `https://raw.githubusercontent.com/${REPO}/main/ponte`;
+const SPINTA_DOPO_MS = Number(process.env.PONTE_SPINTA_DOPO_MS) || 5.5 * 60 * 1000;   // il giro legge dopo 5 minuti di quiete
+const SPINTA_OGNI_MS = 10 * 60 * 1000;
+export const LINK_CHIAVE_GH = "https://github.com/settings/personal-access-tokens/new?name=Ponte%20di%20Sofia&description=Il%20ponte%20sul%20PC%20fa%20partire%20il%20giro%20di%20Sofia%20(solo%20Actions%20di%20pulizie-stanze-ricci)&target_name=michelepegoli2210-hub&expires_in=366&actions=write";
 const MAX_STORICO = 400;
 
 // ---------------------------------------------------------------------------------- stato e registro
-export const stato = { fase: "avvio", errore: "", qr: "", numero: "", gruppiVisti: [], contati: 0, ultimo: null, registro: [], conf: {}, fb: null };
+export const stato = { fase: "avvio", errore: "", qr: "", numero: "", gruppiVisti: [], contati: 0, ultimo: null, registro: [], conf: {}, fb: null, spinta: { ultima: 0, perche: "", errore: "", n: 0 }, aggiornamento: { controllato: 0, nuova: "", errore: "" } };
 export function annota(t) {
   const riga = `${new Date().toLocaleTimeString("it-IT")} ${t}`;
   stato.registro.push(riga); if (stato.registro.length > 60) stato.registro.shift();
@@ -131,7 +144,7 @@ async function gettoneValido() {
   return gettone.id;
 }
 const intestazioni = async (extra = {}) => ({ ...extra, Authorization: "Bearer " + await gettoneValido() });
-function confDaSalvare() { const c = stato.conf; return { utente: c.utente, email: c.email, rientro: c.rientro, gruppi: c.gruppi, privati: c.privati || [] }; }
+function confDaSalvare() { const c = stato.conf; return { utente: c.utente, email: c.email, rientro: c.rientro, gruppi: c.gruppi, privati: c.privati || [], ...(c.github && c.github.gettone ? { github: c.github } : {}) }; }
 // le chat private scelte nell'app: [{ nome: "Papa'", numero: "393331234567" }]
 function prendiPrivati(d) {
   const nuovi = Array.isArray(d && d.privati) ? d.privati.filter(p => p && p.numero).map(p => ({ nome: String(p.nome || "Chat").slice(0, 40), numero: soloCifre(p.numero) })).slice(0, 6) : [];
@@ -209,7 +222,7 @@ export async function deposita(p, scarica) {
   }
   const r = await fsCrea("posta", p.id, doc);
   ricordaVisto(p.id);
-  if (r === "ok") { stato.contati++; stato.ultimo = Date.now(); annota(`${p.chat}: ${p.chi}${p.tipo === "testo" ? " ha scritto" : p.tipo === "audio" ? " ha mandato un vocale" : " ha mandato una foto"}${p.storico ? " (dei giorni scorsi)" : ""}`); }
+  if (r === "ok") { stato.contati++; stato.ultimo = Date.now(); annota(`${p.chat}: ${p.chi}${p.tipo === "testo" ? " ha scritto" : p.tipo === "audio" ? " ha mandato un vocale" : " ha mandato una foto"}${p.storico ? " (dei giorni scorsi)" : ""}`); if (!p.storico) dopoMessaggio(); }
   return r;
 }
 
@@ -342,27 +355,180 @@ export async function battito() {
   }
 }
 
+// ---------------------------------------------------------------------------------- 1.1.0: la spinta dal PC (fa partire il giro di Sofia)
+// La chiave di GitHub: solo «Actions: Read and write» del progetto pulizie-stanze-ricci. Resta solo qui (config.json): mai nel
+// database, mai nella pagina, mai nel registro. GitHub dice quando scade (intestazione github-authentication-token-expiration):
+// il ponte lo passa al giro, che lo scrive per l'app («la chiave scade il…»).
+const intestazioniGh = (g) => ({ Authorization: "Bearer " + g, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "ponte-di-sofia/" + VERSIONE });
+export function scadenzaDa(h) { const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(h || "").trim()); return m ? m[1] : ""; }
+export function minutiDiRoma(d = new Date()) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d).map(x => [x.type, x.value]));
+  return (Number(p.hour) % 24) * 60 + Number(p.minute);
+}
+export const oraDiSpinta = (d = new Date()) => { const m = minutiDiRoma(d); return m >= 6 * 60 && m < 23 * 60; };
+export const chiaveFormaGiusta = (g) => /^(github_pat_[A-Za-z0-9_]{40,}|gh[pousr]_[A-Za-z0-9]{30,})$/.test(String(g || ""));
+function erroreGh(st, j) {
+  if (st === 401) return "La chiave non è giusta (forse non l'hai copiata tutta, o è scaduta): rifalla e incollala di nuovo.";
+  if (st === 403) return "La chiave c'è, ma non ha il permesso giusto: rifalla con «Actions: Read and write».";
+  if (st === 404) return "La chiave non vede il progetto: rifalla scegliendo «Only select repositories» → pulizie-stanze-ricci.";
+  if (st === 422) return "GitHub non accetta la spinta (" + String((j && j.message) || "").slice(0, 80) + ").";
+  return "GitHub non risponde come dovrebbe (" + st + "): riprovo fra poco.";
+}
+export async function spingiGiro(perche, conChiave) {
+  const g = conChiave || (stato.conf.github && stato.conf.github.gettone);
+  if (!g) return { ok: false, errore: "Manca la chiave di GitHub." };
+  const segnaErrore = (errore) => { if (!conChiave) { if (stato.spinta.errore !== errore) annota("Spinta dal PC non riuscita: " + errore); stato.spinta = { ...stato.spinta, errore, quandoErrore: Date.now() }; } return { ok: false, errore }; };
+  try {
+    const scade = (stato.conf.github && stato.conf.github.scade) || "";
+    const r = await fetch(`${API_GH()}/repos/${REPO}/actions/workflows/sofia-giro.yml/dispatches`, { method: "POST", headers: { ...intestazioniGh(g), "Content-Type": "application/json" }, body: JSON.stringify({ ref: "main", inputs: { da: "ponte", scade } }) });
+    if (r.status === 204 || r.status === 200) {
+      const sc = scadenzaDa(r.headers.get("github-authentication-token-expiration"));
+      if (sc && stato.conf.github && stato.conf.github.gettone === g && stato.conf.github.scade !== sc) { stato.conf.github = { ...stato.conf.github, scade: sc }; try { salvaConf(confDaSalvare()); } catch (e) {} }
+      if (stato.spinta.errore && !conChiave) annota("Spinta dal PC: di nuovo a posto.");
+      stato.spinta = { ...stato.spinta, ultima: Date.now(), perche, errore: "", quandoErrore: 0, n: (stato.spinta.n || 0) + 1 };
+      return { ok: true };
+    }
+    const j = await r.json().catch(() => ({}));
+    return segnaErrore(erroreGh(r.status, j));
+  } catch (e) { return segnaErrore("Non riesco a parlare con GitHub (c'è internet?)."); }
+}
+// la chiave appena incollata: GitHub la riconosce e vede il giro di Sofia? Allora la salvo e faccio partire un giro di prova
+export async function provaChiave(chiave) {
+  const g = String(chiave || "").trim();
+  if (!chiaveFormaGiusta(g)) return { ok: false, errore: g.length < 30 ? "Incolla la chiave intera: comincia con github_pat_ ed è lunga." : "Questa non sembra la chiave di GitHub: deve cominciare con github_pat_." };
+  try {
+    const r = await fetch(`${API_GH()}/repos/${REPO}/actions/workflows/sofia-giro.yml`, { headers: intestazioniGh(g) });
+    if (r.status !== 200) { const j = await r.json().catch(() => ({})); return { ok: false, errore: erroreGh(r.status, j) }; }
+    const prima = stato.conf.github || null;
+    stato.conf.github = { gettone: g, scade: scadenzaDa(r.headers.get("github-authentication-token-expiration")), messa: new Date().toISOString() };
+    const s = await spingiGiro("prova della chiave", g);
+    if (!s.ok) { stato.conf.github = prima; return { ok: false, errore: s.errore }; }
+    salvaConf(confDaSalvare());
+    annota("Spinta dal PC accesa: d'ora in poi faccio partire io il giro di Sofia, ogni 10 minuti e dopo i messaggi nuovi.");
+    return { ok: true, scade: stato.conf.github.scade };
+  } catch (e) { return { ok: false, errore: "Non riesco a parlare con GitHub (c'è internet?)." }; }
+}
+// dopo un messaggio nuovo: se per 5 minuti e mezzo non ne arrivano altri, la spinta (il giro legge con 5 minuti di quiete)
+let timerSpinta = null;
+export function dopoMessaggio() {
+  if (!stato.conf.github || !stato.conf.github.gettone) return;
+  clearTimeout(timerSpinta);
+  timerSpinta = setTimeout(() => { timerSpinta = null; if (oraDiSpinta()) spingiGiro("messaggi nuovi"); }, SPINTA_DOPO_MS);
+}
+// ogni minuto: se dall'ultima spinta sono passati 10 minuti (e siamo fra le 6 e le 23), un'altra
+export function spintaPeriodica(adesso = Date.now()) {
+  if (!stato.conf.github || !stato.conf.github.gettone || !oraDiSpinta(new Date(adesso))) return false;
+  if (adesso - (stato.spinta.ultima || 0) < SPINTA_OGNI_MS - 30 * 1000) return false;
+  if (stato.spinta.quandoErrore && adesso - stato.spinta.quandoErrore < SPINTA_OGNI_MS - 30 * 1000) return false;   // dopo un errore: fra 10 minuti
+  spingiGiro("ogni 10 minuti");
+  return true;
+}
+
+// ---------------------------------------------------------------------------------- 1.1.0: il ponte si aggiorna da solo
+// Ogni 6 ore (e 3 minuti dopo l'avvio) guarda sul sito se c'è un ponte più nuovo. Se c'è: lo scarica accanto, controlla che
+// sia un programma valido (node --check), tiene da parte quello di adesso (ponte-prima.mjs) e si ferma col codice 3: il file
+// «Avvia il ponte di Sofia» lo fa ripartire (e, se servono librerie nuove, fa prima «npm install»). Se il ponte nuovo non
+// parte, il .bat rimette quello di prima. Solo col .bat 1.1.0 (che lo sa fare: PONTE_BAT=2).
+export function confrontaVersioni(a, b) { const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0) ? 1 : -1; } return 0; }
+const controllaSintassi = (file) => new Promise((ok, no) => exec(`"${process.execPath}" --check "${file}"`, (err) => err ? no(new Error("il ponte nuovo ha un errore: non lo metto")) : ok()));
+export async function controllaAggiornamento({ riavvia = true, cartella = CARTELLA } = {}) {
+  if (process.env.PONTE_NO_AGGIORNA || (riavvia && Number(process.env.PONTE_BAT || 0) < 2)) return { esito: "spento" };
+  stato.aggiornamento = { ...stato.aggiornamento, controllato: Date.now() };
+  const nuovo = path.join(cartella, "ponte-nuovo.mjs");
+  try {
+    const r = await fetch(`${RAW()}/ponte.mjs`, { headers: { "Cache-Control": "no-cache" } });
+    if (!r.ok) throw new Error("il sito risponde " + r.status);
+    const testo = await r.text();
+    const v = (/export const VERSIONE = "(\d+\.\d+\.\d+)"/.exec(testo) || [])[1];
+    if (!v) throw new Error("nel ponte del sito non trovo la versione");
+    if (confrontaVersioni(v, VERSIONE) <= 0) { stato.aggiornamento.errore = ""; return { esito: "aggiornato", versione: v }; }
+    fs.writeFileSync(nuovo, testo);
+    await controllaSintassi(nuovo);
+    // le librerie: se il ponte nuovo ne vuole altre, il .bat fa «npm install» prima di farlo partire
+    try {
+      const pj = await fetch(`${RAW()}/package.json`, { headers: { "Cache-Control": "no-cache" } });
+      if (pj.ok) {
+        const t = await pj.text(); const j = JSON.parse(t);
+        const ora = JSON.parse(fs.readFileSync(path.join(cartella, "package.json"), "utf8"));
+        if (JSON.stringify(j.dependencies || {}) !== JSON.stringify(ora.dependencies || {})) {
+          const pl = await fetch(`${RAW()}/package-lock.json`, { headers: { "Cache-Control": "no-cache" } });
+          if (pl.ok) { const tl = await pl.text(); JSON.parse(tl); fs.writeFileSync(path.join(cartella, "package-lock-nuovo.json"), tl); }
+          fs.writeFileSync(path.join(cartella, "package-nuovo.json"), t);
+        }
+      }
+    } catch (e) { annota("Aggiornamento: le librerie nuove non le ho prese (" + e.message + ")."); }
+    fs.copyFileSync(path.join(cartella, "ponte.mjs"), path.join(cartella, "ponte-prima.mjs"));
+    fs.renameSync(nuovo, path.join(cartella, "ponte.mjs"));
+    stato.aggiornamento = { ...stato.aggiornamento, nuova: v, errore: "" };
+    annota(`C'è il ponte nuovo (${v}): riparto da solo fra pochi secondi.`);
+    if (riavvia) setTimeout(() => { try { fermaWhatsApp(); } catch (e) {} process.exit(3); }, 3000);
+    return { esito: "nuovo", versione: v };
+  } catch (e) {
+    try { fs.unlinkSync(nuovo); } catch (x) {}
+    stato.aggiornamento = { ...stato.aggiornamento, errore: String(e.message).slice(0, 120) };
+    return { esito: "errore", errore: e.message };
+  }
+}
+
 // ---------------------------------------------------------------------------------- la paginetta su http://localhost:3939
 const esc = (s) => String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 async function paginaQr() { if (!stato.qr) return ""; try { const QR = (await import("qrcode")).default; return await QR.toDataURL(stato.qr, { margin: 1, width: 320 }); } catch (e) { return ""; } }
 function pagina() {
   return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Il ponte di Sofia</title>
-<style>body{margin:0;background:#F7F5F0;color:#1C1917;font:500 17px/1.45 system-ui,Segoe UI,sans-serif}main{max-width:620px;margin:0 auto;padding:28px 18px}h1{font:800 28px/1.15 system-ui;margin:0 0 4px}.sotto{color:#6B5A3A;margin:0 0 18px}.box{background:#fff;border:1px solid #E7E2DA;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 10px 24px -18px rgba(28,25,23,.4)}.ok{border-color:#8A6D32}.big{font:800 22px system-ui}input{font:700 24px system-ui;letter-spacing:.12em;text-transform:uppercase;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #8A6D32}button{margin-top:12px;min-height:52px;width:100%;border:0;border-radius:14px;background:#8A6D32;color:#fff;font:800 18px system-ui;cursor:pointer}button.chiaro{background:#fff;color:#6E542B;border:1.5px solid #8A6D32}img{display:block;margin:10px auto;width:300px;max-width:100%;image-rendering:pixelated}ol{padding-left:22px}li{margin:6px 0}.err{color:#B42318;font-weight:700}.reg{font:13px/1.5 ui-monospace,Consolas,monospace;color:#57534E;white-space:pre-wrap;max-height:220px;overflow:auto}</style></head>
+<style>body{margin:0;background:#F7F5F0;color:#1C1917;font:500 17px/1.45 system-ui,Segoe UI,sans-serif}main{max-width:620px;margin:0 auto;padding:28px 18px}h1{font:800 28px/1.15 system-ui;margin:0 0 4px}.sotto{color:#6B5A3A;margin:0 0 18px}.box{background:#fff;border:1px solid #E7E2DA;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 10px 24px -18px rgba(28,25,23,.4)}.ok{border-color:#8A6D32}.big{font:800 22px system-ui}input{font:700 24px system-ui;letter-spacing:.12em;text-transform:uppercase;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #8A6D32}button{margin-top:12px;min-height:52px;width:100%;border:0;border-radius:14px;background:#8A6D32;color:#fff;font:800 18px system-ui;cursor:pointer}button.chiaro{background:#fff;color:#6E542B;border:1.5px solid #8A6D32}a.bottone{display:flex;align-items:center;justify-content:center;margin-top:12px;min-height:52px;border-radius:14px;background:#8A6D32;color:#fff;font:800 18px system-ui;text-decoration:none}.gialla{margin-top:14px;padding:14px;border-radius:14px;background:#FFF4B8;border:3px solid #E8B400}.gialla label{display:block;font:800 19px system-ui;margin-bottom:8px}.gialla input{letter-spacing:0;text-transform:none;font:600 18px ui-monospace,Consolas,monospace}.okk{color:#1F7A3A;font-weight:800}img{display:block;margin:10px auto;width:300px;max-width:100%;image-rendering:pixelated}ol{padding-left:22px}li{margin:6px 0}.err{color:#B42318;font-weight:700}.reg{font:13px/1.5 ui-monospace,Consolas,monospace;color:#57534E;white-space:pre-wrap;max-height:220px;overflow:auto}</style></head>
 <body><main><h1>Il ponte di Sofia</h1><p class="sotto">Legge soltanto il gruppo WhatsApp e passa i messaggi a Sofia. Non scrive mai niente.</p><div id="corpo">…</div></main>
 <script>
-async function giro(){ try { const r = await fetch('/stato'); const s = await r.json(); document.getElementById('corpo').innerHTML = s.html; const f = document.getElementById('fcod'); if (f) f.onsubmit = async (e) => { e.preventDefault(); const v = document.getElementById('cod').value; const r2 = await fetch('/codice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codice: v }) }); const j = await r2.json(); if (!j.ok) alert(j.errore || 'Codice sbagliato'); giro(); }; const b = document.getElementById('avvio'); if (b) b.onclick = async () => { const r3 = await fetch('/avvio-automatico', { method: 'POST' }); const j = await r3.json(); alert(j.ok ? 'Fatto: il ponte partira da solo quando accendi il PC.' : (j.errore || 'Non ci sono riuscito')); }; } catch (e) {} }
-giro(); setInterval(() => { if (!document.activeElement || document.activeElement.id !== 'cod') giro(); }, 2500);
+let mostraGh = false, provaGh = false;
+function preparaGh() {
+  const c = document.getElementById('ghcambia'); if (c) c.onclick = () => { mostraGh = true; giro(); };
+  const t = document.getElementById('ghtieni'); if (t) t.onclick = () => { mostraGh = false; giro(); };
+  const i = document.getElementById('gh'); if (!i) return;
+  const esito = document.getElementById('ghesito');
+  const prova = async () => {
+    const v = i.value.trim(); if (!v || provaGh) return;
+    if (!/^(github_pat_|gh[pousr]_)/.test(v)) { esito.className = 'err'; esito.textContent = 'Questa non sembra la chiave di GitHub: deve cominciare con github_pat_'; return; }
+    provaGh = true; esito.className = 'sotto'; esito.textContent = 'Controllo la chiave con GitHub...';
+    try {
+      const r = await fetch('/github', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gettone: v }) }); const j = await r.json();
+      if (j.ok) { i.value = ''; mostraGh = false; esito.className = 'okk'; esito.textContent = '✓ Giusta! Ho fatto partire un giro di Sofia per prova. Da adesso ci penso io.'; i.blur(); setTimeout(() => { provaGh = false; giro(); }, 4000); return; }
+      esito.className = 'err'; esito.textContent = j.errore || 'Non va.';
+    } catch (e) { esito.className = 'err'; esito.textContent = 'Il ponte non risponde: è aperta la finestra nera?'; }
+    provaGh = false;
+  };
+  i.addEventListener('paste', () => setTimeout(prova, 60));
+  i.addEventListener('input', () => { if (i.value.trim().length >= 40) prova(); });
+}
+async function giro(){ try { const r = await fetch('/stato' + (mostraGh ? '?gh=1' : '')); const s = await r.json(); document.getElementById('corpo').innerHTML = s.html; preparaGh(); const f = document.getElementById('fcod'); if (f) f.onsubmit = async (e) => { e.preventDefault(); const v = document.getElementById('cod').value; const r2 = await fetch('/codice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codice: v }) }); const j = await r2.json(); if (!j.ok) alert(j.errore || 'Codice sbagliato'); giro(); }; const b = document.getElementById('avvio'); if (b) b.onclick = async () => { const r3 = await fetch('/avvio-automatico', { method: 'POST' }); const j = await r3.json(); alert(j.ok ? 'Fatto: il ponte partira da solo quando accendi il PC.' : (j.errore || 'Non ci sono riuscito')); }; } catch (e) {} }
+giro(); setInterval(() => { const a = document.activeElement; if (provaGh || (a && (a.id === 'cod' || a.id === 'gh'))) return; giro(); }, 2500);
 </script></body></html>`;
 }
 function cosaLeggo() {
   const g = (stato.conf.gruppi || []).join(", "), p = (stato.conf.privati || []).map(x => "la chat con " + x.nome).join(", ");
   return [g ? "il gruppo " + g : "", p].filter(Boolean).join(" e ");
 }
-async function htmlStato() {
+// 1.1.0: il riquadro della spinta dal PC (la chiave non compare MAI nella pagina: solo se c'è, quando scade, com'è andata)
+const dataBella = (iso) => { const [y, m, d] = String(iso || "").split("-"); return d && m && y ? `${d}/${m}/${y}` : String(iso || ""); };
+const oraBella = (t) => new Date(t).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+export function htmlSpinta(mostra = false) {
+  const g = stato.conf.github, s = stato.spinta || {};
+  const ce = !!(g && g.gettone);
+  if (ce && !mostra) {
+    const giorni = g.scade ? Math.round((Date.parse(g.scade + "T12:00:00Z") - Date.now()) / 86400000) : null;
+    const scade = g.scade ? (giorni !== null && giorni <= 21 ? `<p class="err">⚠️ La chiave di GitHub ${giorni < 0 ? "è scaduta" : "scade"} il ${dataBella(g.scade)}: rifalla con il tasto qui sotto (2 minuti).</p>` : `<p class="sotto">La chiave di GitHub scade il ${dataBella(g.scade)}: qualche settimana prima te lo ricordo.</p>`) : "";
+    return `<div class="box ok"><div class="big">✓ La spinta dal PC è accesa</div><p>Faccio partire io il giro di Sofia: ogni 10 minuti (dalle 6 alle 23) e 5 minuti dopo i messaggi nuovi.${s.ultima ? ` L'ultima volta alle <b>${oraBella(s.ultima)}</b>${s.perche ? ` (${esc(s.perche)})` : ""}.` : ""}</p>${s.errore ? `<p class="err">${esc(s.errore)}</p>` : ""}${scade}<button id="ghcambia" class="chiaro">Cambia la chiave di GitHub</button></div>`;
+  }
+  return `<div class="box" id="boxgh"><div class="big">${ce ? "Cambia la chiave di GitHub" : "Sofia sempre accesa: la spinta dal PC"}</div>
+${ce ? "" : `<p>GitHub fa partire Sofia «quando può»: a volte con ore di ritardo. Con una chiave di GitHub la fa partire questo PC: ogni 10 minuti e subito dopo i messaggi nuovi.</p>`}
+<ol><li>Tocca <b>«Apri GitHub»</b>: la pagina della chiave è già compilata.</li><li>Lì, in <b>Repository access</b>, scegli <b>Only select repositories</b> → <b>pulizie-stanze-ricci</b> (se non c'è già). Poi in fondo <b>Generate token</b>, e copia la chiave col tastino accanto (comincia con github_pat_).</li><li>Torna qui e <b>incollala nel riquadro giallo</b>: controllo io se è giusta.</li></ol>
+<a class="bottone" href="${LINK_CHIAVE_GH}" target="_blank" rel="noopener">Apri GitHub</a>
+<div class="gialla"><label for="gh">👉 Incolla qui la chiave di GitHub</label><input id="gh" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_..."></div>
+<p id="ghesito" class="sotto">La chiave resta solo su questo PC: non va nell'app, né nel database.</p>${ce ? `<button id="ghtieni" class="chiaro">Lascia quella di prima</button>` : ""}</div>`;
+}
+async function htmlStato(opz = {}) {
   const s = stato, reg = `<div class="box"><b>Cosa è successo</b><div class="reg">${esc(s.registro.slice(-14).join("\n"))}</div></div>`;
   if (s.fase === "codice") return `<div class="box"><div class="big">1. Il codice del ponte</div><p>Nell'app: <b>Altro → Il ponte WhatsApp → Crea il codice del ponte</b>. Scrivilo qui sotto (16 lettere e numeri).</p>${s.errore ? `<p class="err">${esc(s.errore)}</p>` : ""}<form id="fcod"><input id="cod" autocomplete="off" placeholder="ABCD-EFGH-JKLM-NPQR" maxlength="24"><button>Collega</button></form></div>` + reg;
   if (s.fase === "qr") { const img = await paginaQr(); return `<div class="box"><div class="big">2. Inquadra il codice con WhatsApp</div><ol><li>Sul telefono apri WhatsApp → <b>⋮</b> → <b>Dispositivi collegati</b> → <b>Collega un dispositivo</b>.</li><li>Inquadra il quadrato qui sotto.</li></ol>${img ? `<img src="${img}" alt="codice da inquadrare">` : "<p>Preparo il codice…</p>"}<p class="sotto">Il codice cambia ogni tanto: se non va, aspetta il nuovo.</p></div>` + reg; }
-  if (s.fase === "collegato") return `<div class="box ok"><div class="big">✓ Collegato</div><p>Leggo soltanto: <b>${esc(cosaLeggo())}</b>. Messaggi passati a Sofia: <b>${s.contati}</b>${s.ultimo ? ` · l'ultimo alle ${new Date(s.ultimo).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}` : ""}.</p><p>Lascia aperta la finestra nera del ponte (puoi ridurla a icona). Se spegni il PC, i messaggi aspettano e arrivano quando lo riaccendi.</p><button id="avvio" class="chiaro">Fallo partire da solo quando accendo il PC</button></div>` + reg;
+  if (s.fase === "collegato") return `<div class="box ok"><div class="big">✓ Collegato</div><p>Leggo soltanto: <b>${esc(cosaLeggo())}</b>. Messaggi passati a Sofia: <b>${s.contati}</b>${s.ultimo ? ` · l'ultimo alle ${new Date(s.ultimo).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}` : ""}.</p><p>Lascia aperta la finestra nera del ponte (puoi ridurla a icona). Se spegni il PC, i messaggi aspettano e arrivano quando lo riaccendi.</p><button id="avvio" class="chiaro">Fallo partire da solo quando accendo il PC</button><p class="sotto">Ponte ${VERSIONE} · si aggiorna da solo.</p></div>` + htmlSpinta(!!opz.gh) + reg;
   if (s.fase === "errore") return `<div class="box"><p class="err">${esc(s.errore)}</p></div>` + reg;
   return `<div class="box"><div class="big">Un attimo…</div><p>${s.fase === "ricollego" ? "Mi ricollego a WhatsApp." : "Preparo il ponte."}</p></div>` + reg;
 }
@@ -377,7 +543,16 @@ function avvioAutomatico() {
 function avviaPagina() {
   const srv = http.createServer(async (req, res) => {
     try {
-      if (req.url === "/stato") { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ fase: stato.fase, html: await htmlStato() })); return; }
+      if (req.url === "/stato" || req.url === "/stato?gh=1") { res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify({ fase: stato.fase, html: await htmlStato({ gh: req.url.endsWith("gh=1") }) })); return; }
+      if (req.url === "/github" && req.method === "POST") {
+        // solo dalla pagina del ponte: JSON (un altro sito non può mandarlo senza permesso) e, se c'è, la stessa origine
+        const tipo = String(req.headers["content-type"] || "").split(";")[0].trim(), orig = String(req.headers.origin || "");
+        if (tipo !== "application/json" || (orig && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(orig))) { res.writeHead(403); res.end("no"); return; }
+        let corpo = ""; for await (const x of req) { corpo += x; if (corpo.length > 4000) break; }
+        let g = ""; try { g = String(JSON.parse(corpo || "{}").gettone || ""); } catch (e) {}
+        const risp = await provaChiave(g);
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify(risp)); return;
+      }
       if (req.url === "/codice" && req.method === "POST") {
         let corpo = ""; for await (const p of req) corpo += p;
         const codice = String((JSON.parse(corpo || "{}").codice) || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -388,8 +563,13 @@ function avviaPagina() {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(pagina());
     } catch (e) { res.writeHead(500); res.end(String(e.message)); }
   });
-  srv.listen(PORTA, "127.0.0.1", () => annota(`Pagina del ponte: http://localhost:${PORTA}`));
-  return srv;
+  // 1.1.0: se la porta è occupata riprovo qualche volta (il ponte di prima si sta fermando); se resta occupata, c'è già un ponte acceso
+  return new Promise((ok, no) => {
+    let volte = 0;
+    srv.on("listening", () => { annota(`Pagina del ponte: http://localhost:${PORTA}`); ok(srv); });
+    srv.on("error", (e) => { if (e && e.code === "EADDRINUSE" && ++volte < 5) { setTimeout(() => srv.listen(PORTA, "127.0.0.1"), 1500); return; } no(e); });
+    srv.listen(PORTA, "127.0.0.1");
+  });
 }
 // il codice creato nell'app (16 lettere e numeri): le prime 6 dicono l'utente del ponte, le altre 10 sono la sua password.
 // Si entra una volta (la password va solo a Google), si legge la scheda del ponte (i gruppi da seguire) e si parte.
@@ -419,7 +599,7 @@ export async function usaCodice(codice) {
 function partiWhatsApp() {
   if (sock) { stato.fase = faseWA || "avvio"; return; }
   stato.fase = "avvio";
-  if (process.env.PONTE_SENZA_WA) return;          // solo per le prove automatiche (senza WhatsApp vero)
+  if (process.env.PONTE_SENZA_WA) { if (process.env.PONTE_SENZA_WA === "collegato") stato.fase = "collegato"; return; }   // solo per le prove automatiche (senza WhatsApp vero)
   avviaWhatsApp().catch(e => { stato.fase = "errore"; stato.errore = e.message; });
 }
 
@@ -428,7 +608,14 @@ async function main() {
   try { fs.mkdirSync(DATI, { recursive: true }); } catch (e) {}
   annota(`Il ponte di Sofia ${VERSIONE}`);
   stato.conf = { gruppi: ["Albergo"], ...leggiConf() };
-  avviaPagina();
+  try { await avviaPagina(); }
+  catch (e) { if (e && e.code === "EADDRINUSE") { console.log("Il ponte è già acceso in un'altra finestra."); process.exit(4); } throw e; }
+  // 1.1.0: la spinta dal PC (ogni minuto guardo se sono passati 10 minuti) e l'aggiornamento da solo (dopo 3 minuti, poi ogni 6 ore)
+  setInterval(() => { try { spintaPeriodica(); } catch (e) {} }, 60 * 1000);
+  setTimeout(() => { controllaAggiornamento().catch(() => {}); setInterval(() => controllaAggiornamento().catch(() => {}), 6 * 3600 * 1000); }, 3 * 60 * 1000);
+  // partito bene da 2 minuti: il ponte di prima (tenuto da parte durante un aggiornamento) non serve più
+  setTimeout(() => { try { fs.unlinkSync(path.join(CARTELLA, "ponte-prima.mjs")); } catch (e) {} }, 2 * 60 * 1000);
+  if (stato.conf.github && stato.conf.github.gettone) annota("Spinta dal PC accesa: faccio partire io il giro di Sofia ogni 10 minuti e dopo i messaggi nuovi.");
   try { stato.fb = await caricaFirebase(); } catch (e) { stato.fase = "errore"; stato.errore = e.message + " (c'è internet?)"; annota(stato.errore); return; }
   if (process.platform === "win32" && !process.env.PONTE_NO_BROWSER) exec(`start "" "http://localhost:${PORTA}"`);
   setInterval(battito, 5 * 60 * 1000);

@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-title Il ponte di Sofia
+title Avvio il ponte di Sofia
 echo.
 echo   IL PONTE DI SOFIA - legge soltanto il gruppo WhatsApp e passa i messaggi a Sofia
 echo   (non scrive mai niente su WhatsApp)
@@ -19,6 +19,11 @@ rem --- Il ponte vive sempre nella cartella "Ponte di Sofia", anche se lo apri d
 set "CASA=%USERPROFILE%\Ponte di Sofia"
 set "SITO=https://raw.githubusercontent.com/michelepegoli2210-hub/pulizie-stanze-ricci/main/ponte"
 if /i "%~dp0"=="%CASA%\" goto avvia
+
+rem --- 1.1.0: se un ponte e' gia' acceso (anche quello di prima), lo fermo: due ponti insieme litigano su WhatsApp
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 3939 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Write-Host 'Fermo il ponte che era gia acceso...'; Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+timeout /t 2 /nobreak >nul
+
 if not exist "%CASA%" mkdir "%CASA%"
 if not exist "%~dp0ponte.mjs" goto da_internet
 echo Sistemo il ponte nella cartella "%CASA%" ...
@@ -40,19 +45,45 @@ curl -fsSL -o "%CASA%\LEGGIMI.txt" "%SITO%/LEGGIMI.txt"
 
 :copia_me
 copy /y "%~f0" "%CASA%\Avvia il ponte di Sofia.bat" >nul
+if exist "%CASA%\ponte-prima.mjs" del /q "%CASA%\ponte-prima.mjs" >nul 2>nul
 echo Fatto. D'ora in poi il ponte si avvia dalla cartella "%CASA%".
 echo.
 
 :avvia
+title Il ponte di Sofia
 cd /d "%CASA%"
+rem --- 1.1.0: questo file sa far ripartire il ponte quando si aggiorna da solo (codice 3)
+set "PONTE_BAT=2"
 if not exist node_modules (
   echo Preparo il ponte: solo la prima volta, ci vuole un minuto...
   call npm install --omit=dev --no-audit --no-fund
 )
+
+:gira
+if exist package-nuovo.json (
+  echo Aggiorno le librerie del ponte: un minuto...
+  move /y package-nuovo.json package.json >nul
+  if exist package-lock-nuovo.json move /y package-lock-nuovo.json package-lock.json >nul
+  call npm install --omit=dev --no-audit --no-fund
+)
 node ponte.mjs
+set "USCITA=%errorlevel%"
+if "%USCITA%"=="3" goto gira
+if "%USCITA%"=="4" goto gia_acceso
+if exist ponte-prima.mjs (
+  echo Il ponte nuovo non e' partito bene: rimetto quello di prima.
+  move /y ponte-prima.mjs ponte.mjs >nul
+  goto gira
+)
 echo.
 echo Il ponte si e' fermato. Chiudi questa finestra e riaprila per farlo ripartire.
 pause
+exit /b
+
+:gia_acceso
+echo.
+echo Il ponte e' gia' acceso in un'altra finestra: questa si chiude da sola.
+timeout /t 8 >nul
 exit /b
 
 :senza_file

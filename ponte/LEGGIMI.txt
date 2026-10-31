@@ -23,9 +23,14 @@ COME SI ACCENDE (la prima volta)
 4. Sul telefono: WhatsApp -> menu (3 puntini) -> Dispositivi collegati -> Collega un dispositivo,
    e inquadra il quadrato della pagina. Fatto.
 5. Nella pagina tocca "Fallo partire da solo quando accendo il PC".
+6. (consigliato) La spinta dal PC: nella pagina del ponte c'e' il riquadro giallo. Tocca "Apri GitHub",
+   scegli il progetto pulizie-stanze-ricci, "Generate token", copia la chiave e incollala nel riquadro giallo.
+   Da li' in poi il PC fa partire Sofia ogni 10 minuti e subito dopo i messaggi nuovi (GitHub da solo
+   a volte la fa partire con ore di ritardo). La chiave resta solo sul PC.
 
 DA SAPERE
 - La finestra nera del ponte deve restare aperta (si puo' ridurre a icona).
+- Il ponte si aggiorna da solo (guarda ogni 6 ore se c'e' una versione nuova e riparte da solo).
 - Se il PC e' spento i messaggi aspettano: quando lo riaccendi arrivano tutti.
 - Il codice serve una volta sola: il ponte lo usa per entrare e poi si ricorda l'accesso
   (la password non resta scritta sul PC). Il codice resta nell'app sul telefono dove l'hai creato.
