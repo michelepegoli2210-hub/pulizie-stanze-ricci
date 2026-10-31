@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.21.0";
+export const VERSIONE = "1.21.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -3346,7 +3346,12 @@ function casaAggiorna(h) {
   if (mini) {
     const parti = [ls.length ? `${fatte}/${ls.length} pulizie` : "0 pulizie"];   // 1.6.6: senza il saluto accanto, si spiega da sola
     if (man) parti.push(`${man} ${man === 1 ? "lavoro" : "lavori"}`); else if (dom) parti.push(`${dom} ${dom === 1 ? "domanda" : "domande"}`);
-    const tm = "Oggi: " + parti.join(" · "); if (mini.textContent !== tm) mini.textContent = tm; mini.hidden = false;   // 1.10.0: «Oggi:» davanti, perche' sopra c'e' domani
+    const tm = "Oggi: " + parti.join(" · ");   // 1.10.0: «Oggi:» davanti, perche' sopra c'e' domani
+    // 1.21.1 (Michele: "la semplicita' e la chiarezza delle icone deve essere anche quando si riduce ad icona"): nella vista
+    // facile, a tendina chiusa, le figurine col numero grande (il secchio delle pulizie, la chiave inglese o il fumetto)
+    if (facile) { const hh = miniFacile(ls, fatte, man, dom); if (mini._hh !== hh) { mini._hh = hh; mini.innerHTML = hh; } }
+    else { mini._hh = null; if (mini.textContent !== tm) mini.textContent = tm; }
+    mini.hidden = false;
   }
   // 1.10.0 (Michele: "quando chiudo la tendina qualcosa mi deve dire: le pulizie del giorno dopo, per fare le chiamate"):
   // la tessera «Domani» nella striscia chiusa: quante pulizie e per quale signora; un tocco apre il dettaglio
@@ -3357,8 +3362,9 @@ function casaAggiorna(h) {
     const chi = Object.entries(perSig).map(([s, n]) => `${s} ${n}`).join(", ");
     const quando = L.dataGiornoLungo(domani).replace(/^(\S{3})\S*/, "$1");
     const hh = `<span class="cr-ico verde" aria-hidden="true">${ico2("pulizie3")}</span><span class="cr-t"><small class="cr-l">Domani · ${esc(quando)}</small><b class="cr-v">${dm.length ? `${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}: ${esc(chi)}` : "nessuna pulizia"}</b></span><span class="cr-va" aria-hidden="true">›</span>`;
-    if (cd.innerHTML !== hh) cd.innerHTML = hh;
-    cd.classList.toggle("att", dm.length > 0);
+    const df = facile ? domaniFacile() : null, hf = df ? df.html : hh;   // 1.21.1: nella vista facile la tessera a figure
+    if (cd._hh !== hf) { cd._hh = hf; cd.innerHTML = hf; }
+    cd.classList.toggle("att", df ? df.n > 0 : dm.length > 0);
   }
   const det = h.dataset.dettaglio ? (facile ? dettaglioFacile : dettaglioHtml)(h.dataset.dettaglio, ls, fatte) : null;   // 1.7.1; 1.21.0: nella vista facile a figure
   if (sal) { if (det) { if (sal.innerHTML !== det.titolo) sal.innerHTML = det.titolo; sal.classList.remove("lunga"); } else { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); } }
@@ -3488,6 +3494,21 @@ function schedeFacili(ls, fatte, man, dom) {
   if (dom) out.push(scheda({ vai: "sofia", ico: icoDomande(), n: String(dom), parole: `${dom === 1 ? "domanda" : "domande"} di ${nomeGov()} per te`, tono: "att", larga: true, dici: `${nomeGov()} ha ${dom} ${dom === 1 ? "domanda" : "domande"} per te` }));
   if (cloudAttivo()) { const a = argonTesseraValore(); out.push(scheda({ vai: "argon", ico: icoNuvola(), n: "ArgonCloud", parole: a.v, testo: true, tono: a.att ? "att" : "", larga: true, dici: `ArgonCloud: ${a.v}` })); }
   return out.join("");
+}
+// 1.21.1: a tendina chiusa (vista facile) la tessera «Domani» e' come la scheda larga: il secchio col foglio del calendario,
+// il numero grande, «pulizia domani» e chi la fa (le rifiniture non contano, come nella scheda e nel dettaglio)
+function domaniFacile() {
+  const domani = L.aggiungiGiorni(L.oggiISO(), 1), dm = pulizieDelGiorno(domani).filter(p => p.tipo !== "stelle"), perSig = {};
+  dm.forEach(p => { const s = SIG(p.zona); perSig[s] = (perSig[s] || 0) + 1; });
+  const chi = Object.entries(perSig).map(([s, n]) => `${s} ${n}`).join(" · ");
+  return { n: dm.length, html: `<span class="of-ico" aria-hidden="true">${icoSecchio(L.giornoDelMese(domani))}</span><span class="of-t"><b class="of-n">${dm.length}</b><span class="of-p">${dm.length === 1 ? "pulizia domani" : "pulizie domani"}</span>${chi ? `<small class="of-s2">${esc(chi)}</small>` : ""}</span><span class="cr-va" aria-hidden="true">›</span>` };
+}
+// 1.21.1: la pillola «Oggi» a tendina chiusa (vista facile): le figurine col numero, come le schede (dorata = c'e' da fare)
+function miniFacile(ls, fatte, man, dom) {
+  const n = ls.length, fig = (cls, ico, num, parola) => `<span class="csm-c${cls}"><span class="csm-ico" aria-hidden="true">${ico}</span><b>${num}</b><span class="csm-p">${parola}</span></span>`;
+  const p1 = fig(n - fatte > 0 ? " att" : "", icoSecchio(), n ? `${fatte} su ${n}` : "0", n ? "oggi" : "pulizie oggi");
+  const p2 = man ? fig(" att", icoChiave(), man, "da aggiustare") : dom ? fig(" att", icoDomande(), dom, dom === 1 ? "domanda" : "domande") : "";
+  return p1 + p2;
 }
 // il fumetto di Sofia (lo stesso messaggio della pagina di prima: saluto, testo, «👉» la cosa da fare) e le schede
 function oggiFacileHtml(c, u, ls, fatte, man, dom) {

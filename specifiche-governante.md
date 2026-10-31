@@ -2124,3 +2124,14 @@ Michele, 31/10 sera, con la foto del dettaglio «Domani, domenica 1 nov: 1 puliz
   - In fondo resta il tasto per la pagina intera («Apri l'elenco di oggi», «Apri il prospetto di domani»…). ArgonCloud resta com'era.
 - TORNARE INDIETRO: in fondo al riquadro (si scorre giù) «Questa pagina: [Facile] [Come prima]». «Come prima» rimette la pagina della 1.20.0, uguale (messaggio sulla lastra bianca e le quattro tessere); da lì si torna a «Facile» con lo stesso interruttore. La scelta resta sul telefono (ricci_oggi_vista: "facile" o "classica").
 - Mentre Sofia parla, il riquadro va da solo sulla frase che sta dicendo anche nel fumetto della pagina facile. Tema scuro: fumetto, schede e bottoni scuri, scritte chiare. Telefono stretto (360 px): figure e numeri un filo più piccoli, la griglia delle camere a due colonne.
+
+## 120. La 1.21.1 (31 ottobre, notte): LA TENDINA CHIUSA A FIGURE
+
+Michele, 31/10 alle 23:05, con la foto della pagina «Oggi» a tendina chiusa (Sofia intera, sotto «Domani · dom 1 nov — 1 pulizia: Selena 1» e la pillola «Oggi: 0/4 pulizie · 11 lavori»): «la semplicità e la chiarezza delle icone deve essere anche quando si riduce ad icona».
+
+- Nella vista FACILE, a tendina chiusa:
+  - La tessera «Domani» è come la scheda larga della pagina aperta: il secchio col foglio del calendario (il numero del giorno), il NUMERO GRANDE, «pulizia domani» / «pulizie domani» e sotto chi la fa («Selena 1»). Dorata se domani c'è da fare, bianca se non c'è niente. Le rifiniture non contano (come nella scheda e nel dettaglio). Un tocco apre il dettaglio a figure di domani (con «📞 Da chiamare»).
+  - Al posto della scritta «Oggi: 0/4 pulizie · 11 lavori» ci sono le FIGURINE col numero, le stesse delle schede: il secchio «0 su 4 oggi» e la chiave inglese «11 da aggiustare»; se non ci sono lavori aperti ma Sofia ha domande, il fumetto «3 domande». Dorata = c'è da fare. Un tocco (come prima) apre la tendina.
+  - Il riquadro chiuso è un filo più alto (128 px invece di 108) per starci.
+- «Come prima» resta uguale (la tessera con l'icona a linee e la scritta «Oggi: …»).
+- Le due cose si rifanno solo quando cambia un numero (un tocco non si perde). Tema scuro: figurine e tessera scure, scritte chiare. Telefono stretto (360 px): figurine e scritte un filo più piccole, accanto alla freccia.

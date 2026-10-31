@@ -5882,3 +5882,44 @@ body.premium .sofia-hero .casa-nuvola .dtf-cm.libera small{font:700 12.5px/1.15 
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-k.non{background:#1E293B;border-color:#475569;color:#94A3B8}
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-k.via{background:#1E293B;border-color:#475569}
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-r{border-top-color:rgba(212,175,106,.22)}
+/* ============================================================================
+   1.21.1 (Michele, 31/10 notte, con la foto della tendina giu'): "la semplicita' e la chiarezza delle icone deve essere
+   anche quando si riduce ad icona". Nella vista facile, a tendina chiusa: la tessera «Domani» e' una scheda a figure (il
+   secchio col foglio del calendario, il numero grande, «pulizia domani», chi la fa); sotto, al posto della scritta
+   «Oggi: 0/4 pulizie · 11 lavori», le figurine col numero: «🪣 0 su 4 oggi» e «🔧 11 da aggiustare» (o «3 domande»).
+   Il riquadro chiuso e' un filo piu' alto (128 px invece di 108). «Come prima» resta uguale.
+   ============================================================================ */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 128px);height:128px}
+/* la tessera «Domani» come la scheda larga della pagina aperta */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani{display:flex;align-items:center;gap:8px;flex:0 0 62px;height:62px;margin:0 0 7px;padding:6px 10px 6px 6px;border-radius:16px;box-sizing:border-box;background:#FFFFFF;border:2px solid #E3D5B4;box-shadow:0 2px 6px -4px rgba(15,23,42,.2);color:#0F172A;text-align:left}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani.att{background:#F6EAD1;border-color:#D9BF8C;box-shadow:0 4px 10px -6px rgba(133,101,53,.55)}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-t{flex-direction:row;flex-wrap:wrap;align-items:baseline;column-gap:7px;row-gap:1px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-p{font-size:15.5px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-s2{flex-basis:100%}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-va{flex:0 0 auto;margin-left:auto;font:700 20px/1 var(--f-lettura);color:#9A7432;text-shadow:none}
+/* la pillola «Oggi»: due figurine col numero (dorata = c'e' da fare) */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-mini{display:inline-flex;align-items:center;gap:5px;flex:0 1 auto;min-width:0;height:auto;min-height:0;max-width:100%;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;font:600 14px/1 var(--f-lettura);color:#3F3A33;text-shadow:none;white-space:nowrap;overflow:visible}
+/* se i numeri sono lunghi, la parola si accorcia coi puntini invece di finire sotto la freccia */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c{display:inline-flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;height:34px;padding:0 10px 0 4px;border-radius:17px;box-sizing:border-box;background:#FFFFFF;border:1.5px solid #E3D5B4}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c.att{background:#F6EAD1;border-color:#D9BF8C}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-ico{display:flex;flex:0 0 auto}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-ico svg{display:block;width:32px;height:20px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c b{font:700 16.5px/1 var(--f-lettura);font-variant-numeric:lining-nums proportional-nums;color:#0F172A}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-p{min-width:0;overflow:hidden;text-overflow:ellipsis;font:600 14px/1.15 var(--f-lettura);color:#3F3A33}
+/* telefono stretto: figurine e scritte un filo piu' piccole, per starci accanto alla freccia */
+@media (max-width:374px){
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-mini{gap:4px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c{gap:3px;padding:0 8px 0 3px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-ico svg{width:27px;height:17px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c b{font-size:15px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-p{font-size:12px}
+}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani,
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c{background:#131B2D;border-color:rgba(212,175,106,.32);color:#F8FAFC;box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani.att,
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c.att{background:#3A2F1F;border-color:#7A6236}
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-va{color:#D4AF6A}
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-mini{background:none;color:#CBD5E1}
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-c b{color:#F8FAFC}
+:root[data-theme="dark"] body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csm-p{color:#CBD5E1}
