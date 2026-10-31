@@ -16,13 +16,17 @@
 //  1.17.1: gli avvisi partono tutti "urgenti" (Urgency: high): col telefono a riposo Android li consegna subito invece di
 //  tenerli da parte (sono pochi al giorno). E dal tasto «Run workflow» di GitHub, con la casella «prova», parte SOLO un
 //  avviso di prova a ogni telefono acceso (niente giro): serve a controllare tutta la strada fino al telefono.
+//  1.18.0: SOFIA LEGGE LE CHAT ANCHE AD APP CHIUSA (lettura-giro.mjs): ogni 10 minuti, se il ponte ha portato messaggi nuovi
+//  e da 5 minuti nessuno scrive, li legge con Gemini (stessa richiesta dell'app, lettura.js), mette il risultato da
+//  controllare in importazioni/lettura-sofia e manda l'avviso «Ho letto… Tocca per controllare». Serve il segreto GEMINI_CHIAVE.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
 import { LUOGHI_COMUNI } from "../governante.js";
+import { leggiChat } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.17.1";
+export const VERSIONE_GIRO = "1.18.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -121,7 +125,7 @@ export function testoBollettino(st, oggi, domani) {
 }
 
 // ---- il giro ------------------------------------------------------------------------------------------
-export async function giro({ db, telegram, push = null, adesso = new Date() }) {
+export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null }) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
   const esiti = [];
   const [stato0, avvisi] = await Promise.all([db.doc("importazioni", "giro-sofia"), db.doc("impostazioni", "avvisi")]);
@@ -132,12 +136,12 @@ export async function giro({ db, telegram, push = null, adesso = new Date() }) {
   // 1.17.0: gli avvisi sul telefono del titolare (si legge il documento solo se c'è qualcosa da dirgli)
   let ps = null;
   const iscrizioni = () => Object.entries((ps && ps.iscrizioni) || {}).filter(([, v]) => v && v.sub && v.sub.endpoint && (v.chi || "titolare") === "titolare");
-  const mandaMe = async (testo, cosa, titolo = "Sofia", urgente = false) => {
+  const mandaMe = async (testo, cosa, titolo = "Sofia", urgente = false, extra = {}) => {
     let okk = false;
     if (tgMe) okk = (await telegram(a.token, a.chatMio, testo)) || okk;
     if (push && ps && ps.vapidPublic && ps.vapidPrivato) {
       const finite = [];
-      for (const [id, v] of iscrizioni()) { const r = await push(ps, v.sub, { titolo, testo, urgente }); if (r && r.ok) okk = true; else if (r && r.finita) finite.push(id); }
+      for (const [id, v] of iscrizioni()) { const r = await push(ps, v.sub, { titolo, testo, urgente, ...extra }); if (r && r.ok) okk = true; else if (r && r.finita) finite.push(id); }
       if (finite.length) { const resto = Object.fromEntries(Object.entries(ps.iscrizioni || {}).filter(([id]) => !finite.includes(id))); await db.sostituisci("importazioni", "push-sofia", "iscrizioni", resto); ps.iscrizioni = resto; esiti.push(`tolte ${finite.length} iscrizioni scadute`); }
     }
     esiti.push(`${cosa}${okk ? "" : " (non è arrivato)"}`); return okk;
@@ -226,9 +230,28 @@ export async function giro({ db, telegram, push = null, adesso = new Date() }) {
       } else fatti.ponte = "nessun ponte";
     }
   }
+  // 1.18.0: Sofia legge le chat anche ad app chiusa (a ogni giro, se il ponte ha portato posta nuova)
+  let lettura = null;
+  try {
+    const prendiBase = async () => {
+      const [camereDoc, squadra, ruoli] = await Promise.all([db.doc("impostazioni", "camere"), db.doc("impostazioni", "squadra"), db.tutti("ruoli")]);
+      const k = casa({ camereDoc, squadra, ruoli, avvisi: a });
+      return { camere: k.camere, signore: k.signore().map(z => ({ id: z.id, nome: k.SIG(z.id), zona: z.nome || "" })) };
+    };
+    lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase });
+    if (lettura.avvisa) { if (!ps) ps = await db.doc("importazioni", "push-sofia"); await mandaMe(lettura.avvisa.testo, "lettura delle chat", lettura.avvisa.titolo, true, { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" }); }
+    else if (lettura.esito && /^(letto|niente da leggere|non riuscita)/.test(lettura.esito)) esiti.push(`lettura delle chat: ${lettura.esito}`);
+    if (lettura.credito && fatti.creditoAvvisato !== oggi) {
+      if (!ps) ps = await db.doc("importazioni", "push-sofia");
+      await mandaMe("Non riesco a leggere le chat: il credito di Gemini è finito. Ricaricalo su aistudio.google.com/billing (intanto i messaggi aspettano).", "avviso credito finito", "Sofia · credito finito", true);
+      fatti.creditoAvvisato = oggi;
+    }
+  } catch (e) { console.warn("lettura delle chat:", e && e.message); esiti.push("lettura delle chat: errore " + String((e && e.message) || e).slice(0, 80)); }
   const vecchi = Array.isArray(stato0 && stato0.esiti) ? stato0.esiti : [];
-  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
-  return { ora: t.hhmm, giorno: oggi, fatti, esiti };
+  const notevole = lettura && !/^(niente di nuovo|aspetto|aspetta|la sta leggendo)/.test(lettura.esito || "");
+  const letturaInfo = notevole ? { quando: adesso.toISOString(), esito: lettura.esito, n: lettura.n || 0 } : ((stato0 && stato0.lettura) || null);
+  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
+  return { ora: t.hhmm, giorno: oggi, fatti, esiti, lettura: lettura ? lettura.esito : null };
 }
 
 // ---- il mondo vero: Firestore (firebase-admin) e Telegram ----------------------------------------------
@@ -241,6 +264,8 @@ export function dbAdmin(fs) {
     soggiorniDa: async (iso) => comeOggetto(await fs.collection("soggiorni").where("fine", ">=", iso).get()),
     guastiAperti: async () => comeOggetto(await fs.collection("manutenzione").where("stato", "!=", "fatto").get()),
     merge: (c, id, dati) => fs.collection(c).doc(id).set(dati, { merge: true }),
+    salva: (c, id, dati) => fs.collection(c).doc(id).set(dati),
+    postaDa: async (ts) => comeOggetto(await fs.collection("posta").where("ts", ">=", ts).get()),   // 1.18.0
     sostituisci: (c, id, campo, valore) => fs.collection(c).doc(id).update({ [campo]: valore }),
   };
 }
@@ -249,7 +274,7 @@ export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
       // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
-      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
       return { ok: true, stato: (r && r.statusCode) || null };
     } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };
@@ -292,7 +317,8 @@ async function main() {
     console.log("Sofia sempre accesa (solo avviso di prova):", JSON.stringify(r));
     return;
   }
-  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date() });
+  const chiave = String(process.env.GEMINI_CHIAVE || "").trim();
+  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null });
   console.log("Sofia sempre accesa:", JSON.stringify(esito));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(e => { console.error("Sofia sempre accesa: errore", e && e.message); process.exitCode = 1; });
