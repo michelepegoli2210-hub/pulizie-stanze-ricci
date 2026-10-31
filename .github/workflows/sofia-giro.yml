@@ -1,11 +1,17 @@
 # Sofia sempre accesa (1.16.0): il giro automatico di Sofia, ogni mezz'ora, anche ad app chiusa.
 # Parte da solo quando c'è il segreto FIREBASE_SA (la chiave dell'account di servizio di Firebase, la mette Michele).
 # Gli orari sono in UTC (alle :05 e alle :35, dalle 4 alle 21): il giro guarda l'ora di Roma e decide da solo cosa fare.
+# 1.17.1: dal tasto «Run workflow», con la casella «prova» spuntata, parte SOLO un avviso di prova sul telefono.
 name: Sofia sempre accesa
 on:
   schedule:
     - cron: "5,35 4-21 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Solo un avviso di prova sul telefono (niente giro)"
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -38,3 +44,4 @@ jobs:
         run: node sofia-giro/giro.mjs
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          PROVA_AVVISO: ${{ inputs.prova }}
