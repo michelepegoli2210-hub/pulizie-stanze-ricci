@@ -19,7 +19,7 @@ import http from "node:http";
 import { exec } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const VERSIONE = "1.0.1";
+export const VERSIONE = "1.0.2";
 const CARTELLA = path.dirname(fileURLToPath(import.meta.url));
 const DATI = process.env.PONTE_DATI || CARTELLA;            // dove il ponte tiene le sue cose (accesso, WhatsApp, messaggi visti)
 const FILE_CONF = path.join(DATI, "config.json");
@@ -281,12 +281,16 @@ async function avviaWhatsApp() {
   if (!bw) {
     const B = await import("@whiskeysockets/baileys");
     const pino = (await import("pino")).default;
-    bw = { make: B.makeWASocket || B.default, useMultiFileAuthState: B.useMultiFileAuthState, DisconnectReason: B.DisconnectReason, Browsers: B.Browsers, downloadMediaMessage: B.downloadMediaMessage, normalizeMessageContent: B.normalizeMessageContent, getContentType: B.getContentType, isJidGroup: B.isJidGroup, logger: pino({ level: "silent" }) };
+    bw = { make: B.makeWASocket || B.default, useMultiFileAuthState: B.useMultiFileAuthState, DisconnectReason: B.DisconnectReason, Browsers: B.Browsers, downloadMediaMessage: B.downloadMediaMessage, normalizeMessageContent: B.normalizeMessageContent, getContentType: B.getContentType, isJidGroup: B.isJidGroup, ultimaVersione: B.fetchLatestBaileysVersion, logger: pino({ level: "silent" }) };
   }
   const mio = ++giro;
   const { state, saveCreds } = await bw.useMultiFileAuthState(CARTELLA_SESSIONE);
   if (mio !== giro) return;
-  sock = bw.make({ auth: state, logger: bw.logger, browser: bw.Browsers.windows("Ponte di Sofia"), markOnlineOnConnect: false, syncFullHistory: false, getMessage: async () => undefined, generateHighQualityLinkPreview: false });
+  // 1.0.2: la versione di WhatsApp Web piu' recente (se non si riesce a sapere, quella della libreria)
+  let versioneWA = null;
+  try { const v = bw.ultimaVersione ? await Promise.race([bw.ultimaVersione(), new Promise((_, no) => setTimeout(() => no(new Error("tempo")), 8000))]) : null; if (v && Array.isArray(v.version) && v.version.length === 3) versioneWA = v.version; } catch (e) { versioneWA = null; }
+  if (mio !== giro) return;
+  sock = bw.make({ auth: state, logger: bw.logger, browser: bw.Browsers.windows("Ponte di Sofia"), markOnlineOnConnect: false, syncFullHistory: false, getMessage: async () => undefined, generateHighQualityLinkPreview: false, ...(versioneWA ? { version: versioneWA } : {}) });
   sock.ev.on("creds.update", saveCreds);
   sock.ev.on("connection.update", async (u) => {
     if (mio !== giro) return;                       // una connessione vecchia (fermata): non conta piu'
