@@ -14,7 +14,8 @@ COME SI ACCENDE (la prima volta)
    Regole -> incolla -> Pubblica).
 1. Nell'app: Altro -> Il ponte WhatsApp -> "Crea il codice del ponte".
    Esce un codice di 16 lettere e numeri (es. ABCD-EFGH-JKLM-NPQR).
-2. Sul PC estrai lo zip (tasto destro -> Estrai tutto) e fai doppio clic su "Avvia il ponte di Sofia".
+2. Sul PC fai doppio clic su "Avvia il ponte di Sofia" (meglio dopo aver estratto lo zip: tasto destro -> Estrai tutto).
+   Il ponte si sistema da solo nella cartella "Ponte di Sofia" della tua cartella utente e parte da li'.
    Se Windows dice "Windows ha protetto il PC": tocca "Ulteriori informazioni" -> "Esegui comunque".
    La prima volta, se manca, installa Node.js (se chiede di accettare le condizioni premi Y e Invio;
    se Windows chiede il permesso rispondi Si), poi chiudi la finestra e rifai doppio clic.

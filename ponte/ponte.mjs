@@ -19,7 +19,7 @@ import http from "node:http";
 import { exec } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const VERSIONE = "1.0.2";
+export const VERSIONE = "1.0.3";
 const CARTELLA = path.dirname(fileURLToPath(import.meta.url));
 const DATI = process.env.PONTE_DATI || CARTELLA;            // dove il ponte tiene le sue cose (accesso, WhatsApp, messaggi visti)
 const FILE_CONF = path.join(DATI, "config.json");
