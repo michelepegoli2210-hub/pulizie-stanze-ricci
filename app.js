@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.18.1";
+export const VERSIONE = "1.19.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2915,9 +2915,9 @@ function casaOssatura(tre) {
         <div class="casa-righe"></div>
         <b class="casa-sal"></b>
         <p class="casa-riga"></p>
+        <p class="casa-spinta"></p>
         <div class="casa-info"></div>
       </div>
-      <p class="casa-spinta"></p>
       <div class="casa-chat" id="casaChat" aria-live="polite"></div>
       <div class="casa-sotto" id="consSotto"></div>
     </div>
@@ -3087,15 +3087,25 @@ function indietroVista() {
 // 1.7.0: la tendina a misura (Michele: "devo poter scegliere piu' facilmente la tendina, quanto la voglio sopra a Sofia"):
 // trascinando la testata col dito il riquadro segue il dito; lasciato, resta li' (e la misura resta in memoria); un colpo
 // secco in giu' la chiude, in su la riapre. La misura e' una frazione dell'altezza della casa (vale su ogni telefono).
-const CHIAVE_TENDA_TOP = "ricci_tenda_top";
+const CHIAVE_TENDA_TOP = "ricci_tenda_top_119";   // 1.19.0: chiave nuova (il riquadro adesso parte piu' in alto)
 let tendaDito = null;
 function tendaLimiti(h) {
   const nv = h.querySelector(".casa-nuvola"), hr = h.getBoundingClientRect(), r = nv.getBoundingClientRect();
   const fondo = r.bottom - hr.top, hc = fondo + 17;                 // il bordo in basso non si muove mai
   const lb = Math.max(...[".casa-lato", ".casa-lato-sx"].map(s => { const e = h.querySelector(s); return e && getComputedStyle(e).display !== "none" ? e.getBoundingClientRect().bottom - hr.top : 0; }));
-  const min = Math.max(lb + 10, hc * .36);
+  const min = Math.max(lb + 10, hc * .3);   // 1.19.0: i tasti accanto a Sofia adesso stanno piu' in alto
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
-  return { fondo, hc, min, chiusa: fondo - 108, def: hc * .60, scatti: [min, hc * .60, hc * .70] };
+  // 1.19.0: alta (appena sotto i tasti, di partenza), media, bassa
+  return { fondo, hc, min, chiusa: fondo - 108, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
+}
+// 1.19.0: di partenza il riquadro sta al 34% dell'altezza; su un telefono basso, dove i tasti accanto a Sofia arrivano piu'
+// giu', parte appena sotto di loro (senza segnarlo in memoria)
+function tendaControlla(h) {
+  try {
+    if (!h || !h.isConnected || tendaMisuraMemoria() || h.classList.contains("tenda-chiusa") || h.classList.contains("nuvola-aperta") || h.classList.contains("msg-aperto")) return;
+    const L = tendaLimiti(h), hr = h.getBoundingClientRect(), top = h.querySelector(".casa-nuvola").getBoundingClientRect().top - hr.top;
+    if (top < L.min - 1) h.style.setProperty("--tenda-top", Math.round(L.min) + "px");
+  } catch (e) {}
 }
 function tendaScatto(L, top) { let m = L.scatti[0]; for (const s of L.scatti) if (Math.abs(s - top) < Math.abs(m - top)) m = s; return m; }
 function tendaMisuraMemoria() { try { const v = parseFloat(localStorage.getItem(CHIAVE_TENDA_TOP)); return v >= .25 && v <= .9 ? v : null; } catch (e) { return null; } }
@@ -3303,6 +3313,14 @@ document.addEventListener("focusin", (e) => {
   if (document.body.classList.contains("premium") && !h.classList.contains("nuvola-aperta")) nuvolaApri(true);
   setTimeout(() => chatGiu(h), 350); setTimeout(() => chatGiu(h), 800);
 });
+// 1.19.0: le notizie non ci stanno tutte nel riquadro? allora in fondo sfumano piano (si capisce che si scorre col dito);
+// arrivati in fondo la sfumatura sparisce
+function notizieScorrono(h) {
+  const sc = h && h.querySelector(".casa-nuvola .casa-testo"); if (!sc) return;
+  const misura = () => { const si = sc.scrollHeight > sc.clientHeight + 4; h.classList.toggle("notizie-scorrono", si); h.classList.toggle("notizie-fondo", si && sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 6); };
+  if (!sc._misura) { sc._misura = true; sc.addEventListener("scroll", misura, { passive: true }); try { new ResizeObserver(misura).observe(sc); } catch (e) {} }
+  requestAnimationFrame(misura);
+}
 function casaAggiorna(h) {
   const c = consiglioOggi(), u = umoreGov();
   if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
@@ -3340,9 +3358,11 @@ function casaAggiorna(h) {
   }
   const det = h.dataset.dettaglio ? dettaglioHtml(h.dataset.dettaglio, ls, fatte) : null;   // 1.7.1
   if (sal) { if (det) { if (sal.innerHTML !== det.titolo) sal.innerHTML = det.titolo; sal.classList.remove("lunga"); } else { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); } }
+  // 1.19.0: sopra il messaggio, chi l'ha scritto e a che ora (Michele vedeva «Buongiorno… entro le 14» alle 20:20 e non capiva)
+  if (sal) { const qq = !det && c && c.ora ? `${nomeGov()} · alle ${L.oraBreve(c.ora)}` : ""; if ((sal.dataset.quando || "") !== qq) sal.dataset.quando = qq; }
   if (riga) { if (det) { if (riga.innerHTML !== det.html) riga.innerHTML = det.html; } else riga.textContent = c && c.testo ? c.testo : u.testo; }
   h.classList.toggle("con-dettaglio", !!det);
-  if (spinta) spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno();
+  if (spinta) { spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno(); spinta.classList.toggle("da-fare", !!(c && c.consiglio)); }   // 1.19.0: «Per prima cosa» solo sul consiglio vero
   // 1.2.0: l'altezza del consiglio (una riga chiuso, due o tre aperto) serve allo stile per sfumare il testo che gli
   // scorre dietro proprio sopra la barra blu (Gemini: "spuntano mezze lettere sopra il bordo d'oro")
   // 1.4.0: il consiglio sta FUORI dal riquadro che scorre (niente righe che gli passano sotto: ora e' trasparente)
@@ -3364,6 +3384,7 @@ function casaAggiorna(h) {
     bv.classList.toggle("spenta", !su);
   }
   h.dataset.umore = u.v;
+  notizieScorrono(h);   // 1.19.0
   h.classList.toggle("sta-parlando", !!voceInCorso);
   h.classList.toggle("con-ia", !!c);
 }
@@ -3380,9 +3401,9 @@ function righeNotizie(ls, fatte, man, dom) {
   // 1.9.0 (Gemini): quattro tessere 2x2 (icona, etichetta piccola, valore grande, freccetta); d'oro quelle che chiedono
   // attenzione; un tocco apre il dettaglio nel riquadro grande. Le domande di Sofia, se ci sono, in una quinta tessera larga.
   const r = (ico, tono, etichetta, valore, vai, att, larga) => `<button type="button" class="cr-riga cr-tess${att ? " att" : ""}${larga ? " larga" : ""}" data-casa-vai="${vai}"><span class="cr-ico ${tono}" aria-hidden="true">${ico}</span><span class="cr-t"><small class="cr-l">${etichetta}</small><b class="cr-v">${valore}</b></span><span class="cr-va" aria-hidden="true">›</span></button>`;
-  const out = [r(ico2("pulizie3"), "verde", "Pulizie oggi", ls.length ? `${fatte} fatte su ${ls.length}` : "nessuna", "pulizie", ls.length - fatte > 0)];
-  out.push(r(ico2("lavori2"), "arancio", "Lavori", man ? `${man} da fare` : "nessuno", "manutenzione", man > 0));
-  out.push(r(ico2("arrivi2"), "blu", "Arrivi domani", arrivi.length ? `${arrivi.length} · ${esc(nomi.slice(0, 2).join(", "))}${nomi.length > 2 ? "…" : ""}` : "nessuno", "arrivi", false));
+  const out = [r(ico2("pulizie3"), "verde", "Pulizie fatte", ls.length ? `${fatte} su ${ls.length}` : "nessuna oggi", "pulizie", ls.length - fatte > 0)];   // 1.19.0: su una riga
+  out.push(r(ico2("lavori2"), "arancio", "Lavori da fare", man ? String(man) : "nessuno", "manutenzione", man > 0));
+  out.push(r(ico2("arrivi2"), "blu", "Arrivi domani", arrivi.length ? String(arrivi.length) : "nessuno", "arrivi", false));   // 1.19.0: i nomi toccando la tessera
   out.push(r(ico2("camere2"), "oro", "Camere piene", `${piene} su ${S.camere.length}`, "camere", false));
   if (cloudAttivo()) { const a = argonTesseraValore(); out.push(r(ico2("spunta"), "verde", "ArgonCloud", esc(a.v), "argon", a.att, true)); }   // 1.12.0
   if (dom) out.push(r(ico2("domande2"), "rosso", esc(nomeGov()) + " chiede", `${dom} ${dom === 1 ? "domanda" : "domande"} per te`, "sofia", true, true));
@@ -3461,6 +3482,7 @@ function disegnaCasa() {
     const t = document.querySelector("header");
     document.body.insertBefore(h, t || document.body.firstChild);
     window.scrollTo(0, 0);
+    requestAnimationFrame(() => requestAnimationFrame(() => tendaControlla(h)));   // 1.19.0
     if (tre) { const c = h.querySelector(".casa-card.tre"); if (c) treOsserva(c); }
   }
   document.body.classList.add("ha-casa");
@@ -5785,8 +5807,11 @@ async function rispostaIA(testo, conv, immagine, opz = {}) {
 
 // --- il consiglio del giorno: lei guarda la casa e dice la sua, una volta al giorno
 const CHIAVE_CONSIGLIO = "ricci_ia_consiglio";
+// 1.19.0: tre momenti al giorno (come il saluto): mattina fino alle 13, pomeriggio fino alle 18, sera. Il messaggio di un
+// momento passato non si mostra piu': Sofia ne scrive uno nuovo (quelli di prima della 1.19.0 valgono come «mattina»)
+function fasciaGiorno() { const h = Number(new Date().toLocaleString("it-IT", { hour: "2-digit", hour12: false, timeZone: "Europe/Rome" })) % 24; return h < 13 ? "mattina" : h < 18 ? "pomeriggio" : "sera"; }
 function consiglioOggi() {
-  try { const c = JSON.parse(localStorage.getItem(CHIAVE_CONSIGLIO) || "null"); return c && c.giorno === L.oggiISO() ? c : null; } catch (e) { return null; }
+  try { const c = JSON.parse(localStorage.getItem(CHIAVE_CONSIGLIO) || "null"); return c && c.giorno === L.oggiISO() && (c.fascia || "mattina") === fasciaGiorno() ? c : null; } catch (e) { return null; }
 }
 let consiglioInCorso = false;
 async function chiediConsiglioDelGiorno() {
@@ -5796,15 +5821,17 @@ async function chiediConsiglioDelGiorno() {
   try {
     let affari = false; try { const u = localStorage.getItem("ricci_consiglio_affari") || ""; affari = !u || L.giorniTra(u, L.oggiISO()) >= 7; } catch (e) {}
     const { r } = await chiediIA({ sistema: sistemaIA(), storia: [],
-      testo: (affari ? `OGGI IL CONSIGLIO È DA IMPRENDITORE: guarda «I NUMERI DELL'AZIENDA» e dammi UNA cosa concreta per guadagnare di più o spendere meno (prezzi, occupazione, Booking, mesi vuoti, risparmio, un finanziamento da cercare), col conto fatto e il primo passo. ` : "") + `Fai il tuo giro di controllo delle nove cose (e guarda il taccuino), poi rispondi con questo JSON: {"pensiero":"...","saluto":"...","risposta":"...","consiglio":"...","azione":null}.
-"saluto": una riga sola che apre la giornata. Comincia con ${saluto()} e il mio nome (${nomeMio()}). Se c'è qualcosa di VERAMENTE meritato nella fotografia (tutte le camere chiuse, un controllo andato bene, una settimana in ordine) dillo in mezza frase, con il fatto preciso. Se non c'è niente di meritato NON inventare complimenti: metti invece una spinta corta e pratica per oggi. Massimo 18 parole.
-"risposta": in UNA frase corta com'è la situazione adesso, la cosa più importante, col numero.
-"consiglio": la cosa da fare per prima.` });
-    const c = { giorno: L.oggiISO(), saluto: daCodici(String(r.saluto || "")).slice(0, 160), testo: daCodici(String(r.risposta || "")).slice(0, 220), consiglio: daCodici(String(r.consiglio || "")).slice(0, 220), ora: new Date().toISOString() };
+      testo: (fasciaGiorno() === "sera" ? "È SERA: la giornata è quasi finita. Guarda soprattutto DOMANI (arrivi, pulizie, chi chiamare stasera) e cosa è rimasto aperto di oggi. " : fasciaGiorno() === "pomeriggio" ? "È POMERIGGIO: guarda cosa manca per chiudere oggi e cosa preparare per domani. " : "") + (affari ? `OGGI IL CONSIGLIO È DA IMPRENDITORE: guarda «I NUMERI DELL'AZIENDA» e dammi UNA cosa concreta per guadagnare di più o spendere meno (prezzi, occupazione, Booking, mesi vuoti, risparmio, un finanziamento da cercare), col conto fatto e il primo passo. ` : "") + `Fai il tuo giro di controllo delle nove cose (e guarda il taccuino), poi rispondi con questo JSON: {"pensiero":"...","saluto":"...","risposta":"...","consiglio":"...","azione":null}.
+"saluto": una riga sola che apre la giornata. Comincia con ${saluto()} e il mio nome (${nomeMio()}). Se c'è qualcosa di VERAMENTE meritato nella fotografia (tutte le camere chiuse, un controllo andato bene, una settimana in ordine) dillo in mezza frase, con il fatto preciso. Se non c'è niente di meritato NON inventare complimenti: metti invece una spinta corta e pratica per oggi. Massimo 12 parole.
+"risposta": in UNA frase corta com'è la situazione adesso, la cosa più importante, col numero (massimo 14 parole).
+"consiglio": la cosa da fare per prima, in una frase (massimo 14 parole).` });
+    const c = { giorno: L.oggiISO(), fascia: fasciaGiorno(), saluto: daCodici(String(r.saluto || "")).slice(0, 160), testo: daCodici(String(r.risposta || "")).slice(0, 220), consiglio: daCodici(String(r.consiglio || "")).slice(0, 220), ora: new Date().toISOString() };
     if (c.testo) {
       try { localStorage.setItem(CHIAVE_CONSIGLIO, JSON.stringify(c)); if (affari) localStorage.setItem("ricci_consiglio_affari", L.oggiISO()); } catch (e) {}
       disegna();
-      inviaTelegram(`👩 ${nomeGov()}${c.saluto ? ` — ${c.saluto}` : ""}\n${c.testo}${c.consiglio ? `\n💡 ${c.consiglio}` : ""}`, "anna", { aMe: true });
+      // su Telegram solo il primo del giorno (gli altri due li vede nell'app)
+      let primo = true; try { primo = localStorage.getItem("ricci_consiglio_tg") !== c.giorno; localStorage.setItem("ricci_consiglio_tg", c.giorno); } catch (e) {}
+      if (primo) inviaTelegram(`👩 ${nomeGov()}${c.saluto ? ` — ${c.saluto}` : ""}\n${c.testo}${c.consiglio ? `\n💡 ${c.consiglio}` : ""}`, "anna", { aMe: true });
     }
   } catch (e) { console.warn("consiglio", e); }
   consiglioInCorso = false;

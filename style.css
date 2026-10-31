@@ -5562,3 +5562,104 @@ body.premium .bs-sofia[aria-pressed="true"] .bs-gioiello.bs-oro{box-shadow:0 0 0
 .avt-tasto{width:100%}
 .giro-passi{margin:0;padding-left:20px;display:grid;gap:10px;font:500 15px/1.4 var(--f-body)}
 .giro-passi .btnsm{display:inline-flex;align-items:center;margin:4px 0 2px;cursor:pointer;text-decoration:none}
+/* ============================================================================
+   1.19.0 (Michele, 31/10 sera, con la foto del telefono): "il messaggio che mi ha scritto non si legge bene per niente;
+   mettilo piu' giu' o vedi tu, ma io lo devo leggere bene e subito; e tutte le altre info devono essere molto molto piu'
+   chiare". Prima: 2 righe di saluto tagliate coi puntini, il testo nascosto, il consiglio in una striscia blu tagliata a
+   una riga, tutto su vetro trasparente sopra la giacca di Sofia (con la sfumatura in cima che mangiava le lettere), le
+   notizie in 4 tessere con le etichette minuscole grigie e i nomi tagliati.
+   ADESSO: IL MESSAGGIO SI LEGGE SUBITO. In cima al riquadro, su una lastra BIANCA PIENA (niente vetro dietro le lettere,
+   niente sfumature, niente aloni), INTERO (saluto, testo e «Per prima cosa»), scritte grandi e scure, e sopra chi l'ha
+   scritto e a che ora. LE NOTIZIE CHIARE: tessere bianche piene, il nome in chiaro (niente maiuscolette grigie) e il
+   numero grande sotto, niente puntini; chi arriva domani su una tessera larga coi nomi interi. PER FARCI STARE TUTTO:
+   mentre leggi le notizie Sofia e' un po' piu' piccola (85%: il viso resta grande e libero), i suoi tasti salgono, il
+   riquadro parte piu' in alto (34%).
+   ============================================================================ */
+/* ---- Sofia un po' piu' piccola e i suoi tasti piu' in alto, solo mentre il riquadro delle notizie e' aperto ---- */
+body.premium .sofia-hero .casa-card{transition:scale .32s ease;transform-origin:50% 0}
+body.premium .sofia-hero:not(.nuvola-aperta):not(.tenda-chiusa) .casa-card{scale:.85}
+body.premium .sofia-hero .casa-lato{transition:top .32s ease,opacity .2s ease}
+body.premium .sofia-hero:not(.nuvola-aperta):not(.tenda-chiusa) .casa-lato{top:calc(var(--h-casa) * .06);gap:6px}
+/* ---- il riquadro: di partenza al 34% (prima 54,7%); la misura scelta col dito resta (chiave nuova) ---- */
+body.premium .sofia-hero:not(.nuvola-aperta):not(.msg-aperto){--nv-top:var(--tenda-top,calc(var(--h-casa) * .34))}
+/* ---- la parte che scorre: niente sfumature in cima (tagliavano a meta' le lettere) ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-testo{display:flex;flex-direction:column;align-items:stretch;gap:0;text-align:left;-webkit-mask-image:none;mask-image:none;padding:0 0 6px}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal{order:1}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga{order:2}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta{order:3}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-righe{order:4}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-info{order:5}
+/* ---- il messaggio: una lastra bianca piena, intera, scritte grandi e scure ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta{display:block;-webkit-line-clamp:unset;line-clamp:unset;-webkit-box-orient:initial;overflow:visible;position:static;min-height:0;height:auto;width:auto;margin:0;background:#FFFFFF;border:1.5px solid #D6BC85;box-shadow:none;text-shadow:none;color:#0F172A;letter-spacing:0;font-style:normal;font-variant-numeric:lining-nums proportional-nums;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;cursor:default}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal.lunga{border-bottom:0;border-radius:18px 18px 0 0;padding:11px 15px 0;font:700 18.5px/1.3 var(--f-lettura);color:#0F172A}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal::before{content:attr(data-quando);display:block;position:static;inset:auto;transform:none;width:auto;height:auto;background:none;border:0;margin:0 0 4px;font:700 13px/1.2 var(--f-lettura);letter-spacing:.01em;color:#8C621E}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal:not([data-quando])::before,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal[data-quando=""]::before{display:none}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga{border-top:0;border-bottom:0;border-radius:0;padding:6px 15px 10px;font:600 17px/1.4 var(--f-lettura);color:#1E293B}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta{border-top:1px solid #EFE3C8;border-radius:0 0 18px 18px;padding:9px 15px 12px;background:#FBF6EA;font:700 17px/1.36 var(--f-lettura);color:#4A3510}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta::before{content:none;display:none}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta.da-fare::before{content:"👉 Per prima cosa";display:block;position:static;inset:auto;transform:none;width:auto;height:auto;background:none;border:0;margin:0 0 2px;font:700 13px/1.2 var(--f-lettura);letter-spacing:.01em;color:#8C621E}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta::after{content:none;display:none}
+/* il dettaglio di una notizia (toccata una tessera): titolo e righe nella lastra, il consiglio si nasconde */
+body.premium .sofia-hero.con-dettaglio:not(.nuvola-aperta) .casa-nuvola .casa-spinta{display:none}
+body.premium .sofia-hero.con-dettaglio:not(.nuvola-aperta) .casa-nuvola .casa-riga{border-bottom:1.5px solid #D6BC85;border-radius:0 0 18px 18px;padding-bottom:14px}
+/* ---- le notizie: tessere bianche piene, il nome in chiaro sopra e il numero grande sotto, niente puntini ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-righe{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0 4px}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess:not(.cs-domani){display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;height:auto;min-height:56px;margin:0;padding:7px 6px 7px 8px;border-radius:14px;background:#FFFFFF;border:1.5px solid #E3D5B4;box-shadow:0 1px 2px rgba(15,23,42,.05);color:#0F172A;text-shadow:none;grid-column:auto}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.larga:not(.cs-domani){grid-column:1/-1}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.att:not(.cs-domani){background:#FFF8E9;border-color:#C9A35A;box-shadow:inset 5px 0 0 #C9A35A;padding-left:12px}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.verde,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.arancio,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.blu,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.oro,
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.rosso{flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:#F5EFE2;border:1px solid rgba(154,116,50,.35);color:#6E501F}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico .ico2{width:21px;height:21px}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-t{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;flex:1 1 auto;min-width:0}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-l{display:block;font:600 14.5px/1.2 var(--f-lettura);text-transform:none;letter-spacing:0;color:#334155;white-space:normal;overflow:visible;text-overflow:clip;text-shadow:none}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess.att:not(.cs-domani) .cr-l{color:#7A5418}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-v{display:block;font:700 18.5px/1.22 var(--f-lettura);font-variant-numeric:lining-nums proportional-nums;color:#0F172A;text-align:left;white-space:normal;overflow:visible;text-overflow:clip;text-shadow:none}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-va{flex:0 0 auto;margin-left:0;font:700 20px/1 var(--f-lettura);color:#9A7432;text-shadow:none}
+/* ---- se le notizie non ci stanno tutte (si scorre col dito), in fondo sfumano piano; arrivati in fondo la sfumatura va via ---- */
+body.premium .sofia-hero.notizie-scorrono:not(.nuvola-aperta) .casa-nuvola .casa-testo{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent 100%);mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent 100%);padding-bottom:22px}
+body.premium .sofia-hero.notizie-scorrono.notizie-fondo:not(.nuvola-aperta) .casa-nuvola .casa-testo{-webkit-mask-image:none;mask-image:none}
+/* ---- tema scuro: lastra e tessere scure piene, scritte chiare ---- */
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal,
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga{background:#131B2D;border-color:rgba(212,175,106,.5);color:#F8FAFC;text-shadow:none;box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga{color:#E2E8F0}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta{background:#1B2438;border-color:rgba(212,175,106,.5);border-top-color:rgba(212,175,106,.22);color:#F3D68E;text-shadow:none;box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-sal::before,
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-spinta.da-fare::before{color:#D4AF6A}
+:root[data-theme="dark"] body.premium .sofia-hero.con-dettaglio:not(.nuvola-aperta) .casa-nuvola .casa-riga{border-bottom-color:rgba(212,175,106,.5)}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess:not(.cs-domani){background:#131B2D;border-color:rgba(212,175,106,.32);color:#F8FAFC;box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.att:not(.cs-domani){background:#1C2438;border-color:#D4AF6A;box-shadow:inset 5px 0 0 #D4AF6A}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico,
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.verde,
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.arancio,
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.blu,
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.oro,
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-ico.rosso{background:rgba(212,175,106,.14);border-color:rgba(212,175,106,.42);color:#E5C888}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-l{color:#CBD5E1}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess.att:not(.cs-domani) .cr-l{color:#E5C888}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-v{color:#F8FAFC}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .cr-tess:not(.cs-domani) .cr-va{color:#D4AF6A}
+/* ---- il dettaglio di una notizia: le righe con la stessa scritta chiara (prima corsivo e caratteri sottili) ---- */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga .dt-r{padding:9px 0;font:600 17px/1.35 var(--f-lettura);font-variant-numeric:lining-nums proportional-nums;color:#0F172A}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga .dt-r b{font-weight:700}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga .dt-r small{font:600 14px/1.25 var(--f-lettura);letter-spacing:0;color:#785A28}
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga .dt-sofia{font:600 16.5px/1.38 var(--f-lettura);font-style:normal;color:#0F172A;background:#FBF6EA;border-color:#E3CF9E}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga .dt-r{color:#F8FAFC}
+:root[data-theme="dark"] body.premium .sofia-hero:not(.nuvola-aperta) .casa-nuvola .casa-riga .dt-sofia{background:#1B2438;border-color:rgba(212,175,106,.45);color:#F8FAFC}
+/* ---- la striscia chiusa (in basso, Sofia intera): stessa scritta chiara, niente maiuscolette ---- */
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani{background:#FFFFFF;border:1.5px solid #E3D5B4;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani.att{background:#FFF8E9;border-color:#C9A35A;box-shadow:inset 5px 0 0 #C9A35A}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-l{font:600 13.5px/1.2 var(--f-lettura);text-transform:none;letter-spacing:0;color:#334155;text-shadow:none}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-v{font:700 17px/1.2 var(--f-lettura);font-variant-numeric:lining-nums proportional-nums;color:#0F172A;text-shadow:none}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-mini{font:700 14px/26px var(--f-lettura);color:#0F172A;background:#FFFFFF;text-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani{background:#131B2D;border-color:rgba(212,175,106,.32)}
+:root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-l{color:#CBD5E1}
+:root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-v,
+:root[data-theme="dark"] body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-mini{color:#F8FAFC;background:#131B2D}
