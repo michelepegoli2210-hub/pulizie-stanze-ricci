@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.20.0";
+export const VERSIONE = "1.21.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2912,12 +2912,14 @@ function casaOssatura(tre) {
       <button type="button" class="cr-riga cr-tess cs-domani" data-casa-vai="domani" aria-label="Le pulizie di domani"></button>
       <button type="button" class="casa-saluto" data-tenda aria-expanded="true" aria-label="Apri o chiudi le notizie"><b class="casa-ciao"></b><i class="cs-mini" hidden></i><span class="cs-freccia" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
       <div class="casa-testo">
+        <div class="of"></div>
         <div class="casa-righe"></div>
         <div class="casa-msg-testa"><span class="cmt-chi"></span><button type="button" class="cmt-rispondi" data-cons-mic aria-label="Rispondi a ${esc(nomeGov())} a voce: dille una novità">${CASA_ICO.mic}<span>Rispondi</span></button></div>
         <b class="casa-sal"></b>
         <p class="casa-riga"></p>
         <p class="casa-spinta"></p>
         <div class="casa-info"></div>
+        <div class="casa-vista-sw" role="group" aria-label="Come vedere questa pagina"><span class="cvs-t">Questa pagina:</span><button type="button" data-oggi-vista="facile" aria-pressed="true">Facile</button><button type="button" data-oggi-vista="classica" aria-pressed="false">Come prima</button></div>
       </div>
       <div class="casa-chat" id="casaChat" aria-live="polite"></div>
       <div class="casa-sotto" id="consSotto"></div>
@@ -3252,7 +3254,7 @@ function sottotitoli(parte, buf, durata) {
     // 1.2.0: il consiglio e' attaccato in fondo al riquadro (sempre in vista): non si insegue, se no il riquadro
     // scorre oltre la fine del messaggio mentre lei lo legge
     if (box) sottotitoliIn("casa", box, aperta ? ".cc-io, .cc-lei:not(.cc-pensa)" : ".casa-sal, .casa-riga", parte, buf, durata, () => h.classList.contains("nuvola-aperta") !== aperta);
-  } else if (nv && !h.classList.contains("nuvola-aperta")) sottotitoliIn("casa", nv, ".casa-sal, .casa-riga, .casa-spinta, .cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => h.classList.contains("nuvola-aperta"));
+  } else if (nv && !h.classList.contains("nuvola-aperta")) sottotitoliIn("casa", nv, ".casa-sal, .casa-riga, .casa-spinta, .of-sal, .of-testo, .of-fai-t, .cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => h.classList.contains("nuvola-aperta"));
   const mt = document.querySelector("#sofiaMiniNuvola:not([hidden]) .sm-testo");
   if (mt) sottotitoliIn("mini", mt, ".cc-io, .cc-lei:not(.cc-pensa)", parte, buf, durata, () => !!mt.closest("[hidden]"));
 }
@@ -3329,6 +3331,7 @@ function casaAggiorna(h) {
   const ls = pulizieDelGiorno(oggi).filter(p => p.tipo !== "stelle"), fatte = ls.filter(p => p.stato === "fatta").length;   // 1.20.0: senza il giro delle stelle
   const man = lavoriAperti().length;
   let dom = 0; try { dom = statoChatApp().aperte.length; } catch (e) {}
+  const facile = oggiFacile(); h.classList.toggle("oggi-facile", facile);   // 1.21.0: «Oggi facile» (di partenza) o «Come prima»
   // 0.97: il riassunto e' fatto di "pillole" da toccare: pulizie -> l'elenco di oggi, lavori -> manutenzione, domande -> Sofia
   const voci = [`<button type="button" class="casa-pill" data-casa-vai="pulizie"><span aria-hidden="true">${ICO_LINEA.pulizie}</span>${ls.length ? `<b>${fatte}/${ls.length}</b> pulizie oggi` : "nessuna pulizia oggi"}</button>`];
   if (man) voci.push(`<button type="button" class="casa-pill" data-casa-vai="manutenzione"><span aria-hidden="true">${ICO_LINEA.lavori}</span><b>${man}</b> ${man === 1 ? "lavoro" : "lavori"} da fare</button>`);
@@ -3357,11 +3360,16 @@ function casaAggiorna(h) {
     if (cd.innerHTML !== hh) cd.innerHTML = hh;
     cd.classList.toggle("att", dm.length > 0);
   }
-  const det = h.dataset.dettaglio ? dettaglioHtml(h.dataset.dettaglio, ls, fatte) : null;   // 1.7.1
+  const det = h.dataset.dettaglio ? (facile ? dettaglioFacile : dettaglioHtml)(h.dataset.dettaglio, ls, fatte) : null;   // 1.7.1; 1.21.0: nella vista facile a figure
   if (sal) { if (det) { if (sal.innerHTML !== det.titolo) sal.innerHTML = det.titolo; sal.classList.remove("lunga"); } else { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); } }
   // 1.19.0: sopra il messaggio, chi l'ha scritto e a che ora (Michele vedeva «Buongiorno… entro le 14» alle 20:20 e non capiva)
   if (sal) { const qq = !det && c && c.ora ? `${nomeGov()} · alle ${L.oraBreve(c.ora)}` : ""; if ((sal.dataset.quando || "") !== qq) sal.dataset.quando = qq; }
-  { const cc = q(".cmt-chi"); if (cc) { const tc = det ? "" : c && c.ora ? `${nomeGov()} · alle ${L.oraBreve(c.ora)}` : nomeGov(); if (cc.textContent !== tc) cc.textContent = tc; } }   // 1.20.0: sopra il messaggio, col tasto «Rispondi»
+  { const cc = q(".cmt-chi"); if (cc) { const tc = det ? "Qualcosa da cambiare?" : c && c.ora ? `${nomeGov()} · alle ${L.oraBreve(c.ora)}` : nomeGov(); if (cc.textContent !== tc) cc.textContent = tc; } }   // 1.20.0: sopra il messaggio, col tasto «Rispondi»
+  // 1.21.0 (Michele: "nessun microfono"): nel dettaglio la testata col microfono resta: «Qualcosa da cambiare? 🎤 Parla»
+  { const rs = q(".cmt-rispondi span"); if (rs) { const tr = det ? "Parla" : "Rispondi"; if (rs.textContent !== tr) rs.textContent = tr; } }
+  // 1.21.0: la vista facile (il fumetto di Sofia e le schede a figure); si rifa' solo se cambia qualcosa (un tocco non si perde)
+  { const of = q(".of"); if (of) { const hh = facile && !det ? oggiFacileHtml(c, u, ls, fatte, man, dom) : ""; if (of._hh !== hh) { of._hh = hh; of.innerHTML = hh; } } }
+  h.querySelectorAll("[data-oggi-vista]").forEach(b => { const si = String((b.dataset.oggiVista === "classica") !== facile); if (b.getAttribute("aria-pressed") !== si) b.setAttribute("aria-pressed", si); });
   if (riga) { if (det) { if (riga.innerHTML !== det.html) riga.innerHTML = det.html; } else riga.textContent = c && c.testo ? c.testo : u.testo; }
   h.classList.toggle("con-dettaglio", !!det);
   if (spinta) { spinta.textContent = c && c.consiglio ? c.consiglio : spintaDelGiorno(); spinta.classList.toggle("da-fare", !!(c && c.consiglio)); }   // 1.19.0: «Per prima cosa» solo sul consiglio vero
@@ -3410,6 +3418,160 @@ function righeNotizie(ls, fatte, man, dom) {
   if (cloudAttivo()) { const a = argonTesseraValore(); out.push(r(ico2("spunta"), "verde", "ArgonCloud", esc(a.v), "argon", a.att, true)); }   // 1.12.0
   if (dom) out.push(r(ico2("domande2"), "rosso", esc(nomeGov()) + " chiede", `${dom} ${dom === 1 ? "domanda" : "domande"} per te`, "sofia", true, true));
   return out.join("");
+}
+// ---- 1.21.0 «OGGI FACILE» (Michele, 31/10 sera: "non riesco a capire le informazioni al volo: semplifica come hai fatto
+// per il prospetto, lo deve capire anche mia nonna; pero' dammi la possibilita' di tornare indietro perche' anche adesso mi
+// piace"). Di partenza la pagina «Oggi» e' FACILE: il fumetto di Sofia (chi parla, a che ora, «🎤 Parla») e le schede A
+// FIGURE come nel prospetto facile: un disegno, un NUMERO GRANDE e due parole. Dorato = c'e' da fare; bianco = a posto.
+// Il dettaglio di una scheda e' a figure anche lui. In fondo «Questa pagina: Facile | Come prima» (la pagina di prima).
+const CHIAVE_OGGI_VISTA = "ricci_oggi_vista";
+function oggiFacile() { try { return localStorage.getItem(CHIAVE_OGGI_VISTA) !== "classica"; } catch (e) { return true; } }
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-oggi-vista]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const v = b.dataset.oggiVista === "classica" ? "classica" : "facile";
+  try { localStorage.setItem(CHIAVE_OGGI_VISTA, v); } catch (er) {}
+  const h = document.getElementById("sofiaHero"); if (!h) return;
+  try { casaAggiorna(h); } catch (er) { console.warn("vista oggi", er); }
+  const sc = h.querySelector(".casa-nuvola .casa-testo"); if (sc) sc.scrollTop = 0;
+  toast(v === "facile" ? "Pagina facile" : "Pagina come prima");
+}, true);
+// le figure (disegni originali, colori pieni come il letto del prospetto facile): il secchio delle pulizie (con il foglio del
+// calendario per domani), la valigia di chi arriva, chiave inglese e cacciavite per le cose da aggiustare, il fumetto delle
+// domande, la nuvola di ArgonCloud
+function icoSecchio(giorno) {
+  const cal = giorno != null;
+  const secchio = `<g${cal ? ' transform="translate(-5 0)"' : ""}><path d="M21 16.5C21 4 43 4 43 16.5" fill="none" stroke="#64748B" stroke-width="2.4" stroke-linecap="round"/><path d="M17.5 17.5H46.5L43.2 36.3Q42.9 38 41.2 38H22.8Q21.1 38 20.8 36.3Z" fill="#3B82F6" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round"/><path d="M23.6 22.5L25 33.5" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round"/><rect x="15.8" y="14.6" width="32.4" height="4.8" rx="2.4" fill="#60A5FA" stroke="#1D4ED8" stroke-width="1.3"/><g fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.1"><circle cx="22.5" cy="13.4" r="4.3"/><circle cx="30" cy="10.8" r="5.4"/><circle cx="38" cy="11.9" r="4.7"/><circle cx="44" cy="14" r="3.1"/></g></g>`;
+  const destra = cal
+    ? `<rect x="46" y="15" width="17" height="21" rx="3" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.3"/><path d="M46 21.5V18Q46 15 49 15H60Q63 15 63 18V21.5Z" fill="#EF4444"/><rect x="49.4" y="12.8" width="2" height="4.6" rx="1" fill="#475569"/><rect x="57.6" y="12.8" width="2" height="4.6" rx="1" fill="#475569"/><text x="54.5" y="32.6" text-anchor="middle" font-size="11" font-weight="700" fill="#1E293B" font-family="Plus Jakarta Sans,Arial,sans-serif">${Number(giorno) || ""}</text>`
+    : `<rect x="50" y="27" width="11" height="11" rx="2.6" fill="#FACC15" stroke="#CA8A04" stroke-width="1.2"/><g fill="#CA8A04" opacity=".55"><circle cx="53" cy="30.6" r="1"/><circle cx="57.4" cy="33.4" r="1"/><circle cx="53.8" cy="35.4" r=".8"/></g><path d="M8 6.5L9.3 10.7L13.5 12L9.3 13.3L8 17.5L6.7 13.3L2.5 12L6.7 10.7Z" fill="#FACC15"/>`;
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${secchio}${destra}</svg>`;
+}
+function icoValigia() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M4.5 22H16.5" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16.8L17.2 22L12 27.2" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 10V6.4Q32 4 34.4 4H41.6Q44 4 44 6.4V10" fill="none" stroke="#7C4A1E" stroke-width="2.6" stroke-linecap="round"/><rect x="23" y="10" width="30" height="24.5" rx="4.2" fill="#EA8A2E" stroke="#9A4F0E" stroke-width="1.5"/><path d="M31 10V34.5M45 10V34.5" stroke="#9A4F0E" stroke-width="2.2"/><path d="M26.5 14.5V30" stroke="#F6B26B" stroke-width="2" stroke-linecap="round"/><circle cx="28.5" cy="36.6" r="2.6" fill="#334155"/><circle cx="47.5" cy="36.6" r="2.6" fill="#334155"/></svg>`;
+}
+function icoChiave() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><g transform="rotate(32 32 20)"><rect x="15" y="17.3" width="29" height="5.4" rx="2.7" fill="#94A3B8" stroke="#475569" stroke-width="1.3"/><path d="M56.07 17.5A7.5 7.5 0 1 0 56.07 22.5L50.6 22.5L50.6 17.5Z" fill="#94A3B8" stroke="#475569" stroke-width="1.3" stroke-linejoin="round"/><circle cx="16.4" cy="20" r="4.4" fill="#94A3B8" stroke="#475569" stroke-width="1.3"/><circle cx="16.4" cy="20" r="1.8" fill="#E2E8F0" stroke="#475569" stroke-width=".9"/></g><g transform="rotate(-32 32 20)"><rect x="9" y="16.2" width="15" height="7.6" rx="3.2" fill="#EF4444" stroke="#B91C1C" stroke-width="1.3"/><path d="M12 18.2V21.8M15.5 18.2V21.8M19 18.2V21.8" stroke="#FCA5A5" stroke-width="1.2" stroke-linecap="round"/><rect x="24" y="17.7" width="3" height="4.6" rx=".8" fill="#CBD5E1" stroke="#64748B" stroke-width=".8"/><rect x="27" y="18.9" width="19" height="2.2" fill="#CBD5E1" stroke="#64748B" stroke-width=".8"/><path d="M46 18.9L50.6 20L46 21.1Z" fill="#64748B"/></g></svg>`;
+}
+function icoDomande() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M13 3.5H51Q57.5 3.5 57.5 10V24.5Q57.5 31 51 31H31.5L22 38.2V31H13Q6.5 31 6.5 24.5V10Q6.5 3.5 13 3.5Z" fill="#D4AF6A" stroke="#8C621E" stroke-width="1.5" stroke-linejoin="round"/><text x="32" y="25.6" text-anchor="middle" font-size="21" font-weight="700" fill="#FFFFFF" font-family="Plus Jakarta Sans,Arial,sans-serif">?</text></svg>`;
+}
+function icoNuvola() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M19 33.5Q10 33.5 10 26Q10 19 17.4 18.4Q19 10.5 27.5 10.5Q35 10.5 37.6 17Q39.6 15.5 42.6 15.5Q49.6 15.5 50.1 22.4Q56 23 56 28.4Q56 33.5 50.4 33.5Z" fill="#E0F2FE" stroke="#0284C7" stroke-width="1.6" stroke-linejoin="round"/><path d="M25 25L30.4 30L40 20.4" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+// il giorno a parole: «oggi», «domani», «ieri», «venerdì» (entro 6 giorni), altrimenti «22 novembre»
+function parolaGiorno(d) { const n = L.giorniTra(L.oggiISO(), d); return n === 0 ? "oggi" : n === 1 ? "domani" : n === -1 ? "ieri" : Math.abs(n) <= 6 ? L.GIORNI[L.giornoSettimana(d)] : `${L.giornoDelMese(d)} ${L.MESI[L.daISO(d).getUTCMonth()]}`; }
+function finoAGiorno(d) { const p = parolaGiorno(d); if (!/^\d/.test(p)) return `fino a ${p}`; const n = parseInt(p, 10); return n === 8 || n === 11 ? `fino all'${p}` : `fino al ${n === 1 ? p.replace(/^1(?=\s)/, "1°") : p}`; }
+function elencoParole(a) { return a.length < 2 ? (a[0] || "") : `${a.slice(0, -1).join(", ")} e ${a[a.length - 1]}`; }
+// le schede a figure: pulizie di oggi, cose da aggiustare, arrivi di domani, camere piene; larghe: pulizie di domani, le
+// domande di Sofia, ArgonCloud. Numeri presi dall'app, non scritti dall'IA: sempre giusti.
+function schedeFacili(ls, fatte, man, dom) {
+  const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
+  const arrivi = sog.filter(s => s.inizio === domani).length;
+  const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
+  const dm = pulizieDelGiorno(domani).filter(p => p.tipo !== "stelle"), perSig = {};
+  dm.forEach(p => { const s = SIG(p.zona); perSig[s] = (perSig[s] || 0) + 1; });
+  const chiDomani = Object.entries(perSig).map(([s, n]) => `${s} ${n}`).join(" · ");
+  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}</b><span class="of-p">${esc(o.parole)}</span>${o.sotto || ""}</span></button>`;
+  const n = ls.length, resta = n - fatte, out = [];
+  out.push(scheda({ vai: "pulizie", ico: icoSecchio(), n: n ? `${fatte} su ${n}` : "0", parole: n ? `${n === 1 ? "pulizia fatta" : "pulizie fatte"}${resta ? "" : " ✓"}` : "pulizie oggi",
+    sotto: n ? `<span class="of-barra" aria-hidden="true"><i style="width:${Math.round(fatte / n * 100)}%"></i></span>` : "", tono: resta > 0 ? "att" : n ? "ok" : "",
+    dici: n ? `Pulizie di oggi: ${fatte} fatte su ${n}` : "Oggi nessuna pulizia" }));
+  out.push(scheda({ vai: "manutenzione", ico: icoChiave(), n: String(man), parole: "da aggiustare", tono: man > 0 ? "att" : "",
+    dici: man ? `${man} ${man === 1 ? "cosa" : "cose"} da aggiustare` : "Niente da aggiustare" }));
+  out.push(scheda({ vai: "arrivi", ico: icoValigia(), n: String(arrivi), parole: arrivi === 1 ? "arrivo domani" : "arrivi domani", dici: `Domani ${arrivi} ${arrivi === 1 ? "arrivo" : "arrivi"}` }));
+  out.push(scheda({ vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", sotto: `<small class="of-s">${libere} ${libere === 1 ? "libera" : "libere"}</small>`,
+    dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "libera" : "libere"}` }));
+  out.push(scheda({ vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", larga: true,
+    sotto: chiDomani ? `<small class="of-s2">${esc(chiDomani)}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` }));
+  if (dom) out.push(scheda({ vai: "sofia", ico: icoDomande(), n: String(dom), parole: `${dom === 1 ? "domanda" : "domande"} di ${nomeGov()} per te`, tono: "att", larga: true, dici: `${nomeGov()} ha ${dom} ${dom === 1 ? "domanda" : "domande"} per te` }));
+  if (cloudAttivo()) { const a = argonTesseraValore(); out.push(scheda({ vai: "argon", ico: icoNuvola(), n: "ArgonCloud", parole: a.v, testo: true, tono: a.att ? "att" : "", larga: true, dici: `ArgonCloud: ${a.v}` })); }
+  return out.join("");
+}
+// il fumetto di Sofia (lo stesso messaggio della pagina di prima: saluto, testo, «👉» la cosa da fare) e le schede
+function oggiFacileHtml(c, u, ls, fatte, man, dom) {
+  const quando = c && c.ora ? `alle ${L.oraBreve(c.ora)}` : "";
+  const sal = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`, testo = c && c.testo ? c.testo : u.testo;
+  const vero = !!(c && c.consiglio), fai = vero ? c.consiglio : spintaDelGiorno();
+  return `<div class="of-fumetto">
+    <button type="button" class="of-parla" data-cons-mic aria-label="Parla con ${esc(nomeGov())}: dille una novità">${CASA_ICO.mic}<span>Parla</span></button>
+    <span class="of-chi"><b>${esc(nomeGov())}</b> ti dice${quando ? ` <small>· ${esc(quando)}</small>` : ""}</span>
+    <p class="of-dice"><b class="of-sal">${esc(sal)}</b> <span class="of-testo">${esc(testo)}</span></p>
+    <p class="of-fai${vero ? " vero" : ""}">${vero ? `<span class="of-dito" aria-hidden="true">👉</span>` : ""}<span class="of-fai-t">${esc(fai)}</span></p>
+  </div>
+  <div class="of-griglia">${schedeFacili(ls, fatte, man, dom)}</div>`;
+}
+// il dettaglio a figure (toccata una scheda): niente messaggio di Sofia ripetuto (confondeva), una cosa per riga, le camere
+// a bottoni (✓ verde = fatta), le signore col loro nome; ArgonCloud resta com'era
+const DETTAGLI_FACILI = { pulizie: 1, domani: 1, arrivi: 1, camere: 1, manutenzione: 1, sofia: 1 };
+function dettaglioFacile(k, ls, fatte) {
+  if (!DETTAGLI_FACILI[k]) return dettaglioHtml(k, ls, fatte);
+  const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
+  const pagina = (vai, testo) => `<button type="button" class="dt-pagina" data-casa-vai="${vai}" data-casa-pagina>${esc(testo)}<span aria-hidden="true">›</span></button>`;
+  const tit = (ico, testo) => `<span class="dtf-tit"><span class="dtf-tico" aria-hidden="true">${ico}</span><span class="dtf-tt">${testo}</span></span>`;
+  const vuoto = (t) => `<span class="dtf-vuoto">${esc(t)}</span>`;
+  const nomeCam = (cm) => esc(cm.tipo === "casa" ? nomeBreveCamera(cm) : cm.nome);
+  let titolo = "", corpo = "", tasto = "";
+  if (k === "pulizie" || k === "domani") {
+    const tutte = pulizieDelGiorno(k === "pulizie" ? oggi : domani), vere = tutte.filter(p => p.tipo !== "stelle"), ft = vere.filter(p => p.stato === "fatta").length;
+    titolo = tit(icoSecchio(k === "domani" ? L.giornoDelMese(domani) : null), k === "pulizie" ? "Pulizie di oggi" : `Domani, ${esc(L.dataGiornoLungo(domani))}`);
+    const chip = (p) => {
+      if (p.tipo === "stelle") return `<span class="dtf-k stelle${p.stato === "fatta" ? " fatta" : ""}">${p.stato === "fatta" ? "✓ " : "✦ "}Rifiniture</span>`;
+      const st = p.stato === "fatta" ? "fatta" : p.stato === "problema" ? "problema" : p.stato === "non_fatta" ? "non" : "";
+      const segno = st === "fatta" ? "✓ " : st === "problema" ? "! " : st === "non" ? "✗ " : "";
+      const tipo = p.stato === "in_corso" ? "in corso" : p.tipo === "ripasso" ? "veloce" : p.tipo === "extra" ? "extra" : "";
+      return `<span class="dtf-k${st ? " " + st : ""}">${segno}${nomeCam(camera(p.camera))}${tipo ? ` <small>${tipo}</small>` : ""}</span>`;
+    };
+    const gruppi = new Map(); for (const p of tutte) { const z = p.zona || "?"; if (!gruppi.has(z)) gruppi.set(z, []); gruppi.get(z).push(p); }
+    const ord = zoneOrdinate().map(z => z.id), pos = (z) => { const i = ord.indexOf(z); return i < 0 ? 99 : i; };
+    const blocchi = [...gruppi.entries()].sort((a, b) => pos(a[0]) - pos(b[0])).map(([z, l]) => {
+      const v = l.filter(p => p.tipo !== "stelle"), f = v.filter(p => p.stato === "fatta").length, nome = SIG(z);
+      const conto = !v.length ? "rifiniture" : k === "pulizie" ? `${f} su ${v.length} ${v.length === 1 ? "fatta" : "fatte"}` : `${v.length} ${v.length === 1 ? "pulizia" : "pulizie"}`;
+      return `<span class="dtf-sig"><span class="dtf-sig-t"><i class="dtf-av" aria-hidden="true">${esc(nome.charAt(0).toUpperCase())}</i><b>${esc(nome)}</b><span class="dtf-conto">${conto}</span></span><span class="dtf-cam">${l.map(chip).join("")}</span></span>`;
+    });
+    if (!tutte.length) corpo = vuoto(k === "pulizie" ? "Oggi nessuna pulizia." : "Domani nessuna pulizia: nessuno da chiamare.");
+    else {
+      const conta = k === "pulizie" ? `<span class="dtf-conta"><span class="dtf-n ok"><i aria-hidden="true">✓</i><b>${ft}</b> ${ft === 1 ? "fatta" : "fatte"}</span><span class="dtf-n da"><b>${vere.length - ft}</b> da fare</span></span>`
+        : `<span class="dtf-conta"><span class="dtf-n da"><b>${vere.length}</b> ${vere.length === 1 ? "pulizia" : "pulizie"}</span></span>`;
+      const nomi = [...gruppi.keys()].sort((a, b) => pos(a) - pos(b)).map(z => `<b>${esc(SIG(z))}</b>`);
+      corpo = conta + (k === "domani" ? `<span class="dtf-nota">📞 Da chiamare: ${elencoParole(nomi)}</span>` : "") + blocchi.join("");
+    }
+    tasto = k === "pulizie" ? pagina("pulizie", "Apri l'elenco di oggi") : pagina("domani", "Apri il prospetto di domani");
+  } else if (k === "arrivi") {
+    const arr = sog.filter(s => s.inizio === domani), part = sog.filter(s => s.fine === domani);
+    titolo = tit(icoValigia(), arr.length ? "Chi arriva domani?" : "Domani non arriva nessuno");
+    const gruppi = new Map(); for (const s of arr) { const kk = PAROLE.norm(nomeOspite(s)) || s.id; if (!gruppi.has(kk)) gruppi.set(kk, []); gruppi.get(kk).push(s); }
+    const righe = [...gruppi.values()].map(l => {
+      const fine = l.map(s => s.fine).filter(Boolean).sort().pop();
+      return `<span class="dtf-r"><span class="dtf-r-t"><b class="dtf-nome">${esc(nomeCortoOspite(l[0]))}</b>${fine ? `<span class="dtf-fino">${esc(finoAGiorno(fine))}</span>` : ""}</span><span class="dtf-cam">${l.map(s => `<span class="dtf-k">${icoPorta()}${nomeCam(camera(s.camera))}</span>`).join("")}</span></span>`;
+    });
+    corpo = (arr.length ? `<span class="dtf-conta"><span class="dtf-n da"><b>${arr.length}</b> ${arr.length === 1 ? "arrivo" : "arrivi"}</span></span>` + righe.join("") : "")
+      + (part.length ? `<span class="dtf-blocco"><span class="dtf-bt">Vanno via domani</span><span class="dtf-cam">${part.map(s => `<span class="dtf-k via">${esc(nomeCortoOspite(s))} <small>${nomeCam(camera(s.camera))}</small></span>`).join("")}</span></span>` : "");
+    if (!corpo) corpo = vuoto("Domani nessuno arriva e nessuno va via.");
+    tasto = pagina("prospetto", "Apri il prospetto");
+  } else if (k === "camere") {
+    const elenco = zoneOrdinate().flatMap(z => camereZona(z.id)), tutte = elenco.concat(S.camere.filter(c => !elenco.includes(c)));
+    const piene = tutte.filter(cm => L.ospiteIl(sog, cm.id, oggi)).length, libere = tutte.length - piene;
+    titolo = tit(icoLetto(true), "Chi dorme stanotte?");
+    const celle = tutte.map(cm => { const s = L.ospiteIl(sog, cm.id, oggi); return s ? `<span class="dtf-cm piena"><b>${nomeCam(cm)}</b><small>${esc(nomeCortoOspite(s))}</small></span>` : `<span class="dtf-cm libera"><b>${nomeCam(cm)}</b><small>libera</small></span>`; }).join("");
+    corpo = `<span class="dtf-conta"><span class="dtf-n pieno">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="dtf-n libero">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "libera" : "libere"}</span></span><span class="dtf-griglia">${celle}</span>`;
+    tasto = pagina("prospetto", "Apri il prospetto");
+  } else if (k === "manutenzione") {
+    const ap = lavoriAperti();
+    titolo = tit(icoChiave(), ap.length ? `Da aggiustare: ${ap.length}` : "Niente da aggiustare");
+    corpo = ap.length ? ap.map(m => {
+      const cm = m.camera ? camera(m.camera) : null, g = m.data ? parolaGiorno(m.data) : "";
+      return `<span class="dtf-r"><span class="dtf-r-t"><b class="dtf-nome">${esc(m.titolo || "Lavoro")}</b></span><span class="dtf-dove">${cm ? `${icoPorta()}${esc(cm.nome)}` : "In generale"}${g ? ` · segnalato ${/^\d/.test(g) ? "il " : ""}${esc(g)}` : ""}</span>${m.nota ? `<span class="dtf-nota2">${esc(m.nota)}</span>` : ""}</span>`;
+    }).join("") : vuoto("Tutto a posto: niente da aggiustare.");
+    tasto = pagina("manutenzione", "Apri i lavori");
+  } else if (k === "sofia") {
+    let ap = []; try { ap = statoChatApp().aperte; } catch (e) {}
+    titolo = tit(icoDomande(), ap.length ? `${esc(nomeGov())} ti chiede ${ap.length} ${ap.length === 1 ? "cosa" : "cose"}` : `${esc(nomeGov())} non ha domande`);
+    corpo = ap.length ? ap.slice(0, 6).map((d, i) => `<span class="dtf-r dtf-dom"><i class="dtf-num" aria-hidden="true">${i + 1}</i><span class="dtf-dom-t">${d.urgente ? `<b class="dtf-urg">Urgente</b> ` : ""}${esc(d.testo)}</span></span>`).join("") + (ap.length > 6 ? vuoto(`…e altre ${ap.length - 6}.`) : "") : vuoto("Nessuna domanda: tutto chiaro.");
+    tasto = pagina("sofia", "Rispondi a " + nomeGov());
+  }
+  return { titolo, html: corpo + tasto };
 }
 // ---- lei ti parla appena apri l'app -------------------------------------
 // I telefoni non lasciano partire un suono da soli: se il browser dice di no,
