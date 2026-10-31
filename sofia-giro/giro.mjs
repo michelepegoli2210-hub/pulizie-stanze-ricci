@@ -13,13 +13,16 @@
 //   - 7-21: se il ponte WhatsApp c'era e tace da più di 40 minuti, lo dice al titolare (una volta al giorno)
 //  1.17.0: al titolare scrive anche (o solo) con gli AVVISI SUL TELEFONO (Web Push, importazioni/push-sofia): basta il tasto
 //  «Accendi gli avvisi su questo telefono» nell'app, niente Telegram. Le iscrizioni scadute (404/410) si tolgono da sole.
+//  1.17.1: gli avvisi partono tutti "urgenti" (Urgency: high): col telefono a riposo Android li consegna subito invece di
+//  tenerli da parte (sono pochi al giorno). E dal tasto «Run workflow» di GitHub, con la casella «prova», parte SOLO un
+//  avviso di prova a ogni telefono acceso (niente giro): serve a controllare tutta la strada fino al telefono.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
 import { LUOGHI_COMUNI } from "../governante.js";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.17.0";
+export const VERSIONE_GIRO = "1.17.1";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -245,10 +248,29 @@ export function dbAdmin(fs) {
 export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
-      await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800) }), { TTL: 6 * 3600, urgency: dati.urgente ? "high" : "normal", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
-      return { ok: true };
-    } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message)); return { ok: false, finita: s === 404 || s === 410 }; }
+      // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      return { ok: true, stato: (r && r.statusCode) || null };
+    } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };
+}
+// 1.17.1: «solo un avviso di prova» a ogni telefono del titolare (dal tasto Run workflow, casella «prova»). Niente giro.
+export async function provaAvviso({ db, push, adesso = new Date() }) {
+  const t = oraRoma(adesso);
+  const ps = await db.doc("importazioni", "push-sofia");
+  const lista = Object.entries((ps && ps.iscrizioni) || {}).filter(([, v]) => v && v.sub && v.sub.endpoint && (v.chi || "titolare") === "titolare");
+  if (!ps || !ps.vapidPublic || !ps.vapidPrivato || !lista.length) return { ora: t.hhmm, prova: "nessun telefono con gli avvisi accesi" };
+  const esiti = [], finite = [];
+  for (const [id, v] of lista) {
+    const r = await push(ps, v.sub, { titolo: "Sofia · prova", testo: `🔔 Prova delle ${t.hhmm}: se leggi questo, gli avvisi automatici di Sofia arrivano su questo telefono.`, urgente: true });
+    esiti.push({ telefono: v.nome || id, ok: !!(r && r.ok), stato: (r && r.stato) || null });
+    if (r && r.finita) finite.push(id);
+  }
+  if (finite.length) await db.sostituisci("importazioni", "push-sofia", "iscrizioni", Object.fromEntries(Object.entries(ps.iscrizioni || {}).filter(([id]) => !finite.includes(id))));
+  const st = await db.doc("importazioni", "giro-sofia");
+  const vecchi = Array.isArray(st && st.esiti) ? st.esiti : [];
+  await db.merge("importazioni", "giro-sofia", { esiti: [...vecchi, { quando: adesso.toISOString(), cosa: `prova avviso: partiti ${esiti.filter(e => e.ok).length} su ${esiti.length}` }].slice(-30) });
+  return { ora: t.hhmm, prova: esiti, tolte: finite.length };
 }
 export async function telegramVero(token, chat, testo) {
   try {
@@ -265,6 +287,11 @@ async function main() {
   const { getFirestore } = await import("firebase-admin/firestore");
   initializeApp({ credential: cert(JSON.parse(sa)) });
   const webpush = (await import("web-push")).default;
+  if (String(process.env.PROVA_AVVISO || "") === "true") {
+    const r = await provaAvviso({ db: dbAdmin(getFirestore()), push: pushVero(webpush) });
+    console.log("Sofia sempre accesa (solo avviso di prova):", JSON.stringify(r));
+    return;
+  }
   const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date() });
   console.log("Sofia sempre accesa:", JSON.stringify(esito));
 }
