@@ -3,6 +3,8 @@
 # Gli orari sono in UTC (alle :05 e alle :35, dalle 4 alle 21): il giro guarda l'ora di Roma e decide da solo cosa fare.
 # 1.17.1: dal tasto «Run workflow», con la casella «prova» spuntata, parte SOLO un avviso di prova sul telefono.
 # 1.18.0: ogni 10 minuti (alle :05, :15, :25...): così legge le chat del ponte poco dopo che arrivano (serve GEMINI_CHIAVE).
+# 1.18.1: l'orario di GitHub è "quando può" (il 31/10 nessun giro dalle 12:29 alle 17:14): lo fa partire anche il ponte sul PC
+# (Run workflow con da = "ponte" e scade = quando scade la sua chiave di GitHub), ogni 10 minuti e dopo i messaggi nuovi.
 name: Sofia sempre accesa
 on:
   schedule:
@@ -13,6 +15,16 @@ on:
         description: "Solo un avviso di prova sul telefono (niente giro)"
         type: boolean
         default: false
+      da:
+        description: "Chi lo fa partire (il ponte sul PC scrive: ponte). Lascia vuoto."
+        type: string
+        default: ""
+        required: false
+      scade:
+        description: "Quando scade la chiave del ponte (la scrive il ponte). Lascia vuoto."
+        type: string
+        default: ""
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -47,3 +59,5 @@ jobs:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
           GEMINI_CHIAVE: ${{ secrets.GEMINI_CHIAVE }}
           PROVA_AVVISO: ${{ inputs.prova }}
+          GIRO_DA: ${{ inputs.da }}
+          GIRO_SCADE: ${{ inputs.scade }}
