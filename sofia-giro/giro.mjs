@@ -6,9 +6,10 @@
 //  Cosa fa (ora di Roma), ognuna una volta al giorno (segni in importazioni/giro-sofia):
 //   - dalle 7 (o dall'ora scelta in Avvisi) alle 11: il piano del giorno alle signore (stesso segno "ultimoPiano" dell'app:
 //     se l'ha già mandato l'app, non lo rimanda) e tre righe al titolare
-//   - 12:30-13:29: se una camera dove oggi arriva un ospite non è pronta, un messaggio gentile alle signore (priorità)
-//   - 13:30-14:59: se è ancora indietro, un avviso al titolare
-//   - 15:00-16:59: le pulizie di oggi ancora da segnare: un promemoria gentile (mai rimproveri)
+//   - 12:30-13:59: se una camera dove oggi arriva un ospite non è pronta, un messaggio gentile alle signore (priorità)
+//   - 13:30-16:59: se è ancora indietro, un avviso al titolare
+//   - 15:00-18:29: le pulizie di oggi ancora da segnare: un promemoria gentile (mai rimproveri)
+//     (1.18.1: finestre più larghe: GitHub a volte fa partire il giro con ore di ritardo, il 31/10 è rimasto fermo dalle 12:29 alle 17:14)
 //   - dalle 20: il bollettino della sera al titolare (oggi, quello che Sofia ha fatto da sola, i guasti, domani, cosa aspetta il «Sì»)
 //   - 7-21: se il ponte WhatsApp c'era e tace da più di 40 minuti, lo dice al titolare (una volta al giorno)
 //  1.17.0: al titolare scrive anche (o solo) con gli AVVISI SUL TELEFONO (Web Push, importazioni/push-sofia): basta il tasto
@@ -19,6 +20,10 @@
 //  1.18.0: SOFIA LEGGE LE CHAT ANCHE AD APP CHIUSA (lettura-giro.mjs): ogni 10 minuti, se il ponte ha portato messaggi nuovi
 //  e da 5 minuti nessuno scrive, li legge con Gemini (stessa richiesta dell'app, lettura.js), mette il risultato da
 //  controllare in importazioni/lettura-sofia e manda l'avviso «Ho letto… Tocca per controllare». Serve il segreto GEMINI_CHIAVE.
+//  1.18.1: l'avviso «ho letto» anche per le letture fatte dal telefono/PC con l'app aperta (e per quelle fatte di notte, dopo
+//  le 7); il controllo del ponte non si ferma più su "nessun ponte"; LA SPINTA DAL PC: il ponte (1.1.0) fa partire il giro
+//  ogni 10 minuti e 5 minuti dopo i messaggi nuovi (input "da" = "ponte" e "scade" = quando scade la sua chiave di GitHub):
+//  il giro lo scrive in giro-sofia.spinta, così l'app sa se la spinta c'è e quando scade la chiave.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -26,7 +31,7 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.18.0";
+export const VERSIONE_GIRO = "1.18.1";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -125,7 +130,7 @@ export function testoBollettino(st, oggi, domani) {
 }
 
 // ---- il giro ------------------------------------------------------------------------------------------
-export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null }) {
+export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "" }) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
   const esiti = [];
   const [stato0, avvisi] = await Promise.all([db.doc("importazioni", "giro-sofia"), db.doc("impostazioni", "avvisi")]);
@@ -150,9 +155,9 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   const dentro = (da, a2) => t.minuti >= da && t.minuti < a2;
   const serve = {
     piano: !fatti.piano && dentro(oraPiano, MIN(11)),
-    arrivi: !fatti.arrivi && dentro(MIN(12, 30), MIN(13, 30)),
-    allarme: !fatti.allarme && dentro(MIN(13, 30), MIN(15)),
-    chiusura: !fatti.chiusura && dentro(MIN(15), MIN(17)),
+    arrivi: !fatti.arrivi && dentro(MIN(12, 30), MIN(14)),
+    allarme: !fatti.allarme && dentro(MIN(13, 30), MIN(17)),
+    chiusura: !fatti.chiusura && dentro(MIN(15), MIN(18, 30)),
     bollettino: !fatti.bollettino && t.minuti >= MIN(20),
     ponte: !fatti.ponte && dentro(MIN(7), MIN(21)),
   };
@@ -227,7 +232,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
           if (puoMe) await mandaMe(`📵 Il ponte WhatsApp non dà segni dalle ${oraRoma(new Date(vivo)).hhmm}: il PC è acceso? Finché è spento, i messaggi del gruppo aspettano.`, "avviso ponte spento", "Sofia · il ponte WhatsApp");
           fatti.ponte = t.hhmm;
         }
-      } else fatti.ponte = "nessun ponte";
+      }      // 1.18.1: senza ponte (o col ponte acceso) non segno niente: si ricontrolla al prossimo giro
     }
   }
   // 1.18.0: Sofia legge le chat anche ad app chiusa (a ogni giro, se il ponte ha portato posta nuova)
@@ -238,10 +243,15 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       const k = casa({ camereDoc, squadra, ruoli, avvisi: a });
       return { camere: k.camere, signore: k.signore().map(z => ({ id: z.id, nome: k.SIG(z.id), zona: z.nome || "" })) };
     };
-    lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase });
-    if (lettura.avvisa) { if (!ps) ps = await db.doc("importazioni", "push-sofia"); await mandaMe(lettura.avvisa.testo, "lettura delle chat", lettura.avvisa.titolo, true, { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" }); }
+    lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase, minuti: t.minuti });
+    if (lettura.avvisa) {
+      if (!ps) ps = await db.doc("importazioni", "push-sofia");
+      await mandaMe(lettura.avvisa.testo, lettura.avvisataLid !== undefined ? "avviso della lettura da controllare" : "lettura delle chat", lettura.avvisa.titolo, true, { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" });
+      // 1.18.1: la lettura fatta dal telefono/PC (o di notte): il segno «avvisata», solo se è ancora quella (stesso numero)
+      if (lettura.avvisataLid !== undefined) { try { await db.segnaSe("importazioni", "lettura-sofia", "lid", lettura.avvisataLid, { avvisata: adesso.toISOString() }); } catch (e) { console.warn("avvisata:", e && e.message); } }
+    }
     else if (lettura.esito && /^(letto|niente da leggere|non riuscita)/.test(lettura.esito)) esiti.push(`lettura delle chat: ${lettura.esito}`);
-    if (lettura.credito && fatti.creditoAvvisato !== oggi) {
+    if (lettura.credito && fatti.creditoAvvisato !== oggi && t.minuti >= MIN(7) && t.minuti < MIN(22, 30)) {
       if (!ps) ps = await db.doc("importazioni", "push-sofia");
       await mandaMe("Non riesco a leggere le chat: il credito di Gemini è finito. Ricaricalo su aistudio.google.com/billing (intanto i messaggi aspettano).", "avviso credito finito", "Sofia · credito finito", true);
       fatti.creditoAvvisato = oggi;
@@ -250,8 +260,11 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   const vecchi = Array.isArray(stato0 && stato0.esiti) ? stato0.esiti : [];
   const notevole = lettura && !/^(niente di nuovo|aspetto|aspetta|la sta leggendo)/.test(lettura.esito || "");
   const letturaInfo = notevole ? { quando: adesso.toISOString(), esito: lettura.esito, n: lettura.n || 0 } : ((stato0 && stato0.lettura) || null);
-  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
-  return { ora: t.hhmm, giorno: oggi, fatti, esiti, lettura: lettura ? lettura.esito : null };
+  // 1.18.1: chi ha fatto partire il giro (il ponte sul PC, l'orario di GitHub, Michele a mano) e quando scade la chiave del ponte
+  const chi = /^[a-z ]{1,20}$/.test(String(da || "")) ? String(da) : "";
+  const spinta = chi === "ponte" ? { spinta: { ultima: adesso.toISOString(), scade: /^\d{4}-\d{2}-\d{2}$/.test(String(scade || "")) ? String(scade) : null } } : {};
+  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, ...(chi ? { ultimoDa: chi } : {}), ...spinta, letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
+  return { ora: t.hhmm, giorno: oggi, fatti, esiti, lettura: lettura ? lettura.esito : null, da: chi || null };
 }
 
 // ---- il mondo vero: Firestore (firebase-admin) e Telegram ----------------------------------------------
@@ -266,6 +279,8 @@ export function dbAdmin(fs) {
     merge: (c, id, dati) => fs.collection(c).doc(id).set(dati, { merge: true }),
     salva: (c, id, dati) => fs.collection(c).doc(id).set(dati),
     postaDa: async (ts) => comeOggetto(await fs.collection("posta").where("ts", ">=", ts).get()),   // 1.18.0
+    // 1.18.1: aggiorna il documento solo se il campo ha ancora quel valore (la lettura non è cambiata nel frattempo)
+    segnaSe: (c, id, campo, valore, dati) => fs.runTransaction(async (tr) => { const ref = fs.collection(c).doc(id); const s = await tr.get(ref); if (!s.exists || (s.data() || {})[campo] !== valore) return false; tr.update(ref, dati); return true; }),
     sostituisci: (c, id, campo, valore) => fs.collection(c).doc(id).update({ [campo]: valore }),
   };
 }
@@ -318,7 +333,10 @@ async function main() {
     return;
   }
   const chiave = String(process.env.GEMINI_CHIAVE || "").trim();
-  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null });
+  // 1.18.1: chi lo fa partire: il ponte sul PC (input "da"), l'orario di GitHub, o Michele col tasto «Run workflow»
+  const ev = String(process.env.GITHUB_EVENT_NAME || "");
+  const da = String(process.env.GIRO_DA || "").trim().toLowerCase() || (ev === "schedule" ? "orario" : ev === "workflow_dispatch" ? "a mano" : "");
+  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null, da, scade: String(process.env.GIRO_SCADE || "").trim() });
   console.log("Sofia sempre accesa:", JSON.stringify(esito));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(e => { console.error("Sofia sempre accesa: errore", e && e.message); process.exitCode = 1; });

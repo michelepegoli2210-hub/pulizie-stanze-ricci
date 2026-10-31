@@ -11,6 +11,10 @@
 //  Non salva MAI niente nel prospetto: quello lo fa Michele col suo «Salva». Se una lettura aspetta il controllo, la posta
 //  nuova aspetta (come nell'app); dopo un giorno senza controllo si rilegge tutto insieme. Se il telefono sta leggendo
 //  (in_lettura da meno di 15 minuti) il giro non tocca niente.
+//  1.18.1: l'avviso «ho letto» arriva anche per le letture fatte dal telefono o dal PC con l'app aperta (prima l'avviso lo
+//  mandava solo il giro per le sue): se una lettura aspetta il controllo da almeno 2 minuti, nessuno l'ha aperta e non è
+//  ancora stata avvisata, parte l'avviso (una volta sola, segno «avvisata»). Gli avvisi delle letture partono solo dalle 7
+//  alle 22:30: una lettura fatta di notte si avvisa al primo giro dopo le 7.
 // ============================================================================
 import * as L from "../logica.js";
 import * as LET from "../lettura.js";
@@ -20,6 +24,10 @@ import { TIPI_OSPITE } from "../regole.js";
 
 export const QUIETE_MS = 5 * 60 * 1000, LOCK_MS = 15 * 60 * 1000, SCADE_MS = 24 * 3600 * 1000, MARGINE_MS = 60 * 60 * 1000;
 const MAX_VOCALI = 60, MAX_FOTO = 4;
+// 1.18.1: l'avviso di una lettura fatta da un telefono parte dopo 2 minuti (se nel frattempo l'ha aperta, niente avviso);
+// gli avvisi delle letture solo dalle 7 alle 22:30 (minuti dell'ora di Roma; senza ora, sempre)
+export const ATTESA_AVVISO_MS = 2 * 60 * 1000, ORE_AVVISO = [7 * 60, 22 * 60 + 30];
+export const oraDiAvvisi = (minuti) => minuti === undefined || minuti === null || (minuti >= ORE_AVVISO[0] && minuti < ORE_AVVISO[1]);
 
 // il nome di Sofia, come lo mostra l'app (tutto maiuscolo → normale)
 export function nomeGovDa(gov) {
@@ -30,6 +38,12 @@ export function nomeGovDa(gov) {
 export function testoRiassunto(r) {
   const p = (n, uno, tanti) => n ? `${n} ${n === 1 ? uno : tanti}` : "";
   return [p(r.cambi, "cambio nel prospetto", "cambi nel prospetto"), p(r.indicazioni, "indicazione per le signore", "indicazioni per le signore"), p(r.assenze, "assenza", "assenze"), p(r.guasti, "guasto", "guasti"), p(r.spesa, "cosa da comprare", "cose da comprare"), p(r.note, "cosa da sapere", "cose da sapere")].filter(Boolean).join(" · ");
+}
+// 1.18.1: il testo dell'avviso «ho letto» (lo stesso per le letture del giro e per quelle del telefono)
+export function avvisoLettura(x, nomeGov) {
+  const n = Number(x && x.n) || 0, cosa = testoRiassunto((x && x.riassunto) || {});
+  const chats = [...new Set((Array.isArray(x && x.fonte && x.fonte.chats) ? x.fonte.chats : []).map(c => String(c).replace(/^chat con /, "")).filter(Boolean))].slice(0, 3).join(", ");
+  return { titolo: `${nomeGov || "Sofia"} · ho letto WhatsApp`, testo: `Ho letto ${n === 1 ? "un messaggio" : n ? n + " messaggi" : "i messaggi"}${chats ? ` (${chats})` : ""}${cosa ? `: ${cosa}` : ""}. Tocca per controllare e salvare.` };
 }
 const dIso = (x) => /^\d{4}-\d{2}-\d{2}$/.test(String(x || "").trim()) ? String(x).trim() : "";
 function cameraDa(x, ctx) {
@@ -85,15 +99,24 @@ export async function ctxDalDatabase(db, { oggi, camere, signore }) {
 }
 
 // ---- la lettura --------------------------------------------------------------------------------------------------------
-// ritorna { esito, ts (fin dove ha guardato la posta), riassunto?, n?, avvisa?: {titolo, testo} , credito? }
-export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, letturaTs = 0, oggi, prendiBase }) {
+// ritorna { esito, ts (fin dove ha guardato la posta), riassunto?, n?, avvisa?: {titolo, testo}, avvisataLid?, credito? }
+// minuti: l'ora di Roma in minuti (1.18.1: gli avvisi delle letture solo dalle 7 alle 22:30)
+export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, letturaTs = 0, oggi, prendiBase, minuti }) {
   if (a.giroLettura === false) return { esito: "spenta", ts: letturaTs };
   if (!gemini || (!gemini.chiave && typeof gemini.chiedi !== "function")) return { esito: "senza chiave", ts: letturaTs };
-  const ora = adesso.getTime();
+  const ora = adesso.getTime(), t0 = Date.now(), finito = () => new Date(ora + (Date.now() - t0)).toISOString();
   const lett = await db.doc("importazioni", "lettura-sofia");
   let vecchie = [];
   if (lett && lett.stato === "da_controllare") {
-    if (ora - Date.parse(lett.quando || 0) < SCADE_MS) return { esito: "aspetta il tuo controllo", ts: letturaTs };
+    const eta = ora - Date.parse(lett.quando || 0);
+    if (eta < SCADE_MS) {
+      // 1.18.1: se non l'ha ancora aperta nessuno e l'avviso non è partito (lettura del telefono/PC, o fatta di notte), lo mando io
+      if (lett.lid && !lett.avvisata && !lett.vista && eta >= ATTESA_AVVISO_MS && oraDiAvvisi(minuti)) {
+        const gov = await db.doc("impostazioni", "governante");
+        return { esito: "aspetta il tuo controllo", ts: letturaTs, avvisa: avvisoLettura(lett, nomeGovDa(gov)), avvisataLid: lett.lid };
+      }
+      return { esito: "aspetta il tuo controllo", ts: letturaTs };
+    }
     vecchie = Array.isArray(lett.postaIds) ? lett.postaIds : [];      // ferma da più di un giorno: la rileggo insieme alla nuova
   }
   if (lett && lett.stato === "in_lettura" && ora - Date.parse(lett.quando || 0) < LOCK_MS) return { esito: "la sta leggendo il telefono", ts: letturaTs };
@@ -158,16 +181,16 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     const testoPapa = scelti.filter(m => m.testo && (!papa || m.chi === papa)).map(m => m.testo).join("\n");
     const etichette = [...chats.entries()].map(([nome, gruppo]) => gruppo ? nome : "chat con " + nome);
     const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: papa ? [papa] : [], chats: etichette, data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "", posta: true, giro: true };
-    await db.salva("importazioni", "lettura-sofia", { lid: id, stato: ha ? "da_controllare" : "vuota", da: "giro", quando: new Date().toISOString(), j, modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, testo: testoPapa.slice(0, 20000), fonte, postaIds: ids, riassunto });
+    const avvisoOra = ha && oraDiAvvisi(minuti);      // 1.18.1: di notte niente avviso: parte al primo giro dopo le 7
+    await db.salva("importazioni", "lettura-sofia", { lid: id, stato: ha ? "da_controllare" : "vuota", da: "giro", quando: finito(), j, modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, testo: testoPapa.slice(0, 20000), fonte, postaIds: ids, riassunto, ...(avvisoOra ? { avvisata: adesso.toISOString() } : {}) });
     for (const pid of ids) { try { await db.merge("posta", pid, { letto: true }); } catch (e) {} }
-    const chiChat = [...chats.keys()].slice(0, 3).join(", ");
     return {
       esito: ha ? "letto" : "letto, niente da cambiare", ts: ultimoTs, n: scelti.length, riassunto, modello: r.modello || "",
-      avvisa: ha ? { titolo: `${ctx.nomeGov} · ho letto WhatsApp`, testo: `Ho letto ${scelti.length === 1 ? "un messaggio" : scelti.length + " messaggi"}${chiChat ? ` (${chiChat})` : ""}: ${testoRiassunto(riassunto)}. Tocca per controllare e salvare.` } : null,
+      avvisa: avvisoOra ? avvisoLettura({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov) : null,
     };
   } catch (e) {
     const msg = String((e && e.message) || e).slice(0, 200);
-    try { await db.salva("importazioni", "lettura-sofia", { lid: id, stato: "errore", da: "giro", quando: new Date().toISOString(), errore: msg, postaIds: ids }); } catch (e2) {}
+    try { await db.salva("importazioni", "lettura-sofia", { lid: id, stato: "errore", da: "giro", quando: finito(), errore: msg, postaIds: ids }); } catch (e2) {}
     return { esito: "non riuscita: " + msg, ts: letturaTs, credito: /credito|402|prepay|billing/i.test(msg) };
   }
 }
