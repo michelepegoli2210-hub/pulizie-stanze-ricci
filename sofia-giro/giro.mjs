@@ -24,6 +24,7 @@
 //  le 7); il controllo del ponte non si ferma più su "nessun ponte"; LA SPINTA DAL PC: il ponte (1.1.0) fa partire il giro
 //  ogni 10 minuti e 5 minuti dopo i messaggi nuovi (input "da" = "ponte" e "scade" = quando scade la sua chiave di GitHub):
 //  il giro lo scrive in giro-sofia.spinta, così l'app sa se la spinta c'è e quando scade la chiave.
+//  1.20.0: le pulizie che Michele ha detto «non serve» (non_fatta + nonServe) non contano nel piano, nei solleciti e nel bollettino.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -31,7 +32,7 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.18.1";
+export const VERSIONE_GIRO = "1.20.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -56,7 +57,7 @@ function casa(st) {
   const signore = () => Object.entries(ZONE).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0)).map(([id, v]) => ({ id, ...v })).filter(z => squadra[z.id] && squadra[z.id].attiva !== false);
   const tag = (z) => { const t = ((st.avvisi || {}).tag || {})[z]; return t ? (String(t).startsWith("@") ? t : "@" + t) : SIG(z); };
   const ordine = (id) => camera(id).ordine || 99;
-  const visibile = (p) => p && p.tipo !== "stelle";      // il giro delle rifiniture lo vedono nell'app (qui non si ricalcola)
+  const visibile = (p) => p && p.tipo !== "stelle" && !p.nonServe;      // il giro delle rifiniture lo vedono nell'app (qui non si ricalcola); 1.20.0: senza quelle che non servono
   const delGiorno = (iso, z) => Object.values(st.pulizie || {}).filter(p => p && p.data === iso && (!z || p.zona === z) && visibile(p)).sort((a, b) => ordine(a.camera) - ordine(b.camera));
   const titolo = (p) => (p.tipo === "totale" || p.tipo === "totale_casa" ? "Cambio completo" : (p.titolo || "Pulizia")) + (p.parte && L.PARTE_TESTO[p.parte] ? ` · ${L.PARTE_TESTO[p.parte]}` : "");
   const sempre = (id) => { try { return L.spezzaRichieste((st.promemoria || {})[id] || ""); } catch (e) { return []; } };
