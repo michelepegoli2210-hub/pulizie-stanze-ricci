@@ -2135,3 +2135,15 @@ Michele, 31/10 alle 23:05, con la foto della pagina «Oggi» a tendina chiusa (S
   - Il riquadro chiuso è un filo più alto (128 px invece di 108) per starci.
 - «Come prima» resta uguale (la tessera con l'icona a linee e la scritta «Oggi: …»).
 - Le due cose si rifanno solo quando cambia un numero (un tocco non si perde). Tema scuro: figurine e tessera scure, scritte chiare. Telefono stretto (360 px): figurine e scritte un filo più piccole, accanto alla freccia.
+
+## 121. La 1.21.2 (31 ottobre, notte): A TENDINA CHIUSA TUTTE LE NOTIZIE DELLA GIORNATA
+
+Michele, 31/10 notte, sulla tendina chiusa della 1.21.1 (la tessera «Domani» e due figurine): «okay, ma nella tendina chiusa ci devono essere tutte le notifiche della giornata».
+
+- Nella vista FACILE, a tendina chiusa:
+  - In alto la tessera «Domani» (secchio col foglio del calendario, «1 pulizia domani», «Selena 1»), con ACCANTO la freccia dorata per aprire la tendina (più grande, 42 px).
+  - Sotto, TUTTE le notizie di oggi a FIGURINE, quattro per fila, le stesse delle schede: il disegno, il numero e due parole. Sempre: «0 su 4 · pulizie oggi» (secchio), «11 · da aggiustare» (chiave inglese), «5 · arrivi domani» (valigia), «5 · camere piene» (letto). Solo quando ci sono: «3 · da controllare» (la busta: Sofia ha letto le chat e aspetta il controllo; «… sta leggendo» mentre legge), «1 · problema» (il triangolo rosso: una pulizia segnata con un problema), «3 · domande» (il fumetto: le domande di Sofia), ArgonCloud (la nuvola: ✓ se è tutto a posto, altrimenti il numero da guardare).
+  - Dorata = c'è da fare; rossa = un problema; bianca = a posto. Ogni figurina si TOCCA e apre il suo dettaglio a figure (la busta apre la lettura da controllare, come la striscia del prospetto).
+  - Il riquadro chiuso si allunga da solo: una fila se le notizie sono fino a quattro (174 px), due file se sono di più (248 px). La scritta «Oggi: …» non c'è più (le figurine dicono tutto).
+- Le chat da controllare e i problemi entrano anche tra le schede del riquadro aperto (schede larghe, dopo le quattro in alto): così le notizie sono le stesse, aperto e chiuso. Le notizie sono contate una volta sola (notizieFacili) e servono sia alle schede sia alle figurine.
+- «Come prima» resta uguale. Tema scuro: figurine scure, rossa scura per i problemi. Telefono stretto (360 px): figurine e scritte un filo più piccole.

@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.21.1";
+export const VERSIONE = "1.21.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2911,6 +2911,7 @@ function casaOssatura(tre) {
       </div>
       <button type="button" class="cr-riga cr-tess cs-domani" data-casa-vai="domani" aria-label="Le pulizie di domani"></button>
       <button type="button" class="casa-saluto" data-tenda aria-expanded="true" aria-label="Apri o chiudi le notizie"><b class="casa-ciao"></b><i class="cs-mini" hidden></i><span class="cs-freccia" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+      <div class="csf" role="group" aria-label="Le notizie di oggi"></div>
       <div class="casa-testo">
         <div class="of"></div>
         <div class="casa-righe"></div>
@@ -3366,6 +3367,12 @@ function casaAggiorna(h) {
     if (cd._hh !== hf) { cd._hh = hf; cd.innerHTML = hf; }
     cd.classList.toggle("att", df ? df.n > 0 : dm.length > 0);
   }
+  // 1.21.2 (Michele: "nella tendina chiusa ci devono essere tutte le notifiche della giornata"): nella vista facile, a tendina
+  // chiusa, sotto «Domani» tutte le notizie di oggi a figurine (le stesse delle schede); un tocco apre il dettaglio
+  {
+    const cf = q(".csf");
+    if (cf) { const fg = facile ? figurineFacili(ls, fatte, man, dom) : null, hh = fg ? fg.html : ""; if (cf._hh !== hh) { cf._hh = hh; cf.innerHTML = hh; } h.classList.toggle("csf-2", !!fg && fg.n > 4); }
+  }
   const det = h.dataset.dettaglio ? (facile ? dettaglioFacile : dettaglioHtml)(h.dataset.dettaglio, ls, fatte) : null;   // 1.7.1; 1.21.0: nella vista facile a figure
   if (sal) { if (det) { if (sal.innerHTML !== det.titolo) sal.innerHTML = det.titolo; sal.classList.remove("lunga"); } else { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); } }
   // 1.19.0: sopra il messaggio, chi l'ha scritto e a che ora (Michele vedeva «Buongiorno… entro le 14» alle 20:20 e non capiva)
@@ -3472,29 +3479,69 @@ function finoAGiorno(d) { const p = parolaGiorno(d); if (!/^\d/.test(p)) return 
 function elencoParole(a) { return a.length < 2 ? (a[0] || "") : `${a.slice(0, -1).join(", ")} e ${a[a.length - 1]}`; }
 // le schede a figure: pulizie di oggi, cose da aggiustare, arrivi di domani, camere piene; larghe: pulizie di domani, le
 // domande di Sofia, ArgonCloud. Numeri presi dall'app, non scritti dall'IA: sempre giusti.
-function schedeFacili(ls, fatte, man, dom) {
+// 1.21.2: TUTTE LE NOTIZIE DELLA GIORNATA, contate una volta sola: le usano le schede (riquadro aperto) e le figurine
+// (tendina chiusa). Sempre: pulizie di oggi, da aggiustare, arrivi di domani, camere piene, pulizie di domani. Solo quando
+// ci sono: le chat lette da Sofia da controllare (o che sta leggendo), i problemi nelle camere, le domande di Sofia,
+// ArgonCloud. Numeri presi dall'app, non scritti dall'IA: sempre giusti.
+function letturaFacile() {
+  try {
+    if (letturaInCorso()) return { n: "…", parole: `${nomeGov()} sta leggendo le chat`, corto: "sta leggendo", dici: `${nomeGov()} sta leggendo le chat` };
+    if (letturaDaControllare()) {
+      const r = riassuntoLettura(S.dett.ia), t = r.cambi + r.indicazioni + r.assenze + r.guasti + r.spesa + r.note;
+      return { n: String(t), parole: `${t === 1 ? "cosa" : "cose"} dalle chat da controllare`, corto: "da controllare", dici: `${nomeGov()} ha letto le chat: ${t} ${t === 1 ? "cosa" : "cose"} da controllare` };
+    }
+  } catch (e) {}
+  return null;
+}
+function notizieFacili(ls, fatte, man, dom) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
   const arrivi = sog.filter(s => s.inizio === domani).length;
   const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
   const dm = pulizieDelGiorno(domani).filter(p => p.tipo !== "stelle"), perSig = {};
   dm.forEach(p => { const s = SIG(p.zona); perSig[s] = (perSig[s] || 0) + 1; });
   const chiDomani = Object.entries(perSig).map(([s, n]) => `${s} ${n}`).join(" · ");
-  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}</b><span class="of-p">${esc(o.parole)}</span>${o.sotto || ""}</span></button>`;
-  const n = ls.length, resta = n - fatte, out = [];
-  out.push(scheda({ vai: "pulizie", ico: icoSecchio(), n: n ? `${fatte} su ${n}` : "0", parole: n ? `${n === 1 ? "pulizia fatta" : "pulizie fatte"}${resta ? "" : " ✓"}` : "pulizie oggi",
+  const n = ls.length, resta = n - fatte, problemi = ls.filter(p => p.stato === "problema").length, out = [];
+  out.push({ k: "pulizie", vai: "pulizie", ico: icoSecchio(), n: n ? `${fatte} su ${n}` : "0", parole: n ? `${n === 1 ? "pulizia fatta" : "pulizie fatte"}${resta ? "" : " ✓"}` : "pulizie oggi", corto: "pulizie oggi",
     sotto: n ? `<span class="of-barra" aria-hidden="true"><i style="width:${Math.round(fatte / n * 100)}%"></i></span>` : "", tono: resta > 0 ? "att" : n ? "ok" : "",
-    dici: n ? `Pulizie di oggi: ${fatte} fatte su ${n}` : "Oggi nessuna pulizia" }));
-  out.push(scheda({ vai: "manutenzione", ico: icoChiave(), n: String(man), parole: "da aggiustare", tono: man > 0 ? "att" : "",
-    dici: man ? `${man} ${man === 1 ? "cosa" : "cose"} da aggiustare` : "Niente da aggiustare" }));
-  out.push(scheda({ vai: "arrivi", ico: icoValigia(), n: String(arrivi), parole: arrivi === 1 ? "arrivo domani" : "arrivi domani", dici: `Domani ${arrivi} ${arrivi === 1 ? "arrivo" : "arrivi"}` }));
-  out.push(scheda({ vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", sotto: `<small class="of-s">${libere} ${libere === 1 ? "libera" : "libere"}</small>`,
-    dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "libera" : "libere"}` }));
-  out.push(scheda({ vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", larga: true,
-    sotto: chiDomani ? `<small class="of-s2">${esc(chiDomani)}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` }));
-  if (dom) out.push(scheda({ vai: "sofia", ico: icoDomande(), n: String(dom), parole: `${dom === 1 ? "domanda" : "domande"} di ${nomeGov()} per te`, tono: "att", larga: true, dici: `${nomeGov()} ha ${dom} ${dom === 1 ? "domanda" : "domande"} per te` }));
-  if (cloudAttivo()) { const a = argonTesseraValore(); out.push(scheda({ vai: "argon", ico: icoNuvola(), n: "ArgonCloud", parole: a.v, testo: true, tono: a.att ? "att" : "", larga: true, dici: `ArgonCloud: ${a.v}` })); }
-  return out.join("");
+    dici: n ? `Pulizie di oggi: ${fatte} fatte su ${n}` : "Oggi nessuna pulizia" });
+  out.push({ k: "manutenzione", vai: "manutenzione", ico: icoChiave(), n: String(man), parole: "da aggiustare", corto: "da aggiustare", tono: man > 0 ? "att" : "",
+    dici: man ? `${man} ${man === 1 ? "cosa" : "cose"} da aggiustare` : "Niente da aggiustare" });
+  out.push({ k: "arrivi", vai: "arrivi", ico: icoValigia(), n: String(arrivi), parole: arrivi === 1 ? "arrivo domani" : "arrivi domani", corto: arrivi === 1 ? "arrivo domani" : "arrivi domani", dici: `Domani ${arrivi} ${arrivi === 1 ? "arrivo" : "arrivi"}` });
+  out.push({ k: "camere", vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", corto: piene === 1 ? "camera piena" : "camere piene", sotto: `<small class="of-s">${libere} ${libere === 1 ? "libera" : "libere"}</small>`,
+    dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "libera" : "libere"}` });
+  const lt = letturaFacile();
+  if (lt) out.push({ k: "lettura", attr: "data-oggi-lettura", ico: icoBusta(), n: lt.n, parole: lt.parole, corto: lt.corto, tono: "att", larga: true, dici: lt.dici });
+  if (problemi) out.push({ k: "problemi", vai: "pulizie", ico: icoAttenzione(), n: String(problemi), parole: problemi === 1 ? "problema in una camera" : "problemi nelle camere", corto: problemi === 1 ? "problema" : "problemi", tono: "rosso", larga: true, dici: `Oggi ${problemi} ${problemi === 1 ? "problema" : "problemi"} nelle camere` });
+  out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: "domani", larga: true,
+    sotto: chiDomani ? `<small class="of-s2">${esc(chiDomani)}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` });
+  if (dom) out.push({ k: "sofia", vai: "sofia", ico: icoDomande(), n: String(dom), parole: `${dom === 1 ? "domanda" : "domande"} di ${nomeGov()} per te`, corto: dom === 1 ? "domanda" : "domande", tono: "att", larga: true, dici: `${nomeGov()} ha ${dom} ${dom === 1 ? "domanda" : "domande"} per te` });
+  if (cloudAttivo()) { const a = argonTesseraValore(); out.push({ k: "argon", vai: "argon", ico: icoNuvola(), n: "ArgonCloud", parole: a.v, testo: true, mn: a.att ? (String(a.v).match(/^\d+/) || ["!"])[0] : "✓", corto: "ArgonCloud", tono: a.att ? "att" : "", larga: true, dici: `ArgonCloud: ${a.v}` }); }
+  return out;
 }
+// le schede a figure del riquadro aperto (le quattro in alto, poi le larghe)
+function schedeFacili(ls, fatte, man, dom) {
+  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}</b><span class="of-p">${esc(o.parole)}</span>${o.sotto || ""}</span></button>`;
+  return notizieFacili(ls, fatte, man, dom).map(scheda).join("");
+}
+// 1.21.2: le figurine della tendina chiusa: tutte le notizie della giornata (tranne «domani», che ha la sua tessera sopra)
+function figurineFacili(ls, fatte, man, dom) {
+  const l = notizieFacili(ls, fatte, man, dom).filter(o => o.k !== "domani");
+  return { n: l.length, html: l.map(o => `<button type="button" class="csf-c${o.tono ? " " + o.tono : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="csf-ico" aria-hidden="true">${o.ico}</span><b class="csf-n">${esc(o.mn || o.n)}</b><span class="csf-p">${esc(o.corto)}</span></button>`).join("") };
+}
+// la busta (le chat lette da Sofia) e il triangolo (un problema in una camera)
+function icoBusta() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><rect x="13" y="8" width="38" height="27" rx="3.5" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.8"/><path d="M14.5 10.2L32 24L49.5 10.2" fill="none" stroke="#2563EB" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.5 33L26.5 21.5M49.5 33L37.5 21.5" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/><circle cx="50.5" cy="9" r="6.2" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.6"/></svg>`;
+}
+function icoAttenzione() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M32 3.5L56.5 36.5H7.5Z" fill="#FEE2E2" stroke="#DC2626" stroke-width="2.4" stroke-linejoin="round"/><rect x="30.2" y="13" width="3.6" height="13.5" rx="1.8" fill="#B91C1C"/><circle cx="32" cy="31.2" r="2.3" fill="#B91C1C"/></svg>`;
+}
+// la figurina (o la scheda) delle chat: apre la lettura da controllare, come la striscia del prospetto
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-oggi-lettura]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  try { if (!letturaDaControllare() && !letturaInCorso()) riprendiUltimaLettura(); apriFoglio({ tipo: "dettatura" }); } catch (er) { console.warn("lettura dalla casa", er); }
+}, true);
 // 1.21.1: a tendina chiusa (vista facile) la tessera «Domani» e' come la scheda larga: il secchio col foglio del calendario,
 // il numero grande, «pulizia domani» e chi la fa (le rifiniture non contano, come nella scheda e nel dettaglio)
 function domaniFacile() {
