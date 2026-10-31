@@ -3,11 +3,11 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.17.0";
+const VERSIONE = "1.18.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
-  "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
+  "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./lettura.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./cons-parla.mp4", "./cons-riposo.mp4", "./cons-film.json", "./cons-poster.webp", "./cons-poster-3d2.webp", "./cons-fondo-3d.webp", "./avorio-parete.webp", "./cornice-noce.webp", "./fonts/atkinson-hyperlegible-next-latin-400-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-600-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-800-normal.woff2",
   "./bocca.js", "./viso.js", "./cons-base.webp", "./cons-indica.webp", "./cons-cuore.webp", "./cons-pollice.webp", "./cons-osx.webp", "./cons-odx.webp", "./cons-osu.webp", "./cons-scena.webp", "./cons-saluto.webp", "./cons-riposo.webp", "./cons-b1.webp", "./cons-b2.webp", "./cons-b3.webp", "./cons-occhi.webp", "./cons-felice.webp", "./cons-testa.webp", "./cons-testa-occhi.webp",
   "./marmo-blu.webp", "./marmo-avorio.webp", "./marmo-biglia.webp", "./fonts/dancing-script-latin-700-normal.woff2", "./fonts/cormorant-garamond-latin-600-normal.woff2", "./fonts/cormorant-garamond-latin-700-normal.woff2", "./fonts/cormorant-garamond-latin-600-italic.woff2", "./fonts/plus-jakarta-sans-latin-600-normal.woff2", "./fonts/plus-jakarta-sans-latin-700-normal.woff2",
@@ -35,7 +35,7 @@ self.addEventListener("notificationclick", (e) => {
   const url = new URL((e.notification.data && e.notification.data.url) || "./index.html", self.registration.scope).href;
   e.waitUntil((async () => {
     const finestre = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} if (!(e.notification.data && e.notification.data.push)) { try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} } return; } }
+    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} if (!(e.notification.data && e.notification.data.push) || (e.notification.data && e.notification.data.lettura)) { try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} } return; } }
     if (self.clients.openWindow) await self.clients.openWindow(url);
   })());
 });
@@ -44,7 +44,10 @@ self.addEventListener("notificationclick", (e) => {
 self.addEventListener("push", (e) => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { testo: e.data ? e.data.text() : "" }; }
   const titolo = String(d.titolo || "Sofia").slice(0, 80), testo = String(d.testo || "Apri l'app: Sofia ti ha scritto.").slice(0, 1800);
-  e.waitUntil(self.registration.showNotification(titolo, { body: testo, icon: "icon-192.png", badge: "icon-192.png", tag: "sofia-" + Date.now(), data: { url: "./index.html", push: true } }));
+  // 1.18.0: l'avviso «ho letto le chat» apre l'app sulla lettura da controllare
+  const url = typeof d.url === "string" && /^\.\/index\.html(\?[a-z=&0-9]*)?$/i.test(d.url) ? d.url : "./index.html";
+  const tag = typeof d.tag === "string" && /^[a-z0-9-]{1,40}$/i.test(d.tag) ? d.tag : "sofia-" + Date.now();
+  e.waitUntil(self.registration.showNotification(titolo, { body: testo, icon: "icon-192.png", badge: "icon-192.png", tag, renotify: true, data: { url, push: true, lettura: !!d.lettura } }));
 });
 
 // ---- filmati: cache-first, a pezzi, scaricati per intero una volta sola ----------------------
