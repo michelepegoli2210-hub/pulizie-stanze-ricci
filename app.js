@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.26.2";
+export const VERSIONE = "1.26.3";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2398,13 +2398,13 @@ function testaSofia(z, giorno, lavori, rif, anteprima) {
     <button type="button" class="gs-sofia-fig" data-sg="ascolta" aria-label="${esc(nomeGov())}: tocca e ti dico cosa fare"><span class="gs-film-posto"></span></button>
     <div class="gs-hero-alto"><span class="gs-giorno">${esc(L.dataLunga(giorno))}</span>${anteprima ? "" : `<button type="button" class="gs-muta" data-sg="muta" aria-pressed="${!guidaMuta()}" aria-label="${guidaMuta() ? "Sofia zitta quando apri una camera" : "Sofia parla quando apri una camera"}">${guidaMuta() ? "🔇" : "🔊"}</button>`}</div>
     <div class="gs-tenda">
-      <div class="gs-bolla" aria-live="polite"><span class="gs-bolla-chi">${esc(nomeGov())}</span>${conCiao ? `<b class="gs-ciao">${esc(ciao)}</b>` : `<span class="gs-ciao" hidden>${esc(ciao)}</span>`}${esc(bolla)}</div>
       <div class="gs-sofia-tasti${anteprima ? " due" : ""}">
         <button type="button" class="gs-st main" data-sg="ascolta">${parlando ? "⏹ Basta" : "🔊 Ascolta"}</button>
         ${anteprima ? `<button type="button" class="gs-st" data-g="${oggi}">↩ Torna a oggi</button>` : `<button type="button" class="gs-st" data-sg="poi">E poi? ➜</button><button type="button" class="gs-st${guida.ascolta ? " on" : ""}" data-sg="chiedi">🎤 Chiedi</button>`}
       </div>
     </div>
-  </section>`;
+  </section>
+  <section class="gs-detto${parlando ? " parla" : ""}${guida.ascolta ? " ascolta" : ""}" aria-label="Sofia ti dice"><div class="gs-bolla" aria-live="polite"><span class="gs-bolla-chi">${esc(nomeGov())}</span>${conCiao ? `<b class="gs-ciao">${esc(ciao)}</b>` : `<span class="gs-ciao" hidden>${esc(ciao)}</span>`}${esc(bolla)}</div></section>`;
 }
 // la mappa della giornata, sotto Sofia: i sette giorni (col numero di camere) e due bollini, ⏱️ le ore e ⭐ le stelle
 function mappaGiornata(z, giorno, lavori, rif) {
@@ -2507,10 +2507,6 @@ function guidaHeroMisura() {
   const top = h.getBoundingClientRect().top + (window.scrollY || 0);
   const alto = Math.round(Math.max(470, Math.min(860, (window.innerHeight || 800) - top - navH)));
   if (h.style.height !== alto + "px") h.style.height = alto + "px";
-  // 1.26.1: Sofia nella finestra ad arco, intera dalla testa al petto (Michele: «ritaglia troppo la testa»). La finestra
-  // ha la forma del filmato (9:16, niente ritagli); sopra la tendina (circa 250 px) devono restare testa e spalle (62%)
-  const W = h.clientWidth || 400, arco = Math.round(Math.max(170, Math.min(W * 0.74, 300, (alto - 250 - 10 - 40) * 0.5625 / 0.62)));
-  if (h.style.getPropertyValue("--arco-w") !== arco + "px") h.style.setProperty("--arco-w", arco + "px");
 }
 window.addEventListener("resize", () => { try { guidaHeroMisura(); } catch (e) {} });
 function guidaTestaInVista() { const h = document.querySelector(".gs-sofia"); if (!h) return false; const r = h.getBoundingClientRect(); return r.bottom > 110 && r.top < (window.innerHeight || 800) - 120; }

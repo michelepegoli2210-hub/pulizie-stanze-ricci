@@ -2237,3 +2237,12 @@ Michele (sulla 1.26.1): «No, togli la cupola tipo santino, quella la devi togli
 - Sofia resta intera e della stessa misura (larga il 74% dello schermo, al massimo 300 px), ma SENZA CORNICE: niente arco, niente bordo bianco né anello verde, niente ombra. I bordi del filmato sfumano (a destra e a sinistra il 20%, in alto il 12%, in basso dal 74%) nel fondo della scena, che adesso ha gli stessi grigi caldi del corridoio (#D9D9D4 → #C9CAC3, con una luce bianca dietro la testa presa dai colori ai bordi del poster): sembra che stia in piedi nel corridoio, senza un riquadro intorno.
 - Sta 18 px più in alto (40 px dal bordo della scena: senza la cupola sopra la testa non serve altro spazio). Il giorno e 🔊/🔇 su vetro più bianco (78%) per leggersi sul grigio.
 - Prove: prova1262 (= prova1260 sulla 1.26.2), prova1260m, prova1250: a posto; foto a 412x797, 412x860 e 360x740.
+
+## 126.3 La 1.26.3 (1 novembre, sera): SOFIA DI NUOVO GRANDE, SENZA SCRITTE SOPRA
+
+Michele (con la foto della 1.26.2 e quella della 1.26.0 dal suo telefono): «La prima immagine come si vede adesso e non mi piace. A me mi piaceva come nella seconda immagine, cioè di prima, però senza le scritte. Le scritte le va a trovare sotto, se scorre col telefono, capisci? Altrimenti può parlare soltanto con Sofia».
+
+- Via la finestra ad arco e la sfumatura (1.26.1 e 1.26.2: tolte dallo stile e da guidaHeroMisura): la scena torna come la 1.26.0, Sofia a tutto schermo dalla testa al gilet.
+- SULLA SCENA NIENTE SCRITTE: solo il giorno (in alto a sinistra), 🔊/🔇 (in alto a destra) e i tre tasti su una striscia di vetro sottile in basso (🔊 Ascolta · E poi? ➜ · 🎤 Chiedi; un altro giorno 🔊 Ascolta · ↩ Torna a oggi). Toccare Sofia = Ascolta. Quando parla, il tasto diventa ⏹ Basta; quando ascolta, 🎤 Chiedi diventa rosso.
+- QUELLO CHE DICE SI LEGGE SOTTO: subito dopo la scena la scheda «Sofia ti dice» (section.gs-detto: SOFIA · il saluto · quello che dice, bianca col filo verde acqua; rossa quando ascolta, filo verde quando parla). Poi la mappa come nella 1.26.0.
+- Prove: prova1263 (= prova1260 con «sulla scena niente scritte; la scheda sotto»), prova1260m, prova1250: a posto; foto a 412x797, 412x860 e 360x740.
