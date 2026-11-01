@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.26.0";
+export const VERSIONE = "1.26.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2393,7 +2393,7 @@ function testaSofia(z, giorno, lavori, rif, anteprima) {
   const bolla = guida.ascolta ? "Ti ascolto…" : guida.parla && guida.voce ? guida.voce : (g.passo.breve || g.passo.testo);
   const ciao = anteprima ? `Cosa c'è ${L.GIORNI[L.giornoSettimana(giorno)]}` : `${saluto()}, ${nomeSignora()}!`;
   // il saluto in grassetto quando sta zitta (quando parla il saluto è già dentro quello che dice)
-  const conCiao = !parlando && !guida.ascolta;
+  const conCiao = !parlando && !guida.ascolta && !(anteprima ? false : PAROLE.norm(bolla).includes(PAROLE.norm(nomeSignora())));
   return `<section class="gs-testa gs-sofia gs-hero${parlando ? " parla" : ""}${guida.ascolta ? " ascolta" : ""}${anteprima ? " anteprima" : ""}">
     <button type="button" class="gs-sofia-fig" data-sg="ascolta" aria-label="${esc(nomeGov())}: tocca e ti dico cosa fare"><span class="gs-film-posto"></span></button>
     <div class="gs-hero-alto"><span class="gs-giorno">${esc(L.dataLunga(giorno))}</span>${anteprima ? "" : `<button type="button" class="gs-muta" data-sg="muta" aria-pressed="${!guidaMuta()}" aria-label="${guidaMuta() ? "Sofia zitta quando apri una camera" : "Sofia parla quando apri una camera"}">${guidaMuta() ? "🔇" : "🔊"}</button>`}</div>
@@ -2507,6 +2507,10 @@ function guidaHeroMisura() {
   const top = h.getBoundingClientRect().top + (window.scrollY || 0);
   const alto = Math.round(Math.max(470, Math.min(860, (window.innerHeight || 800) - top - navH)));
   if (h.style.height !== alto + "px") h.style.height = alto + "px";
+  // 1.26.1: Sofia nella finestra ad arco, intera dalla testa al petto (Michele: «ritaglia troppo la testa»). La finestra
+  // ha la forma del filmato (9:16, niente ritagli); sopra la tendina (circa 250 px) devono restare testa e spalle (62%)
+  const W = h.clientWidth || 400, arco = Math.round(Math.max(170, Math.min(W * 0.74, 300, (alto - 250 - 10 - 58) * 0.5625 / 0.62)));
+  if (h.style.getPropertyValue("--arco-w") !== arco + "px") h.style.setProperty("--arco-w", arco + "px");
 }
 window.addEventListener("resize", () => { try { guidaHeroMisura(); } catch (e) {} });
 function guidaTestaInVista() { const h = document.querySelector(".gs-sofia"); if (!h) return false; const r = h.getBoundingClientRect(); return r.bottom > 110 && r.top < (window.innerHeight || 800) - 120; }

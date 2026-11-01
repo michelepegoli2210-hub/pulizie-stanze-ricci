@@ -6558,3 +6558,18 @@ body.premium .sofia-hero .casa-nuvola .of-fumetto,body.premium .sofia-hero .casa
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c.att,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c.att{background:rgba(58,47,31,.62) !important}
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c.rosso,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c.rosso{background:rgba(59,20,20,.64) !important}
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-fumetto,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c{text-shadow:0 0 6px rgba(0,0,0,.8),0 1px 1px rgba(0,0,0,.7)}
+
+/* ===================================================================================================================
+   1.26.1 · SOFIA NELLA FINESTRA AD ARCO (Michele, 1/11, dal suo telefono: «si vede troppo, ritaglia troppo la testa:
+   la devi mettere più sotto»). Non più a tutto schermo: intera dalla testa al petto, con lo spazio sopra la testa, in una
+   finestra ad arco al centro della scena; dietro un cielo chiaro di laguna. La tendina di vetro resta, un po' più bassa.
+   =================================================================================================================== */
+.gs-testa.gs-hero{background:radial-gradient(ellipse 92% 70% at 50% 32%,#FFFFFF 0%,#EEF6F4 52%,#D9EAE6 100%)}
+.gs-hero .gs-sofia-fig{position:absolute;inset:auto;top:58px;left:50%;width:var(--arco-w,280px);height:calc(var(--arco-w,280px) / .5625);transform:translateX(-50%);border:3px solid #FFFFFF;border-radius:calc(var(--arco-w,280px) / 2) calc(var(--arco-w,280px) / 2) 26px 26px;overflow:hidden;background:#E8F0EE;box-shadow:0 0 0 2px rgba(0,102,94,.32),0 22px 40px -20px rgba(13,38,34,.6)}
+.gs-hero .gs-sofia-fig .gs-film-posto,.gs-hero .gs-sofia-fig .donnina.gov-fig.gov-film{border-radius:inherit}
+.gs-hero .gs-sofia-fig .gov-film video{object-fit:cover;object-position:50% 0%}
+.gs-hero.parla .gs-sofia-fig{box-shadow:0 0 0 5px rgba(0,102,94,.4),0 22px 40px -20px rgba(13,38,34,.6)}
+.gs-hero .gs-bolla{font-size:17px;max-height:min(26svh,8.4em)}
+.gs-hero .gs-ciao{font-size:20px}
+.gs-hero .gs-st{min-height:54px}
+@media (max-width:374px){.gs-hero .gs-bolla{font-size:16px}.gs-hero .gs-ciao{font-size:19px}}

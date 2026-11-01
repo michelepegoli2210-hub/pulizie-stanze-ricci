@@ -2219,3 +2219,13 @@ Michele, 1/11 (dopo la 1.25.0): «No, non va bene. Sofia la devi mettere grandis
 - In fondo 190 px di spazio: HO FINITO sale sopra il tasto tondo di Sofia invece di finirci sotto.
 - LA TENDINA DI MICHELE (casa-nuvola, solo body.premium): il vetro passa da 7 px di sfocatura a 1,5 px, il fondo al 16%, via il marmo sopra; il fumetto bianco al 66%, le tessere al 52% (la dorata e la rossa restano dorata e rossa, trasparenti), un alone chiaro dietro le lettere per leggerle; col tema scuro le stesse cose in blu notte. Dietro si vede Sofia che si muove.
 - Prove: prova1260 (tutta la 1.24 sulla pagina nuova: la scena fino alla barra, la mappa sotto, i tre bollini, poche scritte nei riquadri, la guida, il microfono, la camera, HO FINITO, i soldi, le micro-tracce), prova1260m (la tendina di vetro chiara e scura; le signore a 360 px), prova1250, 1220, 1200, 1190 sulla 1.26: tutte a posto.
+
+## 126.1 La 1.26.1 (1 novembre, sera): SOFIA NELLA FINESTRA AD ARCO
+
+Michele, dal suo telefono (POCO F9 Ultra, foto della prova di Selena): «Non mi piace la versione per le donne delle pulizie. Come vedi nel mio telefono si vede troppo, ritaglia troppo la testa. La devi mettere o più sotto o la devi togliere completamente. Vedi un po' tu».
+
+- Il perché: a tutto schermo il filmato (9:16) riempiva la larghezza e la tendina copriva dal mento in giù: restava una faccia enorme, con i capelli attaccati alla testata.
+- ORA: Sofia sta in una FINESTRA AD ARCO al centro della scena (come l'arco dietro la Sofia di Michele): la finestra ha la forma del filmato (niente ritagli), larga il 74% dello schermo e al massimo 300 px, 58 px sotto il bordo della scena (sopra ci sono il giorno e 🔊/🔇); si vede tutta la testa con lo spazio sopra, le spalle, il gilet col cartellino. guidaHeroMisura sceglie la larghezza perché sopra la tendina (circa 250 px) restino sempre testa e spalle (62% del filmato): 412x797 e 412x860 → 300 px; 360x740 → 256 px. Bordo bianco, anello verde laguna (più forte quando parla), ombra morbida; dietro un cielo chiaro di laguna (sfumato dal bianco al verde acqua).
+- La nuvoletta un po' più piccola (17 px, il saluto 20 px) e i tasti 54 px: la tendina copre meno.
+- Il saluto («Buonasera, Selena!») non si scrive quando quello che dice Sofia ha già il nome («Bravissima Selena, per oggi hai finito…»): prima c'era due volte.
+- Prove: prova1261 (= prova1260 sulla 1.26.1), prova1260m, prova1250: a posto; misure della finestra a 412x797, 412x860 (il telefono di Michele) e 360x740.
