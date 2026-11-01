@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.26.3";
+export const VERSIONE = "1.27.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1388,7 +1388,7 @@ function avviaAscolto() {
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
-  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteAutomatica(); segnaInizioGovernante(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteRiequilibra(); governanteAutomatica(); segnaInizioGovernante(); }));
   S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; const daUnire = []; for (const r of Object.values(m)) { const tolta = CAMERE_TOLTE[r.luogo]; const luogo = tolta ? tolta.unitaA : r.luogo; if (tolta) daUnire.push(r); const k = G.chiaveRegistro(G.nuovoId(r.regola), luogo); const prev = S.registro[k]; if (!prev || (r.ultima || "") > (prev.ultima || "")) S.registro[k] = { ...r, regola: G.nuovoId(r.regola), luogo }; } disegna(); governanteAutomatica(); unisciRegistroTolte(daUnire); }, mostraErrore));
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; disegna(); pianoDelMattino(); }));
@@ -1397,7 +1397,7 @@ function avviaAscolto() {
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
   if (addetta()) wherePul.push(["zona", "==", u.zona]);
-  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); allineaManutenzione(); governanteDaSola(); }, mostraErrore));
+  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); allineaManutenzione(); governanteDaSola(); governanteRiequilibra(); }, mostraErrore));
   // pagamenti
   S.stop.push(db.ascolta("pagamenti", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.pagamenti = m; disegna(); }, mostraErrore));
   if (!addetta()) {
@@ -2278,8 +2278,13 @@ function guidaPassi(z, iso) {
   const quale = anteprima ? L.GIORNI[L.giornoSettimana(iso)].replace(/^./, ch => ch.toUpperCase()) : "Oggi";
   const passi = [];
   if (!lavori.length) { passi.push({ k: "giro", testo: anteprima ? `${quale} non ci sono camere per te.` : `${saluto()} ${nome}. Oggi non ci sono camere per te. Riposati!` }); return passi; }
-  const fissi = camere.some(p => p.tipo === "fisso" || p.tipo === "extra");
-  const quanti = camere.length === 1 ? (fissi ? "un lavoro" : "una camera") : `${camere.length} ${fissi ? "lavori" : "camere"}`;
+  // 1.27.0: le camere (e le scale, il terrazzo) per nome una volta sola; i lavori a fondo di Sofia a parte, raccolti
+  const vere = camere.filter(p => p.origine !== "governante"), fondo = camere.filter(p => p.origine === "governante");
+  const nCam = vere.filter(p => p.tipo !== "fisso" && p.tipo !== "extra").length, nFissi = vere.length - nCam;
+  const cQ = nCam ? (nCam === 1 ? "una camera" : `${nCam} camere`) : "", fQ = nFissi ? (nFissi === 1 ? "un lavoro fisso" : `${nFissi} lavori fissi`) : "";
+  const quanti = cQ && fQ ? `pulire ${cQ} e fare ${fQ}` : cQ ? `pulire ${cQ}` : `fare ${fQ}`;
+  const fondoDetto = fondo.length ? `${vere.length ? "Poi " : ""}${fondo.length === 1 ? "un lavoro a fondo" : fondo.length + " lavori a fondo"}: ${elencoParlato([...fondo.slice(0, fondo.length > 4 ? 3 : 4).map(p => `${String(titoloBase(p) || "").toLowerCase()} in ${nomeDetto(p)}`), ...(fondo.length > 4 ? [`altri ${fondo.length - 3}`] : [])])}.` : "";
+  const giroDetto = (q) => vere.length ? `${q} devi ${quanti}: ${elencoParlato(vere.map(nomeDetto))}.` : `${q}: niente camere, solo lavori a fondo.`;
   const nGiro = giro ? new Set(rif.filter(r => r.pulizia === giro.id).map(r => r.camera)).size : 0;
   const min = minutiGiornata(lavori, rif);
   const daDare = anteprima ? [] : vistiDaDare(z);
@@ -2288,22 +2293,23 @@ function guidaPassi(z, iso) {
   if (!anteprima) { try { const da = L.aggiungiGiorni(oggi, -6); const v2 = Object.values(S.visti || {}).filter(x => x && x.zona === z && x.data >= da && x.data < oggi && (x.difetti || []).length).sort((a, b) => (a.data < b.data ? 1 : -1))[0]; if (v2) { const d = v2.difetti[v2.difetti.length - 1]; difetto = `Una cosa importante: ${v2.data === L.aggiungiGiorni(oggi, -1) ? "ieri" : L.GIORNI[L.giornoSettimana(v2.data)]} ${String(d.nome || "una cosa").replace(/\s*·\s*/, ", ")} non era fatto, anche se risultava fatto. Oggi fallo bene, così il salvadanaio resta pieno.`; } } catch (e) {} }
   if (anteprima) {
     const note = lavori.filter(p => p.dettagli || p.istruzioni).map(p => `da ${nomeDetto(p)}, ${senzaPunto([p.dettagli, p.istruzioni].filter(Boolean).join(". "))}`);
-    passi.push({ k: "giro", testo: [`${quale} devi pulire ${quanti}: ${elencoParlato(camere.map(nomeDetto))}.`, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min ? `In tutto circa ${L.testoOre(min)}.` : "", note.length ? `Michele ti dice: ${note.join("; ")}.` : ""].filter(Boolean).join(" ") });
-    return passi;
-  }
-  passi.push({ k: "giro", breve: [`Oggi devi pulire ${quanti}: ${elencoParlato(camere.map(nomeDetto))}.`, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", daDare.length ? `Prima dai il Visto a ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])}.` : ""].filter(Boolean).join(" "), testo: [`${saluto()} ${nome}, buon lavoro!`, `Oggi devi pulire ${quanti}: ${elencoParlato(camere.map(nomeDetto))}.`, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min ? `In tutto circa ${L.testoOre(min)}.` : "",
+    passi.push({ k: "giro", testo: [giroDetto(quale), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min ? `In tutto circa ${L.testoOre(min)}.` : "", note.length ? `Michele ti dice: ${note.join("; ")}.` : ""].filter(Boolean).join(" ") });
+  } else
+  passi.push({ k: "giro", breve: [giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", daDare.length ? `Prima dai il Visto a ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])}.` : ""].filter(Boolean).join(" "), testo: [`${saluto()} ${nome}, buon lavoro!`, giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min ? `In tutto circa ${L.testoOre(min)}.` : "",
     daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "", difetto, "Quando sei pronta col carrello, tocca: e poi."].filter(Boolean).join(" ") });
   // i promemoria di tutta la giornata: prima le parole di Michele, poi le rifiniture camera per camera
   const ric = [];
   for (const p of lavori) { const f = [p.dettagli, p.istruzioni].filter(Boolean); if (f.length) ric.push(`da ${nomeDetto(p)}, ${p.dettagliDa || "Michele"} dice: ${senzaPunto(f.join(". "))}`); }
   for (const p of lavori) { const mie = rif.filter(r => r.pulizia === p.id); if (!mie.length) continue; if (p.tipo === "stelle") { for (const g of rifPerLavoro(mie)) ric.push(`${g.nome.replace(/:\s*/g, " ").toLowerCase()} in ${elencoParlato(g.dove)}`); } else ric.push(`da ${nomeDetto(p)} ${rifDette(mie, 3)}`); }
-  if (ric.length) passi.push({ k: "ricorda", testo: `Ricordati bene: ${ric.join("; ")}.` });
+  if (ric.length && !anteprima) passi.push({ k: "ricorda", testo: `Ricordati bene: ${ric.join("; ")}.` });
   // una camera alla volta
   for (const p of lavori) {
     const mie = rif.filter(r => r.pulizia === p.id), f = [p.dettagli, p.istruzioni].filter(Boolean), sempre = p.tipo === "stelle" ? [] : promemoriaCamera(p.camera);
     if (p.tipo === "stelle") { passi.push({ k: "cam", id: p.id, testo: `Adesso le rifiniture nelle altre camere: ${rifPerLavoro(mie).map(g => `${g.nome.replace(/:\s*/g, " ").toLowerCase()} in ${elencoParlato(g.dove)}`).join("; ") || "guarda la scheda"}.` }); continue; }
+    if (p.origine === "governante") { passi.push({ k: "cam", id: p.id, testo: [`Adesso un lavoro a fondo in ${nomeDetto(p)}: ${String(titoloBase(p) || "").toLowerCase()}.`, p.come ? `Come si fa: ${senzaPunto(p.come)}.` : "", Number(p.minuti) ? `Ci vogliono circa ${p.minuti} minuti.` : ""].filter(Boolean).join(" ") }); continue; }
     passi.push({ k: "cam", id: p.id, testo: [`Adesso ${nomeDetto(p)}: ${(titoloBase(p) + parteTesto(p)).toLowerCase()}.`, ospiteDetto(p), f.length ? `${p.dettagliDa || "Michele"} ti dice: ${senzaPunto(f.join(". "))}.` : "", sempre.length ? `Qui sempre: ${senzaPunto(sempre.join(", "))}.` : "", mie.length ? `Ricordati: ${rifDette(mie, 5)}.` : ""].filter(Boolean).join(" ") });
   }
+  if (anteprima) return passi;
   passi.push({ k: "fine", testo: finito ? `Bravissima ${nome}, per oggi hai finito tutto alle ${L.oraBreve(v.finitoOra)}! ${v.vistoOra ? `${v.vistoNome || "La direzione"} ha dato il Visto.` : rif.length ? "Le rifiniture aspettano il Visto." : ""} Buon riposo e a domani!`.replace(/\s+/g, " ") : "Quando hai fatto tutto il giro, tocca il tasto verde: HO FINITO. Io sono qui: se ti serve qualcosa, chiedimelo." });
   return passi;
 }
@@ -2328,7 +2334,7 @@ function guidaTasto(cosa) {
   if (cosa === "chiedi") { guidaAscolta(); return; }
   if (cosa === "ascolta" && (voceInCorso || guida.parla)) { guidaZitta(); return; }
   const g = guidaOra(z, iso);
-  if (cosa === "poi" && iso === oggi) { const i = Math.min(g.i + 1, g.passi.length - 1); guidaSegna(z, iso, i); guidaParla(g.passi[i].testo); return; }
+  if (cosa === "poi") { const i = Math.min(g.i + 1, g.passi.length - 1); guidaSegna(z, iso, i); guidaParla(g.passi[i].testo); return; }
   guidaParla(g.passo.testo);
 }
 // quando apre una camera: Sofia va su quella camera e (se non è muta) la dice
@@ -2356,7 +2362,9 @@ function guidaAscolta() {
   } catch (e) { guida.ascolta = false; guidaRec = null; toast("Il microfono non parte: usa i tasti Ascolta ed E poi"); disegna(); }
 }
 function guidaRispondi(frasi) {
-  const z = S.utente.zona, oggi = L.oggiISO(), t = " " + PAROLE.norm((frasi || []).join(" ")) + " ";
+  const z = S.utente.zona, oggiVero = L.oggiISO(), t = " " + PAROLE.norm((frasi || []).join(" ")) + " ";
+  // 1.27.0: guardando un altro giorno, Sofia risponde su quel giorno («oggi» nelle sue frasi = quel giorno)
+  const oggi = S.giorno && S.giorno > oggiVero && S.giorno <= L.aggiungiGiorni(oggiVero, 6) ? S.giorno : oggiVero;
   const g = guidaOra(z, oggi), lavori = lavoriInOrdine(pulizieDelGiorno(oggi, z)), rif = rifinitureOggi(z, oggi);
   const ha = (re) => re.test(t);
   // una camera detta per nome
@@ -2365,9 +2373,10 @@ function guidaRispondi(frasi) {
     const nomi = [nomeBreveCamera(camera(p.camera)), camera(p.camera).nome].map(x => PAROLE.norm(x)).filter(x => x.length > 2);
     if (nomi.some(n => t.includes(" " + n + " ") || t.includes(" " + n.split(" ").pop() + " "))) { const i = g.passi.findIndex(x => x.id === p.id); if (i >= 0) { guidaSegna(z, oggi, i); guidaParla(g.passi[i].testo); return; } }
   }
+  for (const p of lavori) { if (p.origine !== "governante") continue; const w = PAROLE.norm(String(titoloBase(p) || "")).split(" ").filter(x => x.length > 3); if (w.length && w.some(x => t.includes(" " + x))) { const i = g.passi.findIndex(x => x.id === p.id); if (i >= 0) { guidaSegna(z, oggi, i); guidaParla(g.passi[i].testo); return; } } }
   if (ha(/ (e poi|poi|dopo|avanti|prossim[aoie]?|continua|vai avanti|e adesso) /)) { const i = Math.min(g.i + 1, g.passi.length - 1); guidaSegna(z, oggi, i); guidaParla(g.passi[i].testo); return; }
   if (ha(/ (ripet|ridic|ridimm|di nuovo|non ho capito|cosa hai detto|come hai detto)/)) { guidaParla(g.passo.testo); return; }
-  if (ha(/ (domani)/)) { const d = L.aggiungiGiorni(oggi, 1); guidaParla(guidaPassi(z, d)[0].testo); return; }
+  if (ha(/ (domani)/)) { const d = L.aggiungiGiorni(oggiVero, 1); guidaParla(guidaPassi(z, d)[0].testo); return; }
   if (ha(/ (rifinitur|stell|extra)/)) { guidaParla(rif.length ? `Oggi hai ${rif.length === 1 ? "una rifinitura" : rif.length + " rifiniture"}. ${rifinitureParlate(rif, false)}` : "Oggi niente rifiniture: solo le camere."); return; }
   if (ha(/ (michele|raccomand|ha detto|dice il capo|messaggi)/)) { const n = lavori.filter(p => p.dettagli || p.istruzioni); const m = messaggioDelGiorno(oggi); guidaParla(n.length || m ? [m ? `Michele ti scrive: ${senzaPunto(m.testo)}.` : "", ...n.map(p => `Da ${nomeDetto(p)}: ${senzaPunto([p.dettagli, p.istruzioni].filter(Boolean).join(". "))}.`)].filter(Boolean).join(" ") : "Oggi Michele non ha lasciato raccomandazioni."); return; }
   if (ha(/ (finit|ho fatto tutto|abbiamo fatto|chiudo)/)) { guidaParla("Quando hai fatto tutto il giro, tocca il tasto verde HO FINITO. Ti rileggo le rifiniture e poi puoi andare."); return; }
@@ -2396,11 +2405,11 @@ function testaSofia(z, giorno, lavori, rif, anteprima) {
   const conCiao = !parlando && !guida.ascolta && !(anteprima ? false : PAROLE.norm(bolla).includes(PAROLE.norm(nomeSignora())));
   return `<section class="gs-testa gs-sofia gs-hero${parlando ? " parla" : ""}${guida.ascolta ? " ascolta" : ""}${anteprima ? " anteprima" : ""}">
     <button type="button" class="gs-sofia-fig" data-sg="ascolta" aria-label="${esc(nomeGov())}: tocca e ti dico cosa fare"><span class="gs-film-posto"></span></button>
-    <div class="gs-hero-alto"><span class="gs-giorno">${esc(L.dataLunga(giorno))}</span>${anteprima ? "" : `<button type="button" class="gs-muta" data-sg="muta" aria-pressed="${!guidaMuta()}" aria-label="${guidaMuta() ? "Sofia zitta quando apri una camera" : "Sofia parla quando apri una camera"}">${guidaMuta() ? "🔇" : "🔊"}</button>`}</div>
+    <div class="gs-hero-alto">${anteprima ? `<button type="button" class="gs-giorno gs-giorno-b" data-g="${oggi}" aria-label="Torna a oggi">${esc(L.dataLunga(giorno))} <b>↩ oggi</b></button>` : `<span class="gs-giorno">${esc(L.dataLunga(giorno))}</span>`}${anteprima ? "" : `<button type="button" class="gs-muta" data-sg="muta" aria-pressed="${!guidaMuta()}" aria-label="${guidaMuta() ? "Sofia zitta quando apri una camera" : "Sofia parla quando apri una camera"}">${guidaMuta() ? "🔇" : "🔊"}</button>`}</div>
     <div class="gs-tenda">
-      <div class="gs-sofia-tasti${anteprima ? " due" : ""}">
+      <div class="gs-sofia-tasti">
         <button type="button" class="gs-st main" data-sg="ascolta">${parlando ? "⏹ Basta" : "🔊 Ascolta"}</button>
-        ${anteprima ? `<button type="button" class="gs-st" data-g="${oggi}">↩ Torna a oggi</button>` : `<button type="button" class="gs-st" data-sg="poi">E poi? ➜</button><button type="button" class="gs-st${guida.ascolta ? " on" : ""}" data-sg="chiedi">🎤 Chiedi</button>`}
+        <button type="button" class="gs-st" data-sg="poi">E poi? ➜</button><button type="button" class="gs-st${guida.ascolta ? " on" : ""}" data-sg="chiedi">🎤 Chiedi</button>
       </div>
     </div>
   </section>
@@ -2418,18 +2427,28 @@ function mappaGiornata(z, giorno, lavori, rif) {
 // una camera = un riquadro: il disegno, il nome, UNA parola (cambio · ripasso · pulita) e i segni (🚪 parte, 🧳 arriva,
 // ⭐ quante stelle, 📣 Michele ti dice qualcosa). Il resto lo dice Sofia quando la apri.
 function parolaGiornata(p, nome) {
-  if (p.tipo === "fisso" && PAROLE.norm(titoloBase(p)) === PAROLE.norm(nome)) return `ogni ${L.GIORNI[L.giornoSettimana(p.data)]}`;
-  return String(titoloBase(p) || "").trim().split(/\s+/)[0].toLowerCase();
+  if (p.tipo === "fisso" && PAROLE.norm(titoloBase(p)) === PAROLE.norm(nome)) return `come ogni ${L.GIORNI[L.giornoSettimana(p.data)]}`;
+  return (String(titoloBase(p) || "").trim() + parteTesto(p)).toLowerCase();   // 1.27.0: le parole intere («cambio completo», «ripasso veloce»)
 }
 function schedaGiornata(p, rif, anteprima) {
   const stelle = p.tipo === "stelle", c = camera(p.camera);
   const st = anteprima ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
   const mie = st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
+  // 1.27.0: il lavoro a fondo di Sofia: grande il lavoro («Tende»), sotto la camera e i minuti
+  if (p.origine === "governante") {
+    const lav = String(titoloBase(p) || "Lavoro a fondo"), dove = nomeBreveCamera(c);
+    return `<button class="gs-cam k-fondo ${st}" data-dettagli="${esc(p.id)}" aria-label="Lavoro a fondo in ${esc(dove)}: ${esc(lav)}">
+    <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : esc(p.icona || "✨")}</span>
+    <span class="gs-nome">${esc(lav)}</span>
+    <span class="gs-cosa">${st === "fatta" ? "fatto" : `a fondo · ${esc(dove)}`}</span>
+    ${!st && Number(p.minuti) ? `<span class="gs-segni" aria-hidden="true"><span class="gs-sg t">⏱️<b>${esc(String(p.minuti))}′</b></span></span>` : ""}
+  </button>`;
+  }
   if (stelle) {
     const dove = [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))];
     return `<button class="gs-cam gs-stelle ${st}" data-dettagli="${esc(p.id)}" aria-label="${st === "fatta" ? "Stelle nelle altre camere: fatte" : `Stelle in altre camere: ${esc(dove.join(", "))}`}">
     <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : "⭐"}</span>
-    <span class="gs-cam-x"><span class="gs-nome">${st === "fatta" ? "Stelle fatte" : "Altre camere"}</span>${dove.length ? `<span class="gs-dove">${esc(dove.join(" · "))}</span>` : ""}</span>
+    <span class="gs-cam-x"><span class="gs-nome">${st === "fatta" ? "Stelle fatte" : "Altre camere"}</span>${st === "fatta" ? "" : rifPerLavoro(mie).slice(0, 3).map(g => `<span class="gs-dove"><b>${esc(String(g.nome).replace(/:\s*/g, " ").toLowerCase())}</b> · ${esc(g.dove.join(", "))}</span>`).join("")}${rifPerLavoro(mie).length > 3 && st !== "fatta" ? `<span class="gs-dove">e altre ${rifPerLavoro(mie).length - 3}</span>` : ""}</span>
   </button>`;
   }
   const nome = nomeBreveCamera(c);
@@ -2437,12 +2456,15 @@ function schedaGiornata(p, rif, anteprima) {
   const segni = [];
   if (!st && p.partenza) segni.push(["🚪", "", "l'ospite parte"]);
   else if (!st && p.arrivo) segni.push(["🧳", "", "arriva un ospite"]);
-  if (mie.length) segni.push(["⭐", String(mie.length), mie.length === 1 ? "una stella" : `${mie.length} stelle`]);
+  // 1.27.0: la prima stella per nome, corta («⭐ porta numero +1»), al posto del solo numero
+  const corta = (s) => { const x = String(s || "").replace(/:\s*/g, " ").toLowerCase().split(",")[0].trim(); return x.length > 22 ? x.slice(0, 21).trim() + "…" : x; };
+  const stelleNomi = mie.length ? corta(mie[0].nome) + (mie.length > 1 ? ` +${mie.length - 1}` : "") : "";
   if (!st && (p.dettagli || p.istruzioni)) segni.push(["📣", "", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
   return `<button class="gs-cam ${tipoGiornata(p)} ${st}" data-dettagli="${esc(p.id)}" aria-label="${esc(nome)}: ${esc(parola)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}">
     <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : disegnoGiornata(p)}</span>
     <span class="gs-nome">${esc(nome)}</span>
     <span class="gs-cosa">${esc(parola)}</span>
+    ${mie.length ? `<span class="gs-stelle-t">⭐ ${esc(stelleNomi)}</span>` : ""}
     ${segni.length ? `<span class="gs-segni" aria-hidden="true">${segni.map(([i, n]) => `<span class="gs-sg${n ? " n" : ""}">${i}${n ? `<b>${esc(n)}</b>` : ""}</span>`).join("")}</span>` : ""}
   </button>`;
 }
@@ -3224,6 +3246,29 @@ async function rinviaProposta(c, tipo) {
   const rinvii = { ...((S.gov && S.gov.rinvii) || {}) };
   rinvii[c.chiave] = { fino: L.aggiungiGiorni(c.data, tipo === "no" ? 90 : 10), tipo, quando: L.oggiISO() };
   await salvaGov({ rinvii }); toast(tipo === "no" ? "Va bene, non te lo ripropongo per tre mesi" : "Te lo ripropongo fra una o due settimane");
+}
+// 1.27.0: i lavori a fondo ammucchiati nello stesso giorno (prima i limiti non contavano quelli già in programma: sabato 7
+// Selena aveva 18 lavori a fondo, 9 ore) si spostano nei giorni dopo con posto. Lo fa il telefono di Michele, da solo.
+let riequilibrioFatto = "", riequilibrioInCorso = false;
+async function governanteRiequilibra() {
+  if (riequilibrioInCorso || !proprietario() || S.utente?.finta || !S.caricati.pulizie || !S.caricati.soggiorni || !S.caricati.gov) return;
+  const chiave = `${L.oggiISO()}|${Object.keys(S.pulizie).length}`; if (riequilibrioFatto === chiave) return; riequilibrioFatto = chiave;
+  let mosse = []; try { mosse = G.riequilibraProgramma(ctxGov()); } catch (e) { console.warn("riequilibrio", e); return; }
+  const ops = [], fatte = [];
+  for (const m of mosse) {
+    const p = S.pulizie[m.id]; if (!p) continue;
+    const nuovoId = idPuliziaGov({ data: m.a, luogo: p.camera, regola: p.regola });
+    if (S.pulizie[nuovoId]) continue;
+    const dati = { ...p, id: nuovoId, data: m.a, spostato: { da: m.da, quando: S.db.adesso(), perche: "troppi lavori a fondo nello stesso giorno" } };
+    ops.push({ tipo: "salva", coll: "pulizie", id: nuovoId, merge: false, dati }, { tipo: "cancella", coll: "pulizie", id: m.id });
+    fatte.push([m.id, nuovoId, dati]);
+  }
+  if (!ops.length) return;
+  riequilibrioInCorso = true;
+  for (const [vecchio, nuovo, dati] of fatte) { delete S.pulizie[vecchio]; S.pulizie[nuovo] = dati; }
+  disegna();
+  try { await S.db.scrivi(ops); console.info("riequilibrio: spostati", fatte.length, "lavori a fondo"); toast(`${fatte.length === 1 ? "Un lavoro a fondo spostato" : fatte.length + " lavori a fondo spostati"} nei giorni dopo: erano troppi nello stesso giorno`); }
+  catch (e) { erroreScrittura(e); } finally { riequilibrioInCorso = false; }
 }
 // Automatico: i lavori piccoli entrano da soli nelle settimane delle signore (quelli grossi chiedono sempre)
 let autoFatto = "";

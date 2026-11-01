@@ -6574,3 +6574,18 @@ body.premium .sofia-hero .casa-nuvola .of-fumetto,body.premium .sofia-hero .casa
 .gs-detto.ascolta .gs-bolla{background:#FCE8E6;border-color:#F3B8B2;color:#A51D24}
 .gs-detto.parla .gs-bolla{border-color:#00665E}
 @media (max-width:374px){.gs-detto .gs-bolla{font-size:17px}.gs-detto .gs-ciao{font-size:20px}}
+
+/* ===================================================================================================================
+   1.27.0 · LE CAMERE CHIARE (Michele: «difficile capire che cosa deve fare nel concreto, con i colori»): le parole intere
+   («cambio completo»), le prime stelle per nome dentro la camera, il lavoro a fondo col suo nome; negli altri giorni il
+   giorno in alto è il tasto per tornare a oggi.
+   =================================================================================================================== */
+.gs-hero .gs-giorno-b{border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gs-hero .gs-giorno-b b{margin-left:6px;padding:3px 8px;border-radius:10px;background:#00665E;color:#FFFFFF;font-weight:800;letter-spacing:.02em;text-transform:none}
+.gs-cam .gs-cosa{font:700 15.5px/1.25 var(--f-body)}
+.gs-stelle-t{display:block;max-width:100%;margin-top:2px;font:700 14px/1.3 var(--f-body);color:#093832;overflow-wrap:anywhere}
+.gs-cam.k-fondo .gs-tile{background:#FFF7E0;border-color:#E8C77A}
+.gs-cam.k-fondo .gs-nome{font-size:20px}
+.gs-sg.t{background:#FFF7E0;border-color:#E8C77A}
+.gs-sg.t b{color:#663C00}
+.gs-dove b{color:#093832}

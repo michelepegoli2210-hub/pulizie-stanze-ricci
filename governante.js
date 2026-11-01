@@ -783,9 +783,20 @@ export function proposteSettimana(ctx) {
   candidati.sort((a, b) => (a.priorita - b.priorita) || (b.rapporto - a.rapporto) || (a.data < b.data ? -1 : 1));
   const minuti = {}, grandi = { n: 0 }, perLuogo = {}, perRegola = {}, scelte = [];
   let scartate = 0;
+  // 1.27.0: i limiti contano anche i lavori a fondo GIÀ in programma in questa settimana (Michele: «sabato 9 ore: cosa
+  // impossibile»). Prima ogni giro di proposte ricominciava da zero e, giro dopo giro, i lavori si ammucchiavano sullo
+  // stesso giorno (sabato 7: 18 lavori a fondo per Selena).
+  let giaSettimana = 0;
+  for (const p of Object.values(pulizie || {})) {
+    if (!p || p.origine !== "governante" || p.stato === "fatta" || !p.data || p.data < lun || p.data > fine) continue;
+    giaSettimana++;
+    if (p.grande) { grandi.n++; continue; }
+    const kk = `${p.zona}|${p.data}`; minuti[kk] = (minuti[kk] || 0) + (Number(p.minuti) || 0);
+    perLuogo[p.camera] = (perLuogo[p.camera] || 0) + 1;
+  }
   for (const c of candidati) {
     // le finestre di reset (fine maggio, settembre) non hanno i limiti settimanali: una camera per signora al giorno, tutte le camere
-    if (!c.reset && scelte.length >= 8) { scartate++; continue; }
+    if (!c.reset && scelte.length + giaSettimana >= 8) { scartate++; continue; }
     if ((perLuogo[c.luogo] || 0) >= 2) { scartate++; continue; }
     if (!c.reset && (perRegola[c.regola] || 0) >= 3) { scartate++; continue; }
     perRegola[c.regola] = (perRegola[c.regola] || 0) + 1;
@@ -808,6 +819,44 @@ export function proposteSettimana(ctx) {
   scelte.sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0) || (a.zona < b.zona ? -1 : 1));
   const inRitardo = Object.values(pulizie).filter(p => p.origine === "governante" && p.stato !== "fatta" && p.data < oggi).sort((a, b) => a.data < b.data ? -1 : 1);
   return { proposte: scelte, scartate, inRitardo, impegno: minuti };
+}
+// 1.27.0: I LAVORI A FONDO AMMUCCHIATI SI SPOSTANO. Per ogni signora e ogni giorno da domani in poi, i lavori a fondo
+// piccoli (non cominciati) non devono passare MINUTI_PROPOSTE_GIORNO: si tengono i primi messi in programma, gli altri vanno
+// nel primo giorno dopo (lunedì-sabato) con posto, prima nei giorni in cui la signora lavora già, e con la camera libera
+// quando la regola lo vuole. Non si cancella niente: si sposta e basta. Restituisce le mosse {id, da, a}.
+export function riequilibraProgramma(ctx) {
+  const { oggi, pulizie } = ctx, soggiorni = ctx.soggiorni || [], regole = ctx.regole || regoleAttive(ctx.imp);
+  const domani = aggiungiGiorni(oggi, 1), limite = aggiungiGiorni(oggi, 41);
+  const tutte = Object.values(pulizie || {}).filter(p => p && p.data);
+  const carico = {}, lavoraGia = new Set();
+  for (const p of tutte) {
+    if (p.origine === "governante" && p.stato !== "fatta" && !p.grande && p.data >= domani) carico[`${p.zona}|${p.data}`] = (carico[`${p.zona}|${p.data}`] || 0) + (Number(p.minuti) || 0);
+    if (p.origine !== "governante" && p.tipo !== "stelle") lavoraGia.add(`${p.zona}|${p.data}`);
+  }
+  const perGiorno = {};
+  for (const p of tutte) if (p.origine === "governante" && !p.grande && p.stato === "da_fare" && p.data >= domani && p.data <= limite) (perGiorno[`${p.zona}|${p.data}`] ||= []).push(p);
+  const mosse = [];
+  for (const k of Object.keys(perGiorno).sort((a, b) => a.split("|")[1] < b.split("|")[1] ? -1 : 1)) {
+    if ((carico[k] || 0) <= MINUTI_PROPOSTE_GIORNO) continue;
+    const [zona, data] = k.split("|");
+    // si spostano gli ultimi messi in programma (i primi restano dove sono)
+    const lista = perGiorno[k].sort((a, b) => String(a.creato || "").localeCompare(String(b.creato || "")) || (a.id < b.id ? -1 : 1)).reverse();
+    let tenuti = 0;
+    for (const p of lista) {
+      if ((carico[k] || 0) <= MINUTI_PROPOSTE_GIORNO) break;
+      const m = Number(p.minuti) || 0;
+      if (!tenuti && m >= (carico[k] || 0)) break;            // un lavoro solo, anche lungo, resta
+      const r = regole.find(x => x.id === p.regola), libera = !!(r && r.quando === "libera");
+      const va = (d) => giornoSettimana(d) !== 0 && (carico[`${zona}|${d}`] || 0) + m <= MINUTI_PROPOSTE_GIORNO && (!libera || liberaLaNotte(soggiorni, p.camera, d));
+      let nuovo = null;
+      for (let d = aggiungiGiorni(data, 1); d <= limite && !nuovo; d = aggiungiGiorni(d, 1)) if (lavoraGia.has(`${zona}|${d}`) && va(d)) nuovo = d;
+      for (let d = aggiungiGiorni(data, 1); d <= limite && !nuovo; d = aggiungiGiorni(d, 1)) if (va(d)) nuovo = d;
+      if (!nuovo) { tenuti++; continue; }
+      carico[k] -= m; carico[`${zona}|${nuovo}`] = (carico[`${zona}|${nuovo}`] || 0) + m;
+      mosse.push({ id: p.id, da: data, a: nuovo, zona, camera: p.camera, regola: p.regola, minuti: m });
+    }
+  }
+  return mosse;
 }
 
 // ============================================================================
