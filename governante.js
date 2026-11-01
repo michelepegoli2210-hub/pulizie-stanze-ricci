@@ -88,9 +88,12 @@ export const SCHEDA_MATERIALI = [
 // ============================================================================
 export const EURO_MINUTO = 0.25; // (fino alla 0.26: prezzo a minuto; dalla 0.27 si usa il listino a fasce qui sotto)
 // Il listino delle stelle: Michele lo cambia in Paghe → Listino (impostazioni/governante.prezziStelle); tre fasce di minuti
-export const PREZZI_STELLE_BASE = { fino5: 1, fino10: 1.5, oltre10: 2.5 }; // 10 € l'ora (Michele, specifiche §14; fino alla 0.34: 1/2/3)
-export function prezziStelle(imp) { return { ...PREZZI_STELLE_BASE, ...((imp && imp.prezziStelle) || {}) }; }
-export function prezzoStella(minuti, prezzi = PREZZI_STELLE_BASE) { const m = Number(minuti) || 0; return Number(m <= 5 ? prezzi.fino5 : m <= 10 ? prezzi.fino10 : prezzi.oltre10) || 0; }
+// 1.23.0 «ORE GIUSTE» (Michele, 1/11): le rifiniture sono DENTRO LE ORE: ogni rifinitura vale i suoi minuti alla tariffa
+// dell'albergo (aOre, tariffa: l'app ci mette quella del listino), arrotondata ai 5 centesimi. I prezzi a fasce restano per
+// chi torna «a pezzi» (Paghe → Orario di base → Le rifiniture).
+export const PREZZI_STELLE_BASE = { fino5: 1, fino10: 1.5, oltre10: 2.5, aOre: true, tariffa: 8, viaggio: 2 }; // a pezzi: 10 € l'ora (Michele, specifiche §14; fino alla 0.34: 1/2/3) · viaggio: a ore, i minuti per andare in un'altra camera (il giro)
+export function prezziStelle(imp) { const p = { ...PREZZI_STELLE_BASE, ...((imp && imp.prezziStelle) || {}) }; if (p.tariffa == null || p.tariffa === "") p.tariffa = PREZZI_STELLE_BASE.tariffa; return p; }
+export function prezzoStella(minuti, prezzi = PREZZI_STELLE_BASE) { const m = Number(minuti) || 0; if (prezzi && prezzi.aOre) return Math.round(m * (Number(prezzi.tariffa) || 0) / 60 * 20) / 20; return Number(m <= 5 ? prezzi.fino5 : m <= 10 ? prezzi.fino10 : prezzi.oltre10) || 0; }
 export const CATALOGO = PARTI.map(p => ({ ...p, euro: prezzoStella(p.minuti) }));
 export const REGOLE_GOVERNANTE = CATALOGO;
 export const RIGA_DI = Object.fromEntries(RIGHE.map(r => [r.id, r]));
@@ -650,7 +653,9 @@ export function giroStelle(zona, iso, ctx, { giro, pulizieOggi = [], budget = 0,
   }
   cand.sort((a, b) => (b.urgenza - a.urgenza) || (a.priorita - b.priorita) || (a.minuti - b.minuti));
   const scelte = [], perCamera = {}; let euro = 0;
-  for (const c of cand) { if ((perCamera[c.luogo] || 0) >= 2) continue; if (euro + (c.euro || 0) > budget + 1e-9) continue; scelte.push(c); euro += c.euro || 0; perCamera[c.luogo] = (perCamera[c.luogo] || 0) + 1; if (scelte.length >= 8) break; }
+  // 1.23.0 a ore: nelle altre camere qualche minuto in più per andarci (sulla prima rifinitura di ogni camera, pagati come il resto)
+  const prezzi = prezziStelle(imp), viaggio = prezzi.aOre ? Math.max(0, Number(prezzi.viaggio) || 0) : 0;
+  for (const c0 of cand) { if ((perCamera[c0.luogo] || 0) >= 2) continue; const c = viaggio && !perCamera[c0.luogo] ? { ...c0, minuti: (Number(c0.minuti) || 0) + viaggio, viaggio, euro: prezzoStella((Number(c0.minuti) || 0) + viaggio, prezzi) } : c0; if (euro + (c.euro || 0) > budget + 1e-9) continue; scelte.push(c); euro += c.euro || 0; perCamera[c.luogo] = (perCamera[c.luogo] || 0) + 1; if (scelte.length >= 8) break; }
   return scelte;
 }
 export function rifiniturePer(p, ctx) { if (!NORMALE(p) && !(p && p.tipo === "stelle")) return []; return rifinitureDelGiorno(p.zona, p.data, ctx)[p.id] || []; }
