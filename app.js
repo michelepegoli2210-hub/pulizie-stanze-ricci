@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.27.0";
+export const VERSIONE = "1.28.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1356,7 +1356,9 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "camere", d => { if (d?.lista?.length) { const lista = d.lista.filter(c => !CAMERE_TOLTE[c.id]).map(c => { const b = CAMERE.find(x => x.id === c.id); return b ? { ...c, nome: b.nome, piani: b.piani, posti: b.posti ?? c.posti } : c; }); S.camere = [...lista, ...CAMERE.filter(c => !lista.some(x => x.id === c.id))]; } if (d?.zone) S.zone = d.zone; disegna(); pianifica(); }));
   S.stop.push(db.ascoltaDoc("impostazioni", "controlli", d => { S.impControlli = d || null; if (d) delete S.impControlli.id; aggiornaAscoltoAltrui(); aggiornaControllatrice(); disegna(); }));
   // 1.12.0 ArgonCloud: le impostazioni del metodo (le leggono anche le signore: non stanno nel listino)
-  S.stop.push(db.ascoltaDoc("impostazioni", "argon", d => { S.argon = d ? { ...d } : null; if (S.argon) delete S.argon.id; aggiornaAscoltoArgon(); disegna(); pianifica(); argonVenerdi(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "argon", d => { S.argon = d ? { ...d } : null; if (S.argon) delete S.argon.id; aggiornaAscoltoArgon(); disegna(); pianifica(); argonVenerdi(); pianiPresto(); }));
+  // 1.28.0: i piani del giorno fatti da Argon (li scrive Michele, li leggono le signore)
+  S.stop.push(db.ascoltaDoc("impostazioni", "piani-argon", d => { const x = { ...(d || {}) }; delete x.id; delete x.aggiornato; S.piani = x; memoAmmesse = new Map(); disegna(); }));
   if (addetta()) {
     S.stop.push(db.ascolta("controlli", { where: [["zonaControllata", "==", u.zona]] }, (m) => { S.controlliA = m; S.controlli = { ...S.controlliA, ...S.controlliB }; disegna(); }, mostraErrore));
     S.stop.push(db.ascolta("controlli", { where: [["zonaControllatrice", "==", u.zona]] }, (m) => { S.controlliB = m; S.controlli = { ...S.controlliA, ...S.controlliB }; disegna(); }, mostraErrore));
@@ -1388,7 +1390,7 @@ function avviaAscolto() {
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
-  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteRiequilibra(); governanteAutomatica(); segnaInizioGovernante(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteRiequilibra(); governanteAutomatica(); segnaInizioGovernante(); pianiPresto(); }));
   S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; const daUnire = []; for (const r of Object.values(m)) { const tolta = CAMERE_TOLTE[r.luogo]; const luogo = tolta ? tolta.unitaA : r.luogo; if (tolta) daUnire.push(r); const k = G.chiaveRegistro(G.nuovoId(r.regola), luogo); const prev = S.registro[k]; if (!prev || (r.ultima || "") > (prev.ultima || "")) S.registro[k] = { ...r, regola: G.nuovoId(r.regola), luogo }; } disegna(); governanteAutomatica(); unisciRegistroTolte(daUnire); }, mostraErrore));
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; disegna(); pianoDelMattino(); }));
@@ -1397,7 +1399,7 @@ function avviaAscolto() {
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
   if (addetta()) wherePul.push(["zona", "==", u.zona]);
-  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); allineaManutenzione(); governanteDaSola(); governanteRiequilibra(); }, mostraErrore));
+  S.stop.push(db.ascolta("pulizie", { where: wherePul }, (m) => { S.pulizie = m; S.caricati.pulizie = true; disegna(); pianifica(); pianoDelMattino(); allineaManutenzione(); governanteDaSola(); governanteRiequilibra(); pianiPresto(); }, mostraErrore));
   // pagamenti
   S.stop.push(db.ascolta("pagamenti", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.pagamenti = m; disegna(); }, mostraErrore));
   if (!addetta()) {
@@ -1454,7 +1456,7 @@ async function eseguiPiano() {
 function disegna() {
   const app = $("#app");
   if (!app) return;
-  memoProposte = new Map(); memoRif = new Map(); memoLista = new Map(); ctxMemo = null; memoVede = new Map();
+  memoProposte = new Map(); memoRif = new Map(); memoLista = new Map(); ctxMemo = null; memoVede = new Map(); memoAmmesse = new Map();
   disegnaTestata();
   document.body.classList.toggle("nonna", !!(S.utente && addetta()));
   document.body.classList.toggle("semplice", !!(S.utente && addetta() && vistaSignoreSemplice()));
@@ -1481,7 +1483,7 @@ function disegna() {
   disegnaCasa();
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
   sofiaFuori();
-  guidaTondo(); guidaNuvola();
+  guidaTondo(); guidaNuvola(); guidaFinito();
   sofiaMini();
   voceBarra();   // 1.11.0
   orologioAvvia();
@@ -2194,6 +2196,173 @@ function rifinitureOggi(z, iso) {
   return out;
 }
 function testoRif(r) { return `${r.luogoNome} · ${r.nome}`; }
+// ============================================================================
+//  1.28.0 IL PIANO DEL GIORNO LO FA ARGON (Michele, 1/11 notte: «le ripetizioni della frase deve essere il modello gratuito,
+//  ma le assegnazioni le deve dare Argon, cioè Sofia, quella più intelligente, altrimenti non abbiamo fatto niente»;
+//  «non è chiaro cosa si deve fare né come si preme HO FINITO; troppe stelle, troppe rifiniture»).
+//  Sul telefono o sul PC di Michele (lì c'è la chiave di Argon) Sofia prepara per ogni signora il piano di domani (dalle
+//  15) e, se manca, quello di oggi (fino alle 10): sceglie POCHE stelle (al massimo 6 e 30 minuti), mette in ordine il
+//  giro, scrive per ogni lavoro cosa fare in parole semplici e come finire. Il piano va in impostazioni/piani-argon (le
+//  signore lo leggono) e sul loro telefono lo ripete la voce gratuita. Senza piano valgono gli stessi limiti, fatti
+//  dall'app: le prime stelle nell'ordine del catalogo, fino a 6 e a 30 minuti. Le stelle del piano sono le sole che
+//  contano: nella giornata, nella camera aperta, nel «Ho finito», nel Visto e nella busta.
+// ============================================================================
+const PIANO_STELLE_MAX = 6, PIANO_MINUTI_MAX = 30;
+let memoAmmesse = new Map();
+function pianoDi(z, iso) { const p = S.piani && S.piani[`${z}_${iso}`]; return p && Array.isArray(p.stelle) && Array.isArray(p.passi) ? p : null; }
+// le pulizie del giorno SENZA il filtro del giro (giroVisibile guarda le stelle ammesse: qui non si può, si girerebbe a vuoto)
+function pulizieGrezze(iso, z) { return Object.values(S.pulizie || {}).filter(p => p.data === iso && p.zona === z && !p.nonServe).sort((a, b) => ordineCamera(a.camera) - ordineCamera(b.camera)); }
+// la chiave di una stella unica nel giorno (chiaveStella da sola si ripete: «SC08» è la stessa regola in Alba e in Tramonto)
+function kStella(p, r) { return `${p.id}|${chiaveStella(r)}`; }
+function minutiLavoriGiorno(z, iso) { return pulizieGrezze(iso, z).filter(p => p.tipo !== "stelle").reduce((s, p) => s + (Number(p.minuti) || 0), 0); }
+function tettoStelle(z, iso) { return minutiLavoriGiorno(z, iso) > 240 ? 3 : PIANO_STELLE_MAX; }   // giornata già lunga: al massimo 3
+// tutte le stelle che il catalogo darebbe quel giorno (prima del piano)
+function rifinitureOggiTutte(z, iso) {
+  const out = [];
+  for (const p of pulizieGrezze(iso, z)) {
+    if (p.stato === "fatta" && p.rifiniture) continue;
+    for (const r of rifinitureDiTutte(p)) {
+      if (r.sempre || !r.euro) continue;
+      const l = camera(r.luogo || p.camera);
+      out.push({ k: kStella(p, r), pulizia: p.id, camera: r.luogo || p.camera, luogoNome: r.luogoNome || l.nome, nome: r.parte && !String(r.superficie || "").toLowerCase().includes(String(r.parte).toLowerCase()) ? `${r.superficie}: ${r.parte}` : (r.superficie || r.nome), euro: Number(r.euro) || 0, minuti: Number(r.minuti) || 0 });
+    }
+  }
+  return out;
+}
+// le chiavi delle stelle che valgono quel giorno: quelle del piano; senza piano, le prime del catalogo fino ai limiti
+function stelleAmmesse(z, iso) {
+  const k = `${z}|${iso}`; if (memoAmmesse.has(k)) return memoAmmesse.get(k);
+  const pl = pianoDi(z, iso), tutte = rifinitureOggiTutte(z, iso);
+  let si;
+  if (pl) si = new Set(pl.stelle);
+  else {
+    si = new Set(); let min = 0; const max = tettoStelle(z, iso), gruppi = [];
+    for (const r of tutte) { let g = gruppi.find(x => x[0].pulizia === r.pulizia); if (!g) gruppi.push(g = []); g.push(r); }
+    for (let giro = 0; si.size < max && gruppi.some(g => g.length > giro); giro++) for (const g of gruppi) { const r = g[giro]; if (!r || si.size >= max || min + (r.minuti || 0) > PIANO_MINUTI_MAX) continue; si.add(r.k); min += r.minuti || 0; }
+  }
+  memoAmmesse.set(k, si); return si;
+}
+// l'ordine del giro: quello del piano (i lavori nuovi, non nel piano, in fondo)
+function pianoOrdina(lavori, pl) {
+  const base = lavoriInOrdine(lavori); if (!pl) return base;
+  const pos = new Map(pl.passi.map((x, i) => [x.id, i]));
+  return [...base].sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 999) - (pos.has(b.id) ? pos.get(b.id) : 999));
+}
+function pianoPasso(pl, id) { return pl ? (pl.passi.find(x => x.id === id) || null) : null; }
+// ---- quello che si manda ad Argon: i lavori (senza nomi di ospiti né parole di Michele) e le stelle candidate
+function pianoIngresso(z, iso) {
+  const lavori = lavoriInOrdine(pulizieGrezze(iso, z)).filter(p => p.stato !== "fatta" && p.stato !== "non_fatta");
+  if (!lavori.length) return null;
+  const tutte = rifinitureOggiTutte(z, iso).filter(r => lavori.some(p => p.id === r.pulizia)).slice(0, 40);
+  const vere = lavori.filter(p => p.tipo !== "stelle" || tutte.some(r => r.pulizia === p.id));
+  if (!vere.length) return null;
+  const cod = new Map(vere.map((p, i) => [p.id, `L${i + 1}`]));
+  const lav = vere.map(p => {
+    const dove = p.tipo === "stelle" ? "altre camere" : nomeBreveCamera(camera(p.camera));
+    return { c: cod.get(p.id), id: p.id, dove, cosa: p.tipo === "stelle" ? "solo stelle in altre camere" : p.origine === "governante" ? `lavoro a fondo: ${String(titoloBase(p) || "").toLowerCase()}` : parolaGiornata(p, dove), ospite: p.partenza ? "parte oggi" : p.arrivo ? "arriva oggi" : (p.parteIl && p.parteIl > iso ? "resta" : ""), minuti: Number(p.minuti) || 0 };
+  });
+  const stelle = tutte.map((r, i) => ({ c: `S${i + 1}`, k: r.k, lavoro: cod.get(r.pulizia), dove: r.luogoNome, cosa: String(r.nome), minuti: r.minuti }));
+  const firma = String(L.hashTesto(JSON.stringify([lav.map(x => [x.id, x.cosa, x.ospite]), stelle.map(x => x.k)])));
+  const minuti = lav.filter(x => x.dove !== "altre camere").reduce((s, x) => s + x.minuti, 0);
+  return { z, iso, signora: SIG(z), giorno: L.dataLunga(iso), lavori: lav, stelle, firma, minuti, tetto: minuti > 240 ? 3 : PIANO_STELLE_MAX };
+}
+const PIANO_SISTEMA = `Sei Sofia, la capo-governante delle Stanze di Ricci a Lesina: autorevole ma gentile, parli semplice. Prepari il lavoro di UNA signora delle pulizie per UN giorno, in modo che capisca subito cosa fare.
+REGOLE
+1) Tutti i lavori della lista vanno fatti: non toglierne e non aggiungerne.
+2) STELLE (piccole rifiniture): scegline POCHE, solo le più importanti: al massimo quante dice "stelleMassimo" (di solito ${PIANO_STELLE_MAX}; 3 se i lavori fanno già più di 4 ore) e al massimo ${PIANO_MINUTI_MAX} minuti in tutto. Preferisci le camere dove l'ospite parte o arriva e le cose che l'ospite vede e tocca (bagno, letto, ingresso). Ogni stella va nel passo del suo lavoro (campo "lavoro").
+3) ORDINE DEL GIRO: prima le camere dove l'ospite parte o arriva, poi le altre; scale, terrazzo, lavori a fondo e stelle in altre camere alla fine.
+4) Per ogni passo scrivi "fai": da 4 a 12 parole concrete, col tu (per esempio «cambio completo: lenzuola, asciugamani e bagno a fondo»).
+5) "riassunto": una o due frasi corte da dire a voce: quante camere, da dove cominciare, quante stelle (le «altre camere» nominale solo se ci metti stelle).
+6) "fine": una frase corta che le dice di premere il tasto verde HO FINITO quando ha fatto tutto il giro.
+Niente nomi di ospiti. Rispondi SOLO con un JSON così:
+{"riassunto":"...","passi":[{"id":"L1","fai":"...","stelle":["S3"]}],"fine":"..."}
+("id" è il codice del lavoro, L1, L2…; "stelle" sono i codici delle stelle scelte, S1, S2…).`;
+function pianoLeggi(txt) { const s = String(txt || "").replace(/```(json)?/gi, ""); const a = s.indexOf("{"), b = s.lastIndexOf("}"); if (a < 0 || b <= a) return null; try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; } }
+// il piano di Argon passa dalle regole dell'app: solo lavori e stelle veri, i limiti rispettati, i lavori mancanti in fondo
+function pianoValida(o, inp, meta) {
+  const norm = (v) => String(v == null ? "" : v).trim().toUpperCase();
+  const perL = new Map(inp.lavori.map(x => [x.c, x])), perS = new Map(inp.stelle.map(s => [s.c, s]));
+  const trovaL = (v) => perL.get(norm(v)) || inp.lavori.find(x => x.id === v) || null;
+  const trovaS = (v) => perS.get(norm(v)) || inp.stelle.find(x => x.k === v) || null;
+  const visti = new Set(), passi = [], nominate = [];
+  for (const x of (Array.isArray(o && o.passi) ? o.passi : [])) {
+    for (const k of (Array.isArray(x && x.stelle) ? x.stelle : [])) { const s = trovaS(k); if (s && !nominate.includes(s)) nominate.push(s); }
+    const l = x && trovaL(x.id); if (!l || visti.has(l.id)) continue; visti.add(l.id);
+    passi.push({ id: l.id, fai: String(x.fai || "").replace(/\s+/g, " ").trim().slice(0, 110), stelle: [] });
+  }
+  for (const l of inp.lavori) if (!visti.has(l.id)) passi.push({ id: l.id, fai: l.cosa, stelle: [] });
+  const scelte = []; let min = 0; const max = inp.tetto || PIANO_STELLE_MAX;
+  for (const s of nominate) { if (scelte.length >= max || min + (s.minuti || 0) > PIANO_MINUTI_MAX) continue; const lav = perL.get(s.lavoro), p = lav && passi.find(x => x.id === lav.id); if (!p) continue; p.stelle.push(s.k); scelte.push(s.k); min += s.minuti || 0; }
+  for (const p of passi) if (!p.fai) p.fai = (inp.lavori.find(l => l.id === p.id) || {}).cosa || "";
+  for (let i = passi.length - 1; i >= 0; i--) { const l = inp.lavori.find(x => x.id === passi[i].id); if (l && l.dove === "altre camere" && !passi[i].stelle.length) passi.splice(i, 1); }
+  return { firma: inp.firma, fatto: S.db.adesso(), modello: meta.modello || "", ripiego: !!meta.ripiego, riassunto: String((o && o.riassunto) || "").replace(/\s+/g, " ").trim().slice(0, 300), fine: String((o && o.fine) || "").replace(/\s+/g, " ").trim().slice(0, 160), passi, stelle: scelte };
+}
+async function pianoChiedi(inp) {
+  const testo = JSON.stringify({ signora: inp.signora, giorno: inp.giorno, minutiLavori: inp.minuti, stelleMassimo: inp.tetto,
+    lavori: inp.lavori.map(x => ({ id: x.c, dove: x.dove, cosa: x.cosa, ospite: x.ospite, minuti: x.minuti })), stelle: inp.stelle.map(s => ({ k: s.c, lavoro: s.lavoro, dove: s.dove, cosa: s.cosa, minuti: s.minuti })) });
+  const { r, ripiego } = await chiediIA({ sistema: PIANO_SISTEMA, testo, secondi: 60, maxToken: 1600 });
+  const o = pianoLeggi(r && (r.grezzo || r.risposta));
+  if (!o) throw new Error("piano non leggibile");
+  return pianoValida(o, inp, { modello: r.modello, ripiego });
+}
+async function pianoSalva(key, pl) {
+  const tieni = L.aggiungiGiorni(L.oggiISO(), -7), nuovo = {};
+  for (const [k, v] of Object.entries(S.piani || {})) if (/_\d{4}-\d\d-\d\d$/.test(k) && k.slice(-10) >= tieni) nuovo[k] = v;
+  nuovo[key] = pl; S.piani = nuovo; memoAmmesse = new Map(); disegna();
+  await S.db.salva("impostazioni", "piani-argon", { ...nuovo, aggiornato: S.db.adesso() }, false);
+}
+let pianiInCorso = false, pianiTimer = null;
+const pianiTentati = {};
+function pianiPresto() { clearTimeout(pianiTimer); pianiTimer = setTimeout(() => { try { pianiArgonAssicura(); } catch (e) {} }, 4000); }
+async function pianiArgonAssicura() {
+  if (pianiInCorso || !proprietario() || S.utente?.finta || !S.caricati.pulizie || !S.caricati.soggiorni || !S.caricati.gov || !S.argon || !S.argon.attivo) return;
+  let c = null; try { c = confIA(); } catch (e) { return; } if (!IA.accesa(c)) return;
+  const oggi = L.oggiISO(), ora = oraRoma(), giorni = [];
+  if (ora < 10) giorni.push(oggi);
+  if (ora >= 15) giorni.push(L.aggiungiGiorni(oggi, 1));
+  pianiInCorso = true;
+  try {
+    for (const iso of giorni) for (const z of zoneAttive()) {
+      if (!cloudAttivo(iso)) continue;
+      const key = `${z}_${iso}`, vecchio = S.piani && S.piani[key];
+      // oggi, appena la signora ha cominciato il giro, il piano non cambia più (l'ha sentito e lo segue); prima delle 10 sì,
+      // se Michele ha cambiato le camere
+      if (vecchio && iso === oggi && pulizieGrezze(iso, z).some(p => p.stato === "in_corso" || p.stato === "fatta" || p.stato === "problema")) continue;
+      const inp = pianoIngresso(z, iso); if (!inp) continue;
+      if (vecchio && vecchio.firma === inp.firma && (!vecchio.ripiego || iso === oggi)) continue;
+      const w = pianiTentati[key]; if (w && Date.now() - w.t < (w.ok ? 10 : 30) * 60 * 1000) continue;   // dopo un piano riuscito 10 minuti, dopo un errore 30
+      pianiTentati[key] = { t: Date.now(), ok: false };
+      try { const pl = await pianoChiedi(inp); await pianoSalva(key, pl); pianiTentati[key].ok = true; console.info("piano di Argon pronto", key, pl.stelle.length, "stelle"); }
+      catch (e) { console.warn("piano di Argon", key, (e && e.message) || e); }
+    }
+  } finally { pianiInCorso = false; }
+}
+setInterval(() => { try { pianiArgonAssicura(); } catch (e) {} }, 5 * 60 * 1000);
+// la riga in Paghe → ArgonCloud: per chi c'è il piano di oggi e di domani
+function cardPiani() {
+  const oggi = L.oggiISO(), dom = L.aggiungiGiorni(oggi, 1); let acceso = false; try { acceso = IA.accesa(confIA()); } catch (e) {}
+  const riposo = (z, iso) => !pulizieGrezze(iso, z).some(p => p.tipo !== "stelle" && p.stato !== "non_fatta");
+  const riga = (iso) => zoneAttive().map(z => { const p = pianoDi(z, iso); return `${esc(SIG(z))} ${p ? `✓${p.ripiego ? " (modello svelto)" : ""}` : riposo(z, iso) ? "riposo" : "—"}`; }).join(" · ") || "—";
+  return `<div class="floorlabel" style="margin-top:12px">🧠 Il piano del giorno (lo fa Argon)</div><p class="muted small" style="margin:0 0 6px">${acceso ? `Oggi: ${riga(oggi)}. Domani: ${riga(dom)} (si prepara dalle 15).` : "Per i piani serve Argon acceso (Altro → Sofia, la chiave)."} Poche stelle (al massimo ${PIANO_STELLE_MAX} e ${PIANO_MINUTI_MAX} minuti), il giro in ordine, cosa fare in ogni camera e come finire. Le signore lo sentono con la voce gratuita.</p>`;
+}
+// il tasto verde HO FINITO sempre a portata quando si scorre il giro (Michele: «non è chiaro come si preme ho finito»)
+let sgFinitoAperto = false;
+function guidaFinito() {
+  let b = document.getElementById("sgFinito"); let vuoi = false;
+  if (!sgFinitoAperto) try {
+    const t = document.querySelector("#app [data-ho-finito]");
+    // quello fisso sta in basso finché il tasto vero non arriva al suo posto (poi resta il vero: mai due, mai mezzo tagliato)
+    const r = t ? t.getBoundingClientRect() : null, nav = document.querySelector(".barra"), giu = nav ? nav.getBoundingClientRect().top : (window.innerHeight || 800);
+    vuoi = !!(S.pronto && argonLei() && S.vista === "oggi" && t && !document.querySelector(".sheet") && !document.querySelector(".conferma") && !guidaTestaInVista() && r.top > giu - 70);
+  } catch (e) {}
+  document.body.classList.toggle("con-finito", vuoi);
+  if (!vuoi) { if (b) b.hidden = true; return; }
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgFinito"; b.className = "sg-finito"; b.onclick = () => { sgFinitoAperto = true; b.hidden = true; document.body.classList.remove("con-finito"); let r = null; try { r = hoFinito(); } catch (e) {} Promise.resolve(r).catch(() => {}).then(() => { sgFinitoAperto = false; setTimeout(() => { try { guidaFinito(); } catch (e) {} }, 60); }); }; document.body.appendChild(b); }
+  const testo = ((document.querySelector("#app [data-ho-finito] span") || {}).textContent || "HO FINITO").trim();
+  if (b.dataset.t !== testo) { b.dataset.t = testo; b.innerHTML = `${ICONA("spunta")}<span>${esc(testo)}</span>`; }
+  b.hidden = false;
+}
+try { window.addEventListener("scroll", () => { guidaFinito(); }, { passive: true }); } catch (e) {}
 function elencoParlato(xs) { return xs.length <= 1 ? xs.join("") : xs.slice(0, -1).join(", ") + " e " + xs[xs.length - 1]; }
 // a voce: camera per camera, senza i due punti e le parentesi ("In Alba: filtro del phon col disinfettante, …")
 function nomeParlato(r, conProdotto) { return r.nome.replace(/\s*\([^)]*\)\s*/g, " ").replace(/:\s*/g, " ").replace(/\s+/g, " ").trim().toLowerCase() + (conProdotto && r.prodotto ? `, con ${r.prodotto.toLowerCase()}` : ""); }
@@ -2291,6 +2460,23 @@ function guidaPassi(z, iso) {
   // una cosa trovata non fatta negli ultimi giorni: Sofia la dice la mattina (Gemini: «autoritaria ma giusta»)
   let difetto = "";
   if (!anteprima) { try { const da = L.aggiungiGiorni(oggi, -6); const v2 = Object.values(S.visti || {}).filter(x => x && x.zona === z && x.data >= da && x.data < oggi && (x.difetti || []).length).sort((a, b) => (a.data < b.data ? 1 : -1))[0]; if (v2) { const d = v2.difetti[v2.difetti.length - 1]; difetto = `Una cosa importante: ${v2.data === L.aggiungiGiorni(oggi, -1) ? "ieri" : L.GIORNI[L.giornoSettimana(v2.data)]} ${String(d.nome || "una cosa").replace(/\s*·\s*/, ", ")} non era fatto, anche se risultava fatto. Oggi fallo bene, così il salvadanaio resta pieno.`; } } catch (e) {} }
+  // 1.28.0: c'è il piano di Argon: l'ordine, le parole e le stelle sono le sue; la voce gratuita le ripete
+  const pl = pianoDi(z, iso);
+  if (pl) {
+    const ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || rif.some(r => r.pulizia === p.id));
+    const apri = anteprima ? quale : "Oggi";
+    const visto = daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "";
+    passi.push({ k: "giro", breve: [pl.riassunto || giroDetto(apri), visto].filter(Boolean).join(" "), testo: [anteprima ? `${quale}:` : `${saluto()} ${nome}, buon lavoro!`, pl.riassunto || giroDetto(apri), min ? `In tutto circa ${L.testoOre(min)}.` : "", visto, difetto, anteprima ? "" : "Quando sei pronta col carrello, tocca: e poi."].filter(Boolean).join(" ") });
+    ord.forEach((p, i) => {
+      const ps = pianoPasso(pl, p.id) || {}, mie = rif.filter(r => r.pulizia === p.id), f = [p.dettagli, p.istruzioni].filter(Boolean);
+      const chi = p.tipo === "stelle" ? "Le stelle nelle altre camere" : p.origine === "governante" ? `Lavoro a fondo in ${nomeDetto(p)}` : nomeDetto(p);
+      const stelleDette = !mie.length ? "" : p.tipo === "stelle" ? `${rifPerLavoro(mie).map(g => `${g.nome.replace(/:\s*/g, " ").toLowerCase()} in ${elencoParlato(g.dove)}`).join("; ")}.` : `${mie.length === 1 ? "La stella" : "Le stelle"}: ${rifDette(mie, 6)}.`;
+      const vera = p.tipo !== "stelle" && p.origine !== "governante", sempre = vera ? promemoriaCamera(p.camera) : [];
+      passi.push({ k: "cam", id: p.id, testo: [`${i + 1}. ${chi}: ${senzaPunto(ps.fai || parolaGiornata(p, nomeDetto(p)))}.`, vera ? ospiteDetto(p) : "", stelleDette, f.length ? `${p.dettagliDa || "Michele"} ti dice: ${senzaPunto(f.join(". "))}.` : "", sempre.length ? `Qui sempre: ${senzaPunto(sempre.join(", "))}.` : "", p.origine === "governante" && p.come ? `Come si fa: ${senzaPunto(p.come)}.` : ""].filter(Boolean).join(" ") });
+    });
+    if (!anteprima) passi.push({ k: "fine", testo: finito ? `Bravissima ${nome}, per oggi hai finito tutto alle ${L.oraBreve(v.finitoOra)}! ${v.vistoOra ? `${v.vistoNome || "La direzione"} ha dato il Visto.` : rif.length ? "Le rifiniture aspettano il Visto." : ""} Buon riposo e a domani!`.replace(/\s+/g, " ") : (pl.fine || "Quando hai fatto tutto il giro, premi il tasto verde HO FINITO, in fondo alla pagina.") });
+    return passi;
+  }
   if (anteprima) {
     const note = lavori.filter(p => p.dettagli || p.istruzioni).map(p => `da ${nomeDetto(p)}, ${senzaPunto([p.dettagli, p.istruzioni].filter(Boolean).join(". "))}`);
     passi.push({ k: "giro", testo: [giroDetto(quale), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min ? `In tutto circa ${L.testoOre(min)}.` : "", note.length ? `Michele ti dice: ${note.join("; ")}.` : ""].filter(Boolean).join(" ") });
@@ -2310,7 +2496,7 @@ function guidaPassi(z, iso) {
     passi.push({ k: "cam", id: p.id, testo: [`Adesso ${nomeDetto(p)}: ${(titoloBase(p) + parteTesto(p)).toLowerCase()}.`, ospiteDetto(p), f.length ? `${p.dettagliDa || "Michele"} ti dice: ${senzaPunto(f.join(". "))}.` : "", sempre.length ? `Qui sempre: ${senzaPunto(sempre.join(", "))}.` : "", mie.length ? `Ricordati: ${rifDette(mie, 5)}.` : ""].filter(Boolean).join(" ") });
   }
   if (anteprima) return passi;
-  passi.push({ k: "fine", testo: finito ? `Bravissima ${nome}, per oggi hai finito tutto alle ${L.oraBreve(v.finitoOra)}! ${v.vistoOra ? `${v.vistoNome || "La direzione"} ha dato il Visto.` : rif.length ? "Le rifiniture aspettano il Visto." : ""} Buon riposo e a domani!`.replace(/\s+/g, " ") : "Quando hai fatto tutto il giro, tocca il tasto verde: HO FINITO. Io sono qui: se ti serve qualcosa, chiedimelo." });
+  passi.push({ k: "fine", testo: finito ? `Bravissima ${nome}, per oggi hai finito tutto alle ${L.oraBreve(v.finitoOra)}! ${v.vistoOra ? `${v.vistoNome || "La direzione"} ha dato il Visto.` : rif.length ? "Le rifiniture aspettano il Visto." : ""} Buon riposo e a domani!`.replace(/\s+/g, " ") : "Quando hai fatto tutto il giro, premi il tasto verde HO FINITO, in fondo alla pagina. Io sono qui: se ti serve qualcosa, chiedimelo." });
   return passi;
 }
 function guidaOra(z, iso) { const p = guidaPassi(z, iso); const fin = iso === L.oggiISO() && !!(vistoDelGiorno(z, iso) || {}).finitoOra; const i = fin ? p.length - 1 : Math.min(guidaIndice(z, iso), p.length - 1); return { passi: p, i, passo: p[i] }; }
@@ -2430,14 +2616,15 @@ function parolaGiornata(p, nome) {
   if (p.tipo === "fisso" && PAROLE.norm(titoloBase(p)) === PAROLE.norm(nome)) return `come ogni ${L.GIORNI[L.giornoSettimana(p.data)]}`;
   return (String(titoloBase(p) || "").trim() + parteTesto(p)).toLowerCase();   // 1.27.0: le parole intere («cambio completo», «ripasso veloce»)
 }
-function schedaGiornata(p, rif, anteprima) {
+function schedaGiornata(p, rif, anteprima, extra = {}) {
+  const np = extra.n ? `<span class="gs-np" aria-hidden="true">${extra.n}</span>` : "";
   const stelle = p.tipo === "stelle", c = camera(p.camera);
   const st = anteprima ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
   const mie = st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
   // 1.27.0: il lavoro a fondo di Sofia: grande il lavoro («Tende»), sotto la camera e i minuti
   if (p.origine === "governante") {
     const lav = String(titoloBase(p) || "Lavoro a fondo"), dove = nomeBreveCamera(c);
-    return `<button class="gs-cam k-fondo ${st}" data-dettagli="${esc(p.id)}" aria-label="Lavoro a fondo in ${esc(dove)}: ${esc(lav)}">
+    return `<button class="gs-cam k-fondo ${st}" data-dettagli="${esc(p.id)}" aria-label="Lavoro a fondo in ${esc(dove)}: ${esc(lav)}">${np}
     <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : esc(p.icona || "✨")}</span>
     <span class="gs-nome">${esc(lav)}</span>
     <span class="gs-cosa">${st === "fatta" ? "fatto" : `a fondo · ${esc(dove)}`}</span>
@@ -2446,13 +2633,13 @@ function schedaGiornata(p, rif, anteprima) {
   }
   if (stelle) {
     const dove = [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))];
-    return `<button class="gs-cam gs-stelle ${st}" data-dettagli="${esc(p.id)}" aria-label="${st === "fatta" ? "Stelle nelle altre camere: fatte" : `Stelle in altre camere: ${esc(dove.join(", "))}`}">
+    return `<button class="gs-cam gs-stelle ${st}" data-np="${extra.n || ""}" data-dettagli="${esc(p.id)}" aria-label="${st === "fatta" ? "Stelle nelle altre camere: fatte" : `Stelle in altre camere: ${esc(dove.join(", "))}`}">
     <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : "⭐"}</span>
     <span class="gs-cam-x"><span class="gs-nome">${st === "fatta" ? "Stelle fatte" : "Altre camere"}</span>${st === "fatta" ? "" : rifPerLavoro(mie).slice(0, 3).map(g => `<span class="gs-dove"><b>${esc(String(g.nome).replace(/:\s*/g, " ").toLowerCase())}</b> · ${esc(g.dove.join(", "))}</span>`).join("")}${rifPerLavoro(mie).length > 3 && st !== "fatta" ? `<span class="gs-dove">e altre ${rifPerLavoro(mie).length - 3}</span>` : ""}</span>
   </button>`;
   }
   const nome = nomeBreveCamera(c);
-  const parola = st === "fatta" ? "pulita" : st === "prob" ? "da sistemare" : parolaGiornata(p, nome);
+  const parola = st === "fatta" ? "pulita" : st === "prob" ? "da sistemare" : (extra.fai || parolaGiornata(p, nome));   // 1.28.0: le parole del piano di Argon
   const segni = [];
   if (!st && p.partenza) segni.push(["🚪", "", "l'ospite parte"]);
   else if (!st && p.arrivo) segni.push(["🧳", "", "arriva un ospite"]);
@@ -2460,7 +2647,7 @@ function schedaGiornata(p, rif, anteprima) {
   const corta = (s) => { const x = String(s || "").replace(/:\s*/g, " ").toLowerCase().split(",")[0].trim(); return x.length > 22 ? x.slice(0, 21).trim() + "…" : x; };
   const stelleNomi = mie.length ? corta(mie[0].nome) + (mie.length > 1 ? ` +${mie.length - 1}` : "") : "";
   if (!st && (p.dettagli || p.istruzioni)) segni.push(["📣", "", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
-  return `<button class="gs-cam ${tipoGiornata(p)} ${st}" data-dettagli="${esc(p.id)}" aria-label="${esc(nome)}: ${esc(parola)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}">
+  return `<button class="gs-cam ${tipoGiornata(p)} ${st}" data-dettagli="${esc(p.id)}" aria-label="${extra.n ? extra.n + ". " : ""}${esc(nome)}: ${esc(parola)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}">${np}
     <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : disegnoGiornata(p)}</span>
     <span class="gs-nome">${esc(nome)}</span>
     <span class="gs-cosa">${esc(parola)}</span>
@@ -2493,7 +2680,8 @@ function vistaArgon(z) {
   const msg = messaggioDelGiorno(giorno);
   const messaggio = msg ? `<section class="gs-msg"><div class="gs-msg-t">📣 ${esc(msg.da || "Michele")}</div><p class="gs-msg-x">${esc(msg.testo)}</p></section>` : "";
   const sospesa = sosp ? `<section class="gs-avviso rosso">${ICONA("avviso")}<span><b>Fino a ${esc(L.dataLunga(sosp.a))}: solo le camere.</b></span></section>` : "";
-  const schede = lavori.length ? `<section class="gs-camere" aria-label="Le camere">${lavoriInOrdine(lavori).map(p => schedaGiornata(p, rif, anteprima)).join("")}</section>` : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
+  const pl = pianoDi(z, giorno), ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || p.stato === "fatta" || rif.some(r => r.pulizia === p.id));
+  const schede = ord.length ? `<section class="gs-camere${pl ? " col-piano" : ""}" aria-label="Le camere">${ord.map((p, i) => schedaGiornata(p, rif, anteprima, { n: i + 1, fai: (pianoPasso(pl, p.id) || {}).fai || "" })).join("")}</section>` : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
   let tasto = "";
   if (!anteprima && aperteDopo.length) tasto = `<section class="gs-avviso">${ICONA("avviso")}<span><b>Lavoro nuovo:</b> ${esc(aperteDopo.map(p => p.tipo === "stelle" ? "stelle in altre camere" : nomeBreveCamera(camera(p.camera))).join(", "))}.</span></section><button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO ANCHE QUESTO</span></button>`;
   else if (!anteprima && lavori.length && !finito) tasto = `<button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO</span></button>`;
@@ -2890,7 +3078,7 @@ function cardArgon() {
   const presente = !!c.presenze[oggi];
   return `<section class="card argon-card"><div class="head"><h2 style="margin:0">ArgonCloud</h2><span class="pill ${L.argonRodaggio(S.argon, oggi) ? "open" : "paid"}">${L.argonRodaggio(S.argon, oggi) ? `rodaggio fino al ${esc(L.dataBreve(c.rodaggioFino))}` : "acceso"}</span></div>
     <p class="muted small" style="margin:2px 0 8px">Acceso dal ${esc(L.dataLunga(c.da))}. ${S.argonErrore ? "<b>Le regole nuove di Firestore non sono ancora incollate: i Visti non si salvano.</b>" : ""}</p>
-    ${sospHtml}
+    ${sospHtml}${cardPiani()}
     <div class="row"><span>Oggi ci sono io in albergo (le rifiniture si fanno anche se la signora è sola)</span><span class="seg"><button aria-pressed="${presente}" data-argon-presenza="1">Sì</button><button aria-pressed="${!presente}" data-argon-presenza="0">No</button></span></div>
     <div class="floorlabel" style="margin-top:10px">Questa settimana</div>
     ${settimana.length ? settimana.map(rigaV).join("") : `<p class="muted small" style="margin:0">Ancora nessun «Ho finito».</p>`}
@@ -3199,7 +3387,10 @@ function ctxGovNuovo(lun) { return { listino: L.listinoCompleto(S.listino), escl
 let memoProposte = new Map(), memoRif = new Map(), memoLista = new Map();
 function proposteGov(lun) { const k = lun || S.govSett; if (!memoProposte.has(k)) memoProposte.set(k, G.proposteSettimana(ctxGov(k))); return memoProposte.get(k); }
 // le rifiniture dentro una pulizia normale (per la signora, per la controllatrice e per la paga)
-function rifinitureDi(p) { if (!p || p.origine === "governante" || p.tipo === "extra" || p.tipo === "fisso") return []; const k = `${p.zona}|${p.data}`; if (!memoRif.has(k)) memoRif.set(k, G.rifinitureDelGiorno(p.zona, p.data, ctxGov())); return memoRif.get(k)[p.id] || []; }
+function rifinitureDiTutte(p) { if (!p || p.origine === "governante" || p.tipo === "extra" || p.tipo === "fisso") return []; const k = `${p.zona}|${p.data}`; if (!memoRif.has(k)) memoRif.set(k, G.rifinitureDelGiorno(p.zona, p.data, ctxGov())); return memoRif.get(k)[p.id] || []; }
+// 1.28.0: nella camera, nel giro, nel «Ho finito», nel Visto e nella busta contano solo le stelle del piano di Argon (senza
+// piano: le prime del catalogo fino a 6 e a 30 minuti). Le cose «sempre» (i promemoria senza soldi) restano tutte.
+function rifinitureDi(p) { const tutte = rifinitureDiTutte(p); if (!tutte.length || (p.stato === "fatta" && p.rifiniture)) return tutte; const si = stelleAmmesse(p.zona, p.data); return tutte.filter(r => r.sempre || !r.euro || si.has(kStella(p, r))); }
 function routineDi(p) { return rifinitureDi(p); }
 // La lista del giorno della signora (righe grandi + stelle al punto giusto + zone comuni), una per pulizia
 function listaDi(p) { if (!p || p.origine === "governante" || p.tipo === "extra" || p.tipo === "fondo" || p.tipo === "fisso" || p.tipo === "stelle") return null; const k = `L|${p.id}`; if (!memoLista.has(k)) { let v = null; try { v = G.listaDelGiorno(p, { ...ctxGov(), stelle: p.stato === "fatta" && p.rifiniture ? stelleSalvate(p) : rifinitureDi(p) }); } catch (e) { console.warn("lista", e); } memoLista.set(k, v); } return memoLista.get(k); }
@@ -7246,10 +7437,10 @@ function cardRifinitureSettimana(lun) {
   const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(lun, i));
   const righe = zoneOrdinate().map(z => {
     let n = 0, min = 0, pulizie = 0; const perGiorno = [];
-    for (const g of giorni) { const m = G.rifinitureDelGiorno(z.id, g, ctxGov()); const rf = Object.values(m).flat().filter(r => !r.sempre); const k = Object.keys(m).length; if (rf.length) perGiorno.push(`${L.GG[L.giornoSettimana(g)]} ${rf.reduce((s, r) => s + r.minuti, 0)}′`); n += rf.length; min += rf.reduce((s, r) => s + r.minuti, 0); pulizie += k; }
+    for (const g of giorni) { const rf = rifinitureOggi(z.id, g); const k = new Set(rf.map(r => r.pulizia)).size; if (rf.length) perGiorno.push(`${L.GG[L.giornoSettimana(g)]} ${rf.reduce((s, r) => s + r.minuti, 0)}′`); n += rf.length; min += rf.reduce((s, r) => s + r.minuti, 0); pulizie += k; }
     return `<button class="row" data-signora="${z.id}"><span><b>${esc(nomeZonaBreve(z.id))}</b><br><span class="muted small">${n ? `${n} rifiniture in ${pulizie} pulizie · ${perGiorno.join(" · ")}` : "nessuna pulizia in programma"}</span></span><span class="s">${min ? `${min} min` : "—"}</span></button>`;
   }).join("");
-  return `<section class="card"><h2 style="margin:0 0 4px">Rifiniture dentro le pulizie</h2><p class="muted small" style="margin:0 0 8px">A ogni passaggio la governante mette le stelle che ci stanno nel budget del modo dell'ospite (Tecnici: ripasso 15′, totale a camera vuota 45′, fino a 2/3 stelle; Operai: una sola stella di igiene nella totale del giovedì; Booking: 30′ alla partenza, prima il visibile), partendo dalla cosa più scaduta e a parità dall'igiene; le zone comuni vanno alla prima camera del giorno. Tocca una signora per vederle giorno per giorno.</p><div class="rows">${righe}</div></section>`;
+  return `<section class="card"><h2 style="margin:0 0 4px">Rifiniture dentro le pulizie</h2><p class="muted small" style="margin:0 0 8px">Valgono al massimo ${PIANO_STELLE_MAX} stelle al giorno per signora (${PIANO_MINUTI_MAX} minuti; 3 se la giornata è già lunga): quelle scelte da Argon nel piano del giorno. A ogni passaggio la governante mette le stelle che ci stanno nel budget del modo dell'ospite (Tecnici: ripasso 15′, totale a camera vuota 45′, fino a 2/3 stelle; Operai: una sola stella di igiene nella totale del giovedì; Booking: 30′ alla partenza, prima il visibile), partendo dalla cosa più scaduta e a parità dall'igiene; le zone comuni vanno alla prima camera del giorno. Tocca una signora per vederle giorno per giorno.</p><div class="rows">${righe}</div></section>`;
 }
 function vistaCalendarioPulito() {
   const cal = G.calendarioPulito(ctxGov()), oggi = L.oggiISO();
