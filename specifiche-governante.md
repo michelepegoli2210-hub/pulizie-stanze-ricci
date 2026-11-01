@@ -2229,3 +2229,11 @@ Michele, dal suo telefono (POCO F9 Ultra, foto della prova di Selena): «Non mi 
 - La nuvoletta un po' più piccola (17 px, il saluto 20 px) e i tasti 54 px: la tendina copre meno.
 - Il saluto («Buonasera, Selena!») non si scrive quando quello che dice Sofia ha già il nome («Bravissima Selena, per oggi hai finito…»): prima c'era due volte.
 - Prove: prova1261 (= prova1260 sulla 1.26.1), prova1260m, prova1250: a posto; misure della finestra a 412x797, 412x860 (il telefono di Michele) e 360x740.
+
+## 126.2 La 1.26.2 (1 novembre, sera): VIA LA CUPOLA
+
+Michele (sulla 1.26.1): «No, togli la cupola tipo santino, quella la devi togliere, quella cupola lì».
+
+- Sofia resta intera e della stessa misura (larga il 74% dello schermo, al massimo 300 px), ma SENZA CORNICE: niente arco, niente bordo bianco né anello verde, niente ombra. I bordi del filmato sfumano (a destra e a sinistra il 20%, in alto il 12%, in basso dal 74%) nel fondo della scena, che adesso ha gli stessi grigi caldi del corridoio (#D9D9D4 → #C9CAC3, con una luce bianca dietro la testa presa dai colori ai bordi del poster): sembra che stia in piedi nel corridoio, senza un riquadro intorno.
+- Sta 18 px più in alto (40 px dal bordo della scena: senza la cupola sopra la testa non serve altro spazio). Il giorno e 🔊/🔇 su vetro più bianco (78%) per leggersi sul grigio.
+- Prove: prova1262 (= prova1260 sulla 1.26.2), prova1260m, prova1250: a posto; foto a 412x797, 412x860 e 360x740.

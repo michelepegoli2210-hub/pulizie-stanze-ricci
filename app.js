@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.26.1";
+export const VERSIONE = "1.26.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2509,7 +2509,7 @@ function guidaHeroMisura() {
   if (h.style.height !== alto + "px") h.style.height = alto + "px";
   // 1.26.1: Sofia nella finestra ad arco, intera dalla testa al petto (Michele: «ritaglia troppo la testa»). La finestra
   // ha la forma del filmato (9:16, niente ritagli); sopra la tendina (circa 250 px) devono restare testa e spalle (62%)
-  const W = h.clientWidth || 400, arco = Math.round(Math.max(170, Math.min(W * 0.74, 300, (alto - 250 - 10 - 58) * 0.5625 / 0.62)));
+  const W = h.clientWidth || 400, arco = Math.round(Math.max(170, Math.min(W * 0.74, 300, (alto - 250 - 10 - 40) * 0.5625 / 0.62)));
   if (h.style.getPropertyValue("--arco-w") !== arco + "px") h.style.setProperty("--arco-w", arco + "px");
 }
 window.addEventListener("resize", () => { try { guidaHeroMisura(); } catch (e) {} });
