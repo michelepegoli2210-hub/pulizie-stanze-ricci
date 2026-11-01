@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.28.0";
+export const VERSIONE = "1.29.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2605,10 +2605,7 @@ function testaSofia(z, giorno, lavori, rif, anteprima) {
 function mappaGiornata(z, giorno, lavori, rif) {
   const oggi = L.oggiISO();
   const giorni = Array.from({ length: 7 }, (_, i) => L.aggiungiGiorni(oggi, i)).map(d => { const n = pulizieDelGiorno(d, z).filter(p => p.tipo !== "stelle").length; return `<button type="button" class="gs-g${d === giorno ? " on" : ""}${n ? "" : " vuoto"}" data-g="${d}" aria-pressed="${d === giorno}" aria-label="${esc(L.dataLunga(d))}: ${n ? n + (n === 1 ? " camera" : " camere") : "niente"}"><span>${d === oggi ? "oggi" : L.GG[L.giornoSettimana(d)]}</span><b>${L.giornoDelMese(d)}</b><i>${n || "–"}</i></button>`; }).join("");
-  const minuti = minutiGiornata(lavori, rif);
-  const segni = [minuti ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
-    rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
-  return `<section class="gs-mappa" aria-label="La giornata"><div class="gs-giorni" role="group" aria-label="I giorni">${giorni}</div>${segni.length ? `<div class="gs-segni-g">${segni.join("")}</div>` : ""}</section>`;
+  return `<section class="gs-mappa" aria-label="I giorni"><div class="gs-giorni" role="group" aria-label="I giorni">${giorni}</div></section>`;   // 1.29.0: ⏱️ e ⭐ sopra il giro
 }
 // una camera = un riquadro: il disegno, il nome, UNA parola (cambio · ripasso · pulita) e i segni (🚪 parte, 🧳 arriva,
 // ⭐ quante stelle, 📣 Michele ti dice qualcosa). Il resto lo dice Sofia quando la apri.
@@ -2616,44 +2613,51 @@ function parolaGiornata(p, nome) {
   if (p.tipo === "fisso" && PAROLE.norm(titoloBase(p)) === PAROLE.norm(nome)) return `come ogni ${L.GIORNI[L.giornoSettimana(p.data)]}`;
   return (String(titoloBase(p) || "").trim() + parteTesto(p)).toLowerCase();   // 1.27.0: le parole intere («cambio completo», «ripasso veloce»)
 }
+// 1.29.0 IL GIRO MINIMAL (Michele, 2/11: «così è più chiaro rispetto a prima, però non mi piace la grafica. L'applicazione
+// deve essere molto molto chiara, come adesso, ancora più chiara, però ancora più minimal e ancora più graficamente
+// utilizzabile»). Una camera = una riga sola, tutta larga: a sinistra il tondo del giro (il numero; ✓ fatta; ! da
+// sistemare), poi il nome grande, cosa fare col suo disegnino e le stelle; a destra al massimo un segno piccolo (parte,
+// arriva, 📣). «ADESSO» (col tondo pieno) è la camera che Sofia sta dicendo: all'inizio la prima, poi va avanti con
+// «E poi?» o aprendo una camera. Niente riquadri coi disegni, niente bordi in più.
 function schedaGiornata(p, rif, anteprima, extra = {}) {
-  const np = extra.n ? `<span class="gs-np" aria-hidden="true">${extra.n}</span>` : "";
   const stelle = p.tipo === "stelle", c = camera(p.camera);
   const st = anteprima ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
   const mie = st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
-  // 1.27.0: il lavoro a fondo di Sofia: grande il lavoro («Tende»), sotto la camera e i minuti
+  const n = extra.n ? String(extra.n) : "";
+  const tondo = `<span class="gs-np" aria-hidden="true">${st === "fatta" ? "✓" : st === "prob" ? "!" : esc(n)}</span>`;
+  const ora = extra.ora ? `<span class="gs-ora">Adesso</span>` : "";
+  const cls = (k) => `gs-cam ${k}${st ? " " + st : ""}${extra.ora ? " ora" : ""}`;
+  const maiu = (s) => { const x = String(s || ""); return x ? x.charAt(0).toUpperCase() + x.slice(1) : x; };
+  const num = n ? `${n}. ` : "";
+  // il lavoro a fondo di Sofia: grande il lavoro («Tende»), sotto dove e quanto
   if (p.origine === "governante") {
     const lav = String(titoloBase(p) || "Lavoro a fondo"), dove = nomeBreveCamera(c);
-    return `<button class="gs-cam k-fondo ${st}" data-dettagli="${esc(p.id)}" aria-label="Lavoro a fondo in ${esc(dove)}: ${esc(lav)}">${np}
-    <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : esc(p.icona || "✨")}</span>
-    <span class="gs-nome">${esc(lav)}</span>
-    <span class="gs-cosa">${st === "fatta" ? "fatto" : `a fondo · ${esc(dove)}`}</span>
-    ${!st && Number(p.minuti) ? `<span class="gs-segni" aria-hidden="true"><span class="gs-sg t">⏱️<b>${esc(String(p.minuti))}′</b></span></span>` : ""}
-  </button>`;
+    const cosa = st === "fatta" ? "Fatto" : st === "prob" ? "Da sistemare" : `A fondo in ${dove}${Number(p.minuti) ? ` · ${p.minuti} min` : ""}`;
+    return `<button class="${cls("k-fondo")}" data-dettagli="${esc(p.id)}" aria-label="${esc(num)}Lavoro a fondo in ${esc(dove)}: ${esc(lav)}">${tondo}<span class="gs-cam-x">${ora}<span class="gs-nome">${esc(lav)}</span><span class="gs-cosa"><i aria-hidden="true">✨</i>${esc(cosa)}</span></span></button>`;
   }
+  // le stelle nelle altre camere: ogni stella con le sue camere
   if (stelle) {
-    const dove = [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))];
-    return `<button class="gs-cam gs-stelle ${st}" data-np="${extra.n || ""}" data-dettagli="${esc(p.id)}" aria-label="${st === "fatta" ? "Stelle nelle altre camere: fatte" : `Stelle in altre camere: ${esc(dove.join(", "))}`}">
-    <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : "⭐"}</span>
-    <span class="gs-cam-x"><span class="gs-nome">${st === "fatta" ? "Stelle fatte" : "Altre camere"}</span>${st === "fatta" ? "" : rifPerLavoro(mie).slice(0, 3).map(g => `<span class="gs-dove"><b>${esc(String(g.nome).replace(/:\s*/g, " ").toLowerCase())}</b> · ${esc(g.dove.join(", "))}</span>`).join("")}${rifPerLavoro(mie).length > 3 && st !== "fatta" ? `<span class="gs-dove">e altre ${rifPerLavoro(mie).length - 3}</span>` : ""}</span>
-  </button>`;
+    const g = st === "fatta" ? [] : rifPerLavoro(mie);
+    const righe = g.slice(0, 3).map(x => `<span class="gs-dove"><i aria-hidden="true">⭐</i><b>${esc(String(x.nome).replace(/:\s*/g, " ").toLowerCase())}</b> · ${esc(x.dove.join(", "))}</span>`).join("") + (g.length > 3 ? `<span class="gs-dove">e altre ${g.length - 3}</span>` : "");
+    return `<button class="${cls("gs-stelle")}" data-np="${esc(n)}" data-dettagli="${esc(p.id)}" aria-label="${esc(num)}${st === "fatta" ? "Stelle nelle altre camere: fatte" : `Stelle in altre camere: ${esc(g.map(x => x.dove.join(", ")).join("; "))}`}">${tondo}<span class="gs-cam-x">${ora}<span class="gs-nome">${st === "fatta" ? "Stelle fatte" : "Altre camere"}</span>${righe}</span></button>`;
   }
   const nome = nomeBreveCamera(c);
-  const parola = st === "fatta" ? "pulita" : st === "prob" ? "da sistemare" : (extra.fai || parolaGiornata(p, nome));   // 1.28.0: le parole del piano di Argon
+  const parola = st === "fatta" ? `pulita${p.ora ? " alle " + L.oraBreve(p.ora) : ""}` : st === "prob" ? "da sistemare" : (extra.fai || parolaGiornata(p, nome));   // 1.28.0: le parole del piano di Argon
+  const corta = (s) => { const x = String(s || "").replace(/:\s*/g, " ").toLowerCase().split(",")[0].trim(); return x.length > 24 ? x.slice(0, 23).trim() + "…" : x; };
+  const stelleNomi = mie.length ? mie.slice(0, 2).map(r => corta(r.nome)).join(" · ") + (mie.length > 2 ? ` +${mie.length - 2}` : "") : "";
   const segni = [];
-  if (!st && p.partenza) segni.push(["🚪", "", "l'ospite parte"]);
-  else if (!st && p.arrivo) segni.push(["🧳", "", "arriva un ospite"]);
-  // 1.27.0: la prima stella per nome, corta («⭐ porta numero +1»), al posto del solo numero
-  const corta = (s) => { const x = String(s || "").replace(/:\s*/g, " ").toLowerCase().split(",")[0].trim(); return x.length > 22 ? x.slice(0, 21).trim() + "…" : x; };
-  const stelleNomi = mie.length ? corta(mie[0].nome) + (mie.length > 1 ? ` +${mie.length - 1}` : "") : "";
-  if (!st && (p.dettagli || p.istruzioni)) segni.push(["📣", "", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
-  return `<button class="gs-cam ${tipoGiornata(p)} ${st}" data-dettagli="${esc(p.id)}" aria-label="${extra.n ? extra.n + ". " : ""}${esc(nome)}: ${esc(parola)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}">${np}
-    <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : disegnoGiornata(p)}</span>
-    <span class="gs-nome">${esc(nome)}</span>
-    <span class="gs-cosa">${esc(parola)}</span>
-    ${mie.length ? `<span class="gs-stelle-t">⭐ ${esc(stelleNomi)}</span>` : ""}
-    ${segni.length ? `<span class="gs-segni" aria-hidden="true">${segni.map(([i, n]) => `<span class="gs-sg${n ? " n" : ""}">${i}${n ? `<b>${esc(n)}</b>` : ""}</span>`).join("")}</span>` : ""}
-  </button>`;
+  if (!st && p.partenza) segni.push(["parte", "parte", "l'ospite parte"]);
+  else if (!st && p.arrivo) segni.push(["arriva", "arriva", "arriva un ospite"]);
+  if (!st && (p.dettagli || p.istruzioni)) segni.push(["nota", "📣", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
+  return `<button class="${cls(tipoGiornata(p))}" data-dettagli="${esc(p.id)}" aria-label="${esc(num)}${esc(nome)}: ${esc(parola)}${mie.length ? `. Stelle: ${esc(stelleNomi)}` : ""}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}">${tondo}<span class="gs-cam-x">${ora}<span class="gs-nome">${esc(nome)}</span><span class="gs-cosa">${st === "fatta" ? "" : `<i aria-hidden="true">${disegnoGiornata(p)}</i>`}${esc(maiu(parola))}</span>${mie.length ? `<span class="gs-stelle-t"><i aria-hidden="true">⭐</i>${esc(stelleNomi)}</span>` : ""}</span>${segni.length ? `<span class="gs-tags" aria-hidden="true">${segni.map(([k, t]) => `<span class="gs-tag ${k}">${esc(t)}</span>`).join("")}</span>` : ""}</button>`;
+}
+// sopra il giro, una riga sola: ⏱️ le ore e ⭐ le stelle. (Niente «0 di 5 fatte»: le camere diventano verdi tutte insieme
+// con HO FINITO, la barra resterebbe ferma a zero tutto il giorno.)
+function testaGiro(z, giorno, ord, rif, anteprima) {
+  const minuti = Math.round(minutiGiornata(ord, rif) / 15) * 15;   // al quarto d'ora: «3 ore», non «2 ore e 59»
+  const segni = [minuti ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
+    rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
+  return segni.length ? `<div class="gs-giro-t"><span class="gs-segni-g">${segni.join("")}</span></div>` : "";
 }
 // i controlli in tre bollini (Michele: «ben visibili», ma «poche scritte»)
 function bloccoControlli(z, iso) {
@@ -2681,7 +2685,10 @@ function vistaArgon(z) {
   const messaggio = msg ? `<section class="gs-msg"><div class="gs-msg-t">📣 ${esc(msg.da || "Michele")}</div><p class="gs-msg-x">${esc(msg.testo)}</p></section>` : "";
   const sospesa = sosp ? `<section class="gs-avviso rosso">${ICONA("avviso")}<span><b>Fino a ${esc(L.dataLunga(sosp.a))}: solo le camere.</b></span></section>` : "";
   const pl = pianoDi(z, giorno), ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || p.stato === "fatta" || rif.some(r => r.pulizia === p.id));
-  const schede = ord.length ? `<section class="gs-camere${pl ? " col-piano" : ""}" aria-label="Le camere">${ord.map((p, i) => schedaGiornata(p, rif, anteprima, { n: i + 1, fai: (pianoPasso(pl, p.id) || {}).fai || "" })).join("")}</section>` : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
+  // 1.29.0: «ADESSO» = la camera che Sofia sta dicendo (all'inizio la prima da fare; dopo HO FINITO l'eventuale lavoro nuovo)
+  const iCorso = ord.findIndex(p => p.stato === "in_corso"), pa = guidaOra(z, giorno).passo || {};
+  const adesso = anteprima ? -1 : iCorso >= 0 ? iCorso : finito ? ord.findIndex(p => !p.stato || p.stato === "da_fare") : pa.k === "cam" ? ord.findIndex(p => p.id === pa.id) : pa.k === "fine" ? -1 : ord.findIndex(p => p.stato !== "fatta");
+  const schede = ord.length ? `<section class="gs-camere${pl ? " col-piano" : ""}" aria-label="Le camere">${testaGiro(z, giorno, ord, rif, anteprima)}${ord.map((p, i) => schedaGiornata(p, rif, anteprima, { n: i + 1, fai: (pianoPasso(pl, p.id) || {}).fai || "", ora: i === adesso })).join("")}</section>` : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
   let tasto = "";
   if (!anteprima && aperteDopo.length) tasto = `<section class="gs-avviso">${ICONA("avviso")}<span><b>Lavoro nuovo:</b> ${esc(aperteDopo.map(p => p.tipo === "stelle" ? "stelle in altre camere" : nomeBreveCamera(camera(p.camera))).join(", "))}.</span></section><button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO ANCHE QUESTO</span></button>`;
   else if (!anteprima && lavori.length && !finito) tasto = `<button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO</span></button>`;

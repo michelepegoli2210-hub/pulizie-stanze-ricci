@@ -6607,3 +6607,103 @@ body.con-finito #app [data-ho-finito]{visibility:hidden}
 body.con-finito .sg-tondo{bottom:calc(166px + env(safe-area-inset-bottom,0px))}
 body.con-finito.semplice .sofia-fuori.piatta{bottom:calc(166px + env(safe-area-inset-bottom,0px))}
 body.con-finito .sg-nuvola{bottom:calc(174px + env(safe-area-inset-bottom,0px))}
+
+/* ===================================================================================================================
+   1.29.0 · IL GIRO MINIMAL (Michele, 2/11: «come adesso, ancora più chiara, però ancora più minimal e ancora più
+   graficamente utilizzabile»). Sotto Sofia: i giorni senza bordi, i controlli in una riga piccola, poi il giro: una riga
+   per camera, tutta larga, col tondo del giro (numero · ✓ · !) e «ADESSO» sulla prima da fare. Meno grassetto, meno
+   bordi, un colore solo (il verde laguna) più il verde di «fatta».
+   =================================================================================================================== */
+/* quello che dice Sofia: una scheda bianca senza bordo */
+.gs-detto .gs-bolla{padding:16px 18px 18px;border:0;border-radius:22px;background:#FFFFFF;box-shadow:0 1px 2px rgba(13,38,34,.06),0 10px 24px -18px rgba(13,38,34,.4);font:500 17.5px/1.45 var(--f-body);color:#0D2622}
+.gs-detto .gs-bolla-chi{margin-bottom:4px;font:700 11.5px/1.2 var(--f-body);letter-spacing:.09em;color:#00665E}
+.gs-detto .gs-ciao{margin:0 0 4px;font:700 22px/1.2 var(--f-display);letter-spacing:-.01em}
+.gs-detto.parla .gs-bolla{box-shadow:0 0 0 2px #00665E,0 10px 24px -18px rgba(13,38,34,.4)}
+.gs-detto.ascolta .gs-bolla{box-shadow:0 0 0 2px #E8A09A}
+/* i sette giorni: niente bordi; oggi (o il giorno guardato) pieno */
+.gs-mappa{margin-top:18px}
+.gs-giorni{gap:4px}
+.gs-g{min-height:62px;padding:6px 1px;border:0;border-radius:16px;background:transparent}
+.gs-g span{font:600 11px/1.1 var(--f-body);letter-spacing:.05em;color:#5B7671}
+.gs-g b{margin-top:1px;font:700 20px/1.05 var(--f-display);color:#0D2622}
+.gs-g i{min-width:0;height:16px;margin-top:2px;padding:0;border-radius:0;background:transparent;font:700 12.5px/16px var(--f-body);color:#00665E}
+.gs-g.vuoto{background:transparent}
+.gs-g.vuoto b{color:#A3B8B4}
+.gs-g.vuoto i{color:#A3B8B4}
+.gs-g.on{background:#00665E}
+.gs-g.on span,.gs-g.on b,.gs-g.on i{color:#FFFFFF}
+.gs-g.on i{background:transparent}
+/* i controlli: una riga piccola, senza riquadri (colorato solo quello che c'è da fare) */
+.gs-ctrl{gap:6px 16px;margin-top:2px}
+.gs-ctrl-c{min-height:34px;padding:0;border:0;border-radius:17px;background:transparent;font:500 15.5px/1.2 var(--f-body);color:#40605A}
+.gs-ctrl-c i{font-size:17px}
+.gs-ctrl-c b{font-weight:700;color:#0D2622}
+.gs-ctrl-c.att{padding:0 13px 0 10px;background:#E3F2FD;color:#0D2622}
+.gs-ctrl-c.meta{padding:0 13px 0 10px;background:#FFF3CD;border:0;color:#663C00}
+.gs-ctrl-c.vuoto{padding:0 13px 0 10px;background:#FCE8E6;border:0;color:#A51D24}
+.gs-ctrl-c.meta b,.gs-ctrl-c.vuoto b{color:inherit}
+/* il giro: una colonna sola */
+.gs-camere{display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.gs-giro-t{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:28px;padding:0 4px}
+.gs-giro-t .gs-segni-g{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px 16px;margin:0}
+.gs-segno{min-height:0;padding:0;border:0;border-radius:0;background:transparent;font:600 16px/1.2 var(--f-body);color:#40605A;gap:6px}
+.gs-segno i{font-size:17px}
+.gs-segno.oro{background:transparent;border:0;color:#093832}
+/* la riga di una camera */
+.gs-cam,.gs-cam.gs-stelle{display:grid;grid-template-columns:42px minmax(0,1fr) auto;grid-column:auto;align-items:start;column-gap:14px;row-gap:0;width:100%;min-width:0;min-height:0;margin:0;padding:15px 14px 15px 14px;border:1px solid #E1EAE8;border-radius:20px;background:#FFFFFF;box-shadow:0 1px 2px rgba(13,38,34,.05);text-align:left;color:#0D2622;box-sizing:border-box}
+.gs-cam:active{transform:scale(.99)}
+.gs-cam .gs-np{position:static;display:grid;place-items:center;width:42px;height:42px;min-width:0;margin:0;padding:0;border:2px solid #A9D1CB;border-radius:50%;background:#FFFFFF;color:#00665E;font:700 18px/1 var(--f-display);box-shadow:none;box-sizing:border-box}
+.gs-cam.gs-stelle[data-np]::after,.gs-cam.gs-stelle[data-np]:not([data-np=""])::after{content:none;display:none}
+.gs-cam .gs-cam-x,.gs-cam.gs-stelle .gs-cam-x{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding:0;padding-top:1px}
+.gs-ora{margin-bottom:1px;font:700 11.5px/1.2 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:#00665E}
+.gs-cam .gs-nome{max-width:100%;font:700 21px/1.15 var(--f-display);letter-spacing:-.01em;color:#0D2622;overflow-wrap:anywhere}
+.gs-cam .gs-cosa,.col-piano .gs-cam .gs-cosa{display:block;max-width:100%;font:500 16.5px/1.38 var(--f-body);color:#2F4A45;overflow-wrap:anywhere}
+.gs-cam .gs-cosa i,.gs-stelle-t i,.gs-dove i{display:inline-block;margin-right:6px;font-style:normal}
+.gs-cam .gs-stelle-t{display:block;max-width:100%;margin-top:1px;font:600 15px/1.35 var(--f-body);color:#093832;overflow-wrap:anywhere}
+.gs-cam .gs-dove{display:block;max-width:100%;font:500 15.5px/1.38 var(--f-body);color:#2F4A45}
+.gs-cam .gs-dove b{font-weight:700;color:#093832}
+.gs-tags{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
+.gs-tag{display:inline-flex;align-items:center;justify-content:center;height:24px;padding:0 9px;border-radius:12px;font:700 12.5px/1 var(--f-body);letter-spacing:.02em;white-space:nowrap}
+.gs-tag.parte{background:#FCE8E6;color:#A51D24}
+.gs-tag.arriva{background:#E8F0FE;color:#174EA6}
+.gs-tag.nota{min-width:28px;padding:0 6px;background:#FFF4D6;font-size:14px}
+/* ADESSO: la prima da fare */
+.gs-cam.ora{border:2px solid #00665E;padding:14px 13px;background:#F3FAF8;box-shadow:0 10px 24px -18px rgba(0,102,94,.6)}
+.gs-cam.ora .gs-np{border-color:#00665E;background:#00665E;color:#FFFFFF}
+/* fatta: il tondo verde con la spunta, la riga resta bianca e tranquilla */
+.gs-cam.fatta{border-color:#E1EAE8;background:#FFFFFF}
+.gs-cam.fatta .gs-np{border-color:#146C43;background:#146C43;color:#FFFFFF;font-size:20px}
+.gs-cam.fatta .gs-nome{color:#3B5954}
+.gs-cam.fatta .gs-cosa{color:#146C43;font-weight:600}
+/* da sistemare */
+.gs-cam.prob{border-color:#E8C77A;background:#FFFBEF}
+.gs-cam.prob .gs-np{border-color:#B36B00;background:#FFF3CD;color:#663C00}
+.gs-cam.prob .gs-cosa{color:#663C00;font-weight:600}
+/* il lavoro a fondo: il tondo color sabbia */
+.gs-cam.k-fondo .gs-np{border-color:#E0B65A;color:#7A4E00}
+.gs-cam.k-fondo.ora .gs-np{border-color:#00665E;background:#00665E;color:#FFFFFF}
+.gs-cam.k-fondo .gs-nome{font-size:21px}
+/* i riquadri coi disegni della 1.26 non ci sono più */
+.gs-cam .gs-tile,.gs-cam .gs-segni{display:none}
+/* il tasto fisso e Sofia tonda stanno affiancati in basso (Sofia non copre più le camere) */
+body.con-finito .sg-finito{right:92px}
+body.con-finito .sg-tondo{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+/* HO FINITO: uguale a quello fisso, così quando arriva al suo posto non cambia */
+.ag-finito{min-height:64px;border-radius:20px;font-size:24px}
+.sg-finito{min-height:64px;font-size:24px}
+/* la camera aperta, con lo stesso stile leggero del giro */
+.inizio.sig.sf .gs-targa{border:0;box-shadow:0 1px 2px rgba(13,38,34,.06),0 10px 24px -18px rgba(13,38,34,.4)}
+.inizio.sig.sf .gs-targa .gs-nome{font-weight:700}
+.inizio.sig.sf .gs-targa .gs-cosa{font-weight:500;color:#2F4A45}
+.inizio.sig.sf .gs-targa .sf-ospiti,.inizio.sig.sf .gs-targa .sf-ospiti span{font-weight:500}
+.inizio.sig.sf .sf-box.oro{border:1px solid #CFE3DF}
+.inizio.sig.sf .sf-rif-t{font-weight:600}
+@media (max-width:374px){
+  .gs-cam,.gs-cam.gs-stelle{grid-template-columns:38px minmax(0,1fr) auto;column-gap:12px;padding:13px 12px}
+  .gs-cam.ora{padding:12px 11px}
+  .gs-cam .gs-np{width:38px;height:38px;font-size:16px}
+  .gs-cam .gs-nome{font-size:19px}
+  .gs-cam .gs-cosa{font-size:15.5px}
+  .gs-g b{font-size:18px}
+  .gs-detto .gs-bolla{font-size:16.5px}
+}
