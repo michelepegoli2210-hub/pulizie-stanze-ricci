@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.24.0";
+export const VERSIONE = "1.25.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -110,6 +110,14 @@ try { fetch(FILM_PRONTO.abbina).then(r => r.ok ? r.json() : null).then(j => { if
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
 const FILM_TRE = { parla: "cons-parla-3d2.webm", riposo: "cons-riposo-3d2.webm", poster: "cons-poster-3d2.webp" };
+// 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
+// prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
+// nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
+// con Gemini («Crea video», verticale, dalla stessa foto); montati con dev/capo/monta.py: solo in avanti, dissolvenze dove
+// le pose si somigliano, la fine attaccata all'inizio. Sempre piatti (niente 3D: alle signore non serve). capo-viso.webp è
+// la testa, quadrata, per i tondi (il tasto tondo, le schede «Sofia ti spiega»).
+const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: "capo-poster.webp", viso: "capo-viso.webp" };
+function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
 function sofia3dVoluta() { try { return localStorage.getItem(CHIAVE_3D) !== "no"; } catch (e) { return true; } }
@@ -353,14 +361,15 @@ function filmPuntoAbbinato(da, a, t) {
   return Math.max(0, Number(lista[Math.round(tt / (Number(j.passo) || 0.25)) % lista.length]) || 0);
 }
 function FILM_CONS(cls, tre) {
-  const f = tre ? FILM_TRE : FILM_PRONTO;
-  return `<span class="donnina gov-fig gov-film ${cls}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo"${tre ? ' data-tre="1"' : ""}>
+  const capo = !tre && sofiaCapo();   // 1.25.0
+  const f = tre ? FILM_TRE : capo ? FILM_CAPO : FILM_PRONTO;
+  return `<span class="donnina gov-fig gov-film ${cls}${capo ? " capo" : ""}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo"${tre ? ' data-tre="1"' : ""}${capo ? ' data-capo="1"' : ""}>
     <video class="cf-v" src="${f.riposo}" poster="${f.poster}" autoplay muted playsinline loop preload="auto"></video>
     <video class="cf-v giu" poster="${f.poster}" muted playsinline loop preload="none"></video>
   </span>`;
 }
 // i file dei filmati per quella casella: in 3D quelli ritagliati, altrimenti i soliti
-function filmFile(box) { return (box && box.dataset && box.dataset.tre === "1") ? FILM_TRE : FILM_PRONTO; }
+function filmFile(box) { const d = (box && box.dataset) || {}; return d.tre === "1" ? FILM_TRE : d.capo === "1" ? FILM_CAPO : FILM_PRONTO; }
 let filmTimer = null;
 function filmGov(quale, soloBox) {
   const caselle = soloBox ? [soloBox] : [...document.querySelectorAll(".gov-film")];
@@ -377,7 +386,7 @@ function filmUno(quale, box) {
   let p = box._prep;
   if (!p || p.quale !== quale) {
     const da = box.dataset.film || "";
-    const inizio = da ? filmPuntoAbbinato(da, quale, (Number(su.currentTime) || 0) + 0.3) : 0;
+    const inizio = da && box.dataset.capo !== "1" ? filmPuntoAbbinato(da, quale, (Number(su.currentTime) || 0) + 0.3) : 0;
     p = box._prep = { quale, pronto: false, da: Date.now(), inizio };
     const segna = () => { if (box._prep === p) p.pronto = true; };
     const vaiA = () => {
@@ -893,6 +902,7 @@ function rimpicciolisci(file, lato = 460) {
 }
 // Il pupazzo: tutte le facce impilate, si accende quella giusta
 function FACCIA_FOTO(cls = "") {
+  if (sofiaCapo()) return /grande|film/.test(cls) ? FILM_CONS(cls) : `<span class="donnina gov-fig gov-foto capo ${cls}" role="img" aria-label="${esc(nomeGov())}"><span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa"><img class="f-base" src="${FILM_CAPO.viso}" alt=""></span></span></span><i class="gov-alone"></i></span>`;   // 1.25.0
   const f = facceGov();
   if (/grande|film/.test(cls) && corpoPronto()) return FILM_PRONTO.riposo ? FILM_CONS(cls) : CORPO_CONS(cls);
   const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
@@ -1043,7 +1053,7 @@ function GOVERNANTE(cls = "", colore = null) {
 </svg>`;
 }
 function DONNINA(v = "scopa", cls = "", colore = null) {
-  if (v === "governante") return fotoGov() ? FACCIA_FOTO(cls) : (stileGov() === "contorno" ? GOVERNANTE(cls, colore) : GOVERNANTE_PIATTA(cls, colore));
+  if (v === "governante") return fotoGov() || sofiaCapo() ? FACCIA_FOTO(cls) : (stileGov() === "contorno" ? GOVERNANTE(cls, colore) : GOVERNANTE_PIATTA(cls, colore));
   const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = CAPELLI[colore] || colore || "#6B4226";
   const vestito = { scopa: "#4F7BE8", festa: "#EF6F7B", secchio: "#23B5A3", saluto: "#9A6BF2", governante: "#1F2A44" }[v] || "#4F7BE8";
   const braccio = (d) => `<path d="${d}" stroke="${pelle}" stroke-width="7.5" fill="none" stroke-linecap="round"/>`;
@@ -1448,6 +1458,7 @@ function disegna() {
   disegnaTestata();
   document.body.classList.toggle("nonna", !!(S.utente && addetta()));
   document.body.classList.toggle("semplice", !!(S.utente && addetta() && vistaSignoreSemplice()));
+  document.body.classList.toggle("sofia-capo", !!(S.utente && sofiaCapo()));   // 1.25.0: la Sofia delle signore
   document.body.classList.toggle("facilissima", !!(S.utente && addetta() && vistaSignoreFacile()));
   document.body.classList.toggle("argon", !!(S.utente && argonLei()));
   document.body.classList.toggle("vista-manutenzione", !!(S.utente && !addetta() && S.vista === "manutenzione"));
@@ -2465,6 +2476,7 @@ document.addEventListener("click", (e) => {
 let guidaFilm = null;
 function guidaFilmMonta() {
   const posto = document.querySelector(".gs-sofia-fig .gs-film-posto"); if (!posto) return;
+  if (guidaFilm && (guidaFilm.dataset.capo || "") !== (sofiaCapo() ? "1" : "")) { guidaFilm.remove(); guidaFilm = null; }   // 1.25.0
   if (!guidaFilm) { const t = document.createElement("span"); t.innerHTML = FILM_CONS("gs-film"); guidaFilm = t.firstElementChild; }
   if (guidaFilm.parentNode !== posto) posto.appendChild(guidaFilm);
 }
@@ -5375,10 +5387,10 @@ function sofiaFuori() {
     try { guidaNuvola(); } catch (e) {}
     return;
   }
-  const tre = sofia3d() && !addetta() ? "1" : "";
-  if (f && (f.dataset.tre || "") !== tre) { f.remove(); f = null; }
+  const tre = sofia3d() && !addetta() ? "1" : "", capo = !tre && sofiaCapo() ? "1" : "";
+  if (f && ((f.dataset.tre || "") !== tre || (f.dataset.capo || "") !== capo)) { f.remove(); f = null; }
   if (!f) {
-    f = document.createElement("button"); f.type = "button"; f.id = "sofiaFuori"; f.className = "sofia-fuori sta-parlando" + (tre ? " tre" : " piatta"); f.dataset.tre = tre; f.hidden = true;
+    f = document.createElement("button"); f.type = "button"; f.id = "sofiaFuori"; f.className = "sofia-fuori sta-parlando" + (tre ? " tre" : " piatta"); f.dataset.tre = tre; f.dataset.capo = capo; f.hidden = true;
     f.innerHTML = `<span class="sf-fondo" aria-hidden="true"></span><span class="sf-cornice">${FILM_CONS("sf-fig parla", !!tre)}</span><span class="sf-nome"><i aria-hidden="true"></i>${esc(nomeGov())}</span><span class="sf-x" aria-hidden="true">✕</span>`;
     f.onclick = () => { zittisciVoce(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna(); };
     document.body.appendChild(f);

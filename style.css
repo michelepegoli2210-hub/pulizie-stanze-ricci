@@ -6465,3 +6465,14 @@ body.semplice .barra{border-top-color:#CBDAD7}
 body.semplice .barra button{color:#3B5954}
 body.semplice .barra button[aria-pressed="true"]{background:#E0F2F1;color:#00665E}
 body.semplice .banner.finta{background:#E3F2FD;border-color:#BBDEFB;color:#0D2622}
+
+/* ===================================================================================================================
+   1.25.0 · LA SOFIA DELLE SIGNORE: la capo-governante (gilet verde laguna, chignon, cartellino col nome).
+   Solo per le signore (e nella prova della loro parte): body.sofia-capo. Michele resta con la sua Sofia.
+   =================================================================================================================== */
+.gov-film.capo{background:#E8F0EE}
+/* il tasto tondo e i tondi col viso: la testa quadrata (capo-viso.webp), centrata */
+body.sofia-capo .sg-viso{background:url(capo-viso.webp) center/cover no-repeat}
+body.sofia-capo .sv-foto,body.sofia-capo .bs-sofia .bs-foto,body.sofia-capo .dt-sofia-foto,body.sofia-capo .sv-ritratto{background-image:url(capo-viso.webp);background-size:cover;background-position:center}
+.gov-foto.capo img{object-fit:cover;object-position:50% 45%}
+@media (prefers-reduced-motion:reduce){.gov-film.capo{background:#E8F0EE url("capo-poster.webp") center/cover}}
