@@ -91,9 +91,12 @@ export const EURO_MINUTO = 0.25; // (fino alla 0.26: prezzo a minuto; dalla 0.27
 // 1.23.0 «ORE GIUSTE» (Michele, 1/11): le rifiniture sono DENTRO LE ORE: ogni rifinitura vale i suoi minuti alla tariffa
 // dell'albergo (aOre, tariffa: l'app ci mette quella del listino), arrotondata ai 5 centesimi. I prezzi a fasce restano per
 // chi torna «a pezzi» (Paghe → Orario di base → Le rifiniture).
-export const PREZZI_STELLE_BASE = { fino5: 1, fino10: 1.5, oltre10: 2.5, aOre: true, tariffa: 8, viaggio: 2 }; // a pezzi: 10 € l'ora (Michele, specifiche §14; fino alla 0.34: 1/2/3) · viaggio: a ore, i minuti per andare in un'altra camera (il giro)
+// 1.24.0 (Michele: «pagarli in pratica lo stesso»; Gemini 4 Argon: una tariffa sola, 8 € l'ora, e i «minuti premio»): i minuti
+// delle rifiniture contano × molt (1,875: quasi doppi, = 15 € l'ora), più 2 minuti per andare in ogni altra camera. Sulle
+// due settimane di prova: 108 minuti e 27 € a settimana, come coi pezzi (102-111 minuti, 27 €).
+export const PREZZI_STELLE_BASE = { fino5: 1, fino10: 1.5, oltre10: 2.5, aOre: true, tariffa: 8, viaggio: 2, molt: 1.875 }; // a pezzi: 10 € l'ora (Michele, specifiche §14; fino alla 0.34: 1/2/3) · viaggio: a ore, i minuti per andare in un'altra camera (il giro)
 export function prezziStelle(imp) { const p = { ...PREZZI_STELLE_BASE, ...((imp && imp.prezziStelle) || {}) }; if (p.tariffa == null || p.tariffa === "") p.tariffa = PREZZI_STELLE_BASE.tariffa; return p; }
-export function prezzoStella(minuti, prezzi = PREZZI_STELLE_BASE) { const m = Number(minuti) || 0; if (prezzi && prezzi.aOre) return Math.round(m * (Number(prezzi.tariffa) || 0) / 60 * 20) / 20; return Number(m <= 5 ? prezzi.fino5 : m <= 10 ? prezzi.fino10 : prezzi.oltre10) || 0; }
+export function prezzoStella(minuti, prezzi = PREZZI_STELLE_BASE) { const m = Number(minuti) || 0; if (prezzi && prezzi.aOre) return Math.round(m * (Number(prezzi.molt) || 1) * (Number(prezzi.tariffa) || 0) / 60 * 20) / 20; return Number(m <= 5 ? prezzi.fino5 : m <= 10 ? prezzi.fino10 : prezzi.oltre10) || 0; }
 export const CATALOGO = PARTI.map(p => ({ ...p, euro: prezzoStella(p.minuti) }));
 export const REGOLE_GOVERNANTE = CATALOGO;
 export const RIGA_DI = Object.fromEntries(RIGHE.map(r => [r.id, r]));

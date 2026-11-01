@@ -118,13 +118,13 @@ export function preparaParte(testo, conf, chiave) {
 export function vociTelefono() {
   try { return (window.speechSynthesis?.getVoices() || []).filter(v => /^it/i.test(v.lang)); } catch (e) { return []; }
 }
-export function parlaTelefono(testo, { onFine, onInizio } = {}) {
+export function parlaTelefono(testo, { onFine, onInizio, rate, pitch } = {}) {
   try {
     const sin = window.speechSynthesis; if (!sin) { onFine?.(); return null; }
     sin.cancel();
     const u = new SpeechSynthesisUtterance(testo);
     const to = tonoDi(leggiVoce());
-    u.lang = "it-IT"; u.rate = to.rate; u.pitch = to.pitch;
+    u.lang = "it-IT"; u.rate = Number(rate) || to.rate; u.pitch = Number(pitch) || to.pitch;
     const it = vociTelefono(); if (it.length) u.voice = it.find(v => /female|donna|alice|elsa|federica/i.test(v.name)) || it[0];
     u.onstart = () => onInizio?.();
     u.onend = () => onFine?.(); u.onerror = () => onFine?.();
@@ -556,7 +556,7 @@ export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, on
   // 0.66: anche qui il labiale segue il testo. Non c'e' un audio da leggere, quindi
   // la durata si stima dalle lettere (bocca.js) e il tempo parte quando il telefono
   // comincia davvero a parlare (onstart), con una rete se l'evento non arriva.
-  const durata = stimaDurata(t, tonoDi(c).rate);
+  const durata = stimaDurata(t, Number(c.rateTel) || tonoDi(c).rate);
   let t0 = 0, vivo = true, tic = null;
   const parti = () => {
     if (!vivo || t0) return;
@@ -568,5 +568,5 @@ export async function parla(testo, { conf, chiave, onBocca, onFine, onErrore, on
   fermaOra = () => { vivo = false; clearInterval(tic); onBocca?.(0, 0); try { window.speechSynthesis?.cancel(); } catch (e) {} };
   setTimeout(parti, 1500);
   setTimeout(chiudi, Math.max(8000, durata * 1800 + 4000));   // 1.11.0: se il telefono non dice "ho finito", si chiude lo stesso
-  parlaTelefono(t, { onInizio: parti, onFine: chiudi });
+  parlaTelefono(t, { onInizio: parti, onFine: chiudi, rate: c.rateTel, pitch: c.pitchTel });
 }

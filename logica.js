@@ -613,7 +613,7 @@ export const ARGON_BASE = {
   giriVisto: { p1: [3] },                                  // chi passa per il Visto anche senza camere in albergo: zona → giorni (0 dom … 6 sab); "direzione" se Michele vuole
   presenze: {},                                            // giorni in cui la direzione c'è ("oggi ci sono io"): iso → true
   sospensioni: {},                                         // zona → { da, a, perche }: niente rifiniture né Visti
-  premioEuro: 5, premioGiorni: 2, premioDa: "2026-11-01",  // 1.23.0 «Settimana pulita»: € a settimana, giorni di lavoro minimi, da quando
+  premioEuro: 5, premioGiorni: 2, premioDa: "2026-11-01",  // 1.23.0 «Settimana pulita», 1.24.0 il SALVADANAIO: € a settimana (parte pieno), giorni minimi, da quando
 };
 // (la cosa da guardare del venerdì sta in importazioni/argon-giro: la leggono solo i proprietari, mai le signore)
 export function argonCompleto(a) {
@@ -673,14 +673,15 @@ export function vistiSettimana(visti, zona, chiave, a) {
   const euroVisti = Math.round(pagati * c.vistoEuro * 100) / 100;
   return { n: miei.length, smentiti: miei.filter(v => v.smentito).length, pagati, euroVisti, rifatte: Math.round(rifatte * 100) / 100, importo: Math.round((euroVisti + rifatte) * 100) / 100, lista: miei };
 }
-// 1.23.0 · «ORE GIUSTE» (Michele, 1/11): le ore le decide l'app (camere + rifiniture, a ore) e c'è un piccolo premio a settimana,
-// SETTIMANA PULITA (premioEuro), se in tutta la settimana di paga nessuno ha trovato niente di non fatto nel suo lavoro (la
-// direzione: «Ho trovato non fatto»; la collega: «Manca qualcosa»), lei non ha firmato Visti smentiti, i controlli sulle sue
-// camere sono tutti «Bene» e non c'è la sospensione. Servono almeno premioGiorni giorni di lavoro con ArgonCloud acceso.
-// Stato: "ok" (in busta; a settimana aperta "se resta così") · "perso" (con i perché) · "pochi" (pochi giorni) · "spento".
+// 1.23.0 · «ORE GIUSTE» e 1.24.0 · IL SALVADANAIO (Gemini 4 Argon: «tutto o niente demotiva dal lunedì e fa coprire le
+// colleghe»). Ogni settimana di paga il salvadanaio PARTE PIENO (premioEuro, 5 €): ogni cosa trovata non fatta nel suo
+// lavoro (la direzione: «Ho trovato non fatto», anche con le micro-tracce; la collega: «Manca qualcosa»), ogni suo Visto
+// smentito (ha dato il Visto senza guardare: così perdono metà salvadanaio tutte e due) e ogni controllo non «Bene» ne toglie
+// METÀ; alla seconda è vuoto; con la sospensione è vuoto. Vale con almeno premioGiorni giorni di lavoro con ArgonCloud acceso.
+// Stato: "pieno" · "meta" · "vuoto" (con i perché) · "pochi" (pochi giorni) · "spento". A settimana aperta è «finora».
 export function premioSettimana(visti, controlli, pulizie, zona, chiave, a) {
   const c = argonCompleto(a), euro = Number(c.premioEuro) || 0;
-  const out = { euro: 0, stato: "spento", giorni: 0, perche: [], promesso: euro, minimo: Number(c.premioGiorni) || 0 };
+  const out = { euro: 0, stato: "spento", giorni: 0, perche: [], promesso: euro, minimo: Number(c.premioGiorni) || 0, mancanze: 0 };
   if (!euro || !a || !a.attivo || (c.premioDa && chiave < c.premioDa)) return out;
   const giorni = new Set();
   for (const p of Object.values(pulizie || {})) {
@@ -701,10 +702,12 @@ export function premioSettimana(visti, controlli, pulizie, zona, chiave, a) {
     const e = k.esitoProprietario || k.esito; if (!e || e === "bene") continue;
     if ((k.settimana || chiaveSettimana(k.ora || k.data + "T12:00:00")) === chiave) out.perche.push({ tipo: "controllo", data: k.data, testo: "un controllo non «Bene»" });
   }
-  if ([...giorni].some(d => argonSospesa(a, zona, d))) out.perche.push({ tipo: "sospesa", testo: "la sospensione" });
-  if (out.perche.length) return { ...out, stato: "perso" };
-  if (giorni.size < out.minimo) return { ...out, stato: "pochi" };
-  return { ...out, stato: "ok", euro };
+  const sospesa = [...giorni].some(d => argonSospesa(a, zona, d));
+  if (sospesa) out.perche.push({ tipo: "sospesa", testo: "la sospensione" });
+  out.mancanze = out.perche.length;
+  const resta = sospesa ? 0 : Math.max(0, Math.round((euro - out.mancanze * euro / 2) * 100) / 100);
+  if (giorni.size < out.minimo) return { ...out, stato: "pochi", euro: 0, resta };
+  return { ...out, stato: !out.mancanze ? "pieno" : resta > 0 ? "meta" : "vuoto", euro: resta, resta };
 }
 // Le 11 Regole: cos'è «pulito». ★ = grave (Michele, 27/10). Sofia le legge il primo giorno; stanno sempre nel Patto.
 export const REGOLE_11 = [
@@ -725,14 +728,14 @@ export const PATTO = [
   ["Benvenuta.", "Qui non contiamo i minuti con l'orologio: paghiamo il risultato, perfetto per l'ospite."],
   ["Lo standard.", "Una camera è pronta quando rispetta le 11 Regole. Sofia te le legge, e le trovi sempre scritte nell'app."],
   ["La mattina.", "Appena arrivi ascolta Sofia: ti dice quali camere fare, in che ordine, e quali rifiniture ci sono oggi, con il prodotto giusto."],
-  ["Le rifiniture.", "Sono i lavori in più, dentro le tue ore: ogni rifinitura ha i suoi minuti, pagati come le camere."],
+  ["Le rifiniture.", "Sono i lavori in più, dentro le tue ore: la paga è sempre la stessa all'ora, ma i minuti delle rifiniture contano quasi doppi, perché sono lavori di precisione; e ci sono 2 minuti in più per andare in ogni altra camera."],
   ["Un tasto solo.", "Lavora tranquilla col telefono in tasca. Quando hai finito tutto il giro e le tue rifiniture, premi «Ho finito». Sofia ti rilegge le rifiniture del giorno, per sicurezza."],
   ["Il Visto di uscita.", "Prima di andare via, chi è in albergo dopo di te (o la direzione) dà uno sguardo ai punti del giorno e preme «Visto». Vale 3 euro per chi lo dà."],
   ["Aiuto reciproco.", "Se manca un dettaglio, ce lo diciamo subito a voce e lo sistemiamo in due minuti prima del «Visto», senza perdere un centesimo."],
   ["Se sei da sola.", "Nei giorni in cui sei sola in albergo fai solo le camere: le rifiniture si fanno quando c'è chi le vede."],
   ["I soldi.", "Le ore le decide l'app, prima: camere e rifiniture. Finisci prima, prendi lo stesso. Le ore delle rifiniture entrano in busta appena arriva il «Visto»."],
   ["Lealtà.", "Se la direzione trova non fatto un lavoro già «visto», quella rifinitura non si paga, e chi ha dato il «Visto» senza guardare perde i suoi 3 euro."],
-  ["Settimana pulita.", "Se in tutta la settimana nessuno trova niente di non fatto, c'è un premio in busta: {premio}."],
+  ["Il salvadanaio.", "Ogni settimana parte pieno: {premio}. Se la direzione trova una cosa non fatta scende a metà; alla seconda si svuota. Se una collega dà il «Visto» a una cosa non fatta, perdete metà salvadanaio tutte e due. Il sabato quello che resta va in busta."],
   ["Squadra.", "Chi finisce lascia il piano impeccabile a chi entra dopo. Zero discussioni: parla l'app, e decide Michele."],
 ];
 // Il punto nascosto da toccare prima del Visto (Argon, il manuale del ladro): sopra il tasto c'è scritto DOVE mettere il dito.

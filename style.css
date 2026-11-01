@@ -6290,3 +6290,178 @@ body.premium .sofia-hero .casa-nuvola .dtf-prova{margin-left:auto;height:34px;pa
 :root[data-theme="dark"] body.semplice .inizio.sig.sf .sf-ascolta svg{color:#D4AF6A}
 :root[data-theme="dark"] body.semplice .ag-punto.michele,
 :root[data-theme="dark"] body.semplice .ag-ricorda{background:#FBF3E0;border-color:#D9BF8C;color:#1C1917}
+/* ============================================================================
+   1.24.0 (Michele, 1/11): LAGUNA PULITA e SOFIA CHE DIRIGE LE SIGNORE. "Troppi colori: qualcosa che ricordi il pulito e
+   la laguna, un po' di verde"; "appena aprono l'applicazione Sofia, i filmati di Sofia, in piccolo o in fantasmino";
+   "si devono vedere gli altri giorni e la parte dei controlli". La tavolozza è di Gemini 4 Argon (contrasto AA al sole):
+   fondo #F0F5F4, schede bianche con filo #CBDAD7, testo #0D2622, testo secondario #3B5954, verde laguna #00665E;
+   tessere: acqua #E0F2F1 (ripasso e il resto) e cielo #E3F2FD (cambio completo); parte oggi #A51D24 su #FCE8E6;
+   arriva/resta #174EA6 su #E8F0FE; rifiniture #093832 su #EAF4F2 (filo #80B3AD); le parole di Michele su avorio
+   #FFFDF5 con la barra ambra #C27800; HO FINITO e «pulita» verde #146C43; problema #663C00 su #FFF3CD (filo #B36B00).
+   ============================================================================ */
+body.semplice{--bg:#F0F5F4;--card:#FFFFFF;--card-pieno:#FFFFFF;--line:#CBDAD7;--line2:#DCE7E4;--fg:#0D2622;--muted:#3B5954;--muted2:#5B7671;--accent:#00665E;--accent-bg:#E0F2F1;--primary:#00665E;--primary-chiaro:#2E8B82;--primary-scuro:#004D47;--primary-border:#00665E;--primary-fg:#FFFFFF}
+body.semplice{background:#F0F5F4}
+/* ---- la testa con Sofia ---- */
+.gs-testa{background:#FFFFFF;border:1.5px solid #CBDAD7;border-radius:24px;padding:14px 14px 12px;box-shadow:0 1px 2px rgba(13,38,34,.05),0 12px 26px -20px rgba(13,38,34,.35)}
+.gs-sofia-r{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:12px;align-items:start}
+.gs-sofia-fig{position:relative;display:block;width:96px;height:132px;margin:0;padding:0;border:2.5px solid #00665E;border-radius:20px;overflow:hidden;background:#0D2622;cursor:pointer;box-sizing:border-box;box-shadow:0 8px 18px -12px rgba(0,102,94,.65);-webkit-tap-highlight-color:transparent;transition:box-shadow .2s ease}
+.gs-sofia-fig .gs-film-posto,.gs-sofia-fig .donnina.gov-fig.gov-film{position:absolute;inset:0;display:block;width:100%;height:100%;margin:0;border-radius:0;background:none;box-shadow:none;filter:none;overflow:hidden}
+.gs-sofia-fig .gov-film video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.gs-sofia.parla .gs-sofia-fig{box-shadow:0 0 0 4px rgba(0,102,94,.22),0 8px 18px -12px rgba(0,102,94,.65)}
+.gs-sofia .gs-giorno{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:22px;font:800 12.5px/1.2 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:#00665E}
+.gs-muta{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;margin:-6px -4px -6px 0;padding:0;border:1.5px solid #CBDAD7;border-radius:50%;background:#FFFFFF;font-size:15px;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gs-sofia .gs-ciao{margin-top:2px;font:800 23px/1.15 var(--f-display);letter-spacing:-.01em;color:#0D2622}
+.gs-bolla{position:relative;margin-top:8px;padding:8px 12px 10px;border-radius:4px 16px 16px 16px;background:#E0F2F1;border:1.5px solid #B2DFDB;color:#0D2622;font:700 16.5px/1.38 var(--f-body);max-height:9.9em;overflow:auto;overscroll-behavior:contain;overflow-wrap:anywhere}
+.gs-bolla-chi{display:block;margin-bottom:2px;font:800 11.5px/1.2 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:#00665E}
+.gs-sofia.ascolta .gs-bolla{background:#FCE8E6;border-color:#F3B8B2;color:#A51D24}
+.gs-sofia-tasti{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:8px;margin-top:12px}
+.gs-sofia-tasti.due{grid-template-columns:1fr 1fr}
+.gs-st{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:56px;margin:0;padding:0 6px;border:2px solid #00665E;border-radius:16px;background:#FFFFFF;color:#00665E;font:800 17px/1.1 var(--f-display);text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gs-st.main{background:#00665E;color:#FFFFFF}
+.gs-st.on{background:#A51D24;border-color:#A51D24;color:#FFFFFF;animation:gsAscolta 1.1s ease-in-out infinite}
+@keyframes gsAscolta{50%{box-shadow:0 0 0 6px rgba(165,29,36,.18)}}
+.gs-st:active{transform:scale(.97)}
+/* i numeri, piccoli */
+.gs-sofia .gs-numeri{margin-top:12px;gap:8px}
+.gs-sofia .gs-num{min-height:74px;padding:6px 4px;border-radius:16px;background:#F0F5F4;border:1.5px solid #CBDAD7;gap:2px}
+.gs-sofia .gs-num i{font-size:20px}
+.gs-sofia .gs-num b{font-size:21px;color:#0D2622}
+.gs-sofia .gs-num>span{font:700 13px/1.1 var(--f-body);color:#3B5954}
+.gs-sofia .gs-num.ore{background:#E3F2FD;border-color:#BBDEFB}
+.gs-sofia .gs-num.ore b{color:#0D47A1}
+.gs-sofia .gs-num.oro{background:#EAF4F2;border-color:#80B3AD}
+.gs-sofia .gs-num.oro b{color:#093832}
+/* i sette giorni */
+.gs-giorni{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px}
+.gs-g{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:64px;margin:0;padding:4px 1px;border:1.5px solid #CBDAD7;border-radius:14px;background:#FFFFFF;color:#0D2622;font:inherit;cursor:pointer;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.gs-g span{font:800 11px/1.1 var(--f-body);letter-spacing:.04em;text-transform:uppercase;color:#3B5954}
+.gs-g b{font:800 19px/1.05 var(--f-display);font-variant-numeric:lining-nums;color:#0D2622}
+.gs-g i{display:block;max-width:100%;font:700 9.5px/1.15 var(--f-body);font-style:normal;color:#00665E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs-g.vuoto{background:#F6F9F8}
+.gs-g.vuoto b,.gs-g.vuoto i{color:#8AA39E}
+.gs-g.on{background:#00665E;border-color:#00665E}
+.gs-g.on span,.gs-g.on b,.gs-g.on i{color:#FFFFFF}
+.gs-avviso.anteprima{background:#E3F2FD;border-color:#BBDEFB;color:#0D2622}
+.gs-avviso.anteprima .ic{color:#0D47A1}
+/* ---- i controlli, in vista ---- */
+.gs-ctrl{padding:12px 14px 8px;border-radius:20px;background:#FFFFFF;border:1.5px solid #CBDAD7}
+.gs-ctrl-t{margin:0 0 4px;font:800 12.5px/1.2 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:#00665E}
+.gs-ctrl-r{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start;padding:8px 0;border-top:1px solid #E3ECEA;font:600 17px/1.35 var(--f-body);color:#0D2622}
+.gs-ctrl-r:first-of-type{border-top:0}
+.gs-ci{font-size:21px;line-height:1.2;text-align:center}
+.gs-ctrl-r b{font-weight:800}
+.gs-ctrl-r small{display:block;margin-top:1px;font:600 14.5px/1.3 var(--f-body);color:#3B5954}
+.gs-ctrl-r.att{margin:2px -8px;padding:8px;border-top:0;border-radius:12px;background:#E3F2FD}
+.gs-ctrl-r.att+.gs-ctrl-r{border-top:0}
+.gs-ctrl-r.meta small,.gs-ctrl-r.vuoto small{color:#663C00}
+/* ---- le schede delle camere: Laguna Pulita, niente freccette, 16 px tra una e l'altra ---- */
+.gs-camere{gap:16px}
+.gs-cam{grid-template-columns:68px minmax(0,1fr);border-color:#CBDAD7;box-shadow:0 1px 2px rgba(13,38,34,.05),0 10px 22px -18px rgba(13,38,34,.35)}
+.gs-va{display:none}
+.gs-tile{background:#E0F2F1;border-color:#B2DFDB}
+.k-ripasso .gs-tile{background:#E0F2F1;border-color:#B2DFDB}
+.k-cambio .gs-tile{background:#E3F2FD;border-color:#BBDEFB}
+.gs-nome{font:800 24px/1.12 var(--f-display);color:#0D2622}
+.gs-cosa{font:700 18px/1.25 var(--f-body);color:#3B5954}
+.gs-pill{min-height:32px;padding:0 12px 0 9px;border-radius:16px;background:#EEF3F2;color:#3B5954;font:700 15px/1 var(--f-body)}
+.gs-pill.parte{background:#FCE8E6;color:#A51D24}
+.gs-pill.arriva,.gs-pill.resta,.gs-pill.insieme{background:#E8F0FE;color:#174EA6}
+.gs-dice{background:#FFFDF5;border:1px solid #F1E3C2;border-left:6px solid #C27800}
+.gs-dice-t{color:#8A5300}
+.gs-frase{color:#1F1600}
+.gs-rif-x{background:#EAF4F2;border:1.5px solid #80B3AD;color:#093832;font:700 16px/1.3 var(--f-body)}
+.gs-rif.giro{flex-direction:column;gap:10px}
+.gs-rif-g{display:flex;flex-direction:column;align-items:flex-start;gap:4px;grid-template-columns:none}
+.gs-rif-dove{padding-left:4px;font:700 15.5px/1.35 var(--f-body);color:#3B5954}
+.gs-cam.fatta{background:#EDF7F1;border-color:#A7D7BC}
+.gs-cam.fatta .gs-tile{background:#DDF3E6;border-color:#8FD0AC}
+.gs-cam.fatta .gs-nome{color:#0F4D2F}
+.gs-cam.fatta .gs-cosa{color:#146C43}
+.gs-cam.prob{background:#FFF3CD;border-color:#B36B00}
+.gs-cam.prob .gs-tile{background:#FFE8A8;border-color:#B36B00}
+.gs-cam.prob .gs-cosa{color:#663C00}
+/* ---- HO FINITO e VISTO: verde pieno, senza oro (Gemini: le sfumature dorate sembrano tasti spenti) ---- */
+.ag-finito{background:#146C43;color:#FFFFFF;min-height:82px;font-size:30px;box-shadow:0 2px 0 rgba(0,0,0,.12),0 14px 26px -14px rgba(20,108,67,.75)}
+.ag-tasto.visto{background:#146C43}
+.gs-fine{background:#E0F2F1;border-color:#80B3AD}
+.gs-fine.visto{background:#EDF7F1;border-color:#A7D7BC}
+.gs-msg{background:#FFFDF5;border:1.5px solid #F1E3C2;border-left:6px solid #C27800;box-shadow:none}
+.gs-msg-t{color:#8A5300}
+.gs-msg-x{color:#1F1600}
+.gs-visto{border-color:#146C43}
+.gs-tile.k-visto{background:#E0F2F1;border-color:#B2DFDB}
+.gs-visto .ag-punto.rif{background:#EAF4F2;border-left-color:#80B3AD}
+.gs-visto .ag-punto.michele{background:#FFFDF5;border-left-color:#C27800}
+.gs-avviso{border-color:#CBDAD7}
+/* ---- la camera facile coi colori della laguna ---- */
+.inizio.sig.sf .gs-targa{border-color:#CBDAD7}
+.inizio.sig.sf .sf-dice{background:#FFFDF5;border:1.5px solid #F1E3C2;border-left:6px solid #C27800;box-shadow:none}
+.inizio.sig.sf .sf-dice-t{color:#8A5300}
+.inizio.sig.sf .sf-frase{color:#1F1600}
+.inizio.sig.sf .sf-ascolta{background:#00665E;box-shadow:0 4px 12px -6px rgba(0,102,94,.5)}
+.inizio.sig.sf .sf-ascolta svg{color:#E0F2F1}
+.inizio.sig.sf .sf-sempre{border-color:#CBDAD7;color:#3B5954}
+.inizio.sig.sf .sf-box.oro{background:#F4FAF9;border-color:#80B3AD}
+.inizio.sig.sf .sf-box-t{color:#00665E}
+.inizio.sig.sf .sf-rif{border-top-color:#DCE9E6}
+.inizio.sig.sf .sf-rif-n{background:#EAF4F2;border-color:#80B3AD;color:#00665E}
+.sf-come>summary{border-color:#80B3AD;color:#00665E}
+.sf-come-x{background:#F4FAF9;border-color:#B2DFDB;color:#0D2622}
+.inizio.sig.sf .sf-passi>summary{background:#F4FAF9;border-color:#9DBFBA;color:#3B5954}
+.inizio.sig.sf .sf-passi.sf-zona>summary{background:#FFFFFF;border-color:#CBDAD7}
+.gs-torna{border-color:#00665E;color:#00665E}
+/* ---- Sofia sempre a portata (il tasto tondo) e la sua nuvoletta quando esce in fantasmino ---- */
+.sg-tondo{position:fixed;right:14px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:9990;width:68px;height:68px;margin:0;padding:0;border:3px solid #00665E;border-radius:50%;background:#0D2622;box-shadow:0 10px 24px -8px rgba(13,38,34,.55);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sg-tondo[hidden]{display:none}
+.sg-viso{position:absolute;inset:0;border-radius:50%;background:url(cons-poster.webp) 50% 13%/150% auto no-repeat}
+.sg-bollo{position:absolute;right:-5px;bottom:-5px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#00665E;color:#FFFFFF;border:2px solid #FFFFFF;font-size:13px;line-height:1}
+.sg-tondo:active{transform:scale(.95)}
+body.semplice .sofia-fuori.piatta{height:210px;right:8px;bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+body.semplice .sofia-fuori.piatta.piccola{height:170px}
+body.semplice .sofia-fuori.piatta .sf-cornice{box-shadow:0 0 0 2.5px #00665E,0 20px 44px -14px rgba(13,38,34,.6)}
+.sg-nuvola{position:fixed;left:12px;right:182px;bottom:calc(104px + env(safe-area-inset-bottom,0px));z-index:9998;max-height:44vh;overflow:auto;padding:10px 14px 12px;border-radius:18px 18px 4px 18px;background:#FFFFFF;border:2px solid #00665E;box-shadow:0 14px 30px -14px rgba(13,38,34,.5);color:#0D2622;font:700 17px/1.4 var(--f-body);overflow-wrap:anywhere}
+.sg-nuvola b{display:block;margin-bottom:3px;font:800 11.5px/1.2 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:#00665E}
+.sg-nuvola.piccola{right:150px;font-size:15.5px;max-height:34vh}
+.sg-nuvola[hidden]{display:none}
+/* ---- telefono stretto ---- */
+@media (max-width:374px){
+  .gs-sofia-r{grid-template-columns:82px minmax(0,1fr);column-gap:10px}
+  .gs-sofia-fig{width:82px;height:116px}
+  .gs-sofia .gs-ciao{font-size:20px}
+  .gs-bolla{font-size:15.5px}
+  .gs-sofia-tasti{gap:6px}
+  .gs-st{font-size:15.5px;min-height:54px}
+  .gs-g{min-height:58px}
+  .gs-g b{font-size:17px}
+  .gs-g i{font-size:8.5px}
+  .gs-ctrl-r{font-size:16px}
+  .sg-nuvola{right:160px;font-size:15.5px}
+  body.semplice .sofia-fuori.piatta{height:180px}
+}
+/* ---- tema scuro (solo dove la pagina è scura davvero: la vista «semplice» resta chiara) ---- */
+:root[data-theme="dark"] body:not(.semplice) .gs-bolla{background:#123A36;border-color:#1F5A54;color:#E8F5F3}
+:root[data-theme="dark"] body:not(.semplice) .gs-bolla-chi,
+:root[data-theme="dark"] body:not(.semplice) .gs-ctrl-t,
+:root[data-theme="dark"] body:not(.semplice) .gs-sofia .gs-giorno{color:#7FD1C7}
+:root[data-theme="dark"] body:not(.semplice) .gs-st{background:#1C1A17;color:#7FD1C7;border-color:#2E8B82}
+:root[data-theme="dark"] body:not(.semplice) .gs-st.main{background:#00665E;color:#FFFFFF}
+:root[data-theme="dark"] body:not(.semplice) .gs-g,
+:root[data-theme="dark"] body:not(.semplice) .gs-ctrl,
+:root[data-theme="dark"] body:not(.semplice) .gs-muta{background:#1C1A17;border-color:#3D3A35;color:#F8FAFC}
+:root[data-theme="dark"] body:not(.semplice) .gs-g span,
+:root[data-theme="dark"] body:not(.semplice) .gs-g b,
+:root[data-theme="dark"] body:not(.semplice) .gs-ctrl-r{color:#F8FAFC}
+:root[data-theme="dark"] body:not(.semplice) .gs-g.on{background:#00665E;border-color:#00665E}
+:root[data-theme="dark"] body:not(.semplice) .gs-ctrl-r small{color:#C9C2B8}
+:root[data-theme="dark"] body:not(.semplice) .gs-ctrl-r.att{background:#18264A}
+:root[data-theme="dark"] body:not(.semplice) .sg-nuvola{background:#1C1A17;color:#F8FAFC}
+/* ---- la testata e la barra in basso delle signore coi colori della laguna ---- */
+body.semplice header{background:rgba(240,245,244,.96);border-bottom:1px solid #CBDAD7}
+body.semplice h1{color:#00665E}
+body.semplice h1 small{color:#3B5954}
+body.semplice .who{border-color:#CBDAD7;color:#0D2622}
+body.semplice .card,body.semplice .istr-card,body.semplice .sig-box{border-color:#CBDAD7}
+body.semplice .barra{border-top-color:#CBDAD7}
+body.semplice .barra button{color:#3B5954}
+body.semplice .barra button[aria-pressed="true"]{background:#E0F2F1;color:#00665E}
+body.semplice .banner.finta{background:#E3F2FD;border-color:#BBDEFB;color:#0D2622}
