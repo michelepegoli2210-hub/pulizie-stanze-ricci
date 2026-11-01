@@ -6476,3 +6476,85 @@ body.sofia-capo .sg-viso{background:url(capo-viso.webp) center/cover no-repeat}
 body.sofia-capo .sv-foto,body.sofia-capo .bs-sofia .bs-foto,body.sofia-capo .dt-sofia-foto,body.sofia-capo .sv-ritratto{background-image:url(capo-viso.webp);background-size:cover;background-position:center}
 .gov-foto.capo img{object-fit:cover;object-position:50% 45%}
 @media (prefers-reduced-motion:reduce){.gov-film.capo{background:#E8F0EE url("capo-poster.webp") center/cover}}
+
+/* ===================================================================================================================
+   1.26.0 · SOFIA GRANDISSIMA per le signore (Michele, 1/11: «grandissima come ce l'ho io nella mia prima schermata,
+   e tutto il resto sotto Sofia; poi la mappa semplicissima delle giornate e delle stelle, poche scritte») e la TENDINA
+   DI MICHELE TRASPARENTE («voglio vedere lei che si muove dietro»).
+   =================================================================================================================== */
+/* ---- la scena: Sofia a tutto schermo ---- */
+.gs-testa.gs-hero{position:relative;display:block;margin:0 -12px;padding:0;height:calc(100svh - 140px);min-height:470px;max-height:860px;border:0;border-radius:0 0 28px 28px;overflow:hidden;background:#E8F0EE;box-shadow:0 14px 30px -22px rgba(13,38,34,.55)}
+#app>.gs-testa.gs-hero:first-child{margin-top:-12px}
+.gs-hero .gs-sofia-fig{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:0;background:#E8F0EE;box-shadow:none;cursor:pointer}
+.gs-hero .gs-sofia-fig .gov-film video{object-fit:cover;object-position:50% 0%}
+.gs-hero.parla .gs-sofia-fig{box-shadow:none}
+.gs-hero-alto{position:absolute;z-index:2;left:12px;right:12px;top:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;pointer-events:none}
+.gs-hero-alto>*{pointer-events:auto}
+.gs-hero .gs-giorno{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:16px;background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);font:800 12.5px/1 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:#00665E;box-shadow:0 2px 8px -4px rgba(13,38,34,.35)}
+.gs-hero .gs-muta{width:46px;height:46px;margin:0;border:1.5px solid rgba(0,102,94,.35);background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);font-size:20px;box-shadow:0 2px 8px -4px rgba(13,38,34,.35)}
+/* la tendina di vetro: quello che dice e i tre tasti; dietro si vede lei */
+.gs-tenda{position:absolute;z-index:2;left:10px;right:10px;bottom:10px;padding:10px;border-radius:26px;background:rgba(240,245,244,.32);border:1.5px solid rgba(255,255,255,.6);-webkit-backdrop-filter:blur(2px) saturate(1.1);backdrop-filter:blur(2px) saturate(1.1);box-shadow:0 12px 30px -14px rgba(13,38,34,.5)}
+.gs-hero .gs-bolla{margin:0;padding:10px 14px 12px;border-radius:18px;background:rgba(255,255,255,.76);border:1.5px solid rgba(178,223,219,.95);font:700 18px/1.38 var(--f-body);color:#0D2622;max-height:min(30svh,9em)}
+.gs-hero .gs-bolla-chi{margin-bottom:3px}
+.gs-hero .gs-ciao{display:block;margin:0 0 3px;font:800 22px/1.15 var(--f-display);letter-spacing:-.01em;color:#0D2622}
+.gs-hero.ascolta .gs-bolla{background:rgba(252,232,230,.9);border-color:#F3B8B2;color:#A51D24}
+.gs-hero .gs-sofia-tasti{margin-top:10px;gap:8px}
+.gs-hero .gs-st{min-height:58px;background:rgba(255,255,255,.84)}
+.gs-hero .gs-st.main{background:#00665E;color:#FFFFFF}
+.gs-hero .gs-st.on{background:#A51D24;border-color:#A51D24;color:#FFFFFF}
+/* ---- la mappa sotto Sofia: i sette giorni, ⏱️ e ⭐ ---- */
+.gs-mappa{margin-top:14px}
+.gs-mappa .gs-giorni{margin-top:0}
+.gs-g i{display:grid;place-items:center;min-width:22px;height:20px;margin-top:1px;padding:0 5px;border-radius:10px;background:#E0F2F1;font:800 12px/1 var(--f-body);color:#00665E}
+.gs-g.vuoto i{background:transparent;color:#8AA39E}
+.gs-g.on i{background:rgba(255,255,255,.22);color:#FFFFFF}
+.gs-segni-g{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:10px}
+.gs-segno{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 16px 0 12px;border-radius:20px;background:#FFFFFF;border:1.5px solid #CBDAD7;font:800 17px/1 var(--f-body);color:#0D2622}
+.gs-segno i{font-style:normal;font-size:19px;line-height:1}
+.gs-segno.oro{background:#EAF4F2;border-color:#80B3AD;color:#093832}
+/* ---- i controlli in tre bollini ---- */
+.gs-ctrl{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+.gs-ctrl-c{display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 15px 0 11px;border-radius:21px;background:#FFFFFF;border:1.5px solid #CBDAD7;font:700 16px/1.1 var(--f-body);color:#0D2622}
+.gs-ctrl-c i{font-style:normal;font-size:19px;line-height:1}
+.gs-ctrl-c b{font-weight:800}
+.gs-ctrl-c.att{background:#E3F2FD;border-color:#90CAF9}
+.gs-ctrl-c.meta{background:#FFF3CD;border-color:#B36B00;color:#663C00}
+.gs-ctrl-c.vuoto{background:#FCE8E6;border-color:#F3B8B2;color:#A51D24}
+/* ---- le camere: riquadri, una parola sola ---- */
+.gs-camere{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gs-cam{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:3px;min-width:0;min-height:146px;padding:12px 12px 10px;border-radius:22px;text-align:left}
+.gs-cam .gs-tile{width:54px;height:54px;margin-bottom:4px;border-radius:17px;font-size:31px}
+.gs-cam .gs-nome{max-width:100%;font:800 22px/1.1 var(--f-display);overflow-wrap:anywhere}
+.gs-cam .gs-cosa{font:700 16px/1.2 var(--f-body)}
+.gs-segni{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto;padding-top:6px}
+.gs-sg{display:inline-flex;align-items:center;gap:3px;min-width:32px;height:30px;padding:0 8px;border-radius:15px;background:#F0F5F4;border:1px solid #DCE7E4;font-size:16px;line-height:1;justify-content:center}
+.gs-sg b{font:800 15px/1 var(--f-body);color:#093832}
+.gs-sg.n{background:#EAF4F2;border-color:#80B3AD}
+.gs-cam.gs-stelle{grid-column:1/-1;flex-direction:row;align-items:center;gap:12px;min-height:0;padding:12px}
+.gs-cam.gs-stelle .gs-tile{flex:0 0 auto;margin:0;background:#EAF4F2;border-color:#80B3AD}
+.gs-cam.gs-stelle .gs-cam-x{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gs-dove{font:700 16px/1.35 var(--f-body);color:#3B5954}
+.gs-msg-x{font-size:19px}
+/* in fondo, HO FINITO sale sopra il tasto tondo di Sofia (non ci finisce sotto) */
+body.semplice.argon #app{padding-bottom:190px}
+@media (max-width:374px){
+  .gs-hero .gs-bolla{font-size:16.5px}
+  .gs-hero .gs-ciao{font-size:20px}
+  .gs-cam .gs-nome{font-size:20px}
+  .gs-cam{min-height:136px}
+  .gs-ctrl-c{font-size:15px}
+}
+/* ---- la tendina di Michele: di vetro, si vede Sofia che si muove dietro ---- */
+body.premium .sofia-hero .casa-nuvola{background-color:rgba(253,250,244,.16) !important;background-image:none !important;-webkit-backdrop-filter:blur(1.5px) saturate(1.05) !important;backdrop-filter:blur(1.5px) saturate(1.05) !important}
+body.premium .sofia-hero .casa-nuvola .casa-vene{display:none !important}
+body.premium .sofia-hero .casa-nuvola .of-fumetto,body.premium .sofia-hero .casa-nuvola .of-fumetto::before{background:rgba(255,255,255,.66) !important}
+body.premium .sofia-hero .casa-nuvola .of-c,body.premium .sofia-hero .casa-nuvola .csf-c{background:rgba(255,255,255,.52) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+body.premium .sofia-hero .casa-nuvola .of-c.att,body.premium .sofia-hero .casa-nuvola .csf-c.att{background:rgba(246,234,209,.64) !important}
+body.premium .sofia-hero .casa-nuvola .of-c.rosso,body.premium .sofia-hero .casa-nuvola .csf-c.rosso{background:rgba(254,226,226,.68) !important}
+body.premium .sofia-hero .casa-nuvola .of-fumetto,body.premium .sofia-hero .casa-nuvola .of-c,body.premium .sofia-hero .casa-nuvola .csf-c{text-shadow:0 0 6px rgba(255,255,255,.9),0 1px 1px rgba(255,255,255,.8)}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola{background-color:rgba(10,15,28,.18) !important}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-fumetto,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-fumetto::before{background:rgba(19,27,45,.66) !important}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c{background:rgba(19,27,45,.52) !important}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c.att,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c.att{background:rgba(58,47,31,.62) !important}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c.rosso,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c.rosso{background:rgba(59,20,20,.64) !important}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-fumetto,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c{text-shadow:0 0 6px rgba(0,0,0,.8),0 1px 1px rgba(0,0,0,.7)}

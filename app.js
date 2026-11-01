@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.25.0";
+export const VERSIONE = "1.26.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2249,27 +2249,6 @@ function pilloleOspite(p) {
 }
 // le rifiniture del giro nelle altre camere, per lavoro (Gemini: «Phon: filtro → Salvatore, Aurora, Michele, Antonio»)
 function rifPerLavoro(rif) { const g = []; for (const r of rif) { let x = g.find(y => y.nome === r.nome); if (!x) g.push(x = { nome: r.nome, dove: [] }); const d = r.luogoNome || camera(r.camera).nome; if (!x.dove.includes(d)) x.dove.push(d); } return g; }
-function schedaGiornata(p, rif, anteprima) {
-  const stelle = p.tipo === "stelle", c = camera(p.camera);
-  const nome = stelle ? "Altre camere" : nomeBreveCamera(c);
-  const st = anteprima ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
-  const cosa = stelle ? "Solo le rifiniture" : p.tipo === "fisso" && PAROLE.norm(titoloBase(p)) === PAROLE.norm(nome) ? `Come ogni ${L.GIORNI[L.giornoSettimana(p.data)]}` : titoloBase(p) + parteTesto(p);   // il terrazzo: «Come ogni sabato», non «Terrazzo» due volte
-  const sotto = st === "fatta" ? `Pulita${p.ora ? " alle " + L.oraBreve(p.ora) : ""}` : st === "prob" ? (p.nota || "Da sistemare") : cosa;
-  const pillole = st ? [] : pilloleOspite(p);
-  const frasi = st ? [] : [p.dettagli, p.istruzioni].filter(Boolean);
-  const mie = st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
-  const chip = (t) => `<span class="gs-rif-x"><i aria-hidden="true">⭐</i><span>${esc(t)}</span></span>`;
-  let rifHtml = "";
-  if (mie.length && stelle) rifHtml = `<span class="gs-rif giro">${rifPerLavoro(mie).map(g => `<span class="gs-rif-g">${chip(g.nome)}<span class="gs-rif-dove">${esc(g.dove.join(" · "))}</span></span>`).join("")}</span>`;
-  else if (mie.length) rifHtml = `<span class="gs-rif">${mie.map(r => chip(r.camera && r.camera !== p.camera ? testoRif(r) : r.nome)).join("")}</span>`;
-  return `<button class="gs-cam ${tipoGiornata(p)} ${st}" data-dettagli="${esc(p.id)}">
-    <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : disegnoGiornata(p)}</span>
-    <span class="gs-cam-x"><span class="gs-nome">${esc(nome)}</span><span class="gs-cosa">${esc(sotto)}</span></span>
-    ${pillole.length ? `<span class="gs-pills">${pillole.map(([k, i, t]) => `<span class="gs-pill ${k}"><i aria-hidden="true">${i}</i>${esc(t)}</span>`).join("")}</span>` : ""}
-    ${frasi.length ? `<span class="gs-dice"><span class="gs-dice-t">📣 ${esc(p.dettagliDa || "Michele")} ti dice</span>${frasi.map(x => `<span class="gs-frase">«${esc(x)}»</span>`).join("")}</span>` : ""}
-    ${rifHtml}
-  </button>`;
-}
 // ============================================================================
 //  SOFIA GUIDA (gratis): i passi della giornata, la voce e il microfono del telefono, le risposte da quello che l'app sa
 // ============================================================================
@@ -2399,43 +2378,83 @@ function guidaRispondi(frasi) {
   guidaParla("Ti posso dire solo le cose di oggi: le camere, cosa fare in ogni camera, le rifiniture e cosa ha detto Michele. Chiedimi: cosa devo fare? Oppure: e poi? Oppure il nome di una camera.");
 }
 // la testa con Sofia (la vede appena apre l'app)
+// ============================================================================
+//  1.26.0 SOFIA GRANDISSIMA (Michele, 1/11): «Sofia la devi mettere grandissima come ce l'ho io nella mia prima
+//  schermata, e solo così; tutto il resto sotto Sofia. La prima cosa che si deve vedere è poter parlare e ascoltare Sofia
+//  che gli dice la cosa della giornata: l'interfaccia di Sofia. Poi sotto la mappa semplicissima delle giornate e delle
+//  stelle che devono fare, poche scritte in giro». La testa diventa una scena a tutto schermo: il filmato della
+//  capo-governante, in alto il giorno e il 🔊/🔇, in basso la sua tendina di vetro (si vede lei dietro) con quello che dice
+//  e i tre tasti. Sotto: i sette giorni, ⏱️ e ⭐, i controlli in tre bollini, le camere a riquadri con una parola sola.
+// ============================================================================
 function testaSofia(z, giorno, lavori, rif, anteprima) {
   const oggi = L.oggiISO();
   const g = guidaOra(z, giorno);
-  const bolla = guida.ascolta ? "Ti ascolto…" : guida.parla && guida.voce ? guida.voce : (g.passo.breve || g.passo.testo);
-  const camere = lavori.filter(p => p.tipo !== "stelle"), minuti = minutiGiornata(lavori, rif);
-  const parolaLav = camere.some(p => p.tipo === "fisso" || p.tipo === "extra") ? (camere.length === 1 ? "lavoro" : "lavori") : (camere.length === 1 ? "camera" : "camere");
-  const numeri = [camere.length ? `<span class="gs-num"><i aria-hidden="true">🛏️</i><b>${camere.length}</b><span>${parolaLav}</span></span>` : "",
-    minuti ? `<span class="gs-num ore"><i aria-hidden="true">⏱️</i><b>${esc(oreTessera(minuti))}</b><span>di lavoro</span></span>` : "",
-    rif.length ? `<span class="gs-num oro"><i aria-hidden="true">⭐</i><b>${rif.length}</b><span>${rif.length === 1 ? "rifinitura" : "rifiniture"}</span></span>` : ""].filter(Boolean);
-  const giorni = Array.from({ length: 7 }, (_, i) => L.aggiungiGiorni(oggi, i)).map(d => { const n = pulizieDelGiorno(d, z).filter(p => p.tipo !== "stelle").length; return `<button type="button" class="gs-g${d === giorno ? " on" : ""}${n ? "" : " vuoto"}" data-g="${d}" aria-pressed="${d === giorno}"><span>${d === oggi ? "oggi" : L.GG[L.giornoSettimana(d)]}</span><b>${L.giornoDelMese(d)}</b><i>${n ? n + (n === 1 ? " camera" : " camere") : "—"}</i></button>`; }).join("");
   const parlando = guida.parla || (voceInCorso && !!guida.voce);
-  return `<section class="gs-testa gs-sofia${parlando ? " parla" : ""}${guida.ascolta ? " ascolta" : ""}">
-    <div class="gs-sofia-r">
-      <button type="button" class="gs-sofia-fig" data-sg="ascolta" aria-label="${esc(nomeGov())}: tocca e ti dico cosa fare"><span class="gs-film-posto"></span></button>
-      <div class="gs-sofia-x">
-        <div class="gs-giorno">${esc(L.dataLunga(giorno))}${anteprima ? "" : `<button type="button" class="gs-muta" data-sg="muta" aria-pressed="${!guidaMuta()}" aria-label="${guidaMuta() ? "Sofia zitta quando apri una camera" : "Sofia parla quando apri una camera"}">${guidaMuta() ? "🔇" : "🔊"}</button>`}</div>
-        <div class="gs-ciao">${anteprima ? `Cosa c'è ${esc(L.GIORNI[L.giornoSettimana(giorno)])}` : `${esc(saluto())}, ${esc(nomeSignora())}!`}</div>
-        <div class="gs-bolla" aria-live="polite"><span class="gs-bolla-chi">${esc(nomeGov())}</span>${esc(bolla)}</div>
+  const bolla = guida.ascolta ? "Ti ascolto…" : guida.parla && guida.voce ? guida.voce : (g.passo.breve || g.passo.testo);
+  const ciao = anteprima ? `Cosa c'è ${L.GIORNI[L.giornoSettimana(giorno)]}` : `${saluto()}, ${nomeSignora()}!`;
+  // il saluto in grassetto quando sta zitta (quando parla il saluto è già dentro quello che dice)
+  const conCiao = !parlando && !guida.ascolta;
+  return `<section class="gs-testa gs-sofia gs-hero${parlando ? " parla" : ""}${guida.ascolta ? " ascolta" : ""}${anteprima ? " anteprima" : ""}">
+    <button type="button" class="gs-sofia-fig" data-sg="ascolta" aria-label="${esc(nomeGov())}: tocca e ti dico cosa fare"><span class="gs-film-posto"></span></button>
+    <div class="gs-hero-alto"><span class="gs-giorno">${esc(L.dataLunga(giorno))}</span>${anteprima ? "" : `<button type="button" class="gs-muta" data-sg="muta" aria-pressed="${!guidaMuta()}" aria-label="${guidaMuta() ? "Sofia zitta quando apri una camera" : "Sofia parla quando apri una camera"}">${guidaMuta() ? "🔇" : "🔊"}</button>`}</div>
+    <div class="gs-tenda">
+      <div class="gs-bolla" aria-live="polite"><span class="gs-bolla-chi">${esc(nomeGov())}</span>${conCiao ? `<b class="gs-ciao">${esc(ciao)}</b>` : `<span class="gs-ciao" hidden>${esc(ciao)}</span>`}${esc(bolla)}</div>
+      <div class="gs-sofia-tasti${anteprima ? " due" : ""}">
+        <button type="button" class="gs-st main" data-sg="ascolta">${parlando ? "⏹ Basta" : "🔊 Ascolta"}</button>
+        ${anteprima ? `<button type="button" class="gs-st" data-g="${oggi}">↩ Torna a oggi</button>` : `<button type="button" class="gs-st" data-sg="poi">E poi? ➜</button><button type="button" class="gs-st${guida.ascolta ? " on" : ""}" data-sg="chiedi">🎤 Chiedi</button>`}
       </div>
     </div>
-    <div class="gs-sofia-tasti${anteprima ? " due" : ""}">
-      <button type="button" class="gs-st main" data-sg="ascolta">${parlando ? "⏹ Basta" : "🔊 Ascolta"}</button>
-      ${anteprima ? `<button type="button" class="gs-st" data-g="${oggi}">↩ Torna a oggi</button>` : `<button type="button" class="gs-st" data-sg="poi">E poi? ➜</button><button type="button" class="gs-st${guida.ascolta ? " on" : ""}" data-sg="chiedi">🎤 Chiedi</button>`}
-    </div>
-    ${lavori.length ? `<div class="gs-numeri n${numeri.length}">${numeri.join("")}</div>` : ""}
-    <div class="gs-giorni" role="group" aria-label="I giorni">${giorni}</div>
   </section>`;
 }
-// i controlli in vista (Michele: «la parte dei controlli deve essere ben visibile»)
+// la mappa della giornata, sotto Sofia: i sette giorni (col numero di camere) e due bollini, ⏱️ le ore e ⭐ le stelle
+function mappaGiornata(z, giorno, lavori, rif) {
+  const oggi = L.oggiISO();
+  const giorni = Array.from({ length: 7 }, (_, i) => L.aggiungiGiorni(oggi, i)).map(d => { const n = pulizieDelGiorno(d, z).filter(p => p.tipo !== "stelle").length; return `<button type="button" class="gs-g${d === giorno ? " on" : ""}${n ? "" : " vuoto"}" data-g="${d}" aria-pressed="${d === giorno}" aria-label="${esc(L.dataLunga(d))}: ${n ? n + (n === 1 ? " camera" : " camere") : "niente"}"><span>${d === oggi ? "oggi" : L.GG[L.giornoSettimana(d)]}</span><b>${L.giornoDelMese(d)}</b><i>${n || "–"}</i></button>`; }).join("");
+  const minuti = minutiGiornata(lavori, rif);
+  const segni = [minuti ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
+    rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
+  return `<section class="gs-mappa" aria-label="La giornata"><div class="gs-giorni" role="group" aria-label="I giorni">${giorni}</div>${segni.length ? `<div class="gs-segni-g">${segni.join("")}</div>` : ""}</section>`;
+}
+// una camera = un riquadro: il disegno, il nome, UNA parola (cambio · ripasso · pulita) e i segni (🚪 parte, 🧳 arriva,
+// ⭐ quante stelle, 📣 Michele ti dice qualcosa). Il resto lo dice Sofia quando la apri.
+function parolaGiornata(p, nome) {
+  if (p.tipo === "fisso" && PAROLE.norm(titoloBase(p)) === PAROLE.norm(nome)) return `ogni ${L.GIORNI[L.giornoSettimana(p.data)]}`;
+  return String(titoloBase(p) || "").trim().split(/\s+/)[0].toLowerCase();
+}
+function schedaGiornata(p, rif, anteprima) {
+  const stelle = p.tipo === "stelle", c = camera(p.camera);
+  const st = anteprima ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
+  const mie = st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
+  if (stelle) {
+    const dove = [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))];
+    return `<button class="gs-cam gs-stelle ${st}" data-dettagli="${esc(p.id)}" aria-label="${st === "fatta" ? "Stelle nelle altre camere: fatte" : `Stelle in altre camere: ${esc(dove.join(", "))}`}">
+    <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : "⭐"}</span>
+    <span class="gs-cam-x"><span class="gs-nome">${st === "fatta" ? "Stelle fatte" : "Altre camere"}</span>${dove.length ? `<span class="gs-dove">${esc(dove.join(" · "))}</span>` : ""}</span>
+  </button>`;
+  }
+  const nome = nomeBreveCamera(c);
+  const parola = st === "fatta" ? "pulita" : st === "prob" ? "da sistemare" : parolaGiornata(p, nome);
+  const segni = [];
+  if (!st && p.partenza) segni.push(["🚪", "", "l'ospite parte"]);
+  else if (!st && p.arrivo) segni.push(["🧳", "", "arriva un ospite"]);
+  if (mie.length) segni.push(["⭐", String(mie.length), mie.length === 1 ? "una stella" : `${mie.length} stelle`]);
+  if (!st && (p.dettagli || p.istruzioni)) segni.push(["📣", "", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
+  return `<button class="gs-cam ${tipoGiornata(p)} ${st}" data-dettagli="${esc(p.id)}" aria-label="${esc(nome)}: ${esc(parola)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}">
+    <span class="gs-tile" aria-hidden="true">${st === "fatta" ? "✅" : st === "prob" ? "⚠️" : disegnoGiornata(p)}</span>
+    <span class="gs-nome">${esc(nome)}</span>
+    <span class="gs-cosa">${esc(parola)}</span>
+    ${segni.length ? `<span class="gs-segni" aria-hidden="true">${segni.map(([i, n]) => `<span class="gs-sg${n ? " n" : ""}">${i}${n ? `<b>${esc(n)}</b>` : ""}</span>`).join("")}</span>` : ""}
+  </button>`;
+}
+// i controlli in tre bollini (Michele: «ben visibili», ma «poche scritte»)
 function bloccoControlli(z, iso) {
   const vedono = nomiChiVede(chiVedeIl(z, iso)), daDare = vistiDaDare(z);
   const pr = L.premioSettimana(S.visti, S.controlli, S.pulizie, z, L.settimanaCorrente(), S.argon);
-  const righe = [];
-  if (daDare.length) righe.push(`<div class="gs-ctrl-r att"><span class="gs-ci" aria-hidden="true">👀</span><span>Da guardare: il lavoro di <b>${esc(elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))]))}</b> (qui sotto)</span></div>`);
-  righe.push(`<div class="gs-ctrl-r"><span class="gs-ci" aria-hidden="true">🔎</span><span>${vedono.length ? `Il tuo lavoro di oggi lo guarda <b>${esc(vedono.join(" o "))}</b>` : "Oggi nessuno guarda il tuo lavoro: solo le camere"}</span></div>`);
-  if (pr.stato !== "spento") righe.push(`<div class="gs-ctrl-r ${pr.stato}"><span class="gs-ci" aria-hidden="true">🐷</span><span>Salvadanaio della settimana: <b>${eur(pr.stato === "pochi" ? pr.promesso : pr.euro)}</b>${pr.stato === "meta" ? `<small>metà: ${esc(pr.perche[0].testo)}</small>` : pr.stato === "vuoto" ? `<small>vuoto: ${esc(pr.perche.map(x => x.testo).join(", "))}</small>` : pr.stato === "pochi" ? `<small>vale se lavori almeno ${pr.minimo} giorni nella settimana</small>` : `<small>pieno: se nessuno trova niente di non fatto, sabato è tuo</small>`}</span></div>`);
-  return `<section class="gs-ctrl" aria-label="Controlli"><div class="gs-ctrl-t">Controlli</div>${righe.join("")}</section>`;
+  const b = [];
+  if (daDare.length) b.push(`<span class="gs-ctrl-c att"><i aria-hidden="true">👀</i><span>guardi <b>${esc(elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))]))}</b></span></span>`);
+  b.push(`<span class="gs-ctrl-c"><i aria-hidden="true">🔎</i><span>${vedono.length ? `ti guarda <b>${esc(vedono.join(" o "))}</b>` : "nessuno ti guarda"}</span></span>`);
+  if (pr.stato !== "spento") b.push(`<span class="gs-ctrl-c ${pr.stato}" aria-label="Salvadanaio della settimana: ${esc(eur(pr.stato === "pochi" ? pr.promesso : pr.euro))}"><i aria-hidden="true">🐷</i><b>${esc(eur(pr.stato === "pochi" ? pr.promesso : pr.euro))}</b></span>`);
+  return `<section class="gs-ctrl" aria-label="Controlli">${b.join("")}</section>`;
 }
 function vistaArgon(z) {
   const oggi = L.oggiISO(), giorno = S.giorno && S.giorno > oggi && S.giorno <= L.aggiungiGiorni(oggi, 6) ? S.giorno : oggi, anteprima = giorno !== oggi;
@@ -2446,21 +2465,21 @@ function vistaArgon(z) {
   const sosp = !anteprima && L.argonSospesa(S.argon, z, oggi) ? (S.argon.sospensioni || {})[z] : null;
   const parlato = guidaOra(z, giorno).passo.testo;
   const testa = testaSofia(z, giorno, lavori, rif, anteprima) + `<span hidden data-istr-testo="argon">${esc(parlato)}</span>`;
-  // ha finito: subito sotto la testa (con il Visto, quando c'è)
+  const mappa = mappaGiornata(z, giorno, lavori, rif);
   const aperteDopo = finito ? lavori.filter(p => p.stato === "da_fare" || p.stato === "in_corso") : [];
-  const fine = finito && !aperteDopo.length ? `<section class="gs-fine${v.vistoOra ? " visto" : ""}">${DONNINA("festa", "piccola")}<span><b>Hai finito alle ${esc(L.oraBreve(v.finitoOra))}</b><span>${v.vistoOra ? `Visto di ${esc(v.vistoNome || "la direzione")} alle ${esc(L.oraBreve(v.vistoOra))} ✓` : rif.length ? `Le rifiniture aspettano il Visto di ${esc(vedono.join(" o ") || "chi passa dopo")}.` : "Brava! Puoi andare."}</span></span></section>` : "";
+  const fine = finito && !aperteDopo.length ? `<section class="gs-fine${v.vistoOra ? " visto" : ""}">${DONNINA("festa", "piccola")}<span><b>Hai finito alle ${esc(L.oraBreve(v.finitoOra))}</b><span>${v.vistoOra ? `Visto di ${esc(v.vistoNome || "la direzione")} ✓` : rif.length ? `Aspetta il Visto di ${esc(vedono.join(" o ") || "chi passa dopo")}.` : "Brava! Puoi andare."}</span></span></section>` : "";
   const msg = messaggioDelGiorno(giorno);
-  const messaggio = msg ? `<section class="gs-msg"><div class="gs-msg-t">📣 ${esc(msg.da || "Michele")} ti scrive</div><p class="gs-msg-x">${esc(msg.testo)}</p></section>` : "";
-  const sospesa = sosp ? `<section class="gs-avviso rosso">${ICONA("avviso")}<span><b>Fino a ${esc(L.dataLunga(sosp.a))}: solo le camere.</b> Niente rifiniture e niente Visti, per tutte.</span></section>` : "";
-  const schede = lavori.length ? `<section class="gs-camere" aria-label="Le camere">${lavoriInOrdine(lavori).map(p => schedaGiornata(p, rif, anteprima)).join("")}</section>` : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))} non ci sono camere per te.</span></section>` : "");
+  const messaggio = msg ? `<section class="gs-msg"><div class="gs-msg-t">📣 ${esc(msg.da || "Michele")}</div><p class="gs-msg-x">${esc(msg.testo)}</p></section>` : "";
+  const sospesa = sosp ? `<section class="gs-avviso rosso">${ICONA("avviso")}<span><b>Fino a ${esc(L.dataLunga(sosp.a))}: solo le camere.</b></span></section>` : "";
+  const schede = lavori.length ? `<section class="gs-camere" aria-label="Le camere">${lavoriInOrdine(lavori).map(p => schedaGiornata(p, rif, anteprima)).join("")}</section>` : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
   let tasto = "";
-  if (!anteprima && aperteDopo.length) tasto = `<section class="gs-avviso">${ICONA("avviso")}<span><b>Dopo il tuo «Ho finito» è arrivato un lavoro nuovo:</b> ${esc(aperteDopo.map(p => p.tipo === "stelle" ? "rifiniture in altre camere" : nomeBreveCamera(camera(p.camera))).join(", "))}.</span></section><button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO ANCHE QUESTO</span></button>`;
+  if (!anteprima && aperteDopo.length) tasto = `<section class="gs-avviso">${ICONA("avviso")}<span><b>Lavoro nuovo:</b> ${esc(aperteDopo.map(p => p.tipo === "stelle" ? "stelle in altre camere" : nomeBreveCamera(camera(p.camera))).join(", "))}.</span></section><button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO ANCHE QUESTO</span></button>`;
   else if (!anteprima && lavori.length && !finito) tasto = `<button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO</span></button>`;
   const spiegazioni = anteprima ? "" : istruzioniDelGiorno(oggi, z).map((x, i) => cardIstruzione(x, i)).join("");
   const rifiuti = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(giorno) + 1) % 7);
-  const bidoni = rifiuti && z === "ap" ? `<section class="gs-avviso">${ICONA("bidone")}<span>${anteprima ? "Quella sera" : "Stasera"} fuori i bidoni: <b>${esc(rifiuti.cosa.replace(/^./, ch => ch.toUpperCase()))}</b></span></section>` : "";
-  if (anteprima) return testa + `<section class="gs-avviso anteprima">${ICONA("calendario")}<span>Stai guardando <b>${esc(L.dataLunga(giorno))}</b>: è solo da leggere.</span></section>` + messaggio + schede + bidoni;
-  return testa + fine + bloccoControlli(z, oggi) + cardVisto(z) + sospesa + messaggio + spiegazioni + schede + tasto + bidoni;
+  const bidoni = rifiuti && z === "ap" ? `<section class="gs-avviso">${ICONA("bidone")}<span>${anteprima ? "Quella sera" : "Stasera"} fuori: <b>${esc(rifiuti.cosa.replace(/^./, ch => ch.toUpperCase()))}</b></span></section>` : "";
+  if (anteprima) return testa + mappa + messaggio + schede + bidoni;
+  return testa + mappa + fine + bloccoControlli(z, oggi) + cardVisto(z) + sospesa + messaggio + spiegazioni + schede + tasto + bidoni;
 }
 // i tasti di Sofia (anche quando la pagina si ridisegna) e la camera aperta: Sofia la dice (dopo che il foglio si è aperto)
 document.addEventListener("click", (e) => {
@@ -2479,7 +2498,17 @@ function guidaFilmMonta() {
   if (guidaFilm && (guidaFilm.dataset.capo || "") !== (sofiaCapo() ? "1" : "")) { guidaFilm.remove(); guidaFilm = null; }   // 1.25.0
   if (!guidaFilm) { const t = document.createElement("span"); t.innerHTML = FILM_CONS("gs-film"); guidaFilm = t.firstElementChild; }
   if (guidaFilm.parentNode !== posto) posto.appendChild(guidaFilm);
+  guidaHeroMisura();
 }
+// 1.26.0: la scena di Sofia arriva giusta fino alla barra in basso (con la striscia della prova sopra, un po' più bassa)
+function guidaHeroMisura() {
+  const h = document.querySelector(".gs-hero"); if (!h) return;
+  const nav = document.querySelector(".barra"), navH = nav && nav.getClientRects().length ? nav.getBoundingClientRect().height : 0;
+  const top = h.getBoundingClientRect().top + (window.scrollY || 0);
+  const alto = Math.round(Math.max(470, Math.min(860, (window.innerHeight || 800) - top - navH)));
+  if (h.style.height !== alto + "px") h.style.height = alto + "px";
+}
+window.addEventListener("resize", () => { try { guidaHeroMisura(); } catch (e) {} });
 function guidaTestaInVista() { const h = document.querySelector(".gs-sofia"); if (!h) return false; const r = h.getBoundingClientRect(); return r.bottom > 110 && r.top < (window.innerHeight || 800) - 120; }
 function guidaTondo() {
   let b = document.getElementById("sgTondo");
