@@ -7179,3 +7179,20 @@ body.semplice.argon .gs-hero .gs-turno-pill{color:#004D47}
 .gs-turno .gs-turno-via-fine:active{transform:translateY(3px);box-shadow:0 1px 0 #7A3E00}
 .gs-turno.in-corso{flex-wrap:wrap}
 .gs-turno.in-corso .gs-turno-x{flex:1 1 150px}
+
+/* ---- 1.37.0: il disegno grande con le frecce (Michele: «più grande, più capibile, con le frecce, inequivocabile») ---- */
+.sheet .mt-camera{margin:10px -8px 12px;padding:10px 3px 10px}
+.mt-segno .mt-freccia-alone{fill:none;stroke:#FFFDF7;stroke-width:9.5;stroke-linecap:round}
+.mt-segno .mt-freccia{fill:none;stroke:#8A5A00;stroke-width:4.4;stroke-linecap:round}
+.mt-segno .mt-punta{fill:#8A5A00;stroke:#FFFDF7;stroke-width:2.2;stroke-linejoin:round;paint-order:stroke}
+.mt-segno.fondo .mt-freccia{stroke:#B36B00}
+.mt-segno.fondo .mt-punta{fill:#B36B00}
+.mt-segno .mt-tondo{stroke-width:2.8}
+.mt-segno .mt-num{font-size:18px}
+.mt-segno .mt-mini{font-size:13px}
+.mt-segno .mt-alone{stroke-width:3.2}
+.mt-segno .mt-onda{stroke-width:2.4}
+.mt-segno .mt-parola{font-size:14.5px;letter-spacing:.01em;stroke-width:4.5px}
+.mt-segno .mt-parola.start{text-anchor:start}
+.mt-segno .mt-parola.end{text-anchor:end}
+.mt-did{font-size:13.5px;color:#5B4300}

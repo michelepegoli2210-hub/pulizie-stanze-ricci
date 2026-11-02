@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.36.0";
+export const VERSIONE = "1.37.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1841,7 +1841,7 @@ function foglioInizio(f) {
   // le ore standard (la paga: 8 € l'ora in albergo, 10 negli appartamenti), non il cronometro né la stima del catalogo
   const oreStd = p.minuti && p.origine !== "governante" && !extra ? `${L.testoOre(p.minuti)} · ${eur(p.importo)}` : "";
   const chi = p.ospite ? p.ospite : "";
-  const quando = p.partenza ? `${chi || "l'ospite"} parte ${giornoParlato(p.data).replace(/^oggi,.*$/, "oggi")}` : (p.parteIl && p.parteIl > p.data ? `${chi || "l'ospite"} resta fino a ${L.GIORNI[L.giornoSettimana(p.parteIl)]}` : chi);
+  const quando = p.partenza ? `${chi || "l'ospite"} parte ${giornoParlato(p.data).replace(/^oggi,.*$/, "oggi")}` : (p.parteIl && p.parteIl > p.data ? `${chi || "l'ospite"} resta ${finoADetto(p.data, p.parteIl)}` : chi);
   const arrivo = p.arrivo ? `arriva ${p.ospite || "un ospite"}` : (p.prossimoArrivo && p.partenza ? `${p.prossimoArrivo === L.aggiungiGiorni(p.data, 1) ? "domani" : "il " + L.dataBreve(p.prossimoArrivo)} arriva ${p.prossimoNome || "un altro ospite"}` : "");
   const insieme = p.insieme && S.zone[p.insieme] ? `insieme a ${SIG(p.insieme)}` : "";
   // il tipo di ospite, piccolo, accanto al tipo di pulizia (Tecnici · Operai · Ospiti Booking): nessun'altra parola nuova
@@ -1925,7 +1925,7 @@ function foglioInizioFacile(f) {
   // l'ospite in due parole (chi parte, chi resta, chi arriva), e se si fa in due
   const g = (d) => d === L.oggiISO() ? "oggi" : d === L.aggiungiGiorni(L.oggiISO(), 1) ? "domani" : L.GIORNI[L.giornoSettimana(d)];
   const chi = p.ospite || "";
-  const resta = p.parteIl && p.parteIl > p.data ? `fino a ${L.GIORNI[L.giornoSettimana(p.parteIl)]}` : "";
+  const resta = p.parteIl && p.parteIl > p.data ? `${finoADetto(p.data, p.parteIl)}` : "";
   const ospiti = [
     p.partenza ? ["🚪", `${chi || "L'ospite"} parte ${g(p.data)}`] : p.arrivo ? ["🧳", `Arriva ${chi || "un ospite"}${resta ? `, resta ${resta}` : ""}`] : resta ? ["🛏️", `${chi || "L'ospite"} resta ${resta}`] : null,
     p.partenza && p.prossimoArrivo ? ["🧳", `${p.prossimoArrivo === L.aggiungiGiorni(p.data, 1) ? "Domani" : "Il " + L.dataBreve(p.prossimoArrivo)} arriva ${p.prossimoNome || "un altro ospite"}`] : null,
@@ -2618,14 +2618,16 @@ function disegnoGiornata(p) { if (p.tipo === "fisso") return p.camera === "scale
 // due colori soli (Gemini): azzurro = cambio completo, acqua di laguna = tutto il resto
 function tipoGiornata(p) { return p.tipo === "totale" || p.tipo === "totale_casa" ? "k-cambio" : "k-ripasso"; }
 // l'ospite a pillole, in due parole: parte oggi · arriva oggi / domani / lunedì · resta fino a venerdì · con Lucia
+// 1.37.0: il giorno dentro una frase: «oggi», «domani», «venerdì» (entro 6 giorni), poi «martedì 1» (mai più «fino a il mar 1»)
+function giornoDetto(da, d) { const stesso = da === L.oggiISO(); if (d === da) return stesso ? "oggi" : ""; if (d === L.aggiungiGiorni(da, 1)) return stesso ? "domani" : "il giorno dopo"; return L.giorniTra(da, d) <= 6 ? L.GIORNI[L.giornoSettimana(d)] : `${L.GIORNI[L.giornoSettimana(d)]} ${L.giornoDelMese(d)}`; }
+function finoADetto(da, d) { const q = giornoDetto(da, d); return q.startsWith("il ") ? `fino al ${q.slice(3)}` : `fino a ${q}`; }
 function pilloleOspite(p) {
-  const oggi = L.oggiISO(), domani = L.aggiungiGiorni(p.data, 1), stesso = p.data === oggi;
-  const quando = (d) => d === p.data ? (stesso ? "oggi" : "") : d === domani ? (stesso ? "domani" : "il giorno dopo") : L.giorniTra(p.data, d) <= 6 ? L.GIORNI[L.giornoSettimana(d)] : `il ${L.dataBreve(d)}`;
+  const quando = (d) => giornoDetto(p.data, d);
   const out = [];
   if (p.partenza) out.push(["parte", "🚪", `parte ${quando(p.data)}`.trim()]);
   if (p.arrivo) out.push(["arriva", "🧳", `arriva ${quando(p.data)}`.trim()]);
   else if (p.partenza && p.prossimoArrivo && p.prossimoArrivo >= p.data && L.giorniTra(p.data, p.prossimoArrivo) <= 6) out.push(["arriva", "🧳", `arriva ${quando(p.prossimoArrivo)}`]);
-  if (!p.partenza && p.parteIl && p.parteIl > p.data) out.push(["resta", "🛏️", `resta fino a ${quando(p.parteIl)}`]);
+  if (!p.partenza && p.parteIl && p.parteIl > p.data) out.push(["resta", "🛏️", `resta ${finoADetto(p.data, p.parteIl)}`]);
   if (p.insieme && S.zone[p.insieme]) out.push(["insieme", "👭", `con ${SIG(p.insieme)}`]);
   return out;
 }
@@ -2634,7 +2636,7 @@ function rifPerLavoro(rif) { const g = []; for (const r of rif) { let x = g.find
 // ============================================================================
 //  SOFIA GUIDA (gratis): i passi della giornata, la voce e il microfono del telefono, le risposte da quello che l'app sa
 // ============================================================================
-const guida = { parla: false, voce: "", ascolta: false, chiesto: 0, nuvolaFino: 0 };
+const guida = { parla: false, voce: "", ascolta: false, chiesto: 0, nuvolaFino: 0, dalMic: false, risposta: false };   // 1.37.0: dalMic/risposta: quello che dice viene dal microfono
 const CHIAVE_GUIDA_MUTA = "ricci_guida_muta";
 function guidaMuta() { try { return localStorage.getItem(CHIAVE_GUIDA_MUTA) === "1"; } catch (e) { return false; } }
 function guidaChiave(z, iso) { return `ricci_guida_${z}_${iso}`; }
@@ -2648,7 +2650,7 @@ function rifDette(xs, max = 4) { const n = xs.map(r => nomeParlato(r, false)); r
 function ospiteDetto(p) {
   const fr = []; const pl = pilloleOspite(p);
   for (const [k, , t] of pl) fr.push(k === "parte" ? `l'ospite ${t}` : k === "arriva" ? (p.partenza ? `ne ${t} un altro` : `l'ospite ${t}`) : k === "resta" ? `l'ospite ${t}` : `lo fai ${t}`);
-  return fr.length ? fr.join(", ").replace(/^./, ch => ch.toUpperCase()) + "." : "";
+  return fr.length ? fr.join(", ").replace(/, l'ospite resta /, " e resta ").replace(/^./, ch => ch.toUpperCase()) + "." : "";
 }
 // i passi: 0 il giro (solo i nomi), 1 i promemoria, poi una camera alla volta, in fondo «HO FINITO»
 function guidaPassi(z, iso) {
@@ -2720,6 +2722,7 @@ function guidaParla(testo) {
   if (!testo) return;
   zittisciVoce();
   guida.voce = testo; guida.parla = true; guida.nuvolaFino = 0;
+  guida.risposta = !!guida.dalMic; guida.dalMic = false;   // 1.37.0: è una risposta al microfono? (solo allora la nuvola esce anche nella camera aperta)
   voceTesto = testo; voceDa = Date.now(); voceFine = 0;
   voceInCorso = true; disegna();
   parlaTutto(testo, { conf: { ...VOCE.leggiVoce(), motore: "telefono", attiva: true, rateTel: 0.9 }, chiave: "" })
@@ -2748,19 +2751,19 @@ function guidaCamera(id) {
 let guidaRec = null;
 function guidaAscolta(opz = {}) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { if (opz.ripiego) { guidaTasto("ascolta"); return; } toast("Questo telefono non sa ascoltare: usa i tasti Ascolta ed E poi"); return; }
+  if (!SR) { if (opz.ripiego) { guida.dalMic = true; guidaTasto("ascolta"); return; } toast("Questo telefono non sa ascoltare: usa i tasti Ascolta ed E poi"); return; }
   if (guida.ascolta && guidaRec) { try { guidaRec.stop(); } catch (e) {} return; }
   zittisciVoce();
   try {
     const r = new SR(); guidaRec = r; r.lang = "it-IT"; r.interimResults = false; r.maxAlternatives = 3;
     guida.ascolta = true; guida.voce = opz.ripiego ? "Ti ascolto… Dimmi: cosa devo fare? Oppure: e poi? Oppure il nome di una camera." : "Ti ascolto…"; disegna();
     let preso = false;
-    r.onresult = (e) => { preso = true; const alt = []; try { for (const a of e.results[0]) alt.push(a.transcript); } catch (er) {} guida.ascolta = false; guidaRispondi(alt); };
+    r.onresult = (e) => { preso = true; const alt = []; try { for (const a of e.results[0]) alt.push(a.transcript); } catch (er) {} guida.ascolta = false; guida.dalMic = true; guidaRispondi(alt); };
     r.onerror = () => { guida.ascolta = false; if (!preso) { guida.voce = ""; disegna(); } };
     // 1.32.0: dal microfono a fianco, se non ha sentito niente (o il microfono non va) Sofia dice il passo di adesso
-    r.onend = () => { guida.ascolta = false; const annullato = !!r._annulla; guidaRec = null; if (!preso) { guida.voce = ""; if (opz.ripiego && !annullato) { guidaTasto("ascolta"); return; } disegna(); } };
+    r.onend = () => { guida.ascolta = false; const annullato = !!r._annulla; guidaRec = null; if (!preso) { guida.voce = ""; if (opz.ripiego && !annullato) { guida.dalMic = true; guidaTasto("ascolta"); return; } disegna(); } };
     r.start();
-  } catch (e) { guida.ascolta = false; guidaRec = null; if (opz.ripiego) { guidaTasto("ascolta"); return; } toast("Il microfono non parte: usa i tasti Ascolta ed E poi"); disegna(); }
+  } catch (e) { guida.ascolta = false; guidaRec = null; if (opz.ripiego) { guida.dalMic = true; guidaTasto("ascolta"); return; } toast("Il microfono non parte: usa i tasti Ascolta ed E poi"); disegna(); }
 }
 function guidaRispondi(frasi) {
   const z = S.utente.zona, oggiVero = L.oggiISO(), t = " " + PAROLE.norm((frasi || []).join(" ")) + " ";
@@ -3150,13 +3153,13 @@ function postoDisegno(posto, testo) {
   return "camera";
 }
 // ============================================================================
-//  1.36.0 IL DISEGNO DICE ESATTAMENTE DOVE E COSA (Michele, 2/11: «vedo un cerchietto sul letto, non riesco a capire il
-//  piedino del letto; un cerchietto sulla finestra: non so se devo pulire i vetri o lavare la tenda; un cerchietto sulla
-//  parete: non so se devo pulire dove si appendono gli abiti o il muro»). Stessa casa delle bambole a matita della 1.34,
-//  con più cose dentro (il termosifone, l'interruttore, gli appendiabiti, il numero sulla porta e lo spioncino, i piedini
-//  del letto, lo specchio, la mensola, il bidet, lo scopino, il portarotolo, la finestra del bagno, i pensili, il forno…),
-//  l'anello esattamente sulla PARTE da pulire e, sotto il numero, LA PAROLA («piedini», «vetro dentro», «tende», «appendiabiti»).
-//  In più i posti nuovi: il balcone, il corridoio, le scale, l'ingresso, il terrazzo, la lavanderia (le zone comuni).
+//  1.37.0 IL DISEGNO GRANDE, CON LE FRECCE (Michele, 2/11: «essendo che abbiamo aggiunto più elementi dovresti farle più
+//  grandi: il disegno lo devi fare più grande e deve essere più capibile; l'indicazione deve essere fatta con delle frecce,
+//  deve essere veramente inequivocabile; tanti elementi in una piccola stanzetta non va tanto bene»). La stessa casa delle
+//  bambole a matita della 1.36 (tutte le cose dentro, ognuna con la sua scritta), ma ogni stanza riempie il foglio; il numero
+//  sta in uno spazio libero, UNA FRECCIA SPESSA va dal numero alla parte precisa (l'anello piccolo che lampeggia è sulla
+//  punta) e LA PAROLA sta accanto al numero («piedini e doghe», «vetro dentro», «tende: lavate»). Le scritte delle cose
+//  restano dentro il foglio. Dalla 1.36: ogni regola del catalogo sa dove sta (PARTI_DISEGNO) e con quale parola si dice.
 // ============================================================================
 // la prospettiva (isometrica): u va verso destra-in giù, v verso sinistra-in giù, z in su. o = { x, y, s } (dove sta
 // l'angolo in fondo e quanto è grande un metro in pixel)
@@ -3247,7 +3250,7 @@ function isoCamera(o, opz) {
     s += isoTerra(o, 0.35, 4.75, 0.9, 0.75, "#D9C9A8", "mtOr"); posti.zerbino = [0.8, 5.12, 0.05];
   }
   s += isoPortaL(o, 4.5, 5.7, 3.8) + isoMuroL(o, 4.95, 5.25, 3.25, 3.47, "#FFFFFF", "", 1.1, 0.03) + isoTondo(o, 0.03, 5.1, 2.95, 0.07, "#FFFFFF", 1.1);
-  eti.push([[0, 5.1, 3.8], "porta", 0, 17, "middle", false]); posti.porta = [0.05, 5.1, 2.1]; posti["porta.anta"] = [0.05, 5.0, 2.3]; posti["porta.maniglia"] = [0.04, 4.72, 1.9]; posti["porta.numero"] = [0.03, 5.1, 3.3];
+  eti.push([[0, 5.1, 3.8], "porta", 0, -7, "middle", false]); posti.porta = [0.05, 5.1, 2.1];   // 1.37: la scritta sopra la porta (sotto c'è il numero, dove va l'anello) posti["porta.anta"] = [0.05, 5.0, 2.3]; posti["porta.maniglia"] = [0.04, 4.72, 1.9]; posti["porta.numero"] = [0.03, 5.1, 3.3];
   // --- sul muro di destra (v = 0), dal fondo verso destra: la finestra con le tende, il davanzale, il termosifone sotto, la
   //     tapparella sopra; il letto col quadro; l'armadio
   s += isoFinestraR(o, 0.7, 2.7, 2.0, 4.3);
@@ -3281,9 +3284,9 @@ function isoCamera(o, opz) {
   posti.materasso = [cen, 2.9, 0.9]; posti.cuscini = [lu + (singola ? 0.85 : 0.87), 0.95, 1.25]; posti.coperta = [cen, 3.3, 1.06];
   if (!soloLetti) { s += isoBox(o, 7.5, 4.55, 0, 1.4, 0.7, 0.78, "#F6E3C8", "mtOr", { trattoSolo: "lati", sopraCol: "#FBF6EC" }) + isoBox(o, 7.85, 5.35, 0, 0.5, 0.45, 0.48, "#F6E3C8", "", { sp: 1.2 }) + isoBox(o, 7.85, 5.7, 0.48, 0.5, 0.1, 0.55, "#F6E3C8", "", { sp: 1.2 }); eti.push([[7.4, 4.9, 0.78], "scrittoio", -8, 8, "end", false]); posti.scrivania = [8.2, 4.9, 0.85]; }
   else posti.scrivania = posti.comodino;
-  // il soffitto: l'angolo in alto (ragnatele) e la plafoniera
-  // il soffitto: l'angolo in alto (ragnatele) e la plafoniera (lì vicino: in camera il disco non si disegna, l'angolo è già pieno)
-  posti.soffitto = [0.5, 0.5, 4.95]; posti["soffitto.angoli"] = posti.soffitto; posti.plafoniera = [1.4, 1.4, 5.0];
+  // il soffitto: l'angolo in alto (ragnatele) e la plafoniera («luce»: 1.37, con la camera grande il disco ci sta di nuovo)
+  s += isoPlafoniera(o, 1.6, 1.6, 5.0); eti.push([[1.6, 1.6, 5.0], "luce", -21, 5, "end", false]);
+  posti.soffitto = [0.5, 0.5, 4.95]; posti["soffitto.angoli"] = posti.soffitto; posti.plafoniera = [1.6, 1.6, 5.0];
   posti.pavimento = [5.6, 5.4, 0.05]; posti["pavimento.angoli"] = [0.35, 0.35, 0.05]; posti.tavolo = posti.scrivania; posti.divano = posti.pavimento;
   return { svg: s, eti, posti, U, V, H };
 }
@@ -3503,60 +3506,135 @@ function isoLavanderia(o) {
 }
 // ---- tutto insieme: i pezzi uno sotto l'altro, le scritte, gli anelli coi numeri e la parola, la legenda --------------
 const ISO_PEZZI_COMUNI = {
-  corridoio: { titolo: "Il corridoio", fa: (o, opz) => isoCorridoio(o, opz), s: 22, U: 8.6, V: 3.4, H: 5 },
-  scale: { titolo: "Le scale", fa: (o, opz) => isoScale(o, opz), s: 25, U: 6, V: 4.5, H: 6 },
-  ingresso: { titolo: "L'ingresso e il portone", fa: (o) => isoIngresso(o), s: 26, U: 6, V: 4.6, H: 5 },
-  terrazzo: { titolo: "Il terrazzo", fa: (o) => isoTerrazzo(o), s: 21, U: 8, V: 5, H: 3.2 },
-  lavanderia: { titolo: "La lavanderia", fa: (o) => isoLavanderia(o), s: 25, U: 6.5, V: 4.5, H: 5 },
+  corridoio: { titolo: "Il corridoio", fa: (o, opz) => isoCorridoio(o, opz), s: 28, U: 8.6, V: 3.4, H: 5 },
+  scale: { titolo: "Le scale", fa: (o, opz) => isoScale(o, opz), s: 30, U: 6, V: 4.5, H: 6 },
+  ingresso: { titolo: "L'ingresso e il portone", fa: (o) => isoIngresso(o), s: 30, U: 6, V: 4.6, H: 5 },
+  terrazzo: { titolo: "Il terrazzo", fa: (o) => isoTerrazzo(o), s: 26.5, U: 8, V: 5, H: 3.2 },
+  lavanderia: { titolo: "La lavanderia", fa: (o) => isoLavanderia(o), s: 30, U: 6.5, V: 4.5, H: 5 },
 };
 function isoPezzoComune(id) { const k = /corridoio/.test(id) ? "corridoio" : /scal/.test(id) ? "scale" : /ingress|portone/.test(id) ? "ingresso" : /terrazz/.test(id) ? "terrazzo" : /lavander|attrezz/.test(id) ? "lavanderia" : null; return k ? { ...ISO_PEZZI_COMUNI[k], id: k, piano: /p1|1/.test(id) ? 1 : 2 } : null; }
 function isoDisegno(opz) {
-  const E = opz.esc, W = 400;
+  const E = opz.esc, W = 400, f = (n) => n.toFixed(1);
   const pezzi = [];
   const tipo = opz.tipo || (opz.casa ? "casa" : "camera");
+  // 1.37.0: le stanze riempiono il foglio (la camera quasi tutta la larghezza; il bagno, la cucina e le zone comuni di più)
   if (tipo === "comune") { const pz = isoPezzoComune(opz.luogo || ""); if (pz) pezzi.push(pz); }
   else if (tipo === "casa") {
-    pezzi.push({ titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 18.5, U: 11, V: 8, H: 5.5 });
-    pezzi.push({ titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 21, U: 9, V: 6, H: 5.2 });
-    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, { lavatrice: true }), s: 23, U: 5.6, V: 6.4, H: 5.5 });
+    pezzi.push({ titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 23, U: 11, V: 8, H: 5.5 });
+    pezzi.push({ titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 26, U: 9, V: 6, H: 5.2 });
+    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, { lavatrice: true }), s: 28.5, U: 5.6, V: 6.4, H: 5.5 });
   } else {
-    pezzi.push({ titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 23.5, U: 9, V: 6, H: 5.2 });
-    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 25, U: 5.6, V: 6.4, H: 5.5 });
+    pezzi.push({ titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 28.6, U: 9, V: 6, H: 5.2 });
+    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 30, U: 5.6, V: 6.4, H: 5.5 });
   }
-  if (opz.balcone) pezzi.push({ titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 23, U: 6.0, V: 4.2, H: 3.6 });
+  if (opz.balcone) pezzi.push({ titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 30, U: 6.0, V: 4.2, H: 3.6 });
   for (const id of opz.extra || []) { const pz = isoPezzoComune(id); if (pz && !pezzi.some(x => x.id === pz.id)) pezzi.push(pz); }
   let y = 34, corpo = "", scritte = "", titoli = "";
-  const posti = {}, scatole = [];   // scatole: dove stanno le scritte delle cose (le parole dei numeri le evitano)   // posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince: la camera prima del bagno)
+  const posti = {}, scatole = [], diPezzo = {}, bande = [];   // posti: posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince); scatole: dove stanno le scritte (i numeri e le parole le evitano); bande: lo spazio di ogni pezzo
   for (const pz of pezzi) {
     const larg = (pz.U + pz.V) * ISO_CX * pz.s;
     const o = { x: (W - larg) / 2 + pz.V * ISO_CX * pz.s, y: y + 16 + pz.H * pz.s, s: pz.s };
     const r = pz.fa(o, { piano: pz.piano || opz.piano || 2 });
-    titoli += `<text x="${(W / 2).toFixed(1)}" y="${(y + 4).toFixed(1)}" class="mt-titolo">${E(pz.titolo)}</text>`; scatole.push({ x1: W / 2 - pz.titolo.length * 5.2, x2: W / 2 + pz.titolo.length * 5.2, y: y + 4 });
+    titoli += `<text x="${f(W / 2)}" y="${f(y + 4)}" class="mt-titolo">${E(pz.titolo)}</text>`; scatole.push({ x1: W / 2 - pz.titolo.length * 5.2, x2: W / 2 + pz.titolo.length * 5.2, y: y + 4 });
     corpo += `<g>${r.svg}</g>`;
-    for (const e of r.eti) { scritte += isoEti(o, e[0], E(e[1]), e[2], e[3], e[4], e[5] !== false); const q = isoP(o, ...e[0]), lx = q[0] + e[2], larg = String(e[1]).length * 8.6, x1 = e[4] === "end" ? lx - larg : e[4] === "middle" ? lx - larg / 2 : lx; scatole.push({ x1, x2: x1 + larg, y: q[1] + e[3] }); }
-    for (const [k, p] of Object.entries(r.posti)) if (!posti[k]) posti[k] = isoP(o, ...p);
-    y = o.y + (pz.U + pz.V) * ISO_SY * pz.s + 44;
+    for (const e of r.eti) {
+      // la scritta resta dentro il foglio (con le stanze grandi «comodino» e «armadio» uscivano a destra)
+      const q = isoP(o, ...e[0]), lg = String(e[1]).length * 8.6; let dx = e[2];
+      const lx = q[0] + dx, x1 = e[4] === "end" ? lx - lg : e[4] === "middle" ? lx - lg / 2 : lx;
+      if (x1 < 4) dx += 4 - x1; else if (x1 + lg > W - 4) dx -= x1 + lg - (W - 4);
+      scritte += isoEti(o, e[0], E(e[1]), dx, e[3], e[4], e[5] !== false);
+      const nx1 = x1 + (dx - e[2]); scatole.push({ x1: nx1, x2: nx1 + lg, y: q[1] + e[3] });
+    }
+    const ib = bande.length;
+    for (const [k, p] of Object.entries(r.posti)) if (!posti[k]) { posti[k] = isoP(o, ...p); diPezzo[k] = ib; }
+    const centro = isoP(o, pz.U / 2, pz.V / 2, pz.H / 2), fine = o.y + (pz.U + pz.V) * ISO_SY * pz.s;
+    bande.push({ y1: y + 10, y2: fine + 30, cx: centro[0], cy: centro[1], sagoma: [[0, pz.V, 0], [pz.U, pz.V, 0], [pz.U, 0, 0], [pz.U, 0, pz.H], [0, 0, pz.H], [0, pz.V, pz.H]].map(q => isoP(o, ...q)) });
+    y = fine + 44;
   }
   const alto = Math.round(y - 10);
-  // dove va l'anello: il posto preciso («letto.piedini»); se il disegno non ce l'ha, la cosa intera («letto»); se no il centro
-  const trova = (dove) => { const d = String(dove || ""); if (posti[d]) return posti[d]; const parti = d.split("."); for (const k of [parti[parti.length - 1], parti[0], parti.slice(0, -1).join(".")]) if (k && posti[k]) return posti[k]; return posti.camera || posti.casa || posti.corridoio || posti.scale || posti.ingresso || posti.terrazzo || posti.lavanderia || posti.pavimento || [W / 2, alto / 2]; };
-  const conta = {}; const segni = opz.segni || [];
-  const anelli = segni.map((sg) => { const p = trova(sg.dove); const kk = String(sg.dove); const n = conta[kk] = (conta[kk] || 0) + 1; return { x: Math.min(W - 20, Math.max(20, p[0] + (n - 1) * (p[0] > W - 60 ? -30 : 30))), y: Math.min(alto - 18, Math.max(46, p[1])) }; });
-  // il cerchietto col numero sta sopra l'anello; se due cerchietti si toccano, si scostano (l'anello resta sulla cosa)
-  const cerchi = anelli.map(a => ({ x: a.x + 20, y: a.y - 20 }));
-  for (let giro = 0; giro < 12; giro++) { let mosso = false; for (let i = 0; i < cerchi.length; i++) for (let j = i + 1; j < cerchi.length; j++) { const dx = cerchi[j].x - cerchi[i].x, dy = cerchi[j].y - cerchi[i].y, d = Math.hypot(dx, dy) || 1; if (d < 30) { const sp = (30 - d) / 2 + 1, ux = dx / d, uy = dy / d; cerchi[i].x -= ux * sp; cerchi[i].y -= uy * sp; cerchi[j].x += ux * sp; cerchi[j].y += uy * sp; mosso = true; } } if (!mosso) break; }
-  for (const c of cerchi) { c.x = Math.min(W - 16, Math.max(16, c.x)); c.y = Math.min(alto - 16, Math.max(16, c.y)); }
-  // la parola sotto il cerchietto («piedini», «vetro dentro»): se due parole si pestano, la seconda scende
-  const parole = segni.map((sg, i) => { const t = String(sg.parola || "").trim(); if (!t) return null; const c = cerchi[i], larg = Math.min(W - 8, t.length * 7.6 + 12); let x = Math.min(W - larg / 2 - 2, Math.max(larg / 2 + 2, c.x)); return { t, x, y: c.y + 26, larg }; });
-  const urta = (a, i) => { for (let j = 0; j < i; j++) { const b = parole[j]; if (b && Math.abs(a.x - b.x) < (a.larg + b.larg) / 2 && Math.abs(a.y - b.y) < 15) return true; } for (const sc of scatole) if (a.x + a.larg / 2 > sc.x1 && a.x - a.larg / 2 < sc.x2 && Math.abs(a.y - sc.y) < 16) return true; return false; };
-  for (let i = 0; i < parole.length; i++) { const a = parole[i]; if (!a) continue; const c = cerchi[i], prove = [c.y + 26, c.y - 20, c.y + 41, c.y - 35, c.y + 56]; for (const yy of prove) { a.y = yy; if (!urta(a, i)) break; } if (a.y > alto - 6) a.y = alto - 6; if (a.y < 12) a.y = 12; }
+  // dove punta la freccia: il posto preciso («letto.piedini»); se il disegno non ce l'ha, la cosa intera («letto»); se no il centro
+  const chiave = (dove) => { const d = String(dove || ""); if (posti[d]) return d; const parti = d.split("."); for (const k of [parti[parti.length - 1], parti[0], parti.slice(0, -1).join(".")]) if (k && posti[k]) return k; for (const k of ["camera", "casa", "corridoio", "scale", "ingresso", "terrazzo", "lavanderia", "pavimento"]) if (posti[k]) return k; return ""; };
+  const segni = opz.segni || [], R = 15, conta = {};
+  const punte = segni.map((sg) => { const k = chiave(sg.dove); const p = k ? posti[k] : [W / 2, alto / 2]; const n = conta[k] = (conta[k] || 0) + 1; return { x: Math.min(W - 16, Math.max(16, p[0] + (n - 1) * (p[0] > W - 60 ? -22 : 22))), y: Math.min(alto - 14, Math.max(40, p[1])), ib: k ? diPezzo[k] || 0 : 0 }; });
+  // 1.37.0: il numero sta in uno spazio libero (verso fuori, lontano dalle scritte e dagli altri numeri) e la freccia va da lì
+  // alla parte; la parola sta accanto al numero, dalla parte opposta alla freccia
+  const urta = (a, b) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+  const tondo = (x, yy, r) => ({ x1: x - r, x2: x + r, y1: yy - r, y2: yy + r });
+  const scat = scatole.map(sc => ({ x1: sc.x1, x2: sc.x2, y1: sc.y - 12, y2: sc.y + 3 }));
+  const parolaPer = (t, bx, by, px, py) => {
+    if (!t) return null;
+    const lg = Math.min(W - 10, t.length * 8.3 + 6), dx = bx - px, dy = by - py;
+    let x, anc, yy;
+    if (Math.abs(dx) >= Math.abs(dy) * 0.9) { anc = dx > 0 ? "start" : "end"; x = dx > 0 ? bx + R + 5 : bx - R - 5; yy = by + 5; }
+    else { anc = "middle"; x = bx; yy = dy > 0 ? by + R + 15 : by - R - 7; }
+    let x1 = anc === "start" ? x : anc === "end" ? x - lg : x - lg / 2, fuori = 0;
+    if (x1 < 3) fuori = 3 - x1; else if (x1 + lg > W - 3) fuori = (W - 3) - (x1 + lg);
+    if (fuori && anc !== "middle") { anc = "middle"; x = bx; yy = dy > 0 ? by + R + 15 : by - R - 7; x1 = x - lg / 2; fuori = x1 < 3 ? 3 - x1 : x1 + lg > W - 3 ? (W - 3) - (x1 + lg) : 0; }   // di lato non ci sta: sopra o sotto il numero
+    if (fuori && anc === "middle") { x += fuori; x1 += fuori; fuori = 0; }
+    return { t, x, y: yy, anc, x1, x2: x1 + lg, y1: yy - 13, y2: yy + 4, fuori: Math.abs(fuori) };
+  };
+  // dentro la sagoma della stanza (l'esagono): il numero e la parola stanno meglio fuori, sopra il foglio bianco
+  const dentro = (poly, x, yy) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > yy) !== (yj > yy) && x < (xj - xi) * (yy - yi) / ((yj - yi) || 1e-9) + xi) c = !c; } return c; };
+  // due segmenti si incrociano? (due frecce incrociate confondono)
+  const incrocia = (a, b, c, d) => { const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])); return o(a, b, c) !== o(a, b, d) && o(c, d, a) !== o(c, d, b); };
+  // la freccia passa sopra una scatola (una scritta)? punti ogni 6 px lungo l'asta
+  const attraversa = (c, b) => { const n = Math.max(1, Math.ceil(Math.hypot(c.px - c.bx, c.py - c.by) / 6)); for (let s = 0; s <= n; s++) { const x = c.bx + (c.px - c.bx) * s / n, yy = c.by + (c.py - c.by) * s / n; if (x > b.x1 - 4 && x < b.x2 + 4 && yy > b.y1 - 2 && yy < b.y2 + 2) return true; } return false; };
+  const distSeg = (ax, ay, bx, by, px, py) => { const vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy || 1; const tt = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / l2)); return Math.hypot(px - (ax + vx * tt), py - (ay + vy * tt)); };
+  let messi = [];   // i numeri già piazzati (gli altri, quando si cerca il posto di uno)
+  const penalita = (c, i) => {
+    let pen = c.parola && c.parola.fuori ? 12 : 0;
+    const bt = tondo(c.bx, c.by, R + 2), sg = (bande[punte[i].ib] || {}).sagoma;
+    if (sg) { if (dentro(sg, c.bx, c.by)) pen += 2.5; if (c.parola && dentro(sg, (c.parola.x1 + c.parola.x2) / 2, (c.parola.y1 + c.parola.y2) / 2)) pen += 1.5; }
+    for (const b of scat) { if (urta(bt, b)) pen += 4.5; if (c.parola && urta(c.parola, b)) pen += 3; if (attraversa(c, b)) pen += 2.5; }   // il numero sopra una scritta la nasconde: peggio della parola; la freccia (col suo alone) non deve passarci sopra
+    for (const m of messi) {
+      if (!m || m === c) continue;
+      if (Math.hypot(m.bx - c.bx, m.by - c.by) < 2 * R + 8) pen += 8;
+      if (c.parola && urta(c.parola, tondo(m.bx, m.by, R + 2))) pen += 5; if (m.parola && urta(bt, m.parola)) pen += 5; if (c.parola && m.parola && urta(c.parola, m.parola)) pen += 5;
+      if (distSeg(c.bx, c.by, c.px, c.py, m.bx, m.by) < R + 6) pen += 4;   // la freccia non passa sopra un altro numero
+      if (distSeg(m.bx, m.by, m.px, m.py, c.bx, c.by) < R + 6) pen += 4;   // né un'altra freccia sopra questo
+      if (incrocia([c.bx, c.by], [c.px, c.py], [m.bx, m.by], [m.px, m.py])) pen += 6;   // frecce incrociate: no
+      if (m.parola && distSeg(c.bx, c.by, c.px, c.py, (m.parola.x1 + m.parola.x2) / 2, (m.parola.y1 + m.parola.y2) / 2) < 14) pen += 2;
+      if (c.parola && distSeg(m.bx, m.by, m.px, m.py, (c.parola.x1 + c.parola.x2) / 2, (c.parola.y1 + c.parola.y2) / 2) < 14) pen += 2;
+    }
+    for (let j = 0; j < punte.length; j++) { if (j === i) continue; const q = punte[j]; if (Math.hypot(q.x - c.bx, q.y - c.by) < R + 16) pen += 5; if (c.parola && urta(c.parola, tondo(q.x, q.y, 13))) pen += 3; }
+    return pen;
+  };
+  const scegli = (i) => {
+    const sg = segni[i], p = punte[i], bd = bande[p.ib] || bande[0] || { y1: 16, y2: alto - 16, cx: W / 2, cy: alto / 2 };
+    const a0 = Math.atan2(p.y - bd.cy, p.x - bd.cx), parola = String(sg.parola || "").trim();
+    let meglio = null;
+    for (const dist of [68, 86, 104, 122, 52]) {
+      for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8]) {
+        const a = a0 + k * Math.PI / 8, bx = p.x + Math.cos(a) * dist, by = p.y + Math.sin(a) * dist;
+        if (bx < R + 3 || bx > W - R - 3 || by < bd.y1 + R || by > Math.min(bd.y2, alto - 4) - R) continue;
+        const c = { bx, by, px: p.x, py: p.y, parola: parolaPer(parola, bx, by, p.x, p.y) };
+        c.pen = penalita(c, i) + Math.abs(dist - 68) / 40 + Math.abs(k) * 0.08;
+        if (!meglio || c.pen < meglio.pen) meglio = c;
+        if (c.pen < 0.5) break;
+      }
+      if (meglio && meglio.pen < 0.5) break;
+    }
+    if (!meglio) { const bx = Math.min(W - R - 3, Math.max(R + 3, p.x + 40)), by = Math.max(bd.y1 + R, p.y - 50); meglio = { bx, by, px: p.x, py: p.y, parola: parolaPer(parola, bx, by, p.x, p.y), pen: 99 }; }
+    return meglio;
+  };
+  // prima uno dopo l'altro, poi due giri di ritocco: ognuno cerca di nuovo il suo posto sapendo dove stanno tutti gli altri
+  for (let i = 0; i < segni.length; i++) messi.push(scegli(i));
+  for (let giro = 0; giro < 2; giro++) for (let i = 0; i < segni.length; i++) { const prima = messi[i]; messi[i] = null; const dopo = scegli(i); messi[i] = dopo.pen < prima.pen - 0.3 ? dopo : prima; }
   const numeri = segni.map((sg, i) => {
-    const a = anelli[i], c = cerchi[i], lontano = Math.hypot(c.x - a.x, c.y - a.y) > 34, pw = parole[i];
-    return `<g class="mt-segno ${sg.k}"><g transform="translate(${a.x.toFixed(1)} ${a.y.toFixed(1)})"><circle class="mt-onda" r="17"/><circle class="mt-alone" r="17"/></g>${lontano ? `<path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${c.x.toFixed(1)} ${c.y.toFixed(1)}" class="mt-filo-n"/>` : ""}<g transform="translate(${c.x.toFixed(1)} ${c.y.toFixed(1)})"><circle class="mt-tondo" r="13"/><text y="5" class="mt-num">${i + 1}</text><text x="11" y="-7" class="mt-mini">${sg.k === "stella" ? "★" : "✦"}</text></g>${pw ? `<text x="${pw.x.toFixed(1)}" y="${pw.y.toFixed(1)}" class="mt-parola">${E(pw.t)}</text>` : ""}</g>`;
+    const p = punte[i], m = messi[i];
+    // la freccia: dal bordo del cerchietto al bordo dell'anello, con la punta piena
+    const dx = p.x - m.bx, dy = p.y - m.by, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    const x0 = m.bx + ux * (R + 1), y0 = m.by + uy * (R + 1), x1 = p.x - ux * 13, y1 = p.y - uy * 13;
+    const lung = Math.hypot(x1 - x0, y1 - y0), bx = x1 - ux * 11, by = y1 - uy * 11;
+    const asta = `M${f(x0)} ${f(y0)} L${f(bx + ux * 2)} ${f(by + uy * 2)}`, punta = `M${f(x1)} ${f(y1)} L${f(bx - uy * 6.5)} ${f(by + ux * 6.5)} L${f(bx + uy * 6.5)} ${f(by - ux * 6.5)} Z`;
+    const freccia = lung >= 8 ? `<path d="${asta}" class="mt-freccia-alone"/><path d="${asta}" class="mt-freccia"/><path d="${punta}" class="mt-punta"/>` : "";
+    const pw = m.parola;
+    return `<g class="mt-segno ${sg.k}"><g transform="translate(${f(p.x)} ${f(p.y)})"><circle class="mt-onda" r="12"/><circle class="mt-alone" r="12"/></g>${freccia}<g transform="translate(${f(m.bx)} ${f(m.by)})"><circle class="mt-tondo" r="${R}"/><text y="6" class="mt-num">${i + 1}</text><text x="12" y="-9" class="mt-mini">${sg.k === "stella" ? "★" : "✦"}</text></g>${pw ? `<text x="${f(pw.x)}" y="${f(pw.y)}" class="mt-parola ${pw.anc}">${E(pw.t)}</text>` : ""}</g>`;
   }).join("");
   return { alto, svg: `${titoli}<g filter="url(#mtTrem)">${corpo}</g>${scritte}${numeri}`, W, pezzi: pezzi.map(p => p.titolo) };
 }
 // ---- 1.36.0: ogni regola del catalogo sa DOVE sta sul disegno (la parte precisa) e con QUALE PAROLA si dice ---------------
+// ---- (1.37.0: il disegno è grande e il numero indica la parte con una freccia; la parola sta accanto al numero) ----------
 // [posto sul disegno, parola sotto il numero]. La chiave è l'id della regola (C18, C45_1…) o il suo codice (C45).
 const PARTI_DISEGNO = {
   // la camera
@@ -3633,14 +3711,14 @@ function disegnoCamera(p) {
     ...fondi.map(f => { const rg = regolaDi(f.regola); const pd = parteDisegno({ ...rg, regola: f.regola, nome: titoloBase(f) || rg.nome }); return { k: "fondo", t: String(titoloBase(f) || "Lavoro a fondo"), min: Number(f.minuti) || 0, icona: f.icona || rg.icona || "", dove: pd.dove, parola: pd.parola, luogo: p.camera }; })];
   const extra = [...new Set(segni.map(s => s.luogo).filter(l => l && l !== p.camera && comuniIds.has(l)))];
   const balcone = !comune && segni.some(s => /^(balcone|ringhiera|muretto|piante|unita|stendino|portafinestra)/.test(String(s.dove)));
-  // 1.36.0: la stessa casa delle bambole della 1.34, con l'anello sulla parte precisa e la parola sotto il numero
+  // 1.36.0: la stessa casa delle bambole della 1.34, con l'anello sulla parte precisa; 1.37.0: grande, con le frecce
   const d = isoDisegno({ tipo: comune ? "comune" : casa ? "casa" : "camera", luogo: c.id, piano: /p1|1/.test(String(c.zona)) ? 1 : 2, singola, piani: Number(c.piani) || 1, balcone, extra, segni, esc });
   const icoDi = (s) => ICONE_SVG[s.icona] ? ICONA(s.icona) : (s.k === "stella" ? "⭐" : "✨");
   const conMinuti = !pagaAOre();
   const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.parola && !PAROLE.norm(s.t).includes(PAROLE.norm(s.parola)) ? `${s.parola.replace(/^./, ch => ch.toUpperCase())} — ${s.t}` : s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${conMinuti && s.min ? ` · ${s.min} min` : ""}${s.luogo && s.luogo !== p.camera ? ` · ${esc(camera(s.luogo).nome)}` : ""}</small></span></li>`).join("")}</ol>` : "";
   const titolo = comune ? (d.pezzi[0] || c.nome) : casa ? "La casa" : "La camera";
   const detto = comune ? `${titolo.toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: ${singola ? "letto singolo" : "letto matrimoniale"} con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;
-  return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${esc(titolo)}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}${segni.length ? `<p class="mt-did">L'anello lampeggia sulla cosa da pulire; sotto il numero c'è scritto cosa.</p>` : ""}</section>`;
+  return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${esc(titolo)}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}${segni.length ? `<p class="mt-did">Ogni numero ha la sua freccia: la punta sta sulla cosa da pulire, e accanto al numero c'è scritto cosa.</p>` : ""}</section>`;
 }
 // ---- Sofia a fianco, A SCOMPARSA (1.32.0): di solito c'è solo il tasto tondo col microfono; toccandolo Sofia esce intera
 // (la sagoma ritagliata, senza sfondo), ti ascolta e risponde; appena finisce di parlare sparisce. Esce da sola anche quando
@@ -3815,6 +3893,9 @@ function guidaNuvola() {
   const sc = document.getElementById("sgCompagna"), f = sc && !sc.hidden && sc.classList.contains("su") ? sc : document.getElementById("sofiaFuori");   // 1.30.0
   let vuoi = false;
   try { vuoi = !!(addetta() && guida.voce && (guida.parla || guida.ascolta || Date.now() < guida.nuvolaFino) && f && !f.hidden && f.classList.contains("su")); } catch (e) {}
+  // 1.37.0 (Michele: «il fumetto non si deve aprire, è già scritto nelle indicazioni»): nella camera aperta, quando Sofia parla
+  // da sola, niente nuvola (le stesse parole stanno nei passi); resta per «Ti ascolto…» e per quello che risponde al microfono
+  if (vuoi && document.querySelector(".sheet") && !guida.ascolta && !guida.risposta) vuoi = false;
   if (!vuoi) { if (n) n.hidden = true; return; }
   if (!n) { n = document.createElement("div"); n.id = "sgNuvola"; n.className = "sg-nuvola"; n.setAttribute("aria-live", "polite"); document.body.appendChild(n); }
   const html = `<b>${esc(nomeGov())}</b>${esc(guida.voce)}`;
