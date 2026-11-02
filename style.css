@@ -6544,20 +6544,7 @@ body.semplice.argon #app{padding-bottom:190px}
   .gs-cam{min-height:136px}
   .gs-ctrl-c{font-size:15px}
 }
-/* ---- la tendina di Michele: di vetro, si vede Sofia che si muove dietro ---- */
-body.premium .sofia-hero .casa-nuvola{background-color:rgba(253,250,244,.16) !important;background-image:none !important;-webkit-backdrop-filter:blur(1.5px) saturate(1.05) !important;backdrop-filter:blur(1.5px) saturate(1.05) !important}
-body.premium .sofia-hero .casa-nuvola .casa-vene{display:none !important}
-body.premium .sofia-hero .casa-nuvola .of-fumetto,body.premium .sofia-hero .casa-nuvola .of-fumetto::before{background:rgba(255,255,255,.66) !important}
-body.premium .sofia-hero .casa-nuvola .of-c,body.premium .sofia-hero .casa-nuvola .csf-c{background:rgba(255,255,255,.52) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
-body.premium .sofia-hero .casa-nuvola .of-c.att,body.premium .sofia-hero .casa-nuvola .csf-c.att{background:rgba(246,234,209,.64) !important}
-body.premium .sofia-hero .casa-nuvola .of-c.rosso,body.premium .sofia-hero .casa-nuvola .csf-c.rosso{background:rgba(254,226,226,.68) !important}
-body.premium .sofia-hero .casa-nuvola .of-fumetto,body.premium .sofia-hero .casa-nuvola .of-c,body.premium .sofia-hero .casa-nuvola .csf-c{text-shadow:0 0 6px rgba(255,255,255,.9),0 1px 1px rgba(255,255,255,.8)}
-:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola{background-color:rgba(10,15,28,.18) !important}
-:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-fumetto,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-fumetto::before{background:rgba(19,27,45,.66) !important}
-:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c{background:rgba(19,27,45,.52) !important}
-:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c.att,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c.att{background:rgba(58,47,31,.62) !important}
-:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c.rosso,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c.rosso{background:rgba(59,20,20,.64) !important}
-:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-fumetto,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-c,:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-c{text-shadow:0 0 6px rgba(0,0,0,.8),0 1px 1px rgba(0,0,0,.7)}
+/* ---- 1.31.0: la tendina di Michele di vetro (1.26.0) tolta: Michele «è troppo trasparente, ritorna come prima» ---- */
 
 /* ===================================================================================================================
    1.26.3 · SOFIA DI NUOVO GRANDE, SENZA SCRITTE SOPRA (Michele, 1/11: «mi piaceva come prima, però senza le scritte:
@@ -6806,4 +6793,108 @@ body.con-compagna .inizio.sig.sf{padding-bottom:150px}
   .gp-vuota{min-height:104px;font-size:14px}
   .sg-compagna{width:108px;height:144px}
   body.con-compagna .sg-nuvola,body.con-compagna .sg-finito{right:126px}
+}
+
+/* ===================================================================================================================
+   1.31.0 · LA PIANTINA «DA SCUOLA ELEMENTARE» (Michele: «la piantina mi piace così com'è, ma deve essere più da scuola
+   elementare, quasi»; «la grafica in generale non mi piace»). Il foglio a quadretti del quaderno, le camere come figurine
+   colorate (azzurro = cambio, verde = ripasso, giallo = lavoro a fondo), i bordi grossi e l'ombra sotto come i bottoni dei
+   giochi, i numeri tondi grandi, la scritta tonda (Fredoka), l'etichetta del piano come un pezzo di nastro adesivo,
+   la nuvoletta di Sofia come nei fumetti. I lavori a fondo stanno dentro la loro camera.
+   =================================================================================================================== */
+@font-face{font-family:"Fredoka";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/fredoka-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Fredoka";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/fredoka-latin-700-normal.woff2) format("woff2")}
+body.semplice.argon{--f-gioco:"Fredoka","Montserrat",system-ui,sans-serif;--g-ink:#1E2A33;background-color:#FDFEFF;background-image:linear-gradient(rgba(110,150,190,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(110,150,190,.14) 1px,transparent 1px);background-size:24px 24px}
+body.semplice.argon header{background:rgba(253,254,255,.96)}
+/* la nuvoletta di Sofia, come nei fumetti (la punta verso di lei) */
+body.semplice.argon .gs-detto{margin-top:22px}
+body.semplice.argon .gs-detto .gs-bolla{position:relative;padding:16px 18px 18px;border:3px solid #9CD3CB;border-radius:26px;background:#FFFFFF;box-shadow:0 5px 0 #6FBDB1;overflow:visible}
+body.semplice.argon .gs-detto .gs-bolla::before{content:"";position:absolute;top:-15px;left:38px;width:24px;height:24px;background:#FFFFFF;border-left:3px solid #9CD3CB;border-top:3px solid #9CD3CB;border-top-left-radius:6px;transform:rotate(45deg)}
+body.semplice.argon .gs-detto .gs-bolla-chi{font:700 13px/1.2 var(--f-gioco);letter-spacing:.08em}
+body.semplice.argon .gs-detto .gs-ciao{font:700 25px/1.15 var(--f-gioco);letter-spacing:0;color:var(--g-ink)}
+body.semplice.argon .gs-detto.parla .gs-bolla{border-color:#00665E;box-shadow:0 5px 0 #004D47}
+/* i sette giorni: tessere come quelle del calendario di classe */
+body.semplice.argon .gs-g{border:2px solid #DDE6EE;background:#FFFFFF;box-shadow:0 3px 0 #CBD7E3}
+body.semplice.argon .gs-g b{font:700 21px/1.05 var(--f-gioco)}
+body.semplice.argon .gs-g span{font:600 11.5px/1.1 var(--f-gioco);letter-spacing:.06em}
+body.semplice.argon .gs-g i{font:700 13px/16px var(--f-gioco)}
+body.semplice.argon .gs-g.vuoto{border-color:transparent;background:transparent;box-shadow:none}
+body.semplice.argon .gs-g.on{border-color:#00665E;background:#00665E;box-shadow:0 3px 0 #004D47}
+/* sopra la piantina: ⏱️ e ⭐ grandi, e il dito che dice di toccare */
+body.semplice.argon .gs-segno{font:600 18px/1.2 var(--f-gioco);color:var(--g-ink)}
+body.semplice.argon .gp-aiuto{font:600 15.5px/1.3 var(--f-gioco);color:#3E5568}
+body.semplice.argon .gp-aiuto::before{content:"👆 "}
+/* l'etichetta del piano: un pezzo di nastro adesivo */
+body.semplice.argon .gp-eti{padding:0 2px}
+body.semplice.argon .gp-eti span{display:inline-block;padding:5px 12px 4px;border-radius:5px;background:#FFE9A8;color:#5B4300;font:700 15px/1.2 var(--f-gioco);letter-spacing:.05em;transform:rotate(-1.5deg);box-shadow:0 2px 0 rgba(91,67,0,.12)}
+/* il corridoio: una striscia grigia col nome scritto in verticale */
+body.semplice.argon .gp-corr{column-gap:34px;row-gap:14px}
+body.semplice.argon .gp-corr .lato{gap:14px}
+body.semplice.argon .gp-corr::after{width:24px;border-radius:12px;background:#E3E9F0;box-shadow:inset 0 0 0 2px #D3DCE6}
+body.semplice.argon .gp-corr::before{font:700 10px var(--f-gioco);letter-spacing:3px;color:#6A7E92}
+body.semplice.argon .gp-griglia{gap:14px}
+/* la camera = una figurina colorata: azzurro cambio, verde ripasso, giallo lavoro a fondo, viola stelle, grigio-blu il resto */
+body.semplice.argon .gs-cam.gp,body.semplice.argon .gs-cam.gp.gs-stelle{--g-chiaro:#E9EEF7;--g-filo:#B9C6DD;--g-ombra:#98A8C6;--g-forte:#4F6489;min-height:120px;padding:56px 12px 13px;border:3px solid var(--g-filo);border-radius:22px;background:var(--g-chiaro);box-shadow:0 5px 0 var(--g-ombra)}
+body.semplice.argon .gs-cam.gp.k-cambio{--g-chiaro:#E2F0FF;--g-filo:#8CC3F5;--g-ombra:#64A6E6;--g-forte:#2A78D3}
+body.semplice.argon .gs-cam.gp.k-ripasso{--g-chiaro:#E1F5E5;--g-filo:#9BD9A6;--g-ombra:#72C383;--g-forte:#25994A}
+body.semplice.argon .gs-cam.gp.k-fondo{--g-chiaro:#FFF4CF;--g-filo:#F5D27C;--g-ombra:#E8B64A;--g-forte:#D98E0B}
+body.semplice.argon .gs-cam.gp.gs-stelle{--g-chiaro:#F0E8FF;--g-filo:#C9B4F6;--g-ombra:#A88BE8;--g-forte:#7651D4}
+body.semplice.argon .gs-cam.gp .gs-np{top:9px;left:9px;width:44px;height:44px;background:var(--g-forte);font:700 23px/1 var(--f-gioco);box-shadow:0 0 0 3px #FFFFFF,0 4px 0 rgba(0,0,0,.16)}
+body.semplice.argon .gs-cam.gp .gp-ico{top:8px;right:9px;font-size:36px}
+body.semplice.argon .gs-cam.gp .gs-nome{font:700 22px/1.1 var(--f-gioco);letter-spacing:0;color:var(--g-ink)}
+body.semplice.argon .gs-cam.gp .gp-sotto{font:600 14.5px/1.25 var(--f-gioco);color:#4B5D6C}
+body.semplice.argon .gs-cam.gp .gp-segni{gap:5px;margin-top:5px}
+body.semplice.argon .gs-cam.gp .gp-s,body.semplice.argon .gs-cam.gp .gp-s.parte,body.semplice.argon .gs-cam.gp .gp-s.arriva,body.semplice.argon .gs-cam.gp .gp-s.nota{min-width:30px;height:28px;padding:0 6px;border:2px solid rgba(30,42,51,.12);border-radius:14px;background:#FFFFFF;font:700 14px/1 var(--f-gioco);color:var(--g-ink)}
+body.semplice.argon .gs-cam.gp:active{transform:translateY(3px);box-shadow:0 2px 0 var(--g-ombra)}
+/* ADESSO: il bordo arancione e il cartellino col dito */
+body.semplice.argon .gs-cam.gp.ora{--g-filo:#F59E0B;--g-ombra:#D27F00;padding:56px 12px 13px;border:3px solid #F59E0B}
+body.semplice.argon .gs-cam.gp .gs-ora{top:-13px;padding:5px 11px 4px;border-radius:12px;background:#F59E0B;color:#2B1A00;font:700 13px/1 var(--f-gioco);letter-spacing:.04em;box-shadow:0 3px 0 #D27F00}
+/* fatta: la spunta verde, i colori si spengono */
+body.semplice.argon .gs-cam.gp.fatta{--g-chiaro:#F1F5F2;--g-filo:#CFE0D4;--g-ombra:#B8D0BF;--g-forte:#1E9E5A}
+body.semplice.argon .gs-cam.gp.prob{--g-chiaro:#FFF6E0;--g-filo:#F2C46B;--g-ombra:#D9A43F;--g-forte:#B36B00}
+/* la camera che oggi non è sua: solo il contorno, come un disegno da colorare */
+body.semplice.argon .gp-vuota{min-height:120px;border:3px dashed #C9D5E3;border-radius:22px;background:rgba(255,255,255,.7);color:#97A8BC;font:600 17px/1.2 var(--f-gioco)}
+/* i lavori a fondo dentro la camera */
+.gp-fondi{display:flex;flex-direction:column;align-items:stretch;gap:5px;width:100%;margin-top:8px;padding:8px 8px 9px;border-radius:14px;background:#FFF4CF;border:2px solid #F5D27C;box-sizing:border-box}
+.gp-fondi-t{font:700 13px/1.2 var(--f-gioco,var(--f-body));color:#7A4E00}
+.gp-fondo{display:flex;align-items:center;gap:7px;min-height:30px;font:700 15px/1.2 var(--f-gioco,var(--f-body));color:#2B2412;overflow-wrap:anywhere}
+.gp-fondo b{flex:0 0 auto;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#D98E0B;color:#FFFFFF;font:700 14px/1 var(--f-gioco,var(--f-body))}
+.gp-fondo.ora{color:#2B1A00}
+.gp-fondo.ora b{background:#F59E0B;box-shadow:0 0 0 3px #FFE3A8}
+.gp-fondo.fatta b{background:#1E9E5A}
+body.semplice.argon .gs-cam.gp.k-fondo .gp-fondi{background:rgba(255,255,255,.75)}
+/* HO FINITO: il bottone grosso dei giochi (si schiaccia quando lo tocchi) */
+body.semplice.argon .ag-finito,body.semplice .sg-finito{border-radius:22px;background:#22A45D;color:#FFFFFF;font:700 27px/1 var(--f-gioco,var(--f-display));letter-spacing:.03em;box-shadow:0 6px 0 #167A43,0 16px 24px -12px rgba(22,122,67,.6)}
+body.semplice.argon .ag-finito:active,body.semplice .sg-finito:active{transform:translateY(4px);box-shadow:0 2px 0 #167A43}
+/* quello che dice Sofia a fianco: una nuvoletta da fumetto, con lo spigolo verso di lei */
+body.semplice.argon .sg-nuvola{border:3px solid #9CD3CB;border-radius:22px 22px 6px 22px;box-shadow:0 5px 0 #6FBDB1;font:600 17px/1.4 var(--f-gioco);color:var(--g-ink)}
+body.semplice.argon .sg-nuvola b{font:700 13px/1.2 var(--f-gioco);letter-spacing:.08em}
+/* Sofia a fianco: la cornice grossa come una figurina */
+body.semplice .sg-compagna .sgc-cornice{border-radius:22px;box-shadow:0 0 0 3px #00665E,0 0 0 6px #FFFFFF,0 8px 0 3px rgba(0,77,71,.35)}
+body.semplice .sg-compagna .sgc-nome{font:700 14px/1 var(--f-gioco,var(--f-body))}
+/* la camera aperta: la nuvoletta di Sofia e i passi colorati */
+body.semplice .sf-sofia{border:3px solid #9CD3CB;box-shadow:0 5px 0 #6FBDB1}
+body.semplice .sf-sofia-t{font:700 13px/1.2 var(--f-gioco,var(--f-body));letter-spacing:.08em}
+body.semplice .sf-passo{border:3px solid #DDE6EE;border-radius:20px;box-shadow:0 4px 0 #C8D4E0;margin-bottom:12px}
+body.semplice .sf-passo-n{width:38px;height:38px;background:#4F6489;font:700 19px/1 var(--f-gioco,var(--f-display))}
+body.semplice .sf-passo.b-letto .sf-passo-n{background:#2A78D3}
+body.semplice .sf-passo.b-bagno .sf-passo-n{background:#1497C2}
+body.semplice .sf-passo.b-camera .sf-passo-n{background:#7651D4}
+body.semplice .sf-passo.b-cucina .sf-passo-n{background:#E0701A}
+body.semplice .sf-passo.b-partenza .sf-passo-n{background:#D9480F}
+body.semplice .sf-passo.b-pavimenti .sf-passo-n{background:#25994A}
+body.semplice .sf-passo.k-fondo{border-color:#F5D27C;box-shadow:0 4px 0 #E8B64A;background:#FFFBEA}
+body.semplice .sf-passo.k-fondo .sf-passo-n{background:#D98E0B}
+body.semplice .sf-passo>summary{grid-template-columns:38px 32px minmax(0,1fr) 20px}
+body.semplice .sf-passo-t{font:700 19px/1.2 var(--f-gioco,var(--f-display))}
+body.semplice .sf-seq-t{font:700 14px/1.2 var(--f-gioco,var(--f-body));color:#3E5568}
+.sf-fondo-come{margin:2px 4px 6px;font:500 16px/1.45 var(--f-body);color:#2B2412}
+@media (max-width:374px){
+  body.semplice.argon .gs-cam.gp,body.semplice.argon .gs-cam.gp.gs-stelle,body.semplice.argon .gs-cam.gp.ora{min-height:112px;padding:52px 10px 11px}
+  body.semplice.argon .gs-cam.gp .gs-np{width:40px;height:40px;font-size:21px}
+  body.semplice.argon .gs-cam.gp .gs-nome{font-size:19px}
+  body.semplice.argon .gs-cam.gp .gp-ico{font-size:31px}
+  body.semplice.argon .gp-vuota{min-height:112px}
+  body.semplice.argon .gp-corr{column-gap:26px}
+  .gp-fondo{font-size:14px}
 }

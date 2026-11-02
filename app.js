@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.30.0";
+export const VERSIONE = "1.31.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1977,7 +1977,7 @@ function foglioInizioFacile(f) {
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
     <div class="gs-targa ${tipoGiornata(p)} ${p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : ""}"><div class="gs-targa-r"><span class="gs-tile" aria-hidden="true">${p.stato === "fatta" ? "✅" : p.stato === "problema" || p.stato === "non_fatta" ? "⚠️" : disegnoGiornata(p)}</span><span class="gs-cam-x"><span class="gs-nome">${esc(nome)}</span><span class="gs-cosa">${esc(stelle ? "Solo le rifiniture" : titoloBase(p) + parteTesto(p))}</span></span>${p.stato === "da_fare" || p.stato === "in_corso" ? "" : BADGE(p)}</div>${ospiti.length ? `<div class="sf-ospiti">${ospiti.map(([i, x]) => `<span><i aria-hidden="true">${i}</i><span>${esc(x)}</span></span>`).join("")}</div>` : ""}</div>
     ${argonLei() ? sofiaSpiega(testoSofiaCamera(p, parlato)) : `<button type="button" class="sf-ascolta" data-sf-voce>${ICONA("altoparlante")}<span>Ascolta</span></button>`}<span hidden data-sf-testo>${esc(argonLei() ? testoSofiaCamera(p, parlato) : parlato)}</span>
-    ${dice}${argonLei() && lista ? sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) : ""}${sempreHtml}${rifHtml}${argonLei() && lista ? "" : zonaHtml + passiHtml}${bidoni}
+    ${dice}${argonLei() && lista ? sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) : ""}${sempreHtml}${rifHtml}${argonLei() ? fondiCamera(p) : ""}${argonLei() && lista ? "" : zonaHtml + passiHtml}${bidoni}
     ${bottone}
     ${aperta ? `<div class="pro-sec"><button class="nonna-link" data-non-riesco="${esc(p.id)}">Non riesco a fare una cosa</button><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}
   </div>`;
@@ -2670,51 +2670,76 @@ function testaGiro(z, giorno, ord, rif, anteprima) {
 //  Sofia. Quando si scorre, Sofia resta a fianco (in basso a destra, il fantasmino): tocchi lei e ti dice cosa fare adesso;
 //  tocchi una camera e te la spiega lei, mentre si apre la camera con «Sofia ti dice» in alto e i passi in ordine.
 // ============================================================================
-function tesseraGiro(p, rif, anteprima, n, ora) {
-  const st = anteprima ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
-  const mie = st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
-  const c = camera(p.camera), fondo = p.origine === "governante", stelle = p.tipo === "stelle";
+// 1.31.0 (Michele, 2/11 notte, con la foto: tre lavori a fondo in «Altri lavori» con scritto «in Fenicotteri»): «si deve
+// capire meglio che quei lavori bisogna farli da Fenicotteri». I lavori a fondo stanno DENTRO la camera dove si fanno:
+// sulla sua figurina, col loro numero del giro («✨ 4 Pareti · 5 Tende»); se quel giorno la camera non ha la pulizia,
+// la camera si colora lo stesso (non è più tratteggiata) e porta solo i suoi lavori a fondo. In «Altri lavori» restano
+// le scale, il terrazzo, le stelle in altre camere, i lavori in più.
+function tesseraGiro(p, rif, anteprima, n, ora, extra = {}) {
+  const fondi = extra.fondo || [];
+  const soloFondo = !p && fondi.length > 0, apri = p || (fondi[0] && fondi[0].p);
+  if (!apri) return "";
+  const st = anteprima || !p ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
+  const mie = !p || st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
+  const c = extra.camera || camera(apri.camera), fondo = !!p && p.origine === "governante", stelle = !!p && p.tipo === "stelle";
   const nome = stelle ? "Altre camere" : fondo ? String(titoloBase(p) || "Lavoro a fondo") : nomeBreveCamera(c);
   const sotto = stelle ? [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))].join(", ") : fondo ? `in ${nomeBreveCamera(c)}` : "";
-  const ico = stelle ? "⭐" : disegnoGiornata(p);
+  const ico = soloFondo ? "✨" : stelle ? "⭐" : disegnoGiornata(p);
   const segni = [];
   if (!st && mie.length && !stelle) segni.push(["stella", mie.length > 1 ? `⭐${mie.length}` : "⭐", mie.length === 1 ? "una stella" : `${mie.length} stelle`]);
-  if (!st && p.partenza) segni.push(["parte", "🚪", "l'ospite parte"]);
-  else if (!st && p.arrivo) segni.push(["arriva", "🧳", "arriva un ospite"]);
-  if (!st && (p.dettagli || p.istruzioni)) segni.push(["nota", "📣", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
-  const k = fondo ? "k-fondo" : stelle ? "gs-stelle" : tipoGiornata(p);
-  const cosa = st === "fatta" ? "fatta" : st === "prob" ? "da sistemare" : stelle ? "stelle in altre camere" : fondo ? `lavoro a fondo in ${nomeBreveCamera(c)}` : parolaGiornata(p, nome);
-  return `<button class="gs-cam gp ${k}${st ? " " + st : ""}${ora ? " ora" : ""}" data-dettagli="${esc(p.id)}" aria-label="${n ? n + ". " : ""}${esc(nome)}: ${esc(cosa)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}"><span class="gs-np" aria-hidden="true">${st === "fatta" ? "✓" : st === "prob" ? "!" : esc(String(n || ""))}</span>${ora ? `<span class="gs-ora">Adesso</span>` : ""}<span class="gp-ico" aria-hidden="true">${ico}</span><span class="gs-nome">${esc(nome)}</span>${sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : ""}${segni.length ? `<span class="gp-segni" aria-hidden="true">${segni.map(([cl, t]) => `<i class="gp-s ${cl}">${t}</i>`).join("")}</span>` : ""}</button>`;
+  if (p && !st && p.partenza) segni.push(["parte", "🚪", "l'ospite parte"]);
+  else if (p && !st && p.arrivo) segni.push(["arriva", "🧳", "arriva un ospite"]);
+  if (p && !st && (p.dettagli || p.istruzioni)) segni.push(["nota", "📣", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
+  const k = soloFondo || fondo ? "k-fondo" : stelle ? "gs-stelle" : tipoGiornata(p);
+  const qui = fondi.map(f => ({ ...f, st: anteprima ? "" : f.p.stato === "fatta" ? "fatta" : f.p.stato === "problema" || f.p.stato === "non_fatta" ? "prob" : "" }));
+  const ora2 = ora || qui.some(f => f.ora);
+  const cosa = soloFondo ? "lavori a fondo" : st === "fatta" ? "fatta" : st === "prob" ? "da sistemare" : stelle ? "stelle in altre camere" : fondo ? `lavoro a fondo in ${nomeBreveCamera(c)}` : parolaGiornata(p, nome);
+  const fondoHtml = qui.length ? `<span class="gp-fondi"><span class="gp-fondi-t">✨ ${soloFondo ? (qui.length === 1 ? "Lavoro a fondo" : "Lavori a fondo") : "Qui anche"}</span>${qui.map(f => `<span class="gp-fondo${f.ora ? " ora" : ""}${f.st ? " " + f.st : ""}"><b>${f.st === "fatta" ? "✓" : esc(String(f.n || ""))}</b>${esc(String(titoloBase(f.p) || "a fondo"))}</span>`).join("")}</span>` : "";
+  const detti = qui.length ? `. ${qui.length === 1 ? "Lavoro a fondo" : "Lavori a fondo"}: ${qui.map(f => `${f.n}. ${titoloBase(f.p)}`).join(", ")}` : "";
+  return `<button class="gs-cam gp ${k}${st ? " " + st : ""}${ora2 ? " ora" : ""}${qui.length ? " con-fondi" : ""}" data-dettagli="${esc(apri.id)}" aria-label="${n ? n + ". " : ""}${esc(nome)}: ${esc(cosa)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}${esc(detti)}"><span class="gs-np" aria-hidden="true">${soloFondo ? "✨" : st === "fatta" ? "✓" : st === "prob" ? "!" : esc(String(n || ""))}</span>${ora2 ? `<span class="gs-ora">👉 Adesso</span>` : ""}<span class="gp-ico" aria-hidden="true">${ico}</span><span class="gs-nome">${esc(nome)}</span>${sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : ""}${segni.length ? `<span class="gp-segni" aria-hidden="true">${segni.map(([cl, t]) => `<i class="gp-s ${cl}">${t}</i>`).join("")}</span>` : ""}${fondoHtml}</button>`;
 }
 function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   const num = new Map(ord.map((p, i) => [p.id, i + 1]));
   const oraId = adesso >= 0 && ord[adesso] ? ord[adesso].id : "";
-  const vera = (p) => p.tipo !== "stelle" && p.origine !== "governante" && p.tipo !== "fisso" && p.tipo !== "extra" && !!S.camere.find(c => c.id === p.camera);
+  const dentro = (p) => !!S.camere.find(c => c.id === p.camera);
+  const vera = (p) => p.tipo !== "stelle" && p.origine !== "governante" && p.tipo !== "fisso" && p.tipo !== "extra" && dentro(p);
   const perCamera = new Map(); for (const p of ord) if (vera(p) && !perCamera.has(p.camera)) perCamera.set(p.camera, p);
+  // 1.31.0: i lavori a fondo vanno sulla camera dove si fanno
+  const fondoDi = new Map(); for (const p of ord) if (p.origine === "governante" && dentro(p)) { if (!fondoDi.has(p.camera)) fondoDi.set(p.camera, []); fondoDi.get(p.camera).push(p); }
+  const ha = (id) => perCamera.has(id) || fondoDi.has(id);
   const messe = new Set();
-  const tile = (c) => { const p = perCamera.get(c.id); if (!p) return `<div class="gp-vuota" aria-hidden="true"><span>${esc(nomeBreveCamera(c))}</span></div>`; messe.add(p.id); return tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId); };
+  const tile = (c) => {
+    const p = perCamera.get(c.id) || null, fs = fondoDi.get(c.id) || [];
+    if (!p && !fs.length) return `<div class="gp-vuota" aria-hidden="true"><span>${esc(nomeBreveCamera(c))}</span></div>`;
+    if (p) messe.add(p.id); for (const f of fs) messe.add(f.id);
+    return tesseraGiro(p, rif, anteprima, p ? num.get(p.id) : 0, !!p && p.id === oraId, { camera: c, fondo: fs.map(f => ({ p: f, n: num.get(f.id), ora: f.id === oraId })) });
+  };
   const ordine = (a, b) => (a.ordine || 99) - (b.ordine || 99);
   const blocchi = [];
-  // i piani col corridoio: prima quello della signora (tutte le sue camere, quelle di oggi col numero, le altre in grigio),
-  // poi gli altri piani dove oggi ha una camera (solo le sue)
-  const zoneCam = [...new Set([z, ...[...perCamera.keys()].map(id => camera(id).zona)])];
+  const zoneCam = [...new Set([z, ...[...perCamera.keys(), ...fondoDi.keys()].map(id => camera(id).zona)])];
   for (const zz of zoneCam) {
     const sue = zz === z;
-    const cs = camereZona(zz).filter(c => (c.lato === "L" || c.lato === "R") && (sue || perCamera.has(c.id)));
-    if (!cs.some(c => perCamera.has(c.id))) continue;
+    const cs = camereZona(zz).filter(c => (c.lato === "L" || c.lato === "R") && (sue || ha(c.id)));
+    if (!cs.some(c => ha(c.id))) continue;
     const Lc = cs.filter(c => c.lato === "L").sort(ordine), Rc = cs.filter(c => c.lato === "R").sort(ordine);
-    blocchi.push(`<div class="gp-piano"><div class="gp-eti">${esc((S.zone[zz] && (S.zone[zz].breve || S.zone[zz].nome)) || zz)}</div><div class="corridoio gp-corr"><div class="lato">${Lc.map(tile).join("")}</div><div class="lato">${Rc.map(tile).join("")}</div></div></div>`);
+    blocchi.push(`<div class="gp-piano"><div class="gp-eti"><span>${esc((S.zone[zz] && (S.zone[zz].breve || S.zone[zz].nome)) || zz)}</span></div><div class="corridoio gp-corr"><div class="lato">${Lc.map(tile).join("")}</div><div class="lato">${Rc.map(tile).join("")}</div></div></div>`);
   }
-  // le camere sulla strada (via Nazario Sauro) e le case: solo quelle di oggi (per le case, quelle della sua zona in grigio)
   const vie = {};
-  for (const c of S.camere) if (c.lato === "S" && perCamera.has(c.id)) (vie[c.via || "Fuori"] = vie[c.via || "Fuori"] || []).push(c);
-  for (const [via, cs] of Object.entries(vie)) blocchi.push(`<div class="gp-piano"><div class="gp-eti">${esc(via)}</div><div class="gp-griglia">${cs.sort(ordine).map(tile).join("")}</div></div>`);
-  const case_ = S.camere.filter(c => c.lato === "A" && (perCamera.has(c.id) || c.zona === z)).sort(ordine);
-  if (case_.some(c => perCamera.has(c.id))) blocchi.push(`<div class="gp-piano"><div class="gp-eti">Le case</div><div class="gp-griglia">${case_.map(tile).join("")}</div></div>`);
-  // quello che non sta su una camera disegnata: scale, terrazzo, lavori a fondo, stelle in altre camere, lavori in più
+  for (const c of S.camere) if (c.lato === "S" && ha(c.id)) (vie[c.via || "Fuori"] = vie[c.via || "Fuori"] || []).push(c);
+  for (const [via, cs] of Object.entries(vie)) blocchi.push(`<div class="gp-piano"><div class="gp-eti"><span>${esc(via)}</span></div><div class="gp-griglia">${cs.sort(ordine).map(tile).join("")}</div></div>`);
+  const case_ = S.camere.filter(c => c.lato === "A" && (ha(c.id) || c.zona === z)).sort(ordine);
+  if (case_.some(c => ha(c.id))) blocchi.push(`<div class="gp-piano"><div class="gp-eti"><span>Le case</span></div><div class="gp-griglia">${case_.map(tile).join("")}</div></div>`);
   const altri = ord.filter(p => !messe.has(p.id));
-  if (altri.length) blocchi.push(`<div class="gp-piano"><div class="gp-eti">Altri lavori</div><div class="gp-griglia">${altri.map(p => tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId)).join("")}</div></div>`);
+  if (altri.length) blocchi.push(`<div class="gp-piano"><div class="gp-eti"><span>Altri lavori</span></div><div class="gp-griglia">${altri.map(p => tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId)).join("")}</div></div>`);
   return `<section class="gs-camere gp-mappa${pl ? " col-piano" : ""}" aria-label="La piantina del giro">${testaGiro(z, giorno, ord, rif, anteprima)}${blocchi.join("")}</section>`;
+}
+// nella camera aperta: i lavori a fondo di quella camera, quel giorno (col loro «Come si fa»)
+function fondiCamera(p) {
+  if (!p) return "";
+  const qui = Object.values(S.pulizie || {}).filter(x => x.data === p.data && x.zona === p.zona && x.camera === p.camera && x.origine === "governante" && x.id !== p.id && x.stato !== "non_fatta" && !x.nonServe);
+  if (!qui.length) return "";
+  const riga = (f) => { const k = `${f.id}|fondo`; return `<details class="sf-passo k-fondo" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">✨</span><span class="sf-passo-i" aria-hidden="true">${esc(f.icona || "🧽")}</span><span class="sf-passo-t">${esc(String(titoloBase(f) || "Lavoro a fondo"))}<small>${Number(f.minuti) ? `${f.minuti} minuti` : "lavoro a fondo"}</small></span></summary><div class="sf-passo-x"><p class="sf-fondo-come">${esc(f.come || "Fallo bene, con calma: è un lavoro a fondo.")}</p></div></details>`; };
+  return `<section class="sf-seq sf-fondi"><div class="sf-seq-t">✨ ${p.origine === "governante" ? "Qui anche" : "In questa camera anche"} ${qui.length === 1 ? "un lavoro a fondo" : qui.length + " lavori a fondo"}</div>${qui.map(riga).join("")}</section>`;
 }
 // ---- Sofia sempre a fianco: quando la scena di Sofia non si vede più, lei resta in basso a destra (il fantasmino fermo);
 // quando parla si muove e accanto c'è la sua nuvoletta. Toccarla: ti dice cosa fare adesso (o smette di parlare).
@@ -2758,8 +2783,8 @@ function sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) {
   const blocchi = (lista.blocchi || []).filter(b => b.righe && b.righe.length);
   const righeZ = lista.zona && lista.zona.length ? righeZona(lista) : [];
   if (!blocchi.length && !righeZ.length) return "";
-  const passo = (k, i, ico, nome, quante, dentro) => `<details class="sf-passo" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">${i}</span><span class="sf-passo-i" aria-hidden="true">${ico}</span><span class="sf-passo-t">${esc(nome)}<small>${quante}</small></span></summary><div class="sf-passo-x"><div class="sig-lista">${dentro}</div></div></details>`;
-  const html = blocchi.map((b, i) => passo(`${p.id}|b${b.id || i}`, i + 1, ICO_BLOCCO[b.id] || "•", b.nome, `${b.righe.length} ${b.righe.length === 1 ? "cosa" : "cose"}`, b.righe.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")));
+  const passo = (k, i, ico, nome, quante, dentro, cls = "") => `<details class="sf-passo${cls ? " " + cls : ""}" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">${i}</span><span class="sf-passo-i" aria-hidden="true">${ico}</span><span class="sf-passo-t">${esc(nome)}<small>${quante}</small></span></summary><div class="sf-passo-x"><div class="sig-lista">${dentro}</div></div></details>`;
+  const html = blocchi.map((b, i) => passo(`${p.id}|b${b.id || i}`, i + 1, ICO_BLOCCO[b.id] || "•", b.nome, `${b.righe.length} ${b.righe.length === 1 ? "cosa" : "cose"}`, b.righe.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join(""), b.id ? "b-" + b.id : ""));
   if (righeZ.length) html.push(passo(`${p.id}|zona`, blocchi.length + 1, "🪜", "Poi scale, corridoio e lavanderia", `${righeZ.length} ${righeZ.length === 1 ? "cosa" : "cose"}`, righeZ.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")));
   return `<section class="sf-seq"><div class="sf-seq-t">Cosa fare, in ordine</div>${html.join("")}<p class="sf-seq-aiuto">Tocca un passo per vedere tutte le cose.</p></section>`;
 }
