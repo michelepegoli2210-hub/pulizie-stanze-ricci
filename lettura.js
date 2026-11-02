@@ -104,6 +104,14 @@ export function prospettoInCodici(ctx, codici, da, a) {
   }).join("\n");
 }
 
+// ---- 1.39.0: la Segreteria: quello che Sofia ha capito, nella forma che resta da parte (coi nomi veri: la raccolta è dei titolari)
+export function perSegreteria(j) {
+  const x = j && typeof j === "object" ? j : {};
+  const p = (k, n) => (Array.isArray(x[k]) ? x[k] : []).filter(v => v && typeof v === "object").slice(0, n).map(v => { const o = {}; for (const [a, b] of Object.entries(v)) if (b !== undefined && b !== null && typeof b !== "object") o[a] = typeof b === "string" ? b.slice(0, 400) : b; return o; });
+  return { risposta: String(x.risposta || "").slice(0, 700), soggiorni: p("soggiorni", 60), togli: p("togli", 20), indicazioni: p("indicazioni", 20), assenze: p("assenze", 10), guasti: p("guasti", 10), spesa: p("spesa", 10), note: p("note", 10), ore: p("ore", 14), telefoni: p("telefoni", 10),
+    dubbi: (Array.isArray(x.dubbi) ? x.dubbi : []).slice(0, 12).map(d => ({ domanda: String(d && typeof d === "object" ? (d.domanda || d.testo || "") : d || "").slice(0, 200), risposte: d && typeof d === "object" && Array.isArray(d.risposte) ? d.risposte.slice(0, 4).map(r => String(r).slice(0, 40)) : [] })).filter(d => d.domanda) };
+}
+
 // ---- il taccuino senza nomi di ospiti ---------------------------------------------------------------------------------
 export function nomiOspiti(ctx) {
   const via = new Set([...(ctx.camere || []).map(c => PAROLE.norm(c.nome)), ...(ctx.signore || []).map(z => PAROLE.norm(z.nome)), PAROLE.norm(ctx.nomeGov || ""), PAROLE.norm(ctx.nomeMio || ""), "michele", "ospiti", "ospite", "operai", "tecnici", "booking"]);

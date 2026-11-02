@@ -7196,3 +7196,55 @@ body.semplice.argon .gs-hero .gs-turno-pill{color:#004D47}
 .mt-segno .mt-parola.start{text-anchor:start}
 .mt-segno .mt-parola.end{text-anchor:end}
 .mt-did{font-size:13.5px;color:#5B4300}
+
+/* ---- 1.39.0: la Segreteria (i messaggi a sinistra, cosa ha capito Sofia a destra; Giusto / Correggi) ---- */
+.sgr-testa{margin:4px 2px 10px}
+.sgr-testa h2{margin:0 0 4px;font:700 22px/1.15 var(--f-display)}
+.sgr-testa p{margin:0;color:#5B6B7A;font-size:14px;line-height:1.35}
+.sgr-lettura{padding:12px 12px 10px}
+.sgr-lettura.chiusa>summary{list-style:none;cursor:pointer}
+.sgr-lettura.chiusa>summary::-webkit-details-marker{display:none}
+.sgr-lettura.chiusa>summary .sgr-l-testa{margin-bottom:0}
+.sgr-lettura.chiusa[open]>summary .sgr-l-testa{margin-bottom:8px}
+.sgr-l-testa{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.sgr-l-testa>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sgr-l-testa b{font-size:16px}
+.sgr-l-testa small{color:#5B6B7A;font-size:12.5px}
+.sgr-l-testa .btnsm{align-self:flex-start;margin-top:4px}
+.sgr-l-testa .pill{font:700 11.5px var(--f-body);padding:2px 9px;border-radius:999px;background:#E6EDF3;color:#3E5568}
+.sgr-l-testa .pill.ok{background:#DCF5E3;color:#166534}
+.sgr-l-testa .pill.no{background:#F3E4E4;color:#8B2C2C}
+.sgr-l-testa .pill.attesa{background:#FFF1C9;color:#7A4E00}
+.sgr-risposta{display:flex;gap:8px;align-items:flex-start;margin:0 0 10px;padding:8px 10px;border-radius:12px;background:rgba(14,116,144,.08);font-size:14px;line-height:1.35}
+.sgr-risposta .dt-fonte-foto{flex:0 0 auto}
+.sgr-intest,.sgr-riga{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:8px}
+.sgr-intest{font:700 11.5px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:#5B6B7A;margin:0 0 4px}
+.sgr-riga{padding:6px 0;border-top:1px dashed rgba(43,58,74,.18)}
+.sgr-msg{background:#F1F4F8;border-radius:12px 12px 12px 4px;padding:7px 9px;font-size:13.5px;line-height:1.3;overflow-wrap:anywhere;align-self:start}
+.sgr-msg small{display:block;color:#5B6B7A;font-size:11px;margin-bottom:2px}
+.sgr-msg p{margin:0}
+.sgr-msg.mio{background:#E3F3E7;border-radius:12px 12px 4px 12px}
+.sgr-msg.altro{background:transparent;border:1px dashed rgba(43,58,74,.25)}
+.sgr-capito{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sgr-nulla{color:#9AA7B4;padding:6px 2px}
+.sgr-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 6px;align-items:start;padding:7px 8px;border:1.5px solid rgba(43,58,74,.22);border-radius:12px;background:#FFFFFF;font-size:13.5px;line-height:1.3}
+.sgr-item.giusto{border-color:#16A34A;background:#F2FBF4}
+.sgr-item.sbagliato{border-color:#D97706;background:#FFF8EC}
+.sgr-ico{font-size:15px;line-height:1.2}
+.sgr-txt{overflow-wrap:anywhere}
+.sgr-corr{color:#7A4E00;font-weight:600}
+.sgr-azioni{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.sgr-b{border:1.5px solid rgba(43,58,74,.3);background:#FFFFFF;border-radius:999px;padding:4px 10px;font:600 12.5px var(--f-body);color:#2B3A4A;cursor:pointer}
+.sgr-b.si{border-color:#16A34A;color:#166534}
+.sgr-b.no{border-color:#D97706;color:#7A4E00}
+.sgr-giud{font:700 12px var(--f-body);color:#166534}
+.sgr-giud.sbagliato{color:#7A4E00}
+.sgr-dialogo textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:8px 10px;border-radius:10px;border:1.5px solid rgba(43,58,74,.3)}
+.sv-tessera.sgr{grid-column:1/-1}
+:root[data-theme="dark"] .sgr-msg{background:#26303A}
+:root[data-theme="dark"] .sgr-msg.mio{background:#223A2C}
+:root[data-theme="dark"] .sgr-item{background:#1E242B;border-color:rgba(255,255,255,.18)}
+:root[data-theme="dark"] .sgr-item.giusto{background:#1B2E22}
+:root[data-theme="dark"] .sgr-item.sbagliato{background:#332A18}
+:root[data-theme="dark"] .sgr-b{background:#1E242B;color:#E6EDF3}
+:root[data-theme="dark"] .sgr-testa p,:root[data-theme="dark"] .sgr-l-testa small,:root[data-theme="dark"] .sgr-msg small,:root[data-theme="dark"] .sgr-intest{color:#A9B4C0}
