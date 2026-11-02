@@ -136,7 +136,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     const chats = new Map();
     for (const p of tutte) { const nome = p.chat || "Albergo"; if (!chats.has(nome)) chats.set(nome, p.gruppo !== false); }
     const piu = chats.size > 1;
-    const msgs = tutte.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "" }; })
+    const msgs = tutte.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "", chatNome: chats.get(nome) ? nome : "chat con " + nome, mio: !!p.mio }; })
       .sort((x, y) => ((x.data || "") + (x.ora || "")).localeCompare((y.data || "") + (y.ora || "")));
     // i vocali: quelli già trascritti si usano, gli altri si trascrivono (6 per volta)
     const daTrascrivere = msgs.filter(m => m.tipo === "audio" && m.media && !m.trascrizione).slice(-MAX_VOCALI);
@@ -178,6 +178,8 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     if (!j0 || typeof j0 !== "object") throw new Error("Gemini ha risposto in un modo che non capisco");
     const j = codici.daCodiciProfondo(j0);
     const riassunto = riassuntoGiro(j, ctx), ha = !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni);
+    // 1.39.0: la Segreteria: i messaggi (coi vocali trascritti) e quello che Sofia ha capito restano da parte, per «Giusto / Correggi»
+    try { await db.salva("importazioni", "segreteria_" + id, { lid: id, quando: finito(), da: "giro", modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, messaggi: scelti.slice(-60).map(m => ({ id: String(m.id || ""), chat: m.chatNome || "", chi: m.chi || "", mio: !!m.mio, data: m.data || "", ora: m.ora || "", tipo: m.tipo || "testo", testo: String(m.testo || "").slice(0, 900) })), capito: LET.perSegreteria(j), esito: ha ? "da_controllare" : "vuota", giudizi: {} }); } catch (e) { console.warn("segreteria:", e && e.message); }
     const testoPapa = scelti.filter(m => m.testo && (!papa || m.chi === papa)).map(m => m.testo).join("\n");
     const etichette = [...chats.entries()].map(([nome, gruppo]) => gruppo ? nome : "chat con " + nome);
     const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: papa ? [papa] : [], chats: etichette, data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "", posta: true, giro: true };
