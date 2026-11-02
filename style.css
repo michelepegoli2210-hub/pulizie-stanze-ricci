@@ -6898,3 +6898,159 @@ body.semplice .sf-seq-t{font:700 14px/1.2 var(--f-gioco,var(--f-body));color:#3E
   body.semplice.argon .gp-corr{column-gap:26px}
   .gp-fondo{font-size:14px}
 }
+
+/* ===================================================================================================================
+   1.32.0 · A MATITA, IN RILIEVO (Michele, 2/11: «più tratteggiato, tipo colorato a matita, si deve vedere che è disegnato
+   a matita, e più in rilievo 3D»). Le figurine sono colorate a righe oblique come con la matita, col bordo scuro un po'
+   storto (disegnato a mano) e l'ombra piena sotto (il rilievo). Niente numero del giro, niente scopa: il disegnino a
+   matita del letto (matrimoniale o singolo), il nome grande, cosa si fa in parole, «per 2 · matrimoniale», la stella che
+   si tocca, il tasto verde «✓ Fatto». Sofia a fianco è a scomparsa: il tasto col microfono, e lei intera (ritagliata)
+   solo mentre ascolta o parla. Nella camera aperta il disegno a mano della camera con le stelle al loro posto.
+   =================================================================================================================== */
+body.semplice.argon{--m-ink:#2B3A4A;--m-carta:#FFFDF7;--m-storto:18px 22px 16px 24px/22px 16px 24px 18px}
+/* ---- le figurine ---- */
+body.semplice.argon .gs-cam.gp,body.semplice.argon .gs-cam.gp.gs-stelle{--g-chiaro:#EEF2F8;--g-tratto:rgba(120,140,170,.22);--g-ombra:#A9B8CC;--g-forte:#4F6489;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;min-height:0;padding:0;border:2.5px solid rgba(43,58,74,.82);border-radius:var(--m-storto);background:repeating-linear-gradient(-48deg,var(--g-tratto) 0 1.5px,transparent 1.5px 7px),var(--g-chiaro);box-shadow:0 7px 0 var(--g-ombra),0 14px 18px -8px rgba(31,45,61,.35),inset 0 2px 0 rgba(255,255,255,.7);color:var(--g-ink);transition:transform .1s ease,box-shadow .1s ease}
+body.semplice.argon .gs-cam.gp::after{content:"";position:absolute;inset:-7px -5px -5px -7px;border:1.5px solid var(--m-ink);border-radius:24px 18px 26px 20px/18px 26px 20px 24px;opacity:.22;transform:rotate(-.7deg);pointer-events:none}
+body.semplice.argon .gs-cam.gp.k-cambio{--g-chiaro:#E2F0FF;--g-tratto:rgba(42,120,211,.22);--g-ombra:#6FA9E3;--g-forte:#2A78D3}
+body.semplice.argon .gs-cam.gp.k-ripasso{--g-chiaro:#E1F5E5;--g-tratto:rgba(37,153,74,.22);--g-ombra:#7CC58C;--g-forte:#25994A}
+body.semplice.argon .gs-cam.gp.k-fondo{--g-chiaro:#FFF4CF;--g-tratto:rgba(217,142,11,.24);--g-ombra:#E8B64A;--g-forte:#B36B00}
+body.semplice.argon .gs-cam.gp.gs-stelle{--g-chiaro:#F0E8FF;--g-tratto:rgba(118,81,212,.2);--g-ombra:#B49CEC;--g-forte:#7651D4}
+body.semplice.argon .gs-cam.gp.fatta{--g-chiaro:#F1F5F2;--g-tratto:rgba(30,158,90,.14);--g-ombra:#BFD4C6;--g-forte:#1E9E5A}
+body.semplice.argon .gs-cam.gp.prob{--g-chiaro:#FFF6E0;--g-tratto:rgba(179,107,0,.2);--g-ombra:#E0B257;--g-forte:#B36B00}
+body.semplice.argon .gs-cam.gp:active{transform:translateY(4px);box-shadow:0 3px 0 var(--g-ombra),inset 0 2px 0 rgba(255,255,255,.7)}
+body.semplice.argon .gs-cam.gp .gp-apri{flex:1 1 auto;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:2px;width:100%;min-height:124px;margin:0;padding:50px 10px 8px 12px;border:0;border-radius:inherit;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body.semplice.argon .gs-cam.gp .gp-ico{position:absolute;top:7px;right:7px;width:56px;height:46px;font-size:0;line-height:0}
+body.semplice.argon .gs-cam.gp .gp-ico svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 2px 0 rgba(43,58,74,.18))}
+body.semplice.argon .gs-cam.gp .gs-nome{max-width:100%;font:700 23px/1.08 var(--f-gioco);letter-spacing:0;color:var(--m-ink);overflow-wrap:anywhere;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+body.semplice.argon .gs-cam.gp .gp-cosa{max-width:100%;font:700 15px/1.2 var(--f-gioco);color:var(--g-forte);overflow-wrap:anywhere}
+body.semplice.argon .gs-cam.gp.fatta .gp-cosa{color:#1E9E5A}
+body.semplice.argon .gs-cam.gp .gp-per{display:inline-flex;align-items:center;gap:5px;margin-top:4px;padding:3px 8px 3px 6px;border:1.5px solid rgba(43,58,74,.3);border-radius:9px 11px 9px 11px/11px 9px 11px 9px;background:rgba(255,255,255,.88);font:600 13.5px/1.1 var(--f-gioco);color:var(--m-ink);white-space:nowrap}
+body.semplice.argon .gs-cam.gp .gp-per i{font-style:normal;font-size:14px;line-height:1}
+body.semplice.argon .gs-cam.gp .gp-sotto{font:600 14px/1.25 var(--f-gioco);color:#4B5D6C}
+body.semplice.argon .gs-cam.gp .gp-segni{gap:5px;margin-top:5px}
+body.semplice.argon .gs-cam.gp .gp-s,body.semplice.argon .gs-cam.gp .gp-s.parte,body.semplice.argon .gs-cam.gp .gp-s.arriva,body.semplice.argon .gs-cam.gp .gp-s.nota{min-width:30px;height:28px;padding:0 6px;border:1.5px solid rgba(43,58,74,.3);border-radius:14px;background:#FFFFFF;font:700 14px/1 var(--f-gioco);color:var(--m-ink)}
+body.semplice.argon .gs-cam.gp .gp-stato{position:absolute;top:8px;left:8px;display:grid;place-items:center;width:32px;height:32px;border:2.5px solid rgba(43,58,74,.82);border-radius:50%;background:#1E9E5A;color:#FFFFFF;font:700 19px/1 var(--f-gioco);box-shadow:0 3px 0 rgba(43,58,74,.25)}
+body.semplice.argon .gs-cam.gp .gp-stato.prob{background:#F59E0B;color:#2B1A00}
+body.semplice.argon .gs-cam.gp.fatta .gp-ico{opacity:.55}
+body.semplice.argon .gs-cam.gp.fatta .gs-nome{color:#3B5954}
+/* ADESSO: il pezzo di nastro arancione col dito */
+body.semplice.argon .gs-cam.gp.ora{padding:0;border-color:#C96A00;box-shadow:0 7px 0 #E08A1E,0 14px 18px -8px rgba(201,106,0,.4),inset 0 2px 0 rgba(255,255,255,.7)}
+body.semplice.argon .gs-cam.gp.ora::after{opacity:.4;border-color:#C96A00}
+body.semplice.argon .gs-cam.gp .gs-ora{position:absolute;top:-14px;left:50%;transform:translateX(-50%) rotate(-2deg);margin:0;padding:5px 11px 4px;border:1.5px solid rgba(43,58,74,.45);border-radius:7px 5px 7px 5px;background:repeating-linear-gradient(-48deg,rgba(201,106,0,.3) 0 1.5px,transparent 1.5px 6px),#F8B440;color:#2B1A00;font:700 13px/1 var(--f-gioco);letter-spacing:.04em;white-space:nowrap;box-shadow:0 3px 0 #C96A00;z-index:1}
+/* la stella che si tocca e il tasto «✓ Fatto», in fondo alla figurina */
+body.semplice.argon .gp-piede{display:flex;align-items:stretch;gap:7px;padding:2px 8px 9px}
+body.semplice.argon .gp-stella,body.semplice.argon .gp-fatto{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:42px;margin:0;border:2.5px solid rgba(43,58,74,.82);border-radius:13px 11px 14px 10px/11px 14px 10px 13px;font:700 18px/1 var(--f-gioco);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .08s ease,box-shadow .08s ease}
+body.semplice.argon .gp-stella{flex:0 0 auto;min-width:46px;padding:0 9px;background:repeating-linear-gradient(-48deg,rgba(217,142,11,.28) 0 1.5px,transparent 1.5px 6px),#FFE9A8;color:#5B4300;box-shadow:0 4px 0 #D98E0B}
+body.semplice.argon .gp-stella b{font:700 17px/1 var(--f-gioco);color:#5B4300}
+body.semplice.argon .gp-fatto{flex:1 1 auto;padding:0 10px;background:repeating-linear-gradient(-48deg,rgba(255,255,255,.16) 0 1.5px,transparent 1.5px 6px),#22A45D;color:#FFFFFF;box-shadow:0 4px 0 #0F6B3A;letter-spacing:.02em}
+body.semplice.argon .gp-fatto svg{width:22px;height:22px;stroke-width:3}
+body.semplice.argon .gp-stella:active,body.semplice.argon .gp-fatto:active{transform:translateY(3px);box-shadow:0 1px 0 #0F6B3A}
+body.semplice.argon .gp-stella:active{box-shadow:0 1px 0 #D98E0B}
+/* le camere che non sono sue: a matita leggera */
+body.semplice.argon .gp-vuota{min-height:124px;border:2.5px dashed rgba(43,58,74,.38);border-radius:var(--m-storto);background:repeating-linear-gradient(-48deg,rgba(174,187,203,.28) 0 1.5px,transparent 1.5px 9px),rgba(255,255,255,.55);color:#8A9BB0;font:600 17px/1.2 var(--f-gioco)}
+/* il nastro del piano e il corridoio */
+body.semplice.argon .gp-eti span{border:1.5px solid rgba(91,67,0,.3);border-radius:6px 4px 7px 4px;background:repeating-linear-gradient(-48deg,rgba(232,182,74,.38) 0 1.5px,transparent 1.5px 6px),#FFE9A8;box-shadow:0 3px 0 rgba(91,67,0,.16)}
+body.semplice.argon .gp-corr{padding-top:12px}
+body.semplice.argon .gp-corr::after{top:10px}
+body.semplice.argon .gp-corr::after{background:repeating-linear-gradient(90deg,rgba(174,187,203,.55) 0 2px,transparent 2px 9px),#EEF2F7;box-shadow:inset 0 0 0 2px rgba(43,58,74,.3)}
+body.semplice.argon .gp-fondi{border:2px solid rgba(43,58,74,.3);border-radius:12px 14px 11px 13px/14px 11px 13px 12px;background:repeating-linear-gradient(-48deg,rgba(217,142,11,.16) 0 1.5px,transparent 1.5px 6px),#FFF4CF}
+body.semplice.argon .gp-fondo b{width:24px;height:24px;background:#FFFFFF;color:#B36B00;border:1.5px solid rgba(43,58,74,.4);font-size:13px}
+body.semplice.argon .gp-fondo.ora b{background:#F8B440;color:#2B1A00;box-shadow:none}
+body.semplice.argon .gp-fondo.fatta b{background:#1E9E5A;color:#FFFFFF}
+body.semplice.argon .gs-cam.gp.k-fondo .gp-fondi{background:repeating-linear-gradient(-48deg,rgba(217,142,11,.1) 0 1.5px,transparent 1.5px 6px),rgba(255,255,255,.8)}
+/* la nuvoletta della stella: sotto la figurina, con la punta verso la stella */
+.gp-mappa{position:relative}
+.gp-pop{position:absolute;left:0;right:0;z-index:6;padding:14px 16px 12px;border:2.5px solid rgba(43,58,74,.82);border-radius:20px 24px 18px 22px/24px 18px 22px 20px;background:repeating-linear-gradient(-48deg,rgba(232,182,74,.14) 0 1.5px,transparent 1.5px 7px),#FFFDF7;box-shadow:0 7px 0 #E8B64A,0 18px 26px -10px rgba(31,45,61,.4);color:var(--m-ink,#2B3A4A);box-sizing:border-box}
+.gp-pop::before{content:"";position:absolute;top:-13px;left:var(--fx,40px);width:22px;height:22px;margin-left:-11px;border-left:2.5px solid rgba(43,58,74,.82);border-top:2.5px solid rgba(43,58,74,.82);border-top-left-radius:5px;background:#FFFDF7;transform:rotate(45deg)}
+.gp-pop-t{font:700 17px/1.2 var(--f-gioco,var(--f-display));color:#5B4300;margin:0 0 4px}
+.gp-pop-r{display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:8px;padding:9px 0 8px;border-top:1.5px dashed rgba(43,58,74,.3)}
+.gp-pop-s{font:700 20px/1.2 system-ui;color:#D98E0B}
+.gp-pop-x{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gp-pop-x b{font:700 18px/1.2 var(--f-gioco,var(--f-display));color:var(--m-ink,#2B3A4A);overflow-wrap:anywhere}
+.gp-pop-x span{font:500 15.5px/1.45 var(--f-body);color:#2B2412;overflow-wrap:anywhere}
+.gp-pop-x small{font:600 13.5px/1.3 var(--f-gioco,var(--f-body));color:#4B5D6C}
+.gp-pop-b{display:flex;gap:8px;margin-top:8px}
+.gp-pop-voce,.gp-pop-chiudi{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 16px;border:2.5px solid rgba(43,58,74,.82);border-radius:13px 11px 14px 10px/11px 14px 10px 13px;font:700 17px/1 var(--f-gioco,var(--f-display));cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gp-pop-voce{flex:1 1 auto;background:repeating-linear-gradient(-48deg,rgba(255,255,255,.16) 0 1.5px,transparent 1.5px 6px),#00897B;color:#FFFFFF;box-shadow:0 4px 0 #004D47}
+.gp-pop-voce svg{width:22px;height:22px}
+.gp-pop-chiudi{flex:0 0 auto;background:#FFFFFF;color:var(--m-ink,#2B3A4A);box-shadow:0 4px 0 #C9D2DE}
+.gp-pop-voce:active,.gp-pop-chiudi:active{transform:translateY(3px);box-shadow:none}
+/* la domanda «è pulita?» (come quella di HO FINITO): i due tasti uno sopra l'altro, senza coprire la lista */
+.gp-conferma .chiusura-t span b{font-weight:800}
+.conferma-box.chiusura.ag-conferma .big.ok{bottom:62px}
+/* ---- il tasto col microfono (Sofia a scomparsa) ---- */
+.sg-mic{position:fixed;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:9996;display:flex;flex-direction:column;align-items:center;justify-content:center;width:68px;height:68px;margin:0;padding:0;border:3px solid #FFFFFF;border-radius:50%;background:repeating-linear-gradient(-48deg,rgba(0,77,71,.3) 0 1.5px,transparent 1.5px 6px),#00897B;box-shadow:0 0 0 2.5px rgba(43,58,74,.82),0 6px 0 #004D47,0 16px 22px -8px rgba(0,77,71,.6);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .08s ease,box-shadow .08s ease}
+.sg-mic[hidden]{display:none}
+.sg-mic svg{width:34px;height:34px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.2))}
+.sg-mic span{margin-top:-3px;font:700 11px/1 var(--f-gioco,var(--f-body));letter-spacing:.03em;color:#FFFFFF}
+.sg-mic::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2.5px solid rgba(0,137,123,.55);animation:micPulsa 2.6s ease-out infinite;pointer-events:none}
+@keyframes micPulsa{0%{transform:scale(.86);opacity:.9}70%{transform:scale(1.18);opacity:0}100%{transform:scale(1.18);opacity:0}}
+.sg-mic:active{transform:translateY(4px);box-shadow:0 0 0 2.5px rgba(43,58,74,.82),0 2px 0 #004D47}
+body.con-mic .sg-tondo{display:none}
+body.con-mic .sg-finito{right:94px}
+body.con-mic #app [data-ho-finito]{width:calc(100% - 82px);margin-right:auto}
+/* ---- Sofia intera, ritagliata: solo mentre ascolta o parla ---- */
+.sg-compagna.sg-intera{right:-6px;bottom:calc(var(--alto-sotto,71px) - 2px + env(safe-area-inset-bottom,0px));width:178px;height:316px;transform-origin:80% 100%}
+.sg-compagna.sg-intera .sgc-figura{position:absolute;inset:0;display:block;filter:drop-shadow(0 16px 20px rgba(31,45,61,.36)) drop-shadow(0 2px 3px rgba(31,45,61,.28))}
+.sg-compagna.sg-intera .donnina.gov-fig.gov-film.sgc-fig{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;margin:0;border-radius:0;background:none;box-shadow:none;filter:none;overflow:visible}
+.sg-compagna.sg-intera .sgc-fig video,.sg-compagna.sg-intera .sgc-ferma{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%}
+.sg-compagna.sg-intera .sgc-nome{left:auto;right:14px;bottom:10px;transform:none;padding:6px 11px;border:2px solid rgba(255,255,255,.9);background:rgba(0,77,71,.94);font:700 13.5px/1 var(--f-gioco,var(--f-body));box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.sg-compagna.sg-intera .sgc-nome i{font-style:normal;font-size:13px}
+.sg-compagna.sg-intera.parla .sgc-nome{background:#A51D24}
+.sg-compagna.sg-intera.ascolta .sgc-nome{background:#B36B00;animation:ascoltoPulsa 1.2s ease-in-out infinite}
+@keyframes ascoltoPulsa{0%,100%{box-shadow:0 4px 0 rgba(0,0,0,.25),0 0 0 0 rgba(179,107,0,.5)}50%{box-shadow:0 4px 0 rgba(0,0,0,.25),0 0 0 9px rgba(179,107,0,0)}}
+.sg-compagna.sg-intera.piccola{width:138px;height:245px}
+.sg-compagna.sg-intera:active{transform:scale(.97)}
+body.con-compagna .sg-nuvola{right:184px;bottom:calc(var(--alto-sotto,71px) + 136px + env(safe-area-inset-bottom,0px))}
+body.con-compagna.con-finito .sg-nuvola{bottom:calc(var(--alto-sotto,71px) + 136px + env(safe-area-inset-bottom,0px))}
+body.con-compagna .sg-nuvola.piccola{right:146px;bottom:calc(var(--alto-sotto,71px) + 110px + env(safe-area-inset-bottom,0px))}
+body.con-compagna .sg-finito{right:188px}
+body.con-compagna #app [data-ho-finito]{width:100%;margin-right:0}
+body.con-compagna .inizio.sig.sf{padding-bottom:120px}
+@media (prefers-reduced-motion:reduce){.sg-mic::after,.sg-compagna.sg-intera.ascolta .sgc-nome{animation:none}}
+/* ---- il disegno a mano della camera (nella camera aperta) ---- */
+.mt-camera{margin:10px 0 12px;padding:10px 10px 8px;border:2.5px solid rgba(43,58,74,.82);border-radius:20px 24px 18px 22px/24px 18px 22px 20px;background:linear-gradient(rgba(110,150,190,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(110,150,190,.1) 1px,transparent 1px),#FFFDF7;background-size:18px 18px,18px 18px,auto;box-shadow:0 6px 0 #D9D2C2,0 14px 18px -10px rgba(31,45,61,.3)}
+.mt-camera-t{margin:0 0 6px 4px;font:700 13px/1.2 var(--f-gioco,var(--f-display));letter-spacing:.08em;text-transform:uppercase;color:#3E5568}
+.mt-disegno{display:block;width:100%;height:auto;overflow:visible}
+.mt-disegno .mt-eti{font:600 11.5px var(--f-gioco,var(--f-body));fill:#3E5568;paint-order:stroke;stroke:#FFFDF7;stroke-width:3px;stroke-linejoin:round}
+.mt-disegno .mt-eti.mid{text-anchor:middle}
+.mt-disegno .mt-segno-s{font:700 17px/1 system-ui;fill:#B36B00;text-anchor:middle}
+.mt-disegno .mt-segno-t{font:700 11.5px var(--f-gioco,var(--f-body));fill:#2B3A4A;paint-order:stroke;stroke:#FFFDF7;stroke-width:3.5px;stroke-linejoin:round}
+.mt-disegno .mt-segno circle{filter:drop-shadow(0 2px 0 rgba(43,58,74,.3))}
+.mt-did{margin:6px 4px 0;font:600 13.5px/1.3 var(--f-gioco,var(--f-body));color:#7A4E00}
+/* il tasto grande «✓ Fatto» nella camera aperta */
+body.semplice.argon .gp-fatto.grande{width:100%;height:62px;margin:14px 0 6px;border-radius:20px 24px 18px 22px/24px 18px 22px 20px;font-size:25px;box-shadow:0 6px 0 #0F6B3A,0 16px 24px -12px rgba(15,107,58,.6)}
+body.semplice.argon .gp-fatto.grande svg{width:28px;height:28px}
+body.semplice.argon .gp-fatto.grande:active{transform:translateY(4px);box-shadow:0 2px 0 #0F6B3A}
+/* ---- lo stesso tratto a matita sul resto della pagina ---- */
+body.semplice.argon .ag-finito,body.semplice .sg-finito{border:2.5px solid rgba(43,58,74,.82);border-radius:20px 24px 18px 22px/24px 18px 22px 20px;background:repeating-linear-gradient(-48deg,rgba(255,255,255,.14) 0 1.5px,transparent 1.5px 7px),#22A45D}
+body.semplice.argon .gs-detto .gs-bolla{border-color:rgba(43,58,74,.82);border-radius:20px 24px 18px 22px/24px 18px 22px 20px;box-shadow:0 5px 0 #9CD3CB,0 14px 18px -10px rgba(31,45,61,.3)}
+body.semplice.argon .gs-detto .gs-bolla::before{border-left-color:rgba(43,58,74,.82);border-top-color:rgba(43,58,74,.82)}
+body.semplice.argon .gs-detto.parla .gs-bolla{border-color:#00665E;box-shadow:0 5px 0 #6FBDB1,0 14px 18px -10px rgba(31,45,61,.3)}
+body.semplice.argon .gs-g{border:2px solid rgba(43,58,74,.35);border-radius:12px 14px 11px 13px/14px 11px 13px 12px;box-shadow:0 3px 0 #CBD7E3}
+body.semplice.argon .gs-g.on{border-color:rgba(43,58,74,.82);background:repeating-linear-gradient(-48deg,rgba(255,255,255,.14) 0 1.5px,transparent 1.5px 6px),#00897B;box-shadow:0 3px 0 #004D47}
+body.semplice.argon .gs-g.vuoto{border-color:transparent;background:transparent;box-shadow:none}
+body.semplice .sf-passo{border:2.5px solid rgba(43,58,74,.6);border-radius:18px 22px 16px 20px/22px 16px 20px 18px;box-shadow:0 4px 0 #C8D4E0}
+body.semplice .sf-passo.k-fondo{border-color:rgba(43,58,74,.6);box-shadow:0 4px 0 #E8B64A;background:repeating-linear-gradient(-48deg,rgba(217,142,11,.1) 0 1.5px,transparent 1.5px 7px),#FFFBEA}
+body.semplice .sf-sofia{border-color:rgba(43,58,74,.82);border-radius:20px 24px 18px 22px/24px 18px 22px 20px;box-shadow:0 5px 0 #9CD3CB}
+@media (min-width:700px){
+  .sg-compagna.sg-intera{width:222px;height:395px}
+  .sg-compagna.sg-intera.piccola{width:160px;height:284px}
+  body.con-compagna .sg-nuvola{right:232px}
+  body.con-compagna .sg-finito{right:236px}
+}
+@media (max-width:374px){
+  body.semplice.argon .gs-cam.gp .gp-apri{min-height:116px;padding:46px 8px 6px 10px}
+  body.semplice.argon .gs-cam.gp .gp-ico{width:48px;height:40px}
+  body.semplice.argon .gs-cam.gp .gs-nome{font-size:20px}
+  body.semplice.argon .gs-cam.gp .gp-cosa{font-size:14px}
+  body.semplice.argon .gs-cam.gp .gp-per{font-size:12.5px;padding:2px 6px 2px 5px}
+  body.semplice.argon .gp-piede{padding:2px 6px 8px;gap:5px}
+  body.semplice.argon .gp-stella,body.semplice.argon .gp-fatto{height:40px;font-size:16.5px}
+  body.semplice.argon .gp-vuota{min-height:116px}
+  .sg-compagna.sg-intera{width:150px;height:267px}
+  body.con-compagna .sg-nuvola,body.con-compagna .sg-finito{right:158px}
+  .sg-mic{width:62px;height:62px}
+  body.con-mic .sg-finito{right:86px}
+  body.con-compagna .sg-finito{font-size:21px;padding:0 10px}
+}

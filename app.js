@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.31.0";
+export const VERSIONE = "1.32.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -117,6 +117,9 @@ const FILM_TRE = { parla: "cons-parla-3d2.webm", riposo: "cons-riposo-3d2.webm",
 // le pose si somigliano, la fine attaccata all'inizio. Sempre piatti (niente 3D: alle signore non serve). capo-viso.webp è
 // la testa, quadrata, per i tondi (il tasto tondo, le schede «Sofia ti spiega»).
 const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: "capo-poster.webp", viso: "capo-viso.webp" };
+// 1.32.0: la stessa capo-governante RITAGLIATA (senza il corridoio dietro: VP9 con trasparenza, come la Sofia 3D di Michele),
+// per Sofia a fianco delle signore: «tutta la sagoma di Sofia senza sfondo». Fatti con dev/s3d/ritaglia.py (u2net_human_seg).
+const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -360,16 +363,17 @@ function filmPuntoAbbinato(da, a, t) {
   let tt = Number(t) || 0; if (dur > 0) tt = ((tt % dur) + dur) % dur;
   return Math.max(0, Number(lista[Math.round(tt / (Number(j.passo) || 0.25)) % lista.length]) || 0);
 }
-function FILM_CONS(cls, tre) {
+function FILM_CONS(cls, tre, ritaglio) {
   const capo = !tre && sofiaCapo();   // 1.25.0
-  const f = tre ? FILM_TRE : capo ? FILM_CAPO : FILM_PRONTO;
-  return `<span class="donnina gov-fig gov-film ${cls}${capo ? " capo" : ""}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo"${tre ? ' data-tre="1"' : ""}${capo ? ' data-capo="1"' : ""}>
+  const rit = capo && !!ritaglio;      // 1.32.0: la capo-governante ritagliata (senza sfondo), per Sofia a fianco
+  const f = tre ? FILM_TRE : rit ? FILM_CAPO_TRE : capo ? FILM_CAPO : FILM_PRONTO;
+  return `<span class="donnina gov-fig gov-film ${cls}${capo ? " capo" : ""}${rit ? " ritaglio" : ""}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo"${tre ? ' data-tre="1"' : ""}${capo ? ' data-capo="1"' : ""}${rit ? ' data-rit="1"' : ""}>
     <video class="cf-v" src="${f.riposo}" poster="${f.poster}" autoplay muted playsinline loop preload="auto"></video>
     <video class="cf-v giu" poster="${f.poster}" muted playsinline loop preload="none"></video>
   </span>`;
 }
 // i file dei filmati per quella casella: in 3D quelli ritagliati, altrimenti i soliti
-function filmFile(box) { const d = (box && box.dataset) || {}; return d.tre === "1" ? FILM_TRE : d.capo === "1" ? FILM_CAPO : FILM_PRONTO; }
+function filmFile(box) { const d = (box && box.dataset) || {}; return d.tre === "1" ? FILM_TRE : d.capo === "1" ? (d.rit === "1" ? FILM_CAPO_TRE : FILM_CAPO) : FILM_PRONTO; }
 let filmTimer = null;
 function filmGov(quale, soloBox) {
   const caselle = soloBox ? [soloBox] : [...document.querySelectorAll(".gov-film")];
@@ -1854,7 +1858,7 @@ function foglioInizio(f) {
   let listaHtml = "";
   if (lista) {
     const nStelle = lista.stelle;
-    listaHtml = `<div class="sig-guida">${argonLei() ? "Leggi ogni parte. Qui non si tocca niente: alla fine del giro c'è solo <b>«Ho finito»</b>" : document.body.classList.contains("semplice") ? "Leggi ogni parte e alla fine tocca <b>Fatto</b>" : "Cosa si fa · un tasto <b>Fatto</b> per ogni blocco"}${nStelle && !argonLei() ? `, le <b>★ rifiniture</b> si toccano una per una` : nStelle ? `. Le <b>★ rifiniture</b> si pagano dopo il Visto` : ""}</div>` + lista.blocchi.map(b => bloccoSignora(b, p, statoRiga, motivoRiga, aperta)).join("");
+    listaHtml = `<div class="sig-guida">${argonLei() ? "Leggi ogni parte. Quando la camera è pulita tocca <b>«Fatto»</b>; alla fine del giro <b>«Ho finito»</b>" : document.body.classList.contains("semplice") ? "Leggi ogni parte e alla fine tocca <b>Fatto</b>" : "Cosa si fa · un tasto <b>Fatto</b> per ogni blocco"}${nStelle && !argonLei() ? `, le <b>★ rifiniture</b> si toccano una per una` : nStelle ? `. Le <b>★ rifiniture</b> si pagano dopo il Visto` : ""}</div>` + lista.blocchi.map(b => bloccoSignora(b, p, statoRiga, motivoRiga, aperta)).join("");
     if (lista.zona.length) listaHtml += `<section class="sig-box"><div class="sig-sez-t">Scale, corridoio e lavanderia · oggi</div><div class="sig-lista">${righeZona(lista).map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
   } else if (p.tipo === "stelle") {
     const rg = righeGiro(p); const euroG = rg.reduce((x, r) => x + (r.stella.euro || 0), 0);
@@ -1876,7 +1880,7 @@ function foglioInizio(f) {
   else if (p.stato === "fatta") bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${minutiPulizia(p) != null ? ` · ci hai messo ${esc(L.testoOre(minutiPulizia(p)))}` : ""}${p.minuti ? ` · pagata ${esc(L.testoOre(p.minuti))}, ${eur(p.importo)}` : ""} · brava!</span></div>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>` : ""}`;
   else if (p.stato === "problema") bottone = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Togli il problema, rimetti da pulire</button>` : ""}`;
   else if (p.stato === "non_fatta") bottone = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Rimetti da pulire</button>` : ""}`;
-  if (argonLei() && p.stato !== "fatta") bottone = `<div class="ag-nota-foglio">${ICONA("altoparlante")}<span>Leggi, poi pulisci col telefono in tasca. Quando hai finito tutto il giro, torna indietro e tocca <b>«Ho finito»</b>.</span></div>${(p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}`;
+  if (argonLei() && p.stato !== "fatta") bottone = `<div class="ag-nota-foglio">${ICONA("altoparlante")}<span>Leggi, poi pulisci col telefono in tasca. Quando la camera è pulita tocca <b>«Fatto»</b>; alla fine del giro <b>«Ho finito»</b>.</span></div>${(p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}`;
   else if (argonLei()) bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b> · brava!</span></div>`;
   return `<div class="inizio sig">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
@@ -1971,12 +1975,12 @@ function foglioInizioFacile(f) {
   else if (p.stato === "fatta") bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b>${minutiPulizia(p) != null ? ` · ci hai messo ${esc(L.testoOre(minutiPulizia(p)))}` : ""}${p.minuti ? ` · pagata ${esc(L.testoOre(p.minuti))}, ${eur(p.importo)}` : ""} · brava!</span></div>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Ho sbagliato, non è pulita</button>` : ""}`;
   else if (p.stato === "problema") bottone = `<div class="pro-tempo warn">${ICONA("avviso")}<span>Problema segnalato${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Togli il problema, rimetti da pulire</button>` : ""}`;
   else if (p.stato === "non_fatta") bottone = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Rimetti da pulire</button>` : ""}`;
-  if (argonLei() && p.stato !== "fatta") bottone = `<button type="button" class="gs-torna" data-chiudi>${ICONA("indietro")}<span>Torna alle camere</span></button>${(p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}`;   // 1.23.0: niente riquadro giallo
+  if (argonLei() && p.stato !== "fatta") bottone = `${p.tipo !== "stelle" && p.data === L.oggiISO() && (p.stato === "da_fare" || p.stato === "in_corso" || p.stato === "problema" || p.stato === "non_fatta") ? `<button type="button" class="gp-fatto grande" data-fatta-camera="${esc(p.id)}">${ICONA("spunta")}<span>${p.origine === "governante" ? "Fatto" : "Fatto, camera pulita"}</span></button>` : ""}<button type="button" class="gs-torna" data-chiudi>${ICONA("indietro")}<span>Torna alle camere</span></button>${(p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}`;   // 1.23.0: niente riquadro giallo
   else if (argonLei()) bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b> · brava!</span></div>`;
   return `<div class="inizio sig sf">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
     <div class="gs-targa ${tipoGiornata(p)} ${p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : ""}"><div class="gs-targa-r"><span class="gs-tile" aria-hidden="true">${p.stato === "fatta" ? "✅" : p.stato === "problema" || p.stato === "non_fatta" ? "⚠️" : disegnoGiornata(p)}</span><span class="gs-cam-x"><span class="gs-nome">${esc(nome)}</span><span class="gs-cosa">${esc(stelle ? "Solo le rifiniture" : titoloBase(p) + parteTesto(p))}</span></span>${p.stato === "da_fare" || p.stato === "in_corso" ? "" : BADGE(p)}</div>${ospiti.length ? `<div class="sf-ospiti">${ospiti.map(([i, x]) => `<span><i aria-hidden="true">${i}</i><span>${esc(x)}</span></span>`).join("")}</div>` : ""}</div>
-    ${argonLei() ? sofiaSpiega(testoSofiaCamera(p, parlato)) : `<button type="button" class="sf-ascolta" data-sf-voce>${ICONA("altoparlante")}<span>Ascolta</span></button>`}<span hidden data-sf-testo>${esc(argonLei() ? testoSofiaCamera(p, parlato) : parlato)}</span>
+    ${argonLei() ? disegnoCamera(p) : ""}${argonLei() ? sofiaSpiega(testoSofiaCamera(p, parlato)) : `<button type="button" class="sf-ascolta" data-sf-voce>${ICONA("altoparlante")}<span>Ascolta</span></button>`}<span hidden data-sf-testo>${esc(argonLei() ? testoSofiaCamera(p, parlato) : parlato)}</span>
     ${dice}${argonLei() && lista ? sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) : ""}${sempreHtml}${rifHtml}${argonLei() ? fondiCamera(p) : ""}${argonLei() && lista ? "" : zonaHtml + passiHtml}${bidoni}
     ${bottone}
     ${aperta ? `<div class="pro-sec"><button class="nonna-link" data-non-riesco="${esc(p.id)}">Non riesco a fare una cosa</button><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}
@@ -2190,7 +2194,7 @@ function rifinitureOggi(z, iso) {
     for (const r of lista) {
       if (r.sempre || !r.euro) continue;
       const l = camera(r.luogo || p.camera);
-      out.push({ k: chiaveStella(r), pulizia: p.id, camera: r.luogo || p.camera, luogoNome: r.luogoNome || l.nome, nome: r.parte && !String(r.superficie || "").toLowerCase().includes(String(r.parte).toLowerCase()) ? `${r.superficie}: ${r.parte}` : (r.superficie || r.nome), euro: Number(r.euro) || 0, minuti: Number(r.minuti) || 0, controllo: r.controllo || "", prodotto: r.prodotto && !/^nessuno/i.test(r.prodotto) ? r.prodotto : "", come: r.come || "" });
+      out.push({ k: chiaveStella(r), pulizia: p.id, camera: r.luogo || p.camera, luogoNome: r.luogoNome || l.nome, nome: r.parte && !String(r.superficie || "").toLowerCase().includes(String(r.parte).toLowerCase()) ? `${r.superficie}: ${r.parte}` : (r.superficie || r.nome), euro: Number(r.euro) || 0, minuti: Number(r.minuti) || 0, controllo: r.controllo || "", prodotto: r.prodotto && !/^nessuno/i.test(r.prodotto) ? r.prodotto : "", come: r.come || "", posto: r.posto || "", superficie: r.superficie || "", regola: r.regola || "" });
     }
   }
   return out;
@@ -2236,9 +2240,17 @@ function stelleAmmesse(z, iso) {
   let si;
   if (pl) si = new Set(pl.stelle);
   else {
-    si = new Set(); let min = 0; const max = tettoStelle(z, iso), gruppi = [];
-    for (const r of tutte) { let g = gruppi.find(x => x[0].pulizia === r.pulizia); if (!g) gruppi.push(g = []); g.push(r); }
-    for (let giro = 0; si.size < max && gruppi.some(g => g.length > giro); giro++) for (const g of gruppi) { const r = g[giro]; if (!r || si.size >= max || min + (r.minuti || 0) > PIANO_MINUTI_MAX) continue; si.add(r.k); min += r.minuti || 0; }
+    // 1.32.0: le stelle scelte la mattina restano quelle (finché le camere del giorno sono le stesse), anche dopo un «✓ Fatto»
+    const max = tettoStelle(z, iso), congela = iso === L.oggiISO();
+    const kk = `ricci_stelle_${z}_${iso}`, firma = `${max}|${pulizieGrezze(iso, z).map(p => p.id).sort().join(",")}`;
+    let salvate = null; if (congela) try { salvate = JSON.parse(localStorage.getItem(kk) || "null"); } catch (e) {}
+    if (salvate && salvate.firma === firma && Array.isArray(salvate.k)) si = new Set(salvate.k);
+    else {
+      si = new Set(); let min = 0; const gruppi = [];
+      for (const r of tutte) { let g = gruppi.find(x => x[0].pulizia === r.pulizia); if (!g) gruppi.push(g = []); g.push(r); }
+      for (let giro = 0; si.size < max && gruppi.some(g => g.length > giro); giro++) for (const g of gruppi) { const r = g[giro]; if (!r || si.size >= max || min + (r.minuti || 0) > PIANO_MINUTI_MAX) continue; si.add(r.k); min += r.minuti || 0; }
+      if (congela) try { localStorage.setItem(kk, JSON.stringify({ firma, k: [...si] })); for (let i = localStorage.length - 1; i >= 0; i--) { const c = localStorage.key(i); if (c && c.startsWith("ricci_stelle_") && c.slice(-10) < L.aggiungiGiorni(L.oggiISO(), -2)) localStorage.removeItem(c); } } catch (e) {}
+    }
   }
   memoAmmesse.set(k, si); return si;
 }
@@ -2532,20 +2544,21 @@ function guidaCamera(id) {
 }
 // il microfono del telefono (gratis): capisce poche cose, e risponde solo da quello che l'app sa di quelle camere
 let guidaRec = null;
-function guidaAscolta() {
+function guidaAscolta(opz = {}) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast("Questo telefono non sa ascoltare: usa i tasti Ascolta ed E poi"); return; }
+  if (!SR) { if (opz.ripiego) { guidaTasto("ascolta"); return; } toast("Questo telefono non sa ascoltare: usa i tasti Ascolta ed E poi"); return; }
   if (guida.ascolta && guidaRec) { try { guidaRec.stop(); } catch (e) {} return; }
   zittisciVoce();
   try {
     const r = new SR(); guidaRec = r; r.lang = "it-IT"; r.interimResults = false; r.maxAlternatives = 3;
-    guida.ascolta = true; guida.voce = "Ti ascolto…"; disegna();
+    guida.ascolta = true; guida.voce = opz.ripiego ? "Ti ascolto… Dimmi: cosa devo fare? Oppure: e poi? Oppure il nome di una camera." : "Ti ascolto…"; disegna();
     let preso = false;
     r.onresult = (e) => { preso = true; const alt = []; try { for (const a of e.results[0]) alt.push(a.transcript); } catch (er) {} guida.ascolta = false; guidaRispondi(alt); };
     r.onerror = () => { guida.ascolta = false; if (!preso) { guida.voce = ""; disegna(); } };
-    r.onend = () => { guida.ascolta = false; guidaRec = null; if (!preso) { guida.voce = ""; disegna(); } };
+    // 1.32.0: dal microfono a fianco, se non ha sentito niente (o il microfono non va) Sofia dice il passo di adesso
+    r.onend = () => { guida.ascolta = false; const annullato = !!r._annulla; guidaRec = null; if (!preso) { guida.voce = ""; if (opz.ripiego && !annullato) { guidaTasto("ascolta"); return; } disegna(); } };
     r.start();
-  } catch (e) { guida.ascolta = false; guidaRec = null; toast("Il microfono non parte: usa i tasti Ascolta ed E poi"); disegna(); }
+  } catch (e) { guida.ascolta = false; guidaRec = null; if (opz.ripiego) { guidaTasto("ascolta"); return; } toast("Il microfono non parte: usa i tasti Ascolta ed E poi"); disegna(); }
 }
 function guidaRispondi(frasi) {
   const z = S.utente.zona, oggiVero = L.oggiISO(), t = " " + PAROLE.norm((frasi || []).join(" ")) + " ";
@@ -2675,6 +2688,76 @@ function testaGiro(z, giorno, ord, rif, anteprima) {
 // sulla sua figurina, col loro numero del giro («✨ 4 Pareti · 5 Tende»); se quel giorno la camera non ha la pulizia,
 // la camera si colora lo stesso (non è più tratteggiata) e porta solo i suoi lavori a fondo. In «Altri lavori» restano
 // le scale, il terrazzo, le stelle in altre camere, i lavori in più.
+// ============================================================================
+//  1.32.0 A MATITA, IN RILIEVO (Michele, 2/11 mattina, con la foto della 1.31 sul suo telefono): «graficamente deve essere
+//  più tratteggiato, tipo colorato a matita ✏️, si deve vedere che è stato disegnato a matita, e più in rilievo 3D. Il
+//  fantasmino laterale di Sofia a scomparsa: tutta la sagoma di Sofia senza sfondo, Sofia per intero; deve scomparire
+//  appena finisce di parlare e si attiva tramite un microfono. Nelle camere togli i numeri, rendi più chiare le scritte,
+//  nello stesso riquadro per quante persone bisogna preparare la stanza e se è matrimoniale o singola, togli la scopa.
+//  Metti il tasto fatto camera. Se cliccano sulla stella esce cosa devono fare di rifinitura. Se cliccano sulla camera
+//  esce un disegno fatto a mano della camera (cucina, letto matrimoniale, bagno…) così poi ci mettiamo le note: pulire qui».
+//  - Le figurine: niente numero del giro, niente scopa; il disegnino a matita del letto (matrimoniale o singolo), della casa,
+//    delle scale, della pianta; il nome grande, cosa si fa in parole («Cambio completo», «Ripasso»), «per 2 · matrimoniale»;
+//    la stella si tocca e dice cosa fare; sotto il tasto verde «✓ Fatto».
+//  - Sofia a fianco: di solito c'è solo il tasto tondo col microfono; toccandolo lei esce intera (ritagliata, senza sfondo),
+//    ti ascolta e risponde; appena finisce di parlare sparisce e resta il microfono. Esce da sola anche quando parla per
+//    altri motivi (una camera aperta, «E poi?», «Fatto») e sparisce subito dopo.
+//  - La camera aperta: in alto il disegno a mano della camera con le stelle e i lavori a fondo al loro posto (★ pulire qui).
+// ============================================================================
+// ---- i disegnini a matita (SVG): tratteggio obliquo come una matita colorata, bordo scuro, un po' storti ----------------
+const MATITA_DEFS = `<svg class="mt-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><defs>
+<pattern id="mtAz" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#5FA4E8" stroke-width="2.2" stroke-linecap="round"/></pattern>
+<pattern id="mtVe" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#5CBF78" stroke-width="2.2" stroke-linecap="round"/></pattern>
+<pattern id="mtGi" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#E8B64A" stroke-width="2.2" stroke-linecap="round"/></pattern>
+<pattern id="mtOr" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#F0A15A" stroke-width="2.2" stroke-linecap="round"/></pattern>
+<pattern id="mtRo" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#EE9DB7" stroke-width="2.2" stroke-linecap="round"/></pattern>
+<pattern id="mtVi" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#B49CEC" stroke-width="2.2" stroke-linecap="round"/></pattern>
+<pattern id="mtGr" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#AEBBCB" stroke-width="2" stroke-linecap="round"/></pattern>
+<pattern id="mtAc" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-42)"><line x1="1" y1="0" x2="1" y2="7" stroke="#6CC4D8" stroke-width="2.2" stroke-linecap="round"/></pattern>
+<filter id="mtTrem" x="-4%" y="-4%" width="108%" height="108%"><feTurbulence type="fractalNoise" baseFrequency=".032" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+</defs></svg>`;
+const MT_TRATTO = 'fill="none" stroke="#2B3A4A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"';
+const MATITA = {
+  // il letto matrimoniale: testiera, materasso tratteggiato, due cuscini
+  letto2: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M9 7 Q32 2.5 55 7 L56 20 L8 20 Z" fill="#F6E3C8"/><path d="M9 7 Q32 2.5 55 7 L56 20 L8 20 Z" fill="url(#mtOr)" ${MT_TRATTO}/><path d="M6 20 H58 V45 Q32 48.5 6 45 Z" fill="#E2F0FF"/><path d="M6 20 H58 V45 Q32 48.5 6 45 Z" fill="url(#mtAz)" ${MT_TRATTO}/><rect x="10.5" y="23" width="19" height="9" rx="3.5" fill="#FFFFFF" ${MT_TRATTO.replace('2.6', '2.2')}/><rect x="34.5" y="23" width="19" height="9" rx="3.5" fill="#FFFFFF" ${MT_TRATTO.replace('2.6', '2.2')}/><path d="M6 36 Q32 38.5 58 36" ${MT_TRATTO.replace('2.6', '2')}/><path d="M10 45.5 V51 M54 45.5 V51" ${MT_TRATTO}/></svg>`,
+  // il letto singolo: più stretto, un cuscino solo
+  letto1: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M19 7 Q32 3 45 7 L46 20 L18 20 Z" fill="#F6E3C8"/><path d="M19 7 Q32 3 45 7 L46 20 L18 20 Z" fill="url(#mtOr)" ${MT_TRATTO}/><path d="M16 20 H48 V45 Q32 48 16 45 Z" fill="#E1F5E5"/><path d="M16 20 H48 V45 Q32 48 16 45 Z" fill="url(#mtVe)" ${MT_TRATTO}/><rect x="21" y="23" width="22" height="9" rx="3.5" fill="#FFFFFF" ${MT_TRATTO.replace('2.6', '2.2')}/><path d="M16 36 Q32 38.5 48 36" ${MT_TRATTO.replace('2.6', '2')}/><path d="M20 45.5 V51 M44 45.5 V51" ${MT_TRATTO}/></svg>`,
+  // la casa (gli appartamenti): tetto, muro tratteggiato, porta e finestra
+  casa: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M13 26 V50 H51 V26 Z" fill="#FFF4CF"/><path d="M13 26 V50 H51 V26 Z" fill="url(#mtGi)" ${MT_TRATTO}/><path d="M7 28 L32 7 L57 28" fill="#F9D9E0"/><path d="M7 28 L32 7 L57 28 Z" fill="url(#mtRo)" ${MT_TRATTO}/><path d="M27 50 V38 Q32 35 37 38 V50" fill="#FFFFFF" ${MT_TRATTO}/><rect x="17" y="32" width="8" height="8" rx="1.5" fill="#E2F0FF" ${MT_TRATTO.replace('2.6', '2')}/><path d="M43 14 V9 H48 V19" ${MT_TRATTO.replace('2.6', '2.2')}/></svg>`,
+  // le scale
+  scale: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M6 50 H18 V40 H30 V30 H42 V20 H54 V10 H60 V50 Z" fill="#E9EEF7"/><path d="M6 50 H18 V40 H30 V30 H42 V20 H54 V10 H60 V50 Z" fill="url(#mtGr)" ${MT_TRATTO}/></svg>`,
+  // la pianta del terrazzo
+  pianta: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M18 32 H46 L42 51 H22 Z" fill="#F6E3C8"/><path d="M18 32 H46 L42 51 H22 Z" fill="url(#mtOr)" ${MT_TRATTO}/><path d="M32 32 V14" ${MT_TRATTO}/><path d="M32 22 Q18 24 14 10 Q28 8 32 22 Z" fill="#E1F5E5"/><path d="M32 22 Q18 24 14 10 Q28 8 32 22 Z" fill="url(#mtVe)" ${MT_TRATTO.replace('2.6', '2.2')}/><path d="M32 18 Q46 20 50 6 Q36 4 32 18 Z" fill="#E1F5E5"/><path d="M32 18 Q46 20 50 6 Q36 4 32 18 Z" fill="url(#mtVe)" ${MT_TRATTO.replace('2.6', '2.2')}/></svg>`,
+  // il secchio (lavori in più)
+  secchio: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M14 20 H50 L45 50 H19 Z" fill="#E2F0FF"/><path d="M14 20 H50 L45 50 H19 Z" fill="url(#mtAc)" ${MT_TRATTO}/><path d="M18 20 Q32 2 46 20" ${MT_TRATTO}/><path d="M14 20 H50" ${MT_TRATTO}/></svg>`,
+  // la stella (le stelle nelle altre camere)
+  stella: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M32 5 L39.5 21 L57 23 L44 35 L47.5 52 L32 43.5 L16.5 52 L20 35 L7 23 L24.5 21 Z" fill="#FFF0B8"/><path d="M32 5 L39.5 21 L57 23 L44 35 L47.5 52 L32 43.5 L16.5 52 L20 35 L7 23 L24.5 21 Z" fill="url(#mtGi)" ${MT_TRATTO}/></svg>`,
+  // la scintilla (lavoro a fondo)
+  scintilla: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M26 6 L30 22 L46 27 L30 32 L26 48 L22 32 L6 27 L22 22 Z" fill="#FFF0B8"/><path d="M26 6 L30 22 L46 27 L30 32 L26 48 L22 32 L6 27 L22 22 Z" fill="url(#mtGi)" ${MT_TRATTO}/><path d="M50 8 L52 15 L59 17 L52 19 L50 26 L48 19 L41 17 L48 15 Z" fill="#FFFFFF" ${MT_TRATTO.replace('2.6', '2')}/></svg>`,
+};
+const MICROFONO_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="22" y="8" width="20" height="32" rx="10" fill="#FFFFFF"/><rect x="22" y="8" width="20" height="32" rx="10" fill="url(#mtAc)" stroke="#FFFFFF" stroke-width="3"/><path d="M14 31 Q14 48 32 48 Q50 48 50 31" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/><path d="M32 48 V58 M22 58 H42" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/></svg>`;
+function disegninoMatita(p, c, soloFondo) {
+  if (soloFondo) return MATITA.scintilla;
+  if (!p) return "";
+  if (p.tipo === "stelle") return MATITA.stella;
+  if (p.origine === "governante") return MATITA.scintilla;
+  if (p.tipo === "fisso") return p.camera === "scale" ? MATITA.scale : p.camera === "terrazzo" ? MATITA.pianta : MATITA.secchio;
+  if (p.tipo === "extra") return MATITA.secchio;
+  if (c && c.tipo === "casa") return MATITA.casa;
+  return c && (Number(c.posti) || 2) < 2 ? MATITA.letto1 : MATITA.letto2;
+}
+// per quante persone si prepara la camera (chi dorme stanotte; alla partenza, chi arriva dopo) e che letto è
+function perChiCamera(p, c) {
+  if (!p || !c || p.tipo === "stelle" || p.tipo === "fisso" || p.tipo === "extra" || p.origine === "governante") return null;
+  const n = p.partenza && !p.arrivo ? (Number(p.prossimoPersone) || 0) : (Number(p.persone) || 0);
+  const casa = c.tipo === "casa", letto = casa ? "" : (Number(c.posti) || 2) >= 2 ? "matrimoniale" : "singola";
+  const pezzi = [n ? `per ${n}` : "", letto].filter(Boolean);
+  if (!pezzi.length) return null;
+  return { n, letto, testo: pezzi.join(" · "), ico: n === 1 ? "👤" : "👥", detto: [n ? `per ${n} ${n === 1 ? "persona" : "persone"}` : "", letto ? `letto ${letto}` : ""].filter(Boolean).join(", ") };
+}
+const maiuscola = (s) => { const x = String(s || ""); return x ? x.charAt(0).toUpperCase() + x.slice(1) : x; };
+// 1.31.0: i lavori a fondo stanno DENTRO la camera dove si fanno. 1.32.0: niente numeri, niente scopa, le scritte chiare,
+// «per 2 · matrimoniale», la stella che si tocca, il tasto «✓ Fatto».
 function tesseraGiro(p, rif, anteprima, n, ora, extra = {}) {
   const fondi = extra.fondo || [];
   const soloFondo = !p && fondi.length > 0, apri = p || (fondi[0] && fondi[0].p);
@@ -2684,19 +2767,25 @@ function tesseraGiro(p, rif, anteprima, n, ora, extra = {}) {
   const c = extra.camera || camera(apri.camera), fondo = !!p && p.origine === "governante", stelle = !!p && p.tipo === "stelle";
   const nome = stelle ? "Altre camere" : fondo ? String(titoloBase(p) || "Lavoro a fondo") : nomeBreveCamera(c);
   const sotto = stelle ? [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))].join(", ") : fondo ? `in ${nomeBreveCamera(c)}` : "";
-  const ico = soloFondo ? "✨" : stelle ? "⭐" : disegnoGiornata(p);
   const segni = [];
-  if (!st && mie.length && !stelle) segni.push(["stella", mie.length > 1 ? `⭐${mie.length}` : "⭐", mie.length === 1 ? "una stella" : `${mie.length} stelle`]);
   if (p && !st && p.partenza) segni.push(["parte", "🚪", "l'ospite parte"]);
   else if (p && !st && p.arrivo) segni.push(["arriva", "🧳", "arriva un ospite"]);
   if (p && !st && (p.dettagli || p.istruzioni)) segni.push(["nota", "📣", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
   const k = soloFondo || fondo ? "k-fondo" : stelle ? "gs-stelle" : tipoGiornata(p);
   const qui = fondi.map(f => ({ ...f, st: anteprima ? "" : f.p.stato === "fatta" ? "fatta" : f.p.stato === "problema" || f.p.stato === "non_fatta" ? "prob" : "" }));
   const ora2 = ora || qui.some(f => f.ora);
-  const cosa = soloFondo ? "lavori a fondo" : st === "fatta" ? "fatta" : st === "prob" ? "da sistemare" : stelle ? "stelle in altre camere" : fondo ? `lavoro a fondo in ${nomeBreveCamera(c)}` : parolaGiornata(p, nome);
-  const fondoHtml = qui.length ? `<span class="gp-fondi"><span class="gp-fondi-t">✨ ${soloFondo ? (qui.length === 1 ? "Lavoro a fondo" : "Lavori a fondo") : "Qui anche"}</span>${qui.map(f => `<span class="gp-fondo${f.ora ? " ora" : ""}${f.st ? " " + f.st : ""}"><b>${f.st === "fatta" ? "✓" : esc(String(f.n || ""))}</b>${esc(String(titoloBase(f.p) || "a fondo"))}</span>`).join("")}</span>` : "";
-  const detti = qui.length ? `. ${qui.length === 1 ? "Lavoro a fondo" : "Lavori a fondo"}: ${qui.map(f => `${f.n}. ${titoloBase(f.p)}`).join(", ")}` : "";
-  return `<button class="gs-cam gp ${k}${st ? " " + st : ""}${ora2 ? " ora" : ""}${qui.length ? " con-fondi" : ""}" data-dettagli="${esc(apri.id)}" aria-label="${n ? n + ". " : ""}${esc(nome)}: ${esc(cosa)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}${esc(detti)}"><span class="gs-np" aria-hidden="true">${soloFondo ? "✨" : st === "fatta" ? "✓" : st === "prob" ? "!" : esc(String(n || ""))}</span>${ora2 ? `<span class="gs-ora">👉 Adesso</span>` : ""}<span class="gp-ico" aria-hidden="true">${ico}</span><span class="gs-nome">${esc(nome)}</span>${sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : ""}${segni.length ? `<span class="gp-segni" aria-hidden="true">${segni.map(([cl, t]) => `<i class="gp-s ${cl}">${t}</i>`).join("")}</span>` : ""}${fondoHtml}</button>`;
+  const per = soloFondo ? null : perChiCamera(p, c);
+  const cosa = soloFondo ? (qui.length === 1 ? "Lavoro a fondo" : "Lavori a fondo") : st === "fatta" ? `Fatta${p.ora ? " alle " + L.oraBreve(p.ora) : ""} ✓` : st === "prob" ? "Da sistemare" : stelle ? "Stelle in altre camere" : fondo ? "Lavoro a fondo" : maiuscola(parolaGiornata(p, nome));
+  const fondoHtml = qui.length ? `<span class="gp-fondi"><span class="gp-fondi-t">✨ ${soloFondo ? (qui.length === 1 ? "Lavoro a fondo" : "Lavori a fondo") : "Qui anche"}</span>${qui.map(f => `<span class="gp-fondo${f.ora ? " ora" : ""}${f.st ? " " + f.st : ""}"><b>${f.st === "fatta" ? "✓" : f.st === "prob" ? "!" : "✨"}</b>${esc(String(titoloBase(f.p) || "a fondo"))}</span>`).join("")}</span>` : "";
+  const detti = qui.length ? `. ${qui.length === 1 ? "Lavoro a fondo" : "Lavori a fondo"}: ${qui.map(f => titoloBase(f.p)).join(", ")}` : "";
+  const oggi = !anteprima && apri.data === L.oggiISO();
+  const daFare = (x) => x && (x.stato === "da_fare" || x.stato === "in_corso" || x.stato === "problema" || x.stato === "non_fatta");
+  const conFatto = oggi && argonLei() && !stelle && (soloFondo ? qui.some(f => daFare(f.p)) : daFare(p));
+  const stellaBtn = mie.length ? `<button type="button" class="gp-stella" data-stelle="${esc(p.id)}" aria-label="${mie.length === 1 ? "Una stella" : mie.length + " stelle"}: tocca e ti dico cosa fare">⭐${mie.length > 1 ? `<b>${mie.length}</b>` : ""}</button>` : "";
+  const fattoBtn = conFatto ? `<button type="button" class="gp-fatto" data-fatta-camera="${esc(apri.id)}" aria-label="${esc(nome)}: segna fatta">${ICONA("spunta")}<span>Fatto</span></button>` : "";
+  const piede = stellaBtn || fattoBtn ? `<span class="gp-piede">${stellaBtn}${fattoBtn}</span>` : "";
+  const label = `${esc(nome)}: ${esc(cosa)}${per ? ", " + esc(per.detto) : ""}${mie.length ? `, ${mie.length === 1 ? "una stella" : mie.length + " stelle"}` : ""}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}${esc(detti)}`;
+  return `<div class="gs-cam gp ${k}${st ? " " + st : ""}${ora2 ? " ora" : ""}${qui.length ? " con-fondi" : ""}" data-cam="${esc(c.id)}"><button type="button" class="gp-apri" data-dettagli="${esc(apri.id)}" aria-label="${label}">${ora2 ? `<span class="gs-ora">👉 Adesso</span>` : ""}${st ? `<span class="gp-stato ${st}" aria-hidden="true">${st === "fatta" ? "✓" : "!"}</span>` : ""}<span class="gp-ico" aria-hidden="true">${disegninoMatita(p, c, soloFondo)}</span><span class="gs-nome">${esc(nome)}</span><span class="gp-cosa">${esc(cosa)}</span>${per ? `<span class="gp-per"><i aria-hidden="true">${per.ico}</i>${esc(per.testo)}</span>` : ""}${sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : ""}${segni.length ? `<span class="gp-segni" aria-hidden="true">${segni.map(([cl, t]) => `<i class="gp-s ${cl}">${t}</i>`).join("")}</span>` : ""}${fondoHtml}</button>${piede}</div>`;
 }
 function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   const num = new Map(ord.map((p, i) => [p.id, i + 1]));
@@ -2704,7 +2793,6 @@ function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   const dentro = (p) => !!S.camere.find(c => c.id === p.camera);
   const vera = (p) => p.tipo !== "stelle" && p.origine !== "governante" && p.tipo !== "fisso" && p.tipo !== "extra" && dentro(p);
   const perCamera = new Map(); for (const p of ord) if (vera(p) && !perCamera.has(p.camera)) perCamera.set(p.camera, p);
-  // 1.31.0: i lavori a fondo vanno sulla camera dove si fanno
   const fondoDi = new Map(); for (const p of ord) if (p.origine === "governante" && dentro(p)) { if (!fondoDi.has(p.camera)) fondoDi.set(p.camera, []); fondoDi.get(p.camera).push(p); }
   const ha = (id) => perCamera.has(id) || fondoDi.has(id);
   const messe = new Set();
@@ -2731,7 +2819,7 @@ function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   if (case_.some(c => ha(c.id))) blocchi.push(`<div class="gp-piano"><div class="gp-eti"><span>Le case</span></div><div class="gp-griglia">${case_.map(tile).join("")}</div></div>`);
   const altri = ord.filter(p => !messe.has(p.id));
   if (altri.length) blocchi.push(`<div class="gp-piano"><div class="gp-eti"><span>Altri lavori</span></div><div class="gp-griglia">${altri.map(p => tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId)).join("")}</div></div>`);
-  return `<section class="gs-camere gp-mappa${pl ? " col-piano" : ""}" aria-label="La piantina del giro">${testaGiro(z, giorno, ord, rif, anteprima)}${blocchi.join("")}</section>`;
+  return `<section class="gs-camere gp-mappa matita${pl ? " col-piano" : ""}" aria-label="La piantina del giro">${MATITA_DEFS}${testaGiro(z, giorno, ord, rif, anteprima)}${blocchi.join("")}</section>`;
 }
 // nella camera aperta: i lavori a fondo di quella camera, quel giorno (col loro «Come si fa»)
 function fondiCamera(p) {
@@ -2741,33 +2829,235 @@ function fondiCamera(p) {
   const riga = (f) => { const k = `${f.id}|fondo`; return `<details class="sf-passo k-fondo" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">✨</span><span class="sf-passo-i" aria-hidden="true">${esc(f.icona || "🧽")}</span><span class="sf-passo-t">${esc(String(titoloBase(f) || "Lavoro a fondo"))}<small>${Number(f.minuti) ? `${f.minuti} minuti` : "lavoro a fondo"}</small></span></summary><div class="sf-passo-x"><p class="sf-fondo-come">${esc(f.come || "Fallo bene, con calma: è un lavoro a fondo.")}</p></div></details>`; };
   return `<section class="sf-seq sf-fondi"><div class="sf-seq-t">✨ ${p.origine === "governante" ? "Qui anche" : "In questa camera anche"} ${qui.length === 1 ? "un lavoro a fondo" : qui.length + " lavori a fondo"}</div>${qui.map(riga).join("")}</section>`;
 }
-// ---- Sofia sempre a fianco: quando la scena di Sofia non si vede più, lei resta in basso a destra (il fantasmino fermo);
-// quando parla si muove e accanto c'è la sua nuvoletta. Toccarla: ti dice cosa fare adesso (o smette di parlare).
+// ---- la stella toccata: una nuvoletta sotto la figurina con cosa fare (e «Dimmelo»: lo dice Sofia) -----------------------
+function chiudiPopStelle() { const v = document.getElementById("gpPop"); if (v) v.remove(); }
+function popStelle(id, btn) {
+  chiudiPopStelle();
+  const p = S.pulizie[id]; if (!p || !btn) return;
+  const rif = rifinitureOggi(p.zona, p.data).filter(r => r.pulizia === id);
+  if (!rif.length) { toast("Oggi qui non ci sono stelle"); return; }
+  const mappa = btn.closest(".gp-mappa"), card = btn.closest(".gs-cam"); if (!mappa || !card) return;
+  const dove = p.tipo === "stelle" ? "nelle altre camere" : `in ${nomeBreveCamera(camera(p.camera))}`;
+  const pop = document.createElement("div"); pop.id = "gpPop"; pop.className = "gp-pop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", `Le stelle ${dove}`);
+  pop.innerHTML = `<div class="gp-pop-t">⭐ ${rif.length === 1 ? "La stella" : `Le ${rif.length} stelle`} ${esc(dove)}</div>${rif.map(r => `<div class="gp-pop-r"><span class="gp-pop-s" aria-hidden="true">★</span><span class="gp-pop-x"><b>${esc(r.nome)}</b>${p.tipo === "stelle" ? `<small>in ${esc(r.luogoNome)}</small>` : ""}${r.come ? `<span>${esc(r.come)}</span>` : ""}${r.prodotto ? `<small>Prodotto: ${esc(r.prodotto)}</small>` : ""}</span></div>`).join("")}<div class="gp-pop-b"><button type="button" class="gp-pop-voce" data-pop-voce>${ICONA("altoparlante")}<span>Dimmelo</span></button><button type="button" class="gp-pop-chiudi" data-pop-x>Chiudi</button></div>`;
+  const rm = mappa.getBoundingClientRect(), rc = card.getBoundingClientRect(), rb = btn.getBoundingClientRect();
+  pop.style.top = `${Math.round(rc.bottom - rm.top + 10)}px`;
+  pop.style.setProperty("--fx", `${Math.round(rb.left + rb.width / 2 - rm.left)}px`);
+  pop.querySelector("[data-pop-voce]").onclick = (e) => { e.stopPropagation(); if (voceInCorso || guida.parla) { guidaZitta(); return; } guidaParla(`${rif.length === 1 ? "La stella" : "Le stelle"} ${dove}. ${rifinitureParlate(rif, true)}`); };
+  pop.querySelector("[data-pop-x]").onclick = (e) => { e.stopPropagation(); chiudiPopStelle(); };
+  mappa.appendChild(pop);
+  setTimeout(() => { try { pop.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }, 40);
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t) return;
+  const s = t.closest("[data-stelle]");
+  if (s) { e.preventDefault(); e.stopPropagation(); popStelle(s.dataset.stelle, s); return; }
+  const f = t.closest("[data-fatta-camera]");
+  if (f) { e.preventDefault(); e.stopPropagation(); fattaCamera(f.dataset.fattaCamera); return; }
+  if (document.getElementById("gpPop") && !t.closest("#gpPop")) chiudiPopStelle();
+}, true);
+// ---- «✓ Fatto»: la camera si chiude da sola (come col HO FINITO: lista fatta per intero, le stelle tolte segnate non fatte),
+// Sofia va avanti con la camera dopo; all'ultima camera si apre HO FINITO -------------------------------------------------
+function confermaFattaCamera(c, p, fondi, rif) {
+  const nome = nomeBreveCamera(c);
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box chiusura ag-conferma gp-conferma" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>${p ? `<b>${esc(nome)}</b> è pulita?` : `Il lavoro a fondo in <b>${esc(nome)}</b> è fatto?`}</span></div>
+      ${rif.length ? `<p class="ag-dice">${rif.length === 1 ? "La stella l'hai fatta? Se no, toglile la spunta." : "Le stelle le hai fatte? Se ne manca una, toglile la spunta."}</p><div class="chiusura-voci">${rif.map(r => `<label class="chiusura-voce"><input type="checkbox" checked data-voce="${esc(r.k)}@${esc(r.pulizia)}"><span>⭐ ${esc(r.nome)}</span></label>`).join("")}</div>` : ""}
+      ${fondi.length ? `<p class="ag-dice">${p ? (fondi.length === 1 ? "E il lavoro a fondo?" : "E i lavori a fondo?") : "Togli la spunta a quello che non hai fatto."}</p><div class="chiusura-voci">${fondi.map(f => `<label class="chiusura-voce"><input type="checkbox" checked data-fondo="${esc(f.id)}"><span>✨ ${esc(String(titoloBase(f) || "Lavoro a fondo"))}</span></label>`).join("")}</div>` : ""}
+      <button class="big ok" data-si>${p ? "Sì, è pulita ✓" : "Sì, è fatto ✓"}</button><button class="big undo" data-no>Aspetta, torno su</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("[data-si]").onclick = () => { const non = new Set([...el.querySelectorAll("[data-voce]")].filter(x => !x.checked).map(x => x.dataset.voce)); const fn = new Set([...el.querySelectorAll("[data-fondo]")].filter(x => !x.checked).map(x => x.dataset.fondo)); el.remove(); ok({ nonFatte: non, fondiNon: fn }); };
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
+  });
+}
+async function fattaCamera(id) {
+  if (!argonLei()) return;
+  const p0 = S.pulizie[id]; if (!p0) return;
+  const z = S.utente.zona, iso = L.oggiISO(), conf = argonConf();
+  if (p0.data !== iso || p0.zona !== z) { toast("Si segna solo una camera di oggi"); return; }
+  if (!L.argonOrario(S.argon)) { toast(`Il tasto funziona dalle ${conf.oreDa} alle ${conf.oreA}.`); return; }
+  const c = camera(p0.camera);
+  const daFare = (x) => x.stato === "da_fare" || x.stato === "in_corso" || x.stato === "problema" || x.stato === "non_fatta";
+  const diQui = Object.values(S.pulizie).filter(x => x && x.data === iso && x.zona === z && x.camera === p0.camera && x.tipo !== "stelle" && !x.nonServe && daFare(x));
+  const principale = diQui.find(x => x.origine !== "governante") || null, fondi = diQui.filter(x => x.origine === "governante");
+  if (!principale && !fondi.length) return;
+  const rif = principale ? rifinitureOggi(z, iso).filter(r => r.pulizia === principale.id) : [];
+  const scelta = await confermaFattaCamera(c, principale, fondi, rif); if (!scelta) return;
+  if (S.foglio) chiudiFoglio();   // prima di tutto: la camera aperta si chiude (così non si ridisegna a ogni salvataggio)
+  const attese = [];
+  const chiudi = (x, non) => {
+    const sp = spunteDi(x.id);
+    for (const r of righeDi(x)) { if (r.tipo === "stella" && non.has(`${r.k}@${x.id}`)) { sp.non[r.k] = "non fatta"; delete sp.fatte[r.k]; } else if (!sp.non[r.k]) sp.fatte[r.k] = true; }
+    registraPuliziaFatta(x);
+    attese.push(cambiaStato(x, "fatta", "", { tieniFoglio: true, zitto: true }));
+  };
+  if (principale) chiudi(principale, scelta.nonFatte);
+  for (const f of fondi) if (!scelta.fondiNon.has(f.id)) chiudi(f, new Set());
+  Promise.all(attese).catch(() => {});
+  // Sofia va avanti: il passo della camera dopo (ancora da fare); se non ne restano, il passo finale e si apre HO FINITO
+  const restano = pulizieDelGiorno(iso, z).filter(x => x.tipo !== "stelle" && (x.stato === "da_fare" || x.stato === "in_corso"));
+  const g = guidaOra(z, iso); let i = -1;
+  if (restano.length) { const ids = new Set(restano.map(x => x.id)); i = g.passi.findIndex((s, j) => j > g.i && s.k === "cam" && ids.has(s.id)); if (i < 0) i = g.passi.findIndex(s => s.k === "cam" && ids.has(s.id)); }
+  else i = g.passi.length - 1;
+  if (i >= 0) guidaSegna(z, iso, i);
+  disegna();
+  const brava = ["Brava!", "Bene!", "Ottimo!", "Perfetto!"][Math.floor(Math.random() * 4)];
+  if (!restano.length) { toast(`${nomeBreveCamera(c)} fatta ✓ Era l'ultima!`); setTimeout(() => { try { hoFinito(); } catch (e) {} }, 600); return; }
+  const s = i >= 0 ? g.passi[i] : null;
+  if (!guidaMuta() && s && s.k === "cam") guidaParla(`${brava} ${nomeBreveCamera(c)} è fatta. Adesso ${s.testo.replace(/^\d+\.\s*/, "").replace(/^Adesso\s+/i, "")}`);
+  else toast(`${brava} ${nomeBreveCamera(c)} è fatta ✓`);
+}
+// ---- il disegno a mano della camera (nella camera aperta): letto, bagno, armadio, finestra, porta; la casa con la cucina.
+// Le stelle e i lavori a fondo di oggi stanno al loro posto sul disegno («★ pulire qui») ------------------------------------
+function postoDisegno(posto, testo) {
+  const t = PAROLE.norm(`${posto || ""} ${testo || ""}`);
+  const ha = (re) => re.test(t);
+  if (ha(/cucina|forno|fornell|piano cottura|cappa|lavello|lavastoviglie|pentol|stovigli|microonde|tostapane|moka|dispensa|pattumier|bidon/)) return ha(/forno|fornell|cottura|cappa|microonde/) ? "fornelli" : ha(/frigo/) ? "frigo" : "lavello";
+  if (ha(/frigo|minibar/)) return "frigo";
+  if (ha(/doccia|box|soffione|piatto|tenda doccia|scarico/)) return "doccia";
+  if (ha(/wc|water|tazza|bidet|sciacquone|scopino/)) return "wc";
+  if (ha(/lavabo|lavandin|specchio|rubinett|phon|asciugacapell|miscelator|mensol/)) return "lavabo";
+  if (ha(/bagno|piastrell|sanitar|asciugaman|tappetin/)) return "bagno";
+  if (ha(/condizionator|clima|split|filtr/)) return "clima";
+  if (ha(/tend|finestr|persian|tapparell|vetr|zanzarier|davanzal|balcon|terrazz/)) return ha(/balcon|terrazz/) ? "balcone" : "finestra";
+  if (ha(/materass|copri|letto|lenzuol|cuscin|guancial|testier|rete|doghe|piumon|copert/)) return "letto";
+  if (ha(/comodin|abat|lampad.*comod/)) return "comodino";
+  if (ha(/armadi|gruccia|grucce|appendi|cassett|ripian/)) return "armadio";
+  if (ha(/tv|televis|telecomand|schermo/)) return "tv";
+  if (ha(/soffitt|plafonier|lampadar|ragnatel|angoli alti|lampad/)) return "soffitto";
+  if (ha(/porta|manigli|serratur|chiav|spioncin/)) return "porta";
+  if (ha(/pavim|battiscop|zoccol|sotto il letto|sotto i mobil|tappet|moquette|lavare a terra/)) return "pavimento";
+  if (ha(/tavol|sedi|divan|poltron|salott|soggiorn/)) return ha(/divan|poltron|salott|soggiorn/) ? "divano" : "tavolo";
+  if (ha(/scriv|sedia|specchio grande|quadr|cornic|prese|interrutt|termosif|radiator|cestin|appendiabiti/)) return "camera";
+  return "camera";
+}
+function disegnoCamera(p) {
+  if (!p || p.tipo === "stelle" || p.tipo === "fisso" || p.tipo === "extra") return "";
+  const c = camera(p.camera); if (!c || !c.id) return "";
+  const casa = c.tipo === "casa", singola = !casa && (Number(c.posti) || 2) < 2;
+  // le stelle e i lavori a fondo di oggi in questa camera
+  let rif = []; try { rif = rifinitureOggi(p.zona, p.data).filter(r => r.camera === p.camera && (r.pulizia === p.id || S.pulizie[r.pulizia]?.camera === p.camera)); } catch (e) {}
+  const fondi = Object.values(S.pulizie || {}).filter(x => x && x.data === p.data && x.zona === p.zona && x.camera === p.camera && x.origine === "governante" && x.stato !== "non_fatta" && !x.nonServe);
+  const regolaDi = (id) => { try { return regoleGov().find(x => x.id === id) || {}; } catch (e) { return {}; } };
+  const segni = [...rif.map(r => ({ k: "stella", t: r.nome, dove: postoDisegno(r.posto, `${r.superficie || ""} ${r.nome}`) })),
+    ...fondi.map(f => { const rg = regolaDi(f.regola); return { k: "fondo", t: String(titoloBase(f) || "Lavoro a fondo"), dove: postoDisegno(rg.posto, `${rg.superficie || ""} ${rg.nome || ""} ${titoloBase(f) || ""}`) }; })];
+  const T = (x, y, s, cls = "") => `<text x="${x}" y="${y}" class="mt-eti ${cls}">${esc(s)}</text>`;
+  const H = MT_TRATTO.replace('2.6', '2.4');   // tratto del disegno
+  let corpo = "", posti = {};
+  if (!casa) {
+    // la camera: finestra in alto, il letto al centro, armadio e frigo a sinistra, la porta in basso, la TV davanti al letto, il bagno a destra
+    const lx = singola ? 92 : 62, lw = singola ? 76 : 136;
+    corpo = `<rect x="10" y="12" width="340" height="206" rx="6" fill="#FFFDF7" ${H}/>
+      <rect x="240" y="12" width="110" height="112" fill="#E6F6F9"/><rect x="240" y="12" width="110" height="112" fill="url(#mtAc)" ${H}/>
+      <path d="M240 124 H300 M330 124 H350 M240 54 V124" ${H}/><path d="M300 124 Q314 118 326 124" ${H.replace('2.4', '1.8')} stroke-dasharray="3 3"/>
+      <rect x="300" y="20" width="42" height="42" rx="4" fill="#FFFFFF" ${H}/><circle cx="321" cy="41" r="5" ${H.replace('2.4', '1.8')}/><path d="M304 24 L338 58 M338 24 L304 58" ${H.replace('2.4', '1.2')} stroke-dasharray="2 4"/>
+      <ellipse cx="262" cy="36" rx="12" ry="9" fill="#FFFFFF" ${H}/><rect x="250" y="20" width="24" height="8" rx="2" fill="#FFFFFF" ${H.replace('2.4', '1.8')}/>
+      <rect x="248" y="78" width="40" height="22" rx="7" fill="#FFFFFF" ${H}/><ellipse cx="268" cy="91" rx="12" ry="6" ${H.replace('2.4', '1.6')}/>
+      <rect x="80" y="8" width="90" height="8" fill="#E2F0FF" ${H}/><path d="M125 8 V16" ${H.replace('2.4', '1.6')}/>
+      <rect x="186" y="18" width="40" height="13" rx="3" fill="#FFFFFF" ${H.replace('2.4', '2')}/><path d="M190 27 H222" ${H.replace('2.4', '1.2')}/>
+      <path d="M${lx} 44 Q${lx + lw / 2} 38 ${lx + lw} 44 V56 H${lx} Z" fill="#F6E3C8"/><path d="M${lx} 44 Q${lx + lw / 2} 38 ${lx + lw} 44 V56 H${lx} Z" fill="url(#mtOr)" ${H}/>
+      <rect x="${lx}" y="56" width="${lw}" height="104" rx="4" fill="#E2F0FF"/><rect x="${lx}" y="56" width="${lw}" height="104" rx="4" fill="url(#mtAz)" ${H}/>
+      ${singola ? `<rect x="${lx + 10}" y="62" width="56" height="22" rx="6" fill="#FFFFFF" ${H.replace('2.4', '2')}/>` : `<rect x="${lx + 10}" y="62" width="52" height="22" rx="6" fill="#FFFFFF" ${H.replace('2.4', '2')}/><rect x="${lx + lw - 62}" y="62" width="52" height="22" rx="6" fill="#FFFFFF" ${H.replace('2.4', '2')}/>`}
+      <path d="M${lx} 96 Q${lx + lw / 2} 100 ${lx + lw} 96" ${H.replace('2.4', '1.8')}/>
+      <rect x="${lx - 26}" y="44" width="20" height="20" rx="3" fill="#F6E3C8" ${H.replace('2.4', '2')}/><rect x="${lx + lw + 6}" y="44" width="20" height="20" rx="3" fill="#F6E3C8" ${H.replace('2.4', '2')}/>
+      <rect x="14" y="128" width="28" height="84" rx="3" fill="#F6E3C8"/><rect x="14" y="128" width="28" height="84" rx="3" fill="url(#mtOr)" ${H}/><path d="M28 132 V208" ${H.replace('2.4', '1.6')}/>
+      <rect x="14" y="78" width="28" height="36" rx="3" fill="#FFFFFF" ${H}/><path d="M18 92 H38" ${H.replace('2.4', '1.6')}/>
+      <rect x="${singola ? 98 : 100}" y="196" width="60" height="12" rx="2" fill="#E9EEF7" ${H}/>
+      <path d="M200 218 H236" stroke="#FFFDF7" stroke-width="5"/><path d="M200 218 V182" ${H}/><path d="M200 182 A36 36 0 0 1 236 218" ${H.replace('2.4', '1.6')} stroke-dasharray="4 4"/>
+      ${T(125, 31, "finestra")}${T(206, 43, "clima")}${T(lx + lw / 2, 134, singola ? "letto singolo" : "letto matrimoniale", "mid")}${T(28, 124, "armadio", "mid")}${T(28, 74, "frigo", "mid")}${T(128, 192, "TV", "mid")}${T(218, 180, "porta", "mid")}${T(322, 118, "bagno", "mid")}`;
+    posti = { finestra: [125, 18], clima: [206, 24], letto: [lx + lw / 2, 120], comodino: [lx - 16, 54], armadio: [28, 170], frigo: [28, 96], tv: [128, 202], porta: [250, 198], doccia: [321, 41], wc: [262, 36], lavabo: [268, 89], bagno: [295, 100], soffitto: [160, 120], pavimento: [60, 190], camera: [180, 150], balcone: [60, 18], fornelli: [28, 96], lavello: [28, 96], tavolo: [180, 150], divano: [180, 150] };
+  } else {
+    // la casa: cucina a sinistra, tavolo, bagno in mezzo, due camere a destra (su due piani: «e il piano di sopra»)
+    corpo = `<rect x="10" y="12" width="340" height="206" rx="6" fill="#FFFDF7" ${H}/>
+      <rect x="10" y="12" width="130" height="100" fill="#FFF4CF"/><rect x="10" y="12" width="130" height="100" fill="url(#mtGi)" ${H}/>
+      <rect x="16" y="18" width="118" height="22" rx="3" fill="#FFFFFF" ${H}/><circle cx="36" cy="29" r="7" ${H.replace('2.4', '1.8')}/><rect x="60" y="21" width="30" height="16" rx="2" ${H.replace('2.4', '1.8')}/><circle cx="68" cy="26" r="2.6" ${H.replace('2.4', '1.4')}/><circle cx="82" cy="26" r="2.6" ${H.replace('2.4', '1.4')}/><circle cx="68" cy="33" r="2.6" ${H.replace('2.4', '1.4')}/><circle cx="82" cy="33" r="2.6" ${H.replace('2.4', '1.4')}/>
+      <rect x="104" y="46" width="30" height="48" rx="3" fill="#FFFFFF" ${H}/><path d="M108 62 H130" ${H.replace('2.4', '1.6')}/>
+      <rect x="30" y="126" width="80" height="44" rx="6" fill="#F6E3C8"/><rect x="30" y="126" width="80" height="44" rx="6" fill="url(#mtOr)" ${H}/><rect x="42" y="112" width="16" height="10" rx="3" fill="#FFFFFF" ${H.replace('2.4', '1.8')}/><rect x="82" y="112" width="16" height="10" rx="3" fill="#FFFFFF" ${H.replace('2.4', '1.8')}/><rect x="42" y="174" width="16" height="10" rx="3" fill="#FFFFFF" ${H.replace('2.4', '1.8')}/><rect x="82" y="174" width="16" height="10" rx="3" fill="#FFFFFF" ${H.replace('2.4', '1.8')}/>
+      <rect x="150" y="12" width="88" height="88" fill="#E6F6F9"/><rect x="150" y="12" width="88" height="88" fill="url(#mtAc)" ${H}/><rect x="196" y="18" width="36" height="36" rx="4" fill="#FFFFFF" ${H}/><circle cx="214" cy="36" r="4.5" ${H.replace('2.4', '1.6')}/><ellipse cx="168" cy="34" rx="11" ry="8" fill="#FFFFFF" ${H}/><rect x="158" y="66" width="34" height="20" rx="6" fill="#FFFFFF" ${H}/>
+      <rect x="156" y="150" width="78" height="30" rx="8" fill="#F0E8FF"/><rect x="156" y="150" width="78" height="30" rx="8" fill="url(#mtVi)" ${H}/><path d="M166 150 V142 H224 V150" ${H.replace('2.4', '1.8')}/>
+      <rect x="248" y="12" width="102" height="100" fill="#FFFFFF"/><path d="M248 112 H350 M248 12 V218" ${H}/>
+      <rect x="268" y="24" width="64" height="70" rx="3" fill="#E2F0FF"/><rect x="268" y="24" width="64" height="70" rx="3" fill="url(#mtAz)" ${H}/><rect x="272" y="28" width="26" height="14" rx="4" fill="#FFFFFF" ${H.replace('2.4', '1.6')}/><rect x="302" y="28" width="26" height="14" rx="4" fill="#FFFFFF" ${H.replace('2.4', '1.6')}/>
+      <rect x="268" y="128" width="64" height="70" rx="3" fill="#E1F5E5"/><rect x="268" y="128" width="64" height="70" rx="3" fill="url(#mtVe)" ${H}/><rect x="272" y="132" width="26" height="14" rx="4" fill="#FFFFFF" ${H.replace('2.4', '1.6')}/><rect x="302" y="132" width="26" height="14" rx="4" fill="#FFFFFF" ${H.replace('2.4', '1.6')}/>
+      <path d="M178 218 H214" stroke="#FFFDF7" stroke-width="5"/><path d="M178 218 V182" ${H}/><path d="M178 182 A36 36 0 0 1 214 218" ${H.replace('2.4', '1.6')} stroke-dasharray="4 4"/>
+      ${T(75, 106, "cucina", "mid")}${T(70, 152, "tavolo", "mid")}${T(194, 94, "bagno", "mid")}${T(195, 169, "divano", "mid")}${T(300, 106, "camera", "mid")}${T(300, 212, c.piani > 1 ? "camera · e sopra" : "camera", "mid")}${T(196, 196, "porta", "mid")}`;
+    posti = { fornelli: [75, 29], lavello: [36, 29], frigo: [119, 70], cucina: [75, 60], tavolo: [70, 148], bagno: [194, 60], doccia: [214, 36], wc: [168, 34], lavabo: [175, 76], divano: [195, 165], letto: [300, 60], comodino: [300, 60], armadio: [300, 165], finestra: [300, 22], clima: [300, 22], tv: [195, 150], porta: [196, 200], soffitto: [120, 60], pavimento: [120, 200], camera: [300, 165], balcone: [120, 200] };
+  }
+  // i segni: le stelle e i lavori a fondo al loro posto (più di uno nello stesso posto: in fila)
+  const conta = {};
+  const segniHtml = segni.map((s, i) => {
+    const [x0, y0] = posti[s.dove] || posti.camera; const n = conta[s.dove] = (conta[s.dove] || 0) + 1;
+    const x = Math.min(336, Math.max(24, x0 + (n - 1) * 26)), y = Math.min(206, Math.max(22, y0));
+    const breve = s.t.length > 22 ? s.t.slice(0, 21).trim() + "…" : s.t;
+    const sopra = y > 186;   // in basso l'etichetta va sopra il segno, se no esce dal foglio
+    return `<g class="mt-segno ${s.k}" transform="translate(${x} ${y})"><circle r="14" fill="${s.k === "stella" ? "#FFE9A8" : "#FFF0B8"}" stroke="#B36B00" stroke-width="2.4"/><text y="5" class="mt-segno-s">${s.k === "stella" ? "★" : "✦"}</text>${n === 1 ? `<text y="${sopra ? -21 : 30}" class="mt-segno-t" text-anchor="middle">${esc(breve)}</text>` : ""}</g>`;
+  }).join("");
+  const didasc = segni.length ? `<p class="mt-did">${segni.some(s => s.k === "stella") ? "★ le stelle" : ""}${segni.some(s => s.k === "stella") && segni.some(s => s.k === "fondo") ? " · " : ""}${segni.some(s => s.k === "fondo") ? "✦ i lavori a fondo" : ""}: pulisci qui</p>` : "";
+  return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${casa ? "La casa" : "La camera"}</div><svg class="mt-disegno" viewBox="0 0 360 230" role="img" aria-label="${esc(casa ? "la casa: cucina, tavolo, bagno, camere" : singola ? "la camera: letto singolo, armadio, frigo, finestra, bagno" : "la camera: letto matrimoniale, armadio, frigo, finestra, bagno")}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}<g filter="url(#mtTrem)">${corpo}</g>${segniHtml}</svg>${didasc}</section>`;
+}
+// ---- Sofia a fianco, A SCOMPARSA (1.32.0): di solito c'è solo il tasto tondo col microfono; toccandolo Sofia esce intera
+// (la sagoma ritagliata, senza sfondo), ti ascolta e risponde; appena finisce di parlare sparisce. Esce da sola anche quando
+// parla per altri motivi (una camera aperta, «E poi?», «Fatto») e sparisce subito dopo. --------------------------------
+const compagna = { tieni: 0 };
+function ritaglioOK() { return ALFA_OK === "si" && !motoRidotto(); }
+function compagnaBase() { try { return !!(S.pronto && argonLei() && S.vista === "oggi" && sofiaFuoriVoluta() && !document.querySelector(".conferma")); } catch (e) { return false; } }
+function compagnaMostra() { return !!(voceInCorso || guida.parla || guida.ascolta || compagna.tieni > Date.now()); }
+function sofiaCartaInVista() { const el = document.querySelector(".sheet .sf-sofia"); if (!el) return false; const r = el.getBoundingClientRect(); return r.bottom > 90 && r.top < (window.innerHeight || 800) - 100; }
 function compagnaVuole() {
-  try {
-    if (!(S.pronto && argonLei() && S.vista === "oggi" && sofiaFuoriVoluta() && !document.querySelector(".conferma"))) return false;
-    if (document.querySelector(".sheet")) return false;   // nella camera aperta Sofia è nella scheda «Sofia ti dice»
-    return !!document.querySelector(".gs-sofia") && !guidaTestaInVista();
-  } catch (e) { return false; }
+  if (!compagnaBase() || !compagnaMostra()) return false;
+  if (document.querySelector(".sheet")) return !sofiaCartaInVista();
+  return !!document.querySelector(".gs-sofia") && !guidaTestaInVista();
+}
+function micVuole() {
+  if (!compagnaBase() || compagnaMostra()) return false;
+  if (document.querySelector(".sheet")) return !!document.querySelector(".sheet .sf-sofia") && !sofiaCartaInVista();
+  return !!document.querySelector(".gs-sofia") && !guidaTestaInVista();
+}
+function compagnaTocca() {
+  try { VOCE.sbloccaAudio(); } catch (e) {}
+  if (voceInCorso || guida.parla) { compagna.tieni = 0; guidaZitta(); return; }
+  if (guida.ascolta && guidaRec) { guidaRec._annulla = true; try { guidaRec.stop(); } catch (e) {} compagna.tieni = 0; return; }
+  guidaTasto("ascolta");
+}
+function compagnaMic() {
+  try { VOCE.sbloccaAudio(); } catch (e) {}
+  if (voceInCorso || guida.parla) { guidaZitta(); return; }
+  compagna.tieni = Date.now() + 1800; guidaCompagna();
+  guidaAscolta({ ripiego: true });
 }
 function guidaCompagna() {
   let c = document.getElementById("sgCompagna");
   const vuoi = compagnaVuole();
   document.body.classList.toggle("con-compagna", vuoi);
-  if (!vuoi) { if (c && !c.hidden) { c.classList.remove("su"); clearTimeout(c._via); c._via = setTimeout(() => { if (!c.classList.contains("su")) c.hidden = true; }, 320); } return; }
-  if (c && (c.dataset.capo || "") !== (sofiaCapo() ? "1" : "")) { c.remove(); c = null; }
+  if (!vuoi) { if (c && !c.hidden) { c.classList.remove("su"); clearTimeout(c._via); c._via = setTimeout(() => { if (!c.classList.contains("su")) c.hidden = true; }, 320); } guidaMic(); return; }
+  const rit = ritaglioOK() ? "1" : "";
+  if (c && ((c.dataset.capo || "") !== (sofiaCapo() ? "1" : "") || (c.dataset.rit || "") !== rit)) { c.remove(); c = null; }
   if (!c) {
-    c = document.createElement("button"); c.type = "button"; c.id = "sgCompagna"; c.className = "sg-compagna"; c.hidden = true; c.dataset.capo = sofiaCapo() ? "1" : "";
-    c.innerHTML = `<span class="sgc-cornice">${FILM_CONS("sgc-fig")}</span><span class="sgc-nome"><i aria-hidden="true">🔊</i><span>${esc(nomeGov())}</span></span>`;
-    c.onclick = (e) => { e.preventDefault(); e.stopPropagation(); try { VOCE.sbloccaAudio(); } catch (er) {} guidaTasto("ascolta"); };
+    c = document.createElement("button"); c.type = "button"; c.id = "sgCompagna"; c.className = "sg-compagna sg-intera"; c.hidden = true; c.dataset.capo = sofiaCapo() ? "1" : ""; c.dataset.rit = rit;
+    c.innerHTML = `<span class="sgc-figura">${rit ? FILM_CONS("sgc-fig", false, true) : `<img class="sgc-ferma" src="${sofiaCapo() ? FILM_CAPO_TRE.poster : FILM_TRE.poster}" alt="">`}</span><span class="sgc-nome"><i aria-hidden="true">🔊</i><span>${esc(nomeGov())}</span></span>`;
+    c.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaTocca(); };
     document.body.appendChild(c);
   }
-  const parla = !!(voceInCorso || guida.parla);
+  const parla = !!(voceInCorso || guida.parla), ascolta = !parla && !!guida.ascolta;
   c.classList.toggle("piccola", !!document.querySelector(".sheet"));
-  c.classList.toggle("parla", parla);
-  c.setAttribute("aria-label", parla ? `${nomeGov()} sta parlando: tocca per farla smettere` : `${nomeGov()}: tocca e ti dico cosa fare adesso`);
+  c.classList.toggle("parla", parla); c.classList.toggle("ascolta", ascolta);
+  const pill = c.querySelector(".sgc-nome"), pillHtml = parla ? `<i aria-hidden="true">⏹</i><span>${esc(nomeGov())}</span>` : ascolta ? `<i aria-hidden="true">🎤</i><span>Ti ascolto</span>` : `<i aria-hidden="true">🔊</i><span>${esc(nomeGov())}</span>`;
+  if (pill && pill.innerHTML !== pillHtml) pill.innerHTML = pillHtml;
+  c.setAttribute("aria-label", parla ? `${nomeGov()} sta parlando: tocca per farla smettere` : ascolta ? `${nomeGov()} ti ascolta: dille cosa vuoi sapere` : `${nomeGov()}: tocca e ti dico cosa fare adesso`);
   clearTimeout(c._via);
   if (c.hidden) { c.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => c.classList.add("su"))); } else c.classList.add("su");
+  guidaMic();
+}
+function guidaMic() {
+  let b = document.getElementById("sgMic");
+  const vuoi = micVuole();
+  document.body.classList.toggle("con-mic", vuoi);
+  if (!vuoi) { if (b) b.hidden = true; return; }
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = "sg-mic"; b.innerHTML = `${MICROFONO_SVG}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
+  b.setAttribute("aria-label", `Parla con ${nomeGov()}: tocca il microfono e chiedi`);
+  b.hidden = false;
 }
 try { window.addEventListener("scroll", () => { try { guidaCompagna(); guidaNuvola(); } catch (e) {} }, { passive: true }); } catch (e) {}
 // ---- la camera aperta: «Sofia ti dice» in alto (le stesse parole che dice a voce) e i passi in ordine, numerati
@@ -2842,7 +3132,7 @@ document.addEventListener("click", (e) => {
   const b = t.closest("[data-sg]");
   if (b) { e.preventDefault(); e.stopPropagation(); guidaTasto(b.dataset.sg); return; }
   if (t.closest("#sgTondo")) { e.preventDefault(); e.stopPropagation(); guidaTasto("ascolta"); return; }
-  const c = t.closest(".gs-cam[data-dettagli]");
+  const c = t.closest(".gs-cam[data-dettagli], .gs-cam [data-dettagli]");
   if (c) { const id = c.dataset.dettagli; setTimeout(() => guidaCamera(id), 60); }
 }, true);
 // il tasto tondo con Sofia, sempre a portata di pollice quando la testa è scesa (Gemini, consiglio 5); e la sua nuvoletta
@@ -2868,7 +3158,7 @@ function guidaTestaInVista() { const h = document.querySelector(".gs-sofia"); if
 function guidaTondo() {
   let b = document.getElementById("sgTondo");
   let vuoi = false;
-  try { vuoi = !!(S.pronto && argonLei() && (S.vista === "oggi" || S.vista === "settimana") && !document.querySelector(".sheet") && !document.querySelector(".conferma") && !voceInCorso && document.querySelector(".gs-sofia") && !guidaTestaInVista() && !compagnaVuole()); } catch (e) {}
+  try { vuoi = !!(S.pronto && argonLei() && (S.vista === "oggi" || S.vista === "settimana") && !document.querySelector(".sheet") && !document.querySelector(".conferma") && !voceInCorso && document.querySelector(".gs-sofia") && !guidaTestaInVista() && !compagnaVuole() && !micVuole()); } catch (e) {}
   if (!vuoi) { if (b) b.hidden = true; return; }
   if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgTondo"; b.className = "sg-tondo"; b.setAttribute("aria-label", `${nomeGov()}: tocca e ti dico cosa fare`); b.innerHTML = `<span class="sg-viso" aria-hidden="true"></span><span class="sg-bollo" aria-hidden="true">🔊</span>`; document.body.appendChild(b); }
   b.hidden = false;
@@ -2877,7 +3167,7 @@ function guidaNuvola() {
   let n = document.getElementById("sgNuvola");
   const sc = document.getElementById("sgCompagna"), f = sc && !sc.hidden && sc.classList.contains("su") ? sc : document.getElementById("sofiaFuori");   // 1.30.0
   let vuoi = false;
-  try { vuoi = !!(addetta() && guida.voce && (guida.parla || Date.now() < guida.nuvolaFino) && f && !f.hidden && f.classList.contains("su")); } catch (e) {}
+  try { vuoi = !!(addetta() && guida.voce && (guida.parla || guida.ascolta || Date.now() < guida.nuvolaFino) && f && !f.hidden && f.classList.contains("su")); } catch (e) {}
   if (!vuoi) { if (n) n.hidden = true; return; }
   if (!n) { n = document.createElement("div"); n.id = "sgNuvola"; n.className = "sg-nuvola"; n.setAttribute("aria-live", "polite"); document.body.appendChild(n); }
   const html = `<b>${esc(nomeGov())}</b>${esc(guida.voce)}`;
@@ -2912,7 +3202,9 @@ async function hoFinito() {
   if (!L.argonOrario(S.argon)) { toast(`Il tasto funziona dalle ${c.oreDa} alle ${c.oreA}.`); return; }
   const nonChiuse = lavori.filter(p => p.stato === "problema" || p.stato === "non_fatta");
   const rif = rifinitureOggi(z, iso).filter(r => !nonChiuse.some(p => p.id === r.pulizia));   // le camere col problema restano aperte: le loro rifiniture no
-  const scelta = await confermaHoFinito(lavori, rif, nonChiuse); if (!scelta) return;
+  // 1.32.0: le stelle delle camere già chiuse col «✓ Fatto» sono state confermate lì: qui si chiedono solo le altre
+  const daChiedere = rif.filter(r => { const x = S.pulizie[r.pulizia]; return !x || x.stato !== "fatta"; });
+  const scelta = await confermaHoFinito(lavori, daChiedere, nonChiuse); if (!scelta) return;
   const chiuse = lavori.filter(p => p.stato !== "problema" && p.stato !== "non_fatta");
   // 1) le camere si chiudono come col «Ho finito» di ogni camera: lista fatta per intero, le rifiniture non fatte segnate
   //    (anche il giro delle rifiniture nelle altre camere quando oggi è vuoto, e quindi nascosto: la giornata è chiusa)
@@ -5790,7 +6082,7 @@ function sofiaInVista() {
 function sofiaFuori() {
   let f = document.getElementById("sofiaFuori");
   let vuoi = false;
-  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista() && !(addetta() && compagnaVuole())); } catch (e) {}
+  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista() && !(addetta() && compagnaBase())); } catch (e) {}
   if (!vuoi) {
     document.body.classList.remove("con-sofia-fuori");
     if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) f.hidden = true; try { guidaNuvola(); } catch (e) {} }, 420); }
@@ -8575,7 +8867,8 @@ function disegnaFoglio() {
   const valori = {}; s.querySelectorAll("textarea[id],input[id]").forEach(e => { if (e.type !== "file") valori[e.id] = { v: e.value, s: e.selectionStart, e: e.selectionEnd }; });
   const pieno = f.tipo === "inizio" || f.tipo === "giro" || f.tipo === "chat";
   s.classList.toggle("pieno", pieno); s.classList.toggle("chat-sheet", f.tipo === "chat");
-  const scroll = pieno ? 0 : (s.querySelector(".panel")?.scrollTop || 0);
+  const fid = `${f.tipo}|${f.id || ""}`, stessa = s.dataset.fid === fid; s.dataset.fid = fid;
+  const scroll = pieno && !(f.tipo === "inizio" && stessa) ? 0 : (s.querySelector(".panel")?.scrollTop || 0);   // 1.32.0: la stessa camera resta dov'era
   s.innerHTML = `<div class="panel ${pieno ? "pieno" : ""}" role="dialog">${pieno ? "" : `<div class="grip"></div>`}${html}${pieno ? "" : `<button class="big close" data-chiudi>Chiudi</button>`}</div>`;
   for (const [id, x] of Object.entries(valori)) { const e = s.querySelector("#" + CSS.escape(id)); if (e && e.hasAttribute("data-keep")) { e.value = x.v; } }
   if (idAttivo) { const e = s.querySelector("#" + CSS.escape(idAttivo)); if (e) { try { e.focus({ preventScroll: true }); if (valori[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(valori[idAttivo].s, valori[idAttivo].e); } catch (err) {} } }
