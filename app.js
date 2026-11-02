@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.39.0";
+export const VERSIONE = "1.40.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -120,6 +120,9 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 // 1.32.0: la stessa capo-governante RITAGLIATA (senza il corridoio dietro: VP9 con trasparenza, come la Sofia 3D di Michele),
 // per Sofia a fianco delle signore: «tutta la sagoma di Sofia senza sfondo». Fatti con dev/s3d/ritaglia.py (u2net_human_seg).
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
+// 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
+// finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
+const FILM_SEGR = { riposo: "segr-riposo-3d.webm", poster: "segr-poster-3d.webp" };
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -1490,7 +1493,7 @@ function disegna() {
   disegnaCasa();
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
   sofiaFuori();
-  guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito();
+  guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito(); fantasmaSegreteria();   // 1.40.0
   sofiaMini();
   voceBarra();   // 1.11.0
   orologioAvvia();
@@ -4400,6 +4403,30 @@ function correggiSegreteria(lid, k) {
   el.querySelector("[data-no]").onclick = chiudi;
   el.onclick = (e) => { if (e.target === el) chiudi(); };
   setTimeout(() => { try { el.querySelector("[data-sgr-testo]").focus(); } catch (e) {} }, 50);
+}
+// 1.40.0: IL FANTASMINO DELLA SEGRETERIA (Michele: «Sofia vestita da segretaria, con gli occhiali, sempre a fantasmino a fianco,
+// senza la parte scritta, abbastanza sbiadita così che posso leggere»): un elemento solo, fisso in basso a destra, che non si
+// tocca (i tocchi passano sotto), sbiadito; col filmato ritagliato dove la trasparenza si può (ritaglioOK), se no la figura ferma.
+// Non si ricostruisce a ogni disegno (il filmato non riparte); sparisce appena si cambia pagina o si apre un foglio.
+function fantasmaSegreteria() {
+  let f = document.getElementById("sgFantasma");
+  let vuoi = false;
+  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && !document.querySelector(".sheet")); } catch (e) {}
+  if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) { f.hidden = true; const v = f.querySelector("video"); if (v) { try { v.pause(); } catch (e) {} } } }, 650); } return; }
+  const rit = ritaglioOK();
+  if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
+  if (!f) {
+    f = document.createElement("div"); f.id = "sgFantasma"; f.className = "sgr-fantasma"; f.setAttribute("aria-hidden", "true"); f.hidden = true; f.dataset.rit = rit ? "1" : "";
+    f.innerHTML = rit ? `<video src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`;
+    const v = f.querySelector("video"), img = f.querySelector("img");
+    // finché i filmati da segretaria non ci sono (o non si caricano), la capo-governante di sempre
+    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.poster = FILM_CAPO_TRE.poster; v.src = FILM_CAPO_TRE.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
+    if (img) img.onerror = () => { if (img.dataset.ripiego) return; img.dataset.ripiego = "1"; img.src = FILM_CAPO_TRE.poster; };
+    document.body.appendChild(f);
+  }
+  clearTimeout(f._via);
+  if (f.hidden) { f.hidden = false; const v = f.querySelector("video"); if (v) { try { v.play().catch(() => {}); } catch (e) {} } requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); }
+  else f.classList.add("su");
 }
 let segreteriaPulita = false;
 function pulisciSegreteria(letture) {

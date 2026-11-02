@@ -7248,3 +7248,12 @@ body.semplice.argon .gs-hero .gs-turno-pill{color:#004D47}
 :root[data-theme="dark"] .sgr-item.sbagliato{background:#332A18}
 :root[data-theme="dark"] .sgr-b{background:#1E242B;color:#E6EDF3}
 :root[data-theme="dark"] .sgr-testa p,:root[data-theme="dark"] .sgr-l-testa small,:root[data-theme="dark"] .sgr-msg small,:root[data-theme="dark"] .sgr-intest{color:#A9B4C0}
+
+/* ---- 1.40.0: il fantasmino della Segreteria (Sofia a fianco, sbiadita, senza scritte; i tocchi passano sotto) ---- */
+.sgr-fantasma{position:fixed;right:-4px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:5;width:min(46vw,210px);height:min(44vh,400px);pointer-events:none;opacity:0;transform:translate(10px,14px);transition:opacity .6s ease,transform .6s ease;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 38%);mask-image:linear-gradient(to right,transparent 0,#000 38%)}
+.sgr-fantasma.su{opacity:.38;transform:none}
+.sgr-fantasma[hidden]{display:none}
+.sgr-fantasma video,.sgr-fantasma img{position:absolute;right:0;bottom:0;width:100%;height:100%;object-fit:contain;object-position:right bottom;filter:saturate(.8) contrast(.95);background:none;border:0}
+@media (min-width:700px){.sgr-fantasma{right:calc(50vw - 340px);width:230px;height:440px}}
+@media (prefers-reduced-motion:reduce){.sgr-fantasma{transition:none}}
+:root[data-theme="dark"] .sgr-fantasma.su{opacity:.34}
