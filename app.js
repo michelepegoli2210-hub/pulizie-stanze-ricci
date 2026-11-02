@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.29.0";
+export const VERSIONE = "1.30.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -459,7 +459,7 @@ function filmVigila() {
     for (const b of document.querySelectorAll(".gov-film")) {
       // 1.0: una Sofia nascosta (quella che "esce" quando parla, a riposo) non consuma batteria
       if (b.closest("[hidden]")) { for (const v of b.querySelectorAll("video")) if (!v.paused) { try { v.pause(); } catch (e) {} } continue; }
-      const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando") || (voceInCorso && !!b.closest("#sofiaHero, #sofiaFuori, .sofia-vista, .gs-sofia"));
+      const vuole = forzato === "parla" || b.classList.contains("parla") || !!b.closest(".sta-parlando") || (voceInCorso && !!b.closest("#sofiaHero, #sofiaFuori, #sgCompagna, .sf-sofia, .sofia-vista, .gs-sofia"));
       const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
       const pensa = !parla && !ascolta && forzato === "pensa";
@@ -1483,7 +1483,7 @@ function disegna() {
   disegnaCasa();
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
   sofiaFuori();
-  guidaTondo(); guidaNuvola(); guidaFinito();
+  guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito();
   sofiaMini();
   voceBarra();   // 1.11.0
   orologioAvvia();
@@ -1976,8 +1976,8 @@ function foglioInizioFacile(f) {
   return `<div class="inizio sig sf">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
     <div class="gs-targa ${tipoGiornata(p)} ${p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : ""}"><div class="gs-targa-r"><span class="gs-tile" aria-hidden="true">${p.stato === "fatta" ? "✅" : p.stato === "problema" || p.stato === "non_fatta" ? "⚠️" : disegnoGiornata(p)}</span><span class="gs-cam-x"><span class="gs-nome">${esc(nome)}</span><span class="gs-cosa">${esc(stelle ? "Solo le rifiniture" : titoloBase(p) + parteTesto(p))}</span></span>${p.stato === "da_fare" || p.stato === "in_corso" ? "" : BADGE(p)}</div>${ospiti.length ? `<div class="sf-ospiti">${ospiti.map(([i, x]) => `<span><i aria-hidden="true">${i}</i><span>${esc(x)}</span></span>`).join("")}</div>` : ""}</div>
-    <button type="button" class="sf-ascolta" data-sf-voce>${ICONA("altoparlante")}<span>Ascolta</span></button><span hidden data-sf-testo>${esc(parlato)}</span>
-    ${dice}${sempreHtml}${rifHtml}${zonaHtml}${passiHtml}${bidoni}
+    ${argonLei() ? sofiaSpiega(testoSofiaCamera(p, parlato)) : `<button type="button" class="sf-ascolta" data-sf-voce>${ICONA("altoparlante")}<span>Ascolta</span></button>`}<span hidden data-sf-testo>${esc(argonLei() ? testoSofiaCamera(p, parlato) : parlato)}</span>
+    ${dice}${argonLei() && lista ? sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) : ""}${sempreHtml}${rifHtml}${argonLei() && lista ? "" : zonaHtml + passiHtml}${bidoni}
     ${bottone}
     ${aperta ? `<div class="pro-sec"><button class="nonna-link" data-non-riesco="${esc(p.id)}">Non riesco a fare una cosa</button><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}
   </div>`;
@@ -2657,8 +2657,121 @@ function testaGiro(z, giorno, ord, rif, anteprima) {
   const minuti = Math.round(minutiGiornata(ord, rif) / 15) * 15;   // al quarto d'ora: «3 ore», non «2 ore e 59»
   const segni = [minuti ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
     rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
-  return segni.length ? `<div class="gs-giro-t"><span class="gs-segni-g">${segni.join("")}</span></div>` : "";
+  return `<div class="gs-giro-t"><span class="gs-segni-g">${segni.join("")}</span><span class="gp-aiuto">Tocca una camera: ${esc(nomeGov())} te la spiega</span></div>`;   // 1.30.0
 }
+// ============================================================================
+//  1.30.0 LA PIANTINA DEL GIRO E SOFIA SEMPRE A FIANCO (Michele, 2/11 notte, sul suo telefono: «le scritte sono troppo
+//  banali; si clicca sopra e non si capisce dove c'è la spiegazione; non si capisce la sequenza delle cose da fare. Era
+//  meglio la piantina, però c'erano troppe cose scritte. Ci deve stare sempre Sofia a fianco, col fantasmino, che possa
+//  spiegare cosa bisogna fare»; alla domanda: «la piantina vera, ma Sofia sempre nella prima schermata»).
+//  Sotto Sofia (che resta la prima schermata) le camere sono disegnate AL LORO POSTO nel corridoio del piano, come nelle
+//  Piantine di Michele: su ogni camera di oggi il numero del giro, il disegnino (🛏️ cambio, 🧹 ripasso) e i segni piccoli
+//  (⭐ stella, 🚪 parte, 🧳 arriva, 📣 Michele); le altre camere del piano in grigio, solo il nome. Niente frasi: le spiega
+//  Sofia. Quando si scorre, Sofia resta a fianco (in basso a destra, il fantasmino): tocchi lei e ti dice cosa fare adesso;
+//  tocchi una camera e te la spiega lei, mentre si apre la camera con «Sofia ti dice» in alto e i passi in ordine.
+// ============================================================================
+function tesseraGiro(p, rif, anteprima, n, ora) {
+  const st = anteprima ? "" : p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "";
+  const mie = st === "fatta" ? [] : (rif || []).filter(r => r.pulizia === p.id);
+  const c = camera(p.camera), fondo = p.origine === "governante", stelle = p.tipo === "stelle";
+  const nome = stelle ? "Altre camere" : fondo ? String(titoloBase(p) || "Lavoro a fondo") : nomeBreveCamera(c);
+  const sotto = stelle ? [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))].join(", ") : fondo ? `in ${nomeBreveCamera(c)}` : "";
+  const ico = stelle ? "⭐" : disegnoGiornata(p);
+  const segni = [];
+  if (!st && mie.length && !stelle) segni.push(["stella", mie.length > 1 ? `⭐${mie.length}` : "⭐", mie.length === 1 ? "una stella" : `${mie.length} stelle`]);
+  if (!st && p.partenza) segni.push(["parte", "🚪", "l'ospite parte"]);
+  else if (!st && p.arrivo) segni.push(["arriva", "🧳", "arriva un ospite"]);
+  if (!st && (p.dettagli || p.istruzioni)) segni.push(["nota", "📣", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
+  const k = fondo ? "k-fondo" : stelle ? "gs-stelle" : tipoGiornata(p);
+  const cosa = st === "fatta" ? "fatta" : st === "prob" ? "da sistemare" : stelle ? "stelle in altre camere" : fondo ? `lavoro a fondo in ${nomeBreveCamera(c)}` : parolaGiornata(p, nome);
+  return `<button class="gs-cam gp ${k}${st ? " " + st : ""}${ora ? " ora" : ""}" data-dettagli="${esc(p.id)}" aria-label="${n ? n + ". " : ""}${esc(nome)}: ${esc(cosa)}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}"><span class="gs-np" aria-hidden="true">${st === "fatta" ? "✓" : st === "prob" ? "!" : esc(String(n || ""))}</span>${ora ? `<span class="gs-ora">Adesso</span>` : ""}<span class="gp-ico" aria-hidden="true">${ico}</span><span class="gs-nome">${esc(nome)}</span>${sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : ""}${segni.length ? `<span class="gp-segni" aria-hidden="true">${segni.map(([cl, t]) => `<i class="gp-s ${cl}">${t}</i>`).join("")}</span>` : ""}</button>`;
+}
+function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
+  const num = new Map(ord.map((p, i) => [p.id, i + 1]));
+  const oraId = adesso >= 0 && ord[adesso] ? ord[adesso].id : "";
+  const vera = (p) => p.tipo !== "stelle" && p.origine !== "governante" && p.tipo !== "fisso" && p.tipo !== "extra" && !!S.camere.find(c => c.id === p.camera);
+  const perCamera = new Map(); for (const p of ord) if (vera(p) && !perCamera.has(p.camera)) perCamera.set(p.camera, p);
+  const messe = new Set();
+  const tile = (c) => { const p = perCamera.get(c.id); if (!p) return `<div class="gp-vuota" aria-hidden="true"><span>${esc(nomeBreveCamera(c))}</span></div>`; messe.add(p.id); return tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId); };
+  const ordine = (a, b) => (a.ordine || 99) - (b.ordine || 99);
+  const blocchi = [];
+  // i piani col corridoio: prima quello della signora (tutte le sue camere, quelle di oggi col numero, le altre in grigio),
+  // poi gli altri piani dove oggi ha una camera (solo le sue)
+  const zoneCam = [...new Set([z, ...[...perCamera.keys()].map(id => camera(id).zona)])];
+  for (const zz of zoneCam) {
+    const sue = zz === z;
+    const cs = camereZona(zz).filter(c => (c.lato === "L" || c.lato === "R") && (sue || perCamera.has(c.id)));
+    if (!cs.some(c => perCamera.has(c.id))) continue;
+    const Lc = cs.filter(c => c.lato === "L").sort(ordine), Rc = cs.filter(c => c.lato === "R").sort(ordine);
+    blocchi.push(`<div class="gp-piano"><div class="gp-eti">${esc((S.zone[zz] && (S.zone[zz].breve || S.zone[zz].nome)) || zz)}</div><div class="corridoio gp-corr"><div class="lato">${Lc.map(tile).join("")}</div><div class="lato">${Rc.map(tile).join("")}</div></div></div>`);
+  }
+  // le camere sulla strada (via Nazario Sauro) e le case: solo quelle di oggi (per le case, quelle della sua zona in grigio)
+  const vie = {};
+  for (const c of S.camere) if (c.lato === "S" && perCamera.has(c.id)) (vie[c.via || "Fuori"] = vie[c.via || "Fuori"] || []).push(c);
+  for (const [via, cs] of Object.entries(vie)) blocchi.push(`<div class="gp-piano"><div class="gp-eti">${esc(via)}</div><div class="gp-griglia">${cs.sort(ordine).map(tile).join("")}</div></div>`);
+  const case_ = S.camere.filter(c => c.lato === "A" && (perCamera.has(c.id) || c.zona === z)).sort(ordine);
+  if (case_.some(c => perCamera.has(c.id))) blocchi.push(`<div class="gp-piano"><div class="gp-eti">Le case</div><div class="gp-griglia">${case_.map(tile).join("")}</div></div>`);
+  // quello che non sta su una camera disegnata: scale, terrazzo, lavori a fondo, stelle in altre camere, lavori in più
+  const altri = ord.filter(p => !messe.has(p.id));
+  if (altri.length) blocchi.push(`<div class="gp-piano"><div class="gp-eti">Altri lavori</div><div class="gp-griglia">${altri.map(p => tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId)).join("")}</div></div>`);
+  return `<section class="gs-camere gp-mappa${pl ? " col-piano" : ""}" aria-label="La piantina del giro">${testaGiro(z, giorno, ord, rif, anteprima)}${blocchi.join("")}</section>`;
+}
+// ---- Sofia sempre a fianco: quando la scena di Sofia non si vede più, lei resta in basso a destra (il fantasmino fermo);
+// quando parla si muove e accanto c'è la sua nuvoletta. Toccarla: ti dice cosa fare adesso (o smette di parlare).
+function compagnaVuole() {
+  try {
+    if (!(S.pronto && argonLei() && S.vista === "oggi" && sofiaFuoriVoluta() && !document.querySelector(".conferma"))) return false;
+    if (document.querySelector(".sheet")) return false;   // nella camera aperta Sofia è nella scheda «Sofia ti dice»
+    return !!document.querySelector(".gs-sofia") && !guidaTestaInVista();
+  } catch (e) { return false; }
+}
+function guidaCompagna() {
+  let c = document.getElementById("sgCompagna");
+  const vuoi = compagnaVuole();
+  document.body.classList.toggle("con-compagna", vuoi);
+  if (!vuoi) { if (c && !c.hidden) { c.classList.remove("su"); clearTimeout(c._via); c._via = setTimeout(() => { if (!c.classList.contains("su")) c.hidden = true; }, 320); } return; }
+  if (c && (c.dataset.capo || "") !== (sofiaCapo() ? "1" : "")) { c.remove(); c = null; }
+  if (!c) {
+    c = document.createElement("button"); c.type = "button"; c.id = "sgCompagna"; c.className = "sg-compagna"; c.hidden = true; c.dataset.capo = sofiaCapo() ? "1" : "";
+    c.innerHTML = `<span class="sgc-cornice">${FILM_CONS("sgc-fig")}</span><span class="sgc-nome"><i aria-hidden="true">🔊</i><span>${esc(nomeGov())}</span></span>`;
+    c.onclick = (e) => { e.preventDefault(); e.stopPropagation(); try { VOCE.sbloccaAudio(); } catch (er) {} guidaTasto("ascolta"); };
+    document.body.appendChild(c);
+  }
+  const parla = !!(voceInCorso || guida.parla);
+  c.classList.toggle("piccola", !!document.querySelector(".sheet"));
+  c.classList.toggle("parla", parla);
+  c.setAttribute("aria-label", parla ? `${nomeGov()} sta parlando: tocca per farla smettere` : `${nomeGov()}: tocca e ti dico cosa fare adesso`);
+  clearTimeout(c._via);
+  if (c.hidden) { c.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => c.classList.add("su"))); } else c.classList.add("su");
+}
+try { window.addEventListener("scroll", () => { try { guidaCompagna(); guidaNuvola(); } catch (e) {} }, { passive: true }); } catch (e) {}
+// ---- la camera aperta: «Sofia ti dice» in alto (le stesse parole che dice a voce) e i passi in ordine, numerati
+function testoSofiaCamera(p, ripiego) {
+  try { if (argonLei()) { const s = guidaPassi(p.zona, p.data).find(x => x.id === p.id); if (s && s.testo) return s.testo.replace(/^\d+\.\s*/, ""); } } catch (e) {}
+  return ripiego;
+}
+function sofiaSpiega(testo) {
+  return `<section class="sf-sofia"><span class="sf-sofia-film" aria-hidden="true">${FILM_CONS("sfs-fig")}</span><div class="sf-sofia-b"><div class="sf-sofia-t">${esc(nomeGov())} ti dice</div><p class="sf-sofia-x">${esc(testo)}</p></div><button type="button" class="sf-sofia-voce" data-sg-dici aria-label="Ascolta ${esc(nomeGov())}">${ICONA("altoparlante")}</button></section>`;
+}
+const ICO_BLOCCO = { letto: "🛏️", bagno: "🚿", camera: "🧽", cucina: "🍳", sopra: "🪜", partenza: "🚪", pavimenti: "🧹" };
+function sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) {
+  const blocchi = (lista.blocchi || []).filter(b => b.righe && b.righe.length);
+  const righeZ = lista.zona && lista.zona.length ? righeZona(lista) : [];
+  if (!blocchi.length && !righeZ.length) return "";
+  const passo = (k, i, ico, nome, quante, dentro) => `<details class="sf-passo" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">${i}</span><span class="sf-passo-i" aria-hidden="true">${ico}</span><span class="sf-passo-t">${esc(nome)}<small>${quante}</small></span></summary><div class="sf-passo-x"><div class="sig-lista">${dentro}</div></div></details>`;
+  const html = blocchi.map((b, i) => passo(`${p.id}|b${b.id || i}`, i + 1, ICO_BLOCCO[b.id] || "•", b.nome, `${b.righe.length} ${b.righe.length === 1 ? "cosa" : "cose"}`, b.righe.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")));
+  if (righeZ.length) html.push(passo(`${p.id}|zona`, blocchi.length + 1, "🪜", "Poi scale, corridoio e lavanderia", `${righeZ.length} ${righeZ.length === 1 ? "cosa" : "cose"}`, righeZ.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")));
+  return `<section class="sf-seq"><div class="sf-seq-t">Cosa fare, in ordine</div>${html.join("")}<p class="sf-seq-aiuto">Tocca un passo per vedere tutte le cose.</p></section>`;
+}
+// «Ascolta» dentro la camera: la dice Sofia (si muove lei, a fianco, con la nuvoletta)
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-sg-dici]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  if (voceInCorso || guida.parla) { guidaZitta(); return; }
+  const t = (document.querySelector(".sheet [data-sf-testo]") || document.querySelector("[data-sf-testo]") || {}).textContent || "";
+  if (t) guidaParla(t);
+}, true);
 // i controlli in tre bollini (Michele: «ben visibili», ma «poche scritte»)
 function bloccoControlli(z, iso) {
   const vedono = nomiChiVede(chiVedeIl(z, iso)), daDare = vistiDaDare(z);
@@ -2688,7 +2801,7 @@ function vistaArgon(z) {
   // 1.29.0: «ADESSO» = la camera che Sofia sta dicendo (all'inizio la prima da fare; dopo HO FINITO l'eventuale lavoro nuovo)
   const iCorso = ord.findIndex(p => p.stato === "in_corso"), pa = guidaOra(z, giorno).passo || {};
   const adesso = anteprima ? -1 : iCorso >= 0 ? iCorso : finito ? ord.findIndex(p => !p.stato || p.stato === "da_fare") : pa.k === "cam" ? ord.findIndex(p => p.id === pa.id) : pa.k === "fine" ? -1 : ord.findIndex(p => p.stato !== "fatta");
-  const schede = ord.length ? `<section class="gs-camere${pl ? " col-piano" : ""}" aria-label="Le camere">${testaGiro(z, giorno, ord, rif, anteprima)}${ord.map((p, i) => schedaGiornata(p, rif, anteprima, { n: i + 1, fai: (pianoPasso(pl, p.id) || {}).fai || "", ora: i === adesso })).join("")}</section>` : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
+  const schede = ord.length ? piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
   let tasto = "";
   if (!anteprima && aperteDopo.length) tasto = `<section class="gs-avviso">${ICONA("avviso")}<span><b>Lavoro nuovo:</b> ${esc(aperteDopo.map(p => p.tipo === "stelle" ? "stelle in altre camere" : nomeBreveCamera(camera(p.camera))).join(", "))}.</span></section><button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO ANCHE QUESTO</span></button>`;
   else if (!anteprima && lavori.length && !finito) tasto = `<button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO</span></button>`;
@@ -2730,14 +2843,14 @@ function guidaTestaInVista() { const h = document.querySelector(".gs-sofia"); if
 function guidaTondo() {
   let b = document.getElementById("sgTondo");
   let vuoi = false;
-  try { vuoi = !!(S.pronto && argonLei() && (S.vista === "oggi" || S.vista === "settimana") && !document.querySelector(".sheet") && !document.querySelector(".conferma") && !voceInCorso && document.querySelector(".gs-sofia") && !guidaTestaInVista()); } catch (e) {}
+  try { vuoi = !!(S.pronto && argonLei() && (S.vista === "oggi" || S.vista === "settimana") && !document.querySelector(".sheet") && !document.querySelector(".conferma") && !voceInCorso && document.querySelector(".gs-sofia") && !guidaTestaInVista() && !compagnaVuole()); } catch (e) {}
   if (!vuoi) { if (b) b.hidden = true; return; }
   if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgTondo"; b.className = "sg-tondo"; b.setAttribute("aria-label", `${nomeGov()}: tocca e ti dico cosa fare`); b.innerHTML = `<span class="sg-viso" aria-hidden="true"></span><span class="sg-bollo" aria-hidden="true">🔊</span>`; document.body.appendChild(b); }
   b.hidden = false;
 }
 function guidaNuvola() {
   let n = document.getElementById("sgNuvola");
-  const f = document.getElementById("sofiaFuori");
+  const sc = document.getElementById("sgCompagna"), f = sc && !sc.hidden && sc.classList.contains("su") ? sc : document.getElementById("sofiaFuori");   // 1.30.0
   let vuoi = false;
   try { vuoi = !!(addetta() && guida.voce && (guida.parla || Date.now() < guida.nuvolaFino) && f && !f.hidden && f.classList.contains("su")); } catch (e) {}
   if (!vuoi) { if (n) n.hidden = true; return; }
@@ -5652,7 +5765,7 @@ function sofiaInVista() {
 function sofiaFuori() {
   let f = document.getElementById("sofiaFuori");
   let vuoi = false;
-  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista()); } catch (e) {}
+  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista() && !(addetta() && compagnaVuole())); } catch (e) {}
   if (!vuoi) {
     document.body.classList.remove("con-sofia-fuori");
     if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) f.hidden = true; try { guidaNuvola(); } catch (e) {} }, 420); }

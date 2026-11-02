@@ -6707,3 +6707,103 @@ body.con-finito .sg-tondo{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   .gs-g b{font-size:18px}
   .gs-detto .gs-bolla{font-size:16.5px}
 }
+
+/* ===================================================================================================================
+   1.30.0 · LA PIANTINA DEL GIRO E SOFIA SEMPRE A FIANCO (Michele: «la piantina vera, ma Sofia sempre nella prima
+   schermata»; «ci deve stare sempre Sofia a fianco, col fantasmino, che possa spiegare»). Le camere al loro posto nel
+   corridoio del piano, col numero del giro; le altre del piano tratteggiate in grigio. Quando si scorre, Sofia resta in
+   basso a destra; il tasto verde HO FINITO le sta accanto.
+   =================================================================================================================== */
+.gp-mappa{display:flex;flex-direction:column;align-items:stretch;gap:14px}
+.gp-mappa .gs-giro-t{flex-wrap:wrap;row-gap:4px}
+.gp-aiuto{flex:1 1 100%;font:500 14.5px/1.3 var(--f-body);color:#40605A}
+.gp-piano{display:flex;flex-direction:column;gap:8px}
+.gp-eti{padding:0 4px;font:700 12px/1.2 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:#5B7671}
+.gp-corr{column-gap:30px;row-gap:10px}
+body.semplice .gp-corr::after{width:20px;border-radius:10px;background:#DCE7E4;box-shadow:none}
+body.semplice .gp-corr::before{font:700 8.5px var(--f-display);letter-spacing:2px;color:#5B7671;text-shadow:none}
+.gp-corr .lato{gap:10px}
+.gp-griglia{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+/* la camera sulla piantina: il numero del giro in alto a sinistra, il disegnino a destra, il nome sotto */
+.gs-cam.gp,.gs-cam.gp.gs-stelle{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:2px;width:100%;min-width:0;min-height:112px;margin:0;padding:50px 12px 11px;border:1px solid #E1EAE8;border-radius:20px;background:#FFFFFF;box-shadow:0 1px 2px rgba(13,38,34,.05),0 8px 18px -16px rgba(13,38,34,.4);text-align:left;color:#0D2622;box-sizing:border-box;grid-template-columns:none}
+.gs-cam.gp .gs-np{position:absolute;top:10px;left:10px;display:grid;place-items:center;width:36px;height:36px;margin:0;padding:0;border:0;border-radius:50%;background:#00665E;color:#FFFFFF;font:700 18px/1 var(--f-display);box-shadow:0 2px 6px -2px rgba(0,102,94,.6)}
+.gs-cam.gp .gp-ico{position:absolute;top:9px;right:10px;font-size:30px;line-height:1}
+.gs-cam.gp .gs-nome{max-width:100%;font:700 18px/1.15 var(--f-display);letter-spacing:-.01em;color:#0D2622;overflow-wrap:anywhere}
+.gs-cam.gp .gp-sotto{max-width:100%;font:500 13.5px/1.25 var(--f-body);color:#40605A;overflow-wrap:anywhere}
+.gs-cam.gp .gp-segni{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.gs-cam.gp .gp-s{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:24px;padding:0 5px;border-radius:12px;background:#F0F5F4;font:700 12.5px/1 var(--f-body);font-style:normal;color:#093832}
+.gs-cam.gp .gp-s.parte{background:#FCE8E6}
+.gs-cam.gp .gp-s.arriva{background:#E8F0FE}
+.gs-cam.gp .gp-s.nota{background:#FFF4D6}
+.gs-cam.gp .gs-ora{position:absolute;top:-10px;left:50%;transform:translateX(-50%);margin:0;padding:4px 10px;border-radius:10px;background:#00665E;color:#FFFFFF;font:700 10.5px/1 var(--f-body);letter-spacing:.09em;white-space:nowrap}
+.gs-cam.gp.ora{border:2.5px solid #00665E;padding:48.5px 10.5px 9.5px;background:#F3FAF8;box-shadow:0 10px 24px -16px rgba(0,102,94,.7)}
+.gs-cam.gp.k-fondo .gs-np{background:#B7791F}
+.gs-cam.gp.gs-stelle .gs-np{background:#093832}
+.gs-cam.gp.fatta{background:#F3FAF6;border-color:#CFE8DA;box-shadow:none}
+.gs-cam.gp.fatta .gs-np{background:#146C43;font-size:20px}
+.gs-cam.gp.fatta .gp-ico{opacity:.4}
+.gs-cam.gp.fatta .gs-nome{color:#3B5954}
+.gs-cam.gp.prob{background:#FFFBEF;border-color:#E8C77A}
+.gs-cam.gp.prob .gs-np{background:#B36B00}
+.gs-cam.gp:active{transform:scale(.98)}
+/* le camere del piano che oggi non sono sue: solo il nome, tratteggiate */
+.gp-vuota{display:flex;align-items:flex-end;min-height:112px;padding:11px 12px;border:1.5px dashed #D3E0DD;border-radius:20px;background:rgba(255,255,255,.35);color:#94ABA6;font:600 15px/1.2 var(--f-display);box-sizing:border-box}
+/* ---- Sofia a fianco (il fantasmino fermo): in basso a destra, sopra la barra; parla e si muove quando dice qualcosa ---- */
+.sg-compagna{position:fixed;right:8px;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:9996;width:126px;height:168px;margin:0;padding:0;border:0;background:none;cursor:pointer;opacity:0;transform:translate(14px,24px) scale(.94);transform-origin:80% 100%;transition:opacity .22s ease-in,transform .22s ease-in;-webkit-tap-highlight-color:transparent}
+.sg-compagna.su{opacity:1;transform:none;transition:opacity .3s cubic-bezier(.22,1,.36,1),transform .3s cubic-bezier(.22,1,.36,1)}
+.sg-compagna[hidden]{display:none}
+.sg-compagna .sgc-cornice{position:absolute;inset:0;display:block;border-radius:22px;overflow:hidden;background:#E8F0EE;box-shadow:0 0 0 2.5px #00665E,0 18px 36px -14px rgba(13,38,34,.55)}
+.sg-compagna .donnina.gov-fig.gov-film.sgc-fig{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;margin:0;border-radius:0;background:none;box-shadow:none;filter:none;overflow:hidden}
+.sg-compagna .sgc-fig video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 8%}
+.sg-compagna .sgc-nome{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;background:rgba(0,77,71,.92);color:#FFFFFF;font:700 13px/1 var(--f-body);white-space:nowrap;box-shadow:0 6px 14px -6px rgba(0,0,0,.5)}
+.sg-compagna .sgc-nome i{font-style:normal;font-size:12px}
+.sg-compagna.parla .sgc-cornice{box-shadow:0 0 0 3px #00665E,0 0 0 8px rgba(0,102,94,.18),0 18px 36px -14px rgba(13,38,34,.55)}
+.sg-compagna.parla .sgc-nome{background:#A51D24}
+.sg-compagna.parla .sgc-nome i::before{content:"⏹ "}
+.sg-compagna.piccola{width:100px;height:134px}
+.sg-compagna:active{transform:scale(.97)}
+body.con-compagna .sg-tondo{display:none}
+body.con-compagna .sofia-fuori.piatta{display:none}
+/* la nuvoletta di Sofia accanto a lei; il tasto verde fisso le sta a sinistra */
+body.con-compagna .sg-nuvola{right:144px;bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+body.con-compagna.con-finito .sg-nuvola{bottom:calc(164px + env(safe-area-inset-bottom,0px))}
+body.con-compagna .sg-nuvola.piccola{right:118px}
+body.con-compagna .sg-finito{right:144px}
+body.con-compagna #app [data-ho-finito]{width:calc(100% - 136px);margin-right:auto}
+body.con-compagna.con-finito .sg-tondo{display:none}
+/* nella camera aperta si legge tutto anche con Sofia a fianco */
+body.con-compagna .inizio.sig.sf{padding-bottom:150px}
+/* ---- la camera aperta: «Sofia ti dice» in alto, poi i passi in ordine ---- */
+.sf-sofia{display:grid;grid-template-columns:58px minmax(0,1fr) 46px;align-items:start;column-gap:12px;margin:12px 0 0;padding:14px 12px 14px 14px;border-radius:22px;background:#FFFFFF;box-shadow:0 0 0 2px #00665E,0 10px 24px -18px rgba(0,102,94,.6)}
+.sf-sofia-film{position:relative;display:block;width:58px;height:76px;border-radius:16px;overflow:hidden;background:#E8F0EE;box-shadow:0 0 0 2px #00665E}
+.sf-sofia-film .donnina.gov-fig.gov-film.sfs-fig{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;margin:0;border-radius:0;background:none;box-shadow:none;filter:none;overflow:hidden}
+.sf-sofia-film .sfs-fig video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 6%}
+.sf-sofia-t{margin:1px 0 4px;font:700 11.5px/1.2 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:#00665E}
+.sf-sofia-x{margin:0;font:500 17px/1.45 var(--f-body);color:#0D2622;overflow-wrap:anywhere}
+.sf-sofia-voce{display:grid;place-items:center;width:46px;height:46px;margin:0;padding:0;border:0;border-radius:50%;background:#00665E;color:#FFFFFF;cursor:pointer}
+.sf-sofia-voce svg{width:22px;height:22px}
+.sf-seq{margin:14px 0 0}
+.sf-seq-t{margin:0 4px 8px;font:700 12px/1.2 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:#5B7671}
+.sf-passo{margin:0 0 8px;border-radius:18px;background:#FFFFFF;border:1px solid #E1EAE8;box-shadow:0 1px 2px rgba(13,38,34,.05)}
+.sf-passo>summary{display:grid;grid-template-columns:34px 30px minmax(0,1fr) 20px;align-items:center;column-gap:10px;min-height:60px;padding:8px 12px;list-style:none;cursor:pointer}
+.sf-passo>summary::-webkit-details-marker{display:none}
+.sf-passo>summary::before,details.sf-passo>summary::before,details.sf-passo[open]>summary::before{content:none;display:none}
+.sf-passo>summary::after{content:"▾";justify-self:end;color:#5B7671;font-size:15px;transition:transform .2s}
+.sf-passo[open]>summary::after{transform:rotate(180deg)}
+.sf-passo-n{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#00665E;color:#FFFFFF;font:700 17px/1 var(--f-display)}
+.sf-passo-i{font-size:24px;line-height:1;text-align:center}
+.sf-passo-t{display:flex;flex-direction:column;gap:1px;font:700 17px/1.2 var(--f-display);color:#0D2622}
+.sf-passo-t small{font:500 13.5px/1.2 var(--f-body);color:#5B7671}
+.sf-passo-x{padding:0 10px 10px}
+.sf-passo-x .sig-lista{margin:0}
+.sf-seq-aiuto{margin:2px 4px 0;font:500 13.5px/1.3 var(--f-body);color:#5B7671}
+@media (max-width:374px){
+  .gp-corr{column-gap:24px}
+  .gs-cam.gp,.gs-cam.gp.gs-stelle{min-height:104px;padding:46px 10px 10px}
+  .gs-cam.gp.ora{padding:44.5px 8.5px 8.5px}
+  .gs-cam.gp .gs-nome{font-size:16.5px}
+  .gs-cam.gp .gp-ico{font-size:26px}
+  .gp-vuota{min-height:104px;font-size:14px}
+  .sg-compagna{width:108px;height:144px}
+  body.con-compagna .sg-nuvola,body.con-compagna .sg-finito{right:126px}
+}
