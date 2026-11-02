@@ -7123,3 +7123,49 @@ body.con-compagna .sg-nuvola.piccola{right:160px;bottom:calc(var(--alto-sotto,71
 .mt-segno .mt-num{font-size:15px}
 @media (prefers-reduced-motion:reduce){.mt-segno .mt-alone{animation:none}}
 .mt-segno .mt-filo-n{fill:none;stroke:#8A5A00;stroke-width:1.6}
+
+/* ===================================================================================================================
+   1.35.0 · LA PAGA A ORE COL CRONOMETRO (Michele: «appena entrano premono il cronometro; 10 euro l'ora; le stelle sono
+   gratuite, dentro le ore»): il tasto «Sono arrivata» sotto Sofia, a matita come il resto; l'orario che corre; il giorno
+   fatto; in Paghe «Come pago le signore» e le righe giorno per giorno.
+   =================================================================================================================== */
+.gs-turno{display:flex;align-items:center;gap:12px;padding:12px 14px;border:2.5px solid rgba(43,58,74,.82);border-radius:18px 22px 16px 20px/22px 16px 20px 18px;background:repeating-linear-gradient(-48deg,rgba(174,187,203,.22) 0 1.5px,transparent 1.5px 6px),#FFFFFF;box-shadow:0 5px 0 #C9D2DE;font:600 16px/1.3 var(--f-gioco,var(--f-body));color:#2B3A4A}
+.gs-turno.da-fare{padding:0;border:0;background:transparent;box-shadow:none}
+.gs-turno-via{display:flex;align-items:center;gap:14px;width:100%;min-height:86px;margin:0;padding:12px 18px;border:2.5px solid rgba(43,58,74,.82);border-radius:20px 24px 18px 22px/24px 18px 22px 20px;background:repeating-linear-gradient(-48deg,rgba(255,255,255,.16) 0 1.5px,transparent 1.5px 6px),#22A45D;color:#FFFFFF;box-shadow:0 7px 0 #0F6B3A,0 16px 20px -10px rgba(15,107,58,.45);font:700 26px/1.1 var(--f-gioco,var(--f-display));text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gs-turno-via:active{transform:translateY(4px);box-shadow:0 3px 0 #0F6B3A}
+.gs-turno-via .ic{width:46px;height:46px;flex:0 0 46px;stroke-width:2.2}
+.gs-turno-x{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gs-turno-via .gs-turno-x b{font-size:27px;letter-spacing:.01em}
+.gs-turno-via .gs-turno-x small{font:600 14.5px/1.25 var(--f-body);opacity:.94}
+.gs-turno-ico{font-size:30px;line-height:1;flex:0 0 auto}
+.gs-turno small{font:600 14px/1.3 var(--f-body);color:#4A5A6A}
+.gs-turno.in-corso{background:repeating-linear-gradient(-48deg,rgba(0,137,123,.12) 0 1.5px,transparent 1.5px 6px),#E0F2F1;border-color:#00695C;box-shadow:0 5px 0 #80B3AD}
+.gs-turno.in-corso b{font-size:20px;color:#004D47}
+.gs-turno [data-turno-ore]{font-variant-numeric:tabular-nums}
+@keyframes turnoBatte{0%,100%{opacity:1}50%{opacity:.35}}
+.gs-turno.in-corso .gs-turno-ico{animation:turnoBatte 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.gs-turno.in-corso .gs-turno-ico{animation:none}}
+.gs-turno.fatto{background:repeating-linear-gradient(-48deg,rgba(217,142,11,.14) 0 1.5px,transparent 1.5px 6px),#FFF4CF;border-color:#B8860B;box-shadow:0 5px 0 #D9A43F}
+.gs-turno.fatto b{font-size:18px;color:#5B4300}
+.gs-turno.manca{background:#FFF7ED;border-color:#F59E0B;box-shadow:0 5px 0 #FCD34D}
+.gs-turno.manca b{color:#7C2D12}
+/* Paghe (Michele) */
+.paga-modo-card .seg button{white-space:normal;line-height:1.2}
+.paga-ore .turno-riga.stima{background:#FFFBEB}
+.paga-ore .turno-riga .btnsm{min-height:34px}
+.ag-arrivo .campo{margin:6px 0 10px;padding:10px 12px;border:2px dashed #F59E0B;border-radius:14px;background:#FFFBEB}
+.ag-arrivo .campo span{font:700 16px/1.3 var(--f-body);color:#1C1917}
+.ag-arrivo input[type=time],.turno-dialogo input[type=time],.turno-dialogo input[type=date]{width:100%;box-sizing:border-box;font:700 22px var(--f-display);padding:8px 10px;border:2px solid #CBD5E1;border-radius:12px;background:#fff;color:#1C1917}
+.turno-dialogo .campo span{font:600 14px var(--f-body);color:var(--muted)}
+/* la spilla con l'orario sulla scena di Sofia (sotto la data e il tasto del suono) */
+.gs-hero-alto{flex-wrap:wrap}
+.gs-turno-pill-r{flex:1 0 100%;display:flex;justify-content:flex-start;margin-top:6px}
+.gs-turno-pill{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);border:1.5px solid rgba(0,102,94,.35);font:800 13px/1 var(--f-gioco,var(--f-body));letter-spacing:.03em;color:#004D47;box-shadow:0 2px 8px -4px rgba(13,38,34,.35);font-variant-numeric:tabular-nums}
+.gs-turno-pill i{font-style:normal;font-size:15px}
+.gs-turno-pill.corre i{animation:turnoBatte 2s ease-in-out infinite}
+.gs-turno-pill.fatto{background:rgba(255,244,207,.9);border-color:rgba(184,134,11,.5);color:#5B4300}
+body.semplice.argon .gs-hero .gs-turno-pill{color:#004D47}
+/* il tasto sopra Sofia: niente spazio di troppo tra il tasto e la scena */
+#app>.gs-turno.da-fare:first-child{margin-top:-4px}
+/* col tasto «Sono arrivata» sopra, sui telefoni bassi la scena di Sofia può farsi un po' più bassa (poi torna com'era) */
+#app>.gs-turno.da-fare+.gs-testa.gs-hero{min-height:380px}

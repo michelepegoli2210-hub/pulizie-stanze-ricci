@@ -122,7 +122,8 @@ function dbProva() {
   if (!dati || !dati.soggiorni) dati = datiIniziali();
   const salvaTutto = () => { try { localStorage.setItem(CHIAVE, JSON.stringify(dati)); } catch (e) {} };
   const ascoltatori = new Set();
-  const avvisa = () => { for (const a of [...ascoltatori]) { try { a(); } catch (e) { console.error(e); } } };
+  // come Firestore: si avvisano solo gli ascoltatori della raccolta scritta (prima tutti: venti ridisegni per ogni scrittura)
+  const avvisa = (colls) => { for (const a of [...ascoltatori]) { if (colls && a.coll && !colls.has(a.coll)) continue; try { a(); } catch (e) { console.error(e); } } };
   let utente = null;
   try { utente = JSON.parse(localStorage.getItem("ricci_prova_utente") || "null"); } catch (e) {}
   // Link diretto: ?prova=1&signora=1 (1° piano), 2 (2° piano), 3 (appartamenti) oppure &gestione=1 → si entra subito, senza scegliere
@@ -169,12 +170,12 @@ function dbProva() {
     async esci() { utente = null; db.utenteCorrente = null; try { localStorage.removeItem("ricci_prova_utente"); } catch (e) {} for (const cb of cbUtente) cb(null); },
     async cambiaPassword() {},
     ascolta(coll, opz, cb) {
-      const f = () => cb(filtra(coll, opz), { daCache: false });
+      const f = () => cb(filtra(coll, opz), { daCache: false }); f.coll = coll;
       ascoltatori.add(f); setTimeout(f, 0);
       return () => ascoltatori.delete(f);
     },
     ascoltaDoc(coll, id, cb) {
-      const f = () => cb(dati[coll]?.[id] ? { id, ...dati[coll][id] } : null);
+      const f = () => cb(dati[coll]?.[id] ? { id, ...dati[coll][id] } : null); f.coll = coll;
       ascoltatori.add(f); setTimeout(f, 0);
       return () => ascoltatori.delete(f);
     },
@@ -184,10 +185,10 @@ function dbProva() {
       dati[coll] = dati[coll] || {};
       const { id: _i, ...pulito } = d;
       dati[coll][id] = merge ? { ...(dati[coll][id] || {}), ...pulito } : pulito;
-      salvaTutto(); avvisa();
+      salvaTutto(); avvisa(new Set([coll]));
     },
-    async aggiorna(coll, id, patch) { if (!dati[coll]?.[id]) throw new Error("non esiste"); Object.assign(dati[coll][id], patch); salvaTutto(); avvisa(); },
-    async cancella(coll, id) { if (dati[coll]) delete dati[coll][id]; salvaTutto(); avvisa(); },
+    async aggiorna(coll, id, patch) { if (!dati[coll]?.[id]) throw new Error("non esiste"); Object.assign(dati[coll][id], patch); salvaTutto(); avvisa(new Set([coll])); },
+    async cancella(coll, id) { if (dati[coll]) delete dati[coll][id]; salvaTutto(); avvisa(new Set([coll])); },
     async scrivi(ops) {
       for (const op of ops) {
         dati[op.coll] = dati[op.coll] || {};
@@ -195,7 +196,7 @@ function dbProva() {
         else if (op.tipo === "aggiorna") Object.assign(dati[op.coll][op.id] = dati[op.coll][op.id] || {}, op.dati);
         else { const { id: _i, ...d } = op.dati; dati[op.coll][op.id] = op.merge === false ? d : { ...(dati[op.coll][op.id] || {}), ...d }; }
       }
-      salvaTutto(); avvisa();
+      salvaTutto(); avvisa(new Set(ops.map(o => o.coll)));
     },
     adesso() { return new Date().toISOString(); },
     azzeraProva() { dati = datiIniziali(); salvaTutto(); avvisa(); },
