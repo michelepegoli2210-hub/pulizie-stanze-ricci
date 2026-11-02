@@ -195,6 +195,7 @@ COME SI LEGGE IL PROSPETTO:
 - Se i messaggi vengono da più chat, davanti c'è la chat tra parentesi tonde: "(chat con Papà)" è la chat privata tra Michele e il papà; un nome da solo, per esempio "(Albergo)", è un gruppo (Albergo = il gruppo dell'albergo con la famiglia e le signore). I messaggi che cominciano con 🎤 sono vocali trascritti (possono avere qualche parola sbagliata: [?] = non si capiva).
 - Non inventare niente: se una cosa non è chiara mettila in "dubbi" (con le risposte possibili, così Michele risponde con un tocco) o metti "sicurezza":"bassa".
 - Se tra i messaggi c'è "Risposte di Michele ai dubbi", vale quello che dice lui: usalo e non rifare la stessa domanda.
+- Se in fondo ci sono le "CORREZIONI DI MICHELE", valgono più di tutto quello che avevi capito prima: applicale (il nome di un ospite, la camera, i giorni, oppure DOVE va una cosa: prospetto, indicazioni per le signore, guasti, spesa, note, ore delle signore, telefoni), rifai la lettura intera di conseguenza, non rifare le domande a cui ha già risposto e nella "risposta" digli in una frase cosa hai cambiato.
 
 IL PROSPETTO CHE C'È ADESSO NELL'APP (soggiorni dal ${L.dataMedia(da)} al ${L.dataMedia(a)}):
 ${prospettoInCodici(ctx, codici, da, a)}

@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.40.0";
+export const VERSIONE = "1.41.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1491,6 +1491,7 @@ function disegna() {
   if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
   disegnaCasa();
+  disegnaStanze();   // 1.41.0: le stanze sotto Sofia, sopra la striscia dei giorni
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
   sofiaFuori();
   guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito(); fantasmaSegreteria();   // 1.40.0
@@ -4307,10 +4308,12 @@ async function salvaSegreteria(d, j, extra = {}) {
     const u = (d && d.ultimaLettura) || {}, tutti = Array.isArray(u.messaggi) ? u.messaggi : [];
     const messaggi = tutti.slice(-60).map(m => ({ id: String(m.id || ""), chat: String(m.chatNome || m.chat || ""), chi: String(m.chi || ""), mio: !!m.mio, data: String(m.data || ""), ora: String(m.ora || ""), tipo: m.media && m.media.tipo ? m.media.tipo : String(m.tipo || "testo"), testo: String(m.testo || "").slice(0, 900) })).filter(m => m.testo);
     if (!messaggi.length || !j) return null;
-    const lid = (d && d.condivisa) || ("app_" + Date.now().toString(36));
+    const rifatta = !!(d && d.segreteria);   // 1.41.0: una rilettura con le correzioni di Michele aggiorna la stessa scheda
+    const lid = (d && (d.segreteria || d.condivisa)) || ("app_" + Date.now().toString(36));
     d.segreteria = lid;
     const doc = { lid, quando: new Date().toISOString(), da: "telefono", nome: nomeTelefono(), modello: extra.modello || "", ripiego: !!extra.ripiego, n: messaggi.length, messaggi, capito: LET.perSegreteria(j), esito: extra.esito || "da_controllare", giudizi: {} };
-    await S.db.salva("importazioni", "segreteria_" + lid, doc, false);
+    if (rifatta) await S.db.salva("importazioni", "segreteria_" + lid, { capito: doc.capito, modello: doc.modello, ripiego: doc.ripiego, esito: doc.esito, rifatta: doc.quando, correzioni: Array.isArray(d.correzioni) ? d.correzioni : [] }, true);
+    else await S.db.salva("importazioni", "segreteria_" + lid, doc, false);
     return lid;
   } catch (e) { console.warn("segreteria", e); return null; }
 }
@@ -4353,14 +4356,15 @@ function vistaSegreteria() {
   const letture = segreteriaLetture();
   const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="sofia">${ICONA("indietro")}${esc(nomeGov())}</button></section>
     <section class="sgr-testa"><h2>📨 Segreteria</h2><p>Quello che ${esc(nomeGov())} ha letto nelle chat e come l'ha capito: a sinistra i messaggi, a destra cosa ha capito. Dille se è giusto: con «Correggi» impara per la prossima volta.</p></section>`;
-  if (!letture.length) return testa + `<section class="card"><p class="muted" style="margin:0">Ancora niente: alla prossima lettura di WhatsApp la trovi qui.</p></section>`;
+  const banner = puoModificare() ? bannerLettura() : "";   // 1.41.0: le letture di WhatsApp vivono qui (non più nel prospetto)
+  if (!letture.length) return testa + banner + `<section class="card"><p class="muted" style="margin:0">Ancora niente: alla prossima lettura di WhatsApp la trovi qui.</p></section>` + tendinaSegreteria() + `<div class="sgr-spazio" aria-hidden="true"></div>`;
   pulisciSegreteria(letture);
-  return testa + letture.map((x, i) => cardSegreteria(x, i < 3)).join("");
+  return testa + banner + letture.map((x, i) => cardSegreteria(x, i < 3)).join("") + tendinaSegreteria() + `<div class="sgr-spazio" aria-hidden="true"></div>`;
 }
 function cardSegreteria(x, aperta) {
   const voci = vociSegreteria(x.capito || {}), messaggi = Array.isArray(x.messaggi) ? x.messaggi : [], { per, altro } = abbinaSegreteria(messaggi, voci), g = x.giudizi || {};
   const giorno = String(x.quando || "").slice(0, 10);
-  const quando = giorno ? `${L.GIORNI[L.giornoSettimana(giorno)]} ${L.dataMedia(giorno)}, ${L.oraBreve(x.quando)}` : "";
+  const quando = giorno ? `${L.dataMedia(giorno).replace(/^\S+\s/, L.GIORNI[L.giornoSettimana(giorno)] + " ")}, ${L.oraBreve(x.quando)}` : "";   // 1.41.0: «martedì 3 nov, 12:20»
   const esito = x.esito === "salvata" ? ["salvata", "ok"] : x.esito === "scartata" ? ["scartata", "no"] : x.esito === "vuota" ? ["niente da cambiare", ""] : ["da controllare", "attesa"];
   const chi = x.da === "giro" ? "letta da sola" : `letta dal ${esc(x.nome || "telefono")}`;
   const item = (v) => { const gg = g[v.k]; return `<div class="sgr-item ${gg ? esc(gg.esito) : ""}"><span class="sgr-ico" aria-hidden="true">${v.ico}</span><span class="sgr-txt">${esc(v.testo)}${gg && gg.esito === "sbagliato" && gg.correzione ? `<br><span class="sgr-corr">✎ giusto: ${esc(gg.correzione)}</span>` : ""}</span><span class="sgr-azioni">${gg ? `<span class="sgr-giud ${esc(gg.esito)}">${gg.esito === "giusto" ? "✓ giusto" : "✎ corretta"}</span>` : `<button type="button" class="sgr-b si" data-sgr-giusto="${esc(x.lid)}|${esc(v.k)}">✓ Giusto</button><button type="button" class="sgr-b no" data-sgr-correggi="${esc(x.lid)}|${esc(v.k)}">✎ Correggi</button>`}</span></div>`; };
@@ -4411,12 +4415,12 @@ function correggiSegreteria(lid, k) {
 function fantasmaSegreteria() {
   let f = document.getElementById("sgFantasma");
   let vuoi = false;
-  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && !document.querySelector(".sheet")); } catch (e) {}
+  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && S.sgrAperta && !document.querySelector(".sheet")); } catch (e) {}   // 1.41.0: solo a tendina aperta (Michele: «troppo trasparente non va bene; quando la premo la vedo»)
   if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) { f.hidden = true; const v = f.querySelector("video"); if (v) { try { v.pause(); } catch (e) {} } } }, 650); } return; }
   const rit = ritaglioOK();
   if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
   if (!f) {
-    f = document.createElement("div"); f.id = "sgFantasma"; f.className = "sgr-fantasma"; f.setAttribute("aria-hidden", "true"); f.hidden = true; f.dataset.rit = rit ? "1" : "";
+    f = document.createElement("div"); f.id = "sgFantasma"; f.className = "sgr-fantasma in-tendina"; f.setAttribute("aria-hidden", "true"); f.hidden = true; f.dataset.rit = rit ? "1" : "";
     f.innerHTML = rit ? `<video src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`;
     const v = f.querySelector("video"), img = f.querySelector("img");
     // finché i filmati da segretaria non ci sono (o non si caricano), la capo-governante di sempre
@@ -4440,6 +4444,158 @@ document.addEventListener("click", (e) => {
   const c = t.closest("[data-sgr-correggi]"); if (c) { const [lid, k] = c.dataset.sgrCorreggi.split("|"); correggiSegreteria(lid, k); return; }
   const a = t.closest("[data-sgr-apri]"); if (a) { try { guardaCondivisa(); } catch (e2) {} if (S.dett && S.dett.condivisa) apriFoglio({ tipo: "dettatura" }); else toast("Questa lettura non è più da controllare."); }
 });
+// ============================================================================
+//  1.41.0 LE STANZE DEL TITOLARE (Michele, 2/11: «nel menu ci dovrebbero stare come delle camere: vado in segreteria, vado in
+//  manutenzione, vado nel prospetto… camere disegnate proprio fisicamente sotto Sofia, fatte disegnare da Gemini») e la
+//  TENDINA DELLA SEGRETARIA (Michele: «ci deve stare una parte dove io possa chattare con la segretaria, correggere i
+//  messaggi e dire dove vanno a finire; quando c'è una tendina ci deve essere una tendina: quando la premo la vedo e ci
+//  parlo, quando non la premo rimane lì dentro; troppo trasparente non va bene»).
+//  - Sotto Sofia, nella prima pagina, le STANZE: una griglia di camere disegnate (i disegni veri li fa Gemini: stanza-<id>.webp;
+//    finché non ci sono, un disegnino a matita fatto dall'app), ognuna con una riga che dice cosa c'è dentro oggi.
+//  - Nella Segreteria, in basso, la TENDINA: chiusa è una maniglia col viso di Sofia; aperta mostra Sofia intera (il filmato
+//    ritagliato, pieno, non sbiadito) e la chat con lei. Quello che le scrivi («il nome in Aurora è Bianchi», «le ore di Lucia
+//    vanno nelle paghe», «quello sulla doccia è un guasto in Alba») diventa una CORREZIONE: Sofia rilegge gli stessi messaggi
+//    con la tua correzione davanti a tutto, rifà la lettura e te la apre da controllare e salvare. La chat resta nella scheda
+//    della lettura (importazioni/segreteria_<lettura>.chat).
+// ============================================================================
+const STANZE = [
+  { id: "segreteria", nome: "Segreteria", vista: "segreteria" },
+  { id: "prospetto", nome: "Prospetto", vista: "prospetto" },
+  { id: "signore", nome: "Le signore", vista: "piantine" },
+  { id: "manutenzione", nome: "Manutenzione", vista: "manutenzione" },
+  { id: "paghe", nome: "Paghe", vista: "paghe" },
+  { id: "governante", nome: "La governante", vista: "governante" },
+  { id: "sofia", nome: "Parla con Sofia", vista: "sofia" },
+  { id: "altro", nome: "Impostazioni", vista: "altro" },
+];
+// la riga sotto il nome: cosa c'è dentro oggi (numeri presi dall'app, sempre giusti)
+function sottoStanza(id) {
+  try {
+    const oggi = L.oggiISO();
+    if (id === "segreteria") { const l = segreteriaLetture(), n = l.filter(x => x.esito === "da_controllare").length, nuove = postaNuova().length; return nuove ? `${nuove} ${nuove === 1 ? "messaggio nuovo" : "messaggi nuovi"}` : n ? `${n} ${n === 1 ? "lettura" : "letture"} da controllare` : l.length ? "tutto controllato" : "le chat lette da Sofia"; }
+    if (id === "prospetto") { const piene = S.camere.filter(c => c.id && L.ospiteIl(soggiorniLista(), c.id, oggi)).length; return `${piene} ${piene === 1 ? "camera piena" : "camere piene"} su ${S.camere.length}`; }
+    if (id === "signore") { const tutte = signore().flatMap(z => pulizieDelGiorno(oggi, z.id)), f = tutte.filter(p => p.stato === "fatta").length; return tutte.length ? `oggi ${f} su ${tutte.length} pulizie` : "oggi niente pulizie"; }
+    if (id === "manutenzione") { const n = lavoriAperti().length; return n ? `${n} ${n === 1 ? "lavoro da fare" : "lavori da fare"}` : "niente in sospeso"; }
+    if (id === "paghe") { const k = L.settimanaCorrente(); let tot = 0; for (const z of zoneAttive()) { try { tot += Number(totaleBusta(z, k).totale) || 0; } catch (e) {} } return `${eur(tot)} questa settimana`; }
+    if (id === "governante") { let s = ""; try { s = sottoGovernante(); } catch (e) {} return s || "le stelle e il catalogo"; }
+    if (id === "sofia") { const d = domandeSofia(); return d ? `${d} ${d === 1 ? "cosa da guardare" : "cose da guardare"}` : "tutto chiaro"; }
+    if (id === "altro") return "il ponte, la chiave, le regole";
+  } catch (e) {}
+  return "";
+}
+// il disegnino a matita di ogni stanza (finché non arrivano quelli di Gemini): una stanzetta con le sue cose
+function isoUfficio(o, tipo) {
+  const U = 7, V = 5, H = 4.2;
+  let s = isoStanza(o, U, V, H, { col: "#FBF6EC", tratto: "mtGr" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
+  const scrivania = () => isoBox(o, 1.2, 1.0, 0, 3.2, 1.3, 1.5, "#F6E3C8", "mtOr", { trattoSolo: "lati" }) + isoCilindro(o, 2.8, 3.0, 0, 0.42, 0.9, "#3E4A5A", "");
+  if (tipo === "segreteria") { s += isoFinestraL(o, 0.8, 2.4, 1.9, 3.6) + scrivania() + isoBox(o, 1.5, 1.1, 1.5, 1.1, 0.12, 0.8, "#3E4A5A", "", { scuro: "rgba(0,0,0,.25)" }) + isoBox(o, 3.4, 1.4, 1.5, 0.6, 0.45, 0.22, "#E6EBF2", "", {}) + isoTerra(o, 2.7, 1.2, 0.6, 0.8, "#FFFFFF", "", 1, 1.52) + isoCilindro(o, 6.0, 1.0, 0, 0.3, 1.0, "#D9C9A8", "mtOr") + isoEllisse(o, 6.0, 1.0, 1.6, 0.75, 0.75, "#9CD39A", 1.4); }
+  else if (tipo === "prospetto") { s += isoBox(o, 1.0, 1.2, 0, 4.0, 1.1, 1.9, "#8A5A3A", "", { scuro: "rgba(0,0,0,.18)" }) + isoMuroR(o, 1.2, 4.8, 2.2, 3.7, "#F6E3C8", "mtOr", 1.6, 0.04); for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) s += isoEllisse(o, 1.7 + i * 0.9, 0.05, 2.6 + j * 0.7, 0.1, 0.1, "#E8B64A", 1); s += isoCilindro(o, 4.3, 1.6, 1.9, 0.22, 0.25, "#E8B64A", "") + isoMuroL(o, 1.0, 3.2, 2.0, 3.4, "#DDF1FA", "mtAc", 1.4, 0.04); }
+  else if (tipo === "manutenzione") { s += isoBox(o, 1.0, 1.0, 0, 3.4, 1.2, 1.4, "#D9C9A8", "mtOr", { trattoSolo: "lati" }) + isoBox(o, 1.6, 1.2, 1.4, 1.0, 0.6, 0.5, "#D9534F", "", {}) + isoLinea(o, [5.2, 0.4, 0], [5.6, 0.4, 3.6], 2) + isoLinea(o, [6.0, 0.4, 0], [6.4, 0.4, 3.6], 2); for (let z = 0.5; z < 3.5; z += 0.6) s += isoLinea(o, [5.25 + z * 0.11, 0.4, z], [6.05 + z * 0.11, 0.4, z], 1.4); s += isoMuroL(o, 0.8, 2.6, 2.3, 3.4, "#FFFFFF", "", 1.4, 0.04) + isoLinea(o, [0.05, 1.0, 2.9], [0.05, 2.4, 2.9], 1.2) + isoCilindro(o, 3.0, 3.3, 0, 0.35, 0.6, "#AEBBCB", ""); }
+  else if (tipo === "paghe") { s += scrivania() + isoBox(o, 5.0, 0.6, 0, 1.4, 1.2, 1.8, "#7A8794", "", { scuro: "rgba(0,0,0,.25)" }) + isoEllisse(o, 5.0, 1.75, 0.9, 0.22, 0.22, "#E6EBF2", 1.2) + isoCilindro(o, 2.0, 1.3, 1.5, 0.22, 0.35, "#FFD64D", "") + isoCilindro(o, 2.5, 1.2, 1.5, 0.22, 0.5, "#FFD64D", "") + isoBox(o, 3.3, 1.3, 1.5, 0.9, 0.7, 0.12, "#DCEBFA", "mtAz", {}); }
+  else if (tipo === "sofia") { s += isoFinestraR(o, 1.0, 3.2, 1.8, 3.8) + isoMuroR(o, 0.7, 1.15, 1.5, 4.0, "#F6E3C8", "mtOr", 1.6, 0.06) + isoMuroR(o, 3.05, 3.5, 1.5, 4.0, "#F6E3C8", "mtOr", 1.6, 0.06) + isoBox(o, 2.2, 2.4, 0, 2.0, 1.6, 0.9, "#DCEBFA", "mtAz", {}) + isoBox(o, 2.2, 2.4, 0.9, 2.0, 0.5, 0.8, "#DCEBFA", "mtAz", {}) + isoBox(o, 5.0, 2.8, 0, 0.9, 0.9, 1.0, "#F6E3C8", "", {}) + isoCilindro(o, 5.45, 3.25, 1.0, 0.16, 0.5, "#F6E3C8", "") + isoBox(o, 5.1, 2.9, 1.5, 0.7, 0.7, 0.4, "#FFF0B8", "mtGi", {}); }
+  else if (tipo === "altro") { s += isoMuroR(o, 1.0, 4.6, 1.6, 3.6, "#3E4A5A", "", 1.8, 0.05); for (let i = 0; i < 6; i++) s += isoEllisse(o, 1.5 + i * 0.6, 0.06, 2.9, 0.12, 0.12, i % 2 ? "#9CD39A" : "#FFD64D", 1) + isoLinea(o, [1.5 + i * 0.6, 0.07, 2.0], [1.5 + i * 0.6, 0.07, 2.5], 2.2); s += isoTondo(o, 0.05, 2.0, 3.0, 0.5, "#FFFFFF", 1.6) + isoLinea(o, [0.06, 2.0, 3.0], [0.06, 2.0, 3.35], 1.4) + isoLinea(o, [0.06, 2.0, 3.0], [0.06, 2.25, 3.0], 1.4) + isoBox(o, 1.4, 2.6, 0, 1.6, 1.0, 1.2, "#D9C9A8", "mtOr", { trattoSolo: "lati" }); }
+  return { svg: s, U, V, H };
+}
+function svgStanza(id) {
+  const W = 220, HH = 170;
+  let pz;
+  if (id === "signore") pz = { fa: (o) => isoLavanderia(o), s: 14.5, U: 6.5, V: 4.5, H: 5 };
+  else if (id === "governante") pz = { fa: (o) => isoCamera(o, { soloLetti: true, singola: false }), s: 11.5, U: 9, V: 6, H: 5.2 };
+  else pz = { fa: (o) => isoUfficio(o, id), s: 15, U: 7, V: 5, H: 4.2 };
+  const larg = (pz.U + pz.V) * ISO_CX * pz.s, alto = pz.H * pz.s + (pz.U + pz.V) * ISO_SY * pz.s;
+  const o = { x: (W - larg) / 2 + pz.V * ISO_CX * pz.s, y: (HH - alto) / 2 + pz.H * pz.s, s: pz.s };
+  const r = pz.fa(o, {});
+  return `<svg class="stanza-svg" viewBox="0 0 ${W} ${HH}" aria-hidden="true">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}<g filter="url(#mtTrem)">${r.svg}</g></svg>`;
+}
+const stanzaTile = (st) => `<button type="button" class="stanza" data-vista="${st.vista}" data-stanza="${st.id}" aria-label="${esc(st.nome)}: ${esc(sottoStanza(st.id))}"><span class="stanza-fig"><img class="stanza-img" src="stanza-${st.id}.webp" alt="">${svgStanza(st.id)}</span><b>${esc(st.nome)}</b><span class="stanza-sotto">${esc(sottoStanza(st.id))}</span></button>`;
+function vistaStanze() {
+  const tile = stanzaTile;
+  return `<section class="stanze" aria-label="Le stanze"><div class="stanze-griglia">${STANZE.map(tile).join("")}</div></section>`;
+}
+// le stanze stanno SOTTO Sofia e SOPRA la striscia dei giorni (fuori da #app, come la casa): una sezione sola, fatta una
+// volta e aggiornata nelle righe (così i disegni di Gemini non si ricaricano a ogni disegno della pagina)
+function disegnaStanze() {
+  let s = document.getElementById("stanzeCasa");
+  let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && proprietario() && !addetta() && S.vista === "oggi" && !(S.utente && S.utente.finta)); } catch (e) {}
+  if (!vuoi) { if (s) s.remove(); document.body.classList.remove("ha-stanze"); return; }
+  const header = document.querySelector("header"), app = document.getElementById("app");
+  if (!s) {
+    s = document.createElement("section"); s.id = "stanzeCasa"; s.className = "stanze"; s.setAttribute("aria-label", "Le stanze");
+    s.innerHTML = `<div class="stanze-griglia">${STANZE.map(stanzaTile).join("")}</div>`;
+    document.body.insertBefore(s, header || app);
+  } else {
+    for (const st of STANZE) { const b = s.querySelector(`.stanza[data-stanza="${st.id}"]`); if (!b) continue; const x = sottoStanza(st.id), r = b.querySelector(".stanza-sotto"); if (r && r.textContent !== x) { r.textContent = x; b.setAttribute("aria-label", `${st.nome}: ${x}`); } }
+    const prima = header || app; if (prima && s.nextElementSibling !== prima) prima.parentNode.insertBefore(s, prima);   // sempre subito sopra la striscia dei giorni (sotto la casa)
+  }
+  document.body.classList.add("ha-stanze");
+}
+// l'immagine di Gemini c'è? la si mostra; se manca (404) resta il disegnino a matita (l'evento error non risale: si prende in cattura)
+document.addEventListener("error", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("stanza-img")) { img.remove(); } }, true);
+document.addEventListener("load", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("stanza-img")) { const f = img.closest(".stanza-fig"); if (f) f.classList.add("con-foto"); } }, true);
+
+// ---- la tendina della segretaria -------------------------------------------------------------------------------------
+function tendinaSegreteria() {
+  const x = segreteriaLetture()[0], aperta = !!S.sgrAperta;
+  const chat = (x && Array.isArray(x.chat) ? x.chat : []).slice(-24);
+  const bolle = chat.map(m => `<div class="sgr-c-riga ${m.chi === "io" ? "io" : "lei"}"><div class="sgr-c-bolla">${esc(String(m.testo || "")).replace(/\n/g, "<br>")}</div></div>`).join("")
+    + (S.sgrScrive ? `<div class="sgr-c-riga lei"><div class="sgr-c-bolla pensa">${esc(nomeGov())} rilegge i messaggi…</div></div>` : "");
+  const quando = x && x.quando ? `${L.dataMedia(String(x.quando).slice(0, 10))}, ${L.oraBreve(x.quando)}` : "";
+  const benvenuto = x ? `<div class="sgr-c-riga lei"><div class="sgr-c-bolla">Dimmi cosa correggere della lettura di ${esc(quando)}: il nome di un ospite, i giorni, oppure dove va una cosa (prospetto, signore, guasti, spesa, ore, rubrica). Rileggo i messaggi con la tua correzione e ti riapro la lettura da salvare.</div></div>` : `<div class="sgr-c-riga lei"><div class="sgr-c-bolla">Ancora nessuna lettura: quando leggo WhatsApp, qui mi puoi correggere.</div></div>`;
+  const apri = x && x.esito === "da_controllare" && S.letturaCondivisa && S.letturaCondivisa.lid === x.lid ? `<button type="button" class="btnsm" data-sgr-apri>Apri la lettura e salva</button>` : "";
+  return `<section class="sgr-tendina ${aperta ? "aperta" : ""}" id="sgrTendina">
+    <button type="button" class="sgr-maniglia" data-sgr-tendina aria-expanded="${aperta}"><img class="sgr-m-viso" src="${FILM_CAPO.viso}" alt=""><span><b>${esc(nomeGov())}, la segretaria</b><small>${aperta ? "Tocca qui per chiudere" : x ? "Tocca per parlarle: correggi, sposta, chiedi" : "Tocca per parlarle"}</small></span><i class="sgr-m-freccia" aria-hidden="true">${aperta ? "⌄" : "⌃"}</i></button>
+    ${aperta ? `<div class="sgr-t-corpo"><div class="sgr-t-figura" aria-hidden="true"></div><div class="sgr-t-chat"><div class="sgr-c-msgs" id="sgrMsgs">${chat.length ? bolle : benvenuto + (S.sgrScrive ? bolle : "")}</div>${apri}
+      <form class="sgr-t-form" id="sgrScrivi" autocomplete="off"><input type="text" id="sgrTesto" placeholder="${x ? "Correggi o chiedi…" : "Ancora niente da correggere"}" maxlength="400" enterkeyhint="send" ${x ? "" : "disabled"}><button type="submit" class="sgr-t-manda" aria-label="Manda" ${x ? "" : "disabled"}>➤</button></form>
+      <p class="sgr-t-hint">Per esempio: «Il nome in Aurora è Bianchi» · «Le ore di Lucia vanno nelle paghe» · «Quello sulla doccia è un guasto in Alba»</p></div></div>` : ""}
+  </section>`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest ? e.target.closest("[data-sgr-tendina]") : null; if (!b) return;
+  S.sgrAperta = !S.sgrAperta; disegna();
+  if (S.sgrAperta) setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50);
+});
+document.addEventListener("submit", (e) => {
+  const f = e.target && e.target.closest ? e.target.closest("#sgrScrivi") : null; if (!f) return;
+  e.preventDefault();
+  const inp = f.querySelector("#sgrTesto"), t = inp ? inp.value.trim() : ""; if (!t) return;
+  if (inp) { inp.value = ""; inp.blur(); }
+  segreteriaManda(t).catch(err => console.warn("segreteria/chat", err));
+}, true);
+// quello che Michele scrive alla segretaria: resta nella chat della lettura, e diventa una correzione con cui Sofia rilegge
+async function segreteriaManda(testo) {
+  const t = String(testo || "").trim(); if (!t) return;
+  const x = segreteriaLetture()[0]; if (!x) { toast("Ancora nessuna lettura da correggere."); return; }
+  const lid = x.lid, chat = [...(Array.isArray(x.chat) ? x.chat : []), { chi: "io", testo: t, ora: S.db.adesso() }];
+  x.chat = chat; S.sgrScrive = true; disegna();
+  setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50);
+  try { await S.db.aggiorna("importazioni", "segreteria_" + lid, { chat }); } catch (e) { console.warn("segreteria/chat", e); }
+  let risposta = "";
+  try { risposta = await rileggiSegreteria(x, t); }
+  catch (e) { console.warn("segreteria/rileggi", e); risposta = `Non sono riuscita a rileggere: ${String((e && e.message) || e).slice(0, 140)}`; }
+  const y = (S.segreteria || {})["segreteria_" + lid] || x;
+  const chat2 = [...(Array.isArray(y.chat) && y.chat.length >= chat.length ? y.chat : chat), { chi: "gov", testo: risposta, ora: S.db.adesso() }];
+  y.chat = chat2; x.chat = chat2; S.sgrScrive = false; disegna();
+  setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50);
+  try { await S.db.aggiorna("importazioni", "segreteria_" + lid, { chat: chat2 }); } catch (e) { console.warn("segreteria/chat", e); }
+  try { if (voceAccesa()) parlaConVoce(risposta, { inChat: true }); } catch (e) {}
+}
+// Sofia rilegge gli stessi messaggi della lettura con la correzione di Michele davanti a tutto; poi apre la lettura da salvare
+async function rileggiSegreteria(x, correzione) {
+  if (!iaAccesa()) throw new Error("su questo telefono manca la chiave di Gemini (Altro → la governante intelligente)");
+  const messaggi = (Array.isArray(x.messaggi) ? x.messaggi : []).filter(m => m && m.testo).map(m => ({ data: m.data || "", ora: m.ora || "", chi: m.chi || "", testo: m.testo, chat: m.chat || "", chatNome: m.chat || "", mio: !!m.mio }));
+  if (!messaggi.length) throw new Error("questa lettura non ha messaggi da rileggere");
+  const papa = messaggi.some(m => m.chi === "Papà") ? "Papà" : "";
+  const correzioni = [...(Array.isArray(x.correzioni) ? x.correzioni : []), String(correzione).slice(0, 400)].slice(-8);
+  const d = { testo: messaggi.filter(m => !papa || m.chi === papa).map(m => m.testo).join("\n"), base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, rif: "", segreteria: x.lid, correzioni,
+    fonte: { tipo: "whatsapp", come: "chat", posta: true, messaggi: messaggi.length, chats: [...new Set(messaggi.map(m => m.chat).filter(Boolean))], data: (messaggi[messaggi.length - 1] || {}).data || "", intestazioni: true, rif: "" },
+    condivisa: S.letturaCondivisa && S.letturaCondivisa.lid === x.lid ? x.lid : null };
+  S.dett = d;
+  await leggiConSofia(messaggi, { papa, d, correzioni });
+  if (!d.ia || d.ia.errore) throw new Error((d.ia && d.ia.errore) || "non ha risposto");
+  const r = String(d.ia.risposta || "").trim();
+  if (S.vista === "segreteria") apriFoglio({ tipo: "dettatura" });
+  return `${r ? r + " " : ""}Ho rifatto la lettura con la tua correzione: controlla e salva.`;
+}
 // ---- schermate dei proprietari ---------------------------------------------------
 function vistaProprietario() {
   const v = S.vista;
@@ -9135,7 +9291,7 @@ function vistaTabellone() {
   const nav = `<section class="card flat pr-nav"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
     <div class="pr-nav-sotto">${pillole}<button type="button" class="pr-mese" data-board="${modo === "mese" ? "settimana" : "mese"}">${modo === "mese" ? "Vedi la settimana" : "Vedi il mese"}</button></div></section>`;
   const corpo = modo === "mappa" ? mappaCamere() : modo === "facile" ? vistaFacile() : modo === "settimana" ? nav + settimanaCompatta(da) : nav + corpoMese;
-  return `${puoModificare() ? bannerLettura() : ""}<div class="pr-riga">${azioni}${viste}</div>
+  return `<div class="pr-riga">${azioni}${viste}</div>
   ${corpo}
   ${dubbi.length ? `<section class="card"><h2 style="color:var(--todo)">Da controllare (?)</h2><div class="rows">${dubbi.map(s => `<button class="row" data-sog="${esc(s.id)}"><span><b>${esc(camera(s.camera).nome)}</b> · ${esc(s.nome)}<br><span class="muted">${esc(L.dataMedia(s.inizio))} → ${esc(L.dataMedia(s.fine))}${s.notaPrivata ? " · " + esc(s.notaPrivata) : ""}</span></span><span class="s todo">?</span></button>`).join("")}</div></section>` : ""}
   <section class="card"><h2>Note del periodo</h2>${noteP.length ? `<div class="notes">${noteP.map(n => `<button class="row" data-nota="${esc(n.id)}"><span><b>${esc(L.dataMedia(n.data))}</b> · ${esc(n.camera ? camera(n.camera).nome : "Generale")}<br>${esc(n.testo)}</span>${n.privata ? `<span class="pill priv">privata</span>` : ""}</button>`).join("")}</div>` : `<p class="muted" style="margin:0">Nessuna nota in questo periodo.</p>`}${puoModificare() ? `<button class="big undo" data-nuova-nota>+ Scrivi una nota</button>` : ""}</section>`;
@@ -10008,7 +10164,7 @@ Fenicotteri: come la settimana scorsa
 Via Zara piano terra: D'Agostino, 3 operai, tutto il mese
 Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ultimo ospite di quella camera. Controlla sempre l'anteprima.</div></details>`;
   const salva = leggo ? "" : `<div class="dt-salva-fisso"><button class="big main" data-dett-salva ${ds.tot && !S.attesa ? "" : "disabled style='opacity:.5'"}>${S.attesa ? "Salvo…" : ds.testo}</button>${d.ia && !d.ia.errore && !S.attesa ? `<button type="button" class="nonna-link" data-dett-scarta style="margin-top:6px">Non serve niente: scarta questa lettura</button>` : ""}</div>`;
-  const testa = `<h3>${f.copia ? "Come la settimana scorsa" : "Il prospetto"}</h3>
+  const testa = `<h3>${f.copia ? "Come la settimana scorsa" : d.fonte && d.fonte.tipo === "whatsapp" ? `Cosa ha capito ${esc(nomeGov())}` : "Il prospetto"}</h3>
     ${f.copia ? `<div class="muted">Per le camere ancora vuote ripeto l'ospite della settimana prima, spostato di una settimana. Togli la spunta a chi non torna.</div>` : fonteDettaturaHtml(d) || `<div class="muted">Incolla il messaggio di WhatsApp, oppure scrivi o detta chi arriva: una riga per camera. Prima di salvare ti faccio controllare.</div>`}`;
   if (sofiaPronta) return `${testa}
     ${partiSofiaHtml(d, "testa")}
@@ -10107,7 +10263,7 @@ async function salvaDettatura(f) {
     if (Array.isArray(d0.postaIds) && d0.postaIds.length) cancellaPosta(d0.postaIds);
     S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
     S.attesa = false; chiudiFoglio();
-    S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
+    S.vista = (Array.isArray(d0.postaIds) && d0.postaIds.length) || d0.segreteria ? "segreteria" : "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();   // 1.41.0: una lettura di WhatsApp torna in Segreteria
     toast([n ? `Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} alle signore` : "", na ? `${na} ${na === 1 ? "cosa" : "cose"} nel taccuino` : "", nx.gu ? `${nx.gu} in manutenzione` : "", nx.sp ? `${nx.sp} nella spesa` : "", nx.passate ? `${nx.passate} ${nx.passate === 1 ? "pulizia passata" : "pulizie passate"} all'altra signora` : "", nx.as + nx.no ? `${nx.as + nx.no} nelle tue note` : "", nx.ore ? `${nx.ore} ${nx.ore === 1 ? "orario scritto" : "orari scritti"} dalle signore nella paga` : "", nx.te ? `${nx.te} ${nx.te === 1 ? "numero di telefono" : "numeri di telefono"}` : ""].filter(Boolean).join(" · ") + ". Le pulizie si aggiornano da sole.");
   } catch (e) { S.attesa = false; disegnaFoglio(); erroreScrittura(e); }
 }
@@ -10504,7 +10660,7 @@ async function leggiConSofia(messaggi, opz = {}) {
   // se il foglio l'hai chiuso tu mentre ascoltava i vocali, non lo riapro: si aggiorna la striscia "sta leggendo"
   if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); else if (!opz.d) apriFoglio({ tipo: "dettatura" }); else if (!S.foglio) disegna();
   try {
-    const { r, ripiego } = await chiediLettura({ sistema: istruzioniLettura(messaggi), storia: [], testo: `${immagini.length ? `Ti mando anche ${immagini.length === 1 ? "una foto" : immagini.length + " foto"} della chat (numerate nell'ordine, nei messaggi trovi "foto n. 1"...): se sono il prospetto scritto a mano o stampato, leggile come il resto.\n` : ""}ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, immagine: immagini.length ? immagini.map(x => ({ mime: x.mime, dati: x.dati })) : null, secondi: 150, maxToken: 16000 });
+    const { r, ripiego } = await chiediLettura({ sistema: istruzioniLettura(messaggi), storia: [], testo: `${immagini.length ? `Ti mando anche ${immagini.length === 1 ? "una foto" : immagini.length + " foto"} della chat (numerate nell'ordine, nei messaggi trovi "foto n. 1"...): se sono il prospetto scritto a mano o stampato, leggile come il resto.\n` : ""}ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}${Array.isArray(opz.correzioni) && opz.correzioni.length ? `\n\nCORREZIONI DI MICHELE (valgono più di tutto quello che avevi capito; applicale e digli in «risposta» cosa hai cambiato):\n${opz.correzioni.map((c, i) => `${i + 1}. ${c}`).join("\n")}` : ""}`, immagine: immagini.length ? immagini.map(x => ({ mime: x.mime, dati: x.dati })) : null, secondi: 150, maxToken: 16000 });
     if (giro !== letturaGiro) return;
     const j = rimettiTelefoni(jsonDaRisposta(r.grezzo), telefoni);
     if (!j) throw new Error("ha risposto in un modo che non capisco. Riprova.");
@@ -11137,7 +11293,7 @@ async function leggiPosta(nuove, opz = {}) {
     const privata = chats.find(c => !c.gruppo && mittenti.some(x => x.nome === c.nome));
     const papa = mittenti.some(x => x.nome === ric) ? ric : privata ? privata.nome : (mittenti.find(x => !/michele/i.test(x.nome) && x.camere) || {}).nome || "";
     S.chatPapa = { chats, media, papa, giorni: 0 };
-    if (!opz.silenzioso && S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
+    if (!opz.silenzioso && S.vista !== "segreteria") { S.vista = "segreteria"; disegna(); window.scrollTo(0, 0); }   // 1.41.0
     await leggiChatWA({ silenzioso: !!opz.silenzioso, posta: ids });
     if (S.dett && S.dett.postaIds === ids && S.dett.ia && !S.dett.ia.errore) await segnaPostaLetta(ids);
   } catch (e) { console.warn("posta", e); }
