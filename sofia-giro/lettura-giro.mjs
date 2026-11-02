@@ -37,7 +37,7 @@ export function nomeGovDa(gov) {
 }
 export function testoRiassunto(r) {
   const p = (n, uno, tanti) => n ? `${n} ${n === 1 ? uno : tanti}` : "";
-  return [p(r.cambi, "cambio nel prospetto", "cambi nel prospetto"), p(r.indicazioni, "indicazione per le signore", "indicazioni per le signore"), p(r.assenze, "assenza", "assenze"), p(r.guasti, "guasto", "guasti"), p(r.spesa, "cosa da comprare", "cose da comprare"), p(r.note, "cosa da sapere", "cose da sapere")].filter(Boolean).join(" · ");
+  return [p(r.cambi, "cambio nel prospetto", "cambi nel prospetto"), p(r.indicazioni, "indicazione per le signore", "indicazioni per le signore"), p(r.assenze, "assenza", "assenze"), p(r.guasti, "guasto", "guasti"), p(r.spesa, "cosa da comprare", "cose da comprare"), p(r.note, "cosa da sapere", "cose da sapere"), p(r.ore, "orario scritto da una signora", "orari scritti dalle signore"), p(r.telefoni, "numero di telefono", "numeri di telefono")].filter(Boolean).join(" · ");
 }
 // 1.18.1: il testo dell'avviso «ho letto» (lo stesso per le letture del giro e per quelle del telefono)
 export function avvisoLettura(x, nomeGov) {
@@ -71,7 +71,7 @@ export function riassuntoGiro(j, ctx) {
     if (camera && nome && sog.some(s => s.camera === camera && LET.nucleoNome(s.nome).toLowerCase() === nome && s.fine >= L.aggiungiGiorni(oggi, -3))) cambi++;
   }
   const n = (k) => (Array.isArray(j[k]) ? j[k] : []).filter(Boolean).length;
-  return { cambi, indicazioni: n("indicazioni"), assenze: n("assenze"), guasti: n("guasti"), spesa: n("spesa"), note: n("note") };
+  return { cambi, indicazioni: n("indicazioni"), assenze: n("assenze"), guasti: n("guasti"), spesa: n("spesa"), note: n("note"), ore: n("ore"), telefoni: n("telefoni") };   // 1.38.0: ore e telefoni
 }
 // Gemini: prima Argon, poi il modello sveglio, poi lo svelto (come l'app)
 export async function chiediGemini(gemini, dom) {
@@ -147,7 +147,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
       for (const m of lotto) { const x = await db.doc("posta_media", m.id); if (x && x.dati && x.dati.length < 8e6) parti.push({ m, mime: x.mime || "audio/ogg", dati: x.dati }); }
       if (!parti.length) continue;
       try {
-        const { r } = await chiediGemini(gemini, { sistema: LET.istruzioniTrascrizione(nomiCamere, parti.length), storia: [], testo: LET.testoTrascrizione(parti.length), immagine: parti.map(p => ({ mime: p.mime, dati: p.dati })), secondi: 120, maxToken: 8000 });
+        const { r } = await chiediGemini(gemini, { sistema: LET.istruzioniTrascrizione(nomiCamere, parti.length, { signore: (base.signore || []).map(s => s.nome) }), storia: [], testo: LET.testoTrascrizione(parti.length), immagine: parti.map(p => ({ mime: p.mime, dati: p.dati })), secondi: 120, maxToken: 8000 });
         const j = LET.jsonDaRisposta(r.grezzo), lista = j && Array.isArray(j.vocali) ? j.vocali : [];
         for (const [k, p] of parti.entries()) {
           const t = String(lista[k] || "").trim();
@@ -177,7 +177,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     const j0 = LET.rimettiTelefoni(LET.jsonDaRisposta(r.grezzo), telefoni);
     if (!j0 || typeof j0 !== "object") throw new Error("Gemini ha risposto in un modo che non capisco");
     const j = codici.daCodiciProfondo(j0);
-    const riassunto = riassuntoGiro(j, ctx), ha = !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note);
+    const riassunto = riassuntoGiro(j, ctx), ha = !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni);
     const testoPapa = scelti.filter(m => m.testo && (!papa || m.chi === papa)).map(m => m.testo).join("\n");
     const etichette = [...chats.entries()].map(([nome, gruppo]) => gruppo ? nome : "chat con " + nome);
     const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: papa ? [papa] : [], chats: etichette, data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "", posta: true, giro: true };
