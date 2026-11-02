@@ -520,14 +520,16 @@ function stella(r, l, reg, data, ogni, extra = {}) {
 // ---- Chi fa le stelle (0.35, specifiche §14): solo la signora delle stelle (Selena, 2° piano), in tutto l'albergo, per un
 // obiettivo di € a settimana; negli appartamenti le stelle sono spente finché Michele non le accende. Le zone comuni "di ogni
 // giorno" (euro 0) restano a chi ha la zona.
-export function regoleStelle(ctx) { const l = ctx.listino || {}; return { zona: l.zonaStelle || "p2", obiettivo: Number(l.obiettivoStelle ?? 27), appartamenti: !!l.stelleAppartamenti, escluse: ctx.escluse || null }; }
-export function faStelle(zona, luogo, ctx) { const rs = regoleStelle(ctx); if (luogo && luogo.tipo === "casa") return rs.appartamenti; return zona === rs.zona; }
+// 1.36.0: zonaStelle "tutte" = tutte le signore, ognuna nelle sue camere e nelle sue zone comuni; con la paga a ore (modoPaga "ore")
+// le stelle sono dentro le ore: niente obiettivo in euro (il tetto del giorno lo mette l'app: stelleGiorno / stelleMinuti)
+export function regoleStelle(ctx) { const l = ctx.listino || {}; const tutte = l.zonaStelle === "tutte"; return { zona: tutte ? "tutte" : (l.zonaStelle || "p2"), tutte, obiettivo: (l.modoPaga || "ore") === "ore" ? 0 : Number(l.obiettivoStelle ?? 27), appartamenti: !!l.stelleAppartamenti, escluse: ctx.escluse || null }; }
+export function faStelle(zona, luogo, ctx) { const rs = regoleStelle(ctx); if (luogo && luogo.tipo === "casa") return rs.appartamenti; return rs.tutte || zona === rs.zona; }
 // La settimana di paga di un giorno: da domenica a sabato (la chiave è il sabato)
 export function giorniSettimanaPaga(iso) { const wd = giornoSettimana(iso); const dom = aggiungiGiorni(iso, -wd); return Array.from({ length: 7 }, (_, i) => aggiungiGiorni(dom, i)); }
 // Quanti € di stelle la signora delle stelle ha già (fatte o in programma) nei giorni della settimana prima di oggi, e quanti giorni
 // con lavori le restano da oggi (compreso): il budget di oggi è quello che resta diviso per i giorni che restano.
 export function budgetStelleOggi(zona, iso, ctx) {
-  const rs = regoleStelle(ctx); if (zona !== rs.zona || !rs.obiettivo) return { oggi: Infinity, resto: Infinity, giorni: 1 };
+  const rs = regoleStelle(ctx); if ((zona !== rs.zona && !rs.tutte) || !rs.obiettivo) return { oggi: Infinity, resto: Infinity, giorni: 1 };
   ctx._memoStelleEuro = ctx._memoStelleEuro || {};
   const giorni = giorniSettimanaPaga(iso);
   // 1.12.0 ArgonCloud: le rifiniture si fanno solo nei giorni in cui c'è chi le vede (la collega in albergo, il suo giro del
@@ -600,7 +602,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
     out[p.id] = scelte; inCamera[p.camera] = scelte.length;
   }
   // il giro delle stelle nelle altre camere dell'albergo (quelle che oggi non pulisce lei): le più scadute, col budget che resta
-  if (giro && zona === rs.zona) out[giro.id] = giroStelle(zona, iso, ctx, { giro, pulizieOggi: pulizie, budget: Math.max(0, bud.oggi - euroOggi), inizio, escluse });
+  if (giro && (rs.tutte || zona === rs.zona)) out[giro.id] = giroStelle(zona, iso, ctx, { giro, pulizieOggi: pulizie, budget: Math.max(0, bud.oggi - euroOggi), inizio, escluse });
   // le zone comuni della signora: alla prima pulizia del giorno (quelle di ogni giorno + una a ritmo entro zonaMinuti, solo per chi fa le stelle)
   const prima = pulizie[0], comuni = [];
   if (prima) for (const r of regole) {
@@ -613,7 +615,7 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
       const rapporto = ogni ? rapportoScadenza(r, reg?.ultima || null, iso, ogni) : Infinity;
       if (ogni > 1 && reg?.ultima && rapporto < 0.9) continue;
       if (ogni <= 1 && reg?.ultima === iso) continue;
-      if (ogni > 1 && zona !== rs.zona) continue; // le zone comuni "a ritmo" (pagate) sono stelle: solo la signora delle stelle
+      if (ogni > 1 && zona !== rs.zona && !rs.tutte) continue; // le zone comuni "a ritmo" (pagate) sono stelle: solo la signora delle stelle (o tutte, ognuna le sue)
       comuni.push(stella(r, l, reg, iso, ogni, { comune: true, sempre: ogni <= 1, euro: ogni <= 1 ? 0 : r.euro || 0, urgenza: urgenza(ogni > 1 ? ogni : 0, reg?.ultima || null, iso, inizio) }));
     }
   }
@@ -621,6 +623,13 @@ export function rifinitureDelGiorno(zona, iso, ctx) {
   const sceltiComuni = []; let minZ = 0, nZ = 0;
   for (const c of comuni) { if (c.sempre) { sceltiComuni.push(c); continue; } if (nZ >= 1 || minZ + c.minuti > sg.zonaMinuti || !ciSta(c)) continue; sceltiComuni.push(c); minZ += c.minuti; nZ++; euroOggi += c.euro || 0; }
   if (prima && sceltiComuni.length) out[prima.id] = [...(out[prima.id] || []), ...sceltiComuni];
+  // 1.36.0: il tetto del giorno (come fa l'app con le stelle ammesse): le prime di ogni camera a turno, fino a N stelle e M minuti
+  const tg = ctx.tettoGiorno;
+  if (tg && (tg.stelle || tg.minuti)) {
+    const gruppi = Object.values(out).map(rf => rf.filter(r => !r.sempre && r.euro)).filter(rf => rf.length), si = new Set(); let n = 0, min = 0;
+    for (let giro = 0; gruppi.some(g => g.length > giro); giro++) for (const rf of gruppi) { const r = rf[giro]; if (!r) continue; if ((tg.stelle && n >= tg.stelle) || (tg.minuti && min + (r.minuti || 0) > tg.minuti)) continue; si.add(r); n++; min += r.minuti || 0; }
+    for (const id of Object.keys(out)) out[id] = out[id].filter(r => r.sempre || !r.euro || si.has(r));
+  }
   return out;
 }
 // Il giro delle stelle nelle altre camere dell'albergo: camere che oggi la signora delle stelle non pulisce, accessibili (vuote, o con
@@ -629,10 +638,11 @@ export function giroStelle(zona, iso, ctx, { giro, pulizieOggi = [], budget = 0,
   if (!giro || budget <= 0) return [];
   const { camere, registro, soggiorni = [] } = ctx; const luoghi = ctx.luoghi || LUOGHI_COMUNI, flags = ctx.flags || {}, imp = ctx.imp || null;
   inizio = inizio || inizioGovernante(ctx);
-  const pulite = new Set(pulizieOggi.map(p => p.camera));
+  const pulite = new Set(pulizieOggi.map(p => p.camera)), rs = regoleStelle(ctx);
   const cand = [];
   for (const l of camere) {
     if (l.tipo === "casa" || pulite.has(l.id)) continue;
+    if (rs.tutte && l.zona !== zona) continue;   // 1.36.0: con «tutte e due» ognuna gira nelle sue camere
     const occ = ospiteIl(soggiorni, l.id, iso);
     const modo = modoValido(modoCamera(l, iso, soggiorni, ctx.clienti || {}, ctx.regoleBase));
     if (occ && modo === "booking") continue; // ospiti in camera: non si entra per le stelle

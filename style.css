@@ -7169,3 +7169,13 @@ body.semplice.argon .gs-hero .gs-turno-pill{color:#004D47}
 #app>.gs-turno.da-fare:first-child{margin-top:-4px}
 /* col tasto «Sono arrivata» sopra, sui telefoni bassi la scena di Sofia può farsi un po' più bassa (poi torna com'era) */
 #app>.gs-turno.da-fare+.gs-testa.gs-hero{min-height:380px}
+
+/* ===================================================================================================================
+   1.36.0 · IL DISEGNO DICE DOVE E COSA (la parola sotto il numero), il timer e basta, niente «Sofia ti dice» nella camera
+   =================================================================================================================== */
+.mt-segno .mt-parola{font:800 12.5px var(--f-gioco,var(--f-body));letter-spacing:.02em;fill:#7A4B00;text-anchor:middle;paint-order:stroke;stroke:#FFFDF7;stroke-width:4px;stroke-linejoin:round}
+.mt-segno.fondo .mt-parola{fill:#5B4300}
+.gs-turno .gs-turno-via-fine{margin-left:auto;flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:2.5px solid rgba(43,58,74,.82);border-radius:13px 11px 14px 10px/11px 14px 10px 13px;background:repeating-linear-gradient(-48deg,rgba(255,255,255,.16) 0 1.5px,transparent 1.5px 6px),#C96A00;color:#FFFFFF;box-shadow:0 4px 0 #7A3E00;font:700 16px/1 var(--f-gioco,var(--f-display));cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gs-turno .gs-turno-via-fine:active{transform:translateY(3px);box-shadow:0 1px 0 #7A3E00}
+.gs-turno.in-corso{flex-wrap:wrap}
+.gs-turno.in-corso .gs-turno-x{flex:1 1 150px}

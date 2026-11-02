@@ -311,8 +311,10 @@ export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [
     }
     // il giro delle stelle nelle altre camere (la signora delle stelle, nei giorni in cui lavora): le stelle le mette la governante
     const l = listinoCompleto(listino), zs = l.zonaStelle;
-    if (inverno && zs && Number(l.obiettivoStelle) > 0 && out.some(p => p.data === iso && p.zona === zs)) {
-      out.push({ id: `${iso}_stelle_${zs}`, data: iso, camera: "stelle", zona: zs, insieme: "", modo: "", tipo: "stelle", titolo: "Stelle in altre camere", passi: [],
+    // 1.36.0: zonaStelle "tutte": il giro ce l'ha ogni signora dell'albergo (nelle sue camere), nei giorni in cui lavora
+    const zoneGiro = zs === "tutte" ? [...new Set(out.filter(p => p.data === iso && (camere.find(c => c.id === p.camera) || {}).tipo !== "casa").map(p => p.zona))] : (zs ? [zs] : []);
+    if (inverno && Number(l.obiettivoStelle) > 0) for (const z of zoneGiro) if (out.some(p => p.data === iso && p.zona === z)) {
+      out.push({ id: `${iso}_stelle_${z}`, data: iso, camera: "stelle", zona: z, insieme: "", modo: "", tipo: "stelle", titolo: "Stelle in altre camere", passi: [],
         ospite: "", soggiorno: null, partenza: false, arrivo: false, parteIl: null, prossimoArrivo: null, prossimoNome: "", prossimoPersone: null, istruzioni: "", persone: null,
         minuti: 0, importo: 0, origine: "auto" });
     }

@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.35.0";
+export const VERSIONE = "1.36.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1601,7 +1601,7 @@ function vistaNonnaOggi(z) {
   const testata = `<section class="pro-testa">
     <div class="pro-ciao"><div class="pro-ciao-testo"><div class="pro-saluto">${esc(saluto())}, ${esc(nomeSignora())}!</div><div class="pro-frase">${esc(frase)}</div></div>${DONNINA(variante, "media")}</div>
     <div class="pro-riepilogo"><div class="pro-num"><b>${lavori.length}</b><span>camere</span></div><div class="pro-num done"><b>${pulite}</b><span>pulite</span></div><div class="pro-num wip"><b>${inCorso}</b><span>in corso</span></div><div class="pro-num todo"><b>${daFare}</b><span>da pulire</span></div></div>
-    ${(() => { const std = lavori.filter(p => p.minuti && p.origine !== "governante" && p.tipo !== "extra"); const min = std.reduce((s, p) => s + (Number(p.minuti) || 0), 0), eu = std.reduce((s, p) => s + (Number(p.importo) || 0), 0); return min ? `<div class="pro-ore">${ICONA("orologio")}<span>${esc(L.testoOre(min))} standard · <b>${eur(eu)}</b>${lavori.some(p => rifinitureDi(p).some(r => r.euro)) ? " + le rifiniture" : ""}</span></div>` : ""; })()}
+    ${(() => { const std = pagaAOre() ? [] : lavori.filter(p => p.minuti && p.origine !== "governante" && p.tipo !== "extra"); const min = std.reduce((s, p) => s + (Number(p.minuti) || 0), 0), eu = std.reduce((s, p) => s + (Number(p.importo) || 0), 0); return min ? `<div class="pro-ore">${ICONA("orologio")}<span>${esc(L.testoOre(min))} standard · <b>${eur(eu)}</b>${lavori.some(p => rifinitureDi(p).some(r => r.euro)) ? " + le rifiniture" : ""}</span></div>` : ""; })()}
     ${lavori.length ? `<div class="bar bar-grande"><i style="width:${Math.round(pulite / lavori.length * 100)}%"></i></div>` : ""}
     <div class="pro-data-riga"><div class="pro-data">${ICONA("calendario")}<span>${["Oggi", "Domani", "Ieri"].includes(quando) ? esc(quando) + " · " + esc(L.dataLunga(iso)) : esc(L.dataLunga(iso).replace(/^./, ch => ch.toUpperCase()))}</span></div><button class="nonna-link" data-altri-giorni>${S.mostraGiorni ? "Nascondi" : "Altri giorni"}</button></div>
     ${messaggio}${istruzioniDelGiorno(iso, z).length ? `<div class="pro-msg dentro istr-avviso">${ICONA("stella")}<span><b>${esc(nomeGov())} ti ha lasciato ${istruzioniDelGiorno(iso, z).length === 1 ? "una spiegazione" : istruzioniDelGiorno(iso, z).length + " spiegazioni"}</b>: le trovi qui sotto, coi disegni.</span></div>` : ""}${tutteFatte && numeroWhatsApp() ? `<button class="pro-btn verde" style="margin-top:12px;min-height:56px;font-size:15px" data-whatsapp-finito="${iso}">${ICONA("spunta")}<span>Avvisa su WhatsApp che hai finito</span></button>` : ""}</section>`;
@@ -2110,7 +2110,7 @@ function cardTurno(z, anteprima, dove = "tutto") {
   const ini = (v && (v.turnoInizio || v.arrivoOra)) || null, fin = (v && (v.turnoFine || v.finitoOra)) || null;
   if (!ini && !fin) return dove !== "sotto" && pulizieDelGiorno(oggi, z).length ? `<section class="gs-turno da-fare"><button type="button" class="gs-turno-via" data-turno-inizio>${ICONA("gioca")}<span class="gs-turno-x"><b>Sono arrivata</b><small>Tocca appena entri: parte il tuo orario</small></span></button></section>` : "";
   if (dove === "sopra") return "";
-  if (ini && !fin) return `<section class="gs-turno in-corso"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(ini))} · <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></b><small>L'orario corre. Quando hai finito tutto, HO FINITO lo ferma.</small></span></section>`;
+  if (ini && !fin) return `<section class="gs-turno in-corso"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(ini))} · <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></b><small>L'orario corre. Quando vai via tocca qui, o HO FINITO in fondo.</small></span>${pulizieDelGiorno(oggi, z).length ? `<button type="button" class="gs-turno-via-fine" data-turno-fine>⏹ Vado via</button>` : ""}</section>`;
   if (!ini) return `<section class="gs-turno manca"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Hai finito alle ${esc(L.oraBreve(fin))}</b><small>Manca l'ora in cui sei arrivata: la mette Michele.</small></span></section>`;
   return `<section class="gs-turno fatto"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Oggi ${esc(L.oraBreve(ini))} → ${esc(L.oraBreve(fin))} · ${esc(testoOreTurno(t ? t.minuti : 0))}</b><small>${eur(euroOre(t ? t.minuti : 0))} · ${eur(tariffaOra())} l'ora</small></span></section>`;
 }
@@ -2231,6 +2231,7 @@ async function turnoSalva(z, iso) {
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t) return;
   const a = t.closest("[data-turno-inizio]"); if (a) { e.preventDefault(); e.stopPropagation(); turnoInizia(); return; }
+  const fine = t.closest("[data-turno-fine]"); if (fine) { e.preventDefault(); e.stopPropagation(); try { hoFinito(); } catch (err) { console.warn(err); } return; }
   const o = t.closest("[data-turno-orario]"); if (o) { e.preventDefault(); const [z, iso] = o.dataset.turnoOrario.split("|"); turnoSalva(z, iso); return; }
   const n = t.closest("[data-turno-nuovo]"); if (n) { e.preventDefault(); turnoSalva(n.dataset.turnoNuovo, null); return; }
   const m = t.closest("[data-modo-paga]"); if (m && puoModificare() && !m.disabled) { e.preventDefault(); const l = JSON.parse(JSON.stringify(S.listino)); if (l.modoPaga === m.dataset.modoPaga) return; l.modoPaga = m.dataset.modoPaga; if (!l.tariffaOra) l.tariffaOra = 10; salvaListino(l); toast(l.modoPaga === "ore" ? `Da ora pago a ore col cronometro: ${eur(l.tariffaOra)} l'ora, le stelle dentro l'orario` : "Da ora pago a camera, con le stelle a parte, come prima"); return; }
@@ -2409,6 +2410,9 @@ function testoRif(r) { return `${r.luogoNome} · ${r.nome}`; }
 //  contano: nella giornata, nella camera aperta, nel «Ho finito», nel Visto e nella busta.
 // ============================================================================
 const PIANO_STELLE_MAX = 6, PIANO_MINUTI_MAX = 30;
+// 1.36.0: con la paga a ore il tetto delle stelle del giorno lo sceglie Michele (Paghe → Come pago le signore); a camera resta 6 e 30
+function pianoStelleMax() { const n = pagaAOre() ? Number(S.listino && S.listino.stelleGiorno) : 0; return n > 0 ? Math.round(n) : PIANO_STELLE_MAX; }
+function pianoMinutiMax() { const n = pagaAOre() ? Number(S.listino && S.listino.stelleMinuti) : 0; return n > 0 ? Math.round(n) : PIANO_MINUTI_MAX; }
 let memoAmmesse = new Map();
 function pianoDi(z, iso) { const p = S.piani && S.piani[`${z}_${iso}`]; return p && Array.isArray(p.stelle) && Array.isArray(p.passi) ? p : null; }
 // le pulizie del giorno SENZA il filtro del giro (giroVisibile guarda le stelle ammesse: qui non si può, si girerebbe a vuoto)
@@ -2416,7 +2420,7 @@ function pulizieGrezze(iso, z) { return Object.values(S.pulizie || {}).filter(p 
 // la chiave di una stella unica nel giorno (chiaveStella da sola si ripete: «SC08» è la stessa regola in Alba e in Tramonto)
 function kStella(p, r) { return `${p.id}|${chiaveStella(r)}`; }
 function minutiLavoriGiorno(z, iso) { return pulizieGrezze(iso, z).filter(p => p.tipo !== "stelle").reduce((s, p) => s + (Number(p.minuti) || 0), 0); }
-function tettoStelle(z, iso) { return minutiLavoriGiorno(z, iso) > 240 ? 3 : PIANO_STELLE_MAX; }   // giornata già lunga: al massimo 3
+function tettoStelle(z, iso) { return minutiLavoriGiorno(z, iso) > 240 ? Math.min(3, pianoStelleMax()) : pianoStelleMax(); }   // giornata già lunga: al massimo 3
 // tutte le stelle che il catalogo darebbe quel giorno (prima del piano)
 function rifinitureOggiTutte(z, iso) {
   const out = [];
@@ -2445,7 +2449,7 @@ function stelleAmmesse(z, iso) {
     else {
       si = new Set(); let min = 0; const gruppi = [];
       for (const r of tutte) { let g = gruppi.find(x => x[0].pulizia === r.pulizia); if (!g) gruppi.push(g = []); g.push(r); }
-      for (let giro = 0; si.size < max && gruppi.some(g => g.length > giro); giro++) for (const g of gruppi) { const r = g[giro]; if (!r || si.size >= max || min + (r.minuti || 0) > PIANO_MINUTI_MAX) continue; si.add(r.k); min += r.minuti || 0; }
+      for (let giro = 0; si.size < max && gruppi.some(g => g.length > giro); giro++) for (const g of gruppi) { const r = g[giro]; if (!r || si.size >= max || min + (r.minuti || 0) > pianoMinutiMax()) continue; si.add(r.k); min += r.minuti || 0; }
       if (congela) try { localStorage.setItem(kk, JSON.stringify({ firma, k: [...si] })); for (let i = localStorage.length - 1; i >= 0; i--) { const c = localStorage.key(i); if (c && c.startsWith("ricci_stelle_") && c.slice(-10) < L.aggiungiGiorni(L.oggiISO(), -2)) localStorage.removeItem(c); } } catch (e) {}
     }
   }
@@ -2473,12 +2477,12 @@ function pianoIngresso(z, iso) {
   const stelle = tutte.map((r, i) => ({ c: `S${i + 1}`, k: r.k, lavoro: cod.get(r.pulizia), dove: r.luogoNome, cosa: String(r.nome), minuti: r.minuti }));
   const firma = String(L.hashTesto(JSON.stringify([lav.map(x => [x.id, x.cosa, x.ospite]), stelle.map(x => x.k)])));
   const minuti = lav.filter(x => x.dove !== "altre camere").reduce((s, x) => s + x.minuti, 0);
-  return { z, iso, signora: SIG(z), giorno: L.dataLunga(iso), lavori: lav, stelle, firma, minuti, tetto: minuti > 240 ? 3 : PIANO_STELLE_MAX };
+  return { z, iso, signora: SIG(z), giorno: L.dataLunga(iso), lavori: lav, stelle, firma, minuti, tetto: tettoStelle(z, iso), minutiMax: pianoMinutiMax() };
 }
-const PIANO_SISTEMA = `Sei Sofia, la capo-governante delle Stanze di Ricci a Lesina: autorevole ma gentile, parli semplice. Prepari il lavoro di UNA signora delle pulizie per UN giorno, in modo che capisca subito cosa fare.
+const pianoSistema = () => `Sei Sofia, la capo-governante delle Stanze di Ricci a Lesina: autorevole ma gentile, parli semplice. Prepari il lavoro di UNA signora delle pulizie per UN giorno, in modo che capisca subito cosa fare.
 REGOLE
 1) Tutti i lavori della lista vanno fatti: non toglierne e non aggiungerne.
-2) STELLE (piccole rifiniture): scegline POCHE, solo le più importanti: al massimo quante dice "stelleMassimo" (di solito ${PIANO_STELLE_MAX}; 3 se i lavori fanno già più di 4 ore) e al massimo ${PIANO_MINUTI_MAX} minuti in tutto. Preferisci le camere dove l'ospite parte o arriva e le cose che l'ospite vede e tocca (bagno, letto, ingresso). Ogni stella va nel passo del suo lavoro (campo "lavoro").
+2) STELLE (piccole rifiniture): ${pagaAOre() ? "sono dentro le ore pagate, non costano a parte: scegli le più scadute e importanti, fino a" : "scegline POCHE, solo le più importanti: al massimo"} quante dice "stelleMassimo" (di solito ${pianoStelleMax()}; 3 se i lavori fanno già più di 4 ore) e al massimo ${pianoMinutiMax()} minuti in tutto. Preferisci le camere dove l'ospite parte o arriva e le cose che l'ospite vede e tocca (bagno, letto, ingresso). Ogni stella va nel passo del suo lavoro (campo "lavoro").
 3) ORDINE DEL GIRO: prima le camere dove l'ospite parte o arriva, poi le altre; scale, terrazzo, lavori a fondo e stelle in altre camere alla fine.
 4) Per ogni passo scrivi "fai": da 4 a 12 parole concrete, col tu (per esempio «cambio completo: lenzuola, asciugamani e bagno a fondo»).
 5) "riassunto": una o due frasi corte da dire a voce: quante camere, da dove cominciare, quante stelle (le «altre camere» nominale solo se ci metti stelle).
@@ -2500,8 +2504,8 @@ function pianoValida(o, inp, meta) {
     passi.push({ id: l.id, fai: String(x.fai || "").replace(/\s+/g, " ").trim().slice(0, 110), stelle: [] });
   }
   for (const l of inp.lavori) if (!visti.has(l.id)) passi.push({ id: l.id, fai: l.cosa, stelle: [] });
-  const scelte = []; let min = 0; const max = inp.tetto || PIANO_STELLE_MAX;
-  for (const s of nominate) { if (scelte.length >= max || min + (s.minuti || 0) > PIANO_MINUTI_MAX) continue; const lav = perL.get(s.lavoro), p = lav && passi.find(x => x.id === lav.id); if (!p) continue; p.stelle.push(s.k); scelte.push(s.k); min += s.minuti || 0; }
+  const scelte = []; let min = 0; const max = inp.tetto || pianoStelleMax(), minMax = inp.minutiMax || pianoMinutiMax();
+  for (const s of nominate) { if (scelte.length >= max || min + (s.minuti || 0) > minMax) continue; const lav = perL.get(s.lavoro), p = lav && passi.find(x => x.id === lav.id); if (!p) continue; p.stelle.push(s.k); scelte.push(s.k); min += s.minuti || 0; }
   for (const p of passi) if (!p.fai) p.fai = (inp.lavori.find(l => l.id === p.id) || {}).cosa || "";
   for (let i = passi.length - 1; i >= 0; i--) { const l = inp.lavori.find(x => x.id === passi[i].id); if (l && l.dove === "altre camere" && !passi[i].stelle.length) passi.splice(i, 1); }
   return { firma: inp.firma, fatto: S.db.adesso(), modello: meta.modello || "", ripiego: !!meta.ripiego, riassunto: String((o && o.riassunto) || "").replace(/\s+/g, " ").trim().slice(0, 300), fine: String((o && o.fine) || "").replace(/\s+/g, " ").trim().slice(0, 160), passi, stelle: scelte };
@@ -2509,7 +2513,7 @@ function pianoValida(o, inp, meta) {
 async function pianoChiedi(inp) {
   const testo = JSON.stringify({ signora: inp.signora, giorno: inp.giorno, minutiLavori: inp.minuti, stelleMassimo: inp.tetto,
     lavori: inp.lavori.map(x => ({ id: x.c, dove: x.dove, cosa: x.cosa, ospite: x.ospite, minuti: x.minuti })), stelle: inp.stelle.map(s => ({ k: s.c, lavoro: s.lavoro, dove: s.dove, cosa: s.cosa, minuti: s.minuti })) });
-  const { r, ripiego } = await chiediIA({ sistema: PIANO_SISTEMA, testo, secondi: 60, maxToken: 1600 });
+  const { r, ripiego } = await chiediIA({ sistema: pianoSistema(), testo, secondi: 60, maxToken: 1600 });
   const o = pianoLeggi(r && (r.grezzo || r.risposta));
   if (!o) throw new Error("piano non leggibile");
   return pianoValida(o, inp, { modello: r.modello, ripiego });
@@ -2588,7 +2592,7 @@ function parlatoArgon(lavori, rif, vedono, finito, v) {
   const camParlate = lavori.filter(p => p.tipo !== "stelle").map(p => { const n = nomeBreveCamera(camera(p.camera)), t = titoloBase(p); return `${n}${PAROLE.norm(t) === PAROLE.norm(n) ? "" : ", " + t.toLowerCase()}${p.partenza ? ", l'ospite parte" : p.arrivo ? ", arriva un ospite" : ""}`; });
   const parolaCam = lavori.some(p => p.tipo === "fisso" || p.tipo === "extra") ? (camParlate.length === 1 ? "un lavoro" : camParlate.length + " lavori") : (camParlate.length === 1 ? "una camera" : camParlate.length + " camere");
   const dice = lavori.filter(p => p.dettagli || p.istruzioni).map(p => `In ${p.tipo === "stelle" ? "altre camere" : nomeBreveCamera(camera(p.camera))}: ${[p.dettagli, p.istruzioni].filter(Boolean).map(senzaPunto).join(". ")}.`);
-  return [`${saluto()} ${nome}.`, camParlate.length ? `Oggi hai ${parolaCam}: ${elencoParlato(camParlate)}.` : "", min ? `In tutto ${L.testoOre(min)} di lavoro.` : "",
+  return [`${saluto()} ${nome}.`, camParlate.length ? `Oggi hai ${parolaCam}: ${elencoParlato(camParlate)}.` : "", min && !pagaAOre() ? `In tutto ${L.testoOre(min)} di lavoro.` : "",
     dice.length ? `${(lavori.find(p => p.dettagliDa) || {}).dettagliDa || "Michele"} ti raccomanda. ${dice.join(" ")}` : "",
     rif.length ? `E ${rif.length === 1 ? "una rifinitura" : rif.length + " rifiniture"}. ${rifinitureParlate(rif, true)} ${vedono.length ? `Le vede ${elencoParlato(vedono)}.` : ""}` : (vedono.length ? "Oggi niente rifiniture." : "Oggi sei sola in albergo: solo le camere, niente rifiniture."),
     "Lavora tranquilla col telefono in tasca. Quando hai finito tutto il giro, tocca il tasto grande: Ho finito."].filter(Boolean).join(" ");
@@ -2676,7 +2680,7 @@ function guidaPassi(z, iso) {
     const ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || rif.some(r => r.pulizia === p.id));
     const apri = anteprima ? quale : "Oggi";
     const visto = daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "";
-    passi.push({ k: "giro", breve: [arrivoDetto, pl.riassunto || giroDetto(apri), visto].filter(Boolean).join(" "), testo: [anteprima ? `${quale}:` : `${saluto()} ${nome}, buon lavoro!`, arrivoDetto, pl.riassunto || giroDetto(apri), min ? `In tutto circa ${L.testoOre(min)}.` : "", visto, difetto, anteprima ? "" : "Quando sei pronta col carrello, tocca: e poi."].filter(Boolean).join(" ") });
+    passi.push({ k: "giro", breve: [arrivoDetto, pl.riassunto || giroDetto(apri), visto].filter(Boolean).join(" "), testo: [anteprima ? `${quale}:` : `${saluto()} ${nome}, buon lavoro!`, arrivoDetto, pl.riassunto || giroDetto(apri), min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "", visto, difetto, anteprima ? "" : "Quando sei pronta col carrello, tocca: e poi."].filter(Boolean).join(" ") });
     ord.forEach((p, i) => {
       const ps = pianoPasso(pl, p.id) || {}, mie = rif.filter(r => r.pulizia === p.id), f = [p.dettagli, p.istruzioni].filter(Boolean);
       const chi = p.tipo === "stelle" ? "Le stelle nelle altre camere" : p.origine === "governante" ? `Lavoro a fondo in ${nomeDetto(p)}` : nomeDetto(p);
@@ -2689,9 +2693,9 @@ function guidaPassi(z, iso) {
   }
   if (anteprima) {
     const note = lavori.filter(p => p.dettagli || p.istruzioni).map(p => `da ${nomeDetto(p)}, ${senzaPunto([p.dettagli, p.istruzioni].filter(Boolean).join(". "))}`);
-    passi.push({ k: "giro", testo: [giroDetto(quale), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min ? `In tutto circa ${L.testoOre(min)}.` : "", note.length ? `Michele ti dice: ${note.join("; ")}.` : ""].filter(Boolean).join(" ") });
+    passi.push({ k: "giro", testo: [giroDetto(quale), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "", note.length ? `Michele ti dice: ${note.join("; ")}.` : ""].filter(Boolean).join(" ") });
   } else
-  passi.push({ k: "giro", breve: [arrivoDetto, giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", daDare.length ? `Prima dai il Visto a ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])}.` : ""].filter(Boolean).join(" "), testo: [`${saluto()} ${nome}, buon lavoro!`, arrivoDetto, giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min ? `In tutto circa ${L.testoOre(min)}.` : "",
+  passi.push({ k: "giro", breve: [arrivoDetto, giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", daDare.length ? `Prima dai il Visto a ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])}.` : ""].filter(Boolean).join(" "), testo: [`${saluto()} ${nome}, buon lavoro!`, arrivoDetto, giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "",
     daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "", difetto, "Quando sei pronta col carrello, tocca: e poi."].filter(Boolean).join(" ") });
   // i promemoria di tutta la giornata: prima le parole di Michele, poi le rifiniture camera per camera
   const ric = [];
@@ -2702,7 +2706,7 @@ function guidaPassi(z, iso) {
   for (const p of lavori) {
     const mie = rif.filter(r => r.pulizia === p.id), f = [p.dettagli, p.istruzioni].filter(Boolean), sempre = p.tipo === "stelle" ? [] : promemoriaCamera(p.camera);
     if (p.tipo === "stelle") { passi.push({ k: "cam", id: p.id, testo: `Adesso le rifiniture nelle altre camere: ${rifPerLavoro(mie).map(g => `${g.nome.replace(/:\s*/g, " ").toLowerCase()} in ${elencoParlato(g.dove)}`).join("; ") || "guarda la scheda"}.` }); continue; }
-    if (p.origine === "governante") { passi.push({ k: "cam", id: p.id, testo: [`Adesso un lavoro a fondo in ${nomeDetto(p)}: ${String(titoloBase(p) || "").toLowerCase()}.`, p.come ? `Come si fa: ${senzaPunto(p.come)}.` : "", Number(p.minuti) ? `Ci vogliono circa ${p.minuti} minuti.` : ""].filter(Boolean).join(" ") }); continue; }
+    if (p.origine === "governante") { passi.push({ k: "cam", id: p.id, testo: [`Adesso un lavoro a fondo in ${nomeDetto(p)}: ${String(titoloBase(p) || "").toLowerCase()}.`, p.come ? `Come si fa: ${senzaPunto(p.come)}.` : "", Number(p.minuti) && !pagaAOre() ? `Ci vogliono circa ${p.minuti} minuti.` : ""].filter(Boolean).join(" ") }); continue; }
     passi.push({ k: "cam", id: p.id, testo: [`Adesso ${nomeDetto(p)}: ${(titoloBase(p) + parteTesto(p)).toLowerCase()}.`, ospiteDetto(p), f.length ? `${p.dettagliDa || "Michele"} ti dice: ${senzaPunto(f.join(". "))}.` : "", sempre.length ? `Qui sempre: ${senzaPunto(sempre.join(", "))}.` : "", mie.length ? `Ricordati: ${rifDette(mie, 5)}.` : ""].filter(Boolean).join(" ") });
   }
   if (anteprima) return passi;
@@ -2778,7 +2782,7 @@ function guidaRispondi(frasi) {
   if (ha(/ (michele|raccomand|ha detto|dice il capo|messaggi)/)) { const n = lavori.filter(p => p.dettagli || p.istruzioni); const m = messaggioDelGiorno(oggi); guidaParla(n.length || m ? [m ? `Michele ti scrive: ${senzaPunto(m.testo)}.` : "", ...n.map(p => `Da ${nomeDetto(p)}: ${senzaPunto([p.dettagli, p.istruzioni].filter(Boolean).join(". "))}.`)].filter(Boolean).join(" ") : "Oggi Michele non ha lasciato raccomandazioni."); return; }
   if (ha(/ (finit|ho fatto tutto|abbiamo fatto|chiudo)/)) { guidaParla("Quando hai fatto tutto il giro, tocca il tasto verde HO FINITO. Ti rileggo le rifiniture e poi puoi andare."); return; }
   if (ha(/ (visto|controll|guardare|guardo)/)) { const d = vistiDaDare(z), vd = nomiChiVede(chiVedeIl(z, oggi)); guidaParla([d.length ? `Devi guardare il lavoro di ${elencoParlato([...new Set(d.map(x => x.finitoDa || SIG(x.zona)))])}: sali, guarda i punti scritti e tocca VISTO.` : "Oggi non c'è niente da guardare.", vd.length ? `Il tuo lavoro lo guarda ${elencoParlato(vd)}.` : "Il tuo lavoro oggi non lo guarda nessuno: solo le camere."].join(" ")); return; }
-  if (ha(/ (ore|quanto ci|quanto tempo|tempo)/)) { const m = minutiGiornata(lavori, rif); guidaParla(m ? `Oggi hai circa ${L.testoOre(m)} di lavoro.` : "Oggi non hai lavori."); return; }
+  if (ha(/ (ore|quanto ci|quanto tempo|tempo)/)) { if (pagaAOre()) { const tg = turnoDelGiorno(z, L.oggiISO()); guidaParla(tg && tg.inizio && !tg.fine ? `Sei qui da ${testoOreDette(minutiDa(tg.inizio))}. Il tempo lo segna il cronometro: finisci con calma e poi tocca HO FINITO.` : tg && tg.inizio && tg.fine ? `Oggi hai lavorato ${testoOreDette(tg.minuti)}.` : "Il tempo lo segna il cronometro: tocca Sono arrivata quando entri e HO FINITO quando hai finito."); return; } const m = minutiGiornata(lavori, rif); guidaParla(m ? `Oggi hai circa ${L.testoOre(m)} di lavoro.` : "Oggi non hai lavori."); return; }
   if (ha(/ (salvadanaio|premio|soldi|paga|quante ore|le mie ore|ore ho fatto|ore fatte)/)) { if (pagaAOre()) { const b = bustaOre(z, L.settimanaCorrente()); guidaParla(`Questa settimana hai ${testoOreDette(b.minuti)} di lavoro: ${eur(b.totale)}. Le stelle non si pagano a parte: sono dentro le tue ore. Il resto lo trovi in: I miei soldi, in basso.`); return; } const pr = L.premioSettimana(S.visti, S.controlli, S.pulizie, z, L.settimanaCorrente(), S.argon); guidaParla(pr.stato === "spento" ? "I soldi li trovi in: I miei soldi, in basso." : `Il salvadanaio di questa settimana ha ${eur(pr.stato === "pochi" ? pr.promesso : pr.euro)}. Gli altri soldi li trovi in: I miei soldi.`); return; }
   if (ha(/ (cosa devo|che devo|cosa faccio|che faccio|cosa c e|che c e|da fare|camere|giro|oggi|aiut)/)) { guida.chiesto++; const p = g.passo; guidaParla((guida.chiesto > 1 ? "Nessun problema, te lo ripeto con calma. " : "") + (p.k === "cam" || p.k === "fine" || p.k === "ricorda" ? p.testo : g.passi[0].testo)); return; }
   guidaParla("Ti posso dire solo le cose di oggi: le camere, cosa fare in ogni camera, le rifiniture e cosa ha detto Michele. Chiedimi: cosa devo fare? Oppure: e poi? Oppure il nome di una camera.");
@@ -2866,7 +2870,7 @@ function schedaGiornata(p, rif, anteprima, extra = {}) {
 // con HO FINITO, la barra resterebbe ferma a zero tutto il giorno.)
 function testaGiro(z, giorno, ord, rif, anteprima) {
   const minuti = Math.round(minutiGiornata(ord, rif) / 15) * 15;   // al quarto d'ora: «3 ore», non «2 ore e 59»
-  const segni = [minuti ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
+  const segni = [minuti && !pagaAOre() ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
     rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
   return `<div class="gs-giro-t"><span class="gs-segni-g">${segni.join("")}</span><span class="gp-aiuto">Tocca una camera: ${esc(nomeGov())} te la spiega</span></div>`;   // 1.30.0
 }
@@ -3026,7 +3030,7 @@ function fondiCamera(p) {
   const qui = Object.values(S.pulizie || {}).filter(x => x.data === p.data && x.zona === p.zona && x.camera === p.camera && x.origine === "governante" && x.id !== p.id && x.stato !== "non_fatta" && !x.nonServe);
   if (!qui.length) return "";
   const ico = (f) => ICONE_SVG[f.icona] ? ICONA(f.icona) : (f.icona && !/^[a-z]+$/i.test(f.icona) ? esc(f.icona) : "✨");
-  const riga = (f) => { const k = `${f.id}|fondo`; return `<details class="sf-passo k-fondo" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">✨</span><span class="sf-passo-i" aria-hidden="true">${ico(f)}</span><span class="sf-passo-t">${esc(String(titoloBase(f) || "Lavoro a fondo"))}<small>${Number(f.minuti) ? `${f.minuti} minuti` : "lavoro a fondo"}</small></span></summary><div class="sf-passo-x"><p class="sf-fondo-come">${esc(f.come || "Fallo bene, con calma: è un lavoro a fondo.")}</p></div></details>`; };
+  const riga = (f) => { const k = `${f.id}|fondo`; return `<details class="sf-passo k-fondo" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">✨</span><span class="sf-passo-i" aria-hidden="true">${ico(f)}</span><span class="sf-passo-t">${esc(String(titoloBase(f) || "Lavoro a fondo"))}<small>${Number(f.minuti) && !pagaAOre() ? `${f.minuti} minuti` : "lavoro a fondo"}</small></span></summary><div class="sf-passo-x"><p class="sf-fondo-come">${esc(f.come || "Fallo bene, con calma: è un lavoro a fondo.")}</p></div></details>`; };
   return `<section class="sf-seq sf-fondi"><div class="sf-seq-t">✨ ${p.origine === "governante" ? "Qui anche" : "In questa camera anche"} ${qui.length === 1 ? "un lavoro a fondo" : qui.length + " lavori a fondo"}</div>${qui.map(riga).join("")}</section>`;
 }
 // ---- la stella toccata: una nuvoletta sotto la figurina con cosa fare (e «Dimmelo»: lo dice Sofia) -----------------------
@@ -3146,13 +3150,13 @@ function postoDisegno(posto, testo) {
   return "camera";
 }
 // ============================================================================
-//  1.34.0 IL DISEGNO DELLA CAMERA IN 3D, A MATITA (Michele, 2/11: «i disegni ancora più dettagliati e molto più chiari,
-//  non devono avere nessun tipo di dubbio»). Non più la pianta vista dall'alto (un rettangolo può essere tutto): la camera
-//  come una casa delle bambole aperta davanti, in prospettiva, dove ogni cosa si riconosce al volo: il letto con la testiera,
-//  i cuscini e la coperta; l'armadio alto con le ante e le maniglie; il frigo col congelatore; la finestra con le tende; il
-//  clima sul muro; il quadro sopra il letto; la lampada che pende dal soffitto; la TV; la porta con la maniglia; e il bagno
-//  sotto, con la doccia col soffione, il WC, il lavabo col rubinetto e lo specchio, il phon, gli asciugamani, il cestino.
-//  OGNI COSA HA LA SUA SCRITTA. I numeri delle stelle e dei lavori a fondo stanno sopra la cosa, e lampeggiano.
+//  1.36.0 IL DISEGNO DICE ESATTAMENTE DOVE E COSA (Michele, 2/11: «vedo un cerchietto sul letto, non riesco a capire il
+//  piedino del letto; un cerchietto sulla finestra: non so se devo pulire i vetri o lavare la tenda; un cerchietto sulla
+//  parete: non so se devo pulire dove si appendono gli abiti o il muro»). Stessa casa delle bambole a matita della 1.34,
+//  con più cose dentro (il termosifone, l'interruttore, gli appendiabiti, il numero sulla porta e lo spioncino, i piedini
+//  del letto, lo specchio, la mensola, il bidet, lo scopino, il portarotolo, la finestra del bagno, i pensili, il forno…),
+//  l'anello esattamente sulla PARTE da pulire e, sotto il numero, LA PAROLA («piedini», «vetro dentro», «tende», «appendiabiti»).
+//  In più i posti nuovi: il balcone, il corridoio, le scale, l'ingresso, il terrazzo, la lavanderia (le zone comuni).
 // ============================================================================
 // la prospettiva (isometrica): u va verso destra-in giù, v verso sinistra-in giù, z in su. o = { x, y, s } (dove sta
 // l'angolo in fondo e quanto è grande un metro in pixel)
@@ -3172,17 +3176,22 @@ function isoBox(o, u, v, z, w, d, h, col, tratto, opz = {}) {
   const sin = [[u, v + d, z], [u + w, v + d, z], [u + w, v + d, z + h], [u, v + d, z + h]];
   const des = [[u + w, v, z], [u + w, v + d, z], [u + w, v + d, z + h], [u + w, v, z + h]];
   const tr = opz.trattoSolo === "sopra" ? [tratto, "", ""] : opz.trattoSolo === "lati" ? ["", tratto, tratto] : [tratto, tratto, tratto];
+  const sp = opz.sp || 2;
   let s = "";
-  if (!opz.senzaSinistra) s += isoPoly(o, sin, col, tr[1], 2) + `<path d="${isoPath(o, sin)}" fill="${medio}"/>`;
-  if (!opz.senzaDestra) s += isoPoly(o, des, col, tr[2], 2) + `<path d="${isoPath(o, des)}" fill="${scuro}"/>`;
-  if (!opz.senzaSopra) s += isoPoly(o, sopra, opz.sopraCol || col, tr[0], 2);
+  if (!opz.senzaSinistra) s += isoPoly(o, sin, col, tr[1], sp) + `<path d="${isoPath(o, sin)}" fill="${medio}"/>`;
+  if (!opz.senzaDestra) s += isoPoly(o, des, col, tr[2], sp) + `<path d="${isoPath(o, des)}" fill="${scuro}"/>`;
+  if (!opz.senzaSopra) s += isoPoly(o, sopra, opz.sopraCol || col, tr[0], sp);
   return s;
 }
 // un rettangolo appoggiato al muro di destra (v = 0) o a quello di sinistra (u = 0)
 function isoMuroR(o, u1, u2, z1, z2, col, tratto, sp = 2, v = 0) { return isoPoly(o, [[u1, v, z1], [u2, v, z1], [u2, v, z2], [u1, v, z2]], col, tratto, sp); }
 function isoMuroL(o, v1, v2, z1, z2, col, tratto, sp = 2, u = 0) { return isoPoly(o, [[u, v1, z1], [u, v2, z1], [u, v2, z2], [u, v1, z2]], col, tratto, sp); }
+// un rettangolo steso per terra (tappeto, zerbino, griglia)
+function isoTerra(o, u, v, w, d, col, tratto, sp = 1.4, z = 0.02) { return isoPoly(o, [[u, v, z], [u + w, v, z], [u + w, v + d, z], [u, v + d, z]], col, tratto, sp); }
 function isoLinea(o, a, b, sp = 1.8, extra = "") { const p = isoP(o, ...a), q = isoP(o, ...b); return `<path d="M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${q[0].toFixed(1)} ${q[1].toFixed(1)}" fill="none" stroke="${ISO_INK}" stroke-width="${sp}" stroke-linecap="round"${extra}/>`; }
 function isoEllisse(o, u, v, z, ru, rv, col, sp = 1.8) { const c = isoP(o, u, v, z); return `<ellipse cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" rx="${(ru * ISO_CX * o.s).toFixed(1)}" ry="${(rv * ISO_SY * o.s).toFixed(1)}" fill="${col}" stroke="${ISO_INK}" stroke-width="${sp}"/>`; }
+// un cerchio «in piedi» (sul muro, o visto di fronte): per lampade, spioncini, oblò
+function isoTondo(o, u, v, z, r, col, sp = 1.4) { const c = isoP(o, u, v, z); return `<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="${(r * o.s).toFixed(1)}" fill="${col}" stroke="${ISO_INK}" stroke-width="${sp}"/>`; }
 // un cilindro (cestino, lampada): il corpo e il cerchio di sopra
 function isoCilindro(o, u, v, z, r, h, col, tratto) {
   const a = isoP(o, u - r * 0.72, v + r * 0.72, z), b = isoP(o, u + r * 0.72, v - r * 0.72, z), c = isoP(o, u + r * 0.72, v - r * 0.72, z + h), d = isoP(o, u - r * 0.72, v + r * 0.72, z + h);
@@ -3198,6 +3207,14 @@ function isoStanza(o, U, V, H, pav, muro) {
   s += isoLinea(o, [0, V, 0.18], [0, 0, 0.18], 1.4) + isoLinea(o, [0, 0, 0.18], [U, 0, 0.18], 1.4);
   return s;
 }
+// la plafoniera: un disco chiaro vicino al soffitto (il soffitto non si disegna, ma il disco con la scritta si capisce)
+function isoPlafoniera(o, u, v, z) { return isoEllisse(o, u, v, z, 0.42, 0.42, "#FFF7D6", 1.6) + isoEllisse(o, u, v, z + 0.02, 0.2, 0.2, "#FFE6A0", 1); }
+// la finestra: il vetro azzurro con la croce
+function isoFinestraR(o, u1, u2, z1, z2) { const um = (u1 + u2) / 2, zm = (z1 + z2) / 2; return isoMuroR(o, u1, u2, z1, z2, "#DDF1FA", "mtAc", 2, 0.02) + isoLinea(o, [um, 0.02, z1], [um, 0.02, z2], 1.4) + isoLinea(o, [u1, 0.02, zm], [u2, 0.02, zm], 1.4); }
+function isoFinestraL(o, v1, v2, z1, z2) { const vm = (v1 + v2) / 2, zm = (z1 + z2) / 2; return isoMuroL(o, v1, v2, z1, z2, "#DDF1FA", "mtAc", 2, 0.02) + isoLinea(o, [0.02, vm, z1], [0.02, vm, z2], 1.4) + isoLinea(o, [0.02, v1, zm], [0.02, v2, zm], 1.4); }
+// la porta sul muro di sinistra (u = 0) o di destra (v = 0): l'anta col pomello
+function isoPortaL(o, v1, v2, h = 3.8, col = "#F6E3C8") { return isoMuroL(o, v1, v2, 0, h, col, "mtOr", 2, 0.02) + isoLinea(o, [0.02, v1 + 0.2, 0.6], [0.02, v2 - 0.2, 0.6], 1.2) + isoLinea(o, [0.02, v1 + 0.2, h - 1.5], [0.02, v2 - 0.2, h - 1.5], 1.2) + isoEllisse(o, 0.04, v1 + 0.22, 1.9, 0.09, 0.09, ISO_INK, 1); }
+function isoPortaR(o, u1, u2, h = 3.8, col = "#F6E3C8") { return isoMuroR(o, u1, u2, 0, h, col, "mtOr", 2, 0.02) + isoLinea(o, [u1 + 0.2, 0.02, 0.6], [u2 - 0.2, 0.02, 0.6], 1.2) + isoLinea(o, [u1 + 0.2, 0.02, h - 1.5], [u2 - 0.2, 0.02, h - 1.5], 1.2) + isoEllisse(o, u1 + 0.25, 0.04, 1.9, 0.09, 0.09, ISO_INK, 1); }
 // la scritta accanto alla cosa, con la lineetta che la indica
 function isoEti(o, p3, testo, dx, dy, ancora = "start", linea = true) {
   const p = isoP(o, ...p3), x = p[0] + dx, y = p[1] + dy;
@@ -3209,72 +3226,110 @@ function isoCamera(o, opz) {
   const U = 9, V = 6, H = 5.2, singola = !!opz.singola, soloLetti = !!opz.soloLetti;
   let s = isoStanza(o, U, V, H, { col: "#FBF6EC", tratto: "mtGr" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
   const eti = [], posti = {};
-  // --- sul muro di sinistra (u = 0), dal fondo in avanti: la TV, il frigo (col cestino accanto), la porta
+  // --- sul muro di sinistra (u = 0), dal fondo in avanti: la TV con le prese sotto, il clima, lo specchio, il frigo (col cestino
+  //     accanto), gli appendiabiti, l'interruttore, la porta col numero e lo spioncino, lo zerbino
   if (!soloLetti) {
     s += isoBox(o, 0.02, 0.5, 2.4, 0.12, 1.5, 0.95, "#3E4A5A", "", { scuro: "rgba(0,0,0,.25)", medio: "rgba(0,0,0,.1)" }) + isoLinea(o, [0.14, 0.65, 2.55], [0.14, 1.85, 2.55], 1, ' stroke="#9FB0C4"');
-    eti.push([[0.12, 2.0, 2.9], "TV", -8, 4, "end", false]); posti.tv = [0.1, 1.25, 2.9];
+    eti.push([[0.12, 2.0, 2.9], "TV", -8, 4, "end", false]); posti.tv = [0.1, 1.25, 2.9]; posti["tv.retro"] = [0.1, 1.25, 2.45];
+    s += isoMuroL(o, 1.1, 1.45, 0.4, 0.62, "#FFFFFF", "", 1.1, 0.03) + isoEllisse(o, 0.04, 1.27, 0.51, 0.045, 0.045, ISO_INK, 0.8); posti.prese = [0.03, 1.27, 0.5];
     s += isoBox(o, 0.02, 0.6, 4.3, 0.4, 1.7, 0.45, "#FFFFFF", "", {}) + isoLinea(o, [0.42, 0.8, 4.4], [0.42, 2.1, 4.4], 1.1) + isoLinea(o, [0.42, 0.8, 4.53], [0.42, 2.1, 4.53], 1.1);
-    eti.push([[0.2, 1.45, 4.75], "clima", -4, -9, "middle", false]); posti.clima = [0.25, 1.45, 4.55];
+    eti.push([[0.2, 1.45, 4.75], "clima", -4, -9, "middle", false]); posti.clima = [0.25, 1.45, 4.55]; posti["clima.filtri"] = [0.3, 1.45, 4.42]; posti["clima.griglia"] = [0.25, 1.45, 4.62];
+    s += isoMuroL(o, 2.1, 2.8, 2.55, 3.55, "#DDF1FA", "mtAc", 1.6, 0.03) + isoLinea(o, [0.03, 2.25, 2.7], [0.03, 2.5, 3.4], 1, ' stroke="#FFFFFF"');
+    eti.push([[0.03, 2.45, 3.55], "specchio", -2, -9, "middle", false]); posti.specchio = [0.03, 2.45, 3.05];
     s += isoBox(o, 0.1, 2.4, 0, 0.9, 1.1, 2.0, "#FFFFFF", "", {}) + isoLinea(o, [1.0, 2.4, 1.4], [1.0, 3.5, 1.4], 1.6) + isoLinea(o, [1.0, 3.35, 0.35], [1.0, 3.35, 1.15], 2.2) + isoLinea(o, [1.0, 3.35, 1.55], [1.0, 3.35, 1.85], 2.2);
-    eti.push([[1.0, 2.95, 2.0], "frigo", 0, -13, "middle", false]); posti.frigo = [0.6, 2.95, 2.1];
+    eti.push([[1.0, 2.95, 2.0], "frigo", 0, -13, "middle", false]); posti.frigo = [0.6, 2.95, 1.2]; posti["frigo.guarnizione"] = [1.0, 3.35, 1.0]; posti["frigo.retro"] = [0.3, 2.95, 0.3];
+    s += isoCilindro(o, 0.45, 2.75, 2.0, 0.14, 0.3, "#AEBBCB", "") + isoLinea(o, [0.6, 2.75, 2.2], [0.72, 2.75, 2.34], 1.4); posti.bollitore = [0.45, 2.75, 2.3];
     s += isoCilindro(o, 1.1, 4.0, 0, 0.3, 0.6, "#E9EEF7", "mtGr"); eti.push([[1.1, 4.0, 0.3], "cestino", -7, 22, "end"]); posti.cestino = [1.1, 4.0, 0.65];
+    // gli appendiabiti (la barra coi ganci) e l'interruttore accanto alla porta
+    s += isoLinea(o, [0.03, 3.65, 3.55], [0.03, 4.35, 3.55], 2.4); for (const v of [3.78, 4.0, 4.22]) s += isoLinea(o, [0.03, v, 3.55], [0.03, v, 3.33], 1.8) + isoEllisse(o, 0.04, v, 3.31, 0.05, 0.05, ISO_INK, 0.8);
+    eti.push([[0.03, 4.0, 3.55], "ganci", -2, -10, "middle", false]); posti.appendiabiti = [0.03, 4.0, 3.45];
+    s += isoMuroL(o, 4.22, 4.42, 2.3, 2.52, "#FFFFFF", "", 1.1, 0.03) + isoLinea(o, [0.04, 4.32, 2.34], [0.04, 4.32, 2.48], 1.2); posti.interruttori = [0.03, 4.32, 2.41];
+    s += isoTerra(o, 0.35, 4.75, 0.9, 0.75, "#D9C9A8", "mtOr"); posti.zerbino = [0.8, 5.12, 0.05];
   }
-  s += isoMuroL(o, 4.5, 5.7, 0, 3.8, "#F6E3C8", "mtOr", 2, 0.02) + isoLinea(o, [0.02, 4.7, 0.6], [0.02, 5.5, 0.6], 1.2) + isoLinea(o, [0.02, 4.7, 2.3], [0.02, 5.5, 2.3], 1.2) + isoEllisse(o, 0.04, 4.72, 1.9, 0.09, 0.09, "#2B3A4A", 1);
-  eti.push([[0, 5.1, 3.8], "porta", 0, -10, "middle", false]); posti.porta = [0.05, 5.1, 2.1];
-  // --- sul muro di destra (v = 0), dal fondo verso destra: la finestra con le tende e il clima sopra, il letto col quadro, l'armadio
-  s += isoMuroR(o, 0.7, 2.7, 2.0, 4.3, "#DDF1FA", "mtAc", 2, 0.02) + isoLinea(o, [1.7, 0.02, 2.0], [1.7, 0.02, 4.3], 1.4) + isoLinea(o, [0.7, 0.02, 3.15], [2.7, 0.02, 3.15], 1.4);
+  s += isoPortaL(o, 4.5, 5.7, 3.8) + isoMuroL(o, 4.95, 5.25, 3.25, 3.47, "#FFFFFF", "", 1.1, 0.03) + isoTondo(o, 0.03, 5.1, 2.95, 0.07, "#FFFFFF", 1.1);
+  eti.push([[0, 5.1, 3.8], "porta", 0, 17, "middle", false]); posti.porta = [0.05, 5.1, 2.1]; posti["porta.anta"] = [0.05, 5.0, 2.3]; posti["porta.maniglia"] = [0.04, 4.72, 1.9]; posti["porta.numero"] = [0.03, 5.1, 3.3];
+  // --- sul muro di destra (v = 0), dal fondo verso destra: la finestra con le tende, il davanzale, il termosifone sotto, la
+  //     tapparella sopra; il letto col quadro; l'armadio
+  s += isoFinestraR(o, 0.7, 2.7, 2.0, 4.3);
+  s += isoLinea(o, [1.78, 0.03, 2.95], [1.78, 0.03, 3.35], 2.6) + isoEllisse(o, 1.78, 0.03, 3.14, 0.07, 0.07, ISO_INK, 0.8);   // la maniglia
+  s += isoBox(o, 0.65, 0.02, 1.9, 2.1, 0.22, 0.1, "#FFFFFF", "", {});   // il davanzale
+  s += isoBox(o, 1.0, 0.06, 0.3, 1.4, 0.16, 0.95, "#FFFFFF", "", {}); for (let i = 1; i < 7; i++) s += isoLinea(o, [1.0 + i * 0.2, 0.22, 0.38], [1.0 + i * 0.2, 0.22, 1.18], 1.1);   // il termosifone
   s += isoMuroR(o, 0.25, 0.75, 1.5, 4.5, "#F6E3C8", "mtOr", 1.8, 0.06) + isoMuroR(o, 2.65, 3.15, 1.5, 4.5, "#F6E3C8", "mtOr", 1.8, 0.06) + isoLinea(o, [0.2, 0.06, 4.55], [3.2, 0.06, 4.55], 2.2);
-  eti.push([[1.7, 0, 1.75], "finestra", 0, 6, "middle", false]); posti.finestra = [1.7, 0.1, 2.9]; posti.balcone = posti.finestra;
+  s += isoBox(o, 0.6, 0.02, 4.6, 2.2, 0.3, 0.38, "#F6E3C8", "mtOr", { sp: 1.4 });   // il cassonetto della tapparella
+  eti.push([[1.7, 0, 1.75], "finestra", 0, 6, "middle", false]); eti.push([[1.7, 0.2, 0.3], "termosifone", 0, 16, "middle", false]); eti.push([[1.7, 0.1, 4.98], "tapparella", 0, 13, "middle", false]);
+  posti.finestra = [1.7, 0.1, 2.9]; posti["finestra.vetro"] = [1.2, 0.03, 2.6]; posti["finestra.vetroEsterno"] = [1.2, 0.03, 3.75]; posti["finestra.maniglia"] = [1.78, 0.04, 3.14]; posti["finestra.davanzale"] = [1.7, 0.22, 1.98]; posti["finestra.telaio"] = [0.74, 0.03, 3.15]; posti.zanzariera = [2.2, 0.03, 2.6];
+  posti.tende = [0.5, 0.07, 3.0]; posti["tende.bastone"] = [1.7, 0.07, 4.55]; posti.tapparella = [1.7, 0.12, 4.8]; posti.termosifone = [1.7, 0.2, 0.75]; posti.balcone = posti.finestra;
   const lu = singola ? 4.4 : 3.75, lw = singola ? 1.7 : 3.0, cen = lu + lw / 2;
   s += isoMuroR(o, cen - 0.65, cen + 0.65, 3.15, 4.15, "#8A5A3A", "", 2, 0.03) + isoMuroR(o, cen - 0.53, cen + 0.53, 3.27, 4.03, "#E1F5E5", "", 1.2, 0.04) + isoLinea(o, [cen - 0.5, 0.05, 3.45], [cen - 0.1, 0.05, 3.8], 1.4) + isoLinea(o, [cen - 0.1, 0.05, 3.8], [cen + 0.15, 0.05, 3.58], 1.4) + isoLinea(o, [cen + 0.15, 0.05, 3.58], [cen + 0.5, 0.05, 3.9], 1.4) + isoEllisse(o, cen + 0.32, 0.05, 3.9, 0.09, 0.09, "#FFD64D", 1.2);
-  eti.push([[cen, 0, 4.15], "quadro", 0, -22, "middle", false]); posti.quadro = [cen, 0.1, 3.65];
+  eti.push([[cen, 0, 4.15], "quadro", 0, -22, "middle", false]); posti.quadro = [cen, 0.1, 3.65]; posti["pareti.macchie"] = [3.6, 0.05, 2.8]; posti.battiscopa = [7.2, 0.05, 0.15];
   s += isoBox(o, 7.6, 0.05, 0, 1.35, 0.8, 4.0, "#F6E3C8", "mtOr", { trattoSolo: "lati" }) + isoLinea(o, [8.27, 0.85, 0.1], [8.27, 0.85, 3.9], 1.6) + isoLinea(o, [8.12, 0.85, 1.9], [8.12, 0.85, 2.4], 2.6) + isoLinea(o, [8.42, 0.85, 1.9], [8.42, 0.85, 2.4], 2.6);
-  eti.push([[8.27, 0.45, 4.0], "armadio", 0, -12, "middle", false]); posti.armadio = [8.27, 0.45, 4.1];
-  posti.pareti = [7.0, 0.05, 4.5]; posti.camera = posti.pareti;
-  // --- per terra: i comodini con l'abat-jour, il letto (testiera, materasso, cuscini, coperta)
+  eti.push([[8.27, 0.45, 4.0], "armadio", 0, -12, "middle", false]); posti.armadio = [8.27, 0.45, 4.1]; posti["armadio.sopra"] = [8.27, 0.45, 4.05]; posti["armadio.ante"] = [8.27, 0.9, 2.2]; posti["armadio.dentro"] = [8.27, 0.9, 2.6]; posti["armadio.sotto"] = [8.27, 0.9, 0.15];
+  posti.pareti = [7.0, 0.05, 4.5]; posti.camera = [4.5, 3.0, 2.6];
+  // --- per terra: i comodini con l'abat-jour (e il telecomando), il letto (testiera, materasso, cuscini, coperta, piedini), lo scrittoio
   const cu = [lu - 0.8, lu + lw + 0.1];
-  for (const x of cu) { s += isoBox(o, x, 0.1, 0, 0.7, 0.8, 1.1, "#F6E3C8", "", {}) + isoCilindro(o, x + 0.35, 0.5, 1.1, 0.12, 0.3, "#F6E3C8", "") + isoBox(o, x + 0.1, 0.25, 1.4, 0.5, 0.5, 0.32, "#FFF0B8", "mtGi", {}); }
-  eti.push([[cu[1] + 0.7, 0.9, 0], "comodino", 8, 16, "start"]); posti.comodino = [cu[1] + 0.35, 0.5, 1.8];
+  for (const x of cu) { s += isoBox(o, x, 0.1, 0, 0.7, 0.8, 1.1, "#F6E3C8", "", {}) + isoLinea(o, [x + 0.1, 0.9, 0.55], [x + 0.6, 0.9, 0.55], 1) + isoCilindro(o, x + 0.35, 0.5, 1.1, 0.12, 0.3, "#F6E3C8", "") + isoBox(o, x + 0.1, 0.25, 1.4, 0.5, 0.5, 0.32, "#FFF0B8", "mtGi", {}); }
+  s += isoBox(o, cu[1] + 0.08, 0.62, 1.1, 0.42, 0.14, 0.07, "#3E4A5A", "", { sp: 1 });   // il telecomando
+  eti.push([[cu[1] + 0.7, 0.9, 0], "comodino", 8, 16, "start"]); posti.comodino = [cu[1] + 0.35, 0.5, 1.15]; posti.abatjour = [cu[1] + 0.35, 0.5, 1.62]; posti.telecomandi = [cu[1] + 0.29, 0.69, 1.2]; posti.cassetti = [cu[1] + 0.35, 0.9, 0.55];
   s += isoBox(o, lu, 0.05, 0, lw, 0.25, 2.0, "#8A5A3A", "", { scuro: "rgba(0,0,0,.18)" });
-  s += isoBox(o, lu, 0.3, 0, lw, 4.0, 0.85, "#FFFFFF", "", {});
+  s += isoBox(o, lu, 0.3, 0.2, lw, 4.0, 0.65, "#FFFFFF", "", {});
+  for (const x of [lu + 0.08, lu + lw - 0.26]) s += isoBox(o, x, 4.1, 0, 0.18, 0.18, 0.2, "#8A5A3A", "", { sp: 1.2 });   // i piedini davanti
   if (singola) s += isoBox(o, lu + 0.25, 0.5, 0.85, 1.2, 0.9, 0.35, "#FFFFFF", "", {});
   else s += isoBox(o, lu + 0.3, 0.5, 0.85, 1.15, 0.9, 0.35, "#FFFFFF", "", {}) + isoBox(o, lu + 1.55, 0.5, 0.85, 1.15, 0.9, 0.35, "#FFFFFF", "", {});
   s += isoBox(o, lu - 0.08, 1.9, 0.85, lw + 0.16, 2.4, 0.18, "#DCEBFA", "mtAz", {}) + isoLinea(o, [lu - 0.08, 2.4, 1.03], [lu + lw + 0.08, 2.4, 1.03], 1.4);
-  eti.push([[cen, 4.3, 0.5], singola ? "letto singolo" : "letto matrimoniale", 0, 20, "middle", false]); posti.letto = [cen, 2.9, 1.1];
-  // il soffitto: l'angolo in alto (per le ragnatele, la plafoniera)
-  posti.soffitto = [0.7, 0.7, 4.9];
-  posti.pavimento = [7.8, 5.6, 0.05]; posti.tavolo = posti.pavimento; posti.divano = posti.pavimento;
+  eti.push([[cen, 4.3, 0.5], singola ? "letto singolo" : "letto matrimoniale", 0, 20, "middle", false]);
+  posti.letto = [cen, 2.9, 1.1]; posti["letto.sotto"] = [cen, 4.35, 0.12]; posti["letto.testiera"] = [cen, 0.17, 1.6]; posti["letto.piedini"] = [lu + 0.17, 4.2, 0.12]; posti["letto.spostato"] = [cen, 0.05, 0.45];
+  posti.materasso = [cen, 2.9, 0.9]; posti.cuscini = [lu + (singola ? 0.85 : 0.87), 0.95, 1.25]; posti.coperta = [cen, 3.3, 1.06];
+  if (!soloLetti) { s += isoBox(o, 7.5, 4.55, 0, 1.4, 0.7, 0.78, "#F6E3C8", "mtOr", { trattoSolo: "lati", sopraCol: "#FBF6EC" }) + isoBox(o, 7.85, 5.35, 0, 0.5, 0.45, 0.48, "#F6E3C8", "", { sp: 1.2 }) + isoBox(o, 7.85, 5.7, 0.48, 0.5, 0.1, 0.55, "#F6E3C8", "", { sp: 1.2 }); eti.push([[7.4, 4.9, 0.78], "scrittoio", -8, 8, "end", false]); posti.scrivania = [8.2, 4.9, 0.85]; }
+  else posti.scrivania = posti.comodino;
+  // il soffitto: l'angolo in alto (ragnatele) e la plafoniera
+  // il soffitto: l'angolo in alto (ragnatele) e la plafoniera (lì vicino: in camera il disco non si disegna, l'angolo è già pieno)
+  posti.soffitto = [0.5, 0.5, 4.95]; posti["soffitto.angoli"] = posti.soffitto; posti.plafoniera = [1.4, 1.4, 5.0];
+  posti.pavimento = [5.6, 5.4, 0.05]; posti["pavimento.angoli"] = [0.35, 0.35, 0.05]; posti.tavolo = posti.scrivania; posti.divano = posti.pavimento;
   return { svg: s, eti, posti, U, V, H };
 }
 // ---- il bagno --------------------------------------------------------------------------------------------------------
 function isoBagno(o, opz) {
-  const U = 5.6, V = 5.2, H = 5.5;
+  const U = 5.6, V = 6.4, H = 5.5, casa = !!opz.lavatrice;
   let s = isoStanza(o, U, V, H, { col: "#E6F6F9", tratto: "mtAc" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
   const eti = [], posti = {};
-  // gli asciugamani sul muro di sinistra
+  // sul muro di sinistra: lo scaldasalviette, gli asciugamani, la lavatrice (case) o il bidet (albergo), il portarotolo, il WC,
+  // la finestra sopra il WC, l'aspiratore, la porta con l'interruttore
+  s += isoBox(o, 0.02, 0.15, 0.6, 0.12, 0.7, 2.0, "#FFFFFF", "", { sp: 1.4 }); for (let i = 1; i < 6; i++) s += isoLinea(o, [0.14, 0.15, 0.6 + i * 0.33], [0.14, 0.85, 0.6 + i * 0.33], 1.1);
+  posti.scaldasalviette = [0.1, 0.5, 1.6];
   s += isoLinea(o, [0.02, 1.0, 3.25], [0.02, 2.3, 3.25], 2.6) + isoMuroL(o, 1.15, 2.15, 1.9, 3.2, "#FBE3EA", "mtRo", 1.8, 0.06);
   eti.push([[0.02, 1.65, 3.3], "asciugamani", 0, -10, "middle"]); posti.asciugamani = [0.08, 1.65, 2.6];
-  // la lavatrice (nelle case)
-  if (opz.lavatrice) { s += isoBox(o, 0.1, 2.7, 0, 0.9, 1.0, 1.3, "#FFFFFF", "", {}) + isoEllisse(o, 1.0, 3.2, 0.65, 0.3, 0.3, "#DDF1FA", 1.6); eti.push([[0.05, 3.3, 1.9], "lavatrice", -6, 0, "end", false]); posti.lavatrice = [0.6, 3.2, 1.4]; }
-  // il WC: cassetta e tazza col sedile
-  s += isoBox(o, 0.05, 3.9, 0.6, 0.45, 1.0, 1.4, "#FFFFFF", "", {}) + isoBox(o, 0.5, 4.0, 0, 1.3, 0.8, 0.9, "#FFFFFF", "", {}) + isoEllisse(o, 1.15, 4.4, 0.9, 0.5, 0.33, "#DDF1FA", 1.6);
-  eti.push([[0.5, 4.5, 0.9], "WC", -22, 12, "end"]); posti.wc = [1.15, 4.4, 1.0]; posti.bagno = [3.0, 3.4, 0.05]; posti.pavimento = posti.bagno;
-  // il lavabo col rubinetto, lo specchio sopra
-  s += isoBox(o, 1.75, 0.3, 0, 0.55, 0.5, 1.5, "#FFFFFF", "", {}) + isoBox(o, 1.2, 0.05, 1.5, 1.6, 1.05, 0.45, "#FFFFFF", "", {}) + isoEllisse(o, 2.0, 0.6, 1.95, 0.5, 0.33, "#DDF1FA", 1.6) + isoLinea(o, [2.0, 0.08, 1.95], [2.0, 0.08, 2.45], 2) + isoLinea(o, [2.0, 0.08, 2.45], [2.0, 0.45, 2.45], 2);
-  eti.push([[2.0, 1.1, 1.95], "lavabo", 0, 26, "middle"]); posti.lavabo = [2.0, 0.6, 2.0];
-  s += isoMuroR(o, 1.25, 2.75, 2.9, 4.4, "#DDF1FA", "mtAc", 2, 0.03) + isoLinea(o, [1.45, 0.05, 3.1], [1.85, 0.05, 4.2], 1, ' stroke="#FFFFFF"');
-  eti.push([[2.0, 0, 4.4], "specchio", 0, -10, "middle"]); posti.specchio = [2.0, 0.1, 3.65];
-  // il phon appeso
+  if (casa) { s += isoBox(o, 0.1, 2.7, 0, 0.9, 1.0, 1.3, "#FFFFFF", "", {}) + isoEllisse(o, 1.0, 3.2, 0.65, 0.3, 0.3, "#DDF1FA", 1.6); eti.push([[0.05, 3.3, 1.9], "lavatrice", -6, 0, "end", false]); posti.lavatrice = [0.6, 3.2, 1.4]; posti.bidet = [1.15, 4.4, 1.0]; }
+  else { s += isoBox(o, 0.5, 2.75, 0, 1.1, 0.85, 0.85, "#FFFFFF", "", {}) + isoEllisse(o, 1.05, 3.17, 0.85, 0.42, 0.3, "#DDF1FA", 1.4) + isoLinea(o, [0.55, 3.17, 0.85], [0.55, 3.17, 1.2], 1.8); eti.push([[1.6, 3.6, 0.3], "bidet", 10, 14, "start"]); posti.bidet = [1.05, 3.17, 0.95]; }
+  s += isoBox(o, 0.02, 3.72, 1.2, 0.3, 0.26, 0.3, "#FFFFFF", "", { sp: 1.2 }); posti.portarotolo = [0.12, 3.85, 1.35];
+  s += isoBox(o, 0.05, 3.9, 0.6, 0.45, 1.0, 1.4, "#FFFFFF", "", {}) + isoBox(o, 0.5, 4.0, 0, 1.3, 0.8, 0.9, "#FFFFFF", "", {}) + isoEllisse(o, 1.15, 4.4, 0.9, 0.5, 0.33, "#DDF1FA", 1.6) + isoMuroL(o, 4.3, 4.5, 1.55, 1.68, "#AEBBCB", "", 1, 0.5);
+  eti.push([[0.5, 4.5, 0.9], "WC", -22, 12, "end"]); posti.wc = [1.15, 4.4, 1.0]; posti["wc.tavoletta"] = posti.wc; posti["wc.base"] = [1.15, 4.75, 0.3]; posti["wc.cassetta"] = [0.27, 4.4, 1.5]; posti["wc.dietro"] = [0.55, 4.5, 0.05];
+  s += isoCilindro(o, 2.0, 4.9, 0, 0.13, 0.5, "#AEBBCB", "") + isoLinea(o, [2.0, 4.9, 0.5], [2.0, 4.9, 1.05], 1.6) + isoEllisse(o, 2.0, 4.9, 1.05, 0.06, 0.06, ISO_INK, 1); posti.scopino = [2.0, 4.9, 0.5];
+  s += isoFinestraL(o, 4.0, 4.9, 3.3, 4.5); eti.push([[0.02, 4.45, 4.3], "finestra", -10, 0, "end", false]); posti["bagno.finestra"] = [0.05, 4.45, 3.9];
+  s += isoMuroL(o, 2.75, 3.3, 4.55, 5.0, "#E9EEF7", "", 1.2, 0.03); for (const z of [4.66, 4.78, 4.9]) s += isoLinea(o, [0.04, 2.82, z], [0.04, 3.23, z], 0.9); posti.aspiratore = [0.03, 3.02, 4.78];
+  s += isoPortaL(o, 5.25, 6.2, 3.8); eti.push([[0, 5.72, 3.8], "porta", 0, -10, "middle", false]); posti["bagno.porta"] = [0.05, 5.72, 2.1];
+  s += isoMuroL(o, 5.0, 5.18, 2.3, 2.52, "#FFFFFF", "", 1.1, 0.03) + isoLinea(o, [0.04, 5.09, 2.34], [0.04, 5.09, 2.48], 1.2); posti["bagno.interruttori"] = [0.03, 5.09, 2.41];
+  posti.bagno = [3.0, 3.6, 0.05]; posti["bagno.pavimento"] = posti.bagno;
+  // sul muro di destra: il lavabo col rubinetto, la mensola, lo specchio con la luce; il phon; la doccia (piatto, vetri, soffione,
+  // miscelatore, mensolina); per terra il tappetino, lo scarico, il cestino
+  s += isoBox(o, 1.75, 0.3, 0, 0.55, 0.5, 1.5, "#FFFFFF", "", {}) + isoBox(o, 1.2, 0.05, 1.5, 1.6, 1.05, 0.45, "#FFFFFF", "", {}) + isoEllisse(o, 2.0, 0.6, 1.95, 0.5, 0.33, "#DDF1FA", 1.6) + isoEllisse(o, 2.0, 0.6, 1.96, 0.07, 0.05, ISO_INK, 0.8) + isoLinea(o, [2.0, 0.08, 1.95], [2.0, 0.08, 2.45], 2) + isoLinea(o, [2.0, 0.08, 2.45], [2.0, 0.45, 2.45], 2);
+  eti.push([[2.0, 1.1, 1.95], "lavabo", 0, 26, "middle"]); posti.lavabo = [2.0, 0.6, 2.0]; posti["lavabo.piletta"] = [2.0, 0.6, 1.93]; posti["lavabo.sotto"] = [2.0, 0.55, 0.85]; posti.rubinetto = [2.0, 0.22, 2.4];
+  s += isoBox(o, 1.35, 0.02, 2.65, 1.3, 0.24, 0.06, "#DDF1FA", "", { sp: 1.2 }) + isoCilindro(o, 1.6, 0.14, 2.71, 0.07, 0.3, "#FFFFFF", "") + isoCilindro(o, 1.85, 0.14, 2.71, 0.07, 0.24, "#FBE3EA", "") + isoCilindro(o, 2.35, 0.14, 2.71, 0.06, 0.2, "#DDF1FA", "");
+  posti.mensola = [2.0, 0.14, 2.75];
+  s += isoMuroR(o, 1.25, 2.75, 2.9, 4.4, "#DDF1FA", "mtAc", 2, 0.03) + isoLinea(o, [1.45, 0.05, 3.1], [1.85, 0.05, 4.2], 1, ' stroke="#FFFFFF"') + isoBox(o, 1.5, 0.02, 4.42, 1.0, 0.2, 0.16, "#FFF7D6", "", { sp: 1.1 });
+  eti.push([[2.0, 0, 4.6], "specchio", 0, -8, "middle"]); posti["specchio.bagno"] = [2.0, 0.1, 3.65]; posti["specchio.luce"] = [2.0, 0.12, 4.5];
   s += isoBox(o, 3.05, 0.02, 3.1, 0.55, 0.3, 0.32, "#AEBBCB", "", {}) + isoBox(o, 3.15, 0.02, 2.45, 0.26, 0.3, 0.65, "#AEBBCB", "", {}) + isoLinea(o, [3.6, 0.17, 3.26], [3.75, 0.17, 3.26], 2.6);
   eti.push([[3.3, 0.1, 3.45], "phon", 8, -8, "start"]); posti.phon = [3.3, 0.2, 2.9];
-  // la doccia: il piatto, i vetri, il soffione
   s += isoBox(o, 3.7, 0.1, 0, 1.8, 1.8, 0.22, "#FFFFFF", "", {}) + isoEllisse(o, 4.6, 1.0, 0.22, 0.12, 0.12, "#AEBBCB", 1.2);
   s += isoLinea(o, [4.7, 0.05, 4.6], [4.7, 0.75, 4.6], 2) + isoEllisse(o, 4.7, 0.8, 4.52, 0.26, 0.26, "#AEBBCB", 1.6) + isoLinea(o, [4.55, 0.8, 4.4], [4.45, 0.8, 3.9], 1.2, ' stroke-dasharray="2 3"') + isoLinea(o, [4.7, 0.8, 4.4], [4.7, 0.8, 3.9], 1.2, ' stroke-dasharray="2 3"') + isoLinea(o, [4.85, 0.8, 4.4], [4.95, 0.8, 3.9], 1.2, ' stroke-dasharray="2 3"');
+  s += isoBox(o, 4.1, 0.02, 2.25, 0.3, 0.2, 0.2, "#AEBBCB", "", { sp: 1.1 }) + isoLinea(o, [4.25, 0.22, 2.35], [4.25, 0.5, 2.5], 1.8);   // il miscelatore
+  s += isoBox(o, 5.1, 0.02, 2.85, 0.4, 0.4, 0.06, "#DDF1FA", "", { sp: 1.1 }) + isoCilindro(o, 5.3, 0.2, 2.91, 0.06, 0.26, "#FFFFFF", "");   // la mensolina
   s += isoPoly(o, [[3.7, 1.9, 0.22], [5.5, 1.9, 0.22], [5.5, 1.9, 4.2], [3.7, 1.9, 4.2]], "rgba(221,241,250,.55)", "", 1.8) + isoPoly(o, [[5.5, 0.1, 0.22], [5.5, 1.9, 0.22], [5.5, 1.9, 4.2], [5.5, 0.1, 4.2]], "rgba(221,241,250,.45)", "", 1.8);
-  eti.push([[4.6, 1.9, 0.22], "doccia", 0, 26, "middle"]); posti.doccia = [4.6, 1.0, 2.2];
-  // il cestino
-  s += isoCilindro(o, 2.9, 4.2, 0, 0.28, 0.6, "#E9EEF7", "mtGr"); eti.push([[2.9, 4.2, 0.6], "cestino", 10, 14, "start"]); posti.cestino = [2.9, 4.2, 0.65];
-  posti.pareti = [4.5, 0.05, 2.5];
+  eti.push([[4.6, 1.9, 0.22], "doccia", 0, 26, "middle"]); posti.doccia = [4.6, 1.0, 2.2]; posti["doccia.piatto"] = [4.6, 1.0, 0.3]; posti["doccia.piletta"] = [4.6, 1.0, 0.25]; posti["doccia.box"] = [4.6, 1.9, 2.7]; posti["doccia.guide"] = [5.5, 1.4, 2.3]; posti.soffione = [4.7, 0.8, 4.5]; posti.miscelatore = [4.25, 0.1, 2.35]; posti["doccia.mensola"] = [5.3, 0.22, 2.9]; posti.silicone = [3.75, 0.2, 0.3];
+  s += isoTerra(o, 3.9, 2.35, 1.3, 0.7, "#FBE3EA", "mtRo"); posti.tappetino = [4.55, 2.7, 0.05];
+  s += isoTerra(o, 2.4, 2.55, 0.3, 0.3, "#AEBBCB", "", 1) + isoLinea(o, [2.55, 2.55, 0.03], [2.55, 2.85, 0.03], 0.8) + isoLinea(o, [2.4, 2.7, 0.03], [2.7, 2.7, 0.03], 0.8); posti.scarico = [2.55, 2.7, 0.05];
+  s += isoCilindro(o, 2.9, 4.2, 0, 0.28, 0.6, "#E9EEF7", "mtGr"); eti.push([[2.9, 4.2, 0.6], "cestino", 10, 14, "start"]); posti.bidoncino = [2.9, 4.2, 0.65]; posti["bagno.cestino"] = posti.bidoncino;
+  s += isoPlafoniera(o, 1.6, 2.0, 5.4); eti.push([[1.6, 2.0, 5.4], "plafoniera", -26, -8, "end"]);
+  posti.piastrelle = [4.1, 0.05, 3.9]; posti["bagno.pareti"] = posti.piastrelle; posti["bagno.soffitto"] = [0.7, 0.7, 5.3]; posti["bagno.plafoniera"] = [1.6, 2.0, 5.4];
   return { svg: s, eti, posti, U, V, H };
 }
 // ---- la cucina col soggiorno (le case) -------------------------------------------------------------------------------
@@ -3282,89 +3337,310 @@ function isoCucina(o) {
   const U = 11, V = 8, H = 5.5;
   let s = isoStanza(o, U, V, H, { col: "#FFF4CF", tratto: "mtGi" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
   const eti = [], posti = {};
-  // la finestra sul muro di sinistra
-  s += isoMuroL(o, 1.6, 3.6, 2.2, 4.4, "#DDF1FA", "mtAc", 2, 0.02) + isoLinea(o, [0.02, 2.6, 2.2], [0.02, 2.6, 4.4], 1.4) + isoLinea(o, [0.02, 1.6, 3.3], [0.02, 3.6, 3.3], 1.4);
-  eti.push([[0, 2.6, 4.4], "finestra", 0, -9, "middle", false]); posti.finestra = [0.1, 2.6, 3.3]; posti.balcone = posti.finestra;
-  // la TV sul muro di sinistra
-  s += isoBox(o, 0.02, 5.2, 2.4, 0.12, 1.8, 1.05, "#3E4A5A", "", { scuro: "rgba(0,0,0,.25)", medio: "rgba(0,0,0,.1)" }); eti.push([[0.1, 6.1, 3.45], "TV", 0, -10, "middle", false]); posti.tv = [0.1, 6.1, 2.9];
-  // i mobili della cucina col piano, il lavello col rubinetto, i fornelli, la cappa, il frigo
+  // la finestra e la TV sul muro di sinistra
+  s += isoFinestraL(o, 1.6, 3.6, 2.2, 4.4);
+  eti.push([[0, 2.6, 4.4], "finestra", 0, -9, "middle", false]); posti["cucina.finestra"] = [0.1, 2.6, 3.3]; posti.balcone = posti["cucina.finestra"];
+  s += isoBox(o, 0.02, 5.2, 2.4, 0.12, 1.8, 1.05, "#3E4A5A", "", { scuro: "rgba(0,0,0,.25)", medio: "rgba(0,0,0,.1)" }); eti.push([[0.1, 6.1, 3.45], "TV", 0, -10, "middle", false]); posti["cucina.tv"] = [0.1, 6.1, 2.9];
+  // i mobili della cucina col piano: il lavello col rubinetto, il bollitore, i fornelli col forno sotto, la lavastoviglie, il
+  // microonde; sopra: i pensili, la barra dei mestoli, la cappa; poi il frigo
   s += isoBox(o, 0.2, 0.05, 0, 5.6, 0.95, 1.3, "#F6E3C8", "mtOr", { trattoSolo: "lati", sopraCol: "#FFFFFF" }) + isoLinea(o, [2.0, 1.0, 0.1], [2.0, 1.0, 1.2], 1.2) + isoLinea(o, [4.0, 1.0, 0.1], [4.0, 1.0, 1.2], 1.2);
   s += isoEllisse(o, 1.2, 0.5, 1.3, 0.45, 0.32, "#DDF1FA", 1.6) + isoLinea(o, [1.2, 0.08, 1.3], [1.2, 0.08, 1.85], 2) + isoLinea(o, [1.2, 0.08, 1.85], [1.2, 0.4, 1.85], 2);
-  eti.push([[1.2, 0.5, 1.9], "lavello", 0, -18, "middle", false]); posti.lavello = [1.2, 0.5, 1.5];
+  eti.push([[1.2, 1.0, 0.1], "lavello", 0, 16, "middle", false]); posti.lavello = [1.2, 0.5, 1.5]; posti["lavello.sotto"] = [1.2, 1.0, 0.6];
+  s += isoCilindro(o, 2.5, 0.5, 1.3, 0.15, 0.36, "#AEBBCB", "") + isoLinea(o, [2.65, 0.5, 1.5], [2.78, 0.5, 1.64], 1.4); posti["bollitore.cucina"] = [2.5, 0.5, 1.5];
   for (const [a, b] of [[3.3, 0.3], [4.3, 0.3], [3.3, 0.75], [4.3, 0.75]]) s += isoEllisse(o, a, b, 1.31, 0.22, 0.22, "#3E4A5A", 1.2);
-  eti.push([[3.8, 1.0, 0], "fornelli", 0, 16, "middle", false]); posti.fornelli = [3.8, 0.55, 1.5]; posti.cucina = [2.6, 0.5, 1.5];
-  s += isoBox(o, 3.0, 0.02, 3.5, 1.6, 0.7, 0.55, "#AEBBCB", "", {}) + isoLinea(o, [3.8, 0.4, 4.05], [3.8, 0.4, 5.3], 2.2); eti.push([[3.8, 0.2, 4.05], "cappa", 0, -11, "middle", false]); posti.cappa = [3.8, 0.4, 3.8];
+  eti.push([[3.8, 1.0, 0], "fornelli", 0, 16, "middle", false]); posti.fornelli = [3.8, 0.55, 1.5]; posti.cucina = [2.6, 0.5, 1.5]; posti.piano = posti.cucina; posti.paraschizzi = [2.6, 0.05, 1.95]; posti["piastrelle.fornelli"] = [3.8, 0.05, 2.35]; posti["prese.cucina"] = [0.6, 0.05, 2.2];
+  s += isoPoly(o, [[3.2, 1.0, 0.25], [4.4, 1.0, 0.25], [4.4, 1.0, 1.05], [3.2, 1.0, 1.05]], "#3E4A5A", "", 1.4) + isoLinea(o, [3.3, 1.02, 0.95], [4.3, 1.02, 0.95], 1.6, ' stroke="#DDE6EF"'); posti.forno = [3.8, 1.0, 0.65];
+  s += isoPoly(o, [[4.7, 1.0, 0.1], [5.6, 1.0, 0.1], [5.6, 1.0, 1.15], [4.7, 1.0, 1.15]], "#FFFFFF", "", 1.4) + isoLinea(o, [4.8, 1.02, 1.0], [5.5, 1.02, 1.0], 1.4); posti.lavastoviglie = [5.15, 1.0, 0.6];
+  s += isoBox(o, 4.85, 0.15, 1.3, 0.8, 0.6, 0.55, "#AEBBCB", "", { sp: 1.4 }) + isoMuroR(o, 4.95, 5.4, 1.42, 1.72, "#3E4A5A", "", 1, 0.75); posti.microonde = [5.25, 0.45, 1.6];
+  s += isoBox(o, 0.5, 0.02, 3.1, 1.9, 0.5, 0.9, "#F6E3C8", "mtOr", { trattoSolo: "lati" }) + isoLinea(o, [1.45, 0.52, 3.15], [1.45, 0.52, 3.95], 1.2); eti.push([[2.4, 0.52, 3.55], "pensili", 10, 4, "start", false]);
+  posti.pensili = [1.45, 0.55, 3.5]; posti["pensili.sopra"] = [1.45, 0.3, 4.05]; posti["pensili.dentro"] = posti.pensili;
+  s += isoLinea(o, [1.9, 0.04, 2.5], [2.8, 0.04, 2.5], 2.2); for (const u of [2.1, 2.35, 2.6]) s += isoLinea(o, [u, 0.04, 2.5], [u, 0.04, 2.1], 1.4); posti.mestoli = [2.35, 0.05, 2.35];
+  s += isoBox(o, 3.0, 0.02, 3.5, 1.6, 0.7, 0.55, "#AEBBCB", "", {}) + isoLinea(o, [3.8, 0.4, 4.05], [3.8, 0.4, 5.3], 2.2); eti.push([[4.6, 0.4, 3.8], "cappa", 12, 4, "start", false]); posti.cappa = [3.8, 0.4, 3.8]; posti["cappa.filtri"] = [3.8, 0.45, 3.52];
   s += isoBox(o, 6.1, 0.1, 0, 1.0, 1.15, 2.6, "#FFFFFF", "", {}) + isoLinea(o, [7.1, 0.1, 1.8], [7.1, 1.25, 1.8], 1.6) + isoLinea(o, [7.1, 1.1, 0.5], [7.1, 1.1, 1.5], 2.2) + isoLinea(o, [7.1, 1.1, 2.0], [7.1, 1.1, 2.45], 2.2);
-  eti.push([[6.1, 0.6, 2.6], "frigo", -6, 2, "end", false]); posti.frigo = [6.6, 0.6, 2.7];
-  // la porta sul muro di destra
-  s += isoMuroR(o, 8.6, 9.9, 0, 4.0, "#F6E3C8", "mtOr", 2, 0.02) + isoEllisse(o, 8.85, 0.04, 2.0, 0.09, 0.09, "#2B3A4A", 1);
-  eti.push([[9.25, 0, 4.0], "porta", 0, -10, "middle", false]); posti.porta = [9.25, 0.05, 2.2]; posti.pareti = [10.3, 0.05, 2.5]; posti.camera = posti.pareti;
-  // il tavolo con le sedie
+  eti.push([[6.1, 0.6, 2.6], "frigo", -6, 2, "end", false]); posti["cucina.frigo"] = [6.6, 0.6, 2.7]; posti["cucina.frigo.guarnizioni"] = [7.1, 0.6, 1.3]; posti["cucina.frigo.dietro"] = [6.6, 0.05, 0.4]; posti["cucina.frigo.sopra"] = [6.6, 0.6, 2.62];
+  // la porta e i bidoni della differenziata sul muro di destra
+  s += isoPortaR(o, 8.6, 9.9, 4.0);
+  eti.push([[9.25, 0, 4.0], "porta", 0, -10, "middle", false]); posti["cucina.porta"] = [9.25, 0.05, 2.2]; posti["cucina.pareti"] = [10.4, 0.05, 3.0]; posti.casa = [5.5, 4.0, 2.6];
+  for (const [v, col] of [[0.25, "#FFF0B8"], [0.9, "#DCEBFA"], [1.55, "#E1F5E5"]]) s += isoBox(o, 10.25, v, 0, 0.55, 0.5, 0.7, col, "", { sp: 1.3 });
+  eti.push([[10.8, 1.5, 0.72], "bidoni", 6, -8, "start", false]); posti.bidoni = [10.5, 0.9, 0.75];
+  // il tavolo con le sedie, il divano, il cestino
   s += isoBox(o, 3.6, 3.6, 0, 2.4, 1.5, 0.95, "#F6E3C8", "mtOr", { trattoSolo: "lati", sopraCol: "#FBF6EC" });
   for (const [a, b] of [[3.0, 4.0], [6.1, 4.0], [4.0, 5.25], [5.2, 5.25]]) s += isoBox(o, a, b, 0, 0.55, 0.55, 0.55, "#F6E3C8", "", {}) + (b > 5 ? isoBox(o, a, b + 0.42, 0.55, 0.55, 0.13, 0.7, "#F6E3C8", "", {}) : "");
-  eti.push([[4.2, 5.3, 0], "tavolo", -8, 18, "middle", false]); posti.tavolo = [4.8, 4.3, 1.1]; posti.pavimento = [9.5, 6.8, 0.05];
-  // il divano
+  eti.push([[4.2, 5.3, 0], "tavolo", -8, 18, "middle", false]); posti.tavolo = [4.8, 4.3, 1.1]; posti.sedie = [3.27, 4.27, 0.6]; posti["cucina.pavimento"] = [9.5, 6.8, 0.05]; posti["pavimento.frigo"] = [6.6, 1.5, 0.05];
   s += isoBox(o, 7.6, 4.3, 0, 2.7, 1.3, 0.75, "#E9DDFB", "mtVi", {}) + isoBox(o, 7.6, 4.3, 0.75, 2.7, 0.35, 0.8, "#E9DDFB", "mtVi", {}) + isoBox(o, 7.6, 4.3, 0.75, 0.3, 1.3, 0.35, "#E9DDFB", "", {}) + isoBox(o, 10.0, 4.3, 0.75, 0.3, 1.3, 0.35, "#E9DDFB", "", {});
   eti.push([[8.95, 5.6, 0], "divano", 0, 18, "middle", false]); posti.divano = [8.95, 5.0, 1.0];
-  // il cestino
-  s += isoCilindro(o, 1.2, 2.2, 0, 0.3, 0.65, "#E9EEF7", "mtGr"); eti.push([[1.2, 2.2, 0], "cestino", 0, 18, "middle", false]); posti.cestino = [1.2, 2.2, 0.7];
-  posti.soffitto = [0.7, 0.7, 4.9];
+  s += isoCilindro(o, 1.2, 2.2, 0, 0.3, 0.65, "#E9EEF7", "mtGr"); eti.push([[1.2, 2.2, 0], "cestino", 0, 18, "middle", false]); posti["cucina.cestino"] = [1.2, 2.2, 0.7];
+  posti["cucina.soffitto"] = [0.7, 0.7, 4.9];
   return { svg: s, eti, posti, U, V, H };
 }
-// ---- tutto insieme: i pezzi uno sotto l'altro, le scritte, i numeri che lampeggiano, la legenda ---------------------
+// ---- il balcone: il muro di casa con la portafinestra, la lampada, l'unità del clima, i tubi; il pavimento con la ringhiera,
+//      il tavolino con le sedie, lo stendino, le piante, lo scarico ---------------------------------------------------
+function isoBalcone(o) {
+  const U = 6.0, V = 4.2, H = 3.6;
+  let s = isoPoly(o, [[0, 0, 0], [U, 0, 0], [U, V, 0], [0, V, 0]], "#EDE6D6", "mtGr", 2.4);
+  s += isoPoly(o, [[0, 0, 0], [0, V, 0], [0, V, H], [0, 0, H]], "#FFFDF7", "", 2.4);   // il muro di casa
+  const eti = [], posti = {};
+  s += isoFinestraL(o, 1.4, 2.7, 0.1, 2.7); eti.push([[0, 2.05, 2.7], "portafinestra", 0, -9, "middle", false]); posti.portafinestra = [0.05, 2.05, 1.4];
+  s += isoBox(o, 0.02, 0.2, 1.5, 0.3, 0.85, 0.65, "#AEBBCB", "", { sp: 1.4 }); for (let i = 1; i < 5; i++) s += isoLinea(o, [0.33, 0.2 + i * 0.17, 1.6], [0.33, 0.2 + i * 0.17, 2.05], 1);
+  eti.push([[0.33, 0.62, 1.5], "unità clima", 0, 18, "middle", false]); posti.unita = [0.2, 0.62, 1.82];
+  s += isoTondo(o, 0.03, 3.4, 2.75, 0.18, "#FFF7D6", 1.4); eti.push([[0.03, 3.4, 2.75], "lampada", -14, -8, "end", false]); posti["balcone.lampada"] = [0.03, 3.4, 2.75];
+  s += isoLinea(o, [0.04, 3.95, 0], [0.04, 3.95, 3.5], 2.2) + isoLinea(o, [0.04, 3.55, 3.1], [0.04, 3.95, 3.1], 1.6); eti.push([[0.04, 3.95, 1.3], "tubi", -8, 4, "end", false]); posti["balcone.muro"] = [0.04, 3.8, 0.9];
+  // il muretto basso e la ringhiera sopra, davanti e a destra
+  s += isoBox(o, 0, V - 0.18, 0, U, 0.18, 0.4, "#E8DCC4", "mtOr", { sp: 1.6 }) + isoBox(o, U - 0.18, 0, 0, 0.18, V, 0.4, "#E8DCC4", "mtOr", { sp: 1.6 });
+  for (let u = 0.4; u < U; u += 0.75) s += isoLinea(o, [u, V - 0.09, 0.4], [u, V - 0.09, 1.05], 1.4);
+  for (let v = 0.3; v < V - 0.2; v += 0.75) s += isoLinea(o, [U - 0.09, v, 0.4], [U - 0.09, v, 1.05], 1.4);
+  s += isoLinea(o, [0, V - 0.09, 1.08], [U, V - 0.09, 1.08], 2.2) + isoLinea(o, [U - 0.09, 0, 1.08], [U - 0.09, V, 1.08], 2.2);
+  eti.push([[3.2, V, 1.08], "ringhiera", 0, 18, "middle", false]); posti.ringhiera = [3.2, V - 0.09, 0.8]; posti.muretto = posti.ringhiera;
+  // il tavolino con due sedie, lo stendino, le piante, lo scarico
+  s += isoCilindro(o, 4.0, 2.2, 0, 0.5, 0.7, "#FFFFFF", "") + isoBox(o, 3.1, 1.9, 0, 0.45, 0.45, 0.45, "#FFFFFF", "", { sp: 1.2 }) + isoBox(o, 4.55, 1.9, 0, 0.45, 0.45, 0.45, "#FFFFFF", "", { sp: 1.2 });
+  eti.push([[4.0, 2.8, 0], "tavolino", 4, 18, "middle", false]); posti["balcone.mobili"] = [4.0, 2.2, 0.75];
+  s += isoLinea(o, [1.0, 3.0, 0], [1.0, 3.0, 1.0], 1.6) + isoLinea(o, [2.3, 3.0, 0], [2.3, 3.0, 1.0], 1.6) + isoLinea(o, [1.0, 3.0, 1.0], [2.3, 3.0, 1.0], 1.6); for (let i = 1; i < 4; i++) s += isoLinea(o, [1.0, 3.0 + i * 0.22, 1.0 - i * 0.05], [2.3, 3.0 + i * 0.22, 1.0 - i * 0.05], 1);
+  eti.push([[1.65, 3.8, 0.1], "stendino", 0, 16, "middle", false]); posti.stendino = [1.65, 3.2, 0.9];
+  for (const [u, v] of [[5.2, 0.5], [1.0, 0.6]]) s += isoCilindro(o, u, v, 0, 0.3, 0.5, "#D9A43F", "mtOr") + isoEllisse(o, u, v, 0.9, 0.42, 0.3, "#E1F5E5", 1.4);
+  eti.push([[5.2, 0.5, 1.0], "piante", 8, -6, "start", false]); posti.piante = [5.2, 0.5, 0.7];
+  s += isoTerra(o, 5.3, 3.4, 0.35, 0.35, "#AEBBCB", "", 1) + isoLinea(o, [5.47, 3.4, 0.03], [5.47, 3.75, 0.03], 0.8); eti.push([[5.47, 3.75, 0], "scarico", 6, 14, "start", false]); posti["balcone.scarico"] = [5.47, 3.57, 0.05];
+  posti["balcone.pavimento"] = [3.0, 1.0, 0.05]; posti.balcone = posti["balcone.pavimento"];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- il corridoio: le porte delle camere, i quadri, le luci, l'estintore, la finestra in fondo, il pouf (2° piano) -------
+function isoCorridoio(o, opz) {
+  const U = 8.6, V = 3.4, H = 5, p2 = opz.piano === 2;
+  let s = isoStanza(o, U, V, H, { col: "#FBF6EC", tratto: "mtGr" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
+  const eti = [], posti = {};
+  s += isoFinestraL(o, 0.9, 2.3, 2.2, 4.2); eti.push([[0, 1.6, 4.2], "finestra", 0, -9, "middle", false]); posti["corridoio.finestra"] = [0.05, 1.6, 3.2];
+  for (const u of [1.0, 3.9, 6.8]) s += isoPortaR(o, u, u + 1.0, 3.6);
+  eti.push([[4.4, 0, 3.6], "porte", 0, -8, "middle", false]); posti["corridoio.porte"] = [4.4, 0.05, 2.1]; posti["corridoio.battiscopa"] = [3.0, 0.05, 0.15];
+  for (const u of [2.5, 5.4]) s += isoMuroR(o, u, u + 0.6, 2.5, 3.1, "#8A5A3A", "", 1.6, 0.03) + isoMuroR(o, u + 0.08, u + 0.52, 2.58, 3.02, "#DDF1FA", "", 1, 0.04);
+  eti.push([[2.8, 0, 2.5], "quadri", 0, 15, "middle", false]); posti["corridoio.quadri"] = [2.8, 0.05, 2.8];
+  for (const u of [2.8, 5.7]) s += isoTondo(o, u, 0.03, 4.4, 0.2, "#FFF7D6", 1.4);
+  eti.push([[5.7, 0, 4.4], "luci", 0, -8, "middle", false]); posti["corridoio.luci"] = [5.7, 0.05, 4.4];
+  s += isoMuroR(o, 8.0, 8.4, 1.15, 1.35, "#3E4A5A", "", 1, 0.03) + isoCilindro(o, 8.2, 0.2, 0.9, 0.14, 0.75, "#E0564B", "") + isoLinea(o, [8.2, 0.2, 1.65], [8.2, 0.2, 1.85], 1.6);
+  eti.push([[8.2, 0.2, 0.9], "estintore", 10, 16, "start"]); posti.estintore = [8.2, 0.2, 1.3];
+  if (p2) {
+    s += isoBox(o, 7.0, 2.2, 0, 1.2, 0.8, 0.5, "#E9DDFB", "mtVi", {}) + isoBox(o, 7.1, 2.3, 0.5, 1.0, 0.6, 0.18, "#FBE3EA", "mtRo", { sp: 1.2 });
+    eti.push([[7.6, 3.0, 0.1], "pouf", 0, 16, "middle", false]); posti.pouf = [7.6, 2.6, 0.6];
+    const a = isoP(o, 6.2, 0.02, 2.4), b = isoP(o, 6.8, 0.02, 3.3), c = isoP(o, 7.4, 0.02, 2.5), d = isoP(o, 8.3, 0.02, 3.6);
+    s += `<path d="M${a[0].toFixed(1)} ${a[1].toFixed(1)} Q${b[0].toFixed(1)} ${b[1].toFixed(1)} ${c[0].toFixed(1)} ${c[1].toFixed(1)} T${d[0].toFixed(1)} ${d[1].toFixed(1)}" fill="none" stroke="#00897B" stroke-width="2.2" stroke-linecap="round"/>`;
+    eti.push([[7.3, 0, 3.75], "disegni sul muro", 0, -6, "middle", false]); posti.disegni = [7.3, 0.05, 3.0];
+  }
+  posti["corridoio.pavimento"] = [4.8, 2.4, 0.05]; posti["corridoio.pareti"] = [7.2, 0.05, 4.3]; posti.corridoio = posti["corridoio.pavimento"];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- le scale: i gradini che salgono verso il fondo, il corrimano sul muro, la ringhiera, la finestra, la luce -------------
+function isoScale(o, opz) {
+  const U = 6, V = 4.5, H = 6, p2 = opz.piano === 2;
+  let s = isoStanza(o, U, V, H, { col: "#FBF6EC", tratto: "mtGr" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
+  const eti = [], posti = {};
+  const n = 7, w = 0.7, alt = 0.36;
+  for (let i = 0; i < n; i++) { const u = U - 0.5 - w * (i + 1); s += isoBox(o, u, 0.6, 0, w, 2.6, alt * (i + 1), "#F2E7D0", "mtGr", { trattoSolo: "lati", sopraCol: "#FBF6EC" }); }
+  s += isoBox(o, 0, 0.6, 0, U - 0.5 - w * n, 2.6, alt * n, "#F2E7D0", "", { sopraCol: "#FBF6EC" });   // il pianerottolo in alto
+  // la ringhiera davanti (sul bordo dei gradini) e il corrimano sul muro
+  for (let i = 0; i < n; i++) { const u = U - 0.5 - w * (i + 0.5), z = alt * (i + 1); s += isoLinea(o, [u, 3.2, z], [u, 3.2, z + 0.95], 1.4); }
+  s += isoLinea(o, [U - 0.5 - w * 0.5, 3.2, alt + 0.98], [U - 0.5 - w * (n - 0.5), 3.2, alt * n + 0.98], 2.4);
+  s += isoLinea(o, [U - 0.5, 0.03, 1.1], [U - 0.5 - w * n, 0.03, alt * n + 1.1], 2.6); for (const i of [1, 4]) s += isoLinea(o, [U - 0.5 - w * i, 0.03, alt * i + 1.1], [U - 0.5 - w * i, 0.03, alt * i + 0.75], 1.4);
+  eti.push([[U - 0.5 - w * 3, 3.2, alt * 3 + 1.0], "ringhiera", 10, 16, "start"]); eti.push([[U - 0.5 - w * 2, 0, alt * 2 + 1.1], "corrimano", 0, -8, "middle", false]);
+  posti["scale.gradini"] = [U - 0.5 - w * 3.5, 1.9, alt * 4]; posti["scale.alzate"] = [U - 0.5 - w * 2.5, 3.2, alt * 2.5]; posti.ringhiera = [U - 0.5 - w * 4.5, 3.2, alt * 5 + 0.5]; posti.corrimano = [U - 0.5 - w * 3, 0.03, alt * 3 + 1.0];
+  posti.pianerottolo = [0.6, 1.9, alt * n + 0.05]; posti["scale.battiscopa"] = [U - 0.3, 0.03, 0.15];
+  s += isoFinestraL(o, 1.6, 3.0, 3.8, 5.2); eti.push([[0, 2.3, 5.2], "finestra", 0, -9, "middle", false]); posti["scale.finestra"] = [0.05, 2.3, 4.5];
+  s += isoTondo(o, 0.03, 3.9, 4.9, 0.22, "#FFF7D6", 1.4); posti["scale.luci"] = [0.03, 3.9, 4.9];
+  if (p2) { const a = isoP(o, 2.0, 0.02, 3.6), b = isoP(o, 2.8, 0.02, 4.6), c = isoP(o, 3.6, 0.02, 3.8), d = isoP(o, 4.6, 0.02, 4.9); s += `<path d="M${a[0].toFixed(1)} ${a[1].toFixed(1)} Q${b[0].toFixed(1)} ${b[1].toFixed(1)} ${c[0].toFixed(1)} ${c[1].toFixed(1)} T${d[0].toFixed(1)} ${d[1].toFixed(1)}" fill="none" stroke="#00897B" stroke-width="2.2" stroke-linecap="round"/>`; eti.push([[3.3, 0, 5.0], "disegni sul muro", 0, -8, "middle", false]); posti.disegni = [3.3, 0.05, 4.3]; }
+  posti["scale.pareti"] = [1.2, 0.05, 3.0]; posti.scale = posti["scale.gradini"];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- l'ingresso: il portone col maniglione, il citofono, le targhe, la cassetta della posta, gli zerbini, le luci ----------
+function isoIngresso(o) {
+  const U = 6, V = 4.6, H = 5;
+  let s = isoStanza(o, U, V, H, { col: "#EDE6D6", tratto: "mtGr" }, { col: "#FFFDF7", col2: "#FFFFFF", tratto: "" });
+  const eti = [], posti = {};
+  s += isoMuroR(o, 1.8, 4.2, 0, 3.7, "#8A5A3A", "", 2.2, 0.02) + isoLinea(o, [3.0, 0.03, 0.05], [3.0, 0.03, 3.65], 1.4) + isoMuroR(o, 2.0, 2.85, 2.2, 3.4, "#9C6B48", "", 1, 0.04) + isoMuroR(o, 3.15, 4.0, 2.2, 3.4, "#9C6B48", "", 1, 0.04) + isoMuroR(o, 2.0, 2.85, 0.4, 1.7, "#9C6B48", "", 1, 0.04) + isoMuroR(o, 3.15, 4.0, 0.4, 1.7, "#9C6B48", "", 1, 0.04);
+  s += isoLinea(o, [2.1, 0.08, 1.95], [3.9, 0.08, 1.95], 3) + isoLinea(o, [2.3, 0.08, 1.95], [2.3, 0.02, 1.95], 1.6) + isoLinea(o, [3.7, 0.08, 1.95], [3.7, 0.02, 1.95], 1.6);   // il maniglione
+  eti.push([[3.0, 0, 3.7], "portone", 0, -10, "middle", false]); eti.push([[3.9, 0.08, 1.95], "maniglione", 12, 14, "start"]); posti["ingresso.portone"] = [3.0, 0.05, 2.7]; posti.maniglione = [3.0, 0.1, 1.95];
+  s += isoMuroR(o, 4.6, 5.0, 2.0, 2.9, "#AEBBCB", "", 1.4, 0.03); for (const z of [2.2, 2.4, 2.6]) s += isoEllisse(o, 4.72, 0.04, z, 0.045, 0.045, ISO_INK, 0.8) + isoLinea(o, [4.82, 0.04, z], [4.95, 0.04, z], 0.9);
+  eti.push([[4.8, 0, 2.9], "citofono", 0, -8, "middle", false]); posti.citofono = [4.8, 0.05, 2.45];
+  s += isoMuroR(o, 0.6, 1.4, 2.6, 2.95, "#FFFFFF", "", 1.2, 0.03) + isoMuroR(o, 0.6, 1.4, 3.05, 3.4, "#FFFFFF", "", 1.2, 0.03) + isoLinea(o, [0.75, 0.04, 2.78], [1.25, 0.04, 2.78], 1) + isoLinea(o, [0.75, 0.04, 3.22], [1.25, 0.04, 3.22], 1);
+  eti.push([[1.0, 0, 3.4], "targhe", 0, -8, "middle", false]); posti.targhe = [1.0, 0.05, 3.0];
+  s += isoBox(o, 0.02, 1.0, 2.0, 0.22, 0.6, 0.5, "#AEBBCB", "", { sp: 1.4 }) + isoLinea(o, [0.24, 1.1, 2.4], [0.24, 1.5, 2.4], 1.2); eti.push([[0.02, 1.3, 2.5], "cassetta posta", 0, -9, "middle", false]); posti.cassetta = [0.12, 1.3, 2.25];
+  s += isoTerra(o, 2.0, 0.3, 2.0, 0.8, "#D9C9A8", "mtOr") + isoTerra(o, 2.2, 1.5, 1.6, 0.7, "#C9B894", "mtOr"); eti.push([[3.8, 2.2, 0], "zerbini", 10, 14, "start"]); posti["ingresso.zerbini"] = [3.0, 0.7, 0.05];
+  for (const u of [1.3, 4.7]) s += isoTondo(o, u, 0.03, 4.1, 0.22, "#FFF7D6", 1.4) + isoLinea(o, [u, 0.03, 3.88], [u, 0.03, 3.72], 1.4);
+  eti.push([[1.3, 0, 4.1], "luci", -16, -8, "end"]); posti["ingresso.luci"] = [4.7, 0.05, 4.1];
+  posti["ingresso.pavimento"] = [3.0, 3.4, 0.05]; posti.ingresso = posti["ingresso.portone"];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- il terrazzo: il pavimento col muretto, i bidoni, la lampada, lo stendino, le piante, lo scarico -------------------
+function isoTerrazzo(o) {
+  const U = 8, V = 5, H = 3.2;
+  let s = isoPoly(o, [[0, 0, 0], [U, 0, 0], [U, V, 0], [0, V, 0]], "#EDE6D6", "mtGr", 2.4);
+  s += isoBox(o, 0, 0, 0, 0.2, V, 1.0, "#E8DCC4", "mtOr", { sp: 1.6 }) + isoBox(o, 0, 0, 0, U, 0.2, 1.0, "#E8DCC4", "mtOr", { sp: 1.6 });   // il muretto in fondo
+  const eti = [], posti = {};
+  eti.push([[4.0, 0, 1.0], "muretto", 0, -8, "middle", false]); posti.muretto = [4.0, 0.1, 0.8]; posti["terrazzo.ringhiera"] = posti.muretto;
+  for (const [u, col] of [[6.0, "#FFF0B8"], [6.7, "#DCEBFA"], [7.4, "#E1F5E5"]]) s += isoBox(o, u, 0.4, 0, 0.55, 0.55, 0.8, col, "", { sp: 1.3 });
+  eti.push([[7.95, 0.95, 0.4], "bidoni", 8, 6, "start", false]); posti["terrazzo.bidoni"] = [6.7, 0.65, 0.85];
+  s += isoLinea(o, [7.3, 4.3, 0], [7.3, 4.3, 2.6], 2.4) + isoTondo(o, 7.3, 4.3, 2.75, 0.22, "#FFF7D6", 1.4); eti.push([[7.3, 4.3, 2.75], "lampada", 14, -6, "start", false]); posti["terrazzo.lampade"] = [7.3, 4.3, 2.6];
+  s += isoLinea(o, [1.6, 3.0, 0], [1.6, 3.0, 1.0], 1.6) + isoLinea(o, [3.0, 3.0, 0], [3.0, 3.0, 1.0], 1.6) + isoLinea(o, [1.6, 3.0, 1.0], [3.0, 3.0, 1.0], 1.6); for (let i = 1; i < 4; i++) s += isoLinea(o, [1.6, 3.0 + i * 0.22, 1.0 - i * 0.05], [3.0, 3.0 + i * 0.22, 1.0 - i * 0.05], 1);
+  eti.push([[2.3, 3.8, 0.1], "stendino", 0, 16, "middle", false]); posti["terrazzo.stendino"] = [2.3, 3.2, 0.9];
+  for (const [u, v] of [[0.8, 1.0], [1.7, 0.7]]) s += isoCilindro(o, u, v, 0, 0.3, 0.5, "#D9A43F", "mtOr") + isoEllisse(o, u, v, 0.9, 0.42, 0.3, "#E1F5E5", 1.4);
+  eti.push([[1.7, 0.7, 1.05], "piante", 8, -6, "start", false]); posti["terrazzo.piante"] = [1.25, 0.85, 0.7];
+  s += isoTerra(o, 4.6, 4.2, 0.4, 0.4, "#AEBBCB", "", 1) + isoLinea(o, [4.8, 4.2, 0.03], [4.8, 4.6, 0.03], 0.8); eti.push([[4.8, 4.6, 0], "scarico", 0, 16, "middle", false]); posti["terrazzo.scarico"] = [4.8, 4.4, 0.05];
+  posti["terrazzo.pavimento"] = [4.2, 2.6, 0.05]; posti.terrazzo = posti["terrazzo.pavimento"];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- la lavanderia: gli scaffali con la biancheria, i cestoni, la lavatrice e l'asciugatrice, lo scaffale dei prodotti -------
+function isoLavanderia(o) {
+  const U = 6.5, V = 4.5, H = 5;
+  let s = isoStanza(o, U, V, H, { col: "#EDE6D6", tratto: "mtGr" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
+  const eti = [], posti = {};
+  for (const z of [1.2, 2.4, 3.6]) { s += isoBox(o, 0.4, 0.02, z, 3.2, 0.6, 0.08, "#F6E3C8", "mtOr", { sp: 1.2 }); for (const u of [0.6, 1.5, 2.4]) s += isoBox(o, u, 0.08, z + 0.08, 0.7, 0.45, 0.5, z > 3 ? "#FBE3EA" : "#FFFFFF", "", { sp: 1 }) + isoLinea(o, [u, 0.53, z + 0.33], [u + 0.7, 0.53, z + 0.33], 0.8); }
+  eti.push([[2.0, 0, 4.25], "scaffali della biancheria", 0, -8, "middle", false]); posti["lavanderia.scaffali"] = [2.0, 0.3, 2.5];
+  for (const u of [4.3, 5.4]) s += isoCilindro(o, u, 0.9, 0, 0.45, 0.85, "#F6E3C8", "mtOr");
+  eti.push([[5.4, 1.4, 0.85], "cestoni", 8, 14, "start"]); posti.cestoni = [4.85, 0.9, 0.9];
+  s += isoBox(o, 0.1, 0.4, 0, 0.9, 1.0, 1.3, "#FFFFFF", "", {}) + isoEllisse(o, 1.0, 0.9, 0.65, 0.3, 0.3, "#DDF1FA", 1.6) + isoBox(o, 0.1, 1.55, 0, 0.9, 1.0, 1.3, "#FFFFFF", "", {}) + isoEllisse(o, 1.0, 2.05, 0.65, 0.3, 0.3, "#DDF1FA", 1.6);
+  eti.push([[1.0, 2.6, 0.1], "lavatrice e asciugatrice", 4, 16, "start", false]); posti["lavanderia.lavatrice"] = [0.55, 1.5, 1.4];
+  s += isoBox(o, 0.02, 2.9, 2.4, 0.5, 1.3, 0.08, "#F6E3C8", "mtOr", { sp: 1.2 }) + isoBox(o, 0.02, 2.9, 3.5, 0.5, 1.3, 0.08, "#F6E3C8", "mtOr", { sp: 1.2 });
+  for (const [v, col, z] of [[3.05, "#DCEBFA", 2.48], [3.4, "#FFF0B8", 2.48], [3.75, "#E1F5E5", 2.48], [3.1, "#FBE3EA", 3.58], [3.6, "#DDF1FA", 3.58]]) s += isoCilindro(o, 0.25, v, z, 0.1, 0.5, col, "");
+  eti.push([[0.02, 3.55, 4.1], "prodotti", 0, -8, "middle", false]); posti["lavanderia.prodotti"] = [0.1, 3.5, 3.1];
+  posti["lavanderia.pavimento"] = [3.6, 3.3, 0.05]; posti.lavanderia = posti["lavanderia.scaffali"];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- tutto insieme: i pezzi uno sotto l'altro, le scritte, gli anelli coi numeri e la parola, la legenda --------------
+const ISO_PEZZI_COMUNI = {
+  corridoio: { titolo: "Il corridoio", fa: (o, opz) => isoCorridoio(o, opz), s: 22, U: 8.6, V: 3.4, H: 5 },
+  scale: { titolo: "Le scale", fa: (o, opz) => isoScale(o, opz), s: 25, U: 6, V: 4.5, H: 6 },
+  ingresso: { titolo: "L'ingresso e il portone", fa: (o) => isoIngresso(o), s: 26, U: 6, V: 4.6, H: 5 },
+  terrazzo: { titolo: "Il terrazzo", fa: (o) => isoTerrazzo(o), s: 21, U: 8, V: 5, H: 3.2 },
+  lavanderia: { titolo: "La lavanderia", fa: (o) => isoLavanderia(o), s: 25, U: 6.5, V: 4.5, H: 5 },
+};
+function isoPezzoComune(id) { const k = /corridoio/.test(id) ? "corridoio" : /scal/.test(id) ? "scale" : /ingress|portone/.test(id) ? "ingresso" : /terrazz/.test(id) ? "terrazzo" : /lavander|attrezz/.test(id) ? "lavanderia" : null; return k ? { ...ISO_PEZZI_COMUNI[k], id: k, piano: /p1|1/.test(id) ? 1 : 2 } : null; }
 function isoDisegno(opz) {
   const E = opz.esc, W = 400;
   const pezzi = [];
-  if (opz.casa) {
+  const tipo = opz.tipo || (opz.casa ? "casa" : "camera");
+  if (tipo === "comune") { const pz = isoPezzoComune(opz.luogo || ""); if (pz) pezzi.push(pz); }
+  else if (tipo === "casa") {
     pezzi.push({ titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 18.5, U: 11, V: 8, H: 5.5 });
     pezzi.push({ titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 21, U: 9, V: 6, H: 5.2 });
-    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, { lavatrice: true }), s: 25, U: 5.6, V: 5.2, H: 5.5 });
+    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, { lavatrice: true }), s: 23, U: 5.6, V: 6.4, H: 5.5 });
   } else {
     pezzi.push({ titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 23.5, U: 9, V: 6, H: 5.2 });
-    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 27, U: 5.6, V: 5.2, H: 5.5 });
+    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 25, U: 5.6, V: 6.4, H: 5.5 });
   }
+  if (opz.balcone) pezzi.push({ titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 23, U: 6.0, V: 4.2, H: 3.6 });
+  for (const id of opz.extra || []) { const pz = isoPezzoComune(id); if (pz && !pezzi.some(x => x.id === pz.id)) pezzi.push(pz); }
   let y = 34, corpo = "", scritte = "", titoli = "";
-  const posti = {};   // posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince: la camera prima del bagno)
+  const posti = {}, scatole = [];   // scatole: dove stanno le scritte delle cose (le parole dei numeri le evitano)   // posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince: la camera prima del bagno)
   for (const pz of pezzi) {
     const larg = (pz.U + pz.V) * ISO_CX * pz.s;
     const o = { x: (W - larg) / 2 + pz.V * ISO_CX * pz.s, y: y + 16 + pz.H * pz.s, s: pz.s };
-    const r = pz.fa(o);
-    titoli += `<text x="${(W / 2).toFixed(1)}" y="${(y + 4).toFixed(1)}" class="mt-titolo">${E(pz.titolo)}</text>`;
+    const r = pz.fa(o, { piano: pz.piano || opz.piano || 2 });
+    titoli += `<text x="${(W / 2).toFixed(1)}" y="${(y + 4).toFixed(1)}" class="mt-titolo">${E(pz.titolo)}</text>`; scatole.push({ x1: W / 2 - pz.titolo.length * 5.2, x2: W / 2 + pz.titolo.length * 5.2, y: y + 4 });
     corpo += `<g>${r.svg}</g>`;
-    for (const e of r.eti) scritte += isoEti(o, e[0], E(e[1]), e[2], e[3], e[4]);
+    for (const e of r.eti) { scritte += isoEti(o, e[0], E(e[1]), e[2], e[3], e[4], e[5] !== false); const q = isoP(o, ...e[0]), lx = q[0] + e[2], larg = String(e[1]).length * 8.6, x1 = e[4] === "end" ? lx - larg : e[4] === "middle" ? lx - larg / 2 : lx; scatole.push({ x1, x2: x1 + larg, y: q[1] + e[3] }); }
     for (const [k, p] of Object.entries(r.posti)) if (!posti[k]) posti[k] = isoP(o, ...p);
     y = o.y + (pz.U + pz.V) * ISO_SY * pz.s + 44;
   }
   const alto = Math.round(y - 10);
-  // i numeri che lampeggiano, sopra la cosa (più numeri sulla stessa cosa: in fila)
+  // dove va l'anello: il posto preciso («letto.piedini»); se il disegno non ce l'ha, la cosa intera («letto»); se no il centro
+  const trova = (dove) => { const d = String(dove || ""); if (posti[d]) return posti[d]; const parti = d.split("."); for (const k of [parti[parti.length - 1], parti[0], parti.slice(0, -1).join(".")]) if (k && posti[k]) return posti[k]; return posti.camera || posti.casa || posti.corridoio || posti.scale || posti.ingresso || posti.terrazzo || posti.lavanderia || posti.pavimento || [W / 2, alto / 2]; };
   const conta = {}; const segni = opz.segni || [];
-  const anelli = segni.map((sg) => { const p = posti[sg.dove] || posti.camera || posti.pavimento; const n = conta[sg.dove] = (conta[sg.dove] || 0) + 1; return { x: Math.min(W - 20, Math.max(20, p[0] + (n - 1) * (p[0] > W - 60 ? -30 : 30))), y: Math.min(alto - 18, Math.max(46, p[1])) }; });
+  const anelli = segni.map((sg) => { const p = trova(sg.dove); const kk = String(sg.dove); const n = conta[kk] = (conta[kk] || 0) + 1; return { x: Math.min(W - 20, Math.max(20, p[0] + (n - 1) * (p[0] > W - 60 ? -30 : 30))), y: Math.min(alto - 18, Math.max(46, p[1])) }; });
   // il cerchietto col numero sta sopra l'anello; se due cerchietti si toccano, si scostano (l'anello resta sulla cosa)
   const cerchi = anelli.map(a => ({ x: a.x + 20, y: a.y - 20 }));
   for (let giro = 0; giro < 12; giro++) { let mosso = false; for (let i = 0; i < cerchi.length; i++) for (let j = i + 1; j < cerchi.length; j++) { const dx = cerchi[j].x - cerchi[i].x, dy = cerchi[j].y - cerchi[i].y, d = Math.hypot(dx, dy) || 1; if (d < 30) { const sp = (30 - d) / 2 + 1, ux = dx / d, uy = dy / d; cerchi[i].x -= ux * sp; cerchi[i].y -= uy * sp; cerchi[j].x += ux * sp; cerchi[j].y += uy * sp; mosso = true; } } if (!mosso) break; }
   for (const c of cerchi) { c.x = Math.min(W - 16, Math.max(16, c.x)); c.y = Math.min(alto - 16, Math.max(16, c.y)); }
+  // la parola sotto il cerchietto («piedini», «vetro dentro»): se due parole si pestano, la seconda scende
+  const parole = segni.map((sg, i) => { const t = String(sg.parola || "").trim(); if (!t) return null; const c = cerchi[i], larg = Math.min(W - 8, t.length * 7.6 + 12); let x = Math.min(W - larg / 2 - 2, Math.max(larg / 2 + 2, c.x)); return { t, x, y: c.y + 26, larg }; });
+  const urta = (a, i) => { for (let j = 0; j < i; j++) { const b = parole[j]; if (b && Math.abs(a.x - b.x) < (a.larg + b.larg) / 2 && Math.abs(a.y - b.y) < 15) return true; } for (const sc of scatole) if (a.x + a.larg / 2 > sc.x1 && a.x - a.larg / 2 < sc.x2 && Math.abs(a.y - sc.y) < 16) return true; return false; };
+  for (let i = 0; i < parole.length; i++) { const a = parole[i]; if (!a) continue; const c = cerchi[i], prove = [c.y + 26, c.y - 20, c.y + 41, c.y - 35, c.y + 56]; for (const yy of prove) { a.y = yy; if (!urta(a, i)) break; } if (a.y > alto - 6) a.y = alto - 6; if (a.y < 12) a.y = 12; }
   const numeri = segni.map((sg, i) => {
-    const a = anelli[i], c = cerchi[i], lontano = Math.hypot(c.x - a.x, c.y - a.y) > 34;
-    return `<g class="mt-segno ${sg.k}"><g transform="translate(${a.x.toFixed(1)} ${a.y.toFixed(1)})"><circle class="mt-onda" r="17"/><circle class="mt-alone" r="17"/></g>${lontano ? `<path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${c.x.toFixed(1)} ${c.y.toFixed(1)}" class="mt-filo-n"/>` : ""}<g transform="translate(${c.x.toFixed(1)} ${c.y.toFixed(1)})"><circle class="mt-tondo" r="13"/><text y="5" class="mt-num">${i + 1}</text><text x="11" y="-7" class="mt-mini">${sg.k === "stella" ? "★" : "✦"}</text></g></g>`;
+    const a = anelli[i], c = cerchi[i], lontano = Math.hypot(c.x - a.x, c.y - a.y) > 34, pw = parole[i];
+    return `<g class="mt-segno ${sg.k}"><g transform="translate(${a.x.toFixed(1)} ${a.y.toFixed(1)})"><circle class="mt-onda" r="17"/><circle class="mt-alone" r="17"/></g>${lontano ? `<path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${c.x.toFixed(1)} ${c.y.toFixed(1)}" class="mt-filo-n"/>` : ""}<g transform="translate(${c.x.toFixed(1)} ${c.y.toFixed(1)})"><circle class="mt-tondo" r="13"/><text y="5" class="mt-num">${i + 1}</text><text x="11" y="-7" class="mt-mini">${sg.k === "stella" ? "★" : "✦"}</text></g>${pw ? `<text x="${pw.x.toFixed(1)}" y="${pw.y.toFixed(1)}" class="mt-parola">${E(pw.t)}</text>` : ""}</g>`;
   }).join("");
-  return { alto, svg: `${titoli}<g filter="url(#mtTrem)">${corpo}</g>${scritte}${numeri}`, W };
+  return { alto, svg: `${titoli}<g filter="url(#mtTrem)">${corpo}</g>${scritte}${numeri}`, W, pezzi: pezzi.map(p => p.titolo) };
+}
+// ---- 1.36.0: ogni regola del catalogo sa DOVE sta sul disegno (la parte precisa) e con QUALE PAROLA si dice ---------------
+// [posto sul disegno, parola sotto il numero]. La chiave è l'id della regola (C18, C45_1…) o il suo codice (C45).
+const PARTI_DISEGNO = {
+  // la camera
+  C01: ["soffitto.angoli", "angoli alti"], C02: ["plafoniera", "plafoniera"], C03: ["clima.filtri", "filtri del clima"], C04: ["clima.griglia", "griglia e alette"],
+  C05: ["telecomandi", "telecomandi"], C06: ["pareti.macchie", "ditate e macchie"], C07: ["pareti.macchie", "tutta la parete"], C08: ["quadro", "cornice e vetro"],
+  C09: ["interruttori", "interruttori e prese"], C10: ["termosifone", "termosifone"], C11: ["battiscopa", "battiscopa"], C12: ["porta.maniglia", "maniglie"],
+  C13: ["porta.anta", "anta e stipite"], C14: ["porta.numero", "numero e spioncino"], C15: ["finestra.maniglia", "maniglia"], C16: ["finestra.davanzale", "davanzale"],
+  C17: ["finestra.telaio", "telaio e binari"], C18: ["finestra.vetro", "vetro dentro"], C18_0: ["finestra.vetro", "vetro: ditate"], C19: ["finestra.vetroEsterno", "vetro fuori"],
+  C20: ["tapparella", "tapparella"], C21: ["zanzariera", "zanzariera"], C22: ["tende", "tende: scosse"], C23: ["tende", "tende: lavate"],
+  C24: ["letto.sotto", "sotto il letto"], C25: ["letto.testiera", "testiera"], C26: ["letto.piedini", "piedini e doghe"], C27: ["letto.spostato", "letto spostato"],
+  C28: ["materasso", "materasso"], C29: ["materasso", "girare il materasso"], C30: ["materasso", "coprimaterasso"], C31: ["cuscini", "cuscini: lavare"], C31_0: ["cuscini", "copricuscini"],
+  C32: ["coperta", "piumino"], C32_0: ["coperta", "copripiumino"], C32_1: ["coperta", "piumino: lavare"], C32_2: ["coperta", "coperte di lana"], C33: ["coperta", "copriletto"], C34: ["armadio.dentro", "coperta di scorta"],
+  C35: ["comodino", "comodini: dietro"], C35_0: ["comodino", "comodini"], C36: ["abatjour", "abat-jour"], C37: ["armadio.sopra", "sopra l'armadio"], C38: ["armadio.ante", "ante fuori"], C38_0: ["armadio.ante", "maniglie"],
+  C39: ["armadio.dentro", "dentro l'armadio"], C40: ["cassetti", "cassetti"], C41: ["scrivania", "gambe e sotto"], C41_0: ["scrivania", "tavolo: piano"], C42: ["tv", "schermo TV"], C43: ["tv.retro", "dietro la TV"],
+  C44: ["prese", "ciabatta e prese"], C45: ["frigo", "frigo: dentro"], C45_1: ["frigo.guarnizione", "guarnizione frigo"], C45_2: ["frigo.retro", "dietro il frigo"], C46: ["specchio", "cornice specchio"], C46_0: ["specchio", "specchio"],
+  C47: ["phon", "filtro del phon"], C47_0: ["phon", "phon"], C48: ["bollitore", "bollitore"], C49: ["appendiabiti", "appendiabiti"], C50: ["plafoniera", "ventilatore"], C51: ["cestino", "cestino: lavato"], C51_0: ["cestino", "cestino"],
+  C52: ["pavimento.angoli", "angoli e fughe"], C52_0: ["pavimento", "pavimento"], C53: ["zerbino", "zerbino e tappeti"], C54: ["finestra", "aria: apri"], C55: ["plafoniera", "lampadine"], C56: ["camera", "controllo finale"],
+  C57: ["camera", "tutta la camera"], C58: ["armadio.sotto", "dietro l'armadio"],
+  P01: ["quadro", "pannello foto"], P02: ["bollitore", "portapane"], P03: ["armadio", "armadio in stoffa"], P04: ["tapparella", "cassonetto"], P05: ["tende.bastone", "bastone tende"], P06: ["materasso", "materasso: stato"],
+  // il bagno
+  B01: ["bagno.soffitto", "angoli: muffa"], B02: ["bagno.plafoniera", "plafoniera"], B03: ["aspiratore", "aspiratore"], B04: ["bagno.finestra", "finestra"], B04_1: ["bagno.finestra", "vetro e binari"], B04_2: ["bagno.finestra", "davanzale"],
+  B05: ["scaldasalviette", "scaldasalviette"], B06: ["piastrelle", "piastrelle"], B07: ["piastrelle", "fughe"], B07_1: ["piastrelle", "fughe: spazzolate"], B07_2: ["piastrelle", "fughe: sbiancate"], B08: ["silicone", "silicone doccia"],
+  B09: ["bagno.porta", "porta del bagno"], B10: ["bagno.interruttori", "interruttori"], B11: ["specchio.bagno", "specchio"], B12: ["lavabo", "vasca e rubinetto"], B13: ["lavabo.piletta", "piletta"], B14: ["lavabo.sotto", "sifone e sotto"],
+  B15: ["rubinetto", "rubinetto: calcare"], B15_1: ["rubinetto", "calcare"], B15_2: ["rubinetto", "filtrino"], B16: ["mensola", "mensole e dispenser"], B17: ["wc.tavoletta", "tavoletta e pulsante"], B18: ["wc.base", "base e dietro"],
+  B19: ["wc.cassetta", "cassetta: dentro"], B19_0: ["wc.cassetta", "cassetta"], B20: ["scopino", "scopino: nuovo"], B20_0: ["scopino", "scopino"], B21: ["portarotolo", "portarotolo"], B22: ["bidet", "bidet"],
+  B23: ["doccia.piatto", "piatto e piletta"], B24: ["doccia.box", "box: vetri"], B25: ["doccia.guide", "profili e guide"], B26: ["soffione", "soffione"], B27: ["miscelatore", "miscelatore"], B28: ["doccia.mensola", "mensola doccia"],
+  B29: ["doccia.box", "tenda doccia"], B29_1: ["doccia.box", "tenda: lavata"], B29_2: ["doccia.box", "tenda: nuova"], B30: ["doccia.piatto", "tappetino doccia"], B31: ["asciugamani", "portasciugamani"], B32: ["bidoncino", "bidoncino: lavato"],
+  B33: ["tappetino", "tappetino"], B34: ["bagno.pavimento", "pavimento"], B35: ["scarico", "scarico a terra"], B36: ["lavabo.piletta", "scarichi e odori"], B37: ["asciugamani", "asciugamani"], B38: ["mensola", "dotazioni"],
+  P07: ["portarotolo", "dispenser carta"], P08: ["asciugamani", "accappatoi"],
+  // la cucina (case)
+  K01: ["pensili", "pensili"], K02: ["cappa.filtri", "cappa: filtri"], K02_1: ["cappa.filtri", "filtri della cappa"], K02_2: ["cappa", "cappa: fuori"], K03: ["fornelli", "fornelli"], K04: ["forno", "forno"], K04_1: ["forno", "forno: dentro"], K04_2: ["forno", "porta del forno"], K04_3: ["forno", "teglie"],
+  K05: ["paraschizzi", "piano e paraschizzi"], K06: ["lavello", "lavello"], K06_1: ["lavello.sotto", "sifone e sotto"], K07: ["lavastoviglie", "lavastoviglie"], K07_1: ["lavastoviglie", "filtro"], K07_2: ["lavastoviglie", "guarnizione"], K07_3: ["lavastoviglie", "cestelli"], K07_4: ["lavastoviglie", "lavaggio a vuoto"],
+  K08: ["cucina.frigo", "frigo"], K08_1: ["cucina.frigo.guarnizioni", "ripiani e guarnizioni"], K08_2: ["cucina.frigo.sopra", "sopra il frigo"], K08_3: ["cucina.frigo.dietro", "dietro il frigo"], K08_4: ["cucina.frigo", "freezer: sbrinare"],
+  K09: ["microonde", "microonde"], K10: ["bollitore.cucina", "bollitore e moka"], K11: ["tavolo", "tavolo e sedie"], K11_1: ["sedie", "gambe e sotto"], K12: ["bidoni", "bidoni"], K13: ["cucina.pavimento", "pavimento"], K13_1: ["pavimento.frigo", "sotto il frigo"],
+  K14: ["piastrelle.fornelli", "piastrelle fornelli"], K15: ["pensili.dentro", "stoviglie"], K16: ["prese.cucina", "prese e maniglie"], P09: ["mestoli", "mestoli appesi"],
+  // il balcone
+  E01: ["balcone.pavimento", "pavimento"], E01_1: ["balcone.pavimento", "pavimento: lavato"], E01_2: ["balcone.pavimento", "pavimento a fondo"], E02: ["ringhiera", "ringhiera e muretto"], E03: ["balcone.mobili", "mobili e stendino"], E04: ["balcone.scarico", "scarico"],
+  P10: ["unita", "unità del clima"], P11: ["piante", "piante e sottovasi"], P12: ["balcone.muro", "muro e tubi"],
+  // le zone comuni
+  Z01: ["ingresso.portone", "portone e citofono"], Z02: ["ingresso.zerbini", "zerbini"], Z02_1: ["ingresso.zerbini", "zerbini: scossi"], Z02_2: ["ingresso.zerbini", "zerbini: lavati"],
+  Z03: ["scale.gradini", "gradini"], Z03_1: ["scale.gradini", "gradini: scopati"], Z03_2: ["scale.gradini", "gradini: lavati"], Z04: ["scale.alzate", "alzate e battiscopa"], Z05: ["corrimano", "corrimano"], Z05_1: ["corrimano", "corrimano"], Z05_2: ["ringhiera", "ringhiera a fondo"],
+  Z06: ["pianerottolo", "pianerottoli"], Z06_1: ["pianerottolo", "pianerottoli"], Z06_2: ["scale.luci", "plafoniere e pareti"], Z07: ["scale.finestra", "finestre"], Z08: ["corridoio.pavimento", "pavimento"], Z08_1: ["corridoio.pavimento", "scopato"], Z08_2: ["corridoio.pavimento", "lavato"],
+  Z09: ["corridoio.battiscopa", "battiscopa e porte"], Z09_1: ["corridoio.battiscopa", "battiscopa e porte"], Z09_2: ["corridoio.quadri", "quadri, luci, estintore"], Z10: ["terrazzo.pavimento", "terrazzo"], Z10_1: ["terrazzo.pavimento", "scopato"], Z10_2: ["terrazzo.pavimento", "lavato a fondo"],
+  Z11: ["terrazzo.bidoni", "bidoni"], Z12: ["ingresso.luci", "luci esterne"], Z13: ["lavanderia.scaffali", "scaffali e cestoni"], Z13_1: ["lavanderia.pavimento", "pavimento"], Z13_2: ["lavanderia.scaffali", "scaffali e cestoni"], Z14: ["lavanderia.prodotti", "prodotti: ordine"],
+  P13: ["disegni", "disegni sui muri"], P14: ["pouf", "pouf e cuscini"], P15: ["ingresso.pavimento", "cassapanca e vasi"],
+  // la lavanderia e gli attrezzi
+  L01: ["lavanderia.lavatrice", "cassetto detersivo"], L02: ["lavanderia.lavatrice", "guarnizione oblò"], L03: ["lavanderia.lavatrice", "filtro lavatrice"], L04: ["lavanderia.lavatrice", "lavaggio a vuoto"], L05: ["lavanderia.lavatrice", "esterno e sopra"], L06: ["lavanderia.lavatrice", "filtri asciugatrice"],
+  L07: ["lavanderia.lavatrice", "lavatoio"], L08: ["lavanderia.scaffali", "scaffali"], L08_1: ["lavanderia.scaffali", "scaffali: polvere"], L08_2: ["lavanderia.scaffali", "scaffali: lavati"], L09: ["cestoni", "cestoni"], L10: ["lavanderia.pavimento", "pavimento"], L10_1: ["lavanderia.pavimento", "scopato"], L10_2: ["lavanderia.pavimento", "lavato"],
+  L11: ["terrazzo.stendino", "stendini"], L12: ["lavanderia.prodotti", "carrello"], L13: ["lavanderia.prodotti", "secchi"], L14: ["lavanderia.prodotti", "mappine e mop"], L15: ["lavanderia.prodotti", "panni"], L16: ["lavanderia.prodotti", "spugne"], L17: ["lavanderia.prodotti", "scope"],
+  L18: ["lavanderia.prodotti", "aspirapolvere"], L19: ["lavanderia.prodotti", "guanti"], L20: ["lavanderia.prodotti", "scorte prodotti"], L21: ["lavanderia.scaffali", "biancheria di scorta"], L22: ["lavanderia.scaffali", "biancheria: luce"], L23: ["lavanderia.prodotti", "ferro e asse"],
+};
+// la parte: dall'id (C45_1), dal codice (C45), oppure dalle parole (le regole scritte a mano da Michele)
+function parteDisegno(r) {
+  const id = String((r && (r.regola || r.id)) || ""), codice = id.split("_")[0];
+  const t = PARTI_DISEGNO[id] || PARTI_DISEGNO[codice];
+  const parte = String((r && r.parte) || "").trim();
+  if (t) { const parola = /^(nella totale|a ogni pulizia|-)$/i.test(parte) || !parte || parte.length > 22 || PARTI_DISEGNO[id] ? t[1] : `${t[1].split(":")[0]}: ${parte}`; return { dove: t[0], parola: parola.length > 24 ? parola.slice(0, 22) + "…" : parola }; }
+  const testo = `${(r && r.superficie) || ""} ${(r && r.nome) || ""} ${parte}`;
+  const dove = postoDisegno(r && r.posto, testo), sup = String((r && r.superficie) || (r && r.nome) || "").replace(/\s*\(.*?\)\s*/g, "").trim();
+  const parola = (parte && parte.length <= 18 ? parte : sup.includes(":") ? sup.split(":").slice(1).join(":").trim() : sup).toLowerCase();
+  return { dove, parola: parola.length > 24 ? parola.slice(0, 22) + "…" : parola };
 }
 function disegnoCamera(p) {
-  if (!p || p.tipo === "stelle" || p.tipo === "fisso" || p.tipo === "extra") return "";
+  if (!p || p.tipo === "stelle") return "";
   const c = camera(p.camera); if (!c || !c.id) return "";
-  const casa = c.tipo === "casa", singola = !casa && (Number(c.posti) || 2) < 2;
-  // le stelle e i lavori a fondo di oggi in questa camera
-  let rif = []; try { rif = rifinitureOggi(p.zona, p.data).filter(r => r.camera === p.camera && (r.pulizia === p.id || S.pulizie[r.pulizia]?.camera === p.camera)); } catch (e) {}
+  const comune = c.tipo === "comune", casa = c.tipo === "casa", singola = !casa && !comune && (Number(c.posti) || 2) < 2;
+  if ((p.tipo === "fisso" || p.tipo === "extra") && !comune) return "";   // i lavori fissi nelle zone comuni (scale, terrazzo…) hanno il loro disegno
+  const comuniIds = new Set(G.LUOGHI_COMUNI.map(l => l.id));
+  // le stelle e i lavori a fondo di oggi in questo posto (e le zone comuni appese a questa pulizia, con il loro disegno sotto)
+  let rif = []; try { rif = rifinitureOggi(p.zona, p.data).filter(r => r.pulizia === p.id || (r.camera === p.camera && S.pulizie[r.pulizia]?.camera === p.camera)); } catch (e) {}
   const fondi = Object.values(S.pulizie || {}).filter(x => x && x.data === p.data && x.zona === p.zona && x.camera === p.camera && x.origine === "governante" && x.stato !== "non_fatta" && !x.nonServe);
   const regolaDi = (id) => { try { return regoleGov().find(x => x.id === id) || {}; } catch (e) { return {}; } };
-  const segni = [...rif.map(r => ({ k: "stella", t: r.nome, min: Number(r.minuti) || 0, icona: r.icona || regolaDi(r.regola).icona || "", dove: postoDisegno(r.posto, `${r.superficie || ""} ${r.nome}`) })),
-    ...fondi.map(f => { const rg = regolaDi(f.regola); return { k: "fondo", t: String(titoloBase(f) || "Lavoro a fondo"), min: Number(f.minuti) || 0, icona: f.icona || rg.icona || "", dove: postoDisegno(rg.posto, `${rg.superficie || ""} ${rg.nome || ""} ${titoloBase(f) || ""}`) }; })];
-  // 1.34.0: il disegno in 3D a matita (la camera e il bagno; nelle case la cucina col soggiorno, le camere e il bagno)
-  const d = isoDisegno({ casa, singola, piani: Number(c.piani) || 1, segni, esc });
+  const segni = [...rif.map(r => { const pd = parteDisegno({ ...regolaDi(r.regola), ...r, regola: r.regola }); return { k: "stella", t: r.nome, min: Number(r.minuti) || 0, icona: r.icona || regolaDi(r.regola).icona || "", dove: pd.dove, parola: pd.parola, luogo: r.camera || r.luogo || p.camera }; }),
+    ...fondi.map(f => { const rg = regolaDi(f.regola); const pd = parteDisegno({ ...rg, regola: f.regola, nome: titoloBase(f) || rg.nome }); return { k: "fondo", t: String(titoloBase(f) || "Lavoro a fondo"), min: Number(f.minuti) || 0, icona: f.icona || rg.icona || "", dove: pd.dove, parola: pd.parola, luogo: p.camera }; })];
+  const extra = [...new Set(segni.map(s => s.luogo).filter(l => l && l !== p.camera && comuniIds.has(l)))];
+  const balcone = !comune && segni.some(s => /^(balcone|ringhiera|muretto|piante|unita|stendino|portafinestra)/.test(String(s.dove)));
+  // 1.36.0: la stessa casa delle bambole della 1.34, con l'anello sulla parte precisa e la parola sotto il numero
+  const d = isoDisegno({ tipo: comune ? "comune" : casa ? "casa" : "camera", luogo: c.id, piano: /p1|1/.test(String(c.zona)) ? 1 : 2, singola, piani: Number(c.piani) || 1, balcone, extra, segni, esc });
   const icoDi = (s) => ICONE_SVG[s.icona] ? ICONA(s.icona) : (s.k === "stella" ? "⭐" : "✨");
-  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${s.min ? ` · ${s.min} min` : ""}</small></span></li>`).join("")}</ol><p class="mt-did">I numeri lampeggiano sulla cosa da pulire.</p>` : "";
-  const detto = casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: ${singola ? "letto singolo" : "letto matrimoniale"} con comodini, armadio, frigo, TV, finestra con le tende, clima, quadro, porta; il bagno con doccia, WC, lavabo, specchio, phon, asciugamani`;
-  return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${casa ? "La casa" : "La camera"}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}</section>`;
+  const conMinuti = !pagaAOre();
+  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.parola && !PAROLE.norm(s.t).includes(PAROLE.norm(s.parola)) ? `${s.parola.replace(/^./, ch => ch.toUpperCase())} — ${s.t}` : s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${conMinuti && s.min ? ` · ${s.min} min` : ""}${s.luogo && s.luogo !== p.camera ? ` · ${esc(camera(s.luogo).nome)}` : ""}</small></span></li>`).join("")}</ol>` : "";
+  const titolo = comune ? (d.pezzi[0] || c.nome) : casa ? "La casa" : "La camera";
+  const detto = comune ? `${titolo.toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: ${singola ? "letto singolo" : "letto matrimoniale"} con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;
+  return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${esc(titolo)}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}${segni.length ? `<p class="mt-did">L'anello lampeggia sulla cosa da pulire; sotto il numero c'è scritto cosa.</p>` : ""}</section>`;
 }
 // ---- Sofia a fianco, A SCOMPARSA (1.32.0): di solito c'è solo il tasto tondo col microfono; toccandolo Sofia esce intera
 // (la sagoma ritagliata, senza sfondo), ti ascolta e risponde; appena finisce di parlare sparisce. Esce da sola anche quando
@@ -3435,7 +3711,8 @@ function testoSofiaCamera(p, ripiego) {
   return ripiego;
 }
 function sofiaSpiega(testo) {   // 1.33.0: senza la figurina (Michele: «non ci deve stare quasi per niente»): quando parla esce lei a fianco
-  return `<section class="sf-sofia senza-figura"><div class="sf-sofia-b"><div class="sf-sofia-t">${esc(nomeGov())} ti dice</div><p class="sf-sofia-x">${esc(testo)}</p></div><button type="button" class="sf-sofia-voce" data-sg-dici aria-label="Ascolta ${esc(nomeGov())}">${ICONA("altoparlante")}</button></section>`;
+  // 1.36.0 (Michele: «togli il fumetto che dice Sofia: è già ripetuto sotto e ingombra la camera»): niente riquadro, solo il segnaposto
+  return `<span class="sf-sofia sf-sofia-nascosta" hidden aria-hidden="true" data-testo="${esc(testo)}"></span>`;
 }
 const ICO_BLOCCO = { letto: "🛏️", bagno: "🚿", camera: "🧽", cucina: "🍳", sopra: "🪜", partenza: "🚪", pavimenti: "🧹" };
 function sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) {
@@ -3553,9 +3830,9 @@ function confermaHoFinito(lavori, rif, nonChiuse, arrivo = null) {
   return new Promise((ok) => {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
     const el = document.createElement("div"); el.className = "conferma";
-    el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>${rif.length ? `${esc(nomeGov())} ti rilegge le rifiniture di oggi` : "Hai finito tutto il giro?"}</span></div>
+    el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("spunta")}<span>${rif.length ? `${esc(nomeGov())} ti rilegge le rifiniture di oggi` : "Hai finito tutto il giro?"}${pagaAOre() ? ` <small class="ag-orario-nota">Si ferma l'orario.</small>` : ""}</span></div>
       <p class="ag-dice">${rif.length ? `Le hai fatte tutte? Se ne manca una, toglile la spunta.` : "Hai finito tutto il giro?"}</p>
-      ${rif.length ? `<div class="chiusura-voci">${rif.map(r => `<label class="chiusura-voce"><input type="checkbox" checked data-voce="${esc(r.k)}@${esc(r.pulizia)}"><span>${esc(testoRif(r))}<small>${pagaAOre() ? (r.minuti ? `${r.minuti} min` : "") : prezziRif().aOre && r.minuti ? `${r.minuti} min` : eur(r.euro)}</small></span></label>`).join("")}</div>` : ""}
+      ${rif.length ? `<div class="chiusura-voci">${rif.map(r => `<label class="chiusura-voce"><input type="checkbox" checked data-voce="${esc(r.k)}@${esc(r.pulizia)}"><span>${esc(testoRif(r))}<small>${pagaAOre() ? "" : prezziRif().aOre && r.minuti ? `${r.minuti} min` : eur(r.euro)}</small></span></label>`).join("")}</div>` : ""}
       ${(() => { const r = lavori.filter(p => p.dettagli && p.stato !== "non_fatta"); return r.length ? `<div class="ag-ricorda"><b>📣 ${esc(r[0].dettagliDa || "Michele")} ti aveva chiesto:</b>${r.map(p => `<span>${esc(p.tipo === "stelle" ? "Altre camere" : camera(p.camera).nome)}: «${esc(p.dettagli)}»</span>`).join("")}</div>` : ""; })()}
       ${nonChiuse.length ? `<p class="muted small" style="margin:6px 0">${esc(nonChiuse.map(p => camera(p.camera).nome).join(", "))}: ${nonChiuse.length === 1 ? "resta col suo problema, non la segno pulita" : "restano col loro problema, non le segno pulite"}.</p>` : ""}
       ${arrivo ? `<div class="ag-arrivo"><label class="campo" style="margin:6px 0 10px"><span>⏱️ Stamattina non hai toccato «Sono arrivata». A che ora sei arrivata?</span><input type="time" data-arrivo value="${esc(arrivo)}"></label></div>` : ""}
@@ -8255,7 +8532,7 @@ function cardRifinitureSettimana(lun) {
     for (const g of giorni) { const rf = rifinitureOggi(z.id, g); const k = new Set(rf.map(r => r.pulizia)).size; if (rf.length) perGiorno.push(`${L.GG[L.giornoSettimana(g)]} ${rf.reduce((s, r) => s + r.minuti, 0)}′`); n += rf.length; min += rf.reduce((s, r) => s + r.minuti, 0); pulizie += k; }
     return `<button class="row" data-signora="${z.id}"><span><b>${esc(nomeZonaBreve(z.id))}</b><br><span class="muted small">${n ? `${n} rifiniture in ${pulizie} pulizie · ${perGiorno.join(" · ")}` : "nessuna pulizia in programma"}</span></span><span class="s">${min ? `${min} min` : "—"}</span></button>`;
   }).join("");
-  return `<section class="card"><h2 style="margin:0 0 4px">Rifiniture dentro le pulizie</h2><p class="muted small" style="margin:0 0 8px">Valgono al massimo ${PIANO_STELLE_MAX} stelle al giorno per signora (${PIANO_MINUTI_MAX} minuti; 3 se la giornata è già lunga): quelle scelte da Argon nel piano del giorno. A ogni passaggio la governante mette le stelle che ci stanno nel budget del modo dell'ospite (Tecnici: ripasso 15′, totale a camera vuota 45′, fino a 2/3 stelle; Operai: una sola stella di igiene nella totale del giovedì; Booking: 30′ alla partenza, prima il visibile), partendo dalla cosa più scaduta e a parità dall'igiene; le zone comuni vanno alla prima camera del giorno. Tocca una signora per vederle giorno per giorno.</p><div class="rows">${righe}</div></section>`;
+  return `<section class="card"><h2 style="margin:0 0 4px">Rifiniture dentro le pulizie</h2><p class="muted small" style="margin:0 0 8px">Valgono al massimo ${pianoStelleMax()} stelle al giorno per signora (${pianoMinutiMax()} minuti; 3 se la giornata è già lunga): quelle scelte da Argon nel piano del giorno. A ogni passaggio la governante mette le stelle che ci stanno nel budget del modo dell'ospite (Tecnici: ripasso 15′, totale a camera vuota 45′, fino a 2/3 stelle; Operai: una sola stella di igiene nella totale del giovedì; Booking: 30′ alla partenza, prima il visibile), partendo dalla cosa più scaduta e a parità dall'igiene; le zone comuni vanno alla prima camera del giorno. Tocca una signora per vederle giorno per giorno.</p><div class="rows">${righe}</div></section>`;
 }
 function vistaCalendarioPulito() {
   const cal = G.calendarioPulito(ctxGov()), oggi = L.oggiISO();
@@ -8278,8 +8555,8 @@ const GRUPPI_GOV = G.GRUPPI;
 // ============================================================================
 let memoTab = { chiave: "", valore: null };
 function tabellone() {
-  const chiave = JSON.stringify([S.gov?.regole, S.gov?.soglie, S.gov?.personali, S.gov?.balconi, S.gov?.strada, S.gov?.frigo, S.gov?.inizio, S.gov?.modi, S.gov?.freno, S.gov?.meteo, S.gov?.prezziStelle, L.listinoCompleto(S.listino).tariffe.albergo, S.regole, S.clienti, S.camere.length, Object.keys(S.registro).length, Object.values(S.registro).map(r => r.ultima).join(","), L.oggiISO(), Object.keys(S.pulizie).length, Object.values(S.pulizie).filter(p => p.origine === "governante").length, soggiorniLista().length]);
-  if (memoTab.chiave !== chiave) { let v = null; try { v = G.tabellone(ctxGov(L.lunediDi(L.oggiISO()))); } catch (e) { console.warn("tabellone", e); } memoTab = { chiave, valore: v }; }
+  const chiave = JSON.stringify([S.gov?.regole, S.gov?.soglie, S.gov?.personali, S.gov?.balconi, S.gov?.strada, S.gov?.frigo, S.gov?.inizio, S.gov?.modi, S.gov?.freno, S.gov?.meteo, S.gov?.prezziStelle, L.listinoCompleto(S.listino).tariffe.albergo, (({ zonaStelle, obiettivoStelle, modoPaga, stelleGiorno, stelleMinuti, stelleAppartamenti }) => [zonaStelle, obiettivoStelle, modoPaga, stelleGiorno, stelleMinuti, stelleAppartamenti])(L.listinoCompleto(S.listino)), S.regole, S.clienti, S.camere.length, Object.keys(S.registro).length, Object.values(S.registro).map(r => r.ultima).join(","), L.oggiISO(), Object.keys(S.pulizie).length, Object.values(S.pulizie).filter(p => p.origine === "governante").length, soggiorniLista().length]);
+  if (memoTab.chiave !== chiave) { let v = null; try { v = G.tabellone({ ...ctxGov(L.lunediDi(L.oggiISO())), tettoGiorno: { stelle: pianoStelleMax(), minuti: pianoMinutiMax() } }); } catch (e) { console.warn("tabellone", e); } memoTab = { chiave, valore: v }; }
   return memoTab.valore;
 }
 const COLORE_PEGGIO = g => g.rosse ? "rosso" : g.gialle ? "giallo" : g.grigie ? "grigio" : g.verdi ? "verde" : "fuori";
@@ -9103,12 +9380,18 @@ function cardOrarioBase() {
   const esempio = (id, tipo) => { const c = cam(id); const m = L.minutiPulizia(l, c, tipo); return `${esc(c.nome)} ${tipo === "ripasso" || tipo === "casa" ? "ripasso" : "cambio"}: ${esc(L.testoOre(m))} · ${eur(L.prezzoPulizia(l, c, tipo))}`; };
   const giorniSel = (chiave, val) => `<select data-listino-sel="${chiave}" ${mod ? "" : "disabled"}>${[1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}" ${+val === d ? "selected" : ""}>${L.GIORNI[d]}</option>`).join("")}</select>`;
   const zoneSel = (chiave, val) => `<select data-listino-sel="${chiave}" ${mod ? "" : "disabled"}>${signore().map(z => `<option value="${z.id}" ${val === z.id ? "selected" : ""}>${esc(SIG(z.id))}</option>`).join("")}</select>`;
+  const zonaStelleSel = (val) => `<select data-listino-sel="zonaStelle" ${mod ? "" : "disabled"}>${signore().filter(z => z.id !== "ap").map(z => `<option value="${z.id}" ${val === z.id ? "selected" : ""}>Solo ${esc(SIG(z.id))}</option>`).join("")}<option value="tutte" ${val === "tutte" ? "selected" : ""}>Tutte e due, ognuna le sue camere</option></select>`;
   const fissi = (l.fissi || []).map((f, i) => `<div class="row" style="grid-template-columns:1fr auto;gap:6px"><span><b>${esc(f.titolo)}</b><br><span class="muted small">${eur(L.euroDaMinuti(f.minuti, l.tariffe[f.tariffa || "albergo"]))} · ${esc(L.testoOre(f.minuti))}</span></span><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${giorniSel(`fissi.${i}.giorno`, f.giorno)}${zoneSel(`fissi.${i}.zona`, f.zona)}<input type="number" min="0" step="5" value="${f.minuti}" data-listino="fissi.${i}.minuti" style="width:72px" ${mod ? "" : "disabled"}><small>min</small></span></div>`).join("");
   const aOre = pagaAOre();
   const modo = `<section class="card paga-modo-card"><h2>Come pago le signore</h2>
     <p class="muted small" style="margin:0 0 8px"><b>A ore, col cronometro</b>: la signora tocca «Sono arrivata» quando entra e «Ho finito» alla fine; si pagano i minuti tra le due ore, tutte alla stessa tariffa. Le rifiniture ⭐ e il Visto restano come controllo di qualità, senza soldi a parte. <b>A camera</b>: com'era prima, ore standard per ogni camera, stelle a parte, Visti pagati e salvadanaio. Niente va perso: le impostazioni della paga a camera restano qui sotto.</p>
     <div class="row paga-modo"><span>Come pago</span><span class="seg"><button type="button" aria-pressed="${aOre}" data-modo-paga="ore" ${mod ? "" : "disabled"}>A ore, col cronometro</button><button type="button" aria-pressed="${!aOre}" data-modo-paga="camera" ${mod ? "" : "disabled"}>A camera</button></span></div>
-    ${aOre ? `<div class="listino" style="margin-top:8px">${num("Tariffa dell'ora (tutte le signore)", "tariffaOra", l.tariffaOra ?? 10, 0.5, "€/ora")}</div><p class="muted small" style="margin:6px 0 0">Se in un giorno manca un orario (tasto dimenticato), quel giorno vale le ore standard delle camere fatte ed è segnato in giallo: lo sistemi in Paghe con «Orario».</p>` : ""}</section>`;
+    ${aOre ? `<div class="listino" style="margin-top:8px">${num("Tariffa dell'ora (tutte le signore)", "tariffaOra", l.tariffaOra ?? 10, 0.5, "€/ora")}</div><p class="muted small" style="margin:6px 0 0">Se in un giorno manca un orario (tasto dimenticato), quel giorno vale le ore standard delle camere fatte ed è segnato in giallo: lo sistemi in Paghe con «Orario».</p>
+    <div class="floorlabel" style="margin-top:14px">Le stelle, dentro le ore</div>
+    <p class="muted small" style="margin:0 0 6px">Le rifiniture ⭐ non costano a parte: sono lavoro dentro le ore. Qui decidi quante ne mette l'app ogni giorno a ogni signora (il catalogo è grande: più stelle al giorno = il giro completo si chiude prima) e chi le fa.</p>
+    <div class="listino">${num("Stelle al giorno per signora, al massimo", "stelleGiorno", l.stelleGiorno ?? 6, 1, "stelle")}${num("Minuti di stelle al giorno, al massimo", "stelleMinuti", l.stelleMinuti ?? 30, 5, "min")}</div>
+    <div class="row" style="margin-top:6px"><span>Chi fa le stelle in albergo</span>${zonaStelleSel(l.zonaStelle)}</div>
+    <p class="muted small" style="margin:6px 0 0">${(() => { try { const t = tabellone(); return t ? `Con queste impostazioni, nelle prossime 13 settimane il catalogo è coperto al <b>${t.copertura}%</b> (${t.buchi} ${t.buchi === 1 ? "cosa che nessuno farebbe in tempo" : "cose che nessuno farebbe in tempo"}). Il dettaglio è in ${esc(nomeGov())} → Tabellone.` : ""; } catch (e) { return ""; } })()}</p>` : ""}</section>`;
   return `${modo}<section class="card">${aOre ? `<details><summary>Le impostazioni della paga a camera (conservate, non in uso)</summary>` : ""}<h2>Orario di base e tariffe</h2><p class="muted small" style="margin:0 0 10px">Il lavoro normale si paga a ore standard (i tuoi tempi), non a cronometro: ogni pulizia vale i suoi minuti per la tariffa dell'ora. Se cambi qualcosa vale dalle prossime pulizie: quelle già fatte o pagate non cambiano.</p>
     <div class="floorlabel">Tariffa dell'ora</div>
     <div class="listino">${num("Albergo e via Nazario Sauro (Lella e Nicole comprese)", "tariffe.albergo", l.tariffe.albergo, 0.5, "€/ora")}${num("Appartamenti (via Zara, via Trento)", "tariffe.appartamenti", l.tariffe.appartamenti, 0.5, "€/ora")}</div>
@@ -9126,7 +9409,7 @@ function cardOrarioBase() {
     <div class="row"><span>Come si pagano</span><span class="seg"><button aria-pressed="${!!pz.aOre}" data-stelle-modo="ore" ${mod ? "" : "disabled"}>A ore</button><button aria-pressed="${!pz.aOre}" data-stelle-modo="pezzi" ${mod ? "" : "disabled"}>A pezzi</button></span></div>
     <div class="listino">${num("Tetto delle rifiniture a settimana", "obiettivoStelle", l.obiettivoStelle, 1, "€")}${pz.aOre ? `<label for="ps_molt">Minuti premio: i minuti delle rifiniture contano ×</label><span class="unita"><input id="ps_molt" type="number" min="1" max="4" step="0.125" value="${esc(String(pz.molt || 1))}" data-stelle-molt ${mod ? "" : "disabled"}><small>= ${eur(Math.round((pz.molt || 1) * pz.tariffa * 100) / 100)}/ora</small></span><label for="ps_viaggio">Nelle altre camere, minuti in più per andarci</label><span class="unita"><input id="ps_viaggio" type="number" min="0" step="1" value="${esc(String(pz.viaggio ?? 2))}" data-stelle-viaggio ${mod ? "" : "disabled"}><small>min a camera</small></span>` : rigaStella("Rifinitura fino a 5 minuti", "fino5") + rigaStella("Rifinitura fino a 10 minuti", "fino10") + rigaStella("Rifinitura oltre 10 minuti", "oltre10")}</div>
     ${pz.aOre && Number(pz.tariffa) > 0 && Number(l.obiettivoStelle) > 0 ? `<p class="muted small" style="margin:6px 0 0">${eur(l.obiettivoStelle)} a settimana = circa ${esc(L.testoOre(Math.round(Number(l.obiettivoStelle) / (Number(pz.tariffa) * (Number(pz.molt) || 1)) * 12) * 5))} di rifiniture vere.</p>` : ""}
-    <div class="row" style="margin-top:6px"><span>Chi fa le stelle in albergo</span>${zoneSel("zonaStelle", l.zonaStelle)}</div>
+    <div class="row" style="margin-top:6px"><span>Chi fa le stelle in albergo</span>${zonaStelleSel(l.zonaStelle)}</div>
     <div class="row"><span>Stelle negli appartamenti (le fa chi ci va)</span><span class="seg"><button aria-pressed="${!!l.stelleAppartamenti}" data-listino-flag="stelleAppartamenti|1" ${mod ? "" : "disabled"}>Accese</button><button aria-pressed="${!l.stelleAppartamenti}" data-listino-flag="stelleAppartamenti|0" ${mod ? "" : "disabled"}>Spente</button></span></div>
     <div class="floorlabel" style="margin-top:14px">I controlli</div>
     <div class="listino">${num("Paga per ogni camera controllata", "controllo", l.controllo, 0.5, "€")}${signore().map(z => [5, 6].map(d => num(`${esc(SIG(z.id))} · controlli ${L.GIORNI[d]}`, `controlli.${z.id}.${d}`, (l.controlli[z.id] || {})[d] ?? 0, 1, "camere")).join("")).join("")}</div>
