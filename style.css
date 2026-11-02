@@ -7104,3 +7104,22 @@ body.con-compagna .sg-nuvola.piccola{right:160px;bottom:calc(var(--alto-sotto,71
   .mt-legenda li span{font-size:15px}
   .sg-compagna.sg-intera.piccola{width:136px;height:242px}
 }
+
+/* ===================================================================================================================
+   1.34.0 · IL DISEGNO DELLA CAMERA IN 3D, A MATITA (Michele: «i disegni ancora più dettagliati e molto più chiari, non
+   devono avere nessun tipo di dubbio»): la camera come una casa delle bambole aperta davanti, ogni cosa riconoscibile e
+   con la sua scritta; sotto il bagno; nelle case la cucina col soggiorno, le camere e il bagno.
+   =================================================================================================================== */
+.mt-camera{padding:10px 6px 10px}
+.mt-disegno .mt-titolo{font:700 15px var(--f-gioco,var(--f-display));letter-spacing:.06em;text-transform:uppercase;fill:#3E5568;text-anchor:middle}
+.mt-disegno .mt-eti{font:700 14.5px var(--f-gioco,var(--f-body));fill:#2B3A4A;paint-order:stroke;stroke:#FFFDF7;stroke-width:4px;stroke-linejoin:round}
+.mt-disegno .mt-eti.fine{text-anchor:end}
+.mt-disegno .mt-filo{fill:none;stroke:#2B3A4A;stroke-width:1.2;stroke-dasharray:2 2;opacity:.7}
+.mt-segno .mt-num{font-size:16px}
+.mt-segno .mt-alone{fill:none;stroke:#E8A400;stroke-width:3.5;transform-box:fill-box;transform-origin:center;animation:mtLampeggia 1.3s ease-in-out infinite}
+.mt-segno.fondo .mt-alone{stroke:#D9A43F;animation-duration:2.2s}
+.mt-segno .mt-onda{stroke-width:2.5}
+.mt-segno .mt-tondo{animation:none}
+.mt-segno .mt-num{font-size:15px}
+@media (prefers-reduced-motion:reduce){.mt-segno .mt-alone{animation:none}}
+.mt-segno .mt-filo-n{fill:none;stroke:#8A5A00;stroke-width:1.6}

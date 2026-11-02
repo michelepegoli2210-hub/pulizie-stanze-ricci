@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.33.0";
+export const VERSIONE = "1.34.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2947,6 +2947,210 @@ function postoDisegno(posto, testo) {
   if (ha(/tavol|sedi|divan|poltron|salott|soggiorn/)) return ha(/divan|poltron|salott|soggiorn/) ? "divano" : "tavolo";
   return "camera";
 }
+// ============================================================================
+//  1.34.0 IL DISEGNO DELLA CAMERA IN 3D, A MATITA (Michele, 2/11: «i disegni ancora più dettagliati e molto più chiari,
+//  non devono avere nessun tipo di dubbio»). Non più la pianta vista dall'alto (un rettangolo può essere tutto): la camera
+//  come una casa delle bambole aperta davanti, in prospettiva, dove ogni cosa si riconosce al volo: il letto con la testiera,
+//  i cuscini e la coperta; l'armadio alto con le ante e le maniglie; il frigo col congelatore; la finestra con le tende; il
+//  clima sul muro; il quadro sopra il letto; la lampada che pende dal soffitto; la TV; la porta con la maniglia; e il bagno
+//  sotto, con la doccia col soffione, il WC, il lavabo col rubinetto e lo specchio, il phon, gli asciugamani, il cestino.
+//  OGNI COSA HA LA SUA SCRITTA. I numeri delle stelle e dei lavori a fondo stanno sopra la cosa, e lampeggiano.
+// ============================================================================
+// la prospettiva (isometrica): u va verso destra-in giù, v verso sinistra-in giù, z in su. o = { x, y, s } (dove sta
+// l'angolo in fondo e quanto è grande un metro in pixel)
+const ISO_CX = Math.cos(Math.PI / 6), ISO_SY = 0.5;
+function isoP(o, u, v, z) { return [o.x + (u - v) * ISO_CX * o.s, o.y + (u + v) * ISO_SY * o.s - z * o.s]; }
+function isoPath(o, pts) { return pts.map((p, i) => (i ? "L" : "M") + isoP(o, p[0], p[1], p[2]).map(n => n.toFixed(1)).join(" ")).join(" ") + " Z"; }
+const ISO_INK = "#2B3A4A";
+// un poligono pieno (col tratteggio a matita sopra, se c'è) e il bordo scuro
+function isoPoly(o, pts, col, tratto, sp = 2, extra = "") {
+  const d = isoPath(o, pts);
+  return `<path d="${d}" fill="${col}"${extra}/>${tratto ? `<path d="${d}" fill="url(#${tratto})"/>` : ""}<path d="${d}" fill="none" stroke="${ISO_INK}" stroke-width="${sp}" stroke-linejoin="round" stroke-linecap="round"/>`;
+}
+// una scatola: la faccia di sopra (chiara), quella a sinistra (verso di noi, v+d) e quella a destra (u+w)
+function isoBox(o, u, v, z, w, d, h, col, tratto, opz = {}) {
+  const scuro = opz.scuro || "rgba(43,58,74,.10)", medio = opz.medio || "rgba(43,58,74,.05)";
+  const sopra = [[u, v, z + h], [u + w, v, z + h], [u + w, v + d, z + h], [u, v + d, z + h]];
+  const sin = [[u, v + d, z], [u + w, v + d, z], [u + w, v + d, z + h], [u, v + d, z + h]];
+  const des = [[u + w, v, z], [u + w, v + d, z], [u + w, v + d, z + h], [u + w, v, z + h]];
+  const tr = opz.trattoSolo === "sopra" ? [tratto, "", ""] : opz.trattoSolo === "lati" ? ["", tratto, tratto] : [tratto, tratto, tratto];
+  let s = "";
+  if (!opz.senzaSinistra) s += isoPoly(o, sin, col, tr[1], 2) + `<path d="${isoPath(o, sin)}" fill="${medio}"/>`;
+  if (!opz.senzaDestra) s += isoPoly(o, des, col, tr[2], 2) + `<path d="${isoPath(o, des)}" fill="${scuro}"/>`;
+  if (!opz.senzaSopra) s += isoPoly(o, sopra, opz.sopraCol || col, tr[0], 2);
+  return s;
+}
+// un rettangolo appoggiato al muro di destra (v = 0) o a quello di sinistra (u = 0)
+function isoMuroR(o, u1, u2, z1, z2, col, tratto, sp = 2, v = 0) { return isoPoly(o, [[u1, v, z1], [u2, v, z1], [u2, v, z2], [u1, v, z2]], col, tratto, sp); }
+function isoMuroL(o, v1, v2, z1, z2, col, tratto, sp = 2, u = 0) { return isoPoly(o, [[u, v1, z1], [u, v2, z1], [u, v2, z2], [u, v1, z2]], col, tratto, sp); }
+function isoLinea(o, a, b, sp = 1.8, extra = "") { const p = isoP(o, ...a), q = isoP(o, ...b); return `<path d="M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${q[0].toFixed(1)} ${q[1].toFixed(1)}" fill="none" stroke="${ISO_INK}" stroke-width="${sp}" stroke-linecap="round"${extra}/>`; }
+function isoEllisse(o, u, v, z, ru, rv, col, sp = 1.8) { const c = isoP(o, u, v, z); return `<ellipse cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" rx="${(ru * ISO_CX * o.s).toFixed(1)}" ry="${(rv * ISO_SY * o.s).toFixed(1)}" fill="${col}" stroke="${ISO_INK}" stroke-width="${sp}"/>`; }
+// un cilindro (cestino, lampada): il corpo e il cerchio di sopra
+function isoCilindro(o, u, v, z, r, h, col, tratto) {
+  const a = isoP(o, u - r * 0.72, v + r * 0.72, z), b = isoP(o, u + r * 0.72, v - r * 0.72, z), c = isoP(o, u + r * 0.72, v - r * 0.72, z + h), d = isoP(o, u - r * 0.72, v + r * 0.72, z + h);
+  const corpo = `M${a[0].toFixed(1)} ${a[1].toFixed(1)} L${b[0].toFixed(1)} ${b[1].toFixed(1)} L${c[0].toFixed(1)} ${c[1].toFixed(1)} L${d[0].toFixed(1)} ${d[1].toFixed(1)} Z`;
+  return `<path d="${corpo}" fill="${col}"/>${tratto ? `<path d="${corpo}" fill="url(#${tratto})"/>` : ""}<path d="${corpo}" fill="none" stroke="${ISO_INK}" stroke-width="2" stroke-linejoin="round"/>${isoEllisse(o, u, v, z + h, r, r, col, 1.8)}`;
+}
+// la stanza: il pavimento e i due muri in fondo (aperta davanti, come una casa delle bambole)
+function isoStanza(o, U, V, H, pav, muro) {
+  let s = isoPoly(o, [[0, 0, 0], [U, 0, 0], [U, V, 0], [0, V, 0]], pav.col, pav.tratto, 2.4);
+  s += isoPoly(o, [[0, 0, 0], [0, V, 0], [0, V, H], [0, 0, H]], muro.col, muro.tratto, 2.4);
+  s += isoPoly(o, [[0, 0, 0], [U, 0, 0], [U, 0, H], [0, 0, H]], muro.col2 || muro.col, muro.tratto, 2.4);
+  // il battiscopa
+  s += isoLinea(o, [0, V, 0.18], [0, 0, 0.18], 1.4) + isoLinea(o, [0, 0, 0.18], [U, 0, 0.18], 1.4);
+  return s;
+}
+// la scritta accanto alla cosa, con la lineetta che la indica
+function isoEti(o, p3, testo, dx, dy, ancora = "start", linea = true) {
+  const p = isoP(o, ...p3), x = p[0] + dx, y = p[1] + dy;
+  const fine = ancora === "end" ? x + 2 : ancora === "middle" ? x : x - 3;
+  return `${linea && (Math.abs(dx) > 14 || Math.abs(dy) > 14) ? `<path d="M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${fine.toFixed(1)} ${(y - 4).toFixed(1)}" class="mt-filo"/>` : ""}<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="mt-eti ${ancora === "middle" ? "mid" : ancora === "end" ? "fine" : ""}">${testo}</text>`;
+}
+// ---- la camera (albergo): U verso destra (il muro di destra), V verso sinistra (il muro di sinistra), H l'altezza ------
+function isoCamera(o, opz) {
+  const U = 9, V = 6, H = 5.2, singola = !!opz.singola, soloLetti = !!opz.soloLetti;
+  let s = isoStanza(o, U, V, H, { col: "#FBF6EC", tratto: "mtGr" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
+  const eti = [], posti = {};
+  // --- sul muro di sinistra (u = 0), dal fondo in avanti: la TV, il frigo (col cestino accanto), la porta
+  if (!soloLetti) {
+    s += isoBox(o, 0.02, 0.5, 2.4, 0.12, 1.5, 0.95, "#3E4A5A", "", { scuro: "rgba(0,0,0,.25)", medio: "rgba(0,0,0,.1)" }) + isoLinea(o, [0.14, 0.65, 2.55], [0.14, 1.85, 2.55], 1, ' stroke="#9FB0C4"');
+    eti.push([[0.12, 2.0, 2.9], "TV", -8, 4, "end", false]); posti.tv = [0.1, 1.25, 2.9];
+    s += isoBox(o, 0.02, 0.6, 4.3, 0.4, 1.7, 0.45, "#FFFFFF", "", {}) + isoLinea(o, [0.42, 0.8, 4.4], [0.42, 2.1, 4.4], 1.1) + isoLinea(o, [0.42, 0.8, 4.53], [0.42, 2.1, 4.53], 1.1);
+    eti.push([[0.2, 1.45, 4.75], "clima", -4, -9, "middle", false]); posti.clima = [0.25, 1.45, 4.55];
+    s += isoBox(o, 0.1, 2.4, 0, 0.9, 1.1, 2.0, "#FFFFFF", "", {}) + isoLinea(o, [1.0, 2.4, 1.4], [1.0, 3.5, 1.4], 1.6) + isoLinea(o, [1.0, 3.35, 0.35], [1.0, 3.35, 1.15], 2.2) + isoLinea(o, [1.0, 3.35, 1.55], [1.0, 3.35, 1.85], 2.2);
+    eti.push([[1.0, 2.95, 2.0], "frigo", 0, -13, "middle", false]); posti.frigo = [0.6, 2.95, 2.1];
+    s += isoCilindro(o, 1.1, 4.0, 0, 0.3, 0.6, "#E9EEF7", "mtGr"); eti.push([[1.1, 4.0, 0.3], "cestino", -7, 22, "end"]); posti.cestino = [1.1, 4.0, 0.65];
+  }
+  s += isoMuroL(o, 4.5, 5.7, 0, 3.8, "#F6E3C8", "mtOr", 2, 0.02) + isoLinea(o, [0.02, 4.7, 0.6], [0.02, 5.5, 0.6], 1.2) + isoLinea(o, [0.02, 4.7, 2.3], [0.02, 5.5, 2.3], 1.2) + isoEllisse(o, 0.04, 4.72, 1.9, 0.09, 0.09, "#2B3A4A", 1);
+  eti.push([[0, 5.1, 3.8], "porta", 0, -10, "middle", false]); posti.porta = [0.05, 5.1, 2.1];
+  // --- sul muro di destra (v = 0), dal fondo verso destra: la finestra con le tende e il clima sopra, il letto col quadro, l'armadio
+  s += isoMuroR(o, 0.7, 2.7, 2.0, 4.3, "#DDF1FA", "mtAc", 2, 0.02) + isoLinea(o, [1.7, 0.02, 2.0], [1.7, 0.02, 4.3], 1.4) + isoLinea(o, [0.7, 0.02, 3.15], [2.7, 0.02, 3.15], 1.4);
+  s += isoMuroR(o, 0.25, 0.75, 1.5, 4.5, "#F6E3C8", "mtOr", 1.8, 0.06) + isoMuroR(o, 2.65, 3.15, 1.5, 4.5, "#F6E3C8", "mtOr", 1.8, 0.06) + isoLinea(o, [0.2, 0.06, 4.55], [3.2, 0.06, 4.55], 2.2);
+  eti.push([[1.7, 0, 1.75], "finestra", 0, 6, "middle", false]); posti.finestra = [1.7, 0.1, 2.9]; posti.balcone = posti.finestra;
+  const lu = singola ? 4.4 : 3.75, lw = singola ? 1.7 : 3.0, cen = lu + lw / 2;
+  s += isoMuroR(o, cen - 0.65, cen + 0.65, 3.15, 4.15, "#8A5A3A", "", 2, 0.03) + isoMuroR(o, cen - 0.53, cen + 0.53, 3.27, 4.03, "#E1F5E5", "", 1.2, 0.04) + isoLinea(o, [cen - 0.5, 0.05, 3.45], [cen - 0.1, 0.05, 3.8], 1.4) + isoLinea(o, [cen - 0.1, 0.05, 3.8], [cen + 0.15, 0.05, 3.58], 1.4) + isoLinea(o, [cen + 0.15, 0.05, 3.58], [cen + 0.5, 0.05, 3.9], 1.4) + isoEllisse(o, cen + 0.32, 0.05, 3.9, 0.09, 0.09, "#FFD64D", 1.2);
+  eti.push([[cen, 0, 4.15], "quadro", 0, -22, "middle", false]); posti.quadro = [cen, 0.1, 3.65];
+  s += isoBox(o, 7.6, 0.05, 0, 1.35, 0.8, 4.0, "#F6E3C8", "mtOr", { trattoSolo: "lati" }) + isoLinea(o, [8.27, 0.85, 0.1], [8.27, 0.85, 3.9], 1.6) + isoLinea(o, [8.12, 0.85, 1.9], [8.12, 0.85, 2.4], 2.6) + isoLinea(o, [8.42, 0.85, 1.9], [8.42, 0.85, 2.4], 2.6);
+  eti.push([[8.27, 0.45, 4.0], "armadio", 0, -12, "middle", false]); posti.armadio = [8.27, 0.45, 4.1];
+  posti.pareti = [7.0, 0.05, 4.5]; posti.camera = posti.pareti;
+  // --- per terra: i comodini con l'abat-jour, il letto (testiera, materasso, cuscini, coperta)
+  const cu = [lu - 0.8, lu + lw + 0.1];
+  for (const x of cu) { s += isoBox(o, x, 0.1, 0, 0.7, 0.8, 1.1, "#F6E3C8", "", {}) + isoCilindro(o, x + 0.35, 0.5, 1.1, 0.12, 0.3, "#F6E3C8", "") + isoBox(o, x + 0.1, 0.25, 1.4, 0.5, 0.5, 0.32, "#FFF0B8", "mtGi", {}); }
+  eti.push([[cu[1] + 0.7, 0.9, 0], "comodino", 8, 16, "start"]); posti.comodino = [cu[1] + 0.35, 0.5, 1.8];
+  s += isoBox(o, lu, 0.05, 0, lw, 0.25, 2.0, "#8A5A3A", "", { scuro: "rgba(0,0,0,.18)" });
+  s += isoBox(o, lu, 0.3, 0, lw, 4.0, 0.85, "#FFFFFF", "", {});
+  if (singola) s += isoBox(o, lu + 0.25, 0.5, 0.85, 1.2, 0.9, 0.35, "#FFFFFF", "", {});
+  else s += isoBox(o, lu + 0.3, 0.5, 0.85, 1.15, 0.9, 0.35, "#FFFFFF", "", {}) + isoBox(o, lu + 1.55, 0.5, 0.85, 1.15, 0.9, 0.35, "#FFFFFF", "", {});
+  s += isoBox(o, lu - 0.08, 1.9, 0.85, lw + 0.16, 2.4, 0.18, "#DCEBFA", "mtAz", {}) + isoLinea(o, [lu - 0.08, 2.4, 1.03], [lu + lw + 0.08, 2.4, 1.03], 1.4);
+  eti.push([[cen, 4.3, 0.5], singola ? "letto singolo" : "letto matrimoniale", 0, 20, "middle", false]); posti.letto = [cen, 2.9, 1.1];
+  // il soffitto: l'angolo in alto (per le ragnatele, la plafoniera)
+  posti.soffitto = [0.7, 0.7, 4.9];
+  posti.pavimento = [7.8, 5.6, 0.05]; posti.tavolo = posti.pavimento; posti.divano = posti.pavimento;
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- il bagno --------------------------------------------------------------------------------------------------------
+function isoBagno(o, opz) {
+  const U = 5.6, V = 5.2, H = 5.5;
+  let s = isoStanza(o, U, V, H, { col: "#E6F6F9", tratto: "mtAc" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
+  const eti = [], posti = {};
+  // gli asciugamani sul muro di sinistra
+  s += isoLinea(o, [0.02, 1.0, 3.25], [0.02, 2.3, 3.25], 2.6) + isoMuroL(o, 1.15, 2.15, 1.9, 3.2, "#FBE3EA", "mtRo", 1.8, 0.06);
+  eti.push([[0.02, 1.65, 3.3], "asciugamani", 0, -10, "middle"]); posti.asciugamani = [0.08, 1.65, 2.6];
+  // la lavatrice (nelle case)
+  if (opz.lavatrice) { s += isoBox(o, 0.1, 2.7, 0, 0.9, 1.0, 1.3, "#FFFFFF", "", {}) + isoEllisse(o, 1.0, 3.2, 0.65, 0.3, 0.3, "#DDF1FA", 1.6); eti.push([[0.05, 3.3, 1.9], "lavatrice", -6, 0, "end", false]); posti.lavatrice = [0.6, 3.2, 1.4]; }
+  // il WC: cassetta e tazza col sedile
+  s += isoBox(o, 0.05, 3.9, 0.6, 0.45, 1.0, 1.4, "#FFFFFF", "", {}) + isoBox(o, 0.5, 4.0, 0, 1.3, 0.8, 0.9, "#FFFFFF", "", {}) + isoEllisse(o, 1.15, 4.4, 0.9, 0.5, 0.33, "#DDF1FA", 1.6);
+  eti.push([[0.5, 4.5, 0.9], "WC", -22, 12, "end"]); posti.wc = [1.15, 4.4, 1.0]; posti.bagno = [3.0, 3.4, 0.05]; posti.pavimento = posti.bagno;
+  // il lavabo col rubinetto, lo specchio sopra
+  s += isoBox(o, 1.75, 0.3, 0, 0.55, 0.5, 1.5, "#FFFFFF", "", {}) + isoBox(o, 1.2, 0.05, 1.5, 1.6, 1.05, 0.45, "#FFFFFF", "", {}) + isoEllisse(o, 2.0, 0.6, 1.95, 0.5, 0.33, "#DDF1FA", 1.6) + isoLinea(o, [2.0, 0.08, 1.95], [2.0, 0.08, 2.45], 2) + isoLinea(o, [2.0, 0.08, 2.45], [2.0, 0.45, 2.45], 2);
+  eti.push([[2.0, 1.1, 1.95], "lavabo", 0, 26, "middle"]); posti.lavabo = [2.0, 0.6, 2.0];
+  s += isoMuroR(o, 1.25, 2.75, 2.9, 4.4, "#DDF1FA", "mtAc", 2, 0.03) + isoLinea(o, [1.45, 0.05, 3.1], [1.85, 0.05, 4.2], 1, ' stroke="#FFFFFF"');
+  eti.push([[2.0, 0, 4.4], "specchio", 0, -10, "middle"]); posti.specchio = [2.0, 0.1, 3.65];
+  // il phon appeso
+  s += isoBox(o, 3.05, 0.02, 3.1, 0.55, 0.3, 0.32, "#AEBBCB", "", {}) + isoBox(o, 3.15, 0.02, 2.45, 0.26, 0.3, 0.65, "#AEBBCB", "", {}) + isoLinea(o, [3.6, 0.17, 3.26], [3.75, 0.17, 3.26], 2.6);
+  eti.push([[3.3, 0.1, 3.45], "phon", 8, -8, "start"]); posti.phon = [3.3, 0.2, 2.9];
+  // la doccia: il piatto, i vetri, il soffione
+  s += isoBox(o, 3.7, 0.1, 0, 1.8, 1.8, 0.22, "#FFFFFF", "", {}) + isoEllisse(o, 4.6, 1.0, 0.22, 0.12, 0.12, "#AEBBCB", 1.2);
+  s += isoLinea(o, [4.7, 0.05, 4.6], [4.7, 0.75, 4.6], 2) + isoEllisse(o, 4.7, 0.8, 4.52, 0.26, 0.26, "#AEBBCB", 1.6) + isoLinea(o, [4.55, 0.8, 4.4], [4.45, 0.8, 3.9], 1.2, ' stroke-dasharray="2 3"') + isoLinea(o, [4.7, 0.8, 4.4], [4.7, 0.8, 3.9], 1.2, ' stroke-dasharray="2 3"') + isoLinea(o, [4.85, 0.8, 4.4], [4.95, 0.8, 3.9], 1.2, ' stroke-dasharray="2 3"');
+  s += isoPoly(o, [[3.7, 1.9, 0.22], [5.5, 1.9, 0.22], [5.5, 1.9, 4.2], [3.7, 1.9, 4.2]], "rgba(221,241,250,.55)", "", 1.8) + isoPoly(o, [[5.5, 0.1, 0.22], [5.5, 1.9, 0.22], [5.5, 1.9, 4.2], [5.5, 0.1, 4.2]], "rgba(221,241,250,.45)", "", 1.8);
+  eti.push([[4.6, 1.9, 0.22], "doccia", 0, 26, "middle"]); posti.doccia = [4.6, 1.0, 2.2];
+  // il cestino
+  s += isoCilindro(o, 2.9, 4.2, 0, 0.28, 0.6, "#E9EEF7", "mtGr"); eti.push([[2.9, 4.2, 0.6], "cestino", 10, 14, "start"]); posti.cestino = [2.9, 4.2, 0.65];
+  posti.pareti = [4.5, 0.05, 2.5];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- la cucina col soggiorno (le case) -------------------------------------------------------------------------------
+function isoCucina(o) {
+  const U = 11, V = 8, H = 5.5;
+  let s = isoStanza(o, U, V, H, { col: "#FFF4CF", tratto: "mtGi" }, { col: "#FFFFFF", col2: "#FFFDF7", tratto: "" });
+  const eti = [], posti = {};
+  // la finestra sul muro di sinistra
+  s += isoMuroL(o, 1.6, 3.6, 2.2, 4.4, "#DDF1FA", "mtAc", 2, 0.02) + isoLinea(o, [0.02, 2.6, 2.2], [0.02, 2.6, 4.4], 1.4) + isoLinea(o, [0.02, 1.6, 3.3], [0.02, 3.6, 3.3], 1.4);
+  eti.push([[0, 2.6, 4.4], "finestra", 0, -9, "middle", false]); posti.finestra = [0.1, 2.6, 3.3]; posti.balcone = posti.finestra;
+  // la TV sul muro di sinistra
+  s += isoBox(o, 0.02, 5.2, 2.4, 0.12, 1.8, 1.05, "#3E4A5A", "", { scuro: "rgba(0,0,0,.25)", medio: "rgba(0,0,0,.1)" }); eti.push([[0.1, 6.1, 3.45], "TV", 0, -10, "middle", false]); posti.tv = [0.1, 6.1, 2.9];
+  // i mobili della cucina col piano, il lavello col rubinetto, i fornelli, la cappa, il frigo
+  s += isoBox(o, 0.2, 0.05, 0, 5.6, 0.95, 1.3, "#F6E3C8", "mtOr", { trattoSolo: "lati", sopraCol: "#FFFFFF" }) + isoLinea(o, [2.0, 1.0, 0.1], [2.0, 1.0, 1.2], 1.2) + isoLinea(o, [4.0, 1.0, 0.1], [4.0, 1.0, 1.2], 1.2);
+  s += isoEllisse(o, 1.2, 0.5, 1.3, 0.45, 0.32, "#DDF1FA", 1.6) + isoLinea(o, [1.2, 0.08, 1.3], [1.2, 0.08, 1.85], 2) + isoLinea(o, [1.2, 0.08, 1.85], [1.2, 0.4, 1.85], 2);
+  eti.push([[1.2, 0.5, 1.9], "lavello", 0, -18, "middle", false]); posti.lavello = [1.2, 0.5, 1.5];
+  for (const [a, b] of [[3.3, 0.3], [4.3, 0.3], [3.3, 0.75], [4.3, 0.75]]) s += isoEllisse(o, a, b, 1.31, 0.22, 0.22, "#3E4A5A", 1.2);
+  eti.push([[3.8, 1.0, 0], "fornelli", 0, 16, "middle", false]); posti.fornelli = [3.8, 0.55, 1.5]; posti.cucina = [2.6, 0.5, 1.5];
+  s += isoBox(o, 3.0, 0.02, 3.5, 1.6, 0.7, 0.55, "#AEBBCB", "", {}) + isoLinea(o, [3.8, 0.4, 4.05], [3.8, 0.4, 5.3], 2.2); eti.push([[3.8, 0.2, 4.05], "cappa", 0, -11, "middle", false]); posti.cappa = [3.8, 0.4, 3.8];
+  s += isoBox(o, 6.1, 0.1, 0, 1.0, 1.15, 2.6, "#FFFFFF", "", {}) + isoLinea(o, [7.1, 0.1, 1.8], [7.1, 1.25, 1.8], 1.6) + isoLinea(o, [7.1, 1.1, 0.5], [7.1, 1.1, 1.5], 2.2) + isoLinea(o, [7.1, 1.1, 2.0], [7.1, 1.1, 2.45], 2.2);
+  eti.push([[6.1, 0.6, 2.6], "frigo", -6, 2, "end", false]); posti.frigo = [6.6, 0.6, 2.7];
+  // la porta sul muro di destra
+  s += isoMuroR(o, 8.6, 9.9, 0, 4.0, "#F6E3C8", "mtOr", 2, 0.02) + isoEllisse(o, 8.85, 0.04, 2.0, 0.09, 0.09, "#2B3A4A", 1);
+  eti.push([[9.25, 0, 4.0], "porta", 0, -10, "middle", false]); posti.porta = [9.25, 0.05, 2.2]; posti.pareti = [10.3, 0.05, 2.5]; posti.camera = posti.pareti;
+  // il tavolo con le sedie
+  s += isoBox(o, 3.6, 3.6, 0, 2.4, 1.5, 0.95, "#F6E3C8", "mtOr", { trattoSolo: "lati", sopraCol: "#FBF6EC" });
+  for (const [a, b] of [[3.0, 4.0], [6.1, 4.0], [4.0, 5.25], [5.2, 5.25]]) s += isoBox(o, a, b, 0, 0.55, 0.55, 0.55, "#F6E3C8", "", {}) + (b > 5 ? isoBox(o, a, b + 0.42, 0.55, 0.55, 0.13, 0.7, "#F6E3C8", "", {}) : "");
+  eti.push([[4.2, 5.3, 0], "tavolo", -8, 18, "middle", false]); posti.tavolo = [4.8, 4.3, 1.1]; posti.pavimento = [9.5, 6.8, 0.05];
+  // il divano
+  s += isoBox(o, 7.6, 4.3, 0, 2.7, 1.3, 0.75, "#E9DDFB", "mtVi", {}) + isoBox(o, 7.6, 4.3, 0.75, 2.7, 0.35, 0.8, "#E9DDFB", "mtVi", {}) + isoBox(o, 7.6, 4.3, 0.75, 0.3, 1.3, 0.35, "#E9DDFB", "", {}) + isoBox(o, 10.0, 4.3, 0.75, 0.3, 1.3, 0.35, "#E9DDFB", "", {});
+  eti.push([[8.95, 5.6, 0], "divano", 0, 18, "middle", false]); posti.divano = [8.95, 5.0, 1.0];
+  // il cestino
+  s += isoCilindro(o, 1.2, 2.2, 0, 0.3, 0.65, "#E9EEF7", "mtGr"); eti.push([[1.2, 2.2, 0], "cestino", 0, 18, "middle", false]); posti.cestino = [1.2, 2.2, 0.7];
+  posti.soffitto = [0.7, 0.7, 4.9];
+  return { svg: s, eti, posti, U, V, H };
+}
+// ---- tutto insieme: i pezzi uno sotto l'altro, le scritte, i numeri che lampeggiano, la legenda ---------------------
+function isoDisegno(opz) {
+  const E = opz.esc, W = 400;
+  const pezzi = [];
+  if (opz.casa) {
+    pezzi.push({ titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 18.5, U: 11, V: 8, H: 5.5 });
+    pezzi.push({ titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 21, U: 9, V: 6, H: 5.2 });
+    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, { lavatrice: true }), s: 25, U: 5.6, V: 5.2, H: 5.5 });
+  } else {
+    pezzi.push({ titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 23.5, U: 9, V: 6, H: 5.2 });
+    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 27, U: 5.6, V: 5.2, H: 5.5 });
+  }
+  let y = 34, corpo = "", scritte = "", titoli = "";
+  const posti = {};   // posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince: la camera prima del bagno)
+  for (const pz of pezzi) {
+    const larg = (pz.U + pz.V) * ISO_CX * pz.s;
+    const o = { x: (W - larg) / 2 + pz.V * ISO_CX * pz.s, y: y + 16 + pz.H * pz.s, s: pz.s };
+    const r = pz.fa(o);
+    titoli += `<text x="${(W / 2).toFixed(1)}" y="${(y + 4).toFixed(1)}" class="mt-titolo">${E(pz.titolo)}</text>`;
+    corpo += `<g>${r.svg}</g>`;
+    for (const e of r.eti) scritte += isoEti(o, e[0], E(e[1]), e[2], e[3], e[4]);
+    for (const [k, p] of Object.entries(r.posti)) if (!posti[k]) posti[k] = isoP(o, ...p);
+    y = o.y + (pz.U + pz.V) * ISO_SY * pz.s + 44;
+  }
+  const alto = Math.round(y - 10);
+  // i numeri che lampeggiano, sopra la cosa (più numeri sulla stessa cosa: in fila)
+  const conta = {}; const segni = opz.segni || [];
+  const anelli = segni.map((sg) => { const p = posti[sg.dove] || posti.camera || posti.pavimento; const n = conta[sg.dove] = (conta[sg.dove] || 0) + 1; return { x: Math.min(W - 20, Math.max(20, p[0] + (n - 1) * (p[0] > W - 60 ? -30 : 30))), y: Math.min(alto - 18, Math.max(46, p[1])) }; });
+  // il cerchietto col numero sta sopra l'anello; se due cerchietti si toccano, si scostano (l'anello resta sulla cosa)
+  const cerchi = anelli.map(a => ({ x: a.x + 20, y: a.y - 20 }));
+  for (let giro = 0; giro < 12; giro++) { let mosso = false; for (let i = 0; i < cerchi.length; i++) for (let j = i + 1; j < cerchi.length; j++) { const dx = cerchi[j].x - cerchi[i].x, dy = cerchi[j].y - cerchi[i].y, d = Math.hypot(dx, dy) || 1; if (d < 30) { const sp = (30 - d) / 2 + 1, ux = dx / d, uy = dy / d; cerchi[i].x -= ux * sp; cerchi[i].y -= uy * sp; cerchi[j].x += ux * sp; cerchi[j].y += uy * sp; mosso = true; } } if (!mosso) break; }
+  for (const c of cerchi) { c.x = Math.min(W - 16, Math.max(16, c.x)); c.y = Math.min(alto - 16, Math.max(16, c.y)); }
+  const numeri = segni.map((sg, i) => {
+    const a = anelli[i], c = cerchi[i], lontano = Math.hypot(c.x - a.x, c.y - a.y) > 34;
+    return `<g class="mt-segno ${sg.k}"><g transform="translate(${a.x.toFixed(1)} ${a.y.toFixed(1)})"><circle class="mt-onda" r="17"/><circle class="mt-alone" r="17"/></g>${lontano ? `<path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${c.x.toFixed(1)} ${c.y.toFixed(1)}" class="mt-filo-n"/>` : ""}<g transform="translate(${c.x.toFixed(1)} ${c.y.toFixed(1)})"><circle class="mt-tondo" r="13"/><text y="5" class="mt-num">${i + 1}</text><text x="11" y="-7" class="mt-mini">${sg.k === "stella" ? "★" : "✦"}</text></g></g>`;
+  }).join("");
+  return { alto, svg: `${titoli}<g filter="url(#mtTrem)">${corpo}</g>${scritte}${numeri}`, W };
+}
 function disegnoCamera(p) {
   if (!p || p.tipo === "stelle" || p.tipo === "fisso" || p.tipo === "extra") return "";
   const c = camera(p.camera); if (!c || !c.id) return "";
@@ -2957,65 +3161,12 @@ function disegnoCamera(p) {
   const regolaDi = (id) => { try { return regoleGov().find(x => x.id === id) || {}; } catch (e) { return {}; } };
   const segni = [...rif.map(r => ({ k: "stella", t: r.nome, min: Number(r.minuti) || 0, icona: r.icona || regolaDi(r.regola).icona || "", dove: postoDisegno(r.posto, `${r.superficie || ""} ${r.nome}`) })),
     ...fondi.map(f => { const rg = regolaDi(f.regola); return { k: "fondo", t: String(titoloBase(f) || "Lavoro a fondo"), min: Number(f.minuti) || 0, icona: f.icona || rg.icona || "", dove: postoDisegno(rg.posto, `${rg.superficie || ""} ${rg.nome || ""} ${titoloBase(f) || ""}`) }; })];
-  const T = (x, y, s, cls = "") => `<text x="${x}" y="${y}" class="mt-eti ${cls}">${esc(s)}</text>`;
-  const H = MT_TRATTO.replace('2.6', '2.4'), h = (w) => MT_TRATTO.replace('2.6', String(w));
-  let corpo = "", posti = {};
-  if (!casa) {
-    // la camera: la finestra col clima e il quadro sul muro in alto, il letto coi comodini, frigo e armadio a sinistra,
-    // la lampada al centro, la TV e la porta in basso, il bagno a destra (doccia, WC, specchio, lavabo, phon, cestino)
-    const lx = singola ? 92 : 62, lw = singola ? 76 : 136, cx = lx + lw / 2;
-    corpo = `<rect x="10" y="12" width="340" height="216" rx="6" fill="#FFFDF7" ${H}/>
-      <rect x="240" y="12" width="110" height="112" fill="#E6F6F9"/><rect x="240" y="12" width="110" height="112" fill="url(#mtAc)" ${H}/>
-      <path d="M240 124 H300 M330 124 H350 M240 54 V124" ${H}/><path d="M300 124 Q314 118 326 124" ${h(1.8)} stroke-dasharray="3 3"/>
-      <rect x="300" y="20" width="42" height="42" rx="4" fill="#FFFFFF" ${H}/><circle cx="321" cy="41" r="5" ${h(1.8)}/><path d="M304 24 L338 58 M338 24 L304 58" ${h(1.2)} stroke-dasharray="2 4"/>
-      <ellipse cx="262" cy="38" rx="12" ry="9" fill="#FFFFFF" ${H}/><rect x="250" y="20" width="24" height="8" rx="2" fill="#FFFFFF" ${h(1.8)}/>
-      <rect x="250" y="66" width="36" height="6" rx="2" fill="#E2F0FF" ${h(1.8)}/>
-      <rect x="248" y="78" width="40" height="22" rx="7" fill="#FFFFFF" ${H}/><ellipse cx="268" cy="91" rx="12" ry="6" ${h(1.6)}/>
-      <circle cx="300" cy="87" r="4.5" fill="#FFFFFF" ${h(1.8)}/><path d="M300 91.5 L297 100" ${h(1.8)}/>
-      <rect x="330" y="104" width="10" height="12" rx="2" fill="#FFFFFF" ${h(1.8)}/>
-      <rect x="60" y="8" width="90" height="8" fill="#E2F0FF" ${H}/><path d="M105 8 V16" ${h(1.6)}/>
-      <rect x="160" y="18" width="40" height="13" rx="3" fill="#FFFFFF" ${h(2)}/><path d="M164 27 H196" ${h(1.2)}/>
-      <rect x="207" y="17" width="28" height="20" rx="2" fill="#FFFFFF" ${h(2)}/><rect x="211" y="21" width="20" height="12" fill="#E1F5E5" ${h(1.2)}/><path d="M212 31 L218 25 L223 29 L227 26 L230 31" ${h(1.2)}/>
-      <path d="M${lx} 44 Q${cx} 38 ${lx + lw} 44 V56 H${lx} Z" fill="#F6E3C8"/><path d="M${lx} 44 Q${cx} 38 ${lx + lw} 44 V56 H${lx} Z" fill="url(#mtOr)" ${H}/>
-      <rect x="${lx}" y="56" width="${lw}" height="100" rx="4" fill="#E2F0FF"/><rect x="${lx}" y="56" width="${lw}" height="100" rx="4" fill="url(#mtAz)" ${H}/>
-      ${singola ? `<rect x="${lx + 10}" y="62" width="56" height="22" rx="6" fill="#FFFFFF" ${h(2)}/>` : `<rect x="${lx + 10}" y="62" width="52" height="22" rx="6" fill="#FFFFFF" ${h(2)}/><rect x="${lx + lw - 62}" y="62" width="52" height="22" rx="6" fill="#FFFFFF" ${h(2)}/>`}
-      <path d="M${lx} 96 Q${cx} 100 ${lx + lw} 96" ${h(1.8)}/>
-      <rect x="${lx - 26}" y="44" width="20" height="20" rx="3" fill="#F6E3C8" ${h(2)}/><rect x="${lx + lw + 6}" y="44" width="20" height="20" rx="3" fill="#F6E3C8" ${h(2)}/>
-      <rect x="14" y="76" width="28" height="34" rx="3" fill="#FFFFFF" ${H}/><path d="M18 90 H38" ${h(1.6)}/>
-      <rect x="14" y="128" width="28" height="84" rx="3" fill="#F6E3C8"/><rect x="14" y="128" width="28" height="84" rx="3" fill="url(#mtOr)" ${H}/><path d="M28 132 V208" ${h(1.6)}/>
-      <circle cx="${cx}" cy="176" r="7" fill="#FFF0B8" ${h(2)}/><path d="M${cx} 163 V166 M${cx} 186 V189 M${cx - 13} 176 H${cx - 10} M${cx + 10} 176 H${cx + 13}" ${h(1.6)}/>
-      <rect x="${cx - 30}" y="196" width="60" height="12" rx="2" fill="#E9EEF7" ${H}/>
-      <path d="M200 228 H236" stroke="#FFFDF7" stroke-width="5"/><path d="M200 228 V192" ${H}/><path d="M200 192 A36 36 0 0 1 236 228" ${h(1.6)} stroke-dasharray="4 4"/>
-      ${T(105, 30, "finestra", "mid")}${T(180, 44, "clima", "mid")}${T(cx, 134, singola ? "letto singolo" : "letto matrimoniale", "mid")}${T(28, 72, "frigo", "mid")}${T(28, 224, "armadio", "mid")}${T(cx, 192, "TV", "mid")}${T(218, 187, "porta", "mid")}${T(322, 118, "bagno", "mid")}`;
-    posti = { finestra: [105, 16], balcone: [40, 16], clima: [180, 24], quadro: [221, 27], letto: [cx, 108], comodino: [lx - 16, 54], frigo: [28, 93], armadio: [28, 170], soffitto: [cx, 176], tv: [cx, 202], porta: [252, 200], doccia: [321, 41], wc: [262, 38], specchio: [268, 69], lavabo: [268, 89], phon: [302, 90], cestino: [335, 110], bagno: [300, 112], pareti: [300, 160], pavimento: [300, 196], camera: [300, 160], fornelli: [28, 93], lavello: [28, 93], lavatrice: [28, 93], tavolo: [300, 160], divano: [300, 160] };
-  } else {
-    // la casa: cucina (fornelli, lavello, frigo) e tavolo a sinistra, bagno in mezzo col divano sotto, due camere a destra
-    corpo = `<rect x="10" y="12" width="340" height="216" rx="6" fill="#FFFDF7" ${H}/>
-      <rect x="10" y="12" width="130" height="100" fill="#FFF4CF"/><rect x="10" y="12" width="130" height="100" fill="url(#mtGi)" ${H}/>
-      <rect x="16" y="18" width="118" height="22" rx="3" fill="#FFFFFF" ${H}/><circle cx="36" cy="29" r="7" ${h(1.8)}/><rect x="60" y="21" width="30" height="16" rx="2" ${h(1.8)}/><circle cx="68" cy="26" r="2.6" ${h(1.4)}/><circle cx="82" cy="26" r="2.6" ${h(1.4)}/><circle cx="68" cy="33" r="2.6" ${h(1.4)}/><circle cx="82" cy="33" r="2.6" ${h(1.4)}/>
-      <rect x="104" y="46" width="30" height="48" rx="3" fill="#FFFFFF" ${H}/><path d="M108 62 H130" ${h(1.6)}/>
-      <rect x="18" y="96" width="12" height="12" rx="2" fill="#FFFFFF" ${h(1.6)}/>
-      <rect x="30" y="128" width="80" height="44" rx="6" fill="#F6E3C8"/><rect x="30" y="128" width="80" height="44" rx="6" fill="url(#mtOr)" ${H}/><rect x="42" y="114" width="16" height="10" rx="3" fill="#FFFFFF" ${h(1.8)}/><rect x="82" y="114" width="16" height="10" rx="3" fill="#FFFFFF" ${h(1.8)}/><rect x="42" y="176" width="16" height="10" rx="3" fill="#FFFFFF" ${h(1.8)}/><rect x="82" y="176" width="16" height="10" rx="3" fill="#FFFFFF" ${h(1.8)}/>
-      <rect x="150" y="12" width="88" height="88" fill="#E6F6F9"/><rect x="150" y="12" width="88" height="88" fill="url(#mtAc)" ${H}/><rect x="196" y="18" width="36" height="36" rx="4" fill="#FFFFFF" ${H}/><circle cx="214" cy="36" r="4.5" ${h(1.6)}/><ellipse cx="168" cy="34" rx="11" ry="8" fill="#FFFFFF" ${H}/><rect x="158" y="58" width="30" height="5" rx="2" fill="#E2F0FF" ${h(1.6)}/><rect x="158" y="68" width="34" height="20" rx="6" fill="#FFFFFF" ${H}/><rect x="206" y="70" width="22" height="22" rx="3" fill="#FFFFFF" ${h(1.8)}/><circle cx="217" cy="81" r="6" ${h(1.4)}/>
-      <rect x="156" y="152" width="78" height="30" rx="8" fill="#F0E8FF"/><rect x="156" y="152" width="78" height="30" rx="8" fill="url(#mtVi)" ${H}/><path d="M166 152 V144 H224 V152" ${h(1.8)}/>
-      <rect x="166" y="118" width="58" height="10" rx="2" fill="#E9EEF7" ${h(1.8)}/>
-      <rect x="248" y="12" width="102" height="100" fill="#FFFFFF"/><path d="M248 112 H350 M248 12 V228" ${H}/>
-      <rect x="268" y="26" width="64" height="70" rx="3" fill="#E2F0FF"/><rect x="268" y="26" width="64" height="70" rx="3" fill="url(#mtAz)" ${H}/><rect x="272" y="30" width="26" height="14" rx="4" fill="#FFFFFF" ${h(1.6)}/><rect x="302" y="30" width="26" height="14" rx="4" fill="#FFFFFF" ${h(1.6)}/>
-      <rect x="268" y="134" width="64" height="70" rx="3" fill="#E1F5E5"/><rect x="268" y="134" width="64" height="70" rx="3" fill="url(#mtVe)" ${H}/><rect x="272" y="138" width="26" height="14" rx="4" fill="#FFFFFF" ${h(1.6)}/><rect x="302" y="138" width="26" height="14" rx="4" fill="#FFFFFF" ${h(1.6)}/>
-      <path d="M178 228 H214" stroke="#FFFDF7" stroke-width="5"/><path d="M178 228 V192" ${H}/><path d="M178 192 A36 36 0 0 1 214 228" ${h(1.6)} stroke-dasharray="4 4"/>
-      ${T(75, 106, "cucina", "mid")}${T(70, 154, "tavolo", "mid")}${T(194, 97, "bagno", "mid")}${T(195, 171, "divano", "mid")}${T(300, 106, "camera", "mid")}${T(300, 222, c.piani > 1 ? "camera · e sopra" : "camera", "mid")}${T(196, 224, "porta", "mid")}`;
-    posti = { fornelli: [75, 29], lavello: [36, 29], frigo: [119, 70], cucina: [75, 70], cestino: [24, 102], tavolo: [70, 150], bagno: [170, 92], doccia: [214, 36], wc: [168, 34], specchio: [173, 60], lavabo: [175, 78], phon: [195, 78], lavatrice: [217, 81], divano: [195, 167], tv: [195, 123], letto: [300, 60], comodino: [300, 60], armadio: [300, 170], finestra: [300, 22], clima: [300, 22], quadro: [330, 22], balcone: [120, 206], porta: [196, 206], soffitto: [120, 112], pavimento: [120, 206], pareti: [120, 206], camera: [300, 170] };
-  }
-  // i segni: numeri che lampeggiano (oro = stella, chiaro = lavoro a fondo), uno sopra l'altro posto se sono nello stesso punto
-  const conta = {};
-  const segniHtml = segni.map((s, i) => {
-    const [x0, y0] = posti[s.dove] || posti.camera; const n = conta[s.dove] = (conta[s.dove] || 0) + 1;
-    const x = Math.min(336, Math.max(24, x0 + (n - 1) * (x0 > 300 ? -28 : 28))), y = Math.min(214, Math.max(16, y0));
-    return `<g class="mt-segno ${s.k}" transform="translate(${x} ${y})"><circle class="mt-onda" r="14"/><circle class="mt-tondo" r="14"/><text y="5" class="mt-num">${i + 1}</text>${s.k === "stella" ? `<text x="11" y="-7" class="mt-mini">★</text>` : `<text x="11" y="-7" class="mt-mini">✦</text>`}</g>`;
-  }).join("");
+  // 1.34.0: il disegno in 3D a matita (la camera e il bagno; nelle case la cucina col soggiorno, le camere e il bagno)
+  const d = isoDisegno({ casa, singola, piani: Number(c.piani) || 1, segni, esc });
   const icoDi = (s) => ICONE_SVG[s.icona] ? ICONA(s.icona) : (s.k === "stella" ? "⭐" : "✨");
-  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${s.min ? ` · ${s.min} min` : ""}</small></span></li>`).join("")}</ol><p class="mt-did">I numeri lampeggiano dove devi pulire.</p>` : "";
-  return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${casa ? "La casa" : "La camera"}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 360 240" role="img" aria-label="${esc(casa ? "la casa: cucina, tavolo, bagno, divano, camere" : singola ? "la camera: letto singolo, armadio, frigo, finestra, quadro, TV, bagno" : "la camera: letto matrimoniale, armadio, frigo, finestra, quadro, TV, bagno")}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}<g filter="url(#mtTrem)">${corpo}</g>${segniHtml}</svg>${legenda}</section>`;
+  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${s.min ? ` · ${s.min} min` : ""}</small></span></li>`).join("")}</ol><p class="mt-did">I numeri lampeggiano sulla cosa da pulire.</p>` : "";
+  const detto = casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: ${singola ? "letto singolo" : "letto matrimoniale"} con comodini, armadio, frigo, TV, finestra con le tende, clima, quadro, porta; il bagno con doccia, WC, lavabo, specchio, phon, asciugamani`;
+  return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${casa ? "La casa" : "La camera"}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}</section>`;
 }
 // ---- Sofia a fianco, A SCOMPARSA (1.32.0): di solito c'è solo il tasto tondo col microfono; toccandolo Sofia esce intera
 // (la sagoma ritagliata, senza sfondo), ti ascolta e risponde; appena finisce di parlare sparisce. Esce da sola anche quando
