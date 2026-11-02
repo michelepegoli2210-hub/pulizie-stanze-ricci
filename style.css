@@ -7316,3 +7316,18 @@ body.premium .stanza{border-color:rgba(43,58,74,.55)}
 :root[data-theme="dark"] .sgr-t-form input{background:#26303A;color:#E6EDF3;border-color:rgba(255,255,255,.25)}
 /* con un foglio aperto la tendina e Sofia stanno sotto: non coprono niente */
 body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma) .sgr-fantasma{display:none}
+
+/* ---- 1.43.0: il posto del filmato tenuto da parte (non è una scatola: la pagina si impagina come prima) ---- */
+.film-posto{display:contents}
+
+/* ---- 1.43.0: TEMA SCURO LEGGIBILE. In Premium (e nella vista semplice delle signore) tasti secondari, tessere delle
+   camere e collegamenti «indietro» sono bianchi: al buio il testo chiaro ci spariva sopra. Qui diventano scuri. ---- */
+:root[data-theme="dark"] body.premium .big.undo,:root[data-theme="dark"] body.premium .big.skip,:root[data-theme="dark"] body.premium .big.close,:root[data-theme="dark"] body.premium .btnsm.ghost,:root[data-theme="dark"] body.premium .pick button,:root[data-theme="dark"] body.premium .navmese button,:root[data-theme="dark"] body.premium .dt-sett button,:root[data-theme="dark"] body.premium .scelte button,
+:root[data-theme="dark"] body.semplice .big.undo,:root[data-theme="dark"] body.semplice .big.skip,:root[data-theme="dark"] body.semplice .big.close,:root[data-theme="dark"] body.semplice .btnsm.ghost,:root[data-theme="dark"] body.semplice .pick button,:root[data-theme="dark"] body.semplice .navmese button,:root[data-theme="dark"] body.semplice .dt-sett button,:root[data-theme="dark"] body.semplice .scelte button{background:#26221D;border-color:#3F382F;color:#F5F1EA;--tx:#F5F1EA;--tx2:#B8B0A4;text-shadow:none}
+:root[data-theme="dark"] body.premium .pick button[aria-pressed="true"],:root[data-theme="dark"] body.semplice .pick button[aria-pressed="true"]{background:var(--accent,#2563EB);color:#FFFFFF}
+:root[data-theme="dark"] body.premium .tess.todo,:root[data-theme="dark"] body.premium .tess.wip,:root[data-theme="dark"] body.premium .tess.done,:root[data-theme="dark"] body.premium .tess.warn,:root[data-theme="dark"] body.premium .tess.skip,:root[data-theme="dark"] body.premium .inizio-testa.todo,:root[data-theme="dark"] body.premium .inizio-testa.wip,:root[data-theme="dark"] body.premium .inizio-testa.done,:root[data-theme="dark"] body.premium .inizio-testa.warn,:root[data-theme="dark"] body.premium .inizio-testa.skip,
+:root[data-theme="dark"] body.semplice .tess.todo,:root[data-theme="dark"] body.semplice .tess.wip,:root[data-theme="dark"] body.semplice .tess.done,:root[data-theme="dark"] body.semplice .tess.warn,:root[data-theme="dark"] body.semplice .tess.skip,:root[data-theme="dark"] body.semplice .inizio-testa.todo,:root[data-theme="dark"] body.semplice .inizio-testa.wip,:root[data-theme="dark"] body.semplice .inizio-testa.done,:root[data-theme="dark"] body.semplice .inizio-testa.warn,:root[data-theme="dark"] body.semplice .inizio-testa.skip{background:#1E1B18;border-color:#35302A;--tx:#F5F1EA;--tx2:#B8B0A4}
+:root[data-theme="dark"] body.premium .tess .tess-flag.out,:root[data-theme="dark"] body.semplice .tess .tess-flag.out{color:#F5F1EA;background:#3B1515}
+:root[data-theme="dark"] body.premium .nonna-link,:root[data-theme="dark"] body.premium .inizio-indietro,:root[data-theme="dark"] body.semplice .nonna-link,:root[data-theme="dark"] body.semplice .inizio-indietro{background:#26221D;border-color:#3F382F;color:#E8C98A}
+:root[data-theme="dark"] body.premium .nonna-link.rosso,:root[data-theme="dark"] body.semplice .nonna-link.rosso{background:#3B1515;color:#FCA5A5}
+:root[data-theme="dark"] body.premium .big.warn,:root[data-theme="dark"] body.semplice .big.warn{background:#991B1B;color:#FFFFFF}

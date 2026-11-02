@@ -3,12 +3,17 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.42.0";
+const VERSIONE = "1.43.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
+// 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
+// riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
+// e restano; quando un filmato cambia gli si cambia nome. FILMATI = quelli che l'app usa: gli altri si tolgono.
+const CACHE_FILM = "ricci-filmati-1";
+const FILMATI = ["./cons-parla.mp4", "./cons-riposo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr-riposo-3d.webm", "./cons-parla-3d2.webm", "./cons-riposo-3d2.webm"];
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./lettura.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
-  "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./cons-parla.mp4", "./cons-riposo.mp4", "./cons-film.json", "./cons-poster.webp", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-poster.webp", "./capo-viso.webp", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./capo-poster-3d.webp", "./stanza-governante.webp", "./stanza-manutenzione.webp", "./stanza-prospetto.webp", "./stanza-segreteria.webp", "./stanza-signore.webp", "./stanza-sofia.webp", "./segr-riposo-3d.webm", "./segr-poster-3d.webp", "./cons-poster-3d2.webp", "./cons-fondo-3d.webp", "./avorio-parete.webp", "./cornice-noce.webp", "./fonts/atkinson-hyperlegible-next-latin-400-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-600-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-800-normal.woff2",
+  "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./cons-film.json", "./cons-poster.webp", "./capo-poster.webp", "./capo-viso.webp", "./capo-poster-3d.webp", "./stanza-governante.webp", "./stanza-manutenzione.webp", "./stanza-prospetto.webp", "./stanza-segreteria.webp", "./stanza-signore.webp", "./stanza-sofia.webp", "./segr-poster-3d.webp", "./cons-poster-3d2.webp", "./cons-fondo-3d.webp", "./avorio-parete.webp", "./cornice-noce.webp", "./fonts/atkinson-hyperlegible-next-latin-400-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-600-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-800-normal.woff2",
   "./bocca.js", "./viso.js", "./cons-base.webp", "./cons-indica.webp", "./cons-cuore.webp", "./cons-pollice.webp", "./cons-osx.webp", "./cons-odx.webp", "./cons-osu.webp", "./cons-scena.webp", "./cons-saluto.webp", "./cons-riposo.webp", "./cons-b1.webp", "./cons-b2.webp", "./cons-b3.webp", "./cons-occhi.webp", "./cons-felice.webp", "./cons-testa.webp", "./cons-testa-occhi.webp",
   "./marmo-blu.webp", "./marmo-avorio.webp", "./marmo-biglia.webp", "./fonts/dancing-script-latin-700-normal.woff2", "./fonts/cormorant-garamond-latin-600-normal.woff2", "./fonts/cormorant-garamond-latin-700-normal.woff2", "./fonts/cormorant-garamond-latin-600-italic.woff2", "./fonts/plus-jakarta-sans-latin-600-normal.woff2", "./fonts/plus-jakarta-sans-latin-700-normal.woff2",
   "./fonts/fredoka-latin-600-normal.woff2", "./fonts/fredoka-latin-700-normal.woff2",
@@ -23,7 +28,15 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
     const chiavi = await caches.keys();
-    await Promise.all(chiavi.filter((k) => k.startsWith("ricci-pulizie-") && k !== CACHE).map((k) => caches.delete(k)));
+    let film = null; try { film = await caches.open(CACHE_FILM); } catch (err) {}
+    for (const k of chiavi) {
+      if (!k.startsWith("ricci-pulizie-") || k === CACHE) continue;
+      // 1.43.0: i filmati già scaricati con la versione vecchia passano nella cache dei filmati: niente riscaricamenti
+      if (film) { try { const vecchia = await caches.open(k); for (const req of await vecchia.keys()) { if (!VIDEO.test(new URL(req.url).pathname)) continue; if (await film.match(req.url)) continue; const r = await vecchia.match(req); if (r && r.status === 200) await film.put(req.url, r); } } catch (err) {} }
+      await caches.delete(k);
+    }
+    // via dalla cache dei filmati quelli che l'app non usa più
+    if (film) { try { const validi = new Set(FILMATI.map((u) => new URL(u, self.registration.scope).href)); for (const req of await film.keys()) { if (!validi.has(req.url)) await film.delete(req); } } catch (err) {} }
     await self.clients.claim();
   })());
 });
@@ -54,9 +67,21 @@ self.addEventListener("push", (e) => {
 // ---- filmati: cache-first, a pezzi, scaricati per intero una volta sola ----------------------
 const VIDEO = /\.(mp4|webm)$/i;
 const scaricamenti = new Map();   // url -> Promise, per non scaricare due volte lo stesso filmato in parallelo
+// 1.43.0: il filmato letto una volta in memoria per le richieste a pezzi (prima si rileggeva tutto il file a ogni pezzo)
+const letti = new Map();          // url -> { buf, tipo, t }, al massimo 3 filmati
+async function filmLetto(url, intera) {
+  let b = letti.get(url);
+  if (!b) {
+    b = { buf: await intera.arrayBuffer(), tipo: intera.headers.get("Content-Type") || "video/mp4", t: Date.now() };
+    letti.set(url, b);
+    if (letti.size > 3) { let vecchio = null; for (const [k, v] of letti) if (!vecchio || v.t < letti.get(vecchio).t) vecchio = k; letti.delete(vecchio); }
+  }
+  b.t = Date.now();
+  return b;
+}
 async function rispostaVideo(req) {
   const chiave = new URL(req.url); chiave.search = "";
-  const cache = await caches.open(CACHE);
+  const cache = await caches.open(CACHE_FILM);   // 1.43.0: la cache dei filmati, che resta
   let intera = await cache.match(chiave.href);
   if (!intera) {
     // non c'e' (precache fallito o interrotto): lo scarico TUTTO una volta sola e lo tengo
@@ -72,22 +97,23 @@ async function rispostaVideo(req) {
       if (!intera) return r || Response.error();
     } catch (err) { return Response.error(); }
   }
-  return rispostaIntervallo(req, intera);
+  return rispostaIntervallo(req, intera, chiave.href);
 }
 // Il lettore video chiede "Range: bytes=a-b": si risponde 206 con quel pezzo del file in cache
-async function rispostaIntervallo(req, intera) {
+async function rispostaIntervallo(req, intera, url) {
   const range = req.headers.get("range");
   if (!range) return intera;
   const m = /bytes=(\d*)-(\d*)/.exec(range);
   if (!m) return intera;
-  const buf = await intera.arrayBuffer();
+  const letto = await filmLetto(url, intera);
+  const buf = letto.buf;
   const tot = buf.byteLength;
   let a = m[1] ? Number(m[1]) : 0, b = m[2] ? Number(m[2]) : tot - 1;
   if (!m[1] && m[2]) { a = Math.max(0, tot - Number(m[2])); b = tot - 1; }
   b = Math.min(b, tot - 1);
   if (a >= tot || a > b) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${tot}` } });
   const h = new Headers();
-  h.set("Content-Type", intera.headers.get("Content-Type") || "video/mp4");
+  h.set("Content-Type", letto.tipo);
   h.set("Content-Range", `bytes ${a}-${b}/${tot}`);
   h.set("Content-Length", String(b - a + 1));
   h.set("Accept-Ranges", "bytes");

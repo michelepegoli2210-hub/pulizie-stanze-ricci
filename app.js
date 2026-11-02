@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.42.0";
+export const VERSIONE = "1.43.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -321,8 +321,6 @@ const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], [
 // granelli di polvere d'oro (fuori dal gruppo che gira). Disegno nostro.
 // 1.13.2: stella a quattro punte sfaccettata (metà chiara e metà scura per punta, luce da in alto a sinistra), d'oro sulla moneta blu notte
 const ORO_STELLA = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="osF0" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="32" y2="8"><stop offset="0" stop-color="#FBE6AC"/><stop offset="1" stop-color="#DDB45A"/></linearGradient><linearGradient id="osF1" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="32" y2="8"><stop offset="0" stop-color="#C4943E"/><stop offset="1" stop-color="#916A24"/></linearGradient><linearGradient id="osF2" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="56" y2="32"><stop offset="0" stop-color="#FFF9E2"/><stop offset="1" stop-color="#F4D688"/></linearGradient><linearGradient id="osF3" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="56" y2="32"><stop offset="0" stop-color="#9C7229"/><stop offset="1" stop-color="#5E4112"/></linearGradient><linearGradient id="osF4" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="32" y2="56"><stop offset="0" stop-color="#C4943E"/><stop offset="1" stop-color="#916A24"/></linearGradient><linearGradient id="osF5" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="32" y2="56"><stop offset="0" stop-color="#FBE6AC"/><stop offset="1" stop-color="#DDB45A"/></linearGradient><linearGradient id="osF6" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="8" y2="32"><stop offset="0" stop-color="#9C7229"/><stop offset="1" stop-color="#5E4112"/></linearGradient><linearGradient id="osF7" gradientUnits="userSpaceOnUse" x1="32" y1="32" x2="8" y2="32"><stop offset="0" stop-color="#FFF9E2"/><stop offset="1" stop-color="#F4D688"/></linearGradient><radialGradient id="osFL" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset=".35" stop-color="#FFFFFF" stop-opacity=".45"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs><g class="dm-glint"><path d="M32 32L32 8L24.22 24.22Z" fill="url(#osF0)"/><path d="M32 32L32 8L39.78 24.22Z" fill="url(#osF1)"/><path d="M32 32L56 32L39.78 24.22Z" fill="url(#osF2)"/><path d="M32 32L56 32L39.78 39.78Z" fill="url(#osF3)"/><path d="M32 32L32 56L39.78 39.78Z" fill="url(#osF4)"/><path d="M32 32L32 56L24.22 39.78Z" fill="url(#osF5)"/><path d="M32 32L8 32L24.22 39.78Z" fill="url(#osF6)"/><path d="M32 32L8 32L24.22 24.22Z" fill="url(#osF7)"/><path d="M32 8L39.78 24.22L56 32L39.78 39.78L32 56L24.22 39.78L8 32L24.22 24.22Z" fill="none" stroke="#5A3D10" stroke-opacity="0.55" stroke-width=".7" stroke-linejoin="round"/><path d="M32 32L32 8M32 32L8 32" stroke="#FFFFFF" stroke-opacity=".55" stroke-width=".6" stroke-linecap="round" fill="none"/><circle cx="30.8" cy="30.4" r="4.2" fill="url(#osFL)"/><path d="M30.8 25.6L31.25 29.95L35.6 30.4L31.25 30.85L30.8 35.2L30.35 30.85L26 30.4L30.35 29.95Z" fill="#FFFFFF" fill-opacity=".9"/></g></svg>`;
-const DIAMANTE = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="amCuore" cx=".46" cy=".42" r=".6"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".95"/><stop offset=".3" stop-color="#FFC25A" stop-opacity=".8"/><stop offset="1" stop-color="#FF9A1F" stop-opacity="0"/></radialGradient><linearGradient id="amA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#E8891A"/></linearGradient><linearGradient id="amB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7A531"/><stop offset="1" stop-color="#B85A0C"/></linearGradient><linearGradient id="amC" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9721A"/><stop offset="1" stop-color="#7A3A06"/></linearGradient><linearGradient id="amD" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFE09A"/><stop offset="1" stop-color="#F29A22"/></linearGradient><radialGradient id="amAlone" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB03B" stop-opacity=".6"/><stop offset="1" stop-color="#FFB03B" stop-opacity="0"/></radialGradient><radialGradient id="amLucido" cx=".35" cy=".25" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".75"/><stop offset=".45" stop-color="#FFFFFF" stop-opacity=".12"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs><circle cx="32" cy="33" r="27" fill="url(#amAlone)"/><polygon points="33,9 48,21 50,39 40,57 27,58 14,42 18,19" fill="rgba(2,6,23,.5)" transform="translate(1,3)"/><polygon points="33,6 48,20 33,30" fill="url(#amA)"/><polygon points="48,20 50,38 33,30" fill="url(#amB)"/><polygon points="50,38 40,56 33,30" fill="url(#amC)"/><polygon points="40,56 28,58 33,30" fill="#9C4A08"/><polygon points="28,58 14,42 33,30" fill="url(#amB)"/><polygon points="14,42 18,18 33,30" fill="url(#amD)"/><polygon points="18,18 33,6 33,30" fill="#FFCB6B"/><circle cx="32" cy="31" r="15" fill="url(#amCuore)"/><g fill="#5A2A05" opacity=".55"><circle cx="38" cy="36" r=".9"/><circle cx="27" cy="40" r=".7"/><circle cx="41" cy="27" r=".6"/><circle cx="30" cy="48" r=".8"/><ellipse cx="24" cy="33" rx="1.3" ry=".6" transform="rotate(-30 24 33)"/></g><g fill="#FFFFFF" opacity=".5"><circle cx="36" cy="44" r=".8"/><circle cx="22" cy="27" r=".6"/></g><path d="M33,6 L33,30 M48,20 L33,30 M50,38 L33,30 M40,56 L33,30 M28,58 L33,30 M14,42 L33,30 M18,18 L33,30" fill="none" stroke="#FFF3D6" stroke-opacity=".32" stroke-width=".7"/><polygon points="33,6 48,20 50,38 40,56 28,58 14,42 18,18" fill="url(#amLucido)"/><polygon points="33,6 48,20 50,38 40,56 28,58 14,42 18,18" fill="none" stroke="#FFF1CC" stroke-opacity=".85" stroke-width=".9" stroke-linejoin="round"/><path d="M21,19 L32,9 L32,16 L24,24 Z" fill="#FFFFFF" opacity=".5"/><g class="dm-glint" transform="translate(25,16)"><path d="M0,-5.5 C0.4,-1.4 1.4,-0.4 5.5,0 C1.4,0.4 0.4,1.4 0,5.5 C-0.4,1.4 -1.4,0.4 -5.5,0 C-1.4,-0.4 -0.4,-1.4 0,-5.5 Z" fill="#FFFFFF"/><circle cx="0" cy="0" r="1.3" fill="#FFF8E6"/></g></svg>`;
-const STELLA_ORO = `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="oroZ" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF8DC"/><stop offset=".25" stop-color="#F7DC8A"/><stop offset=".5" stop-color="#D4AF6A"/><stop offset=".78" stop-color="#9A7432"/><stop offset="1" stop-color="#FFE599"/></linearGradient><filter id="oroL" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#D4AF6A" flood-opacity=".65"/></filter></defs><g class="st-polvere"><circle class="p1" cx="18" cy="18" r="1.4" fill="#FFF8DC"/><circle class="p2" cx="47" cy="16" r="1.1" fill="#F7DC8A"/><circle class="p3" cx="49" cy="44" r="1.5" fill="#FFF8DC"/><circle class="p4" cx="16" cy="45" r="1" fill="#D4AF6A"/><circle class="p5" cx="32" cy="10" r="1.2" fill="#FFF8DC"/></g><g class="st-gira" filter="url(#oroL)"><path d="M32 20 L34.5 29.5 L44 32 L34.5 34.5 L32 44 L29.5 34.5 L20 32 L29.5 29.5 Z" fill="#9A7432" opacity=".75" transform="rotate(45 32 32)"/><path d="M32 9 C33.8 24.5 39.5 30.2 55 32 C39.5 33.8 33.8 39.5 32 55 C30.2 39.5 24.5 33.8 9 32 C24.5 30.2 30.2 24.5 32 9 Z" fill="url(#oroZ)" stroke="#FFF8DC" stroke-width=".6"/><path d="M32 9 L35 29 L55 32 L32 32 Z" fill="#FFFDF5" opacity=".45"/><path d="M32 55 L29 35 L9 32 L32 32 Z" fill="#5E4314" opacity=".35"/><circle cx="32" cy="32" r="2.2" fill="#FFFFFF"/></g></svg>`;
 document.addEventListener("visibilitychange", () => { try { document.body.classList.toggle("pagina-nascosta", document.hidden); } catch (e) {} });
 function barraSotto() {
   let b = document.getElementById("barraSotto");
@@ -377,11 +375,29 @@ function FILM_CONS(cls, tre, ritaglio) {
 }
 // i file dei filmati per quella casella: in 3D quelli ritagliati, altrimenti i soliti
 function filmFile(box) { const d = (box && box.dataset) || {}; return d.tre === "1" ? FILM_TRE : d.capo === "1" ? (d.rit === "1" ? FILM_CAPO_TRE : FILM_CAPO) : FILM_PRONTO; }
-let filmTimer = null;
-function filmGov(quale, soloBox) {
-  const caselle = soloBox ? [soloBox] : [...document.querySelectorAll(".gov-film")];
-  for (const b of caselle) filmUno(quale, b, true);
+// 1.43.0: I FILMATI DI SOFIA DENTRO LE PAGINE NON RIPARTONO A OGNI DISEGNO. La pagina di Sofia (sv-fig) e la testata della
+// governante (viva film) stanno dentro #app, che si ricostruisce a ogni disegna() (ogni volta che arriva un dato nuovo):
+// prima il <video> si ricreava, ricominciava da capo e richiedeva il file al service worker. Ora nel markup c'è solo un
+// POSTO (filmPosto) e il filmato vero è un elemento tenuto da parte (filmTenuti) che si sposta nel posto: il filmato
+// continua, lo stato parla/riposo resta, niente richieste in più. (La stessa idea di guidaFilmMonta per le signore.)
+const filmTenuti = new Map();
+function filmPosto(cls, tre, ritaglio) {
+  return `<span class="film-posto" data-cls="${esc(String(cls || ""))}"${tre ? ' data-tre="1"' : ""}${ritaglio ? ' data-rit="1"' : ""}></span>`;
 }
+function filmMontaTenuti() {
+  let posti; try { posti = document.querySelectorAll(".film-posto"); } catch (e) { return; }
+  if (!posti.length) return;
+  for (const posto of posti) {
+    const cls = posto.dataset.cls || "", tre = posto.dataset.tre === "1", rit = posto.dataset.rit === "1";
+    const base = cls.split(/\s+/).filter(c => c && c !== "parla").join(" ");
+    const k = `${base}|${tre ? 1 : 0}|${rit ? 1 : 0}|${sofiaCapo() ? 1 : 0}`;
+    let el = filmTenuti.get(k);
+    if (!el) { const t = document.createElement("span"); t.innerHTML = FILM_CONS(base, tre, rit); el = t.firstElementChild; if (!el) continue; filmTenuti.set(k, el); }
+    el.classList.toggle("parla", /\bparla\b/.test(cls));
+    if (el.parentNode !== posto) { posto.textContent = ""; posto.appendChild(el); }
+  }
+}
+let filmTimer = null;
 // Prepara il filmato `quale` nel video nascosto (gia' al punto giusto) e lo manda in dissolvenza al posto di quello in corso.
 function filmUno(quale, box) {
   if (!box || !FILM_PRONTO[quale] || box.dataset.occupato === "1") return;
@@ -887,7 +903,6 @@ function salvaFaccia(k, dataUrl) {
   catch (e) { console.warn("facce", e); return false; }
 }
 function togliFacce() { try { localStorage.removeItem(CHIAVE_FACCE); localStorage.removeItem("ricci_gov_foto"); } catch (e) {} facceCache = null; }
-function salvaFotoGov(d) { return d ? salvaFaccia("base", d) : (togliFacce(), true); }
 // La foto ritagliata quadrata e rimpicciolita: 460 px, così pesa poco e si vede bene
 function rimpicciolisci(file, lato = 460) {
   return new Promise((ok, no) => {
@@ -909,9 +924,9 @@ function rimpicciolisci(file, lato = 460) {
 }
 // Il pupazzo: tutte le facce impilate, si accende quella giusta
 function FACCIA_FOTO(cls = "") {
-  if (sofiaCapo()) return /grande|film/.test(cls) ? FILM_CONS(cls) : `<span class="donnina gov-fig gov-foto capo ${cls}" role="img" aria-label="${esc(nomeGov())}"><span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa"><img class="f-base" src="${FILM_CAPO.viso}" alt=""></span></span></span><i class="gov-alone"></i></span>`;   // 1.25.0
+  if (sofiaCapo()) return /grande|film/.test(cls) ? filmPosto(cls) : `<span class="donnina gov-fig gov-foto capo ${cls}" role="img" aria-label="${esc(nomeGov())}"><span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa"><img class="f-base" src="${FILM_CAPO.viso}" alt=""></span></span></span><i class="gov-alone"></i></span>`;   // 1.25.0
   const f = facceGov();
-  if (/grande|film/.test(cls) && corpoPronto()) return FILM_PRONTO.riposo ? FILM_CONS(cls) : CORPO_CONS(cls);
+  if (/grande|film/.test(cls) && corpoPronto()) return FILM_PRONTO.riposo ? filmPosto(cls) : CORPO_CONS(cls);   // 1.43.0: il filmato tenuto da parte
   const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
   return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
     <span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa">${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m3", "f-m3")}${strato("m2", "f-m2")}${strato("felice", "f-felice")}${strato("pensa", "f-pensa")}${strato("occhi", "f-occhi")}</span></span></span><i class="gov-alone"></i></span>`;
@@ -1490,6 +1505,7 @@ function disegna() {
   for (const [id, x] of Object.entries(tenuti)) { const e = document.getElementById(id); if (e && e.hasAttribute("data-keep")) e.value = x.v; }
   if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
+  filmMontaTenuti();   // 1.43.0: i filmati di Sofia nelle pagine, al loro posto senza ripartire
   disegnaCasa();
   disegnaStanze();   // 1.41.0: le stanze sotto Sofia, sopra la striscia dei giorni
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
@@ -2035,16 +2051,6 @@ function vistaPiantina(z, perSignora) {
     <div class="legenda"><span><i class="todo"></i>Da fare</span><span><i class="wip"></i>In corso</span><span><i class="done"></i>Fatta</span><span><i class="skip"></i>Non fatta</span><span><i class="warn"></i>Problema</span></div></section>`;
 }
 
-function vistaSettimanaLista(z) {
-  const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(S.settimana, i));
-  const oggi = L.oggiISO();
-  const blocchi = giorni.map(g => {
-    const ls = pulizieDelGiorno(g, z);
-    if (!ls.length) return "";
-    return `<section class="card"><h2 style="${g === oggi ? "color:var(--flamingo)" : ""}">${L.dataLunga(g)}${g === oggi ? " · oggi" : ""}</h2><div class="rows">${ls.map(p => `<button class="row" data-pul="${esc(p.id)}"><span><b>${esc(camera(p.camera).nome)}</b> · ${p.origine === "governante" ? "⭐ " : ""}${esc(p.titolo)}${p.ospite ? `<br><span class="muted">${esc(p.ospite)}</span>` : ""}</span><span class="s ${statoClasse(p)}">${esc(p.stato === "da_fare" ? "da fare" : statoTesto(p))}</span></button>`).join("")}</div></section>`;
-  }).join("");
-  return blocchi || `<section class="card"><h2>Niente in programma questa settimana</h2><p class="muted" style="margin:0">Le pulizie compaiono qui appena il prospetto è aggiornato.</p></section>`;
-}
 
 // ============================================================================
 //  1.35.0 LA PAGA A ORE COL CRONOMETRO (Michele, 2/11: «le stelle non vengono pagate a parte: le paghiamo nell'orario che
@@ -3736,7 +3742,6 @@ const compagna = { tieni: 0 };
 function ritaglioOK() { return ALFA_OK === "si" && !motoRidotto(); }
 function compagnaBase() { try { return !!(S.pronto && argonLei() && S.vista === "oggi" && sofiaFuoriVoluta() && !document.querySelector(".conferma")); } catch (e) { return false; } }
 function compagnaMostra() { return !!(voceInCorso || guida.parla || guida.ascolta || compagna.tieni > Date.now()); }
-function sofiaCartaInVista() { const el = document.querySelector(".sheet .sf-sofia"); if (!el) return false; const r = el.getBoundingClientRect(); return r.bottom > 90 && r.top < (window.innerHeight || 800) - 100; }
 function compagnaVuole() {
   if (!compagnaBase() || !compagnaMostra()) return false;
   if (document.querySelector(".sheet")) return !!document.querySelector(".sheet .sf-sofia");   // 1.33.0: nella camera aperta è lei che esce, per tutto il tempo che parla
@@ -4876,7 +4881,6 @@ function rifinitureDiTutte(p) { if (!p || p.origine === "governante" || p.tipo =
 // 1.28.0: nella camera, nel giro, nel «Ho finito», nel Visto e nella busta contano solo le stelle del piano di Argon (senza
 // piano: le prime del catalogo fino a 6 e a 30 minuti). Le cose «sempre» (i promemoria senza soldi) restano tutte.
 function rifinitureDi(p) { const tutte = rifinitureDiTutte(p); if (!tutte.length || (p.stato === "fatta" && p.rifiniture)) return tutte; const si = stelleAmmesse(p.zona, p.data); return tutte.filter(r => r.sempre || !r.euro || si.has(kStella(p, r))); }
-function routineDi(p) { return rifinitureDi(p); }
 // La lista del giorno della signora (righe grandi + stelle al punto giusto + zone comuni), una per pulizia
 function listaDi(p) { if (!p || p.origine === "governante" || p.tipo === "extra" || p.tipo === "fondo" || p.tipo === "fisso" || p.tipo === "stelle") return null; const k = `L|${p.id}`; if (!memoLista.has(k)) { let v = null; try { v = G.listaDelGiorno(p, { ...ctxGov(), stelle: p.stato === "fatta" && p.rifiniture ? stelleSalvate(p) : rifinitureDi(p) }); } catch (e) { console.warn("lista", e); } memoLista.set(k, v); } return memoLista.get(k); }
 // Una pulizia chiusa mostra le stelle che aveva davvero (salvate con FATTO), non quelle ricalcolate oggi
@@ -4904,7 +4908,6 @@ function testoRifiniture(p) { const rf = rifinitureDi(p).filter(r => !r.sempre &
 function testoStelleFatte(p) { const n = (p.rifiniture || []).filter(r => r.euro).length; return n ? `${n} ${n === 1 ? "rifinitura" : "rifiniture"}` : ""; }
 function idPuliziaGov(c) { return `${c.data}_${c.luogo}_g_${c.regola}`; }
 function haProposteNuove() { try { return localStorage.getItem("ricci_gov_visto") !== S.govSett; } catch (e) { return true; } }
-function ledGovernante() { if (!proprietario()) return false; const r = proposteGov(G.settimanaGovernante()); return r.inRitardo.length > 0 || (r.proposte.length > 0 && haProposteNuove()) || mappaGov().buchi > 0; }
 async function salvaGov(patch) {
   const nuovo = { ...(S.gov || {}), ...patch }; S.gov = nuovo; disegna();
   try { await S.db.salva("impostazioni", "governante", nuovo, false); } catch (e) { erroreScrittura(e); }
@@ -5047,7 +5050,6 @@ function statoChatApp() {
 //  Sta fuori da #app, sopra l'intestazione: scorrendo in giu' si trova tutto il
 //  resto esattamente com'era. Il tasto "Le mie giornate" fa la stessa cosa.
 // ---------------------------------------------------------------------------
-const CASA_MIC = `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`;
 function casaAttiva() {
   try {
     return !!(S.pronto && S.utente && S.utente.ruolo && proprietario()
@@ -5599,9 +5601,6 @@ function casaAggiorna(h) {
 }
 // 1.1.0: le notizie di oggi a righe (Gemini: "per punti, non un romanzo"): un'icona colorata e poche parole, ognuna
 // porta alla sua pagina. Sono numeri presi dall'app, non scritti dall'IA: sempre giusti.
-const icoArrivi = () => SVG_T('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M9 14.5l2 2 4-4"/>');
-const icoLettoLinea = () => SVG_T('<path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7M3 15h18M3 18v2M21 18v2"/><path d="M6 9V7a1.5 1.5 0 0 1 1.5-1.5H11A1.5 1.5 0 0 1 12.5 7v2"/>');
-function sog_conta(sog, giorno) { return sog.filter(s => s.inizio === giorno).length; }
 function righeNotizie(ls, fatte, man, dom) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
   const arrivi = sog.filter(s => s.inizio === domani);
@@ -5845,17 +5844,12 @@ function dettaglioFacile(k, ls, fatte) {
 // ---- lei ti parla appena apri l'app -------------------------------------
 // I telefoni non lasciano partire un suono da soli: se il browser dice di no,
 // compare la striscia gialla e basta un tocco qualsiasi per farla partire.
-let salutoDetto = false, salutoArmato = false;
 function testoBenvenuto() {
   const c = consiglioOggi(), u = umoreGov();
   const sal = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`;
   const riga = c && c.testo ? c.testo : u.testo;
   const spinta = c && c.consiglio ? c.consiglio : spintaDelGiorno();
   return [sal, riga, spinta].filter(Boolean).join(" ");
-}
-function casaTocca(mostra) {
-  const h = document.getElementById("sofiaHero");
-  if (h) h.classList.toggle("muta", !!mostra);
 }
 // Da 0.62 NON parla piu' da sola quando apri l'app: lei sta li' e lavora.
 // Parla solo quando tocchi "Parlami". Se la voce era spenta, la riaccende:
@@ -6034,36 +6028,6 @@ function cardStileCasa() {
     <div class="seg"><button type="button" aria-pressed="${sofiaFuoriVoluta()}" data-sofia-fuori="si">Esce sullo schermo</button><button type="button" aria-pressed="${!sofiaFuoriVoluta()}" data-sofia-fuori="no">Resta al suo posto</button></div>
     <span class="small muted">Se parla mentre sei in un'altra schermata, esce grande in basso a destra finché parla. Un tocco su di lei la fa smettere.</span>
   </section>`;
-}
-function cardConsuela() {
-  if (!proprietario()) return "";
-  if (!S.caricati.soggiorni || !S.caricati.pulizie) return "";
-  const c = consiglioOggi(), u = umoreGov();
-  if (iaAccesa() && !c) setTimeout(chiediConsiglioDelGiorno, 400);
-  const muove = govScrive || voceInCorso;
-  const sal = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`;
-  const riga = c && c.testo ? c.testo : u.testo;
-  const spinta = c && c.consiglio ? c.consiglio : spintaDelGiorno();
-  return `<section class="card consuela ${u.v}${muove ? " sta-parlando" : ""}">
-    <button class="cons-apri" data-chat-apri aria-label="Parla con ${esc(nomeGov())}">
-      <span class="cons-fig">${DONNINA("governante", "viva grande" + (muove ? " parla" : ""))}</span>
-      <span class="cons-testo">
-        <b class="cons-sal">${esc(sal)}</b>
-        <span class="cons-riga">${esc(riga)}</span>
-        ${spinta ? `<span class="cons-spinta">${esc(spinta)}</span>` : ""}
-        <span class="cons-az"><span class="cons-chip">${esc(nomeGov())} · parlale ›</span>${c ? `<span class="ia-bollo">IA</span>` : ""}</span>
-      </span></button>
-    <div class="cons-parlaci"><button type="button" class="cons-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button><div class="cons-sotto" id="consSotto"></div></div>
-    ${voceAccesa() ? `<button class="cons-voce" data-cons-voce aria-label="Fatti leggere il saluto">${ICONA("altoparlante")}</button>` : ""}
-  </section>`;
-}
-function cardChat() {
-  if (!S.caricati.soggiorni || !S.caricati.pulizie) return "";
-  const c = statoChatApp(); const n = c.aperte.length, g = (c.gruppi || []).reduce((s, x) => s + x.righe.length, 0);
-  const gruppiTesto = (c.gruppi || []).map(x => `${x.righe.length} ${x.tipo === "nomi" ? (x.righe.length === 1 ? "nome da sistemare" : "nomi da sistemare") : (x.righe.length === 1 ? "lavoro fermo" : "lavori fermi")}`).join(" · ");
-  const sotto = [n ? `${n === 1 ? "una domanda" : n + " domande"} per te${c.inAttesa.length ? ` · altre ${c.inAttesa.length} domani` : ""}` : "", gruppiTesto].filter(Boolean).join(" · ") || (c.prossime ? `le prossime arrivano ${c.prossime.replace(/^\d+ /, "")}` : c.risposteOggi.length ? "per oggi ho finito, grazie" : "niente da chiedere, per ora");
-  const prima = c.aperte[0] || (c.gruppi || [])[0];
-  return `<section class="card chat-card ${n || g ? "" : "quiete"}"><button class="chat-plate" data-chat-apri aria-label="Apri la chat con la governante">${DONNINA("governante", "piccola")}<span class="chat-plate-testo"><b>${esc(nomeGov())} ti chiede${n + g ? ` · ${n + g}` : ""}</b><span>${esc(sotto)}</span>${prima ? `<span class="chat-anteprima">“${esc(prima.titolo)}”</span>` : ""}</span>${c.urgenti ? `<span class="led" role="img" aria-label="urgente"></span>` : ""}<span class="man-freccia">›</span></button></section>`;
 }
 // L'umore della governante: guarda come sta la casa e lo dice in una riga (e si vede in faccia)
 function umoreGov() {
@@ -6975,21 +6939,6 @@ function labStatMostra() {
   const sec = (s.ultimo - s.t0) / 1000; if (sec < 1.5) return;
   const al = Math.round(s.n / sec), buco = Math.round(s.buco);
   try { toast(`Fluidità: ${al} disegni al secondo, buco più lungo ${buco} ms`); } catch (e) {}
-}
-function labialeTieni(box, si) {
-  if (!LABIALE_ACCESO || labRotto || !box) return;
-  labiali = labiali.filter(l => l.tela && l.tela.isConnected || l.riserva || (l._montando && Date.now() - l._montando < 8000));
-  const c = labiali.find(l => l.box === box);
-  if (si && !c) {
-    if (!(box.offsetWidth > 0 && box.offsetHeight > 0)) return;
-    const l = new BOCCA.Labiale(box); l._montando = Date.now();
-    labiali.push(l);
-    l.monta().then(() => { l._montando = 0; labialeVitaVia(); }).catch(e => { console.warn("labiale", e); labRotto = true; labiali = labiali.filter(x => x !== l); });
-  } else if (!si && c) {
-    labiali = labiali.filter(x => x !== c);
-    try { c.smonta(); } catch (e) {}
-  }
-  if (!labiali.length) labialeVitaFerma();
 }
 function labialeVitaVia() {
   if (labVita) return;
@@ -8811,10 +8760,6 @@ function sottoGovernante() {
   const buchi = mappaGov().buchi;
   return buchi ? `${buchi} ${buchi === 1 ? "superficie scoperta nella mappa" : "superfici scoperte nella mappa"}${rit ? ` · ${rit} in ritardo` : ""}` : rit ? `${rit} in ritardo${n ? ` · ${n} consigli` : ""}` : n ? `${n} consigli per ${G.settimanaGovernante() === L.lunediDi(L.oggiISO()) ? "questa settimana" : "la settimana prossima"}` : "tutto in ordine";
 }
-function plateGovernante() {
-  const sotto = sottoGovernante();
-  return `<button class="piastra gov-plate" data-vista="governante">${DONNINA("governante", "piccola")}<span class="man-testo"><b>${esc(nomeGov())}</b><span>${esc(sotto)}</span></span>${ledGovernante() ? `<span class="led" role="img" aria-label="novità"></span>` : ""}<span class="man-freccia">›</span></button>`;
-}
 
 // 0.96 - LA SEZIONE DI SOFIA, A PARTE (Michele: "la sezione governante deve essere messa a parte").
 // In cima due riquadri (le sue domande -> la chat delle domande; i suoi consigli -> la pagina della governante),
@@ -8843,7 +8788,7 @@ function vistaSofia() {
   const benvenuto = `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">Dimmi pure, ${esc(nomeMio())}. Puoi scrivermi o parlarmi col microfono: cambio il prospetto, segno un guasto, scrivo alle signore. Prima di fare qualcosa ti chiedo sempre.</div></div></div>`;
   const chips = [["Chi arriva domani?", "manda"], ["Scrivi alle signore: ", "scrivi", "Scrivi alle signore…"], ["Segna un guasto: ", "scrivi", "Segna un guasto…"], ["Com'è il prospetto di questa settimana?", "manda", "Il prospetto della settimana"]];
   return `<section class="sofia-vista" aria-label="${esc(nome)}">
-    ${premiumScelto() ? `<div class="sv-figura" aria-hidden="true">${FILM_CONS("sv-fig", sofia3d())}</div>` : ""}
+    ${premiumScelto() ? `<div class="sv-figura" aria-hidden="true">${filmPosto("sv-fig", sofia3d())}</div>` : ""}
     ${premiumScelto() ? (regiaArgonHtml() ? `<div class="sv-regia-riga">${regiaArgonHtml()}</div>` : "") : `<div class="sv-testa"><span class="sv-ritratto" aria-hidden="true"></span><div><b>${esc(nome)}</b><span>${pensa ? "ci sta pensando…" : dom ? `ha ${dom === 1 ? "una cosa" : dom + " cose"} da chiederti` : "la tua governante · tutto in ordine"}</span>${regiaArgonHtml()}</div></div>`}
     <div class="sv-tessere">
       <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">${dom ? "?" : "✓"}</span><b>${dom ? `${esc(nome)} ti chiede` : "Tutto chiaro"}</b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "nessun dubbio sulle camere"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
@@ -9530,73 +9475,7 @@ function settimanaCompatta(da) {
 // 0.97 - IL PROSPETTO A COLPO D'OCCHIO (Michele: "rendi ultra super chiaro il prospetto"): per oggi (o uno dei
 // prossimi 6 giorni, si sceglie in alto) quattro gruppi di camere: chi ARRIVA, chi PARTE, chi RESTA, le LIBERE stanotte.
 // Si tocca una camera: si apre il soggiorno (o, se e' libera, si segna un arrivo).
-function colpoDOcchio() {
-  const oggi = L.oggiISO();
-  if (!S.colpo || S.colpo < oggi || L.giorniTra(oggi, S.colpo) > 6) S.colpo = oggi;
-  const g = S.colpo, sog = soggiorniLista();
-  const camere = zoneOrdinate().flatMap(z => camereZona(z.id));
-  const conta = (x) => ({ a: sog.filter(s => s.inizio === x).length, p: sog.filter(s => s.fine === x).length });
-  const arrivi = [], partenze = [], restano = [], libere = [];
-  for (const c of camere) {
-    const qui = sog.filter(s => s.camera === c.id);
-    qui.filter(s => s.fine === g).forEach(s => partenze.push({ c, s }));
-    qui.filter(s => s.inizio === g).forEach(s => arrivi.push({ c, s }));
-    qui.filter(s => s.inizio < g && g < s.fine).forEach(s => restano.push({ c, s }));
-    if (!qui.some(s => s.inizio <= g && g < s.fine)) libere.push({ c });
-  }
-  const occupate = camere.length - libere.length;
-  const giorni = []; for (let i = 0; i < 7; i++) giorni.push(L.aggiungiGiorni(oggi, i));
-  const nomeG = (x, i) => i === 0 ? "Oggi" : i === 1 ? "Domani" : L.GG[L.giornoSettimana(x)];
-  const strip = giorni.map((x, i) => { const n = conta(x); return `<button type="button" class="cd-g" aria-pressed="${x === g}" data-colpo="${x}"><span>${nomeG(x, i)}</span><b>${L.giornoDelMese(x)}</b><i>${n.a ? `<em class="in">+${n.a}</em>` : ""}${n.p ? `<em class="out">−${n.p}</em>` : ""}</i></button>`; }).join("");
-  const dubbio = (s) => s.tipo === "unk" || s.dubbio;
-  const chip = (x, cls) => `<button type="button" class="cd-chip ${cls}${dubbio(x.s) ? " q" : ""}" data-sog="${esc(x.s.id)}"><b>${esc(x.c.nome)}</b><span>${dubbio(x.s) ? "? " : ""}${esc(x.s.nome || "")}${x.s.persone > 1 ? ` · ${x.s.persone}` : ""}${cls === "resta" ? ` · fino a ${esc(L.GG[L.giornoSettimana(x.s.fine)])} ${L.giornoDelMese(x.s.fine)}` : ""}</span></button>`;
-  const chipLibera = (x) => puoModificare() ? `<button type="button" class="cd-chip libera" data-cella="${esc(x.c.id)}|${g}" aria-label="${esc(x.c.nome)}: libera, tocca per segnare un arrivo"><b>${esc(x.c.nome)}</b></button>` : `<span class="cd-chip libera"><b>${esc(x.c.nome)}</b></span>`;
-  const gruppo = (titolo, ico, cls, lista, vuoto, fn) => `<div class="cd-gruppo ${cls}"><div class="cd-t"><span class="cd-ico" aria-hidden="true">${ico}</span><b>${titolo}</b><span class="cd-n">${lista.length}</span></div><div class="cd-chips">${lista.length ? lista.map(fn).join("") : `<span class="cd-vuoto">${vuoto}</span>`}</div></div>`;
-  const quale = g === oggi ? "Oggi" : g === L.aggiungiGiorni(oggi, 1) ? "Domani" : L.GIORNI[L.giornoSettimana(g)].replace(/^./, c => c.toUpperCase());
-  return `<section class="card cd" aria-label="Il prospetto a colpo d'occhio">
-    <div class="cd-testa"><div><h2>${esc(quale)}</h2><span class="cd-data">${esc(L.dataLunga(g))}</span></div><div class="cd-occ"><b>${occupate}<small>/${camere.length}</small></b><span>occupate<br>stanotte</span></div></div>
-    <div class="cd-giorni" role="tablist" aria-label="Scegli il giorno">${strip}</div>
-    ${gruppo("Arrivano", "→", "in", arrivi, "Nessun arrivo", x => chip(x, "in"))}
-    ${gruppo("Partono", "←", "out", partenze, "Nessuna partenza", x => chip(x, "out"))}
-    ${gruppo("Restano", "●", "resta", restano, "Nessuno resta", x => chip(x, "resta"))}
-    ${gruppo("Libere stanotte", "○", "libera", libere, "Tutto pieno", chipLibera)}
-  </section>`;
-}
 // Prospetto a elenco: una riga per camera, con chi c'è, quando arriva e quando parte (giorno della settimana per esteso)
-function elencoProspetto(da, a) {
-  const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), G = L.dataGiornoLungo;
-  const sog = soggiorniLista();
-  const pillola = (s) => {
-    if (s.fine === oggi) return `<span class="el-pill out">parte oggi</span>`;
-    if (s.inizio === oggi) return `<span class="el-pill in">arriva oggi</span>`;
-    if (s.fine === domani) return `<span class="el-pill out">parte domani</span>`;
-    if (s.inizio === domani) return `<span class="el-pill in">arriva domani</span>`;
-    if (s.inizio <= oggi && oggi < s.fine) return `<span class="el-pill now">in camera</span>`;
-    return "";
-  };
-  return zoneOrdinate().map(z => {
-    const cam = camereZona(z.id);
-    let occupate = 0;
-    const righe = cam.map(c => {
-      const miei = sog.filter(s => s.camera === c.id && s.inizio < a && da < s.fine).sort((x, y) => x.inizio < y.inizio ? -1 : 1);
-      const noteCam = Object.values(S.note).filter(n => n.camera === c.id && n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
-      const pul = Object.values(S.pulizie).filter(p => p.camera === c.id && p.data >= da && p.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
-      const pulTxt = pul.length ? `<span class="muted small">Pulizie: ${pul.map(p => `${L.GG[L.giornoSettimana(p.data)]} ${TIPI_PULIZIA[p.tipo]?.breve || "LAV"}${p.stato === "fatta" ? " ✓" : p.stato === "problema" ? " !" : ""}`).join(" · ")}</span>` : "";
-      const noteTxt = noteCam.map(nn => `<br><button class="el-nota" data-nota="${esc(nn.id)}">! ${esc(L.dataGiornoLungo(nn.data))}: ${esc(nn.testo)}</button>`).join("");
-      if (!miei.length) return `<div class="row el-riga vuota"><span><b class="el-camera">${esc(c.nome)}</b><br><span class="muted">Libera tutta la settimana</span>${pulTxt ? "<br>" + pulTxt : ""}${noteTxt}</span>${puoModificare() ? `<button class="btnsm ghost" data-cella="${esc(c.id)}|${da}">+ Arrivo</button>` : ""}</div>`;
-      occupate++;
-      return miei.map((s, i) => {
-        const col = TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore, q = s.tipo === "unk" || s.dubbio;
-        const notti = L.giorniTra(s.inizio, s.fine);
-        return `<button class="row el-riga ${q ? "q" : ""}" data-sog="${esc(s.id)}"><span>${i === 0 ? `<b class="el-camera">${esc(c.nome)}</b>` : `<span class="el-camera-ancora">${esc(c.nome)} · poi</span>`}<br>
-          <span class="el-chi"><i style="background:${q ? "transparent" : col};${q ? "border:2px dashed var(--c-unk)" : ""}"></i>${esc(s.nome)}${s.persone > 1 ? ` · ${s.persone} persone` : ""}${q ? ` <span class="chip">da controllare</span>` : ""}</span><br>
-          <span class="el-quando">Arriva <b>${esc(G(s.inizio))}</b> → parte <b>${esc(G(s.fine))}</b> · ${notti} ${notti === 1 ? "notte" : "notti"}</span>
-          ${s.nota ? `<br><span class="muted small">📝 ${esc(s.nota)}</span>` : ""}${i === miei.length - 1 && pulTxt ? "<br>" + pulTxt : ""}${i === miei.length - 1 ? noteTxt : ""}</span>${pillola(s)}</button>`;
-      }).join("");
-    }).join("");
-    return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(z.nome)}</h2><span class="muted">${occupate}/${cam.length} occupate</span></div><div class="rows">${righe}</div></section>`;
-  }).join("");
-}
 
 // ---- paghe e listino -----------------------------------------------------------
 // Il conto dal prospetto (Michele): "Pulizie: … € + stelle: … € = … €" per la settimana e per il mese, pulizie previste e fatte
@@ -10070,12 +9949,6 @@ function foglioSoggiorno(f) {
 //  "Dimmi il prospetto": si scrive o si detta chi arriva, l'app capisce con regole fisse
 //  e fa controllare tutto prima di salvare. Niente intelligenza artificiale.
 // ---------------------------------------------------------------------------
-function bottoniProspetto() {
-  return `<section class="card dt-pulsanti"><h2 style="margin:0">Compila il prospetto in un attimo</h2><p class="muted small" style="margin:4px 0 0">Scrivi (o detta col microfono della tastiera) chi arriva e quando, carica il file Excel di papà, oppure ripeti la settimana scorsa. Le pulizie si creano da sole.</p>
-    <button class="big main" data-dettatura>🗣️ Dimmi il prospetto</button>
-    <div class="due" style="margin-top:0"><label class="big undo" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:10px">📄 Foglio di papà<input class="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><button class="big undo" data-dettatura-copia>🔁 Come la settimana scorsa</button></div>
-    <p class="muted small" style="margin:10px 0 0">Oppure tocca una casella vuota del tabellone per segnare un arrivo, tocca una striscia per cambiarla.</p></section>`;
-}
 function statoDettatura() {
   if (!S.dett) S.dett = { testo: "", base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {} };
   return S.dett;
@@ -10947,7 +10820,6 @@ async function apriChatWA(files, opz = {}) {
   if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
   apriFoglio({ tipo: "chatPapa" });
 }
-function apriChatPapa(grezzo, nomeFile) { apriChatWA([new File([String(grezzo || "")], nomeFile || "Chat WhatsApp.txt", { type: "text/plain" })]); }
 // i messaggi delle chat scelte nel periodo, in ordine di tempo; con piu' chat ogni messaggio dice da quale viene
 function messaggiScelti(c) {
   const attive = c.chats.filter(x => x.attiva);
@@ -12140,16 +12012,6 @@ async function esportaExcel() {
 //  Persone e accessi (chi può entrare e con quale ruolo)
 // ---------------------------------------------------------------------------
 function emailDi(login) { return `${String(login || "").trim().toLowerCase().replace(/\s+/g, "")}@${(window.DOMINIO_ACCESSO || "stanzericci.app").toLowerCase()}`; }
-let seminaFatta = false;
-async function seminaPersone() {
-  // La prima volta che un proprietario entra e la lista è vuota, l'app scrive le persone di base da sola.
-  if (seminaFatta || !proprietario() || !S.caricati.ruoli || Object.keys(S.ruoli).length) return;
-  seminaFatta = true;
-  try {
-    await S.db.scrivi(PERSONE_BASE.map(p => ({ tipo: "salva", coll: "ruoli", id: emailDi(p.login), dati: { login: p.login, nome: p.nome, ruolo: p.ruolo, zona: p.zona || null, creato: S.db.adesso() } })));
-    toast("Ho preparato le persone di base (proprietari e signore).");
-  } catch (e) { console.error(e); }
-}
 function vistaPersone() {
   const lista = Object.values(S.ruoli).filter(r => r.ruolo !== "ponte").sort((a, b) => (a.ruolo + a.login).localeCompare(b.ruolo + b.login));
   const ponti = Object.values(S.ruoli).filter(r => r.ruolo === "ponte").length;
