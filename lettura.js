@@ -54,6 +54,27 @@ export function creaCodici(ctx) {
 // la "firma" dei codici: se non cambiano i nomi, i codici restano gli stessi (l'app li tiene da parte)
 export function firmaCodici(ctx) { return (ctx.soggiorni || []).map(s => s.nome || "").join("|") + "#" + Object.keys(ctx.clienti || {}).join("|"); }
 
+// ---- 1.38.0: un nome che NON è un nome -----------------------------------------------------------------------------------
+// Nel prospetto vero di Michele erano finiti «Allora Cambiato Abbiamo Messo» e «Mi Sai Dire Quando O Se Lunedì»: pezzi di
+// vocale messi nel campo "nome" dal modello svelto. Un nome di ospite è 1-3 parole (cognome, nome, ditta), senza le parole
+// del parlato. Se sembra una frase, l'app mette "?" e chiede a Michele chi è.
+const ARTICOLI_NOME = new Set(["la", "lo", "le", "li", "di", "de", "del", "della", "dello", "dei", "degli", "delle", "da", "d", "e", "el", "al", "van", "von", "san", "santa"]);
+const NON_NOME = new Set([...PAROLE.STOP, "allora", "cambiato", "cambia", "cambiamo", "cambiano", "sai", "dire", "dimmi", "dici", "dico", "lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica", "dopodomani", "stasera", "sera", "mattina", "notte", "dopo", "prima", "cioe", "quindi", "forse", "arriva", "arrivano", "arrivato", "arrivati", "arrivare", "parte", "partono", "partito", "partiti", "partire", "viene", "vengono", "venuto", "venuti", "venire", "andare", "vanno", "andato", "resta", "restano", "rimane", "rimangono", "rimasto", "torna", "tornano", "tornato", "camera", "stanza", "stanze", "camere", "giorno", "giorni", "mese", "perche", "pero", "quello", "quella", "questi", "altro", "altra", "altri", "stesso", "stessa", "niente", "nulla", "okay", "ecco", "dunque", "insomma", "praticamente", "comunque", "magari", "appunto", "libera", "libero", "occupata", "occupato", "lenzuola", "asciugamani", "chiavi", "chiave", "persone", "persona", "ragazzi", "ragazzo", "telefono", "numero", "chiamato", "chiamata", "chiama", "chiamare", "sentito", "sento", "detto", "dice", "dicono", "vediamo", "vedere", "vedi", "visto", "penso", "credo", "sembra", "dovrebbe", "dovrebbero", "possono", "puo", "posso", "potrebbe", "sta", "stanno", "stare", "sempre", "mai", "quasi", "ora", "volta", "volte", "sopra", "sotto", "dentro", "fuori", "piano", "terra", "zara", "trento", "albergo", "appartamento", "casa", "quando", "mettiamo", "mettere", "messo", "metti", "fatto", "fare", "facciamo", "abbiamo", "siamo", "sono", "hanno", "avevo", "aveva", "avevano", "era", "erano", "sara", "saranno", "tecnico", "tecnici", "operaio", "operai", "cliente", "clienti", "ospite", "ospiti", "signore", "signora", "signori", "uomo", "donna", "tizio", "tipo", "ragazza", "gruppo", "squadra", "so", "boh", "nessuno", "qualcuno", "qualcuna", "altre", "stessi", "nuovo", "nuova", "nuovi", "vecchio", "solito", "soliti", "solita", "ditta"]);
+export function nomeSospetto(nome) {
+  const n = String(nome || "").trim(); if (!n || n === "?") return false;
+  if (/\d{3,}/.test(n) || /[?!]$/.test(n)) return true;
+  const p = PAROLE.norm(n).split(" ").filter(Boolean); if (!p.length) return true;
+  if (/^(sig|sigra|signora|signor|famiglia|fam|ditta|coppia|dott|ing|avv)$/.test(p[0])) p.shift();
+  const vere = p.filter(w => !ARTICOLI_NOME.has(w)), brutte = vere.filter(w => NON_NOME.has(w)).length;
+  return p.length >= 6 || brutte >= 2 || (brutte >= 1 && vere.length >= 3) || vere.length >= 5;
+}
+// il nome ripulito: spazi doppi, punteggiatura in fondo, TUTTO MAIUSCOLO → Nome Cognome
+export function puliziaNome(nome) {
+  let n = String(nome || "").replace(/\s+/g, " ").replace(/[\s.,;:!]+$/, "").trim();
+  if (n.length > 3 && n === n.toUpperCase() && n !== n.toLowerCase()) n = n.toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+  return n;
+}
+
 // ---- telefoni ed email: mai a Gemini ---------------------------------------------------------------------------------
 export function senzaTelefoni(t) { return String(t || "").replace(/\+?\d(?:[\s.\-]?\d){7,}/g, "[telefono]").replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[email]"); }
 // 1.0.6: i telefoni diventano segnaposto numerati ([telefono1], [telefono2]...); la tabella segnaposto -> numero resta a
@@ -66,12 +87,9 @@ export function telefoniInSegnaposto(t, mappa) {
 }
 // nel JSON di Sofia: il segnaposto del campo "telefono" torna il numero vero (solo li': note e messaggi restano coi segnaposto)
 export function rimettiTelefoni(j, mappa) {
-  if (!j || !Array.isArray(j.soggiorni)) return j;
-  for (const x of j.soggiorni) {
-    if (!x || typeof x !== "object") continue;
-    const m = /\[\s*telefono\s*(\d{1,3})\s*\]/i.exec(String(x.telefono || ""));
-    x.telefono = m && mappa ? (mappa.get(`[telefono${m[1]}]`) || "") : "";
-  }
+  if (!j || typeof j !== "object") return j;
+  const vero = (x) => { const m = /\[\s*telefono\s*(\d{1,3})\s*\]/i.exec(String(x || "")); return m && mappa ? (mappa.get(`[telefono${m[1]}]`) || "") : ""; };
+  for (const k of ["soggiorni", "telefoni"]) if (Array.isArray(j[k])) for (const x of j[k]) { if (x && typeof x === "object") x.telefono = vero(x.telefono); }   // 1.38.0: anche la rubrica
   return j;
 }
 // il tipo di ospite detto a Sofia: le ditte col loro codice (sono anche clienti col nome), cosi' nessun nome esce in chiaro
@@ -160,9 +178,11 @@ COME SI LEGGE IL PROSPETTO:
 - "x2", "2p", "2 pax", "in 2" = 2 persone. Una lista di camere con i nomi accanto è il prospetto di quella settimana.
 - Tipi di ospite (campo "tipo"): ${tipi}. I tecnici della ferrovia e delle altre ditte sono "ferr", turisti e Booking "altro", se non si capisce "unk".
 - Gli ospiti che l'app conosce già sono CODICI tra parentesi quadre, per esempio [O3]: è sempre la stessa persona. Nel JSON riscrivilo IDENTICO; se accanto al codice c'è anche il nome di battesimo (per esempio "[O3] Antonio"), scrivilo tutto: "[O3] Antonio".
-- Il NOME DELL'OSPITE scrivilo COMPLETO e preciso, come lo scrive il papà: cognome e nome se ci sono tutti e due, con "Sig.ra", "Famiglia", "Ditta" se li scrive. Non accorciarlo e non inventarlo.
+- Il NOME DELL'OSPITE scrivilo COMPLETO e preciso, come lo scrive il papà: cognome e nome se ci sono tutti e due, con "Sig.ra", "Famiglia", "Ditta" se li scrive. Non accorciarlo e non inventarlo. Nel campo "nome" ci va SOLO un nome di persona o di ditta (1-3 parole): MAI pezzi di frase («allora cambiato abbiamo messo», «mi sai dire quando»), MAI il nome di una camera, MAI la famiglia (Michele, il papà, la mamma) né le signore delle pulizie. Se il papà nomina solo la ditta («in Salvatore uno della D'Agostino», «ne arriva un altro della stessa ditta»), nel nome metti la ditta (il suo codice, o "Ditta …") e aggiungi in "dubbi" la domanda «Come si chiama il tecnico della … in Salvatore?». Se non c'è né nome né ditta, metti "?" e chiedi in "dubbi" chi è: meglio una domanda che un nome sbagliato.
+- Se un messaggio è un'EMAIL COPIATA (intestazione, «Gentile», firma): se parla di presenze, prenotazioni o arrivi dei tecnici è prospetto e si legge come il resto; se è pubblicità o un'offerta (Booking, Expedia, fornitori) va al massimo in "note" con una riga, senza inventare soggiorni.
+- Le ORE DI LAVORO scritte dalle signore delle pulizie («oggi 2 ore e mezza», «oggi mezz'ora», una lista «albergo 4 · Nicole 2.30 · via Trento 0.30») vanno in "ore", in MINUTI, col giorno del messaggio: 2 ore e mezza = 150, 2.30 = 2 ore e 30 = 150, 0.30 = 30, mezz'ora = 30, 1 ora e un quarto = 75. Se la lista è di più posti dello stesso giorno, UNA riga sola con la somma e in "dove" l'elenco. Chi è la signora: la chat privata con lei (il suo codice) oppure chi scrive nel gruppo; se non si capisce chi è, lascia "signora" vuota e metti la domanda in "dubbi". Le ore dette da Michele o dal papà NON sono ore delle signore.
 - ATTENZIONE: le CAMERE hanno nomi di persona (Salvatore, Michele, Aurora, Antonio, Lella, Alba, Nicole). "in Antonio", "ad Aurora", "Salvatore:" sono le camere, non gli ospiti: il nome di una camera non va MAI nel campo "nome". Michele è anche il figlio, quello che usa l'app.
-- I numeri di telefono li ho tolti io: al loro posto c'è un segnaposto numerato, [telefono1], [telefono2]... Se il telefono è dell'ospite di un soggiorno (scritto accanto al suo nome o nello stesso messaggio), metti il suo segnaposto IDENTICO nel campo "telefono" di quel soggiorno; altrimenti lascia "telefono" vuoto.
+- I numeri di telefono li ho tolti io: al loro posto c'è un segnaposto numerato, [telefono1], [telefono2]... Se il numero è dell'ospite di un soggiorno (accanto al suo nome, nello stesso messaggio, oppure detto con la CAMERA: «il numero di quello di Nicole», «Tramonto: [telefono2]», anche in risposta a una richiesta di Michele), metti il suo segnaposto IDENTICO nel campo "telefono" del soggiorno di quella camera in quei giorni (riscrivi quel soggiorno anche se è già nell'app, con lo stesso nome o codice). Tutti gli altri numeri (un tecnico, un idraulico, un fornitore, una ditta, un parente) mettili in "telefoni", col segnaposto e di chi è. Non lasciare mai un numero senza una casa: o in un soggiorno o in "telefoni".
 - [email] è un indirizzo email tolto apposta.
 - Se i messaggi vengono da più chat, davanti c'è la chat tra parentesi tonde: "(chat con Papà)" è la chat privata tra Michele e il papà; un nome da solo, per esempio "(Albergo)", è un gruppo (Albergo = il gruppo dell'albergo con la famiglia e le signore). I messaggi che cominciano con 🎤 sono vocali trascritti (possono avere qualche parola sbagliata: [?] = non si capiva).
 - Non inventare niente: se una cosa non è chiara mettila in "dubbi" (con le risposte possibili, così Michele risponde con un tocco) o metti "sicurezza":"bassa".
@@ -184,7 +204,9 @@ RISPONDI SOLO con questo JSON:
  "assenze":[{"signora":"p2","dal":"AAAA-MM-GG","al":"AAAA-MM-GG (uguale a dal se è un giorno solo)","testo":"corto, per Michele (es. Selena sabato non viene)","messaggio":"le sue parole","sicurezza":"alta"}],
  "guasti":[{"camera":"codice della camera oppure vuoto se è un posto comune","cosa":"cosa è rotto o non va, corto (es. la doccia perde)","urgente":false,"chi":"chi l'ha detto","messaggio":"le sue parole"}],
  "spesa":[{"prodotto":"il prodotto che manca, corto (es. detersivo per pavimenti)","signora":"p1 oppure vuoto","chi":"chi l'ha detto","messaggio":"le sue parole"}],
- "note":[{"giorno":"AAAA-MM-GG","testo":"una cosa importante da sapere per Michele, corta","chi":"chi l'ha detto","messaggio":"le sue parole"}]}
+ "note":[{"giorno":"AAAA-MM-GG","testo":"una cosa importante da sapere per Michele, corta","chi":"chi l'ha detto","messaggio":"le sue parole"}],
+ "telefoni":[{"camera":"codice della camera oppure vuoto","nome":"di chi è il numero: un codice [O3], un nome, una ditta, oppure vuoto","telefono":"[telefono1]","chi":"ospite / tecnico / fornitore / ditta / altro","messaggio":"le parole da cui l'hai capito"}],
+ "ore":[{"signora":"p1","giorno":"AAAA-MM-GG","minuti":150,"dove":"albergo, Nicole (se l'ha scritto, altrimenti vuoto)","messaggio":"le sue parole"}]}
 REGOLE DEL JSON:
 - In "soggiorni" metti TUTTI i soggiorni che secondo i messaggi ci sono con la partenza da ${L.dataMedia(L.aggiungiGiorni(oggi, -3))} in poi, anche quelli già uguali nell'app (il confronto lo faccio io). Una riga per ospite e per periodo. Le camere libere non si mettono.
 - In "togli" solo i soggiorni che sono NELL'APP e che i messaggi dicono chiaramente disdetti o finiti prima (camera, codice, data di arrivo come nell'app).
@@ -194,6 +216,8 @@ REGOLE DEL JSON:
 - In "spesa" i prodotti che mancano o stanno finendo (detersivi, carta igienica, sacchi, saponi, lampadine...).
 - In "note" solo le cose importanti per Michele che non vanno da nessun'altra parte (per esempio un appuntamento, chi porta le chiavi, un ospite che chiede qualcosa). Niente saluti e chiacchiere.
 - Se nei messaggi dopo una cosa risulta già fatta o risolta ("ho comprato il detersivo", "aggiustato", "allora vengo"), non metterla.
+- In "ore" solo le ore di lavoro scritte dalle signore delle pulizie: una riga per signora e per giorno, in minuti.
+- In "telefoni" solo i numeri che NON sono finiti nel campo "telefono" di un soggiorno. Nel campo "telefono" sempre e solo il segnaposto, mai cifre.
 - Le date sempre nel formato AAAA-MM-GG. "sicurezza": "alta", "media" o "bassa".`;
 }
 
@@ -221,7 +245,8 @@ export function jsonDaRisposta(txt) {
   return null;
 }
 // i vocali: Gemini li trascrive 6 per volta, parola per parola
-export function istruzioniTrascrizione(nomiCamere, n) {
-  return `Trascrivi in italiano, parola per parola, questi ${n} messaggi vocali di WhatsApp, nell'ordine in cui te li mando. Sono di una famiglia che gestisce un piccolo albergo a Lesina: parlano di camere (${nomiCamere}), di ospiti (cognomi), di giorni, date, pulizie. Non riassumere e non inventare: se una parola non si capisce scrivi [?]. Rispondi SOLO con questo JSON: {"vocali":["trascrizione del primo","trascrizione del secondo"]}`;
+export function istruzioniTrascrizione(nomiCamere, n, extra = {}) {
+  const sig = (Array.isArray(extra.signore) ? extra.signore : []).map(x => String(x || "").trim()).filter(Boolean).join(", ");
+  return `Trascrivi in italiano, parola per parola, questi ${n} messaggi vocali di WhatsApp, nell'ordine in cui te li mando. Sono di una famiglia che gestisce un piccolo albergo a Lesina (Foggia): parlano di camere (${nomiCamere}), di ospiti (cognomi, ditte, tecnici della ferrovia, operai), di giorni e date, di pulizie (cambio totale, ripasso, lenzuola, asciugamani, chiavi), di soldi e di ore di lavoro${sig ? `; le signore delle pulizie si chiamano ${sig}` : ""}. Parlano italiano con qualche parola di dialetto pugliese. Scrivi i nomi propri e i cognomi con la maiuscola e i numeri di telefono tutti in cifre, attaccati. Non riassumere e non inventare: se una parola non si capisce scrivi [?]. Rispondi SOLO con questo JSON: {"vocali":["trascrizione del primo","trascrizione del secondo"]}`;
 }
 export function testoTrascrizione(n) { return `Ecco ${n === 1 ? "il vocale" : `i ${n} vocali, nell'ordine`}.`; }

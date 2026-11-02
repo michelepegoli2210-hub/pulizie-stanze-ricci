@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.37.0";
+export const VERSIONE = "1.38.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2066,6 +2066,9 @@ function turnoDelGiorno(z, iso) {
   const fatte = Object.values(S.pulizie || {}).filter(p => p && p.zona === z && p.data === iso && p.stato === "fatta" && p.tipo !== "stelle");
   if (inizio && fine && new Date(fine) > new Date(inizio)) return { v, inizio, fine, minuti: Math.round((new Date(fine) - new Date(inizio)) / 60000), stima: false, corretto, camere: fatte.length };
   if (inizio && !fine && iso === L.oggiISO() && new Date(inizio) <= new Date()) return { v, inizio, fine: null, minuti: minutiDa(inizio), stima: false, aperto: true, inCorso: true, corretto, camere: fatte.length };   // oggi, l'orario corre
+  // 1.38.0: le ore che la signora ha scritto su WhatsApp («oggi 2 ore e mezza»), lette da Sofia e spuntate da Michele
+  const dette = v && v.oreDette && Number(v.oreDette.minuti) > 0 ? v.oreDette : null;
+  if (dette) return { v, inizio, fine, minuti: Math.round(Number(dette.minuti)), stima: false, dette: true, corretto, camere: fatte.length };
   if (!fatte.length && !inizio) return null;
   const ultima = fatte.map(p => p.ora).filter(Boolean).sort().pop() || null;
   if (inizio && ultima && new Date(ultima) > new Date(inizio)) return { v, inizio, fine: null, minuti: Math.round((new Date(ultima) - new Date(inizio)) / 60000), stima: true, aperto: true, corretto, camere: fatte.length };
@@ -2157,7 +2160,7 @@ function arrivoProposto(z, iso) {
 // ---- I miei soldi, a ore --------------------------------------------------------------------------------------------
 function rigaTurno(z, g, mod) {
   const t = g.t, quando = `${L.GIORNI[L.giornoSettimana(g.iso)]} ${L.giornoDelMese(g.iso)}`;
-  const ore = t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : t.inCorso ? `dalle ${L.oraBreve(t.inizio)} · l'orario corre` : t.inizio ? `dalle ${L.oraBreve(t.inizio)}, senza HO FINITO` : t.fine ? `fino alle ${L.oraBreve(t.fine)}, senza l'arrivo` : "senza orario";
+  const ore = t.dette ? `ore scritte su WhatsApp${t.inizio ? ` (arrivata alle ${L.oraBreve(t.inizio)})` : ""}` : t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : t.inCorso ? `dalle ${L.oraBreve(t.inizio)} · l'orario corre` : t.inizio ? `dalle ${L.oraBreve(t.inizio)}, senza HO FINITO` : t.fine ? `fino alle ${L.oraBreve(t.fine)}, senza l'arrivo` : "senza orario";
   return `<div class="row turno-riga ${t.stima ? "stima" : ""}"><span><b>${esc(quando)}</b> · ${esc(ore)}<br><span class="muted small">${esc(testoOreTurno(t.minuti))}${t.stima ? " · stima dalle camere" : ""}${t.corretto ? " · orario messo da Michele" : ""}${t.camere ? ` · ${t.camere} ${t.camere === 1 ? "camera" : "camere"}` : ""}</span></span><span style="display:flex;gap:6px;align-items:center"><span class="s ${t.stima ? "warn" : "done"}">${eur(euroOre(t.minuti))}</span>${mod ? `<button class="btnsm ghost" data-turno-orario="${esc(z)}|${g.iso}">Orario</button>` : ""}</span></div>`;
 }
 function vistaStoricoOre(z) {
@@ -2211,7 +2214,7 @@ function turnoDialogo(z, iso) {
     el.innerHTML = `<div class="conferma-box chiusura turno-dialogo" role="dialog"><div class="chiusura-t">${ICONA("orologio")}<span>L'orario di ${esc(SIG(z))}${iso ? ` · ${esc(L.dataBreve(iso))}` : ""}</span></div>
       ${iso ? "" : `<label class="campo" style="margin:0 0 8px"><span>Giorno</span><input type="date" data-t-giorno value="${L.oggiISO()}"></label>`}
       <div class="due"><label class="campo"><span>Arrivata alle</span><input type="time" data-t-ini value="${esc(ini)}"></label><label class="campo"><span>Finito alle</span><input type="time" data-t-fin value="${esc(fin)}"></label></div>
-      ${t && t.stima ? `<p class="muted small" style="margin:0 0 6px">Finora era una stima dalle camere (${esc(testoOreTurno(t.minuti))}).</p>` : ""}
+      ${t && t.stima ? `<p class="muted small" style="margin:0 0 6px">Finora era una stima dalle camere (${esc(testoOreTurno(t.minuti))}).</p>` : t && t.dette ? `<p class="muted small" style="margin:0 0 6px">Finora valevano le ore scritte su WhatsApp (${esc(testoOreTurno(t.minuti))}): con un orario preciso vince l'orario.</p>` : ""}
       <button class="big ok" data-si>Salva l'orario</button><button class="big undo" data-no>Annulla</button></div>`;
     document.body.appendChild(el);
     el.querySelector("[data-si]").onclick = () => { const g = iso || (el.querySelector("[data-t-giorno]") || {}).value; const a = el.querySelector("[data-t-ini]").value, b = el.querySelector("[data-t-fin]").value; el.remove(); ok({ iso: g, ini: a, fin: b }); };
@@ -9510,7 +9513,7 @@ function cardOrarioBase() {
 // ---- altro ---------------------------------------------------------------------------
 function vistaAltro() {
   const r = S.regole;
-  return cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -9940,7 +9943,7 @@ async function salvaDettatura(f) {
     if (righe.length) { const x = opsRigheProspetto(righe); await S.db.scrivi(x.ops); n = x.n; }
     const ni = await salvaIndicazioni(ind);
     let na = 0; for (const v of ab) { try { if (await ricordaNelTaccuino(v.testo, "sofia")) na++; } catch (e) { console.warn("abitudine", e); } }
-    const nx = altre.tot ? await salvaAltreDaSofia(altre) : { as: 0, passate: 0, gu: 0, sp: 0, no: 0 };   // 1.18.0
+    const nx = altre.tot ? await salvaAltreDaSofia(altre) : { as: 0, passate: 0, gu: 0, sp: 0, no: 0, ore: 0, te: 0 };   // 1.18.0
     const base = ris.base || statoDettatura().base;
     if (d0.ia) togliUltimaLettura();
     if (d0.condivisa) chiudiLetturaCondivisa(d0.condivisa, "salvata");   // 1.18.0
@@ -9948,7 +9951,7 @@ async function salvaDettatura(f) {
     S.dett = { testo: "", base, scelte: {}, comportamenti: {} };
     S.attesa = false; chiudiFoglio();
     S.vista = "prospetto"; S.board = { modo: "settimana", inizio: base }; disegna();
-    toast([n ? `Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} alle signore` : "", na ? `${na} ${na === 1 ? "cosa" : "cose"} nel taccuino` : "", nx.gu ? `${nx.gu} in manutenzione` : "", nx.sp ? `${nx.sp} nella spesa` : "", nx.passate ? `${nx.passate} ${nx.passate === 1 ? "pulizia passata" : "pulizie passate"} all'altra signora` : "", nx.as + nx.no ? `${nx.as + nx.no} nelle tue note` : ""].filter(Boolean).join(" · ") + ". Le pulizie si aggiornano da sole.");
+    toast([n ? `Prospetto aggiornato: ${n} ${n === 1 ? "cambiamento" : "cambiamenti"}` : "", ni ? `${ni} ${ni === 1 ? "indicazione" : "indicazioni"} alle signore` : "", na ? `${na} ${na === 1 ? "cosa" : "cose"} nel taccuino` : "", nx.gu ? `${nx.gu} in manutenzione` : "", nx.sp ? `${nx.sp} nella spesa` : "", nx.passate ? `${nx.passate} ${nx.passate === 1 ? "pulizia passata" : "pulizie passate"} all'altra signora` : "", nx.as + nx.no ? `${nx.as + nx.no} nelle tue note` : "", nx.ore ? `${nx.ore} ${nx.ore === 1 ? "orario scritto" : "orari scritti"} dalle signore nella paga` : "", nx.te ? `${nx.te} ${nx.te === 1 ? "numero di telefono" : "numeri di telefono"}` : ""].filter(Boolean).join(" · ") + ". Le pulizie si aggiornano da sole.");
   } catch (e) { S.attesa = false; disegnaFoglio(); erroreScrittura(e); }
 }
 // Le scritture sul prospetto per le righe capite (dalla scheda "Dimmi il prospetto" o da quello che dice Sofia)
@@ -10217,15 +10220,23 @@ function lettoDaSofia(j) {
   const usati = new Set();
   (Array.isArray(j.soggiorni) ? j.soggiorni : []).slice(0, 80).forEach((x, i) => {
     const camera = cameraDaSofia(x && x.camera), inizio = dataIso(x && x.arrivo), fine = dataIso(x && x.partenza);
-    let nome = daCodici(String((x && x.nome) || "").trim()).replace(/^\[.*\]$/, "?").slice(0, 48) || "?";
+    let nome = LET.puliziaNome(daCodici(String((x && x.nome) || "").trim()).replace(/^\[.*\]$/, "?")).slice(0, 48) || "?";
     if (nome !== "?" && S.camere.some(c => PAROLE.norm(c.nome) === PAROLE.norm(nome) || PAROLE.norm(c.id) === PAROLE.norm(nome))) nome = "?";
     if (!camera || !inizio || !fine || fine <= inizio) { if (x && (x.camera || x.nome)) dubbi.push({ domanda: `Non ho capito bene: ${daCodici(String(x.messaggio || `${x.camera || ""} ${x.nome || ""}`)).slice(0, 120)}`, risposte: [] }); return; }
+    // 1.38.0: un nome che è un pezzo di frase («Allora Cambiato Abbiamo Messo») non entra nel prospetto: "?" e una domanda a Michele
+    let nomeSospetto = "";
+    if (nome !== "?" && LET.nomeSospetto(nome)) {
+      nomeSospetto = nome; nome = "?";
+      const ultimi = [...new Set(soggiorniLista().filter(s => s.camera === camera && s.nome && s.nome !== "?" && !LET.nomeSospetto(s.nome)).sort((a, b) => (a.inizio < b.inizio ? 1 : -1)).map(s => nucleoNome(s.nome)).filter(Boolean))].slice(0, 3);
+      dubbi.push({ domanda: `Chi è l'ospite in ${(S.camere.find(c => c.id === camera) || { nome: camera }).nome} dal ${L.dataMedia(inizio)}? Il nome non l'ho capito («${nomeSospetto.slice(0, 40)}»)`, risposte: [...ultimi, "Non lo so ancora"] });
+    }
     const tipo = TIPI_OSPITE[x.tipo] ? x.tipo : null;
     const persone = Math.max(1, Math.min(12, Math.round(Number(x.persone) || 0))) || null;
     const bassa = /bassa/i.test(String(x.sicurezza || ""));
     const r = { camera, testo: daCodici(String(x.messaggio || "")).slice(0, 160), azione: "nuovo", nome, persone, tipo, inizio, fine, nota: daCodici(String(x.nota || "")).slice(0, 160), notaPrivata: "", telefono: telefonoPulito(x.telefono), dubbio: bassa || nome === "?", motivi: x.dubbio ? [daCodici(String(x.dubbio)).slice(0, 160)] : [], assunti: [], scelto: !bassa, base: L.lunediDi(inizio), inizioDetto: true, fineDetta: true, tipoDetto: !!tipo, durata: null, comeScorsa: false, libera: false, haParoleParte: false, haParoleProlunga: false, daSofia: true };
     try { completaRiga(r, ctx); } catch (e) { console.warn("riga sofia", e); }
     if (bassa) r.scelto = false;
+    if (nomeSospetto) { r.dubbio = true; r.motivi.unshift(`nome non capito («${nomeSospetto.slice(0, 40)}»)${r.nome && r.nome !== "?" ? `: ho messo ${r.nome}, controlla` : ""}`); }
     r.id = "s" + i; r.firma = `${r.azione}|${r.camera}|${r.inizio}|${r.fine}|${r.nome}`;
     if (usati.has(r.firma)) return; usati.add(r.firma);
     righe.push(r);
@@ -10273,15 +10284,42 @@ function lettoDaSofia(j) {
     const g = dataIso(x.giorno);
     return { k: "no" + i, giorno: g && g >= oggi ? g : oggi, testo, chi: corto(x.chi, 40), messaggio: corto(x.messaggio, 160), scelta: true };
   }).filter(Boolean).slice(0, 8);
-  return { righe, indicazioni, abitudini, dubbi, assenze, guasti, spesa, note, risposta: daCodici(String(j.risposta || "").trim()).slice(0, 700) };
+  // 1.38.0: le ore di lavoro scritte dalle signore su WhatsApp («oggi 2 ore e mezza»): entrano nella paga a ore se quel giorno
+  // non c'è l'orario del cronometro (se c'è, restano da parte: si spuntano apposta)
+  const ore = (Array.isArray(j.ore) ? j.ore : []).map((x, i) => {
+    const z = x ? zonaDaIA(x.signora || x.chi) : null, g = dataIso(x && x.giorno), min = Math.round(Number(x && x.minuti) || 0);
+    if (!z || !g || min < 10 || min > 14 * 60 || g > oggi) return null;
+    let t = null; try { t = turnoDelGiorno(z, g); } catch (e) {}
+    const timer = !!(t && !t.stima && !t.dette), v = L.vistoDi(S.visti, z, g), giaDette = !!(v && v.oreDette && Number(v.oreDette.minuti) === min);
+    if (giaDette) return null;
+    return { k: "or" + i, zona: z, giorno: g, minuti: min, dove: corto(x.dove, 80), chi: corto(x.chi, 40), messaggio: corto(x.messaggio, 160), timer, timerMinuti: t ? t.minuti : 0, scelta: !timer };
+  }).filter(Boolean).slice(0, 14);
+  // 1.38.0: i numeri di telefono che non sono di un soggiorno (un tecnico, un fornitore): nella rubrica, mai all'IA
+  const telefoni = (Array.isArray(j.telefoni) ? j.telefoni : []).map((x, i) => {
+    const tel = telefonoPulito(x && x.telefono); if (!tel) return null;
+    const cam = cameraDaSofia(x && x.camera), nome = LET.puliziaNome(daCodici(String((x && x.nome) || "").trim())).slice(0, 48);
+    const sog = cam ? soggiorniLista().filter(s => s.camera === cam && s.fine >= L.aggiungiGiorni(oggi, -1) && s.inizio <= L.aggiungiGiorni(oggi, 7)).sort((a, b) => (a.inizio < b.inizio ? -1 : 1))[0] : null;
+    const giaLi = sog && telefonoPulito(sog.telefono) === tel;
+    if (giaLi) return null;
+    return { k: "te" + i, camera: cam, nome: LET.nomeSospetto(nome) ? "" : nome, telefono: tel, chi: corto(x.chi, 20), messaggio: corto(x.messaggio, 160), soggiorno: sog ? sog.id : null, soggiornoNome: sog ? nucleoNome(sog.nome) : "", scelta: true };
+  }).filter(Boolean).slice(0, 10);
+  return { righe, indicazioni, abitudini, dubbi, assenze, guasti, spesa, note, ore, telefoni, risposta: daCodici(String(j.risposta || "").trim()).slice(0, 700) };
 }
 // 0.98.1: per LEGGERE (chat di papa', foto del foglio) serve il modello che ragiona di piu': Argon se c'e' la sua chiave col
 // credito; altrimenti Gemini Flash (non il "lite", che e' fatto per rispondere in fretta a voce); il lite solo come ultima spiaggia.
-async function chiediLettura(dom) {
-  const c = confIA(), tentativi = [];
-  if (c.chiaveArgon && !argonInPausa()) tentativi.push({ ...c, chiave: c.chiaveArgon, qualita: "argon", modello: /argon|pro/i.test(c.modello || "") ? c.modello : "" });
+// 1.38.0: Argon si prova anche con la chiave normale, se il modello scelto è Argon (è il caso di Michele: il credito sta sulla
+// chiave normale e «chiaveArgon» è vuota; prima la lettura e la trascrizione dei vocali saltavano Argon e andavano col
+// modello sveglio, che metteva pezzi di vocale nei nomi degli ospiti)
+function tentativiLettura(c) {
+  const tentativi = [];
+  const argonConNormale = !c.chiaveArgon && /argon/i.test(c.modello || "") && c.qualita === "argon";
+  if ((c.chiaveArgon || argonConNormale) && !argonInPausa()) tentativi.push({ ...c, chiave: c.chiaveArgon || c.chiave, qualita: "argon", modello: /argon|pro/i.test(c.modello || "") ? c.modello : "" });
   tentativi.push({ ...c, qualita: "sveglia", modello: c.modelloSveglio || "" });
   tentativi.push({ ...c, qualita: "svelta", modello: c.modelloSvelto || "" });
+  return tentativi;
+}
+async function chiediLettura(dom) {
+  const c = confIA(), tentativi = tentativiLettura(c);
   let errore = null;
   for (const conf of tentativi) {
     try {
@@ -10401,7 +10439,7 @@ function partiSofiaHtml(d, parte = "testa") {
 }
 // 1.18.0: le altre cose delle chat, da spuntare: assenze delle signore, guasti, spesa, cose da sapere per Michele
 function altreSofiaHtml(x) {
-  const as = x.assenze || [], gu = x.guasti || [], sp = x.spesa || [], no = x.note || [];
+  const as = x.assenze || [], gu = x.guasti || [], sp = x.spesa || [], no = x.note || [], ore = x.ore || [], te = x.telefoni || [];
   const parole = (v) => v.messaggio ? `<br><span class="muted small">${v.chi ? esc(v.chi) + ": " : ""}«${esc(v.messaggio)}»</span>` : "";
   const riga = (v, tipo, testa, corpo, sotto = "") => `<label class="row dt-riga ok" style="grid-template-columns:auto 1fr;cursor:pointer;align-items:start"><input type="checkbox" data-sofia-${tipo}="${esc(v.k)}" ${v.scelta ? "checked" : ""} style="width:24px;height:24px;margin-top:2px"><span>${testa ? `<b>${testa}</b><br>` : ""}${corpo}${parole(v)}${sotto}</span></label>`;
   const quando = (a, b) => a === b ? `${esc(quandoEtichetta(a))} ${esc(L.dataMedia(a))}` : `dal ${esc(L.dataMedia(a))} al ${esc(L.dataMedia(b))}`;
@@ -10409,16 +10447,20 @@ function altreSofiaHtml(x) {
   return sez("Assenze delle signore", as, as.map(v => riga(v, "ass", `${esc(SIG(v.zona))} · ${quando(v.dal, v.al)}`, esc(v.testo), v.pulizie.length && v.altra ? `<span class="dt-passa" style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" data-sofia-passa="${esc(v.k)}" ${v.passa ? "checked" : ""} style="width:22px;height:22px"><span>Passa le sue ${v.pulizie.length} ${v.pulizie.length === 1 ? "pulizia" : "pulizie"} di ${v.dal === v.al ? "quel giorno" : "quei giorni"} a <b>${esc(SIG(v.altra))}</b></span></span>` : "")).join(""), "Le spuntate vanno nelle tue note di quel giorno.")
     + sez("Guasti", gu, gu.map(v => riga(v, "gua", `${v.camera ? esc(camera(v.camera).nome) : "Posto comune"}${v.urgente ? " · URGENTE" : ""}`, esc(v.cosa))).join(""), "Le spuntate vanno in Manutenzione.")
     + sez("Da comprare", sp, sp.map(v => riga(v, "spe", v.zona ? esc(nomeZonaBreve(v.zona)) : "", esc(v.prodotto))).join(""), "Le spuntate vanno nella lista della spesa.")
-    + sez("Da sapere per te", no, no.map(v => riga(v, "not", `${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}`, esc(v.testo))).join(""), "Le spuntate vanno nelle tue note di quel giorno.");
+    + sez("Da sapere per te", no, no.map(v => riga(v, "not", `${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}`, esc(v.testo))).join(""), "Le spuntate vanno nelle tue note di quel giorno.")
+    // 1.38.0: le ore scritte dalle signore e i numeri di telefono
+    + sez("Ore scritte dalle signore su WhatsApp", ore, ore.map(v => riga(v, "ore", `${esc(SIG(v.zona))} · ${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}`, `${esc(testoOreTurno(v.minuti))}${v.dove ? ` · ${esc(v.dove)}` : ""}${v.timer ? `<br><span class="muted small">Quel giorno c'è già l'orario del cronometro (${esc(testoOreTurno(v.timerMinuti))}): spunta solo se vuoi usare le ore scritte.</span>` : ""}`)).join(""), "Le spuntate entrano nella paga a ore di quel giorno (dove non c'è l'orario del cronometro).")
+    + sez("Numeri di telefono", te, te.map(v => riga(v, "tel", `${esc(v.nome || (v.camera ? camera(v.camera).nome : "") || "Numero")}${v.chi ? ` · ${esc(v.chi)}` : ""}`, `📞 <b>${esc(telBello(v.telefono))}</b>${v.soggiorno ? `<br><span class="muted small">→ nella scheda dell'ospite di ${esc(camera(v.camera).nome)}${v.soggiornoNome ? ` (${esc(v.soggiornoNome)})` : ""}: lo vedete solo voi, toccando la camera</span>` : `<br><span class="muted small">→ nella rubrica (Altro → Rubrica): lo vedete solo voi</span>`}`)).join(""), "I numeri non vanno mai all'intelligenza artificiale.");
 }
 function altreScelte(d) {
   const x = (d && d.ia) || {};
   const as = (x.assenze || []).filter(v => v.scelta), gu = (x.guasti || []).filter(v => v.scelta), sp = (x.spesa || []).filter(v => v.scelta), no = (x.note || []).filter(v => v.scelta);
-  return { as, gu, sp, no, tot: as.length + gu.length + sp.length + no.length };
+  const ore = (x.ore || []).filter(v => v.scelta), te = (x.telefoni || []).filter(v => v.scelta);   // 1.38.0
+  return { as, gu, sp, no, ore, te, tot: as.length + gu.length + sp.length + no.length + ore.length + te.length };
 }
 // salva le altre cose spuntate: note di Michele, pulizie passate all'altra signora, manutenzione, lista della spesa
 async function salvaAltreDaSofia(a) {
-  const adesso = S.db.adesso(), oggi = L.oggiISO(), ops = [], n = { as: 0, passate: 0, gu: 0, sp: 0, no: 0 };
+  const adesso = S.db.adesso(), oggi = L.oggiISO(), ops = [], n = { as: 0, passate: 0, gu: 0, sp: 0, no: 0, ore: 0, te: 0 };
   const simile = (p, q) => { const x = PAROLE.norm(p || ""), y = PAROLE.norm(q || ""); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
   for (const v of a.as) {
     try { await notaDellaGovernante(v.dal, null, `${v.testo}${v.dal !== v.al ? ` (fino al ${L.dataMedia(v.al)})` : ""}${v.messaggio ? ` — «${v.messaggio}»` : ""}`, true); n.as++; } catch (e) { console.warn("assenza", e); }
@@ -10442,8 +10484,28 @@ async function salvaAltreDaSofia(a) {
     if (n.sp) await salvaSpesa({ voci });
   }
   for (const v of a.no) { try { await notaDellaGovernante(v.giorno, null, `${v.testo}${v.chi ? ` (${v.chi})` : ""}`, true); n.no++; } catch (e) { console.warn("nota", e); } }
+  // 1.38.0: le ore scritte dalle signore → nel documento del giorno (oreDette); la paga a ore le usa dove manca il cronometro
+  for (const v of (a.ore || [])) {
+    const id = L.idVisto(v.zona, v.giorno), dati = { zona: v.zona, data: v.giorno, oreDette: { minuti: v.minuti, dove: v.dove || "", chi: v.chi || "", testo: v.messaggio || "", da: "whatsapp", quando: adesso } };
+    S.visti[id] = { ...(S.visti[id] || {}), ...dati, id };
+    ops.push({ tipo: "salva", coll: "visti", id, merge: true, dati }); n.ore++;
+  }
+  // 1.38.0: i numeri di telefono → nella scheda dell'ospite di quella camera, oppure nella rubrica (mai all'IA)
+  const inRubrica = [];
+  for (const v of (a.te || [])) {
+    if (v.soggiorno && S.soggiorni && S.soggiorni[v.soggiorno]) { ops.push({ tipo: "aggiorna", coll: "soggiorni", id: v.soggiorno, dati: { telefono: v.telefono } }); n.te++; }
+    else inRubrica.push({ nome: v.nome || (v.camera ? camera(v.camera).nome : "") || "?", telefono: v.telefono, chi: v.chi || "", camera: v.camera || "", quando: oggi, messaggio: v.messaggio || "" });
+  }
+  if (inRubrica.length) { try { await aggiungiInRubrica(inRubrica); n.te += inRubrica.length; } catch (e) { console.warn("rubrica", e); } }
   if (ops.length) await S.db.scrivi(ops);
   return n;
+}
+// 1.38.0: la rubrica dei numeri arrivati dalle chat (importazioni/rubrica: solo i titolari): si legge e si scrive in un colpo
+async function aggiungiInRubrica(voci) {
+  const r = (await S.db.leggi("importazioni", "rubrica")) || {}, lista = Array.isArray(r.voci) ? r.voci.slice() : [];
+  for (const v of voci) { const i = lista.findIndex(x => x && telefonoPulito(x.telefono) === telefonoPulito(v.telefono)); if (i >= 0) lista[i] = { ...lista[i], ...v, nome: v.nome && v.nome !== "?" ? v.nome : lista[i].nome }; else lista.push(v); }
+  await S.db.salva("importazioni", "rubrica", { voci: lista.slice(-200), aggiornato: S.db.adesso() }, false);
+  S.rubrica = lista;
 }
 
 // ---- 0.99: LE CHAT DI WHATSAPP (papà e il gruppo "Albergo"), CON I VOCALI E LE FOTO, E L'AVVISO SUL TELEFONO -----------
@@ -10662,7 +10724,7 @@ async function trascriviVocali(vocali, media, avanza) {
         catch (e) { console.warn("vocale", e); }
       }
       if (parti.length) {
-        const sistema = LET.istruzioniTrascrizione(nomiCamere, parti.length);
+        const sistema = LET.istruzioniTrascrizione(nomiCamere, parti.length, { signore: zoneAttive().map(z => SIG(z)) });   // 1.38.0
         try {
           const { r } = await chiediLettura({ sistema, storia: [], testo: LET.testoTrascrizione(parti.length), immagine: parti.map(p => ({ mime: p.mime, dati: p.dati })), secondi: 120, maxToken: 8000 });
           const j = jsonDaRisposta(r.grezzo), lista = j && Array.isArray(j.vocali) ? j.vocali : [];
@@ -10705,12 +10767,12 @@ function letturaDaControllare() { const d = S.dett; return !!(d && d.ia && !d.ia
 // 1.18.0: le cose trovate da Sofia in una lettura, contate (per l'avviso, la striscia e il giro)
 function riassuntoLettura(x) {
   x = x || {};
-  return { cambi: (x.righe || []).filter(r => r.azione !== "niente").length, indicazioni: (x.indicazioni || []).length, assenze: (x.assenze || []).length, guasti: (x.guasti || []).length, spesa: (x.spesa || []).length, note: (x.note || []).length };
+  return { cambi: (x.righe || []).filter(r => r.azione !== "niente").length, indicazioni: (x.indicazioni || []).length, assenze: (x.assenze || []).length, guasti: (x.guasti || []).length, spesa: (x.spesa || []).length, note: (x.note || []).length, ore: (x.ore || []).length, telefoni: (x.telefoni || []).length };
 }
-function haCoseLettura(x) { const r = riassuntoLettura(x); return !!(r.cambi || r.indicazioni || r.assenze || r.guasti || r.spesa || r.note); }
+function haCoseLettura(x) { const r = riassuntoLettura(x); return !!(r.cambi || r.indicazioni || r.assenze || r.guasti || r.spesa || r.note || r.ore || r.telefoni); }
 function testoRiassunto(r) {
   const p = (n, uno, tanti) => n ? `${n} ${n === 1 ? uno : tanti}` : "";
-  return [p(r.cambi, "cambio nel prospetto", "cambi nel prospetto"), p(r.indicazioni, "indicazione per le signore", "indicazioni per le signore"), p(r.assenze, "assenza", "assenze"), p(r.guasti, "guasto", "guasti"), p(r.spesa, "cosa da comprare", "cose da comprare"), p(r.note, "cosa da sapere", "cose da sapere")].filter(Boolean).join(" · ");
+  return [p(r.cambi, "cambio nel prospetto", "cambi nel prospetto"), p(r.indicazioni, "indicazione per le signore", "indicazioni per le signore"), p(r.assenze, "assenza", "assenze"), p(r.guasti, "guasto", "guasti"), p(r.spesa, "cosa da comprare", "cose da comprare"), p(r.note, "cosa da sapere", "cose da sapere"), p(r.ore, "orario scritto da una signora", "orari scritti dalle signore"), p(r.telefoni, "numero di telefono", "numeri di telefono")].filter(Boolean).join(" · ");
 }
 function bannerLettura() {
   if (S.foglio && S.foglio.tipo === "dettatura") return "";
@@ -10930,6 +10992,23 @@ function pulisciPostaVecchia() {
   const vecchie = Object.values(S.posta || {}).filter(p => p && p.letto && Date.now() - (Number(p.ts) || 0) > 7 * 86400000).map(p => p.id);
   if (vecchie.length) cancellaPosta(vecchie);
 }
+// 1.38.0: la rubrica: i numeri di telefono arrivati dalle chat (tecnici, fornitori, ditte) che Sofia ha messo da parte.
+// Quelli degli ospiti stanno nella scheda dell'ospite (si vedono toccando la camera). Mai all'intelligenza artificiale.
+let rubricaChiesta = false;
+function cardRubrica() {
+  if (!proprietario()) return "";
+  if (S.rubrica === undefined && !rubricaChiesta) { rubricaChiesta = true; S.db.leggi("importazioni", "rubrica").then(r => { S.rubrica = (r && Array.isArray(r.voci)) ? r.voci : []; if (S.vista === "altro") disegna(); }).catch(() => { S.rubrica = []; }); }
+  const voci = Array.isArray(S.rubrica) ? S.rubrica.slice().reverse() : [];
+  const tel = (v) => `<a href="tel:${esc(String(v.telefono || "").replace(/[^\d+]/g, ""))}">📞 ${esc(telBello(v.telefono))}</a>`;
+  return `<section class="card rubrica-card"><h2 style="margin:0 0 4px">Rubrica</h2><p class="muted small" style="margin:0 0 8px">I numeri che arrivano nelle chat (tecnici, fornitori, ditte): ${esc(nomeGov())} li mette qui quando li spunti in una lettura. I numeri degli ospiti stanno nella scheda dell'ospite: toccate la camera nel prospetto. Li vedete solo voi.</p>
+    ${S.rubrica === undefined ? `<p class="muted small" style="margin:0">Un attimo…</p>` : voci.length ? `<div class="rows">${voci.slice(0, 40).map((v, i) => `<div class="row rubrica-riga"><span><b>${esc(v.nome || "?")}</b>${v.chi ? ` <span class="muted small">· ${esc(v.chi)}</span>` : ""}${v.camera && camera(v.camera).id ? ` <span class="muted small">· ${esc(camera(v.camera).nome)}</span>` : ""}<br>${tel(v)}${v.messaggio ? `<br><span class="muted small">«${esc(v.messaggio)}»</span>` : ""}</span><button type="button" class="btnsm ghost" data-rubrica-togli="${voci.length - 1 - i}">Togli</button></div>`).join("")}</div>` : `<p class="muted small" style="margin:0">Ancora vuota.</p>`}</section>`;
+}
+async function togliDaRubrica(i) {
+  const lista = Array.isArray(S.rubrica) ? S.rubrica.slice() : []; if (!(i >= 0 && i < lista.length)) return;
+  lista.splice(i, 1); S.rubrica = lista; disegna();
+  try { await S.db.salva("importazioni", "rubrica", { voci: lista, aggiornato: S.db.adesso() }, false); } catch (e) { erroreScrittura(e); }
+}
+document.addEventListener("click", (e) => { const b = e.target && e.target.closest ? e.target.closest("[data-rubrica-togli]") : null; if (b) togliDaRubrica(Number(b.dataset.rubricaTogli)); });
 function cardPonte() {
   if (!proprietario()) return "";
   const p = pontePrincipale(), nome = nomeGov();
@@ -11335,7 +11414,7 @@ function collegaFoglio() {
     document.querySelectorAll("[data-sofia-ind]").forEach(c => c.onchange = () => { const v = (d.ia && d.ia.indicazioni || []).find(x => x.k === c.dataset.sofiaInd); if (v) v.scelta = c.checked; disegnaFoglio(); });
     document.querySelectorAll("[data-sofia-ab]").forEach(c => c.onchange = () => { const v = (d.ia && d.ia.abitudini || []).find(x => x.k === c.dataset.sofiaAb); if (v) v.scelta = c.checked; disegnaFoglio(); });
     // 1.18.0: assenze, guasti, spesa, note
-    for (const [attr, campo, lista] of [["ass", "scelta", "assenze"], ["passa", "passa", "assenze"], ["gua", "scelta", "guasti"], ["spe", "scelta", "spesa"], ["not", "scelta", "note"]]) document.querySelectorAll(`[data-sofia-${attr}]`).forEach(c => { c.onclick = (e) => e.stopPropagation(); c.onchange = () => { const v = ((d.ia && d.ia[lista]) || []).find(x => x.k === c.getAttribute(`data-sofia-${attr}`)); if (v) v[campo] = c.checked; disegnaFoglio(); }; });
+    for (const [attr, campo, lista] of [["ass", "scelta", "assenze"], ["passa", "passa", "assenze"], ["gua", "scelta", "guasti"], ["spe", "scelta", "spesa"], ["not", "scelta", "note"], ["ore", "scelta", "ore"], ["tel", "scelta", "telefoni"]]) document.querySelectorAll(`[data-sofia-${attr}]`).forEach(c => { c.onclick = (e) => e.stopPropagation(); c.onchange = () => { const v = ((d.ia && d.ia[lista]) || []).find(x => x.k === c.getAttribute(`data-sofia-${attr}`)); if (v) v[campo] = c.checked; disegnaFoglio(); }; });
     document.querySelectorAll("[data-dett-scarta]").forEach(b => b.onclick = () => scartaLettura());
     document.querySelectorAll("[data-dett-base]").forEach(b => b.onclick = () => { d.base = b.dataset.dettBase; d.scelte = {}; d.comportamenti = {}; disegnaFoglio(); });
     document.querySelectorAll("[data-dett-parla]").forEach(b => b.onclick = () => parlaDettatura(f));
