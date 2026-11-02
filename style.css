@@ -7054,3 +7054,53 @@ body.semplice .sf-sofia{border-color:rgba(43,58,74,.82);border-radius:20px 24px 
   body.con-mic .sg-finito{right:86px}
   body.con-compagna .sg-finito{font-size:21px;padding:0 10px}
 }
+
+/* ===================================================================================================================
+   1.33.0 · CHIARO SUL TELEFONO (Michele, 2/11, dal suo telefono): il disegno della camera coi numeri che lampeggiano e la
+   legenda sotto (niente scritte accavallate); nella camera aperta via la figurina di Sofia dalla scheda: resta il
+   microfono a fianco e, quando parla, esce lei intera per tutto il tempo; i lavori a fondo col disegnino giusto; la scena
+   di Sofia sugli schermi larghi tutta intera (non mezza testa).
+   =================================================================================================================== */
+/* la scheda «Sofia ti dice» senza la figurina */
+.sf-sofia.senza-figura{grid-template-columns:minmax(0,1fr) 46px;padding-left:16px}
+/* i lavori a fondo: il disegnino del catalogo nel suo quadratino (prima la parola «finestra» si accavallava al nome) */
+body.semplice .sf-passo-i{display:grid;place-items:center;width:32px;height:32px;overflow:hidden;font-size:22px}
+body.semplice .sf-passo-i svg{width:26px;height:26px;color:#B36B00;stroke-width:2.2}
+/* ---- il disegno della camera: numeri che lampeggiano sulla cosa da pulire, legenda sotto ---- */
+.mt-camera{padding:10px 8px 10px}
+.mt-camera-t b{color:#7A4E00}
+.mt-disegno .mt-eti{font-size:13px;stroke-width:3.5px}
+.mt-segno .mt-tondo{fill:#FFD64D;stroke:#8A5A00;stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:mtLampeggia 1.3s ease-in-out infinite;filter:drop-shadow(0 2px 0 rgba(43,58,74,.3))}
+.mt-segno.fondo .mt-tondo{fill:#FFF3C4;stroke:#B36B00;animation-duration:2.2s}
+.mt-segno .mt-onda{fill:none;stroke:#E8A400;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:mtOnda 1.3s ease-out infinite}
+.mt-segno.fondo .mt-onda{stroke:#D9A43F;animation-duration:2.2s}
+.mt-segno .mt-num{font:700 15px/1 var(--f-gioco,var(--f-display));fill:#2B1A00;text-anchor:middle}
+.mt-segno .mt-mini{font:700 12px/1 system-ui;fill:#8A5A00;paint-order:stroke;stroke:#FFFDF7;stroke-width:3px;stroke-linejoin:round}
+@keyframes mtLampeggia{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+@keyframes mtOnda{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.1);opacity:0}}
+.mt-legenda{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+.mt-legenda li{display:grid;grid-template-columns:30px 32px minmax(0,1fr);align-items:center;column-gap:9px;padding:7px 10px;border:2px solid rgba(43,58,74,.4);border-radius:12px 14px 11px 13px/14px 11px 13px 12px;background:#FFFFFF}
+.mt-legenda li.stella{background:repeating-linear-gradient(-48deg,rgba(217,142,11,.14) 0 1.5px,transparent 1.5px 6px),#FFF8E1;border-color:rgba(138,90,0,.55)}
+.mt-legenda li b{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#FFD64D;border:2px solid #8A5A00;font:700 15px/1 var(--f-gioco,var(--f-display));color:#2B1A00}
+.mt-legenda li.fondo b{background:#FFF3C4;border-color:#B36B00}
+.mt-legenda li i{display:grid;place-items:center;width:32px;height:32px;font-style:normal;font-size:22px;line-height:1}
+.mt-legenda li i svg{width:28px;height:28px;color:#3E5568;stroke-width:2.2}
+.mt-legenda li span{font:700 16.5px/1.25 var(--f-gioco,var(--f-display));color:#2B3A4A;overflow-wrap:anywhere}
+.mt-legenda li small{display:block;margin-top:2px;font:600 12.5px/1.2 var(--f-gioco,var(--f-body));color:#7A4E00}
+.mt-did{margin:8px 4px 0;font:600 13px/1.3 var(--f-gioco,var(--f-body));color:#5B6B7A}
+@media (prefers-reduced-motion:reduce){.mt-segno .mt-tondo,.mt-segno .mt-onda{animation:none}}
+/* ---- Sofia a fianco anche nella camera aperta (è lei che parla: la figurina nella scheda non c'è più) ---- */
+.sg-compagna.sg-intera.piccola{width:152px;height:270px}
+body.con-mic .sheet .inizio.sig.sf,body.con-compagna .sheet .inizio.sig.sf{padding-bottom:124px}
+body.con-compagna .sg-nuvola.piccola{right:160px;bottom:calc(var(--alto-sotto,71px) + 120px + env(safe-area-inset-bottom,0px))}
+/* ---- la scena di Sofia sugli schermi larghi (computer, tablet): tutta lei, col corridoio sfumato ai lati ---- */
+@media (min-aspect-ratio:4/5){
+  body.semplice.argon .gs-hero .gs-sofia-fig{background:#DCE8E5}
+  body.semplice.argon .gs-hero .gs-sofia-fig::before{content:"";position:absolute;inset:-26px;background:url(capo-poster.webp) center 35%/cover no-repeat;filter:blur(24px) saturate(.85);opacity:.9;pointer-events:none}
+  body.semplice.argon .gs-hero .gs-sofia-fig .gs-film-posto{z-index:1}
+  body.semplice.argon .gs-hero .gs-sofia-fig .gov-film video{object-fit:contain;object-position:50% 100%}
+}
+@media (max-width:374px){
+  .mt-legenda li span{font-size:15px}
+  .sg-compagna.sg-intera.piccola{width:136px;height:242px}
+}
