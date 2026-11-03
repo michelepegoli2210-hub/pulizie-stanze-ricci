@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.43.0";
+export const VERSIONE = "1.44.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1840,7 +1840,7 @@ function bloccoSignora(b, p, statoRiga, motivoRiga, aperta) {
   const tasto = b.righe.length && !argonLei() ? `<button class="sig-blocco-fatto ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>Fatto</span>`}</button>` : "";
   // 0.99.1 (Argon): nella vista semplice il tasto e' UNO, grande, in fondo alla parte (prima si legge, poi si tocca)
   const giu = b.righe.length && !argonLei() ? `<button class="sig-blocco-fatto giu ${st || ""}" data-spunta="${esc(p.id)}|${esc(b.k)}" ${aperta ? "" : "disabled"} aria-pressed="${st === "fatta"}">${st === "fatta" ? `${ICONA("spunta")}<span>Fatto: ${esc(b.nome.toLowerCase())}</span>` : st === "non" ? `<span>✕ Non fatto</span>` : `<span>✓ Fatto: ${esc(b.nome.toLowerCase())}</span>`}</button>` : "";
-  return `<section class="sig-box sig-blocco ${st || ""}"><div class="sig-blocco-t"><div><div class="sig-sez-t">${esc(b.nome)}</div>${st === "non" && motivo ? `<div class="sig-non-perche">${esc(motivo)}</div>` : ""}</div>${tasto}</div>
+  return `<section class="sig-box sig-blocco ${st || ""}"><div class="sig-blocco-t"><div><div class="sig-sez-t">${esc(b.nome)}</div>${st === "non" && motivo ? `<div class="sig-non-perche">${esc(motivo)}</div>` : ""}</div>${tasto}</div>${figuraLavoro(b.id, !!(p && /tot|cambio/i.test(String(p.tipo || ""))))}
     <div class="sig-lista">${b.righe.map(r => rigaSignora(r, p, st, aperta, "")).join("")}${b.stelle.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div>${giu}</section>`;
 }
 function foglioInizio(f) {
@@ -3811,10 +3811,11 @@ function sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) {
   const blocchi = (lista.blocchi || []).filter(b => b.righe && b.righe.length);
   const righeZ = lista.zona && lista.zona.length ? righeZona(lista) : [];
   if (!blocchi.length && !righeZ.length) return "";
-  const passo = (k, i, ico, nome, quante, dentro, cls = "") => `<details class="sf-passo${cls ? " " + cls : ""}" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">${i}</span><span class="sf-passo-i" aria-hidden="true">${ico}</span><span class="sf-passo-t">${esc(nome)}<small>${quante}</small></span></summary><div class="sf-passo-x"><div class="sig-lista">${dentro}</div></div></details>`;
-  const html = blocchi.map((b, i) => passo(`${p.id}|b${b.id || i}`, i + 1, ICO_BLOCCO[b.id] || "•", b.nome, `${b.righe.length} ${b.righe.length === 1 ? "cosa" : "cose"}`, b.righe.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join(""), b.id ? "b-" + b.id : ""));
+  const totale = !!(lista.passo && lista.passo.tipo === "totale");
+  const passo = (k, i, ico, nome, quante, dentro, cls = "", figura = "") => `<details class="sf-passo${cls ? " " + cls : ""}" data-come="${esc(k)}"${comeAperti.has(k) ? " open" : ""}><summary><span class="sf-passo-n">${i}</span><span class="sf-passo-i" aria-hidden="true">${ico}</span><span class="sf-passo-t">${esc(nome)}<small>${quante}</small></span></summary><div class="sf-passo-x">${figura}<div class="sig-lista">${dentro}</div></div></details>`;
+  const html = blocchi.map((b, i) => passo(`${p.id}|b${b.id || i}`, i + 1, ICO_BLOCCO[b.id] || "•", b.nome, `${b.righe.length} ${b.righe.length === 1 ? "cosa" : "cose"}`, b.righe.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join(""), b.id ? "b-" + b.id : "", figuraLavoro(b.id, totale)));   // 1.44.0: la figura del lavoro
   if (righeZ.length) html.push(passo(`${p.id}|zona`, blocchi.length + 1, "🪜", "Poi scale, corridoio e lavanderia", `${righeZ.length} ${righeZ.length === 1 ? "cosa" : "cose"}`, righeZ.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")));
-  return `<section class="sf-seq"><div class="sf-seq-t">Cosa fare, in ordine</div>${html.join("")}<p class="sf-seq-aiuto">Tocca un passo per vedere tutte le cose.</p></section>`;
+  return `<section class="sf-seq"><div class="sf-seq-t">Cosa fare, in ordine</div>${html.join("")}<div class="sf-finale"><img class="lavoro-img" src="lavoro-finale.webp" alt="" aria-hidden="true"><p class="sf-seq-aiuto">Prima di chiudere: luce spenta, finestra come la vuole l'ospite, niente fuori posto. Tocca un passo per vedere tutte le cose.</p></div></section>`;   // 1.44.0
 }
 // «Ascolta» dentro la camera: la dice Sofia (si muove lei, a fianco, con la nuvoletta)
 document.addEventListener("click", (e) => {
@@ -4536,6 +4537,17 @@ function disegnaStanze() {
 }
 // l'immagine di Gemini c'è? la si mostra; se manca (404) resta il disegnino a matita (l'evento error non risale: si prende in cattura)
 document.addEventListener("error", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("stanza-img")) { img.remove(); } }, true);
+// 1.44.0: LE FIGURE DEL LAVORO PER LE SIGNORE (lavoro-<blocco>.webp): Sofia vestita da addetta mostra il gesto di quel blocco
+// (letto, bagno, camera, pavimenti, partenza, cucina; «biancheria» per il cambio completo del letto, «finale» prima di chiudere).
+// Si vedono appena ci sono (evento load); se il file manca (404) la figura si toglie e resta solo la lista.
+const FIGURE_LAVORO = { letto: "letto", bagno: "bagno", camera: "camera", pavimenti: "pavimenti", partenza: "partenza", cucina: "cucina", sopra: "letto" };
+function figuraLavoro(blocco, totale) {
+  let id = FIGURE_LAVORO[blocco] || ""; if (!id) return "";
+  if (blocco === "letto" && totale) id = "biancheria";
+  return `<img class="lavoro-img" src="lavoro-${id}.webp" alt="" aria-hidden="true">`;
+}
+document.addEventListener("error", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("lavoro-img")) { img.remove(); } }, true);
+document.addEventListener("load", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("lavoro-img")) { img.classList.add("pronta"); } }, true);
 document.addEventListener("load", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("stanza-img")) { const f = img.closest(".stanza-fig"); if (f) f.classList.add("con-foto"); } }, true);
 
 // ---- la tendina della segretaria -------------------------------------------------------------------------------------

@@ -7331,3 +7331,11 @@ body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma)
 :root[data-theme="dark"] body.premium .nonna-link,:root[data-theme="dark"] body.premium .inizio-indietro,:root[data-theme="dark"] body.semplice .nonna-link,:root[data-theme="dark"] body.semplice .inizio-indietro{background:#26221D;border-color:#3F382F;color:#E8C98A}
 :root[data-theme="dark"] body.premium .nonna-link.rosso,:root[data-theme="dark"] body.semplice .nonna-link.rosso{background:#3B1515;color:#FCA5A5}
 :root[data-theme="dark"] body.premium .big.warn,:root[data-theme="dark"] body.semplice .big.warn{background:#991B1B;color:#FFFFFF}
+
+/* ---- 1.44.0: LE FIGURE DEL LAVORO PER LE SIGNORE (si vedono solo quando il file c'è) ---- */
+.lavoro-img{display:none;width:100%;aspect-ratio:22/17;object-fit:cover;border-radius:14px;margin:2px 0 8px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.lavoro-img.pronta{display:block}
+.sf-passo-x .lavoro-img{margin:6px 0 10px}
+.sig-blocco .lavoro-img{margin:0 0 10px}
+.sf-finale{margin-top:10px}
+.sf-finale .lavoro-img{border-radius:16px}
