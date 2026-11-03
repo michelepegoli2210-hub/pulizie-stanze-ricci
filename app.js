@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.47.0";
+export const VERSIONE = "1.48.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8603,13 +8603,32 @@ function collegaChat() {
   document.querySelectorAll("[data-chat-wa]").forEach(b => b.onclick = () => { const r = S.chat.risposte[b.dataset.chatWa]; if (r && r.whatsapp) apriWhatsApp(r.whatsapp); });
   document.querySelectorAll("[data-conv]").forEach(b => b.onclick = () => { const [i, k] = b.dataset.conv.split("|"); b.disabled = true; rispondiParole(Number(i), k); });
   const fp = document.getElementById("formParla");
+  const corpo = document.querySelector(".chat-corpo");
+  // 1.48.0: LA CASELLA PER SCRIVERE NON COPRE L'ULTIMO MESSAGGIO. La casella sta appiccicata in fondo allo schermo e la lista dei
+  // messaggi (.chat-corpo, che scorre da sola) arrivava fin sotto: le ultime righe restavano nascoste. Ora la lista è alta
+  // quanto lo spazio che c'è davvero sopra la casella (si rimisura quando la casella cresce e quando lo schermo cambia, per
+  // esempio con la tastiera aperta), e quando si apre o arriva un messaggio nuovo è scesa in fondo.
+  const misuraChat = () => {
+    if (!corpo) return;
+    const inFondo = corpo.scrollHeight - corpo.scrollTop - corpo.clientHeight < 40;
+    const pan = corpo.closest(".panel"), s = pan ? pan.scrollTop : 0;
+    const sopra = corpo.getBoundingClientRect().top + s, fh = fp ? fp.offsetHeight : 0;
+    const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    const fondo = pan ? Math.min(pan.getBoundingClientRect().bottom, vh) : vh;   // la casella si appiccica al fondo del pannello che scorre
+    corpo.style.maxHeight = Math.max(160, Math.floor(fondo - sopra - fh - 30)) + "px";
+    if (inFondo) corpo.scrollTop = corpo.scrollHeight;
+  };
   if (fp) { const ta = document.getElementById("parlaGov");
-    const cresci = () => { ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; };
+    const cresci = () => { ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; misuraChat(); };
     ta.oninput = cresci; cresci();
     ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); fp.requestSubmit(); } };
     fp.onsubmit = (e) => { e.preventDefault(); const t = ta.value.trim(); if (!t) { ta.focus(); return; } ta.value = ""; ta.style.height = "auto"; parlaGov(t); };
   }
-  const corpo = document.querySelector(".chat-corpo"); if (corpo && !corpo.dataset.scrollato) { corpo.dataset.scrollato = "1"; requestAnimationFrame(() => { corpo.scrollTop = corpo.scrollHeight; }); }
+  if (corpo) {
+    misuraChat();
+    if (!window._chatMisura) { window._chatMisura = () => { try { if (document.querySelector(".chat-corpo")) misuraChat(); } catch (e) {} }; window.addEventListener("resize", window._chatMisura); if (window.visualViewport) window.visualViewport.addEventListener("resize", window._chatMisura); }
+    if (!corpo.dataset.scrollato) { corpo.dataset.scrollato = "1"; requestAnimationFrame(() => { misuraChat(); corpo.scrollTop = corpo.scrollHeight; }); }
+  }
 }
 function salvaModo(k, patch) { const modi = { ...((S.gov && S.gov.modi) || {}) }; const cur = modi[k] || {}; modi[k] = { ...cur, ...patch, budget: { ...(cur.budget || {}), ...(patch.budget || {}) }, stelle: { ...(cur.stelle || {}), ...(patch.stelle || {}) } }; return salvaGov({ modi }); }
 async function salvaSpesa(nuovo) { S.spesa = nuovo; disegna(); try { await S.db.salva("impostazioni", "spesa", nuovo, false); } catch (e) { erroreScrittura(e); } }

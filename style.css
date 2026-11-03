@@ -7349,3 +7349,7 @@ body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma)
 .mt-camera + .mt-camera{margin-top:14px}
 
 /* ---- 1.47.0: niente di nuovo nello stile: le mappe delle zone comuni usano .mt-foto della 1.45 ---- */
+
+/* ---- 1.48.0: Parla con Sofia: la lista dei messaggi non arriva più sotto la casella per scrivere (l'altezza vera la mette
+   il codice, misuraChat; questa è la riserva se il codice non è ancora passato) ---- */
+.chat-corpo{max-height:calc(100dvh - 240px);padding-bottom:10px;scroll-padding-bottom:10px}

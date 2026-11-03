@@ -2470,3 +2470,11 @@ Michele: «Per le stelle nel corridoio, sul terrazzo, negli spazi comuni, anche 
 - IL BAGNO RIFATTO: al quarto tentativo Gemini ha messo la porta del bagno in primo piano sulla parete di destra, aperta verso fuori, senza coprire niente: tutte le coordinate del bagno rilette. La camera resta quella della 1.45 (il tentativo con la zanzariera è venuto in verticale, inutilizzabile): «zanzariera» punta alla finestra.
 - NIENTE «€» SULLE STELLE con la paga a ore (pagaAOre): nella tessera «Altre camere» del titolare e della signora, nella testata e nella guida della scheda «Altre camere», nelle righe delle rifiniture (righeGiro: niente «N min · €»), nei controlli e nei difetti del Visto. Il valore in euro resta dentro (serve al piano e ai conti quando la paga torna a camera).
 - Prove: prova1470 (le mappe delle zone comuni nel disegno: scale, corridoio, terrazzo, lavanderia, ingresso con le <image> e i posti; il balcone come mappa; il bagno con la porta; niente «€» sulle stelle a ore) più tutto quello della 1.46.
+
+## 148. La 1.48.0 (3 novembre, sera): PARLA CON SOFIA, LA CASELLA NON COPRE PIÙ L'ULTIMO MESSAGGIO
+
+Michele (dal telefono, con la schermata): «Nella chat di Sofia non riesco a vedere al di sotto che cosa mi sta chiedendo, per via del riquadro dove devo inserire il testo».
+
+- IL DIFETTO: la lista dei messaggi (.chat-corpo) scorre da sola ed era alta «schermo meno 150 px»; la casella per scrivere (.chat-parla) sta appiccicata in fondo allo schermo (sticky). La lista arrivava fin sotto la casella, e siccome la lista tiene lo scorrimento per sé (overscroll-behavior: contain) la pagina fuori non scorreva mai: le ultime 80-130 px dell'ultimo messaggio restavano nascoste dietro la casella.
+- LA CORREZIONE (misuraChat): la lista è alta quanto lo spazio che c'è davvero tra la sua cima e la casella (schermo visibile − dove comincia − altezza della casella − 16 px); si rimisura quando la casella cresce (il testo va a capo), quando lo schermo cambia (tastiera aperta: visualViewport) e a ogni disegno; se era in fondo resta in fondo. Riserva in CSS: max-height calc(100dvh − 240px).
+- Prove: prova1480 (una conversazione lunga nella chat: l'ultimo messaggio finisce sopra la casella, anche con la casella cresciuta a tre righe; la lista è scesa in fondo) più tutto quello della 1.47.
