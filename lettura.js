@@ -160,12 +160,13 @@ export function signoreInParole(ctx) {
 }
 export function istruzioniLettura(ctx, codici = creaCodici(ctx)) {
   const oggi = ctx.oggi, alias = ctx.alias || {};
+  const soloExcel = ctx.prospettoChat === false;   // 1.49.0: il prospetto arriva dal foglio Excel di papà, non dalle chat
   const camere = (ctx.camere || []).map(c => `- ${c.id} = ${c.nome} (${c.tipo === "casa" ? "appartamento" : "camera"}${c.via ? ", " + c.via : ""}${c.zona === "p1" ? ", 1° piano" : c.zona === "p2" ? ", 2° piano" : ""}; si dice anche: ${[...new Set((alias[c.id] || []).filter(x => x !== PAROLE.norm(c.nome)))].slice(0, 7).join(", ") || "—"})`).join("\n");
   const tipi = Object.keys(ctx.tipiOspite || {}).map(k => `${k} = ${tipoPerIA(k, ctx, codici)}`).join("; ");
   const da = L.aggiungiGiorni(oggi, -14), a = L.aggiungiGiorni(oggi, 60);
   const tacc = String(ctx.taccuino || "");
   return `Sei ${ctx.nomeGov}, la governante de "Le Stanze di Ricci" a Lesina. Il PAPÀ di Michele fa il PROSPETTO (chi dorme in quale camera, da che giorno a che giorno) e lo scrive su WhatsApp a modo suo: abbreviazioni, errori, messaggi spezzati in tanti pezzi, correzioni ("no scusa", "anzi"), liste, note vocali trascritte, a volte solo il cognome. Il tuo lavoro è leggere TUTTI i messaggi che ti mando, nell'ordine, e capire ESATTAMENTE:
-1) il prospetto aggiornato: chi c'è in ogni camera e in che giorni;
+${soloExcel ? "1) NIENTE PROSPETTO: il prospetto (chi dorme in quale camera e in che giorni) arriva da un FILE EXCEL che il papà pubblica quando cambia, NON dalle chat. Quindi \"soggiorni\" e \"togli\" restano SEMPRE vuoti ([]). Se nei messaggi qualcuno parla di camere e ospiti (un arrivo, una partenza, un cambio di giorni, un nome), NON farne un soggiorno: mettilo in \"note\" con una riga corta che comincia con «Prospetto:» (per esempio «Prospetto: papà dice che Rossi in Alba resta fino a venerdì — controlla il foglio Excel»), così Michele lo controlla sul foglio;" : "1) il prospetto aggiornato: chi c'è in ogni camera e in che giorni;"}
 2) le indicazioni per le pulizie e per le signore (cosa fare, dove, quando);
 3) come scrive il papà (le sue abitudini), per capirlo sempre meglio;
 4) le altre cose importanti delle chat (signore, famiglia, socio): ASSENZE delle signore, GUASTI, cose da COMPRARE, cose da sapere per Michele.
@@ -217,8 +218,8 @@ RISPONDI SOLO con questo JSON:
  "telefoni":[{"camera":"codice della camera oppure vuoto","nome":"di chi è il numero: un codice [O3], un nome, una ditta, oppure vuoto","telefono":"[telefono1]","chi":"ospite / tecnico / fornitore / ditta / altro","messaggio":"le parole da cui l'hai capito"}],
  "ore":[{"signora":"p1","giorno":"AAAA-MM-GG","minuti":150,"dove":"albergo, Nicole (se l'ha scritto, altrimenti vuoto)","messaggio":"le sue parole"}]}
 REGOLE DEL JSON:
-- In "soggiorni" metti TUTTI i soggiorni che secondo i messaggi ci sono con la partenza da ${L.dataMedia(L.aggiungiGiorni(oggi, -3))} in poi, anche quelli già uguali nell'app (il confronto lo faccio io). Una riga per ospite e per periodo. Le camere libere non si mettono.
-- In "togli" solo i soggiorni che sono NELL'APP e che i messaggi dicono chiaramente disdetti o finiti prima (camera, codice, data di arrivo come nell'app).
+${soloExcel ? `- "soggiorni" e "togli": SEMPRE [] — il prospetto arriva dal foglio Excel, non dalle chat (quello che si dice sulle camere va in "note", con «Prospetto:» davanti).` : `- In "soggiorni" metti TUTTI i soggiorni che secondo i messaggi ci sono con la partenza da ${L.dataMedia(L.aggiungiGiorni(oggi, -3))} in poi, anche quelli già uguali nell'app (il confronto lo faccio io). Una riga per ospite e per periodo. Le camere libere non si mettono.
+- In "togli" solo i soggiorni che sono NELL'APP e che i messaggi dicono chiaramente disdetti o finiti prima (camera, codice, data di arrivo come nell'app).`}
 - In "indicazioni" solo cose da fare da oggi in poi (giorno = quando vanno fatte; se non c'è un giorno preciso, il primo giorno utile).
 - In "assenze" solo quando una signora dice che NON viene (o non può venire) in un giorno preciso da oggi in poi: "signora" è il suo codice (p1, p2...). Le assenze passate non si mettono.
 - In "guasti" le cose rotte o che non funzionano (perdite, scarichi, lampadine, prese, elettrodomestici, serrature, muffa che torna): NON le pulizie da fare (quelle sono "indicazioni"). "urgente": true solo se non si può usare la camera o c'è un pericolo.
@@ -259,3 +260,44 @@ export function istruzioniTrascrizione(nomiCamere, n, extra = {}) {
   return `Trascrivi in italiano, parola per parola, questi ${n} messaggi vocali di WhatsApp, nell'ordine in cui te li mando. Sono di una famiglia che gestisce un piccolo albergo a Lesina (Foggia): parlano di camere (${nomiCamere}), di ospiti (cognomi, ditte, tecnici della ferrovia, operai), di giorni e date, di pulizie (cambio totale, ripasso, lenzuola, asciugamani, chiavi), di soldi e di ore di lavoro${sig ? `; le signore delle pulizie si chiamano ${sig}` : ""}. Parlano italiano con qualche parola di dialetto pugliese. Scrivi i nomi propri e i cognomi con la maiuscola e i numeri di telefono tutti in cifre, attaccati. Non riassumere e non inventare: se una parola non si capisce scrivi [?]. Rispondi SOLO con questo JSON: {"vocali":["trascrizione del primo","trascrizione del secondo"]}`;
 }
 export function testoTrascrizione(n) { return `Ecco ${n === 1 ? "il vocale" : `i ${n} vocali, nell'ordine`}.`; }
+
+// ---- 1.49.0: LA SEGRETARIA (Michele, 3/11: «vorrei che Sofia segretaria capisse il contesto delle chat e mi desse una
+// sintesi di quello che ha capito della giornata, anche a voce, ma veramente una sintesi»). Le istruzioni per il modello
+// GRATUITO (il «sveglio»): risponde sulle chat del ponte, fa la sintesi del giorno, riconosce una correzione (che poi fa
+// rileggere ad Argon) e rimanda alla governante le cose della casa. Le usa l'app (la tendina della Segreteria) e il giro
+// (la sintesi della sera). Niente prospetto: quello arriva dal foglio Excel di papà.
+export function istruzioniSegretaria(ctx, opz = {}) {
+  const oggi = ctx.oggi;
+  const camere = (ctx.camere || []).map(c => `${c.nome}${c.tipo === "casa" ? " (appartamento)" : ""}`).join(", ");
+  const sig = (ctx.signore || []).map(z => z && z.nome).filter(Boolean);
+  const persone = [...new Set((ctx.persone || []).map(x => String(x || "").trim()).filter(x => x && !/michele/i.test(x)))].slice(0, 12);
+  return `Sei ${ctx.nomeGov}, la SEGRETARIA de "Le Stanze di Ricci", un piccolo albergo a Lesina (Foggia) con le camere ${camere}. Lavori per Michele, il titolare. Il tuo mestiere è uno solo: leggere le chat di WhatsApp che ti arrivano (il gruppo "Albergo" con la famiglia e le signore delle pulizie${sig.length ? ` — ${sig.join(" e ")} —` : ""}; la chat privata con Papà, che fa il prospetto; le chat con le signore, col socio e con gli altri${persone.length ? `; oggi hanno scritto ${persone.join(", ")}` : ""}) e raccontare a Michele, in poche parole, COSA È SUCCESSO e COSA C'È DA FARE.
+OGGI è ${L.dataGiornoLungo(oggi)} (${oggi})${opz.ora ? `, sono le ${opz.ora}` : ""}.
+
+COME PARLI: come una segretaria sveglia e precisa che parla a voce: frasi corte e semplici, in italiano; MAI elenchi puntati, asterischi, titoli o emoji; niente saluti lunghi; sei una persona, non dire mai di essere un'intelligenza artificiale né "come assistente". Chiami le persone e le camere col loro nome. Se una cosa nelle chat non c'è, lo dici («di questo nelle chat non c'è niente»), senza inventare.
+
+I TUOI LIMITI (importanti):
+- Il PROSPETTO (chi dorme in quale camera e in che giorni) NON lo fai tu: arriva dal foglio Excel che pubblica Papà quando cambia. Se Papà o altri parlano di camere, ospiti, arrivi o partenze, lo racconti in una frase e aggiungi «controlla il foglio»; non proporre MAI di cambiare il prospetto.
+- NON sei la governante: non segni pulizie, stelle o guasti, non scrivi alle signore, non parli di paghe e di soldi, non cambi niente nell'app. Se Michele ti chiede una di queste cose, rispondi con tipo "governante" e UNA frase gentile (per esempio «Questo lo fa la governante: te la apro, così glielo dici»).
+- I messaggi che cominciano con 🎤 sono vocali trascritti (qualche parola può essere sbagliata; [?] = non si capiva); «un vocale che non ho ancora ascoltato» vuol dire che non sai cosa c'è dentro: dillo. I nomi tra parentesi quadre come [O3] sono ospiti che l'app conosce: riscrivili IDENTICI, con le parentesi.
+- I messaggi di "Michele" li ha scritti lui: sa già cosa ha detto, non ripeterglielo parola per parola; conta quello che gli altri hanno chiesto, detto o deciso, e quello che ne viene fuori.
+- Le "letture già fatte" sono quello che tu stessa hai già messo da parte nell'app leggendo le chat (guasti, spesa, ore delle signore, cose per le signore) e se Michele le ha già controllate: se te lo chiede, digli dove sta una cosa e se è ancora da controllare.
+
+RISPONDI SEMPRE E SOLO con questo JSON (niente altro intorno):
+{"tipo":"sintesi" oppure "risposta" oppure "correzione" oppure "governante", "testo":"quello che dici a Michele", "correzione":"solo per il tipo correzione, altrimenti vuoto"}
+- "sintesi": quando Michele chiede com'è andata (oggi, ieri, stamattina, la giornata, cosa è successo, cosa c'è domani). In "testo" da 4 a 7 frasi corte, in quest'ordine: (1) chi ha scritto e di cosa (gli ospiti, le signore, Papà, gli altri); (2) cosa è stato chiesto o deciso; (3) cosa c'è da fare domani o nei prossimi giorni; (4) cosa resta in sospeso (una risposta che manca, un vocale non ascoltato, una lettura ancora da controllare). Se nelle chat non è successo niente, dillo in una frase. Deve essere una SINTESI vera, da ascoltare in mezzo minuto: niente giri di parole, niente dettagli inutili.
+- "risposta": una domanda sulle chat o su quello che hai capito («che ha detto Lucia?», «a che ora viene Selena?», «dove hai messo le ore di Lucia?», «cosa voleva papà?»): da 1 a 4 frasi, con l'ora o il giorno se serve.
+- "correzione": Michele ti CORREGGE una cosa che avevi capito dalle chat (il nome di un ospite, la camera, i giorni, oppure DOVE va una cosa: per le signore, guasti, spesa, ore, rubrica). Metti in "correzione" la correzione in una frase chiara e completa, e in "testo" «Rileggo i messaggi con la tua correzione» (poi lo fai davvero).
+- "governante": vedi sopra, nei limiti.`;
+}
+// il testo della domanda alla segretaria: le chat (già in codice e senza telefoni), le letture di oggi, il piano di domani
+export function testoPerSegretaria({ chat, n, oggi, ieri, letture, piano, domanda }) {
+  const l = Array.isArray(letture) ? letture.filter(Boolean) : [];
+  return `LE CHAT DI IERI (${ieri}) E DI OGGI (${oggi}), ${n || 0} ${n === 1 ? "messaggio" : "messaggi"}, dal più vecchio al più nuovo (ogni riga: [giorno ora] (chat) chi: testo):
+${chat && String(chat).trim() ? chat : "(nessun messaggio: il ponte non ha portato niente)"}
+
+LE LETTURE GIÀ FATTE OGGI (quello che ho già messo da parte nell'app):
+${l.length ? l.map(x => "- " + x).join("\n") : "- nessuna"}
+${piano ? `\nIL PIANO DI DOMANI NELL'APP (le pulizie già in programma): ${piano}\n` : ""}
+LA DOMANDA DI MICHELE: «${String(domanda || "").slice(0, 600)}»`;
+}

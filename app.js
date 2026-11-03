@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.48.0";
+export const VERSIONE = "1.49.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -122,7 +122,7 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr-riposo-3d.webm", poster: "segr-poster-3d.webp" };
+const FILM_SEGR = { riposo: "segr-riposo-3d.webm", parla: "segr-parla-3d.webm", poster: "segr-poster-3d.webp" };   // 1.49.0: anche «parla» (se il file manca resta quello fermo)
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -1521,6 +1521,7 @@ function disegna() {
   const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
   if (condivisoAtteso) guardaCondiviso();
   if (letturaAttesa) guardaLettura();
+  if (segreteriaAttesa) guardaSegreteria();   // 1.49.0
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
   try { indietroVista(); } catch (e) {}   // 1.7.0
 }
@@ -4445,7 +4446,7 @@ function abbinaSegreteria(messaggi, voci) {
 function vistaSegreteria() {
   const letture = segreteriaLetture();
   const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="sofia">${ICONA("indietro")}${esc(nomeGov())}</button></section>
-    <section class="sgr-testa"><h2>📨 Segreteria</h2><p>Quello che ${esc(nomeGov())} ha letto nelle chat e come l'ha capito: a sinistra i messaggi, a destra cosa ha capito. Dille se è giusto: con «Correggi» impara per la prossima volta.</p></section>`;
+    <section class="sgr-testa"><h2>📨 Segreteria</h2><p>Quello che ${esc(nomeGov())} ha letto nelle chat e come l'ha capito: a sinistra i messaggi, a destra cosa ha capito. Dille se è giusto: con «Correggi» impara per la prossima volta.${prospettoDalleChat() ? "" : " Il prospetto non passa da qui: arriva dal foglio Excel di papà."}</p></section>`;
   const banner = puoModificare() ? bannerLettura() : "";   // 1.41.0: le letture di WhatsApp vivono qui (non più nel prospetto)
   if (!letture.length) return testa + banner + `<section class="card"><p class="muted" style="margin:0">Ancora niente: alla prossima lettura di WhatsApp la trovi qui.</p></section>` + tendinaSegreteria() + `<div class="sgr-spazio" aria-hidden="true"></div>`;
   pulisciSegreteria(letture);
@@ -4502,25 +4503,33 @@ function correggiSegreteria(lid, k) {
 // senza la parte scritta, abbastanza sbiadita così che posso leggere»): un elemento solo, fisso in basso a destra, che non si
 // tocca (i tocchi passano sotto), sbiadito; col filmato ritagliato dove la trasparenza si può (ritaglioOK), se no la figura ferma.
 // Non si ricostruisce a ogni disegno (il filmato non riparte); sparisce appena si cambia pagina o si apre un foglio.
+// 1.49.0: mentre la segretaria parla (voceInCorso a tendina aperta) passa al filmato «parla» (segr-parla-3d.webm) con una
+// dissolvenza; se quel file non c'è ancora (404) resta quello fermo, per tutta la sessione.
+let segrParlaManca = false;
 function fantasmaSegreteria() {
   let f = document.getElementById("sgFantasma");
   let vuoi = false;
   try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && S.sgrAperta && !document.querySelector(".sheet")); } catch (e) {}   // 1.41.0: solo a tendina aperta (Michele: «troppo trasparente non va bene; quando la premo la vedo»)
-  if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) { f.hidden = true; const v = f.querySelector("video"); if (v) { try { v.pause(); } catch (e) {} } } }, 650); } return; }
+  if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su", "parla"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) { f.hidden = true; f.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); } }, 650); } return; }
   const rit = ritaglioOK();
   if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
   if (!f) {
     f = document.createElement("div"); f.id = "sgFantasma"; f.className = "sgr-fantasma in-tendina"; f.setAttribute("aria-hidden", "true"); f.hidden = true; f.dataset.rit = rit ? "1" : "";
-    f.innerHTML = rit ? `<video src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`;
-    const v = f.querySelector("video"), img = f.querySelector("img");
+    f.innerHTML = rit ? `<video class="sgr-f-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sgr-f-parla" src="${FILM_SEGR.parla}" muted playsinline loop preload="auto"></video>`}` : `<img src="${FILM_SEGR.poster}" alt="">`;
+    const v = f.querySelector("video.sgr-f-riposo"), vp = f.querySelector("video.sgr-f-parla"), img = f.querySelector("img");
     // finché i filmati da segretaria non ci sono (o non si caricano), la capo-governante di sempre
     if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.poster = FILM_CAPO_TRE.poster; v.src = FILM_CAPO_TRE.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
+    if (vp) vp.addEventListener("error", () => { segrParlaManca = true; vp.remove(); f.classList.remove("parla"); });   // 1.49.0: il filmato «parla» non c'è ancora
     if (img) img.onerror = () => { if (img.dataset.ripiego) return; img.dataset.ripiego = "1"; img.src = FILM_CAPO_TRE.poster; };
     document.body.appendChild(f);
   }
+  const parla = !!voceInCorso, vp = f.querySelector("video.sgr-f-parla");   // 1.49.0
+  if (vp) { if (parla && !f.classList.contains("parla")) { try { vp.play().catch(() => {}); } catch (e) {} } else if (!parla && f.classList.contains("parla")) { try { vp.pause(); } catch (e) {} } }
+  f.classList.toggle("parla", parla && !!vp);
   clearTimeout(f._via);
-  if (f.hidden) { f.hidden = false; const v = f.querySelector("video"); if (v) { try { v.play().catch(() => {}); } catch (e) {} } requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); }
+  if (f.hidden) { f.hidden = false; const v = f.querySelector("video.sgr-f-riposo"); if (v) { try { v.play().catch(() => {}); } catch (e) {} } requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); }
   else f.classList.add("su");
+  sgrPillAggiorna();
 }
 let segreteriaPulita = false;
 function pulisciSegreteria(letture) {
@@ -4634,53 +4643,123 @@ document.addEventListener("error", (e) => { const img = e.target; if (img && img
 document.addEventListener("load", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("lavoro-img")) { img.classList.add("pronta"); } }, true);
 document.addEventListener("load", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("stanza-img")) { const f = img.closest(".stanza-fig"); if (f) f.classList.add("con-foto"); } }, true);
 
-// ---- la tendina della segretaria -------------------------------------------------------------------------------------
-function tendinaSegreteria() {
-  const x = segreteriaLetture()[0], aperta = !!S.sgrAperta;
-  const chat = (x && Array.isArray(x.chat) ? x.chat : []).slice(-24);
-  const bolle = chat.map(m => `<div class="sgr-c-riga ${m.chi === "io" ? "io" : "lei"}"><div class="sgr-c-bolla">${esc(String(m.testo || "")).replace(/\n/g, "<br>")}</div></div>`).join("")
-    + (S.sgrScrive ? `<div class="sgr-c-riga lei"><div class="sgr-c-bolla pensa">${esc(nomeGov())} rilegge i messaggi…</div></div>` : "");
-  const quando = x && x.quando ? `${L.dataMedia(String(x.quando).slice(0, 10))}, ${L.oraBreve(x.quando)}` : "";
-  const benvenuto = x ? `<div class="sgr-c-riga lei"><div class="sgr-c-bolla">Dimmi cosa correggere della lettura di ${esc(quando)}: il nome di un ospite, i giorni, oppure dove va una cosa (prospetto, signore, guasti, spesa, ore, rubrica). Rileggo i messaggi con la tua correzione e ti riapro la lettura da salvare.</div></div>` : `<div class="sgr-c-riga lei"><div class="sgr-c-bolla">Ancora nessuna lettura: quando leggo WhatsApp, qui mi puoi correggere.</div></div>`;
-  const apri = x && x.esito === "da_controllare" && S.letturaCondivisa && S.letturaCondivisa.lid === x.lid ? `<button type="button" class="btnsm" data-sgr-apri>Apri la lettura e salva</button>` : "";
-  return `<section class="sgr-tendina ${aperta ? "aperta" : ""}" id="sgrTendina">
-    <button type="button" class="sgr-maniglia" data-sgr-tendina aria-expanded="${aperta}"><img class="sgr-m-viso" src="${FILM_CAPO.viso}" alt=""><span><b>${esc(nomeGov())}, la segretaria</b><small>${aperta ? "Tocca qui per chiudere" : x ? "Tocca per parlarle: correggi, sposta, chiedi" : "Tocca per parlarle"}</small></span><i class="sgr-m-freccia" aria-hidden="true">${aperta ? "⌄" : "⌃"}</i></button>
-    ${aperta ? `<div class="sgr-t-corpo"><div class="sgr-t-figura" aria-hidden="true"></div><div class="sgr-t-chat"><div class="sgr-c-msgs" id="sgrMsgs">${chat.length ? bolle : benvenuto + (S.sgrScrive ? bolle : "")}</div>${apri}
-      <form class="sgr-t-form" id="sgrScrivi" autocomplete="off"><input type="text" id="sgrTesto" placeholder="${x ? "Correggi o chiedi…" : "Ancora niente da correggere"}" maxlength="400" enterkeyhint="send" ${x ? "" : "disabled"}><button type="submit" class="sgr-t-manda" aria-label="Manda" ${x ? "" : "disabled"}>➤</button></form>
-      <p class="sgr-t-hint">Per esempio: «Il nome in Aurora è Bianchi» · «Le ore di Lucia vanno nelle paghe» · «Quello sulla doccia è un guasto in Alba»</p></div></div>` : ""}
-  </section>`;
+// ============================================================================
+//  1.49.0 SOFIA LA SEGRETARIA (Michele, 3/11 sera: «vorrei il microfono con Sofia segretaria, che la sua faccia mi esca a
+//  fianco e mi parli, come nella prima pagina; una sintesi di quello che ha capito della giornata, anche a voce, ma veramente
+//  una sintesi; il prospetto è un unico file che pubblica mio padre: non deve rinnovarlo ogni volta che parlo con lui nel
+//  gruppo; ci devono essere più distinzioni tra i ruoli»).
+//  - La segretaria ha un mestiere suo, distinto dalla governante: LE CHAT. Legge i messaggi di WhatsApp portati dal ponte
+//    (il gruppo Albergo, papà, le signore, gli altri: la «posta», coi vocali già trascritti dal giro) e risponde su quelli:
+//    «Com'è andata oggi?» → la SINTESI DELLA GIORNATA (4-7 frasi: chi ha scritto e di cosa, cosa è stato deciso, cosa c'è
+//    domani, cosa resta in sospeso); le domande («che ha detto papà?», «dove hai messo le ore di Lucia?»); le CORREZIONI
+//    («il nome in Aurora è Bianchi»): solo allora rilegge i messaggi dell'ultima lettura (con Argon, come prima) e riapre
+//    la lettura da salvare. Le cose della casa (stelle, pulizie, paghe, messaggi alle signore) le rimanda alla governante,
+//    con un tasto che apre la sua chat con la domanda già scritta.
+//  - Costa zero sul credito: risposte e sintesi le fa il modello GRATUITO (il «sveglio», Flash, con la chiave normale; se
+//    non risponde, lo svelto). Argon serve solo per la rilettura dopo una correzione.
+//  - Il MICROFONO nella tendina (ascolta finché parli, si chiude da solo dopo 3 secondi di silenzio) e lei a fianco:
+//    «Ti ascolto…» mentre parli, «…ci penso», e quando risponde PARLA (la voce di sempre) col filmato «parla» da segretaria
+//    (segr-parla-3d.webm: finché non c'è resta quello fermo) e la pillola «⏹ Sofia» per farla smettere. La governante non
+//    esce più in basso a destra mentre parla la segretaria, e la linguetta del microfono si nasconde a tendina aperta.
+//  - La sintesi resta in importazioni/sintesi_<giorno> (la sera la fa anche il giro, da sola: sofia-giro) e si vede nella
+//    tendina con «🔊 Leggimela». La chat con la segretaria sta in importazioni/segreteria-chat (ultime 40 righe, su tutti i telefoni).
+//  - IL PROSPETTO NON PASSA PIÙ DALLE CHAT (scelta di Michele: «solo dal file Excel di papà»): nelle letture Sofia non propone
+//    più soggiorni; se papà parla di camere lo mette in «note» («Prospetto: … — controlla il foglio»). Si riaccende in
+//    Impostazioni → Sofia sempre accesa → «Prospetto anche dalle chat» (impostazioni/avvisi.prospettoChat).
+// ============================================================================
+const SGR_VELOCI = ["Com'è andata oggi?", "E ieri?", "Cosa c'è domani?"];
+const MIC_SEGR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`;
+const ESITI_LETTURA = { salvata: "salvata nell'app", scartata: "scartata", vuota: "niente da cambiare", da_controllare: "ancora da controllare, non ho salvato niente" };
+function prospettoDalleChat() { return !!(S.avvisi && S.avvisi.prospettoChat === true); }
+function tendinaSegreteriaAperta() { try { return !!(S.vista === "segreteria" && S.sgrAperta && proprietario()); } catch (e) { return false; } }
+function sgrChat() { return Array.isArray(S.sgrChat) ? S.sgrChat : []; }
+function sgrScorri() { setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50); }
+async function caricaSgrChat() {
+  if (S.sgrChatCaricata) return; S.sgrChatCaricata = true;
+  try { const d = await S.db.leggi("importazioni", "segreteria-chat"); if (d && Array.isArray(d.righe) && !sgrChat().length) { S.sgrChat = d.righe.slice(-40); disegna(); sgrScorri(); } } catch (e) { console.warn("segreteria/chat", e); }
+  caricaSintesiOggi();
 }
-document.addEventListener("click", (e) => {
-  const b = e.target && e.target.closest ? e.target.closest("[data-sgr-tendina]") : null; if (!b) return;
-  S.sgrAperta = !S.sgrAperta; disegna();
-  if (S.sgrAperta) setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50);
-});
-document.addEventListener("submit", (e) => {
-  const f = e.target && e.target.closest ? e.target.closest("#sgrScrivi") : null; if (!f) return;
-  e.preventDefault();
-  const inp = f.querySelector("#sgrTesto"), t = inp ? inp.value.trim() : ""; if (!t) return;
-  if (inp) { inp.value = ""; inp.blur(); }
-  segreteriaManda(t).catch(err => console.warn("segreteria/chat", err));
-}, true);
-// quello che Michele scrive alla segretaria: resta nella chat della lettura, e diventa una correzione con cui Sofia rilegge
+async function salvaSgrChat(righe) {
+  try { await S.db.salva("importazioni", "segreteria-chat", { righe: righe.slice(-40).map(m => ({ chi: m.chi, testo: String(m.testo || "").slice(0, 1500), ora: m.ora || "", ...(m.tipo ? { tipo: m.tipo } : {}), ...(m.vai ? { vai: String(m.vai).slice(0, 400) } : {}) })), quando: new Date().toISOString() }, false); }
+  catch (e) { console.warn("segreteria/chat salva", e); }
+}
+function sintesiDiOggi() { const s = S.sintesiOggi; return s && s.giorno === L.oggiISO() && s.testo ? s : null; }
+async function caricaSintesiOggi() {
+  const oggi = L.oggiISO();
+  if (S.sintesiOggi && S.sintesiOggi.giorno === oggi && S.sintesiOggi.letta) return;
+  S.sintesiOggi = { giorno: oggi, letta: true };
+  try { const d = await S.db.leggi("importazioni", "sintesi_" + oggi); if (d && d.testo) { S.sintesiOggi = { ...d, giorno: oggi, letta: true }; disegna(); sgrScorri(); } } catch (e) { console.warn("sintesi", e); }
+}
+// i messaggi delle chat tra due giorni (compresi), dalla posta del ponte: i vocali con la trascrizione fatta dal giro
+function messaggiPosta(da, a) {
+  const nome = (p) => { const n = p.chat || "Albergo"; return p.gruppo === false ? "chat con " + n : n; };
+  return Object.values(S.posta || {}).filter(p => p && String(p.data || "") >= da && String(p.data || "") <= a && ["testo", "audio", "foto"].includes(p.tipo || "testo"))
+    .sort((x, y) => (Number(x.ts) || 0) - (Number(y.ts) || 0))
+    .map(p => ({ id: p.id, data: String(p.data || ""), ora: p.ora || "", chi: p.chi || "", mio: !!p.mio, chat: nome(p), chatNome: nome(p), ts: Number(p.ts) || 0,
+      testo: p.tipo === "audio" ? (p.trascrizione ? `🎤 (vocale) ${p.trascrizione}` : "🎤 (un vocale che non ho ancora ascoltato)") : p.tipo === "foto" ? `📷 (una foto)${p.didascalia ? " " + p.didascalia : ""}` : String(p.testo || "") }))
+    .filter(m => m.testo).slice(-160);
+}
+function lettureDiOggiPerIA(oggi) {
+  return segreteriaLetture().filter(x => String(x.quando || "").slice(0, 10) === oggi).slice(0, 8).reverse().map(x => {
+    const voci = vociSegreteria(x.capito || {}).filter(v => v.tipo !== "f").slice(0, 12).map(v => aCodici(v.testo)).join("; ");   // mai i numeri di telefono
+    return `${L.oraBreve(x.quando)} (${x.da === "giro" ? "letta da sola" : "letta dal telefono"}; ${ESITI_LETTURA[x.esito] || x.esito || "?"}): ${voci || "niente da segnare"}`;
+  });
+}
+// la segretaria risponde (il modello gratuito): sintesi, risposta, correzione (→ rilettura con Argon) o «è roba da governante»
+async function segretariaRispondi(domanda, righe) {
+  if (!iaAccesa()) throw new Error(`su questo telefono manca la chiave di Gemini (Impostazioni → ${nomeGov()} intelligente)`);
+  const oggi = L.oggiISO(), ieri = L.aggiungiGiorni(oggi, -1), domani = L.aggiungiGiorni(oggi, 1);
+  const msgs = messaggiPosta(ieri, oggi);
+  const papa = msgs.some(m => m.chi === "Papà") ? "Papà" : "";
+  const { testo: chat } = testoPerLettura(msgs, papa);
+  let piano = ""; try { piano = testoPiano(domani); } catch (e) {}
+  const sistema = LET.istruzioniSegretaria({ ...ctxLettura(), persone: [...new Set(msgs.map(m => m.chi).filter(Boolean))] }, { ora: `${String(oraRoma()).padStart(2, "0")} circa` });
+  const testo = LET.testoPerSegretaria({ chat, n: msgs.length, oggi: L.dataGiornoLungo(oggi), ieri: L.dataGiornoLungo(ieri), letture: lettureDiOggiPerIA(oggi), piano, domanda });
+  const storia = righe.slice(-7, -1).filter(m => m && (m.chi === "io" || m.chi === "gov") && m.testo).map(m => ({ chi: m.chi, testo: String(m.testo).slice(0, 600) }));
+  const r = await chiediPiccola({ sistema, storia, testo, secondi: 45, maxToken: 1500, cervello: true }, confIA());
+  const j = LET.jsonDaRisposta(r.grezzo) || {};
+  const tipo = ["sintesi", "risposta", "correzione", "governante"].includes(j.tipo) ? j.tipo : "risposta";
+  const grezzo = String(j.testo || j.risposta || (j.tipo ? "" : r.grezzo) || "").trim();
+  const detto = daCodici(grezzo).replace(/\*\*?/g, "").slice(0, 1400) || "Non ho capito bene: riprova con parole semplici.";
+  if (tipo === "correzione") {
+    const corr = daCodici(String(j.correzione || domanda)).slice(0, 400), x = segreteriaLetture()[0];
+    if (!x) return { tipo, testo: `${detto} Però non ho una lettura da rifare: me lo segno nel taccuino, così la prossima volta lo so.`, dopo: () => ricordaNelTaccuino(`Correzione di Michele: ${corr}`, "michele") };
+    return { tipo, testo: detto, dopo: async () => {
+      S.sgrScrive = true; disegna(); sgrScorri();
+      let r2 = ""; try { r2 = await rileggiSegreteria(x, corr); } catch (e) { console.warn("segreteria/rileggi", e); r2 = `Non sono riuscita a rileggere: ${String((e && e.message) || e).slice(0, 140)}`; }
+      S.sgrChat = [...sgrChat(), { chi: "gov", testo: r2, ora: S.db.adesso() }]; S.sgrScrive = false; disegna(); sgrScorri(); salvaSgrChat(S.sgrChat);
+      if (voceAccesa()) parlaConVoce(r2, { inChat: true });
+    } };
+  }
+  if (tipo === "governante") return { tipo, testo: detto, vai: domanda };
+  if (tipo === "sintesi" && !/\b(ieri|settimana|scors[aoie])\b/i.test(domanda)) salvaSintesi(oggi, detto, msgs, r.modello);
+  return { tipo, testo: detto };
+}
+function salvaSintesi(giorno, testo, msgs, modello) {
+  const miei = msgs.filter(m => m.data === giorno);
+  const doc = { giorno, quando: new Date().toISOString(), da: "telefono", n: miei.length, fino: Math.max(0, ...miei.map(m => m.ts || 0)), testo: String(testo).slice(0, 1400), modello: modello || "" };
+  S.sintesiOggi = { ...doc, letta: true };
+  S.db.salva("importazioni", "sintesi_" + giorno, doc, false).catch(e => console.warn("sintesi salva", e));
+}
+// quello che Michele scrive o dice alla segretaria: resta nella sua chat, e lei risponde (a voce, se la voce è accesa)
 async function segreteriaManda(testo) {
   const t = String(testo || "").trim(); if (!t) return;
-  const x = segreteriaLetture()[0]; if (!x) { toast("Ancora nessuna lettura da correggere."); return; }
-  const lid = x.lid, chat = [...(Array.isArray(x.chat) ? x.chat : []), { chi: "io", testo: t, ora: S.db.adesso() }];
-  x.chat = chat; S.sgrScrive = true; disegna();
-  setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50);
-  try { await S.db.aggiorna("importazioni", "segreteria_" + lid, { chat }); } catch (e) { console.warn("segreteria/chat", e); }
-  let risposta = "";
-  try { risposta = await rileggiSegreteria(x, t); }
-  catch (e) { console.warn("segreteria/rileggi", e); risposta = `Non sono riuscita a rileggere: ${String((e && e.message) || e).slice(0, 140)}`; }
-  const y = (S.segreteria || {})["segreteria_" + lid] || x;
-  const chat2 = [...(Array.isArray(y.chat) && y.chat.length >= chat.length ? y.chat : chat), { chi: "gov", testo: risposta, ora: S.db.adesso() }];
-  y.chat = chat2; x.chat = chat2; S.sgrScrive = false; disegna();
-  setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50);
-  try { await S.db.aggiorna("importazioni", "segreteria_" + lid, { chat: chat2 }); } catch (e) { console.warn("segreteria/chat", e); }
-  try { if (voceAccesa()) parlaConVoce(risposta, { inChat: true }); } catch (e) {}
+  S.sgrChatCaricata = true;
+  const righe = [...sgrChat(), { chi: "io", testo: t, ora: S.db.adesso() }];
+  S.sgrChat = righe; S.sgrScrive = true; disegna(); sgrScorri();
+  salvaSgrChat(righe);
+  if (voceAccesa()) { try { VOCE.scaldaLive(VOCE.leggiVoce(), confIA().chiave); } catch (e) {} }
+  let fine;
+  try { fine = await segretariaRispondi(t, righe); }
+  catch (e) { console.warn("segreteria/rispondi", e); fine = { testo: `Non sono riuscita a rispondere: ${String((e && e.message) || e).slice(0, 160)}` }; }
+  const m = { chi: "gov", testo: fine.testo, ora: S.db.adesso(), ...(fine.tipo ? { tipo: fine.tipo } : {}), ...(fine.vai ? { vai: fine.vai } : {}) };
+  S.sgrChat = [...sgrChat(), m]; S.sgrScrive = false; disegna(); sgrScorri();
+  salvaSgrChat(S.sgrChat);
+  const dopo = fine.dopo ? fine.dopo() : null;
+  if (voceAccesa() && fine.testo) { try { await parlaConVoce(fine.testo, { inChat: true }); } catch (e) {} }
+  if (dopo) { try { await dopo; } catch (e) { console.warn("segreteria/dopo", e); } }
 }
-// Sofia rilegge gli stessi messaggi della lettura con la correzione di Michele davanti a tutto; poi apre la lettura da salvare
+// Sofia rilegge gli stessi messaggi dell'ultima lettura con la correzione di Michele davanti a tutto; poi apre la lettura da salvare
 async function rileggiSegreteria(x, correzione) {
   if (!iaAccesa()) throw new Error("su questo telefono manca la chiave di Gemini (Altro → la governante intelligente)");
   const messaggi = (Array.isArray(x.messaggi) ? x.messaggi : []).filter(m => m && m.testo).map(m => ({ data: m.data || "", ora: m.ora || "", chi: m.chi || "", testo: m.testo, chat: m.chat || "", chatNome: m.chat || "", mio: !!m.mio }));
@@ -4696,6 +4775,90 @@ async function rileggiSegreteria(x, correzione) {
   const r = String(d.ia.risposta || "").trim();
   if (S.vista === "segreteria") apriFoglio({ tipo: "dettatura" });
   return `${r ? r + " " : ""}Ho rifatto la lettura con la tua correzione: controlla e salva.`;
+}
+// ---- il microfono della segretaria: ascolta finché parli (3 secondi di silenzio = hai finito), poi manda ----------------
+let sgrRec = null;
+function sgrPillHtml() {
+  const st = sgrRec ? "ascolto" : S.sgrScrive ? "pensa" : (voceInCorso && tendinaSegreteriaAperta()) ? "parla" : "";
+  const t = st === "ascolto" ? "🎤 Ti ascolto…" : st === "pensa" ? "…ci penso" : st === "parla" ? `⏹ ${esc(nomeGov())}` : "";
+  return `<span class="sgr-pill" id="sgrPill"${st ? ` data-stato="${st}"` : ""}>${t}</span>`;
+}
+function sgrPillAggiorna() {
+  const p = document.getElementById("sgrPill");
+  if (p) { const tmp = document.createElement("div"); tmp.innerHTML = sgrPillHtml(); const n = tmp.firstChild; if (p.outerHTML !== n.outerHTML) p.replaceWith(n); }
+  document.querySelectorAll("[data-sgr-mic]").forEach(b => { b.classList.toggle("ascolta", !!sgrRec); b.setAttribute("aria-pressed", sgrRec ? "true" : "false"); });
+}
+function sgrMicVai() {
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!R) { toast("Qui il microfono non si apre: usa quello della tastiera, accanto alla barra spaziatrice"); return; }
+  if (sgrRec) { try { sgrRec.stop(); } catch (e) {} return; }
+  if (voceInCorso) { try { zittisciVoce(); } catch (e) {} }
+  try { VOCE.sbloccaAudio(); } catch (e) {}
+  const r = new R(); r.lang = "it-IT"; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
+  let finale = "", silenzio = null;
+  const riarma = (ms) => { clearTimeout(silenzio); silenzio = setTimeout(() => { try { r.stop(); } catch (e) {} }, ms); };
+  const inp = () => document.getElementById("sgrTesto");
+  r.onresult = (e) => { const t = testoDaRisultati(e); finale = t.finale; const i = inp(); if (i) i.value = t.visto; riarma(3000); };
+  r.onerror = (e) => { sgrRec = null; clearTimeout(silenzio); sgrPillAggiorna(); if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("Il telefono non mi dà il microfono: dallo a questa app nelle impostazioni"); else if (e.error !== "aborted" && e.error !== "no-speech") toast("Non ti ho sentito, riprova"); };
+  r.onend = () => {
+    sgrRec = null; clearTimeout(silenzio); sgrPillAggiorna();
+    const i = inp(), t = (finale || (i ? i.value : "") || "").trim();
+    if (i) i.value = "";
+    if (t) segreteriaManda(t).catch(err => console.warn("segreteria/mic", err));
+  };
+  try { r.start(); sgrRec = r; riarma(9000); sgrPillAggiorna(); if (voceAccesa()) { try { VOCE.scaldaLive(VOCE.leggiVoce(), confIA().chiave); } catch (e) {} } }
+  catch (e) { sgrRec = null; sgrPillAggiorna(); toast("Microfono non disponibile"); }
+}
+// ---- la tendina della segretaria -------------------------------------------------------------------------------------
+function tendinaSegreteria() {
+  const aperta = !!S.sgrAperta, nome = nomeGov();
+  if (aperta && !S.sgrChatCaricata) setTimeout(() => { caricaSgrChat().catch(() => {}); }, 0);
+  const chat = sgrChat().slice(-24);
+  const bolla = (m) => m.chi === "io" ? `<div class="sgr-c-riga io"><div class="sgr-c-bolla">${escNl(m.testo)}</div></div>`
+    : `<div class="sgr-c-riga lei"><div class="sgr-c-bolla${m.tipo === "sintesi" ? " sgr-sintesi" : ""}">${escNl(m.testo)}${m.vai ? `<br><button type="button" class="btnsm" data-sgr-vai-gov="${esc(m.vai)}">Apri la governante</button>` : ""}${m.tipo === "sintesi" ? `<br><button type="button" class="btnsm" data-sgr-leggi="${esc(m.testo)}">🔊 Leggimela</button>` : ""}</div></div>`;
+  const bolle = chat.map(bolla).join("") + (S.sgrScrive ? `<div class="sgr-c-riga lei"><div class="sgr-c-bolla pensa">${esc(nome)} ci pensa…</div></div>` : "");
+  const s = sintesiDiOggi(), giaInChat = !!(s && chat.some(m => m.chi === "gov" && m.tipo === "sintesi" && m.testo === s.testo));   // se l'ha appena detta in chat non si ripete
+  const sint = s && !giaInChat ? `<div class="sgr-c-riga lei"><div class="sgr-c-bolla sgr-sintesi" data-sgr-sintesi><b>La sintesi di oggi</b> <small>(${esc(L.oraBreve(s.quando))}${s.da === "giro" ? ", fatta da sola" : ""})</small><br>${escNl(s.testo)}<br><button type="button" class="btnsm" data-sgr-leggi>🔊 Leggimela</button></div></div>` : "";
+  const benvenuto = `<div class="sgr-c-riga lei"><div class="sgr-c-bolla">Sono ${esc(nome)}, la segretaria: leggo le chat di WhatsApp e ti racconto cosa è successo. Chiedimi «Com'è andata oggi?» col microfono o coi tasti qui sotto; se ho capito male una cosa, correggimi. Il prospetto non lo tocco: arriva dal foglio Excel di papà.</div></div>`;
+  const x = segreteriaLetture()[0];
+  const apri = x && x.esito === "da_controllare" && S.letturaCondivisa && S.letturaCondivisa.lid === x.lid ? `<button type="button" class="btnsm" data-sgr-apri>Apri la lettura e salva</button>` : "";
+  return `<section class="sgr-tendina ${aperta ? "aperta" : ""}" id="sgrTendina">
+    <button type="button" class="sgr-maniglia" data-sgr-tendina aria-expanded="${aperta}"><img class="sgr-m-viso" src="segr-viso.webp" alt=""><span><b>${esc(nome)}, la segretaria</b><small>${aperta ? "Tocca qui per chiudere" : "Tocca e chiedile com'è andata oggi"}</small></span><i class="sgr-m-freccia" aria-hidden="true">${aperta ? "⌄" : "⌃"}</i></button>
+    ${aperta ? `<div class="sgr-t-corpo"><button type="button" class="sgr-t-figura" data-sgr-figura aria-label="${esc(nome)}: tocca per farla smettere di parlare">${sgrPillHtml()}</button><div class="sgr-t-chat"><div class="sgr-c-msgs" id="sgrMsgs">${benvenuto}${sint}${bolle}</div>${apri}
+      <div class="sgr-t-veloci" role="group" aria-label="Domande veloci">${SGR_VELOCI.map(v => `<button type="button" data-sgr-veloce="${esc(v)}">${esc(v)}</button>`).join("")}</div>
+      <form class="sgr-t-form" id="sgrScrivi" autocomplete="off"><input type="text" id="sgrTesto" data-keep placeholder="Scrivi o parla…" maxlength="400" enterkeyhint="send"><button type="button" class="sgr-t-mic${sgrRec ? " ascolta" : ""}" data-sgr-mic aria-pressed="${!!sgrRec}" aria-label="Parla con ${esc(nome)}">${MIC_SEGR_SVG}</button><button type="submit" class="sgr-t-manda" aria-label="Manda">➤</button></form>
+      <p class="sgr-t-hint">Per esempio: «Che ha detto papà?» · «Le ore di Lucia dove le hai messe?» · «Il nome in Aurora è Bianchi»</p></div></div>` : ""}
+  </section>`;
+}
+document.addEventListener("error", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("sgr-m-viso") && !img.dataset.ripiego) { img.dataset.ripiego = "1"; img.src = FILM_CAPO.viso; } }, true);
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest ? e.target.closest("[data-sgr-tendina]") : null; if (!b) return;
+  S.sgrAperta = !S.sgrAperta; disegna();
+  if (S.sgrAperta) sgrScorri();
+});
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t) return;
+  const m = t.closest("[data-sgr-mic]"); if (m) { e.preventDefault(); sgrMicVai(); return; }
+  const v = t.closest("[data-sgr-veloce]"); if (v) { segreteriaManda(v.dataset.sgrVeloce).catch(err => console.warn("segreteria", err)); return; }
+  const f = t.closest("[data-sgr-figura]"); if (f) { if (voceInCorso) { zittisciVoce(); if (document.body.dataset.cons === "parla") statoCons("ferma"); disegna(); } else if (sgrRec) { try { sgrRec.stop(); } catch (err) {} } return; }
+  const l = t.closest("[data-sgr-leggi]"); if (l) { const s = sintesiDiOggi(), testo = l.dataset.sgrLeggi || (s && s.testo) || ""; if (!testo) return; if (!voceAccesa()) { toast(`La voce è spenta: accendila con l'altoparlante in alto nella chat di ${nomeGov()}.`); return; } try { VOCE.sbloccaAudio(); } catch (err) {} parlaConVoce(testo, { inChat: true }); return; }
+  const g = t.closest("[data-sgr-vai-gov]"); if (g) { const testo = g.dataset.sgrVaiGov || ""; S.sgrAperta = false; S.vista = "sofia"; disegna(); window.scrollTo(0, 0); setTimeout(() => { const i = document.getElementById("casaTesto"); if (i) { i.value = testo; i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (err) {} } }, 80); return; }
+});
+document.addEventListener("submit", (e) => {
+  const f = e.target && e.target.closest ? e.target.closest("#sgrScrivi") : null; if (!f) return;
+  e.preventDefault();
+  const inp = f.querySelector("#sgrTesto"), t = inp ? inp.value.trim() : ""; if (!t) return;
+  if (inp) { inp.value = ""; inp.blur(); }
+  segreteriaManda(t).catch(err => console.warn("segreteria/chat", err));
+}, true);
+// 1.49.0: l'avviso «la sintesi di oggi» (dal giro) apre la Segreteria con la tendina aperta (?segreteria=1, o il messaggio del service worker)
+let segreteriaAttesa = false;
+try { const u1 = new URL(location.href); if (u1.searchParams.has("segreteria")) { segreteriaAttesa = true; u1.searchParams.delete("segreteria"); history.replaceState(null, "", u1.pathname + u1.search + u1.hash); } } catch (e) {}
+try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.tipo === "apriSegreteria") { segreteriaAttesa = true; disegna(); } }); } catch (e) {}
+function guardaSegreteria() {
+  if (!segreteriaAttesa || !S.pronto || !proprietario()) return;
+  segreteriaAttesa = false;
+  S.vista = "segreteria"; S.sgrAperta = true; S.sintesiOggi = null; disegna(); window.scrollTo(0, 0); sgrScorri();
 }
 // ---- schermate dei proprietari ---------------------------------------------------
 function vistaProprietario() {
@@ -6151,7 +6314,7 @@ function testataGov() {
   return `<div class="gov-viva ${u.v}${muove ? " sta-parlando" : ""}">${DONNINA("governante", "viva film" + (muove ? " parla" : ""))}<div class="gov-viva-t"><b>${esc(nomeGov())}${c ? ` <span class="ia-bollo">IA</span>` : ""}</b><span>${esc(testo)}</span>${c && c.consiglio ? `<span class="gov-consiglio">💡 ${esc(c.consiglio)}</span>` : ""}</div></div>`;
 }
 const escNl = s => esc(s).replace(/\n/g, "<br>");
-function bollaGov(testo, extra = "") { return `<div class="chat-msg gov">${DONNINA("governante", "mini")}<div class="chat-bolla">${testo}${extra}</div></div>`; }
+function bollaGov(testo, extra = "") { return `<div class="chat-msg gov"><div class="chat-bolla">${testo}${extra}</div></div>`; }   // 1.49.0: senza la figurina vecchia (Michele: «Sofia non è più così»)
 function foglioChat(f) {
   const c = statoChatApp(); const mod = puoModificare();
   const storico = c.storico.slice(-8);
@@ -7176,7 +7339,7 @@ function sofiaInVista() {
 function sofiaFuori() {
   let f = document.getElementById("sofiaFuori");
   let vuoi = false;
-  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista() && !(addetta() && compagnaBase())); } catch (e) {}
+  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista() && !(addetta() && compagnaBase()) && !tendinaSegreteriaAperta()); } catch (e) {}   // 1.49.0: a tendina aperta parla la segretaria
   if (!vuoi) {
     document.body.classList.remove("con-sofia-fuori");
     if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) f.hidden = true; try { guidaNuvola(); } catch (e) {} }, 420); }
@@ -7217,7 +7380,7 @@ function heroInVista() {
 function sofiaMini() {
   let m = document.getElementById("sofiaMini"), nv = document.getElementById("sofiaMiniNuvola");
   let vuoi = false;
-  try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && !S.utente.finta && S.vista !== "sofia" && S.vista !== "governante" && !heroInVista()); } catch (e) {}
+  try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && !S.utente.finta && S.vista !== "sofia" && S.vista !== "governante" && !heroInVista() && !tendinaSegreteriaAperta()); } catch (e) {}   // 1.49.0: a tendina aperta c'è il microfono della segretaria
   try { if (vuoi && premiumVisto() && ["oggi", "manutenzione", "signora"].includes(S.vista) && !miniAperto && !micAttivo && !voceInCorso && !["ascolto", "pensa", "parla"].includes(document.body.dataset.cons || "")) vuoi = false; } catch (e) {}
   if (!vuoi) {
     if (m) m.hidden = true; if (nv) nv.hidden = true;
@@ -8201,7 +8364,7 @@ function cardSempreAccesa() {
     <p class="small muted" style="margin:0 0 4px">Oggi:</p>
     <ul class="giro-oggi">${voce("piano", a.token && a.chat ? "Piano del giorno alle signore (dalle 7)" : "Il piano del giorno a te (dalle 7)")}${voce("arrivi", "Priorità alle camere con un arrivo (12:30)")}${voce("allarme", "Avviso a te se una camera non è pronta (13:30)")}${voce("chiusura", "Promemoria delle pulizie da segnare (15:00)")}${voce("bollettino", "Bollettino della sera a te (20:00)")}</ul>
     ${rigaLetturaGiro(g, a)}
-    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}</div>
+    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}${sw("giroSintesi", "La sintesi della sera della segretaria (dalle 20:30)")}<label class="giro-sw"><span>Prospetto anche dalle chat <small class="muted">(di solito spento: il prospetto arriva dal foglio Excel di papà)</small></span><input type="checkbox" data-giro-sw="prospettoChat" ${a.prospettoChat === true ? "checked" : ""}></label></div>
   </section>`;
 }
 // 1.18.1: LA SPINTA DAL PC. L'orario di GitHub è «quando può» (il 31/10 nessun giro dalle 12:29 alle 17:14): il ponte sul
@@ -10466,7 +10629,7 @@ function fonteDettaturaHtml(d) {
 //    nelle risposte (aCodici / daCodici): i nomi gia' noti non lasciano il telefono.
 // ===========================================================================
 // 1.18.0: le funzioni stanno in lettura.js (le usa anche il giro sempre acceso); qui restano col nome di prima
-function ctxLettura() { return { oggi: L.oggiISO(), camere: S.camere, soggiorni: soggiorniLista(), clienti: S.clienti || {}, signore: signore().map(z => ({ id: z.id, nome: SIG(z.id), zona: z.zonaNome || "" })), nomeGov: nomeGov(), nomeMio: nomeMio(), alias: aliasPerCamera(), tipiOspite: TIPI_OSPITE }; }
+function ctxLettura() { return { oggi: L.oggiISO(), camere: S.camere, soggiorni: soggiorniLista(), clienti: S.clienti || {}, signore: signore().map(z => ({ id: z.id, nome: SIG(z.id), zona: z.zonaNome || "" })), nomeGov: nomeGov(), nomeMio: nomeMio(), alias: aliasPerCamera(), tipiOspite: TIPI_OSPITE, prospettoChat: prospettoDalleChat() }; }   // 1.49.0: prospettoChat
 function nucleoNome(n) { return LET.nucleoNome(n); }
 let codiciCache = null;
 function codiciOspiti() {
@@ -10519,7 +10682,7 @@ function lettoDaSofia(j) {
     return domanda ? { domanda, risposte: [] } : null;
   }).filter(Boolean).slice(0, 12);
   const usati = new Set();
-  (Array.isArray(j.soggiorni) ? j.soggiorni : []).slice(0, 80).forEach((x, i) => {
+  (prospettoDalleChat() && Array.isArray(j.soggiorni) ? j.soggiorni : []).slice(0, 80).forEach((x, i) => {   // 1.49.0: il prospetto arriva dal foglio Excel
     const camera = cameraDaSofia(x && x.camera), inizio = dataIso(x && x.arrivo), fine = dataIso(x && x.partenza);
     let nome = LET.puliziaNome(daCodici(String((x && x.nome) || "").trim()).replace(/^\[.*\]$/, "?")).slice(0, 48) || "?";
     if (nome !== "?" && S.camere.some(c => PAROLE.norm(c.nome) === PAROLE.norm(nome) || PAROLE.norm(c.id) === PAROLE.norm(nome))) nome = "?";
@@ -10542,7 +10705,7 @@ function lettoDaSofia(j) {
     if (usati.has(r.firma)) return; usati.add(r.firma);
     righe.push(r);
   });
-  (Array.isArray(j.togli) ? j.togli : []).slice(0, 30).forEach((x, i) => {
+  (prospettoDalleChat() && Array.isArray(j.togli) ? j.togli : []).slice(0, 30).forEach((x, i) => {
     const camera = cameraDaSofia(x && x.camera); if (!camera) return;
     const nome = daCodici(String((x && x.nome) || "").trim()), arrivo = dataIso(x && x.arrivo);
     const stesso = (s) => nome && PAROLE.norm(nucleoNome(s.nome)) === PAROLE.norm(nucleoNome(nome));
