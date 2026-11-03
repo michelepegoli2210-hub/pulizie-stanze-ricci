@@ -7347,3 +7347,5 @@ body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma)
 
 /* ---- 1.46.0: piu disegni uno sotto l altro nella scheda «Altre camere» (uno per camera): un po di aria tra uno e l altro ---- */
 .mt-camera + .mt-camera{margin-top:14px}
+
+/* ---- 1.47.0: niente di nuovo nello stile: le mappe delle zone comuni usano .mt-foto della 1.45 ---- */

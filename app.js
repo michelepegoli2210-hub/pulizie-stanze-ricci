@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.46.0";
+export const VERSIONE = "1.47.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1799,7 +1799,7 @@ function lavoriInPiu(z, iso, rs) {
 function tesseraLavoro(p, perSignora) {
   const c = camera(p.camera), cls = statoClasse(p), fondo = p.origine === "governante";
   if (p.tipo === "stelle") { const rg = p.stato === "fatta" ? (p.rifiniture || []).filter(r => r.euro) : rifinitureDi(p); const euroG = p.stato === "fatta" ? Number(p.extraRifiniture) || 0 : rg.reduce((x, r) => x + (r.euro || 0), 0); const stato = p.stato === "fatta" ? `Fatte ${L.oraBreve(p.ora)}` : (STATI[p.stato] || STATI.da_fare).testo; const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
-    return `<button class="tess ${cls} fondo" ${attr}>${!perSignora ? `<span class="tess-pr">${eur(euroG)}</span>` : ""}<span class="tess-nome">⭐ Altre camere</span><span class="tess-lavoro">${rg.length} ${rg.length === 1 ? "rifinitura" : "rifiniture"}${perSignora && euroG ? ` · ${eur(euroG)}` : ""}</span><span class="tess-osp">${esc([...new Set(rg.map(r => r.luogoNome || camera(r.luogo).nome))].slice(0, 3).join(", "))}</span><span class="badge ${cls} tess-stato">${stato}</span>${perSignora && p.stato !== "fatta" ? `<span class="tess-az">Tocca per vedere</span>` : ""}</button>`; }
+    return `<button class="tess ${cls} fondo" ${attr}>${!perSignora && !pagaAOre() ? `<span class="tess-pr">${eur(euroG)}</span>` : ""}<span class="tess-nome">⭐ Altre camere</span><span class="tess-lavoro">${rg.length} ${rg.length === 1 ? "rifinitura" : "rifiniture"}${perSignora && euroG && !pagaAOre() ? ` · ${eur(euroG)}` : ""}</span><span class="tess-osp">${esc([...new Set(rg.map(r => r.luogoNome || camera(r.luogo).nome))].slice(0, 3).join(", "))}</span><span class="badge ${cls} tess-stato">${stato}</span>${perSignora && p.stato !== "fatta" ? `<span class="tess-az">Tocca per vedere</span>` : ""}</button>`; }
   const stato = p.stato === "fatta" ? `Pulita ${L.oraBreve(p.ora)}` : (STATI[p.stato] || STATI.da_fare).testo;
   const azione = perSignora ? (p.stato === "da_fare" ? "Tocca per iniziare" : p.stato === "in_corso" ? "Tocca quando hai finito" : "") : "";
   const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
@@ -1885,7 +1885,7 @@ function foglioInizio(f) {
     if (lista.zona.length) listaHtml += `<section class="sig-box"><div class="sig-sez-t">Scale, corridoio e lavanderia · oggi</div><div class="sig-lista">${righeZona(lista).map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
   } else if (p.tipo === "stelle") {
     const rg = righeGiro(p); const euroG = rg.reduce((x, r) => x + (r.stella.euro || 0), 0);
-    listaHtml = `<div class="sig-guida">Le ★ rifiniture di oggi nelle altre camere: entra, fai la cosa scritta${argonLei() ? "" : ", tocca la riga"}. Niente da pulire oltre questo.${euroG ? ` In tutto <b>${eur(euroG)}</b>.` : ""}</div><section class="sig-box"><div class="sig-sez-t">Camera per camera</div><div class="sig-lista">${rg.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
+    listaHtml = `<div class="sig-guida">Le ★ rifiniture di oggi nelle altre camere: entra, fai la cosa scritta${argonLei() ? "" : ", tocca la riga"}. Niente da pulire oltre questo.${euroG && !pagaAOre() ? ` In tutto <b>${eur(euroG)}</b>.` : ""}</div><section class="sig-box"><div class="sig-sez-t">Camera per camera</div><div class="sig-lista">${rg.map(r => rigaSignora(r, p, statoRiga(r.k), aperta, motivoRiga(r.k))).join("")}</div></section>`;
   } else if (fondo) {
     const r = { k: "G0", tipo: "stella", n: 1, testo: p.titolo, sotto: `${p.minuti || 0} min`, codici: [], stella: { regola: p.regola, luogo: p.camera, come: p.come || "", controllo: "", prodotto: "", note: "" } };
     listaHtml = `<section class="sig-box"><div class="sig-sez-t">Oggi in questa camera · a camera vuota${p.perche?.length ? ` · ${esc(p.perche[0])}` : ""}</div><div class="sig-lista">${rigaSignora(r, p, statoRiga("G0"), aperta, motivoRiga("G0"))}</div></section>`;
@@ -1907,7 +1907,7 @@ function foglioInizio(f) {
   else if (argonLei()) bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b> · brava!</span></div>`;
   return `<div class="inizio sig">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
-    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(p.tipo === "stelle" ? "⭐ Altre camere" : c.nome)}</div><div class="inizio-lavoro">${p.tipo === "stelle" ? esc((() => { const rg = righeGiro(p); return `Le rifiniture di oggi · ${rg.length} ${rg.length === 1 ? "rifinitura" : "rifiniture"} · ${eur(rg.reduce((x, r) => x + (r.stella.euro || 0), 0))}`; })()) : sottoTarga}</div></div>${BADGE(p)}</div>
+    <div class="inizio-testa ${statoClasse(p)}"><div><div class="inizio-camera">${esc(p.tipo === "stelle" ? "⭐ Altre camere" : c.nome)}</div><div class="inizio-lavoro">${p.tipo === "stelle" ? esc((() => { const rg = righeGiro(p); return `Le rifiniture di oggi · ${rg.length} ${rg.length === 1 ? "rifinitura" : "rifiniture"}${pagaAOre() ? "" : " · " + eur(rg.reduce((x, r) => x + (r.stella.euro || 0), 0))}`; })()) : sottoTarga}</div></div>${BADGE(p)}</div>
     ${diceHtml}${listaHtml}${sempreHtml}${bidoni}
     ${bottone}
     ${aperta ? `<div class="pro-sec"><button class="nonna-link" data-non-riesco="${esc(p.id)}">Non riesco a fare una cosa</button><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}
@@ -2319,7 +2319,7 @@ function foglioControllo(f) {
   const riga = (x) => { const v = f.punti[x.id]; const no = v === false, si = v === true; const fid = x.id; const haFoto = !!f.foto[fid] || !!(c.foto || {})[fid];
     return `<div class="ctrl-punto ${si ? "si" : no ? "no" : ""}"><div class="ctrl-icona">${ICONE_PUNTI[x.icona || (x.richiesta ? "richiesta" : "")] || "✔️"}</div><div class="ctrl-testo"><b>${esc(x.breve || (x.richiesta ? "Richiesta di Michele" : ""))}${x.grave ? ` <span class="ctrl-grave">grave</span>` : ""}</b><div>${esc(x.testo)}</div>${no ? `<div class="ctrl-foto">${haFoto ? `<span class="ctrl-foto-ok">📷 foto fatta</span>` : `<label class="pro-btn rosso piccolo">📷 Fai la foto<input type="file" accept="image/*" capture="environment" hidden data-foto-punto="${esc(fid)}"></label><span class="muted small">senza foto il NO non vale</span>`}</div>` : ""}</div><div class="ctrl-sino"><button class="ctrl-si ${si ? "on" : ""}" data-punto-si="${esc(x.id)}">SÌ</button><button class="ctrl-no ${no ? "on" : ""}" data-punto-no="${esc(x.id)}">NO</button></div></div>`; };
   const rigaStella = (st) => { const v = f.stelle[st.k]; const ok = v && v.ok === true, ko = v && v.ok === false; const fid = "stella:" + st.k; const haFoto = !!f.foto[fid] || !!(c.foto || {})[fid];
-    return `<div class="ctrl-punto stella ${ok ? "si" : ko ? "no" : ""}"><div class="ctrl-icona">⭐</div><div class="ctrl-testo"><b>${esc(st.nome)}${st.euro ? ` · ${eur(st.euro)}` : ""}</b><div>${esc(st.come || "Com'è fatta bene: guarda che sia davvero fatta")}</div>${ko ? `<div class="ctrl-foto">${haFoto ? `<span class="ctrl-foto-ok">📷 foto fatta</span>` : `<label class="pro-btn rosso piccolo">📷 Fai la foto<input type="file" accept="image/*" capture="environment" hidden data-foto-punto="${esc(fid)}"></label><span class="muted small">senza foto non vale</span>`}</div>` : ""}</div><div class="ctrl-sino"><button class="ctrl-si ${ok ? "on" : ""}" data-stella-si="${esc(st.k)}">Fatta</button><button class="ctrl-no ${ko ? "on" : ""}" data-stella-no="${esc(st.k)}">Non fatta</button></div></div>`; };
+    return `<div class="ctrl-punto stella ${ok ? "si" : ko ? "no" : ""}"><div class="ctrl-icona">⭐</div><div class="ctrl-testo"><b>${esc(st.nome)}${st.euro && !pagaAOre() ? ` · ${eur(st.euro)}` : ""}</b><div>${esc(st.come || "Com'è fatta bene: guarda che sia davvero fatta")}</div>${ko ? `<div class="ctrl-foto">${haFoto ? `<span class="ctrl-foto-ok">📷 foto fatta</span>` : `<label class="pro-btn rosso piccolo">📷 Fai la foto<input type="file" accept="image/*" capture="environment" hidden data-foto-punto="${esc(fid)}"></label><span class="muted small">senza foto non vale</span>`}</div>` : ""}</div><div class="ctrl-sino"><button class="ctrl-si ${ok ? "on" : ""}" data-stella-si="${esc(st.k)}">Fatta</button><button class="ctrl-no ${ko ? "on" : ""}" data-stella-no="${esc(st.k)}">Non fatta</button></div></div>`; };
   const esitoTesto = esito === "bene" ? `Bene: tutto pagato (${eur(quota)})` : esito === "cosicosi" ? `Così così: questa camera vale il 20% in meno (${eur(Math.round(quota * perc) / 100)} invece di ${eur(quota)})` : `Male: questa camera vale la metà (${eur(Math.round(quota * perc) / 100)} invece di ${eur(quota)}) e c'è il richiamo`;
   const stelleKo = stelle.filter(st => f.stelle[st.k] && f.stelle[st.k].ok === false);
   const pronto = !senzaRisposta && !fotoManca.length;
@@ -3545,11 +3545,11 @@ const MAPPE = {
     letto: [248, 195], "letto.testiera": [285, 212], "letto.piedini": [258, 256], "letto.sotto": [268, 238], "letto.spostato": [240, 220], materasso: [245, 210], cuscini: [266, 192], coperta: [230, 196], comodino: [233, 250], abatjour: [240, 222], telecomandi: [228, 236],
     plafoniera: [231, 110], quadro: [244, 88], finestra: [300, 105], "finestra.vetro": [290, 110], "finestra.vetroEsterno": [316, 112], "finestra.maniglia": [297, 115], "finestra.telaio": [277, 100], "finestra.davanzale": [298, 138], tapparella: [298, 85], zanzariera: [307, 100], tende: [263, 100], "tende.bastone": [300, 70], termosifone: [293, 165],
   } },
-  bagno: { file: "mappa-bagno.webp", sagoma: [[200, 8], [360, 68], [360, 232], [200, 300], [40, 232], [40, 68]], posti: {
-    bagno: [200, 150], "bagno.soffitto": [198, 16], "bagno.pareti": [330, 90], piastrelle: [160, 95], "bagno.pavimento": [120, 245], "bagno.porta": [372, 170], "bagno.interruttori": [345, 157], "bagno.plafoniera": [197, 73], "bagno.finestra": [225, 85], aspiratore: [128, 57],
-    doccia: [85, 150], "doccia.box": [60, 125], "doccia.guide": [108, 175], "doccia.mensola": [92, 135], "doccia.piatto": [100, 230], "doccia.piletta": [90, 219], soffione: [95, 93], miscelatore: [75, 150], silicone: [60, 215], scaldasalviette: [137, 105], asciugamani: [333, 183],
-    wc: [190, 165], "wc.tavoletta": [193, 165], "wc.cassetta": [177, 135], "wc.base": [188, 190], "wc.dietro": [175, 150], scopino: [122, 195], portarotolo: [218, 150], bidet: [140, 180],
-    lavabo: [283, 160], "lavabo.piletta": [280, 158], "lavabo.sotto": [285, 182], rubinetto: [290, 148], mensola: [290, 134], "specchio.bagno": [295, 105], "specchio.luce": [293, 82], phon: [322, 130], bidoncino: [254, 185], "bagno.cestino": [254, 185], tappetino: [265, 225], scarico: [202, 229],
+  bagno: { file: "mappa-bagno.webp", sagoma: [[200, 10], [355, 65], [355, 235], [215, 300], [38, 235], [38, 65]], posti: {   // 1.47.0: rifatto con la porta
+    bagno: [200, 150], "bagno.soffitto": [198, 16], "bagno.pareti": [160, 60], piastrelle: [160, 70], "bagno.pavimento": [150, 250], "bagno.porta": [368, 185], "bagno.interruttori": [343, 154], "bagno.plafoniera": [195, 75], "bagno.finestra": [235, 85], aspiratore: [120, 52],
+    doccia: [85, 150], "doccia.box": [60, 110], "doccia.guide": [105, 160], "doccia.mensola": [92, 128], "doccia.piatto": [95, 222], "doccia.piletta": [88, 218], soffione: [90, 88], miscelatore: [75, 152], silicone: [52, 228], scaldasalviette: [130, 110], asciugamani: [330, 185],
+    wc: [185, 170], "wc.tavoletta": [190, 165], "wc.cassetta": [176, 138], "wc.base": [186, 195], "wc.dietro": [172, 150], scopino: [160, 190], portarotolo: [218, 148], bidet: [232, 180],
+    lavabo: [288, 162], "lavabo.piletta": [285, 160], "lavabo.sotto": [292, 185], rubinetto: [292, 150], mensola: [285, 135], "specchio.bagno": [298, 105], "specchio.luce": [295, 78], phon: [330, 128], bidoncino: [262, 190], "bagno.cestino": [262, 190], tappetino: [268, 228], scarico: [204, 228],
   } },
   cucina: { file: "mappa-cucina.webp", sagoma: [[200, 12], [372, 83], [372, 212], [200, 298], [20, 222], [20, 88]], posti: {
     casa: [200, 150], cucina: [200, 150], "cucina.soffitto": [200, 22], "cucina.pareti": [320, 70], "cucina.pavimento": [110, 235], "cucina.porta": [298, 130], "cucina.finestra": [240, 95], "cucina.tv": [336, 162], divano: [250, 205], tavolo: [165, 215], sedie: [138, 225],
@@ -3558,16 +3558,39 @@ const MAPPE = {
     "cucina.frigo": [62, 170], "cucina.frigo.sopra": [62, 126], "cucina.frigo.dietro": [40, 150], "cucina.frigo.guarnizioni": [72, 165], "pavimento.frigo": [62, 220], bidoni: [228, 250], "cucina.cestino": [263, 238],
   } },
 };
+// 1.47.0: LE MAPPE DI GEMINI ANCHE PER LE ZONE COMUNI E IL BALCONE (corridoio, scale, ingresso, terrazzo, lavanderia, balcone),
+// e il bagno rifatto con la porta. Ogni mappa ha la sua altezza in unità per 400 di larghezza (h: 300 per 4:3, 224 per 16:9).
+const MAPPE_ZONE = {
+  corridoio: { file: "mappa-corridoio.webp", h: 224, sagoma: [[158, 12], [328, 60], [328, 185], [240, 220], [68, 162], [68, 40]], posti: {
+    corridoio: [200, 120], "corridoio.pavimento": [200, 170], "corridoio.pareti": [340, 70], "corridoio.battiscopa": [255, 148], "corridoio.finestra": [115, 78], "corridoio.porte": [233, 105], "corridoio.quadri": [207, 97], "corridoio.luci": [205, 68], estintore: [315, 128], pouf: [118, 140], disegni: [240, 50],
+  } },
+  scale: { file: "mappa-scale.webp", h: 300, sagoma: [[200, 10], [365, 70], [365, 215], [210, 300], [20, 215], [20, 75]], posti: {
+    scale: [230, 190], "scale.gradini": [255, 195], "scale.alzate": [230, 205], ringhiera: [165, 150], corrimano: [290, 125], pianerottolo: [120, 190], "scale.battiscopa": [322, 190], "scale.finestra": [110, 100], "scale.luci": [221, 52], "scale.pareti": [60, 90], disegni: [265, 85],
+  } },
+  ingresso: { file: "mappa-ingresso.webp", h: 300, sagoma: [[200, 15], [375, 85], [375, 215], [200, 295], [22, 215], [22, 85]], posti: {
+    ingresso: [283, 120], "ingresso.portone": [283, 120], maniglione: [280, 140], citofono: [243, 108], targhe: [345, 135], cassetta: [58, 135], "ingresso.zerbini": [262, 190], "ingresso.luci": [222, 52], "ingresso.pavimento": [190, 225],
+  } },
+  terrazzo: { file: "mappa-terrazzo.webp", h: 300, sagoma: [[197, 100], [378, 160], [378, 215], [200, 298], [20, 222], [20, 165]], posti: {
+    terrazzo: [200, 180], "terrazzo.pavimento": [130, 235], muretto: [300, 128], "terrazzo.ringhiera": [300, 128], "terrazzo.bidoni": [75, 190], "terrazzo.lampade": [198, 63], "terrazzo.stendino": [262, 170], "terrazzo.piante": [168, 145], "terrazzo.scarico": [265, 240],
+  } },
+  lavanderia: { file: "mappa-lavanderia.webp", h: 300, sagoma: [[200, 12], [378, 85], [378, 215], [200, 298], [20, 218], [20, 80]], posti: {
+    lavanderia: [235, 115], "lavanderia.scaffali": [235, 115], "lavanderia.lavatrice": [85, 175], "lavanderia.prodotti": [85, 105], cestoni: [180, 235], carrello: [270, 215], "lavanderia.pavimento": [300, 250],
+  } },
+  balcone: { file: "mappa-balcone.webp", h: 300, sagoma: [[200, 15], [385, 105], [385, 215], [200, 300], [25, 215], [25, 75]], posti: {
+    balcone: [200, 180], "balcone.pavimento": [300, 210], portafinestra: [105, 130], unita: [165, 78], "balcone.lampada": [60, 108], "balcone.muro": [192, 120], ringhiera: [130, 212], muretto: [130, 212], "balcone.mobili": [175, 190], stendino: [255, 165], piante: [205, 140], "balcone.scarico": [262, 238],
+  } },
+};
+for (const [k, v] of Object.entries(MAPPE_ZONE)) MAPPE[k] = v;
 let mappeRotte = false;   // un file delle mappe non c'è (404): si torna a matita, per tutta la sessione
 document.addEventListener("error", (e) => { const t = e.target; if (t && t.classList && t.classList.contains("mt-foto") && !mappeRotte) { mappeRotte = true; try { disegna(); } catch (err) {} } }, true);
 // il pezzo «foto» per isoDisegno: il disegno di Gemini largo tutto il foglio (400 × 300), con i posti già in 2D
-function mappaPezzo(id, titolo) { const m = MAPPE[id]; if (!m || mappeRotte) return null; return { titolo, foto: id, file: m.file, W: 400, H: 300, posti: m.posti, sagoma: m.sagoma }; }
+function mappaPezzo(id, titolo) { const m = MAPPE[id]; if (!m || mappeRotte) return null; return { id, titolo, foto: id, file: m.file, W: 400, H: m.h || 300, posti: m.posti, sagoma: m.sagoma }; }   // 1.47.0: id (per non ripetere i pezzi) e altezza propria
 function isoDisegno(opz) {
   const E = opz.esc, W = 400, f = (n) => n.toFixed(1);
   const pezzi = [];
   const tipo = opz.tipo || (opz.casa ? "casa" : "camera");
   // 1.37.0: le stanze riempiono il foglio (la camera quasi tutta la larghezza; il bagno, la cucina e le zone comuni di più)
-  if (tipo === "comune") { const pz = isoPezzoComune(opz.luogo || ""); if (pz) pezzi.push(pz); }
+  if (tipo === "comune") { const pz = isoPezzoComune(opz.luogo || ""); if (pz) pezzi.push(mappaPezzo(pz.id, pz.titolo) || pz); }   // 1.47.0: la mappa di Gemini, se c'è
   else if (tipo === "casa") {
     pezzi.push(mappaPezzo("cucina", "La cucina e il soggiorno") || { titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 23, U: 11, V: 8, H: 5.5 });   // 1.45.0: la mappa di Gemini, se c'è
     pezzi.push(mappaPezzo("camera", opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere") || { titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 26, U: 9, V: 6, H: 5.2 });
@@ -3576,8 +3599,8 @@ function isoDisegno(opz) {
     pezzi.push(mappaPezzo("camera", "La camera") || { titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 28.6, U: 9, V: 6, H: 5.2 });   // 1.45.0: la mappa di Gemini, se c'è
     pezzi.push(mappaPezzo("bagno", "Il bagno") || { titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 30, U: 5.6, V: 6.4, H: 5.5 });
   }
-  if (opz.balcone) pezzi.push({ titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 30, U: 6.0, V: 4.2, H: 3.6 });
-  for (const id of opz.extra || []) { const pz = isoPezzoComune(id); if (pz && !pezzi.some(x => x.id === pz.id)) pezzi.push(pz); }
+  if (opz.balcone) pezzi.push(mappaPezzo("balcone", "Il balcone") || { titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 30, U: 6.0, V: 4.2, H: 3.6 });   // 1.47.0
+  for (const id of opz.extra || []) { const pz = isoPezzoComune(id); if (pz && !pezzi.some(x => x.id === pz.id)) pezzi.push(mappaPezzo(pz.id, pz.titolo) || pz); }
   let y = 34, corpo = "", scritte = "", titoli = "", foto = "";
   const posti = {}, scatole = [], diPezzo = {}, bande = [];   // posti: posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince); scatole: dove stanno le scritte (i numeri e le parole le evitano); bande: lo spazio di ogni pezzo
   for (const pz of pezzi) {
@@ -4177,7 +4200,7 @@ function difettoVisto(id) {
   const el = document.createElement("div"); el.className = "conferma";
   el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>${esc(pianoBreve(v.zona))} di ${esc(L.dataBreve(v.data))}: cosa hai trovato?</span></div>
     <p class="muted small" style="margin:0 0 8px">${v.vistoOra && v.vistoDa !== "direzione" ? `Visto da ${esc(v.vistoNome || SIG(v.vistoDa))} alle ${esc(L.oraBreve(v.vistoOra))}: «non fatta» le toglie ${eur(argonConf().vistoEuro)} e a ${esc(v.finitoDa || SIG(v.zona))} la rifinitura.` : "Non c'è ancora il Visto di una collega: si toglie solo la rifinitura."}${v.rodaggio ? " Siamo in rodaggio: lo segno, ma non tolgo niente." : ""}</p>
-    <div class="ag-difetti">${voci.map((x, i) => `<div class="ag-difetto"><b>${x.rif ? "⭐ " : ""}${esc(x.nome)}${x.euro ? ` <small>${eur(x.euro)}</small>` : ""}</b><div class="ag-difetto-tasti"><button class="btnsm" data-d="${i}|no">Non fatta</button>${x.rif && altra ? `<button class="btnsm ghost" data-d="${i}|rifatta">L'ha fatta ${esc(SIG(altra))}</button>` : ""}</div></div>`).join("")}</div>
+    <div class="ag-difetti">${voci.map((x, i) => `<div class="ag-difetto"><b>${x.rif ? "⭐ " : ""}${esc(x.nome)}${x.euro && !pagaAOre() ? ` <small>${eur(x.euro)}</small>` : ""}</b><div class="ag-difetto-tasti"><button class="btnsm" data-d="${i}|no">Non fatta</button>${x.rif && altra ? `<button class="btnsm ghost" data-d="${i}|rifatta">L'ha fatta ${esc(SIG(altra))}</button>` : ""}</div></div>`).join("")}</div>
     <button class="big close" data-no>Lascia stare</button></div>`;
   document.body.appendChild(el);
   el.querySelectorAll("[data-d]").forEach(b => b.onclick = async () => { const [i, modo] = b.dataset.d.split("|"); el.remove(); await segnaDifetto(id, voci[+i], modo, altra); });
@@ -4968,7 +4991,7 @@ function stelleSalvate(p) {
 function righeZona(l) { if (!l || !l.zona.length) return []; const giorno = l.zona.filter(r => r.sempre), ritmo = l.zona.filter(r => !r.sempre); return [...(giorno.length ? [{ k: "Zgiorno", tipo: "riga", n: "✓", testo: "Come ogni giorno", sotto: giorno.map(r => r.testo.toLowerCase()).join(", "), codici: [], minuti: giorno.reduce((s, r) => s + (r.minuti || 0), 0) }] : []), ...ritmo]; }
 // Le cose che la signora tocca: i BLOCCHI (un tasto Fatto per blocco: le righe dentro si leggono), le STELLE una per una, le zone comuni
 // le righe del giro delle stelle: una per stella, col nome della camera davanti
-function righeGiro(p) { return rifinitureDi(p).map((st, i) => ({ k: chiaveStella(st), tipo: "stella", n: i + 1, testo: `${st.luogoNome || camera(st.luogo).nome}: ${st.parte ? `${st.superficie}: ${st.parte}` : st.superficie || st.nome}`, sotto: `${st.minuti} min${st.euro ? " · " + eur(st.euro) : ""}${st.prodotto && !/^nessuno/.test(st.prodotto) ? " · " + st.prodotto : ""}`, codici: [st.codice], minuti: st.minuti, stella: st, luogo: st.luogo, blocco: "giro" })); }
+function righeGiro(p) { return rifinitureDi(p).map((st, i) => ({ k: chiaveStella(st), tipo: "stella", n: i + 1, testo: `${st.luogoNome || camera(st.luogo).nome}: ${st.parte ? `${st.superficie}: ${st.parte}` : st.superficie || st.nome}`, sotto: `${pagaAOre() ? "" : `${st.minuti} min${st.euro ? " · " + eur(st.euro) : ""}`}${st.prodotto && !/^nessuno/.test(st.prodotto) ? (pagaAOre() ? "" : " · ") + st.prodotto : ""}`, codici: [st.codice], minuti: st.minuti, stella: st, luogo: st.luogo, blocco: "giro" })); }
 function unitaDi(p) { if (p && p.tipo === "stelle") return righeGiro(p); const l = listaDi(p); if (!l) return []; return [...l.blocchi.filter(b => b.righe.length).map(b => ({ k: b.k, tipo: "blocco", testo: b.nome, codici: b.codici, n: b.righe.length, minuti: b.minuti, blocco: b.id })), ...l.blocchi.flatMap(b => b.stelle), ...righeZona(l)]; }
 function righeDi(p) { return unitaDi(p); }
 // Le spunte della signora su una camera aperta: restano sul telefono finché non preme FATTO (poi si salvano sulla pulizia)
