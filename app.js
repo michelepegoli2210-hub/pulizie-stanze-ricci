@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.44.0";
+export const VERSIONE = "1.45.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -3528,6 +3528,40 @@ const ISO_PEZZI_COMUNI = {
   lavanderia: { titolo: "La lavanderia", fa: (o) => isoLavanderia(o), s: 30, U: 6.5, V: 4.5, H: 5 },
 };
 function isoPezzoComune(id) { const k = /corridoio/.test(id) ? "corridoio" : /scal/.test(id) ? "scale" : /ingress|portone/.test(id) ? "ingresso" : /terrazz/.test(id) ? "terrazzo" : /lavander|attrezz/.test(id) ? "lavanderia" : null; return k ? { ...ISO_PEZZI_COMUNI[k], id: k, piano: /p1|1/.test(id) ? 1 : 2 } : null; }
+// ============================================================================
+//  1.45.0 LE MAPPE CHIARISSIME DI GEMINI (Michele, 3/11: «le immaginette a matita con le stelle da fare: quelle stanze le
+//  devi fare di una chiarezza disarmante»). La camera, il bagno e la cucina delle case sono DISEGNI DI GEMINI (mappa-<id>.webp,
+//  1088×816, 4:3): ogni cosa al suo posto, ben separata, senza persone né scritte. Sopra il disegno l'app mette, come prima,
+//  i numeri con la freccia spessa e la parola (isoDisegno): MAPPE dice, per ogni parte del catalogo (PARTI_DISEGNO), dove sta
+//  nel disegno, in unità della viewBox (400 di larghezza × 300 di altezza). Le zone comuni (scale, terrazzo, lavanderia…) e il
+//  balcone restano a matita. Se un file manca (404) si torna al disegno a matita (mappeRotte).
+// ============================================================================
+const MAPPE = {
+  camera: { file: "mappa-camera.webp", sagoma: [[200, 14], [375, 85], [375, 215], [200, 298], [28, 215], [28, 85]], posti: {
+    camera: [210, 150], soffitto: [200, 30], "soffitto.angoli": [199, 22], pareti: [120, 85], "pareti.macchie": [120, 85], pavimento: [170, 252], "pavimento.angoli": [52, 214], battiscopa: [115, 190],
+    porta: [63, 150], "porta.anta": [58, 165], "porta.maniglia": [80, 157], "porta.numero": [66, 128], zerbino: [78, 205], appendiabiti: [100, 110], interruttori: [92, 140], specchio: [121, 120],
+    tv: [153, 108], "tv.retro": [150, 91], prese: [160, 166], clima: [152, 55], "clima.filtri": [155, 62], "clima.griglia": [150, 46], frigo: [132, 168], "frigo.guarnizione": [143, 165], "frigo.retro": [135, 152], cestino: [108, 180],
+    armadio: [195, 120], "armadio.ante": [184, 130], "armadio.dentro": [207, 92], "armadio.sopra": [195, 58], "armadio.sotto": [196, 162], cassetti: [128, 232], scrivania: [155, 215], tavolo: [155, 215], bollitore: [136, 203], sedia: [150, 235],
+    letto: [248, 195], "letto.testiera": [285, 212], "letto.piedini": [258, 256], "letto.sotto": [268, 238], "letto.spostato": [240, 220], materasso: [245, 210], cuscini: [266, 192], coperta: [230, 196], comodino: [233, 250], abatjour: [240, 222], telecomandi: [228, 236],
+    plafoniera: [231, 110], quadro: [244, 88], finestra: [300, 105], "finestra.vetro": [290, 110], "finestra.vetroEsterno": [316, 112], "finestra.maniglia": [297, 115], "finestra.telaio": [277, 100], "finestra.davanzale": [298, 138], tapparella: [298, 85], zanzariera: [307, 100], tende: [263, 100], "tende.bastone": [300, 70], termosifone: [293, 165],
+  } },
+  bagno: { file: "mappa-bagno.webp", sagoma: [[200, 8], [360, 68], [360, 232], [200, 300], [40, 232], [40, 68]], posti: {
+    bagno: [200, 150], "bagno.soffitto": [198, 16], "bagno.pareti": [330, 90], piastrelle: [160, 95], "bagno.pavimento": [120, 245], "bagno.porta": [372, 170], "bagno.interruttori": [345, 157], "bagno.plafoniera": [197, 73], "bagno.finestra": [225, 85], aspiratore: [128, 57],
+    doccia: [85, 150], "doccia.box": [60, 125], "doccia.guide": [108, 175], "doccia.mensola": [92, 135], "doccia.piatto": [100, 230], "doccia.piletta": [90, 219], soffione: [95, 93], miscelatore: [75, 150], silicone: [60, 215], scaldasalviette: [137, 105], asciugamani: [333, 183],
+    wc: [190, 165], "wc.tavoletta": [193, 165], "wc.cassetta": [177, 135], "wc.base": [188, 190], "wc.dietro": [175, 150], scopino: [122, 195], portarotolo: [218, 150], bidet: [140, 180],
+    lavabo: [283, 160], "lavabo.piletta": [280, 158], "lavabo.sotto": [285, 182], rubinetto: [290, 148], mensola: [290, 134], "specchio.bagno": [295, 105], "specchio.luce": [293, 82], phon: [322, 130], bidoncino: [254, 185], "bagno.cestino": [254, 185], tappetino: [265, 225], scarico: [202, 229],
+  } },
+  cucina: { file: "mappa-cucina.webp", sagoma: [[200, 12], [372, 83], [372, 212], [200, 298], [20, 222], [20, 88]], posti: {
+    casa: [200, 150], cucina: [200, 150], "cucina.soffitto": [200, 22], "cucina.pareti": [320, 70], "cucina.pavimento": [110, 235], "cucina.porta": [298, 130], "cucina.finestra": [240, 95], "cucina.tv": [336, 162], divano: [250, 205], tavolo: [165, 215], sedie: [138, 225],
+    pensili: [85, 95], "pensili.dentro": [165, 78], "pensili.sopra": [110, 62], cappa: [110, 100], "cappa.filtri": [112, 104], mestoli: [128, 118], paraschizzi: [100, 133], "piastrelle.fornelli": [100, 135], fornelli: [112, 148], forno: [120, 175], piano: [140, 150],
+    lavello: [160, 128], "lavello.sotto": [160, 150], lavastoviglie: [185, 155], microonde: [183, 112], "bollitore.cucina": [88, 150], "prese.cucina": [165, 108],
+    "cucina.frigo": [62, 170], "cucina.frigo.sopra": [62, 126], "cucina.frigo.dietro": [40, 150], "cucina.frigo.guarnizioni": [72, 165], "pavimento.frigo": [62, 220], bidoni: [228, 250], "cucina.cestino": [263, 238],
+  } },
+};
+let mappeRotte = false;   // un file delle mappe non c'è (404): si torna a matita, per tutta la sessione
+document.addEventListener("error", (e) => { const t = e.target; if (t && t.classList && t.classList.contains("mt-foto") && !mappeRotte) { mappeRotte = true; try { disegna(); } catch (err) {} } }, true);
+// il pezzo «foto» per isoDisegno: il disegno di Gemini largo tutto il foglio (400 × 300), con i posti già in 2D
+function mappaPezzo(id, titolo) { const m = MAPPE[id]; if (!m || mappeRotte) return null; return { titolo, foto: id, file: m.file, W: 400, H: 300, posti: m.posti, sagoma: m.sagoma }; }
 function isoDisegno(opz) {
   const E = opz.esc, W = 400, f = (n) => n.toFixed(1);
   const pezzi = [];
@@ -3535,18 +3569,29 @@ function isoDisegno(opz) {
   // 1.37.0: le stanze riempiono il foglio (la camera quasi tutta la larghezza; il bagno, la cucina e le zone comuni di più)
   if (tipo === "comune") { const pz = isoPezzoComune(opz.luogo || ""); if (pz) pezzi.push(pz); }
   else if (tipo === "casa") {
-    pezzi.push({ titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 23, U: 11, V: 8, H: 5.5 });
-    pezzi.push({ titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 26, U: 9, V: 6, H: 5.2 });
-    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, { lavatrice: true }), s: 28.5, U: 5.6, V: 6.4, H: 5.5 });
+    pezzi.push(mappaPezzo("cucina", "La cucina e il soggiorno") || { titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 23, U: 11, V: 8, H: 5.5 });   // 1.45.0: la mappa di Gemini, se c'è
+    pezzi.push(mappaPezzo("camera", opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere") || { titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 26, U: 9, V: 6, H: 5.2 });
+    pezzi.push(mappaPezzo("bagno", "Il bagno") || { titolo: "Il bagno", fa: (o) => isoBagno(o, { lavatrice: true }), s: 28.5, U: 5.6, V: 6.4, H: 5.5 });
   } else {
-    pezzi.push({ titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 28.6, U: 9, V: 6, H: 5.2 });
-    pezzi.push({ titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 30, U: 5.6, V: 6.4, H: 5.5 });
+    pezzi.push(mappaPezzo("camera", "La camera") || { titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 28.6, U: 9, V: 6, H: 5.2 });   // 1.45.0: la mappa di Gemini, se c'è
+    pezzi.push(mappaPezzo("bagno", "Il bagno") || { titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 30, U: 5.6, V: 6.4, H: 5.5 });
   }
   if (opz.balcone) pezzi.push({ titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 30, U: 6.0, V: 4.2, H: 3.6 });
   for (const id of opz.extra || []) { const pz = isoPezzoComune(id); if (pz && !pezzi.some(x => x.id === pz.id)) pezzi.push(pz); }
-  let y = 34, corpo = "", scritte = "", titoli = "";
+  let y = 34, corpo = "", scritte = "", titoli = "", foto = "";
   const posti = {}, scatole = [], diPezzo = {}, bande = [];   // posti: posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince); scatole: dove stanno le scritte (i numeri e le parole le evitano); bande: lo spazio di ogni pezzo
   for (const pz of pezzi) {
+    if (pz.foto) {   // 1.45.0: LA MAPPA DI GEMINI: il disegno largo tutto il foglio, i posti già in 2D, la sagoma della stanza
+      const y0 = y + 14, hh = pz.H, cid = `mtFoto${pezzi.indexOf(pz)}`;
+      titoli += `<text x="${f(W / 2)}" y="${f(y + 4)}" class="mt-titolo">${E(pz.titolo)}</text>`; scatole.push({ x1: W / 2 - pz.titolo.length * 5.2, x2: W / 2 + pz.titolo.length * 5.2, y: y + 4 });
+      foto += `<g class="mt-foto-g"><clipPath id="${cid}"><rect x="0" y="${f(y0)}" width="${W}" height="${hh}" rx="14"/></clipPath><image class="mt-foto" href="${pz.file}" x="0" y="${f(y0)}" width="${W}" height="${hh}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cid})"/><rect class="mt-foto-bordo" x="0" y="${f(y0)}" width="${W}" height="${hh}" rx="14"/></g>`;
+      const ib = bande.length;
+      for (const [k, p] of Object.entries(pz.posti)) if (!posti[k]) { posti[k] = [p[0], y0 + p[1]]; diPezzo[k] = ib; }
+      const sg = pz.sagoma.map(q => [q[0], y0 + q[1]]);
+      bande.push({ y1: y + 10, y2: y0 + hh + 6, cx: sg.reduce((s, q) => s + q[0], 0) / sg.length, cy: sg.reduce((s, q) => s + q[1], 0) / sg.length, sagoma: sg });
+      y = y0 + hh + 40;
+      continue;
+    }
     const larg = (pz.U + pz.V) * ISO_CX * pz.s;
     const o = { x: (W - larg) / 2 + pz.V * ISO_CX * pz.s, y: y + 16 + pz.H * pz.s, s: pz.s };
     const r = pz.fa(o, { piano: pz.piano || opz.piano || 2 });
@@ -3646,7 +3691,7 @@ function isoDisegno(opz) {
     const pw = m.parola;
     return `<g class="mt-segno ${sg.k}"><g transform="translate(${f(p.x)} ${f(p.y)})"><circle class="mt-onda" r="12"/><circle class="mt-alone" r="12"/></g>${freccia}<g transform="translate(${f(m.bx)} ${f(m.by)})"><circle class="mt-tondo" r="${R}"/><text y="6" class="mt-num">${i + 1}</text><text x="12" y="-9" class="mt-mini">${sg.k === "stella" ? "★" : "✦"}</text></g>${pw ? `<text x="${f(pw.x)}" y="${f(pw.y)}" class="mt-parola ${pw.anc}">${E(pw.t)}</text>` : ""}</g>`;
   }).join("");
-  return { alto, svg: `${titoli}<g filter="url(#mtTrem)">${corpo}</g>${scritte}${numeri}`, W, pezzi: pezzi.map(p => p.titolo) };
+  return { alto, svg: `${titoli}${foto}<g filter="url(#mtTrem)">${corpo}</g>${scritte}${numeri}`, W, pezzi: pezzi.map(p => p.titolo) };   // 1.45.0: le mappe fuori dal filtro a matita
 }
 // ---- 1.36.0: ogni regola del catalogo sa DOVE sta sul disegno (la parte precisa) e con QUALE PAROLA si dice ---------------
 // ---- (1.37.0: il disegno è grande e il numero indica la parte con una freccia; la parola sta accanto al numero) ----------
@@ -3732,7 +3777,7 @@ function disegnoCamera(p) {
   const conMinuti = !pagaAOre();
   const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.parola && !PAROLE.norm(s.t).includes(PAROLE.norm(s.parola)) ? `${s.parola.replace(/^./, ch => ch.toUpperCase())} — ${s.t}` : s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${conMinuti && s.min ? ` · ${s.min} min` : ""}${s.luogo && s.luogo !== p.camera ? ` · ${esc(camera(s.luogo).nome)}` : ""}</small></span></li>`).join("")}</ol>` : "";
   const titolo = comune ? (d.pezzi[0] || c.nome) : casa ? "La casa" : "La camera";
-  const detto = comune ? `${titolo.toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: ${singola ? "letto singolo" : "letto matrimoniale"} con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;
+  const detto = comune ? `${titolo.toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: letto matrimoniale con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;   // 1.45.0: la mappa è una sola per tutte le camere
   return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${esc(titolo)}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}${segni.length ? `<p class="mt-did">Ogni numero ha la sua freccia: la punta sta sulla cosa da pulire, e accanto al numero c'è scritto cosa.</p>` : ""}</section>`;
 }
 // ---- Sofia a fianco, A SCOMPARSA (1.32.0): di solito c'è solo il tasto tondo col microfono; toccandolo Sofia esce intera

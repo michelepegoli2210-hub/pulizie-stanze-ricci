@@ -7339,3 +7339,8 @@ body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma)
 .sig-blocco .lavoro-img{margin:0 0 10px}
 .sf-finale{margin-top:10px}
 .sf-finale .lavoro-img{border-radius:16px}
+
+/* ---- 1.45.0: LE MAPPE DI GEMINI nel disegno della camera (al posto della casa delle bambole a matita, per camera, bagno e
+   cucina): il disegno largo tutto il foglio, con un bordo sottile e gli angoli tondi; sopra, come prima, numeri, frecce e parole ---- */
+.mt-disegno .mt-foto-bordo{fill:none;stroke:rgba(43,58,74,.55);stroke-width:2}
+.mt-disegno .mt-foto{image-rendering:auto}
