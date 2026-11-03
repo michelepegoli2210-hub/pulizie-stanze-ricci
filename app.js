@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.45.0";
+export const VERSIONE = "1.46.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -3758,26 +3758,42 @@ function parteDisegno(r) {
   return { dove, parola: parola.length > 24 ? parola.slice(0, 22) + "…" : parola };
 }
 function disegnoCamera(p) {
-  if (!p || p.tipo === "stelle") return "";
+  if (!p) return "";
+  const regolaDi = (id) => { try { return regoleGov().find(x => x.id === id) || {}; } catch (e) { return {}; } };
+  const segnoStella = (r, luogo) => { const pd = parteDisegno({ ...regolaDi(r.regola), ...r, regola: r.regola }); return { k: "stella", t: r.nome, min: Number(r.minuti) || 0, icona: r.icona || regolaDi(r.regola).icona || "", dove: pd.dove, parola: pd.parola, luogo }; };
+  // 1.46.0: LE STELLE NELLE ALTRE CAMERE («Altre camere», tipo stelle): un disegno per ogni camera o posto, con le sue frecce
+  // (Michele, 3/11: «Selena fa delle stelle nelle camere di Lucia e viceversa: anche lì ci deve essere il disegno»)
+  if (p.tipo === "stelle") {
+    let rif = []; try { rif = rifinitureOggi(p.zona, p.data).filter(r => r.pulizia === p.id); } catch (e) {}
+    const gruppi = new Map();
+    for (const r of rif) { const l = r.camera || r.luogo || ""; if (!l) continue; if (!gruppi.has(l)) gruppi.set(l, []); gruppi.get(l).push(r); }
+    return [...gruppi].map(([l, rs]) => disegnoLuogo(camera(l), rs.map(r => segnoStella(r, l)), { nome: true })).join("");
+  }
   const c = camera(p.camera); if (!c || !c.id) return "";
-  const comune = c.tipo === "comune", casa = c.tipo === "casa", singola = !casa && !comune && (Number(c.posti) || 2) < 2;
+  const comune = c.tipo === "comune";
   if ((p.tipo === "fisso" || p.tipo === "extra") && !comune) return "";   // i lavori fissi nelle zone comuni (scale, terrazzo…) hanno il loro disegno
-  const comuniIds = new Set(G.LUOGHI_COMUNI.map(l => l.id));
   // le stelle e i lavori a fondo di oggi in questo posto (e le zone comuni appese a questa pulizia, con il loro disegno sotto)
   let rif = []; try { rif = rifinitureOggi(p.zona, p.data).filter(r => r.pulizia === p.id || (r.camera === p.camera && S.pulizie[r.pulizia]?.camera === p.camera)); } catch (e) {}
   const fondi = Object.values(S.pulizie || {}).filter(x => x && x.data === p.data && x.zona === p.zona && x.camera === p.camera && x.origine === "governante" && x.stato !== "non_fatta" && !x.nonServe);
-  const regolaDi = (id) => { try { return regoleGov().find(x => x.id === id) || {}; } catch (e) { return {}; } };
-  const segni = [...rif.map(r => { const pd = parteDisegno({ ...regolaDi(r.regola), ...r, regola: r.regola }); return { k: "stella", t: r.nome, min: Number(r.minuti) || 0, icona: r.icona || regolaDi(r.regola).icona || "", dove: pd.dove, parola: pd.parola, luogo: r.camera || r.luogo || p.camera }; }),
+  const segni = [...rif.map(r => segnoStella(r, r.camera || r.luogo || p.camera)),
     ...fondi.map(f => { const rg = regolaDi(f.regola); const pd = parteDisegno({ ...rg, regola: f.regola, nome: titoloBase(f) || rg.nome }); return { k: "fondo", t: String(titoloBase(f) || "Lavoro a fondo"), min: Number(f.minuti) || 0, icona: f.icona || rg.icona || "", dove: pd.dove, parola: pd.parola, luogo: p.camera }; })];
-  const extra = [...new Set(segni.map(s => s.luogo).filter(l => l && l !== p.camera && comuniIds.has(l)))];
+  return disegnoLuogo(c, segni, {});
+}
+// il disegno di UN posto (camera, casa o zona comune) coi suoi segni: la mappa di Gemini (1.45) o la casa delle bambole a matita,
+// numeri, frecce e parole, la legenda sotto. opz.nome: il nome del posto nel titolo (per le stelle nelle altre camere)
+function disegnoLuogo(c, segni, opz) {
+  if (!c || !c.id) return "";
+  const comune = c.tipo === "comune", casa = c.tipo === "casa", singola = !casa && !comune && (Number(c.posti) || 2) < 2;
+  const comuniIds = new Set(G.LUOGHI_COMUNI.map(l => l.id));
+  const extra = [...new Set(segni.map(s => s.luogo).filter(l => l && l !== c.id && comuniIds.has(l)))];
   const balcone = !comune && segni.some(s => /^(balcone|ringhiera|muretto|piante|unita|stendino|portafinestra)/.test(String(s.dove)));
-  // 1.36.0: la stessa casa delle bambole della 1.34, con l'anello sulla parte precisa; 1.37.0: grande, con le frecce
+  // 1.36.0: la stessa casa delle bambole della 1.34, con l'anello sulla parte precisa; 1.37.0: grande, con le frecce; 1.45.0: le mappe di Gemini
   const d = isoDisegno({ tipo: comune ? "comune" : casa ? "casa" : "camera", luogo: c.id, piano: /p1|1/.test(String(c.zona)) ? 1 : 2, singola, piani: Number(c.piani) || 1, balcone, extra, segni, esc });
   const icoDi = (s) => ICONE_SVG[s.icona] ? ICONA(s.icona) : (s.k === "stella" ? "⭐" : "✨");
   const conMinuti = !pagaAOre();
-  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.parola && !PAROLE.norm(s.t).includes(PAROLE.norm(s.parola)) ? `${s.parola.replace(/^./, ch => ch.toUpperCase())} — ${s.t}` : s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${conMinuti && s.min ? ` · ${s.min} min` : ""}${s.luogo && s.luogo !== p.camera ? ` · ${esc(camera(s.luogo).nome)}` : ""}</small></span></li>`).join("")}</ol>` : "";
-  const titolo = comune ? (d.pezzi[0] || c.nome) : casa ? "La casa" : "La camera";
-  const detto = comune ? `${titolo.toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: letto matrimoniale con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;   // 1.45.0: la mappa è una sola per tutte le camere
+  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.parola && !PAROLE.norm(s.t).includes(PAROLE.norm(s.parola)) ? `${s.parola.replace(/^./, ch => ch.toUpperCase())} — ${s.t}` : s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${conMinuti && s.min ? ` · ${s.min} min` : ""}${s.luogo && s.luogo !== c.id ? ` · ${esc(camera(s.luogo).nome)}` : ""}</small></span></li>`).join("")}</ol>` : "";
+  const titolo = opz && opz.nome ? c.nome : comune ? (d.pezzi[0] || c.nome) : casa ? "La casa" : "La camera";
+  const detto = comune ? `${(d.pezzi[0] || c.nome).toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: letto matrimoniale con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;   // 1.45.0: la mappa è una sola per tutte le camere
   return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${esc(titolo)}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}${segni.length ? `<p class="mt-did">Ogni numero ha la sua freccia: la punta sta sulla cosa da pulire, e accanto al numero c'è scritto cosa.</p>` : ""}</section>`;
 }
 // ---- Sofia a fianco, A SCOMPARSA (1.32.0): di solito c'è solo il tasto tondo col microfono; toccandolo Sofia esce intera

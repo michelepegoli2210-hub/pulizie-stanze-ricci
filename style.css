@@ -7344,3 +7344,6 @@ body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma)
    cucina): il disegno largo tutto il foglio, con un bordo sottile e gli angoli tondi; sopra, come prima, numeri, frecce e parole ---- */
 .mt-disegno .mt-foto-bordo{fill:none;stroke:rgba(43,58,74,.55);stroke-width:2}
 .mt-disegno .mt-foto{image-rendering:auto}
+
+/* ---- 1.46.0: piu disegni uno sotto l altro nella scheda «Altre camere» (uno per camera): un po di aria tra uno e l altro ---- */
+.mt-camera + .mt-camera{margin-top:14px}

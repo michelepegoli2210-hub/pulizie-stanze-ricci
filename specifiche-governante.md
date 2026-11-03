@@ -2452,3 +2452,12 @@ Michele: «Fai generare delle immagini chiarissime per la parte di spiegazione a
 - COME FUNZIONA: isoDisegno accetta pezzi «foto»: il disegno largo tutto il foglio (viewBox 400×300 per pezzo), e per ogni parte del catalogo (PARTI_DISEGNO → posti) le coordinate lette a mano sul disegno (dev/stanze/griglia.py: la griglia numerata per leggerle). Numeri, frecce e parole si piazzano con lo stesso algoritmo di prima (lontano dalle scritte, fuori dalla sagoma della stanza quando si può, frecce che non si incrociano). Le zone comuni (scale, terrazzo, lavanderia…) e il balcone restano a matita, nello stesso foglio. Se un file manca (404 sull'<image>) `mappeRotte` fa tornare tutto a matita.
 - LE IMMAGINI: prompt in dev/stanze/prompt-mappe.txt (stile delle tessere, «mappa didattica», elenco di tutte le cose, 70% del quadro); prese dalla pagina di Gemini sul PC (immagine portata a 870 px, tutto il resto nascosto, cattura 1088×813), webp q85 (dev/stanze/mappe).
 - Prove: prova1450 (la scheda della camera con la mappa di Gemini: le tre <image>, i posti delle stelle sulla mappa, le frecce; senza i file si torna a matita senza errori) più tutto quello della 1.44.
+
+## 146. La 1.46.0 (3 novembre): LE STELLE NELLE ALTRE CAMERE COL DISEGNO
+
+Michele: «Selena fa delle stelle nelle camere di Lucia e Lucia nelle camere di Selena: anche lì ci devono essere indicazioni chiarissime, cioè il disegno».
+
+- LA SCHEDA «ALTRE CAMERE» (tipo `stelle`): prima non aveva nessun disegno (disegnoCamera tornava vuoto). Ora, nella scena di Sofia, c'è UN DISEGNO PER OGNI CAMERA (o posto) dove ci sono stelle: il titolo è il nome della camera («Salvatore», «Scale»…), sotto la mappa di Gemini (o la casa delle bambole a matita per le zone comuni) con i numeri, le frecce e le parole delle sue stelle, e la legenda. Le righe «Camera per camera» restano sotto.
+- COME: disegnoCamera(p) ora, per le pulizie di tipo stelle, raggruppa le rifiniture per camera (rifinitureOggi filtrate per pulizia) e chiama disegnoLuogo(camera, segni, {nome:true}) per ognuna; disegnoLuogo è la parte di prima (isoDisegno, legenda, titolo), usata anche dalle camere normali.
+- In attesa (limite giornaliero di Gemini fino alle 16:05): le mappe di Gemini per scale, corridoio, ingresso, terrazzo, lavanderia e balcone, il bagno con la porta, la camera con la zanzariera (1.47.0).
+- Prove: prova1460 (la scheda «Altre camere» della scena di Sofia: un disegno per camera col nome, le frecce sulle stelle giuste, la legenda) più tutto quello della 1.45.
