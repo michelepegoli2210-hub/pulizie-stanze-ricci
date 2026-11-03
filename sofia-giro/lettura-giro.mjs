@@ -56,6 +56,7 @@ function cameraDa(x, ctx) {
 }
 // quante cose cambiano davvero (stesso confronto dell'app: completaRiga) — serve solo per il testo dell'avviso
 export function riassuntoGiro(j, ctx) {
+  if (ctx.prospettoChat === false) j = { ...j, soggiorni: [], togli: [] };   // 1.49.0: il prospetto arriva dal foglio Excel
   const sog = ctx.soggiorni || [], oggi = ctx.oggi;
   let cambi = 0;
   for (const x of (Array.isArray(j.soggiorni) ? j.soggiorni : []).slice(0, 80)) {
@@ -74,16 +75,16 @@ export function riassuntoGiro(j, ctx) {
   return { cambi, indicazioni: n("indicazioni"), assenze: n("assenze"), guasti: n("guasti"), spesa: n("spesa"), note: n("note"), ore: n("ore"), telefoni: n("telefoni") };   // 1.38.0: ore e telefoni
 }
 // Gemini: prima Argon, poi il modello sveglio, poi lo svelto (come l'app)
-export async function chiediGemini(gemini, dom) {
-  if (typeof gemini.chiedi === "function") return gemini.chiedi(dom);   // le prove
+export async function chiediGemini(gemini, dom, ordine = ["argon", "sveglia", "svelta"]) {   // 1.49.0: la sintesi della sera passa solo dai modelli gratuiti
+  if (typeof gemini.chiedi === "function") return gemini.chiedi(dom, ordine);   // le prove
   let errore = null;
-  for (const qualita of ["argon", "sveglia", "svelta"]) {
+  for (const qualita of ordine) {
     try {
       gemini.modelli = gemini.modelli || {};
       const conf = { fornitore: "gemini", chiave: gemini.chiave, qualita, modello: gemini.modelli[qualita] || "" };
       if (!conf.modello) { const t = await IA.trovaModello(conf); conf.modello = t.modello; gemini.modelli[qualita] = t.modello; }
       const r = await IA.chiedi({ ...dom, conf });
-      return { r, ripiego: qualita !== "argon" };
+      return { r, ripiego: qualita !== ordine[0] };
     } catch (e) { errore = e; console.warn("gemini/" + qualita + ":", e && e.message); }
   }
   throw errore || new Error("nessun modello risponde");
@@ -170,6 +171,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     // chi fa il prospetto: «Papà» (il nome che il ponte dà alla sua chat)
     const papa = scelti.some(m => m.chi === "Papà") ? "Papà" : "";
     const ctx = await ctxDalDatabase(db, { ...base, oggi });
+    ctx.prospettoChat = a.prospettoChat === true;   // 1.49.0: di solito spento: il prospetto arriva dal foglio Excel di papà
     ctx.persone = [...new Set(scelti.flatMap(m => [m.chi, m.chat && String(m.chat).replace(/^chat con /, "")]).filter(Boolean))];
     const codici = LET.creaCodici(ctx);
     const { testo, tagliati, telefoni } = LET.testoPerLettura(scelti, papa, ctx, codici);
@@ -195,4 +197,61 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     try { await db.salva("importazioni", "lettura-sofia", { lid: id, stato: "errore", da: "giro", quando: finito(), errore: msg, postaIds: ids }); } catch (e2) {}
     return { esito: "non riuscita: " + msg, ts: letturaTs, credito: /credito|402|prepay|billing/i.test(msg) };
   }
+}
+
+// ---- 1.49.0: LA SINTESI DELLA SERA DELLA SEGRETARIA (Michele, 3/11: «una sintesi di quello che ha capito della giornata,
+// anche da sola la sera»). Dalle 20:30, una volta al giorno: i messaggi di oggi della posta (coi vocali già trascritti dalle
+// letture; quelli mai ascoltati restano «non ascoltati»: qui non si spende), le letture di oggi, e il modello GRATUITO
+// (sveglio → svelto, mai Argon): 4-7 frasi che restano in importazioni/sintesi_<giorno> (l'app le mostra nella tendina della
+// Segreteria e le legge a voce). Se il telefono l'ha già fatta dopo l'ultimo messaggio, non si rifà.
+const oraRomaDi = (iso) => { try { return new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso)); } catch (e) { return String(iso || "").slice(11, 16); } };
+const ESITI_SINTESI = { salvata: "salvata nell'app", scartata: "scartata", vuota: "niente da cambiare", da_controllare: "ancora da controllare, non ho salvato niente" };
+export function vociCapite(cap, ctx, codici) {
+  const c = cap || {}, out = [];
+  const nomeCam = (id) => { const x = (ctx.camere || []).find(k => k.id === id); return x ? x.nome : String(id || ""); };
+  const data = (iso) => /^\d{4}-\d{2}-\d{2}$/.test(String(iso || "")) ? L.dataMedia(iso) : String(iso || "?");
+  const sig = (z) => { const s = (ctx.signore || []).find(k => k.id === z); return s ? s.nome : (z || "una signora"); };
+  const metti = (t) => { if (t) out.push(codici.aCodici(String(t).replace(/\s+/g, " ").slice(0, 200))); };
+  (c.soggiorni || []).forEach(x => x && metti(`${nomeCam(x.camera)}: ${x.nome || "?"} ${data(x.arrivo)} → ${data(x.partenza)}`));
+  (c.togli || []).forEach(x => x && metti(`${nomeCam(x.camera)}: via ${x.nome || "?"}`));
+  (c.indicazioni || []).forEach(x => x && metti(`Per le signore${x.camera ? " · " + nomeCam(x.camera) : ""} · ${data(x.giorno)}: ${x.testo || ""}`));
+  (c.assenze || []).forEach(x => x && metti(`${sig(x.signora)} non viene ${data(x.dal)}${x.al && x.al !== x.dal ? ` – ${data(x.al)}` : ""}`));
+  (c.guasti || []).forEach(x => x && metti(`Guasto${x.camera ? " · " + nomeCam(x.camera) : ""}: ${x.cosa || ""}${x.urgente ? " (urgente)" : ""}`));
+  (c.spesa || []).forEach(x => x && metti(`Da comprare: ${x.prodotto || ""}`));
+  (c.note || []).forEach(x => x && metti(`Da sapere · ${data(x.giorno)}: ${x.testo || ""}`));
+  (c.ore || []).forEach(x => x && metti(`Ore di ${sig(x.signora)} · ${data(x.giorno)}: ${Number(x.minuti) || 0} minuti${x.dove ? ` · ${x.dove}` : ""}`));
+  (c.telefoni || []).forEach(x => x && metti(`Un numero di telefono messo in rubrica${x.nome ? ` (${x.nome})` : ""}`));   // mai il numero
+  (c.dubbi || []).forEach(x => x && metti(`Domanda: ${typeof x === "string" ? x : (x.domanda || "")}`));
+  return out.slice(0, 12);
+}
+export async function sintesiSera({ db, gemini, adesso = new Date(), a = {}, oggi, prendiBase, minuti, ora = "" }) {
+  if (a.giroSintesi === false) return { esito: "spenta" };
+  if (!gemini || (!gemini.chiave && typeof gemini.chiedi !== "function")) return { esito: "senza chiave" };
+  const gia = await db.doc("importazioni", "sintesi_" + oggi);
+  const inizio = adesso.getTime() - (Number(minuti) || 0) * 60000 - 120000;   // la mezzanotte di Roma, con un po' di margine
+  const posta = Object.values((await db.postaDa(inizio)) || {}).filter(p => p && p.id && String(p.data || "") === oggi && ["testo", "audio", "foto"].includes(p.tipo || "testo"));
+  if (!posta.length) return { esito: "niente da raccontare" };
+  const ultimo = Math.max(...posta.map(p => Number(p.ts) || 0));
+  if (gia && gia.testo && Number(gia.fino || 0) >= ultimo) return { esito: "già fatta", testo: gia.testo };
+  const base = await prendiBase();
+  const nome = (p) => { const n = p.chat || "Albergo"; return p.gruppo === false ? "chat con " + n : n; };
+  const msgs = posta.sort((x, y) => (Number(x.ts) || 0) - (Number(y.ts) || 0)).map(p => ({ id: p.id, data: String(p.data || ""), ora: p.ora || "", chi: p.chi || "", mio: !!p.mio, chat: nome(p), chatNome: nome(p),
+    testo: p.tipo === "audio" ? (p.trascrizione ? `🎤 (vocale) ${p.trascrizione}` : "🎤 (un vocale che non ho ancora ascoltato)") : p.tipo === "foto" ? `📷 (una foto)${p.didascalia ? " " + p.didascalia : ""}` : String(p.testo || "") })).filter(m => m.testo).slice(-160);
+  const papa = msgs.some(m => m.chi === "Papà") ? "Papà" : "";
+  const ctx = await ctxDalDatabase(db, { ...base, oggi });
+  ctx.persone = [...new Set(msgs.map(m => m.chi).filter(Boolean))];
+  const codici = LET.creaCodici(ctx);
+  const { testo: chat } = LET.testoPerLettura(msgs, papa, ctx, codici);
+  let letture = [];
+  try {
+    letture = Object.values((await db.importazioniDa(oggi)) || {}).filter(x => x && x.lid && x.capito && String(x.quando || "").slice(0, 10) === oggi).sort((x, y) => String(x.quando).localeCompare(String(y.quando))).slice(-8)
+      .map(x => `${oraRomaDi(x.quando)} (${x.da === "giro" ? "letta da sola" : "letta dal telefono"}; ${ESITI_SINTESI[x.esito] || x.esito || "?"}): ${vociCapite(x.capito, ctx, codici).join("; ") || "niente da segnare"}`);
+  } catch (e) { console.warn("sintesi/letture:", e && e.message); }
+  const { r } = await chiediGemini(gemini, { sistema: LET.istruzioniSegretaria(ctx, { ora }), storia: [],
+    testo: LET.testoPerSegretaria({ chat, n: msgs.length, oggi: L.dataGiornoLungo(oggi), ieri: L.dataGiornoLungo(L.aggiungiGiorni(oggi, -1)), letture, piano: "", domanda: "Com'è andata oggi? Fammi la sintesi della giornata." }), secondi: 60, maxToken: 1500 }, ["sveglia", "svelta"]);
+  const j = LET.jsonDaRisposta(r.grezzo) || {};
+  const testo = codici.daCodici(String(j.testo || j.risposta || "").trim()).replace(/\*\*?/g, "").slice(0, 1400);
+  if (!testo) throw new Error("Gemini ha risposto in un modo che non capisco");
+  await db.salva("importazioni", "sintesi_" + oggi, { giorno: oggi, quando: adesso.toISOString(), da: "giro", n: msgs.length, fino: ultimo, testo, modello: r.modello || "" });
+  return { esito: "fatta", testo, n: msgs.length };
 }

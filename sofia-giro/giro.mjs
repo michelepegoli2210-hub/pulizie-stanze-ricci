@@ -25,14 +25,18 @@
 //  ogni 10 minuti e 5 minuti dopo i messaggi nuovi (input "da" = "ponte" e "scade" = quando scade la sua chiave di GitHub):
 //  il giro lo scrive in giro-sofia.spinta, così l'app sa se la spinta c'è e quando scade la chiave.
 //  1.20.0: le pulizie che Michele ha detto «non serve» (non_fatta + nonServe) non contano nel piano, nei solleciti e nel bollettino.
+//  1.21.0 (app 1.49.0): LA SINTESI DELLA SERA DELLA SEGRETARIA (lettura-giro.mjs, sintesiSera): dalle 20:30, una volta al giorno,
+//  i messaggi di oggi della posta e le letture di oggi → 4-7 frasi col modello gratuito, in importazioni/sintesi_<giorno>, e
+//  l'avviso «Sofia · la sintesi di oggi» che apre la Segreteria. Si spegne con avvisi.giroSintesi = false. E il prospetto non
+//  passa più dalle chat (avvisi.prospettoChat !== true): le letture non propongono soggiorni.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
 import { LUOGHI_COMUNI } from "../governante.js";
-import { leggiChat } from "./lettura-giro.mjs";
+import { leggiChat, sintesiSera } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.20.0";
+export const VERSIONE_GIRO = "1.21.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -238,12 +242,12 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   }
   // 1.18.0: Sofia legge le chat anche ad app chiusa (a ogni giro, se il ponte ha portato posta nuova)
   let lettura = null;
+  const prendiBase = async () => {
+    const [camereDoc, squadra, ruoli] = await Promise.all([db.doc("impostazioni", "camere"), db.doc("impostazioni", "squadra"), db.tutti("ruoli")]);
+    const k = casa({ camereDoc, squadra, ruoli, avvisi: a });
+    return { camere: k.camere, signore: k.signore().map(z => ({ id: z.id, nome: k.SIG(z.id), zona: z.nome || "" })) };
+  };
   try {
-    const prendiBase = async () => {
-      const [camereDoc, squadra, ruoli] = await Promise.all([db.doc("impostazioni", "camere"), db.doc("impostazioni", "squadra"), db.tutti("ruoli")]);
-      const k = casa({ camereDoc, squadra, ruoli, avvisi: a });
-      return { camere: k.camere, signore: k.signore().map(z => ({ id: z.id, nome: k.SIG(z.id), zona: z.nome || "" })) };
-    };
     lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase, minuti: t.minuti });
     if (lettura.avvisa) {
       if (!ps) ps = await db.doc("importazioni", "push-sofia");
@@ -258,6 +262,23 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       fatti.creditoAvvisato = oggi;
     }
   } catch (e) { console.warn("lettura delle chat:", e && e.message); esiti.push("lettura delle chat: errore " + String((e && e.message) || e).slice(0, 80)); }
+  // 1.21.0: la sintesi della sera della segretaria (dalle 20:30, una volta al giorno, il modello gratuito)
+  if (!fatti.sintesi && t.minuti >= MIN(20, 30)) {
+    try {
+      const s = await sintesiSera({ db, gemini, adesso, a, oggi, prendiBase, minuti: t.minuti, ora: t.hhmm });
+      if (s.esito === "fatta" || s.esito === "già fatta") {
+        if (s.esito === "fatta") {
+          if (!ps) ps = await db.doc("importazioni", "push-sofia");
+          const puoMe2 = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
+          if (puoMe2) await mandaMe(String(s.testo || "").slice(0, 700), "la sintesi della sera", "Sofia · la sintesi di oggi", false, { url: "./index.html?segreteria=1", segreteria: true, tag: "sofia-sintesi" });
+        }
+        fatti.sintesi = t.hhmm; esiti.push(`sintesi della sera: ${s.esito}${s.n ? ` (${s.n} messaggi)` : ""}`);
+      }
+      else if (s.esito === "niente da raccontare") { if (t.minuti >= MIN(22, 30)) fatti.sintesi = "niente"; }   // magari scrivono più tardi: si riprova fino alle 22:30
+      else if (s.esito === "spenta" || s.esito === "senza chiave") fatti.sintesi = s.esito;
+      else esiti.push("sintesi della sera: " + s.esito);
+    } catch (e) { console.warn("sintesi della sera:", e && e.message); esiti.push("sintesi della sera: errore " + String((e && e.message) || e).slice(0, 80)); }
+  }
   const vecchi = Array.isArray(stato0 && stato0.esiti) ? stato0.esiti : [];
   const notevole = lettura && !/^(niente di nuovo|aspetto|aspetta|la sta leggendo)/.test(lettura.esito || "");
   const letturaInfo = notevole ? { quando: adesso.toISOString(), esito: lettura.esito, n: lettura.n || 0 } : ((stato0 && stato0.lettura) || null);
@@ -280,6 +301,7 @@ export function dbAdmin(fs) {
     merge: (c, id, dati) => fs.collection(c).doc(id).set(dati, { merge: true }),
     salva: (c, id, dati) => fs.collection(c).doc(id).set(dati),
     postaDa: async (ts) => comeOggetto(await fs.collection("posta").where("ts", ">=", ts).get()),   // 1.18.0
+    importazioniDa: async (iso) => comeOggetto(await fs.collection("importazioni").where("quando", ">=", iso).get()),   // 1.21.0: le letture di oggi (segreteria_*)
     // 1.18.1: aggiorna il documento solo se il campo ha ancora quel valore (la lettura non è cambiata nel frattempo)
     segnaSe: (c, id, campo, valore, dati) => fs.runTransaction(async (tr) => { const ref = fs.collection(c).doc(id); const s = await tr.get(ref); if (!s.exists || (s.data() || {})[campo] !== valore) return false; tr.update(ref, dati); return true; }),
     sostituisci: (c, id, campo, valore) => fs.collection(c).doc(id).update({ [campo]: valore }),
@@ -290,7 +312,7 @@ export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
       // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
-      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.segreteria ? { segreteria: true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
       return { ok: true, stato: (r && r.statusCode) || null };
     } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };
