@@ -7381,3 +7381,12 @@ body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma)
 :root[data-theme="dark"] .sgr-t-veloci button{background:#223A2C;color:#CFE8D6;border-color:rgba(255,255,255,.2)}
 :root[data-theme="dark"] .sgr-c-bolla.sgr-sintesi{background:#3A3320;color:#F1E6C8;border-color:rgba(255,255,255,.18)}
 :root[data-theme="dark"] .sgr-c-bolla small{color:#B8C2CC}
+/* 1.50.0: «✓ Risolto» e «Cancella» sotto ogni lavoro da aggiustare (notizie di Sofia, vista facile e «come prima») */
+.dtf-man-tasti,.dt-man-tasti{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.dtf-man-tasti button,.dt-man-tasti button{height:34px;padding:0 13px;border-radius:17px;font:700 14px/1 var(--f-lettura,var(--f-body));cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dtf-man-ok,.dt-man-ok{background:#E8F5EC;border:1.5px solid rgba(21,128,61,.45);color:#14532D}
+.dtf-man-via,.dt-man-via{background:transparent;border:1.5px solid rgba(107,99,88,.35);color:#6B6358}
+.dt-r .dt-man-tasti{margin-top:6px}
+body.premium .sofia-hero .casa-nuvola .dtf-man-tasti{display:flex}
+:root[data-theme="dark"] .dtf-man-ok,:root[data-theme="dark"] .dt-man-ok{background:#1E3A2A;border-color:rgba(134,239,172,.4);color:#D1F0DB}
+:root[data-theme="dark"] .dtf-man-via,:root[data-theme="dark"] .dt-man-via{border-color:rgba(255,255,255,.25);color:#CFC8BD}

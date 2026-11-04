@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.49.0";
+export const VERSIONE = "1.50.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -829,7 +829,7 @@ function dettaglioHtml(k, ls, fatte) {
   } else if (k === "manutenzione") {
     const ap = lavoriAperti();
     titolo = ap.length ? `Lavori da fare: <b>${ap.length}</b>` : "Niente da sistemare";
-    righe = ap.map(m => { const cm = m.camera ? camera(m.camera) : null; return r(`<b>${esc(cm ? cm.nome : "In generale")}</b> · ${esc(m.titolo || "Lavoro")}${m.nota ? ` — ${esc(m.nota)}` : ""}${m.data ? `<small>segnalato ${esc(giornoParlato(m.data))}</small>` : ""}`); });
+    righe = ap.map(m => { const cm = m.camera ? camera(m.camera) : null; return r(`<b>${esc(cm ? cm.nome : "In generale")}</b> · ${esc(m.titolo || "Lavoro")}${m.nota ? ` — ${esc(m.nota)}` : ""}${m.data ? `<small>segnalato ${esc(giornoParlato(m.data))}</small>` : ""}${tastiLavoro(m, "dt")}`); });   // 1.50.0
     sofia = dice(c && c.testo ? c.testo : umoreGov().testo); tasto = pagina("manutenzione", "Apri i lavori");
   } else if (k === "arrivi") {
     const arr = sog.filter(s => s.inizio === domani), part = sog.filter(s => s.fine === domani);
@@ -5067,6 +5067,36 @@ async function aggiornaManutenzione(id, patch, msg) {
   Object.assign(S.manutenzione[id], patch); disegna();
   try { await S.db.aggiorna("manutenzione", id, patch); if (msg) toast(msg); } catch (e) { erroreScrittura(e); }
 }
+// 1.50.0 (Michele, 4/11: «io devo poterle anche cancellare: la prima e la seconda le ho già fatte… risolto, in piccolo, per non
+// averle davanti tutti i giorni»): nelle notizie di Sofia, sotto ogni lavoro da aggiustare, due tasti piccoli. «✓ Risolto» lo
+// segna fatto (sparisce dalle notizie e dal conto; resta tra i «Fatti» della pagina Lavori, da dove si riapre) con «Annulla»
+// per 6 secondi; «Cancella» lo toglie del tutto, dopo la conferma (anche qui «Annulla» lo rimette).
+function tastiLavoro(m, pre) {
+  if (!puoModificare() || !m || !m.id) return "";
+  return `<span class="${pre}-man-tasti"><button type="button" class="${pre}-man-ok" data-man-ok="${esc(m.id)}">✓ Risolto</button><button type="button" class="${pre}-man-via" data-man-via="${esc(m.id)}">Cancella</button></span>`;
+}
+function toastAnnulla(testo, fai) {
+  toast(testo, { testo: "Annulla", fai: () => { const t = $(".toast"); if (t) t.remove(); clearTimeout(toastTimer); fai(); } });
+  const t = $(".toast"); clearTimeout(toastTimer); toastTimer = setTimeout(() => { const x = $(".toast"); if (x && x === t) x.remove(); }, 6000);
+}
+document.addEventListener("click", async (e) => {
+  const b = e.target && e.target.closest ? e.target.closest("[data-man-ok], [data-man-via]") : null; if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  if (!puoModificare()) return;
+  const id = b.dataset.manOk || b.dataset.manVia, m = S.manutenzione[id]; if (!m) return;
+  const nome = String(m.titolo || "questo lavoro").replace(/\s+/g, " ").slice(0, 60);
+  if (b.hasAttribute("data-man-ok")) {
+    const prima = { stato: m.stato || "aperto", fatto: m.fatto || null, fattoDa: m.fattoDa || "" };
+    aggiornaManutenzione(id, { stato: "fatto", fatto: S.db.adesso(), fattoDa: (S.utente && S.utente.nome) || "" });
+    toastAnnulla(`✓ Risolto: «${nome.slice(0, 40)}»`, () => aggiornaManutenzione(id, prima, "Rimesso tra i lavori da fare"));
+    return;
+  }
+  if (!await chiedi(`Cancello «${nome}» dai lavori? Se l'hai sistemato, è meglio «✓ Risolto»: così resta tra i fatti.`, { si: "Sì, cancella", pericolo: true })) return;
+  const copia = { ...m };
+  delete S.manutenzione[id]; disegna();
+  try { await S.db.cancella("manutenzione", id); } catch (err) { S.manutenzione[id] = copia; disegna(); erroreScrittura(err); return; }
+  toastAnnulla("Cancellato.", async () => { const { id: _via, ...dati } = copia; S.manutenzione[id] = copia; disegna(); try { await S.db.salva("manutenzione", id, dati, false); toast("Rimesso tra i lavori."); } catch (err) { erroreScrittura(err); } });
+}, true);
 
 // ---- La signora: cosa fa e cosa deve fare questa settimana ------------------------------
 function vistaSignora(z) {
@@ -6089,7 +6119,7 @@ function dettaglioFacile(k, ls, fatte) {
     titolo = tit(icoChiave(), ap.length ? `Da aggiustare: ${ap.length}` : "Niente da aggiustare");
     corpo = ap.length ? ap.map(m => {
       const cm = m.camera ? camera(m.camera) : null, g = m.data ? parolaGiorno(m.data) : "";
-      return `<span class="dtf-r"><span class="dtf-r-t"><b class="dtf-nome">${esc(m.titolo || "Lavoro")}</b></span><span class="dtf-dove">${cm ? `${icoPorta()}${esc(cm.nome)}` : "In generale"}${g ? ` · segnalato ${/^\d/.test(g) ? "il " : ""}${esc(g)}` : ""}</span>${m.nota ? `<span class="dtf-nota2">${esc(m.nota)}</span>` : ""}</span>`;
+      return `<span class="dtf-r dtf-man"><span class="dtf-r-t"><b class="dtf-nome">${esc(m.titolo || "Lavoro")}</b></span><span class="dtf-dove">${cm ? `${icoPorta()}${esc(cm.nome)}` : "In generale"}${g ? ` · segnalato ${/^\d/.test(g) ? "il " : ""}${esc(g)}` : ""}</span>${m.nota ? `<span class="dtf-nota2">${esc(m.nota)}</span>` : ""}${tastiLavoro(m, "dtf")}</span>`;   // 1.50.0: Risolto / Cancella
     }).join("") : vuoto("Tutto a posto: niente da aggiustare.");
     tasto = pagina("manutenzione", "Apri i lavori");
   } else if (k === "sofia") {
@@ -7567,7 +7597,7 @@ function fotografiaIA() {
   prova("vociBusta", () => { const ch = L.settimanaCorrente(); const r = Object.values(S.pagamenti || {}).filter(x => x && x.tipo === "rettifica" && x.settimana === ch); return r.length ? "VOCI IN BUSTA QUESTA SETTIMANA: " + r.map(x => `${SIG(x.zona)} ${x.euro > 0 ? "+" : "−"}${eur(Math.abs(x.euro))} (${x.causale})`).join(" · ") + "." : ""; });
   prova("manutenzione", () => {
     const ap = lavoriAperti(); if (!ap.length) return "MANUTENZIONE: niente aperto.";
-    return `MANUTENZIONE APERTA (${ap.length}): ` + ap.slice(0, 6).map(m => `${m.titolo}${m.camera ? " in " + camera(m.camera).nome : ""} (da ${L.giorniTra(m.data, oggi)} giorni)`).join(" · ") + ".";
+    return `MANUTENZIONE APERTA (${ap.length}; la ripara sempre Michele, o chiama lui il tecnico: il papà e le signore i guasti li segnalano soltanto): ` + ap.slice(0, 6).map(m => `${m.titolo}${m.camera ? " in " + camera(m.camera).nome : ""} (da ${L.giorniTra(m.data, oggi)} giorni)`).join(" · ") + ".";
   });
   prova("occupate", () => {
     const dentro = soggiorniLista().filter(x => x.inizio <= oggi && x.fine > oggi).map(x => camera(x.camera).nome);
