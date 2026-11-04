@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.51.1";
+export const VERSIONE = "1.52.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1414,6 +1414,8 @@ function avviaAscolto() {
   if (proprietario()) { ascoltaPonte(); S.stop.push(fermaPonte); }
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
+  // 1.52.0: i segni di Michele «ogni volta» sui disegni delle camere (li leggono anche le signore)
+  S.stop.push(db.ascoltaDoc("impostazioni", "segni", d => { S.segniFissi = { ...(d || {}) }; delete S.segniFissi.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
   S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteRiequilibra(); governanteAutomatica(); segnaInizioGovernante(); pianiPresto(); }));
   S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; const daUnire = []; for (const r of Object.values(m)) { const tolta = CAMERE_TOLTE[r.luogo]; const luogo = tolta ? tolta.unitaA : r.luogo; if (tolta) daUnire.push(r); const k = G.chiaveRegistro(G.nuovoId(r.regola), luogo); const prev = S.registro[k]; if (!prev || (r.ultima || "") > (prev.ultima || "")) S.registro[k] = { ...r, regola: G.nuovoId(r.regola), luogo }; } disegna(); governanteAutomatica(); unisciRegistroTolte(daUnire); }, mostraErrore));
@@ -1791,7 +1793,7 @@ function tesseraGrande(c, iso, perSignora) {
   const dett = p.dettagli ? `<span class="tess-dett">${ICONA("nota")}Dettagli</span>` : "";
   const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
   const prezzo = !perSignora ? `<span class="tess-pr">${eur(p.importo)}</span>` : "";
-  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="${clsNome}">${esc(c.nome)}</span><span class="tess-lavoro">${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${testoRifiniture(p) ? `<span class="tess-rif">⭐ ${esc(testoRifiniture(p))}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
+  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="${clsNome}">${esc(c.nome)}</span><span class="tess-lavoro">${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${testoRifiniture(p) ? `<span class="tess-rif">⭐ ${esc(testoRifiniture(p))}</span>` : ""}${!perSignora && disegniVeri(c) ? `<span class="tess-rif">✏️ ${segniManoDi(p).length ? `${segniManoDi(p).length} ${segniManoDi(p).length === 1 ? "segno" : "segni"} sul disegno` : "Disegno: tocca per segnare"}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
 }
 // Lavori del giorno che non stanno in una casella della piantina (lavori extra e lavori della governante)
 function lavoriInPiu(z, iso, rs) {
@@ -1957,6 +1959,7 @@ function foglioInizioFacile(f) {
   // QUELLO CHE DICE MICHELE: la nota di oggi, le istruzioni dell'ospite; il messaggio del giorno solo se parla di questa camera
   const da = p.dettagliDa || "Michele";
   const frasi = [p.dettagli, p.istruzioni].filter(Boolean);
+  { const ms = segniManoDi(p); if (ms.length) frasi.push(`Sul disegno ti ho segnato: ${ms.map(m => String(m.testo || "guarda qui").trim()).join("; ")}`); }   // 1.52.0
   if (msg && msg.testo && !stelle && PAROLE.norm(msg.testo).includes(PAROLE.norm(c.nome))) frasi.push(msg.testo);
   const dice = frasi.length ? `<section class="sf-dice"><div class="sf-dice-t">📣 ${esc(da)} ti dice</div>${frasi.map(x => `<p class="sf-frase">«${esc(x)}»</p>`).join("")}</section>` : "";
   const sempreHtml = sempre.length ? `<div class="sf-sempre"><span aria-hidden="true">📌</span><span>Sempre qui: <b>${esc(sempre.join(" · "))}</b></span></div>` : "";
@@ -3583,6 +3586,120 @@ const MAPPE_ZONE = {
   } },
 };
 for (const [k, v] of Object.entries(MAPPE_ZONE)) MAPPE[k] = v;
+
+// ============================================================================
+//  1.52.0 I DISEGNI VERI DELLE CAMERE E I SEGNI DI MICHELE (Michele, 4/11 sera: «mettile nell'applicazione alla stanza di
+//  Salvatore, nella parte di Lucia o di chi deve fare Salvatore, ma anche a me: così, senza spendere credito di Gemini o di
+//  Argon, in una giornata posso scegliere io delle stelle, mettere delle cose evidenziate, dire "prendi questa cosa che sta in
+//  questo posto": per spiegare alle donne delle pulizie, perché una signora può anche cambiare»).
+//  Una camera coi suoi disegni (per ora Salvatore: la camera intera, sei zone da vicino, il bagno da due parti; il modello 3D
+//  esatto ripassato da Gemini senza spostare niente) li usa al posto della mappa uguale per tutte le camere. «posti»: dove sta
+//  ogni parte del catalogo nel disegno (unità 400×300), calcolati dal modello 3D (proiezione + «si vede o è coperta?»); il
+//  terzo numero dice quanto si vede bene (le zone da vicino valgono di più): ogni stella va nel disegno dove si vede meglio.
+//  I SEGNI DI MICHELE: tocca il disegno nel punto giusto e scrive due parole; valgono per quella pulizia (p.segniMano) o
+//  «ogni volta» in quella camera (impostazioni/segni). La signora li vede sul disegno (tondi blu col ✎) e li sente da Sofia.
+// ============================================================================
+const DISEGNI_STANZE = { salvatore: [{"id":"s1","file":"disegno-salvatore-1.webp","titolo":"Tutta la camera (dal bagno)","zona":false,"sagoma":[[371,190],[281,244],[149,271],[28,201],[29,110],[209,3],[371,99]],"posti":{"camera":[139.1,199.2,0.99],"soffitto":[145.4,55.9,0.84],"soffitto.angoli":[209.9,18.1,0.71],"pareti":[185.3,161.9,1.11],"pareti.macchie":[280.7,104.6,0.95],"pavimento":[139.1,186.4,1.0],"pavimento.angoli":[274.6,140.1,0.96],"battiscopa":[281.0,140.9,0.95],"zerbino":[170.1,152.9,1.08],"interruttori":[337.7,154.1,0.81],"tv":[150.3,60.8,0.85],"tv.retro":[150.3,56.3,0.84],"clima":[122.7,76.3,0.9],"clima.filtri":[122.7,73.2,0.89],"clima.griglia":[122.7,79.9,0.92],"frigo":[69.9,167.2,0.82],"frigo.guarnizione":[75.4,159.2,0.84],"frigo.retro":[67.1,149.7,0.82],"armadio":[235.9,90.6,0.95],"armadio.ante":[231.7,86.6,0.94],"armadio.dentro":[223.4,91.4,0.95],"armadio.sopra":[235.9,56.1,0.84],"cassetti":[181.3,217.1,0.93],"scrivania":[195.2,173.3,1.07],"tavolo":[195.2,173.3,1.07],"sedia":[177.5,191.7,1.01],"bollitore":[141.8,120.9,1.0],"letto":[289.8,175.1,0.93],"letto.testiera":[317.2,176.5,0.86],"letto.piedini":[241.4,185.4,1.03],"letto.sotto":[269.6,200.4,0.98],"letto.spostato":[265.8,166.0,0.99],"materasso":[296.2,180.3,0.91],"cuscini":[309.5,184.8,0.88],"coperta":[281.0,169.9,0.95],"comodino":[282.8,208.5,0.94],"abatjour":[342.3,163.0,0.79],"telecomandi":[282.8,204.7,0.94],"quadro":[212.4,136.1,1.1],"finestra":[177.8,69.8,0.88],"finestra.vetro":[177.8,66.6,0.87],"finestra.vetroEsterno":[177.8,63.4,0.86],"finestra.maniglia":[178.4,77.5,0.91],"finestra.davanzale":[177.8,87.4,0.94],"tapparella":[177.8,49.0,0.81],"zanzariera":[177.8,60.2,0.85],"tende":[166.2,80.7,0.92],"tende.bastone":[179.5,39.5,0.78],"termosifone":[179.2,105.7,1.0],"portafinestra":[86.5,136.9,0.87],"pensili":[135.5,91.7,0.96],"pensili.dentro":[135.5,93.3,0.96],"pensili.sopra":[135.5,81.5,0.92],"fornelli":[156.2,113.2,1.03],"forno":[161.2,128.9,1.05],"lavello":[126.3,130.2,0.97],"lavello.sotto":[130.8,148.1,0.98],"mestoli":[127.2,112.4,0.97],"piano":[139.1,123.1,1.0],"cucina":[139.1,132.1,1.0],"cucina.pavimento":[157.1,161.6,1.04],"cucina.frigo":[69.9,167.2,0.82],"sedie":[177.5,191.7,1.01],"bagno.soffitto":[22.9,246.1,0.71],"bagno.pareti":[66.3,230.6,0.82],"piastrelle":[58.0,261.0,0.78],"bagno.pavimento":[47.8,283.8,0.7]}},{"id":"cucina","file":"disegno-salvatore-cucina.webp","titolo":"La cucina","zona":true,"sagoma":[[399,12],[399,299],[14,299],[17,173],[311,0],[379,0]],"posti":{"soffitto":[227.5,76.0,1.81],"pareti":[301.0,271.5,1.49],"pareti.macchie":[222.4,173.2,2.15],"zerbino":[272.9,254.8,1.6],"tv":[236.5,85.0,1.87],"tv.retro":[236.5,76.7,1.81],"clima":[185.7,113.7,2.06],"clima.filtri":[185.7,107.8,2.02],"clima.griglia":[185.7,120.2,2.1],"frigo":[88.3,281.3,1.42],"frigo.guarnizione":[98.5,266.5,1.52],"frigo.retro":[83.2,248.9,1.64],"armadio.ante":[386.7,132.6,1.37],"armadio.dentro":[371.4,141.4,1.44],"cassetti":[223.5,218.0,1.85],"bollitore":[220.9,195.9,1.99],"quadro":[351.0,223.8,1.55],"finestra":[287.2,101.6,1.86],"finestra.vetro":[287.2,95.7,1.86],"finestra.vetroEsterno":[287.2,89.8,1.86],"finestra.maniglia":[288.2,115.8,1.86],"finestra.davanzale":[287.2,134.0,1.86],"tapparella":[287.2,63.3,1.72],"zanzariera":[287.2,84.0,1.86],"tende":[265.8,121.7,1.97],"tende.bastone":[290.3,45.7,1.6],"termosifone":[289.8,167.9,1.85],"portafinestra":[118.9,225.3,1.8],"pensili":[209.2,142.0,2.25],"pensili.dentro":[209.2,144.9,2.25],"pensili.sopra":[209.2,123.1,2.12],"fornelli":[247.4,181.7,2.06],"forno":[256.6,210.6,1.9],"lavello":[192.3,212.9,1.88],"lavello.sotto":[200.5,245.9,1.66],"mestoli":[193.9,180.3,2.1],"piano":[215.8,200.0,1.97],"cucina":[215.8,216.5,1.86],"cucina.pavimento":[249.0,271.0,1.49],"cucina.frigo":[88.3,281.3,1.42]}},{"id":"tavolo","file":"disegno-salvatore-tavolo.webp","titolo":"Il letto piccolo e il tavolo","zona":true,"sagoma":[[399,299],[0,299],[0,0],[396,0]],"posti":{"camera":[212.6,146.0,2.24],"soffitto":[309.6,52.2,1.65],"soffitto.angoli":[233.4,95.1,1.93],"pareti":[299.3,76.2,1.8],"pareti.macchie":[299.3,142.1,1.8],"pavimento":[212.6,122.1,2.11],"battiscopa":[340.3,187.4,1.6],"zerbino":[270.7,59.2,1.69],"frigo":[82.9,86.1,1.71],"frigo.guarnizione":[93.2,71.1,1.77],"frigo.retro":[77.7,53.1,1.65],"cassetti":[291.7,179.7,1.84],"scrivania":[317.9,97.5,1.71],"tavolo":[317.9,97.5,1.71],"sedia":[284.7,131.9,1.88],"quadro":[350.1,27.7,1.48],"tende":[84.4,27.1,1.48],"termosifone":[57.4,118.8,1.59],"portafinestra":[114.0,29.2,1.49],"lavello":[188.7,16.6,1.41],"lavello.sotto":[197.0,50.2,1.63],"cucina":[212.6,20.2,1.43],"cucina.pavimento":[246.3,75.6,1.8],"cucina.frigo":[82.9,86.1,1.71],"sedie":[284.7,131.9,1.88],"bagno.soffitto":[161.7,137.6,2.11],"bagno.pareti":[76.1,205.0,1.68],"piastrelle":[60.5,262.0,1.55]}},{"id":"armadio","file":"disegno-salvatore-armadio.webp","titolo":"L'armadio e il letto grande","zona":true,"sagoma":[[399,299],[0,299],[0,0],[399,0]],"posti":{"soffitto":[74.4,166.1,1.67],"soffitto.angoli":[352.8,85.7,1.54],"pareti":[65.0,187.8,1.62],"pareti.macchie":[227.2,90.4,1.9],"pavimento":[160.4,194.1,2.01],"pavimento.angoli":[216.9,150.6,2.22],"battiscopa":[227.7,152.0,2.16],"zerbino":[39.1,172.4,1.5],"interruttori":[324.1,174.5,1.68],"armadio":[151.0,66.5,1.74],"armadio.ante":[144.0,59.7,1.7],"armadio.dentro":[129.9,67.8,1.75],"cassetti":[58.1,281.6,1.42],"scrivania":[81.9,207.1,1.71],"tavolo":[81.9,207.1,1.71],"sedia":[51.8,238.3,1.56],"letto":[242.7,210.1,1.9],"letto.testiera":[289.3,212.5,1.85],"letto.piedini":[160.4,227.7,1.78],"letto.sotto":[208.4,253.3,1.61],"letto.spostato":[201.8,194.6,2.0],"materasso":[253.5,219.1,1.84],"cuscini":[276.1,226.7,1.79],"coperta":[227.7,201.4,1.96],"comodino":[230.7,267.0,1.52],"abatjour":[331.9,189.6,1.64],"telecomandi":[230.7,260.5,1.56],"quadro":[111.0,143.8,1.86],"finestra":[52.3,31.2,1.51],"finestra.vetro":[52.3,25.7,1.47],"finestra.vetroEsterno":[52.3,20.3,1.44],"finestra.maniglia":[53.2,44.2,1.57],"finestra.davanzale":[52.3,61.0,1.56],"tende":[32.5,49.6,1.46],"termosifone":[54.6,92.3,1.57],"fornelli":[15.6,105.0,1.38],"forno":[24.0,131.6,1.42],"cucina.pavimento":[17.0,187.3,1.38],"sedie":[51.8,238.3,1.56]}},{"id":"ingresso","file":"disegno-salvatore-ingresso.webp","titolo":"L'ingresso","zona":true,"sagoma":[[399,270],[366,299],[27,298],[0,282],[0,66],[151,0],[264,0],[313,14],[399,65]],"posti":{"soffitto":[230.1,255.5,1.6],"pareti":[140.3,59.7,1.7],"pareti.macchie":[367.2,178.5,1.46],"pavimento":[182.1,256.6,1.59],"porta":[55.9,196.3,1.58],"porta.anta":[63.7,173.8,1.62],"porta.maniglia":[74.3,189.3,1.67],"porta.numero":[55.9,153.1,1.58],"interruttori":[94.2,174.1,1.77],"frigo.guarnizione":[387.8,253.0,1.36],"cassetti":[149.4,201.7,1.96],"scrivania":[117.9,261.6,1.56],"tavolo":[117.9,261.6,1.56],"quadro":[353.5,135.3,1.53]}},{"id":"letto","file":"disegno-salvatore-letto.webp","titolo":"Il letto grande","zona":true,"sagoma":[[399,299],[71,299],[15,266],[16,74],[143,0],[399,0]],"posti":{"soffitto":[234.1,187.6,2.05],"soffitto.angoli":[52.8,81.4,1.56],"pareti":[227.6,259.4,1.57],"battiscopa":[273.4,198.2,1.93],"porta":[364.7,131.1,1.48],"porta.anta":[372.8,107.5,1.44],"porta.maniglia":[384.0,123.7,1.38],"porta.numero":[364.7,85.7,1.48],"armadio.sopra":[333.6,256.3,1.59],"letto":[206.0,228.8,1.77],"letto.testiera":[141.2,157.3,2.01],"letto.sotto":[253.7,229.1,1.77],"letto.spostato":[262.9,273.0,1.48],"materasso":[190.9,223.9,1.81],"cuscini":[159.5,198.2,1.98],"coperta":[226.9,240.9,1.69],"comodino":[222.6,164.7,2.19],"abatjour":[81.9,219.5,1.71],"telecomandi":[222.6,155.7,2.19],"quadro":[139.2,88.2,1.89]}},{"id":"balcone","file":"disegno-salvatore-balcone.webp","titolo":"Il balcone","zona":true,"sagoma":[[399,299],[0,299],[0,0],[399,0]],"posti":{"camera":[73.2,107.8,1.67],"soffitto":[61.8,66.8,1.61],"pareti":[66.8,138.4,1.63],"pareti.macchie":[66.8,155.6,1.63],"pavimento":[73.2,107.8,1.67],"frigo":[197.2,73.4,1.79],"frigo.guarnizione":[187.3,64.8,1.73],"frigo.retro":[202.1,36.2,1.54],"cassetti":[65.8,169.3,1.63],"sedia":[13.2,109.8,1.37],"bollitore":[68.3,145.0,1.64],"fornelli":[42.5,161.0,1.51],"forno":[33.6,182.2,1.47],"lavello":[96.0,130.7,1.78],"piano":[73.2,143.3,1.67],"cucina":[73.2,159.3,1.67],"cucina.frigo":[197.2,73.4,1.79],"sedie":[13.2,109.8,1.37],"balcone":[160.0,215.1,1.87],"ringhiera":[173.4,211.4,1.89],"muretto":[173.4,228.6,1.78],"piante":[120.3,249.5,1.64],"unita":[113.4,147.0,1.87],"balcone.mobili":[217.0,156.4,2.21],"balcone.muro":[54.4,231.4,1.57]}},{"id":"bagno1","file":"disegno-salvatore-bagno-1.webp","titolo":"Il bagno e l'antibagno","zona":false,"sagoma":[[305,283],[288,286],[48,196],[48,70],[102,10],[338,105],[338,229]],"posti":{"soffitto":[370.1,183.1,0.72],"soffitto.angoli":[297.7,155.3,0.91],"pareti":[360.3,192.5,0.75],"pareti.macchie":[360.3,240.4,0.75],"pavimento":[387.1,270.2,0.68],"bagno.soffitto":[70.9,72.0,0.83],"bagno.pareti":[148.3,113.8,1.02],"piastrelle":[133.5,143.2,0.98],"bagno.pavimento":[190.7,188.9,1.02],"bagno.porta":[253.0,176.8,1.02],"bagno.finestra":[87.1,95.4,0.87],"doccia":[181.0,167.0,1.09],"doccia.box":[191.0,142.8,1.13],"doccia.guide":[208.2,162.3,1.11],"doccia.piatto":[181.0,208.4,0.96],"doccia.piletta":[181.0,208.9,0.95],"silicone":[173.7,190.5,1.02],"scaldasalviette":[90.1,146.7,0.88],"asciugamani":[214.0,139.1,1.11],"wc":[113.1,171.7,0.93],"wc.tavoletta":[115.6,168.9,0.94],"wc.cassetta":[107.7,165.5,0.92],"wc.base":[117.6,179.7,0.94],"wc.dietro":[107.7,183.0,0.92],"portarotolo":[75.8,149.6,0.84],"bidet":[139.8,188.6,1.0],"lavabo":[213.0,197.2,0.99],"lavabo.piletta":[213.7,194.2,1.0],"lavabo.sotto":[212.3,215.4,0.93],"rubinetto":[208.9,196.1,1.0],"bidoncino":[111.3,147.8,0.93],"bagno.cestino":[111.3,147.8,0.93],"tappetino":[196.9,190.7,1.01]}},{"id":"bagno2","file":"disegno-salvatore-bagno-2.webp","titolo":"Il bagno visto dall'altra parte","zona":false,"sagoma":[[348,238],[286,289],[66,194],[66,60],[114,10],[348,105]],"posti":{"pareti":[53.5,16.9,0.71],"pareti.macchie":[53.5,67.7,0.78],"pavimento":[23.9,141.9,0.71],"battiscopa":[17.7,105.5,0.69],"bagno":[229.7,220.3,0.92],"bagno.soffitto":[325.4,113.0,0.84],"bagno.pareti":[252.7,97.5,0.97],"piastrelle":[266.6,140.0,0.98],"bagno.pavimento":[207.3,224.0,0.9],"bagno.porta":[149.9,146.6,1.02],"doccia":[219.8,158.9,1.1],"doccia.box":[208.5,154.5,1.13],"doccia.guide":[192.3,161.8,1.11],"doccia.piatto":[219.8,202.8,0.97],"doccia.piletta":[219.8,203.3,0.97],"silicone":[224.7,218.3,0.92],"scaldasalviette":[303.9,228.3,0.89],"wc":[284.3,207.4,0.94],"wc.tavoletta":[281.4,209.8,0.95],"wc.cassetta":[290.5,189.4,0.92],"wc.base":[279.1,225.5,0.9],"wc.dietro":[290.5,207.9,0.92],"bidet":[259.4,201.3,0.98],"lavabo":[190.8,151.8,1.13],"lavabo.piletta":[190.0,150.1,1.12],"lavabo.sotto":[191.6,169.6,1.08],"rubinetto":[195.5,141.9,1.12],"mensola":[195.8,130.1,1.08],"specchio.bagno":[197.6,111.5,1.02],"specchio.luce":[197.6,100.0,0.98],"phon":[180.1,112.4,1.02],"bidoncino":[281.2,251.7,0.81],"bagno.cestino":[281.2,251.7,0.81],"tappetino":[201.5,221.2,0.91]}}] };
+function disegniVeri(c) { const l = c && c.id && !mappeRotte ? DISEGNI_STANZE[c.id] : null; return l && l.length ? l : null; }
+// il posto nel disegno: preciso («letto.piedini»), se no la cosa intera («letto»), come fa isoDisegno
+function postoInFoto(f, dove) { const d = String(dove || ""); if (f.posti[d]) return d; const parti = d.split("."); for (const k of [parti[parti.length - 1], parti[0], parti.slice(0, -1).join(".")]) if (k && f.posti[k]) return k; return ""; }
+function segniManoDi(p) {
+  if (!p || !p.camera) return [];
+  const fissi = (((S.segniFissi || {})[p.camera]) || []).map(x => ({ ...x, sempre: true }));
+  return [...(Array.isArray(p.segniMano) ? p.segniMano : []).map(x => ({ ...x, sempre: false })), ...fissi].filter(x => x && x.id && x.foto && Number.isFinite(Number(x.x)) && Number.isFinite(Number(x.y)));
+}
+function segnoDaMano(m, luogo) { const t = String(m.testo || "").trim() || "Guarda qui"; return { k: "mano", t, parola: t.length > 24 ? t.slice(0, 22) + "…" : t, foto: m.foto, x: Number(m.x), y: Number(m.y), da: m.da || "Michele", sempre: !!m.sempre, luogo, mid: m.id }; }
+// i disegni che servono (in ordine) coi soli posti dei segni di oggi; i segni con «dove» che punta al loro disegno
+function pezziVeri(c, segni) {
+  const foto = disegniVeri(c); if (!foto) return null;
+  const usati = new Map(), nuovi = [];
+  const usa = (f) => { if (!usati.has(f.id)) usati.set(f.id, { f, posti: {} }); return usati.get(f.id); };
+  (segni || []).forEach((sg, i) => {
+    if (sg.k === "mano") { const f = foto.find(x => x.id === sg.foto) || foto[0], k = `${f.id}|m${i}`; usa(f).posti[k] = [sg.x, sg.y]; nuovi.push({ ...sg, dove: k }); return; }
+    let meglio = null;
+    for (const f of foto) { const k = postoInFoto(f, sg.dove); if (!k) continue; const q = (k === String(sg.dove) ? 10 : 0) + (f.posti[k][2] || 0); if (!meglio || q > meglio.q) meglio = { f, k, q }; }   // prima il posto preciso, poi il disegno più da vicino
+    if (!meglio) { const f = foto[0], k = postoInFoto(f, "camera"); meglio = { f, k, q: 0 }; }
+    const k = `${meglio.f.id}|${meglio.k || "centro"}`, u = usa(meglio.f);
+    if (!u.posti[k]) u.posti[k] = meglio.k ? meglio.f.posti[meglio.k].slice(0, 2) : [200, 150];
+    nuovi.push({ ...sg, dove: k });
+  });
+  if (!usati.size) usa(foto[0]);   // niente da segnare: la camera intera
+  const ordine = new Map(foto.map((f, i) => [f.id, i]));
+  const pezzi = [...usati.values()].sort((a, b) => ordine.get(a.f.id) - ordine.get(b.f.id)).map(({ f, posti }) => ({ id: f.id, titolo: f.titolo, foto: f.id, file: f.file, W: 400, H: 300, posti, sagoma: f.sagoma }));
+  const pos = new Map(pezzi.map((p, i) => [p.id, i]));
+  nuovi.sort((a, b) => pos.get(a.dove.split("|")[0]) - pos.get(b.dove.split("|")[0]));   // i numeri vanno dall'alto in basso, disegno per disegno
+  return { pezzi, segni: nuovi };
+}
+const SG_CHIP = ["Pulisci bene qui", "Spolvera", "Lava", "Togli le macchie", "Guarda bene qui", "Prendi questo", "Sistema qui", "Non toccare"];
+function chiSono() { return (S.utente && (S.utente.nome || S.utente.login)) || "Michele"; }
+// nella scheda della camera del titolare: i disegni da toccare, i segni messi, come la vede la signora
+function sezioneDisegniTitolare(p, c) {
+  const foto = disegniVeri(c) || [], ms = segniManoDi(p);
+  const conta = (id) => ms.filter(m => m.foto === id).length;
+  const quando = p.data === L.oggiISO() ? "solo oggi" : `solo ${giornoParlato(p.data)}`;
+  return `<div class="floorlabel" style="margin-top:14px">✏️ Il disegno di ${esc(c.nome)}</div>
+    <p class="muted small" style="margin:0 0 8px">Tocca un disegno, poi il punto giusto, e scrivi due parole («spolvera qui», «prendi questo»). La signora lo vede sul disegno quando apre la camera. Gratis: niente Gemini, niente Argon.</p>
+    <div class="sg-galleria">${foto.map(f => `<button type="button" class="sg-mini" data-segna="${esc(p.id)}|${esc(f.id)}"><img src="${esc(f.file)}" alt="" loading="lazy"><span>${esc(f.titolo)}</span>${conta(f.id) ? `<b>${conta(f.id)}</b>` : ""}</button>`).join("")}</div>
+    ${ms.length ? `<ol class="sg-elenco">${ms.map(m => `<li class="${m.sempre ? "sempre" : ""}"><span>✎ ${esc(m.testo || "Guarda qui")}</span><small>${esc((foto.find(f => f.id === m.foto) || {}).titolo || "")} · ${m.sempre ? "ogni volta" : esc(quando)}</small><button type="button" class="nonna-link" data-segna="${esc(p.id)}|${esc(m.foto)}|${esc(m.id)}">Cambia</button></li>`).join("")}</ol>` : ""}
+    <details class="sg-come"><summary>👀 Come lo vede la signora</summary>${disegnoCamera(p)}</details>`;
+}
+// il foglio per segnare: il disegno grande da toccare, i numeri blu, sotto le due parole e «solo oggi / ogni volta»
+function foglioSegna(f) {
+  const p = S.pulizie[f.id];
+  if (!p) return `<h3>Lavoro non trovato</h3><p class="muted">Forse è stato tolto dal prospetto.</p>`;
+  const c = camera(p.camera), foto = disegniVeri(c) || [];
+  const fs = foto.find(x => x.id === f.foto) || foto[0];
+  if (!fs) return `<h3>${esc(c.nome)}</h3><p class="muted">Questa camera non ha ancora i suoi disegni.</p>`;
+  const tutti = segniManoDi(p), ms = tutti.filter(m => m.foto === fs.id);
+  const sel = f.sel === "nuovo" ? { id: "nuovo", x: f.nx, y: f.ny, testo: "", sempre: false } : (ms.find(m => m.id === f.sel) || null);
+  const sempre = sel ? (f.sempre ?? !!sel.sempre) : false;
+  const pin = (m, i) => `<button type="button" class="sg-pin${m.sempre ? " sempre" : ""}${sel && sel.id === m.id ? " scelto" : ""}" style="left:${(Number(m.x) / 4).toFixed(2)}%;top:${(Number(m.y) / 3).toFixed(2)}%" data-sg-pin="${esc(m.id)}" aria-label="Segno ${i + 1}: ${esc(m.testo || "")}">${i + 1}</button>`;
+  const nuovo = f.sel === "nuovo" ? `<span class="sg-pin nuovo" style="left:${(f.nx / 4).toFixed(2)}%;top:${(f.ny / 3).toFixed(2)}%" aria-hidden="true">+</span>` : "";
+  const giorno = p.data === L.oggiISO() ? "Solo oggi" : `Solo ${giornoParlato(p.data)}`;
+  const idT = `sgTesto_${sel ? sel.id : ""}`;
+  const pannello = sel ? `<div class="sg-pannello">
+      <label for="${idT}"><b>${sel.id === "nuovo" ? "Segno nuovo" : "Segno " + (ms.indexOf(sel) + 1)}</b> · cosa deve fare la signora qui</label>
+      <input id="${idT}" type="text" data-keep maxlength="80" value="${esc(sel.testo || "")}" placeholder="es. Spolvera sopra l'armadio" autocomplete="off">
+      <div class="scelte">${SG_CHIP.map(t => `<button type="button" data-chip-testo="${idT}|${esc(t)}">${esc(t)}</button>`).join("")}</div>
+      <div class="seg sg-quando"><button type="button" aria-pressed="${!sempre}" data-sg-quando="giorno">${esc(giorno)}</button><button type="button" aria-pressed="${sempre}" data-sg-quando="sempre">Ogni volta in ${esc(c.nome)}</button></div>
+      <button class="big main" data-sg-salva>Salva il segno</button>
+      ${sel.id !== "nuovo" ? `<button class="big undo" data-sg-togli>Togli questo segno</button>` : `<button class="big undo" data-sg-annulla>Annulla</button>`}
+    </div>` : `<p class="sg-aiuto">👆 Tocca il punto del disegno dove vuoi il segno${ms.length ? ", oppure un numero blu per cambiarlo" : ""}.</p>`;
+  return `<button class="nonna-link indietro" data-sg-torna>${ICONA("indietro")}${esc(c.nome)}</button>
+    <h3 style="margin-top:4px">✏️ Segna sul disegno</h3><div class="muted">${esc(c.nome)} · ${esc(L.dataLunga(p.data))}${p.ospite ? " · " + esc(p.ospite) : ""}</div>
+    <div class="sg-schede" role="tablist">${foto.map(x => { const n = tutti.filter(m => m.foto === x.id).length; return `<button type="button" role="tab" aria-pressed="${x.id === fs.id}" data-sg-foto="${esc(x.id)}">${esc(x.titolo)}${n ? ` · ${n}` : ""}</button>`; }).join("")}</div>
+    <div class="sg-tela" data-sg-tela><img src="${esc(fs.file)}" alt="${esc(fs.titolo)}" draggable="false">${ms.map(pin).join("")}${nuovo}</div>
+    ${pannello}`;
+}
+// salva: le liste di oggi (sulla pulizia) e di ogni volta (impostazioni/segni), solo quelle cambiate
+async function scriviSegni(p, giorno, fissi) {
+  const vecchiG = Array.isArray(p.segniMano) ? p.segniMano : [], vecchiF = ((S.segniFissi || {})[p.camera]) || [];
+  const pulisci = (l) => l.map(({ sempre, ...m }) => m);
+  giorno = pulisci(giorno); fissi = pulisci(fissi);
+  try {
+    if (JSON.stringify(giorno) !== JSON.stringify(vecchiG)) { Object.assign(S.pulizie[p.id], { segniMano: giorno }); await S.db.aggiorna("pulizie", p.id, { segniMano: giorno }); }
+    if (JSON.stringify(fissi) !== JSON.stringify(vecchiF)) { const t = { ...(S.segniFissi || {}) }; delete t.id; if (fissi.length) t[p.camera] = fissi; else delete t[p.camera]; S.segniFissi = t; await S.db.salva("impostazioni", "segni", t, false); }
+    return true;
+  } catch (e) { erroreScrittura(e); return false; }
+}
+async function salvaSegno(p, f) {
+  const el = document.getElementById(`sgTesto_${f.sel}`), testo = String(el ? el.value : "").trim();
+  if (!testo) { if (el) el.focus(); toast("Scrivi due parole: cosa deve fare la signora qui"); return; }
+  const tutti = segniManoDi(p), vecchio = f.sel !== "nuovo" ? tutti.find(m => m.id === f.sel) : null;
+  const sempre = f.sempre ?? (vecchio ? !!vecchio.sempre : false);
+  const m = { id: vecchio ? vecchio.id : `sg${Date.now().toString(36)}`, foto: vecchio ? vecchio.foto : f.foto, x: vecchio ? Number(vecchio.x) : f.nx, y: vecchio ? Number(vecchio.y) : f.ny, testo: testo.slice(0, 80), da: chiSono(), ora: S.db.adesso() };
+  const giorno = (Array.isArray(p.segniMano) ? p.segniMano : []).filter(x => x.id !== m.id), fissi = (((S.segniFissi || {})[p.camera]) || []).filter(x => x.id !== m.id);
+  if (sempre) fissi.push(m); else giorno.push(m);
+  f.sel = null; f.sempre = undefined;
+  if (await scriviSegni(p, giorno, fissi)) toast(sempre ? `Segno salvato: lo vede ogni volta in ${camera(p.camera).nome}` : "Segno salvato: la signora lo vede sul disegno");
+  disegnaFoglio();
+}
+async function togliSegno(p, f) {
+  const giorno = (Array.isArray(p.segniMano) ? p.segniMano : []).filter(x => x.id !== f.sel), fissi = (((S.segniFissi || {})[p.camera]) || []).filter(x => x.id !== f.sel);
+  f.sel = null; f.sempre = undefined;
+  if (await scriviSegni(p, giorno, fissi)) toast("Segno tolto");
+  disegnaFoglio();
+}
 let mappeRotte = false;   // un file delle mappe non c'è (404): si torna a matita, per tutta la sessione
 document.addEventListener("error", (e) => { const t = e.target; if (t && t.classList && t.classList.contains("mt-foto") && !mappeRotte) { mappeRotte = true; try { disegna(); } catch (err) {} } }, true);
 // il pezzo «foto» per isoDisegno: il disegno di Gemini largo tutto il foglio (400 × 300), con i posti già in 2D
@@ -3592,7 +3709,8 @@ function isoDisegno(opz) {
   const pezzi = [];
   const tipo = opz.tipo || (opz.casa ? "casa" : "camera");
   // 1.37.0: le stanze riempiono il foglio (la camera quasi tutta la larghezza; il bagno, la cucina e le zone comuni di più)
-  if (tipo === "comune") { const pz = isoPezzoComune(opz.luogo || ""); if (pz) pezzi.push(mappaPezzo(pz.id, pz.titolo) || pz); }   // 1.47.0: la mappa di Gemini, se c'è
+  if (opz.pezzi) pezzi.push(...opz.pezzi);   // 1.52.0: i disegni veri della camera, già scelti (pezziVeri)
+  else if (tipo === "comune") { const pz = isoPezzoComune(opz.luogo || ""); if (pz) pezzi.push(mappaPezzo(pz.id, pz.titolo) || pz); }   // 1.47.0: la mappa di Gemini, se c'è
   else if (tipo === "casa") {
     pezzi.push(mappaPezzo("cucina", "La cucina e il soggiorno") || { titolo: "La cucina e il soggiorno", fa: (o) => isoCucina(o), s: 23, U: 11, V: 8, H: 5.5 });   // 1.45.0: la mappa di Gemini, se c'è
     pezzi.push(mappaPezzo("camera", opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere") || { titolo: opz.piani > 1 ? "Le camere (anche di sopra)" : "Le camere", fa: (o) => isoCamera(o, { ...opz, soloLetti: true, singola: false }), s: 26, U: 9, V: 6, H: 5.2 });
@@ -3601,7 +3719,7 @@ function isoDisegno(opz) {
     pezzi.push(mappaPezzo("camera", "La camera") || { titolo: "La camera", fa: (o) => isoCamera(o, opz), s: 28.6, U: 9, V: 6, H: 5.2 });   // 1.45.0: la mappa di Gemini, se c'è
     pezzi.push(mappaPezzo("bagno", "Il bagno") || { titolo: "Il bagno", fa: (o) => isoBagno(o, {}), s: 30, U: 5.6, V: 6.4, H: 5.5 });
   }
-  if (opz.balcone) pezzi.push(mappaPezzo("balcone", "Il balcone") || { titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 30, U: 6.0, V: 4.2, H: 3.6 });   // 1.47.0
+  if (opz.balcone && !opz.pezzi) pezzi.push(mappaPezzo("balcone", "Il balcone") || { titolo: "Il balcone", fa: (o) => isoBalcone(o), s: 30, U: 6.0, V: 4.2, H: 3.6 });   // 1.47.0
   for (const id of opz.extra || []) { const pz = isoPezzoComune(id); if (pz && !pezzi.some(x => x.id === pz.id)) pezzi.push(mappaPezzo(pz.id, pz.titolo) || pz); }
   let y = 34, corpo = "", scritte = "", titoli = "", foto = "";
   const posti = {}, scatole = [], diPezzo = {}, bande = [];   // posti: posto → [x, y] sullo schermo (il primo pezzo che ce l'ha vince); scatole: dove stanno le scritte (i numeri e le parole le evitano); bande: lo spazio di ogni pezzo
@@ -3714,7 +3832,7 @@ function isoDisegno(opz) {
     const asta = `M${f(x0)} ${f(y0)} L${f(bx + ux * 2)} ${f(by + uy * 2)}`, punta = `M${f(x1)} ${f(y1)} L${f(bx - uy * 6.5)} ${f(by + ux * 6.5)} L${f(bx + uy * 6.5)} ${f(by - ux * 6.5)} Z`;
     const freccia = lung >= 8 ? `<path d="${asta}" class="mt-freccia-alone"/><path d="${asta}" class="mt-freccia"/><path d="${punta}" class="mt-punta"/>` : "";
     const pw = m.parola;
-    return `<g class="mt-segno ${sg.k}"><g transform="translate(${f(p.x)} ${f(p.y)})"><circle class="mt-onda" r="12"/><circle class="mt-alone" r="12"/></g>${freccia}<g transform="translate(${f(m.bx)} ${f(m.by)})"><circle class="mt-tondo" r="${R}"/><text y="6" class="mt-num">${i + 1}</text><text x="12" y="-9" class="mt-mini">${sg.k === "stella" ? "★" : "✦"}</text></g>${pw ? `<text x="${f(pw.x)}" y="${f(pw.y)}" class="mt-parola ${pw.anc}">${E(pw.t)}</text>` : ""}</g>`;
+    return `<g class="mt-segno ${sg.k}"><g transform="translate(${f(p.x)} ${f(p.y)})"><circle class="mt-onda" r="12"/><circle class="mt-alone" r="12"/></g>${freccia}<g transform="translate(${f(m.bx)} ${f(m.by)})"><circle class="mt-tondo" r="${R}"/><text y="6" class="mt-num">${i + 1}</text><text x="12" y="-9" class="mt-mini">${sg.k === "stella" ? "★" : sg.k === "mano" ? "✎" : "✦"}</text></g>${pw ? `<text x="${f(pw.x)}" y="${f(pw.y)}" class="mt-parola ${pw.anc}">${E(pw.t)}</text>` : ""}</g>`;
   }).join("");
   return { alto, svg: `${titoli}${foto}<g filter="url(#mtTrem)">${corpo}</g>${scritte}${numeri}`, W, pezzi: pezzi.map(p => p.titolo) };   // 1.45.0: le mappe fuori dal filtro a matita
 }
@@ -3802,23 +3920,26 @@ function disegnoCamera(p) {
   const fondi = Object.values(S.pulizie || {}).filter(x => x && x.data === p.data && x.zona === p.zona && x.camera === p.camera && x.origine === "governante" && x.stato !== "non_fatta" && !x.nonServe);
   const segni = [...rif.map(r => segnoStella(r, r.camera || r.luogo || p.camera)),
     ...fondi.map(f => { const rg = regolaDi(f.regola); const pd = parteDisegno({ ...rg, regola: f.regola, nome: titoloBase(f) || rg.nome }); return { k: "fondo", t: String(titoloBase(f) || "Lavoro a fondo"), min: Number(f.minuti) || 0, icona: f.icona || rg.icona || "", dove: pd.dove, parola: pd.parola, luogo: p.camera }; })];
+  if (!comune) for (const m of segniManoDi(p)) segni.push(segnoDaMano(m, p.camera));   // 1.52.0: i segni di Michele sul disegno
   return disegnoLuogo(c, segni, {});
 }
 // il disegno di UN posto (camera, casa o zona comune) coi suoi segni: la mappa di Gemini (1.45) o la casa delle bambole a matita,
 // numeri, frecce e parole, la legenda sotto. opz.nome: il nome del posto nel titolo (per le stelle nelle altre camere)
 function disegnoLuogo(c, segni, opz) {
   if (!c || !c.id) return "";
+  const veri = c.tipo !== "comune" && c.tipo !== "casa" ? pezziVeri(c, segni) : null;   // 1.52.0: i disegni veri della camera
+  if (veri) segni = veri.segni;
   const comune = c.tipo === "comune", casa = c.tipo === "casa", singola = !casa && !comune && (Number(c.posti) || 2) < 2;
   const comuniIds = new Set(G.LUOGHI_COMUNI.map(l => l.id));
   const extra = [...new Set(segni.map(s => s.luogo).filter(l => l && l !== c.id && comuniIds.has(l)))];
   const balcone = !comune && segni.some(s => /^(balcone|ringhiera|muretto|piante|unita|stendino|portafinestra)/.test(String(s.dove)));
   // 1.36.0: la stessa casa delle bambole della 1.34, con l'anello sulla parte precisa; 1.37.0: grande, con le frecce; 1.45.0: le mappe di Gemini
-  const d = isoDisegno({ tipo: comune ? "comune" : casa ? "casa" : "camera", luogo: c.id, piano: /p1|1/.test(String(c.zona)) ? 1 : 2, singola, piani: Number(c.piani) || 1, balcone, extra, segni, esc });
-  const icoDi = (s) => ICONE_SVG[s.icona] ? ICONA(s.icona) : (s.k === "stella" ? "⭐" : "✨");
+  const d = isoDisegno({ tipo: comune ? "comune" : casa ? "casa" : "camera", luogo: c.id, piano: /p1|1/.test(String(c.zona)) ? 1 : 2, singola, piani: Number(c.piani) || 1, balcone, extra, segni, esc, pezzi: veri ? veri.pezzi : null });
+  const icoDi = (s) => ICONE_SVG[s.icona] ? ICONA(s.icona) : (s.k === "stella" ? "⭐" : s.k === "mano" ? "✍️" : "✨");
   const conMinuti = !pagaAOre();
-  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.parola && !PAROLE.norm(s.t).includes(PAROLE.norm(s.parola)) ? `${s.parola.replace(/^./, ch => ch.toUpperCase())} — ${s.t}` : s.t)}<small>${s.k === "stella" ? "★ stella" : "✦ lavoro a fondo"}${conMinuti && s.min ? ` · ${s.min} min` : ""}${s.luogo && s.luogo !== c.id ? ` · ${esc(camera(s.luogo).nome)}` : ""}</small></span></li>`).join("")}</ol>` : "";
-  const titolo = opz && opz.nome ? c.nome : comune ? (d.pezzi[0] || c.nome) : casa ? "La casa" : "La camera";
-  const detto = comune ? `${(d.pezzi[0] || c.nome).toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: letto matrimoniale con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;   // 1.45.0: la mappa è una sola per tutte le camere
+  const legenda = segni.length ? `<ol class="mt-legenda">${segni.map((s, i) => `<li class="${s.k}"><b>${i + 1}</b><i aria-hidden="true">${icoDi(s)}</i><span>${esc(s.parola && !PAROLE.norm(s.t).includes(PAROLE.norm(s.parola)) ? `${s.parola.replace(/^./, ch => ch.toUpperCase())} — ${s.t}` : s.t)}<small>${s.k === "stella" ? "★ stella" : s.k === "mano" ? `✎ segnato da ${esc(s.da || "Michele")}${s.sempre ? " · ogni volta" : ""}` : "✦ lavoro a fondo"}${conMinuti && s.min ? ` · ${s.min} min` : ""}${s.luogo && s.luogo !== c.id ? ` · ${esc(camera(s.luogo).nome)}` : ""}</small></span></li>`).join("")}</ol>` : "";
+  const titolo = opz && opz.nome ? c.nome : comune ? (d.pezzi[0] || c.nome) : casa ? "La casa" : veri ? c.nome : "La camera";
+  const detto = veri ? `${c.nome} com'è davvero: ${d.pezzi.join(", ").toLowerCase()}` : comune ? `${(d.pezzi[0] || c.nome).toLowerCase()}, com'è fatto davvero` : casa ? "la casa: la cucina col soggiorno, le camere e il bagno" : `la camera: letto matrimoniale con comodini, armadio, frigo, TV, finestra con le tende, termosifone, clima, quadro, porta; il bagno con doccia, WC, bidet, lavabo, specchio, phon, asciugamani`;   // 1.45.0: la mappa è una sola per tutte le camere
   return `<section class="mt-camera" aria-label="Il disegno di ${esc(c.nome)}"><div class="mt-camera-t">✏️ ${esc(titolo)}${segni.length ? ` · <b>${segni.length === 1 ? "1 cosa da fare" : segni.length + " cose da fare"}</b>` : ""}</div><svg class="mt-disegno" viewBox="0 0 ${d.W} ${d.alto}" role="img" aria-label="${esc(detto)}">${MATITA_DEFS.replace(/<\/?svg[^>]*>/g, "")}${d.svg}</svg>${legenda}${segni.length ? `<p class="mt-did">Ogni numero ha la sua freccia: la punta sta sulla cosa da pulire, e accanto al numero c'è scritto cosa.</p>` : ""}</section>`;
 }
 // ---- Sofia a fianco, A SCOMPARSA (1.32.0): di solito c'è solo il tasto tondo col microfono; toccandolo Sofia esce intera
@@ -10427,6 +10548,7 @@ function disegnaFoglio() {
   const s = elFoglio();
   let html = "";
   if (f.tipo === "pulizia") html = foglioPulizia(f);
+  else if (f.tipo === "segna") html = foglioSegna(f);   // 1.52.0
   else if (f.tipo === "inizio") html = foglioInizioFacile(f);   // 1.22.0: la camera facile (tutti i passi restano dentro, chiusi)
   else if (f.tipo === "patto") html = foglioPatto(f);
   else if (f.tipo === "messaggio") html = foglioMessaggio(f);
@@ -10512,6 +10634,7 @@ function foglioPulizia(f) {
       <input id="promemoriaCam" type="text" data-keep value="${esc(S.promemoria?.[p.camera] || "")}" placeholder="es. Balcone, dietro la TV">
       <button class="big undo" data-salva-promemoria="${esc(p.camera)}">Salva «da fare sempre»</button>`
     : (p.dettagli ? `<div class="pro-dett"><div class="pro-dett-t">${ICONA("nota")}<span>Dettagli di oggi</span></div><div class="pro-dett-x">${esc(p.dettagli)}</div></div>` : "");
+  const disegniHtml = proprietario() && disegniVeri(c) ? sezioneDisegniTitolare(p, c) : "";   // 1.52.0
   const ctrl = S.controlli[p.id];
   let controllo = "";
   if (p.stato === "fatta") {
@@ -10540,6 +10663,7 @@ function foglioPulizia(f) {
     <span class="kind">${esc(p.titolo)}</span>${p.partenza ? `<span class="kind arrivo">Parte ${esc(L.GIORNI[L.giornoSettimana(p.data)])} ${L.giornoDelMese(p.data)}</span>` : ""}${p.arrivo ? `<span class="kind arrivo">Arriva ${esc(L.GIORNI[L.giornoSettimana(p.data)])} ${L.giornoDelMese(p.data)}</span>` : ""}${!addetta() || p.stato === "fatta" ? `<span class="kind money">${eur(p.importo)}</span>` : ""}
     ${(!p.partenza && p.parteIl && p.parteIl > p.data) || (!p.arrivo && p.prossimoArrivo) ? `<p class="muted small" style="margin:6px 0 0">${!p.partenza && p.parteIl && p.parteIl > p.data ? `Resta fino a <b>${esc(giornoParlato(p.parteIl))}</b>` : ""}${!p.partenza && p.parteIl && p.parteIl > p.data && !p.arrivo && p.prossimoArrivo ? " · " : ""}${!p.arrivo && p.prossimoArrivo ? `Prossimo arrivo <b>${esc(giornoParlato(p.prossimoArrivo))}</b>${p.prossimoNome ? ` (${esc(p.prossimoNome)})` : ""}` : ""}</p>` : ""}
     ${promemoriaCamera(p.camera).length && !proprietario() ? `<div class="note info">Sempre in ${esc(c.nome)}: <b>${esc(promemoriaCamera(p.camera).join(" · "))}</b></div>` : ""}
+    ${disegniHtml}
     ${dettagli}
     ${p.istruzioni ? `<div class="note">${esc(p.istruzioni)}</div>` : ""}
     ${rif && c.tipo === "casa" ? `<div class="note">🗑 Stasera fuori: ${esc(rif.cosa.toUpperCase())}</div>` : ""}
@@ -12291,8 +12415,22 @@ function collegaFoglio() {
     document.querySelectorAll("[data-togli-msg]").forEach(b => b.onclick = async () => { if (await chiedi("Tolgo il messaggio di questo giorno?", { si: "Sì, togli", pericolo: true })) salvaMessaggio(f.giorno, ""); });
     return;
   }
+  if (f.tipo === "segna") {   // 1.52.0: tocchi sul disegno
+    const p = S.pulizie[f.id]; if (!p) return;
+    const tela = document.querySelector(".sheet [data-sg-tela]");
+    if (tela) tela.onclick = (e) => { if (e.target.closest("[data-sg-pin]")) return; const r = tela.getBoundingClientRect(); if (!r.width || !r.height) return; f.sel = "nuovo"; f.sempre = undefined; f.nx = Math.round(Math.max(6, Math.min(394, (e.clientX - r.left) / r.width * 400)) * 10) / 10; f.ny = Math.round(Math.max(6, Math.min(294, (e.clientY - r.top) / r.height * 300)) * 10) / 10; f.foto = f.foto || (disegniVeri(camera(p.camera)) || [{}])[0].id; disegnaFoglio(); setTimeout(() => { const el = document.getElementById("sgTesto_nuovo"); if (el) el.focus({ preventScroll: true }); }, 60); };
+    document.querySelectorAll(".sheet [data-sg-pin]").forEach(b => b.onclick = (e) => { e.stopPropagation(); f.sel = b.dataset.sgPin; f.sempre = undefined; disegnaFoglio(); });
+    document.querySelectorAll(".sheet [data-sg-foto]").forEach(b => b.onclick = () => { f.foto = b.dataset.sgFoto; f.sel = null; f.sempre = undefined; disegnaFoglio(); });
+    document.querySelectorAll(".sheet [data-sg-quando]").forEach(b => b.onclick = () => { f.sempre = b.dataset.sgQuando === "sempre"; disegnaFoglio(); });
+    document.querySelectorAll(".sheet [data-sg-salva]").forEach(b => b.onclick = () => salvaSegno(p, f));
+    document.querySelectorAll(".sheet [data-sg-togli]").forEach(b => b.onclick = async () => { if (await chiedi("Tolgo questo segno dal disegno?", { si: "Sì, togli", pericolo: true })) togliSegno(p, f); });
+    document.querySelectorAll(".sheet [data-sg-annulla]").forEach(b => b.onclick = () => { f.sel = null; f.sempre = undefined; disegnaFoglio(); });
+    document.querySelectorAll(".sheet [data-sg-torna]").forEach(b => b.onclick = () => apriFoglio({ tipo: "pulizia", id: p.id }));
+    return;
+  }
   if (f.tipo === "pulizia") {
     const p = S.pulizie[f.id];
+    document.querySelectorAll(".sheet [data-segna]").forEach(b => b.onclick = () => { const [pid, foto, sel] = b.dataset.segna.split("|"); apriFoglio({ tipo: "segna", id: pid, foto, sel: sel || null }); });   // 1.52.0
     document.querySelectorAll("[data-stato]").forEach(b => b.onclick = () => b.dataset.stato === "fatta" ? segnaFatta(p.id) : cambiaStato(p, b.dataset.stato, ""));
     document.querySelectorAll("[data-vai-inizio]").forEach(b => b.onclick = () => apriFoglio({ tipo: "inizio", id: b.dataset.vaiInizio }));
     const apriMotivo = (tipoMotivo, conFocus) => {
