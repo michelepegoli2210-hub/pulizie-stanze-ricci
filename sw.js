@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.50.0";
+const VERSIONE = "1.51.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -49,7 +49,7 @@ self.addEventListener("notificationclick", (e) => {
   const url = new URL((e.notification.data && e.notification.data.url) || "./index.html", self.registration.scope).href;
   e.waitUntil((async () => {
     const finestre = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} if (e.notification.data && e.notification.data.segreteria) { try { c.postMessage({ tipo: "apriSegreteria" }); } catch (err) {} return; } if (!(e.notification.data && e.notification.data.push) || (e.notification.data && e.notification.data.lettura)) { try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} } return; } }
+    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} if (e.notification.data && e.notification.data.segreteria) { try { c.postMessage({ tipo: "apriSegreteria", lettura: e.notification.data.segreteria === "lettura" }); } catch (err) {} return; } if (!(e.notification.data && e.notification.data.push) || (e.notification.data && e.notification.data.lettura)) { try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} } return; } }
     if (self.clients.openWindow) await self.clients.openWindow(url);
   })());
 });
@@ -61,7 +61,7 @@ self.addEventListener("push", (e) => {
   // 1.18.0: l'avviso «ho letto le chat» apre l'app sulla lettura da controllare
   const url = typeof d.url === "string" && /^\.\/index\.html(\?[a-z=&0-9]*)?$/i.test(d.url) ? d.url : "./index.html";
   const tag = typeof d.tag === "string" && /^[a-z0-9-]{1,40}$/i.test(d.tag) ? d.tag : "sofia-" + Date.now();
-  e.waitUntil(self.registration.showNotification(titolo, { body: testo, icon: "icon-192.png", badge: "icon-192.png", tag, renotify: true, data: { url, push: true, lettura: !!d.lettura, segreteria: !!d.segreteria } }));   // 1.49.0: anche «la sintesi di oggi»
+  e.waitUntil(self.registration.showNotification(titolo, { body: testo, icon: "icon-192.png", badge: "icon-192.png", tag, renotify: true, data: { url, push: true, lettura: !!d.lettura, segreteria: d.segreteria === "lettura" ? "lettura" : !!d.segreteria } }));   // 1.49.0: anche «la sintesi di oggi»; 1.51.0: e la lettura (Segreteria a tendina chiusa)
 });
 
 // ---- filmati: cache-first, a pezzi, scaricati per intero una volta sola ----------------------

@@ -7390,3 +7390,45 @@ body:has(.sheet) .sgr-tendina,body:has(.sheet) .sgr-fantasma,body:has(.conferma)
 body.premium .sofia-hero .casa-nuvola .dtf-man-tasti{display:flex}
 :root[data-theme="dark"] .dtf-man-ok,:root[data-theme="dark"] .dt-man-ok{background:#1E3A2A;border-color:rgba(134,239,172,.4);color:#D1F0DB}
 :root[data-theme="dark"] .dtf-man-via,:root[data-theme="dark"] .dt-man-via{border-color:rgba(255,255,255,.25);color:#CFC8BD}
+/* 1.51.0: LA SEGRETARIA FA LEI — la scheda di una lettura: cosa ho fatto (↩ Annulla), cosa ti chiedo, i messaggi; la contabilità
+   dei messaggi; i lavori urgenti; gli orari della sintesi */
+.sgr-conti{padding:10px 12px;margin-bottom:10px}
+.sgr-conti p{margin:0;font-size:14px;line-height:1.5;color:#2B3A4A}
+.sgr-conti b{font-weight:700}
+.sgr-voc{color:#5B6B7A;font-size:12.5px;white-space:nowrap}
+.sgr-nuova .sgr-blocco{margin:2px 0 10px}
+.sgr-nuova .sgr-blocco h4{margin:0 0 6px;font:700 14.5px/1.2 var(--f-body);color:#2B3A4A}
+.sgr-fatto,.sgr-prop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;margin:0 0 6px;border-radius:12px;background:#F1F7F2;border:1px solid rgba(22,101,52,.12)}
+.sgr-prop{background:#FFF8E6;border-color:rgba(122,78,0,.16);flex-wrap:wrap}
+.sgr-fatto.annullato{background:#F3F4F6;border-color:transparent}
+.sgr-fatto.annullato .sgr-f-t{color:#6B7280;text-decoration:line-through;text-decoration-color:rgba(107,114,128,.6)}
+.sgr-prop.fatta{background:#F3F4F6;border-color:transparent}
+.sgr-f-t{flex:1 1 200px;min-width:0;font-size:14.5px;line-height:1.35;overflow-wrap:anywhere;color:#1F2933}
+.sgr-f-t small{display:block;margin-top:3px;color:#7A4E00;font-size:12.5px;text-decoration:none}
+.sgr-nuova .sgr-b{min-height:34px;padding:0 13px;font-size:13.5px;flex:0 0 auto;-webkit-tap-highlight-color:transparent}
+.sgr-nuova .sgr-azioni{display:flex;gap:8px;flex-wrap:wrap}
+.sgr-nuova .sgr-giud{flex:0 0 auto;color:#4B5563}
+.sgr-non{margin:4px 2px 8px;line-height:1.4}
+.sgr-msgs{margin-top:4px}
+.sgr-msgs>summary{cursor:pointer;font:600 13.5px var(--f-body);color:#3E5568;padding:4px 2px}
+.sgr-msgs[open]>summary{margin-bottom:6px}
+.sgr-msgs .sgr-msg{margin:0 0 6px}
+/* i lavori urgenti */
+.dtf-urg{display:inline-block;margin-right:8px;padding:2px 9px;border-radius:999px;background:#FDE2E1;color:#9B1C1C;font:800 12px/1.4 var(--f-body);letter-spacing:.02em;text-transform:uppercase;vertical-align:2px}
+.dtf-urg-n{font-size:.75em;font-weight:700;color:#9B1C1C}
+.dt-urg{color:#B42318}
+body.premium .sofia-hero .casa-nuvola .dtf-man.urgente{border-left:4px solid #DC2626;padding-left:10px}
+.dtf-man.urgente{border-left:4px solid #DC2626;padding-left:10px}
+/* gli orari della sintesi */
+.giro-ore{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 2px 2px;font:600 14px/1.3 var(--f-body)}
+.giro-ore .btnsm{min-width:62px}
+:root[data-theme="dark"] .sgr-conti p,:root[data-theme="dark"] .sgr-nuova .sgr-blocco h4,:root[data-theme="dark"] .sgr-f-t{color:#E6EDF3}
+:root[data-theme="dark"] .sgr-voc,:root[data-theme="dark"] .sgr-msgs>summary{color:#A9B4C0}
+:root[data-theme="dark"] .sgr-fatto{background:#1E2E24;border-color:rgba(134,239,172,.14)}
+:root[data-theme="dark"] .sgr-prop{background:#332A15;border-color:rgba(252,211,77,.16)}
+:root[data-theme="dark"] .sgr-fatto.annullato,:root[data-theme="dark"] .sgr-prop.fatta{background:#232A31}
+:root[data-theme="dark"] .sgr-fatto.annullato .sgr-f-t{color:#8B96A2}
+:root[data-theme="dark"] .sgr-f-t small{color:#FCD34D}
+:root[data-theme="dark"] .sgr-nuova .sgr-giud{color:#C9D3DD}
+:root[data-theme="dark"] .dtf-urg{background:#4A1D1D;color:#FECACA}
+:root[data-theme="dark"] .dtf-urg-n,:root[data-theme="dark"] .dt-urg{color:#FCA5A5}

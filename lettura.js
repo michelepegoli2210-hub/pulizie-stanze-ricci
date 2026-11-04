@@ -17,6 +17,10 @@ const NUCLEO_RE = /\s*[·,;(\/]\s*|\s+-\s+/;
 export function nucleoNome(n) { return String(n || "").split(NUCLEO_RE)[0].replace(/\d.*$/, "").replace(/\s+/g, " ").trim(); }
 
 // ---- i codici degli ospiti ---------------------------------------------------------------------------------------------
+// 1.51.0: come SUONA un nome (senza h, senza doppie): «Rahhal», «Raal» → «ral». Serve per i cognomi sbagliati nei vocali trascritti
+export function chiaveSuono(w) { return PAROLE.norm(w).replace(/[^a-z]/g, "").replace(/h/g, "").replace(/k/g, "c").replace(/[yj]/g, "i").replace(/w/g, "v").replace(/(.)\1+/g, "$1"); }
+function distanzaParole(a, b) { const m = a.length, n = b.length; if (Math.abs(m - n) > 1) return 2; const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; }
+const PAROLE_COMUNI = new Set(["ciao", "allora", "domani", "oggi", "ieri", "senti", "grazie", "buongiorno", "buonasera", "buonanotte", "mamma", "papa", "michele", "lucia", "selena", "sele", "selly", "ok", "okay", "va", "bene", "si", "no", "eh", "ah", "mo", "uè", "ue", "come", "quando", "dove", "perche", "anche", "pero", "quindi", "poi", "prima", "dopo", "sono", "sta", "stanno", "fammi", "dimmi", "fatti", "vedi", "lascia", "metti"]);
 export function creaCodici(ctx) {
   const sog = ctx.soggiorni || [], cl = ctx.clienti || {};
   const via = new Set([...(ctx.camere || []).map(c => PAROLE.norm(c.nome)), ...(ctx.camere || []).map(c => PAROLE.norm(c.id)), ...(ctx.signore || []).map(z => PAROLE.norm(z.nome)), PAROLE.norm(ctx.nomeGov || ""), PAROLE.norm(ctx.nomeMio || ""),
@@ -46,7 +50,28 @@ export function creaCodici(ctx) {
       const molte = /\s/.test(x.t);          // piu' parole: maiuscole o minuscole non importa; una parola sola: come e' scritta
       return { re: new RegExp(`(^|[^\\p{L}\\[])(${e})(?=$|[^\\p{L}\\]])`, molte ? "giu" : "gu"), c: x.c };
     });
-  const aCodici = (t) => { let x = String(t ?? ""); if (!x) return x; for (const r of regole) x = x.replace(r.re, (m, a) => a + r.c); return x; };
+  // 1.51.0: i cognomi «come suonano», solo se sono di un ospite solo (la camera e le persone note non si toccano mai)
+  for (const lista of Object.values(ctx.alias || {})) for (const al of (lista || [])) via.add(PAROLE.norm(al));
+  const suoni = new Map();
+  for (const [k, n] of elenco) for (const w of n.split(/\s+/)) {
+    const pulita = w.replace(/[^\p{L}]/gu, ""); if (pulita.length < 4 || via.has(PAROLE.norm(pulita))) continue;
+    const s = chiaveSuono(pulita); if (s.length < 3) continue;
+    const c = codice.get(k); suoni.set(s, suoni.has(s) && suoni.get(s) !== c ? null : c);
+  }
+  const perSuono = (w) => {
+    const n = PAROLE.norm(w); if (!n || via.has(n) || PAROLE_COMUNI.has(n) || (PAROLE.STOP && PAROLE.STOP.has && PAROLE.STOP.has(n))) return null;
+    const s = chiaveSuono(w); if (s.length < 3) return null;
+    if (suoni.get(s)) return suoni.get(s);
+    if (/^[aeiou]/.test(n) && suoni.get(chiaveSuono(w.slice(1)))) return suoni.get(chiaveSuono(w.slice(1)));   // «Aral» = «a Rahhal»
+    if (s.length >= 6 && !NON_NOME.has(n)) { let trovato = null; for (const [k2, c2] of suoni) if (c2 && k2.length >= 6 && distanzaParole(k2, s) <= 1) { if (trovato && trovato !== c2) return null; trovato = c2; } return trovato; }
+    return null;
+  };
+  const aCodici = (t) => {
+    let x = String(t ?? ""); if (!x) return x;
+    for (const r of regole) x = x.replace(r.re, (m, a) => a + r.c);
+    if (suoni.size) x = x.replace(/(^|[^\p{L}\[])(\p{Lu}[\p{L}'’]{2,})(?=$|[^\p{L}\]])/gu, (m, a, w) => { const c = perSuono(w); return c ? a + c : m; });
+    return x;
+  };
   const daCodici = (t) => String(t ?? "").replace(/\[\s*O\s*(\d{1,4})\s*\]/g, (m, n) => nomi.get(`[O${n}]`) || m);
   const daCodiciProfondo = (v) => { if (typeof v === "string") return daCodici(v); if (Array.isArray(v)) return v.map(daCodiciProfondo); if (v && typeof v === "object") { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = daCodiciProfondo(x); return o; } return v; };
   return { nomi, regole, aCodici, daCodici, daCodiciProfondo };
@@ -107,8 +132,9 @@ export function prospettoInCodici(ctx, codici, da, a) {
 // ---- 1.39.0: la Segreteria: quello che Sofia ha capito, nella forma che resta da parte (coi nomi veri: la raccolta è dei titolari)
 export function perSegreteria(j) {
   const x = j && typeof j === "object" ? j : {};
-  const p = (k, n) => (Array.isArray(x[k]) ? x[k] : []).filter(v => v && typeof v === "object").slice(0, n).map(v => { const o = {}; for (const [a, b] of Object.entries(v)) if (b !== undefined && b !== null && typeof b !== "object") o[a] = typeof b === "string" ? b.slice(0, 400) : b; return o; });
+  const p = (k, n) => (Array.isArray(x[k]) ? x[k] : []).filter(v => v && typeof v === "object").slice(0, n).map(v => { const o = {}; for (const [a, b] of Object.entries(v)) { if (b === undefined || b === null) continue; if (Array.isArray(b)) { const l = b.filter(z => z !== null && typeof z !== "object").slice(0, 14).map(z => typeof z === "string" ? z.slice(0, 80) : z); if (l.length) o[a] = l; } else if (typeof b !== "object") o[a] = typeof b === "string" ? b.slice(0, 400) : b; } return o; });   // 1.51.0: anche le liste
   return { risposta: String(x.risposta || "").slice(0, 700), soggiorni: p("soggiorni", 60), togli: p("togli", 20), indicazioni: p("indicazioni", 20), assenze: p("assenze", 10), guasti: p("guasti", 10), spesa: p("spesa", 10), note: p("note", 10), ore: p("ore", 14), telefoni: p("telefoni", 10),
+    ...(Array.isArray(x.azioni) ? { azioni: p("azioni", 24), proposte: p("proposte", 12) } : {}),   // 1.51.0
     dubbi: (Array.isArray(x.dubbi) ? x.dubbi : []).slice(0, 12).map(d => ({ domanda: String(d && typeof d === "object" ? (d.domanda || d.testo || "") : d || "").slice(0, 200), risposte: d && typeof d === "object" && Array.isArray(d.risposte) ? d.risposte.slice(0, 4).map(r => String(r).slice(0, 40)) : [] })).filter(d => d.domanda) };
 }
 
@@ -159,6 +185,7 @@ export function signoreInParole(ctx) {
   return `LE SIGNORE DELLE PULIZIE (nel JSON usa questi codici):\n${righe.join("\n")}${somiglia.length ? `\nNelle chat possono avere un altro nome: ${somiglia.join("; ")}.` : ""}`;
 }
 export function istruzioniLettura(ctx, codici = creaCodici(ctx)) {
+  if (ctx.prospettoChat === false) return istruzioniLetturaChat(ctx, codici);   // 1.51.0: le chat di WhatsApp (modo nuovo)
   const oggi = ctx.oggi, alias = ctx.alias || {};
   const soloExcel = ctx.prospettoChat === false;   // 1.49.0: il prospetto arriva dal foglio Excel di papà, non dalle chat
   const camere = (ctx.camere || []).map(c => `- ${c.id} = ${c.nome} (${c.tipo === "casa" ? "appartamento" : "camera"}${c.via ? ", " + c.via : ""}${c.zona === "p1" ? ", 1° piano" : c.zona === "p2" ? ", 2° piano" : ""}; si dice anche: ${[...new Set((alias[c.id] || []).filter(x => x !== PAROLE.norm(c.nome)))].slice(0, 7).join(", ") || "—"})`).join("\n");
@@ -302,4 +329,106 @@ LE LETTURE GIÀ FATTE OGGI (quello che ho già messo da parte nell'app):
 ${l.length ? l.map(x => "- " + x).join("\n") : "- nessuna"}
 ${piano ? `\nIL PIANO DI DOMANI NELL'APP (le pulizie già in programma): ${piano}\n` : ""}
 LA DOMANDA DI MICHELE: «${String(domanda || "").slice(0, 600)}»`;
+}
+
+// ---- 1.51.0: LA SEGRETARIA FA LEI (Michele, 4/11: «lo scopo dell'ascoltare i messaggi è interpretarli e far cambiare le sezioni
+// dedicate: la maniglia rotta nei lavori da fare, il giro di Lucia, i ripassi di Selena… si dovrebbe aggiornare automaticamente»).
+// Le istruzioni per la lettura delle CHAT DI WHATSAPP (quando il prospetto arriva solo dal foglio Excel di papà): Sofia vede
+// anche IL GIRO DELLE SIGNORE dei prossimi giorni e risponde con le AZIONI (le stesse «mani» della governante), che l'app fa
+// subito, e con le PROPOSTE (le cose non dette chiare), che Michele conferma con un tocco. Niente più «abitudini».
+const TIPO_GIRO = { ripasso: "ripasso", totale: "cambio completo", casa: "pulizia della casa", totale_casa: "cambio completo", extra: "lavoro in più", fisso: "lavoro fisso" };
+export function giroInParole(ctx) {
+  const giorni = Array.isArray(ctx.giroGiorni) ? ctx.giroGiorni : [];
+  if (!giorni.length) return "";
+  const lista = (Array.isArray(ctx.giro) ? ctx.giro : []).filter(p => p && p.tipo !== "stelle" && !p.nonServe);
+  const nomeCam = (id) => { const c = (ctx.camere || []).find(x => x.id === id); return c ? c.nome : String(id || ""); };
+  const sig = (ctx.signore || []).filter(z => z && z.id);
+  const nomeSig = (z) => { const s = sig.find(x => x.id === z); return s ? s.nome : "senza signora"; };   // una zona senza signora (gli appartamenti, se non c'è la terza)
+  return giorni.map(g => {
+    const delGiorno = lista.filter(p => p.data === g);
+    const zone = [...new Set([...sig.map(z => z.id), ...delGiorno.map(p => p.zona).filter(Boolean)])];
+    const parti = zone.map(z => {
+      const ps = delGiorno.filter(p => p.zona === z).map(p => `${p.camera ? `${nomeCam(p.camera)} [${p.camera}]` : "senza camera"} ${TIPO_GIRO[p.tipo] || p.tipo || ""}${p.tipo === "extra" && p.titolo ? ` «${String(p.titolo).slice(0, 70)}»` : ""}${p.insieme ? ` (insieme a ${nomeSig(p.insieme)})` : ""}${p.stato === "fatta" ? " (già fatta)" : ""}`.replace(/\s+/g, " ").trim());
+      return `${nomeSig(z)} (${z}): ${ps.length ? ps.join("; ") : "niente"}`;
+    });
+    return `- ${L.dataGiornoLungo(g)} (${g})${g === ctx.oggi ? ", OGGI" : ""}: ${parti.join(" | ")}`;   // «|» tra le signore (i nomi delle case hanno già «·»)
+  }).join("\n");
+}
+export function istruzioniLetturaChat(ctx, codici = creaCodici(ctx)) {
+  const oggi = ctx.oggi, alias = ctx.alias || {};
+  const camere = (ctx.camere || []).map(c => `- ${c.id} = ${c.nome} (${c.tipo === "casa" ? "appartamento" : "camera"}${c.via ? ", " + c.via : ""}${c.zona === "p1" ? ", 1° piano" : c.zona === "p2" ? ", 2° piano" : ""}; si dice anche: ${[...new Set((alias[c.id] || []).filter(x => x !== PAROLE.norm(c.nome)))].slice(0, 7).join(", ") || "—"})`).join("\n");
+  const da = L.aggiungiGiorni(oggi, -14), a = L.aggiungiGiorni(oggi, 60);
+  const giro = codici.aCodici(giroInParole(ctx));   // i titoli dei lavori in più possono avere il nome di un ospite: solo codici
+  return `Sei ${ctx.nomeGov} de "Le Stanze di Ricci" a Lesina e qui fai da segretaria: leggi le chat di WhatsApp di Michele, il titolare, con la famiglia, il socio e le signore delle pulizie, e METTI A POSTO L'APP al posto suo: quello che nelle chat si decide sul lavoro lo scrivi come AZIONI, e l'app le fa SUBITO. Michele non vuole spuntare né salvare niente: vuole che l'app si aggiorni da sola e poi leggere cosa hai fatto.
+
+OGGI è ${L.dataGiornoLungo(oggi)} (${oggi})${ctx.ora ? `, sono le ${ctx.ora}` : ""}.
+
+LE CAMERE (nel JSON usa SOLO questi codici):
+${camere}
+Liù, Maria Grazia e via Ancona sono appoggi esterni: non sono nostre.
+
+${signoreInParole(ctx)}
+
+LE PERSONE DELLE CHAT: «Michele» è il titolare: usa l'app e decide. «Papà» è suo padre: fa il prospetto (il foglio Excel) e parla spesso con le signore e con gli ospiti. «Michele Santucci» è il socio di Michele: dà consigli. Contano le cose DECISE (da Michele o dal papà), non i consigli e le chiacchiere.
+
+COME SI LEGGONO I MESSAGGI:
+- Ogni messaggio ha la sua data e ora tra parentesi quadre: «domani», «oggi», «stasera», un giorno della settimana valgono rispetto alla DATA DEL MESSAGGIO, non a oggi.
+- Davanti c'è la chat tra parentesi tonde: «(chat con Selly)» è la chat privata tra Michele e quella persona; un nome da solo, per esempio «(Albergo)», è un gruppo. Quello che Michele (o il papà) dice a una signora è una DECISIONE. Quello che propone una signora vale se Michele lo conferma («sì», «va bene», «quelli che hai detto tu»).
+- I messaggi che cominciano con 🎤 sono vocali trascritti: le parole possono essere sbagliate, soprattutto i COGNOMI degli ospiti ([?] = non si capiva). Un nome che non è una camera è quasi sempre un OSPITE: guarda nel prospetto qui sotto in quale camera sta (i codici [O..]) e usa QUELLA camera. Non trasformare MAI un nome strano nella camera che gli somiglia (un cognome che suona come «Alba» non è la camera Alba): se non capisci di chi parla, metti una domanda in "dubbi".
+- Le CAMERE hanno nomi di persona (Salvatore, Michele, Aurora, Antonio, Lella, Alba, Nicole): «in Antonio», «ad Aurora», «Salvatore:» sono camere.
+- I messaggi più recenti correggono quelli vecchi; se una cosa risulta già fatta o risolta, non metterla.
+- I nomi degli ospiti che l'app conosce sono CODICI tra parentesi quadre, per esempio [O3]: riscrivili IDENTICI.
+- I numeri di telefono li ho tolti io: al loro posto c'è [telefono1], [telefono2]...; [email] è un'email tolta.
+- IL PROSPETTO (chi dorme in quale camera e in che giorni) arriva da un FILE EXCEL che pubblica il papà: dalle chat NON lo cambi mai. Se qualcuno parla di arrivi, partenze o giorni di un ospite, scrivi una riga in "note" che comincia con «Prospetto:» (per esempio «Prospetto: papà dice che [O3] resta fino a sabato — controlla il foglio Excel»).
+- La MANUTENZIONE la fa SEMPRE Michele (o chiama lui il tecnico): il papà, le signore e gli ospiti i guasti li SEGNALANO soltanto, anche quando il papà ci mette una pezza. Nel "cosa" scrivi solo cosa non va, mai chi lo sistemerà.
+- Se in fondo ci sono le «CORREZIONI DI MICHELE», valgono più di tutto: rifai tutto di conseguenza e nella "risposta" digli in una frase cosa hai cambiato.
+
+IL PROSPETTO CHE C'È ADESSO NELL'APP (dal foglio Excel; soggiorni dal ${L.dataMedia(da)} al ${L.dataMedia(a)}):
+${prospettoInCodici(ctx, codici, da, a)}
+${giro ? `
+IL GIRO DELLE SIGNORE NELL'APP (le pulizie già in programma, giorno per giorno; le sigle delle camere tra parentesi quadre):
+${giro}
+` : ""}
+IL TACCUINO (cose che Michele mi ha chiesto di ricordare sempre):
+${String(ctx.taccuino || "")}
+
+LE AZIONI: con queste cambi DAVVERO l'app, come farebbe Michele. Una azione per ogni cosa decisa nelle chat.
+1) un GUASTO o una cosa da riparare → {"tipo":"manutenzione","modo":"apri","camera":"tramonto","cosa":"La maniglia del bagno è rotta","urgente":true}
+   "camera" vuota se è di tutta la casa (la caldaia, il cancello). "urgente": true se un ospite aspetta, se la camera non si può usare o se c'è un pericolo; altrimenti false.
+   Un guasto che Michele (o il tecnico) ha SISTEMATO → {"tipo":"manutenzione","modo":"chiudi","camera":"nicole","cosa":"caldaia"}
+2) una pulizia del giro che quel giorno NON SERVE → {"tipo":"pulizie","modo":"non_serve","giorno":"AAAA-MM-GG","dove":["fenicotteri","tramonto"]}
+   una pulizia tolta per sbaglio da RIMETTERE → {"tipo":"pulizie","modo":"da_fare","giorno":"AAAA-MM-GG","dove":["alba"]}
+3) un LAVORO IN PIÙ per una signora in un giorno: una camera o una casa che NON è nel suo giro di quel giorno, oppure un lavoro senza camera → {"tipo":"incarico","giorno":"AAAA-MM-GG","chi":"p1","dove":"trento","cosa":"Marciapiede e rinfresco; vetri asciutti o tapparelle chiuse; guarda se gli ospiti sono tornati","minuti":30}
+   Senza camera: "dove":"" (per esempio {"tipo":"incarico","giorno":"AAAA-MM-GG","chi":"p1","dove":"","cosa":"In albergo alle 10:30: il punto su lenzuola e trapunte","minuti":30}). "minuti" quelli detti (mezz'ora = 30, un'ora = 60); se non li dicono, 30.
+4) una pulizia del giro da far fare all'ALTRA signora, o a tutte e due insieme → {"tipo":"assegna","giorno":"AAAA-MM-GG","dove":["zara1"],"chi":["p1","p2"]}
+5) una NOTA per una pulizia che c'è già nel giro (cosa fare in più, solo una parte) → {"tipo":"dettagli","camera":"alba","giorno":"AAAA-MM-GG","testo":"Solo il bagno"}
+   Le note per le signore le scrivi come le direbbe Michele a voce: corte, dirette, dando del tu.
+6) un AVVISO per le signore in un giorno (vale per tutte e due) → {"tipo":"messaggio","giorno":"AAAA-MM-GG","testo":"Domani arrivano gli operai alle 8"}
+7) chi pulisce DI SOLITO una camera, da adesso in poi («d'ora in poi Alba la fa Lucia») → {"tipo":"camera","camera":"alba","signora":"p1"}
+8) una REGOLA che vale sempre e non ha un altro posto → {"tipo":"ricorda","testo":"Il cambio lenzuola in più si fa solo se l'ospite lascia 10 € sul comodino; se no si aspetta il venerdì"}
+REGOLE DELLE AZIONI:
+- Guarda IL GIRO DELLE SIGNORE prima di scrivere: se una cosa è già così, non metterla. Se una camera detta nelle chat è già nel giro di quella signora quel giorno, NON fare un incarico (al massimo una nota, punto 5).
+- In "azioni" solo quello che è detto CHIARO: l'app lo fa subito, senza chiedere.
+- Quello che pensi ma non è detto chiaro va in "proposte", con "perche" = la domanda corta per Michele (lui risponde con un tocco). Esempio: Michele dice «i ripassi di oggi sono Lella e Passerella» e nel giro di oggi ce ne sono anche altri → una proposta {"tipo":"pulizie","modo":"non_serve",...} con gli altri e "perche":"Nel giro di oggi ci sono anche Fenicotteri e Tramonto: li tolgo?".
+- Solo cose da oggi in poi: niente per i giorni passati, niente per le ore già passate di oggi.
+- I soldi (paghe, buste, prezzi) non si toccano con le azioni.
+
+RISPONDI SOLO con questo JSON:
+{"risposta":"2-4 frasi semplici per Michele: chi ha scritto e di cosa, e cosa metti nell'app",
+ "azioni":[{"tipo":"…"}],
+ "proposte":[{"tipo":"…","perche":"la domanda corta per Michele"}],
+ "dubbi":[{"domanda":"domanda corta per Michele su una cosa non chiara","risposte":["2-4 risposte brevi possibili"]}],
+ "assenze":[{"signora":"p2","dal":"AAAA-MM-GG","al":"AAAA-MM-GG (uguale a dal se è un giorno solo)","testo":"corto, per Michele (es. Selena sabato non viene)","messaggio":"le sue parole","sicurezza":"alta"}],
+ "spesa":[{"prodotto":"il prodotto che manca, corto","signora":"p1 oppure vuoto","chi":"chi l'ha detto","messaggio":"le sue parole"}],
+ "note":[{"giorno":"AAAA-MM-GG","testo":"una cosa importante da sapere per Michele, corta","chi":"chi l'ha detto","messaggio":"le sue parole"}],
+ "telefoni":[{"camera":"codice della camera oppure vuoto","nome":"di chi è il numero: un codice [O3], un nome, una ditta","telefono":"[telefono1]","chi":"ospite / tecnico / fornitore / ditta / altro","messaggio":"le parole da cui l'hai capito"}],
+ "ore":[{"signora":"p1","giorno":"AAAA-MM-GG","minuti":150,"dove":"albergo, Nicole (se l'ha scritto)","messaggio":"le sue parole"}],
+ "soggiorni":[], "togli":[]}
+REGOLE DEL JSON:
+- "soggiorni" e "togli" SEMPRE vuoti: il prospetto arriva dal foglio Excel.
+- In "assenze" solo quando una signora dice che NON viene in un giorno preciso da oggi in poi ("signora" = il suo codice).
+- In "spesa" i prodotti che mancano o stanno finendo. In "note" solo le cose importanti per Michele che non hanno un altro posto (un appuntamento, chi porta le chiavi, una cosa sul prospetto, un ospite che chiede qualcosa): niente saluti e chiacchiere.
+- In "ore" solo le ore di lavoro scritte dalle signore: una riga per signora e per giorno, in minuti (2 ore e mezza = 150, mezz'ora = 30).
+- In "telefoni" sempre e solo il segnaposto, mai cifre.
+- Le date sempre nel formato AAAA-MM-GG.`;
 }

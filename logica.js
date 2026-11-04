@@ -157,7 +157,7 @@ export const CALENDARIO_CAMERE = (() => {
     const dubbio = /CONTROLLA|COMPLETA/i.test(v.controlla || "") || !!v.oppure;
     for (const id of v.posti) {
       const c = out[id] = out[id] || { passi: [], aperto: false, domande: [] };
-      c.passi.push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, oppure: !!v.oppure, controlla: v.controlla || "", zona: v.zona || null, insieme: v.insieme || "", parte: v.parte || "", dubbio });
+      c.passi.push({ giorno: v.giorno, tipo: v.tipo, budget: v.budget, libera: !!v.libera, base: !!v.base, oppure: !!v.oppure, controlla: v.controlla || "", zona: v.zona || null, insieme: v.insieme || "", parte: v.parte || "", minuti: Number(v.minuti) || 0, dubbio });   // 1.51.0: i minuti di quel passaggio
       if (dubbio) { c.aperto = true; if (v.controlla && !c.domande.includes(v.controlla)) c.domande.push(v.controlla); }
     }
   }
@@ -216,7 +216,7 @@ export function passaggiCamera(camera, regole = REGOLE_BASE, iso = null) {
   const r = { ...REGOLE_BASE, ...(regole || {}) };
   if (iso && regimeDi(iso, r) === "estate") return [];
   const cal = CALENDARIO_CAMERE[camera.id];
-  if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), zona: x.zona || camera.zona, insieme: x.insieme || "", parte: x.parte || "", daCalendario: true }));
+  if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), zona: x.zona || camera.zona, insieme: x.insieme || "", parte: x.parte || "", minuti: Number(x.minuti) || 0, daCalendario: true }));
   return ((camera.tipo === "casa" ? r.casa : r.camera) || []).map(x => ({ ...x, zona: camera.zona, daCalendario: false }));
 }
 
@@ -274,11 +274,12 @@ export function pulizia_prevista(camera, iso, soggiorni, regole = REGOLE_BASE, n
     zona: (regola && regola.zona) || zonaDi(camera, r),
     insieme: (regola && regola.insieme) || "",
     parte: (regola && regola.parte) || "",
+    minuti: (regola && tipo === regola.tipo && Number(regola.minuti)) || 0,   // 1.51.0
     altreParti: regola && tipo === regola.tipo ? altreParti : [],
     regime: regimeDi(iso, r),
   };
 }
-export const PARTE_TESTO = { sotto: "piano di sotto", sopra: "piano di sopra" };
+export const PARTE_TESTO = { sotto: "piano di sotto", sopra: "piano di sopra", insieme1: "insieme", insieme2: "insieme" };   // 1.51.0
 
 // Costruisce l'elenco completo delle pulizie "attese" in un intervallo di giorni.
 export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [], clienti = {}) {
@@ -293,14 +294,14 @@ export function pianoPulizie(camere, soggiorni, regole, listino, da, a, note = [
         ospite: p.ospite, soggiorno: p.soggiorno, partenza: p.partenza, arrivo: p.arrivo,
         parteIl: p.parteIl, prossimoArrivo: p.prossimoArrivo, prossimoNome: p.prossimoNome, prossimoPersone: p.prossimoPersone,
         istruzioni: p.istruzioni, persone: p.persone,
-        minuti: minutiPulizia(listino, c, p.tipo),
-        importo: prezzoPulizia(listino, c, p.tipo) + Number(p.supplemento || 0),
+        minuti: Number(p.minuti) || minutiPulizia(listino, c, p.tipo),   // 1.51.0: i minuti del calendario, se ci sono
+        importo: (Number(p.minuti) ? euroDaMinuti(p.minuti, tariffaDi(listino, c)) : prezzoPulizia(listino, c, p.tipo)) + Number(p.supplemento || 0),
         origine: "auto",
       };
       const conParte = (b, parte) => parte ? { ...b, parte, titolo: `${b.titolo} · ${PARTE_TESTO[parte] || parte}` } : b;
       out.push({ id: `${iso}_${c.id}`, ...conParte(base, p.parte) });
       // le altre parti dello stesso giorno (l'altra signora, l'altro piano): un'altra riga di paga, senza il supplemento dell'ospite
-      for (const x of p.altreParti || []) out.push({ id: `${iso}_${c.id}_${x.parte}`, ...conParte({ ...base, zona: x.zona || base.zona, insieme: x.insieme || "", importo: prezzoPulizia(listino, c, p.tipo) }, x.parte) });
+      for (const x of p.altreParti || []) out.push({ id: `${iso}_${c.id}_${x.parte}`, ...conParte({ ...base, zona: x.zona || base.zona, insieme: x.insieme || "", minuti: Number(x.minuti) || base.minuti, importo: Number(x.minuti) ? euroDaMinuti(x.minuti, tariffaDi(listino, c)) : prezzoPulizia(listino, c, p.tipo) }, x.parte) });
     }
     // i lavori fissi della settimana (terrazzo, scale e ingresso del sabato): una riga di paga a ore standard, senza camera
     const inverno = regimeDi(iso, { ...REGOLE_BASE, ...(regole || {}) }) !== "estate";
