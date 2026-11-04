@@ -39,6 +39,13 @@ export function testoRiassunto(r) {
   const p = (n, uno, tanti) => n ? `${n} ${n === 1 ? uno : tanti}` : "";
   return [p(r.cambi, "cambio nel prospetto", "cambi nel prospetto"), p(r.indicazioni, "indicazione per le signore", "indicazioni per le signore"), p(r.assenze, "assenza", "assenze"), p(r.guasti, "guasto", "guasti"), p(r.spesa, "cosa da comprare", "cose da comprare"), p(r.note, "cosa da sapere", "cose da sapere"), p(r.ore, "orario scritto da una signora", "orari scritti dalle signore"), p(r.telefoni, "numero di telefono", "numeri di telefono")].filter(Boolean).join(" · ");
 }
+// 1.22.0: l'avviso di una lettura del modo nuovo: cosa c'è da mettere a posto (lo fa l'app) e cosa chiede; apre la Segreteria
+export function avvisoApplica(x, nomeGov) {
+  const n = Number(x && x.n) || 0, r = (x && x.riassunto) || {};
+  const cose = (Number(r.azioni) || 0) + (Number(r.guasti) || 0) + (Number(r.assenze) || 0) + (Number(r.spesa) || 0) + (Number(r.note) || 0) + (Number(r.telefoni) || 0), domande = (Number(r.proposte) || 0) + (Number(r.dubbi) || 0) + (Number(r.ore) || 0);
+  const chats = [...new Set((Array.isArray(x && x.fonte && x.fonte.chats) ? x.fonte.chats : []).map(c => String(c).replace(/^chat con /, "")).filter(Boolean))].slice(0, 3).join(", ");
+  return { titolo: `${nomeGov || "Sofia"} · WhatsApp`, testo: `Ho letto ${n === 1 ? "un messaggio" : n ? n + " messaggi" : "i messaggi"}${chats ? ` (${chats})` : ""}: ${cose ? `${cose === 1 ? "una cosa" : cose + " cose"} da mettere a posto nell'app` : "niente da cambiare nell'app"}${domande ? `, ${domande === 1 ? "una domanda" : domande + " domande"} per te` : ""}. Tocca per vedere.`, extra: { url: "./index.html?segreteria=lettura", segreteria: "lettura", tag: "sofia-lettura" } };
+}
 // 1.18.1: il testo dell'avviso «ho letto» (lo stesso per le letture del giro e per quelle del telefono)
 export function avvisoLettura(x, nomeGov) {
   const n = Number(x && x.n) || 0, cosa = testoRiassunto((x && x.riassunto) || {});
@@ -72,7 +79,7 @@ export function riassuntoGiro(j, ctx) {
     if (camera && nome && sog.some(s => s.camera === camera && LET.nucleoNome(s.nome).toLowerCase() === nome && s.fine >= L.aggiungiGiorni(oggi, -3))) cambi++;
   }
   const n = (k) => (Array.isArray(j[k]) ? j[k] : []).filter(Boolean).length;
-  return { cambi, indicazioni: n("indicazioni"), assenze: n("assenze"), guasti: n("guasti"), spesa: n("spesa"), note: n("note"), ore: n("ore"), telefoni: n("telefoni") };   // 1.38.0: ore e telefoni
+  return { cambi, indicazioni: n("indicazioni"), assenze: n("assenze"), guasti: n("guasti"), spesa: n("spesa"), note: n("note"), ore: n("ore"), telefoni: n("telefoni"), azioni: n("azioni"), proposte: n("proposte"), dubbi: n("dubbi") };   // 1.38.0: ore e telefoni; 1.22.0: azioni, proposte, dubbi
 }
 // Gemini: prima Argon, poi il modello sveglio, poi lo svelto (come l'app)
 export async function chiediGemini(gemini, dom, ordine = ["argon", "sveglia", "svelta"]) {   // 1.49.0: la sintesi della sera passa solo dai modelli gratuiti
@@ -108,6 +115,13 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
   const ora = adesso.getTime(), t0 = Date.now(), finito = () => new Date(ora + (Date.now() - t0)).toISOString();
   const lett = await db.doc("importazioni", "lettura-sofia");
   let vecchie = [];
+  // 1.22.0: una lettura «da_applicare» (modo nuovo) la mette a posto la prima app del titolare che si apre: si aspetta 2 ore, poi
+  // si rilegge insieme alla posta nuova (quella vecchia, mai applicata, diventa «sostituita»)
+  if (lett && lett.stato === "da_applicare") {
+    if (ora - Date.parse(lett.quando || 0) < 2 * 3600 * 1000) return { esito: "aspetta che l'app la metta a posto", ts: letturaTs };
+    vecchie = Array.isArray(lett.postaIds) ? lett.postaIds : [];
+    if (lett.lid) { try { await db.merge("importazioni", "segreteria_" + lett.lid, { esito: "sostituita" }); } catch (e) {} }
+  }
   if (lett && lett.stato === "da_controllare") {
     const eta = ora - Date.parse(lett.quando || 0);
     if (eta < SCADE_MS) {
@@ -172,25 +186,32 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     const papa = scelti.some(m => m.chi === "Papà") ? "Papà" : "";
     const ctx = await ctxDalDatabase(db, { ...base, oggi });
     ctx.prospettoChat = a.prospettoChat === true;   // 1.49.0: di solito spento: il prospetto arriva dal foglio Excel di papà
+    if (!ctx.prospettoChat) {   // 1.22.0: il modo nuovo: Sofia vede il giro delle signore dei prossimi tre giorni e l'ora
+      const giorni = [0, 1, 2].map(n => L.aggiungiGiorni(oggi, n));
+      try { ctx.giro = Object.values((await db.pulizieDi(giorni)) || {}).filter(p => p && !p.nonServe && p.stato !== "non_fatta" && p.tipo !== "stelle").map(p => ({ data: p.data, zona: p.zona, camera: p.camera || "", tipo: p.tipo, titolo: p.titolo || "", insieme: p.insieme || "", stato: p.stato || "" })); ctx.giroGiorni = giorni; } catch (e) { console.warn("giro delle signore:", e && e.message); }
+      if (minuti !== undefined && minuti !== null) ctx.ora = `${String(Math.floor(minuti / 60)).padStart(2, "0")}:${String(minuti % 60).padStart(2, "0")}`;
+    }
     ctx.persone = [...new Set(scelti.flatMap(m => [m.chi, m.chat && String(m.chat).replace(/^chat con /, "")]).filter(Boolean))];
     const codici = LET.creaCodici(ctx);
     const { testo, tagliati, telefoni } = LET.testoPerLettura(scelti, papa, ctx, codici);
     const { r, ripiego } = await chiediGemini(gemini, { sistema: LET.istruzioniLettura(ctx, codici), storia: [], testo: `${immagini.length ? `Ti mando anche ${immagini.length === 1 ? "una foto" : immagini.length + " foto"} della chat (numerate nell'ordine, nei messaggi trovi "foto n. 1"...): se sono il prospetto scritto a mano o stampato, leggile come il resto.\n` : ""}ECCO I MESSAGGI (${scelti.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, immagine: immagini.length ? immagini : null, secondi: 150, maxToken: 16000 });
     const j0 = LET.rimettiTelefoni(LET.jsonDaRisposta(r.grezzo), telefoni);
     if (!j0 || typeof j0 !== "object") throw new Error("Gemini ha risposto in un modo che non capisco");
-    const j = codici.daCodiciProfondo(j0);
-    const riassunto = riassuntoGiro(j, ctx), ha = !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni);
+    const j = ctx.prospettoChat === false ? { ...codici.daCodiciProfondo(j0), soggiorni: [], togli: [] } : codici.daCodiciProfondo(j0);   // 1.22.0: dalle chat niente prospetto (arriva dal foglio Excel)
+    const chat = ctx.prospettoChat === false;   // 1.22.0: il modo nuovo: la lettura la mette a posto l'app (da_applicare)
+    const riassunto = riassuntoGiro(j, ctx), ha = chat ? !!(riassunto.azioni || riassunto.proposte || riassunto.dubbi || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni) : !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni);
+    const statoNuovo = ha ? (chat ? "da_applicare" : "da_controllare") : "vuota";
     // 1.39.0: la Segreteria: i messaggi (coi vocali trascritti) e quello che Sofia ha capito restano da parte, per «Giusto / Correggi»
-    try { await db.salva("importazioni", "segreteria_" + id, { lid: id, quando: finito(), da: "giro", modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, messaggi: scelti.slice(-60).map(m => ({ id: String(m.id || ""), chat: m.chatNome || "", chi: m.chi || "", mio: !!m.mio, data: m.data || "", ora: m.ora || "", tipo: m.tipo || "testo", testo: String(m.testo || "").slice(0, 900) })), capito: LET.perSegreteria(j), esito: ha ? "da_controllare" : "vuota", giudizi: {} }); } catch (e) { console.warn("segreteria:", e && e.message); }
+    try { await db.salva("importazioni", "segreteria_" + id, { lid: id, quando: finito(), da: "giro", modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, messaggi: scelti.slice(-60).map(m => ({ id: String(m.id || ""), chat: m.chatNome || "", chi: m.chi || "", mio: !!m.mio, data: m.data || "", ora: m.ora || "", tipo: m.tipo || "testo", testo: String(m.testo || "").slice(0, 900) })), capito: LET.perSegreteria(j), esito: statoNuovo, giudizi: {} }); } catch (e) { console.warn("segreteria:", e && e.message); }
     const testoPapa = scelti.filter(m => m.testo && (!papa || m.chi === papa)).map(m => m.testo).join("\n");
     const etichette = [...chats.entries()].map(([nome, gruppo]) => gruppo ? nome : "chat con " + nome);
     const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: papa ? [papa] : [], chats: etichette, data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "", posta: true, giro: true };
     const avvisoOra = ha && oraDiAvvisi(minuti);      // 1.18.1: di notte niente avviso: parte al primo giro dopo le 7
-    await db.salva("importazioni", "lettura-sofia", { lid: id, stato: ha ? "da_controllare" : "vuota", da: "giro", quando: finito(), j, modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, testo: testoPapa.slice(0, 20000), fonte, postaIds: ids, riassunto, ...(avvisoOra ? { avvisata: adesso.toISOString() } : {}) });
+    await db.salva("importazioni", "lettura-sofia", { lid: id, stato: statoNuovo, da: "giro", quando: finito(), j, modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, testo: testoPapa.slice(0, 20000), fonte, postaIds: ids, riassunto, ...(avvisoOra ? { avvisata: adesso.toISOString() } : {}) });
     for (const pid of ids) { try { await db.merge("posta", pid, { letto: true }); } catch (e) {} }
     return {
       esito: ha ? "letto" : "letto, niente da cambiare", ts: ultimoTs, n: scelti.length, riassunto, modello: r.modello || "",
-      avvisa: avvisoOra ? avvisoLettura({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov) : null,
+      avvisa: avvisoOra ? (chat ? avvisoApplica({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov) : avvisoLettura({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov)) : null,
     };
   } catch (e) {
     const msg = String((e && e.message) || e).slice(0, 200);
@@ -205,7 +226,36 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
 // (sveglio → svelto, mai Argon): 4-7 frasi che restano in importazioni/sintesi_<giorno> (l'app le mostra nella tendina della
 // Segreteria e le legge a voce). Se il telefono l'ha già fatta dopo l'ultimo messaggio, non si rifà.
 const oraRomaDi = (iso) => { try { return new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso)); } catch (e) { return String(iso || "").slice(11, 16); } };
-const ESITI_SINTESI = { salvata: "salvata nell'app", scartata: "scartata", vuota: "niente da cambiare", da_controllare: "ancora da controllare, non ho salvato niente" };
+const ESITI_SINTESI = { salvata: "salvata nell'app", scartata: "messa da parte", vuota: "niente da cambiare", da_controllare: "ancora da controllare, non ho salvato niente", da_applicare: "la mette a posto l'app appena si apre", fatta: "messa a posto nell'app", sostituita: "riletta più tardi" };   // 1.22.0
+// 1.22.0: una lettura del modo nuovo: le cose fatte nell'app (non annullate), quelle da confermare, le domande; se l'app non l'ha
+// ancora messa a posto, le azioni in parole
+function azioneInParole(x, ctx) {
+  const nomeCam = (id) => { const k = (ctx.camere || []).find(c => c.id === id); return k ? k.nome : String(id || ""); };
+  const sig = (z) => { const s = (ctx.signore || []).find(k => k.id === z); return s ? s.nome : (z || "una signora"); };
+  const data = (iso) => /^\d{4}-\d{2}-\d{2}$/.test(String(iso || "")) ? L.dataMedia(iso) : "";
+  const dove = (v) => (Array.isArray(v) ? v : v ? [v] : []).map(nomeCam).join(", ");
+  switch (x && x.tipo) {
+    case "manutenzione": return x.modo === "chiudi" ? `Lavoro sistemato: ${x.cosa || ""}` : `Guasto${x.camera ? " · " + nomeCam(x.camera) : ""}: ${x.cosa || ""}${x.urgente ? " (URGENTE)" : ""}`;
+    case "pulizie": return `${x.modo === "da_fare" ? "Da rimettere" : "Non serve"} · ${data(x.giorno)}: ${dove(x.dove)}`;
+    case "incarico": return `Lavoro in più per ${sig(x.chi)} · ${data(x.giorno)}: ${x.dove ? nomeCam(x.dove) + " — " : ""}${x.cosa || ""} (${Number(x.minuti) || 30} min)`;
+    case "assegna": return `${data(x.giorno)} ${dove(x.dove)}: ${(Array.isArray(x.chi) ? x.chi : [x.chi]).map(sig).join(" e ")}`;
+    case "dettagli": return `Nota per la signora · ${nomeCam(x.camera)} · ${data(x.giorno)}: ${x.testo || ""}`;
+    case "messaggio": return `Avviso alle signore · ${data(x.giorno)}: ${x.testo || ""}`;
+    case "camera": return `${nomeCam(x.camera)}: da adesso la pulisce ${sig(x.signora)}`;
+    case "ricorda": return `Nel taccuino: ${x.testo || ""}`;
+  }
+  return "";
+}
+function vociLettura(x, ctx, codici) {
+  if (Array.isArray(x.fatti)) {
+    const via = (t) => String(t || "").replace(/^\S+\s/, "").replace(/\s+/g, " ").trim();
+    return [...x.fatti.filter(f => !f.annullato && f.tipo !== "te").map(f => "Fatto: " + via(f.testo)), ...(Array.isArray(x.proposte) ? x.proposte : []).filter(p => !p.esito).map(p => "Da confermare: " + via(p.testo)), ...(Array.isArray(x.domande) ? x.domande : []).filter(d => !d.risposta).map(d => "Domanda: " + d.domanda)]
+      .slice(0, 12).map(t => codici.aCodici(t.slice(0, 200)));
+  }
+  const c = x.capito || {};
+  const az = [...(Array.isArray(c.azioni) ? c.azioni : []).map(a => azioneInParole(a, ctx)), ...(Array.isArray(c.proposte) ? c.proposte : []).map(a => { const t = azioneInParole(a, ctx); return t ? "Da confermare: " + t : ""; })].filter(Boolean).map(t => codici.aCodici(t.slice(0, 200)));
+  return [...az, ...vociCapite(c, ctx, codici)].slice(0, 12);
+}
 export function vociCapite(cap, ctx, codici) {
   const c = cap || {}, out = [];
   const nomeCam = (id) => { const x = (ctx.camere || []).find(k => k.id === id); return x ? x.nome : String(id || ""); };
@@ -224,18 +274,18 @@ export function vociCapite(cap, ctx, codici) {
   (c.dubbi || []).forEach(x => x && metti(`Domanda: ${typeof x === "string" ? x : (x.domanda || "")}`));
   return out.slice(0, 12);
 }
-export async function sintesiSera({ db, gemini, adesso = new Date(), a = {}, oggi, prendiBase, minuti, ora = "" }) {
+export async function sintesiSera({ db, gemini, adesso = new Date(), a = {}, oggi, prendiBase, minuti, ora = "", inizio: daQuando = null, domanda = "" }) {
   if (a.giroSintesi === false) return { esito: "spenta" };
   if (!gemini || (!gemini.chiave && typeof gemini.chiedi !== "function")) return { esito: "senza chiave" };
   const gia = await db.doc("importazioni", "sintesi_" + oggi);
   const inizio = adesso.getTime() - (Number(minuti) || 0) * 60000 - 120000;   // la mezzanotte di Roma, con un po' di margine
-  const posta = Object.values((await db.postaDa(inizio)) || {}).filter(p => p && p.id && String(p.data || "") === oggi && ["testo", "audio", "foto"].includes(p.tipo || "testo"));
+  const posta = Object.values((await db.postaDa(daQuando != null ? daQuando : inizio)) || {}).filter(p => p && p.id && (daQuando != null ? (Number(p.ts) || 0) >= daQuando && (Number(p.ts) || 0) <= adesso.getTime() : String(p.data || "") === oggi) && ["testo", "audio", "foto"].includes(p.tipo || "testo"));   // 1.22.0: dall'orario di prima
   if (!posta.length) return { esito: "niente da raccontare" };
   const ultimo = Math.max(...posta.map(p => Number(p.ts) || 0));
   if (gia && gia.testo && Number(gia.fino || 0) >= ultimo) return { esito: "già fatta", testo: gia.testo };
   const base = await prendiBase();
   const nome = (p) => { const n = p.chat || "Albergo"; return p.gruppo === false ? "chat con " + n : n; };
-  const msgs = posta.sort((x, y) => (Number(x.ts) || 0) - (Number(y.ts) || 0)).map(p => ({ id: p.id, data: String(p.data || ""), ora: p.ora || "", chi: p.chi || "", mio: !!p.mio, chat: nome(p), chatNome: nome(p),
+  const msgs = posta.sort((x, y) => (Number(x.ts) || 0) - (Number(y.ts) || 0)).map(p => ({ id: p.id, data: String(p.data || ""), ora: p.ora || "", chi: p.chi || "", mio: !!p.mio, chat: nome(p), chatNome: nome(p), ts: Number(p.ts) || 0,
     testo: p.tipo === "audio" ? (p.trascrizione ? `🎤 (vocale) ${p.trascrizione}` : "🎤 (un vocale che non ho ancora ascoltato)") : p.tipo === "foto" ? `📷 (una foto)${p.didascalia ? " " + p.didascalia : ""}` : String(p.testo || "") })).filter(m => m.testo).slice(-160);
   const papa = msgs.some(m => m.chi === "Papà") ? "Papà" : "";
   const ctx = await ctxDalDatabase(db, { ...base, oggi });
@@ -245,13 +295,13 @@ export async function sintesiSera({ db, gemini, adesso = new Date(), a = {}, ogg
   let letture = [];
   try {
     letture = Object.values((await db.importazioniDa(oggi)) || {}).filter(x => x && x.lid && x.capito && String(x.quando || "").slice(0, 10) === oggi).sort((x, y) => String(x.quando).localeCompare(String(y.quando))).slice(-8)
-      .map(x => `${oraRomaDi(x.quando)} (${x.da === "giro" ? "letta da sola" : "letta dal telefono"}; ${ESITI_SINTESI[x.esito] || x.esito || "?"}): ${vociCapite(x.capito, ctx, codici).join("; ") || "niente da segnare"}`);
+      .map(x => `${oraRomaDi(x.quando)} (${x.da === "giro" ? "letta da sola" : "letta dal telefono"}; ${ESITI_SINTESI[x.esito] || x.esito || "?"}): ${vociLettura(x, ctx, codici).join("; ") || "niente da segnare"}`);   // 1.22.0: anche le cose fatte
   } catch (e) { console.warn("sintesi/letture:", e && e.message); }
   const { r } = await chiediGemini(gemini, { sistema: LET.istruzioniSegretaria(ctx, { ora }), storia: [],
-    testo: LET.testoPerSegretaria({ chat, n: msgs.length, oggi: L.dataGiornoLungo(oggi), ieri: L.dataGiornoLungo(L.aggiungiGiorni(oggi, -1)), letture, piano: "", domanda: "Com'è andata oggi? Fammi la sintesi della giornata." }), secondi: 60, maxToken: 1500 }, ["sveglia", "svelta"]);
+    testo: LET.testoPerSegretaria({ chat, n: msgs.length, oggi: L.dataGiornoLungo(oggi), ieri: L.dataGiornoLungo(L.aggiungiGiorni(oggi, -1)), letture, piano: "", domanda: domanda || "Com'è andata oggi? Fammi la sintesi della giornata." }), secondi: 60, maxToken: 1500 }, ["sveglia", "svelta"]);
   const j = LET.jsonDaRisposta(r.grezzo) || {};
   const testo = codici.daCodici(String(j.testo || j.risposta || "").trim()).replace(/\*\*?/g, "").slice(0, 1400);
   if (!testo) throw new Error("Gemini ha risposto in un modo che non capisco");
-  await db.salva("importazioni", "sintesi_" + oggi, { giorno: oggi, quando: adesso.toISOString(), da: "giro", n: msgs.length, fino: ultimo, testo, modello: r.modello || "" });
+  await db.salva("importazioni", "sintesi_" + oggi, { giorno: oggi, quando: adesso.toISOString(), da: "giro", n: msgs.length, fino: ultimo, testo, modello: r.modello || "", ...(ora ? { ora } : {}) });
   return { esito: "fatta", testo, n: msgs.length };
 }

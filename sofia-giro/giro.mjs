@@ -29,6 +29,9 @@
 //  i messaggi di oggi della posta e le letture di oggi → 4-7 frasi col modello gratuito, in importazioni/sintesi_<giorno>, e
 //  l'avviso «Sofia · la sintesi di oggi» che apre la Segreteria. Si spegne con avvisi.giroSintesi = false. E il prospetto non
 //  passa più dalle chat (avvisi.prospettoChat !== true): le letture non propongono soggiorni.
+//  1.22.0 (app 1.51.0): LA SEGRETARIA FA LEI: nel modo nuovo la lettura risponde con le azioni e resta «da_applicare» (la mette a
+//  posto la prima app del titolare che si apre); l'avviso apre la Segreteria. La sintesi agli orari scelti (avvisi.sintesiOre, di
+//  serie 8:30 e 20:30): ognuna racconta i messaggi dall'orario di prima.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -36,7 +39,7 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat, sintesiSera } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.21.0";
+export const VERSIONE_GIRO = "1.22.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -251,7 +254,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase, minuti: t.minuti });
     if (lettura.avvisa) {
       if (!ps) ps = await db.doc("importazioni", "push-sofia");
-      await mandaMe(lettura.avvisa.testo, lettura.avvisataLid !== undefined ? "avviso della lettura da controllare" : "lettura delle chat", lettura.avvisa.titolo, true, { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" });
+      await mandaMe(lettura.avvisa.testo, lettura.avvisataLid !== undefined ? "avviso della lettura da controllare" : "lettura delle chat", lettura.avvisa.titolo, true, lettura.avvisa.extra || { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" });
       // 1.18.1: la lettura fatta dal telefono/PC (o di notte): il segno «avvisata», solo se è ancora quella (stesso numero)
       if (lettura.avvisataLid !== undefined) { try { await db.segnaSe("importazioni", "lettura-sofia", "lid", lettura.avvisataLid, { avvisata: adesso.toISOString() }); } catch (e) { console.warn("avvisata:", e && e.message); } }
     }
@@ -262,22 +265,33 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       fatti.creditoAvvisato = oggi;
     }
   } catch (e) { console.warn("lettura delle chat:", e && e.message); esiti.push("lettura delle chat: errore " + String((e && e.message) || e).slice(0, 80)); }
-  // 1.21.0: la sintesi della sera della segretaria (dalle 20:30, una volta al giorno, il modello gratuito)
-  if (!fatti.sintesi && t.minuti >= MIN(20, 30)) {
+  // 1.22.0: la sintesi della segretaria agli orari scelti (di serie 8:30 e 20:30): ognuna racconta i messaggi dall'orario di prima
+  const ORE_OK = ["08:30", "13:00", "20:30"], minDi = (o) => MIN(Number(o.slice(0, 2)), Number(o.slice(3)));
+  const oreS = (Array.isArray(a.sintesiOre) ? a.sintesiOre.filter(o => ORE_OK.includes(o)) : []).sort();
+  const orari = oreS.length ? oreS : ["08:30", "20:30"], chiaveS = (o) => "sintesi" + o.replace(":", "");
+  // un orario si fa entro 4 ore (GitHub a volte fa partire il giro in ritardo); più tardi si salta (niente «sintesi di stamattina» alle 18)
+  for (const o of orari) if (!fatti[chiaveS(o)] && t.minuti >= minDi(o) + 240) fatti[chiaveS(o)] = "saltata";
+  const dovute = orari.filter(o => !fatti[chiaveS(o)] && t.minuti >= minDi(o));
+  if (dovute.length && a.giroSintesi !== false) {
+    const o = dovute[dovute.length - 1], i = orari.indexOf(o);
+    for (const x of dovute.slice(0, -1)) fatti[chiaveS(x)] = "saltata";
+    const daMin = i > 0 ? minDi(orari[i - 1]) : minDi(orari[orari.length - 1]) - 24 * 60;
+    const inizio = adesso.getTime() - (t.minuti - daMin) * 60000;
+    const mattina = minDi(o) < MIN(12);
     try {
-      const s = await sintesiSera({ db, gemini, adesso, a, oggi, prendiBase, minuti: t.minuti, ora: t.hhmm });
+      const s = await sintesiSera({ db, gemini, adesso, a, oggi, prendiBase, minuti: t.minuti, ora: t.hhmm, inizio, domanda: mattina ? "Cosa è successo da ieri sera? Fammi la sintesi: cosa c'è da fare oggi." : "Com'è andata oggi? Fammi la sintesi della giornata." });
       if (s.esito === "fatta" || s.esito === "già fatta") {
         if (s.esito === "fatta") {
           if (!ps) ps = await db.doc("importazioni", "push-sofia");
           const puoMe2 = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
-          if (puoMe2) await mandaMe(String(s.testo || "").slice(0, 700), "la sintesi della sera", "Sofia · la sintesi di oggi", false, { url: "./index.html?segreteria=1", segreteria: true, tag: "sofia-sintesi" });
+          if (puoMe2) await mandaMe(String(s.testo || "").slice(0, 700), "la sintesi della segretaria", mattina ? "Sofia · la sintesi di stamattina" : "Sofia · la sintesi di oggi", false, { url: "./index.html?segreteria=1", segreteria: true, tag: "sofia-sintesi" });
         }
-        fatti.sintesi = t.hhmm; esiti.push(`sintesi della sera: ${s.esito}${s.n ? ` (${s.n} messaggi)` : ""}`);
+        fatti[chiaveS(o)] = t.hhmm; esiti.push(`sintesi delle ${o}: ${s.esito}${s.n ? ` (${s.n} messaggi)` : ""}`);
       }
-      else if (s.esito === "niente da raccontare") { if (t.minuti >= MIN(22, 30)) fatti.sintesi = "niente"; }   // magari scrivono più tardi: si riprova fino alle 22:30
-      else if (s.esito === "spenta" || s.esito === "senza chiave") fatti.sintesi = s.esito;
-      else esiti.push("sintesi della sera: " + s.esito);
-    } catch (e) { console.warn("sintesi della sera:", e && e.message); esiti.push("sintesi della sera: errore " + String((e && e.message) || e).slice(0, 80)); }
+      else if (s.esito === "niente da raccontare") fatti[chiaveS(o)] = "niente";
+      else if (s.esito === "spenta" || s.esito === "senza chiave") fatti[chiaveS(o)] = s.esito;
+      else esiti.push(`sintesi delle ${o}: ${s.esito}`);
+    } catch (e) { console.warn("sintesi:", e && e.message); esiti.push(`sintesi delle ${o}: errore ` + String((e && e.message) || e).slice(0, 80)); }
   }
   const vecchi = Array.isArray(stato0 && stato0.esiti) ? stato0.esiti : [];
   const notevole = lettura && !/^(niente di nuovo|aspetto|aspetta|la sta leggendo)/.test(lettura.esito || "");
@@ -312,7 +326,7 @@ export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
       // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
-      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.segreteria ? { segreteria: true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
       return { ok: true, stato: (r && r.statusCode) || null };
     } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };
