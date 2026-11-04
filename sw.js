@@ -3,13 +3,13 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.51.0";
+const VERSIONE = "1.51.1";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
 // e restano; quando un filmato cambia gli si cambia nome. FILMATI = quelli che l'app usa: gli altri si tolgono.
 const CACHE_FILM = "ricci-filmati-1";
-const FILMATI = ["./cons-parla.mp4", "./cons-riposo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr-riposo-3d.webm", "./cons-parla-3d2.webm", "./cons-riposo-3d2.webm"];
+const FILMATI = ["./cons-parla.mp4", "./cons-riposo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr-riposo-3d.webm", "./segr-parla-3d.webm", "./cons-parla-3d2.webm", "./cons-riposo-3d2.webm"];
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./lettura.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",

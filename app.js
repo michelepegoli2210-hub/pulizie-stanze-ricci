@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.51.0";
+export const VERSIONE = "1.51.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -122,7 +122,7 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr-riposo-3d.webm", parla: "segr-parla-3d.webm", poster: "segr-poster-3d.webp" };   // 1.49.0: anche «parla» (se il file manca resta quello fermo)
+const FILM_SEGR = { riposo: "segr-riposo-3d.webm", parla: "segr-parla-3d.webm", poster: "segr-poster-3d.webp" };   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
