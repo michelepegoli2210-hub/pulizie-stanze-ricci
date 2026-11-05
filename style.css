@@ -7465,3 +7465,176 @@ body.premium .sofia-hero .casa-nuvola .dtf-man.urgente{border-left:4px solid #DC
 .sg-pannello .scelte{margin:0}
 .sg-quando{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .sg-aiuto{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#FFF8E1;color:#3D2F00;font-weight:600}
+
+/* ===================================================================================================================
+   1.54.0 · LAGUNA E SAPONE, LA GIORNATA IN PRIMA PAGINA (Michele, 5/11: «togli Sofia all'inizio, solo il microfono a
+   fianco "Chiedi alla governante"; subito quello che scrive la governante, sotto cosa fare oggi, sotto le camere, nella
+   stessa schermata; la matita così così, falla rifare a Gemini; il verde non mi piace: niente di laguna, niente di sapone
+   pulito; Sofia a fantasmino, solo la sagoma»). Lo sfondo ad acquerello e i disegni a matita colorata sono di Gemini.
+   Colori: azzurro laguna #1C86B5 (i tasti), blu laguna scuro #13384B (le scritte), acqua #E3F5FA, bianco schiuma,
+   sabbia #FFF6E3 (il messaggio della governante), oro per le stelle, corallo per i problemi. Niente verde.
+   =================================================================================================================== */
+body.sig-laguna{--lg-ink:#13384B;--lg-blu:#1C86B5;--lg-blu-s:#11658C;--lg-acqua:#E3F5FA;--lg-filo:#CFE6EF;--lg-sabbia:#FFF6E3;--lg-sabbia-filo:#EFD39C;--lg-oro:#C98A12;--lg-corallo:#D9603E;--g-ink:#13384B;--m-ink:#13384B}
+body.sig-laguna.semplice.argon{background-color:transparent;background-image:none}
+body.sig-laguna::before{content:"";position:fixed;inset:0;z-index:-1;background:#F5FBFD url(sfondo-laguna-sapone.webp) center top/cover no-repeat;pointer-events:none}
+body.sig-laguna.semplice.argon header{background:rgba(255,255,255,.8);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.lg-pagina{display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.lg-pagina>*{margin-top:0;margin-bottom:0}
+.lg-fig{display:block;object-fit:contain;-webkit-user-drag:none;user-select:none}
+/* ---- il messaggio della governante: il primo, grande, color sabbia ---- */
+.lg-gov{position:relative;padding:10px 12px 15px 14px;border:2px solid var(--lg-sabbia-filo);border-radius:24px;background:var(--lg-sabbia);box-shadow:0 12px 26px -18px rgba(140,98,24,.6)}
+.lg-gov-testa{display:flex;align-items:center;gap:10px}
+.lg-gov-fig{flex:0 0 auto;width:50px;height:50px}
+.lg-gov-t{flex:1 1 auto;min-width:0;font:700 14px/1.2 var(--f-gioco,var(--f-body));letter-spacing:.08em;text-transform:uppercase;color:#946411}
+.lg-gov-msg{margin:6px 2px 0;font:700 22px/1.32 var(--f-gioco,var(--f-display));color:var(--lg-ink);overflow-wrap:anywhere}
+.lg-ascolta{flex:0 0 auto;display:grid;place-items:center;width:46px;height:46px;margin:0 0 0 auto;padding:0;border:0;border-radius:50%;background:#FFFFFF;box-shadow:0 0 0 2px var(--lg-filo),0 4px 10px -6px rgba(19,56,75,.45);font:22px/1 system-ui;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lg-gov .lg-ascolta{box-shadow:0 0 0 2px var(--lg-sabbia-filo),0 4px 10px -6px rgba(140,98,24,.45)}
+.lg-ascolta:active{transform:scale(.94)}
+/* ---- cosa devi fare oggi ---- */
+.lg-oggi{position:relative;padding:12px 14px 14px;border:2px solid var(--lg-filo);border-radius:24px;background:rgba(255,255,255,.95);box-shadow:0 12px 26px -18px rgba(17,101,140,.55)}
+.lg-oggi-testa{display:flex;align-items:center;gap:10px;min-height:46px}
+.lg-oggi-fig{flex:0 0 auto;width:48px;height:48px}
+.lg-oggi-t{flex:1 1 auto;display:flex;flex-direction:column;gap:1px;min-width:0}
+.lg-oggi-t b{font:700 21px/1.15 var(--f-gioco,var(--f-display));color:var(--lg-ink)}
+.lg-oggi-t small{font:600 14px/1.2 var(--f-gioco,var(--f-body));color:#4D7385}
+.lg-oggi-x{margin:8px 0 0;font:600 18px/1.42 var(--f-gioco,var(--f-body));color:var(--lg-ink);overflow-wrap:anywhere}
+.lg-oggi-nota{margin:10px 0 0;padding:9px 12px;border-radius:14px;background:var(--lg-acqua);font:600 15px/1.35 var(--f-gioco,var(--f-body));color:var(--lg-ink)}
+.lg-oggi-torna{display:inline-flex;align-items:center;justify-content:center;min-height:46px;margin:12px 0 0;padding:0 18px;border:0;border-radius:16px;background:var(--lg-blu);color:#FFFFFF;font:700 17px/1 var(--f-gioco,var(--f-body));box-shadow:0 4px 0 var(--lg-blu-s);cursor:pointer}
+.lg-oggi.fatto{border-color:#BFE3F0;background:linear-gradient(180deg,#F0FAFE 0%,#FFFFFF 70%)}
+.lg-oggi.fatto .lg-oggi-t b{font-size:24px;color:var(--lg-blu-s)}
+.lg-oggi.fatto .lg-oggi-fig{width:54px;height:54px}
+/* il tasto «Sono arrivata» e l'orario, dentro la scheda */
+.lg-oggi .gs-turno{margin:12px 0 0;box-shadow:none}
+.lg-oggi .gs-turno.da-fare{padding:0;border:0;background:none}
+.lg-oggi .gs-turno-via{min-height:70px;padding:10px 18px;border:0;border-radius:20px;background:var(--lg-blu);color:#FFFFFF;box-shadow:0 5px 0 var(--lg-blu-s),0 14px 22px -12px rgba(17,101,140,.6)}
+.lg-oggi .gs-turno-via:active{transform:translateY(3px);box-shadow:0 2px 0 var(--lg-blu-s)}
+.lg-oggi .gs-turno-via .gs-turno-x b{font:700 25px/1.1 var(--f-gioco,var(--f-display));color:#FFFFFF}
+.lg-oggi .gs-turno-via .gs-turno-x small{color:#E6F5FB}
+.lg-oggi .gs-turno.in-corso,.lg-oggi .gs-turno.fatto,.lg-oggi .gs-turno.manca{padding:10px 12px;border:1.5px solid var(--lg-filo);border-radius:16px;background:var(--lg-acqua)}
+.lg-oggi .gs-turno.in-corso b,.lg-oggi .gs-turno.fatto b{font:700 18px/1.2 var(--f-gioco,var(--f-body));color:var(--lg-ink)}
+.lg-oggi .gs-turno small{color:#4D7385}
+.lg-oggi .gs-turno.manca{background:#FFF4EE;border-color:#F3C3AF}
+/* ---- le camere ---- */
+body.sig-laguna.semplice.argon .gs-camere.gp-mappa{margin:0;padding:0}
+body.sig-laguna.semplice.argon .gs-giro-t{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:0;margin:0 2px}
+body.sig-laguna.semplice.argon .gs-segno{min-height:34px;padding:0 12px 0 9px;border:1.5px solid var(--lg-filo);border-radius:17px;background:#FFFFFF;font:700 16px/1 var(--f-gioco);color:var(--lg-ink)}
+body.sig-laguna.semplice.argon .gs-segno.oro{background:#FFF6DC;border-color:#F1D38B;color:#6B4A00}
+body.sig-laguna.semplice.argon .gp-aiuto{font:600 15.5px/1.3 var(--f-gioco);color:#3F6678}
+body.sig-laguna.semplice.argon .gp-piano{margin-top:0}
+body.sig-laguna.semplice.argon .gp-eti{margin:0;padding:0 2px}
+body.sig-laguna.semplice.argon .gp-eti span{display:inline-block;padding:6px 13px 5px;border:0;border-radius:12px;background:var(--lg-blu);color:#FFFFFF;font:700 14.5px/1.1 var(--f-gioco);letter-spacing:.06em;text-transform:uppercase;transform:none;box-shadow:0 3px 8px -4px rgba(17,101,140,.6)}
+body.sig-laguna.semplice.argon .gp-corr{column-gap:26px;row-gap:10px;padding-top:4px}
+body.sig-laguna.semplice.argon .gp-corr .lato{gap:10px}
+body.sig-laguna.semplice.argon .gp-corr::after{top:2px;width:16px;border-radius:8px;background:linear-gradient(180deg,#D7EEF6,#EAF6FA);box-shadow:inset 0 0 0 1.5px #C2E1EC}
+body.sig-laguna.semplice.argon .gp-corr::before{color:#5C8396;font:700 9px var(--f-gioco);letter-spacing:3px}
+body.sig-laguna.semplice.argon .gp-griglia{gap:12px}
+/* la camera: una scheda bianca come il sapone, il disegno di Gemini in alto a destra, il colore del lavoro sopra */
+body.sig-laguna.semplice.argon .gs-cam.gp,body.sig-laguna.semplice.argon .gs-cam.gp.gs-stelle{--g-chiaro:#EAF6FB;--g-forte:#1C86B5;--g-ombra:rgba(17,101,140,.55);border:2px solid var(--lg-filo);border-radius:22px;background:linear-gradient(180deg,var(--g-chiaro) 0,#FFFFFF 58px);box-shadow:0 12px 22px -16px var(--g-ombra);overflow:visible}
+body.sig-laguna.semplice.argon .gs-cam.gp::after{display:none}
+body.sig-laguna.semplice.argon .gs-cam.gp.k-cambio{--g-chiaro:#E4F2FA;--g-forte:#1C6FA8}
+body.sig-laguna.semplice.argon .gs-cam.gp.k-ripasso{--g-chiaro:#E2F6F8;--g-forte:#1A8CA0}
+body.sig-laguna.semplice.argon .gs-cam.gp.k-fondo{--g-chiaro:#FFF4DE;--g-forte:#A86F06;--g-ombra:rgba(168,111,6,.45)}
+body.sig-laguna.semplice.argon .gs-cam.gp.gs-stelle{--g-chiaro:#F0EDFD;--g-forte:#6551C9;--g-ombra:rgba(101,81,201,.45)}
+body.sig-laguna.semplice.argon .gs-cam.gp.fatta{--g-chiaro:#F3F8FA;--g-forte:#1C86B5;border-color:#DCEAF0;box-shadow:none}
+body.sig-laguna.semplice.argon .gs-cam.gp.prob{--g-chiaro:#FFF0EA;--g-forte:#C4502C;border-color:#F3C3AF}
+body.sig-laguna.semplice.argon .gs-cam.gp:active{transform:scale(.985);box-shadow:0 6px 14px -12px var(--g-ombra)}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-apri{min-height:118px;padding:56px 10px 8px 12px}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-ico{top:4px;right:4px;width:66px;height:66px}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-ico .lg-fig{width:100%;height:100%;filter:drop-shadow(0 3px 3px rgba(19,56,75,.14))}
+body.sig-laguna.semplice.argon .gs-cam.gp .gs-nome{font:700 22px/1.08 var(--f-gioco);color:var(--lg-ink);text-shadow:none}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-cosa{font:700 15.5px/1.2 var(--f-gioco);color:var(--g-forte)}
+body.sig-laguna.semplice.argon .gs-cam.gp.fatta .gp-cosa{color:var(--lg-blu)}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-per{border:1.5px solid var(--lg-filo);border-radius:10px;background:#FFFFFF;font:600 14px/1.1 var(--f-gioco);color:var(--lg-ink)}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-s,body.sig-laguna.semplice.argon .gs-cam.gp .gp-s.parte,body.sig-laguna.semplice.argon .gs-cam.gp .gp-s.arriva,body.sig-laguna.semplice.argon .gs-cam.gp .gp-s.nota{border:1.5px solid var(--lg-filo);background:#FFFFFF;color:var(--lg-ink)}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-s.parte{background:#FFF0EA;border-color:#F3C3AF}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-s.nota{background:var(--lg-sabbia);border-color:var(--lg-sabbia-filo)}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-stato{top:10px;left:10px;width:34px;height:34px;border:0;background:var(--lg-blu);color:#FFFFFF;box-shadow:0 0 0 3px #FFFFFF,0 4px 8px -4px rgba(17,101,140,.6)}
+body.sig-laguna.semplice.argon .gs-cam.gp .gp-stato.prob{background:var(--lg-corallo);color:#FFFFFF}
+body.sig-laguna.semplice.argon .gs-cam.gp.fatta .gp-ico{opacity:.5}
+body.sig-laguna.semplice.argon .gs-cam.gp.fatta .gs-nome{color:#3E6274}
+/* ADESSO: il bordo azzurro e il cartellino col dito */
+body.sig-laguna.semplice.argon .gs-cam.gp.ora{border:2.5px solid var(--lg-blu);box-shadow:0 0 0 4px rgba(28,134,181,.14),0 14px 24px -14px rgba(17,101,140,.7)}
+body.sig-laguna.semplice.argon .gs-cam.gp .gs-ora{top:-13px;padding:5px 12px 4px;border:0;border-radius:10px;background:var(--lg-blu);color:#FFFFFF;font:700 13px/1 var(--f-gioco);letter-spacing:.03em;transform:translateX(-50%);box-shadow:0 3px 8px -3px rgba(17,101,140,.7)}
+/* la stella e il tasto «✓ Fatto» */
+body.sig-laguna.semplice.argon .gp-piede{padding:2px 8px 9px}
+body.sig-laguna.semplice.argon .gp-stella,body.sig-laguna.semplice.argon .gp-fatto{height:44px;border:0;border-radius:14px}
+body.sig-laguna.semplice.argon .gp-stella{background:#FFF1C9;color:#6B4A00;box-shadow:0 3px 0 #E5B94B}
+body.sig-laguna.semplice.argon .gp-stella b{color:#6B4A00}
+body.sig-laguna.semplice.argon .gp-fatto{background:var(--lg-blu);color:#FFFFFF;box-shadow:0 4px 0 var(--lg-blu-s)}
+body.sig-laguna.semplice.argon .gp-stella:active{transform:translateY(2px);box-shadow:0 1px 0 #E5B94B}
+body.sig-laguna.semplice.argon .gp-fatto:active{transform:translateY(3px);box-shadow:0 1px 0 var(--lg-blu-s)}
+/* le camere che oggi non sono sue: piccole piccole, solo il nome (così le sue stanno tutte nella prima schermata) */
+body.sig-laguna.semplice.argon .gp-vuota{display:flex;align-items:center;min-height:0;height:auto;padding:7px 10px;border:1.5px dashed #C8DFE8;border-radius:12px;background:rgba(255,255,255,.55);color:#7E9DAC;font:600 14px/1.2 var(--f-gioco)}
+body.sig-laguna.semplice.argon .gp-vuota span{position:static;transform:none}
+/* i lavori a fondo dentro la camera */
+body.sig-laguna.semplice.argon .gp-fondi{border:1.5px solid #F0D49B;border-radius:14px;background:#FFF8E8}
+body.sig-laguna.semplice.argon .gs-cam.gp.k-fondo .gp-fondi{background:rgba(255,255,255,.85)}
+body.sig-laguna.semplice.argon .gp-fondo b{border:1.5px solid #E9C67E;background:#FFFFFF;color:#A86F06}
+body.sig-laguna.semplice.argon .gp-fondo.ora b{background:#FFE7A6;color:#4A3200}
+body.sig-laguna.semplice.argon .gp-fondo.fatta b{background:var(--lg-blu);border-color:var(--lg-blu);color:#FFFFFF}
+/* la nuvoletta della stella */
+body.sig-laguna .gp-pop{border:2px solid var(--lg-filo);border-radius:20px;background:#FFFFFF;box-shadow:0 18px 30px -14px rgba(19,56,75,.45)}
+body.sig-laguna .gp-pop::before{border-left:2px solid var(--lg-filo);border-top:2px solid var(--lg-filo);background:#FFFFFF}
+body.sig-laguna .gp-pop-r{border-top:1.5px dashed var(--lg-filo)}
+body.sig-laguna .gp-pop-voce{border:0;background:var(--lg-blu);box-shadow:0 4px 0 var(--lg-blu-s)}
+body.sig-laguna .gp-pop-chiudi{border:1.5px solid var(--lg-filo);box-shadow:none}
+/* HO FINITO: azzurro laguna (anche quello che resta in basso) */
+body.sig-laguna.semplice.argon .ag-finito,body.sig-laguna.semplice .sg-finito{border:0;border-radius:22px;background:var(--lg-blu);color:#FFFFFF;box-shadow:0 6px 0 var(--lg-blu-s),0 16px 24px -12px rgba(17,101,140,.6)}
+body.sig-laguna.semplice.argon .ag-finito:active,body.sig-laguna.semplice .sg-finito:active{transform:translateY(4px);box-shadow:0 2px 0 var(--lg-blu-s)}
+/* gli avvisi, i Visti, i controlli, i sette giorni */
+body.sig-laguna.semplice.argon .gs-avviso{border:1.5px solid var(--lg-filo);border-radius:18px;background:rgba(255,255,255,.95);color:var(--lg-ink)}
+body.sig-laguna.semplice.argon .gs-avviso .ic{color:var(--lg-blu)}
+body.sig-laguna.semplice.argon .gs-avviso.rosso{background:#FFF0EA;border-color:#F3C3AF}
+body.sig-laguna.semplice.argon .ag-visto{border:2px solid var(--lg-blu);background:#FFFFFF}
+body.sig-laguna.semplice.argon .ag-visto-t .ic{color:var(--lg-blu)}
+body.sig-laguna.semplice.argon .gs-ctrl{gap:8px}
+body.sig-laguna.semplice.argon .gs-ctrl-c{border:1.5px solid var(--lg-filo);background:rgba(255,255,255,.95);color:var(--lg-ink);font-family:var(--f-gioco)}
+body.sig-laguna.semplice.argon .gs-ctrl-c.att{background:var(--lg-sabbia);border-color:var(--lg-sabbia-filo)}
+body.sig-laguna.semplice.argon .gs-mappa{margin:0}
+body.sig-laguna.semplice.argon .gs-g{border:1.5px solid var(--lg-filo);background:rgba(255,255,255,.95);box-shadow:none;color:var(--lg-ink)}
+body.sig-laguna.semplice.argon .gs-g.vuoto{border-color:transparent;background:transparent}
+body.sig-laguna.semplice.argon .gs-g.on{border-color:var(--lg-blu);background:var(--lg-blu);color:#FFFFFF;box-shadow:0 4px 10px -5px rgba(17,101,140,.7)}
+.lg-muta{display:block;width:100%;min-height:46px;margin:0;padding:8px 14px;border:1.5px solid var(--lg-filo);border-radius:16px;background:rgba(255,255,255,.9);font:600 15px/1.3 var(--f-gioco,var(--f-body));color:var(--lg-ink);text-align:left;cursor:pointer}
+/* ---- «Chiedi alla governante»: il microfono a fianco, grande e chiaro ---- */
+.sg-mic.lg-mic{right:10px;width:auto;height:auto;min-height:66px;flex-direction:row;gap:9px;padding:6px 18px 6px 6px;border:3px solid #FFFFFF;border-radius:999px;background:var(--lg-blu,#1C86B5);box-shadow:0 12px 24px -10px rgba(17,101,140,.75);color:#FFFFFF}
+.sg-mic.lg-mic .lg-mic-ico{display:grid;place-items:center;flex:0 0 auto;width:52px;height:52px;border-radius:50%;background:#FFFFFF}
+.sg-mic.lg-mic .lg-mic-ico .lg-fig{width:44px;height:44px}
+.sg-mic.lg-mic .lg-mic-t{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin:0;font:700 18px/1.08 var(--f-gioco,var(--f-display));letter-spacing:0;color:#FFFFFF;text-align:left}
+.sg-mic.lg-mic .lg-mic-t b{font-weight:700}
+.sg-mic.lg-mic::after{inset:-8px;border-radius:999px;border-color:rgba(28,134,181,.45)}
+.sg-mic.lg-mic:active{transform:translateY(3px);box-shadow:0 4px 10px -6px rgba(17,101,140,.75)}
+body.sig-laguna .sg-mic:not(.lg-mic){background:var(--lg-blu,#1C86B5);box-shadow:0 0 0 2.5px #FFFFFF,0 4px 0 #11658C}
+body.sig-laguna .sg-mic:not(.lg-mic)::after{border-color:rgba(28,134,181,.5)}
+body.sig-laguna.con-mic .sg-finito{right:12px}
+body.sig-laguna.con-mic.con-finito .sg-mic.lg-mic{bottom:calc(166px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.con-mic #app{padding-bottom:96px}
+/* ---- Sofia a fianco: solo la sagoma, senza cornice e senza sfondo; la scritta piccola sotto ---- */
+body.sig-laguna .sg-compagna.sg-intera .sgc-figura{filter:drop-shadow(0 10px 14px rgba(19,56,75,.22))}
+body.sig-laguna .sg-compagna.sg-intera .sgc-nome{border:0;background:var(--lg-blu);box-shadow:0 4px 10px -4px rgba(17,101,140,.7)}
+body.sig-laguna .sg-compagna.sg-intera.parla .sgc-nome{background:#C4502C}
+body.sig-laguna .sg-compagna.sg-intera.ascolta .sgc-nome{background:#A86F06}
+body.sig-laguna.semplice.argon .sg-nuvola{border:2px solid var(--lg-filo);border-radius:22px 22px 6px 22px;background:#FFFFFF;box-shadow:0 14px 26px -14px rgba(19,56,75,.5);font:600 17px/1.4 var(--f-gioco);color:var(--lg-ink)}
+@media (max-width:360px){
+  .lg-gov{grid-template-columns:50px minmax(0,1fr)}
+  .lg-gov-fig{width:50px;height:50px}
+  .lg-gov-msg{font-size:19px}
+  .sg-mic.lg-mic .lg-mic-t{font-size:16px}
+  .sg-mic.lg-mic .lg-mic-ico{width:46px;height:46px}
+}
+/* la testata e la barra in basso: niente più verde-laguna di prima */
+body.sig-laguna header h1{color:#11658C}
+body.sig-laguna header small{color:#4D7385}
+body.sig-laguna header .who{color:var(--lg-ink)}
+body.sig-laguna.semplice .barra button{color:#4D7385}
+body.sig-laguna.semplice .barra button[aria-pressed="true"]{background:#E3F2FA;color:#11658C}
+body.sig-laguna .lg-pagina .gp-eti,body.sig-laguna .lg-pagina i{color:inherit}
+body.sig-laguna.semplice.argon .gs-g span,body.sig-laguna.semplice.argon .gs-g i{color:#4D7385}
+body.sig-laguna.semplice.argon .gs-g.on span,body.sig-laguna.semplice.argon .gs-g.on i{color:#E6F5FB}
+/* HO FINITO largo come la pagina (il tondo di prima lo stringeva per non coprirlo; la pillola si scansa scorrendo) */
+body.sig-laguna.con-mic #app [data-ho-finito]{width:100%;margin-right:0}
+/* il nome nella nuvoletta e la sveglia di Gemini al posto del ⏱️ nella scheda */
+body.sig-laguna .sg-nuvola b{color:#11658C}
+.lg-oggi .gs-turno-ico{display:block;flex:0 0 40px;width:40px;height:40px;font-size:0;line-height:0;background:url(fig-sveglia.webp) center/contain no-repeat}
+/* «Vado via»: un tasto bianco col bordo corallo (prima era a righe arancioni) */
+.lg-oggi .gs-turno-via-fine{flex:0 0 auto;min-height:46px;padding:0 14px;border:2px solid #E9A58F;border-radius:14px;background:#FFFFFF;color:#B4462A;font:700 16px/1 var(--f-gioco,var(--f-body));box-shadow:0 3px 0 #E9A58F;background-image:none}
+.lg-oggi .gs-turno-via-fine:active{transform:translateY(2px);box-shadow:0 1px 0 #E9A58F}

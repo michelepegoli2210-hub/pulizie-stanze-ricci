@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.53.1";
+export const VERSIONE = "1.54.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1490,6 +1490,7 @@ function disegna() {
   document.body.classList.toggle("sofia-capo", !!(S.utente && sofiaCapo()));   // 1.25.0: la Sofia delle signore
   document.body.classList.toggle("facilissima", !!(S.utente && addetta() && vistaSignoreFacile()));
   document.body.classList.toggle("argon", !!(S.utente && argonLei()));
+  document.body.classList.toggle("sig-laguna", !!(S.utente && argonLei()));   // 1.54.0: laguna e sapone (i disegni di Gemini); «laguna» da solo è già lo sfondo
   document.body.classList.toggle("vista-manutenzione", !!(S.utente && !addetta() && S.vista === "manutenzione"));
   document.body.classList.toggle("vista-signora", !!(S.utente && !addetta() && (S.vista === "signora" || S.vista === "governante")));
   applicaTema();
@@ -2148,7 +2149,7 @@ function turnoPill(z, anteprima) {
 function turnoDetto(z, iso) {
   if (!pagaAOre() || !addetta()) return "";
   const v = L.vistoDi(S.visti, z, iso); if (v && (v.arrivoOra || v.turnoInizio || v.finitoOra)) return "";
-  return pulizieDelGiorno(iso, z).length ? "Prima di tutto tocca il tasto verde «Sono arrivata», in cima alla pagina: parte il tuo orario." : "";
+  return pulizieDelGiorno(iso, z).length ? "Prima di tutto tocca il tasto blu «Sono arrivata»: parte il tuo orario." : "";
 }
 function turnoGira() { document.querySelectorAll("[data-turno-ore]").forEach(el => { const s = testoOreTurno(minutiDa(el.dataset.turnoOre)); if (el.textContent !== s) el.textContent = s; }); }
 let turnoTimer = null;
@@ -2586,7 +2587,8 @@ function guidaFinito() {
     const t = document.querySelector("#app [data-ho-finito]");
     // quello fisso sta in basso finché il tasto vero non arriva al suo posto (poi resta il vero: mai due, mai mezzo tagliato)
     const r = t ? t.getBoundingClientRect() : null, nav = document.querySelector(".barra"), giu = nav ? nav.getBoundingClientRect().top : (window.innerHeight || 800);
-    vuoi = !!(S.pronto && argonLei() && S.vista === "oggi" && t && !document.querySelector(".sheet") && !document.querySelector(".conferma") && !guidaTestaInVista() && r.top > giu - 70);
+    const cima = document.querySelector(".lg-oggi"), rc = cima ? cima.getBoundingClientRect() : null;   // 1.54.0: in cima si vedono le camere, non il tasto fisso
+    vuoi = !!(S.pronto && argonLei() && S.vista === "oggi" && t && !document.querySelector(".sheet") && !document.querySelector(".conferma") && !guidaTestaInVista() && !(rc && rc.bottom > 90) && r.top > giu - 70);
   } catch (e) {}
   document.body.classList.toggle("con-finito", vuoi);
   if (!vuoi) { if (b) b.hidden = true; return; }
@@ -2771,7 +2773,7 @@ function guidaCamera(id) {
 let guidaRec = null;
 function guidaAscolta(opz = {}) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { if (opz.ripiego) { guida.dalMic = true; guidaTasto("ascolta"); return; } toast("Questo telefono non sa ascoltare: usa i tasti Ascolta ed E poi"); return; }
+  if (!SR) { if (opz.ripiego) { guida.dalMic = true; guidaTasto("ascolta"); return; } toast("Questo telefono non sa ascoltare: tocca 🔊 per sentire cosa fare"); return; }
   if (guida.ascolta && guidaRec) { try { guidaRec.stop(); } catch (e) {} return; }
   zittisciVoce();
   try {
@@ -2783,7 +2785,7 @@ function guidaAscolta(opz = {}) {
     // 1.32.0: dal microfono a fianco, se non ha sentito niente (o il microfono non va) Sofia dice il passo di adesso
     r.onend = () => { guida.ascolta = false; const annullato = !!r._annulla; guidaRec = null; if (!preso) { guida.voce = ""; if (opz.ripiego && !annullato) { guida.dalMic = true; guidaTasto("ascolta"); return; } disegna(); } };
     r.start();
-  } catch (e) { guida.ascolta = false; guidaRec = null; if (opz.ripiego) { guida.dalMic = true; guidaTasto("ascolta"); return; } toast("Il microfono non parte: usa i tasti Ascolta ed E poi"); disegna(); }
+  } catch (e) { guida.ascolta = false; guidaRec = null; if (opz.ripiego) { guida.dalMic = true; guidaTasto("ascolta"); return; } toast("Il microfono non parte: tocca 🔊 per sentire cosa fare"); disegna(); }
 }
 function guidaRispondi(frasi) {
   const z = S.utente.zona, oggiVero = L.oggiISO(), t = " " + PAROLE.norm((frasi || []).join(" ")) + " ";
@@ -2895,7 +2897,7 @@ function testaGiro(z, giorno, ord, rif, anteprima) {
   const minuti = Math.round(minutiGiornata(ord, rif) / 15) * 15;   // al quarto d'ora: «3 ore», non «2 ore e 59»
   const segni = [minuti && !pagaAOre() ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
     rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
-  return `<div class="gs-giro-t"><span class="gs-segni-g">${segni.join("")}</span><span class="gp-aiuto">Tocca una camera: ${esc(nomeGov())} te la spiega</span></div>`;   // 1.30.0
+  return `<div class="gs-giro-t"><span class="gs-segni-g">${segni.join("")}</span><span class="gp-aiuto">Tocca una camera: la governante te la spiega</span></div>`;   // 1.30.0
 }
 // ============================================================================
 //  1.30.0 LA PIANTINA DEL GIRO E SOFIA SEMPRE A FIANCO (Michele, 2/11 notte, sul suo telefono: «le scritte sono troppo
@@ -2961,16 +2963,19 @@ const MATITA = {
   scintilla: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M26 6 L30 22 L46 27 L30 32 L26 48 L22 32 L6 27 L22 22 Z" fill="#FFF0B8"/><path d="M26 6 L30 22 L46 27 L30 32 L26 48 L22 32 L6 27 L22 22 Z" fill="url(#mtGi)" ${MT_TRATTO}/><path d="M50 8 L52 15 L59 17 L52 19 L50 26 L48 19 L41 17 L48 15 Z" fill="#FFFFFF" ${MT_TRATTO.replace('2.6', '2')}/></svg>`,
 };
 const MICROFONO_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="22" y="8" width="20" height="32" rx="10" fill="#FFFFFF"/><rect x="22" y="8" width="20" height="32" rx="10" fill="url(#mtAc)" stroke="#FFFFFF" stroke-width="3"/><path d="M14 31 Q14 48 32 48 Q50 48 50 31" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/><path d="M32 48 V58 M22 58 H42" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/></svg>`;
-function disegninoMatita(p, c, soloFondo) {
-  if (soloFondo) return MATITA.scintilla;
+// 1.54.0: i disegni a matita colorata di Gemini (fig-*.webp, trasparenti) al posto di quelli fatti col codice
+const FIG = (nome, cls = "") => `<img class="lg-fig${cls ? " " + cls : ""}" src="fig-${nome}.webp" alt="" aria-hidden="true" decoding="async">`;
+function figuraGiro(p, c, soloFondo) {
+  if (soloFondo) return "scintilla";
   if (!p) return "";
-  if (p.tipo === "stelle") return MATITA.stella;
-  if (p.origine === "governante") return MATITA.scintilla;
-  if (p.tipo === "fisso") return p.camera === "scale" ? MATITA.scale : p.camera === "terrazzo" ? MATITA.pianta : MATITA.secchio;
-  if (p.tipo === "extra") return MATITA.secchio;
-  if (c && c.tipo === "casa") return MATITA.casa;
-  return c && (Number(c.posti) || 2) < 2 ? MATITA.letto1 : MATITA.letto2;
+  if (p.tipo === "stelle") return "stella";
+  if (p.origine === "governante") return "scintilla";
+  if (p.tipo === "fisso") return p.camera === "scale" ? "scale" : p.camera === "terrazzo" ? "pianta" : "secchio";
+  if (p.tipo === "extra") return "secchio";
+  if (c && c.tipo === "casa") return "casa";
+  return c && (Number(c.posti) || 2) < 2 ? "letto1" : "letto2";
 }
+function disegninoMatita(p, c, soloFondo) { const f = figuraGiro(p, c, soloFondo); return f ? FIG(f) : ""; }
 // per quante persone si prepara la camera (chi dorme stanotte; alla partenza, chi arriva dopo) e che letto è
 function perChiCamera(p, c) {
   if (!p || !c || p.tipo === "stelle" || p.tipo === "fisso" || p.tipo === "extra" || p.origine === "governante") return null;
@@ -3952,12 +3957,12 @@ function compagnaMostra() { return !!(voceInCorso || guida.parla || guida.ascolt
 function compagnaVuole() {
   if (!compagnaBase() || !compagnaMostra()) return false;
   if (document.querySelector(".sheet")) return !!document.querySelector(".sheet .sf-sofia");   // 1.33.0: nella camera aperta è lei che esce, per tutto il tempo che parla
-  return !!document.querySelector(".gs-sofia") && !guidaTestaInVista();
+  return !!document.querySelector(".lg-pagina") || (!!document.querySelector(".gs-sofia") && !guidaTestaInVista());   // 1.54.0: niente più Sofia in cima: esce sempre lei a fianco
 }
 function micVuole() {
   if (!compagnaBase() || compagnaMostra()) return false;
   if (document.querySelector(".sheet")) return !!document.querySelector(".sheet .sf-sofia");   // 1.33.0: il microfono a fianco, sempre
-  return !!document.querySelector(".gs-sofia") && !guidaTestaInVista();
+  return !!document.querySelector(".lg-pagina") || (!!document.querySelector(".gs-sofia") && !guidaTestaInVista());   // 1.54.0: il microfono a fianco, sempre
 }
 function compagnaTocca() {
   try { VOCE.sbloccaAudio(); } catch (e) {}
@@ -3999,8 +4004,10 @@ function guidaMic() {
   const vuoi = micVuole();
   document.body.classList.toggle("con-mic", vuoi);
   if (!vuoi) { if (b) b.hidden = true; return; }
-  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = "sg-mic"; b.innerHTML = `${MICROFONO_SVG}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
-  b.setAttribute("aria-label", `Parla con ${nomeGov()}: tocca il microfono e chiedi`);
+  const nuovo = !!document.querySelector(".lg-pagina") && !document.querySelector(".sheet");   // 1.54.0: sulla pagina «Chiedi alla governante»; nella camera aperta il tondo di prima
+  if (b && (b.dataset.lg || "") !== (nuovo ? "1" : "")) { b.remove(); b = null; }
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = nuovo ? "sg-mic lg-mic" : "sg-mic"; b.dataset.lg = nuovo ? "1" : ""; b.innerHTML = nuovo ? `<span class="lg-mic-ico">${FIG("microfono")}</span><span class="lg-mic-t"><b>Chiedi alla</b><b>governante</b></span>` : `${MICROFONO_SVG}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
+  b.setAttribute("aria-label", nuovo ? "Chiedi alla governante: tocca e parla" : `Parla con ${nomeGov()}: tocca il microfono e chiedi`);
   b.hidden = false;
 }
 try { window.addEventListener("scroll", () => { try { guidaCompagna(); guidaNuvola(); } catch (e) {} }, { passive: true }); } catch (e) {}
@@ -4043,6 +4050,56 @@ function bloccoControlli(z, iso) {
   if (pr.stato !== "spento") b.push(`<span class="gs-ctrl-c ${pr.stato}" aria-label="Salvadanaio della settimana: ${esc(eur(pr.stato === "pochi" ? pr.promesso : pr.euro))}"><i aria-hidden="true">🐷</i><b>${esc(eur(pr.stato === "pochi" ? pr.promesso : pr.euro))}</b></span>`);
   return `<section class="gs-ctrl" aria-label="Controlli">${b.join("")}</section>`;
 }
+// ============================================================================
+//  1.54.0 LA GIORNATA IN PRIMA PAGINA, SOFIA A FIANCO (Michele, 5/11, con le foto della parte di Lucia: «non mi piace
+//  l'impaginazione, è molto scomposta; togli Sofia all'inizio, mettila soltanto come microfono a fianco, scritto grande e
+//  chiaro "Chiedi alla governante"; appena aprono ci devono essere le indicazioni della giornata: quello che gli scrive la
+//  governante (cioè io) lo devono vedere subito, subito sotto quello che devono fare oggi, e sotto, nella stessa schermata
+//  del telefono, le camere che devono fare. La grafica a matita mi piace così così: falla rifare a Gemini; il verde non mi
+//  piace, non c'è niente di laguna né di sapone pulito; rifai anche i riquadri delle camere. A fianco Sofia che esce a
+//  fantasmino: solo la sua sagoma, senza bordo e senza sfondo»).
+//  In cima «📣 La governante ti dice» (il messaggio del giorno, grande, col 🔊); sotto «Cosa devi fare oggi» (le parole di
+//  Sofia per la giornata, il tasto «Sono arrivata» o l'orario che corre; a giornata chiusa «Hai finito alle…»); sotto le
+//  camere (la piantina del giro, le camere degli altri in piccolo). Poi HO FINITO, i Visti, i controlli e i sette giorni.
+//  Il microfono a fianco «Chiedi alla governante»: lo tocchi e lei esce (solo la sagoma ritagliata), ascolta e risponde.
+//  I disegni a matita colorata e lo sfondo ad acquerello (la laguna in alto, le bolle, la schiuma in fondo) sono di Gemini.
+// ============================================================================
+function cardGovernante(giorno, anteprima) {
+  const msg = messaggioDelGiorno(giorno); if (!msg) return "";
+  const quando = anteprima ? ` · ${L.GIORNI[L.giornoSettimana(giorno)]}` : "";
+  return `<section class="lg-gov" aria-label="La governante ti dice"><div class="lg-gov-testa">${FIG("megafono", "lg-gov-fig")}<span class="lg-gov-t">La governante ti dice${esc(quando)}</span>
+    <button type="button" class="lg-ascolta" data-lg-ascolta data-lg-testo="${esc(`La governante ti dice: ${msg.testo}`)}" aria-label="Ascolta quello che dice la governante">🔊</button></div>
+    <p class="lg-gov-msg">${esc(msg.testo)}</p></section>`;
+}
+function cardOggiFare(z, giorno, lavori, rif, anteprima, v, vedono) {
+  const oggi = L.oggiISO(), passi = guidaPassi(z, giorno), primo = passi[0] || {};
+  const finito = !anteprima && !!(v && v.finitoOra);
+  const dopo = finito ? lavori.filter(p => p.stato === "da_fare" || p.stato === "in_corso") : [];
+  let titolo = "Cosa devi fare oggi", testo = primo.breve || primo.testo || "", detto = primo.testo || testo, fig = "lista", cls = "";
+  if (anteprima) { titolo = maiuscola(L.dataLunga(giorno)); }
+  else if (finito && dopo.length) { titolo = "C'è un lavoro nuovo"; testo = `${maiuscola(elencoParlato(dopo.map(p => p.tipo === "stelle" ? "le stelle in altre camere" : nomeBreveCamera(camera(p.camera)))))}. Quando hai fatto, tocca «HO FINITO ANCHE QUESTO».`; detto = testo; }
+  else if (finito) { const fine = passi[passi.length - 1] || {}; titolo = `Hai finito alle ${L.oraBreve(v.finitoOra)}`; testo = v.vistoOra ? `Visto di ${v.vistoNome || "la direzione"} ✓ Brava!` : rif.length ? `Le rifiniture aspettano il Visto di ${vedono.join(" o ") || "chi passa dopo"}.` : "Brava! Puoi andare."; detto = fine.testo || testo; fig = "scintilla"; cls = " fatto"; }
+  const arrivo = anteprima || finito ? "" : turnoDetto(z, giorno);
+  if (arrivo && testo.startsWith(arrivo)) testo = testo.slice(arrivo.length).trim();   // c'è il tasto proprio sotto: la frase resta a voce
+  const sotto = anteprima ? `<button type="button" class="lg-oggi-torna" data-g="${oggi}">↩ Torna a oggi</button>` : "";
+  const turno = anteprima ? "" : cardTurno(z, false, "tutto");
+  const nIstr = anteprima ? 0 : istruzioniDelGiorno(oggi, z).length;
+  const istr = nIstr ? `<p class="lg-oggi-nota">📎 La governante ti ha lasciato ${nIstr === 1 ? "una spiegazione" : nIstr + " spiegazioni"} coi disegni: è più giù, dopo le camere.</p>` : "";
+  const data = anteprima ? "" : `<small>${esc(maiuscola(L.dataLunga(giorno)))}</small>`;
+  return `<section class="lg-oggi${cls}" aria-label="${esc(titolo)}"><div class="lg-oggi-testa">${FIG(fig, "lg-oggi-fig")}<span class="lg-oggi-t"><b>${esc(titolo)}</b>${data}</span>
+    <button type="button" class="lg-ascolta" data-lg-ascolta data-lg-testo="${esc(detto)}" aria-label="Ascolta cosa devi fare">🔊</button></div>
+    <p class="lg-oggi-x">${esc(testo)}</p>${turno}${istr}${sotto}</section>`;
+}
+// il 🔊 delle due schede: la governante dice quel testo (se sta già parlando, smette)
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-lg-ascolta]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  if (voceInCorso || guida.parla) { guidaZitta(); return; }
+  const t = b.dataset.lgTesto || ""; if (t) guidaParla(t);
+}, true);
+// Sofia parla da sola quando apri una camera, oppure no (prima era il 🔊/🔇 sulla scena di Sofia)
+function lgMuta() { return `<button type="button" class="lg-muta" data-sg="muta" aria-pressed="${!guidaMuta()}">${guidaMuta() ? "🔇 Quando apri una camera la governante sta zitta" : "🔊 Quando apri una camera la governante te la dice"}</button>`; }
 function vistaArgon(z) {
   const oggi = L.oggiISO(), giorno = S.giorno && S.giorno > oggi && S.giorno <= L.aggiungiGiorni(oggi, 6) ? S.giorno : oggi, anteprima = giorno !== oggi;
   const lavori = pulizieDelGiorno(giorno, z);
@@ -4051,12 +4108,12 @@ function vistaArgon(z) {
   const vedono = nomiChiVede(chiVedeIl(z, oggi));
   const sosp = !anteprima && L.argonSospesa(S.argon, z, oggi) ? (S.argon.sospensioni || {})[z] : null;
   const parlato = guidaOra(z, giorno).passo.testo;
-  const testa = testaSofia(z, giorno, lavori, rif, anteprima) + `<span hidden data-istr-testo="argon">${esc(parlato)}</span>`;
+  const voce = `<span hidden data-istr-testo="argon">${esc(parlato)}</span>`;
   const mappa = mappaGiornata(z, giorno, lavori, rif);
   const aperteDopo = finito ? lavori.filter(p => p.stato === "da_fare" || p.stato === "in_corso") : [];
-  const fine = finito && !aperteDopo.length ? `<section class="gs-fine${v.vistoOra ? " visto" : ""}">${DONNINA("festa", "piccola")}<span><b>Hai finito alle ${esc(L.oraBreve(v.finitoOra))}</b><span>${v.vistoOra ? `Visto di ${esc(v.vistoNome || "la direzione")} ✓` : rif.length ? `Aspetta il Visto di ${esc(vedono.join(" o ") || "chi passa dopo")}.` : "Brava! Puoi andare."}</span></span></section>` : "";
-  const msg = messaggioDelGiorno(giorno);
-  const messaggio = msg ? `<section class="gs-msg"><div class="gs-msg-t">📣 ${esc(msg.da || "Michele")}</div><p class="gs-msg-x">${esc(msg.testo)}</p></section>` : "";
+  // 1.54.0: in cima il messaggio della governante, sotto cosa fare oggi (niente più Sofia grande in cima)
+  const messaggio = cardGovernante(giorno, anteprima);
+  const fare = cardOggiFare(z, giorno, lavori, rif, anteprima, v, vedono);
   const sospesa = sosp ? `<section class="gs-avviso rosso">${ICONA("avviso")}<span><b>Fino a ${esc(L.dataLunga(sosp.a))}: solo le camere.</b></span></section>` : "";
   const pl = pianoDi(z, giorno), ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || p.stato === "fatta" || rif.some(r => r.pulizia === p.id));
   // 1.29.0: «ADESSO» = la camera che Sofia sta dicendo (all'inizio la prima da fare; dopo HO FINITO l'eventuale lavoro nuovo)
@@ -4069,8 +4126,8 @@ function vistaArgon(z) {
   const spiegazioni = anteprima ? "" : istruzioniDelGiorno(oggi, z).map((x, i) => cardIstruzione(x, i)).join("");
   const rifiuti = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(giorno) + 1) % 7);
   const bidoni = rifiuti && z === "ap" ? `<section class="gs-avviso">${ICONA("bidone")}<span>${anteprima ? "Quella sera" : "Stasera"} fuori: <b>${esc(rifiuti.cosa.replace(/^./, ch => ch.toUpperCase()))}</b></span></section>` : "";
-  if (anteprima) return testa + mappa + messaggio + schede + bidoni;
-  return cardTurno(z, false, "sopra") + testa + cardTurno(z, false, "sotto") + mappa + fine + bloccoControlli(z, oggi) + cardVisto(z) + sospesa + messaggio + spiegazioni + schede + tasto + bidoni;
+  if (anteprima) return `<div class="lg-pagina">${messaggio}${fare}${schede}${mappa}${bidoni}${voce}</div>`;
+  return `<div class="lg-pagina">${messaggio}${fare}${cardVisto(z)}${sospesa}${schede}${tasto}${spiegazioni}${bloccoControlli(z, oggi)}${mappa}${lgMuta()}${bidoni}${voce}</div>`;
 }
 // i tasti di Sofia (anche quando la pagina si ridisegna) e la camera aperta: Sofia la dice (dopo che il foglio si è aperto)
 document.addEventListener("click", (e) => {
@@ -10543,7 +10600,7 @@ function vistaAvvisi() {
 //  Fogli (pannelli dal basso)
 // ---------------------------------------------------------------------------
 function elFoglio() { let s = $(".sheet"); if (!s) { s = document.createElement("div"); s.className = "sheet"; document.body.appendChild(s); s.onclick = e => { if (e.target === s) chiudiFoglio(); }; } return s; }
-function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); }
+function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); try { guidaCompagna(); guidaNuvola(); guidaFinito(); } catch (e) {} }
 function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); if (f && f.tipo === "dettatura") segnaVista(); }
 // 1.18.1: il foglio di una lettura condivisa (fatta dal giro, da questo o da un altro telefono) l'hai aperto: lo segno, così il
 // giro non ti manda l'avviso «ho letto» per una lettura che hai già visto. Una volta sola per lettura.
