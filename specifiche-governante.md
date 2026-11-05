@@ -2627,3 +2627,18 @@ Michele (5/11), con la foto della sua chat con Selena: «Ancora WhatsApp, vedi? 
 - «SONO ARRIVATA»: prima la pillola verde; toccata diventa un messaggio mandato da lei, a destra in verde chiaro: «Sono arrivata», sotto «⏱️ L'orario corre: …», in fondo l'ora e le due spunte azzurre. «Vado via» non c'è più su questa pagina: fa la stessa cosa di HO FINITO.
 - LE CAMERE come messaggi della governante: il beccuccio sulla prima, un po' di spazio a destra; il resto come la 1.55.3 («Adesso» in verde, «✓ Fatto», l'anello verde, l'ora e le spunte su quella fatta, il cartellino giallo «Le camere di oggi»).
 - Prove: prova1554 (la testata con l'icona dei soldi e la freccia, niente barra in basso, il vocale a parte e azzurro dopo l'ascolto, l'ora in fondo al testo, «Sono arrivata» come messaggio mandato, la barra per scrivere in fondo, tutto nella prima schermata) più quelle di prima.
+
+## 155.5 La 1.55.5 (5 novembre): LA PAGINA DELLE SIGNORE MISURATA SULLA CHAT VERA DI WHATSAPP
+
+Michele (5/11): «Non ancora ci siamo… fai una cosa uguale a quella di WhatsApp… controllala rispetto all'immagine che ti ho inviato, fin quando non è uguale.»
+
+Misurata pixel per pixel sulla foto della sua chat con Selena (il telefono è largo 411 dp; colori presi dalla foto e spostati di un filo):
+
+- LO SFONDO più chiaro, come il suo: fondo #F2EFE9 (WhatsApp #F3F0EA), disegnini #E2DFD7 (#E3E0D8). I disegnini restano i nostri delle pulizie (sfondo-pulizie-wa2.webp).
+- LE BOLLE col raggio 10 e l'ombra quasi invisibile; il testo nero #0E1215 (#06080A), con la riga 1,3 come la sua; l'ora grande come la sua in proporzione al testo, grigia neutra #5D5F61 (#5A5B5C); il cartellino «Oggi» quasi bianco #FCFCFA.
+- I MESSAGGI MANDATI verde chiaro #DFFAD7 (#E0FBD8); le spunte e il vocale ascoltato blu #3A7BF2 (#3478F4).
+- IL VOCALE: le barrette grigio chiaro #CDCFCF (#D0D0D0), la durata e l'ora grandi come le sue, la foto 50.
+- LA TESTATA: la foto più piccola (34) con l'anello verde sottile, come quello di Selly; il nome non in grassetto.
+- LA BARRA PER SCRIVERE: la faccina, «Chiedi alla governante» grande come il suo «Messaggio», a destra la graffetta e la macchina fotografica (solo il disegno: tutta la barra è il tasto del microfono), il tondo 48 verde #52A66A (#50A668).
+- Le cose che in WhatsApp non ci sono (le camere, «Sono arrivata», «HO FINITO») restano, con la stessa grafica.
+- Prove: prova1555 (i colori misurati, le misure, la barra per scrivere) più quelle di prima.
