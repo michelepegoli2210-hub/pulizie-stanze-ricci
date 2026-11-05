@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.54.0";
+export const VERSIONE = "1.54.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2704,7 +2704,7 @@ function guidaPassi(z, iso) {
     const ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || rif.some(r => r.pulizia === p.id));
     const apri = anteprima ? quale : "Oggi";
     const visto = daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "";
-    passi.push({ k: "giro", breve: [arrivoDetto, pl.riassunto || giroDetto(apri), visto].filter(Boolean).join(" "), testo: [anteprima ? `${quale}:` : `${saluto()} ${nome}, buon lavoro!`, arrivoDetto, pl.riassunto || giroDetto(apri), min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "", visto, difetto, anteprima ? "" : "Quando sei pronta col carrello, tocca: e poi."].filter(Boolean).join(" ") });
+    passi.push({ k: "giro", breve: [arrivoDetto, pl.riassunto || giroDetto(apri), visto].filter(Boolean).join(" "), testo: [anteprima ? `${quale}:` : `${saluto()} ${nome}, buon lavoro!`, arrivoDetto, pl.riassunto || giroDetto(apri), min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "", visto, difetto, anteprima ? "" : "Quando sei pronta col carrello, tocca la prima camera: te la spiego."].filter(Boolean).join(" ") });
     ord.forEach((p, i) => {
       const ps = pianoPasso(pl, p.id) || {}, mie = rif.filter(r => r.pulizia === p.id), f = [p.dettagli, p.istruzioni].filter(Boolean);
       const chi = p.tipo === "stelle" ? "Le stelle nelle altre camere" : p.origine === "governante" ? `Lavoro a fondo in ${nomeDetto(p)}` : nomeDetto(p);
@@ -2720,7 +2720,7 @@ function guidaPassi(z, iso) {
     passi.push({ k: "giro", testo: [giroDetto(quale), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "", note.length ? `Michele ti dice: ${note.join("; ")}.` : ""].filter(Boolean).join(" ") });
   } else
   passi.push({ k: "giro", breve: [arrivoDetto, giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", daDare.length ? `Prima dai il Visto a ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])}.` : ""].filter(Boolean).join(" "), testo: [`${saluto()} ${nome}, buon lavoro!`, arrivoDetto, giroDetto("Oggi"), fondoDetto, nGiro ? `Poi le rifiniture in ${nGiro === 1 ? "un'altra camera" : nGiro + " altre camere"}.` : "", min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "",
-    daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "", difetto, "Quando sei pronta col carrello, tocca: e poi."].filter(Boolean).join(" ") });
+    daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "", difetto, "Quando sei pronta col carrello, tocca la prima camera: te la spiego."].filter(Boolean).join(" ") });
   // i promemoria di tutta la giornata: prima le parole di Michele, poi le rifiniture camera per camera
   const ric = [];
   for (const p of lavori) { const f = [p.dettagli, p.istruzioni].filter(Boolean); if (f.length) ric.push(`da ${nomeDetto(p)}, ${p.dettagliDa || "Michele"} dice: ${senzaPunto(f.join(". "))}`); }
