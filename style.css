@@ -7467,17 +7467,18 @@ body.premium .sofia-hero .casa-nuvola .dtf-man.urgente{border-left:4px solid #DC
 .sg-aiuto{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#FFF8E1;color:#3D2F00;font-weight:600}
 
 /* ===================================================================================================================
-   1.55.6 · LE GRANDEZZE DI WHATSAPP SUL TELEFONO DI MICHELE (5/11: la foto dell'app presa dal suo telefono, da mettere
-   accanto alla foto della sua chat con Selena, stesso schermo). Sul suo telefono le scritte di WhatsApp sono grandi:
-   misurate una per una, la nostra pagina le ha avute un po' più piccole. Adesso uguali:
-   - il testo dei messaggi 20 (riga 26,8), il nome in alto 22, «online» 16, l'ora 16, il cartellino «Oggi» 17;
-   - il vocale alto 62 come il suo (la durata e l'ora 17);
-   - la barra per scrivere: «Messaggio» come in WhatsApp, grande 22,5 («Chiedi alla governante» sul telefono veniva
-     tagliato: non ci stava);
-   - le bolle un filo più a sinistra (17 dal bordo, come le sue); le camere coi nomi 20.
-   Prima, la 1.55.5: i colori e le misure presi dalla foto della chat (lo sfondo chiaro #F2EFE9, il verde chiaro #DFFAD7,
-   le spunte blu #3A7BF2, le ore grigie #5D5F61, il tondo del microfono #52A66A, la graffetta e la macchina fotografica).
-   La 1.55.6 prende il posto del blocco della 1.55.5.
+   1.55.7 · LA CHAT VERA CON LA GOVERNANTE (Michele, 5/11: «sotto, dove c'è scritto Messaggio, deve poter mettere
+   veramente le emoticon, gli allegati, la fotocamera, deve poter scrivere con Sofia, parlarci, e Sofia le deve poter
+   rispondere»). La barra per scrivere adesso è vera:
+   - la faccina apre le faccine (sopra la barra); nel campo bianco si scrive e si va a capo (fino a quattro righe);
+   - la graffetta (foto, video, file) e la macchina fotografica; scrivendo la macchina fotografica sparisce e il tondo
+     verde col microfono diventa la freccia per mandare, come in WhatsApp;
+   - i suoi messaggi a destra in verde chiaro con l'ora e le due spunte azzurre, le risposte della governante a
+     sinistra in bianco (prima i tre puntini «sta scrivendo»), sotto le risposte i tasti «Sì / No, grazie»;
+   - in cima, sempre, il saluto secondo l'ora del telefono («Buongiorno Selena! ☀️»);
+   - niente più la nuvoletta scritta quando risponde al microfono (la chat è già scritta).
+   Prima, la 1.55.6: le grandezze di WhatsApp sul telefono di Michele (il testo 20, l'ora 16, il nome 22, il vocale 62).
+   La 1.55.7 prende il posto del blocco della 1.55.6.
    (Nel file pubblicato «body.sig-laguna.sig-laguna.sig-laguna.sig-laguna» è ripetuto quattro volte: lo fa la fase di pubblicazione, così queste regole
    passano sopra a quelle vecchie delle signore senza !important.)
    =================================================================================================================== */
@@ -7690,30 +7691,72 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .lg-pagina .gs-g.on span,body.s
 .lg-muta::before{content:"";position:absolute;right:34px;top:50%;z-index:1;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:right .15s}
 .lg-muta[aria-pressed="true"]::after{background:var(--w-verde,#179A54)}
 .lg-muta[aria-pressed="true"]::before{right:16px}
-/* ---- «Chiedi alla governante» (1.55.3-1.55.4): la barra per scrivere di WhatsApp, in fondo (niente più barra in basso):
-   il campo bianco arrotondato con la faccina e «Chiedi alla governante», a destra il tondo verde col microfono bianco
-   (tutta la barra è il tasto) ---- */
-.sg-mic.lg-mic{left:0;right:0;bottom:0;width:auto;height:calc(66px + env(safe-area-inset-bottom,0px));min-height:0;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;padding:6px 10px calc(10px + env(safe-area-inset-bottom,0px)) 8px;border:0;border-radius:0;background:#F2EFE9;box-shadow:none;color:var(--w-testo,#0E1215)}
-.sg-mic.lg-mic .lg-mic-campo{display:flex;align-items:center;gap:12px;flex:1 1 auto;min-width:0;height:50px;padding:0 14px 0 13px;border-radius:25px;background:#FFFFFF;box-shadow:0 1px .5px rgba(11,20,26,.12)}
-.sg-mic.lg-mic .lg-mic-emo{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;color:#5A5C5F}
-.sg-mic.lg-mic .lg-mic-emo svg{width:26px;height:26px;fill:currentColor;filter:none}
-.sg-mic.lg-mic .lg-mic-t{display:block;flex:1 1 auto;min-width:0;margin:0;font:400 22.5px/1.2 var(--w-font,system-ui);letter-spacing:0;color:#5C5F62;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sg-mic.lg-mic .lg-mic-dx{display:flex;align-items:center;gap:20px;flex:0 0 auto;color:#5A5C5F}
-.sg-mic.lg-mic .lg-mic-dx svg{width:24px;height:24px;fill:currentColor;filter:none}
-.sg-mic.lg-mic .lg-mic-ico{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:50%;background:var(--w-mic,#52A66A);color:#FFFFFF;box-shadow:0 1px 1.5px rgba(11,20,26,.2)}
-.sg-mic.lg-mic .lg-mic-ico svg{width:25px;height:25px;fill:currentColor;filter:none}
+/* ---- la barra per scrivere (1.55.3-1.55.6 il disegno, 1.55.7 vera): in fondo, il campo bianco arrotondato con la
+   faccina, il testo, la graffetta e la macchina fotografica; a destra il tondo verde (il microfono, o la freccia per
+   mandare quando c'è del testo) ---- */
+.sg-mic.lg-mic{left:0;right:0;bottom:0;width:auto;height:auto;min-height:calc(66px + env(safe-area-inset-bottom,0px));flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:8px;padding:6px 10px calc(10px + env(safe-area-inset-bottom,0px)) 8px;border:0;border-radius:0;background:#F2EFE9;box-shadow:none;color:var(--w-testo,#0E1215);cursor:default;transition:none}
+.sg-mic.lg-mic:active{transform:none;box-shadow:none}
 .sg-mic.lg-mic::after{display:none}
-.sg-mic.lg-mic:active .lg-mic-ico{transform:scale(.96);background:#47955E}
+.sg-mic.lg-mic span{margin-top:0}
+.sg-mic.lg-mic .lg-mic-campo{display:flex;align-items:flex-end;gap:5px;flex:1 1 auto;min-width:0;min-height:50px;padding:0 6px;border-radius:25px;background:#FFFFFF;box-shadow:0 1px .5px rgba(11,20,26,.12)}
+.sg-mic.lg-mic .lg-mic-emo,.sg-mic.lg-mic .lg-mic-b{display:grid;place-items:center;flex:0 0 40px;width:40px;height:50px;min-height:0;margin:0;padding:0;border:0;border-radius:20px;background:transparent;color:#5A5C5F;box-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sg-mic.lg-mic .lg-mic-emo svg{width:26px;height:26px;fill:currentColor;filter:none}
+.sg-mic.lg-mic .lg-mic-emo[aria-expanded="true"]{color:var(--w-verde,#179A54)}
+.sg-mic.lg-mic .lg-mic-emo:active,.sg-mic.lg-mic .lg-mic-b:active{background:rgba(11,20,26,.07)}
+.sg-mic.lg-mic textarea.lg-mic-t{display:block;flex:1 1 auto;min-width:0;width:auto;height:50px;min-height:50px;max-height:134px;margin:0;padding:11px 0 11px 1px;border:0;border-radius:0;outline:0;background:transparent;box-shadow:none;font:400 22.5px/28px var(--w-font,system-ui);letter-spacing:0;color:var(--w-testo,#0E1215);text-align:left;white-space:pre-wrap;overflow-x:hidden;overflow-y:auto;resize:none;-webkit-appearance:none;appearance:none;caret-color:var(--w-verde,#179A54)}
+.sg-mic.lg-mic textarea.lg-mic-t::placeholder{color:#5C5F62;opacity:1}
+.sg-mic.lg-mic textarea.lg-mic-t:focus-visible{outline:0}
+.sg-mic.lg-mic .lg-mic-dx{display:flex;align-items:flex-end;gap:4px;flex:0 0 auto;color:#5A5C5F}
+.sg-mic.lg-mic .lg-mic-dx svg{width:24px;height:24px;fill:currentColor;filter:none}
+.sg-mic.lg-mic.con-testo .lg-mic-cam{display:none}
+.sg-mic.lg-mic .lg-mic-ico{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;min-height:0;margin:0 0 1px;padding:0;border:0;border-radius:50%;background:var(--w-mic,#52A66A);color:#FFFFFF;box-shadow:0 1px 1.5px rgba(11,20,26,.2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sg-mic.lg-mic .lg-mic-m{display:grid;place-items:center}
+.sg-mic.lg-mic .lg-mic-ico svg{width:25px;height:25px;fill:currentColor;filter:none}
+.sg-mic.lg-mic .lg-mic-ico svg.lg-mic-manda{display:none;width:24px;height:24px;margin-left:3px}
+.sg-mic.lg-mic.con-testo .lg-mic-m{display:none}
+.sg-mic.lg-mic.con-testo .lg-mic-ico svg.lg-mic-manda{display:block}
+.sg-mic.lg-mic .lg-mic-ico:active{transform:scale(.96);background:#47955E}
+/* le faccine: sopra la barra, otto per riga */
+.sg-mic.lg-mic .wa-faccine{position:absolute;left:8px;right:8px;bottom:calc(100% + 2px);display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;max-height:min(44vh,290px);overflow-y:auto;padding:8px;border-radius:16px;background:#FFFFFF;box-shadow:0 2px 6px rgba(11,20,26,.14),0 14px 28px -12px rgba(11,20,26,.4)}
+.sg-mic.lg-mic .wa-faccine[hidden]{display:none}
+.sg-mic.lg-mic .wa-faccine button{display:grid;place-items:center;height:46px;min-height:0;margin:0;padding:0;border:0;border-radius:10px;background:transparent;box-shadow:none;font:400 27px/1 "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sg-mic.lg-mic .wa-faccine button:active{background:#EEF1F2}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic){background:var(--w-verde);box-shadow:0 0 0 3px #FFFFFF,0 4px 10px -2px rgba(17,128,74,.55)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic)::after{border-color:rgba(23,154,84,.35)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic) svg{width:30px;height:30px;fill:#FFFFFF;filter:none}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic) span{font:700 11px/1 var(--w-font)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna #app{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic #app{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic #app{padding-bottom:calc(var(--alto-scrivi,calc(66px + env(safe-area-inset-bottom,0px))) + 18px)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-finito{left:24px;right:24px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic .sg-finito{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic .sg-finito{bottom:calc(var(--alto-scrivi,calc(66px + env(safe-area-inset-bottom,0px))) + 10px)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-finito .sg-finito{left:24px;right:24px}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-compagna .sg-finito{right:150px}
+/* ---- 1.55.7 la chat con la governante: in fondo alla pagina, sopra la barra per scrivere ---- */
+.wa-conversa{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.wa-conversa>.primo{margin-top:7px}
+.wa-conversa>.primo:first-child{margin-top:0}
+.wa-mio{display:flex;flex-direction:column;align-items:flex-end;max-width:100%;padding-right:8px}
+.wa-bolla.wa-bolla-mia{background:var(--w-verde-c)}
+.wa-mio.primo>.wa-bolla-mia{border-top-right-radius:0}
+.wa-mio.primo>.wa-bolla-mia::after{content:"";position:absolute;top:0;right:-8px;width:8px;height:13px;background:var(--w-verde-c);clip-path:polygon(0 0,100% 0,0 100%)}
+.wa-bolla-mia .wa-spunte{display:inline-flex;color:var(--w-spunta)}
+.wa-bolla-mia .wa-spunte svg{width:20px;height:20px}
+.wa-bolla.wa-bolla-mia.con-foto{padding:4px 4px 6px}
+.wa-foto{display:block;width:min(260px,62vw);max-width:100%;height:auto;max-height:360px;object-fit:cover;border-radius:7px;background:#CFD8DC}
+.wa-bolla-mia.con-foto .wa-testo{padding:5px 6px 0}
+.wa-file{display:flex;align-items:center;gap:8px;margin:0 0 5px;padding:10px 12px;border-radius:8px;background:rgba(11,20,26,.06);font:500 17px/1.25 var(--w-font);color:var(--w-testo);overflow-wrap:anywhere}
+.wa-file svg{flex:0 0 28px;width:28px;height:28px;fill:#5E7A87}
+.wa-testo.wa-solo-ora{display:flex;justify-content:flex-end}
+.wa-testo.wa-solo-ora .wa-meta{float:none;top:0;margin:2px 2px 0}
+.wa-tasti{display:flex;flex-direction:column;gap:3px;width:min(336px,88%)}
+.wa-tasto{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:0;padding:8px 12px;border:0;border-radius:10px;background:#FFFFFF;box-shadow:var(--w-ombra);color:var(--w-verde-s);font:500 18.5px/1.2 var(--w-font);text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.wa-tasto:active{background:#F0F2F4}
+.wa-bolla.wa-scrive{display:flex;align-items:center;gap:5px;min-height:42px;padding:0 16px}
+.wa-scrive i{display:block;width:9px;height:9px;border-radius:50%;background:#9AA0A4;animation:waScrive 1.2s infinite ease-in-out}
+.wa-scrive i:nth-child(2){animation-delay:.15s}
+.wa-scrive i:nth-child(3){animation-delay:.3s}
+@keyframes waScrive{0%,60%,100%{opacity:.35;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.wa-scrive i{animation:none;opacity:.7}}
 /* ---- Sofia a fianco: solo la sagoma, in fondo; la sua nuvoletta come un messaggio ---- */
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera{bottom:calc(2px + env(safe-area-inset-bottom,0px))}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera .sgc-figura{filter:drop-shadow(0 10px 14px rgba(11,20,26,.2))}
@@ -7747,9 +7790,11 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .gs-torna{border:1px sol
   .wa-testo{font-size:18.5px}
   body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fatto{padding:0 12px 0 9px}
   body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{font-size:19px}
-  .sg-mic.lg-mic .lg-mic-t{font-size:20px}
-  .sg-mic.lg-mic .lg-mic-dx{gap:14px}
-  .sg-mic.lg-mic .lg-mic-campo{gap:9px}
+  .sg-mic.lg-mic textarea.lg-mic-t{font-size:20px}
+  .sg-mic.lg-mic .lg-mic-dx{gap:0}
+  .sg-mic.lg-mic .lg-mic-campo{gap:2px;padding:0 4px}
+  .sg-mic.lg-mic .lg-mic-emo,.sg-mic.lg-mic .lg-mic-b{flex-basis:36px;width:36px}
+  .sg-mic.lg-mic .wa-faccine{grid-template-columns:repeat(7,minmax(0,1fr))}
   .wa-bolla,.wa-bolla-voce{max-width:90%}
   .wa-bolla-voce{width:90%}
   .wa-chat>.gs-turno,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna #app [data-ho-finito]{margin-left:12px;margin-right:12px}

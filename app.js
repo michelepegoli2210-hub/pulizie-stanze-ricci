@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.6";
+export const VERSIONE = "1.55.7";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1555,7 +1555,8 @@ function disegnaTestata() {
   document.body.classList.toggle("wa-testa-sotto", sottoT);
   const h1 = $("header h1"), nodo = h1 && h1.firstChild && h1.firstChild.nodeType === 3 ? h1.firstChild : null, titolo = chatGov ? "La governante" : sottoT ? (S.vista === "soldi" ? "I miei soldi" : "Le Stanze di Ricci") : "Le Stanze di Ricci";
   if (nodo && nodo.nodeValue !== titolo) nodo.nodeValue = titolo;
-  $("#sub").textContent = chatGov ? (S.online ? "online" : "in attesa di rete…") : sottoT ? "" : sub;
+  let scrive = false; try { scrive = !!guida.scrive; } catch (e) {}
+  $("#sub").textContent = chatGov ? (scrive ? "sta scrivendo…" : S.online ? "online" : "in attesa di rete…") : sottoT ? "" : sub;
   testataWa(chatGov, sottoT);
   const who = $("#whoBtn");
   who.hidden = !u;
@@ -2725,7 +2726,7 @@ function guidaPassi(z, iso) {
     const ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || rif.some(r => r.pulizia === p.id));
     const apri = anteprima ? quale : "Oggi";
     const visto = daDare.length ? `Prima guarda il lavoro di ${elencoParlato([...new Set(daDare.map(x => x.finitoDa || SIG(x.zona)))])} e dai il Visto.` : "";
-    passi.push({ k: "giro", breve: [arrivoDetto, pl.riassunto || giroDetto(apri), visto].filter(Boolean).join(" "), testo: [anteprima ? `${quale}:` : `${saluto()} ${nome}, buon lavoro!`, arrivoDetto, pl.riassunto || giroDetto(apri), min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "", visto, difetto, anteprima ? "" : "Quando sei pronta col carrello, tocca la prima camera: te la spiego."].filter(Boolean).join(" ") });
+    passi.push({ k: "giro", breve: [arrivoDetto, senzaSaluto(pl.riassunto) || giroDetto(apri), visto].filter(Boolean).join(" "), testo: [anteprima ? `${quale}:` : `${saluto()} ${nome}, buon lavoro!`, arrivoDetto, senzaSaluto(pl.riassunto) || giroDetto(apri), min && !pagaAOre() ? `In tutto circa ${L.testoOre(min)}.` : "", visto, difetto, anteprima ? "" : "Quando sei pronta col carrello, tocca la prima camera: te la spiego."].filter(Boolean).join(" ") });
     ord.forEach((p, i) => {
       const ps = pianoPasso(pl, p.id) || {}, mie = rif.filter(r => r.pulizia === p.id), f = [p.dettagli, p.istruzioni].filter(Boolean);
       const chi = p.tipo === "stelle" ? "Le stelle nelle altre camere" : p.origine === "governante" ? `Lavoro a fondo in ${nomeDetto(p)}` : nomeDetto(p);
@@ -2761,6 +2762,7 @@ function guidaPassi(z, iso) {
 function guidaOra(z, iso) { const p = guidaPassi(z, iso); const fin = iso === L.oggiISO() && !!(vistoDelGiorno(z, iso) || {}).finitoOra; const i = fin ? p.length - 1 : Math.min(guidaIndice(z, iso), p.length - 1); return { passi: p, i, passo: p[i] }; }
 // parla con la voce del telefono (gratis), un po' più piano (Gemini: 0,9), e mostra quello che dice
 function guidaParla(testo) {
+  if (guida.cattura) { guida.cattura.push(testo); return; }   // 1.55.7: la risposta per la chat scritta
   try { VOCE.sbloccaAudio(); } catch (e) {}
   if (!testo) return;
   zittisciVoce();
@@ -2801,7 +2803,7 @@ function guidaAscolta(opz = {}) {
     const r = new SR(); guidaRec = r; r.lang = "it-IT"; r.interimResults = false; r.maxAlternatives = 3;
     guida.ascolta = true; guida.voce = opz.ripiego ? "Ti ascolto… Dimmi: cosa devo fare? Oppure: e poi? Oppure il nome di una camera." : "Ti ascolto…"; disegna();
     let preso = false;
-    r.onresult = (e) => { preso = true; const alt = []; try { for (const a of e.results[0]) alt.push(a.transcript); } catch (er) {} guida.ascolta = false; guida.dalMic = true; guidaRispondi(alt); };
+    r.onresult = (e) => { preso = true; const alt = []; try { for (const a of e.results[0]) alt.push(a.transcript); } catch (er) {} guida.ascolta = false; guida.dalMic = true; if (chatVoce()) chatDaVoce(alt); else guidaRispondi(alt); };
     r.onerror = () => { guida.ascolta = false; if (!preso) { guida.voce = ""; disegna(); } };
     // 1.32.0: dal microfono a fianco, se non ha sentito niente (o il microfono non va) Sofia dice il passo di adesso
     r.onend = () => { guida.ascolta = false; const annullato = !!r._annulla; guidaRec = null; if (!preso) { guida.voce = ""; if (opz.ripiego && !annullato) { guida.dalMic = true; guidaTasto("ascolta"); return; } disegna(); } };
@@ -2829,7 +2831,7 @@ function guidaRispondi(frasi) {
   if (ha(/ (finit|ho fatto tutto|abbiamo fatto|chiudo)/)) { guidaParla("Quando hai fatto tutto il giro, tocca il tasto verde HO FINITO. Ti rileggo le rifiniture e poi puoi andare."); return; }
   if (ha(/ (visto|controll|guardare|guardo)/)) { const d = vistiDaDare(z), vd = nomiChiVede(chiVedeIl(z, oggi)); guidaParla([d.length ? `Devi guardare il lavoro di ${elencoParlato([...new Set(d.map(x => x.finitoDa || SIG(x.zona)))])}: sali, guarda i punti scritti e tocca VISTO.` : "Oggi non c'è niente da guardare.", vd.length ? `Il tuo lavoro lo guarda ${elencoParlato(vd)}.` : "Il tuo lavoro oggi non lo guarda nessuno: solo le camere."].join(" ")); return; }
   if (ha(/ (ore|quanto ci|quanto tempo|tempo)/)) { if (pagaAOre()) { const tg = turnoDelGiorno(z, L.oggiISO()); guidaParla(tg && tg.inizio && !tg.fine ? `Sei qui da ${testoOreDette(minutiDa(tg.inizio))}. Il tempo lo segna il cronometro: finisci con calma e poi tocca HO FINITO.` : tg && tg.inizio && tg.fine ? `Oggi hai lavorato ${testoOreDette(tg.minuti)}.` : "Il tempo lo segna il cronometro: tocca Sono arrivata quando entri e HO FINITO quando hai finito."); return; } const m = minutiGiornata(lavori, rif); guidaParla(m ? `Oggi hai circa ${L.testoOre(m)} di lavoro.` : "Oggi non hai lavori."); return; }
-  if (ha(/ (salvadanaio|premio|soldi|paga|quante ore|le mie ore|ore ho fatto|ore fatte)/)) { if (pagaAOre()) { const b = bustaOre(z, L.settimanaCorrente()); guidaParla(`Questa settimana hai ${testoOreDette(b.minuti)} di lavoro: ${eur(b.totale)}. Le stelle non si pagano a parte: sono dentro le tue ore. Il resto lo trovi in: I miei soldi, in basso.`); return; } const pr = L.premioSettimana(S.visti, S.controlli, S.pulizie, z, L.settimanaCorrente(), S.argon); guidaParla(pr.stato === "spento" ? "I soldi li trovi in: I miei soldi, in basso." : `Il salvadanaio di questa settimana ha ${eur(pr.stato === "pochi" ? pr.promesso : pr.euro)}. Gli altri soldi li trovi in: I miei soldi.`); return; }
+  if (ha(/ (salvadanaio|premio|soldi|paga|quante ore|le mie ore|ore ho fatto|ore fatte)/)) { if (pagaAOre()) { const b = bustaOre(z, L.settimanaCorrente()); guidaParla(`Questa settimana hai ${testoOreDette(b.minuti)} di lavoro: ${eur(b.totale)}. Le stelle non si pagano a parte: sono dentro le tue ore. Il resto lo trovi in «I miei soldi»: l'icona dei soldi in alto.`); return; } const pr = L.premioSettimana(S.visti, S.controlli, S.pulizie, z, L.settimanaCorrente(), S.argon); guidaParla(pr.stato === "spento" ? "I soldi li trovi in «I miei soldi»: l'icona dei soldi in alto." : `Il salvadanaio di questa settimana ha ${eur(pr.stato === "pochi" ? pr.promesso : pr.euro)}. Gli altri soldi li trovi in: I miei soldi.`); return; }
   if (ha(/ (cosa devo|che devo|cosa faccio|che faccio|cosa c e|che c e|da fare|camere|giro|oggi|aiut)/)) { guida.chiesto++; const p = g.passo; guidaParla((guida.chiesto > 1 ? "Nessun problema, te lo ripeto con calma. " : "") + (p.k === "cam" || p.k === "fine" || p.k === "ricorda" ? p.testo : g.passi[0].testo)); return; }
   guidaParla("Ti posso dire solo le cose di oggi: le camere, cosa fare in ogni camera, le rifiniture e cosa ha detto Michele. Chiedimi: cosa devo fare? Oppure: e poi? Oppure il nome di una camera.");
 }
@@ -2986,6 +2988,7 @@ const MATITA = {
 // 1.55.1 (Michele: «i colori e le icone uguali a WhatsApp»): le icone libere di Google, Material Symbols (licenza Apache 2.0,
 // LICENSE-material-symbols.txt), nello stile di quelle di WhatsApp: un colore solo, piene. Non quelle di WhatsApp: sono sue.
 const MS = {"king_bed":"M80-494q0-25.9 17-43.95Q114-556 140-556h26v-144q0-24.75 17.63-42.38Q201.25-760 226-760h507q24.75 0 42.38 17.62Q793-724.75 793-700v144h27q24.75 0 42.38 17.62Q880-520.75 880-496v170q0 19-13.5 32.5T834-280l-17 69q-1.56 5.08-5.44 8.04Q807.67-200 803-200h-8q-4.67 0-8.56-2.96-3.88-2.96-5.44-8.04l-17-69H197l-18 69q-1.56 5.08-5.44 8.04Q169.67-200 165-200h-8q-4.67 0-8.56-2.96-3.88-2.96-5.44-8.04l-17-69q-19 0-32.5-13.5T80-326v-168Zm430-62h223v-144H510v144Zm-284 0h224v-144H226v144Z","single_bed":"M160-494q0-25.9 17-43.95Q194-556 220-556h26v-144q0-24.75 17.63-42.38Q281.25-760 306-760h347q24.75 0 42.38 17.62Q713-724.75 713-700v144h27q24.75 0 42.38 17.62Q800-520.75 800-496v170q0 19-13.5 32.5T754-280l-17 69q-1.56 5.08-5.44 8.04Q727.67-200 723-200h-8q-4.67 0-8.56-2.96-3.88-2.96-5.44-8.04l-17-69H277l-18 69q-1.56 5.08-5.44 8.04Q249.67-200 245-200h-8q-4.67 0-8.56-2.96-3.88-2.96-5.44-8.04l-17-69q-19 0-32.5-13.5T160-326v-168Zm350-62h143v-144H510v144Zm-204 0h144v-144H306v144Z","house":"M261-160q-24.75 0-42.37-17.63Q201-195.25 201-220v-332L99-475q-10.04 8-21.52 6.5T58-480q-8-10-6-22t12-20l380-290q8-6 17-9.5t19-3.5q10 0 19 3.5t17 9.5l142 108v-46q0-20.83 14.62-35.42Q687.24-800 708.12-800q20.88 0 35.38 14.58Q758-770.83 758-750v122l138 106q10 8 11.5 20t-6.5 22q-8 10-19.48 11.5T860-475l-102-78v333q0 24.75-17.62 42.37Q722.75-160 698-160h-68q-24.75 0-42.37-17.63Q570-195.25 570-220v-120q0-24.75-17.62-42.38Q534.75-400 510-400h-60q-24.75 0-42.37 17.62Q390-364.75 390-340v120q0 24.75-17.62 42.37Q354.75-160 330-160h-69Zm134-410h170q0-33-25.5-54.5T480-646q-34 0-59.5 21.34T395-570Z","stairs":"M407-383h73q12.75 0 21.38-8.63Q510-400.25 510-413v-103h73q12.75 0 21.38-8.63Q613-533.25 613-546v-104h67q12.75 0 21.38-8.68 8.62-8.67 8.62-21.5 0-12.82-8.62-21.32-8.63-8.5-21.38-8.5h-97q-12.75 0-21.37 8.62Q553-692.75 553-680v103h-73q-12.75 0-21.37 8.62Q450-559.75 450-547v103h-73q-12.75 0-21.37 8.62Q347-426.75 347-414v104h-67q-12.75 0-21.37 8.68-8.63 8.67-8.63 21.5 0 12.82 8.63 21.32 8.62 8.5 21.37 8.5h97q12.75 0 21.38-8.63Q407-267.25 407-280v-103ZM180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Z","potted_plant":"M317-80q-20 0-36.5-12.5T259-125l-52-205h546l-52 205q-5 20-21.5 32.5T643-80H317Zm163-561q5-88 67-150t149-83q4-1 7.5-.5t6.5 3.5q3 3 4 6.5t0 7.5q-17 79-71 138t-133 74v95h300q13 0 21.5 8.5T840-520v100q0 25-17.5 42.5T780-360H180q-25 0-42.5-17.5T120-420v-100q0-13 8.5-21.5T150-550h300v-95q-79-15-133-74t-71-138q-1-4 0-7.5t4-6.5q3-3 6.5-4t7.5 0q88 20 150 83t66 151Z","cleaning_bucket":"M333-40q-22.78 0-39.87-14.7Q276.04-69.39 273-92l-68-514q-2-13.6 6.5-23.8Q220-640 234-640h492q14 0 22.5 10.2T755-606L687-92q-3.04 22.61-20.13 37.3Q649.78-40 627-40H333Zm225-322.08q32-32.09 32-77.92v-40q0-12.75-8.68-21.38-8.67-8.62-21.5-8.62-12.82 0-21.32 8.62-8.5 8.63-8.5 21.38v40q0 21.25-14.32 35.62Q501.35-390 480.18-390q-21.18 0-35.68-14.38Q430-418.75 430-440v-40q0-12.75-8.68-21.38-8.67-8.62-21.5-8.62-12.82 0-21.32 8.62-8.5 8.63-8.5 21.38v40q0 45.83 32.12 77.92 32.12 32.08 78 32.08T558-362.08ZM600-700q-20 0-35-15t-15-35.5q0-20.5 15-35t35.5-14.5q20.5 0 35 14.58Q650-770.83 650-750q0 20-14.58 35-14.59 15-35.42 15Zm-200-40q-37 0-63.5-26.5t-26.5-64q0-37.5 26.5-63.5t64-26q37.5 0 63.5 26.1t26 63.9q0 37-26.1 63.5T400-740Z","star":"M480-269 294-157q-8 5-17 4.5t-16-5.5q-7-5-10.5-13t-1.5-18l49-212-164-143q-8-7-9.5-15.5t.5-16.5q2-8 9-13.5t17-6.5l217-19 84-200q4-9 12-13.5t16-4.5q8 0 16 4.5t12 13.5l84 200 217 19q10 1 17 6.5t9 13.5q2 8 .5 16.5T826-544L662-401l49 212q2 10-1.5 18T699-158q-7 5-16 5.5t-17-4.5L480-269Z","star_shine":"M788.5-362q12.5 0 21.5 9l63 64q9 9 9 21t-9 21q-9 9-21 9t-21-9l-64-63q-9-9-9-21.5t9-21.5q9-9 21.5-9ZM802-811.5q0 12.5-9 21.5l-63 63q-9 9-21.5 9t-21.5-9q-9-9-9-21.5t9-21.5l64-63q9-9 21-9t21 9q9 9 9 21.5ZM188.5-842q12.5 0 21.5 9l63 64q9 9 9 21t-9 21q-9 9-21 9t-21-9l-64-63q-9-9-9-21.5t9-21.5q9-9 21.5-9ZM202-331.5q0 12.5-9 21.5l-63 63q-9 9-21.5 9T87-247q-9-9-9-21t9-21l64-64q9-9 21-9t21 9q9 9 9 21.5ZM480-269 294-157q-8 5-17 4.5t-16-5.5q-7-5-10.5-13t-1.5-18l49-212-164-143q-8-7-9.5-15.5t.5-16.5q2-8 9-13.5t17-6.5l217-19 84-200q4-9 12-13.5t16-4.5q8 0 16 4.5t12 13.5l84 200 217 19q10 1 17 6.5t9 13.5q2 8 .5 16.5T826-544L662-401l49 212q2 10-1.5 18T699-158q-7 5-16 5.5t-17-4.5L480-269Z","campaign":"M850-450h-90q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h90q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5ZM677-274q8-10 19.83-12 11.82-2 22.17 6l73 54q10 8 12 19.83 2 11.82-6 22.17-8 10-19.83 12-11.82 2-22.17-6l-73-54q-10-8-12-19.83-2-11.82 6-22.17Zm115-460-70 53q-10.35 8-22.17 6Q688-677 680-687q-8-10-6-22t12-20l70-53q10.35-8 22.17-6Q790-786 798-776q8 10 6 22t-12 20ZM210-360h-70q-24.75 0-42.37-17.63Q80-395.25 80-420v-120q0-24.75 17.63-42.38Q115.25-600 140-600h180l155-93q15-9 30-.06 15 8.93 15 26.06v374q0 17.13-15 26.06-15 8.94-30-.06l-155-93h-50v130q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-130Zm350 14v-268q27 24 43.5 58.5T620-480q0 41-16.5 75.5T560-346Z","checklist":"m222-299 158-158q9-9 21-8.5t21.39 9.5q8.61 9 8.61 21t-9 21L243-235q-9 9-21 9t-21-9L101-335q-9-9-9-21t9-21q9-9 21-8.5t21 8.5l79 78Zm0-320 158-158q9-9 21-8.5t21.39 9.5q8.61 9 8.61 21t-9 21L243-555q-9 9-21 9t-21-9L101-655q-9-9-9-21t9-21q9-9 21-8.5t21 8.5l79 78Zm328 329q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h300q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H550Zm0-320q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h300q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H550Z","alarm":"M512-450v-160q0-13-8.5-21.5T482-640q-13 0-21.5 8.5T452-610v172q0 6 2 11t7 10l118 118q9 9 21 9t21-9q9-9 9-21t-9-21L512-450ZM339.5-110q-65.5-28-114-77t-77-114Q120-366 120-441q0-74 28.5-139.5t77-114.5q48.5-49 114-77T479-800q74 0 139.5 28T733-695q49 49 77 114.5T838-441q0 75-28 140t-77 114q-49 49-114.5 77T479-82q-74 0-139.5-28ZM71-688q-9-9-8.5-21t9.5-21l121-117q9-8 21.5-7.5T235-846q9 9 8.5 21t-9.5 21L113-687q-9 8-21.5 7.5T71-688Zm816 0q-8 8-20.5 8.5T845-687L724-804q-9-8-9.5-20.5T723-846q8-8 20.5-8.5T765-847l121 117q9 8 9.5 20.5T887-688Z","cleaning_services":"M180-40q-24.75 0-42.37-17.63Q120-75.25 120-100v-230q0-78.85 55.57-134.42Q231.15-520 310-520h60v-340q0-24.75 17.63-42.38Q405.25-920 430-920h100q24.75 0 42.38 17.62Q590-884.75 590-860v340h60q78.85 0 134.42 55.58Q840-408.85 840-330v230q0 24.75-17.62 42.37Q804.75-40 780-40H180Zm0-60h105v-130q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v130h105v-130q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v130h105v-130q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v130h105v-230q0-54.17-37.92-92.08Q704.17-460 650-460H310q-54.17 0-92.08 37.92Q180-384.17 180-330v230Z","mic":"M408-453.92q-29-30.91-29-75.08v-251q0-41.67 29.44-70.83Q437.88-880 479.94-880t71.56 29.17Q581-821.67 581-780v251q0 44.17-29 75.08Q523-423 480-423t-72-30.92ZM450-150v-106q-96-11-166.5-77.5T202-498q-2-12.85 6.59-21.93 8.6-9.07 21.5-9.07 12.91 0 21.41 9t10.5 22q12 81 74.71 132.5Q399.42-314 479.65-314q81.35 0 143.85-51.5T698-498q2-13 10.68-22 8.67-9 21.5-9 12.82 0 21.32 9.07 8.5 9.08 6.5 21.93-11 97-81 164t-167 78v106q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37Z","play_arrow":"M320-258v-450q0-14 9-22t21-8q4 0 8 1t8 3l354 226q7 5 10.5 11t3.5 14q0 8-3.5 14T720-458L366-232q-4 2-8 3t-8 1q-12 0-21-8t-9-22Z","done_all":"M91-445q-9-9-8.5-21.5T92-488q9-9 21.5-9t21.5 9l159 160 11 11 11 11q9 9 9 21t-9 21l-1 1q-9 9-21 9t-21-9L91-445Zm373 117 363-363q9-9 21.5-9t21.5 9q9 9 9 21.5t-9 21.5L485-263q-9 9-21 9t-21-9L261-445q-9-9-8.5-21.5T262-488q9-9 21.5-9t21.5 9l159 160Zm236-320L485-433q-9 9-21 8.5t-21-9.5q-9-9-9-21.5t9-21.5l214-214q9-9 21.5-9t21.5 9q9 9 9 21.5t-9 21.5Z","check":"m378-332 363-363q9-9 21.5-9t21.5 9q9 9 9 21.5t-9 21.5L399-267q-9 9-21 9t-21-9L175-449q-9-9-8.5-21.5T176-492q9-9 21.5-9t21.5 9l159 160Z","bed":"M80-230v-225q0-25 10-47t30-36v-116q0-45 30.5-75.5T226-760h180q22 0 41 10t33 27q14-17 32.5-27t40.5-10h180q45 0 76 30.5t31 75.5v116q20 14 30 36t10 47v225q0 13-8.5 21.5T850-200q-13 0-21.5-8.5T820-230v-50H140v50q0 13-8.5 21.5T110-200q-13 0-21.5-8.5T80-230Zm430-325h270v-99q0-20-13.5-33T733-700H550q-17 0-28.5 14T510-654v99Zm-330 0h270v-99q0-18-11.5-32T410-700H226q-19 0-32.5 13.5T180-654v99Zm-40 215h680v-115q0-17-11.5-28.5T780-495H180q-17 0-28.5 11.5T140-455v115Zm680 0H140h680Z","bed_fill":"M80-230v-225q0-25 10-47t30-36v-116q0-45 30.5-75.5T226-760h180q22 0 41 10t33 27q14-17 32.5-27t40.5-10h180q45 0 76 30.5t31 75.5v116q20 14 30 36t10 47v225q0 13-8.5 21.5T850-200q-13 0-21.5-8.5T820-230v-50H140v50q0 13-8.5 21.5T110-200q-13 0-21.5-8.5T80-230Zm430-325h270v-99q0-20-13.5-33T733-700H550q-17 0-28.5 14T510-654v99Zm-330 0h270v-99q0-18-11.5-32T410-700H226q-19 0-32.5 13.5T180-654v99Z","euro":"M600-120q-115 0-212.5-67.5T255-370H150q-13 0-21.5-8.5T120-400q0-13 8.5-21.5T150-430h93q-4-28-3.5-50t3.5-50h-93q-13 0-21.5-8.5T120-560q0-13 8.5-21.5T150-590h105q35-115 132.5-182.5T600-840q60 0 114.5 18.5T816-768q10 8 11 20t-8 21q-9 9-22 9.5t-24-7.5q-38-27-82-41t-91-14q-94 0-171.5 52.5T319-590h251q13 0 21.5 8.5T600-560q0 13-8.5 21.5T570-530H304q-5 27-5 50t5 50h266q13 0 21.5 8.5T600-400q0 13-8.5 21.5T570-370H319q32 85 109.5 137.5T600-180q45 0 89.5-13.5T773-235q11-8 24-7.5t22 9.5q9 9 8 21t-11 20q-43 32-99 52t-117 20Z","payments":"M540-420q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM220-280q-24.75 0-42.37-17.63Q160-315.25 160-340v-400q0-24.75 17.63-42.38Q195.25-800 220-800h640q24.75 0 42.38 17.62Q920-764.75 920-740v400q0 24.75-17.62 42.37Q884.75-280 860-280H220Zm100-60h440q0-42 29-71t71-29v-200q-42 0-71-29t-29-71H320q0 42-29 71t-71 29v200q42 0 71 29t29 71Zm450 180H100q-24.75 0-42.37-17.63Q40-195.25 40-220v-430q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v430h670q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5ZM220-340v-400 400Z","payments_fill":"M100-160q-24.75 0-42.37-17.63Q40-195.25 40-220v-430q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v430h670q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H100Zm120-120q-24.75 0-42.37-17.63Q160-315.25 160-340v-400q0-24.75 17.63-42.38Q195.25-800 220-800h640q24.75 0 42.38 17.62Q920-764.75 920-740v400q0 24.75-17.62 42.37Q884.75-280 860-280H220Zm100-60q0-42-29-71t-71-29v100h100Zm440 0h100v-100q-42 0-71 29t-29 71Zm-220-80q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM220-640q42 0 71-29t29-71H220v100Zm640 0v-100H760q0 42 29 71t71 29Z","fact_check":"M132-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h696q24 0 42 18t18 42v600q0 24-18 42t-42 18H132Zm0-60h696v-600H132v600Zm228-100q17 0 28.5-11.5T400-320q0-17-11.5-28.5T360-360H240q-17 0-28.5 11.5T200-320q0 17 11.5 28.5T240-280h120Zm222-193-29-29q-12-12-28-11.5T497-501q-11 12-11.5 28t11.5 28l64 64q9 9 21 9t21-9l149-149q12-12 12-28t-12-28q-12-12-28.5-12T695-586L582-473Zm-222 33q17 0 28.5-11.5T400-480q0-17-11.5-28.5T360-520H240q-17 0-28.5 11.5T200-480q0 17 11.5 28.5T240-440h120Zm0-160q17 0 28.5-11.5T400-640q0-17-11.5-28.5T360-680H240q-17 0-28.5 11.5T200-640q0 17 11.5 28.5T240-600h120ZM132-180v-600 600Z","fact_check_fill":"M132-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h696q24 0 42 18t18 42v600q0 24-18 42t-42 18H132Zm228-160q17 0 28.5-11.5T400-320q0-17-11.5-28.5T360-360H240q-17 0-28.5 11.5T200-320q0 17 11.5 28.5T240-280h120Zm222-193-29-29q-12-12-28-11.5T497-501q-11 12-11.5 28t11.5 28l64 64q9 9 21 9t21-9l149-149q12-12 12-28t-12-28q-12-12-28.5-12T695-586L582-473Zm-222 33q17 0 28.5-11.5T400-480q0-17-11.5-28.5T360-520H240q-17 0-28.5 11.5T200-480q0 17 11.5 28.5T240-440h120Zm0-160q17 0 28.5-11.5T400-640q0-17-11.5-28.5T360-680H240q-17 0-28.5 11.5T200-640q0 17 11.5 28.5T240-600h120Z"};
+MS.send = "M814-452 162-178q-15 6-28.5-2.5T120-205v-550q0-16 13.5-24.5T162-782l652 274q18 8 18 28t-18 28ZM180-253l544-227-544-230v168l242 62-242 60v167Zm0 0v-457 457Z"; MS.description = "M349-250h262q12.75 0 21.38-8.68 8.62-8.67 8.62-21.5 0-12.82-8.62-21.32-8.63-8.5-21.38-8.5H349q-12.75 0-21.37 8.68-8.63 8.67-8.63 21.5 0 12.82 8.63 21.32 8.62 8.5 21.37 8.5Zm0-170h262q12.75 0 21.38-8.68 8.62-8.67 8.62-21.5 0-12.82-8.62-21.32-8.63-8.5-21.38-8.5H349q-12.75 0-21.37 8.68-8.63 8.67-8.63 21.5 0 12.82 8.63 21.32 8.62 8.5 21.37 8.5ZM220-80q-24 0-42-18t-18-42v-680q0-24 18-42t42-18h336q12.44 0 23.72 5T599-862l183 183q8 8 13 19.28 5 11.28 5 23.72v496q0 24-18 42t-42 18H220Zm331-584v-156H220v680h520v-494H581q-12.75 0-21.37-8.63Q551-651.25 551-664ZM220-820v186-186 680-680Z";   // 1.55.7
 MS.attach_file = "M728-326q0 103-72.18 174.5-72.17 71.5-175 71.5Q378-80 305.5-151.5T233-326v-380q0-72.5 51.5-123.25T408-880q72 0 123.5 50.75T583-706v360q0 42-30 72t-72.5 30q-42.5 0-72.5-29.67-30-29.68-30-72.33v-340q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v340q0 17 12.5 29.5t30.64 12.5q18.14 0 30-12.5T523-346v-360q0-48-33.5-81t-81.71-33q-48.21 0-81.5 33.06T293-706v380q0 78 54.97 132T481-140q77.92 0 132.46-54Q668-248 668-326v-360q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v360Z"; MS.photo_camera = "M479.5-267q72.5 0 121.5-49t49-121.5q0-72.5-49-121T479.5-607q-72.5 0-121 48.5t-48.5 121q0 72.5 48.5 121.5t121 49Zm0-60q-47.5 0-78.5-31.5t-31-79q0-47.5 31-78.5t78.5-31q47.5 0 79 31t31.5 78.5q0 47.5-31.5 79t-79 31.5ZM140-120q-24 0-42-18t-18-42v-513q0-23 18-41.5t42-18.5h147l55-66q8-11 20-16t26-5h184q14 0 26 5t20 16l55 66h147q23 0 41.5 18.5T880-693v513q0 24-18.5 42T820-120H140Zm0-60h680v-513H645l-73-87H388l-73 87H140v513Zm340-257Z";   // 1.55.5
 MS.arrow_back = "m274-450 227 227q9 9 9 21t-9 21q-9 9-21 9t-21-9L181-459q-5-5-7-10t-2-11q0-6 2-11t7-10l278-278q9-9 21-9t21 9q9 9 9 21t-9 21L274-510h496q13 0 21.5 8.5T800-480q0 13-8.5 21.5T770-450H274Z"; MS.mood = "M626-533q22.5 0 38.25-15.5T680-587q0-23-15.75-38.5T626-641q-22.5 0-38.25 15.5T572-587q0 23 15.75 38.5T626-533Zm-292 0q22.5 0 38.25-15.5T388-587q0-23-15.75-38.5T334-641q-22.5 0-38.25 15.5T280-587q0 23 15.75 38.5T334-533Zm-10 421.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM480-480Zm241 241q99-99 99-241t-99-241q-99-99-241-99t-241 99q-99 99-99 241t99 241q99 99 241 99t241-99Zm-241.5-22q57.5 0 106-26t78.5-72.4q6-11.6-.75-22.6-6.75-11-20.25-11H316.92q-13.92 0-20.42 11-6.5 11-.5 22.6 30 46.4 78.5 72.4 48.5 26 105 26Z";   // 1.55.4
 const msSvg = (nome, cls = "") => `<svg class="ms${cls ? " " + cls : ""}" viewBox="0 -960 960 960" aria-hidden="true"><path d="${MS[nome] || ""}"/></svg>`;
@@ -4064,16 +4067,258 @@ function guidaCompagna() {
   if (c.hidden) { c.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => { c.classList.add("su"); try { guidaNuvola(); } catch (e) {} })); } else c.classList.add("su");
   guidaMic();
 }
+// ============================================================================
+//  1.55.7 LA CHAT VERA CON LA GOVERNANTE (Michele, 5/11: «sotto, dove c'è scritto Messaggio, deve poter mettere veramente
+//  le emoticon, gli allegati, usare la fotocamera, deve poter scrivere con Sofia, parlarci, chiederle delle cose, e Sofia
+//  le deve poter rispondere»). La chat della giornata resta sul telefono (solo quel giorno): i messaggi della signora a
+//  destra in verde chiaro con le due spunte, le risposte della governante a sinistra. Scritto → risponde scritto (prima
+//  «sta scrivendo…»); col microfono → risponde a voce (ed esce lei, senza più la nuvoletta) e la domanda e la risposta
+//  restano scritte nella chat. Quello che non sa, le foto e i file li manda a Michele su Telegram, ma solo se la signora
+//  tocca «Sì».
+// ============================================================================
+const CHAT_CHIAVE = "ricci_chat_signora";
+const FACCINE = ["😊", "😂", "🙏", "👍", "👌", "❤️", "😍", "😘", "😅", "😢", "😮", "😡", "👏", "💪", "🙌", "🤞", "✅", "❌", "⚠️", "❓", "🧹", "🧽", "🧺", "🧴", "🛏️", "🚿", "🚽", "🪣", "🗑️", "🔑", "🚪", "🪟", "💡", "🔌", "🌸", "☀️", "🌙", "⏰", "📷", "🛒"];
+let chatBozza = "", chatMem = null, chatScrivendo = 0;
+const chatFile = new Map();   // i file (non le foto) aspettano qui il «Sì» per Michele: sul telefono non si salvano
+const FOTO_OK = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+function chatChiave() { return `${(S.utente && S.utente.zona) || ""}|${L.oggiISO()}`; }
+// la chat di oggi: in memoria (si legge dal telefono una volta sola); quella dei giorni prima si butta
+function chatGiorno() {
+  const k = chatChiave();
+  if (!chatMem || chatMem.k !== k) {
+    let m = [];
+    try { const x = JSON.parse(localStorage.getItem(CHAT_CHIAVE) || "{}"); if (x && x.k === k && Array.isArray(x.m)) m = x.m; else if (x && x.k) localStorage.removeItem(CHAT_CHIAVE); } catch (e) {}
+    chatMem = { k, m };
+  }
+  return chatMem.m.slice();
+}
+function chatSalva(m) {
+  let lista = m.slice(-60);
+  for (let i = 0; i < 10; i++) {
+    try { localStorage.setItem(CHAT_CHIAVE, JSON.stringify({ k: chatChiave(), m: lista })); break; }
+    catch (e) {   // il telefono è pieno: via le foto più vecchie (resta scritto «📷 Foto»), poi i messaggi più vecchi
+      const j = lista.findIndex(x => x.foto);
+      if (j >= 0) { lista = lista.map((x, n) => n === j ? { ...x, foto: "", fotoVia: true } : x); continue; }
+      if (lista.length > 20) { lista = lista.slice(-20); continue; }
+      break;
+    }
+  }
+  chatMem = { k: chatChiave(), m: lista };
+}
+function chatAggiungi(x) { const m = chatGiorno(); const msg = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, ora: new Date().toISOString(), ...x }; m.push(msg); chatSalva(m); return msg; }
+function chatCambia(id, patch) { chatSalva(chatGiorno().map(x => x.id === id ? { ...x, ...patch } : x)); }
+function chatInFondo() { requestAnimationFrame(() => { const y = document.documentElement.scrollHeight; try { window.scrollTo({ top: y, behavior: "smooth" }); } catch (e) { window.scrollTo(0, y); } }); }
+function chatVoce() { try { return !!(argonLei() && S.vista === "oggi" && document.querySelector(".lg-pagina")); } catch (e) { return false; } }
+// il saluto in cima, sempre, secondo l'ora del telefono: Buongiorno (fino alle 13), Buon pomeriggio (fino alle 18), Buonasera
+function bollaSaluto() {
+  const s = saluto(), em = s === "Buongiorno" ? "☀️" : s === "Buon pomeriggio" ? "🌤️" : "🌙";
+  return bollaWa({ cls: "wa-saluto", primo: true, aria: "La governante ti saluta", testo: `${s} ${nomeSignora()}! ${em}` });
+}
+// il riassunto del piano comincia spesso con «Buongiorno Selena,»: il saluto giusto c'è già in cima
+function senzaSaluto(s) {
+  const t = String(s || ""), m = t.match(/^\s*(?:buongiorno|buon giorno|buon pomeriggio|buonasera|buona sera|ciao|salve)\b[\s,!.:;]*/i);
+  if (!m) return t;
+  let r = t.slice(m[0].length);
+  const n = r.match(/^(?:cara\s+)?[A-ZÀ-Ý][\p{L}'’]*(?:[\s,!.:;]+|$)/u);   // il nome: «Selena,»
+  if (n && (/[,!.:;]/.test(n[0]) || PAROLE.norm(n[0]) === PAROLE.norm(nomeSignora()))) r = r.slice(n[0].length);
+  r = r.trim();
+  return r ? r.charAt(0).toUpperCase() + r.slice(1) : t;
+}
+function bollaChat(x, primo) {
+  const ora = x.ora ? esc(L.oraBreve(x.ora)) : "";
+  if (x.da === "io") {
+    const meta = `<span class="wa-meta"><time class="wa-ora">${ora}</time><span class="wa-spunte" aria-hidden="true">${msSvg("done_all")}</span></span>`;
+    const foto = x.foto && FOTO_OK.test(x.foto) ? `<img class="wa-foto" src="${x.foto}" alt="La foto che hai mandato" decoding="async">` : x.fotoVia ? `<span class="wa-file"><span aria-hidden="true">📷</span><span>Foto</span></span>` : "";
+    const file = x.file ? `<span class="wa-file">${msSvg("description")}<span>${esc(x.file.nome || "File")}</span></span>` : "";
+    return `<div class="wa-mio${primo ? " primo" : ""}" data-chat-id="${esc(x.id)}"><div class="wa-bolla wa-bolla-mia${foto ? " con-foto" : ""}">${foto}${file}<p class="wa-testo${x.testo ? "" : " wa-solo-ora"}">${esc(x.testo || "")}${meta}</p></div></div>`;
+  }
+  const tasti = (x.tasti || []).length ? `<div class="wa-tasti">${x.tasti.map(t => `<button type="button" class="wa-tasto" data-chat-tasto="${esc(t.a)}" data-chat-msg="${esc(x.id)}">${esc(t.t)}</button>`).join("")}</div>` : "";
+  return `<div class="wa-msg wa-sua${primo ? " primo" : ""}" data-chat-id="${esc(x.id)}"><div class="wa-bolla"><p class="wa-testo">${esc(x.testo || "")}<span class="wa-meta"><time class="wa-ora">${ora}</time></span></p></div>${tasti}</div>`;
+}
+function chatHtml() {
+  const m = chatGiorno(); if (!m.length && !guida.scrive) return "";
+  const righe = m.map((x, i) => bollaChat(x, !m[i - 1] || m[i - 1].da !== x.da)).join("");
+  const scrive = guida.scrive ? `<div class="wa-msg wa-sua${!m.length || m[m.length - 1].da !== "lei" ? " primo" : ""}"><div class="wa-bolla wa-scrive" role="status" aria-label="La governante sta scrivendo"><i></i><i></i><i></i></div></div>` : "";
+  return `<section class="wa-conversa" aria-label="La chat con la governante">${righe}${scrive}</section>`;
+}
+// cosa risponde la governante: i saluti, i grazie, le cose che mancano o non vanno (le scrive a Michele, se lei vuole);
+// il resto come al microfono (le cose di oggi); se non lo sa, chiede se scriverlo a Michele
+function rispostaSofia(frasi) {
+  const prime = (frasi || []).map(f => String(f || "")).filter(Boolean), tutte = [...prime, ...prime.map(f => f.replace(/['’]/g, " "))];
+  // le parole della prima frase (col microfono le altre sono solo i «forse» del telefono): servono a capire saluti e richieste
+  const t = " " + PAROLE.norm(String(prime[0] || "").replace(/['’]/g, " ")) + " ", parole = t.trim().split(/\s+/).filter(Boolean).length, nome = nomeSignora();
+  if (!t.trim()) return { testo: "😊" };
+  if (/^ (ciao|buongiorno|buon giorno|buonasera|buona sera|buon pomeriggio|salve|ehi|hey) /.test(t) && parole <= 4) return { testo: `${saluto()} ${nome}! 😊 Dimmi pure.` };
+  if (/^ (grazie|ti ringrazio) /.test(t) && parole <= 4) return { testo: "Prego! 😊" };
+  if (/^ (ok|okay|va bene|perfetto|d accordo|bene|capito|ho capito) /.test(t) && parole <= 3) return { testo: "👍" };
+  if (/ (sono arrivat[ao]|arrivata|eccomi|sono qui) /.test(t) && parole <= 5) return { testo: document.querySelector("#app [data-turno-inizio]") ? "Brava! Tocca il tasto verde «Sono arrivata» qui sopra: così parte l'orario." : "Brava, buon lavoro! 💪" };
+  if (/ (vado via|me ne vado|sto andando|posso andare) /.test(t)) return { testo: "Prima di andare tocca HO FINITO: ti rileggo le rifiniture e si ferma l'orario." };
+  const domanda = /^ (quant[oaie]|cosa|che|qual[ei]?|dove|come|quando|perche|chi) /.test(t);
+  const perMichele = { testo: "Va bene 👍 Vuoi che lo scrivo a Michele?", chiedi: true };
+  // «dillo a Michele», «chiedi a Michele…», «avvisa Michele…»
+  if (/ michele /.test(t) && (/ (scriv\w*|dill[oa]|dici|digli|avvis\w*|chiedi\w*|chiedere|chiam\w*|fai sapere|fagli sapere|riferisci) /.test(t) || / di a michele /.test(t))) return perMichele;
+  // una cosa che manca o che non va, un ritardo, un problema
+  if (!domanda && !/ (ho|abbiamo|hai) finit/.test(t) && / (manca|mancano|e finit[oaie]|sono finit[ie]|finit[oaie] (il|lo|la|i|gli|le|l)|rott[oaie]|guast[oaie]|non funziona|non va|perde|intasat[oaie]|bruciat[oaie]|allagat[oaie]|macchiat[oaie]|non c e piu|non ce piu|non ci sono piu|ritardo|tardi|non vengo|non posso venire|sto male|non sto bene|problema|emergenza|urgente) /.test(t)) return perMichele;
+  if (/ (guadagn\w*|stipendi\w*|pagat[oa]|pagamento|euro) /.test(t)) tutte.push("soldi");   // le parole dei soldi che il microfono non conosceva
+  const detti = []; guida.cattura = detti;
+  try { guidaRispondi(tutte); } catch (e) { console.warn(e); } finally { guida.cattura = null; }
+  const r = detti.filter(Boolean)[0] || "";
+  if (!r || /^Ti posso dire solo le cose di oggi/.test(r)) return domanda || /\?/.test(prime[0] || "") ? { testo: "Questo non lo so 🙂 Vuoi che lo scrivo a Michele?", chiedi: true } : perMichele;
+  return { testo: r };
+}
+const TASTI_CHIEDI = [{ t: "Sì, scrivilo a Michele", a: "chiedi" }, { t: "No, grazie", a: "no" }];
+function chatRisposta(r, domanda, voce) {
+  const m = chatAggiungi({ da: "lei", testo: r.testo, ...(r.chiedi ? { tasti: TASTI_CHIEDI, domanda } : {}) });
+  if (voce) { guida.dalMic = true; guidaParla(r.testo); }
+  return m;
+}
+// «sta scrivendo…» (in alto e nella chat) e poi la risposta
+function chatScrive(fai, ms = 900) {
+  chatScrivendo++; guida.scrive = true; disegna(); chatInFondo();
+  setTimeout(() => { chatScrivendo = Math.max(0, chatScrivendo - 1); guida.scrive = chatScrivendo > 0; try { fai(); } catch (e) { console.warn(e); } disegna(); chatInFondo(); }, ms);
+}
+function chatManda(testo) {
+  testo = String(testo || "").trim(); if (!testo) return;
+  chatAggiungi({ da: "io", testo });
+  chatScrive(() => chatRisposta(rispostaSofia([testo]), testo, false));
+}
+// col microfono: quello che ha detto va nella chat, e la governante risponde a voce (e scritto)
+function chatDaVoce(alt) {
+  const testo = String((alt || [])[0] || "").trim(); if (!testo) { guidaRispondi(alt); return; }
+  chatAggiungi({ da: "io", testo: maiuscola(testo), voce: true });
+  chatRisposta(rispostaSofia(alt), testo, true); disegna(); if (!document.querySelector(".sheet")) chatInFondo();
+}
+function chatTestoCampo() { const ta = document.querySelector("#sgMic textarea"); return ta ? ta.value.trim() : ""; }
+function chatPulisciCampo() { const ta = document.querySelector("#sgMic textarea"); chatBozza = ""; if (ta) { ta.value = ""; ta.dispatchEvent(new Event("input")); } }
+function chatFotoPiccola(file, lato, q) {
+  return new Promise((ok, ko) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { try { const k = Math.min(1, lato / Math.max(img.naturalWidth, img.naturalHeight)); const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k)); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c.toDataURL("image/jpeg", q)); } catch (e) { URL.revokeObjectURL(url); ko(e); } };
+    img.onerror = (e) => { URL.revokeObjectURL(url); ko(e); };
+    img.src = url;
+  });
+}
+function datiInBlob(u) { const [testa, dati] = String(u).split(","); const tipo = (testa.match(/data:([^;]+)/) || [])[1] || "image/jpeg"; const bin = atob(dati || ""); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type: tipo }); }
+// la graffetta (una foto, un video o un file) e la macchina fotografica: va nella chat; la governante chiede se mandarla a
+// Michele (la foto resta sul telefono, rimpicciolita; il video o il file solo finché l'app è aperta)
+async function chatAllega(file) {
+  if (!file) return;
+  const testo = chatTestoCampo();
+  if (/^image\//.test(file.type || "") || (!file.type && /\.(jpe?g|png|webp)$/i.test(file.name || ""))) {
+    let foto = ""; try { foto = await chatFotoPiccola(file, 1280, 0.75); } catch (e) {}
+    if (!foto) { toast("Questa foto non si apre: prova con la macchina fotografica"); return; }
+    const io = chatAggiungi({ da: "io", foto, testo, nomeFile: `${String(file.name || "foto").replace(/\.[^.]+$/, "") || "foto"}.jpg` }); chatPulisciCampo();
+    chatScrive(() => chatAggiungi({ da: "lei", testo: "Ho visto la foto 📷 Vuoi che la mando a Michele?", tasti: [{ t: "Sì, mandala a Michele", a: "foto" }, { t: "No, grazie", a: "no" }], rif: io.id }));
+    return;
+  }
+  if (file.size > 45 * 1024 * 1024) { toast("È troppo grande: mandalo tu a Michele su WhatsApp"); return; }
+  const video = /^video\//.test(file.type || "");
+  const io = chatAggiungi({ da: "io", file: { nome: file.name || (video ? "video" : "file"), tipo: file.type || "" }, testo }); chatFile.set(io.id, file); chatPulisciCampo();
+  chatScrive(() => chatAggiungi({ da: "lei", testo: video ? "Ho visto il video 🎬 Vuoi che lo mando a Michele?" : `Ho ricevuto «${file.name || "il file"}» 📄 Vuoi che lo mando a Michele?`, tasti: [{ t: "Sì, mandalo a Michele", a: "file" }, { t: "No, grazie", a: "no" }], rif: io.id }));
+}
+async function inviaTelegramFile(blob, nome, didascalia, foto) {
+  const a = S.avvisi, dove = a && a.chatMio; if (!a || !a.token || !dove || !blob) return false;
+  try {
+    const fd = new FormData(); fd.append("chat_id", dove); fd.append(foto ? "photo" : "document", blob, nome); if (didascalia) fd.append("caption", String(didascalia).slice(0, 1000));
+    const r = await fetch(`https://api.telegram.org/bot${encodeURIComponent(a.token)}/${foto ? "sendPhoto" : "sendDocument"}`, { method: "POST", body: fd });
+    const j = await r.json().catch(() => ({})); if (!j.ok) console.warn("telegram", j); return !!j.ok;
+  } catch (e) { console.warn("telegram", e); return false; }
+}
+// i tasti sotto le risposte (come i messaggi con le risposte rapide): la scelta diventa un suo messaggio
+async function chatTasto(azione, id) {
+  const m = chatGiorno(), x = m.find(y => y.id === id); if (!x || !(x.tasti || []).length) return;
+  const scelto = x.tasti.find(t => t.a === azione); chatCambia(id, { tasti: [] });
+  chatAggiungi({ da: "io", testo: scelto ? scelto.t : "No, grazie" });
+  if (azione === "no") { chatFile.delete(x.rif); chatScrive(() => chatAggiungi({ da: "lei", testo: "Va bene 👍" }), 600); return; }
+  chatScrivendo++; guida.scrive = true; disegna(); chatInFondo();
+  const chi = SIG(S.utente.zona), quando = L.oraBreve(new Date().toISOString()), io = m.find(y => y.id === x.rif) || {};
+  let fatto = false;
+  try {
+    if (azione === "chiedi") fatto = await inviaTelegram(`💬 ${chi} scrive alla governante (alle ${quando}): «${x.domanda || ""}»`, null, { aMe: true });
+    else if (azione === "foto" && io.foto) fatto = await inviaTelegramFile(datiInBlob(io.foto), io.nomeFile || "foto.jpg", `📷 ${chi} ha mandato una foto alla governante (alle ${quando})${io.testo ? ": " + io.testo : ""}`, true);
+    else if (azione === "file" && chatFile.has(io.id)) { const f = chatFile.get(io.id); fatto = await inviaTelegramFile(f, f.name || "file", `📄 ${chi} ha mandato un file alla governante (alle ${quando})${io.testo ? ": " + io.testo : ""}`, false); if (fatto) chatFile.delete(io.id); }
+  } catch (e) { fatto = false; }
+  chatScrivendo = Math.max(0, chatScrivendo - 1); guida.scrive = chatScrivendo > 0;
+  const ok = { chiedi: "Fatto ✓ L'ho scritto a Michele: ti risponde lui.", foto: "Fatto ✓ L'ho mandata a Michele.", file: "Fatto ✓ L'ho mandato a Michele." }[azione];
+  const ko = { chiedi: "Non ci sono riuscita 😕 Scrivilo tu a Michele su WhatsApp.", foto: "Non ci sono riuscita 😕 Mandala tu a Michele su WhatsApp.", file: "Non ci sono riuscita 😕 Mandalo tu a Michele su WhatsApp." }[azione];
+  chatAggiungi({ da: "lei", testo: fatto ? ok : ko });
+  disegna(); chatInFondo();
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t) return;
+  const b = t.closest("[data-chat-tasto]");
+  if (b) { e.preventDefault(); e.stopPropagation(); chatTasto(b.dataset.chatTasto, b.dataset.chatMsg); return; }
+  const p = document.getElementById("waFaccine"); if (p && !p.hidden && !t.closest("#sgMic")) chatFaccine(false);   // toccando fuori si chiudono le faccine
+}, true);
+// le faccine: si aprono sopra la barra (al posto della tastiera); toccata, la faccina va nel testo
+function chatFaccine(vuoi) {
+  const d = document.getElementById("sgMic");
+  let p = document.getElementById("waFaccine");
+  const apri = (vuoi === undefined ? !(p && !p.hidden) : !!vuoi) && !!d && d.classList.contains("lg-mic") && !d.hidden;
+  const tasto = d && d.querySelector("[data-chat='faccine']"); if (tasto) tasto.setAttribute("aria-expanded", apri ? "true" : "false");
+  if (!apri) { if (p) p.hidden = true; document.body.classList.remove("con-faccine"); return; }
+  if (p && p.parentNode !== d) { p.remove(); p = null; }
+  if (!p) {
+    p = document.createElement("div"); p.id = "waFaccine"; p.className = "wa-faccine"; p.setAttribute("role", "dialog"); p.setAttribute("aria-label", "Faccine");
+    p.innerHTML = FACCINE.map(f => `<button type="button" data-faccina="${f}" aria-label="${f}">${f}</button>`).join("");
+    p.addEventListener("mousedown", (e) => e.preventDefault());   // la tastiera non si apre
+    p.onclick = (e) => {
+      const b = e.target.closest("[data-faccina]"); if (!b) return; e.preventDefault(); e.stopPropagation();
+      const ta = document.querySelector("#sgMic textarea"); if (!ta) return;
+      const s = typeof ta.selectionStart === "number" ? ta.selectionStart : ta.value.length, f = typeof ta.selectionEnd === "number" ? ta.selectionEnd : s;
+      ta.value = ta.value.slice(0, s) + b.dataset.faccina + ta.value.slice(f); const k = s + b.dataset.faccina.length; try { ta.setSelectionRange(k, k); } catch (er) {}
+      ta.dispatchEvent(new Event("input"));
+    };
+    d.appendChild(p);
+  }
+  try { const ta = d.querySelector("textarea"); if (ta && document.activeElement === ta) ta.blur(); } catch (e) {}
+  p.hidden = false; document.body.classList.add("con-faccine");
+}
+// quanto è alta la barra per scrivere (quando il testo va a capo cresce): HO FINITO fisso e il fondo della pagina stanno sopra
+function compositoreAlto(d) { try { if (d && !d.hidden) { const h = Math.round(d.getBoundingClientRect().height); if (h > 0) document.documentElement.style.setProperty("--alto-scrivi", h + "px"); } } catch (e) {} }
+// con la tastiera aperta la barra sta sopra la tastiera (i telefoni che non rimpiccioliscono la pagina: iPhone)
+function compositoreSu() {
+  const d = document.getElementById("sgMic"), vv = window.visualViewport; if (!d || !vv || !d.classList.contains("lg-mic")) return;
+  const giu = Math.round((window.innerHeight || 0) - vv.height - vv.offsetTop);
+  const v = giu > 60 ? giu + "px" : ""; if (d.style.bottom !== v) d.style.bottom = v;
+}
+// e sui telefoni Android la pagina si accorcia sopra la tastiera, come in WhatsApp: solo sulla pagina delle signore (le pagine
+// della gestione restano come sono)
+function tastieraSopra(si) {
+  try { const m = document.querySelector('meta[name="viewport"]'); if (!m) return; const c = m.getAttribute("content") || "", base = c.replace(/\s*,\s*interactive-widget=[a-z-]+/g, ""), v = si ? base + ",interactive-widget=resizes-content" : base; if (v !== c) m.setAttribute("content", v); } catch (e) {}
+}
+try { if (window.visualViewport) { window.visualViewport.addEventListener("resize", compositoreSu); window.visualViewport.addEventListener("scroll", compositoreSu); } } catch (e) {}
+// la barra per scrivere vera: le faccine, il testo, la graffetta, la macchina fotografica; il tondo è il microfono, e
+// quando c'è del testo diventa la freccia per mandare (come in WhatsApp)
+function compositore() {
+  const d = document.createElement("div"); d.id = "sgMic"; d.className = "sg-mic lg-mic"; d.dataset.lg = "1"; d.setAttribute("role", "group"); d.setAttribute("aria-label", "Scrivi alla governante");
+  d.innerHTML = `<div class="lg-mic-campo"><button type="button" class="lg-mic-emo" data-chat="faccine" aria-label="Faccine" aria-expanded="false">${msSvg("mood")}</button><textarea class="lg-mic-t" rows="1" placeholder="Messaggio" aria-label="Scrivi un messaggio alla governante" enterkeyhint="send" autocomplete="off" autocapitalize="sentences"></textarea><span class="lg-mic-dx"><label class="lg-mic-b" aria-label="Allega una foto, un video o un file">${msSvg("attach_file")}<input type="file" accept="image/*,video/*,application/pdf" data-chat="allega" hidden></label><label class="lg-mic-b lg-mic-cam" aria-label="Fai una foto">${msSvg("photo_camera")}<input type="file" accept="image/*" capture="environment" data-chat="fotocamera" hidden></label></span></div><button type="button" class="lg-mic-ico" data-chat="tondo" aria-label="Parla con la governante"><span class="lg-mic-m">${MIC_WA}</span>${msSvg("send", "lg-mic-manda")}</button>`;
+  const ta = d.querySelector("textarea"), tondo = d.querySelector("[data-chat='tondo']");
+  const aggiorna = () => { const c = !!ta.value.trim(); d.classList.toggle("con-testo", c); tondo.setAttribute("aria-label", c ? "Manda il messaggio" : "Parla con la governante"); ta.style.height = "auto"; ta.style.height = Math.min(Math.max(ta.scrollHeight, 50), 134) + "px"; chatBozza = ta.value; compositoreAlto(d); };
+  const manda = () => { const t = ta.value.trim(); if (!t) return; ta.value = ""; aggiorna(); chatFaccine(false); chatManda(t); };
+  ta.value = chatBozza; ta.addEventListener("input", aggiorna);
+  ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); manda(); } });
+  ta.addEventListener("beforeinput", (e) => { if (e.inputType === "insertLineBreak" || e.inputType === "insertParagraph") { e.preventDefault(); manda(); } });   // l'invio della tastiera del telefono
+  ta.addEventListener("focus", () => { chatFaccine(false); if (chatGiorno().length) setTimeout(chatInFondo, 350); });
+  tondo.addEventListener("mousedown", (e) => { if (ta.value.trim()) e.preventDefault(); });   // mandando, la tastiera resta aperta
+  tondo.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (ta.value.trim()) manda(); else { chatFaccine(false); compagnaMic(); } };
+  d.querySelector("[data-chat='faccine']").onclick = (e) => { e.preventDefault(); e.stopPropagation(); chatFaccine(); };
+  d.querySelectorAll("input[type=file]").forEach(inp => { inp.onchange = () => { const f = inp.files && inp.files[0]; inp.value = ""; if (f) chatAllega(f); }; });
+  setTimeout(() => { aggiorna(); compositoreSu(); }, 0);
+  return d;
+}
 function guidaMic() {
   let b = document.getElementById("sgMic");
   const vuoi = micVuole();
   document.body.classList.toggle("con-mic", vuoi);
   const nuovo = !!document.querySelector(".lg-pagina") && !document.querySelector(".sheet");   // 1.54.0: sulla pagina «Chiedi alla governante»; nella camera aperta il tondo di prima
   document.body.classList.toggle("con-lg-mic", nuovo && (vuoi || compagnaVuole()));   // 1.55.0: sta nella barra in basso, a destra
-  if (!vuoi) { if (b) b.hidden = true; return; }
+  tastieraSopra(!!document.querySelector(".lg-pagina"));   // 1.55.7: la barra per scrivere sopra la tastiera (Android)
+  if (!vuoi) { if (b) b.hidden = true; chatFaccine(false); return; }
   if (b && (b.dataset.lg || "") !== (nuovo ? "1" : "")) { b.remove(); b = null; }
-  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = nuovo ? "sg-mic lg-mic" : "sg-mic"; b.dataset.lg = nuovo ? "1" : ""; b.innerHTML = nuovo ? `<span class="lg-mic-campo"><span class="lg-mic-emo" aria-hidden="true">${msSvg("mood")}</span><span class="lg-mic-t">Messaggio</span><span class="lg-mic-dx" aria-hidden="true">${msSvg("attach_file")}${msSvg("photo_camera")}</span></span><span class="lg-mic-ico">${MIC_WA}</span>` : `${MIC_WA}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
-  b.setAttribute("aria-label", nuovo ? "Chiedi alla governante: tocca e parla" : `Parla con ${nomeGov()}: tocca il microfono e chiedi`);
+  if (!b && nuovo) { b = compositore(); document.body.appendChild(b); }   // 1.55.7: la barra per scrivere vera (faccine, graffetta, macchina fotografica, testo, microfono)
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = "sg-mic"; b.dataset.lg = ""; b.innerHTML = `${MIC_WA}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
+  b.setAttribute("aria-label", nuovo ? "Scrivi alla governante" : `Parla con ${nomeGov()}: tocca il microfono e chiedi`);
   b.hidden = false;
 }
 try { window.addEventListener("scroll", () => { try { guidaCompagna(); guidaNuvola(); } catch (e) {} }, { passive: true }); } catch (e) {}
@@ -4167,9 +4412,9 @@ function bollaWa(o) {
   return `<div class="wa-msg${o.cls ? " " + o.cls : ""}${o.primo ? " primo" : ""}" role="group"${o.aria ? ` aria-label="${esc(o.aria)}"` : ""}><div class="wa-bolla">${o.titolo || ""}${o.testo ? `<p class="wa-testo">${esc(o.testo)}${meta}</p>` : meta}${o.dentro || ""}</div>${voce}</div>`;
 }
 // il primo messaggio: quello che scrive Michele per la giornata (se quel giorno non c'è, non c'è)
-function cardGovernante(giorno, anteprima) {
+function cardGovernante(giorno, anteprima, primo = true) {
   const msg = messaggioDelGiorno(giorno); if (!msg) return "";
-  return bollaWa({ cls: "wa-gov", primo: true, aria: "La governante ti dice", testo: msg.testo, detto: `La governante ti dice: ${msg.testo}`, etichetta: "Ascolta quello che dice la governante", ora: oraMessaggio(msg.ora, giorno) });
+  return bollaWa({ cls: "wa-gov", primo, aria: "La governante ti dice", testo: msg.testo, detto: `La governante ti dice: ${msg.testo}`, etichetta: "Ascolta quello che dice la governante", ora: oraMessaggio(msg.ora, giorno) });
 }
 // il secondo: cosa devi fare oggi (le parole di Sofia per la giornata); sotto il tasto «Sono arrivata» o l'orario che corre
 function cardOggiFare(z, giorno, lavori, rif, anteprima, v, vedono) {
@@ -4185,7 +4430,7 @@ function cardOggiFare(z, giorno, lavori, rif, anteprima, v, vedono) {
   const nIstr = anteprima ? 0 : istruzioniDelGiorno(oggi, z).length;
   const istr = nIstr ? `<p class="wa-nota">📎 La governante ti ha lasciato ${nIstr === 1 ? "una spiegazione" : nIstr + " spiegazioni"} coi disegni: è più giù, dopo le camere.</p>` : "";
   const turno = anteprima ? "" : cardTurno(z, false, "tutto");
-  const bolla = bollaWa({ cls: "lg-oggi wa-oggi" + cls, primo: !messaggioDelGiorno(giorno), aria: titolo, titolo: `<b class="wa-titolo"><span>${fig === "scintilla" ? "✨ " : fig === "megafono" ? "📣 " : ""}${esc(titolo)}</span></b>`, testo, detto, etichetta: "Ascolta cosa devi fare", dentro: istr + (finito ? turno : "") });
+  const bolla = bollaWa({ cls: "lg-oggi wa-oggi" + cls, primo: anteprima && !messaggioDelGiorno(giorno), aria: titolo, titolo: `<b class="wa-titolo"><span>${fig === "scintilla" ? "✨ " : fig === "megafono" ? "📣 " : ""}${esc(titolo)}</span></b>`, testo, detto, etichetta: "Ascolta cosa devi fare", dentro: istr + (finito ? turno : "") });
   const sotto = anteprima ? `<button type="button" class="lg-oggi-torna wa-torna" data-g="${oggi}">↩ Torna a oggi</button>` : finito ? "" : turno;
   return bolla + sotto;
 }
@@ -4211,7 +4456,8 @@ function vistaArgon(z) {
   const mappa = mappaGiornata(z, giorno, lavori, rif);
   const aperteDopo = finito ? lavori.filter(p => p.stato === "da_fare" || p.stato === "in_corso") : [];
   // 1.54.0: in cima il messaggio della governante, sotto cosa fare oggi (niente più Sofia grande in cima)
-  const messaggio = cardGovernante(giorno, anteprima);
+  const ciao = anteprima ? "" : bollaSaluto();   // 1.55.7: «Buongiorno Selena!», sempre, secondo l'ora del telefono
+  const messaggio = cardGovernante(giorno, anteprima, !ciao);
   const fare = cardOggiFare(z, giorno, lavori, rif, anteprima, v, vedono);
   const sospesa = sosp ? `<section class="gs-avviso rosso">${ICONA("avviso")}<span><b>Fino a ${esc(L.dataLunga(sosp.a))}: solo le camere.</b></span></section>` : "";
   const pl = pianoDi(z, giorno), ord = pianoOrdina(lavori, pl).filter(p => p.tipo !== "stelle" || p.stato === "fatta" || rif.some(r => r.pulizia === p.id));
@@ -4226,9 +4472,9 @@ function vistaArgon(z) {
   const rifiuti = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(giorno) + 1) % 7);
   const bidoni = rifiuti && z === "ap" ? `<section class="gs-avviso">${ICONA("bidone")}<span>${anteprima ? "Quella sera" : "Stasera"} fuori: <b>${esc(rifiuti.cosa.replace(/^./, ch => ch.toUpperCase()))}</b></span></section>` : "";
   // 1.55.0: in cima i messaggi della governante come in WhatsApp (il cartellino della data, le bolle, il tasto «Sono arrivata»)
-  const chat = `<section class="wa-chat" aria-label="I messaggi della governante"><div class="wa-giorno"><span>${esc(anteprima ? maiuscola(L.dataLunga(giorno)) : "Oggi")}</span></div>${messaggio}${fare}</section>`;
-  if (anteprima) return `<div class="lg-pagina wa-pagina">${chat}${schede}${mappa}${bidoni}${voce}</div>`;
-  return `<div class="lg-pagina wa-pagina">${chat}${cardVisto(z)}${sospesa}${schede}${tasto}${spiegazioni}${bloccoControlli(z, oggi)}${mappa}${lgMuta()}${bidoni}${voce}</div>`;
+  const chat = `<section class="wa-chat" aria-label="I messaggi della governante"><div class="wa-giorno"><span>${esc(anteprima ? maiuscola(L.dataLunga(giorno)) : "Oggi")}</span></div>${ciao}${messaggio}${fare}</section>`;
+  if (anteprima) return `<div class="lg-pagina wa-pagina">${chat}${schede}${mappa}${bidoni}${chatHtml()}${voce}</div>`;
+  return `<div class="lg-pagina wa-pagina">${chat}${cardVisto(z)}${sospesa}${schede}${tasto}${spiegazioni}${bloccoControlli(z, oggi)}${mappa}${lgMuta()}${bidoni}${chatHtml()}${voce}</div>`;
 }
 // i tasti di Sofia (anche quando la pagina si ridisegna) e la camera aperta: Sofia la dice (dopo che il foglio si è aperto)
 document.addEventListener("click", (e) => {
@@ -4269,6 +4515,8 @@ function guidaTondo() {
   b.hidden = false;
 }
 function guidaNuvola() {
+  let lei = false; try { lei = argonLei(); } catch (e) {}
+  if (lei) { const n0 = document.getElementById("sgNuvola"); if (n0) n0.hidden = true; return; }   // 1.55.7: niente nuvoletta, la chat è già scritta
   let n = document.getElementById("sgNuvola");
   const sc = document.getElementById("sgCompagna"), f = sc && !sc.hidden && sc.classList.contains("su") ? sc : document.getElementById("sofiaFuori");   // 1.30.0
   let vuoi = false;

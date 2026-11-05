@@ -2652,3 +2652,17 @@ Michele (5/11) ha mandato la foto dell'app presa dal suo telefono («👀 Prova�
 - La barra per scrivere: «Messaggio», come in WhatsApp, grande 22,5. «Chiedi alla governante» sul suo telefono veniva tagliato («Chiedi alla governan…»): non ci stava. Toccando la barra la governante ascolta, come prima.
 - Le bolle un filo più a sinistra (17 dal bordo, come le sue); le camere coi nomi 20, sotto 16,5.
 - Prove: prova1556 più quelle di prima.
+
+## 155.7 La 1.55.7 (5 novembre): LA CHAT VERA CON LA GOVERNANTE
+
+Michele (5/11): «Lei sotto, dove c'è scritto Messaggio, deve poter mettere veramente un po' di emoticon, gli allegati, la fotocamera, deve poter scrivere anche con Sofia, deve poterci parlare, chiederle delle cose, e Sofia le deve poter rispondere. Quando esce Sofia col microfono togli la nuvoletta scritta: lei parla, e c'è scritto già sopra. Ci deve stare scritto sempre Buongiorno Selena, oppure Buon pomeriggio, o Buonasera, secondo l'ora.»
+
+- LA BARRA PER SCRIVERE È VERA: la faccina apre le faccine (sopra la barra, otto per riga: si toccano e vanno nel testo); nel campo bianco si scrive (va a capo fino a quattro righe); la graffetta allega una foto, un video o un file; la macchina fotografica fa la foto. Quando c'è del testo la macchina fotografica sparisce e il tondo verde col microfono diventa la freccia per mandare, come in WhatsApp. L'invio della tastiera manda.
+- LA CHAT: in fondo alla pagina, sopra la barra. I messaggi suoi a destra in verde chiaro con l'ora e le due spunte azzurre; le risposte della governante a sinistra in bianco. Mentre risponde, in alto «sta scrivendo…» e nella chat i tre puntini.
+- COSA RISPONDE la governante (senza intelligenza artificiale, dalle cose che l'app sa di oggi): ai saluti e ai grazie; a «cosa devo fare», al nome di una camera, a «e poi», alle rifiniture, a cosa ha detto Michele, alle ore e ai soldi, come al microfono; a «sono arrivata» e «vado via» col tasto giusto. Se manca o non va qualcosa («manca la carta», «si è rotto il phon»), un ritardo, «dillo a Michele…», o se non lo sa: «Vuoi che lo scrivo a Michele?» con i tasti «Sì, scrivilo a Michele» e «No, grazie». Solo col «Sì» parte il messaggio a Michele su Telegram (nella sua chat); se non ci riesce lo dice («Scrivilo tu a Michele su WhatsApp»).
+- FOTO, VIDEO E FILE: vanno nella chat (la foto rimpicciolita); la governante chiede «Vuoi che la mando a Michele?»; col «Sì» arrivano a Michele su Telegram con chi l'ha mandata e l'ora. Il video o il file restano solo finché l'app è aperta; le foto restano nella chat del giorno.
+- COL MICROFONO: esce lei e risponde a voce, senza più la nuvoletta scritta; la domanda e la risposta restano scritte nella chat (anche dalla camera aperta).
+- IL SALUTO: in cima ai messaggi, sempre, secondo l'ora del telefono: «Buongiorno Selena! ☀️» fino alle 13, «Buon pomeriggio Selena! 🌤️» fino alle 18, poi «Buonasera Selena! 🌙». Il riassunto del piano non ripete il saluto.
+- La chat è solo sul telefono e solo per quel giorno: il giorno dopo ricomincia vuota. A Michele arriva solo quello per cui lei tocca «Sì».
+- Con la tastiera aperta la barra sta sopra la tastiera: sui telefoni Android la pagina si accorcia, come in WhatsApp (solo sulla pagina delle signore: le pagine della gestione restano come sono); sugli iPhone la barra sale sopra la tastiera.
+- Prove: prova1557 (la barra vera, le faccine, scrivere e la risposta, «sta scrivendo», la domanda per Michele col «Sì» e Telegram finto, la foto, il microfono senza nuvoletta, il saluto di mattina e di pomeriggio) più quelle di prima.
