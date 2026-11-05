@@ -2601,3 +2601,18 @@ Michele (5/11): «Puoi copiare per la parte delle donne delle pulizie i colori u
 ## 155.2 La 1.55.2 (5 novembre): «IL TASTO VERDE»
 
 - Con la 1.55.1 il tasto «Sono arrivata» è verde (come WhatsApp): Sofia ora dice «Prima di tutto tocca il tasto verde «Sono arrivata»: parte il tuo orario.» (prima diceva «blu»).
+
+## 155.3 La 1.55.3 (5 novembre): LA PAGINA DELLE SIGNORE COME UNA CHAT DI WHATSAPP CON LA GOVERNANTE
+
+Michele (5/11): «No, lo devi rendere ancora più uguale a WhatsApp. Ancora non ci siamo. Chiedi sempre a Gemini come renderlo più uguale a WhatsApp.»
+
+Gemini (3.1 Pro, con le due foto della 1.55.2): «la pagina deve fingere di essere una chat singola con la governante».
+
+- LA TESTATA come quella di una chat: la foto tonda della governante, «La governante», sotto «online» in grigio; a destra l'ora e il giorno, senza la pillola grigia. Sulle altre pagine (I miei soldi, Controlli) resta «Le Stanze di Ricci · Pulizie · Lucia».
+- I MESSAGGI come nelle chat singole: niente fotina accanto e niente «La governante» dentro (la governante è già nella testata); le bolle col raggio 12, il beccuccio sul primo, l'ombra quasi invisibile, l'ora in basso a destra in grigio. Il cartellino del giorno dice solo «Oggi». «Cosa devi fare oggi» è un messaggio normale col titolo in grassetto (✨ quando hai finito, 📣 quando c'è un lavoro nuovo).
+- «SONO ARRIVATA» e «HO FINITO»: pillole verdi, 24 di margine ai lati, l'ombra leggerissima.
+- LE CAMERE: niente più il riquadro bianco unico; una bolla bianca per camera, come le righe delle chat: il tondo col disegno (come la foto del contatto), il nome, sotto cosa fare in grigio. A destra, sopra, «Adesso» in verde (come l'ora dei messaggi ancora da leggere) e sotto la pillola «✓ Fatto». La camera di adesso ha il nome in grassetto e l'anello verde intorno al tondo (come gli stati). Quella fatta: il tondo grigio, a destra l'ora, sotto le due spunte azzurre e «Fatta». Sopra le camere il cartellino giallo dei messaggi di sistema: «Le camere di oggi · ⏱️ … · ⭐ …» e «Tocca una camera: la governante te la spiega».
+- «CHIEDI ALLA GOVERNANTE»: la barra per scrivere di WhatsApp, fissa sopra la barra in basso: il campo bianco arrotondato con «Chiedi alla governante» e a destra il tondo verde col microfono bianco (si tocca dove si vuole). Quando la governante parla esce lei, come prima.
+- LA BARRA IN BASSO: bianca, i tasti distribuiti su tutta la larghezza, la pillola verde chiaro dietro quello scelto.
+- Il resto come la 1.55.1-1.55.2 (i colori appena spostati, le icone Material, Roboto, lo sfondo beige coi disegnini delle pulizie).
+- Prove: prova1553 (la testata, i messaggi senza fotina, le pillole, le bolle delle camere, «Adesso» e «Fatto» a destra, la barra per scrivere sopra la barra in basso, tutto nella prima schermata) più quelle di prima.
