@@ -2597,3 +2597,7 @@ Michele (5/11): «Puoi copiare per la parte delle donne delle pulizie i colori u
 - L'ORARIO CHE CORRE dopo «Sono arrivata» è come un messaggio mandato da lei: a destra, verde chiaro, col beccuccio.
 - Il resto come la 1.55.0 (i messaggi in bolle, le camere come la lista delle chat, Roboto, «Chiedi alla governante» nella barra in basso).
 - Prove: prova1550 coi colori nuovi (il verde dei tasti, niente blu) e le icone (svg di Material al posto delle immagini).
+
+## 155.2 La 1.55.2 (5 novembre): «IL TASTO VERDE»
+
+- Con la 1.55.1 il tasto «Sono arrivata» è verde (come WhatsApp): Sofia ora dice «Prima di tutto tocca il tasto verde «Sono arrivata»: parte il tuo orario.» (prima diceva «blu»).

@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.1";
+export const VERSIONE = "1.55.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2149,7 +2149,7 @@ function turnoPill(z, anteprima) {
 function turnoDetto(z, iso) {
   if (!pagaAOre() || !addetta()) return "";
   const v = L.vistoDi(S.visti, z, iso); if (v && (v.arrivoOra || v.turnoInizio || v.finitoOra)) return "";
-  return pulizieDelGiorno(iso, z).length ? "Prima di tutto tocca il tasto blu «Sono arrivata»: parte il tuo orario." : "";
+  return pulizieDelGiorno(iso, z).length ? "Prima di tutto tocca il tasto verde «Sono arrivata»: parte il tuo orario." : "";
 }
 function turnoGira() { document.querySelectorAll("[data-turno-ore]").forEach(el => { const s = testoOreTurno(minutiDa(el.dataset.turnoOre)); if (el.textContent !== s) el.textContent = s; }); }
 let turnoTimer = null;
