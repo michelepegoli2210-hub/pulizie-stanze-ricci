@@ -32,6 +32,8 @@
 //  1.22.0 (app 1.51.0): LA SEGRETARIA FA LEI: nel modo nuovo la lettura risponde con le azioni e resta «da_applicare» (la mette a
 //  posto la prima app del titolare che si apre); l'avviso apre la Segreteria. La sintesi agli orari scelti (avvisi.sintesiOre, di
 //  serie 8:30 e 20:30): ognuna racconta i messaggi dall'orario di prima.
+//  1.23.0 (app 1.53.0): niente più letture «da controllare»: si legge sempre col modo nuovo (avvisi.prospettoChat non conta più);
+//  una lettura del tipo di prima rimasta in sospeso si rilegge (se è di meno di 3 ore) o si mette da parte: la posta non aspetta più.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -39,7 +41,7 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat, sintesiSera } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.22.0";
+export const VERSIONE_GIRO = "1.23.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {

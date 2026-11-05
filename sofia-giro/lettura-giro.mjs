@@ -15,6 +15,10 @@
 //  mandava solo il giro per le sue): se una lettura aspetta il controllo da almeno 2 minuti, nessuno l'ha aperta e non è
 //  ancora stata avvisata, parte l'avviso (una volta sola, segno «avvisata»). Gli avvisi delle letture partono solo dalle 7
 //  alle 22:30: una lettura fatta di notte si avvisa al primo giro dopo le 7.
+//  1.23.0 (app 1.53.0): NIENTE PIÙ LETTURE DA CONTROLLARE (Michele: «se la segreteria fa bene il suo dovere non serve più»): si
+//  legge sempre col modo nuovo (avvisi.prospettoChat non conta più) e una lettura «da_controllare» del tipo di prima non ferma
+//  più la posta: se è di meno di 3 ore la rileggo insieme alla posta nuova (quella di prima diventa «sostituita»), altrimenti
+//  la metto da parte («scartata», in Segreteria c'è «🔄 Rileggila»). Niente più avviso «Tocca per controllare e salvare».
 // ============================================================================
 import * as L from "../logica.js";
 import * as LET from "../lettura.js";
@@ -27,6 +31,8 @@ const MAX_VOCALI = 60, MAX_FOTO = 4;
 // 1.18.1: l'avviso di una lettura fatta da un telefono parte dopo 2 minuti (se nel frattempo l'ha aperta, niente avviso);
 // gli avvisi delle letture solo dalle 7 alle 22:30 (minuti dell'ora di Roma; senza ora, sempre)
 export const ATTESA_AVVISO_MS = 2 * 60 * 1000, ORE_AVVISO = [7 * 60, 22 * 60 + 30];
+// 1.23.0: una lettura del tipo di prima di meno di 3 ore si rilegge; quella più vecchia si mette da parte con questa frase (la stessa dell'app)
+export const FRESCA_MS = 3 * 3600 * 1000, NON_VECCHIA = "Era una lettura del tipo di prima (da spuntare e salvare): l'ho messa da parte. Se vuoi, tocca «🔄 Rileggila»: la rileggo e metto a posto l'app da sola.";
 export const oraDiAvvisi = (minuti) => minuti === undefined || minuti === null || (minuti >= ORE_AVVISO[0] && minuti < ORE_AVVISO[1]);
 
 // il nome di Sofia, come lo mostra l'app (tutto maiuscolo → normale)
@@ -122,17 +128,15 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     vecchie = Array.isArray(lett.postaIds) ? lett.postaIds : [];
     if (lett.lid) { try { await db.merge("importazioni", "segreteria_" + lett.lid, { esito: "sostituita" }); } catch (e) {} }
   }
+  // 1.23.0: una lettura «da_controllare» (del tipo di prima) non aspetta più il controllo: di meno di 3 ore si rilegge col modo nuovo
+  // insieme alla posta nuova (si segna «sostituita» solo quando parte davvero la lettura), più vecchia si mette da parte subito
+  let sostituisci = "";
   if (lett && lett.stato === "da_controllare") {
-    const eta = ora - Date.parse(lett.quando || 0);
-    if (eta < SCADE_MS) {
-      // 1.18.1: se non l'ha ancora aperta nessuno e l'avviso non è partito (lettura del telefono/PC, o fatta di notte), lo mando io
-      if (lett.lid && !lett.avvisata && !lett.vista && eta >= ATTESA_AVVISO_MS && oraDiAvvisi(minuti)) {
-        const gov = await db.doc("impostazioni", "governante");
-        return { esito: "aspetta il tuo controllo", ts: letturaTs, avvisa: avvisoLettura(lett, nomeGovDa(gov)), avvisataLid: lett.lid };
-      }
-      return { esito: "aspetta il tuo controllo", ts: letturaTs };
+    if (ora - Date.parse(lett.quando || 0) < FRESCA_MS) { vecchie = Array.isArray(lett.postaIds) ? lett.postaIds : []; sostituisci = lett.lid || "-"; }
+    else {
+      try { await db.merge("importazioni", "lettura-sofia", { stato: "scartata", chiusa: { chi: "giro 1.23 (lettura del tipo di prima)", quando: adesso.toISOString() } }); } catch (e) { console.warn("lettura di prima:", e && e.message); }
+      if (lett.lid) { try { await db.merge("importazioni", "segreteria_" + lett.lid, { esito: "scartata", non: [NON_VECCHIA] }); } catch (e) {} }
     }
-    vecchie = Array.isArray(lett.postaIds) ? lett.postaIds : [];      // ferma da più di un giorno: la rileggo insieme alla nuova
   }
   if (lett && lett.stato === "in_lettura" && ora - Date.parse(lett.quando || 0) < LOCK_MS) return { esito: "la sta leggendo il telefono", ts: letturaTs };
   const da = letturaTs ? letturaTs - MARGINE_MS : ora - SCADE_MS;
@@ -144,6 +148,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
   for (const id of vecchie) if (!tutte.some(p => p.id === id)) { const p = await db.doc("posta", id); if (p) tutte.push(p); }
   if (!tutte.length) return { esito: "niente di nuovo", ts: ultimoTs };
   const ids = tutte.map(p => p.id), id = "giro_" + ora.toString(36);
+  if (sostituisci && sostituisci !== "-") { try { await db.merge("importazioni", "segreteria_" + sostituisci, { esito: "sostituita" }); } catch (e) {} }   // 1.23.0
   await db.salva("importazioni", "lettura-sofia", { lid: id, stato: "in_lettura", da: "giro", quando: adesso.toISOString(), postaIds: ids });
   try {
     const base = await prendiBase();      // camere e signore (si leggono solo quando c'è davvero da leggere)
@@ -185,7 +190,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     // chi fa il prospetto: «Papà» (il nome che il ponte dà alla sua chat)
     const papa = scelti.some(m => m.chi === "Papà") ? "Papà" : "";
     const ctx = await ctxDalDatabase(db, { ...base, oggi });
-    ctx.prospettoChat = a.prospettoChat === true;   // 1.49.0: di solito spento: il prospetto arriva dal foglio Excel di papà
+    ctx.prospettoChat = false;   // 1.49.0: il prospetto arriva dal foglio Excel di papà; 1.23.0: sempre (l'interruttore «Prospetto anche dalle chat» non c'è più)
     if (!ctx.prospettoChat) {   // 1.22.0: il modo nuovo: Sofia vede il giro delle signore dei prossimi tre giorni e l'ora
       const giorni = [0, 1, 2].map(n => L.aggiungiGiorni(oggi, n));
       try { ctx.giro = Object.values((await db.pulizieDi(giorni)) || {}).filter(p => p && !p.nonServe && p.stato !== "non_fatta" && p.tipo !== "stelle").map(p => ({ data: p.data, zona: p.zona, camera: p.camera || "", tipo: p.tipo, titolo: p.titolo || "", insieme: p.insieme || "", stato: p.stato || "" })); ctx.giroGiorni = giorni; } catch (e) { console.warn("giro delle signore:", e && e.message); }
