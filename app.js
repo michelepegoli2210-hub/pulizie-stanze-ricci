@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.53.0";
+export const VERSIONE = "1.53.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1401,7 +1401,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); setTimeout(guastiDalTaccuino, 2500); }));
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
-  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lettura-sofia", d => { S.letturaCondivisa = d ? { ...d } : null; S.caricati.letturaCondivisa = true; guardaCondivisa(); disegna(); }));   // 1.18.0
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lettura-sofia", d => { S.letturaCondivisa = d ? { ...d } : null; S.caricati.letturaCondivisa = true; guardaCondivisa(); disegna(); if (lettorePosta() && !letturaCondivisaOccupata()) guardaPosta(); }));   // 1.18.0; 1.53.1: appena la lettura condivisa si libera, la posta che aspettava riparte (prima ripartiva solo al messaggio dopo)
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "sofia-autonomia", d => { S.autonomia = d ? { livello: d.livello } : null; S.caricati.autonomia = true; if (S.vista === "altro") disegna(); }));   // 1.15.0; 1.51.0: caricati.autonomia
   // 1.39.0: la Segreteria: una scheda per ogni lettura delle chat (importazioni/segreteria_<lettura>)
   if (proprietario()) S.stop.push(db.ascolta("importazioni", { where: [["__id__", ">=", "segreteria_"], ["__id__", "<", "segreteria`"]] }, (m) => { S.segreteria = m || {}; if (S.vista === "segreteria" || S.vista === "sofia") disegna(); }, (e) => console.warn("segreteria", e)));
@@ -5235,7 +5235,15 @@ async function rileggiDaCapo(lid) {
   finally { rileggendoLid = ""; disegna(); }
 }
 // Sofia rilegge gli stessi messaggi con la correzione di Michele davanti a tutto e rifà le cose (prima annulla quelle di prima)
+// 1.53.1: una alla volta: mentre rilegge, la posta nuova aspetta (e riparte da sola alla fine); se sta già leggendo, lo dice
+let rilettureInCorso = 0;
 async function rileggiEApplica(x, correzione) {
+  if (postaInLettura || letturaInCorso()) throw new Error("sto già leggendo dei messaggi: riprova tra un minuto");
+  rilettureInCorso++;
+  try { return await rileggiEApplicaOra(x, correzione); }
+  finally { rilettureInCorso--; setTimeout(() => { try { guardaPosta(); } catch (e) {} }, 0); }
+}
+async function rileggiEApplicaOra(x, correzione) {
   if (!iaAccesa()) throw new Error("su questo telefono manca la chiave di Gemini (Altro → la governante intelligente)");
   const messaggi = (Array.isArray(x.messaggi) ? x.messaggi : []).filter(m => m && m.testo).map(m => ({ data: m.data || "", ora: m.ora || "", chi: m.chi || "", testo: m.testo, chat: m.chat || "", chatNome: m.chat || "", mio: !!m.mio }));
   if (!messaggi.length) throw new Error("questa lettura non ha messaggi da rileggere");
@@ -11920,7 +11928,7 @@ function postaRicevuta(m) {
 function guardaPosta() {
   clearTimeout(postaTimer);
   const nuove = postaNuova();
-  if (nuove.length && lettorePosta() && iaAccesa() && !postaInLettura && !letturaInCorso() && !letturaDaControllare() && !letturaCondivisaOccupata()) {
+  if (nuove.length && lettorePosta() && iaAccesa() && !postaInLettura && !rilettureInCorso && !letturaInCorso() && !letturaDaControllare() && !letturaCondivisaOccupata()) {   // 1.53.1: non durante una rilettura
     const attesa = ATTESA_POSTA - (Date.now() - ultimoArrivoPosta);
     if (attesa > 0) postaTimer = setTimeout(guardaPosta, attesa + 250);
     else { leggiPosta(nuove, { silenzioso: true }); return; }
