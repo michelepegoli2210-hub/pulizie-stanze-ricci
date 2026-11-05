@@ -2616,3 +2616,14 @@ Gemini (3.1 Pro, con le due foto della 1.55.2): «la pagina deve fingere di esse
 - LA BARRA IN BASSO: bianca, i tasti distribuiti su tutta la larghezza, la pillola verde chiaro dietro quello scelto.
 - Il resto come la 1.55.1-1.55.2 (i colori appena spostati, le icone Material, Roboto, lo sfondo beige coi disegnini delle pulizie).
 - Prove: prova1553 (la testata, i messaggi senza fotina, le pillole, le bolle delle camere, «Adesso» e «Fatto» a destra, la barra per scrivere sopra la barra in basso, tutto nella prima schermata) più quelle di prima.
+
+## 155.4 La 1.55.4 (5 novembre): LA PAGINA DELLE SIGNORE UGUALE A UNA CHAT VERA DI WHATSAPP
+
+Michele (5/11), con la foto della sua chat con Selena: «Ancora WhatsApp, vedi? Questa è una tipica chat con Selena. Devi farla uguale a questa.»
+
+- LA TESTATA della chat: la foto della governante con l'anello verde (come chi ha messo uno stato), «La governante», sotto «online» (senza rete: «in attesa di rete…»); a destra l'icona dei soldi (💶) al posto di quelle delle chiamate. L'ora non c'è più: è già in alto sul telefono.
+- NIENTE BARRA IN BASSO: come in una chat, in fondo c'è solo la barra per scrivere (la faccina, «Chiedi alla governante», il tondo verde col microfono). «I miei soldi» si apre dall'icona in alto; lì in alto la freccia «←» per tornare alle camere.
+- I MESSAGGI: l'ora in fondo all'ultima riga del testo, a destra, come in WhatsApp; il vocale in una bolla a parte, come i vocali veri: ▶, il pallino sull'onda (barrette sottili), sotto la durata e l'ora, a destra la foto della governante col microfonino verde; quando l'hai ascoltato il pallino e il microfonino diventano azzurri (vale per la giornata). Le bolle larghe al massimo come in WhatsApp.
+- «SONO ARRIVATA»: prima la pillola verde; toccata diventa un messaggio mandato da lei, a destra in verde chiaro: «Sono arrivata», sotto «⏱️ L'orario corre: …», in fondo l'ora e le due spunte azzurre. «Vado via» non c'è più su questa pagina: fa la stessa cosa di HO FINITO.
+- LE CAMERE come messaggi della governante: il beccuccio sulla prima, un po' di spazio a destra; il resto come la 1.55.3 («Adesso» in verde, «✓ Fatto», l'anello verde, l'ora e le spunte su quella fatta, il cartellino giallo «Le camere di oggi»).
+- Prove: prova1554 (la testata con l'icona dei soldi e la freccia, niente barra in basso, il vocale a parte e azzurro dopo l'ascolto, l'ora in fondo al testo, «Sono arrivata» come messaggio mandato, la barra per scrivere in fondo, tutto nella prima schermata) più quelle di prima.

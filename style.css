@@ -7467,21 +7467,20 @@ body.premium .sofia-hero .casa-nuvola .dtf-man.urgente{border-left:4px solid #DC
 .sg-aiuto{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#FFF8E1;color:#3D2F00;font-weight:600}
 
 /* ===================================================================================================================
-   1.55.3 · LA PAGINA DELLE SIGNORE COME UNA CHAT DI WHATSAPP CON LA GOVERNANTE (Michele, 5/11: «lo devi rendere ancora
-   più uguale a WhatsApp. Ancora non ci siamo. Chiedi sempre a Gemini come renderlo più uguale a WhatsApp»).
-   Gemini (3.1 Pro, con le foto della 1.55.2): la pagina deve sembrare una chat singola con la governante.
-   - La testata come quella di una chat: la foto tonda della governante, «La governante», sotto «online»; a destra l'ora.
-   - I messaggi senza la fotina accanto e senza il nome dentro (nelle chat singole di WhatsApp non ci sono); le bolle col
-     raggio 12, il beccuccio sul primo, l'ombra quasi invisibile, l'ora in basso a destra in grigio.
-   - «Sono arrivata» e «HO FINITO»: pillole verdi, un po' più strette (24 di margine ai lati), l'ombra leggerissima.
-   - Le camere: niente più il riquadro bianco unico; una bolla bianca per camera, come le righe delle chat (il tondo
-     come la foto del contatto, il nome, sotto cosa fare in grigio); a destra in verde «Adesso» (come l'ora dei messaggi
-     da leggere) e sotto la pillola «✓ Fatto»; la camera di adesso ha l'anello verde intorno al tondo (come gli stati);
-     quella fatta l'ora e le due spunte azzurre. Sopra, il cartellino giallo di sistema «Le camere di oggi».
-   - «Chiedi alla governante»: la barra per scrivere di WhatsApp, fissa sopra la barra in basso (il campo bianco
-     arrotondato e a destra il tondo verde col microfono bianco). La barra in basso coi tasti distribuiti.
+   1.55.4 · LA PAGINA DELLE SIGNORE UGUALE A UNA CHAT VERA DI WHATSAPP (Michele, 5/11, con la foto della sua chat con
+   Selena: «Ancora WhatsApp, vedi? Questa è una tipica chat con Selena. Devi farla uguale a questa»).
+   Sopra la 1.55.3 (i consigli di Gemini: la pagina come una chat singola con la governante):
+   - La testata della chat: la foto della governante con l'anello verde (come chi ha uno stato nuovo), «La governante»,
+     sotto «online»; a destra l'icona dei soldi al posto di quelle delle chiamate (l'ora c'è già sul telefono). Su «I miei
+     soldi» la freccia «←» col titolo. Niente più barra in basso: in fondo c'è solo la barra per scrivere.
+   - Il testo con l'ora in fondo all'ultima riga, a destra; il vocale in una bolla a parte come i vocali di WhatsApp: ▶, il
+     pallino sull'onda (40 barrette sottili), sotto la durata e l'ora, a destra la foto della governante col microfonino
+     (verde da ascoltare, azzurro quando l'hai sentito). Le bolle larghe al massimo l'86%.
+   - «Sono arrivata» toccato: un messaggio mandato da lei (a destra, verde chiaro): «Sono arrivata», sotto l'orario che
+     corre, in fondo l'ora e le due spunte azzurre.
+   - La barra per scrivere con la faccina a sinistra; le camere come messaggi (il beccuccio sulla prima, spazio a destra).
    - Colori come la 1.55.1 (il verde #179A54 da #1DAA61, il beige #ECE6DE da #EFEAE2, le spunte #4FB6E8 da #53BDEB…),
-     il grigio delle ore #687983 (WhatsApp #667781). La 1.55.3 prende il posto del blocco della 1.55.1.
+     il grigio delle ore #687983 (WhatsApp #667781). La 1.55.4 prende il posto del blocco della 1.55.3.
    (Nel file pubblicato «body.sig-laguna.sig-laguna.sig-laguna.sig-laguna» è ripetuto quattro volte: lo fa la fase di pubblicazione, così queste regole
    passano sopra a quelle vecchie delle signore senza !important.)
    =================================================================================================================== */
@@ -7510,15 +7509,22 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.semplice header h1 small,body.s
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna header .who{background:#F0F2F4;border:0;color:var(--w-testo);font:500 14px var(--w-font);box-shadow:none}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna header .who b{font:700 16px var(--w-font);color:var(--w-testo)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna header .waves{display:none}
-/* 1.55.3: sulla pagina delle camere la testata è quella di una chat: la foto tonda della governante, «La governante»,
-   sotto «online» in grigio; a destra l'ora, senza la pillola grigia (al posto delle icone delle chiamate) */
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header{padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:6px;border-bottom:0;box-shadow:0 1px 2px rgba(11,20,26,.08)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header .top{min-height:48px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1{grid-template-columns:42px minmax(0,1fr);column-gap:12px;font:500 19px/1.2 var(--w-font);color:var(--w-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1::before{width:42px;height:42px;background:#DFE5E7 url(capo-viso.webp) center 18%/cover no-repeat}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1 small,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1 small{margin:2px 0 0;font:400 14px/1.15 var(--w-font);color:var(--w-ora)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header .who{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:2px;min-height:44px;padding:0 2px 0 8px;border-radius:0;background:transparent;font:400 13px/1 var(--w-font);color:var(--w-ora)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header .who b{font:500 17px/1 var(--w-font);color:var(--w-testo)}
+/* 1.55.3-1.55.4: la testata di WhatsApp. Sulla chat: la foto della governante con l'anello verde (come chi ha uno stato
+   nuovo), «La governante», sotto «online»; a destra l'icona dei soldi (al posto della videochiamata e della chiamata).
+   Sulle altre pagine delle signore la freccia «←» e il titolo. L'ora non c'è: è già in alto sul telefono. */
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header{padding:calc(3px + env(safe-area-inset-top,0px)) 6px 3px 6px;border-bottom:0;box-shadow:0 1px 2px rgba(11,20,26,.08)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header .top,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header .top{justify-content:flex-start;gap:2px;min-height:50px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1{flex:1 1 auto;min-width:0;margin:0 0 0 3px;padding:5px 0 5px 5px;grid-template-columns:40px minmax(0,1fr);column-gap:13px;font:500 20px/1.2 var(--w-font);color:var(--w-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1::before{width:40px;height:40px;margin:0;background:#DFE5E7 url(capo-viso.webp) center 18%/cover no-repeat;box-shadow:0 0 0 2px #FFFFFF,0 0 0 4.5px var(--w-verde-vivo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1 small,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1 small{margin:1px 0 0;font:400 14px/1.15 var(--w-font);color:var(--w-ora)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat #whoBtn,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto #whoBtn{display:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto.semplice header h1,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header h1{display:block;flex:1 1 auto;min-width:0;margin:0 0 0 6px;font:500 21px/1.2 var(--w-font);color:var(--w-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header h1::before,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header h1 small{display:none}
+.wa-icone{display:flex;align-items:center;gap:2px;margin-left:auto}
+.wa-icone[hidden],.wa-indietro[hidden]{display:none}
+.wa-icone button,.wa-indietro{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;margin:0;padding:0;border:0;border-radius:50%;background:transparent;color:#0B141A;box-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.wa-icone button svg,.wa-indietro svg{width:26px;height:26px;fill:currentColor}
+.wa-icone button:active,.wa-indietro:active{background:rgba(11,20,26,.08)}
 /* ---- la pagina ---- */
 .lg-pagina{display:flex;flex-direction:column;gap:10px;padding-top:2px}
 .lg-pagina>*{margin-top:0;margin-bottom:0}
@@ -7526,26 +7532,38 @@ svg.ms{display:block;fill:currentColor;flex:0 0 auto}
 /* ---- i messaggi della governante, come in WhatsApp ---- */
 .wa-chat{display:flex;flex-direction:column;gap:5px}
 .wa-giorno{display:flex;justify-content:center;margin:0 0 2px}
-.wa-giorno span{padding:5px 12px;border-radius:8px;background:#FFFFFF;box-shadow:0 1px .5px rgba(11,20,26,.13);font:500 13.5px/1.2 var(--w-font);color:#54656F}
+.wa-giorno span{padding:6px 13px;border-radius:8px;background:#FFFFFF;box-shadow:0 1px .5px rgba(11,20,26,.13);font:500 14.5px/1.2 var(--w-font);color:#54656F}
 /* 1.55.3: come nelle chat singole: niente fotina accanto e niente nome dentro (la governante è nella testata) */
-.wa-msg{display:flex;flex-direction:column;align-items:flex-start;max-width:100%;padding-left:8px}
+.wa-msg{display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:100%;padding-left:8px}
 .wa-avatar,.wa-avatar-posto,.wa-chi{display:none}
-.wa-bolla{position:relative;min-width:0;max-width:92%;padding:6px 9px 7px 10px;border-radius:0 12px 12px 12px;background:#FFFFFF;box-shadow:var(--w-ombra)}
-.wa-msg:not(.primo) .wa-bolla{border-radius:12px}
-.wa-msg.primo .wa-bolla::before{content:"";position:absolute;top:0;left:-8px;width:8px;height:13px;background:#FFFFFF;clip-path:polygon(0 0,100% 0,100% 100%)}
+.wa-bolla{position:relative;min-width:0;max-width:86%;padding:6px 9px 7px 10px;border-radius:12px;background:#FFFFFF;box-shadow:var(--w-ombra)}
+.wa-msg.primo>.wa-bolla:first-child{border-top-left-radius:0}
+.wa-msg.primo>.wa-bolla:first-child::before{content:"";position:absolute;top:0;left:-8px;width:8px;height:13px;background:#FFFFFF;clip-path:polygon(0 0,100% 0,100% 100%)}
 .wa-titolo{display:flex;align-items:center;gap:8px;margin:1px 0 2px;font:700 18.5px/1.2 var(--w-font);color:var(--w-testo)}
 .wa-titolo-ico{display:none}
 .wa-testo{margin:0;font:400 17.5px/1.4 var(--w-font);color:var(--w-testo);overflow-wrap:anywhere;white-space:pre-line}
 .wa-gov .wa-testo{font-size:18.5px}
-.wa-piede{display:flex;align-items:center;justify-content:flex-start;gap:10px;margin-top:3px}
-.wa-ora{flex:0 0 auto;margin-left:auto;font:400 12px/1 var(--w-font);color:var(--w-ora);align-self:flex-end}
-/* il «vocale»: tocchi ▶ e la governante lo legge */
-.wa-voce{display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 auto;max-width:250px;min-height:40px;margin:0;padding:0 4px 0 0;border:0;border-radius:20px;background:transparent;color:var(--w-grigio);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.wa-play{flex:0 0 36px;display:grid;place-items:center;width:36px;height:36px;color:#6A7B84}
-.wa-play svg{width:36px;height:36px}
-.wa-punto{flex:0 0 11px;width:11px;height:11px;margin-right:-2px;border-radius:50%;background:var(--w-verde-vivo)}
-.wa-onda{flex:1 1 auto;min-width:0;height:22px;fill:#B3BFC5}
-.wa-durata{flex:0 0 auto;font:400 12.5px/1 var(--w-font);color:var(--w-ora)}
+/* l'ora come in WhatsApp: in fondo all'ultima riga, a destra (se non c'è posto va sotto, sempre a destra) */
+.wa-meta{float:right;position:relative;top:8px;display:inline-flex;align-items:center;gap:3px;margin:0 0 0 12px;line-height:1}
+.wa-ora{font:400 12.5px/1 var(--w-font);color:var(--w-ora);white-space:nowrap}
+/* il vocale: una bolla a parte, come i vocali di WhatsApp: ▶, il pallino sull'onda, sotto la durata e l'ora, a destra la
+   foto della governante col microfonino (verde da ascoltare, azzurro quando l'hai sentito). Si tocca dove si vuole. */
+.wa-bolla-voce{width:min(330px,86%);padding:5px 8px 6px 2px}
+.wa-voce{display:grid;grid-template-columns:42px minmax(0,1fr) 52px;align-items:center;column-gap:6px;width:100%;min-height:58px;margin:0;padding:0;border:0;border-radius:10px;background:transparent;color:var(--w-grigio);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.wa-play{display:grid;place-items:center;width:42px;height:42px;color:#54656F}
+.wa-play svg{width:42px;height:42px}
+.wa-voce-x{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;padding-top:10px}
+.wa-voce-su{display:flex;align-items:center;min-width:0}
+.wa-punto{position:relative;z-index:1;flex:0 0 13px;width:13px;height:13px;margin-right:-5px;border-radius:50%;background:var(--w-verde-vivo)}
+.wa-onda{flex:1 1 auto;min-width:0;height:24px;fill:#B3BFC5}
+.wa-voce-giu{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wa-durata{font:400 13px/1 var(--w-font);color:var(--w-ora)}
+.wa-voce-faccia{position:relative;width:52px;height:52px}
+.wa-voce-faccia img{display:block;width:52px;height:52px;border-radius:50%;object-fit:cover;object-position:center 18%;background:#DFE5E7}
+.wa-voce-mic{position:absolute;left:-8px;bottom:-1px;display:grid;place-items:center;width:22px;height:22px;color:var(--w-verde-vivo)}
+.wa-voce-mic svg{width:22px;height:22px;filter:drop-shadow(0 0 1px #FFFFFF) drop-shadow(0 0 1px #FFFFFF)}
+.wa-bolla-voce.sentito .wa-punto{background:var(--w-spunta)}
+.wa-bolla-voce.sentito .wa-voce-mic{color:var(--w-spunta)}
 .wa-voce:active{transform:scale(.98)}
 .wa-nota{margin:8px 0 0;padding:8px 10px;border-radius:8px;background:var(--w-oro-c);font:400 15px/1.35 var(--w-font);color:#5A4100}
 /* la giornata finita (dentro il messaggio): la scintilla, l'orario */
@@ -7567,10 +7585,15 @@ svg.ms{display:block;fill:currentColor;flex:0 0 auto}
 .wa-chat .gs-turno.in-corso b,.wa-bolla .gs-turno b,.wa-chat .gs-turno.manca b{font:700 17px/1.25 var(--w-font);color:var(--w-testo)}
 .wa-chat .gs-turno small,.wa-bolla .gs-turno small{font:400 14px/1.3 var(--w-font);color:var(--w-grigio)}
 .wa-chat>.gs-turno.manca,.wa-chat>.gs-turno.manca::after{background:var(--w-corallo-c)}
-/* 1.55.3: l'orario che corre in una riga sola, come un messaggio mandato da lei (la spiegazione la dice la governante) */
-.wa-chat>.gs-turno.in-corso small{display:none}
-.wa-chat>.gs-turno.in-corso{padding:7px 9px 7px 11px}
-.wa-chat>.gs-turno.in-corso .gs-turno-ico{flex-basis:28px;width:28px;height:28px}
+/* 1.55.4: «Sono arrivata» toccato è un messaggio mandato da lei: «Sono arrivata», sotto l'orario che corre, in fondo l'ora
+   e le due spunte azzurre (come i messaggi letti) */
+.wa-chat>.gs-turno.wa-mia{display:block;max-width:82%;padding:6px 9px 8px 11px}
+.wa-chat>.gs-turno.wa-mia .gs-turno-x{display:inline}
+.wa-chat>.gs-turno.wa-mia b{display:block;font:400 18px/1.35 var(--w-font);color:var(--w-testo)}
+.wa-chat>.gs-turno.wa-mia small{display:inline;font:400 15.5px/1.35 var(--w-font);color:#3B4A54}
+.wa-chat>.gs-turno.wa-mia .wa-meta{top:6px}
+.wa-chat>.gs-turno.wa-mia .wa-spunte{display:inline-flex;color:var(--w-spunta)}
+.wa-chat>.gs-turno.wa-mia .wa-spunte svg{width:19px;height:19px}
 .wa-chat .gs-turno-via-fine{flex:0 0 auto;min-height:44px;margin:0;padding:0 14px;border:1.5px solid #E7B3AA;border-radius:22px;background:#FFFFFF;background-image:none;color:#B3392C;font:700 15px/1 var(--w-font);box-shadow:none;cursor:pointer}
 .wa-torna{align-self:flex-start;display:inline-flex;align-items:center;min-height:44px;margin:4px 0 0 8px;padding:0 18px;border:0;border-radius:22px;background:var(--w-verde);color:#FFFFFF;font:700 16px/1 var(--w-font);box-shadow:var(--w-ombra);cursor:pointer}
 /* ---- le camere: una bolla bianca per camera, come le righe delle chat (1.55.3: niente più il riquadro unico) ---- */
@@ -7585,7 +7608,9 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno::before{con
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno.oro{background:none;color:#7A5600}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno i{margin-right:2px;font-style:normal}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .wa-aiuto{display:block;margin:0;padding:0;font:400 14px/1.3 var(--w-font);color:#5B6870}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe{display:flex;flex-direction:column;gap:6px;padding-left:8px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe{display:flex;flex-direction:column;gap:6px;padding:0 0 0 8px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe>.gs-cam.wa-riga:first-child{border-top-left-radius:0}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe>.gs-cam.wa-riga:first-child::before{display:block;content:"";position:absolute;top:0;left:-8px;right:auto;bottom:auto;width:8px;height:13px;margin:0;border:0;border-radius:0;background:#FFFFFF;box-shadow:none;opacity:1;transform:none;clip-path:polygon(0 0,100% 0,100% 100%)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga{position:relative;display:flex;flex-direction:row;align-items:center;gap:8px;width:auto;min-width:0;min-height:74px;margin:0;padding:8px 10px;border:0;border-radius:12px;background:#FFFFFF;box-shadow:var(--w-ombra);transform:none;text-align:left;overflow:visible}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga::before,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga::after{display:none}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga:active{transform:none;background:#F5F6F6}
@@ -7668,11 +7693,14 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .lg-pagina .gs-g.on span,body.s
 .lg-muta::before{content:"";position:absolute;right:34px;top:50%;z-index:1;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:right .15s}
 .lg-muta[aria-pressed="true"]::after{background:var(--w-verde,#179A54)}
 .lg-muta[aria-pressed="true"]::before{right:16px}
-/* ---- «Chiedi alla governante» (1.55.3): la barra per scrivere di WhatsApp, fissa sopra la barra in basso: il campo bianco
-   arrotondato con «Chiedi alla governante» e a destra il tondo verde col microfono bianco (tutta la barra è il tasto) ---- */
-.sg-mic.lg-mic{left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom,0px));width:auto;height:66px;min-height:0;flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;padding:6px 8px 10px;border:0;border-radius:0;background:#ECE6DE;box-shadow:none;color:var(--w-testo,#111B21)}
-.sg-mic.lg-mic .lg-mic-campo{display:flex;align-items:center;flex:1 1 auto;min-width:0;height:50px;padding:0 18px;border-radius:25px;background:#FFFFFF;box-shadow:0 1px 1.5px rgba(11,20,26,.16)}
-.sg-mic.lg-mic .lg-mic-t{display:block;margin:0;font:400 17px/1.2 var(--w-font,system-ui);letter-spacing:0;color:#5F7079;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ---- «Chiedi alla governante» (1.55.3-1.55.4): la barra per scrivere di WhatsApp, in fondo (niente più barra in basso):
+   il campo bianco arrotondato con la faccina e «Chiedi alla governante», a destra il tondo verde col microfono bianco
+   (tutta la barra è il tasto) ---- */
+.sg-mic.lg-mic{left:0;right:0;bottom:0;width:auto;height:calc(66px + env(safe-area-inset-bottom,0px));min-height:0;flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;padding:6px 8px calc(10px + env(safe-area-inset-bottom,0px));border:0;border-radius:0;background:#ECE6DE;box-shadow:none;color:var(--w-testo,#111B21)}
+.sg-mic.lg-mic .lg-mic-campo{display:flex;align-items:center;gap:10px;flex:1 1 auto;min-width:0;height:50px;padding:0 18px 0 12px;border-radius:25px;background:#FFFFFF;box-shadow:0 1px 1.5px rgba(11,20,26,.16)}
+.sg-mic.lg-mic .lg-mic-emo{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;color:#54656F}
+.sg-mic.lg-mic .lg-mic-emo svg{width:27px;height:27px;fill:currentColor;filter:none}
+.sg-mic.lg-mic .lg-mic-t{display:block;margin:0;font:400 18px/1.2 var(--w-font,system-ui);letter-spacing:0;color:#5F7079;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sg-mic.lg-mic .lg-mic-ico{display:grid;place-items:center;flex:0 0 50px;width:50px;height:50px;border-radius:50%;background:var(--w-verde,#179A54);color:#FFFFFF;box-shadow:0 1px 1.5px rgba(11,20,26,.2)}
 .sg-mic.lg-mic .lg-mic-ico svg{width:26px;height:26px;fill:currentColor;filter:none}
 .sg-mic.lg-mic::after{display:none}
@@ -7681,27 +7709,21 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic){background
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic)::after{border-color:rgba(23,154,84,.35)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic) svg{width:30px;height:30px;fill:#FFFFFF;filter:none}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-mic:not(.lg-mic) span{font:700 11px/1 var(--w-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic #app{padding-bottom:150px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-finito{left:24px;right:24px;bottom:calc(82px + env(safe-area-inset-bottom,0px))}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic .sg-finito{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna #app{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic #app{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-finito{left:24px;right:24px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-lg-mic .sg-finito{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-finito .sg-finito{left:24px;right:24px}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-compagna .sg-finito{right:150px}
-/* la barra in basso: bianca, alta 70, i tasti distribuiti; la pillola verde chiaro dietro l'icona scelta (come WhatsApp) */
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.semplice .barra,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .barra{box-sizing:border-box;justify-content:space-around;gap:2px;height:calc(70px + env(safe-area-inset-bottom,0px));padding:5px 8px calc(5px + env(safe-area-inset-bottom,0px));border:0;border-top:1px solid var(--w-filo);border-radius:0;background:#FFFFFF;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.semplice .barra button,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .barra button{flex:1 1 0;max-width:150px;min-height:0;height:59px;gap:4px;border-radius:14px;background:transparent;color:#3B4A54;font:500 13.5px/1.1 var(--w-font);letter-spacing:0;text-transform:none;box-shadow:none;text-shadow:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.semplice .barra button .ic,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .barra button .ic{box-sizing:content-box;width:24px;height:24px;padding:4px 20px;border-radius:16px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.semplice .barra button[aria-pressed="true"],body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .barra button[aria-pressed="true"]{background:transparent;color:var(--w-testo);font-weight:700;box-shadow:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.semplice .barra button[aria-pressed="true"] .ic,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .barra button[aria-pressed="true"] .ic{background:var(--w-verde-c);color:var(--w-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .barra button svg.ms.ic{fill:currentColor}
-/* ---- Sofia a fianco: solo la sagoma, sopra la barra; la sua nuvoletta come un messaggio ---- */
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+/* ---- Sofia a fianco: solo la sagoma, in fondo; la sua nuvoletta come un messaggio ---- */
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera{bottom:calc(2px + env(safe-area-inset-bottom,0px))}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera .sgc-figura{filter:drop-shadow(0 10px 14px rgba(11,20,26,.2))}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera .sgc-nome{border:2px solid #FFFFFF;background:var(--w-verde);font:700 13.5px/1 var(--w-font);box-shadow:0 2px 6px -1px rgba(11,20,26,.35)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera.parla .sgc-nome{background:#B3392C}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-compagna.sg-intera.ascolta .sgc-nome{background:#A86F06}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-nuvola{border:0;border-radius:12px 12px 0 12px;background:#FFFFFF;box-shadow:0 2px 6px rgba(11,20,26,.14),0 14px 28px -12px rgba(11,20,26,.4);font:400 17px/1.42 var(--w-font);color:var(--w-testo)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sg-nuvola b{font:500 14px/1.2 var(--w-font);letter-spacing:0;text-transform:none;color:var(--w-verde-s)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-compagna .sg-nuvola{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.con-compagna .sg-nuvola{bottom:calc(18px + env(safe-area-inset-bottom,0px))}
 /* ---- la camera aperta: gli stessi caratteri e lo stesso verde, i bordi leggeri ---- */
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio-indietro{border:1px solid var(--w-filo);border-radius:22px;background:#FFFFFF;color:var(--w-testo);font:500 16px var(--w-font);box-shadow:none}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .sig-data{background:#F0F2F4;color:var(--w-grigio);font-family:var(--w-font)}
@@ -7727,6 +7749,8 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .gs-torna{border:1px sol
   .wa-gov .wa-testo{font-size:18px}
   body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fatto{padding:0 12px 0 9px}
   body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{font-size:18px}
-  .sg-mic.lg-mic .lg-mic-t{font-size:16px}
+  .sg-mic.lg-mic .lg-mic-t{font-size:16.5px}
+  .wa-bolla,.wa-bolla-voce{max-width:90%}
+  .wa-bolla-voce{width:90%}
   .wa-chat>.gs-turno,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna #app [data-ho-finito]{margin-left:12px;margin-right:12px}
 }
