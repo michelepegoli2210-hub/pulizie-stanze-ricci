@@ -2686,3 +2686,19 @@ Michele (6/11): «Bello, mi piace, però mi puoi mettere la possibilità di torn
 - «Come prima» è esattamente la 1.55.7: le icone di prima nei tondi verdi, i caratteri di prima, i disegni 3D di prima (mappe, Salvatore, scene del lavoro), le faccine nei passi, «per 1 · matrimoniale» in grigio. «A matita» è la 1.55.8, con «Letto matrimoniale» in blu e «Letto singolo» in arancione.
 - La chat è uguale in tutte e due.
 - Prove: prova1559 (i tasti sotto «👀 Prova» e nella striscia, «Come prima» uguale alla 1.55.7, «A matita» uguale alla 1.55.8, la scelta salvata) più quelle di prima.
+
+## 155.10 La 1.55.10 (6 novembre): LA GOVERNANTE RISPONDE MEGLIO, LA CHAT SI SVUOTA QUANDO ESCE
+
+Michele (6/11): «In tutte e due le versioni ci dovrebbe essere la parte della chat. A parte che si deve cancellare ogni volta che esce dall'applicazione, forse: così si rigenera la possibilità di mandare dei messaggi subito. E la chat deve essere più efficace: Sofia governante deve dirgli delle cose più intelligenti. Io gli ho chiesto che cosa devo fare oggi e mi ha detto soltanto Fenicotteri, invece deve dire tutto, in poche parole.»
+
+- La chat è uguale nelle due versioni delle camere («A matita» e «Come prima»).
+- LA CHAT SI SVUOTA: riaprendo l'app la chat parte vuota; se la signora esce e torna dopo almeno 2 minuti, anche. Se esce solo un attimo (per fare la foto con la macchina fotografica, o leggere un messaggio) la chat resta, così non perde la domanda a metà.
+- RISPOSTE INTERE (sempre gratis, da quello che l'app sa, niente intelligenza artificiale a pagamento):
+  - «Che cosa devo fare oggi?» (o domani, o sabato): tutto il giro, una camera per riga, in ordine: cosa fare, che letto (matrimoniale o singolo, per quanti), chi parte o arriva, le stelle; poi le stelle nelle altre camere, il messaggio del giorno, quello che dice Michele, «Sono arrivata» se non l'ha ancora toccato, e da dove cominciare. Le camere fatte con ✓.
+  - «Cosa faccio adesso?» / «la prossima»: la prima camera da fare, spiegata (cosa fare, l'ospite, le parole di Michele, le stelle, il letto).
+  - «Cosa mi manca?»: quante ne ha fatte e quali restano.
+  - «Che letto?» (anche per una camera detta per nome): il letto di ogni camera da fare.
+  - «Chi parte?» / «chi arriva?»: le partenze e gli arrivi nelle sue camere.
+  - Le altre domande come prima (una camera per nome, e poi, le ore, i soldi, le stelle, Michele, il Visto); se non lo sa, «Vuoi che lo scrivo a Michele?».
+- Scritto a righe nella chat; col microfono le dice a voce senza le faccine.
+- Prove: prova15510 (le risposte nuove, a righe; a voce senza faccine; la chat che si svuota dopo 2 minuti fuori e non dopo 30 secondi; riaprendo l'app vuota) più quelle di prima.

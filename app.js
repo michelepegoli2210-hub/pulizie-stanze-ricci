@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.9";
+export const VERSIONE = "1.55.10";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -4103,6 +4103,17 @@ const FACCINE = ["😊", "😂", "🙏", "👍", "👌", "❤️", "😍", "😘
 let chatBozza = "", chatMem = null, chatScrivendo = 0;
 const chatFile = new Map();   // i file (non le foto) aspettano qui il «Sì» per Michele: sul telefono non si salvano
 const FOTO_OK = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+// 1.55.10 (Michele: «la chat si deve cancellare ogni volta che esce dall'applicazione: così riscrive subito»): riaprendo
+// l'app la chat parte vuota; se esce e torna dopo almeno 2 minuti, anche. Un attimo fuori (la foto, un messaggio): resta.
+const CHAT_VIA_MIN = 2;
+try { localStorage.removeItem(CHAT_CHIAVE); } catch (e) {}
+let chatViaDa = 0;
+function chatSvuota() { chatMem = { k: chatChiave(), m: [] }; chatFile.clear(); chatScrivendo = 0; try { guida.scrive = false; } catch (e) {} try { localStorage.removeItem(CHAT_CHIAVE); } catch (e) {} }
+try { document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") { chatViaDa = Date.now(); return; }
+  const via = chatViaDa; chatViaDa = 0;
+  if (via && Date.now() - via >= CHAT_VIA_MIN * 60000 && chatMem && chatMem.m.length) { chatSvuota(); try { disegna(); } catch (e) {} }
+}); } catch (e) {}
 function chatChiave() { return `${(S.utente && S.utente.zona) || ""}|${L.oggiISO()}`; }
 // la chat di oggi: in memoria (si legge dal telefono una volta sola); quella dei giorni prima si butta
 function chatGiorno() {
@@ -4163,6 +4174,125 @@ function chatHtml() {
   const scrive = guida.scrive ? `<div class="wa-msg wa-sua${!m.length || m[m.length - 1].da !== "lei" ? " primo" : ""}"><div class="wa-bolla wa-scrive" role="status" aria-label="La governante sta scrivendo"><i></i><i></i><i></i></div></div>` : "";
   return `<section class="wa-conversa" aria-label="La chat con la governante">${righe}${scrive}</section>`;
 }
+// ============================================================================
+//  1.55.10 LA GOVERNANTE RISPONDE MEGLIO (Michele, 6/11: «gli ho chiesto che cosa devo fare oggi e mi ha detto soltanto
+//  Fenicotteri: deve dire tutto, in poche parole; deve rispondere un po' meglio»). Sempre gratis, da quello che l'app sa:
+//  «cosa devo fare (oggi / domani / sabato)» → tutto il giro in poche righe (in ordine, cosa fare, che letto, chi parte,
+//  le stelle, le parole di Michele, da dove cominciare); «adesso / la prossima» → la camera da fare, spiegata; «cosa manca»
+//  → quelle che restano; «che letto» → il letto di ogni camera; «chi arriva / chi parte». Scritto a righe nella chat;
+//  a voce le stesse parole senza le faccine.
+// ============================================================================
+function chatLavori(z, iso) {   // i lavori di quel giorno, nell'ordine in cui li dice la governante
+  const lavori = lavoriInOrdine(pulizieDelGiorno(iso, z));
+  let ordine = [];
+  try { ordine = guidaOra(z, iso).passi.filter(x => x.k === "cam" && x.id).map(x => lavori.find(p => p.id === x.id)).filter(Boolean); } catch (e) {}
+  for (const p of lavori) if (!ordine.includes(p)) ordine.push(p);
+  return ordine;
+}
+function chatLetto(p) {   // «letto matrimoniale per 2», «letto singolo per 1»; negli appartamenti solo «per 4»
+  const per = perChiCamera(p, camera(p.camera)); if (!per) return "";
+  return [per.letto ? `letto ${per.letto === "singola" ? "singolo" : "matrimoniale"}` : "", per.n ? `per ${per.n}` : ""].filter(Boolean).join(" ");
+}
+function chatNomeLavoro(p) { const c = camera(p.camera); return p.origine === "governante" ? `${String(titoloBase(p) || "Lavoro a fondo")} (a fondo in ${nomeBreveCamera(c)})` : nomeBreveCamera(c); }
+function chatRigaLavoro(p, n, rif) {
+  if (p.stato === "fatta") return `✓ ${chatNomeLavoro(p)}: fatta`;
+  const prob = p.stato === "problema" || p.stato === "non_fatta";
+  const cosa = p.origine === "governante" ? "" : parolaGiornata(p, nomeBreveCamera(camera(p.camera)));
+  const mie = (rif || []).filter(r => r.pulizia === p.id).length;
+  const ospite = p.partenza ? (p.arrivo || p.prossimoArrivo === p.data ? "l'ospite parte e ne arriva un altro" : "l'ospite parte") : p.arrivo ? "arriva un ospite" : "";
+  const con = p.insieme && S.zone[p.insieme] ? `con ${SIG(p.insieme)}` : "";
+  return `${n}. ${chatNomeLavoro(p)}: ${[cosa, chatLetto(p), ospite, con, mie ? `⭐ ${mie}` : "", prob ? "⚠️ da sistemare" : ""].filter(Boolean).join(" · ")}`;
+}
+function chatGiro(z, iso) {
+  const oggi = L.oggiISO(), quale = iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, 1) ? "Domani" : maiuscola(L.GIORNI[L.giornoSettimana(iso)]);
+  const tutti = chatLavori(z, iso), lavori = tutti.filter(p => p.tipo !== "stelle"), giro = tutti.find(p => p.tipo === "stelle");
+  if (!tutti.length) return iso === oggi ? "Oggi non ci sono camere per te. Riposati! 😊" : `${quale} non ci sono camere per te. 😊`;
+  const v = iso === oggi ? vistoDelGiorno(z, iso) : null;
+  if (v && v.finitoOra) return `Per oggi hai finito tutto alle ${L.oraBreve(v.finitoOra)}. Brava! 👏`;
+  const rif = rifinitureOggi(z, iso);
+  const nCam = lavori.filter(p => p.tipo !== "fisso" && p.tipo !== "extra" && p.origine !== "governante").length, nAltri = lavori.length - nCam;
+  const quanti = [nCam ? (nCam === 1 ? "una camera" : `${nCam} camere`) : "", nAltri ? (nAltri === 1 ? (nCam ? "un altro lavoro" : "un lavoro") : `${nAltri} ${nCam ? "altri lavori" : "lavori"}`) : ""].filter(Boolean).join(" e ");
+  const righe = [`${quale} hai ${quanti || "solo le rifiniture"}${lavori.length > 1 ? ", in quest'ordine" : ""}:`];
+  let n = 0; for (const p of lavori) { if (p.stato !== "fatta") n++; righe.push(chatRigaLavoro(p, n, rif)); }
+  if (giro) { const mie = rif.filter(r => r.pulizia === giro.id); if (mie.length) righe.push(`⭐ Poi le stelle nelle altre camere: ${rifPerLavoro(mie).map(g => `${g.nome.replace(/:\s*/g, " ").toLowerCase()} in ${elencoParlato(g.dove)}`).join("; ")}`); }
+  const mess = messaggioDelGiorno(iso);
+  if (mess && mess.testo) righe.push(`📣 Il messaggio di oggi: «${senzaPunto(mess.testo)}»`);
+  for (const p of lavori) { const f = [p.dettagli, p.istruzioni].filter(Boolean); if (f.length && p.stato !== "fatta") righe.push(`📣 ${chatNomeLavoro(p)}, ${p.dettagliDa || "Michele"} ti dice: «${senzaPunto(f.join(". "))}»`); }
+  if (iso === oggi) {
+    const prossima = lavori.find(p => p.stato !== "fatta"), arrivo = turnoDetto(z, iso);
+    if (arrivo) righe.push(`👉 ${arrivo}`);
+    righe.push(prossima ? `👉 ${lavori.some(p => p.stato === "fatta") ? "Adesso" : "Comincia da"} ${chatNomeLavoro(prossima)}: toccala qui sotto e te la spiego.` : "👉 Le camere sono fatte: quando hai finito tutto tocca HO FINITO.");
+  }
+  return righe.join("\n");
+}
+function chatAdesso(z) {   // la camera da fare adesso, spiegata (le parole della guida per quella camera)
+  const oggi = L.oggiISO(), lavori = chatLavori(z, oggi).filter(p => p.tipo !== "stelle"), v = vistoDelGiorno(z, oggi);
+  if (!lavori.length) return "Oggi non ci sono camere per te. Riposati! 😊";
+  if (v && v.finitoOra) return `Per oggi hai finito tutto alle ${L.oraBreve(v.finitoOra)}. Brava! 👏`;
+  const p = lavori.find(x => x.stato !== "fatta");
+  if (!p) return "Le camere sono tutte fatte 👏 Quando hai finito tutto tocca HO FINITO.";
+  let passo = null; try { passo = guidaOra(z, oggi).passi.find(x => x.id === p.id); } catch (e) {}
+  const arrivo = turnoDetto(z, oggi), letto = chatLetto(p);
+  const testo = passo ? passo.testo.replace(/^\d+\.\s*/, "").replace(/^Adesso\s+/, "") : chatRigaLavoro(p, 1, rifinitureOggi(z, oggi)).replace(/^\d+\.\s*/, "");
+  return [arrivo ? `👉 ${arrivo}` : "", `👉 Adesso: ${testo}`, letto && !PAROLE.norm(testo).includes(PAROLE.norm(letto)) ? `🛏️ ${maiuscola(letto)}.` : ""].filter(Boolean).join("\n");
+}
+function chatManca(z) {
+  const oggi = L.oggiISO(), lavori = chatLavori(z, oggi).filter(p => p.tipo !== "stelle"), resto = lavori.filter(p => p.stato !== "fatta");
+  if (!lavori.length) return "Oggi non ci sono camere per te. 😊";
+  if (!resto.length) return "Hai fatto tutte le camere 👏 Quando hai finito tutto tocca HO FINITO.";
+  const fatte = lavori.length - resto.length;
+  return `${fatte ? `Ne hai fatte ${fatte} su ${lavori.length}. ` : ""}Ti ${resto.length === 1 ? "manca" : "mancano"} ${resto.length === 1 ? "solo" : resto.length}: ${elencoParlato(resto.map(chatNomeLavoro))}.`;
+}
+function chatLetti(z, iso, solo) {
+  const lavori = chatLavori(z, iso).filter(p => p.tipo !== "stelle" && p.stato !== "fatta" && (!solo || !solo.length || solo.includes(p)) && chatLetto(p));
+  if (!lavori.length) return iso === L.oggiISO() ? "Oggi non ci sono letti da preparare. 😊" : "Quel giorno non ci sono letti da preparare. 😊";
+  return lavori.map(p => { const lt = chatLetto(p); return `🛏️ ${chatNomeLavoro(p)}: ${/^letto /.test(lt) ? lt : "prepara " + lt}`; }).join("\n");
+}
+function chatOspiti(z, iso) {
+  const lavori = chatLavori(z, iso).filter(p => p.tipo !== "stelle");
+  const quando = iso === L.oggiISO() ? "Oggi" : iso === L.aggiungiGiorni(L.oggiISO(), 1) ? "Domani" : maiuscola(L.GIORNI[L.giornoSettimana(iso)]);
+  const righe = lavori.map(p => { const arriva = p.arrivo || (p.partenza && p.prossimoArrivo === iso), n = chatNomeLavoro(p);
+    return p.partenza && arriva ? `🚪 ${n}: parte l'ospite e ne arriva un altro` : p.partenza ? `🚪 ${n}: parte l'ospite` : arriva ? `🧳 ${n}: arriva un ospite` : ""; }).filter(Boolean);
+  return righe.length ? `${quando} nelle tue camere:\n${righe.join("\n")}` : `${quando} nelle tue camere non parte e non arriva nessuno.`;
+}
+function chatGiornoChiesto(t) {   // «domani», «dopodomani», «sabato» (entro la settimana) → quella data; se no oggi
+  const oggi = L.oggiISO();
+  if (/ dopodomani /.test(t)) return L.aggiungiGiorni(oggi, 2);
+  if (/ domani /.test(t)) return L.aggiungiGiorni(oggi, 1);
+  const nomi = ["domenica", "lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato"];
+  for (let i = 1; i <= 6; i++) { const d = L.aggiungiGiorni(oggi, i); if (t.includes(" " + nomi[L.giornoSettimana(d)] + " ")) return d; }
+  return oggi;
+}
+function chatNominate(t, z, iso) {   // le camere di quel giorno dette per nome nella domanda
+  return chatLavori(z, iso).filter(p => p.tipo !== "stelle").filter(p => { const c = camera(p.camera); return [nomeBreveCamera(c), c.nome].map(x => PAROLE.norm(x)).filter(x => x.length > 2).some(n => t.includes(" " + n + " ") || t.includes(" " + n.split(" ").pop() + " ")); });
+}
+// a voce le stesse parole, senza faccine e senza righe
+function chatPerVoce(s) {
+  return String(s || "").replace(/✓/g, "").replace(/⭐\s*(\d+)/g, (m, n) => `${n} ${n === "1" ? "stella" : "stelle"}`).replace(/\p{Extended_Pictographic}|️|‍/gu, "")
+    .replace(/\s*·\s*/g, ", ").replace(/[«»]/g, "").replace(/\s*\n+\s*/g, ". ").replace(/\.\s*\./g, ".").replace(/:\s*\./g, ":").replace(/\s+/g, " ").trim();
+}
+function chatTesto(s) { return { testo: s, voce: chatPerVoce(s) }; }
+function rispostaGiornata(t) {   // null se la domanda non è sulla giornata
+  const z = S.utente && S.utente.zona; if (!z) return null;
+  const oggi = L.oggiISO(), giorno = chatGiornoChiesto(t), nominate = chatNominate(t, z, giorno);
+  if (/ (che|quale|quali) lett[oi] | letti | matrimonial\w* | singol\w* /.test(t)) return chatTesto(chatLetti(z, giorno, nominate));
+  if (nominate.length) return null;   // una camera detta per nome: la spiega la guida (come al microfono)
+  if (/ (che ora|che ore|a che ora|quanto tempo|quante ore|quanto ci|soldi|euro|paga\w*|guadagn\w*|stipendi\w*|salvadanaio|premio|rifinitur\w*|stell[ae]|michele|raccomand\w*|visto|controll\w*) /.test(t)) return null;   // le ore, i soldi, le stelle, Michele, il Visto: le risposte di sempre
+  if (/ (chi arriva|chi parte|arrivano|partono|arrivi|partenze|chi va via) /.test(t)) return chatTesto(chatOspiti(z, giorno));
+  if (giorno === oggi && / (cosa manca|che manca|cosa mi manca|che mi manca|quante mancano|quante ne mancano|cosa resta|cosa mi resta|quanto manca|quanto mi manca|quante ne ho fatte|quante ho fatto|a che punto) /.test(t)) return chatTesto(chatManca(z));
+  if (giorno === oggi && / (adesso|subito|prossim\w*|per prima|da dove (comincio|inizio|parto)|quale (faccio|prima)|cosa faccio ora|che faccio ora|cosa devo fare ora|e ora) /.test(t) && !/ (che ora|che ore|a che ora|quanto) /.test(t)) return chatTesto(chatAdesso(z));
+  if (/ (cosa devo|che devo|cosa faccio|che faccio|cosa c e|che c e|cosa ce|che ce|da fare|programma|giro|quante camere|quali camere|che camere|le camere|le mie camere|lavoro|giornata) /.test(t) || (giorno !== oggi && / (cosa|che|camere|devo|lavor\w*) /.test(t))) return chatTesto(chatGiro(z, giorno));
+  return null;
+}
+function chatConLetto(r) {   // quando la risposta di sempre è su una camera («Adesso Salvatore: …»), anche il letto da fare
+  try {
+    const z = S.utente && S.utente.zona; if (!z || !r) return r;
+    const testa = PAROLE.norm(String(r).replace(/^\d+\.\s*/, "").replace(/^Adesso\s+/i, "").split(":")[0]);
+    const p = chatLavori(z, L.oggiISO()).find(x => x.tipo !== "stelle" && PAROLE.norm(chatNomeLavoro(x)) === testa);
+    const lt = p ? chatLetto(p) : "";
+    return /^letto /.test(lt) && !PAROLE.norm(r).includes(PAROLE.norm(lt)) ? `${r}\n🛏️ ${maiuscola(lt)}.` : r;   // solo matrimoniale o singolo (negli appartamenti no)
+  } catch (e) { return r; }
+}
 // cosa risponde la governante: i saluti, i grazie, le cose che mancano o non vanno (le scrive a Michele, se lei vuole);
 // il resto come al microfono (le cose di oggi); se non lo sa, chiede se scriverlo a Michele
 function rispostaSofia(frasi) {
@@ -4181,17 +4311,19 @@ function rispostaSofia(frasi) {
   if (/ michele /.test(t) && (/ (scriv\w*|dill[oa]|dici|digli|avvis\w*|chiedi\w*|chiedere|chiam\w*|fai sapere|fagli sapere|riferisci) /.test(t) || / di a michele /.test(t))) return perMichele;
   // una cosa che manca o che non va, un ritardo, un problema
   if (!domanda && !/ (ho|abbiamo|hai) finit/.test(t) && / (manca|mancano|e finit[oaie]|sono finit[ie]|finit[oaie] (il|lo|la|i|gli|le|l)|rott[oaie]|guast[oaie]|non funziona|non va|perde|intasat[oaie]|bruciat[oaie]|allagat[oaie]|macchiat[oaie]|non c e piu|non ce piu|non ci sono piu|ritardo|tardi|non vengo|non posso venire|sto male|non sto bene|problema|emergenza|urgente) /.test(t)) return perMichele;
-  if (/ (guadagn\w*|stipendi\w*|pagat[oa]|pagamento|euro) /.test(t)) tutte.push("soldi");   // le parole dei soldi che il microfono non conosceva
+  if (/ (guadagn\w*|stipendi\w*|pagat[oa]|pagamento|euro) /.test(t)) tutte.push("soldi");
+  if (/ (a che ora finisco|che ora finisco|quando finisco|quanto ci metto|a che ora esco|quando esco|a che ora vado via) /.test(t)) tutte.push("quanto tempo");   // 1.55.10   // le parole dei soldi che il microfono non conosceva
+  { const gg = rispostaGiornata(t); if (gg) return gg; }   // 1.55.10: le domande sulla giornata, con risposte intere
   const detti = []; guida.cattura = detti;
   try { guidaRispondi(tutte); } catch (e) { console.warn(e); } finally { guida.cattura = null; }
   const r = detti.filter(Boolean)[0] || "";
   if (!r || /^Ti posso dire solo le cose di oggi/.test(r)) return domanda || /\?/.test(prime[0] || "") ? { testo: "Questo non lo so 🙂 Vuoi che lo scrivo a Michele?", chiedi: true } : perMichele;
-  return { testo: r };
+  return chatTesto(chatConLetto(r));   // 1.55.10: col letto da fare, a voce senza faccine
 }
 const TASTI_CHIEDI = [{ t: "Sì, scrivilo a Michele", a: "chiedi" }, { t: "No, grazie", a: "no" }];
 function chatRisposta(r, domanda, voce) {
   const m = chatAggiungi({ da: "lei", testo: r.testo, ...(r.chiedi ? { tasti: TASTI_CHIEDI, domanda } : {}) });
-  if (voce) { guida.dalMic = true; guidaParla(r.testo); }
+  if (voce) { guida.dalMic = true; guidaParla(r.voce || chatPerVoce(r.testo)); }   // 1.55.10: a voce senza faccine
   return m;
 }
 // «sta scrivendo…» (in alto e nella chat) e poi la risposta

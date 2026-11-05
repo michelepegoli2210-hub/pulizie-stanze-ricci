@@ -7944,3 +7944,5 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf
 .banner.finta .sc-camere-t{flex-basis:100%;text-align:left;color:inherit;font-size:14px}
 .banner.finta .sc-camere .sc-b{flex:1 1 0;min-width:0;min-height:40px;padding:0 8px;font-size:14px;white-space:nowrap}
 :root[data-theme="dark"] .sc-camere-t{color:#D6C7A6}
+/* ---- 1.55.10 · le risposte della governante a righe (tutto il giro: una camera per riga) ---- */
+.wa-conversa .wa-sua .wa-testo{white-space:pre-line}
