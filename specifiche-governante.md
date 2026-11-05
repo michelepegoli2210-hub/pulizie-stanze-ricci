@@ -2666,3 +2666,13 @@ Michele (5/11): «Lei sotto, dove c'è scritto Messaggio, deve poter mettere ver
 - La chat è solo sul telefono e solo per quel giorno: il giorno dopo ricomincia vuota. A Michele arriva solo quello per cui lei tocca «Sì».
 - Con la tastiera aperta la barra sta sopra la tastiera: sui telefoni Android la pagina si accorcia, come in WhatsApp (solo sulla pagina delle signore: le pagine della gestione restano come sono); sugli iPhone la barra sale sopra la tastiera.
 - Prove: prova1557 (la barra vera, le faccine, scrivere e la risposta, «sta scrivendo», la domanda per Michele col «Sì» e Telegram finto, la foto, il microfono senza nuvoletta, il saluto di mattina e di pomeriggio) più quelle di prima.
+
+## 155.8 La 1.55.8 (5 novembre): LE CAMERE A MATITE COLORATE
+
+Michele (5/11): «Dobbiamo modificare soltanto la parte delle camere. La parte delle camere la devi far fare a Gemini, la devi far fare sempre stile scuola elementare, quindi con matite colorate.» (Tutte e due: le righe delle camere e la camera aperta.)
+
+- LE RIGHE DELLE CAMERE: ogni camera è un foglietto del quaderno a quadretti con il bordo fatto a mano; a sinistra l'icona disegnata a matita da Gemini (letto matrimoniale, letto singolo, casetta, scale, pianta, secchio, stella, scintilla) al posto del tondo verde; il nome e le scritte col carattere scritto a mano, grandi; il tasto «Fatto» verde disegnato a mano. La camera di adesso ha l'icona evidenziata in giallo e il nome sottolineato; quella fatta ha l'icona sbiadita con la spunta verde. Sopra, «Le camere di oggi» è un foglietto giallo.
+- LA CAMERA APERTA: il foglio è a quadretti; in alto l'icona a matita della camera; i disegni delle stanze (le mappe e i disegni veri di Salvatore) sono ridisegnati da Gemini a matite colorate con la stessa inquadratura, così i numeri e le frecce restano sulle cose giuste (il disegno dell'armadio, che Gemini aveva allargato, è stato rimesso a posto sull'originale); i passi hanno le icone a matita e il numero in un tondo colorato come un pastello (letto blu, bagno azzurro, camera arancione, pavimenti verde, cucina rosso, partenza viola); le scene del lavoro sono a matita (la stessa signora delle pulizie, senza scritte) e attaccate al foglio con lo scotch; il tasto «Fatto, camera pulita» è disegnato a mano.
+- Gemini consigliava anche disegni piatti, visti di fronte: le stanze restano in 3D perché i numeri e le frecce si appoggiano sulle cose del disegno.
+- I disegni hanno nomi nuovi (…-m.webp): i telefoni non tengono quelli vecchi. Le pagine di Michele usano gli stessi disegni.
+- Prove: prova1558 (le icone a matita nelle righe e nei passi, i disegni nuovi caricati, il carattere a mano, il foglio a quadretti, i posti delle mappe) più quelle di prima.
