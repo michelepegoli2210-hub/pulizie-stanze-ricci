@@ -7467,19 +7467,17 @@ body.premium .sofia-hero .casa-nuvola .dtf-man.urgente{border-left:4px solid #DC
 .sg-aiuto{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#FFF8E1;color:#3D2F00;font-weight:600}
 
 /* ===================================================================================================================
-   1.55.5 · LA PAGINA DELLE SIGNORE MISURATA SULLA CHAT VERA DI WHATSAPP (Michele, 5/11: «Non ancora ci siamo… fai una
-   cosa uguale a quella di WhatsApp… controllala rispetto all'immagine che ti ho inviato, fin quando non è uguale»).
-   Misurata pixel per pixel sulla foto della sua chat con Selena (telefono largo 411 dp; colori presi dalla foto e
-   spostati di un filo):
-   - lo sfondo più chiaro, come il suo: fondo #F2EFE9 (WhatsApp #F3F0EA), disegnini #E2DFD7 (#E3E0D8): sfondo-pulizie-wa2;
-   - le bolle col raggio 10, l'ombra quasi niente; il testo nero #0E1215 (#06080A), alto come il suo in proporzione
-     (riga 1,3); l'ora grande come la sua (0,81 del testo), grigia neutra #5D5F61 (#5A5B5C);
-   - i messaggi mandati verde chiaro #DFFAD7 (#E0FBD8); le spunte e il vocale ascoltato blu #3A7BF2 (#3478F4);
-   - il vocale: le barrette grigio chiaro #CDCFCF (#D0D0D0), la durata e l'ora grandi come le sue, la foto 50;
-   - la foto in alto più piccola (33) con l'anello verde sottile; il nome non in grassetto;
-   - la barra per scrivere: la faccina, «Chiedi alla governante» grande come «Messaggio», la graffetta e la macchina
-     fotografica (solo disegno: tutta la barra è il tasto del microfono), il tondo 48 verde #52A66A (#50A668).
-   La 1.55.5 prende il posto del blocco della 1.55.4.
+   1.55.6 · LE GRANDEZZE DI WHATSAPP SUL TELEFONO DI MICHELE (5/11: la foto dell'app presa dal suo telefono, da mettere
+   accanto alla foto della sua chat con Selena, stesso schermo). Sul suo telefono le scritte di WhatsApp sono grandi:
+   misurate una per una, la nostra pagina le ha avute un po' più piccole. Adesso uguali:
+   - il testo dei messaggi 20 (riga 26,8), il nome in alto 22, «online» 16, l'ora 16, il cartellino «Oggi» 17;
+   - il vocale alto 62 come il suo (la durata e l'ora 17);
+   - la barra per scrivere: «Messaggio» come in WhatsApp, grande 22,5 («Chiedi alla governante» sul telefono veniva
+     tagliato: non ci stava);
+   - le bolle un filo più a sinistra (17 dal bordo, come le sue); le camere coi nomi 20.
+   Prima, la 1.55.5: i colori e le misure presi dalla foto della chat (lo sfondo chiaro #F2EFE9, il verde chiaro #DFFAD7,
+   le spunte blu #3A7BF2, le ore grigie #5D5F61, il tondo del microfono #52A66A, la graffetta e la macchina fotografica).
+   La 1.55.6 prende il posto del blocco della 1.55.5.
    (Nel file pubblicato «body.sig-laguna.sig-laguna.sig-laguna.sig-laguna» è ripetuto quattro volte: lo fa la fase di pubblicazione, così queste regole
    passano sopra a quelle vecchie delle signore senza !important.)
    =================================================================================================================== */
@@ -7513,9 +7511,9 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna header .waves{display:none}
    Sulle altre pagine delle signore la freccia «←» e il titolo. L'ora non c'è: è già in alto sul telefono. */
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header{padding:calc(3px + env(safe-area-inset-top,0px)) 6px 3px 6px;border-bottom:0;box-shadow:0 1px 2px rgba(11,20,26,.08)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header .top,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header .top{justify-content:flex-start;gap:2px;min-height:50px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1{flex:1 1 auto;min-width:0;margin:0 0 0 3px;padding:5px 0 5px 5px;grid-template-columns:40px minmax(0,1fr);column-gap:14px;font:400 21px/1.2 var(--w-font);color:var(--w-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1{flex:1 1 auto;min-width:0;margin:0 0 0 3px;padding:5px 0 5px 5px;grid-template-columns:40px minmax(0,1fr);column-gap:14px;font:400 22px/1.2 var(--w-font);color:var(--w-testo)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1::before{width:34px;height:34px;margin:3px;background:#DFE5E7 url(capo-viso.webp) center 18%/cover no-repeat;box-shadow:0 0 0 1.5px #FFFFFF,0 0 0 3.5px #4CC97A}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1 small,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1 small{margin:1px 0 0;font:400 14px/1.15 var(--w-font);color:var(--w-ora)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat.semplice header h1 small,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat header h1 small{margin:1px 0 0;font:400 16px/1.15 var(--w-font);color:var(--w-ora)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-chat #whoBtn,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto #whoBtn{display:none}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto.semplice header h1,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header h1{display:block;flex:1 1 auto;min-width:0;margin:0 0 0 6px;font:500 21px/1.2 var(--w-font);color:var(--w-testo)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header h1::before,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.wa-testa-sotto header h1 small{display:none}
@@ -7531,31 +7529,32 @@ svg.ms{display:block;fill:currentColor;flex:0 0 auto}
 /* ---- i messaggi della governante, come in WhatsApp ---- */
 .wa-chat{display:flex;flex-direction:column;gap:5px}
 .wa-giorno{display:flex;justify-content:center;margin:0 0 2px}
-.wa-giorno span{padding:6px 12px;border-radius:8px;background:#FCFCFA;box-shadow:0 1px .5px rgba(11,20,26,.08);font:400 15px/1.2 var(--w-font);color:#585A5C}
+.wa-giorno span{padding:6px 12px;border-radius:8px;background:#FCFCFA;box-shadow:0 1px .5px rgba(11,20,26,.08);font:400 17px/1.2 var(--w-font);color:#585A5C}
 /* 1.55.3: come nelle chat singole: niente fotina accanto e niente nome dentro (la governante è nella testata) */
-.wa-msg{display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:100%;padding-left:8px}
+.wa-msg{display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:100%;padding-left:5px}
 .wa-avatar,.wa-avatar-posto,.wa-chi{display:none}
 .wa-bolla{position:relative;min-width:0;max-width:88%;padding:6px 10px 7px 11px;border-radius:10px;background:#FFFFFF;box-shadow:var(--w-ombra)}
 .wa-msg.primo>.wa-bolla:first-child{border-top-left-radius:0}
 .wa-msg.primo>.wa-bolla:first-child::before{content:"";position:absolute;top:0;left:-8px;width:8px;height:13px;background:#FFFFFF;clip-path:polygon(0 0,100% 0,100% 100%)}
-.wa-titolo{display:flex;align-items:center;gap:8px;margin:1px 0 2px;font:700 18.5px/1.2 var(--w-font);color:var(--w-testo)}
+.wa-titolo{display:flex;align-items:center;gap:8px;margin:1px 0 2px;font:700 20px/1.25 var(--w-font);color:var(--w-testo)}
 .wa-titolo-ico{display:none}
-.wa-testo{margin:0;font:400 18.5px/1.3 var(--w-font);color:var(--w-testo);overflow-wrap:anywhere;white-space:pre-line}
+.wa-testo{margin:0;font:400 20px/1.34 var(--w-font);color:var(--w-testo);overflow-wrap:anywhere;white-space:pre-line}
 /* l'ora come in WhatsApp: in fondo all'ultima riga, a destra (se non c'è posto va sotto, sempre a destra) */
 .wa-meta{float:right;position:relative;top:9px;display:inline-flex;align-items:center;gap:4px;margin:0 0 0 14px;line-height:1}
-.wa-ora{font:400 15px/1 var(--w-font);color:var(--w-ora);white-space:nowrap}
+.wa-ora{font:400 16px/1 var(--w-font);color:var(--w-ora);white-space:nowrap}
 /* il vocale: una bolla a parte, come i vocali di WhatsApp: ▶, il pallino sull'onda, sotto la durata e l'ora, a destra la
    foto della governante col microfonino (verde da ascoltare, azzurro quando l'hai sentito). Si tocca dove si vuole. */
-.wa-bolla-voce{width:min(336px,88%);padding:5px 8px 6px 2px}
-.wa-voce{display:grid;grid-template-columns:42px minmax(0,1fr) 50px;align-items:center;column-gap:6px;width:100%;min-height:58px;margin:0;padding:0;border:0;border-radius:10px;background:transparent;color:var(--w-grigio);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.wa-bolla-voce{width:min(336px,88%);padding:6px 8px 6px 2px}
+.wa-voce{display:grid;grid-template-columns:42px minmax(0,1fr) 50px;align-items:center;column-gap:6px;width:100%;min-height:50px;margin:0;padding:0;border:0;border-radius:10px;background:transparent;color:var(--w-grigio);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .wa-play{display:grid;place-items:center;width:42px;height:42px;color:#6A7276}
 .wa-play svg{width:42px;height:42px}
-.wa-voce-x{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;padding-top:10px}
+.wa-voce-x{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;padding-top:8px}
 .wa-voce-su{display:flex;align-items:center;min-width:0}
 .wa-punto{position:relative;z-index:1;flex:0 0 13px;width:13px;height:13px;margin-right:-5px;border-radius:50%;background:var(--w-verde-vivo)}
-.wa-onda{flex:1 1 auto;min-width:0;height:24px;fill:#CDCFCF}
+.wa-onda{flex:1 1 auto;min-width:0;height:22px;fill:#CDCFCF}
 .wa-voce-giu{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.wa-durata{font:400 15px/1 var(--w-font);color:var(--w-ora)}
+.wa-durata{font:400 17px/1 var(--w-font);color:var(--w-ora)}
+.wa-voce-giu .wa-ora{font-size:17px}
 .wa-voce-faccia{position:relative;width:50px;height:50px}
 .wa-voce-faccia img{display:block;width:50px;height:50px;border-radius:50%;object-fit:cover;object-position:center 18%;background:#DFE5E7}
 .wa-voce-mic{position:absolute;left:-12px;bottom:-1px;display:grid;place-items:center;width:20px;height:20px;color:var(--w-verde-vivo)}
@@ -7587,8 +7586,8 @@ svg.ms{display:block;fill:currentColor;flex:0 0 auto}
    e le due spunte azzurre (come i messaggi letti) */
 .wa-chat>.gs-turno.wa-mia{display:block;max-width:82%;padding:6px 9px 8px 11px}
 .wa-chat>.gs-turno.wa-mia .gs-turno-x{display:inline}
-.wa-chat>.gs-turno.wa-mia b{display:block;font:400 18.5px/1.3 var(--w-font);color:var(--w-testo)}
-.wa-chat>.gs-turno.wa-mia small{display:inline;font:400 16px/1.3 var(--w-font);color:#3F4447}
+.wa-chat>.gs-turno.wa-mia b{display:block;font:400 20px/1.34 var(--w-font);color:var(--w-testo)}
+.wa-chat>.gs-turno.wa-mia small{display:inline;font:400 17px/1.34 var(--w-font);color:#3F4447}
 .wa-chat>.gs-turno.wa-mia .wa-meta{top:6px}
 .wa-chat>.gs-turno.wa-mia .wa-spunte{display:inline-flex;color:var(--w-spunta)}
 .wa-chat>.gs-turno.wa-mia .wa-spunte svg{width:20px;height:20px}
@@ -7599,14 +7598,14 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista{display:block;margin:
 /* sopra, il cartellino giallo dei messaggi di sistema: «Le camere di oggi · ⏱️ 2 ore · ⭐ 1», sotto «Tocca una camera…» */
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista-t.wa-sistema{display:flex;justify-content:center;min-height:0;margin:2px 0 6px;padding:0}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-sistema-x{display:inline-flex;flex-direction:column;align-items:center;gap:2px;max-width:92%;padding:6px 14px 7px;border-radius:8px;background:#FCF2C9;box-shadow:0 1px .5px rgba(11,20,26,.13);text-align:center}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-sistema-x>b{font:500 15.5px/1.25 var(--w-font);color:#3B4A54}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-sistema-x>b{font:500 16.5px/1.25 var(--w-font);color:#3B4A54}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segni-g{display:inline}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno{display:inline;min-height:0;padding:0;border:0;border-radius:0;background:none;font:500 15.5px/1.25 var(--w-font);color:#3B4A54}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno{display:inline;min-height:0;padding:0;border:0;border-radius:0;background:none;font:500 16.5px/1.25 var(--w-font);color:#3B4A54}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno::before{content:" · ";color:#8A969C}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno.oro{background:none;color:#7A5600}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno i{margin-right:2px;font-style:normal}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .wa-aiuto{display:block;margin:0;padding:0;font:400 14px/1.3 var(--w-font);color:#5B6870}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe{display:flex;flex-direction:column;gap:6px;padding:0 0 0 8px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .wa-aiuto{display:block;margin:0;padding:0;font:400 15px/1.3 var(--w-font);color:#5B6870}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe{display:flex;flex-direction:column;gap:6px;padding:0 0 0 5px}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe>.gs-cam.wa-riga:first-child{border-top-left-radius:0}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe>.gs-cam.wa-riga:first-child::before{display:block;content:"";position:absolute;top:0;left:-8px;right:auto;bottom:auto;width:8px;height:13px;margin:0;border:0;border-radius:0;background:#FFFFFF;box-shadow:none;opacity:1;transform:none;clip-path:polygon(0 0,100% 0,100% 100%)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga{position:relative;display:flex;flex-direction:row;align-items:center;gap:8px;width:auto;min-width:0;min-height:74px;margin:0;padding:8px 10px;border:0;border-radius:10px;background:#FFFFFF;box-shadow:var(--w-ombra);transform:none;text-align:left;overflow:visible}
@@ -7620,17 +7619,17 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-s
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-stato.fatta{display:none}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .wa-x{display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;flex:1 1 auto}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .wa-su{display:flex;align-items:center;gap:8px;min-width:0}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{flex:0 1 auto;min-width:0;max-width:100%;margin:0;font:500 18.5px/1.2 var(--w-font);letter-spacing:0;color:var(--w-testo);text-shadow:none;overflow-wrap:anywhere}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{flex:0 1 auto;min-width:0;max-width:100%;margin:0;font:500 20px/1.2 var(--w-font);letter-spacing:0;color:var(--w-testo);text-shadow:none;overflow-wrap:anywhere}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .wa-giu{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:0;row-gap:1px;min-width:0;font:400 15px/1.25 var(--w-font);color:var(--w-anteprima)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .wa-giu>span:not(.gp-cosa)+span::before{content:"·";margin:0 6px;color:var(--w-grigio-c)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-cosa{flex:1 0 100%;font:500 15.5px/1.25 var(--w-font);color:#3B4A54}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-cosa{flex:1 0 100%;font:500 16.5px/1.25 var(--w-font);color:#3B4A54}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.k-fondo .gp-cosa{color:var(--w-oro)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.gs-stelle .gp-cosa{color:#5B45BE}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.fatta .gp-cosa{color:var(--w-anteprima)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.prob .gp-cosa{color:var(--w-corallo)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-cosa .wa-spunte{display:inline-block;margin:0 3px 0 0;vertical-align:-4px;color:var(--w-spunta)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-cosa .wa-spunte svg{width:20px;height:20px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-per,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-sotto,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-s{display:inline;margin:0;padding:0;border:0;border-radius:0;background:none;font:400 15px/1.25 var(--w-font);color:var(--w-anteprima);box-shadow:none;min-width:0;height:auto;white-space:nowrap}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-per,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-sotto,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-s{display:inline;margin:0;padding:0;border:0;border-radius:0;background:none;font:400 16px/1.25 var(--w-font);color:var(--w-anteprima);box-shadow:none;min-width:0;height:auto;white-space:nowrap}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-s.parte{color:#B3392C}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-s.nota{color:#8A6100}
 /* fatta: il tondo grigio, l'ora e le due spunte azzurre (come un messaggio letto); adesso: «Adesso» in verde a destra
@@ -7698,7 +7697,7 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .lg-pagina .gs-g.on span,body.s
 .sg-mic.lg-mic .lg-mic-campo{display:flex;align-items:center;gap:12px;flex:1 1 auto;min-width:0;height:50px;padding:0 14px 0 13px;border-radius:25px;background:#FFFFFF;box-shadow:0 1px .5px rgba(11,20,26,.12)}
 .sg-mic.lg-mic .lg-mic-emo{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;color:#5A5C5F}
 .sg-mic.lg-mic .lg-mic-emo svg{width:26px;height:26px;fill:currentColor;filter:none}
-.sg-mic.lg-mic .lg-mic-t{display:block;flex:1 1 auto;min-width:0;margin:0;font:400 18.5px/1.2 var(--w-font,system-ui);letter-spacing:0;color:#5C5F62;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg-mic.lg-mic .lg-mic-t{display:block;flex:1 1 auto;min-width:0;margin:0;font:400 22.5px/1.2 var(--w-font,system-ui);letter-spacing:0;color:#5C5F62;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sg-mic.lg-mic .lg-mic-dx{display:flex;align-items:center;gap:20px;flex:0 0 auto;color:#5A5C5F}
 .sg-mic.lg-mic .lg-mic-dx svg{width:24px;height:24px;fill:currentColor;filter:none}
 .sg-mic.lg-mic .lg-mic-ico{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:50%;background:var(--w-mic,#52A66A);color:#FFFFFF;box-shadow:0 1px 1.5px rgba(11,20,26,.2)}
@@ -7745,10 +7744,10 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .sf-seq-aiuto{font:400 1
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .gp-fatto.grande{border:0;border-radius:16px;background:var(--w-verde);color:#FFFFFF;font:700 22px/1 var(--w-font);box-shadow:0 2px 4px rgba(17,128,74,.25),0 10px 20px -10px rgba(17,128,74,.6)}
 body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .gs-torna{border:1px solid var(--w-filo);border-radius:22px;background:#FFFFFF;color:var(--w-verde);font:500 17px var(--w-font);box-shadow:none}
 @media (max-width:360px){
-  .wa-testo{font-size:17.5px}
+  .wa-testo{font-size:18.5px}
   body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fatto{padding:0 12px 0 9px}
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{font-size:18px}
-  .sg-mic.lg-mic .lg-mic-t{font-size:16.5px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{font-size:19px}
+  .sg-mic.lg-mic .lg-mic-t{font-size:20px}
   .sg-mic.lg-mic .lg-mic-dx{gap:14px}
   .sg-mic.lg-mic .lg-mic-campo{gap:9px}
   .wa-bolla,.wa-bolla-voce{max-width:90%}

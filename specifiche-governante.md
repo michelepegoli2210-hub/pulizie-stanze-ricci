@@ -2642,3 +2642,13 @@ Misurata pixel per pixel sulla foto della sua chat con Selena (il telefono è la
 - LA BARRA PER SCRIVERE: la faccina, «Chiedi alla governante» grande come il suo «Messaggio», a destra la graffetta e la macchina fotografica (solo il disegno: tutta la barra è il tasto del microfono), il tondo 48 verde #52A66A (#50A668).
 - Le cose che in WhatsApp non ci sono (le camere, «Sono arrivata», «HO FINITO») restano, con la stessa grafica.
 - Prove: prova1555 (i colori misurati, le misure, la barra per scrivere) più quelle di prima.
+
+## 155.6 La 1.55.6 (5 novembre): LE GRANDEZZE DI WHATSAPP SUL TELEFONO DI MICHELE
+
+Michele (5/11) ha mandato la foto dell'app presa dal suo telefono («👀 Prova» → Selena), da mettere accanto alla foto della sua chat con Selena: stesso telefono, stesso schermo. Misurate le scritte una per una: sul suo telefono quelle di WhatsApp sono grandi, le nostre un po' più piccole.
+
+- Il testo dei messaggi 20 (con la riga 26,8, come le sue), il titolo «Cosa devi fare oggi» 20; il nome in alto 22, «online» 16; l'ora dei messaggi 16; il cartellino «Oggi» 17.
+- Il vocale alto 62 come il suo; la durata e l'ora 17.
+- La barra per scrivere: «Messaggio», come in WhatsApp, grande 22,5. «Chiedi alla governante» sul suo telefono veniva tagliato («Chiedi alla governan…»): non ci stava. Toccando la barra la governante ascolta, come prima.
+- Le bolle un filo più a sinistra (17 dal bordo, come le sue); le camere coi nomi 20, sotto 16,5.
+- Prove: prova1556 più quelle di prima.

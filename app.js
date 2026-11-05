@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.5";
+export const VERSIONE = "1.55.6";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -4072,7 +4072,7 @@ function guidaMic() {
   document.body.classList.toggle("con-lg-mic", nuovo && (vuoi || compagnaVuole()));   // 1.55.0: sta nella barra in basso, a destra
   if (!vuoi) { if (b) b.hidden = true; return; }
   if (b && (b.dataset.lg || "") !== (nuovo ? "1" : "")) { b.remove(); b = null; }
-  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = nuovo ? "sg-mic lg-mic" : "sg-mic"; b.dataset.lg = nuovo ? "1" : ""; b.innerHTML = nuovo ? `<span class="lg-mic-campo"><span class="lg-mic-emo" aria-hidden="true">${msSvg("mood")}</span><span class="lg-mic-t">Chiedi alla governante</span><span class="lg-mic-dx" aria-hidden="true">${msSvg("attach_file")}${msSvg("photo_camera")}</span></span><span class="lg-mic-ico">${MIC_WA}</span>` : `${MIC_WA}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = nuovo ? "sg-mic lg-mic" : "sg-mic"; b.dataset.lg = nuovo ? "1" : ""; b.innerHTML = nuovo ? `<span class="lg-mic-campo"><span class="lg-mic-emo" aria-hidden="true">${msSvg("mood")}</span><span class="lg-mic-t">Messaggio</span><span class="lg-mic-dx" aria-hidden="true">${msSvg("attach_file")}${msSvg("photo_camera")}</span></span><span class="lg-mic-ico">${MIC_WA}</span>` : `${MIC_WA}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
   b.setAttribute("aria-label", nuovo ? "Chiedi alla governante: tocca e parla" : `Parla con ${nomeGov()}: tocca il microfono e chiedi`);
   b.hidden = false;
 }
