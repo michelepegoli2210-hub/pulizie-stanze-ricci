@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.54.1";
+export const VERSIONE = "1.55.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1535,7 +1535,7 @@ function oraAdesso() { const d = new Date(); return String(d.getHours()).padStar
 setInterval(() => { if (document.hidden) return; const t = oraAdesso(); document.querySelectorAll(".who-ora").forEach(o => { if (o.textContent !== t) o.textContent = t; }); }, 10000);
 function disegnaTestata() {
   const u = S.utente;
-  const sub = !u ? "Pulizie" : addetta() ? SIG(u.zona) : (u.ruolo === "lettura" ? "Solo lettura" : "Gestione") + (u.nome ? " · " + u.nome : "");
+  const sub = !u ? "Pulizie" : addetta() ? (argonLei() ? `Pulizie · ${SIG(u.zona)}` : SIG(u.zona)) : (u.ruolo === "lettura" ? "Solo lettura" : "Gestione") + (u.nome ? " · " + u.nome : "");
   $("#sub").textContent = sub;
   const who = $("#whoBtn");
   who.hidden = !u;
@@ -2962,6 +2962,7 @@ const MATITA = {
   // la scintilla (lavoro a fondo)
   scintilla: `<svg viewBox="0 0 64 54" aria-hidden="true"><path d="M26 6 L30 22 L46 27 L30 32 L26 48 L22 32 L6 27 L22 22 Z" fill="#FFF0B8"/><path d="M26 6 L30 22 L46 27 L30 32 L26 48 L22 32 L6 27 L22 22 Z" fill="url(#mtGi)" ${MT_TRATTO}/><path d="M50 8 L52 15 L59 17 L52 19 L50 26 L48 19 L41 17 L48 15 Z" fill="#FFFFFF" ${MT_TRATTO.replace('2.6', '2')}/></svg>`,
 };
+const MIC_WA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V5a3.5 3.5 0 0 0-7 0v6a3.5 3.5 0 0 0 3.5 3.5z"/><path d="M18.2 11a.9.9 0 0 0-1.8 0 4.4 4.4 0 0 1-8.8 0 .9.9 0 0 0-1.8 0 6.2 6.2 0 0 0 5.3 6.1V20H8.8a.9.9 0 0 0 0 1.8h6.4a.9.9 0 0 0 0-1.8h-2.3v-2.9a6.2 6.2 0 0 0 5.3-6.1z"/></svg>`;   // 1.55.0
 const MICROFONO_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="22" y="8" width="20" height="32" rx="10" fill="#FFFFFF"/><rect x="22" y="8" width="20" height="32" rx="10" fill="url(#mtAc)" stroke="#FFFFFF" stroke-width="3"/><path d="M14 31 Q14 48 32 48 Q50 48 50 31" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/><path d="M32 48 V58 M22 58 H42" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/></svg>`;
 // 1.54.0: i disegni a matita colorata di Gemini (fig-*.webp, trasparenti) al posto di quelli fatti col codice
 const FIG = (nome, cls = "") => `<img class="lg-fig${cls ? " " + cls : ""}" src="fig-${nome}.webp" alt="" aria-hidden="true" decoding="async">`;
@@ -2975,7 +2976,9 @@ function figuraGiro(p, c, soloFondo) {
   if (c && c.tipo === "casa") return "casa";
   return c && (Number(c.posti) || 2) < 2 ? "letto1" : "letto2";
 }
-function disegninoMatita(p, c, soloFondo) { const f = figuraGiro(p, c, soloFondo); return f ? FIG(f) : ""; }
+// 1.55.0: le icone piatte di Gemini, pulite come quelle delle app di messaggistica (ico-*.webp, trasparenti), nei tondi
+const ICO = (nome, cls = "") => `<img class="wa-ico${cls ? " " + cls : ""}" src="ico-${nome}.webp" alt="" aria-hidden="true" decoding="async">`;
+function disegninoMatita(p, c, soloFondo) { const f = figuraGiro(p, c, soloFondo); return f ? ICO(f) : ""; }
 // per quante persone si prepara la camera (chi dorme stanotte; alla partenza, chi arriva dopo) e che letto è
 function perChiCamera(p, c) {
   if (!p || !c || p.tipo === "stelle" || p.tipo === "fisso" || p.tipo === "extra" || p.origine === "governante") return null;
@@ -2998,9 +3001,9 @@ function tesseraGiro(p, rif, anteprima, n, ora, extra = {}) {
   const nome = stelle ? "Altre camere" : fondo ? String(titoloBase(p) || "Lavoro a fondo") : nomeBreveCamera(c);
   const sotto = stelle ? [...new Set(mie.map(r => r.luogoNome || camera(r.camera).nome))].join(", ") : fondo ? `in ${nomeBreveCamera(c)}` : "";
   const segni = [];
-  if (p && !st && p.partenza) segni.push(["parte", "🚪", "l'ospite parte"]);
-  else if (p && !st && p.arrivo) segni.push(["arriva", "🧳", "arriva un ospite"]);
-  if (p && !st && (p.dettagli || p.istruzioni)) segni.push(["nota", "📣", `${p.dettagliDa || "Michele"} ti dice qualcosa`]);
+  if (p && !st && p.partenza) segni.push(["parte", "🚪", "l'ospite parte", "parte"]);
+  else if (p && !st && p.arrivo) segni.push(["arriva", "🧳", "arriva un ospite", "arriva"]);
+  if (p && !st && (p.dettagli || p.istruzioni)) segni.push(["nota", "📣", `${p.dettagliDa || "Michele"} ti dice qualcosa`, "nota"]);
   const k = soloFondo || fondo ? "k-fondo" : stelle ? "gs-stelle" : tipoGiornata(p);
   const qui = fondi.map(f => ({ ...f, st: anteprima ? "" : f.p.stato === "fatta" ? "fatta" : f.p.stato === "problema" || f.p.stato === "non_fatta" ? "prob" : "" }));
   const ora2 = ora || qui.some(f => f.ora);
@@ -3015,7 +3018,11 @@ function tesseraGiro(p, rif, anteprima, n, ora, extra = {}) {
   const fattoBtn = conFatto ? `<button type="button" class="gp-fatto" data-fatta-camera="${esc(apri.id)}" aria-label="${esc(nome)}: segna fatta">${ICONA("spunta")}<span>Fatto</span></button>` : "";
   const piede = stellaBtn || fattoBtn ? `<span class="gp-piede">${stellaBtn}${fattoBtn}</span>` : "";
   const label = `${esc(nome)}: ${esc(cosa)}${per ? ", " + esc(per.detto) : ""}${mie.length ? `, ${mie.length === 1 ? "una stella" : mie.length + " stelle"}` : ""}${segni.length ? ". " + esc(segni.map(s => s[2]).join(", ")) : ""}${esc(detti)}`;
-  return `<div class="gs-cam gp ${k}${st ? " " + st : ""}${ora2 ? " ora" : ""}${qui.length ? " con-fondi" : ""}" data-cam="${esc(c.id)}"><button type="button" class="gp-apri" data-dettagli="${esc(apri.id)}" aria-label="${label}">${ora2 ? `<span class="gs-ora">👉 Adesso</span>` : ""}${st ? `<span class="gp-stato ${st}" aria-hidden="true">${st === "fatta" ? "✓" : "!"}</span>` : ""}<span class="gp-ico" aria-hidden="true">${disegninoMatita(p, c, soloFondo)}</span><span class="gs-nome">${esc(nome)}</span><span class="gp-cosa">${esc(cosa)}</span>${per ? `<span class="gp-per"><i aria-hidden="true">${per.ico}</i>${esc(per.testo)}</span>` : ""}${sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : ""}${segni.length ? `<span class="gp-segni" aria-hidden="true">${segni.map(([cl, t]) => `<i class="gp-s ${cl}">${t}</i>`).join("")}</span>` : ""}${fondoHtml}</button>${piede}</div>`;
+  // 1.55.0: una riga come nelle chat di WhatsApp: a sinistra il tondo col disegno (il ✓ sopra quando è fatta), il nome
+  // grande, sotto in grigio cosa fare · per quanti · che letto · i segni; a destra «👉 Adesso» o le spunte ✓✓, e «✓ Fatto»
+  const giu = [`<span class="gp-cosa">${esc(cosa)}</span>`, per ? `<span class="gp-per">${esc(per.testo)}</span>` : "", sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : "", ...segni.map(([cl, t, , w]) => `<span class="gp-s ${cl}">${t} ${esc(w || "")}</span>`)].filter(Boolean).join("");
+  const destra = ora2 ? `<span class="gs-ora">👉 Adesso</span>` : st === "fatta" ? `<span class="wa-spunte" aria-hidden="true">✓✓</span>` : "";
+  return `<div class="gs-cam wa-riga ${k}${st ? " " + st : ""}${ora2 ? " ora" : ""}${qui.length ? " con-fondi" : ""}" data-cam="${esc(c.id)}"><button type="button" class="gp-apri" data-dettagli="${esc(apri.id)}" aria-label="${label}"><span class="gp-ico" aria-hidden="true">${disegninoMatita(p, c, soloFondo)}${st ? `<span class="gp-stato ${st}">${st === "fatta" ? "✓" : "!"}</span>` : ""}</span><span class="wa-x"><span class="wa-su"><span class="gs-nome">${esc(nome)}</span>${destra}</span><span class="wa-giu">${giu}</span>${fondoHtml}</span></button>${piede}</div>`;
 }
 function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   const num = new Map(ord.map((p, i) => [p.id, i + 1]));
@@ -3050,6 +3057,33 @@ function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   const altri = ord.filter(p => !messe.has(p.id));
   if (altri.length) blocchi.push(`<div class="gp-piano"><div class="gp-eti"><span>Altri lavori</span></div><div class="gp-griglia">${altri.map(p => tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId)).join("")}</div></div>`);
   return `<section class="gs-camere gp-mappa matita${pl ? " col-piano" : ""}" aria-label="La piantina del giro">${MATITA_DEFS}${testaGiro(z, giorno, ord, rif, anteprima)}${blocchi.join("")}</section>`;
+}
+// 1.55.0: le camere come le chat di WhatsApp: una riga per camera (coi suoi lavori a fondo dentro), nell'ordine del giro.
+// Niente più piantina col corridoio e le camere degli altri: solo quelle da fare, una sotto l'altra, larghe e chiare.
+function testaLista(z, giorno, ord, rif, anteprima) {
+  const minuti = Math.round(minutiGiornata(ord, rif) / 15) * 15;   // al quarto d'ora
+  const segni = [minuti && !pagaAOre() ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
+    rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
+  const quando = anteprima ? L.GIORNI[L.giornoSettimana(giorno)] : "oggi";
+  return `<div class="wa-lista-t"><b>Le camere di ${esc(quando)}</b>${segni.length ? `<span class="gs-segni-g">${segni.join("")}</span>` : ""}</div><p class="gp-aiuto wa-aiuto">Tocca una camera: la governante te la spiega</p>`;
+}
+function listaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
+  const num = new Map(ord.map((p, i) => [p.id, i + 1]));
+  const oraId = adesso >= 0 && ord[adesso] ? ord[adesso].id : "";
+  const dentro = (p) => !!S.camere.find(c => c.id === p.camera);
+  const vera = (p) => p.tipo !== "stelle" && p.origine !== "governante" && p.tipo !== "fisso" && p.tipo !== "extra" && dentro(p);
+  const perCamera = new Map(); for (const p of ord) if (vera(p) && !perCamera.has(p.camera)) perCamera.set(p.camera, p);
+  const fondoDi = new Map(); for (const p of ord) if (p.origine === "governante" && dentro(p)) { if (!fondoDi.has(p.camera)) fondoDi.set(p.camera, []); fondoDi.get(p.camera).push(p); }
+  const messe = new Set(), righe = [];
+  for (const p of ord) {
+    if (messe.has(p.id)) continue;
+    if (vera(p) || (p.origine === "governante" && dentro(p))) {
+      const q = perCamera.get(p.camera) || null, fs = fondoDi.get(p.camera) || [];
+      if (q) messe.add(q.id); for (const f of fs) messe.add(f.id);
+      righe.push(tesseraGiro(q, rif, anteprima, q ? num.get(q.id) : 0, !!q && q.id === oraId, { camera: camera(p.camera), fondo: fs.map(f => ({ p: f, n: num.get(f.id), ora: f.id === oraId })) }));
+    } else { messe.add(p.id); righe.push(tesseraGiro(p, rif, anteprima, num.get(p.id), p.id === oraId)); }
+  }
+  return `<section class="gs-camere gp-mappa wa-lista" aria-label="Le camere">${testaLista(z, giorno, ord, rif, anteprima)}<div class="wa-righe">${righe.join("")}</div></section>`;
 }
 // nella camera aperta: i lavori a fondo di quella camera, quel giorno (col loro «Come si fa»)
 // 1.33.0: il disegnino giusto (l'icona del catalogo: finestra, letto, stella… prima usciva la parola e si accavallava al nome)
@@ -4003,10 +4037,11 @@ function guidaMic() {
   let b = document.getElementById("sgMic");
   const vuoi = micVuole();
   document.body.classList.toggle("con-mic", vuoi);
-  if (!vuoi) { if (b) b.hidden = true; return; }
   const nuovo = !!document.querySelector(".lg-pagina") && !document.querySelector(".sheet");   // 1.54.0: sulla pagina «Chiedi alla governante»; nella camera aperta il tondo di prima
+  document.body.classList.toggle("con-lg-mic", nuovo && (vuoi || compagnaVuole()));   // 1.55.0: sta nella barra in basso, a destra
+  if (!vuoi) { if (b) b.hidden = true; return; }
   if (b && (b.dataset.lg || "") !== (nuovo ? "1" : "")) { b.remove(); b = null; }
-  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = nuovo ? "sg-mic lg-mic" : "sg-mic"; b.dataset.lg = nuovo ? "1" : ""; b.innerHTML = nuovo ? `<span class="lg-mic-ico">${FIG("microfono")}</span><span class="lg-mic-t"><b>Chiedi alla</b><b>governante</b></span>` : `${MICROFONO_SVG}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "sgMic"; b.className = nuovo ? "sg-mic lg-mic" : "sg-mic"; b.dataset.lg = nuovo ? "1" : ""; b.innerHTML = nuovo ? `<span class="lg-mic-ico">${MIC_WA}</span><span class="lg-mic-t"><b>Chiedi alla</b><b>governante</b></span>` : `${MIC_WA}<span>${esc(nomeGov())}</span>`; b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); compagnaMic(); }; document.body.appendChild(b); }
   b.setAttribute("aria-label", nuovo ? "Chiedi alla governante: tocca e parla" : `Parla con ${nomeGov()}: tocca il microfono e chiedi`);
   b.hidden = false;
 }
@@ -4064,31 +4099,58 @@ function bloccoControlli(z, iso) {
 //  Il microfono a fianco «Chiedi alla governante»: lo tocchi e lei esce (solo la sagoma ritagliata), ascolta e risponde.
 //  I disegni a matita colorata e lo sfondo ad acquerello (la laguna in alto, le bolle, la schiuma in fondo) sono di Gemini.
 // ============================================================================
+// ============================================================================
+//  1.55.0 LA PAGINA DELLE SIGNORE COME WHATSAPP (Michele, 5/11, con la foto di una chat con Selena: «ancora non mi piace
+//  l'impaginazione: è troppo appiccicata, poco chiara, le cose non risaltano; dai colori non si capisce che è un'app delle
+//  pulizie; non ci siamo come semplicità e professionalità. Per la chiarezza dei messaggi e delle scritte ispirati a
+//  WhatsApp: Selena usa molto WhatsApp, TikTok, Facebook. E falli ispirare a quello anche a Gemini»).
+//  In cima, sullo sfondo delle chat (i disegnini delle pulizie di Gemini), i messaggi della governante come in WhatsApp:
+//  la bolla bianca, «La governante» in blu con la sua foto, il vocale da ascoltare (▶), l'ora. Il primo è quello che
+//  scrive Michele; il secondo «Cosa devi fare oggi»; sotto il tasto blu «Sono arrivata» (o l'orario che corre). Poi le
+//  camere come le chat: una riga per camera, il tondo col disegno (le icone piatte di Gemini), il nome grande, sotto in
+//  grigio cosa fare; a destra «👉 Adesso» (o le due spunte blu ✓✓ quando è fatta) e il tasto «✓ Fatto».
+// ============================================================================
+// il vocale: le barrette (sempre uguali per lo stesso testo) e quanto dura, più o meno
+function ondaVoce(testo) {
+  let h = 2166136261; for (const ch of String(testo || "")) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const barre = [];
+  for (let i = 0; i < 28; i++) { h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; const a = 4 + (h % 17); barre.push(`<rect x="${i * 5}" y="${(22 - a) / 2}" width="3" height="${a}" rx="1.5"/>`); }
+  return `<svg class="wa-onda" viewBox="0 0 138 22" preserveAspectRatio="none" aria-hidden="true">${barre.join("")}</svg>`;
+}
+function durataVoce(testo) { const s = Math.max(2, Math.round(String(testo || "").length / 14)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+// l'ora del messaggio come in WhatsApp: «07:51»; se l'ha scritto il giorno prima, «ieri 20:40»
+function oraMessaggio(ora, giorno) {
+  if (!ora) return "";
+  try { const d = new Date(ora); if (isNaN(d)) return ""; const g = L.oggiISO(d), t = L.oraBreve(d.toISOString()); return g === giorno ? t : g === L.aggiungiGiorni(giorno, -1) ? `ieri ${t}` : `${L.dataBreve(g)} ${t}`; } catch (e) { return ""; }
+}
+function bollaWa(o) {
+  const voce = o.detto ? `<button type="button" class="wa-voce" data-lg-ascolta data-lg-testo="${esc(o.detto)}" aria-label="${esc(o.etichetta || "Ascolta")}"><span class="wa-play" aria-hidden="true"></span>${ondaVoce(o.detto)}<span class="wa-durata" aria-hidden="true">${durataVoce(o.detto)}</span></button>` : "";
+  const piede = voce || o.ora ? `<div class="wa-piede">${voce}${o.ora ? `<time class="wa-ora">${esc(o.ora)}</time>` : ""}</div>` : "";
+  const faccia = o.primo ? `<img class="wa-avatar" src="${FILM_CAPO.viso}" alt="" aria-hidden="true" decoding="async">` : `<span class="wa-avatar-posto" aria-hidden="true"></span>`;
+  return `<div class="wa-msg${o.cls ? " " + o.cls : ""}${o.primo ? " primo" : ""}" role="group"${o.aria ? ` aria-label="${esc(o.aria)}"` : ""}>${faccia}<div class="wa-bolla">${o.primo ? `<b class="wa-chi">La governante</b>` : ""}${o.titolo || ""}${o.testo ? `<p class="wa-testo">${esc(o.testo)}</p>` : ""}${o.dentro || ""}${piede}</div></div>`;
+}
+// il primo messaggio: quello che scrive Michele per la giornata (se quel giorno non c'è, non c'è)
 function cardGovernante(giorno, anteprima) {
   const msg = messaggioDelGiorno(giorno); if (!msg) return "";
-  const quando = anteprima ? ` · ${L.GIORNI[L.giornoSettimana(giorno)]}` : "";
-  return `<section class="lg-gov" aria-label="La governante ti dice"><div class="lg-gov-testa">${FIG("megafono", "lg-gov-fig")}<span class="lg-gov-t">La governante ti dice${esc(quando)}</span>
-    <button type="button" class="lg-ascolta" data-lg-ascolta data-lg-testo="${esc(`La governante ti dice: ${msg.testo}`)}" aria-label="Ascolta quello che dice la governante">🔊</button></div>
-    <p class="lg-gov-msg">${esc(msg.testo)}</p></section>`;
+  return bollaWa({ cls: "wa-gov", primo: true, aria: "La governante ti dice", testo: msg.testo, detto: `La governante ti dice: ${msg.testo}`, etichetta: "Ascolta quello che dice la governante", ora: oraMessaggio(msg.ora, giorno) });
 }
+// il secondo: cosa devi fare oggi (le parole di Sofia per la giornata); sotto il tasto «Sono arrivata» o l'orario che corre
 function cardOggiFare(z, giorno, lavori, rif, anteprima, v, vedono) {
   const oggi = L.oggiISO(), passi = guidaPassi(z, giorno), primo = passi[0] || {};
   const finito = !anteprima && !!(v && v.finitoOra);
   const dopo = finito ? lavori.filter(p => p.stato === "da_fare" || p.stato === "in_corso") : [];
   let titolo = "Cosa devi fare oggi", testo = primo.breve || primo.testo || "", detto = primo.testo || testo, fig = "lista", cls = "";
-  if (anteprima) { titolo = maiuscola(L.dataLunga(giorno)); }
-  else if (finito && dopo.length) { titolo = "C'è un lavoro nuovo"; testo = `${maiuscola(elencoParlato(dopo.map(p => p.tipo === "stelle" ? "le stelle in altre camere" : nomeBreveCamera(camera(p.camera)))))}. Quando hai fatto, tocca «HO FINITO ANCHE QUESTO».`; detto = testo; }
+  if (anteprima) titolo = `Cosa devi fare ${L.GIORNI[L.giornoSettimana(giorno)]}`;
+  else if (finito && dopo.length) { titolo = "C'è un lavoro nuovo"; testo = `${maiuscola(elencoParlato(dopo.map(p => p.tipo === "stelle" ? "le stelle in altre camere" : nomeBreveCamera(camera(p.camera)))))}. Quando hai fatto, tocca «HO FINITO ANCHE QUESTO».`; detto = testo; fig = "megafono"; }
   else if (finito) { const fine = passi[passi.length - 1] || {}; titolo = `Hai finito alle ${L.oraBreve(v.finitoOra)}`; testo = v.vistoOra ? `Visto di ${v.vistoNome || "la direzione"} ✓ Brava!` : rif.length ? `Le rifiniture aspettano il Visto di ${vedono.join(" o ") || "chi passa dopo"}.` : "Brava! Puoi andare."; detto = fine.testo || testo; fig = "scintilla"; cls = " fatto"; }
   const arrivo = anteprima || finito ? "" : turnoDetto(z, giorno);
-  if (arrivo && testo.startsWith(arrivo)) testo = testo.slice(arrivo.length).trim();   // c'è il tasto proprio sotto: la frase resta a voce
-  const sotto = anteprima ? `<button type="button" class="lg-oggi-torna" data-g="${oggi}">↩ Torna a oggi</button>` : "";
-  const turno = anteprima ? "" : cardTurno(z, false, "tutto");
+  if (arrivo && testo.startsWith(arrivo)) testo = testo.slice(arrivo.length).trim();   // il tasto è proprio sotto: la frase resta a voce
   const nIstr = anteprima ? 0 : istruzioniDelGiorno(oggi, z).length;
-  const istr = nIstr ? `<p class="lg-oggi-nota">📎 La governante ti ha lasciato ${nIstr === 1 ? "una spiegazione" : nIstr + " spiegazioni"} coi disegni: è più giù, dopo le camere.</p>` : "";
-  const data = anteprima ? "" : `<small>${esc(maiuscola(L.dataLunga(giorno)))}</small>`;
-  return `<section class="lg-oggi${cls}" aria-label="${esc(titolo)}"><div class="lg-oggi-testa">${FIG(fig, "lg-oggi-fig")}<span class="lg-oggi-t"><b>${esc(titolo)}</b>${data}</span>
-    <button type="button" class="lg-ascolta" data-lg-ascolta data-lg-testo="${esc(detto)}" aria-label="Ascolta cosa devi fare">🔊</button></div>
-    <p class="lg-oggi-x">${esc(testo)}</p>${turno}${istr}${sotto}</section>`;
+  const istr = nIstr ? `<p class="wa-nota">📎 La governante ti ha lasciato ${nIstr === 1 ? "una spiegazione" : nIstr + " spiegazioni"} coi disegni: è più giù, dopo le camere.</p>` : "";
+  const turno = anteprima ? "" : cardTurno(z, false, "tutto");
+  const bolla = bollaWa({ cls: "lg-oggi wa-oggi" + cls, primo: !messaggioDelGiorno(giorno), aria: titolo, titolo: `<b class="wa-titolo">${ICO(fig, "wa-titolo-ico")}<span>${esc(titolo)}</span></b>`, testo, detto, etichetta: "Ascolta cosa devi fare", dentro: istr + (finito ? turno : "") });
+  const sotto = anteprima ? `<button type="button" class="lg-oggi-torna wa-torna" data-g="${oggi}">↩ Torna a oggi</button>` : finito ? "" : turno;
+  return bolla + sotto;
 }
 // il 🔊 delle due schede: la governante dice quel testo (se sta già parlando, smette)
 document.addEventListener("click", (e) => {
@@ -4119,15 +4181,17 @@ function vistaArgon(z) {
   // 1.29.0: «ADESSO» = la camera che Sofia sta dicendo (all'inizio la prima da fare; dopo HO FINITO l'eventuale lavoro nuovo)
   const iCorso = ord.findIndex(p => p.stato === "in_corso"), pa = guidaOra(z, giorno).passo || {};
   const adesso = anteprima ? -1 : iCorso >= 0 ? iCorso : finito ? ord.findIndex(p => !p.stato || p.stato === "da_fare") : pa.k === "cam" ? ord.findIndex(p => p.id === pa.id) : pa.k === "fine" ? -1 : ord.findIndex(p => p.stato !== "fatta");
-  const schede = ord.length ? piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
+  const schede = ord.length ? listaGiro(z, giorno, ord, rif, anteprima, pl, adesso) : (anteprima ? `<section class="gs-avviso">${ICONA("calendario")}<span>${esc(L.GIORNI[L.giornoSettimana(giorno)].replace(/^./, ch => ch.toUpperCase()))}: niente camere.</span></section>` : "");
   let tasto = "";
   if (!anteprima && aperteDopo.length) tasto = `<section class="gs-avviso">${ICONA("avviso")}<span><b>Lavoro nuovo:</b> ${esc(aperteDopo.map(p => p.tipo === "stelle" ? "stelle in altre camere" : nomeBreveCamera(camera(p.camera))).join(", "))}.</span></section><button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO ANCHE QUESTO</span></button>`;
   else if (!anteprima && lavori.length && !finito) tasto = `<button class="ag-finito" data-ho-finito>${ICONA("spunta")}<span>HO FINITO</span></button>`;
   const spiegazioni = anteprima ? "" : istruzioniDelGiorno(oggi, z).map((x, i) => cardIstruzione(x, i)).join("");
   const rifiuti = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(giorno) + 1) % 7);
   const bidoni = rifiuti && z === "ap" ? `<section class="gs-avviso">${ICONA("bidone")}<span>${anteprima ? "Quella sera" : "Stasera"} fuori: <b>${esc(rifiuti.cosa.replace(/^./, ch => ch.toUpperCase()))}</b></span></section>` : "";
-  if (anteprima) return `<div class="lg-pagina">${messaggio}${fare}${schede}${mappa}${bidoni}${voce}</div>`;
-  return `<div class="lg-pagina">${messaggio}${fare}${cardVisto(z)}${sospesa}${schede}${tasto}${spiegazioni}${bloccoControlli(z, oggi)}${mappa}${lgMuta()}${bidoni}${voce}</div>`;
+  // 1.55.0: in cima i messaggi della governante come in WhatsApp (il cartellino della data, le bolle, il tasto «Sono arrivata»)
+  const chat = `<section class="wa-chat" aria-label="I messaggi della governante"><div class="wa-giorno"><span>${esc(anteprima ? maiuscola(L.dataLunga(giorno)) : "Oggi · " + L.dataLunga(giorno))}</span></div>${messaggio}${fare}</section>`;
+  if (anteprima) return `<div class="lg-pagina wa-pagina">${chat}${schede}${mappa}${bidoni}${voce}</div>`;
+  return `<div class="lg-pagina wa-pagina">${chat}${cardVisto(z)}${sospesa}${schede}${tasto}${spiegazioni}${bloccoControlli(z, oggi)}${mappa}${lgMuta()}${bidoni}${voce}</div>`;
 }
 // i tasti di Sofia (anche quando la pagina si ridisegna) e la camera aperta: Sofia la dice (dopo che il foglio si è aperto)
 document.addEventListener("click", (e) => {
