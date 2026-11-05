@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.52.1";
+export const VERSIONE = "1.53.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -4514,7 +4514,25 @@ setInterval(() => { try { argonVenerdi(); } catch (e) {} }, 5 * 60 * 1000);
 // ============================================================================
 const SEGRETERIA_MAX = 40;
 function segreteriaLetture() { return Object.values(S.segreteria || {}).filter(x => x && x.lid).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))); }
-function segreteriaSotto() { const l = segreteriaLetture(), n = l.filter(x => x.esito === "da_controllare").length; return l.length ? `${l.length} ${l.length === 1 ? "lettura" : "letture"}${n ? ` · ${n} da controllare` : ""}` : "le chat lette, da controllare"; }
+// 1.53.0: niente più «da controllare» (la segretaria fa lei): mentre legge, le letture, le domande che aspettano te
+// (le proposte e i dubbi senza risposta delle letture degli ultimi tre giorni: quelle più vecchie non servono più)
+function domandeSegreteria() {
+  const da = L.aggiungiGiorni(L.oggiISO(), -2); let n = 0;
+  for (const x of segreteriaLetture()) {
+    if (!x || ["scartata", "sostituita"].includes(x.esito) || String(x.quando || "").slice(0, 10) < da) continue;
+    n += (Array.isArray(x.proposte) ? x.proposte : []).filter(p => p && !p.esito).length + (Array.isArray(x.domande) ? x.domande : []).filter(d => d && !d.risposta).length;
+  }
+  return n;
+}
+// sta leggendo le chat: questo telefono (la posta del ponte), oppure il giro ad app chiusa, oppure un telefono che mette a posto
+function segretariaAlLavoro() {
+  try {
+    if (letturaInCorso() && modoChat(S.dett)) return true;
+    const x = S.letturaCondivisa; if (!x) return false;
+    return (x.stato === "in_lettura" && Date.now() - Date.parse(x.quando || 0) < 15 * 60 * 1000) || (x.stato === "applicando" && Date.now() - Date.parse(x.applicaQuando || x.quando || 0) < 10 * 60 * 1000);
+  } catch (e) { return false; }
+}
+function segreteriaSotto() { const l = segreteriaLetture(), dom = domandeSegreteria(); if (segretariaAlLavoro()) return `${nomeGov()} sta leggendo i messaggi…`; return l.length ? `${l.length} ${l.length === 1 ? "lettura" : "letture"}${dom ? ` · ${dom} ${dom === 1 ? "domanda" : "domande"} per te` : ""}` : `le chat lette da ${nomeGov()}`; }
 // la lettura appena fatta dall'app: i messaggi (coi vocali trascritti) e quello che Sofia ha capito, coi nomi veri
 async function salvaSegreteria(d, j, extra = {}) {
   try {
@@ -4694,7 +4712,7 @@ const STANZE = [
 function sottoStanza(id) {
   try {
     const oggi = L.oggiISO();
-    if (id === "segreteria") { const l = segreteriaLetture(), n = l.filter(x => x.esito === "da_controllare").length, nuove = postaNuova().length; return nuove ? `${nuove} ${nuove === 1 ? "messaggio nuovo" : "messaggi nuovi"}` : n ? `${n} ${n === 1 ? "lettura" : "letture"} da controllare` : l.length ? "tutto controllato" : "le chat lette da Sofia"; }
+    if (id === "segreteria") { const l = segreteriaLetture(), dom = domandeSegreteria(), nuove = postaNuova().length; return segretariaAlLavoro() ? "sta leggendo i messaggi…" : nuove ? `${nuove} ${nuove === 1 ? "messaggio nuovo" : "messaggi nuovi"}` : dom ? `${dom} ${dom === 1 ? "domanda" : "domande"} per te` : l.length ? "tutto a posto" : `le chat lette da ${nomeGov()}`; }   // 1.53.0: niente più «da controllare»
     if (id === "prospetto") { const piene = S.camere.filter(c => c.id && L.ospiteIl(soggiorniLista(), c.id, oggi)).length; return `${piene} ${piene === 1 ? "camera piena" : "camere piene"} su ${S.camere.length}`; }
     if (id === "signore") { const tutte = signore().flatMap(z => pulizieDelGiorno(oggi, z.id)), f = tutte.filter(p => p.stato === "fatta").length; return tutte.length ? `oggi ${f} su ${tutte.length} pulizie` : "oggi niente pulizie"; }
     if (id === "manutenzione") { const n = lavoriAperti().length; return n ? `${n} ${n === 1 ? "lavoro da fare" : "lavori da fare"}` : "niente in sospeso"; }
@@ -4789,6 +4807,7 @@ document.addEventListener("load", (e) => { const img = e.target; if (img && img.
 //  - IL PROSPETTO NON PASSA PIÙ DALLE CHAT (scelta di Michele: «solo dal file Excel di papà»): nelle letture Sofia non propone
 //    più soggiorni; se papà parla di camere lo mette in «note» («Prospetto: … — controlla il foglio»). Si riaccende in
 //    Impostazioni → Sofia sempre accesa → «Prospetto anche dalle chat» (impostazioni/avvisi.prospettoChat).
+//    1.53.0: l'interruttore non c'è più (le chat le legge sempre la segretaria; il prospetto solo dal foglio Excel).
 // ============================================================================
 const SGR_VELOCI = ["Com'è andata oggi?", "E ieri?", "Cosa c'è domani?"];
 const MIC_SEGR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>`;
@@ -4800,7 +4819,10 @@ function vociFatte(x) {
     ...(Array.isArray(x.proposte) ? x.proposte : []).filter(p => !p.esito).map(p => "Da confermare: " + via(p.testo)),
     ...(Array.isArray(x.domande) ? x.domande : []).filter(d => !d.risposta).map(d => "Domanda: " + d.domanda)].slice(0, 12);
 }
-function prospettoDalleChat() { return !!(S.avvisi && S.avvisi.prospettoChat === true); }
+// 1.53.0 (Michele: «se la segreteria fa bene il suo dovere, le cose delle chat da controllare non servono più»): l'interruttore
+// «Prospetto anche dalle chat» non c'è più e il valore vecchio in avvisi non conta: le chat di WhatsApp le legge e le mette a
+// posto sempre la segretaria (modo nuovo), il prospetto arriva solo dal foglio Excel di papà
+function prospettoDalleChat() { return false; }
 function tendinaSegreteriaAperta() { try { return !!(S.vista === "segreteria" && S.sgrAperta && proprietario()); } catch (e) { return false; } }
 function sgrChat() { return Array.isArray(S.sgrChat) ? S.sgrChat : []; }
 function sgrScorri() { setTimeout(() => { const m = document.getElementById("sgrMsgs"); if (m) m.scrollTop = m.scrollHeight; }, 50); }
@@ -4950,8 +4972,7 @@ function tendinaSegreteria() {
   const s = sintesiDiOggi(), giaInChat = !!(s && chat.some(m => m.chi === "gov" && m.tipo === "sintesi" && m.testo === s.testo));   // se l'ha appena detta in chat non si ripete
   const sint = s && !giaInChat ? `<div class="sgr-c-riga lei"><div class="sgr-c-bolla sgr-sintesi" data-sgr-sintesi><b>La sintesi di oggi</b> <small>(${esc(L.oraBreve(s.quando))}${s.da === "giro" ? ", fatta da sola" : ""})</small><br>${escNl(s.testo)}<br><button type="button" class="btnsm" data-sgr-leggi>🔊 Leggimela</button></div></div>` : "";
   const benvenuto = `<div class="sgr-c-riga lei"><div class="sgr-c-bolla">Sono ${esc(nome)}, la segretaria: leggo le chat di WhatsApp e ti racconto cosa è successo. Chiedimi «Com'è andata oggi?» col microfono o coi tasti qui sotto; se ho capito male una cosa, correggimi. Il prospetto non lo tocco: arriva dal foglio Excel di papà.</div></div>`;
-  const x = segreteriaLetture()[0];
-  const apri = x && x.esito === "da_controllare" && S.letturaCondivisa && S.letturaCondivisa.lid === x.lid ? `<button type="button" class="btnsm" data-sgr-apri>Apri la lettura e salva</button>` : "";
+  const apri = "";   // 1.53.0: niente più «Apri la lettura e salva» (le letture delle chat non aspettano il controllo)
   return `<section class="sgr-tendina ${aperta ? "aperta" : ""}" id="sgrTendina">
     <button type="button" class="sgr-maniglia" data-sgr-tendina aria-expanded="${aperta}"><img class="sgr-m-viso" src="segr-viso.webp" alt=""><span><b>${esc(nome)}, la segretaria</b><small>${aperta ? "Tocca qui per chiudere" : "Tocca e chiedile com'è andata oggi"}</small></span><i class="sgr-m-freccia" aria-hidden="true">${aperta ? "⌄" : "⌃"}</i></button>
     ${aperta ? `<div class="sgr-t-corpo"><button type="button" class="sgr-t-figura" data-sgr-figura aria-label="${esc(nome)}: tocca per farla smettere di parlare">${sgrPillHtml()}</button><div class="sgr-t-chat"><div class="sgr-c-msgs" id="sgrMsgs">${benvenuto}${sint}${bolle}</div>${apri}
@@ -6401,18 +6422,10 @@ function elencoParole(a) { return a.length < 2 ? (a[0] || "") : `${a.slice(0, -1
 // domande di Sofia, ArgonCloud. Numeri presi dall'app, non scritti dall'IA: sempre giusti.
 // 1.21.2: TUTTE LE NOTIZIE DELLA GIORNATA, contate una volta sola: le usano le schede (riquadro aperto) e le figurine
 // (tendina chiusa). Sempre: pulizie di oggi, da aggiustare, arrivi di domani, camere piene, pulizie di domani. Solo quando
-// ci sono: le chat lette da Sofia da controllare (o che sta leggendo), i problemi nelle camere, le domande di Sofia,
-// ArgonCloud. Numeri presi dall'app, non scritti dall'IA: sempre giusti.
-function letturaFacile() {
-  try {
-    if (letturaInCorso()) return { n: "…", parole: `${nomeGov()} sta leggendo le chat`, corto: "sta leggendo", dici: `${nomeGov()} sta leggendo le chat` };
-    if (letturaDaControllare()) {
-      const r = riassuntoLettura(S.dett.ia), t = r.cambi + r.indicazioni + r.assenze + r.guasti + r.spesa + r.note;
-      return { n: String(t), parole: `${t === 1 ? "cosa" : "cose"} dalle chat da controllare`, corto: "da controllare", dici: `${nomeGov()} ha letto le chat: ${t} ${t === 1 ? "cosa" : "cose"} da controllare` };
-    }
-  } catch (e) {}
-  return null;
-}
+// ci sono: i problemi nelle camere, le domande di Sofia, ArgonCloud. Numeri presi dall'app, non scritti dall'IA: sempre giusti.
+// 1.53.0 (Michele: «questa parte cose delle chat da controllare ed il conseguente Sofia cosa capisce si può togliere, non serve
+// più»): via la scheda «N cose dalle chat da controllare» (e «Sofia sta leggendo le chat»). Le chat le legge e le mette a posto
+// la segretaria; quello che ha fatto, e quello che ti chiede, sta in Segreteria.
 function notizieFacili(ls, fatte, man, dom) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
   const arrivi = sog.filter(s => s.inizio === domani).length;
@@ -6429,8 +6442,6 @@ function notizieFacili(ls, fatte, man, dom) {
   out.push({ k: "arrivi", vai: "arrivi", ico: icoValigia(), n: String(arrivi), parole: arrivi === 1 ? "arrivo domani" : "arrivi domani", corto: arrivi === 1 ? "arrivo domani" : "arrivi domani", dici: `Domani ${arrivi} ${arrivi === 1 ? "arrivo" : "arrivi"}` });
   out.push({ k: "camere", vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", corto: piene === 1 ? "camera piena" : "camere piene", sotto: `<small class="of-s">${libere} ${libere === 1 ? "libera" : "libere"}</small>`,
     dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "libera" : "libere"}` });
-  const lt = letturaFacile();
-  if (lt) out.push({ k: "lettura", attr: "data-oggi-lettura", ico: icoBusta(), n: lt.n, parole: lt.parole, corto: lt.corto, tono: "att", larga: true, dici: lt.dici });
   if (problemi) out.push({ k: "problemi", vai: "pulizie", ico: icoAttenzione(), n: String(problemi), parole: problemi === 1 ? "problema in una camera" : "problemi nelle camere", corto: problemi === 1 ? "problema" : "problemi", tono: "rosso", larga: true, dici: `Oggi ${problemi} ${problemi === 1 ? "problema" : "problemi"} nelle camere` });
   out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: "domani", larga: true,
     sotto: chiDomani ? `<small class="of-s2">${esc(chiDomani)}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` });
@@ -6448,7 +6459,7 @@ function figurineFacili(ls, fatte, man, dom) {
   const l = notizieFacili(ls, fatte, man, dom).filter(o => o.k !== "domani");
   return { n: l.length, html: l.map(o => `<button type="button" class="csf-c${o.tono ? " " + o.tono : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="csf-ico" aria-hidden="true">${o.ico}</span><b class="csf-n">${esc(o.mn || o.n)}</b><span class="csf-p">${esc(o.corto)}</span></button>`).join("") };
 }
-// la busta (le chat lette da Sofia) e il triangolo (un problema in una camera)
+// la busta (le chat lette da Sofia: dalla 1.53 non si usa più in Oggi) e il triangolo (un problema in una camera)
 function icoBusta() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><rect x="13" y="8" width="38" height="27" rx="3.5" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.8"/><path d="M14.5 10.2L32 24L49.5 10.2" fill="none" stroke="#2563EB" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.5 33L26.5 21.5M49.5 33L37.5 21.5" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/><circle cx="50.5" cy="9" r="6.2" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.6"/></svg>`;
 }
@@ -6469,13 +6480,6 @@ function provaSignoreHtml() {
   const sg = signore(); if (!sg.length) return "";
   return `<div class="of-prova"><span class="of-prova-t">👀 Prova la parte delle signore:</span>${sg.map(z => `<button type="button" data-prova-signora="${esc(z.id)}">${esc(z.nome)}</button>`).join("")}</div>`;
 }
-// la figurina (o la scheda) delle chat: apre la lettura da controllare, come la striscia del prospetto
-document.addEventListener("click", (e) => {
-  const b = e.target && e.target.closest && e.target.closest("[data-oggi-lettura]");
-  if (!b) return;
-  e.preventDefault(); e.stopPropagation();
-  try { if (!letturaDaControllare() && !letturaInCorso()) riprendiUltimaLettura(); apriFoglio({ tipo: "dettatura" }); } catch (er) { console.warn("lettura dalla casa", er); }
-}, true);
 // 1.21.1: a tendina chiusa (vista facile) la tessera «Domani» e' come la scheda larga: il secchio col foglio del calendario,
 // il numero grande, «pulizia domani» e chi la fa (le rifiniture non contano, come nella scheda e nel dettaglio)
 function domaniFacile() {
@@ -8842,7 +8846,7 @@ function cardSempreAccesa() {
     <p class="small muted" style="margin:0 0 4px">Oggi:</p>
     <ul class="giro-oggi">${voce("piano", a.token && a.chat ? "Piano del giorno alle signore (dalle 7)" : "Il piano del giorno a te (dalle 7)")}${voce("arrivi", "Priorità alle camere con un arrivo (12:30)")}${voce("allarme", "Avviso a te se una camera non è pronta (13:30)")}${voce("chiusura", "Promemoria delle pulizie da segnare (15:00)")}${voce("bollettino", "Bollettino della sera a te (20:00)")}</ul>
     ${rigaLetturaGiro(g, a)}
-    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}${sw("giroSintesi", "La sintesi della segretaria, con l'avviso")}<label class="giro-sw"><span>Prospetto anche dalle chat <small class="muted">(di solito spento: il prospetto arriva dal foglio Excel di papà)</small></span><input type="checkbox" data-giro-sw="prospettoChat" ${a.prospettoChat === true ? "checked" : ""}></label></div>${a.giroSintesi === false ? "" : orariSintesiHtml(a)}
+    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}${sw("giroSintesi", "La sintesi della segretaria, con l'avviso")}</div>${a.giroSintesi === false ? "" : orariSintesiHtml(a)}
   </section>`;
 }
 // 1.18.1: LA SPINTA DAL PC. L'orario di GitHub è «quando può» (il 31/10 nessun giro dalle 12:29 alle 17:14): il ponte sul
@@ -10946,13 +10950,11 @@ try {
 try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.tipo === "apriLettura") { letturaAttesa = true; disegna(); } }); } catch (e) {}
 function guardaLettura() {
   if (!letturaAttesa || !S.pronto || !proprietario() || !S.caricati.soggiorni) return;
-  if (!prospettoDalleChat()) { letturaAttesa = false; segreteriaAttesa = "lettura"; guardaSegreteria(); return; }   // 1.51.0
-  if (!S.caricati.letturaCondivisa) return;   // 1.18.0: la lettura può venire dal giro (app chiusa)
   letturaAttesa = false;
-  guardaCondivisa();
-  if (!letturaDaControllare() && !letturaInCorso() && !riprendiUltimaLettura()) return;
-  if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); }
-  apriFoglio({ tipo: "dettatura" });
+  // 1.53.0: le chat stanno in Segreteria (anche gli avvisi vecchi «tocca per controllare e salvare»); il foglio del Prospetto si
+  // riapre solo per un prospetto scritto, detto o fotografato da te, che aspetta il tuo «Salva»
+  if (letturaDaControllare() || riprendiUltimaLettura()) { if (S.vista !== "prospetto") { S.vista = "prospetto"; disegna(); window.scrollTo(0, 0); } apriFoglio({ tipo: "dettatura" }); return; }
+  segreteriaAttesa = "lettura"; guardaSegreteria();
 }
 try {
   const u = new URL(location.href);
@@ -11325,14 +11327,14 @@ async function leggiConSofia(messaggi, opz = {}) {
       d.applicata = ap;
       if (Array.isArray(d.postaIds) && d.postaIds.length) { try { await S.db.aggiorna("importazioni", "lettura-sofia", { stato: "applicata", applicata: new Date().toISOString(), fatti: ap.fatti.length }); } catch (e) { console.warn("lettura/applicata", e); } }
       avvisaSulTelefono(`${nomeGov()} ha letto ${messaggi.length > 1 ? messaggi.length + " messaggi" : "il messaggio"}`, `${riassuntoApplicata(ap)} Tocca per vedere.`, "./index.html?segreteria=lettura");
-      if (S.foglio && S.foglio.tipo === "dettatura") chiudiFoglio(); else disegna();
+      if (S.foglio && S.foglio.tipo === "dettatura") { chiudiFoglio(); toast(`${riassuntoApplicata(ap)} Lo vedi in Segreteria.`); } else disegna();   // 1.53.0: dal Prospetto dice cosa ha fatto e dove guardare
       return;
     }
     // 0.99: la lettura resta da parte 3 ore e, se l'app non e' davanti agli occhi, arriva la notifica
     salvaUltimaLettura(daCodiciProfondo(j), { modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length, testo: d.testo, base: d.base, fonte: d.fonte || null });
     const rias = riassuntoLettura(x);
     if (Array.isArray(d.postaIds) && d.postaIds.length) condividiLettura(d, j, { modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length });   // 1.18.0
-    salvaSegreteria(d, daCodiciProfondo(j), { modello: r.modello || "", ripiego: !!ripiego, esito: haCoseLettura(x) ? "da_controllare" : "vuota" });   // 1.39.0: la Segreteria (i messaggi e cosa ha capito)
+    // 1.53.0: un prospetto scritto, detto o fotografato da te non va più in Segreteria (lì stanno solo le chat): si controlla e si salva nel Prospetto
     avvisaSulTelefono(`${nomeGov()} ha letto ${messaggi.length > 1 ? messaggi.length + " messaggi" : "il messaggio"}`, haCoseLettura(x) ? testoRiassunto(rias) + ". Tocca per controllare e salvare." : "Nel prospetto è già tutto giusto.");
   } catch (e) {
     if (giro !== letturaGiro) return;
@@ -11730,6 +11732,7 @@ function togliUltimaLettura() { try { localStorage.removeItem(CHIAVE_LETTURA); }
 function riprendiUltimaLettura() {
   let x = null; try { x = JSON.parse(localStorage.getItem(CHIAVE_LETTURA) || "null"); } catch (e) {}
   if (!x || !x.j || Date.now() - (Number(x.quando) || 0) > 3 * 3600 * 1000) return false;
+  if (x.fonte && x.fonte.tipo === "whatsapp") { togliUltimaLettura(); return false; }   // 1.53.0: una lettura delle chat del tipo di prima non si riapre più
   const letto = lettoDaSofia(x.j);
   S.dett = { testo: x.testo || "", base: x.base || settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte: x.fonte || null, rif: "", ia: { ...letto, modello: x.modello || "", ripiego: !!x.ripiego, n: x.n || 0, testo: x.testo || "" } };
   return true;
@@ -11737,7 +11740,7 @@ function riprendiUltimaLettura() {
 // la barra sottile che si riempie: coi vocali dice quanti ne ha ascoltati, nella lettura scorre (non si sa quanto manca)
 function barraLettura(x) { const det = x && typeof x.prog === "number"; return `<span class="cw-prog${det ? "" : " indet"}" aria-hidden="true"><i style="width:${det ? Math.round(x.prog * 100) : 40}%"></i></span>`; }
 function letturaInCorso() { const d = S.dett; return !!(d && d.ia && d.ia.leggo); }
-function letturaDaControllare() { const d = S.dett; return !!(d && d.ia && !d.ia.leggo && !d.ia.errore && !d.applicata && haCoseLettura(d.ia)); }   // 1.51.0: una lettura già fatta (modo nuovo) non aspetta niente
+function letturaDaControllare() { const d = S.dett; return !!(d && d.ia && !d.ia.leggo && !d.ia.errore && !d.applicata && !modoChat(d) && haCoseLettura(d.ia)); }   // 1.51.0: una lettura già fatta (modo nuovo) non aspetta niente; 1.53.0: una lettura delle chat non aspetta MAI il controllo (la mette a posto la segretaria): resta solo il prospetto scritto da te
 // 1.18.0: le cose trovate da Sofia in una lettura, contate (per l'avviso, la striscia e il giro)
 function riassuntoLettura(x) {
   x = x || {};
@@ -11755,10 +11758,10 @@ function bannerLettura() {
     const chat = nuove[0].chat || "Albergo", auto = lettorePosta() && iaAccesa();
     return `<button type="button" class="cw-banner${auto ? " leggo" : ""}" data-posta-leggi><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${nuove.length === 1 ? "Un messaggio nuovo" : nuove.length + " messaggi nuovi"} dal gruppo ${esc(chat)}</b><small>${auto ? `${esc(nomeGov())} li legge fra pochi secondi (aspetta che finiscano di scrivere).` : `Tocca: li faccio leggere a ${esc(nomeGov())}.`}</small>${auto ? barraLettura({}) : ""}</span><i aria-hidden="true">›</i></button>`;
   }
-  if (letturaInCorso()) return `<button type="button" class="cw-banner leggo" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo ${S.dett.fonte && S.dett.fonte.posta ? "i messaggi di WhatsApp" : "le chat"}…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito ti arriva la notifica.</small>${barraLettura(S.dett.ia)}</span><i aria-hidden="true">›</i></button>`;
-  if (!letturaDaControllare()) return "";
-  const x = S.dett.ia;
-  return `<button type="button" class="cw-banner" data-apri-lettura><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} ha letto ${S.dett && S.dett.fonte && S.dett.fonte.posta ? "i messaggi di WhatsApp" : "le chat"}</b><small>${esc(testoRiassunto(riassuntoLettura(x)))}: tocca per controllare e salvare</small></span><i aria-hidden="true">›</i></button>`;
+  // 1.53.0: mentre legge le chat solo l'avviso (non si apre niente: quando ha finito, la lettura compare qui sotto); niente più
+  // «tocca per controllare e salvare» (un prospetto scritto da te si controlla nel Prospetto, non qui)
+  if (letturaInCorso() && modoChat(S.dett)) return `<div class="cw-banner leggo" role="status" style="cursor:default"><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${esc(nomeGov())} sta leggendo ${S.dett.fonte && S.dett.fonte.posta ? "i messaggi di WhatsApp" : "le chat"}…</b><small>${esc(S.dett.ia.fase || "Ci vuole un minuto o due")}. Puoi uscire dall'app: quando ha finito, qui sotto vedi cosa ha messo a posto.</small>${barraLettura(S.dett.ia)}</span></div>`;
+  return "";
 }
 
 // ---- 1.0: IL PONTE WHATSAPP (Michele: "la governante deve ricevere lei stessa i messaggi del gruppo Albergo") -----
@@ -11870,8 +11873,10 @@ let condivisaInAttesa = false;   // 1.51.0: arrivata prima degli avvisi, di «Co
 function guardaCondivisa() {
   const x = S.letturaCondivisa;
   if (x && (x.stato === "da_applicare" || x.stato === "da_controllare") && proprietario() && !(S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie)) { condivisaInAttesa = true; return; }
-  if (x && x.stato === "da_applicare" && !prospettoDalleChat()) { applicaCondivisa(x); return; }   // 1.51.0
-  if (x && x.stato === "da_controllare" && !prospettoDalleChat() && x.fonte && x.fonte.tipo === "whatsapp" && !(x.j && Array.isArray(x.j.azioni)) && S.caricati.pulizie && proprietario()) { vecchiaLettura(x); return; }
+  if (x && x.stato === "da_applicare") { applicaCondivisa(x); return; }   // 1.51.0
+  // 1.53.0: niente più letture «da controllare»: una del tipo di prima (dell'interruttore «Prospetto anche dalle chat», che non
+  // c'è più, o di un telefono con l'app vecchia) si mette da parte, con «🔄 Rileggila» in Segreteria (di meno di 3 ore: la rilegge lei)
+  if (x && x.stato === "da_controllare" && proprietario()) { vecchiaLettura(x); return; }
   if (S.dett && S.dett.condivisa && x && x.lid === S.dett.condivisa && (x.stato === "salvata" || x.stato === "scartata")) {
     // salvata o scartata su un altro telefono: qui non resta niente da controllare
     const aperto = S.foglio && S.foglio.tipo === "dettatura";
@@ -11879,14 +11884,6 @@ function guardaCondivisa() {
     if (aperto) { chiudiFoglio(); toast("Questa lettura l'hai già sistemata su un altro telefono."); }
     return;
   }
-  if (!x || x.stato !== "da_controllare" || !x.j) return;
-  if (S.dett && S.dett.condivisa === x.lid) return;
-  if (letturaInCorso() || letturaDaControllare()) return;
-  if (S.foglio && S.foglio.tipo === "dettatura") return;      // non gli cambio il foglio sotto le mani
-  try {
-    const letto = lettoDaSofia(x.j);
-    S.dett = { testo: x.testo || "", base: settimanaBaseDefault(L.oggiISO()), scelte: {}, comportamenti: {}, fonte: x.fonte || { tipo: "whatsapp", come: "chat", posta: true, messaggi: x.n || 0 }, rif: "", ia: { ...letto, modello: x.modello || "", ripiego: !!x.ripiego, n: x.n || 0, testo: x.testo || "", daGiro: x.da === "giro" }, postaIds: Array.isArray(x.postaIds) ? x.postaIds : [], condivisa: x.lid };
-  } catch (e) { console.warn("lettura condivisa", e); }
 }
 async function condividiLettura(d, j, extra, stato) {
   const id = "app_" + Date.now().toString(36);
