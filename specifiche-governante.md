@@ -2676,3 +2676,13 @@ Michele (5/11): «Dobbiamo modificare soltanto la parte delle camere. La parte d
 - Gemini consigliava anche disegni piatti, visti di fronte: le stanze restano in 3D perché i numeri e le frecce si appoggiano sulle cose del disegno.
 - I disegni hanno nomi nuovi (…-m.webp): i telefoni non tengono quelli vecchi. Le pagine di Michele usano gli stessi disegni.
 - Prove: prova1558 (le icone a matita nelle righe e nei passi, i disegni nuovi caricati, il carattere a mano, il foglio a quadretti, i posti delle mappe) più quelle di prima.
+
+## 155.9 La 1.55.9 (6 novembre): SCEGLIERE FRA LA 1.55.7 E LA 1.55.8
+
+Michele (6/11): «Bello, mi piace, però mi puoi mettere la possibilità di tornare indietro alla versione 1.55.7 se volessi? Mi sa che era leggermente più chiara, non ne sono proprio certo. Fammi scegliere fra la punto 7 e la punto 8.»
+
+- DOVE SI SCEGLIE: sotto «👀 Prova la parte delle signore» ci sono due tasti, «✏️ A matita · 1.55.8» e «Come prima · 1.55.7»; gli stessi due tasti sono anche nella striscia in alto mentre Michele prova la parte delle signore, così le guarda tutte e due subito. Quello scelto è verde.
+- VALE PER TUTTI: la scelta si salva nelle impostazioni (impostazioni/argon → camere: «matita» o «prima») e la vedono tutti i telefoni delle signore. Di base resta «A matita».
+- «Come prima» è esattamente la 1.55.7: le icone di prima nei tondi verdi, i caratteri di prima, i disegni 3D di prima (mappe, Salvatore, scene del lavoro), le faccine nei passi, «per 1 · matrimoniale» in grigio. «A matita» è la 1.55.8, con «Letto matrimoniale» in blu e «Letto singolo» in arancione.
+- La chat è uguale in tutte e due.
+- Prove: prova1559 (i tasti sotto «👀 Prova» e nella striscia, «Come prima» uguale alla 1.55.7, «A matita» uguale alla 1.55.8, la scelta salvata) più quelle di prima.

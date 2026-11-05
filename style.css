@@ -7800,134 +7800,147 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .gs-torna{border:1px sol
   .wa-chat>.gs-turno,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna #app [data-ho-finito]{margin-left:12px;margin-right:12px}
 }
 /* ============================================================================
-   1.55.8 · LA PARTE DELLE CAMERE A MATITE COLORATE (Michele, 5/11: «la parte delle camere la devi far fare a Gemini,
+   1.55.8-1.55.9 · LA PARTE DELLE CAMERE A MATITE COLORATE, SE MICHELE LA SCEGLIE (body.camere-matita; senza: come la 1.55.7).
+   (Michele, 5/11: «la parte delle camere la devi far fare a Gemini,
    sempre stile scuola elementare, con matite colorate»). Solo le camere: la chat resta come WhatsApp.
    Le righe delle camere e la camera aperta come un quaderno a quadretti: i disegni e le icone a matita di Gemini
    (mat-*.webp, mappa-*-m.webp, disegno-salvatore-*-m.webp, lavoro-*-m.webp), i bordi fatti a mano, il carattere
    scritto a mano (Patrick Hand, grandi e chiari), i numeri dei passi nei tondi colorati come i pastelli.
    ============================================================================ */
 @font-face{font-family:"Patrick Hand";font-style:normal;font-weight:400;font-display:swap;src:url(patrick-hand.woff2) format("woff2")}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna{--m-font:"Patrick Hand","Roboto",system-ui,sans-serif;--m-carta:#FFFDF6;--m-quad:rgba(110,150,205,.17);--m-matita:#343434;--m-testo:#222222;--m-grigio:#5E5E5E;--m-verde:#179A54;--m-verde-s:#0E6B3A;--m-ombra:2px 3px 0 rgba(52,52,52,.16);--m-bordo:255px 16px 225px 16px/16px 225px 16px 255px;--m-bordo2:16px 225px 16px 255px/255px 16px 225px 16px;--m-tasto:22px 18px 24px 16px/18px 24px 16px 22px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita{--m-font:"Patrick Hand","Roboto",system-ui,sans-serif;--m-carta:#FFFDF6;--m-quad:rgba(110,150,205,.17);--m-matita:#343434;--m-testo:#222222;--m-grigio:#5E5E5E;--m-verde:#179A54;--m-verde-s:#0E6B3A;--m-ombra:2px 3px 0 rgba(52,52,52,.16);--m-bordo:255px 16px 225px 16px/16px 225px 16px 255px;--m-bordo2:16px 225px 16px 255px/255px 16px 225px 16px;--m-tasto:22px 18px 24px 16px/18px 24px 16px 22px}
 /* ---- le righe delle camere: ogni camera un foglietto a quadretti, l'icona a matita senza il tondo verde ---- */
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista{font-synthesis:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista-t.wa-sistema{margin:3px 0 8px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista-t .wa-sistema-x{gap:0;padding:5px 14px 6px;border-radius:3px 4px 16px 3px;background:#FFF0A3;box-shadow:2px 3px 0 rgba(90,75,0,.16);transform:rotate(-1deg)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista-t .wa-sistema-x>b{font:400 23px/1.1 var(--m-font);color:#3A3200}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno{font:400 20px/1.1 var(--m-font);color:#3A3200}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-segno.oro{color:#8A5A00}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .wa-aiuto{font:400 17.5px/1.2 var(--m-font);color:#5A5230}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe{gap:9px;padding:0 3px 2px 2px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe>.gs-cam.wa-riga:first-child{border-top-left-radius:255px 16px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-righe>.gs-cam.wa-riga:first-child::before{display:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga{min-height:76px;gap:8px;padding:6px 10px 6px 6px;border:2px solid var(--m-matita);border-radius:var(--m-bordo);background-color:var(--m-carta);background-image:linear-gradient(var(--m-quad) 1px,transparent 1px),linear-gradient(90deg,var(--m-quad) 1px,transparent 1px);background-size:18px 18px;background-position:-1px -1px;box-shadow:var(--m-ombra)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga:nth-child(even){border-radius:var(--m-bordo2)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga:active{background-color:#FFF6DA}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-apri{gap:9px;min-height:60px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.k-fondo .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.gs-stelle .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.fatta .gp-ico{flex:0 0 58px;width:58px;height:58px;margin:0;border-radius:0;background:none;box-shadow:none;isolation:isolate}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-ico .mat-ico{display:block;width:58px;height:58px;object-fit:contain}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.ora .gp-ico{box-shadow:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.ora .gp-ico::before{content:"";position:absolute;inset:-3px -4px -2px -3px;z-index:-1;border-radius:46% 54% 50% 50%/55% 45% 55% 45%;background:#FFE36E;opacity:.8}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.fatta .gp-ico .mat-ico{filter:grayscale(.8);opacity:.55}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.fatta .gp-ico::after{content:"✓";position:absolute;right:-6px;bottom:-8px;font:400 42px/1 var(--m-font);color:var(--m-verde);text-shadow:0 0 3px #FFFDF6,0 0 3px #FFFDF6}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-stato{right:-4px;bottom:-4px;width:26px;height:26px;border:2px solid #8E1F12;border-radius:50% 45% 52% 48%/48% 52% 45% 50%;background:#E5533D;color:#FFFFFF;font:400 19px/1 var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{font:400 25px/1.04 var(--m-font);color:var(--m-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.ora .gs-nome{font-weight:400;text-decoration:underline wavy #E3A500 2px;text-underline-offset:6px;text-decoration-skip-ink:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.fatta .gs-nome{color:#5E5E5E}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .wa-giu{row-gap:0;font:400 17.5px/1.12 var(--m-font);color:var(--m-grigio)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-cosa{font:400 19.5px/1.1 var(--m-font);color:var(--m-verde-s)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.k-fondo .gp-cosa{color:#9A6400}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.gs-stelle .gp-cosa{color:#5B45BE}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.fatta .gp-cosa{color:var(--m-grigio)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.prob .gp-cosa{color:#C0392B}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-per,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-sotto,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-s{font:400 17.5px/1.12 var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fondi-t{font:400 18px/1.2 var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fondo{padding:3px 9px;border:1.5px solid #C99A2E;border-radius:var(--m-tasto);background:#FFF3C4;font:400 18px/1.15 var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fondo b{font:400 17px/1 var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-ora{font:400 19px/1 var(--m-font);color:var(--m-verde-s)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .wa-quando{font:400 18px/1 var(--m-font);color:var(--m-grigio)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fatto{height:44px;padding:0 13px 0 9px;border:2px solid var(--m-verde-s);border-radius:var(--m-tasto);background:var(--m-verde);color:#FFFFFF;font:400 22px/1 var(--m-font);box-shadow:2px 3px 0 rgba(14,107,58,.35)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fatto svg{width:20px;height:20px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fatto:active{transform:translate(1px,2px);background:var(--m-verde-s);box-shadow:1px 1px 0 rgba(14,107,58,.35)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-stella{height:38px;border:2px solid #B88400;border-radius:var(--m-tasto);background:#FFE58A;font:400 20px/1 var(--m-font);box-shadow:2px 2px 0 rgba(136,98,0,.25)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista{font-synthesis:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista-t.wa-sistema{margin:3px 0 8px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista-t .wa-sistema-x{gap:0;padding:5px 14px 6px;border-radius:3px 4px 16px 3px;background:#FFF0A3;box-shadow:2px 3px 0 rgba(90,75,0,.16);transform:rotate(-1deg)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista-t .wa-sistema-x>b{font:400 23px/1.1 var(--m-font);color:#3A3200}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-segno{font:400 20px/1.1 var(--m-font);color:#3A3200}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-segno.oro{color:#8A5A00}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .wa-aiuto{font:400 17.5px/1.2 var(--m-font);color:#5A5230}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-righe{gap:9px;padding:0 3px 2px 2px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-righe>.gs-cam.wa-riga:first-child{border-top-left-radius:255px 16px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-righe>.gs-cam.wa-riga:first-child::before{display:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga{min-height:76px;gap:8px;padding:6px 10px 6px 6px;border:2px solid var(--m-matita);border-radius:var(--m-bordo);background-color:var(--m-carta);background-image:linear-gradient(var(--m-quad) 1px,transparent 1px),linear-gradient(90deg,var(--m-quad) 1px,transparent 1px);background-size:18px 18px;background-position:-1px -1px;box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga:nth-child(even){border-radius:var(--m-bordo2)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga:active{background-color:#FFF6DA}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-apri{gap:9px;min-height:60px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.k-fondo .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.gs-stelle .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.fatta .gp-ico{flex:0 0 58px;width:58px;height:58px;margin:0;border-radius:0;background:none;box-shadow:none;isolation:isolate}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-ico .mat-ico{display:block;width:58px;height:58px;object-fit:contain}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.ora .gp-ico{box-shadow:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.ora .gp-ico::before{content:"";position:absolute;inset:-3px -4px -2px -3px;z-index:-1;border-radius:46% 54% 50% 50%/55% 45% 55% 45%;background:#FFE36E;opacity:.8}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.fatta .gp-ico .mat-ico{filter:grayscale(.8);opacity:.55}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.fatta .gp-ico::after{content:"✓";position:absolute;right:-6px;bottom:-8px;font:400 42px/1 var(--m-font);color:var(--m-verde);text-shadow:0 0 3px #FFFDF6,0 0 3px #FFFDF6}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-stato{right:-4px;bottom:-4px;width:26px;height:26px;border:2px solid #8E1F12;border-radius:50% 45% 52% 48%/48% 52% 45% 50%;background:#E5533D;color:#FFFFFF;font:400 19px/1 var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gs-nome{font:400 25px/1.04 var(--m-font);color:var(--m-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.ora .gs-nome{font-weight:400;text-decoration:underline wavy #E3A500 2px;text-underline-offset:6px;text-decoration-skip-ink:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.fatta .gs-nome{color:#5E5E5E}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .wa-giu{row-gap:0;font:400 17.5px/1.12 var(--m-font);color:var(--m-grigio)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-cosa{font:400 19.5px/1.1 var(--m-font);color:var(--m-verde-s)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.k-fondo .gp-cosa{color:#9A6400}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.gs-stelle .gp-cosa{color:#5B45BE}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.fatta .gp-cosa{color:var(--m-grigio)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.prob .gp-cosa{color:#C0392B}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-per,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-sotto,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-s{font:400 17.5px/1.12 var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-fondi-t{font:400 18px/1.2 var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-fondo{padding:3px 9px;border:1.5px solid #C99A2E;border-radius:var(--m-tasto);background:#FFF3C4;font:400 18px/1.15 var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-fondo b{font:400 17px/1 var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gs-ora{font:400 19px/1 var(--m-font);color:var(--m-verde-s)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .wa-quando{font:400 18px/1 var(--m-font);color:var(--m-grigio)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-fatto{height:44px;padding:0 13px 0 9px;border:2px solid var(--m-verde-s);border-radius:var(--m-tasto);background:var(--m-verde);color:#FFFFFF;font:400 22px/1 var(--m-font);box-shadow:2px 3px 0 rgba(14,107,58,.35)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-fatto svg{width:20px;height:20px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-fatto:active{transform:translate(1px,2px);background:var(--m-verde-s);box-shadow:1px 1px 0 rgba(14,107,58,.35)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-stella{height:38px;border:2px solid #B88400;border-radius:var(--m-tasto);background:#FFE58A;font:400 20px/1 var(--m-font);box-shadow:2px 2px 0 rgba(136,98,0,.25)}
 /* ---- la camera aperta: un foglio del quaderno a quadretti ---- */
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet{--f-gioco:var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .panel.pieno:has(>.inizio.sig.sf){background-color:var(--m-carta);background-image:linear-gradient(var(--m-quad) 1px,transparent 1px),linear-gradient(90deg,var(--m-quad) 1px,transparent 1px);background-size:22px 22px;background-attachment:local}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sig.sf{font-family:var(--m-font);font-synthesis:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .inizio-indietro{border:2px solid var(--m-matita);border-radius:var(--m-tasto);background:#FFFFFF;color:var(--m-testo);font:400 21px var(--m-font);box-shadow:var(--m-ombra)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-data{border:1.5px solid rgba(52,52,52,.45);border-radius:var(--m-tasto);background:#FFFFFF;color:var(--m-grigio);font-family:var(--m-font);font-size:16px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-data b{font-family:var(--m-font);font-weight:400;font-size:21px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa{border:2px solid var(--m-matita);border-radius:var(--m-bordo);background:#FFFFFF;box-shadow:var(--m-ombra)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-tile{position:relative;display:grid;place-items:center;width:68px;height:68px;border:0;border-radius:0;background:none;font-size:40px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-tile .mat-ico{display:block;width:68px;height:68px;object-fit:contain}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa.fatta .gs-tile .mat-ico{filter:grayscale(.8);opacity:.55}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa.fatta .gs-tile::after{content:"✓";position:absolute;right:-6px;bottom:-8px;font:400 46px/1 var(--m-font);color:var(--m-verde);text-shadow:0 0 3px #FFFFFF,0 0 3px #FFFFFF}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa.prob .gs-tile::after{content:"!";position:absolute;right:-4px;bottom:-4px;display:grid;place-items:center;width:28px;height:28px;border:2px solid #8E1F12;border-radius:50% 45% 52% 48%/48% 52% 45% 50%;background:#E5533D;color:#FFFFFF;font:400 21px/1 var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-nome{font:400 35px/1.02 var(--m-font);color:var(--m-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-cosa{font:400 23px/1.15 var(--m-font);color:var(--m-verde-s)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-ospiti{border-top:2px dashed rgba(52,52,52,.3);font:400 20px/1.25 var(--m-font);color:#444444}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .mt-camera{border:2px solid var(--m-matita);border-radius:var(--m-bordo2);background:#FFFFFF;box-shadow:var(--m-ombra)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .mt-camera-t{font:400 22px/1.2 var(--m-font);letter-spacing:0;text-transform:none;color:var(--m-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .mt-disegno .mt-titolo{font:400 20px var(--m-font);letter-spacing:0;text-transform:none;fill:var(--m-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .mt-disegno .mt-foto-bordo{stroke:rgba(52,52,52,.38);stroke-width:1.6;stroke-dasharray:7 5}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .mt-segno .mt-num{font-family:var(--m-font);font-weight:400;font-size:21px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .mt-segno .mt-parola{font-family:var(--m-font);font-weight:400;font-size:17px;letter-spacing:0}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-seq-t{font:400 27px/1.2 var(--m-font);letter-spacing:0;text-transform:none;color:var(--m-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo{border:2px solid var(--m-matita);border-radius:var(--m-bordo);background:#FFFFFF;box-shadow:var(--m-ombra)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo:nth-of-type(even){border-radius:var(--m-bordo2)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo>summary{grid-template-columns:42px 54px minmax(0,1fr) 20px;column-gap:10px;min-height:72px;padding:8px 12px 8px 10px;color:var(--m-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo>summary::after{color:var(--m-matita);font-size:16px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-n{--pastello:#6B6B6B;--pastello-s:#3F3F3F;display:grid;place-items:center;width:42px;height:42px;border:2.5px solid var(--pastello-s);border-radius:50% 45% 52% 48%/48% 52% 45% 50%;background:var(--pastello);color:#FFFFFF;font:400 26px/1 var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo.b-letto .sf-passo-n{--pastello:#3E6FD8;--pastello-s:#1F3F8C}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo.b-bagno .sf-passo-n{--pastello:#1C9AD6;--pastello-s:#0E5E86}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo.b-camera .sf-passo-n{--pastello:#F08A00;--pastello-s:#9A5600}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo.b-pavimenti .sf-passo-n{--pastello:#2E9E57;--pastello-s:#1D6B3A}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo.b-cucina .sf-passo-n{--pastello:#DC4733;--pastello-s:#8E1F12}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo.b-partenza .sf-passo-n{--pastello:#8E4FB8;--pastello-s:#55276F}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo.b-sopra .sf-passo-n{--pastello:#9A6232;--pastello-s:#5C3714}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-i{display:grid;place-items:center;width:54px;height:54px;font-size:30px;color:inherit}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-i .mat-ico{display:block;width:54px;height:54px;object-fit:contain}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-t{font:400 26px/1.08 var(--m-font);color:var(--m-testo)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-t small{font:400 19px/1.2 var(--m-font);color:var(--m-grigio)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-lista{font-family:var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-riga{font-family:var(--m-font)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-riga .sig-testo,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-riga .sig-testo b{font-family:var(--m-font);font-weight:400;font-size:22px;line-height:1.2}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-riga .sig-testo small,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-riga .sig-testo span{font-family:var(--m-font);font-size:18.5px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-riga .sig-n,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sig-riga .sig-num{font-family:var(--m-font);font-weight:400;font-size:20px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet{--f-gioco:var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .panel.pieno:has(>.inizio.sig.sf){background-color:var(--m-carta);background-image:linear-gradient(var(--m-quad) 1px,transparent 1px),linear-gradient(90deg,var(--m-quad) 1px,transparent 1px);background-size:22px 22px;background-attachment:local}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sig.sf{font-family:var(--m-font);font-synthesis:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .inizio-indietro{border:2px solid var(--m-matita);border-radius:var(--m-tasto);background:#FFFFFF;color:var(--m-testo);font:400 21px var(--m-font);box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-data{border:1.5px solid rgba(52,52,52,.45);border-radius:var(--m-tasto);background:#FFFFFF;color:var(--m-grigio);font-family:var(--m-font);font-size:16px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-data b{font-family:var(--m-font);font-weight:400;font-size:21px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa{border:2px solid var(--m-matita);border-radius:var(--m-bordo);background:#FFFFFF;box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-tile{position:relative;display:grid;place-items:center;width:68px;height:68px;border:0;border-radius:0;background:none;font-size:40px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-tile .mat-ico{display:block;width:68px;height:68px;object-fit:contain}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa.fatta .gs-tile .mat-ico{filter:grayscale(.8);opacity:.55}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa.fatta .gs-tile::after{content:"✓";position:absolute;right:-6px;bottom:-8px;font:400 46px/1 var(--m-font);color:var(--m-verde);text-shadow:0 0 3px #FFFFFF,0 0 3px #FFFFFF}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa.prob .gs-tile::after{content:"!";position:absolute;right:-4px;bottom:-4px;display:grid;place-items:center;width:28px;height:28px;border:2px solid #8E1F12;border-radius:50% 45% 52% 48%/48% 52% 45% 50%;background:#E5533D;color:#FFFFFF;font:400 21px/1 var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-nome{font:400 35px/1.02 var(--m-font);color:var(--m-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-cosa{font:400 23px/1.15 var(--m-font);color:var(--m-verde-s)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-ospiti{border-top:2px dashed rgba(52,52,52,.3);font:400 20px/1.25 var(--m-font);color:#444444}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .mt-camera{border:2px solid var(--m-matita);border-radius:var(--m-bordo2);background:#FFFFFF;box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .mt-camera-t{font:400 22px/1.2 var(--m-font);letter-spacing:0;text-transform:none;color:var(--m-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .mt-disegno .mt-titolo{font:400 20px var(--m-font);letter-spacing:0;text-transform:none;fill:var(--m-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .mt-disegno .mt-foto-bordo{stroke:rgba(52,52,52,.38);stroke-width:1.6;stroke-dasharray:7 5}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .mt-segno .mt-num{font-family:var(--m-font);font-weight:400;font-size:21px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .mt-segno .mt-parola{font-family:var(--m-font);font-weight:400;font-size:17px;letter-spacing:0}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-seq-t{font:400 27px/1.2 var(--m-font);letter-spacing:0;text-transform:none;color:var(--m-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo{border:2px solid var(--m-matita);border-radius:var(--m-bordo);background:#FFFFFF;box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo:nth-of-type(even){border-radius:var(--m-bordo2)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo>summary{grid-template-columns:42px 54px minmax(0,1fr) 20px;column-gap:10px;min-height:72px;padding:8px 12px 8px 10px;color:var(--m-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo>summary::after{color:var(--m-matita);font-size:16px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-n{--pastello:#6B6B6B;--pastello-s:#3F3F3F;display:grid;place-items:center;width:42px;height:42px;border:2.5px solid var(--pastello-s);border-radius:50% 45% 52% 48%/48% 52% 45% 50%;background:var(--pastello);color:#FFFFFF;font:400 26px/1 var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo.b-letto .sf-passo-n{--pastello:#3E6FD8;--pastello-s:#1F3F8C}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo.b-bagno .sf-passo-n{--pastello:#1C9AD6;--pastello-s:#0E5E86}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo.b-camera .sf-passo-n{--pastello:#F08A00;--pastello-s:#9A5600}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo.b-pavimenti .sf-passo-n{--pastello:#2E9E57;--pastello-s:#1D6B3A}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo.b-cucina .sf-passo-n{--pastello:#DC4733;--pastello-s:#8E1F12}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo.b-partenza .sf-passo-n{--pastello:#8E4FB8;--pastello-s:#55276F}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo.b-sopra .sf-passo-n{--pastello:#9A6232;--pastello-s:#5C3714}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-i{display:grid;place-items:center;width:54px;height:54px;font-size:30px;color:inherit}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-i .mat-ico{display:block;width:54px;height:54px;object-fit:contain}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-t{font:400 26px/1.08 var(--m-font);color:var(--m-testo)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-t small{font:400 19px/1.2 var(--m-font);color:var(--m-grigio)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-lista{font-family:var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-riga{font-family:var(--m-font)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-riga .sig-testo,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-riga .sig-testo b{font-family:var(--m-font);font-weight:400;font-size:22px;line-height:1.2}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-riga .sig-testo small,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-riga .sig-testo span{font-family:var(--m-font);font-size:18.5px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-riga .sig-n,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sig-riga .sig-num{font-family:var(--m-font);font-weight:400;font-size:20px}
 /* le scene a matita: attaccate al foglio con lo scotch, un po' storte come nel quaderno */
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .lavoro-img{border:6px solid #FFFFFF;border-radius:5px;outline:2px solid var(--m-matita);outline-offset:0;box-shadow:3px 4px 0 rgba(52,52,52,.18);transform:rotate(-.7deg)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo:nth-of-type(even) .lavoro-img{transform:rotate(.7deg)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-x{position:relative}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-x:has(>.lavoro-img.pronta)::before,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-finale:has(>.lavoro-img.pronta)::before{content:"";position:absolute;z-index:2;top:-1px;left:50%;width:92px;height:24px;margin-left:-46px;background:rgba(255,232,130,.82);box-shadow:0 1px 2px rgba(0,0,0,.12);transform:rotate(-2.5deg);pointer-events:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-finale{position:relative;padding-top:4px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-finale .lavoro-img{border-radius:5px;transform:rotate(.6deg)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-seq-aiuto{font:400 20px/1.3 var(--m-font);color:#444444}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gp-fatto.grande{border:2.5px solid var(--m-verde-s);border-radius:var(--m-tasto);background:var(--m-verde);color:#FFFFFF;font:400 30px/1 var(--m-font);box-shadow:3px 4px 0 rgba(14,107,58,.4)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gp-fatto.grande:active{transform:translate(1px,2px);box-shadow:1px 2px 0 rgba(14,107,58,.4)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .pro-tempo{font-family:var(--m-font);font-size:21px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .pro-tempo b{font-weight:400}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .nonna-link{border:2px solid rgba(52,52,52,.55);border-radius:var(--m-tasto);background:#FFFFFF;font:400 20px var(--m-font);box-shadow:var(--m-ombra)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .nonna-link.rosso{border-color:#B3392C;color:#B3392C}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-dice,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-box,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-sempre,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passi{border:2px solid var(--m-matita);border-radius:var(--m-bordo2);box-shadow:var(--m-ombra)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-dice-t,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-box-t{font:400 23px/1.2 var(--m-font);letter-spacing:0;text-transform:none}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-frase,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-rif-t,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-sempre,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passi summary{font-family:var(--m-font);font-weight:400;font-size:21px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-sempre b,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-rif-t b{font-weight:400}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .gs-torna{border:2px solid var(--m-matita);border-radius:var(--m-tasto);font:400 21px var(--m-font);box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .lavoro-img{border:6px solid #FFFFFF;border-radius:5px;outline:2px solid var(--m-matita);outline-offset:0;box-shadow:3px 4px 0 rgba(52,52,52,.18);transform:rotate(-.7deg)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo:nth-of-type(even) .lavoro-img{transform:rotate(.7deg)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-x{position:relative}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-x:has(>.lavoro-img.pronta)::before,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-finale:has(>.lavoro-img.pronta)::before{content:"";position:absolute;z-index:2;top:-1px;left:50%;width:92px;height:24px;margin-left:-46px;background:rgba(255,232,130,.82);box-shadow:0 1px 2px rgba(0,0,0,.12);transform:rotate(-2.5deg);pointer-events:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-finale{position:relative;padding-top:4px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-finale .lavoro-img{border-radius:5px;transform:rotate(.6deg)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-seq-aiuto{font:400 20px/1.3 var(--m-font);color:#444444}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gp-fatto.grande{border:2.5px solid var(--m-verde-s);border-radius:var(--m-tasto);background:var(--m-verde);color:#FFFFFF;font:400 30px/1 var(--m-font);box-shadow:3px 4px 0 rgba(14,107,58,.4)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gp-fatto.grande:active{transform:translate(1px,2px);box-shadow:1px 2px 0 rgba(14,107,58,.4)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .pro-tempo{font-family:var(--m-font);font-size:21px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .pro-tempo b{font-weight:400}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .nonna-link{border:2px solid rgba(52,52,52,.55);border-radius:var(--m-tasto);background:#FFFFFF;font:400 20px var(--m-font);box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .nonna-link.rosso{border-color:#B3392C;color:#B3392C}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-dice,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-box,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-sempre,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passi{border:2px solid var(--m-matita);border-radius:var(--m-bordo2);box-shadow:var(--m-ombra)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-dice-t,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-box-t{font:400 23px/1.2 var(--m-font);letter-spacing:0;text-transform:none}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-frase,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-rif-t,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-sempre,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passi summary{font-family:var(--m-font);font-weight:400;font-size:21px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-sempre b,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-rif-t b{font-weight:400}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .gs-torna{border:2px solid var(--m-matita);border-radius:var(--m-tasto);font:400 21px var(--m-font);box-shadow:var(--m-ombra)}
 @media (max-width:360px){
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.k-fondo .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.gs-stelle .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga.fatta .gp-ico{flex-basis:50px;width:50px;height:50px}
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-ico .mat-ico{width:50px;height:50px}
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gs-nome{font-size:23px}
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-fatto{padding:0 10px 0 8px;font-size:20px}
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-tile,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-tile .mat-ico{width:58px;height:58px}
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-nome{font-size:31px}
-  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .sf-passo-t{font-size:24px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.k-fondo .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.gs-stelle .gp-ico,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga.fatta .gp-ico{flex-basis:50px;width:50px;height:50px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-ico .mat-ico{width:50px;height:50px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gs-nome{font-size:23px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-fatto{padding:0 10px 0 8px;font-size:20px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-tile,body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-tile .mat-ico{width:58px;height:58px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-nome{font-size:31px}
+  body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .sf-passo-t{font-size:24px}
 }
-@media (prefers-reduced-motion:reduce){body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .lavoro-img{transform:none}}
+@media (prefers-reduced-motion:reduce){body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .lavoro-img{transform:none}}
 /* ---- che letto si fa, molto chiaro (Michele: «un matrimoniale, un singolo»): il matrimoniale in blu, il singolo in arancione,
    con l'evidenziatore sotto; nelle righe, sotto il nome nella camera aperta e nel passo del letto (col disegno di quel letto) ---- */
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .m-letto{font-weight:400;padding:0 2px;border-radius:3px;white-space:nowrap}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .m-letto.matrimoniale{color:#1F4FB0;background:linear-gradient(transparent 56%,rgba(90,150,255,.3) 56%)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .m-letto.singolo{color:#B04E00;background:linear-gradient(transparent 56%,rgba(255,165,50,.36) 56%)}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-per{color:#3A3A3A;white-space:normal}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .wa-lista .gs-cam.wa-riga .gp-per .m-letto{font-size:20px}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-letto{display:block;margin-top:4px;font:400 23px/1.15 var(--m-font);color:#3A3A3A}
-body.sig-laguna.sig-laguna.sig-laguna.sig-laguna .sheet .inizio.sf .gs-targa .gs-letto .m-letto{font-size:25px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .m-letto{font-weight:400;padding:0 2px;border-radius:3px;white-space:nowrap}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .m-letto.matrimoniale{color:#1F4FB0;background:linear-gradient(transparent 56%,rgba(90,150,255,.3) 56%)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .m-letto.singolo{color:#B04E00;background:linear-gradient(transparent 56%,rgba(255,165,50,.36) 56%)}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-per{color:#3A3A3A;white-space:normal}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .wa-lista .gs-cam.wa-riga .gp-per .m-letto{font-size:20px}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-letto{display:block;margin-top:4px;font:400 23px/1.15 var(--m-font);color:#3A3A3A}
+body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf .gs-targa .gs-letto .m-letto{font-size:25px}
+/* ---- 1.55.9 · LA SCELTA DI MICHELE: le camere a matita (1.55.8) o come prima (1.55.7), sotto «👀 Prova» e nella striscia
+   in alto quando prova la parte delle signore («fammi scegliere fra la punto 7 e la punto 8») ---- */
+.sc-camere{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 8px;margin:10px 0 0}
+.sc-camere-t{flex-basis:100%;text-align:center;font:600 14px/1.2 var(--f-lettura,var(--f-body,system-ui));color:#6B5A3A}
+.sc-camere .sc-b{min-height:40px;margin:0;padding:0 15px;border:1.5px solid #CBB78A;border-radius:20px;background:#FFFFFF;color:#4A3510;font:700 14.5px/1 var(--f-lettura,var(--f-body,system-ui));cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sc-camere .sc-b.su{border-color:#179A54;background:#179A54;color:#FFFFFF}
+.banner.finta{flex-wrap:wrap}
+.banner.finta>span{flex:1 1 170px;min-width:0}
+.banner.finta .sc-camere{flex-basis:100%;margin:2px 0 0;justify-content:flex-start}
+.banner.finta .sc-camere-t{flex-basis:100%;text-align:left;color:inherit;font-size:14px}
+.banner.finta .sc-camere .sc-b{flex:1 1 0;min-width:0;min-height:40px;padding:0 8px;font-size:14px;white-space:nowrap}
+:root[data-theme="dark"] .sc-camere-t{color:#D6C7A6}
