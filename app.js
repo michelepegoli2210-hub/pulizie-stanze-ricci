@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.56.0";
+export const VERSIONE = "1.56.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1404,6 +1404,7 @@ function avviaAscolto() {
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); setTimeout(guastiDalTaccuino, 2500); }));
   if (proprietario()) S.stop.push(ascoltaMessaggiSig());   // 1.55.13: i messaggi delle signore per Michele
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lettura-sofia", d => { S.letturaCondivisa = d ? { ...d } : null; S.caricati.letturaCondivisa = true; guardaCondivisa(); disegna(); if (lettorePosta() && !letturaCondivisaOccupata()) guardaPosta(); }));   // 1.18.0; 1.53.1: appena la lettura condivisa si libera, la posta che aspettava riparte (prima ripartiva solo al messaggio dopo)
@@ -11623,16 +11624,11 @@ function vistaAlloggiati() {
       ${lista}${mancano && !inviato ? `<p class="al-mancano">${mancano === 1 ? "Manca ancora 1 persona" : `Mancano ancora ${mancano} persone`}${righe.length ? "" : ": comincia da chi ha il documento (il capofamiglia o il capogruppo)"}</p>` : ""}${tasti}</section>`;
   }).join("");
   const da = alDaMandare(st), tutte = da.flatMap(x => x.righe), pronte = tutte.filter(r => !r.manca.length).length, incomplete = tutte.length - pronte;
-  const file = !da.length ? "" : `<section class="card al-file"><h3>Il file per Alloggiati Web</h3>
-    ${incomplete ? `<p class="al-avviso">Prima completa ${incomplete === 1 ? "la persona col punto esclamativo" : `le ${incomplete} persone col punto esclamativo`}.</p>` : `<p class="muted small" style="margin:0 0 10px">${pronte} ${pronte === 1 ? "persona pronta" : "persone pronte"}, in ${da.length} ${da.length === 1 ? "camera" : "camere"}.</p>`}
-    <button type="button" class="big main" data-al-scarica ${incomplete ? "disabled" : ""}>⬇️ Scarica il file</button>
-    <ol class="al-come"><li>Tocca <b>«Apri Alloggiati Web»</b> ed entra con le tue credenziali.</li><li>Scegli <b>«Invio file»</b> e prendi il file appena scaricato (è nella cartella Download).</li><li>Tocca <b>«Elabora»</b>, guarda che sia tutto giusto, poi <b>«Invia»</b>.</li></ol>
-    <a class="big undo" href="${AL_PORTALE}" target="_blank" rel="noopener">🌐 Apri Alloggiati Web</a>
-    <button type="button" class="big undo" data-al-inviato>✓ L'ho mandato: cancella i dati da questo telefono</button></section>`;
-  return `<section class="card al-testa"><button type="button" class="btnsm ghost" data-al-torna>‹ ${S.alDa === "segreteria" ? "Segreteria" : "Oggi"}</button><h2>🪪 Alloggiati Web</h2>
+  const file = !da.length ? "" : alFileCard(da, pronte, incomplete);   // 1.56.1: col passaggio, «📨 Manda alla Polizia»
+  return `<section class="card al-testa"><button type="button" class="btnsm ghost" data-al-torna>‹ ${S.alDa === "segreteria" ? "Segreteria" : "Oggi"}</button><h2>🪪 Alloggiati Web</h2>${alWsTesta()}
     <p>Fotografa il documento di chi è arrivato: l'app legge i dati e prepara il file da caricare su Alloggiati Web. <b>Le foto non escono dal telefono</b> e non restano salvate.</p>
     <p class="muted small">Vanno mandati entro 24 ore dall'arrivo: qui ci sono le camere arrivate oggi e ieri. Per il capofamiglia (o capogruppo) serve il documento; per gli altri bastano nome, nascita e cittadinanza.</p></section>
-    ${schede || `<section class="card"><p style="margin:0">Oggi e ieri non è arrivato nessuno (secondo il prospetto).</p></section>`}${file}`;
+    ${alRicevutaCard()}${schede || `<section class="card"><p style="margin:0">Oggi e ieri non è arrivato nessuno (secondo il prospetto).</p></section>`}${file}`;
 }
 // sulla pagina Oggi del proprietario: il promemoria quando è arrivato qualcuno e non è ancora stato mandato
 function bannerAlloggiati(iso) {
@@ -11862,6 +11858,175 @@ document.addEventListener("input", (e) => {
   sg.innerHTML = r.map(x => `<button type="button" data-al-scegli="${esc(campo)}|${esc(x.c)}">${esc(x.n)}${x.comune && x.p ? ` <small>(${esc(x.p)})</small>` : x.comune ? "" : " <small>stato</small>"}${x.vivo ? "" : " <small>· non c'è più</small>"}</button>`).join("");
 }, true);
 
+// ============================================================================
+//  1.56.1 ALLOGGIATI CHE SI MANDA DA SOLA (6/11, Michele: «dai allora mettiamo che si compila da solo»)
+//  Il servizio della Polizia (Alloggiati Web, «servizio web») non accetta richieste dalle app nel browser: in mezzo c'è
+//  «il passaggio», un piccolo programma (alloggiati-passaggio.gs) nell'account Google di Michele (Google Apps Script,
+//  gratis) che tiene nome utente, password e chiave WSKEY (mai nell'app) e parla con la Polizia. L'indirizzo del passaggio
+//  e il «segreto» stanno in importazioni/alloggiati-web (solo i proprietari li leggono): così funziona dal telefono e dal PC.
+//  «📨 Manda alla Polizia»: prima il controllo (Test), poi l'invio (Send); se una schedina ha un errore non parte niente e
+//  si vede chi correggere. «📄 La ricevuta di oggi»: il PDF della Polizia. Il file da scaricare resta, se serve.
+// ============================================================================
+const ALWS_CODICE = "alloggiati-passaggio.gs";
+const alWsPronto = () => !!(S.alWs && S.alWs.url && S.alWs.segreto && S.alWs.pronto);
+const alWsUrlGiusto = (u) => /^https:\/\/script\.google\.com\/(?:a\/[^/]+\/)?macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/.test(String(u || "").trim());
+function alWsSegreto() { const a = new Uint8Array(24); crypto.getRandomValues(a); return Array.from(a, b => b.toString(16).padStart(2, "0")).join(""); }
+// la chiamata al passaggio: testo semplice (niente intestazioni speciali, così Google risponde anche all'app)
+async function alWsChiama(url, corpo, ms = 90000) {
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+  try {
+    const r = await fetch(url, corpo ? { method: "POST", body: JSON.stringify(corpo), signal: ac.signal } : { signal: ac.signal, cache: "no-store" });
+    const j = await r.json();
+    return j && typeof j === "object" ? j : { ok: false, errore: "risposta strana dal passaggio" };
+  } catch (e) { return { ok: false, errore: e && e.name === "AbortError" ? "il passaggio non ha risposto in tempo: riprova" : "il passaggio non risponde: controlla la connessione (e l'indirizzo)" }; }
+  finally { clearTimeout(t); }
+}
+const alWs = (corpo, ms) => alWsChiama(S.alWs.url, { ...corpo, segreto: S.alWs.segreto }, ms);
+// ---- la scheda del file: col passaggio «📨 Manda alla Polizia», senza i tre passi a mano ---------------------------------
+function alFileCard(da, pronte, incomplete) {
+  const pronto = alWsPronto(), quante = `${pronte} ${pronte === 1 ? "persona pronta" : "persone pronte"}, in ${da.length} ${da.length === 1 ? "camera" : "camere"}`;
+  const avviso = incomplete ? `<p class="al-avviso">Prima completa ${incomplete === 1 ? "la persona col punto esclamativo" : `le ${incomplete} persone col punto esclamativo`}.</p>` : `<p class="muted small" style="margin:0 0 10px">${quante}.</p>`;
+  if (pronto) return `<section class="card al-file al-ws"><h3>📨 Manda alla Polizia</h3>${avviso}
+    <button type="button" class="big main al-manda" data-alws-manda ${incomplete ? "disabled" : ""}>📨 Manda alla Polizia</button>
+    <p class="muted small" style="margin:8px 0 0">Prima la Polizia le controlla: se una è sbagliata non parte niente e ti dico quale correggere. Poi le riceve, e qui diventano «✓ mandato».</p>
+    <div class="al-ws-altro"><button type="button" class="btnsm ghost" data-al-scarica ${incomplete ? "disabled" : ""}>⬇️ Scarica il file (se serve)</button><button type="button" class="btnsm ghost" data-alws-apri>⚙️ Il collegamento</button></div></section>`;
+  return `<section class="card al-file"><h3>Il file per Alloggiati Web</h3>${avviso}
+    <button type="button" class="big main" data-al-scarica ${incomplete ? "disabled" : ""}>⬇️ Scarica il file</button>
+    <ol class="al-come"><li>Tocca <b>«Apri Alloggiati Web»</b> ed entra con le tue credenziali.</li><li>Scegli <b>«Invio file»</b> e prendi il file appena scaricato (è nella cartella Download).</li><li>Tocca <b>«Elabora»</b>, guarda che sia tutto giusto, poi <b>«Invia»</b>.</li></ol>
+    <a class="big undo" href="${AL_PORTALE}" target="_blank" rel="noopener">🌐 Apri Alloggiati Web</a>
+    <button type="button" class="big undo" data-al-inviato>✓ L'ho mandato: cancella i dati da questo telefono</button>
+    <button type="button" class="al-ws-invito" data-alws-apri><span aria-hidden="true">📨</span><span><b>Vuoi che si mandi da sola?</b><small>Si imposta una volta sola, dal PC: poi un tocco e la Polizia le riceve.</small></span><span aria-hidden="true">›</span></button></section>`;
+}
+// in cima alla pagina: la ricevuta di oggi (col passaggio)
+function alRicevutaCard() {
+  if (!alWsPronto()) return "";
+  return `<section class="card al-ric"><span>📄 La ricevuta della Polizia</span><button type="button" class="btnsm" data-alws-ricevuta="${esc(L.oggiISO())}">Oggi</button><button type="button" class="btnsm ghost" data-alws-ricevuta="${esc(L.aggiungiGiorni(L.oggiISO(), -1))}">Ieri</button></section>`;
+}
+// ---- il foglio per impostarla (una volta sola, dal PC) -----------------------------------------------------------------
+function foglioAlWs(f) {
+  const w = S.alWs || {};
+  if (alWsPronto() && !f.rifai) return `<h3>📨 Alloggiati si manda da sola</h3>
+    <p class="note info">✓ Collegata${w.quando ? ` dal ${esc(L.dataLunga(String(w.quando).slice(0, 10)))}` : ""}. Nella pagina di Alloggiati Web c'è «📨 Manda alla Polizia». Nome utente, password e chiave stanno nel tuo passaggio su Google, non nell'app.</p>
+    <ol class="rg-passi"><li><button type="button" class="rg-b" data-alws-prova><b>✓</b>Prova il collegamento</button></li>
+      <li><button type="button" class="rg-b" data-alws-rifai><b>↺</b>Cambia password o chiave</button></li></ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || f.esito || (f.provo ? "Provo…" : "Se la Polizia cambia la tua password, rimettila qui con «Cambia password o chiave»."))}</p>`;
+  const urlOk = f.urlOk || (f.rifai && alWsUrlGiusto(w.url));
+  return `<h3>📨 Alloggiati che si manda da sola</h3>
+    <p class="muted small" style="margin:0 0 10px">Si fa una volta sola, meglio dal PC. Il sito della Polizia non accetta richieste dirette dalle app: serve un «passaggio» nel tuo account Google, gratis. Le tue credenziali di Alloggiati Web restano lì, non nell'app.</p>
+    <ol class="rg-passi">
+      ${f.rifai ? "" : `<li><button type="button" class="rg-b" data-alws-copia><b>1</b>Copia il codice del passaggio</button></li>
+      <li><a class="rg-b" href="https://script.new" target="_blank" rel="noopener"><b>2</b>Apri Google: un progetto nuovo</a></li>
+      <li><span class="rg-t"><b>3</b><span>Su Google: clic nel testo, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, poi 💾. In alto a destra <b>«Esegui il deployment» → «Nuovo deployment»</b> → ⚙️ <b>«App web»</b> → <b>«Chi ha accesso: Chiunque»</b> → <b>«Esegui il deployment»</b> → <b>«Autorizza l'accesso»</b> (se dice «Google non ha verificato questa app»: <b>«Avanzate»</b> → <b>«Vai a…»</b> → <b>«Consenti»</b>). Poi copia l'<b>«URL app web»</b>.</span></span></li>
+      <li><label class="gh-incolla"><b>4</b><input id="alwsUrl" type="text" data-keep autocomplete="off" spellcheck="false" placeholder="Incolla qui l'URL app web" aria-label="Incolla qui l'indirizzo del passaggio" data-alws-url value="${esc(f.url || "")}"></label></li>`}
+      <li><span class="rg-t"><b>${f.rifai ? 1 : 5}</b><span>In <a href="${AL_PORTALE}" target="_blank" rel="noopener">Alloggiati Web</a>, con le tue credenziali, prendi la <b>chiave del servizio web (WSKEY)</b>. Poi scrivi qui sotto:</span></span></li>
+      <li><label class="gh-incolla"><b>${f.rifai ? 2 : 6}</b><input id="alwsUtente" type="text" data-keep autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="Nome utente di Alloggiati Web" aria-label="Nome utente di Alloggiati Web"></label></li>
+      <li><label class="gh-incolla"><b>${f.rifai ? 3 : 7}</b><input id="alwsPw" type="password" data-keep autocomplete="off" placeholder="Password di Alloggiati Web" aria-label="Password di Alloggiati Web"></label></li>
+      <li><label class="gh-incolla"><b>${f.rifai ? 4 : 8}</b><input id="alwsKey" type="password" data-keep autocomplete="off" spellcheck="false" placeholder="Chiave WSKEY" aria-label="Chiave WSKEY"></label></li>
+      <li><button type="button" class="rg-b verde" data-alws-accendi><b>${f.rifai ? 5 : 9}</b>Controlla e accendi</button></li>
+    </ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || (f.provo ? "Chiedo alla Polizia se è tutto giusto…" : urlOk ? "✓ Il passaggio risponde. Ora i dati di Alloggiati Web." : "Quando incolli l'indirizzo, lo controllo da sola."))}</p>`;
+}
+// com'è andato l'invio quando qualcosa non va: chi correggere, con le parole della Polizia
+function foglioAlEsito(f) {
+  const righe = (f.righe || []).map(x => `<li class="al-es-riga"><b>${esc(x.nome)}</b><span>${esc(x.errore)}</span></li>`).join("");
+  return `<h3>${f.fase === "invio" ? "L'invio non è andato del tutto" : "La Polizia ha trovato degli errori"}</h3>
+    <p class="al-avviso">${esc(f.errore || "")}${f.fase === "controllo" ? " Non ho mandato niente: correggi e riprova." : ""}</p>
+    ${righe ? `<ul class="al-es">${righe}</ul><p class="muted small">Tocca la persona nella pagina, correggi e premi di nuovo «📨 Manda alla Polizia».</p>` : `<p class="muted small">Puoi riprovare tra poco, oppure scaricare il file e caricarlo a mano su Alloggiati Web.</p>`}`;
+}
+async function alWsUrl(u) {
+  if (!S.foglio || S.foglio.tipo !== "alWs") return;
+  S.foglio = { ...S.foglio, url: u, errore: "", urlOk: false, provo: true }; disegnaFoglio();
+  const j = await alWsChiama(u, null, 30000);
+  if (!S.foglio || S.foglio.tipo !== "alWs") return;
+  S.foglio = { ...S.foglio, provo: false, url: u, urlOk: !!(j && j.passaggio), errore: j && j.passaggio ? "" : `Questo indirizzo non risponde come il passaggio${j && j.errore ? ` (${j.errore})` : ""}. Controlla di aver copiato l'«URL app web» e scelto «Chi ha accesso: Chiunque».` };
+  disegnaFoglio();
+}
+async function alWsAccendi() {
+  const f = S.foglio; if (!f || f.tipo !== "alWs" || f.provo) return;
+  const v = (id) => { const e = document.getElementById(id); return e ? String(e.value || "") : ""; };
+  const url = f.rifai ? (S.alWs && S.alWs.url) : v("alwsUrl").trim(), utente = v("alwsUtente").trim(), pw = v("alwsPw"), key = v("alwsKey").trim();
+  const errore = !alWsUrlGiusto(url) ? "Prima incolla l'«URL app web» del passaggio (comincia con https://script.google.com/macros/s/…)." : !utente || !pw || !key ? "Scrivi nome utente, password e chiave WSKEY di Alloggiati Web." : "";
+  if (errore) { S.foglio = { ...f, url, errore }; disegnaFoglio(); return; }
+  const segreto = S.alWs && S.alWs.url === url && S.alWs.segreto ? S.alWs.segreto : alWsSegreto();
+  S.foglio = { ...f, url, provo: true, errore: "" }; disegnaFoglio();
+  const r = await alWsChiama(url, { azione: "imposta", segreto, utente, password: pw, wskey: key });
+  for (const id of ["alwsPw", "alwsKey"]) { const e = document.getElementById(id); if (e) e.value = ""; }
+  if (!S.foglio || S.foglio.tipo !== "alWs") return;
+  if (!r.ok) { S.foglio = { ...S.foglio, provo: false, errore: r.errore || "Non ci sono riuscita." }; try { elFoglio().querySelectorAll("#alwsPw,#alwsKey").forEach(e => e.removeAttribute("id")); } catch (e) {} disegnaFoglio(); return; }
+  try { await S.db.salva("importazioni", "alloggiati-web", { url, segreto, pronto: true, quando: new Date().toISOString() }, false); }
+  catch (e) { S.foglio = { ...S.foglio, provo: false, errore: "Il passaggio va, ma non riesco a salvarlo nell'app: riprova." }; disegnaFoglio(); return; }
+  S.alWs = { url, segreto, pronto: true, quando: new Date().toISOString() };
+  try { elFoglio().querySelectorAll("input[id]").forEach(e => e.removeAttribute("id")); } catch (e) {}
+  S.foglio = { tipo: "alWs" }; disegna(); toast("✓ Fatto: Alloggiati si manda da sola");
+}
+// ---- l'invio ------------------------------------------------------------------------------------------------------------
+async function alManda() {
+  if (!alWsPronto()) return;
+  const st = alStato(), da = alDaMandare(st); if (!da.length) return;
+  if (da.some(x => x.righe.some(r => r.manca.length))) { toast("Prima completa le persone col punto esclamativo"); return; }
+  const righe = [], chi = [];
+  for (const { s, righe: rr } of da) for (const { p, tipo } of rr) { righe.push(DOC.rigaAlloggiati({ ...p, tipo, arrivo: s.inizio, giorni: alNotti(s) })); chi.push({ sid: s.id, nome: `${p.cognome || ""} ${p.nome || ""}`.trim() || "?" }); }
+  alAttesa("Mando le schedine alla Polizia…");
+  const r = await alWs({ azione: "manda", righe }, 120000);
+  alAttesa("");
+  if (r && r.ok) {
+    const st2 = alStato(), ora = new Date().toISOString();
+    for (const { s } of da) { st2.inviati[s.id] = ora; delete st2.persone[s.id]; delete st2.gruppo[s.id]; }
+    alSalva(st2); disegna(); toast(`✓ Mandate: la Polizia ha ricevuto ${righe.length} ${righe.length === 1 ? "schedina" : "schedine"}`);
+    return;
+  }
+  const sbagliate = (r && Array.isArray(r.righe) ? r.righe : []).map((x, i) => x && !x.ok ? { nome: (chi[i] || {}).nome || `riga ${i + 1}`, errore: x.errore || "errore" } : null).filter(Boolean);
+  apriFoglio({ tipo: "alEsito", fase: r && r.fase, errore: (r && r.errore) || "Non ci sono riuscita.", righe: sbagliate });
+}
+async function alRicevuta(data) {
+  if (!alWsPronto()) return;
+  alAttesa("Chiedo la ricevuta alla Polizia…");
+  const r = await alWs({ azione: "ricevuta", data }, 60000);
+  alAttesa("");
+  if (!r || !r.ok || !r.pdf) { toast(r && r.errore ? r.errore : "Ricevuta non disponibile"); return; }
+  try {
+    const bin = atob(r.pdf), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf], { type: "application/pdf" })); a.download = `ricevuta-alloggiati-${data}.pdf`; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); toast("Ricevuta scaricata ✓");
+  } catch (e) { toast("Non riesco ad aprire la ricevuta"); }
+}
+async function alWsCopia() {
+  let codice = "";
+  try { const r = await fetch(ALWS_CODICE, { cache: "no-store" }); if (r.ok) codice = await r.text(); } catch (e) {}
+  if (!/function doPost/.test(codice)) { toast("Non riesco a prendere il codice: c'è internet?"); return; }
+  try { await navigator.clipboard.writeText(codice); toast("Codice copiato ✓ Ora «Apri Google»"); }
+  catch (e) { apriFoglio({ tipo: "copia", titolo: "Il codice del passaggio", testo: codice }); }
+}
+// ---- i tocchi ----------------------------------------------------------------------------------------------------------
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-alws-apri],[data-alws-copia],[data-alws-accendi],[data-alws-prova],[data-alws-rifai],[data-alws-manda],[data-alws-ricevuta]") : null;
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-alws-apri")) { apriFoglio({ tipo: "alWs" }); return; }
+  if (t.hasAttribute("data-alws-copia")) { alWsCopia(); return; }
+  if (t.hasAttribute("data-alws-accendi")) { alWsAccendi(); return; }
+  if (t.hasAttribute("data-alws-rifai")) { S.foglio = { tipo: "alWs", rifai: true }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-alws-prova")) {
+    (async () => { S.foglio = { tipo: "alWs", provo: true }; disegnaFoglio(); const r = await alWs({ azione: "prova" }, 60000); if (!S.foglio || S.foglio.tipo !== "alWs") return; S.foglio = { tipo: "alWs", esito: r.ok ? "✓ La Polizia risponde: il collegamento va." : "", errore: r.ok ? "" : (r.errore || "Non va.") }; disegnaFoglio(); })();
+    return;
+  }
+  if (t.hasAttribute("data-alws-manda")) { if (!t.disabled) alManda(); return; }
+  if (t.hasAttribute("data-alws-ricevuta")) { alRicevuta(t.getAttribute("data-alws-ricevuta")); }
+}, true);
+document.addEventListener("input", (e) => {
+  const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-alws-url")) return;
+  const u = String(t.value || "").trim(); if (alWsUrlGiusto(u)) alWsUrl(u);   // incollato giusto: si controlla da solo
+}, true);
+// se il telefono non lascia copiare: il codice in una casella da cui copiarlo a mano
+function foglioCopia(f) {
+  return `<h3>${esc(f.titolo || "Il codice del passaggio")}</h3>
+    <p class="muted small" style="margin:0 0 8px">Il browser non mi lascia copiare da sola: tocca la casella, seleziona tutto e copia.</p>
+    <textarea class="regole-testo" readonly rows="12" onfocus="this.select()">${esc(f.testo || "")}</textarea>`;
+}
+// sempre in cima alla pagina (anche senza arrivi): lo stato dell'invio automatico e il tasto per impostarlo
+function alWsTesta() {
+  return `<button type="button" class="al-ws-stato${alWsPronto() ? " acceso" : ""}" data-alws-apri>${alWsPronto() ? "📨 Invio automatico alla Polizia: acceso ✓" : "📨 Invio automatico alla Polizia: impostalo"} ›</button>`;
+}
 function vistaAltro() {
   const r = S.regole;
   return cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
@@ -11946,6 +12111,9 @@ function disegnaFoglio() {
   else if (f.tipo === "patto") html = foglioPatto(f);
   else if (f.tipo === "messaggio") html = foglioMessaggio(f);
   else if (f.tipo === "alloggiato") html = foglioAlloggiato(f);   // 1.56.0
+  else if (f.tipo === "alWs") html = foglioAlWs(f);   // 1.56.1
+  else if (f.tipo === "alEsito") html = foglioAlEsito(f);
+  else if (f.tipo === "copia") html = foglioCopia(f);
   else if (f.tipo === "controllo") html = foglioControllo(f);
   else if (f.tipo === "soggiorno") html = foglioSoggiorno(f);
   else if (f.tipo === "nota") html = foglioNota(f);

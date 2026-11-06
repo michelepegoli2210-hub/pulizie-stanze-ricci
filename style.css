@@ -8224,3 +8224,19 @@ body:has(.sheet) .sg-finito{display:none!important}
 .al-lato label.big{display:flex;align-items:center;justify-content:center;gap:8px;margin:0;cursor:pointer}
 .al-lato-galleria{align-self:center;cursor:pointer}
 .al-avviso.ok{background:#E3F6EA;color:#0E5A2F}
+/* ---- 1.56.1 · Alloggiati che si manda da sola: «📨 Manda alla Polizia», l'invito, la ricevuta, gli errori ---- */
+.al-ws .al-manda{display:flex;align-items:center;justify-content:center;gap:8px}
+.al-ws-altro{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.al-ws-invito{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 0;padding:12px 14px;border:1px dashed #9CC8F0;border-radius:14px;background:#F2F8FE;color:#0B3F6E;text-align:left;cursor:pointer}
+.al-ws-invito>span:first-child{font-size:24px}
+.al-ws-invito>span:nth-child(2){flex:1 1 auto;display:flex;flex-direction:column;gap:2px}
+.al-ws-invito b{font-size:16px}
+.al-ws-invito small{font-size:14px;color:#3D5A75}
+.al-ric{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.al-ric>span{flex:1 1 auto;font-weight:700}
+.al-es{margin:8px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.al-es-riga{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #F2C94C;border-radius:12px;background:#FFFBEA}
+.al-es-riga b{font-size:16px}
+.al-es-riga span{font-size:15px;color:#5A3D00}
+.al-ws-stato{display:block;width:100%;margin:2px 0 10px;padding:10px 12px;border:1px solid #9CC8F0;border-radius:12px;background:#F2F8FE;color:#0B3F6E;font-size:15px;font-weight:700;text-align:left;cursor:pointer}
+.al-ws-stato.acceso{border-color:#9BD3B0;background:#EEF8F1;color:#0E5A2F}
