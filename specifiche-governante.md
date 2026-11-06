@@ -2717,3 +2717,19 @@ Sempre gratis e tutto sul telefono (niente intelligenza artificiale a pagamento)
 - ✉️ SCRIVI A MICHELE: la governante chiede cosa scrivere; il messaggio dopo glielo manda su Telegram, col «Sì».
 - QUANDO NON CAPISCE una frase: «Non ho capito bene 🤔» con il tasto «✉️ Mandalo a Michele» e il menu. Una domanda che non sa: «Questo non lo so 🙂 Vuoi che lo scrivo a Michele?» come prima.
 - Prove: prova15511 (il menu, le proposte, come si pulisce col materiale e il panno, le chiacchiere, le parole sbagliate, sì/no scritti, Scrivi a Michele, Non ho capito) più quelle di prima.
+
+## 155.12 La 1.55.12 (6 novembre): LE CAMERE A MATITA RIDISEGNATE DA GEMINI, PIÙ CHIARE E IN RILIEVO
+
+Michele (6/11): «Prova a fare fare questa versione a Gemini sempre a matita ma più chiara, più fruibile, a prova di idiota, più 3D, più rilievo, anche quando cliccano sopra la camera. Se la fai bene puoi sostituire anche tale versione.»
+
+Gemini ha ridisegnato le due pagine (le righe delle camere e la camera aperta) e i disegnini nuovi (l'omino, i due omini, la valigia, il megafono). «A matita» adesso è questa; «Come prima · 1.55.7» resta uguale.
+- LE RIGHE: ogni camera è un cartoncino spesso sollevato dal foglio, e quando la tocchi si schiaccia. A sinistra il tondo colorato col disegno; sotto il letto il nastro MATRIMONIALE (rosso) o SINGOLO (blu), gli stessi colori del disegno. Il nome grande come col pennarello, sotto cosa fare in verde.
+- I BOLLINI: «1 persona» con l'omino, «Parte» con la porta, «Arriva» con la valigia, «Nota» col megafono. Ognuno è intero: non si spezza più a capo (prima «· 🚪 parte» e «per / 1» andavano a capo male).
+- «✨ QUI ANCHE»: le etichette dei lavori in più in fila, da sinistra, larghe tutta la camera (prima erano una sotto l'altra, al centro).
+- ADESSO: un post-it giallo attaccato con lo scotch sulla camera da fare adesso, e un alone giallo intorno al tondo.
+- A DESTRA: la stella è una moneta d'oro col numero; «✓ Fatto» è un tasto verde in rilievo che si schiaccia. HO FINITO uguale, più grande.
+- IL TITOLO: «LE CAMERE DI OGGI» con le lettere dei colori delle matite.
+- LA CAMERA APERTA: «‹ LE MIE CAMERE» come un'etichetta. Nel cartoncino il nome grande e i tondi grandi col nastro: il letto (MATRIMONIALE o SINGOLO), «1 persona», «Parte oggi» o «Arriva oggi». Il disegno della camera ha lo scotch agli angoli. I passi sono tasti spessi col numero nel tondo colorato in rilievo. In fondo «✓ FATTO, CAMERA PULITA» grande in rilievo e «C'è un problema» rosso.
+- HO FINITO FISSO: quello che resta in basso mentre si scorrono le camere adesso sparisce appena si apre una camera (prima restava sopra la camera aperta, e si poteva premere al posto di «Fatto, camera pulita»). Vale anche per «Come prima».
+- Quando non si sa quanti arrivano (l'ospite parte e il prossimo non c'è ancora), il bollino delle persone non c'è.
+- Prove: prova15512 (quelle di prima, più le nuove: i bollini interi anche a 360 pixel, il nastro del letto, il post-it, i tasti che si schiacciano, i tondi nella camera aperta).

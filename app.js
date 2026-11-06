@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.11";
+export const VERSIONE = "1.55.12";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2028,9 +2028,10 @@ function foglioInizioFacile(f) {
   else if (p.stato === "non_fatta") bottone = `<div class="pro-tempo skip">${ICONA("avviso")}<span>Non fatta${p.nota ? ": " + esc(p.nota) : ""}</span></div><button class="pro-btn verde gigante" data-fatta-foglio="${esc(p.id)}">${ICONA("spunta")}<span>Adesso è pulita</span></button>${addetta() ? `<button class="nonna-link" data-stato-foglio="${esc(p.id)}|da_fare">Rimetti da pulire</button>` : ""}`;
   if (argonLei() && p.stato !== "fatta") bottone = `${p.tipo !== "stelle" && p.data === L.oggiISO() && (p.stato === "da_fare" || p.stato === "in_corso" || p.stato === "problema" || p.stato === "non_fatta") ? `<button type="button" class="gp-fatto grande" data-fatta-camera="${esc(p.id)}">${ICONA("spunta")}<span>${p.origine === "governante" ? "Fatto" : "Fatto, camera pulita"}</span></button>` : ""}<button type="button" class="gs-torna" data-chiudi>${ICONA("indietro")}<span>Torna alle camere</span></button>${(p.stato === "da_fare" || p.stato === "in_corso") ? `<div class="pro-sec"><button class="nonna-link rosso" data-apri-motivo="${esc(p.id)}|problema">${ICONA("avviso")}C'è un problema</button></div>` : ""}`;   // 1.23.0: niente riquadro giallo
   else if (argonLei()) bottone = `<div class="pro-tempo done">${ICONA("spunta")}<span>Pulita alle <b>${L.oraBreve(p.ora)}</b> · brava!</span></div>`;
+  const bolliniC = argonLei() && camereMatita() && !stelle ? bolliniCamera(p, c) : "";   // 1.55.12: i tondi di Gemini
   return `<div class="inizio sig sf">
     <div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Le mie camere</span></button><span class="sig-data"><b class="who-ora">${oraAdesso()}</b>${esc(L.dataBreve(p.data))}</span></div>
-    <div class="gs-targa ${tipoGiornata(p)} ${p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : ""}"><div class="gs-targa-r"><span class="gs-tile" aria-hidden="true">${argonLei() && camereMatita() ? MAT(figuraGiro(p, c) || "secchio") : p.stato === "fatta" ? "✅" : p.stato === "problema" || p.stato === "non_fatta" ? "⚠️" : disegnoGiornata(p)}</span><span class="gs-cam-x"><span class="gs-nome">${esc(nome)}</span><span class="gs-cosa">${esc(stelle ? "Solo le rifiniture" : titoloBase(p) + parteTesto(p))}</span>${argonLei() && camereMatita() && !stelle ? (() => { const pc = perChiCamera(p, c), lt = lettoDiCamera(p, c); return lt || (pc && pc.n) ? `<span class="gs-letto">${lettoScritto(lt, pc ? pc.n : 0)}</span>` : ""; })() : ""}</span>${p.stato === "da_fare" || p.stato === "in_corso" ? "" : BADGE(p)}</div>${ospiti.length ? `<div class="sf-ospiti">${ospiti.map(([i, x]) => `<span><i aria-hidden="true">${i}</i><span>${esc(x)}</span></span>`).join("")}</div>` : ""}</div>
+    <div class="gs-targa ${tipoGiornata(p)} ${p.stato === "fatta" ? "fatta" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : ""}${bolliniC ? " con-bollini" : ""}"><div class="gs-targa-r"><span class="gs-tile" aria-hidden="true">${argonLei() && camereMatita() ? MAT(figuraGiro(p, c) || "secchio") : p.stato === "fatta" ? "✅" : p.stato === "problema" || p.stato === "non_fatta" ? "⚠️" : disegnoGiornata(p)}</span><span class="gs-cam-x"><span class="gs-nome">${esc(nome)}</span><span class="gs-cosa">${esc(stelle ? "Solo le rifiniture" : titoloBase(p) + parteTesto(p))}</span>${bolliniC}</span>${p.stato === "da_fare" || p.stato === "in_corso" ? "" : BADGE(p)}</div>${ospiti.length ? `<div class="sf-ospiti">${ospiti.map(([i, x]) => `<span><i aria-hidden="true">${argonLei() && camereMatita() && OSPITI_MAT[i] ? MAT(OSPITI_MAT[i]) : i}</i><span>${esc(x)}</span></span>`).join("")}</div>` : ""}</div>
     ${argonLei() ? disegnoCamera(p) : ""}${argonLei() ? sofiaSpiega(testoSofiaCamera(p, parlato)) : `<button type="button" class="sf-ascolta" data-sf-voce>${ICONA("altoparlante")}<span>Ascolta</span></button>`}<span hidden data-sf-testo>${esc(argonLei() ? testoSofiaCamera(p, parlato) : parlato)}</span>
     ${dice}${argonLei() && lista ? sequenzaCamera(p, lista, statoRiga, motivoRiga, aperta) : ""}${sempreHtml}${rifHtml}${argonLei() ? fondiCamera(p) : ""}${argonLei() && lista ? "" : zonaHtml + passiHtml}${bidoni}
     ${bottone}
@@ -3012,12 +3013,28 @@ function figuraGiro(p, c, soloFondo) {
 const ICO = (nome, cls = "") => `<img class="wa-ico${cls ? " " + cls : ""}" src="ico-${nome}.webp" alt="" aria-hidden="true" decoding="async">`;
 // 1.55.8: le icone a matite colorate di Gemini (mat-*.webp, trasparenti), come i disegni della scuola elementare
 const MAT = (nome, cls = "") => `<img class="mat-ico${cls ? " " + cls : ""}" src="mat-${nome}.webp" alt="" aria-hidden="true" decoding="async">`;
+// 1.55.12 · le camere a matita come le ha ridisegnate Gemini (Michele, 6/11: «più chiara, a prova di idiota, più 3D»):
+// le lettere colorate del titolo, i tondi grandi della camera aperta (che letto, per quanti, se parte o arriva)
+function arcobaleno(t) { let i = 0; return [...String(t || "")].map(ch => ch === " " ? " " : `<span class="ab${(i++ % 6) + 1}">${esc(ch)}</span>`).join(""); }
+const OSPITI_MAT = { "🚪": "p-partenza", "🧳": "valigia" };
+function perQuante(n) { return n === 1 ? "1 persona" : `${n} persone`; }   // come nel disegno di Gemini
+function bolliniCamera(p, c) {
+  if (!p || p.tipo === "stelle" || p.origine === "governante") return "";
+  c = c || camera(p.camera);
+  const lt = lettoDiCamera(p, c), pc = perChiCamera(p, c), n = pc ? pc.n : 0, oggi = p.data === L.oggiISO();
+  const b = [];
+  if (lt) b.push([`letto ${lt}`, MAT(lt === "singolo" ? "letto1" : "letto2"), lt === "singolo" ? "Singolo" : "Matrimoniale"]);
+  if (n) b.push(["persone", MAT(n === 1 ? "persona" : "persone"), perQuante(n)]);
+  if (p.partenza) b.push(["parte", MAT("p-partenza"), oggi ? "Parte oggi" : "Parte"]);
+  else if (p.arrivo) b.push(["arriva", MAT("valigia"), oggi ? "Arriva oggi" : "Arriva"]);
+  return b.length ? `<span class="gs-bollini">${b.map(([cl, ico, t]) => `<span class="gs-b ${cl}"><span class="gs-b-o">${ico}</span><b>${esc(t)}</b></span>`).join("")}</span>` : "";
+}
 // 1.55.9: Michele sceglie com'è la parte delle camere delle signore: «matita» (1.55.8, di base) o «prima» (1.55.7)
 function camereMatita() { return !(S.argon && S.argon.camere === "prima"); }
 function fileVista(f) { return camereMatita() ? String(f || "").replace(/\.webp$/, "-m.webp") : f; }   // i disegni di Salvatore: a matita (-m) o quelli di prima
 function sceltaCamereHtml(dove) {
   const m = camereMatita();
-  return `<div class="sc-camere${dove ? " " + dove : ""}" role="group" aria-label="Com'è la parte delle camere delle signore"><span class="sc-camere-t">🎨 Le camere delle signore:</span><button type="button" class="sc-b${m ? " su" : ""}" data-scegli-camere="matita" aria-pressed="${m}">✏️ A matita · 1.55.8</button><button type="button" class="sc-b${m ? "" : " su"}" data-scegli-camere="prima" aria-pressed="${!m}">Come prima · 1.55.7</button></div>`;
+  return `<div class="sc-camere${dove ? " " + dove : ""}" role="group" aria-label="Com'è la parte delle camere delle signore"><span class="sc-camere-t">🎨 Le camere delle signore:</span><button type="button" class="sc-b${m ? " su" : ""}" data-scegli-camere="matita" aria-pressed="${m}">✏️ A matita · 1.55.12</button><button type="button" class="sc-b${m ? "" : " su"}" data-scegli-camere="prima" aria-pressed="${!m}">Come prima · 1.55.7</button></div>`;
 }
 async function scegliCamere(stile) {
   const capo = proprietario() || !!(S.veroUtente && S.veroUtente.ruolo === "proprietario");   // anche mentre prova la parte delle signore
@@ -3073,12 +3090,19 @@ function tesseraGiro(p, rif, anteprima, n, ora, extra = {}) {
   // 1.55.0: una riga come nelle chat di WhatsApp: a sinistra il tondo col disegno (il ✓ sopra quando è fatta), il nome
   // grande, sotto in grigio cosa fare · per quanti · che letto · i segni; a destra «👉 Adesso» o le spunte ✓✓, e «✓ Fatto»
   const giu = [`<span class="gp-cosa">${st === "fatta" ? `<span class="wa-spunte" aria-hidden="true">${msSvg("done_all")}</span>Fatta` : esc(cosa)}</span>`, per ? `<span class="gp-per">${argonLei() && camereMatita() ? lettoScritto(per.letto ? lettoDiCamera(p, c) : "", per.n) : esc(per.testo)}</span>` : "", sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : "", ...segni.map(([cl, t, , w]) => `<span class="gp-s ${cl}">${t} ${esc(w || "")}</span>`)].filter(Boolean).join("");
+  // 1.55.12: a matita (Gemini) il tondo colorato col disegno e sotto il nastro MATRIMONIALE o SINGOLO; i bollini in fila
+  // (per quante persone, parte, arriva, la nota), ognuno intero: niente più «· parte» o «per / 1» spezzati a capo
+  const matita2 = argonLei() && camereMatita(), lettoR = matita2 && per && per.letto ? lettoDiCamera(p, c) : "";
+  const figM = matita2 ? ` fig-${figuraGiro(p, c, soloFondo) || "secchio"}` : "";
+  const nastro = lettoR ? `<span class="gp-nastro ${lettoR}">${lettoR === "singolo" ? "Singolo" : "Matrimoniale"}</span>` : "";
+  const bollini = matita2 && st !== "fatta" ? [per && per.n ? `<span class="gp-b persone">${MAT(per.n === 1 ? "persona" : "persone")}${perQuante(per.n)}</span>` : "", ...segni.map(([cl, , , w]) => `<span class="gp-b ${cl}">${MAT(cl === "parte" ? "p-partenza" : cl === "arriva" ? "valigia" : "megafono")}${esc(maiuscola(w || ""))}</span>`)].filter(Boolean).join("") : "";
+  const giuM = matita2 ? [`<span class="gp-cosa">${st === "fatta" ? `<span class="wa-spunte" aria-hidden="true">${msSvg("done_all")}</span>Fatta` : esc(cosa)}</span>`, sotto ? `<span class="gp-sotto">${esc(sotto)}</span>` : "", bollini ? `<span class="gp-bollini">${bollini}</span>` : ""].filter(Boolean).join("") : giu;
   // 1.55.3: a destra come nelle righe delle chat: sopra «Adesso» in verde (come l'ora dei messaggi da leggere) o l'ora in cui
   // è stata fatta; sotto la pillola «✓ Fatto» (Gemini: «al posto dell'orario e della notifica verde»)
   const quando = st === "fatta" && p && p.ora ? L.oraBreve(p.ora) : "";
   const destra = ora2 ? `<span class="gs-ora">Adesso</span>` : quando ? `<time class="wa-quando">${esc(quando)}</time>` : "";
   const piede = destra || stellaBtn || fattoBtn ? `<span class="gp-piede">${destra}${stellaBtn}${fattoBtn}</span>` : "";
-  return `<div class="gs-cam wa-riga ${k}${st ? " " + st : ""}${ora2 ? " ora" : ""}${qui.length ? " con-fondi" : ""}" data-cam="${esc(c.id)}"><button type="button" class="gp-apri" data-dettagli="${esc(apri.id)}" aria-label="${label}"><span class="gp-ico" aria-hidden="true">${disegninoMatita(p, c, soloFondo)}${st ? `<span class="gp-stato ${st}">${st === "fatta" ? "✓" : "!"}</span>` : ""}</span><span class="wa-x"><span class="wa-su"><span class="gs-nome">${esc(nome)}</span></span><span class="wa-giu">${giu}</span>${fondoHtml}</span></button>${piede}</div>`;
+  return `<div class="gs-cam wa-riga ${k}${st ? " " + st : ""}${ora2 ? " ora" : ""}${qui.length ? " con-fondi" : ""}" data-cam="${esc(c.id)}"><button type="button" class="gp-apri" data-dettagli="${esc(apri.id)}" aria-label="${label}"><span class="gp-ico${figM}" aria-hidden="true">${disegninoMatita(p, c, soloFondo)}${nastro}${st ? `<span class="gp-stato ${st}">${st === "fatta" ? "✓" : "!"}</span>` : ""}</span><span class="wa-x"><span class="wa-su"><span class="gs-nome">${esc(nome)}</span></span><span class="wa-giu">${giuM}</span>${fondoHtml}</span></button>${piede}</div>`;
 }
 function piantinaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   const num = new Map(ord.map((p, i) => [p.id, i + 1]));
@@ -3121,7 +3145,7 @@ function testaLista(z, giorno, ord, rif, anteprima) {
   const segni = [minuti && !pagaAOre() ? `<span class="gs-segno"><i aria-hidden="true">⏱️</i>${esc(oreTessera(minuti))}</span>` : "",
     rif.length ? `<span class="gs-segno oro" aria-label="${rif.length} ${rif.length === 1 ? "stella" : "stelle"}"><i aria-hidden="true">⭐</i>${rif.length}</span>` : ""].filter(Boolean);
   const quando = anteprima ? L.GIORNI[L.giornoSettimana(giorno)] : "oggi";
-  return `<div class="wa-lista-t wa-sistema"><span class="wa-sistema-x"><b>Le camere di ${esc(quando)}${segni.length ? `<span class="gs-segni-g">${segni.join("")}</span>` : ""}</b><span class="gp-aiuto wa-aiuto">Tocca una camera: la governante te la spiega</span></span></div>`;   // 1.55.3
+  return `<div class="wa-lista-t wa-sistema"><span class="wa-sistema-x"><b>${argonLei() && camereMatita() ? `<span class="m-titolo">${arcobaleno("Le camere di " + quando)}</span>` : `Le camere di ${esc(quando)}`}${segni.length ? `<span class="gs-segni-g">${segni.join("")}</span>` : ""}</b><span class="gp-aiuto wa-aiuto">Tocca una camera: la governante te la spiega</span></span></div>`;   // 1.55.3
 }
 function listaGiro(z, giorno, ord, rif, anteprima, pl, adesso) {
   const num = new Map(ord.map((p, i) => [p.id, i + 1]));
@@ -11287,7 +11311,7 @@ function vistaAvvisi() {
 // ---------------------------------------------------------------------------
 function elFoglio() { let s = $(".sheet"); if (!s) { s = document.createElement("div"); s.className = "sheet"; document.body.appendChild(s); s.onclick = e => { if (e.target === s) chiudiFoglio(); }; } return s; }
 function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); try { guidaCompagna(); guidaNuvola(); guidaFinito(); } catch (e) {} }
-function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); if (f && f.tipo === "dettatura") segnaVista(); }
+function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); if (f && f.tipo === "dettatura") segnaVista(); try { guidaFinito(); } catch (e) {} }   // 1.55.12: via HO FINITO fisso
 // 1.18.1: il foglio di una lettura condivisa (fatta dal giro, da questo o da un altro telefono) l'hai aperto: lo segno, così il
 // giro non ti manda l'avviso «ho letto» per una lettura che hai già visto. Una volta sola per lettura.
 let vistaSegnata = "";

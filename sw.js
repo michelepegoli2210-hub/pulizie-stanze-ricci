@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.55.11";
+const VERSIONE = "1.55.12";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -19,7 +19,7 @@ const FILE_BASE = [
   "./fonts/fredoka-latin-600-normal.woff2", "./fonts/fredoka-latin-700-normal.woff2",
   "./fonts/montserrat-latin-500-normal.woff2", "./fonts/montserrat-latin-600-normal.woff2", "./fonts/montserrat-latin-700-normal.woff2", "./fonts/montserrat-latin-800-normal.woff2",
   "./legno-oro-parete.webp", "./cornice-legno.webp", "./radica.webp", "./legno-oro.webp", "./fascia-mogano.webp", "./fonts/playfair-display-latin-600-normal.woff2", "./fonts/playfair-display-latin-400-italic.woff2",
-  "./patrick-hand.woff2", "./mat-letto2.webp", "./mat-letto1.webp", "./mat-casa.webp", "./mat-scale.webp", "./mat-pianta.webp", "./mat-secchio.webp", "./mat-stella.webp", "./mat-scintilla.webp", "./mat-p-letto.webp", "./mat-p-bagno.webp", "./mat-p-camera.webp", "./mat-p-pavimenti.webp", "./mat-p-cucina.webp", "./mat-p-lavanderia.webp", "./mat-p-partenza.webp", "./mat-p-finestra.webp", "./lavoro-letto-singolo-m.webp",   // 1.55.8: le camere a matita
+  "./patrick-hand.woff2", "./mat-letto2.webp", "./mat-letto1.webp", "./mat-persona.webp", "./mat-persone.webp", "./mat-valigia.webp", "./mat-megafono.webp", "./mat-casa.webp", "./mat-scale.webp", "./mat-pianta.webp", "./mat-secchio.webp", "./mat-stella.webp", "./mat-scintilla.webp", "./mat-p-letto.webp", "./mat-p-bagno.webp", "./mat-p-camera.webp", "./mat-p-pavimenti.webp", "./mat-p-cucina.webp", "./mat-p-lavanderia.webp", "./mat-p-partenza.webp", "./mat-p-finestra.webp", "./lavoro-letto-singolo-m.webp",   // 1.55.8: le camere a matita
 ];
 
 self.addEventListener("install", (e) => {
