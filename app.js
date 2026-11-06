@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.13";
+export const VERSIONE = "1.55.14";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -804,6 +804,7 @@ document.addEventListener("click", (e) => {
 function casaVaiPagina(k) {
   if (k === "messaggi") { apriFoglio({ tipo: "postaSig" }); return; }   // 1.55.13
   if (k === "regoleMsg") { apriFoglio({ tipo: "regoleMsg" }); return; }
+  if (k === "spintaGh") { apriFoglio({ tipo: "spintaGh" }); return; }   // 1.55.14
   if (k === "arrivi" || k === "camere") k = "prospetto";
   if (k === "domani") { const d = L.aggiungiGiorni(L.oggiISO(), 1); S.giorno = d; S.settimana = L.lunediDi(d); k = "prospetto"; }   // 1.10.0
   if (k === "pulizie") { const a = document.getElementById("app"); const top = a ? a.getBoundingClientRect().top + window.scrollY - 70 : window.innerHeight; window.scrollTo({ top, behavior: "smooth" }); return; }
@@ -4629,7 +4630,7 @@ function ascoltaMessaggiSig() {
   if (!S.db || !capo || capo.ruolo !== "proprietario") return () => {};
   const da = L.aggiungiGiorni(L.oggiISO(), -14);
   stopMsgSig = S.db.ascolta(MSG_SIG, { where: [["data", ">=", da]] },
-    (m) => { S.messaggiSig = m || {}; S.messaggiErrore = ""; disegna(); },
+    (m) => { S.messaggiSig = m || {}; S.messaggiErrore = ""; disegna(); messaggiArrivati(m); },   // 1.55.14
     (e) => { S.messaggiErrore = (e && e.code) || "errore"; disegna(); });
   return () => { if (stopMsgSig) { try { stopMsgSig(); } catch (e) {} stopMsgSig = null; } };
 }
@@ -4712,6 +4713,137 @@ async function guardaAvviso() {
   S.vista = VISTA_AVVISO[a.dove] || S.vista || "oggi"; disegna(); window.scrollTo(0, 0);
   apriFoglio({ tipo: "avviso", titolo: a.titolo || "", testo: a.testo || "", dove: a.dove || "", quando: a.quando || "" });
 }
+// ============================================================================
+//  1.55.14 · LE NOTIFICHE SUBITO: LA SPINTA DALL'APP APERTA SUL PC
+//  Il giro di Sofia (che manda le notifiche al telefono di Michele) lo fa partire GitHub «quando può»: dal 31/10 è partito
+//  3-4 volte al giorno, così una notifica (anche «💬 Selena ti scrive») poteva arrivare ore dopo. La spinta del ponte sul
+//  PC c'è dalla versione 1.1.0 del ponte, ma il ponte acceso sul PC è di prima. Adesso la può fare l'app aperta sul PC: con
+//  una chiave di GitHub che Michele incolla una volta (solo «Actions: Read and write» del progetto; resta solo in quel
+//  browser, mai nel database, mai a schermo) fa partire il giro ogni 10 minuti (dalle 6 alle 23) e SUBITO quando una
+//  signora scrive a Michele. E se l'app sul PC (o sul telefono) è aperta ma nascosta, il messaggio nuovo lo dice subito lì.
+// ============================================================================
+const GH_REPO = "michelepegoli2210-hub/pulizie-stanze-ricci", GH_CHIAVE = "ricci_spinta_gh", GH_ULTIMA = "ricci_spinta_ultima";
+const GH_NUOVA = "https://github.com/settings/personal-access-tokens/new?name=Sofia%20dal%20PC&description=L%27app%20aperta%20sul%20PC%20fa%20partire%20il%20giro%20di%20Sofia%20(solo%20Actions%20di%20pulizie-stanze-ricci)&target_name=michelepegoli2210-hub&expires_in=366&actions=write";
+const SPINTA_OGNI = 10 * 60 * 1000;
+let spintaStato = { ultima: 0, errore: "", quandoErrore: 0, n: 0, perche: "" }, spintaSubitoT = null;
+function spintaConf() { try { const x = JSON.parse(localStorage.getItem(GH_CHIAVE) || "null"); return x && x.gettone ? x : null; } catch (e) { return null; } }
+const ghChiaveGiusta = (g) => /^(github_pat_[A-Za-z0-9_]{40,}|gh[pousr]_[A-Za-z0-9]{30,})$/.test(String(g || ""));
+const ghIntest = (g) => ({ Authorization: "Bearer " + g, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" });
+function ghErrore(st, j) {
+  if (st === 401) return "La chiave non è giusta (forse non l'hai copiata tutta, o è scaduta): rifalla e incollala di nuovo.";
+  if (st === 403) return "La chiave c'è, ma non ha il permesso giusto: rifalla con «Actions: Read and write».";
+  if (st === 404) return "La chiave non vede il progetto: rifalla scegliendo «Only select repositories» → pulizie-stanze-ricci.";
+  if (st === 422) return "GitHub non accetta la spinta (" + String((j && j.message) || "").slice(0, 80) + ").";
+  return "GitHub non risponde come dovrebbe (" + st + "): riprovo fra poco.";
+}
+function minutiRoma(d = new Date()) {
+  try { const p = Object.fromEntries(new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d).map(x => [x.type, x.value])); return (Number(p.hour) % 24) * 60 + Number(p.minute); }
+  catch (e) { return d.getHours() * 60 + d.getMinutes(); }
+}
+const oraDiSpinta = (d = new Date()) => { const m = minutiRoma(d); return m >= 6 * 60 && m < 23 * 60; };
+function ultimaSpinta() { let u = spintaStato.ultima || 0; try { u = Math.max(u, Number(localStorage.getItem(GH_ULTIMA)) || 0); } catch (e) {} return u; }   // fra le schede dello stesso PC
+async function spingiGiro(perche, chiave) {
+  const c = chiave ? { gettone: chiave } : spintaConf(); if (!c) return { ok: false, errore: "Manca la chiave di GitHub." };
+  const segna = (errore) => { if (!chiave) spintaStato = { ...spintaStato, errore, quandoErrore: Date.now() }; return { ok: false, errore }; };
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/workflows/sofia-giro.yml/dispatches`, { method: "POST", headers: { ...ghIntest(c.gettone), "Content-Type": "application/json" }, body: JSON.stringify({ ref: "main", inputs: { da: "app" } }) });
+    if (r.status === 204 || r.status === 200) {
+      const ora = Date.now(); spintaStato = { ...spintaStato, ultima: ora, errore: "", quandoErrore: 0, n: spintaStato.n + 1, perche };
+      try { localStorage.setItem(GH_ULTIMA, String(ora)); } catch (e) {}
+      return { ok: true };
+    }
+    const j = await r.json().catch(() => ({})); return segna(ghErrore(r.status, j));
+  } catch (e) { return segna("Non riesco a parlare con GitHub (c'è internet?)."); }
+}
+// la chiave appena incollata: GitHub la riconosce e vede il giro? Allora la tengo (solo qui) e faccio partire un giro di prova
+async function provaChiaveGh(chiave) {
+  const g = String(chiave || "").trim();
+  if (!ghChiaveGiusta(g)) return { ok: false, errore: g.length < 30 ? "Incolla la chiave intera: comincia con github_pat_ ed è lunga." : "Questa non sembra la chiave di GitHub: deve cominciare con github_pat_." };
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/workflows/sofia-giro.yml`, { headers: ghIntest(g) });
+    if (r.status !== 200) { const j = await r.json().catch(() => ({})); return { ok: false, errore: ghErrore(r.status, j) }; }
+    const s = await spingiGiro("prova della chiave", g);
+    if (!s.ok) return { ok: false, errore: s.errore };
+    const scade = L.aggiungiGiorni(L.oggiISO(), 365);   // la pagina di GitHub la fa da un anno
+    try { localStorage.setItem(GH_CHIAVE, JSON.stringify({ gettone: g, scade, messa: new Date().toISOString() })); } catch (e) { return { ok: false, errore: "Questo browser non mi lascia tenere la chiave." }; }
+    spintaStato = { ...spintaStato, ultima: Date.now(), errore: "", n: spintaStato.n + 1, perche: "prova della chiave" };
+    return { ok: true, scade };
+  } catch (e) { return { ok: false, errore: "Non riesco a parlare con GitHub (c'è internet?)." }; }
+}
+function spintaPuo() { return !!(spintaConf() && S.pronto && S.utente && (proprietario() || S.veroUtente)); }
+// ogni minuto: se sono passati 10 minuti dall'ultima spinta (di questo PC), dalle 6 alle 23, un'altra
+function spintaPeriodica(adesso = Date.now()) {
+  if (!spintaPuo() || !oraDiSpinta(new Date(adesso))) return false;
+  if (adesso - ultimaSpinta() < SPINTA_OGNI - 30 * 1000) return false;
+  if (spintaStato.quandoErrore && adesso - spintaStato.quandoErrore < SPINTA_OGNI - 30 * 1000) return false;
+  spingiGiro("ogni 10 minuti"); return true;
+}
+try { setInterval(() => { try { spintaPeriodica(); } catch (e) {} }, 60 * 1000); } catch (e) {}
+// una signora ha scritto a Michele: il giro subito (dopo 15 secondi, così due messaggi di fila fanno un giro solo)
+function spintaSubito(perche) {
+  if (!spintaPuo() || spintaSubitoT) return;
+  spintaSubitoT = setTimeout(() => { spintaSubitoT = null; spingiGiro(perche); }, 15 * 1000);
+}
+// i messaggi nuovi visti adesso dall'app di Michele: il giro subito e, se l'app è aperta ma nascosta, la notifica qui
+const MSG_NOTIFICATI = "ricci_msg_notificati";
+function messaggiArrivati(m) {
+  const adesso = Date.now(), freschi = Object.values(m || {}).filter(x => x && x.id && !x.letto && x.avvisato === false && Date.parse(x.ora || "") > adesso - 15 * 60 * 1000);
+  if (!freschi.length) return;
+  let visti = []; try { visti = JSON.parse(localStorage.getItem(MSG_NOTIFICATI) || "[]"); } catch (e) {}
+  const nuovi = freschi.filter(x => !visti.includes(x.id)); if (!nuovi.length) return;
+  try { localStorage.setItem(MSG_NOTIFICATI, JSON.stringify([...visti, ...nuovi.map(x => x.id)].slice(-80))); } catch (e) {}
+  spintaSubito(`messaggio di ${nuovi[0].nome || "una signora"}`);
+  try {
+    if (!document.hidden || !("Notification" in window) || Notification.permission !== "granted" || !navigator.serviceWorker) return;
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (!reg) return;
+      for (const x of nuovi.slice(-3)) {
+        const corpo = x.tipo === "foto" ? `📷 Ti ha mandato una foto${x.testo ? `: «${x.testo}»` : "."}` : x.tipo === "file" ? String(x.testo || "") : `«${x.testo || ""}»`;
+        reg.showNotification(`💬 ${x.nome || "Una signora"} ti scrive${x.prova ? " (prova)" : ""}`, { body: `${corpo} (alle ${L.oraBreve(x.ora)}) · Tocca per leggerlo nell'app.`, icon: "icon-192.png", badge: "icon-192.png", tag: ("sofia-msg-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), renotify: true, data: { push: true, id: "qui-" + Date.now().toString(36), dove: "messaggi", rif: x.id } });
+      }
+    }).catch(() => {});
+  } catch (e) {}
+}
+// il PC (mouse e schermo largo): solo lì si propone la chiave
+function questoPC() { try { return matchMedia("(pointer: fine)").matches && (window.innerWidth || 0) >= 900; } catch (e) { return false; } }
+function spintaDaProporre() { return !spintaConf() && questoPC() && proprietario() && !S.utente.finta; }
+function foglioSpintaGh(f) {
+  const c = spintaConf();
+  if (c) {
+    const u = ultimaSpinta();
+    return `<h3>⚡ Le notifiche partono subito</h3><p class="note info">✓ Questo PC fa partire Sofia ogni 10 minuti (dalle 6 alle 23) e subito quando una signora ti scrive. Tienilo acceso con l'app aperta.</p>
+      <p class="muted small" style="margin:8px 0">${u ? `L'ultima spinta: alle ${esc(L.oraBreve(new Date(u).toISOString()))}${spintaStato.perche ? ` (${esc(spintaStato.perche)})` : ""}.` : "La prima spinta parte fra poco."}${spintaStato.errore ? ` <b>${esc(spintaStato.errore)}</b>` : ""} La chiave dura fino a circa ${esc(L.dataLunga(c.scade || L.aggiungiGiorni(L.oggiISO(), 365)))} ${esc(String(c.scade || L.aggiungiGiorni(L.oggiISO(), 365)).slice(0, 4))}; resta solo su questo PC.</p>
+      <button type="button" class="rg-b" data-gh-togli><b>✕</b>Togli la chiave da questo PC</button>`;
+  }
+  return `<h3>⚡ Le notifiche subito</h3>
+    <p class="muted small" style="margin:0 0 10px">Sofia la fa partire GitHub «quando può»: in questi giorni 3 o 4 volte al giorno. Così una notifica (anche «💬 Selena ti scrive») può arrivarti ore dopo. Con una chiave di GitHub incollata qui, questo PC fa partire Sofia ogni 10 minuti e subito quando una signora ti scrive. La chiave resta solo su questo PC.</p>
+    <ol class="rg-passi">
+      <li><a class="rg-b" href="${GH_NUOVA}" target="_blank" rel="noopener"><b>1</b>Apri GitHub: è già tutto scritto</a></li>
+      <li><span class="rg-t"><b>2</b><span>Su GitHub, in «Repository access» scegli «Only select repositories» → <b>pulizie-stanze-ricci</b>. Poi in fondo «Generate token» e copia la chiave (comincia con <b>github_pat_</b>).</span></span></li>
+      <li><label class="gh-incolla"><b>3</b><input id="ghChiave" type="password" autocomplete="off" spellcheck="false" placeholder="Incolla qui la chiave" aria-label="Incolla qui la chiave di GitHub" data-gh-campo></label></li>
+      <li><button type="button" class="rg-b verde" data-gh-prova><b>4</b>Controlla e accendi</button></li>
+    </ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${f.errore ? esc(f.errore) : f.provo ? "Controllo la chiave…" : "Quando incolli la chiave, la controllo da solo."}</p>`;
+}
+async function accendiSpinta(g) {
+  if (!S.foglio || S.foglio.tipo !== "spintaGh" || S.foglio.provo) return;
+  S.foglio = { ...S.foglio, provo: true, errore: "" }; disegnaFoglio();
+  const r = await provaChiaveGh(g);
+  if (!S.foglio || S.foglio.tipo !== "spintaGh") return;
+  if (r.ok) { S.foglio = { tipo: "spintaGh" }; disegna(); toast("✓ Fatto: le notifiche partono subito da questo PC"); }
+  else { S.foglio = { tipo: "spintaGh", errore: r.errore }; disegnaFoglio(); }
+}
+document.addEventListener("input", (e) => {
+  const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-gh-campo")) return;
+  const g = String(t.value || "").trim(); if (ghChiaveGiusta(g)) { t.value = ""; accendiSpinta(g); }   // incollata giusta: si controlla da sola
+}, true);
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest && e.target.closest("[data-gh-prova],[data-gh-togli]");
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-gh-prova")) { const c = document.getElementById("ghChiave"); const g = c ? String(c.value || "").trim() : ""; if (c) c.value = ""; if (!g) { S.foglio = { tipo: "spintaGh", errore: "Prima incolla la chiave nella casella gialla." }; disegnaFoglio(); return; } accendiSpinta(g); return; }
+  if (t.hasAttribute("data-gh-togli")) { try { localStorage.removeItem(GH_CHIAVE); } catch (e) {} spintaStato = { ultima: 0, errore: "", quandoErrore: 0, n: 0, perche: "" }; disegna(); toast("Chiave tolta da questo PC"); }
+}, true);
 async function inviaTelegramFile(blob, nome, didascalia, foto) {
   const a = S.avvisi, dove = a && a.chatMio; if (!a || !a.token || !dove || !blob) return false;
   try {
@@ -4736,7 +4868,7 @@ async function chatTasto(azione, id, detto) {
       viaApp = await messaggioAMichele(`${tg ? "Ti ha mandato su Telegram" : "Ti voleva mandare"} ${video ? "un video" : "un file"} («${f.name || "file"}»)${io.testo ? ": " + io.testo : ""}${tg ? "" : ". Chiediglielo su WhatsApp."}`, "file"); fatto = tg; soloAvviso = !tg && viaApp; }
   } catch (e) { fatto = fatto || false; }
   chatScrivendo = Math.max(0, chatScrivendo - 1); guida.scrive = chatScrivendo > 0;
-  const ok = { chiedi: viaApp ? "Fatto ✓ L'ho mandato a Michele: gli arriva sul telefono tra qualche minuto." : "Fatto ✓ L'ho scritto a Michele: ti risponde lui.", foto: viaApp ? "Fatto ✓ Ho mandato la foto a Michele: gli arriva sul telefono tra qualche minuto." : "Fatto ✓ L'ho mandata a Michele.", file: "Fatto ✓ L'ho mandato a Michele." }[azione];
+  const ok = { chiedi: viaApp ? "Fatto ✓ L'ho mandato a Michele: gli arriva la notifica sul telefono." : "Fatto ✓ L'ho scritto a Michele: ti risponde lui.", foto: viaApp ? "Fatto ✓ Ho mandato la foto a Michele: gli arriva la notifica sul telefono." : "Fatto ✓ L'ho mandata a Michele.", file: "Fatto ✓ L'ho mandato a Michele." }[azione];
   const ko = { chiedi: "Non ci sono riuscita 😕 Scrivilo tu a Michele su WhatsApp.", foto: "Non ci sono riuscita 😕 Mandala tu a Michele su WhatsApp.", file: "Non ci sono riuscita 😕 Mandalo tu a Michele su WhatsApp." }[azione];
   chatAggiungi({ da: "lei", testo: fatto ? ok : soloAvviso ? "Il file non riesco a mandarlo 😕 Ho detto a Michele che glielo vuoi mandare: mandaglielo tu su WhatsApp." : ko, proposte: CHAT_PROP.base });   // 1.55.11: e le domande dopo
   disegna(); chatInFondo();
@@ -7363,6 +7495,7 @@ function notizieFacili(ls, fatte, man, dom) {
     dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "libera" : "libere"}` });
   const nm = messaggiSigNuovi();   // 1.55.13: i messaggi delle signore per Michele
   if (nm.length) out.push({ k: "messaggi", vai: "messaggi", ico: icoBusta(), n: String(nm.length), parole: nm.length === 1 ? `messaggio di ${nm[0].nome || "una signora"}` : "messaggi dalle signore", corto: nm.length === 1 ? "messaggio" : "messaggi", tono: "att", larga: true, dici: nm.length === 1 ? `${nm[0].nome || "Una signora"} ti ha scritto: ${nm[0].testo || "una foto"}` : `${nm.length} messaggi dalle signore` });
+  if (spintaDaProporre()) out.push({ k: "spintaGh", vai: "spintaGh", ico: icoNuvola(), n: "⚡", mn: "⚡", parole: "un passo per te: le notifiche subito", corto: "notifiche", tono: "att", larga: true, dici: "Un passo per te: con una chiave di GitHub le notifiche partono subito da questo PC" });   // 1.55.14
   if (regoleMsgVecchie()) out.push({ k: "regoleMsg", vai: "regoleMsg", ico: icoAttenzione(), n: "!", mn: "!", parole: "un passo per te: le regole di Firebase", corto: "regole", tono: "rosso", larga: true, dici: "Per ricevere i messaggi delle signore, pubblica le regole nuove di Firebase" });
   if (problemi) out.push({ k: "problemi", vai: "pulizie", ico: icoAttenzione(), n: String(problemi), parole: problemi === 1 ? "problema in una camera" : "problemi nelle camere", corto: problemi === 1 ? "problema" : "problemi", tono: "rosso", larga: true, dici: `Oggi ${problemi} ${problemi === 1 ? "problema" : "problemi"} nelle camere` });
   out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: "domani", larga: true,
@@ -11487,6 +11620,7 @@ function disegnaFoglio() {
   else if (f.tipo === "postaSig") html = foglioPostaSig(f);   // 1.55.13
   else if (f.tipo === "avviso") html = foglioAvviso(f);
   else if (f.tipo === "regoleMsg") html = foglioRegoleMsg(f);
+  else if (f.tipo === "spintaGh") html = foglioSpintaGh(f);   // 1.55.14
   else if (f.tipo === "inserisci") html = foglioInserisci(f);
   else if (f.tipo === "chatPapa") html = foglioChatPapa(f);
   else if (f.tipo === "manutenzione") html = foglioManutenzione(f);

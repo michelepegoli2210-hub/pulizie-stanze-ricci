@@ -2748,3 +2748,13 @@ Perché non arrivava: il messaggio per Michele dalla chat della governante («S�
 - LA CHAT: «E le altre camere?» (e «il resto», «tutte le camere», «le altre») dice tutte le camere del giorno; prima ripeteva la camera di adesso.
 - Il giro di Sofia: versione 1.24.0.
 - Prove: prova15513 (quelle di prima, più: le altre camere, il messaggio scritto e la foto a Michele, la scheda e il foglio dei messaggi, «Letto», la notifica toccata con l'app aperta e da chiusa, la scheda delle regole), prova15513giro (le notifiche dei messaggi, una volta sola, gli orari, i titoli e «dove»), prova15513sw (il service worker: la notifica messa da parte, il tocco).
+
+## 155.14 La 1.55.14 (6 novembre): LE NOTIFICHE SUBITO (LA SPINTA DALL'APP SUL PC)
+
+Controllando la 1.55.13: il giro di Sofia, quello che manda le notifiche al telefono di Michele, lo fa partire GitHub «quando può». Dal 31/10 è partito 3 o 4 volte al giorno (per esempio il 5/11 alle 1:31, alle 13:08 e alle 20:54), non ogni 10 minuti. Così una notifica, anche «💬 Selena ti scrive», poteva arrivare ore dopo. La spinta dal PC c'è nel ponte dalla versione 1.1.0, ma il ponte acceso sul PC di Michele è di prima e non la fa.
+
+- LA SPINTA DALL'APP SUL PC: in Oggi, sul PC (mouse e schermo largo), la scheda «⚡ un passo per te: le notifiche subito». Il foglio ha 4 passi: «Apri GitHub» (la pagina della chiave già scritta: solo «Actions: Read and write», un anno), «Only select repositories» → pulizie-stanze-ricci e «Generate token», la casella gialla dove incollare (si controlla da sola), «Controlla e accendi». La chiave resta solo in quel browser: mai nel database, mai a schermo.
+- Da quel momento l'app aperta sul PC fa partire Sofia ogni 10 minuti (dalle 6 alle 23; con più schede aperte una sola volta) e SUBITO quando una signora scrive a Michele (15 secondi dopo, così due messaggi di fila fanno un giro solo). Il giro parte in circa un minuto e la notifica arriva al telefono.
+- IL MESSAGGIO NUOVO SUBITO ANCHE LÌ: se l'app di Michele è aperta ma nascosta (sul PC o sul telefono), il messaggio appena arrivato lo dice subito con una notifica sua, che apre il foglio dei messaggi.
+- LA GOVERNANTE NON PROMETTE I MINUTI: «Fatto ✓ L'ho mandato a Michele: gli arriva la notifica sul telefono.» (prima diceva «tra qualche minuto», ma dipende da quando parte il giro).
+- Prove: prova15514 (quelle di prima, più: la scheda solo sul PC, la chiave incollata che si controlla da sola, la chiave sbagliata, mai a schermo, la spinta ogni 10 minuti e non di notte, la spinta subito dopo un messaggio, la notifica qui).
