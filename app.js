@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.12";
+export const VERSIONE = "1.55.13";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -802,6 +802,8 @@ document.addEventListener("click", (e) => {
   casaVaiPagina(k);
 }, true);
 function casaVaiPagina(k) {
+  if (k === "messaggi") { apriFoglio({ tipo: "postaSig" }); return; }   // 1.55.13
+  if (k === "regoleMsg") { apriFoglio({ tipo: "regoleMsg" }); return; }
   if (k === "arrivi" || k === "camere") k = "prospetto";
   if (k === "domani") { const d = L.aggiungiGiorni(L.oggiISO(), 1); S.giorno = d; S.settimana = L.lunediDi(d); k = "prospetto"; }   // 1.10.0
   if (k === "pulizie") { const a = document.getElementById("app"); const top = a ? a.getBoundingClientRect().top + window.scrollY - 70 : window.innerHeight; window.scrollTo({ top, behavior: "smooth" }); return; }
@@ -1399,6 +1401,7 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "economia", d => { S.economia = { ...(d || {}) }; delete S.economia.id; disegna(); }));
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); setTimeout(guastiDalTaccuino, 2500); }));
+  if (proprietario()) S.stop.push(ascoltaMessaggiSig());   // 1.55.13: i messaggi delle signore per Michele
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lettura-sofia", d => { S.letturaCondivisa = d ? { ...d } : null; S.caricati.letturaCondivisa = true; guardaCondivisa(); disegna(); if (lettorePosta() && !letturaCondivisaOccupata()) guardaPosta(); }));   // 1.18.0; 1.53.1: appena la lettura condivisa si libera, la posta che aspettava riparte (prima ripartiva solo al messaggio dopo)
@@ -1526,6 +1529,7 @@ function disegna() {
   if (condivisoAtteso) guardaCondiviso();
   if (letturaAttesa) guardaLettura();
   if (segreteriaAttesa) guardaSegreteria();   // 1.49.0
+  if (avvisoAtteso) guardaAvviso();   // 1.55.13
   if (condivisaInAttesa && S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie) { condivisaInAttesa = false; setTimeout(guardaCondivisa, 0); }   // 1.51.0
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
   try { indietroVista(); } catch (e) {}   // 1.7.0
@@ -4307,6 +4311,7 @@ function rispostaGiornata(t) {   // null se la domanda non è sulla giornata
   if (/ (chi arriva|chi parte|arrivano|partono|arrivi|partenze|chi va via) /.test(t)) return chatTesto(chatOspiti(z, giorno));
   if (giorno === oggi && / (cosa manca|che manca|cosa mi manca|che mi manca|quante mancano|quante ne mancano|cosa resta|cosa mi resta|quanto manca|quanto mi manca|quante ne ho fatte|quante ho fatto|a che punto) /.test(t)) return chatTesto(chatManca(z));
   if (giorno === oggi && / (adesso|subito|prossim\w*|per prima|da dove (comincio|inizio|parto)|quale (faccio|prima)|cosa faccio ora|che faccio ora|cosa devo fare ora|e ora) /.test(t) && !/ (che ora|che ore|a che ora|quanto) /.test(t)) return chatTesto(chatAdesso(z));
+  if (/ (le altre|gli altri|altre camere|altre stanze|altri lavori|il resto|tutte le camere|tutte le stanze|tutti i lavori|quali altre|quante altre) /.test(t) || (/ camere /.test(t) && t.trim().split(/\s+/).length <= 4)) return chatTesto(chatGiro(z, giorno));   // 1.55.13: «E le altre camere?»
   if (/ (cosa devo|che devo|cosa faccio|che faccio|cosa c e|che c e|cosa ce|che ce|da fare|programma|giro|quante camere|quali camere|che camere|le camere|le mie camere|lavoro|giornata) /.test(t) || (giorno !== oggi && / (cosa|che|camere|devo|lavor\w*) /.test(t))) return chatTesto(chatGiro(z, giorno));
   return null;
 }
@@ -4389,7 +4394,7 @@ function chatCorreggi(t) {   // t: « parole normalizzate »; ogni parola sconos
 const CHAT_VUOTE = new Set("come si pulisce pulisco puliscono pulire pulita pulito pulisci lava lavo lavare lavano lavi con cosa che quale quali uso usare usa metto mettere prodotto prodotti detersivo detergente il lo la i gli le l un una uno di del della dello dei degli delle da dal dalla per in nel nella sul sulla e o a al alla ai mi ti ci devo deve faccio fare fa va bene posso serve servono tratta trattare quando ogni quanto spesso dove sono c ce tolgo togliere levo levare".split(" "));
 const CHAT_SINONIMI = { water: "wc", gabinetto: "wc", tazza: "wc", vater: "wc", lavabo: "lavandino", lavello: "lavandino", frigorifero: "frigo", minibar: "frigo", freezer: "frigo", clima: "condizionatore", climatizzatore: "condizionatore", radiatore: "termosifone", calorifero: "termosifone", serranda: "tapparella", persiana: "tapparella", vetri: "vetro", finestre: "finestra", lenzuola: "biancheria", lenzuolo: "biancheria", federe: "cuscini", federa: "cuscini", cuscino: "cuscini", piumone: "piumino", terra: "pavimento", mattonelle: "piastrelle", doccetta: "soffione", televisore: "tv", televisione: "tv", fornelli: "cottura", spazzatura: "bidoni", immondizia: "bidoni", rifiuti: "bidoni", pattumiera: "bidoncino", ragnatele: "angoli", ragnatela: "angoli", tappeto: "tappetino", ferro: "stiro", asciugamano: "asciugamani", telo: "asciugamani" };
 // le parole di tutti i giorni: non si «correggono» (prima «mille» diventava «molle»)
-const CHAT_COMUNI = ("mille tutti tutto tutte molto molta molti bella bello belle sempre quando perche adesso dopo prima ancora anche stanca stanco caldo freddo acqua carta sacchi sacco sapone chiavi chiave " +
+const CHAT_COMUNI = ("resto altre altri stanze mille tutti tutto tutte molto molta molti bella bello belle sempre quando perche adesso dopo prima ancora anche stanca stanco caldo freddo acqua carta sacchi sacco sapone chiavi chiave " +
   "buona buono buoni buone notte serata giornata mattina pomeriggio stasera domattina settimana tempo pioggia piove vento fuori dentro sopra sotto vicino lontano piano piani scala " +
   "grande piccolo piccola nuova nuovo vecchio vecchia sporco sporca pulito pulita rotto rotta guasto guasta manca mancano finito finita finiti sporchi sacchetti cliente clienti signora " +
   "signore marito figlio figli figlia macchina strada arrivo arrivata arrivato uscita uscito entrata entrato aspetto aspetta chiamo chiama telefono messaggio messaggi scusa scusami " +
@@ -4569,6 +4574,144 @@ async function chatAllega(file) {
   const io = chatAggiungi({ da: "io", file: { nome: file.name || (video ? "video" : "file"), tipo: file.type || "" }, testo }); chatFile.set(io.id, file); chatPulisciCampo();
   chatScrive(() => chatAggiungi({ da: "lei", testo: video ? "Ho visto il video 🎬 Vuoi che lo mando a Michele?" : `Ho ricevuto «${file.name || "il file"}» 📄 Vuoi che lo mando a Michele?`, tasti: [{ t: "Sì, mandalo a Michele", a: "file" }, { t: "No, grazie", a: "no" }], rif: io.id }));
 }
+// ============================================================================
+//  1.55.13 · I MESSAGGI DELLE SIGNORE ARRIVANO A MICHELE · LE NOTIFICHE APRONO LA PARTE GIUSTA COL LORO TESTO
+//  Michele (6/11, provando la parte di Selena): «ha provato a scrivermi: come mai non mi ha inviato un messaggio da
+//  qualche parte? E vorrei che le notifiche che mi arrivano sul telefono siano più chiare e che, quando clicco sulla
+//  notifica, mi apra quella parte dell'app con la scritta che mi è arrivata».
+//  Prima il messaggio per Michele dalla chat della governante partiva solo su Telegram, che non è acceso: non arrivava.
+//  Adesso va nel database (messaggi_signore: le regole nuove si pubblicano una volta); il giro di Sofia (ogni 10 minuti)
+//  lo manda come notifica «💬 Selena ti scrive»; nell'app di Michele c'è la scheda «Messaggi dalle signore» in Oggi.
+//  Le notifiche nuove portano con sé dove aprire l'app (dove) e il loro testo: toccandole si apre quella parte con sopra
+//  il foglio della notifica (il testo intero, grande). Quelle della Segreteria aprono la Segreteria come prima.
+// ============================================================================
+const MSG_SIG = "messaggi_signore";
+const CACHE_AVVISI = "ricci-avvisi";
+const VISTA_AVVISO = { casa: "oggi", signore: "piantine", segreteria: "segreteria", prospetto: "prospetto", manutenzione: "manutenzione", altro: "altro", sofia: "sofia", messaggi: "oggi" };
+const NOME_VISTA_AVVISO = { casa: "Oggi", signore: "Le signore", segreteria: "La segreteria", prospetto: "Il prospetto", manutenzione: "La manutenzione", altro: "Le impostazioni", sofia: "Sofia" };
+const fotoBuona = (s) => typeof s === "string" && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
+// la foto per Michele: sta nel database insieme al messaggio, quindi al massimo 900 pixel se è grande
+function fotoPerMichele(dataUrl) {
+  return new Promise((ok) => {
+    try {
+      const s = String(dataUrl || "");
+      if (!fotoBuona(s)) { ok(""); return; }
+      if (s.length < 600000) { ok(s); return; }
+      const im = new Image();
+      im.onload = () => {
+        try {
+          const k = Math.min(1, 900 / Math.max(im.naturalWidth || 1, im.naturalHeight || 1)), c = document.createElement("canvas");
+          c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          const d = c.toDataURL("image/jpeg", 0.7); ok(d.length < 700000 ? d : "");
+        } catch (e) { ok(""); }
+      };
+      im.onerror = () => ok("");
+      im.src = s;
+    } catch (e) { ok(""); }
+  });
+}
+// il messaggio della signora per Michele, nel database: lo manda il giro di Sofia come notifica, lo legge l'app di Michele
+async function messaggioAMichele(testo, tipo = "scritto", foto = "") {
+  const u = S.utente; if (!u || !u.zona || !S.db) return false;
+  const oggi = L.oggiISO(), id = `${oggi}_${u.zona}_${Date.now().toString(36)}`;
+  const dati = { zona: u.zona, nome: SIG(u.zona), data: oggi, ora: new Date().toISOString(), testo: String(testo || "").trim().slice(0, 2000), tipo, letto: false, avvisato: false };
+  if (foto) dati.foto = foto;
+  if (u.finta) dati.prova = true;   // Michele che prova la parte delle signore: la notifica dice «(prova)»
+  try { await S.db.salva(MSG_SIG, id, dati, false); return true; }
+  catch (e) { console.warn("messaggio a Michele", (e && (e.code || e.message)) || e); return false; }
+}
+// ---- dalla parte di Michele: i messaggi degli ultimi 14 giorni (solo i proprietari) ----
+let stopMsgSig = null;
+function ascoltaMessaggiSig() {
+  if (stopMsgSig) { try { stopMsgSig(); } catch (e) {} stopMsgSig = null; }
+  const capo = S.veroUtente || S.utente;
+  if (!S.db || !capo || capo.ruolo !== "proprietario") return () => {};
+  const da = L.aggiungiGiorni(L.oggiISO(), -14);
+  stopMsgSig = S.db.ascolta(MSG_SIG, { where: [["data", ">=", da]] },
+    (m) => { S.messaggiSig = m || {}; S.messaggiErrore = ""; disegna(); },
+    (e) => { S.messaggiErrore = (e && e.code) || "errore"; disegna(); });
+  return () => { if (stopMsgSig) { try { stopMsgSig(); } catch (e) {} stopMsgSig = null; } };
+}
+function messaggiSigNuovi() { return Object.values(S.messaggiSig || {}).filter(m => m && !m.letto).sort((a, b) => String(a.ora || "").localeCompare(String(b.ora || ""))); }
+function regoleMsgVecchie() { return S.messaggiErrore === "permission-denied"; }
+function quandoMsg(m) {
+  const d = String(m.data || m.ora || "").slice(0, 10), oggi = L.oggiISO();
+  const g = d === oggi ? "oggi" : d === L.aggiungiGiorni(oggi, -1) ? "ieri" : d ? L.dataBreve(d) : "";
+  return [g, m.ora ? `alle ${L.oraBreve(m.ora)}` : ""].filter(Boolean).join(" ");
+}
+function rigaMsgSig(m, evid) {
+  return `<div class="ms-msg${m.letto ? " letto" : ""}${evid ? " evid" : ""}" data-ms-riga="${esc(m.id)}">
+    <div class="ms-testa"><b>${esc(m.nome || SIG(m.zona))}</b><span>${esc(quandoMsg(m))}${m.prova ? " · prova" : ""}</span></div>
+    ${m.testo ? `<p class="ms-testo">${esc(m.testo)}</p>` : ""}${fotoBuona(m.foto) ? `<button type="button" class="ms-foto" data-ms-foto="${esc(m.id)}" aria-label="Guarda la foto grande"><img src="${esc(m.foto)}" alt="La foto di ${esc(m.nome || "")}"></button>` : ""}
+    ${m.letto ? `<span class="ms-letto">✓ Letto</span>` : `<button type="button" class="ms-ok" data-ms-letto="${esc(m.id)}">✓ Letto</button>`}</div>`;
+}
+function bannerAvviso(a) {
+  const ora = a && a.quando ? L.oraBreve(a.quando) : "";
+  return `<div class="av-banner" role="status"><div class="av-eti">🔔 La notifica${ora ? ` delle ${esc(ora)}` : ""}</div>${a.titolo ? `<b class="av-tit">${esc(a.titolo)}</b>` : ""}${a.testo ? `<p class="av-testo">${esc(a.testo)}</p>` : ""}</div>`;
+}
+function foglioPostaSig(f) {
+  const tutti = Object.values(S.messaggiSig || {}).filter(Boolean).sort((a, b) => String(b.ora || "").localeCompare(String(a.ora || "")));
+  const nuovi = tutti.filter(m => !m.letto), letti = tutti.filter(m => m.letto).slice(0, 15);
+  return `${f.avviso ? bannerAvviso(f.avviso) : ""}<h3>💬 Messaggi dalle signore</h3>
+    <p class="muted small" style="margin:0 0 10px">Quello che ti scrivono dalla chat della governante: quando toccano «Sì, scrivilo a Michele» o ti mandano una foto. Ti arriva anche la notifica sul telefono.</p>
+    ${regoleMsgVecchie() ? `<div class="note warn">Prima pubblica le regole nuove di Firebase, se no i messaggi non arrivano. <button type="button" class="btnsm" data-casa-vai="regoleMsg">Come si fa</button></div>` : ""}
+    ${nuovi.length ? `<div class="ms-lista">${nuovi.map(m => rigaMsgSig(m, m.id === f.rif)).join("")}</div>${nuovi.length > 1 ? `<button type="button" class="ms-tutti" data-ms-tutti>✓ Li ho letti tutti</button>` : ""}` : `<p class="ms-vuoto">Nessun messaggio nuovo.</p>`}
+    ${letti.length ? `<div class="ms-eti">Già letti</div><div class="ms-lista">${letti.map(m => rigaMsgSig(m, m.id === f.rif)).join("")}</div>` : ""}`;
+}
+function foglioAvviso(f) {
+  const vai = NOME_VISTA_AVVISO[f.dove] || "";
+  return `${bannerAvviso(f)}<button type="button" class="av-vai" data-chiudi>${vai ? `Vai a: ${esc(vai)} ›` : "OK"}</button>`;
+}
+function foglioRegoleMsg() {
+  if (!regoleMsgVecchie()) return `<h3>Le regole di Firebase</h3><p class="note info">✓ Sono a posto: i messaggi delle signore ti arrivano.</p><button type="button" class="av-vai" data-chiudi>OK</button>`;
+  return `<h3>Un minuto per te: le regole di Firebase</h3>
+    <p class="muted small" style="margin:0 0 10px">Servono per far arrivare a te i messaggi che le signore scrivono nella chat della governante. Si fa una volta sola.</p>
+    <ol class="rg-passi">
+      <li><button type="button" class="rg-b" data-regole-copia><b>1</b>Copia le regole</button></li>
+      <li><a class="rg-b" href="https://console.firebase.google.com/project/le-stanze-di-ricci/firestore/rules" target="_blank" rel="noopener"><b>2</b>Apri Firebase, le regole</a></li>
+      <li><span class="rg-t"><b>3</b><span>Su Firebase (meglio dal PC): clic nel testo delle regole, <kbd>Ctrl</kbd>+<kbd>A</kbd> e <kbd>Ctrl</kbd>+<kbd>V</kbd>, poi il tasto <b>Pubblica</b>. Dal telefono: tieni premuto nel testo, «Seleziona tutto», «Incolla».</span></span></li>
+      <li><button type="button" class="rg-b verde" data-regole-prova><b>4</b>Ho fatto: controlla</button></li>
+    </ol>`;
+}
+async function segnaMsgLetti(ids) {
+  const v = ids.filter(id => S.messaggiSig && S.messaggiSig[id] && !S.messaggiSig[id].letto); if (!v.length) return;
+  try { await S.db.scrivi(v.map(id => ({ tipo: "aggiorna", coll: MSG_SIG, id, dati: { letto: true, lettoOra: new Date().toISOString() } }))); }
+  catch (e) { erroreScrittura(e); }
+}
+function provaRegoleMsg() {
+  S.stop.push(ascoltaMessaggiSig()); toast("Controllo…");
+  setTimeout(() => { toast(regoleMsgVecchie() ? "Ancora le regole di prima: ripubblica e riprova tra un minuto" : "✓ Regole a posto: i messaggi delle signore ti arrivano"); disegna(); }, 2500);
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest && e.target.closest("[data-ms-letto],[data-ms-tutti],[data-ms-foto],[data-regole-copia],[data-regole-prova]");
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.dataset.msLetto) { segnaMsgLetti([t.dataset.msLetto]); return; }
+  if (t.hasAttribute("data-ms-tutti")) { segnaMsgLetti(messaggiSigNuovi().map(m => m.id)); return; }
+  if (t.dataset.msFoto) { const m = (S.messaggiSig || {})[t.dataset.msFoto]; if (m && fotoBuona(m.foto)) apriFoglio({ tipo: "foto", titolo: `La foto di ${m.nome || "una signora"}`, sotto: [quandoMsg(m), m.testo ? `«${m.testo}»` : ""].filter(Boolean).join(" · "), dati: m.foto }); return; }
+  if (t.hasAttribute("data-regole-copia")) { copiaRegole(); return; }
+  if (t.hasAttribute("data-regole-prova")) { provaRegoleMsg(); return; }
+}, true);
+// ---- la notifica toccata: si apre la sua parte dell'app col foglio della notifica sopra ----
+let avvisoAtteso = null, avvisoInCarica = false;
+try { const u3 = new URL(location.href); if (u3.searchParams.has("avviso")) { avvisoAtteso = { id: String(u3.searchParams.get("avviso") || "").slice(0, 40) }; u3.searchParams.delete("avviso"); history.replaceState(null, "", u3.pathname + u3.search + u3.hash); } } catch (e) {}
+try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.tipo === "apriAvviso" && e.data.avviso) { avvisoAtteso = e.data.avviso; disegna(); } }); } catch (e) {}
+async function avvisoDaCache(id) {
+  try { const c = await caches.open(CACHE_AVVISI); const r = await c.match(new URL("./avvisi/" + encodeURIComponent(id), location.href).href); return r ? await r.json() : null; } catch (e) { return null; }
+}
+async function guardaAvviso() {
+  if (!avvisoAtteso || avvisoInCarica || !S.pronto || !S.utente) return;
+  if (!proprietario() && !S.veroUtente) { avvisoAtteso = null; return; }   // le notifiche di Sofia sono per i proprietari
+  let a = avvisoAtteso;
+  if (!a.titolo && !a.testo && a.id) { avvisoInCarica = true; const x = await avvisoDaCache(a.id); avvisoInCarica = false; if (x) a = { ...x, id: a.id }; }
+  avvisoAtteso = null;
+  if (!a || (!a.titolo && !a.testo)) return;
+  if (S.veroUtente) esciComeSignora();   // stava provando la parte delle signore: torna alla sua
+  if (a.dove === "messaggi") { S.vista = "oggi"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "postaSig", rif: String(a.rif || ""), avviso: a }); return; }
+  S.vista = VISTA_AVVISO[a.dove] || S.vista || "oggi"; disegna(); window.scrollTo(0, 0);
+  apriFoglio({ tipo: "avviso", titolo: a.titolo || "", testo: a.testo || "", dove: a.dove || "", quando: a.quando || "" });
+}
 async function inviaTelegramFile(blob, nome, didascalia, foto) {
   const a = S.avvisi, dove = a && a.chatMio; if (!a || !a.token || !dove || !blob) return false;
   try {
@@ -4585,16 +4728,17 @@ async function chatTasto(azione, id, detto) {
   if (azione === "no") { chatFile.delete(x.rif); chatScrive(() => chatAggiungi({ da: "lei", testo: "Va bene 👍", proposte: CHAT_PROP.base }), 600); return; }
   chatScrivendo++; guida.scrive = true; disegna(); chatInFondo();
   const chi = SIG(S.utente.zona), quando = L.oraBreve(new Date().toISOString()), io = m.find(y => y.id === x.rif) || {};
-  let fatto = false;
+  let fatto = false, viaApp = false, soloAvviso = false;   // 1.55.13: prima solo Telegram (spento): non arrivava niente
   try {
-    if (azione === "chiedi") fatto = await inviaTelegram(`💬 ${chi} scrive alla governante (alle ${quando}): «${x.domanda || ""}»`, null, { aMe: true });
-    else if (azione === "foto" && io.foto) fatto = await inviaTelegramFile(datiInBlob(io.foto), io.nomeFile || "foto.jpg", `📷 ${chi} ha mandato una foto alla governante (alle ${quando})${io.testo ? ": " + io.testo : ""}`, true);
-    else if (azione === "file" && chatFile.has(io.id)) { const f = chatFile.get(io.id); fatto = await inviaTelegramFile(f, f.name || "file", `📄 ${chi} ha mandato un file alla governante (alle ${quando})${io.testo ? ": " + io.testo : ""}`, false); if (fatto) chatFile.delete(io.id); }
-  } catch (e) { fatto = false; }
+    if (azione === "chiedi") { viaApp = await messaggioAMichele(x.domanda || "", "scritto"); const tg = await inviaTelegram(`💬 ${chi} ti scrive (alle ${quando}): «${x.domanda || ""}»`, null, { aMe: true }); fatto = viaApp || tg; }
+    else if (azione === "foto" && io.foto) { viaApp = await messaggioAMichele(io.testo || "", "foto", await fotoPerMichele(io.foto)); const tg = await inviaTelegramFile(datiInBlob(io.foto), io.nomeFile || "foto.jpg", `📷 ${chi} ti ha mandato una foto (alle ${quando})${io.testo ? ": " + io.testo : ""}`, true); fatto = viaApp || tg; }
+    else if (azione === "file" && chatFile.has(io.id)) { const f = chatFile.get(io.id), video = /^video\//.test(f.type || ""); const tg = await inviaTelegramFile(f, f.name || "file", `📄 ${chi} ti ha mandato ${video ? "un video" : "un file"} (alle ${quando})${io.testo ? ": " + io.testo : ""}`, false); if (tg) chatFile.delete(io.id);
+      viaApp = await messaggioAMichele(`${tg ? "Ti ha mandato su Telegram" : "Ti voleva mandare"} ${video ? "un video" : "un file"} («${f.name || "file"}»)${io.testo ? ": " + io.testo : ""}${tg ? "" : ". Chiediglielo su WhatsApp."}`, "file"); fatto = tg; soloAvviso = !tg && viaApp; }
+  } catch (e) { fatto = fatto || false; }
   chatScrivendo = Math.max(0, chatScrivendo - 1); guida.scrive = chatScrivendo > 0;
-  const ok = { chiedi: "Fatto ✓ L'ho scritto a Michele: ti risponde lui.", foto: "Fatto ✓ L'ho mandata a Michele.", file: "Fatto ✓ L'ho mandato a Michele." }[azione];
+  const ok = { chiedi: viaApp ? "Fatto ✓ L'ho mandato a Michele: gli arriva sul telefono tra qualche minuto." : "Fatto ✓ L'ho scritto a Michele: ti risponde lui.", foto: viaApp ? "Fatto ✓ Ho mandato la foto a Michele: gli arriva sul telefono tra qualche minuto." : "Fatto ✓ L'ho mandata a Michele.", file: "Fatto ✓ L'ho mandato a Michele." }[azione];
   const ko = { chiedi: "Non ci sono riuscita 😕 Scrivilo tu a Michele su WhatsApp.", foto: "Non ci sono riuscita 😕 Mandala tu a Michele su WhatsApp.", file: "Non ci sono riuscita 😕 Mandalo tu a Michele su WhatsApp." }[azione];
-  chatAggiungi({ da: "lei", testo: fatto ? ok : ko, proposte: CHAT_PROP.base });   // 1.55.11: e le domande dopo
+  chatAggiungi({ da: "lei", testo: fatto ? ok : soloAvviso ? "Il file non riesco a mandarlo 😕 Ho detto a Michele che glielo vuoi mandare: mandaglielo tu su WhatsApp." : ko, proposte: CHAT_PROP.base });   // 1.55.11: e le domande dopo
   disegna(); chatInFondo();
 }
 document.addEventListener("click", (e) => {
@@ -7217,6 +7361,9 @@ function notizieFacili(ls, fatte, man, dom) {
   out.push({ k: "arrivi", vai: "arrivi", ico: icoValigia(), n: String(arrivi), parole: arrivi === 1 ? "arrivo domani" : "arrivi domani", corto: arrivi === 1 ? "arrivo domani" : "arrivi domani", dici: `Domani ${arrivi} ${arrivi === 1 ? "arrivo" : "arrivi"}` });
   out.push({ k: "camere", vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", corto: piene === 1 ? "camera piena" : "camere piene", sotto: `<small class="of-s">${libere} ${libere === 1 ? "libera" : "libere"}</small>`,
     dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "libera" : "libere"}` });
+  const nm = messaggiSigNuovi();   // 1.55.13: i messaggi delle signore per Michele
+  if (nm.length) out.push({ k: "messaggi", vai: "messaggi", ico: icoBusta(), n: String(nm.length), parole: nm.length === 1 ? `messaggio di ${nm[0].nome || "una signora"}` : "messaggi dalle signore", corto: nm.length === 1 ? "messaggio" : "messaggi", tono: "att", larga: true, dici: nm.length === 1 ? `${nm[0].nome || "Una signora"} ti ha scritto: ${nm[0].testo || "una foto"}` : `${nm.length} messaggi dalle signore` });
+  if (regoleMsgVecchie()) out.push({ k: "regoleMsg", vai: "regoleMsg", ico: icoAttenzione(), n: "!", mn: "!", parole: "un passo per te: le regole di Firebase", corto: "regole", tono: "rosso", larga: true, dici: "Per ricevere i messaggi delle signore, pubblica le regole nuove di Firebase" });
   if (problemi) out.push({ k: "problemi", vai: "pulizie", ico: icoAttenzione(), n: String(problemi), parole: problemi === 1 ? "problema in una camera" : "problemi nelle camere", corto: problemi === 1 ? "problema" : "problemi", tono: "rosso", larga: true, dici: `Oggi ${problemi} ${problemi === 1 ? "problema" : "problemi"} nelle camere` });
   out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: "domani", larga: true,
     sotto: chiDomani ? `<small class="of-s2">${esc(chiDomani)}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` });
@@ -11337,6 +11484,9 @@ function disegnaFoglio() {
   else if (f.tipo === "nuovoLavoro") html = foglioNuovoLavoro(f);
   else if (f.tipo === "dettatura") html = foglioDettatura(f);
   else if (f.tipo === "regole") html = foglioRegole(f);
+  else if (f.tipo === "postaSig") html = foglioPostaSig(f);   // 1.55.13
+  else if (f.tipo === "avviso") html = foglioAvviso(f);
+  else if (f.tipo === "regoleMsg") html = foglioRegoleMsg(f);
   else if (f.tipo === "inserisci") html = foglioInserisci(f);
   else if (f.tipo === "chatPapa") html = foglioChatPapa(f);
   else if (f.tipo === "manutenzione") html = foglioManutenzione(f);

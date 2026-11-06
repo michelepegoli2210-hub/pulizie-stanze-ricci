@@ -165,6 +165,20 @@ service cloud.firestore {
         && request.resource.data.dati is string && request.resource.data.dati.size() < 1000000;
     }
 
+    // 1.55.13 · I messaggi delle signore per Michele (dalla chat della governante: «Sì, scrivilo a Michele», una foto).
+    // La signora ne AGGIUNGE uno per la sua zona (solo questi campi, testo corto, foto piccola); li leggono, segnano letti
+    // e cancellano i proprietari; il giro di Sofia (dal server) li manda come notifica sul telefono di Michele.
+    match /messaggi_signore/{id} {
+      allow read, update, delete: if proprietario();
+      allow create: if proprietario()
+        || (addetta()
+            && request.resource.data.zona == miaZona()
+            && request.resource.data.keys().hasOnly(["zona", "nome", "data", "ora", "testo", "tipo", "letto", "avvisato", "foto"])
+            && request.resource.data.testo is string && request.resource.data.testo.size() < 2100
+            && request.resource.data.letto == false && request.resource.data.avvisato == false
+            && (!("foto" in request.resource.data) || (request.resource.data.foto is string && request.resource.data.foto.size() < 750000)));
+    }
+
     // Tutto il resto: chiuso.
     match /{altro=**} {
       allow read, write: if false;

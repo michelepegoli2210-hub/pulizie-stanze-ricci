@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.55.12";
+const VERSIONE = "1.55.13";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -50,8 +50,11 @@ self.addEventListener("notificationclick", (e) => {
   const url = new URL((e.notification.data && e.notification.data.url) || "./index.html", self.registration.scope).href;
   e.waitUntil((async () => {
     const finestre = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} if (e.notification.data && e.notification.data.segreteria) { try { c.postMessage({ tipo: "apriSegreteria", lettura: e.notification.data.segreteria === "lettura" }); } catch (err) {} return; } if (!(e.notification.data && e.notification.data.push) || (e.notification.data && e.notification.data.lettura)) { try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} } return; } }
-    if (self.clients.openWindow) await self.clients.openWindow(url);
+    // 1.55.13: le notifiche nuove (con id e dove) aprono la loro parte dell'app col foglio della notifica sopra
+    const d = e.notification.data || {}, nuova = !!d.id && !d.segreteria && !d.lettura;
+    const avviso = nuova ? { id: d.id, titolo: e.notification.title || "", testo: e.notification.body || "", dove: d.dove || "", rif: d.rif || "", quando: new Date(e.notification.timestamp || Date.now()).toISOString() } : null;
+    for (const c of finestre) { if ("focus" in c) { try { await c.focus(); } catch (err) {} if (avviso) { try { c.postMessage({ tipo: "apriAvviso", avviso }); } catch (err) {} return; } if (e.notification.data && e.notification.data.segreteria) { try { c.postMessage({ tipo: "apriSegreteria", lettura: e.notification.data.segreteria === "lettura" }); } catch (err) {} return; } if (!(e.notification.data && e.notification.data.push) || (e.notification.data && e.notification.data.lettura)) { try { c.postMessage({ tipo: "apriLettura" }); } catch (err) {} } return; } }
+    if (self.clients.openWindow) await self.clients.openWindow(avviso ? new URL("./index.html?avviso=" + encodeURIComponent(avviso.id), self.registration.scope).href : url);
   })());
 });
 
@@ -62,8 +65,25 @@ self.addEventListener("push", (e) => {
   // 1.18.0: l'avviso «ho letto le chat» apre l'app sulla lettura da controllare
   const url = typeof d.url === "string" && /^\.\/index\.html(\?[a-z=&0-9]*)?$/i.test(d.url) ? d.url : "./index.html";
   const tag = typeof d.tag === "string" && /^[a-z0-9-]{1,40}$/i.test(d.tag) ? d.tag : "sofia-" + Date.now();
-  e.waitUntil(self.registration.showNotification(titolo, { body: testo, icon: "icon-192.png", badge: "icon-192.png", tag, renotify: true, data: { url, push: true, lettura: !!d.lettura, segreteria: d.segreteria === "lettura" ? "lettura" : !!d.segreteria } }));   // 1.49.0: anche «la sintesi di oggi»; 1.51.0: e la lettura (Segreteria a tendina chiusa)
+  // 1.55.13: dove aprire l'app e (per i messaggi delle signore) quale messaggio; la notifica resta da parte sul telefono
+  // (cache ricci-avvisi, le ultime 40): toccandola l'app la ritrova anche se si apre da chiusa
+  const dove = ["casa", "signore", "segreteria", "prospetto", "manutenzione", "altro", "sofia", "messaggi"].includes(d.dove) ? d.dove : "";
+  const rif = typeof d.rif === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(d.rif) ? d.rif : "";
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  e.waitUntil(Promise.all([
+    self.registration.showNotification(titolo, { body: testo, icon: "icon-192.png", badge: "icon-192.png", tag, renotify: true, data: { url, push: true, lettura: !!d.lettura, segreteria: d.segreteria === "lettura" ? "lettura" : !!d.segreteria, id, dove, rif } }),
+    salvaAvviso({ id, titolo, testo, dove, rif, quando: new Date().toISOString() }),
+  ]));   // 1.49.0: anche «la sintesi di oggi»; 1.51.0: e la lettura (Segreteria a tendina chiusa)
 });
+
+const CACHE_AVVISI = "ricci-avvisi";
+async function salvaAvviso(a) {
+  try {
+    const c = await caches.open(CACHE_AVVISI);
+    await c.put(new Request(new URL("./avvisi/" + a.id, self.registration.scope).href), new Response(JSON.stringify(a), { headers: { "Content-Type": "application/json" } }));
+    const ks = await c.keys(); for (const k of ks.slice(0, Math.max(0, ks.length - 40))) await c.delete(k);
+  } catch (err) {}
+}
 
 // ---- filmati: cache-first, a pezzi, scaricati per intero una volta sola ----------------------
 const VIDEO = /\.(mp4|webm)$/i;

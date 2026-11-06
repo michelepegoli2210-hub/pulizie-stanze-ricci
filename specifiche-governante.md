@@ -2733,3 +2733,18 @@ Gemini ha ridisegnato le due pagine (le righe delle camere e la camera aperta) e
 - HO FINITO FISSO: quello che resta in basso mentre si scorrono le camere adesso sparisce appena si apre una camera (prima restava sopra la camera aperta, e si poteva premere al posto di «Fatto, camera pulita»). Vale anche per «Come prima».
 - Quando non si sa quanti arrivano (l'ospite parte e il prossimo non c'è ancora), il bollino delle persone non c'è.
 - Prove: prova15512 (quelle di prima, più le nuove: i bollini interi anche a 360 pixel, il nastro del letto, il post-it, i tasti che si schiacciano, i tondi nella camera aperta).
+
+## 155.13 La 1.55.13 (6 novembre): I MESSAGGI DELLE SIGNORE ARRIVANO A MICHELE · LE NOTIFICHE APRONO LA PARTE GIUSTA
+
+Michele (6/11, provando la parte di Selena): «Ha provato a scrivermi: come mai non mi ha inviato un messaggio da qualche parte? E vorrei che le notifiche che mi arrivano sul telefono siano più chiare e che, quando clicco sulla notifica, mi apra quella parte dell'app con la scritta che mi è arrivata.»
+
+Perché non arrivava: il messaggio per Michele dalla chat della governante («Sì, scrivilo a Michele», la foto) partiva solo su Telegram, e Telegram non è acceso (manca la chat di Michele negli avvisi). A Michele arrivano solo le notifiche dell'app (quelle di Sofia).
+
+- I MESSAGGI DELLE SIGNORE: «Sì, scrivilo a Michele», «✉️ Scrivi a Michele», la foto: vanno nel database (raccolta messaggi_signore). Il giro di Sofia (ogni 10 minuti, dalle 6:30 alle 22:30) li manda a Michele come notifica «💬 Selena ti scrive» (con «(prova)» quando è Michele che prova la loro parte). La governante dice alla signora: «Fatto ✓ L'ho mandato a Michele: gli arriva sul telefono tra qualche minuto.» Se c'è anche Telegram, parte anche lì. Un video o un file non entrano nel database: la notifica dice a Michele che lei glielo voleva mandare.
+- NELL'APP DI MICHELE: in Oggi la scheda «messaggio di Selena» / «messaggi dalle signore»; toccandola si apre il foglio «💬 Messaggi dalle signore» (il testo grande, la foto, «✓ Letto», «✓ Li ho letti tutti»; sotto quelli già letti).
+- LE REGOLE DI FIREBASE (una volta sola, le pubblica Michele): finché non ci sono, in Oggi c'è la scheda rossa «un passo per te: le regole di Firebase» con i 4 passi (copia, apri Firebase, incolla e Pubblica, «Ho fatto: controlla»).
+- LE NOTIFICHE PIÙ CHIARE: nel titolo il disegnino e la cosa («☀️ Il piano di oggi», «⚠️ Tramonto non è pronta», «🌙 Com'è andata oggi», «📵 Il ponte WhatsApp è fermo», «💳 Il credito di Gemini è finito», «📋 La sintesi di oggi», «💬 Selena ti scrive»), sotto la frase che conta.
+- TOCCANDO LA NOTIFICA si apre la sua parte dell'app (il piano e le camere non pronte: Le signore; la sera: Oggi; il ponte e il credito: le impostazioni; i messaggi: il foglio dei messaggi col messaggio evidenziato) con sopra il foglio «🔔 La notifica delle …» col testo intero, grande, e il tasto «Vai a: …». Quelle della Segreteria (le chat lette, la sintesi) aprono la Segreteria come prima. Il telefono tiene da parte le ultime 40 notifiche, così le ritrova anche se l'app era chiusa.
+- LA CHAT: «E le altre camere?» (e «il resto», «tutte le camere», «le altre») dice tutte le camere del giorno; prima ripeteva la camera di adesso.
+- Il giro di Sofia: versione 1.24.0.
+- Prove: prova15513 (quelle di prima, più: le altre camere, il messaggio scritto e la foto a Michele, la scheda e il foglio dei messaggi, «Letto», la notifica toccata con l'app aperta e da chiusa, la scheda delle regole), prova15513giro (le notifiche dei messaggi, una volta sola, gli orari, i titoli e «dove»), prova15513sw (il service worker: la notifica messa da parte, il tocco).
