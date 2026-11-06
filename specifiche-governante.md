@@ -2702,3 +2702,18 @@ Michele (6/11): «In tutte e due le versioni ci dovrebbe essere la parte della c
   - Le altre domande come prima (una camera per nome, e poi, le ore, i soldi, le stelle, Michele, il Visto); se non lo sa, «Vuoi che lo scrivo a Michele?».
 - Scritto a righe nella chat; col microfono le dice a voce senza le faccine.
 - Prove: prova15510 (le risposte nuove, a righe; a voce senza faccine; la chat che si svuota dopo 2 minuti fuori e non dopo 30 secondi; riaprendo l'app vuota) più quelle di prima.
+
+## 155.11 La 1.55.11 (6 novembre): LA GOVERNANTE COME I CHATBOT
+
+Michele (6/11): «Se deve essere gratuita, falle avere quelle risposte che hanno i chatbot più comuni, quelli delle chat. Vedi un po' che riesci a fare.»
+
+Sempre gratis e tutto sul telefono (niente intelligenza artificiale a pagamento):
+- LE RISPOSTE RAPIDE DA TOCCARE: a chat vuota la governante dice «Sono qui per aiutarti 😊» con il menu: 📋 Cosa devo fare oggi? · 👉 Cosa faccio adesso? · 🛏️ Che letto devo fare? · 🚪 Chi parte oggi? · 🧽 Come si pulisce… · ⭐ Le stelle di oggi · ⏱️ Le mie ore · ✉️ Scrivi a Michele. Sotto ogni risposta le domande che vengono dopo (dopo il giro: «Cosa faccio adesso?», «Che letto?», «Chi parte?», «Le stelle»…). Si vedono solo sotto l'ultimo messaggio.
+- COME SI PULISCE: «come si pulisce il materasso?», «con cosa pulisco il box doccia?», «che prodotto uso per i vetri?» → dal catalogo della governante: come si fa, il prodotto, il controllo, l'attenzione; il materiale di quella camera (il pavimento di marmo o di gres, il box a soffietto, le porte, i mobili: come si tratta e cosa MAI usare); il colore del panno. «Come si pulisce…» da solo → le cose che chiedono più spesso, da toccare.
+- I PANNI: «che panno uso per il WC?» → ROSSO solo per il WC; GIALLO il resto del bagno; BLU la camera; VERDE la cucina.
+- LE CHIACCHIERE DEI CHATBOT: come stai, chi sei, sono stanca (le dice quanto manca), brava/grazie mille, buon lavoro/a domani, aiuto/menu.
+- LE PAROLE SCRITTE MALE: una lettera sbagliata o ripetuta si capisce lo stesso («materaso», «ciaooo»).
+- «SÌ» E «NO» SCRITTI (o detti) al posto dei tasti valgono come i tasti.
+- ✉️ SCRIVI A MICHELE: la governante chiede cosa scrivere; il messaggio dopo glielo manda su Telegram, col «Sì».
+- QUANDO NON CAPISCE una frase: «Non ho capito bene 🤔» con il tasto «✉️ Mandalo a Michele» e il menu. Una domanda che non sa: «Questo non lo so 🙂 Vuoi che lo scrivo a Michele?» come prima.
+- Prove: prova15511 (il menu, le proposte, come si pulisce col materiale e il panno, le chiacchiere, le parole sbagliate, sì/no scritti, Scrivi a Michele, Non ho capito) più quelle di prima.

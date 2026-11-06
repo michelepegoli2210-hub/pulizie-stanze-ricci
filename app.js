@@ -17,7 +17,7 @@ import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 
-export const VERSIONE = "1.55.10";
+export const VERSIONE = "1.55.11";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -4108,7 +4108,7 @@ const FOTO_OK = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 const CHAT_VIA_MIN = 2;
 try { localStorage.removeItem(CHAT_CHIAVE); } catch (e) {}
 let chatViaDa = 0;
-function chatSvuota() { chatMem = { k: chatChiave(), m: [] }; chatFile.clear(); chatScrivendo = 0; try { guida.scrive = false; } catch (e) {} try { localStorage.removeItem(CHAT_CHIAVE); } catch (e) {} }
+function chatSvuota() { chatMem = { k: chatChiave(), m: [] }; chatFile.clear(); chatPerMichele = false; chatScrivendo = 0; try { guida.scrive = false; } catch (e) {} try { localStorage.removeItem(CHAT_CHIAVE); } catch (e) {} }
 try { document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { chatViaDa = Date.now(); return; }
   const via = chatViaDa; chatViaDa = 0;
@@ -4157,7 +4157,7 @@ function senzaSaluto(s) {
   r = r.trim();
   return r ? r.charAt(0).toUpperCase() + r.slice(1) : t;
 }
-function bollaChat(x, primo) {
+function bollaChat(x, primo, ultimo = true) {
   const ora = x.ora ? esc(L.oraBreve(x.ora)) : "";
   if (x.da === "io") {
     const meta = `<span class="wa-meta"><time class="wa-ora">${ora}</time><span class="wa-spunte" aria-hidden="true">${msSvg("done_all")}</span></span>`;
@@ -4165,12 +4165,14 @@ function bollaChat(x, primo) {
     const file = x.file ? `<span class="wa-file">${msSvg("description")}<span>${esc(x.file.nome || "File")}</span></span>` : "";
     return `<div class="wa-mio${primo ? " primo" : ""}" data-chat-id="${esc(x.id)}"><div class="wa-bolla wa-bolla-mia${foto ? " con-foto" : ""}">${foto}${file}<p class="wa-testo${x.testo ? "" : " wa-solo-ora"}">${esc(x.testo || "")}${meta}</p></div></div>`;
   }
-  const tasti = (x.tasti || []).length ? `<div class="wa-tasti">${x.tasti.map(t => `<button type="button" class="wa-tasto" data-chat-tasto="${esc(t.a)}" data-chat-msg="${esc(x.id)}">${esc(t.t)}</button>`).join("")}</div>` : "";
-  return `<div class="wa-msg wa-sua${primo ? " primo" : ""}" data-chat-id="${esc(x.id)}"><div class="wa-bolla"><p class="wa-testo">${esc(x.testo || "")}<span class="wa-meta"><time class="wa-ora">${ora}</time></span></p></div>${tasti}</div>`;
+  const prop = ultimo && (x.proposte || []).length ? `<div class="wa-proposte">${x.proposte.map(p => `<button type="button" class="wa-prop" data-chat-dici="${esc(p.d)}">${esc(p.t)}</button>`).join("")}</div>` : "";   // 1.55.11
+  const tasti = ultimo && (x.tasti || []).length ? `<div class="wa-tasti">${x.tasti.map(t => `<button type="button" class="wa-tasto" data-chat-tasto="${esc(t.a)}" data-chat-msg="${esc(x.id)}">${esc(t.t)}</button>`).join("")}</div>` : "";
+  return `<div class="wa-msg wa-sua${primo ? " primo" : ""}" data-chat-id="${esc(x.id)}"><div class="wa-bolla"><p class="wa-testo">${esc(x.testo || "")}<span class="wa-meta"><time class="wa-ora">${ora}</time></span></p></div>${tasti}${prop}</div>`;
 }
 function chatHtml() {
-  const m = chatGiorno(); if (!m.length && !guida.scrive) return "";
-  const righe = m.map((x, i) => bollaChat(x, !m[i - 1] || m[i - 1].da !== x.da)).join("");
+  const m = chatGiorno();
+  if (!m.length && !guida.scrive) return `<section class="wa-conversa" aria-label="La chat con la governante"><div class="wa-msg wa-sua primo wa-benvenuto"><div class="wa-bolla"><p class="wa-testo">Sono qui per aiutarti 😊 Chiedimi quello che vuoi sulle camere, oppure tocca una domanda:</p></div><div class="wa-proposte">${CHAT_MENU.map(p => `<button type="button" class="wa-prop" data-chat-dici="${esc(p.d)}">${esc(p.t)}</button>`).join("")}</div></div></section>`;   // 1.55.11: il benvenuto col menu
+  const righe = m.map((x, i) => bollaChat(x, !m[i - 1] || m[i - 1].da !== x.da, i === m.length - 1)).join("");
   const scrive = guida.scrive ? `<div class="wa-msg wa-sua${!m.length || m[m.length - 1].da !== "lei" ? " primo" : ""}"><div class="wa-bolla wa-scrive" role="status" aria-label="La governante sta scrivendo"><i></i><i></i><i></i></div></div>` : "";
   return `<section class="wa-conversa" aria-label="La chat con la governante">${righe}${scrive}</section>`;
 }
@@ -4293,6 +4295,172 @@ function chatConLetto(r) {   // quando la risposta di sempre è su una camera (�
     return /^letto /.test(lt) && !PAROLE.norm(r).includes(PAROLE.norm(lt)) ? `${r}\n🛏️ ${maiuscola(lt)}.` : r;   // solo matrimoniale o singolo (negli appartamenti no)
   } catch (e) { return r; }
 }
+// ============================================================================
+//  1.55.11 LA GOVERNANTE COME I CHATBOT (Michele, 6/11: «se deve essere gratuita, falle avere quelle risposte che hanno i
+//  chatbot più comuni, quelli delle chat; vedi un po' che riesci a fare»). Sempre gratis e tutto sul telefono:
+//  - le risposte rapide da toccare: sotto l'ultimo messaggio della governante, e a chat vuota il menu di benvenuto;
+//  - «come si pulisce…?», «che prodotto uso…?», «che panno…?»: dal catalogo della governante (come si fa, il prodotto, il
+//    controllo) e dai materiali di quella camera (il pavimento di marmo o di gres, il box doccia, le porte, i mobili);
+//  - le chiacchiere dei chatbot (come stai, chi sei, sono stanca, brava, buon lavoro) e il menu («aiuto»);
+//  - le parole scritte con una lettera sbagliata; «sì» e «no» scritti al posto dei tasti;
+//  - «✉️ Scrivi a Michele»: quello che scrive dopo glielo manda (col «Sì»);
+//  - quando non capisce: «Non ho capito bene 🤔» col menu e «Mandalo a Michele».
+// ============================================================================
+const CHAT_MENU = [
+  { t: "📋 Cosa devo fare oggi?", d: "Cosa devo fare oggi?" }, { t: "👉 Cosa faccio adesso?", d: "Cosa faccio adesso?" },
+  { t: "🛏️ Che letto devo fare?", d: "Che letto devo fare?" }, { t: "🚪 Chi parte oggi?", d: "Chi parte oggi?" },
+  { t: "🧽 Come si pulisce…", d: "Come si pulisce?" }, { t: "⭐ Le stelle di oggi", d: "Le stelle di oggi" },
+  { t: "⏱️ Le mie ore", d: "Le mie ore" }, { t: "✉️ Scrivi a Michele", d: "__michele" },
+];
+const CHAT_PROP = {
+  giro: [{ t: "👉 Cosa faccio adesso?", d: "Cosa faccio adesso?" }, { t: "🛏️ Che letto?", d: "Che letto devo fare?" }, { t: "🚪 Chi parte?", d: "Chi parte oggi?" }, { t: "⭐ Le stelle", d: "Le stelle di oggi" }],
+  adesso: [{ t: "➜ E poi?", d: "E poi?" }, { t: "📋 Cosa mi manca?", d: "Cosa mi manca?" }, { t: "🧽 Come si pulisce…", d: "Come si pulisce?" }],
+  manca: [{ t: "👉 Cosa faccio adesso?", d: "Cosa faccio adesso?" }, { t: "📅 E domani?", d: "Cosa devo fare domani?" }],
+  letto: [{ t: "👉 Cosa faccio adesso?", d: "Cosa faccio adesso?" }, { t: "🚪 Chi parte?", d: "Chi parte oggi?" }],
+  ospiti: [{ t: "📋 Cosa devo fare oggi?", d: "Cosa devo fare oggi?" }, { t: "🛏️ Che letto?", d: "Che letto devo fare?" }],
+  come: [{ t: "🧤 Che panno uso?", d: "Che panno uso?" }, { t: "🧽 Un'altra cosa", d: "Come si pulisce?" }, { t: "👉 Cosa faccio adesso?", d: "Cosa faccio adesso?" }],
+  base: [{ t: "👉 Cosa faccio adesso?", d: "Cosa faccio adesso?" }, { t: "📋 Cosa mi manca?", d: "Cosa mi manca?" }],
+};
+const CHAT_COSE = [   // «Come si pulisce…»: le cose che chiedono più spesso
+  { t: "🛏️ Il materasso", d: "Come si pulisce il materasso?" }, { t: "🚿 Il box doccia", d: "Come si pulisce il box doccia?" },
+  { t: "🚽 Il WC", d: "Come si pulisce il WC?" }, { t: "🪟 I vetri", d: "Come si puliscono i vetri?" },
+  { t: "🧹 Il pavimento", d: "Come si pulisce il pavimento?" }, { t: "❄️ Il condizionatore", d: "Come si pulisce il condizionatore?" },
+  { t: "🧊 Il frigo", d: "Come si pulisce il frigo?" }, { t: "🧤 Che panno uso?", d: "Che panno uso?" },
+];
+let chatPerMichele = false;   // dopo «✉️ Scrivi a Michele»: il prossimo messaggio è per lui
+// ---- le parole: le lettere ripetute, una lettera sbagliata («materaso», «matrimognale») ----
+function chatDistanza(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prima = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const riga = [i]; let minimo = i;
+    for (let j = 1; j <= b.length; j++) { const v = Math.min(prima[j] + 1, riga[j - 1] + 1, prima[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); riga.push(v); if (v < minimo) minimo = v; }
+    if (minimo > max) return max + 1;
+    prima = riga;
+  }
+  return prima[b.length];
+}
+let chatVocab = null;
+function chatParoleNote() {
+  if (chatVocab) return chatVocab;
+  const s = new Set(("cosa devo fare faccio adesso oggi domani dopodomani manca mancano resta letto letti matrimoniale singolo parte partono arriva arrivano ospite ospiti camera camere giro lavoro " +
+    "pulisce pulisco puliscono pulire prodotto detersivo panno panni straccio colore stelle stella rifiniture michele scrivi grazie ciao buongiorno buonasera aiuto prossima finito finisco " +
+    "lunedi martedi mercoledi giovedi venerdi sabato domenica materasso doccia vetri pavimento condizionatore frigorifero frigo lavandino rubinetto specchio cuscini coperta piumino tende " +
+    "tapparella termosifone porta porte maniglie finestra armadio comodino cassetti scrivania sedie televisore bidet scopino piastrelle fughe silicone calcare muffa macchie biancheria " +
+    "lenzuola asciugamani accappatoi forno cappa microonde lavastoviglie fornelli bidoni spazzatura balcone ringhiera terrazzo scale corridoio ingresso lavanderia lavatrice aspirapolvere").split(" "));
+  try { for (const r of G.RIGHE) for (const w of PAROLE.norm(`${r.superficie} ${r.regola}`).split(" ")) if (w.length >= 5) s.add(w); } catch (e) {}
+  for (const w of CHAT_COMUNI) s.add(w);
+  return (chatVocab = s);
+}
+function chatCorreggi(t) {   // t: « parole normalizzate »; ogni parola sconosciuta, se è a una lettera da una parola nota, si corregge
+  const voc = chatParoleNote(), lista = [...voc];
+  return " " + t.trim().replace(/(.)\1{2,}/g, "$1").split(" ").map(w => {
+    if (w.length < 5 || voc.has(w) || /\d/.test(w)) return w;
+    const max = w.length >= 9 ? 2 : 1; let meglio = "", d0 = max + 1, pari = false;
+    for (const v of lista) { if (Math.abs(v.length - w.length) > max) continue; const d = chatDistanza(w, v, max); if (d < d0) { d0 = d; meglio = v; pari = false; } else if (d === d0) pari = true; }
+    return meglio && d0 <= max && !pari ? meglio : w;
+  }).join(" ") + " ";
+}
+// ---- «come si pulisce…»: il catalogo della governante e i materiali della camera ----
+const CHAT_VUOTE = new Set("come si pulisce pulisco puliscono pulire pulita pulito pulisci lava lavo lavare lavano lavi con cosa che quale quali uso usare usa metto mettere prodotto prodotti detersivo detergente il lo la i gli le l un una uno di del della dello dei degli delle da dal dalla per in nel nella sul sulla e o a al alla ai mi ti ci devo deve faccio fare fa va bene posso serve servono tratta trattare quando ogni quanto spesso dove sono c ce tolgo togliere levo levare".split(" "));
+const CHAT_SINONIMI = { water: "wc", gabinetto: "wc", tazza: "wc", vater: "wc", lavabo: "lavandino", lavello: "lavandino", frigorifero: "frigo", minibar: "frigo", freezer: "frigo", clima: "condizionatore", climatizzatore: "condizionatore", radiatore: "termosifone", calorifero: "termosifone", serranda: "tapparella", persiana: "tapparella", vetri: "vetro", finestre: "finestra", lenzuola: "biancheria", lenzuolo: "biancheria", federe: "cuscini", federa: "cuscini", cuscino: "cuscini", piumone: "piumino", terra: "pavimento", mattonelle: "piastrelle", doccetta: "soffione", televisore: "tv", televisione: "tv", fornelli: "cottura", spazzatura: "bidoni", immondizia: "bidoni", rifiuti: "bidoni", pattumiera: "bidoncino", ragnatele: "angoli", ragnatela: "angoli", tappeto: "tappetino", ferro: "stiro", asciugamano: "asciugamani", telo: "asciugamani" };
+// le parole di tutti i giorni: non si «correggono» (prima «mille» diventava «molle»)
+const CHAT_COMUNI = ("mille tutti tutto tutte molto molta molti bella bello belle sempre quando perche adesso dopo prima ancora anche stanca stanco caldo freddo acqua carta sacchi sacco sapone chiavi chiave " +
+  "buona buono buoni buone notte serata giornata mattina pomeriggio stasera domattina settimana tempo pioggia piove vento fuori dentro sopra sotto vicino lontano piano piani scala " +
+  "grande piccolo piccola nuova nuovo vecchio vecchia sporco sporca pulito pulita rotto rotta guasto guasta manca mancano finito finita finiti sporchi sacchetti cliente clienti signora " +
+  "signore marito figlio figli figlia macchina strada arrivo arrivata arrivato uscita uscito entrata entrato aspetto aspetta chiamo chiama telefono messaggio messaggi scusa scusami " +
+  "giusto giusta sbagliato capito capisco sentito vedere visto guarda guardo lavorare lavorato lavoro lavori stanze stanza").split(" ");
+const CHAT_POSTI = { bagno: "Bagno", camera: "Camera", stanza: "Camera", cucina: "Cucina appartamenti", balcone: "Balcone", lavanderia: "Lavanderia e attrezzi", scale: "Zone comuni", corridoio: "Zone comuni", ingresso: "Zone comuni", terrazzo: "Zone comuni" };
+function chatRadice(w) { w = CHAT_SINONIMI[w] || w; return w.length >= 5 ? w.replace(/[aeiou]+$/, "") : w; }
+let chatCatalogo = null;
+function chatIndiceCatalogo() {
+  if (chatCatalogo) return chatCatalogo;
+  const rad = (s) => new Set(PAROLE.norm(s).split(" ").filter(w => w.length >= 2 && !CHAT_VUOTE.has(w)).map(chatRadice));
+  try { chatCatalogo = G.RIGHE.map(r => ({ r, sup: rad(r.superficie), reg: rad(r.regola), come: rad(r.come || "") })); } catch (e) { chatCatalogo = []; }
+  return chatCatalogo;
+}
+function chatCercaCatalogo(t) {   // le righe del catalogo per la cosa chiesta (la migliore e quelle della stessa cosa)
+  const parole = t.trim().split(" ").filter(w => w.length >= 2 && !CHAT_VUOTE.has(w)), rad = [...new Set(parole.map(chatRadice))];
+  if (!rad.length) return [];
+  const posti = parole.map(w => CHAT_POSTI[w]).filter(Boolean);
+  let meglio = null, punti0 = 0;
+  for (const x of chatIndiceCatalogo()) {
+    let p = 0; for (const w of rad) { if (x.sup.has(w)) p += 3; else if (x.reg.has(w)) p += 1.5; else if (x.come.has(w)) p += 0.4; }
+    if (p < 3) continue;
+    if (posti.length) p += posti.includes(x.r.posto) ? 2 : -1.5;
+    else if (x.r.posto === "Camera") p += 0.3;
+    if (p > punti0) { punti0 = p; meglio = x.r; }
+  }
+  if (!meglio) return [];
+  return G.RIGHE.filter(r => r.posto === meglio.posto && r.superficie === meglio.superficie).slice(0, 3);
+}
+function chatLuogoDiOggi() {   // la camera dove lavora adesso (per i materiali): la prima da fare, se no la prima di oggi
+  try { const z = S.utente && S.utente.zona, l = chatLavori(z, L.oggiISO()).filter(p => p.tipo !== "stelle"); const p = l.find(x => x.stato !== "fatta") || l[0]; return p ? camera(p.camera) : null; } catch (e) { return null; }
+}
+function chatPanno(r) {   // il colore del panno (Colori dei panni: ROSSO solo WC · GIALLO resto del bagno · BLU camera · VERDE cucina)
+  if (!r) return "";
+  if (r.posto === "Bagno") return /^(wc|scopino)/i.test(r.superficie) ? "🧤 Panno ROSSO (solo per il WC)." : "🧤 Panno GIALLO (il bagno, non il WC).";
+  if (r.posto === "Camera") return "🧤 Panno BLU (la camera).";
+  if (/Cucina/.test(r.posto)) return "🧤 Panno VERDE (la cucina).";
+  return "";
+}
+function chatComeSiPulisce(t) {
+  const chiede = / (come si (pulisc\w*|lav\w*|tratt\w*)|come (pulisc\w*|lav\w*|tratt\w*|tolgo|levo)|con cosa|cosa (uso|metto)|che (prodotto|detersivo|detergente)|quale (prodotto|detersivo)|prodotto per|come faccio a pulire) /.test(t);
+  const panno = / (che|quale|di che) (panno|straccio|colore)| panni | colori dei panni /.test(t);
+  if (!chiede && !panno) return null;
+  const righe = chatCercaCatalogo(t);
+  if (!righe.length) {
+    if (panno) return { testo: `🧤 ${G.PANNI}`, proposte: CHAT_PROP.come.filter(x => !/panno/i.test(x.d)) };
+    return { testo: "Dimmi cosa vuoi pulire 🙂 Per esempio:", voce: "Dimmi cosa vuoi pulire: per esempio il materasso, il box doccia, il WC, i vetri o il pavimento.", proposte: CHAT_COSE };
+  }
+  const r0 = righe[0];
+  if (panno && !chiede) return { testo: chatPanno(r0) && !/panni/i.test(r0.superficie) ? `${chatPanno(r0)}\nMai lo stesso panno dal bagno alla camera.` : `🧤 ${G.PANNI}`, proposte: CHAT_PROP.come.filter(x => !/panno/i.test(x.d)) };
+  const posto = r0.posto === "Cucina appartamenti" ? "cucina" : r0.posto.toLowerCase();
+  const out = [`🧽 ${r0.superficie} (${posto})`];
+  for (const r of righe) { out.push(`• ${r.regola}: ${senzaPunto(r.come)}.`); if (r.prodotto && !/^nessun/i.test(r.prodotto)) out.push(`🧴 Prodotto: ${r.prodotto}.`); }
+  if (r0.controllo) out.push(`✅ Controllo: ${senzaPunto(r0.controllo)}.`);
+  const note = righe.map(r => r.note).filter(Boolean)[0]; if (note) out.push(`⚠️ ${senzaPunto(note)}.`);
+  try { const parte = G.PARTI.find(p => p.codice === r0.id && p.materiale), luogo = chatLuogoDiOggi(); const m = parte && luogo ? G.rigaMateriale(parte, luogo, (S.gov && S.gov.materiali) || {}) : null; if (m) out.push(`🏠 Da te (${m.nome}): ${senzaPunto(m.come)}.${m.mai ? " " + senzaPunto(m.mai) + "." : ""}`); } catch (e) {}
+  const pc = chatPanno(r0); if (pc) out.push(pc);
+  return { testo: [...new Set(out)].join("\n"), proposte: CHAT_PROP.come };
+}
+// ---- le chiacchiere dei chatbot e il menu ----
+function chatChiacchiere(t) {
+  const n = t.trim().split(" ").filter(Boolean).length, z = S.utente && S.utente.zona;
+  if (/ (aiuto|aiutami|help|menu|cosa sai fare|cosa puoi fare|cosa posso chiedere|cosa ti posso chiedere|cosa mi sai dire) /.test(t) && n <= 6)
+    return { testo: "Ecco cosa ti posso dire 😊 Tocca una domanda, oppure scrivimi tu:", voce: "Puoi chiedermi: cosa devo fare oggi, cosa faccio adesso, che letto devo fare, chi parte, come si pulisce una cosa, le stelle e le tue ore. Oppure scrivi a Michele.", proposte: CHAT_MENU };
+  if (/ (come stai|come va|tutto bene|stai bene) /.test(t) && n <= 6) return { testo: "Tutto bene, grazie! 😊 E tu? Se ti serve qualcosa per le camere, chiedimi pure.", proposte: CHAT_PROP.base };
+  if (/ (chi sei|come ti chiami|sei un robot|sei vera|sei una persona|sei umana|sei un computer) /.test(t)) return { testo: `Sono ${nomeGov()}, la governante delle Stanze di Ricci 🙂 Non sono una persona: ti aiuto con le camere di oggi. Per le cose importanti c'è Michele.`, proposte: CHAT_MENU.slice(0, 4) };
+  if (/ (sono stanc[ao]|che fatica|non ce la faccio|sono distrutt[ao]|sono cotta) /.test(t)) { let resto = ""; try { if (z) resto = chatManca(z); } catch (e) {} return { testo: `Forza, ce la fai! 💪${resto && !/^Hai fatto tutte|^Oggi non ci sono/.test(resto) ? " " + resto : ""}`, proposte: CHAT_PROP.manca }; }
+  if (/^ (brava|bravissima|sei brava|sei gentile|gentilissima|grazie mille|mille grazie|ti voglio bene|sei la migliore) /.test(t) && n <= 6) return { testo: "Grazie! 😊 Buon lavoro!", proposte: CHAT_PROP.base };
+  if (/^ (buon lavoro|buona giornata|a domani|ciao ciao|arrivederci|ci vediamo|buona serata|buonanotte|buona notte) /.test(t) && n <= 5) return { testo: "Buon lavoro, a domani! 👋" };
+  return null;
+}
+// ---- la risposta completa: le chiacchiere, «come si pulisce», le risposte di sempre; con le proposte da toccare ----
+function rispostaChatbot(frasi) {
+  const prima = String((frasi || [])[0] || ""), norm = " " + PAROLE.norm(prima.replace(/['’]/g, " ")) + " ";
+  const ciance = chatChiacchiere(norm.replace(/(.)\1{2,}/g, "$1"));   // le chiacchiere sul testo com'è (le lettere ripetute a una)
+  if (ciance) return { voce: chatPerVoce(ciance.voce || ciance.testo), ...ciance };
+  const t = chatCorreggi(norm);
+  const extra = chatChiacchiere(t) || chatComeSiPulisce(t);
+  if (extra) return { voce: chatPerVoce(extra.voce || extra.testo), ...extra };
+  // «domani arrivo alle 9», «oggi faccio tardi»: una cosa per Michele
+  if (!/\?/.test(prima) && / (arrivo alle|arrivo verso|arrivo per le|vengo alle|vengo verso|faccio tardi|arrivo tardi|arrivo dopo|arrivo prima|esco prima|devo andare via|vado via prima|devo uscire) /.test(t)) return { testo: "Va bene 👍 Vuoi che lo scrivo a Michele?", chiedi: true };
+  // «oggi fa caldo», «oggi c'è il sole»: non è una domanda sul lavoro → «Non ho capito bene»
+  if (/ oggi /.test(t) && !/\?/.test(prima) && t.trim().split(" ").length >= 3 && !/ (cosa|che|quali|quale|quante|quanti|camer\w*|giro|fare|faccio|lavor\w*|programma|piano|dove|come|chi|devo|manca|mancano|stell\w*|ore) /.test(t)) return chatNonCapito(prima);
+  const corretta = t.trim() !== norm.trim() ? t.trim() + (/\?/.test(prima) ? "?" : "") : prima;
+  const r = rispostaSofia([corretta, ...(frasi || []).filter(f => f !== corretta)]);
+  if (r.chiedi || r.tasti) return r;
+  const s = String(r.testo || "");
+  const prop = /^(Oggi|Domani|Lunedì|Martedì|Mercoledì|Giovedì|Venerdì|Sabato|Domenica) hai /.test(s) ? CHAT_PROP.giro : /Adesso:|^Adesso /.test(s) ? CHAT_PROP.adesso : /^(Ne hai fatte|Ti mancan?o?)/.test(s) ? CHAT_PROP.manca
+    : /^🛏️/.test(s) ? CHAT_PROP.letto : /nelle tue camere/.test(s) ? CHAT_PROP.ospiti : /^(👍|Prego)/.test(s) ? null : CHAT_PROP.base;
+  return prop ? { ...r, proposte: prop } : r;
+}
+// quello che non capisce (una frase che non è una domanda e non è un problema): «Non ho capito bene» col menu
+function chatNonCapito(testo) { return { testo: "Non ho capito bene 🤔 Ti posso aiutare con queste cose, oppure lo mando a Michele:", voce: "Non ho capito bene. Puoi chiedermi cosa devi fare oggi, cosa fare adesso, che letto, chi parte o come si pulisce una cosa.", tasti: [{ t: "✉️ Mandalo a Michele", a: "chiedi" }], domanda: testo, proposte: CHAT_MENU.filter(x => x.d !== "__michele").slice(0, 5) }; }
+// il messaggio in attesa del «Sì» (scritto «sì» o «no» al posto dei tasti)
+function chatInAttesa() { const m = chatGiorno(); const x = m[m.length - 1]; return x && x.da === "lei" && (x.tasti || []).length ? x : null; }
+function chatSiNo(t) { if (/^ (si|sì|certo|certamente|ok|okay|va bene|si grazie|si si|scrivilo|mandalo|si scrivilo|si mandalo|dai|si dai|volentieri|perfetto) $/.test(t)) return "si"; if (/^ (no|no grazie|non serve|lascia stare|lascia perdere|niente|no no) $/.test(t)) return "no"; return ""; }
 // cosa risponde la governante: i saluti, i grazie, le cose che mancano o non vanno (le scrive a Michele, se lei vuole);
 // il resto come al microfono (le cose di oggi); se non lo sa, chiede se scriverlo a Michele
 function rispostaSofia(frasi) {
@@ -4317,12 +4485,13 @@ function rispostaSofia(frasi) {
   const detti = []; guida.cattura = detti;
   try { guidaRispondi(tutte); } catch (e) { console.warn(e); } finally { guida.cattura = null; }
   const r = detti.filter(Boolean)[0] || "";
-  if (!r || /^Ti posso dire solo le cose di oggi/.test(r)) return domanda || /\?/.test(prime[0] || "") ? { testo: "Questo non lo so 🙂 Vuoi che lo scrivo a Michele?", chiedi: true } : perMichele;
+  if (!r || /^Ti posso dire solo le cose di oggi/.test(r)) return domanda || /\?/.test(prime[0] || "") ? { testo: "Questo non lo so 🙂 Vuoi che lo scrivo a Michele?", chiedi: true } : chatNonCapito(prime[0]);   // 1.55.11
   return chatTesto(chatConLetto(r));   // 1.55.10: col letto da fare, a voce senza faccine
 }
 const TASTI_CHIEDI = [{ t: "Sì, scrivilo a Michele", a: "chiedi" }, { t: "No, grazie", a: "no" }];
 function chatRisposta(r, domanda, voce) {
-  const m = chatAggiungi({ da: "lei", testo: r.testo, ...(r.chiedi ? { tasti: TASTI_CHIEDI, domanda } : {}) });
+  const tasti = r.tasti || (r.chiedi ? TASTI_CHIEDI : null);   // 1.55.11: anche i tasti e le proposte da toccare
+  const m = chatAggiungi({ da: "lei", testo: r.testo, ...(tasti ? { tasti, domanda: r.domanda || domanda } : {}), ...((r.proposte || []).length ? { proposte: r.proposte } : {}) });
   if (voce) { guida.dalMic = true; guidaParla(r.voce || chatPerVoce(r.testo)); }   // 1.55.10: a voce senza faccine
   return m;
 }
@@ -4333,14 +4502,20 @@ function chatScrive(fai, ms = 900) {
 }
 function chatManda(testo) {
   testo = String(testo || "").trim(); if (!testo) return;
+  if (testo === "__michele") { chatAggiungi({ da: "io", testo: "Scrivi a Michele" }); chatPerMichele = true; chatScrive(() => chatAggiungi({ da: "lei", testo: "Scrivi qui sotto quello che vuoi dire a Michele: glielo mando io 👍" }), 600); return; }   // 1.55.11
+  const att = chatInAttesa(), sn = att ? chatSiNo(" " + PAROLE.norm(testo.replace(/['’]/g, " ")) + " ") : "";
+  if (att && sn) { const si = att.tasti.find(x => x.a !== "no"); chatTasto(sn === "si" && si ? si.a : "no", att.id, testo); return; }   // «sì» o «no» scritti: come toccare il tasto
   chatAggiungi({ da: "io", testo });
-  chatScrive(() => chatRisposta(rispostaSofia([testo]), testo, false));
+  if (chatPerMichele) { chatPerMichele = false; chatScrive(() => chatRisposta({ testo: `Ecco il messaggio per Michele:\n«${testo}»\nLo mando?`, tasti: [{ t: "Sì, mandalo a Michele", a: "chiedi" }, { t: "No, grazie", a: "no" }], domanda: testo }, testo, false)); return; }
+  chatScrive(() => chatRisposta(rispostaChatbot([testo]), testo, false));
 }
 // col microfono: quello che ha detto va nella chat, e la governante risponde a voce (e scritto)
 function chatDaVoce(alt) {
   const testo = String((alt || [])[0] || "").trim(); if (!testo) { guidaRispondi(alt); return; }
+  const att = chatInAttesa(), sn = att ? chatSiNo(" " + PAROLE.norm(testo.replace(/['’]/g, " ")) + " ") : "";   // 1.55.11: «sì» detto a voce
+  if (att && sn) { const si = att.tasti.find(x => x.a !== "no"); chatTasto(sn === "si" && si ? si.a : "no", att.id, maiuscola(testo)); return; }
   chatAggiungi({ da: "io", testo: maiuscola(testo), voce: true });
-  chatRisposta(rispostaSofia(alt), testo, true); disegna(); if (!document.querySelector(".sheet")) chatInFondo();
+  chatRisposta(rispostaChatbot(alt), testo, true); disegna(); if (!document.querySelector(".sheet")) chatInFondo();
 }
 function chatTestoCampo() { const ta = document.querySelector("#sgMic textarea"); return ta ? ta.value.trim() : ""; }
 function chatPulisciCampo() { const ta = document.querySelector("#sgMic textarea"); chatBozza = ""; if (ta) { ta.value = ""; ta.dispatchEvent(new Event("input")); } }
@@ -4379,11 +4554,11 @@ async function inviaTelegramFile(blob, nome, didascalia, foto) {
   } catch (e) { console.warn("telegram", e); return false; }
 }
 // i tasti sotto le risposte (come i messaggi con le risposte rapide): la scelta diventa un suo messaggio
-async function chatTasto(azione, id) {
+async function chatTasto(azione, id, detto) {
   const m = chatGiorno(), x = m.find(y => y.id === id); if (!x || !(x.tasti || []).length) return;
   const scelto = x.tasti.find(t => t.a === azione); chatCambia(id, { tasti: [] });
-  chatAggiungi({ da: "io", testo: scelto ? scelto.t : "No, grazie" });
-  if (azione === "no") { chatFile.delete(x.rif); chatScrive(() => chatAggiungi({ da: "lei", testo: "Va bene 👍" }), 600); return; }
+  chatAggiungi({ da: "io", testo: detto || (scelto ? scelto.t : "No, grazie") });
+  if (azione === "no") { chatFile.delete(x.rif); chatScrive(() => chatAggiungi({ da: "lei", testo: "Va bene 👍", proposte: CHAT_PROP.base }), 600); return; }
   chatScrivendo++; guida.scrive = true; disegna(); chatInFondo();
   const chi = SIG(S.utente.zona), quando = L.oraBreve(new Date().toISOString()), io = m.find(y => y.id === x.rif) || {};
   let fatto = false;
@@ -4395,13 +4570,15 @@ async function chatTasto(azione, id) {
   chatScrivendo = Math.max(0, chatScrivendo - 1); guida.scrive = chatScrivendo > 0;
   const ok = { chiedi: "Fatto ✓ L'ho scritto a Michele: ti risponde lui.", foto: "Fatto ✓ L'ho mandata a Michele.", file: "Fatto ✓ L'ho mandato a Michele." }[azione];
   const ko = { chiedi: "Non ci sono riuscita 😕 Scrivilo tu a Michele su WhatsApp.", foto: "Non ci sono riuscita 😕 Mandala tu a Michele su WhatsApp.", file: "Non ci sono riuscita 😕 Mandalo tu a Michele su WhatsApp." }[azione];
-  chatAggiungi({ da: "lei", testo: fatto ? ok : ko });
+  chatAggiungi({ da: "lei", testo: fatto ? ok : ko, proposte: CHAT_PROP.base });   // 1.55.11: e le domande dopo
   disegna(); chatInFondo();
 }
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t) return;
   const b = t.closest("[data-chat-tasto]");
   if (b) { e.preventDefault(); e.stopPropagation(); chatTasto(b.dataset.chatTasto, b.dataset.chatMsg); return; }
+  const dici = t.closest("[data-chat-dici]");   // 1.55.11: una risposta rapida toccata
+  if (dici) { e.preventDefault(); e.stopPropagation(); chatManda(dici.dataset.chatDici); return; }
   const p = document.getElementById("waFaccine"); if (p && !p.hidden && !t.closest("#sgMic")) chatFaccine(false);   // toccando fuori si chiudono le faccine
 }, true);
 // le faccine: si aprono sopra la barra (al posto della tastiera); toccata, la faccina va nel testo
