@@ -34,6 +34,11 @@
 //  serie 8:30 e 20:30): ognuna racconta i messaggi dall'orario di prima.
 //  1.23.0 (app 1.53.0): niente più letture «da controllare»: si legge sempre col modo nuovo (avvisi.prospettoChat non conta più);
 //  una lettura del tipo di prima rimasta in sospeso si rilegge (se è di meno di 3 ore) o si mette da parte: la posta non aspetta più.
+//  1.24.0 (app 1.55.13): I MESSAGGI DELLE SIGNORE PER MICHELE (messaggi_signore, dalla chat della governante): a ogni giro,
+//  dalle 6:30 alle 22:30, una notifica per messaggio «💬 Selena ti scrive» (con «(prova)» se è Michele che prova la loro
+//  parte), che apre l'app sul messaggio; poi il segno «avvisato». Quelli già letti o di più di 2 giorni non si mandano.
+//  E LE NOTIFICHE PIÙ CHIARE (Michele: «più chiare, e che toccandole si apra quella parte dell'app con la scritta»): il
+//  disegnino e la cosa nel titolo, e «dove» aprire l'app (signore, casa, altro, messaggi; la Segreteria come prima).
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -41,7 +46,7 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat, sintesiSera } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.23.0";
+export const VERSIONE_GIRO = "1.24.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -205,7 +210,8 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
         if (puoMe) {
           const n = k.signore().map(z => { const c = k.delGiorno(oggi, z.id).filter(p => p.stato !== "fatta").length; return c ? `${k.SIG(z.id)} ${c}` : ""; }).filter(Boolean).join(", ");
           const arr = [...new Set(k.arriviDi(oggi))].map(c => k.camera(c).nome);
-          await mandaMe(`${alGruppo ? "☀️ Piano mandato alle signore" : "☀️ Oggi"}: ${n}.${arr.length ? ` Arrivi oggi: ${arr.join(", ")}.` : ""}`, "tre righe al titolare", "Sofia · il piano di oggi");
+          const quante = k.signore().map(z => { const c = k.delGiorno(oggi, z.id).filter(p => p.stato !== "fatta").length; return c ? `${k.SIG(z.id)} ${c} ${c === 1 ? "pulizia" : "pulizie"}` : ""; }).filter(Boolean);
+          await mandaMe(`${quante.length ? `Oggi ${quante.join(", ")}.` : `Oggi: ${n}.`}${arr.length ? ` Arrivano ospiti in ${arr.join(", ")}.` : ""}${alGruppo ? " Il piano è già andato alle signore." : ""}`, "tre righe al titolare", "☀️ Il piano di oggi", false, { dove: "signore", tag: "sofia-piano" });
         }
       }
     }
@@ -219,7 +225,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     }
     if (serve.allarme) {
       const ls = arriviNonPronti(st, oggi);
-      if (ls.length && puoMe) await mandaMe(`⚠️ ${ls.map(p => k.camera(p.camera).nome).join(", ")}: oggi ${ls.length === 1 ? "arriva un ospite e la camera non risulta" : "arrivano ospiti e le camere non risultano"} ancora ${ls.length === 1 ? "pronta" : "pronte"}.`, "avviso arrivi al titolare", "Sofia · camera non pronta", true);
+      if (ls.length && puoMe) await mandaMe(`${ls.map(p => k.camera(p.camera).nome).join(", ")}: oggi ${ls.length === 1 ? "arriva un ospite e la camera non risulta" : "arrivano ospiti e le camere non risultano"} ancora ${ls.length === 1 ? "pronta" : "pronte"}.`, "avviso arrivi al titolare", ls.length === 1 ? `⚠️ ${k.camera(ls[0].camera).nome} non è pronta` : "⚠️ Camere non pronte", true, { dove: "signore", tag: "sofia-allarme" });
       fatti.allarme = ls.length ? t.hhmm : "niente";
     }
     if (serve.chiusura) {
@@ -231,7 +237,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       fatti.chiusura = righe.length ? t.hhmm : "niente";
     }
     if (serve.bollettino) {
-      if (puoMe && a.giroBollettino !== false) await mandaMe(testoBollettino(st, oggi, domani), "bollettino della sera", "Sofia · il bollettino della sera");
+      if (puoMe && a.giroBollettino !== false) await mandaMe(testoBollettino(st, oggi, domani), "bollettino della sera", "🌙 Com'è andata oggi", false, { dove: "casa", tag: "sofia-sera" });
       fatti.bollettino = puoMe ? t.hhmm : "spento";
     }
     if (serve.ponte) {
@@ -239,7 +245,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       if (ponti.length) {
         const vivo = Math.max(...ponti.map(p => Number(p.vivo)));
         if (adesso.getTime() - vivo > 40 * 60 * 1000) {
-          if (puoMe) await mandaMe(`📵 Il ponte WhatsApp non dà segni dalle ${oraRoma(new Date(vivo)).hhmm}: il PC è acceso? Finché è spento, i messaggi del gruppo aspettano.`, "avviso ponte spento", "Sofia · il ponte WhatsApp");
+          if (puoMe) await mandaMe(`📵 Il ponte WhatsApp non dà segni dalle ${oraRoma(new Date(vivo)).hhmm}: il PC è acceso? Finché è spento, i messaggi del gruppo aspettano.`, "avviso ponte spento", "📵 Il ponte WhatsApp è fermo", false, { dove: "altro", tag: "sofia-ponte" });
           fatti.ponte = t.hhmm;
         }
       }      // 1.18.1: senza ponte (o col ponte acceso) non segno niente: si ricontrolla al prossimo giro
@@ -263,7 +269,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     else if (lettura.esito && /^(letto|niente da leggere|non riuscita)/.test(lettura.esito)) esiti.push(`lettura delle chat: ${lettura.esito}`);
     if (lettura.credito && fatti.creditoAvvisato !== oggi && t.minuti >= MIN(7) && t.minuti < MIN(22, 30)) {
       if (!ps) ps = await db.doc("importazioni", "push-sofia");
-      await mandaMe("Non riesco a leggere le chat: il credito di Gemini è finito. Ricaricalo su aistudio.google.com/billing (intanto i messaggi aspettano).", "avviso credito finito", "Sofia · credito finito", true);
+      await mandaMe("Non riesco a leggere le chat: il credito di Gemini è finito. Ricaricalo su aistudio.google.com/billing (intanto i messaggi aspettano).", "avviso credito finito", "💳 Il credito di Gemini è finito", true, { dove: "altro", tag: "sofia-credito" });
       fatti.creditoAvvisato = oggi;
     }
   } catch (e) { console.warn("lettura delle chat:", e && e.message); esiti.push("lettura delle chat: errore " + String((e && e.message) || e).slice(0, 80)); }
@@ -286,7 +292,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
         if (s.esito === "fatta") {
           if (!ps) ps = await db.doc("importazioni", "push-sofia");
           const puoMe2 = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
-          if (puoMe2) await mandaMe(String(s.testo || "").slice(0, 700), "la sintesi della segretaria", mattina ? "Sofia · la sintesi di stamattina" : "Sofia · la sintesi di oggi", false, { url: "./index.html?segreteria=1", segreteria: true, tag: "sofia-sintesi" });
+          if (puoMe2) await mandaMe(String(s.testo || "").slice(0, 700), "la sintesi della segretaria", mattina ? "📋 La sintesi di stamattina" : "📋 La sintesi di oggi", false, { url: "./index.html?segreteria=1", segreteria: true, tag: "sofia-sintesi" });
         }
         fatti[chiaveS(o)] = t.hhmm; esiti.push(`sintesi delle ${o}: ${s.esito}${s.n ? ` (${s.n} messaggi)` : ""}`);
       }
@@ -295,6 +301,23 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       else esiti.push(`sintesi delle ${o}: ${s.esito}`);
     } catch (e) { console.warn("sintesi:", e && e.message); esiti.push(`sintesi delle ${o}: errore ` + String((e && e.message) || e).slice(0, 80)); }
   }
+  // 1.24.0 (app 1.55.13): i messaggi delle signore per Michele: una notifica per messaggio, dalle 6:30 alle 22:30
+  try {
+    const nuovi = Object.values((db.messaggiDaAvvisare ? await db.messaggiDaAvvisare() : {}) || {}).filter(m => m && m.id && m.avvisato === false).sort((x, y) => String(x.ora || "").localeCompare(String(y.ora || "")));
+    if (nuovi.length && t.minuti >= MIN(6, 30) && t.minuti < MIN(22, 30)) {
+      if (!ps) ps = await db.doc("importazioni", "push-sofia");
+      const puoMe3 = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
+      for (const m of nuovi) {
+        const quando = Date.parse(m.ora || "") || 0, vecchio = !quando || adesso.getTime() - quando > 2 * 24 * 3600e3;
+        if (m.letto || vecchio) { await db.merge("messaggi_signore", m.id, { avvisato: m.letto ? "letto prima" : "troppo vecchio" }); continue; }
+        if (!puoMe3) { esiti.push("messaggi delle signore: nessun telefono con le notifiche accese"); break; }
+        const chi = String(m.nome || "Una signora"), ora = quando ? oraRoma(new Date(quando)).hhmm : "";
+        const corpo = m.tipo === "foto" ? `📷 Ti ha mandato una foto${m.testo ? `: «${m.testo}»` : "."}` : m.tipo === "file" ? String(m.testo || "") : `«${m.testo || ""}»`;
+        const okk = await mandaMe(`${corpo}${ora ? ` (alle ${ora})` : ""} · Tocca per leggerlo nell'app.`, `messaggio di ${chi}`, `💬 ${chi} ti scrive${m.prova ? " (prova)" : ""}`, true, { dove: "messaggi", rif: String(m.id).slice(0, 80), tag: ("sofia-msg-" + String(m.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40) });
+        if (okk) await db.merge("messaggi_signore", m.id, { avvisato: adesso.toISOString() });
+      }
+    }
+  } catch (e) { console.warn("messaggi delle signore:", e && e.message); esiti.push("messaggi delle signore: errore " + String((e && e.message) || e).slice(0, 80)); }
   const vecchi = Array.isArray(stato0 && stato0.esiti) ? stato0.esiti : [];
   const notevole = lettura && !/^(niente di nuovo|aspetto|aspetta|la sta leggendo)/.test(lettura.esito || "");
   const letturaInfo = notevole ? { quando: adesso.toISOString(), esito: lettura.esito, n: lettura.n || 0 } : ((stato0 && stato0.lettura) || null);
@@ -318,6 +341,7 @@ export function dbAdmin(fs) {
     salva: (c, id, dati) => fs.collection(c).doc(id).set(dati),
     postaDa: async (ts) => comeOggetto(await fs.collection("posta").where("ts", ">=", ts).get()),   // 1.18.0
     importazioniDa: async (iso) => comeOggetto(await fs.collection("importazioni").where("quando", ">=", iso).get()),   // 1.21.0: le letture di oggi (segreteria_*)
+    messaggiDaAvvisare: async () => comeOggetto(await fs.collection("messaggi_signore").where("avvisato", "==", false).get()),   // 1.24.0
     // 1.18.1: aggiorna il documento solo se il campo ha ancora quel valore (la lettura non è cambiata nel frattempo)
     segnaSe: (c, id, campo, valore, dati) => fs.runTransaction(async (tr) => { const ref = fs.collection(c).doc(id); const s = await tr.get(ref); if (!s.exists || (s.data() || {})[campo] !== valore) return false; tr.update(ref, dati); return true; }),
     sostituisci: (c, id, campo, valore) => fs.collection(c).doc(id).update({ [campo]: valore }),
@@ -328,7 +352,7 @@ export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
       // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
-      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.dove ? { dove: String(dati.dove) } : {}), ...(dati.rif ? { rif: String(dati.rif) } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
       return { ok: true, stato: (r && r.statusCode) || null };
     } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };
@@ -341,7 +365,7 @@ export async function provaAvviso({ db, push, adesso = new Date() }) {
   if (!ps || !ps.vapidPublic || !ps.vapidPrivato || !lista.length) return { ora: t.hhmm, prova: "nessun telefono con gli avvisi accesi" };
   const esiti = [], finite = [];
   for (const [id, v] of lista) {
-    const r = await push(ps, v.sub, { titolo: "Sofia · prova", testo: `🔔 Prova delle ${t.hhmm}: se leggi questo, gli avvisi automatici di Sofia arrivano su questo telefono.`, urgente: true });
+    const r = await push(ps, v.sub, { titolo: "🔔 Prova delle notifiche", testo: `Prova delle ${t.hhmm}: se leggi questo, le notifiche di Sofia arrivano su questo telefono.`, urgente: true, dove: "altro", tag: "sofia-prova" });
     esiti.push({ telefono: v.nome || id, ok: !!(r && r.ok), stato: (r && r.stato) || null });
     if (r && r.finita) finite.push(id);
   }
