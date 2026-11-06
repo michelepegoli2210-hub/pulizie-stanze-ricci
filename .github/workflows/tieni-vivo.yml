@@ -1,0 +1,39 @@
+# Tieni vivo (6/11/2026): GitHub spegne da solo i giri automatici («schedule») di un progetto pubblico se per 60 giorni
+# nessuno cambia niente nel progetto. Quando l'app sarà finita e non la toccheremo più, Sofia si spegnerebbe da sola.
+# Questo giro, il 1° e il 15 di ogni mese, scrive la data in sofia-giro/vivo.txt (una modifica vera, così il progetto
+# non resta mai fermo 60 giorni) e, se GitHub avesse spento «Sofia sempre accesa», la riaccende.
+# Non tocca l'app, i dati né le chiavi. Si può far partire anche a mano: Actions → Tieni vivo → Run workflow.
+name: Tieni vivo
+on:
+  schedule:
+    - cron: "17 3 1,15 * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: tieni-vivo
+  cancel-in-progress: false
+jobs:
+  vivo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scrivo la data (il segno che il progetto è vivo)
+        run: |
+          date -u +"%Y-%m-%d %H:%M UTC" > sofia-giro/vivo.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sofia-giro/vivo.txt
+          git commit -m "Tieni vivo: $(date -u +%Y-%m-%d) (così Sofia non si spegne)"
+          for i in 1 2 3; do git pull --rebase --quiet && git push --quiet && exit 0; sleep 10; done
+          exit 1
+      - name: Se GitHub ha spento Sofia, la riaccendo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          codice=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/sofia-giro.yml/enable")
+          echo "Sofia sempre accesa: accesa (risposta $codice)"
