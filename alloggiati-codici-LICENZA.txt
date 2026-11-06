@@ -1,0 +1,13 @@
+alloggiati-codici.json — da dove vengono i dati
+
+1. Comuni, stati e tipi di documento: le «Tabelle di codifica» pubbliche del Servizio Alloggiati della Polizia di Stato
+   (https://alloggiatiweb.poliziadistato.it/PortaleAlloggiati/Tabelle.aspx).
+
+2. I codici catastali (le quattro lettere/cifre del codice fiscale che dicono il comune o lo stato estero di nascita):
+   dall'elenco del pacchetto codice-fiscale-js 2.4.0 (https://github.com/lucavandro/CodiceFiscaleJS), dati ISTAT e
+   Agenzia delle Entrate. Licenza Creative Commons Attribuzione - Condividi allo stesso modo 4.0 (CC BY-SA 4.0):
+   https://creativecommons.org/licenses/by-sa/4.0/ — questa parte del file (la voce «belfiore») si può riusare alle
+   stesse condizioni.
+
+3. I nomi italiani dei paesi coi codici a tre lettere (ISO 3166-1 alpha-3), per la cittadinanza scritta nelle righe
+   <<< dei documenti: pacchetto i18n-iso-countries 7.14.0 (licenza MIT).

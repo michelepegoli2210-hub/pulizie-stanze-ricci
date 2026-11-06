@@ -16,8 +16,9 @@ import * as IA from "./ia.js";
 import * as VOCE from "./voce.js";
 import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
+import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.55.14";
+export const VERSIONE = "1.56.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5629,9 +5630,9 @@ function vistaSegreteria() {
   const testa = `<section class="card flat"><button class="nonna-link indietro" data-vista="sofia">${ICONA("indietro")}${esc(nomeGov())}</button></section>
     <section class="sgr-testa"><h2>📨 Segreteria</h2><p>${prospettoDalleChat() ? `Quello che ${esc(nomeGov())} ha letto nelle chat e come l'ha capito: a sinistra i messaggi, a destra cosa ha capito. Dille se è giusto: con «Correggi» impara per la prossima volta.` : `${esc(nomeGov())} legge le chat di WhatsApp e mette a posto l'app da sola: i guasti nei lavori, i cambi del giro nella giornata delle signore, le note e gli avvisi. Qui ti dice cosa ha fatto: se una cosa non va, tocca «↩ Annulla»; quello che non sa te lo chiede. Il prospetto arriva dal foglio Excel di papà.`}</p></section>${contabilitaPosta()}`;   // 1.51.0
   const banner = puoModificare() ? bannerLettura() : "";   // 1.41.0: le letture di WhatsApp vivono qui (non più nel prospetto)
-  if (!letture.length) return testa + banner + `<section class="card"><p class="muted" style="margin:0">Ancora niente: alla prossima lettura di WhatsApp la trovi qui.</p></section>` + tendinaSegreteria() + `<div class="sgr-spazio" aria-hidden="true"></div>`;
+  if (!letture.length) return testa + cardAlloggiatiSegreteria() + banner + `<section class="card"><p class="muted" style="margin:0">Ancora niente: alla prossima lettura di WhatsApp la trovi qui.</p></section>` + tendinaSegreteria() + `<div class="sgr-spazio" aria-hidden="true"></div>`;
   pulisciSegreteria(letture);
-  return testa + banner + letture.map((x, i) => cardSegreteria(x, i < 3)).join("") + tendinaSegreteria() + `<div class="sgr-spazio" aria-hidden="true"></div>`;
+  return testa + cardAlloggiatiSegreteria() + banner + letture.map((x, i) => cardSegreteria(x, i < 3)).join("") + tendinaSegreteria() + `<div class="sgr-spazio" aria-hidden="true"></div>`;
 }
 function cardSegreteria(x, aperta) {
   if (!prospettoDalleChat() || x.esito === "fatta" || x.esito === "da_applicare" || x.esito === "sostituita" || Array.isArray(x.fatti) || (x.capito && Array.isArray(x.capito.azioni))) return cardSegreteriaNuova(x, aperta);   // 1.51.0: nel modo nuovo tutte le schede così (anche quelle di prima, in breve)
@@ -6393,6 +6394,7 @@ function vistaProprietario() {
   else if (v === "governante") corpo = vistaGovernante();
   else if (v === "sofia") corpo = vistaSofia();
   else if (v === "segreteria") corpo = vistaSegreteria();   // 1.39.0
+  else if (v === "alloggiati") corpo = vistaAlloggiati();   // 1.56.0
   else if (v === "signora") corpo = vistaSignora(S.sigZona || zoneOrdinate()[0].id);
   else corpo = vistaOggiGestione();
   return tabs + corpo;
@@ -6431,7 +6433,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Tocca «Scrivi»: le signore lo vedono in grande.</p>`}</section>`;
-  return `<section class="card flat">${premiumScelto() ? "" : `<h2 style="margin:0">${L.dataLunga(iso)}</h2>`}<p class="muted small" style="margin:0">Tocca una camera o una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + grigliaCamere(iso) + messaggio + avviso + blocchi + bottone;
+  return bannerAlloggiati(iso) + `<section class="card flat">${premiumScelto() ? "" : `<h2 style="margin:0">${L.dataLunga(iso)}</h2>`}<p class="muted small" style="margin:0">Tocca una camera o una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + grigliaCamere(iso) + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -6462,7 +6464,7 @@ function vistaOggiPremium(iso) {
   const tutte = zone.flatMap(z => pulizieDelGiorno(iso, z.id));
   const fatte = tutte.filter(p => p.stato === "fatta").length, inCorso = tutte.filter(p => p.stato === "in_corso").length;
   const tasti = puoModificare() ? `<section class="o13-tasti"><button type="button" class="o13-tasto o13-wa" data-whatsapp-piano="${iso}">${ico2("manda")}<span>Piano su WhatsApp</span></button><button type="button" class="o13-tasto o13-extra" data-nuovo-lavoro>${ico2("piu")}<span>Lavoro extra</span></button></section>` : "";
-  return `<div class="o13">${avviso130(iso)}${cruscotto130(iso, tutte.length, fatte, inCorso)}${fisarmoniche130(iso, zone)}${tasti}</div>`;
+  return `<div class="o13">${bannerAlloggiati(iso)}${avviso130(iso)}${cruscotto130(iso, tutte.length, fatte, inCorso)}${fisarmoniche130(iso, zone)}${tasti}</div>`;
 }
 // l'avviso alle signore: etichetta e "Detta" piccolo sulla prima riga, sotto il testo intero su due righe (Gemini: "un
 // avviso che non si legge a colpo d'occhio tradisce la sua funzione"); un tocco sul testo lo apre per cambiarlo
@@ -11528,9 +11530,341 @@ function cardOrarioBase() {
 }
 
 // ---- altro ---------------------------------------------------------------------------
+// ============================================================================
+//  1.56.0 DOCUMENTI → ALLOGGIATI WEB (Michele, 5/11: «la maniera per fare la foto al documento e compilare
+//  automaticamente Alloggiati Web»; la prima delle tre cose da finire entro fine mese).
+//  In «Altro» e in Oggi (quando è arrivato qualcuno): «🪪 Alloggiati Web». Per ogni camera arrivata oggi o ieri (Alloggiati
+//  Web accetta solo quelle date) si fotografano i documenti: il telefono legge le righe coi <<< e il codice fiscale
+//  (documenti.js), senza mandare la foto a nessuno; quello che manca si sceglie da un elenco (i comuni e gli stati delle
+//  tabelle ufficiali della Polizia di Stato, alloggiati-codici.json). Poi «Scarica il file» (il tracciato di 168
+//  caratteri) e Michele lo carica su Alloggiati Web con le sue credenziali: Invio file → Elabora → Invia.
+//  I dati restano solo su questo telefono, al massimo 3 giorni; «L'ho mandato» li cancella subito.
+//  6/11 (Michele: «nella sezione segretaria devo poter inquadrare il documento e deve fare tutto in automatico, oppure
+//  caricare la foto dopo; dalla foto devi capire tutti i dati»): la scheda «🪪 Documenti degli ospiti» anche in Segreteria
+//  (📷 e 🖼️ per ogni camera arrivata); «📷 Fotografa l'altro lato» nel foglio della persona; dal davanti della carta
+//  d'identità il comune che l'ha fatta, dal passaporto italiano la questura e il luogo di nascita; le tabelle ufficiali.
+// ============================================================================
+const CHIAVE_ALLOGGIATI = "ricci_alloggiati";
+const AL_TIPI = { 16: "da sola/o", 17: "capofamiglia", 18: "capogruppo", 19: "familiare", 20: "del gruppo" };
+const AL_PORTALE = "https://alloggiatiweb.poliziadistato.it/PortaleAlloggiati/";
+function alStato() {
+  try { const x = JSON.parse(localStorage.getItem(CHIAVE_ALLOGGIATI) || "{}"); return { persone: x.persone || {}, gruppo: x.gruppo || {}, inviati: x.inviati || {} }; }
+  catch (e) { return { persone: {}, gruppo: {}, inviati: {} }; }
+}
+function alSalva(st) { try { localStorage.setItem(CHIAVE_ALLOGGIATI, JSON.stringify(st)); return true; } catch (e) { toast("Il telefono non riesce a tenere questi dati: scarica subito il file"); return false; } }
+// al massimo 3 giorni sul telefono: poi i dati delle persone si cancellano da soli
+function alPulisci() {
+  const st = alStato(), lim = L.aggiungiGiorni(L.oggiISO(), -3); let via = false;
+  for (const id of Object.keys(st.persone)) { const s = S.soggiorni[id]; if (!s || s.inizio < lim) { delete st.persone[id]; delete st.gruppo[id]; via = true; } }
+  for (const [id, q] of Object.entries(st.inviati)) if (String(q).slice(0, 10) < lim) { delete st.inviati[id]; via = true; }
+  if (via) alSalva(st);
+  return st;
+}
+// le tabelle ufficiali (comuni, stati, documenti): si scaricano la prima volta che servono
+let AL_COD = null, alCodInCarico = null;
+async function alCodici() {
+  if (AL_COD) return AL_COD;
+  if (!alCodInCarico) alCodInCarico = fetch("alloggiati-codici.json").then(r => { if (!r.ok) throw new Error("tabelle"); return r.json(); })
+    .then(j => { AL_COD = j; AL_COD.perCodice = new Map([...j.comuni.map(x => [x[0], { c: x[0], n: x[1], p: x[2], comune: true }]), ...j.stati.map(x => [x[0], { c: x[0], n: x[1], comune: false }])]); return AL_COD; })
+    .finally(() => { alCodInCarico = null; });
+  return alCodInCarico;
+}
+const alNorm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+function alItalia(cod) { const x = cod.stati.find(s => alNorm(s[1]) === "ITALIA"); return x ? x[0] : ""; }
+// cerca per nome: prima quelli che cominciano così, prima i comuni di oggi (non cessati)
+function alCerca(cod, testo, cosa) {
+  const t = alNorm(testo); if (t.length < 2) return [];
+  const out = [];
+  if (cosa !== "stato") for (const x of cod.comuni) { const n = alNorm(x[1]); if (n.startsWith(t) || (t.length >= 3 && n.includes(" " + t))) out.push({ c: x[0], n: x[1], p: x[2], comune: true, vivo: !x[4], pri: n.startsWith(t) ? 0 : 1 }); }
+  if (cosa !== "comune") for (const x of cod.stati) { const n = alNorm(x[1]); if (n.startsWith(t) || (t.length >= 3 && n.includes(" " + t))) out.push({ c: x[0], n: x[1], comune: false, vivo: !x[3], pri: n.startsWith(t) ? 0 : 1 }); }
+  out.sort((a, b) => (a.pri - b.pri) || (b.vivo - a.vivo) || (a.n.length - b.n.length) || a.n.localeCompare(b.n));
+  return out.slice(0, 8);
+}
+const AL_MRZ = { D: "GERMANIA", RKS: "KOSOVO", XXA: "APOLIDE", XXB: "APOLIDE", XXC: "APOLIDE", GBD: "REGNO UNITO", GBN: "REGNO UNITO", GBO: "REGNO UNITO", GBP: "REGNO UNITO", GBS: "REGNO UNITO" };
+function alStatoDaIso(cod, iso3) { if (!iso3) return null; const per = AL_MRZ[iso3]; const x = (per && cod.stati.find(s => alNorm(s[1]) === per && !s[3])) || cod.stati.find(s => s[2] === iso3 && !s[3]) || cod.stati.find(s => s[2] === iso3); return x ? { c: x[0], n: x[1] } : null; }
+// dal codice catastale del codice fiscale: un comune che ha cambiato provincia ha più codici, si sceglie con la data di nascita
+const alCodiciDi = (cod, b) => { const k = cod.belfiore && cod.belfiore[b]; return !k ? [] : Array.isArray(k) ? k : [k]; };
+function alComuneDaBelfiore(cod, b, nascita) { const kk = alCodiciDi(cod, b); if (!kk.length) return null; const x = DOC.rigaPerData(cod.comuni.filter(c => kk.includes(c[0])), nascita || ""); return x ? { c: x[0], n: x[1], p: x[2] } : null; }
+function alStatoDaZ(cod, z) { const kk = alCodiciDi(cod, z); if (!kk.length) return null; const rr = cod.stati.filter(s => kk.includes(s[0])), x = rr.find(s => !s[3]) || rr[0]; return x ? { c: x[0], n: x[1] } : null; }
+// il tipo di documento: passaporto, carta d'identità elettronica (italiana) o carta d'identità
+function alTipoDoc(cod, m) {
+  const trova = (re) => { const x = cod.documenti.find(d => re.test(alNorm(d[1]))); return x ? x[0] : ""; };
+  if (m.passaporto) return trova(/^PASSAPORTO ORDINARIO/) || trova(/PASSAPORTO/);
+  if (m.statoRilascio === "ITA") return trova(/IDENTITA ELETTRONICA/) || trova(/^CARTA (DI )?IDENTITA/);
+  return trova(/^CARTA (DI )?IDENTITA/) || trova(/IDENTITA/);
+}
+function alArrivi() {
+  const oggi = L.oggiISO(), ieri = L.aggiungiGiorni(oggi, -1);
+  return soggiorniLista().filter(s => s && s.camera && (s.inizio === oggi || s.inizio === ieri))
+    .sort((a, b) => a.inizio !== b.inizio ? (a.inizio < b.inizio ? 1 : -1) : ordineCamera(a.camera) - ordineCamera(b.camera));
+}
+const alTipi = (lista, gruppo) => lista.map((p, i) => lista.length === 1 ? 16 : i === 0 ? (gruppo ? 18 : 17) : (gruppo ? 20 : 19));
+function alNotti(s) { return Math.max(1, L.giorniTra ? L.giorniTra(s.inizio, s.fine || s.inizio) : 1); }
+function alRighe(st, s) {
+  const lista = st.persone[s.id] || [], tipi = alTipi(lista, !!st.gruppo[s.id]);
+  return lista.map((p, i) => ({ p, tipo: tipi[i], manca: DOC.cosaManca({ ...p, tipo: tipi[i] }) }));
+}
+// i soggiorni da mettere nel file: quelli non ancora mandati, con almeno una persona, tutte complete
+function alDaMandare(st) {
+  return alArrivi().filter(s => !st.inviati[s.id] && (st.persone[s.id] || []).length).map(s => ({ s, righe: alRighe(st, s) }));
+}
+// ---- la pagina ---------------------------------------------------------------------------------------------------------
+function vistaAlloggiati() {
+  const st = alPulisci(), arrivi = alArrivi(), oggi = L.oggiISO();
+  const schede = arrivi.map(s => {
+    const righe = alRighe(st, s), inviato = st.inviati[s.id], notti = alNotti(s), persone = Number(s.persone) || 0, gr = !!st.gruppo[s.id];
+    const lista = righe.map(({ p, tipo, manca }, i) => `<button type="button" class="al-persona ${manca.length ? "manca" : "ok"}" data-al-apri="${esc(s.id)}|${i}"><span class="al-p-ico" aria-hidden="true">${manca.length ? "!" : "✓"}</span><span class="al-p-x"><b>${esc(`${p.cognome || "?"} ${p.nome || ""}`.trim())}</b><small>${esc(AL_TIPI[tipo])}${manca.length ? ` · manca ${manca[0]}${manca.length > 1 ? ` e altre ${manca.length - 1} cose` : ""}` : " · pronta"}</small></span><span class="al-p-fr" aria-hidden="true">›</span></button>`).join("");
+    const mancano = Math.max(0, persone - righe.length);
+    const tasti = inviato ? "" : `<div class="al-tasti"><label class="big main al-foto">📷 Fotografa un documento<input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}"></label>
+      <div class="due"><label class="big undo">🖼️ Scegli una foto<input type="file" accept="image/*" hidden data-al-foto="${esc(s.id)}"></label><button type="button" class="big undo" data-al-mano="${esc(s.id)}">✍️ Scrivi a mano</button></div>
+      ${righe.length > 1 ? `<div class="seg al-gr" role="group" aria-label="Chi sono"><button type="button" aria-pressed="${!gr}" data-al-gruppo="${esc(s.id)}|0">Famiglia</button><button type="button" aria-pressed="${gr}" data-al-gruppo="${esc(s.id)}|1">Gruppo (colleghi, amici)</button></div>` : ""}</div>`;
+    return `<section class="card al-sogg${inviato ? " inviato" : ""}"><div class="al-sogg-t"><b>${esc(camera(s.camera).nome)}</b>${s.nome ? `<span>${esc(s.nome)}</span>` : ""}</div>
+      <p class="al-sogg-s">${s.inizio === oggi ? "Arrivo oggi" : "Arrivo ieri"} · ${notti} ${notti === 1 ? "notte" : "notti"}${persone ? ` · ${persone} ${persone === 1 ? "persona" : "persone"}` : ""}${inviato ? ` · <b>✓ mandato ad Alloggiati Web</b>` : ""}</p>
+      ${lista}${mancano && !inviato ? `<p class="al-mancano">${mancano === 1 ? "Manca ancora 1 persona" : `Mancano ancora ${mancano} persone`}${righe.length ? "" : ": comincia da chi ha il documento (il capofamiglia o il capogruppo)"}</p>` : ""}${tasti}</section>`;
+  }).join("");
+  const da = alDaMandare(st), tutte = da.flatMap(x => x.righe), pronte = tutte.filter(r => !r.manca.length).length, incomplete = tutte.length - pronte;
+  const file = !da.length ? "" : `<section class="card al-file"><h3>Il file per Alloggiati Web</h3>
+    ${incomplete ? `<p class="al-avviso">Prima completa ${incomplete === 1 ? "la persona col punto esclamativo" : `le ${incomplete} persone col punto esclamativo`}.</p>` : `<p class="muted small" style="margin:0 0 10px">${pronte} ${pronte === 1 ? "persona pronta" : "persone pronte"}, in ${da.length} ${da.length === 1 ? "camera" : "camere"}.</p>`}
+    <button type="button" class="big main" data-al-scarica ${incomplete ? "disabled" : ""}>⬇️ Scarica il file</button>
+    <ol class="al-come"><li>Tocca <b>«Apri Alloggiati Web»</b> ed entra con le tue credenziali.</li><li>Scegli <b>«Invio file»</b> e prendi il file appena scaricato (è nella cartella Download).</li><li>Tocca <b>«Elabora»</b>, guarda che sia tutto giusto, poi <b>«Invia»</b>.</li></ol>
+    <a class="big undo" href="${AL_PORTALE}" target="_blank" rel="noopener">🌐 Apri Alloggiati Web</a>
+    <button type="button" class="big undo" data-al-inviato>✓ L'ho mandato: cancella i dati da questo telefono</button></section>`;
+  return `<section class="card al-testa"><button type="button" class="btnsm ghost" data-al-torna>‹ ${S.alDa === "segreteria" ? "Segreteria" : "Oggi"}</button><h2>🪪 Alloggiati Web</h2>
+    <p>Fotografa il documento di chi è arrivato: l'app legge i dati e prepara il file da caricare su Alloggiati Web. <b>Le foto non escono dal telefono</b> e non restano salvate.</p>
+    <p class="muted small">Vanno mandati entro 24 ore dall'arrivo: qui ci sono le camere arrivate oggi e ieri. Per il capofamiglia (o capogruppo) serve il documento; per gli altri bastano nome, nascita e cittadinanza.</p></section>
+    ${schede || `<section class="card"><p style="margin:0">Oggi e ieri non è arrivato nessuno (secondo il prospetto).</p></section>`}${file}`;
+}
+// sulla pagina Oggi del proprietario: il promemoria quando è arrivato qualcuno e non è ancora stato mandato
+function bannerAlloggiati(iso) {
+  try {
+    if (iso !== L.oggiISO() || !proprietario()) return "";
+    const st = alStato(), arr = alArrivi().filter(s => !st.inviati[s.id]); if (!arr.length) return "";
+    return `<button type="button" class="al-banner" data-al-vai><span class="al-banner-ico" aria-hidden="true">🪪</span><span class="al-banner-x"><b>Alloggiati Web</b><small>${arr.length === 1 ? `${esc(camera(arr[0].camera).nome)}: da mandare` : `${arr.length} camere da mandare`} · fotografa i documenti</small></span><span aria-hidden="true">›</span></button>`;
+  } catch (e) { return ""; }
+}
+// 6/11: in Segreteria, «🪪 Documenti degli ospiti»: per ogni camera arrivata oggi o ieri e non ancora mandata, 📷 (inquadra il
+// documento) e 🖼️ (una foto già fatta, per esempio arrivata su WhatsApp); «Apri ›» porta alla pagina con tutto
+function cardAlloggiatiSegreteria() {
+  try {
+    if (!proprietario()) return "";
+    const st = alStato(), oggi = L.oggiISO(), da = alArrivi().filter(s => !st.inviati[s.id]);
+    const righe = da.map(s => { const fatte = (st.persone[s.id] || []).length, pers = Number(s.persone) || 0, nome = camera(s.camera).nome;
+      return `<div class="al-sg-riga"><span class="al-sg-x"><b>${esc(nome)}</b><small>${s.inizio === oggi ? "arrivo oggi" : "arrivo ieri"}${pers ? ` · ${pers} ${pers === 1 ? "persona" : "persone"}` : ""}${fatte ? ` · ${fatte} già ${fatte === 1 ? "messa" : "messe"}` : ""}</small></span>`
+        + `<label class="al-sg-b foto" title="Inquadra il documento">📷<span>Inquadra</span><input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(nome)}"></label>`
+        + `<label class="al-sg-b" title="Una foto già fatta">🖼️<span>Foto</span><input type="file" accept="image/*" hidden data-al-foto="${esc(s.id)}" aria-label="Scegli la foto del documento per ${esc(nome)}"></label></div>`; }).join("");
+    return `<section class="card al-sg"><div class="al-sg-testa"><h3>🪪 Documenti degli ospiti</h3><button type="button" class="btnsm ghost" data-al-vai data-al-da="segreteria">Apri ›</button></div>
+      <p class="al-sg-p">Inquadra il documento: leggo io i dati e preparo il file per Alloggiati Web. La foto non esce dal telefono.</p>
+      ${righe || `<p class="al-sg-vuoto">Oggi e ieri non è arrivato nessuno, secondo il prospetto.</p>`}</section>`;
+  } catch (e) { return ""; }
+}
+function cardAlloggiati() {
+  return `<section class="card"><h2>🪪 Alloggiati Web</h2><p class="muted small" style="margin:0 0 10px">Fotografi il documento di chi arriva, l'app legge i dati (senza mandare la foto a nessuno) e prepara il file da caricare su Alloggiati Web.</p><button type="button" class="big main" data-al-vai>Apri</button></section>`;
+}
+// ---- il foglio di una persona ------------------------------------------------------------------------------------------
+function alCampo(id, etichetta, valore, { manca, letto, tipo = "text", extra = "", aiuto = "" } = {}) {
+  return `<div class="campo al-campo${manca ? " al-manca" : ""}${letto ? " al-letto" : ""}"><label for="${id}">${esc(etichetta)}${letto ? ` <span class="al-ok">✓ letto</span>` : ""}</label><input id="${id}" type="${tipo}" data-keep value="${esc(valore || "")}" autocomplete="off" ${extra}>${aiuto}</div>`;
+}
+function alScelta(campo, etichetta, testo, codice, { manca, letto, cosa, aiuto = "" } = {}) {
+  return `<div class="campo al-campo al-cerca-box${manca ? " al-manca" : ""}${letto ? " al-letto" : ""}"><label for="alc_${campo}">${esc(etichetta)}${letto ? ` <span class="al-ok">✓ letto</span>` : ""}</label>
+    <input id="alc_${campo}" type="text" data-keep value="${esc(testo || "")}" autocomplete="off" placeholder="scrivi le prime lettere" data-al-cerca="${campo}|${cosa}">
+    <input id="alv_${campo}" type="hidden" data-keep value="${esc(codice || "")}"><div class="al-sugg" id="als_${campo}"></div>${aiuto}</div>`;
+}
+function foglioAlloggiato(f) {
+  const d = f.dati || {}, cod = AL_COD, st = alStato(), lista = st.persone[f.sogg] || [], s = S.soggiorni[f.sogg] || {};
+  const pos = f.idx >= 0 ? f.idx : lista.length, n = f.idx >= 0 ? lista.length : lista.length + 1;
+  const tipo = alTipi(Array.from({ length: n }), !!st.gruppo[f.sogg])[pos];
+  const conDoc = [16, 17, 18].includes(tipo), letto = new Set(f.letto || []);
+  if (!cod) return `<h3>Un attimo…</h3><p class="muted">Scarico l'elenco dei comuni e degli stati.</p>`;
+  const manca = new Set(DOC.cosaManca({ ...d, tipo }).map(x => x));
+  const m = (k) => f.provato && manca.has(k);
+  const seg = (k, val, sc) => `<div class="seg al-seg" role="group">${sc.map(([v, t]) => `<button type="button" aria-pressed="${val === v}" data-al-seg="${k}|${v}">${esc(t)}</button>`).join("")}</div>`;
+  const italia = d.natoInItalia !== false;
+  return `<h3>${f.idx >= 0 ? "Persona" : "Nuova persona"} · ${esc(AL_TIPI[tipo])}</h3><div class="muted">${esc(camera(s.camera).nome || "")}${s.nome ? " · " + esc(s.nome) : ""}</div>
+    ${f.avviso ? `<p class="al-avviso${f.tuttoOk ? " ok" : ""}">${esc(f.avviso)}</p>` : ""}
+    <div class="al-lato"><label class="big undo al-lato-foto">📷 ${letto.size ? "Fotografa l'altro lato" : "Fotografa il documento"}<input type="file" accept="image/*" capture="environment" hidden data-al-lato></label><label class="btnsm ghost al-lato-galleria">🖼️ oppure una foto già fatta<input type="file" accept="image/*" hidden data-al-lato></label></div>
+    ${letto.size ? `<p class="al-letti">✓ Ho letto dal documento: ${esc([...letto].map(k => ({ cognome: "cognome", nome: "nome", sesso: "sesso", nascita: "data di nascita", comuneNascita: "comune di nascita", statoNascita: "stato di nascita", cittadinanza: "cittadinanza", tipoDoc: "tipo di documento", numDoc: "numero", luogoRilascio: "chi l'ha rilasciato" }[k] || k)).join(", "))}. Controlla che sia tutto giusto.</p>` : ""}
+    ${alCampo("al_cognome", "Cognome", d.cognome, { manca: m("il cognome"), letto: letto.has("cognome"), extra: 'autocapitalize="characters"' })}
+    ${alCampo("al_nome", "Nome", d.nome, { manca: m("il nome"), letto: letto.has("nome"), extra: 'autocapitalize="characters"' })}
+    <div class="campo al-campo${m("il sesso") ? " al-manca" : ""}${letto.has("sesso") ? " al-letto" : ""}"><label>Sesso${letto.has("sesso") ? ` <span class="al-ok">✓ letto</span>` : ""}</label>${seg("sesso", d.sesso, [[1, "Uomo"], [2, "Donna"]])}</div>
+    ${alCampo("al_nascita", "Data di nascita", d.nascita, { manca: m("la data di nascita"), letto: letto.has("nascita"), tipo: "date" })}
+    <div class="campo al-campo"><label>Dove è nata/o</label>${seg("natoInItalia", italia, [[true, "In Italia"], [false, "All'estero"]])}</div>
+    ${italia ? alScelta("comuneNascita", "Comune di nascita", d.comuneNome ? `${d.comuneNome}${d.provNascita ? " (" + d.provNascita + ")" : ""}` : "", d.comuneNascita, { manca: m("il comune di nascita"), letto: letto.has("comuneNascita"), cosa: "comune" })
+      : alScelta("statoNascita", "Stato di nascita", d.statoNome, d.statoNascita, { manca: m("lo stato di nascita"), letto: letto.has("statoNascita"), cosa: "stato" })}
+    ${alScelta("cittadinanza", "Cittadinanza", d.cittNome, d.cittadinanza, { manca: m("la cittadinanza"), letto: letto.has("cittadinanza"), cosa: "stato" })}
+    ${conDoc ? `<div class="floorlabel">Il documento</div>
+      <div class="campo al-campo${m("il tipo di documento") ? " al-manca" : ""}${letto.has("tipoDoc") ? " al-letto" : ""}"><label for="al_tipoDoc">Tipo di documento${letto.has("tipoDoc") ? ` <span class="al-ok">✓ letto</span>` : ""}</label><select id="al_tipoDoc" data-keep><option value="">— scegli —</option>${alDocOrdinati(cod).map(x => `<option value="${esc(x[0])}" ${x[0] === d.tipoDoc ? "selected" : ""}>${esc(x[1])}</option>`).join("")}</select></div>
+      ${alCampo("al_numDoc", "Numero del documento", d.numDoc, { manca: m("il numero del documento"), letto: letto.has("numDoc"), extra: 'autocapitalize="characters"' })}
+      ${alScelta("luogoRilascio", "Rilasciato da (comune, o stato se è estero)", d.rilascioNome, d.luogoRilascio, { manca: m("dove è stato rilasciato il documento"), letto: letto.has("luogoRilascio"), cosa: "tutti", aiuto: `<p class="muted small" style="margin:4px 0 0">Carta d'identità: il comune che l'ha fatta. Passaporto italiano: la città della questura.</p>` })}` : `<p class="muted small">Per i familiari e per chi è nel gruppo il documento non serve.</p>`}
+    <button type="button" class="big main" data-al-salva>Salva</button>
+    ${f.idx > 0 ? `<button type="button" class="big undo" data-al-primo>Metti per prima (${st.gruppo[f.sogg] ? "capogruppo" : "capofamiglia"})</button>` : ""}
+    ${f.idx >= 0 ? `<button type="button" class="big undo" data-al-togli>Togli questa persona</button>` : ""}`;
+}
+function alDocOrdinati(cod) {
+  const pri = (n) => { const x = alNorm(n); return /IDENTITA ELETTRONICA/.test(x) ? 0 : /^CARTA (DI )?IDENTITA/.test(x) ? 1 : /^PASSAPORTO ORDINARIO/.test(x) ? 2 : /^PATENTE/.test(x) ? 3 : 9; };
+  return [...cod.documenti].sort((a, b) => pri(a[1]) - pri(b[1]) || a[1].localeCompare(b[1]));
+}
+// quello che c'è scritto nel foglio → la persona (i pulsanti Uomo/Donna e Italia/Estero sono già nel foglio)
+function alLeggiFoglio() {
+  const f = S.foglio; if (!f || f.tipo !== "alloggiato") return null;
+  const v = (id) => { const e = document.getElementById(id); return e ? e.value.trim() : ""; };
+  const d = { ...(f.dati || {}) };
+  d.cognome = v("al_cognome").toUpperCase(); d.nome = v("al_nome").toUpperCase(); d.nascita = v("al_nascita");
+  const cod = AL_COD, nome = (k) => { const x = cod && cod.perCodice.get(v("alv_" + k)); return x || null; };
+  if (d.natoInItalia !== false) { const c = nome("comuneNascita"); d.comuneNascita = c && c.comune ? c.c : ""; d.comuneNome = c ? c.n : ""; d.provNascita = c ? c.p : ""; d.statoNascita = cod ? alItalia(cod) : ""; d.statoNome = "ITALIA"; }
+  else { const c = nome("statoNascita"); d.statoNascita = c && !c.comune ? c.c : ""; d.statoNome = c ? c.n : ""; d.comuneNascita = ""; d.comuneNome = ""; d.provNascita = ""; }
+  const ci = nome("cittadinanza"); d.cittadinanza = ci && !ci.comune ? ci.c : ""; d.cittNome = ci ? ci.n : "";
+  if (document.getElementById("al_tipoDoc")) { d.tipoDoc = v("al_tipoDoc"); d.numDoc = v("al_numDoc").toUpperCase().replace(/\s+/g, ""); const r = nome("luogoRilascio"); d.luogoRilascio = r ? r.c : ""; d.rilascioNome = r ? r.n : ""; }
+  return d;
+}
+// ---- la lettura della foto ---------------------------------------------------------------------------------------------
+function alAttesa(testo) {
+  let a = document.getElementById("alAttesa");
+  if (!testo) { if (a) a.remove(); return; }
+  if (!a) { a = document.createElement("div"); a.id = "alAttesa"; a.className = "al-attesa"; a.setAttribute("role", "status"); document.body.appendChild(a); }
+  a.innerHTML = `<div class="al-attesa-box"><span class="al-giro" aria-hidden="true"></span><b>${esc(testo)}</b><small>La foto resta sul telefono.</small></div>`;
+}
+const AL_FASI = { davanti: "Leggo il davanti del documento…", "loading tesseract core": "Preparo il lettore (solo la prima volta, 7 MB)…", "initializing tesseract": "Preparo il lettore…", "loading language traineddata": "Preparo il lettore (solo la prima volta)…", "initializing api": "Preparo il lettore…", "recognizing text": "Leggo il documento…", leggo: "Leggo il documento…" };
+function alDaLettura(letto, cod) {
+  const m = letto && letto.mrz, cf = letto && letto.cf ? DOC.leggiCf(letto.cf) : null, d = {}, preso = [];
+  const ita = alItalia(cod);
+  if (m) {
+    if (m.cognome) { d.cognome = m.cognome; preso.push("cognome"); }
+    if (m.nome) { d.nome = m.nome; preso.push("nome"); }
+    if (m.sesso) { d.sesso = m.sesso; preso.push("sesso"); }
+    if (m.nascita) { d.nascita = m.nascita; if (m.controlli.nascita) preso.push("nascita"); }
+    const ci = alStatoDaIso(cod, m.cittadinanza); if (ci) { d.cittadinanza = ci.c; d.cittNome = ci.n; preso.push("cittadinanza"); }
+    if (m.numero) { d.numDoc = m.numero; if (m.controlli.numero) preso.push("numDoc"); }
+    const td = alTipoDoc(cod, m); if (td) { d.tipoDoc = td; preso.push("tipoDoc"); }
+    if (m.statoRilascio && m.statoRilascio !== "ITA") { const r = alStatoDaIso(cod, m.statoRilascio); if (r) { d.luogoRilascio = r.c; d.rilascioNome = r.n; preso.push("luogoRilascio"); } }
+  }
+  if (cf) {
+    if (!d.sesso) d.sesso = cf.sesso;
+    if (!cf.estero) { const c = alComuneDaBelfiore(cod, cf.belfiore, d.nascita); if (c) { d.natoInItalia = true; d.comuneNascita = c.c; d.comuneNome = c.n; d.provNascita = c.p; d.statoNascita = ita; d.statoNome = "ITALIA"; preso.push("comuneNascita"); } }
+    else { const z = alStatoDaZ(cod, cf.belfiore); if (z) { d.natoInItalia = false; d.statoNascita = z.c; d.statoNome = z.n; preso.push("statoNascita"); } }
+  }
+  // 6/11: il davanti (carta d'identità) o la pagina del passaporto italiano: chi l'ha rilasciato e il luogo di nascita
+  const dav = (letto && letto.davanti) || "", italiano = !m || m.statoRilascio === "ITA";
+  let davantiLetto = false;
+  if (dav && italiano) {
+    if (!d.luogoRilascio) { const r = DOC.trovaRilascio(dav, cod.comuni); if (r) { d.luogoRilascio = r[0]; d.rilascioNome = r[1]; preso.push("luogoRilascio"); davantiLetto = true; } }
+    if (!d.comuneNascita) { const n = DOC.trovaNascita(dav, cod.comuni, d.nascita || ""); if (n) { d.natoInItalia = true; d.comuneNascita = n[0]; d.comuneNome = n[1]; d.provNascita = n[2]; d.statoNascita = ita; d.statoNome = "ITALIA"; preso.push("comuneNascita"); davantiLetto = true; } }
+    if (!m) { const x = DOC.altroDavanti(dav); if (x.numero) { d.numDoc = x.numero; preso.push("numDoc"); davantiLetto = true; } if (x.cie) { const td = alTipoDoc(cod, { statoRilascio: "ITA" }); if (td) { d.tipoDoc = td; preso.push("tipoDoc"); } davantiLetto = true; } }
+  }
+  // senza codice fiscale: un cittadino italiano di solito è nato in Italia (il comune si sceglie); uno straniero nel suo paese
+  if (d.natoInItalia === undefined && d.cittadinanza) { if (d.cittadinanza === ita) d.natoInItalia = true; else { d.natoInItalia = false; d.statoNascita = d.cittadinanza; d.statoNome = d.cittNome; } }
+  let avviso = "";
+  if (!m && davantiLetto) avviso = "Ho letto il davanti. Ora fotografa il retro, quello con le righe <<<: tocca «📷 Fotografa l'altro lato».";
+  else if (!m) avviso = "Non ho trovato le righe coi <<< del documento. Rifai la foto al retro della carta d'identità o alla pagina del passaporto con la foto: vicina, dritta e con tanta luce. Oppure scrivi a mano.";
+  else if (!m.controlli.numero || !m.controlli.nascita) avviso = "Ho letto il documento, ma alcune cose non tornano coi numeri di controllo: guarda bene il numero del documento e la data di nascita.";
+  else if (italiano && !m.passaporto && !d.luogoRilascio) avviso = "Manca solo il comune che ha fatto la carta: fotografa il davanti con «📷 Fotografa l'altro lato» (oppure scrivilo qui sotto).";
+  return { dati: d, letto: preso, avviso, conMrz: !!m };
+}
+async function alLeggiFoto(sid, file) {
+  alAttesa("Leggo il documento…");
+  let ris = null, errore = "";
+  try {
+    const [cod, letto] = await Promise.all([alCodici(), DOC.leggiFoto(file, (s, p) => alAttesa(`${AL_FASI[s] || "Leggo il documento…"}${s === "recognizing text" && p ? " " + Math.round(p * 100) + "%" : ""}`))]);
+    ris = alDaLettura(letto, cod);
+  } catch (e) { errore = String(e && e.message || e); }
+  alAttesa("");
+  try { await alCodici(); } catch (e) { toast("Non riesco a scaricare l'elenco dei comuni: controlla la connessione"); return; }
+  if (!ris) ris = { dati: {}, letto: [], avviso: `Non sono riuscita a leggere la foto${errore ? ` (${errore})` : ""}. Scrivi i dati a mano, oppure rifai la foto più vicina, dritta e con più luce.` };
+  apriFoglio({ tipo: "alloggiato", sogg: sid, idx: -1, dati: ris.dati, letto: ris.letto, avviso: ris.avviso, provato: true, soloDavanti: !ris.conMrz });
+}
+const AL_GRUPPI = [["cognome"], ["nome"], ["sesso"], ["nascita"], ["comuneNascita", "comuneNome", "provNascita", "statoNascita", "statoNome", "natoInItalia"], ["cittadinanza", "cittNome"], ["tipoDoc"], ["numDoc"], ["luogoRilascio", "rilascioNome"]];
+const alPieno = (d, g) => g[0] === "comuneNascita" ? !!(d.comuneNascita || (d.natoInItalia === false && d.statoNascita)) : !!(d[g[0]] || d[g[0]] === 0);
+async function alAltroLato(file) {
+  const f = S.foglio; if (!f || f.tipo !== "alloggiato") return;
+  const ora = alLeggiFoglio() || { ...(f.dati || {}) };
+  alAttesa("Leggo l'altro lato…");
+  let ris = null;
+  try { const [cod, letto] = await Promise.all([alCodici(), DOC.leggiFoto(file, (s, p) => alAttesa(`${AL_FASI[s] || "Leggo il documento…"}${s === "recognizing text" && p ? " " + Math.round(p * 100) + "%" : ""}`))]); ris = alDaLettura(letto, cod); } catch (e) {}
+  alAttesa("");
+  if (!S.foglio || S.foglio.tipo !== "alloggiato") return;
+  if (!ris || !ris.letto.length) { toast("Non sono riuscita a leggere questa foto: rifalla più vicina, dritta e con più luce"); return; }
+  const unito = { ...ora }, letti = new Set(f.letto || []), nuovi = [];
+  const vince = f.soloDavanti && ris.conMrz ? new Set(["cognome", "nome", "sesso", "nascita", "cittadinanza", "tipoDoc", "numDoc"]) : new Set();
+  for (const g of AL_GRUPPI) {
+    if ((alPieno(unito, g) && !vince.has(g[0])) || !alPieno(ris.dati, g)) continue;
+    for (const k of g) if (ris.dati[k] !== undefined) unito[k] = ris.dati[k];
+    for (const k of ris.letto) if (g.includes(k)) { letti.add(k); nuovi.push(k); }
+  }
+  const st = alStato(), lista = st.persone[f.sogg] || [], pos = f.idx >= 0 ? f.idx : lista.length, n = f.idx >= 0 ? lista.length : lista.length + 1;
+  const tipo = alTipi(Array.from({ length: n }), !!st.gruppo[f.sogg])[pos], manca = DOC.cosaManca({ ...unito, tipo });
+  const avviso = !nuovi.length ? "Questa foto non ha aggiunto niente di nuovo." : manca.length ? `Ho unito i due lati. Manca ancora ${manca.join(", ")}.` : "Ho unito i due lati: c'è tutto ✓ Controlla e tocca «Salva».";
+  S.foglio = { ...f, dati: unito, letto: [...letti], avviso, tuttoOk: !manca.length && nuovi.length > 0, provato: true, soloDavanti: f.soloDavanti && !ris.conMrz };
+  // il foglio, quando si ridisegna, tiene quello che c'era scritto nelle caselle: qui invece devono entrare i dati nuovi
+  try { elFoglio().querySelectorAll("input[id],textarea[id],select[id]").forEach(e => e.removeAttribute("id")); } catch (e) {}
+  disegnaFoglio();
+}
+function alScarica() {
+  const st = alStato(), da = alDaMandare(st);
+  if (!da.length) return;
+  if (da.some(x => x.righe.some(r => r.manca.length))) { toast("Prima completa le persone col punto esclamativo"); return; }
+  const righe = [];
+  for (const { s, righe: rr } of da) for (const { p, tipo } of rr) righe.push(DOC.rigaAlloggiati({ ...p, tipo, arrivo: s.inizio, giorni: alNotti(s) }));
+  const blob = new Blob([DOC.fileAlloggiati(righe)], { type: "text/plain" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `alloggiati-${L.oggiISO()}.txt`; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  toast(`File scaricato: ${righe.length} ${righe.length === 1 ? "persona" : "persone"}. Ora caricalo su Alloggiati Web.`);
+}
+// ---- i tocchi ----------------------------------------------------------------------------------------------------------
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t) return;
+  let b;
+  if ((b = t.closest("[data-al-vai]"))) { e.preventDefault(); S.alDa = b.dataset.alDa || "oggi"; S.vista = "alloggiati"; disegna(); window.scrollTo(0, 0); alCodici().catch(() => {}); try { DOC.preparaLettore().catch(() => {}); } catch (er) {} return; }
+  if ((b = t.closest("[data-al-torna]"))) { e.preventDefault(); S.vista = S.alDa === "segreteria" ? "segreteria" : "oggi"; disegna(); window.scrollTo(0, 0); return; }
+  if ((b = t.closest("[data-al-mano]"))) { e.preventDefault(); const sid = b.dataset.alMano; alCodici().then(() => apriFoglio({ tipo: "alloggiato", sogg: sid, idx: -1, dati: {}, letto: [] })).catch(() => toast("Non riesco a scaricare l'elenco dei comuni: controlla la connessione")); return; }
+  if ((b = t.closest("[data-al-apri]"))) { e.preventDefault(); const [sid, i] = b.dataset.alApri.split("|"); const p = (alStato().persone[sid] || [])[+i]; if (!p) return; alCodici().then(() => apriFoglio({ tipo: "alloggiato", sogg: sid, idx: +i, dati: { ...p }, letto: [], provato: true })).catch(() => toast("Non riesco a scaricare l'elenco dei comuni")); return; }
+  if ((b = t.closest("[data-al-gruppo]"))) { e.preventDefault(); const [sid, g] = b.dataset.alGruppo.split("|"); const st = alStato(); if (g === "1") st.gruppo[sid] = true; else delete st.gruppo[sid]; alSalva(st); disegna(); return; }
+  if ((b = t.closest("[data-al-seg]"))) { e.preventDefault(); const f = S.foglio; if (!f || f.tipo !== "alloggiato") return; const [k, v] = b.dataset.alSeg.split("|"); f.dati = { ...(alLeggiFoglio() || f.dati) }; f.dati[k] = k === "sesso" ? Number(v) : v === "true"; disegnaFoglio(); return; }
+  if ((b = t.closest("[data-al-scegli]"))) {
+    e.preventDefault(); const [campo, codice] = b.dataset.alScegli.split("|");
+    const x = AL_COD && AL_COD.perCodice.get(codice); if (!x) return;
+    const vis = document.getElementById("alc_" + campo), nas = document.getElementById("alv_" + campo), sg = document.getElementById("als_" + campo);
+    if (vis) vis.value = x.comune && x.p ? `${x.n} (${x.p})` : x.n; if (nas) nas.value = x.c; if (sg) sg.innerHTML = "";
+    const box = vis && vis.closest(".al-campo"); if (box) box.classList.remove("al-manca");
+    return;
+  }
+  if ((b = t.closest("[data-al-salva]"))) {
+    e.preventDefault(); const f = S.foglio; const d = alLeggiFoglio(); if (!f || !d) return;
+    const st = alStato(), lista = st.persone[f.sogg] || [];
+    if (f.idx >= 0) lista[f.idx] = d; else lista.push(d);
+    st.persone[f.sogg] = lista; delete st.inviati[f.sogg];
+    if (!alSalva(st)) return;
+    const pos = f.idx >= 0 ? f.idx : lista.length - 1, tipo = alTipi(lista, !!st.gruppo[f.sogg])[pos], manca = DOC.cosaManca({ ...d, tipo });
+    chiudiFoglio(); disegna();
+    toast(manca.length ? `Salvata, ma manca ${manca[0]}` : "Salvata ✓");
+    return;
+  }
+  if ((b = t.closest("[data-al-primo]"))) { e.preventDefault(); const f = S.foglio; const d = alLeggiFoglio(); if (!f || !d) return; const st = alStato(), lista = st.persone[f.sogg] || []; lista.splice(f.idx, 1); lista.unshift(d); st.persone[f.sogg] = lista; alSalva(st); chiudiFoglio(); disegna(); return; }
+  if ((b = t.closest("[data-al-togli]"))) { e.preventDefault(); const f = S.foglio; if (!f) return; const st = alStato(), lista = st.persone[f.sogg] || []; lista.splice(f.idx, 1); st.persone[f.sogg] = lista; alSalva(st); chiudiFoglio(); disegna(); return; }
+  if ((b = t.closest("[data-al-scarica]"))) { e.preventDefault(); alScarica(); return; }
+  if ((b = t.closest("[data-al-inviato]"))) {
+    e.preventDefault(); const st = alStato(), da = alDaMandare(st); if (!da.length) return;
+    const ora = new Date().toISOString(); for (const { s } of da) { st.inviati[s.id] = ora; delete st.persone[s.id]; delete st.gruppo[s.id]; }
+    alSalva(st); disegna(); toast("Fatto: i dati delle persone sono cancellati da questo telefono"); return;
+  }
+}, true);
+document.addEventListener("change", (e) => {
+  const lato = e.target && e.target.closest && e.target.closest("[data-al-lato]");
+  if (lato) { const ff = [...(lato.files || [])]; lato.value = ""; if (ff[0]) alAltroLato(ff[0]); return; }   // 6/11
+  const inp = e.target && e.target.closest && e.target.closest("[data-al-foto]"); if (!inp) return;
+  const sid = inp.dataset.alFoto, files = [...(inp.files || [])]; inp.value = "";
+  if (files[0]) alLeggiFoto(sid, files[0]);
+}, true);
+document.addEventListener("input", (e) => {
+  const inp = e.target && e.target.closest && e.target.closest("[data-al-cerca]"); if (!inp || !AL_COD) return;
+  const [campo, cosa] = inp.dataset.alCerca.split("|"), sg = document.getElementById("als_" + campo), nas = document.getElementById("alv_" + campo);
+  if (nas) nas.value = "";   // finché non sceglie dall'elenco, il codice non c'è
+  if (!sg) return;
+  const r = alCerca(AL_COD, inp.value, cosa);
+  sg.innerHTML = r.map(x => `<button type="button" data-al-scegli="${esc(campo)}|${esc(x.c)}">${esc(x.n)}${x.comune && x.p ? ` <small>(${esc(x.p)})</small>` : x.comune ? "" : " <small>stato</small>"}${x.vivo ? "" : " <small>· non c'è più</small>"}</button>`).join("");
+}, true);
+
 function vistaAltro() {
   const r = S.regole;
-  return cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -11611,6 +11945,7 @@ function disegnaFoglio() {
   else if (f.tipo === "inizio") html = foglioInizioFacile(f);   // 1.22.0: la camera facile (tutti i passi restano dentro, chiusi)
   else if (f.tipo === "patto") html = foglioPatto(f);
   else if (f.tipo === "messaggio") html = foglioMessaggio(f);
+  else if (f.tipo === "alloggiato") html = foglioAlloggiato(f);   // 1.56.0
   else if (f.tipo === "controllo") html = foglioControllo(f);
   else if (f.tipo === "soggiorno") html = foglioSoggiorno(f);
   else if (f.tipo === "nota") html = foglioNota(f);

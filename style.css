@@ -8147,3 +8147,80 @@ body:has(.sheet) .sg-finito{display:none!important}
 .gh-incolla input:focus,.sheet .gh-incolla input#ghChiave:focus{border-color:#C98F00;box-shadow:0 0 0 5px rgba(226,179,60,.45)}
 .gh-esito{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:#F2F5FA;color:#334155;font:600 15.5px/1.35 var(--f-lettura,var(--f-body,system-ui))}
 .gh-esito.ko{background:#FDECEA;color:#9B1C1C}
+
+/* ===================================================================================================================
+   1.56.0 · DOCUMENTI → ALLOGGIATI WEB: la pagina (camere arrivate oggi e ieri, le persone, il file), il foglio della
+   persona (i campi letti dal documento col ✓, quelli che mancano in giallo), l'attesa mentre legge, il promemoria in Oggi.
+   =================================================================================================================== */
+.al-testa h2{margin:8px 0 6px}
+.al-testa p{margin:0 0 8px;line-height:1.45}
+.al-sogg{display:flex;flex-direction:column;gap:8px}
+.al-sogg.inviato{opacity:.75}
+.al-sogg-t{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.al-sogg-t b{font-size:20px}
+.al-sogg-t span{color:var(--muted)}
+.al-sogg-s{margin:0;color:var(--muted);font-size:15px}
+.al-persona{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card-pieno,#fff);color:inherit;text-align:left;cursor:pointer}
+.al-persona .al-p-ico{flex:0 0 32px;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#E3F0FC;color:#0A6FCF;font-weight:800}
+.al-persona.manca .al-p-ico{background:#FFF1C2;color:#8A5A00}
+.al-persona.manca{border-color:#F2C94C;background:#FFFBEA}
+.al-p-x{flex:1 1 auto;display:flex;flex-direction:column;gap:2px;min-width:0}
+.al-p-x b{font-size:17px;overflow-wrap:anywhere}
+.al-p-x small{color:var(--muted);font-size:14px}
+.al-p-fr{color:var(--muted);font-size:22px}
+.al-mancano{margin:0;padding:8px 12px;border-radius:12px;background:#FFF6DA;color:#6B4A00;font-size:15px}
+.al-tasti{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.al-tasti .big{margin:0}
+.al-tasti label.big{display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.al-file h3{margin:0 0 8px}
+.al-come{margin:10px 0;padding-left:22px;line-height:1.5}
+.al-come li{margin:4px 0}
+.al-file a.big{display:flex;align-items:center;justify-content:center;text-decoration:none}
+.al-avviso{margin:8px 0;padding:10px 12px;border-radius:12px;background:#FFF1C2;color:#5A3D00;font-size:15px;line-height:1.4}
+.al-letti{margin:8px 0;padding:10px 12px;border-radius:12px;background:#E8F4FD;color:#0B4F8A;font-size:15px;line-height:1.4}
+/* il foglio della persona: in giallo quello che manca, ✓ quello letto dal documento */
+.al-campo.al-manca input,.al-campo.al-manca select,.al-campo.al-manca .al-seg button{background:#FFF59D;border-color:#F2B705;box-shadow:0 0 0 3px rgba(242,183,5,.25)}
+.al-campo.al-manca>label::after{content:" — manca";color:#9A6B00;font-weight:700}
+.al-ok{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:9px;background:#E3F0FC;color:#0A6FCF;font-size:12.5px;font-weight:700}
+.al-campo.al-letto input,.al-campo.al-letto select{border-color:#9CC8F0}
+.al-cerca-box{position:relative}
+.al-sugg{display:flex;flex-direction:column;gap:0;margin-top:4px;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px -8px rgba(0,0,0,.35)}
+.al-sugg:empty{display:none}
+.al-sugg button{display:block;width:100%;min-height:46px;margin:0;padding:10px 12px;border:0;border-top:1px solid var(--line);background:#fff;color:inherit;font-size:16px;text-align:left;cursor:pointer}
+.al-sugg button:first-child{border-top:0}
+.al-sugg button small{color:var(--muted)}
+.al-seg{margin-top:4px}
+/* l'attesa mentre legge la foto */
+.al-attesa{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;padding:24px;background:rgba(10,20,30,.45)}
+.al-attesa-box{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:320px;padding:22px 26px;border-radius:18px;background:#fff;color:#111B21;text-align:center;box-shadow:0 20px 40px -12px rgba(0,0,0,.5)}
+.al-attesa-box b{font-size:18px}
+.al-attesa-box small{color:#54656F}
+.al-giro{width:42px;height:42px;border-radius:50%;border:4px solid #DCEBF8;border-top-color:#0A6FCF;animation:alGiro 1s linear infinite}
+@keyframes alGiro{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.al-giro{animation-duration:3s}}
+/* il promemoria nella pagina Oggi */
+.al-banner{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 10px;padding:12px 14px;border:1px solid #F2C94C;border-radius:16px;background:#FFF8DC;color:#3D2C00;text-align:left;cursor:pointer;font:inherit}
+.al-banner-ico{font-size:26px}
+.al-banner-x{flex:1 1 auto;display:flex;flex-direction:column;gap:2px}
+.al-banner-x b{font-size:16px}
+.al-banner-x small{font-size:14px;opacity:.85}
+/* 6/11 · in Segreteria: «🪪 Documenti degli ospiti», per ogni camera arrivata 📷 Inquadra e 🖼️ Foto */
+.al-sg{display:flex;flex-direction:column;gap:10px;border:1px solid #F2C94C;background:#FFFCEF}
+.al-sg-testa{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.al-sg-testa h3{margin:0;font-size:19px;color:#3D2C00}
+.al-sg-p{margin:0;color:#5A4A1E;font-size:15px;line-height:1.4}
+.al-sg-riga{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #EADBB0;border-radius:14px;background:#fff}
+.al-sg-x{flex:1 1 auto;display:flex;flex-direction:column;gap:2px;min-width:0}
+.al-sg-x b{font-size:17px;color:#111B21}
+.al-sg-x small{color:#6B5B32;font-size:14px}
+.al-sg-b{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:62px;min-height:56px;padding:4px 6px;border-radius:14px;border:1px solid #D9C9A0;background:#FFF8E1;font-size:24px;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.al-sg-b span{font-size:12.5px;font-weight:700;color:#5A4A1E}
+.al-sg-b.foto{background:#179A54;border-color:#127A43}
+.al-sg-b.foto span{color:#fff}
+.al-sg-b:active{transform:translateY(2px)}
+.al-sg-vuoto{margin:0;padding:10px 12px;border-radius:12px;background:#F4F1E6;color:#5A4A1E;font-size:15px}
+/* nel foglio della persona: «📷 Fotografa l'altro lato» */
+.al-lato{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:6px 0 10px}
+.al-lato label.big{display:flex;align-items:center;justify-content:center;gap:8px;margin:0;cursor:pointer}
+.al-lato-galleria{align-self:center;cursor:pointer}
+.al-avviso.ok{background:#E3F6EA;color:#0E5A2F}
