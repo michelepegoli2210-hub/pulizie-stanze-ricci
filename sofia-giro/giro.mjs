@@ -56,15 +56,21 @@
 //  prospetto dell'app e i messaggi delle ultime settimane: i soggiorni si mettono a posto da soli (solo i cambi), ognuno con
 //  «Annulla» in Segreteria; l'app del titolare rifà le pulizie e le stelle (vedi prospetto-giro.mjs). Prima delle chat, così
 //  la lettura delle chat vede già il prospetto nuovo. L'avviso «📊 Foglio di papà» solo se cambia qualcosa (avvisi.giroFoglio).
+//  1.28.0 (app 1.62.0, la Segreteria nuova): LE NOTIFICHE SOLO PER QUELLO CHE ASPETTA MICHELE (Michele, 7/11: «queste sono le
+//  notifiche che mi devono arrivare, altrimenti mi arrivano due volte»): la lettura delle chat avvisa solo se c'è una cosa da
+//  decidere (proposte, dubbi, ore) o un guasto urgente; quello che Sofia ha fatto da sola sta in Segreteria. E «🔔 DA FARE TU»
+//  (perte-giro.mjs): le cose che deve fare lui in persona («metti le chiavi ad Aurora») suonano e vibrano, col tasto «✅ Fatto»,
+//  subito e poi ogni ora finché non le segna fatte (avvisi.giroFareTu = false le spegne).
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
 import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat, sintesiSera, oraDiAvvisi } from "./lettura-giro.mjs";
 import { leggiFogliPapa } from "./prospetto-giro.mjs";   // 1.27.0
+import { allarmiPerTe } from "./perte-giro.mjs";   // 1.28.0
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.27.0";
+export const VERSIONE_GIRO = "1.28.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -339,6 +345,13 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       fatti.creditoAvvisato = oggi;
     }
   } catch (e) { console.warn("lettura delle chat:", e && e.message); esiti.push("lettura delle chat: errore " + String((e && e.message) || e).slice(0, 80)); }
+  // 1.28.0: «🔔 Da fare tu»: le cose che deve fare Michele in persona suonano (vibrano) finché non le segna fatte
+  if (a.giroFareTu !== false && oraDiAvvisi(t.minuti)) {
+    try {
+      const n = await allarmiPerTe({ db, adesso, t, manda: async (testo, titolo, extra) => { if (!ps) ps = await db.doc("importazioni", "push-sofia"); return mandaMe(testo, "allarme «da fare»", titolo, true, extra); } });
+      if (n) fatti.daFare = t.hhmm;
+    } catch (e) { console.warn("da fare:", e && e.message); esiti.push("allarme da fare: errore " + String((e && e.message) || e).slice(0, 80)); }
+  }
   // 1.22.0: la sintesi della segretaria agli orari scelti (di serie 8:30 e 20:30): ognuna racconta i messaggi dall'orario di prima
   const ORE_OK = ["08:30", "13:00", "20:30"], minDi = (o) => MIN(Number(o.slice(0, 2)), Number(o.slice(3)));
   const oreS = (Array.isArray(a.sintesiOre) ? a.sintesiOre.filter(o => ORE_OK.includes(o)) : []).sort();

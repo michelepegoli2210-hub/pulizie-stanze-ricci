@@ -94,15 +94,17 @@ export function avvisoApplica(x, nomeGov) {
   // parole di Sofia (la «risposta» della lettura: 2-4 frasi semplici, chi ha scritto e di cosa), poi i guasti uno per riga
   const n = Number(x && x.n) || 0, r = (x && x.riassunto) || {}, jj = (x && x.j) || {};
   const nomeCamera = typeof (x && x.nomeCamera) === "function" ? x.nomeCamera : (id) => id;
-  const cose = (Number(r.azioni) || 0) + (Number(r.guasti) || 0) + (Number(r.assenze) || 0) + (Number(r.spesa) || 0) + (Number(r.note) || 0) + (Number(r.telefoni) || 0), domande = (Number(r.proposte) || 0) + (Number(r.dubbi) || 0) + (Number(r.ore) || 0);
+  const domande = (Number(r.proposte) || 0) + (Number(r.dubbi) || 0) + (Number(r.ore) || 0);
   const chats = [...new Set((Array.isArray(x && x.fonte && x.fonte.chats) ? x.fonte.chats : []).map(c => String(c).replace(/^chat con /, "")).filter(Boolean))].slice(0, 3).join(", ");
   const righe = [];
   const risp = String(jj.risposta || "").replace(/\s+/g, " ").trim();
   righe.push(risp ? (risp.length > 320 ? risp.slice(0, 317).replace(/\s+\S*$/, "") + "…" : risp) : `Ho letto ${n === 1 ? "un messaggio" : n ? n + " messaggi" : "i messaggi"}${chats ? ` (${chats})` : ""}.`);
-  const guasti = (Array.isArray(jj.azioni) ? jj.azioni : []).filter(a => a && a.tipo === "manutenzione" && a.modo !== "chiudi" && a.cosa).slice(0, 3);
-  for (const a of guasti) righe.push(`${a.urgente ? "🚨" : "🔧"} ${String(a.cosa).replace(/\s+/g, " ").slice(0, 80)}${a.camera ? ` (${nomeCamera(a.camera)})` : ""}`);
-  righe.push(domande ? `👉 ${domande === 1 ? "C'è una domanda" : `Ci sono ${domande} domande`} per te: tocca per rispondere.` : "👉 Tocca per vedere.");
-  const titolo = `📲 WhatsApp: ${cose ? `${cose === 1 ? "una cosa" : cose + " cose"} nell'app` : "niente da cambiare"}${domande ? ` · ${domande === 1 ? "una domanda" : domande + " domande"} per te` : ""}`;
+  const guasti = (Array.isArray(jj.azioni) ? jj.azioni : []).filter(a => a && a.tipo === "manutenzione" && a.modo !== "chiudi" && a.cosa && a.urgente).slice(0, 3);   // 1.28.0: solo gli urgenti
+  if (!domande && !guasti.length) return null;   // 1.28.0: niente per Michele: niente avviso (lo vede in Segreteria)
+  for (const a of guasti) righe.push(`🚨 ${String(a.cosa).replace(/\s+/g, " ").slice(0, 80)}${a.camera ? ` (${nomeCamera(a.camera)})` : ""}`);
+  righe.push(domande ? `👉 ${domande === 1 ? "C'è una cosa" : `Ci sono ${domande} cose`} da decidere: tocca per rispondere.` : "👉 Tocca per vedere.");
+  const titolo = guasti.length && !domande ? `🚨 Guasto urgente: ${String(guasti[0].cosa).replace(/\s+/g, " ").slice(0, 50)}${guasti[0].camera ? ` (${nomeCamera(guasti[0].camera)})` : ""}`
+    : `✋ ${nomeGov || "Sofia"} ti propone: ${domande === 1 ? "una cosa" : domande + " cose"} da decidere${guasti.length ? ` · 🚨 ${guasti.length === 1 ? "un guasto urgente" : guasti.length + " guasti urgenti"}` : ""}`;
   return { titolo, testo: righe.join("\n"), extra: { url: "./index.html?segreteria=lettura", segreteria: "lettura", tag: "sofia-lettura" } };
 }
 // 1.18.1: il testo dell'avviso «ho letto» (lo stesso per le letture del giro e per quelle del telefono)
@@ -138,7 +140,7 @@ export function riassuntoGiro(j, ctx) {
     if (camera && nome && sog.some(s => s.camera === camera && LET.nucleoNome(s.nome).toLowerCase() === nome && s.fine >= L.aggiungiGiorni(oggi, -3))) cambi++;
   }
   const n = (k) => (Array.isArray(j[k]) ? j[k] : []).filter(Boolean).length;
-  return { cambi, indicazioni: n("indicazioni"), assenze: n("assenze"), guasti: n("guasti"), spesa: n("spesa"), note: n("note"), ore: n("ore"), telefoni: n("telefoni"), azioni: n("azioni"), proposte: n("proposte"), dubbi: n("dubbi") };   // 1.38.0: ore e telefoni; 1.22.0: azioni, proposte, dubbi
+  return { perTe: n("perTe"), cambi, indicazioni: n("indicazioni"), assenze: n("assenze"), guasti: n("guasti"), spesa: n("spesa"), note: n("note"), ore: n("ore"), telefoni: n("telefoni"), azioni: n("azioni"), proposte: n("proposte"), dubbi: n("dubbi") };   // 1.38.0: ore e telefoni; 1.22.0: azioni, proposte, dubbi
 }
 // Gemini: prima Argon, poi il modello sveglio, poi lo svelto (come l'app)
 export async function chiediGemini(gemini, dom, ordine = ["argon", "sveglia", "svelta"]) {   // 1.49.0: la sintesi della sera passa solo dai modelli gratuiti
@@ -212,11 +214,15 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
   const ora = adesso.getTime(), t0 = Date.now(), finito = () => new Date(ora + (Date.now() - t0)).toISOString();
   const lett = await db.doc("importazioni", "lettura-sofia");
   let vecchie = [];
+  // 1.28.0: rileggendo una lettura che nessuna app ha messo a posto, «Da fare tu» tiene «fatto», «rimanda» e le volte che ha suonato
+  let perTePrima = [], avvisiPrima = {};
+  const perTeNuove = (nuove) => { const perTe = LET.perTeTieni(nuove, perTePrima), av = LET.perTeAvvisiTieni(perTe, perTePrima, avvisiPrima); return { perTe, ...(Object.keys(av).length ? { perTeAvvisi: av } : {}) }; };
   // 1.22.0: una lettura «da_applicare» (modo nuovo) la mette a posto la prima app del titolare che si apre: si aspetta 2 ore, poi
   // si rilegge insieme alla posta nuova (quella vecchia, mai applicata, diventa «sostituita»)
   if (lett && lett.stato === "da_applicare") {
     if (ora - Date.parse(lett.quando || 0) < 2 * 3600 * 1000) return { esito: "aspetta che l'app la metta a posto", ts: letturaTs };
     vecchie = Array.isArray(lett.postaIds) ? lett.postaIds : [];
+    if (lett.lid) { try { const v = await db.doc("importazioni", "segreteria_" + lett.lid); if (v) { perTePrima = Array.isArray(v.perTe) ? v.perTe : []; avvisiPrima = v.perTeAvvisi || {}; } } catch (e) {} }   // 1.28.0
     if (lett.lid) { try { await db.merge("importazioni", "segreteria_" + lett.lid, { esito: "sostituita" }); } catch (e) {} }
   }
   // 1.23.0: una lettura «da_controllare» (del tipo di prima) non aspetta più il controllo: di meno di 3 ore si rilegge col modo nuovo
@@ -298,10 +304,10 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     if (!j0 || typeof j0 !== "object") throw new Error("Gemini ha risposto in un modo che non capisco");
     const j = ctx.prospettoChat === false ? { ...codici.daCodiciProfondo(j0), soggiorni: [], togli: [] } : codici.daCodiciProfondo(j0);   // 1.22.0: dalle chat niente prospetto (arriva dal foglio Excel)
     const chat = ctx.prospettoChat === false;   // 1.22.0: il modo nuovo: la lettura la mette a posto l'app (da_applicare)
-    const riassunto = riassuntoGiro(j, ctx), ha = chat ? !!(riassunto.azioni || riassunto.proposte || riassunto.dubbi || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni) : !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni);
+    const riassunto = riassuntoGiro(j, ctx), ha = chat ? !!(riassunto.perTe || riassunto.azioni || riassunto.proposte || riassunto.dubbi || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni) : !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni);
     const statoNuovo = ha ? (chat ? "da_applicare" : "da_controllare") : "vuota";
     // 1.39.0: la Segreteria: i messaggi (coi vocali trascritti) e quello che Sofia ha capito restano da parte, per «Giusto / Correggi»
-    try { await db.salva("importazioni", "segreteria_" + id, { lid: id, quando: finito(), da: "giro", modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, messaggi: scelti.slice(-60).map(m => ({ id: String(m.id || ""), chat: m.chatNome || "", chi: m.chi || "", mio: !!m.mio, data: m.data || "", ora: m.ora || "", tipo: m.tipo || "testo", testo: String(m.testo || "").slice(0, 900) })), capito: LET.perSegreteria(j), esito: statoNuovo, giudizi: {} }); } catch (e) { console.warn("segreteria:", e && e.message); }
+    try { await db.salva("importazioni", "segreteria_" + id, { lid: id, quando: finito(), da: "giro", modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, messaggi: scelti.slice(-60).map(m => ({ id: String(m.id || ""), chat: m.chatNome || "", chi: m.chi || "", mio: !!m.mio, data: m.data || "", ora: m.ora || "", tipo: m.tipo || "testo", testo: String(m.testo || "").slice(0, 900) })), capito: LET.perSegreteria(j), esito: statoNuovo, giudizi: {}, ...perTeNuove(LET.perTeDa(j, oggi)) }); } catch (e) { console.warn("segreteria:", e && e.message); }
     const testoPapa = scelti.filter(m => m.testo && (!papa || m.chi === papa)).map(m => m.testo).join("\n");
     const etichette = [...chats.entries()].map(([nome, gruppo]) => gruppo ? nome : "chat con " + nome);
     const fonte = { tipo: "whatsapp", come: "chat", messaggi: scelti.length, chi: papa ? [papa] : [], chats: etichette, data: (scelti[scelti.length - 1] || {}).data || "", tolte: 0, intestazioni: true, rif: "", posta: true, giro: true };
