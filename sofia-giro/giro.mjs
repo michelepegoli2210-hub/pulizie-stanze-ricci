@@ -61,6 +61,8 @@
 //  decidere (proposte, dubbi, ore) o un guasto urgente; quello che Sofia ha fatto da sola sta in Segreteria. E «🔔 DA FARE TU»
 //  (perte-giro.mjs): le cose che deve fare lui in persona («metti le chiavi ad Aurora») suonano e vibrano, col tasto «✅ Fatto»,
 //  subito e poi ogni ora finché non le segna fatte (avvisi.giroFareTu = false le spegne).
+//  1.28.1: per il vaglio è urgente anche una cosa che chiedono a Michele di fare lui (le chiavi, chiamare, andare in albergo):
+//  così la lettura (e l'allarme) arriva subito e non al turno di lettura dopo.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -70,7 +72,7 @@ import { leggiFogliPapa } from "./prospetto-giro.mjs";   // 1.27.0
 import { allarmiPerTe } from "./perte-giro.mjs";   // 1.28.0
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.28.0";
+export const VERSIONE_GIRO = "1.28.1";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
