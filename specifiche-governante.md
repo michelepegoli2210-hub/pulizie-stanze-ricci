@@ -2904,3 +2904,21 @@ Michele (7/11) tocca quasi sempre «9 da aggiustare» nella tendina di Sofia: l�
   tendina si ridisegna). Il tasto in fondo ora dice «Apri la manutenzione».
 - Nella pagina Manutenzione le pastiglie mostrano sia gli urgentissimi sia gli urgenti (prima solo uno dei due).
 - La pagina Manutenzione: anche l'elenco chiuso «Vedi tutto in elenco» resta aperto se lo apri.
+
+## 160.0 La 1.60.0 · il tasto d'oro da sala giochi, al centro: apre Sofia segretaria
+
+Michele (7/11): «quel tasto lì di parlare con Sofia non è nemmeno tanto idoneo… Sofia segretaria io la vado a prendere troppo
+giù, è Sofia segretaria che deve stare lì… un tasto come quelli dei vecchi videogiochi, delle sale giochi, però d'oro»; visto
+il primo disegno: «sì, mi piace, però fallo ancora più tridimensionale… sotto al limite scrivi Segreteria».
+
+- Il tasto al centro della barra in basso (solo nel disegno «premium» del titolare) ora apre la **Segreteria** (Sofia
+  segretaria: le letture delle chat, i documenti degli ospiti e la tendina per parlarle). Prima apriva «Parla con Sofia», che
+  resta nel tasto «Parla» della finestra di Sofia e nella stanza «Parla con Sofia» sotto Sofia.
+- Il disegno: un tasto da sala giochi d'oro visto un po' dall'alto. La ghiera d'oro con il suo spessore, il pozzo blu notte,
+  il pistone d'oro (cilindro con la cupola lucida) e l'ombra sulla barra. Sotto c'è scritto solo «Segreteria».
+- Quando lo premi il pistone scende nella ghiera e il telefono vibra; la Segreteria si apre subito dopo (0,17 secondi), così
+  si vede che l'hai premuto.
+- Si ACCENDE quando la segretaria ha qualcosa per te (proposte o domande delle letture degli ultimi 2 giorni): la luce d'oro
+  esce dal pozzo e pulsa piano, come le lucine dei tasti delle sale giochi; il numerino dice quante cose sono. Se non c'è
+  niente resta spento. Il numerino di prima (le domande di «Parla con Sofia») resta nella finestra di Sofia.
+- Nella pagina Segreteria la barra si alza un poco e la tendina della segretaria con lei: il tasto non finisce sotto la tendina.

@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.59.1";
+export const VERSIONE = "1.60.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -329,6 +329,7 @@ function barraSotto() {
   if (!vuoi) { if (b) b.hidden = true; document.body.classList.remove("con-sotto"); return; }
   if (!b) { b = document.createElement("nav"); b.id = "barraSotto"; b.className = "barra-sotto"; b.setAttribute("aria-label", "Sezioni"); document.body.appendChild(b); }
   const v = S.vista, dom = domandeSofia();
+  let nSeg = 0; try { nSeg = proprietario() ? domandeSegreteria() : 0; } catch (e) {}   // 1.60.0: quello che la segretaria ha per te
   const html = BS_VOCI.map(([k, n, ic]) => {
     const att = v === k || (k === "sofia" && v === "governante") || (k === "oggi" && (v === "manutenzione" || v === "signora"));
     const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
@@ -341,7 +342,16 @@ function barraSotto() {
     // rubino e metti la pietra filosofale"): un cristallo rosso. 1.6.3: la pietra d'ambra. 1.6.4 (Michele: "un tasto
     // molto tridimensionale di alluminio satinato color oro, un pulsante proprio da schiacciare, tutto d'oro"): un
     // bottone bombato d'oro satinato con la stella incisa nel metallo, tono su tono; si schiaccia davvero al tocco
-    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia" data-bs="sofia" aria-pressed="${att}" aria-label="${esc(nomeGov())}${conta ? " (" + dom + " da guardare)" : ""}"><span class="bs-gioiello bs-oro">${ORO_STELLA}${conta}</span><span class="bs-n">${esc(nomeGov())}</span></button>`;
+    // 1.60.0 (Michele, 7/11: «quel tasto lì di parlare con Sofia non è nemmeno tanto idoneo… Sofia segretaria io la vado
+    // a prendere troppo giù, è Sofia segretaria che deve stare lì… un tasto come quelli dei vecchi videogiochi, delle sale
+    // giochi, però d'oro»; poi: «fallo ancora più tridimensionale… sotto al limite scrivi Segreteria»): il tasto al centro
+    // apre la SEGRETERIA ed è un tasto da sala giochi d'oro visto un po' dall'alto: la ghiera d'oro con il suo spessore, il
+    // pozzo blu notte, il pistone d'oro (cilindro con la cupola) che scende quando lo premi, l'ombra sulla barra (vibra e si
+    // vede andare giù prima di aprire). Sotto solo «Segreteria». Si
+    // ACCENDE (la luce che esce dal pozzo, come le lucine dei tasti delle sale giochi) quando la segretaria ha qualcosa per
+    // lui: proposte o domande delle ultime letture; il numerino dice quante. «Parla con Sofia» resta nel «Parla» della
+    // tendina e tra le stanze sotto Sofia.
+    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia bs-arcade-t${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare)" : ""}"><span class="bs-arcade"><span class="ar-ombra"></span><span class="ar-glato"></span><span class="ar-gcima"></span><span class="ar-pozzo"></span><span class="ar-plato"></span><span class="ar-pcima"></span>${nSeg ? `<i class="nav-conta" aria-hidden="true">${nSeg > 99 ? "99+" : nSeg}</i>` : ""}</span><span class="bs-n">Segreteria</span></button>`;
     const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
     return `<button type="button" class="bs-t" data-bs="${k}" aria-pressed="${att}"><span class="bs-ico">${ic2 ? ico2(ic2) : NAV_ICO[ic]}</span><span class="bs-n">${esc(n)}</span></button>`;
   }).join("");
@@ -349,10 +359,14 @@ function barraSotto() {
     b.innerHTML = html; b.dataset.html = html;
     b.querySelectorAll("[data-bs]").forEach(t => t.onclick = () => {
       const k = t.dataset.bs;
-      if (k === "oggi") { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); }
-      const stessa = S.vista === k;
-      S.vista = k; chiudiFoglio(); disegna();
-      window.scrollTo({ top: 0, behavior: stessa ? "smooth" : "auto" });
+      const vai = () => {
+        if (k === "oggi") { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); }
+        const stessa = S.vista === k;
+        S.vista = k; chiudiFoglio(); disegna();
+        window.scrollTo({ top: 0, behavior: stessa ? "smooth" : "auto" });
+      };
+      // 1.60.0: il tasto d'oro va giù (e vibra) e la segreteria si apre subito dopo: si sente che l'hai premuto
+      if (t.classList.contains("bs-arcade-t")) { t.classList.add("giu"); vibra(18); setTimeout(vai, 170); } else vai();
     });
   }
   b.hidden = false; document.body.classList.add("con-sotto");
