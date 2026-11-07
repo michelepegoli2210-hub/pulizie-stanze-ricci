@@ -3009,3 +3009,12 @@ Paghe e Oggi, devi far fare dei pulsanti molto simili a questi ma di un blu bell
 - Un tasto toccato nella pagina dove sei già va giù e torna su (prima quello d'oro restava schiacciato).
 - La barra è un po' più alta (circa 89 px invece di 75 + il tasto che sporgeva): le cose sopra la barra (avvisi,
   scrivi a Sofia, fondo della pagina) seguono la sua altezza vera. Telefoni stretti: tasti un po' più piccoli.
+
+## 1.63.1 · I tasti della barra più calmi (8/11)
+Michele: «belli tutti, ma tolgono troppo l'occhio a Sofia: devono essere meno brillanti, non devono distogliere lo
+sguardo da Sofia».
+- Stessa forma dei tasti (1.63.0), ma il metallo è opaco: il blu mare scuro e l'oro sono più spenti, le luci più
+  morbide, niente lampi bianchi sul pistone d'oro; la grana del satinato è più fine.
+- La luce del tasto della pagina dove sei è più tenue.
+- Il tasto d'oro, quando la segretaria ha qualcosa, ha una luce tenue e FERMA (prima pulsava): il numerino dice quante.
+- Lo sguardo deve andare a Sofia: in cima alla pagina è lei la cosa più viva; la barra resta sotto, tranquilla.
