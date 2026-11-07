@@ -2886,3 +2886,21 @@ L'APP 1.59.0
 - La tendina di Sofia «Chi dorme stanotte?»: le camere sono tasti: piena → il soggiorno (nome, date, persone, istruzioni per le signore, nota privata); libera → un arrivo nuovo in quella camera.
 - Il soggiorno: in cima «Com'è questa camera (resta per tutti gli ospiti)» (impostazioni/caratteristiche) e «Ogni volta, in questa camera le signore fanno anche» (impostazioni/promemoria, lo stesso di prima): si salvano da soli. I campi del soggiorno tengono quello che hai scritto se il foglio si ridisegna (data-keep), e anche il tipo di ospite scelto.
 - Prove: prova1595 (i riquadri e i colori, il foglio del posto, l'urgenza, Sistemato, Scrivi / Dillo a voce / Fai una foto con la foto salvata e mostrata, la tendina che si tocca, com'è la camera, il soggiorno che tiene il testo).
+
+## 159.6 La 1.59.1 · «Cosa c'è da aggiustare?» a riquadri anche nella tendina di Sofia
+
+Michele (7/11) tocca quasi sempre «9 da aggiustare» nella tendina di Sofia: lì c'era ancora l'elenco di prima, e lui aveva detto
+«non deve essere un elenco fatto così… appena la apro devo vedere tutti i guasti… tipo "Chi dorme stanotte?"».
+
+- La tendina «Da aggiustare» ora è come «Chi dorme stanotte?»: in cima le pastiglie (✓ a posto · 🔧 da aggiustare ·
+  🚨 urgentissimi · ⚠️ urgenti), sotto un riquadro per camera, tre per riga, coi quattro colori della pagina Manutenzione
+  (a posto: bianco tratteggiato verde; da aggiustare: crema col bordo oro; urgente: arancio; urgentissimo: rosa col bordo
+  a strisce rosse). Dentro: il nome della camera e il primo guasto (con 🚨 o ⚠️); se i guasti sono di più, il numero
+  nell'angolo. In fondo un riquadro largo «Spazi comuni · in generale».
+- Toccando un riquadro si apre il foglio di quella camera (lo stesso della pagina Manutenzione): i guasti con l'urgenza,
+  «✓ Sistemato», e «Aggiungi un guasto» a voce, con la foto o scritto.
+- Sotto: «Tocca una camera: vedi i suoi guasti e ne aggiungi uno, anche a voce o con una foto.» e, chiuso, «Vedi tutto in
+  elenco (N)» con l'elenco di prima e i tasti piccoli «✓ Risolto» e «Cancella» (resta aperto se lo apri, anche quando la
+  tendina si ridisegna). Il tasto in fondo ora dice «Apri la manutenzione».
+- Nella pagina Manutenzione le pastiglie mostrano sia gli urgentissimi sia gli urgenti (prima solo uno dei due).
+- La pagina Manutenzione: anche l'elenco chiuso «Vedi tutto in elenco» resta aperto se lo apri.

@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.59.0";
+export const VERSIONE = "1.59.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -6527,7 +6527,7 @@ function vistaManutenzionePremium() {
     return `<div class="m13-riga ${fatto ? "fatto" : ""}"><button type="button" class="m13-apri" data-man="${esc(m.id)}"><span class="m13-dove">${c ? esc(c.nome) : "In generale"}</span>${!fatto ? etichettaUrg(m, "m13-urg") : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<span class="m13-nota">${esc(m.nota)}</span>` : ""}<span class="m13-quando">${esc(quando)}</span></button>${!fatto && puoModificare() ? `<button type="button" class="m13-ok" data-man-risolto="${esc(m.id)}">${ico2("spunta")}<span>Risolto</span></button>` : ""}</div>`; };
   return `<section class="m13-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><div class="m13-tit"><span class="o13-lico">${ico2("chiave")}</span><h2>Manutenzione</h2>${puoModificare() ? `<button type="button" class="o13-lav-piu" data-nuovo-man>${ico2("piu")}<span>Guasto</span></button>` : ""}</div></section>
     ${grigliaGuasti()}   ${"" /* 1.59.0: prima i riquadri (disegno di Gemini), l'elenco sotto */}
-    ${aperti.length ? `<section class="m13-fatti m13-elenco"><details><summary>Vedi tutto in elenco (${aperti.length})</summary><div class="m13-lista">${aperti.map(m => riga(m, false)).join("")}</div></details></section>` : ""}
+    ${aperti.length ? `<section class="m13-fatti m13-elenco"><details data-come="paginaGuasti"${comeAperti.has("paginaGuasti") ? " open" : ""}><summary>Vedi tutto in elenco (${aperti.length})</summary><div class="m13-lista">${aperti.map(m => riga(m, false)).join("")}</div></details></section>` : ""}
     ${fatti.length ? `<section class="m13-fatti"><details><summary>Fatti (${fatti.length})</summary><div class="m13-lista">${fatti.slice(0, 40).map(m => riga(m, true)).join("")}</div></details></section>` : ""}`;
 }
 // "Detta": si apre il foglio del messaggio e il telefono scrive mentre Michele parla (poi tocca "Manda alle signore")
@@ -6559,7 +6559,7 @@ function vistaManutenzione() {
   return `<section class="card flat man-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><h2 style="margin:8px 0 0">${ICONA("attrezzi")} Lavori di manutenzione</h2><p class="muted small" style="margin:2px 0 0">Qui finisce tutto quello che si rompe o va sistemato: i problemi che segnalano le signore (restano anche dopo che la camera è stata ripulita) e i lavori che aggiungi tu. Tocca una riga per i dettagli e per segnarla fatta.</p></section>
   ${grigliaGuasti()}
   <section class="card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">${aperti.length ? `<span class="led" role="img" aria-label="da fare"></span>` : ""}Da fare <span class="muted">· ${aperti.length}</span></h2>${puoModificare() ? `<button class="btnsm" data-nuovo-man>+ Lavoro</button>` : ""}</div>
-    ${aperti.length ? `<details style="margin-top:8px"><summary>Vedi tutto in elenco</summary><div class="rows" style="margin-top:10px">${aperti.map(riga).join("")}</div></details>` : `<p class="muted" style="margin:10px 0 0">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
+    ${aperti.length ? `<details style="margin-top:8px" data-come="paginaGuasti"${comeAperti.has("paginaGuasti") ? " open" : ""}><summary>Vedi tutto in elenco</summary><div class="rows" style="margin-top:10px">${aperti.map(riga).join("")}</div></details>` : `<p class="muted" style="margin:10px 0 0">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
   ${fatti.length ? `<section class="card"><details><summary>Fatti (${fatti.length})</summary><div class="rows" style="margin-top:8px">${fatti.slice(0, 40).map(riga).join("")}</div></details></section>` : ""}`;
 }
 function foglioManutenzione(f) {
@@ -7641,14 +7641,36 @@ function dettaglioFacile(k, ls, fatte) {
     corpo = `<span class="dtf-conta"><span class="dtf-n pieno">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="dtf-n libero">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "libera" : "libere"}</span></span><span class="dtf-griglia">${celle}</span>`;
     tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "manutenzione") {
+    // 1.59.1 (Michele, 7/11: «non deve essere un elenco fatto così… appena la apro devo vedere tutti i guasti… tipo "Chi dorme
+    // stanotte?"… quelle da aggiustare hanno un colore, quelle a posto un altro, le urgenti un altro, le urgentissime un altro»):
+    // anche qui, nella tendina di Sofia (dove lui tocca «9 da aggiustare»), i guasti sono a riquadri come «Chi dorme stanotte?»:
+    // un riquadro per camera col suo colore e il primo guasto scritto dentro (il numero nell'angolo se sono di più); toccandolo
+    // si apre il foglio della camera: i suoi guasti, l'urgenza, «Sistemato», e uno nuovo a voce, con la foto o scritto.
+    // L'elenco di prima resta sotto, chiuso, coi tasti piccoli «Risolto» e «Cancella» (1.50.0).
     const ap = lavoriAperti();
-    const urg = ap.filter(m => urgenza(m) >= 1).length;
-    titolo = tit(icoChiave(), ap.length ? `Da aggiustare: ${ap.length}${urg ? ` <small class="dtf-urg-n">(${urg} ${urg === 1 ? "urgente" : "urgenti"})</small>` : ""}` : "Niente da aggiustare");
-    corpo = ap.length ? ap.map(m => {
+    const elenco = zoneOrdinate().flatMap(z => camereZona(z.id)), tutte = elenco.concat(S.camere.filter(c => !elenco.includes(c)));
+    const aPosto = tutte.filter(cm => !guastiDelPosto(cm.id).length).length;
+    const n2 = ap.filter(m => urgenza(m) === 2).length, n1 = ap.filter(m => urgenza(m) === 1).length;
+    titolo = tit(icoChiave(), ap.length ? "Cosa c'è da aggiustare?" : "Niente da aggiustare");
+    const cella = (posto, nome, largo) => {   // nome: già pulito
+      const l = guastiDelPosto(posto), st = statoPosto(l), p = l[0];
+      const sotto = st ? `${st === 3 ? "🚨 " : st === 2 ? "⚠️ " : ""}${esc(String(p.titolo || "Guasto"))}` : "a posto";
+      const aria = st ? `${l.length === 1 ? "un guasto" : l.length + " guasti"}${st === 3 ? ", urgentissimo" : st === 2 ? ", urgente" : ""}` : "a posto";
+      return `<button type="button" class="dtf-cm mgd mgd${st}${largo ? " mgd-largo" : ""}" data-man-posto="${esc(posto || "_")}" aria-label="${nome}: ${aria}"><b>${nome}</b><small>${sotto}</small>${l.length > 1 ? `<i class="mgd-n" aria-hidden="true">${l.length}</i>` : ""}</button>`;
+    };
+    const celle = tutte.map(cm => cella(cm.id, nomeCam(cm))).join("") + cella("", "Spazi comuni · in generale", true);
+    const conta = `<span class="dtf-conta"><span class="dtf-n mgn0"><i aria-hidden="true">✓</i><b>${aPosto}</b> a posto</span>`
+      + (ap.length ? `<span class="dtf-n mgn1"><i aria-hidden="true">🔧</i><b>${ap.length}</b> da aggiustare</span>` : "")
+      + (n2 ? `<span class="dtf-n mgn3"><i aria-hidden="true">🚨</i><b>${n2}</b> ${n2 === 1 ? "urgentissimo" : "urgentissimi"}</span>` : "")
+      + (n1 ? `<span class="dtf-n mgn2"><i aria-hidden="true">⚠️</i><b>${n1}</b> ${n1 === 1 ? "urgente" : "urgenti"}</span>` : "") + `</span>`;
+    const righe = ap.map(m => {
       const cm = m.camera ? camera(m.camera) : null, g = m.data ? parolaGiorno(m.data) : "";
       return `<span class="dtf-r dtf-man${urgenza(m) ? " urgente" : ""}"><span class="dtf-r-t">${urgenza(m) ? `<span class="dtf-urg">${urgenza(m) === 2 ? "Urgentissimo" : "Urgente"}</span>` : ""}<b class="dtf-nome">${esc(m.titolo || "Lavoro")}</b></span><span class="dtf-dove">${cm ? `${icoPorta()}${esc(cm.nome)}` : "In generale"}${g ? ` · segnalato ${/^\d/.test(g) ? "il " : ""}${esc(g)}` : ""}</span>${m.nota ? `<span class="dtf-nota2">${esc(m.nota)}</span>` : ""}${tastiLavoro(m, "dtf")}</span>`;   // 1.50.0: Risolto / Cancella
-    }).join("") : vuoto("Tutto a posto: niente da aggiustare.");
-    tasto = pagina("manutenzione", "Apri i lavori");
+    }).join("");
+    corpo = conta + `<span class="dtf-griglia mgd-griglia">${celle}</span>`
+      + `<span class="dtf-nota mgd-aiuto">Tocca una camera: vedi i suoi guasti e ne aggiungi uno, anche a voce o con una foto.</span>`
+      + (ap.length ? `<details class="dtf-elenco" data-come="tendinaGuasti"${comeAperti.has("tendinaGuasti") ? " open" : ""}><summary>Vedi tutto in elenco (${ap.length})</summary>${righe}</details>` : "");
+    tasto = pagina("manutenzione", "Apri la manutenzione");
   } else if (k === "sofia") {
     let ap = []; try { ap = statoChatApp().aperte; } catch (e) {}
     titolo = tit(icoDomande(), ap.length ? `${esc(nomeGov())} ti chiede ${ap.length} ${ap.length === 1 ? "cosa" : "cose"}` : `${esc(nomeGov())} non ha domande`);
@@ -12525,7 +12547,7 @@ function grigliaGuasti() {
   const n2 = aperti.filter(m => urgenza(m) === 2).length, n1 = aperti.filter(m => urgenza(m) === 1).length;
   const pastiglie = `<span class="fa-n mg-n mg-n0"><i aria-hidden="true">✓</i><b>${aPosto}</b> a posto</span>`
     + (aperti.length ? `<span class="fa-n mg-n mg-n1"><i aria-hidden="true">🔧</i><b>${aperti.length}</b> da aggiustare</span>` : "")
-    + (n2 ? `<span class="fa-n mg-n mg-n3"><i aria-hidden="true">🚨</i><b>${n2}</b> ${n2 === 1 ? "urgentissimo" : "urgentissimi"}</span>` : n1 ? `<span class="fa-n mg-n mg-n2"><i aria-hidden="true">⚠️</i><b>${n1}</b> ${n1 === 1 ? "urgente" : "urgenti"}</span>` : "");
+    + (n2 ? `<span class="fa-n mg-n mg-n3"><i aria-hidden="true">🚨</i><b>${n2}</b> ${n2 === 1 ? "urgentissimo" : "urgentissimi"}</span>` : "") + (n1 ? `<span class="fa-n mg-n mg-n2"><i aria-hidden="true">⚠️</i><b>${n1}</b> ${n1 === 1 ? "urgente" : "urgenti"}</span>` : "");
   const gruppi = zone.map(({ z, cam }) => `<div class="fa-gruppo"><div class="fa-t">${esc(z.breve || z.nome)}${cam.some(c => c.lato === "S") ? " + " + cam.filter(c => c.lato === "S").map(c => esc(c.nome)).join(", ") : ""}</div><div class="fa-griglia">${cam.map(c => riquadroGuasti(c.id, nomeRiquadro(c))).join("")}</div></div>`).join("")
     + (altre.length ? `<div class="fa-gruppo"><div class="fa-t">Altre camere</div><div class="fa-griglia">${altre.map(c => riquadroGuasti(c.id, nomeRiquadro(c))).join("")}</div></div>` : "")
     + `<div class="fa-gruppo"><div class="fa-t">Spazi comuni / In generale</div>${riquadroGuasti("", "Scale, terrazzo, lavanderia…", true)}</div>`;
