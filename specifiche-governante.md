@@ -2855,3 +2855,20 @@ LE NOTIFICHE (giro di Sofia 1.25.0)
   - 📋 la sintesi: una frase per riga. 💬 i messaggi delle ragazze: il messaggio da solo sulla prima riga, sotto «🕐 alle 8:55 · tocca per leggerlo e rispondere». 📵 «WhatsApp non arriva più all'app».
 - Il giro conta anche le ragazze nuove (le zone «s…» dell'app 1.57.0).
 - Prove: prova1580giro (urgentissimi ogni 2 ore, di notte no, sistemato basta; la riga degli urgenti; le ragazze nuove; il bollettino; la lettura di WhatsApp; la sintesi a righe; il pacchetto col tasto e la vibrazione), prova1580 (i tre tasti, l'ordine, le etichette, il guasto nuovo, «✅ Sistemato» dalla notifica, la notifica toccata che apre il guasto, il service worker coi tasti).
+
+## 159.0 La 1.58.1 e il giro 1.26.0 (7 novembre): SOFIA RISPARMIA (le chat ogni 4 ore, le cose urgenti subito)
+
+Michele (7/11), visto che l'intelligenza artificiale di Sofia costava circa 1 € al giorno sulla carta (progetto LE STANZE DI RICCI, quasi tutto Argon; limite di spesa messo a 40 € al mese su aistudio.google.com/spend): «ogni 4 ore, facciamo così. Per le cose tipo solo ok, trascrizione: il modello gratuito, fammi risparmiare parecchio. I guasti e le indicazioni che si capisce che sono urgenti me le devi mettere subito nell'applicazione. Per tutto il resto va bene ogni 4 ore».
+
+IL GIRO 1.26.0 (sofia-giro/lettura-giro.mjs)
+- Argon legge le chat solo ai turni: alle 8, alle 12, alle 16 e alle 20 (importazioni/giro-sofia.letturaTurno = l'ultimo turno fatto, per esempio «2026-11-07@12»; prima delle 8 vale quello delle 20 di ieri).
+- IL VAGLIO: a ogni giro (ogni 10 minuti), se ci sono messaggi nuovi e da 5 minuti nessuno scrive più, il modello economico (flash-lite, poi flash; mai Argon) guarda SOLO i messaggi non ancora vagliati, con una paginetta di istruzioni: «urgente» (un guasto, un danno, una cosa da fare oggi o subito, una persona che sta male) → Argon legge subito tutto quello che aspetta; «niente» (ok, grazie, saluti, emoji) → se aspettano solo saluti, si segnano letti senza Argon; «normale» → aspettano il turno. Il giudizio resta sul messaggio (posta/<id>.vaglio e vaglioPerche): ogni messaggio si guarda una volta sola. Se il vaglio non riesce o la risposta non si capisce: si legge subito (meglio spendere che perdere un guasto).
+- I vocali li trascrive il modello economico (anche quelli del vaglio: la trascrizione resta nel messaggio e Argon legge il testo); la sintesi delle 8:30 e delle 20:30 parte dal modello economico.
+- Le letture «di prima» da rifare (da_applicare non messa a posto, da_controllare di meno di 3 ore) si leggono subito come prima.
+- Nel registro del giro: «aspetto il turno delle 12 (3 messaggi; le cose urgenti le leggo subito)» non si scrive (come «aspetto che finiscano di scrivere»); «niente da leggere (solo saluti: …)» sì.
+
+L'APP 1.58.1
+- Il PC «lettore» (il PC di Michele) non legge più le chat da solo a ogni messaggio se il giro 1.26 o più nuovo ha girato nelle ultime 8 ore e la lettura del giro è accesa: lo fa il giro coi turni. Se il giro è fermo, il PC legge come prima.
+- Il riquadro dei messaggi nuovi dice «Sofia li legge alle 12; le cose urgenti subito. Tocca per farli leggere adesso» (o «C'è una cosa urgente: Sofia la legge fra pochi minuti»); toccandolo si leggono subito, come sempre.
+- Altro → Sofia sempre accesa: «Legge le chat di WhatsApp alle 8, alle 12, alle 16 e alle 20, anche con l'app chiusa; le cose urgenti le legge subito».
+- Prove: prova1590giro (urgente subito con Argon; normale aspetta il turno; saluti mai ad Argon; vocali e vaglio col modello economico; un messaggio si vaglia una volta; vaglio che non riesce → si legge subito; il turno delle 12; la sintesi economica; le letture di prima subito; il turno salvato dal giro), prova1590 (il PC non legge da solo col giro acceso, il riquadro, legge se il giro è fermo).

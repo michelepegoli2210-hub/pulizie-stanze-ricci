@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.58.0";
+export const VERSIONE = "1.58.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -9952,7 +9952,7 @@ function rigaLetturaGiro(g, a) {
   if (l.esito === "senza chiave") return `<p class="note warn" style="margin:8px 0 0">📖 Per leggere le chat ad app chiusa al giro manca la chiave di Gemini (su GitHub: segreto GEMINI_CHIAVE).</p>`;
   const stato = x && x.stato === "da_controllare" ? ` · <b>una lettura aspetta il tuo controllo</b> (${esc(testoRiassunto(x.riassunto || {}) || "apri il prospetto")})` : "";
   const ultima = l.quando ? ` · ultima lettura alle ${esc(L.oraBreve(l.quando))}${l.esito && l.esito !== "letto" ? ` (${esc(l.esito)})` : ""}` : "";
-  return `<p class="small" style="margin:8px 0 0">📖 Legge le chat di WhatsApp ogni 10 minuti, anche con l'app chiusa, e ti avvisa sul telefono${ultima}${stato}.</p>`;
+  return `<p class="small" style="margin:8px 0 0">📖 Legge le chat di WhatsApp alle 8, alle 12, alle 16 e alle 20, anche con l'app chiusa; le cose urgenti (un guasto, una cosa da fare subito) le legge subito. Ti avvisa sul telefono${ultima}${stato}.</p>`;
 }
 function cardAutonomia() {
   if (!proprietario()) return "";
@@ -13860,8 +13860,8 @@ function bannerLettura() {
   if (S.foglio && S.foglio.tipo === "dettatura") return "";
   const nuove = postaNuova();
   if (nuove.length && !letturaInCorso() && !letturaDaControllare()) {
-    const chat = nuove[0].chat || "Albergo", auto = lettorePosta() && iaAccesa();
-    return `<button type="button" class="cw-banner${auto ? " leggo" : ""}" data-posta-leggi><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${nuove.length === 1 ? "Un messaggio nuovo" : nuove.length + " messaggi nuovi"} dal gruppo ${esc(chat)}</b><small>${auto ? `${esc(nomeGov())} li legge fra pochi secondi (aspetta che finiscano di scrivere).` : `Tocca: li faccio leggere a ${esc(nomeGov())}.`}</small>${auto ? barraLettura({}) : ""}</span><i aria-hidden="true">›</i></button>`;
+    const chat = nuove[0].chat || "Albergo", giro = giroLegge(), auto = lettorePosta() && iaAccesa() && !giro;   // 1.58.1
+    return `<button type="button" class="cw-banner${auto ? " leggo" : ""}" data-posta-leggi><span class="dt-fonte-foto" aria-hidden="true"></span><span><b>${nuove.length === 1 ? "Un messaggio nuovo" : nuove.length + " messaggi nuovi"} dal gruppo ${esc(chat)}</b><small>${auto ? `${esc(nomeGov())} li legge fra pochi secondi (aspetta che finiscano di scrivere).` : giro ? (nuove.some(p => p.vaglio === "urgente") ? `C'è una cosa urgente: ${esc(nomeGov())} la legge fra pochi minuti.` : `${esc(nomeGov())} li legge ${esc(prossimaLetturaChat())}; le cose urgenti subito. Tocca per farli leggere adesso.`) : `Tocca: li faccio leggere a ${esc(nomeGov())}.`}</small>${auto ? barraLettura({}) : ""}</span><i aria-hidden="true">›</i></button>`;
   }
   // 1.53.0: mentre legge le chat solo l'avviso (non si apre niente: quando ha finito, la lettura compare qui sotto); niente più
   // «tocca per controllare e salvare» (un prospetto scritto da te si controlla nel Prospetto, non qui)
@@ -13880,6 +13880,19 @@ function bannerLettura() {
 // messaggi nuovi e per 40 secondi non ne arrivano altri, ascolta i vocali, guarda le foto, legge col prospetto e
 // avvisa (notifica se l'app e' dietro). L'anteprima si salva come sempre; dopo il salvataggio la posta si cancella.
 const CHIAVE_LETTORE = "ricci_posta_lettore", CHIAVE_CODICE_PONTE = "ricci_ponte_codice", ATTESA_POSTA = (Number(window.__attesaPosta) || 40) * 1000, ALFABETO_PONTE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+// 1.58.1 (giro 1.26.0; Michele, 7/11: «ogni 4 ore… le cose urgenti subito… fammi risparmiare parecchio»): le chat le legge il giro
+// di Sofia alle 8, 12, 16 e 20; prima il modello economico guarda i messaggi nuovi e le cose urgenti si leggono subito. Il PC
+// «lettore» non legge più da solo a ogni messaggio (ogni volta era una lettura di Argon). Se il giro non gira da più di 8 ore
+// (di notte si ferma) il PC legge come prima. Il riquadro «messaggi nuovi» resta: toccandolo si fanno leggere subito.
+function giroLegge() {
+  const g = S.giroSofia; if (!g || (S.avvisi && S.avvisi.giroLettura === false)) return false;
+  const [a, b] = String(g.versione || "").split(".").map(n => Number(n) || 0);
+  return (a > 1 || (a === 1 && b >= 26)) && Date.now() - (Date.parse(g.ultimo || "") || 0) < 8 * 3600 * 1000;
+}
+function prossimaLetturaChat() {
+  const h = new Date().getHours(), p = [8, 12, 16, 20].find(x => x > h);
+  return p !== undefined ? `alle ${p}` : "domattina alle 8";
+}
 function lettorePosta() { try { return localStorage.getItem(CHIAVE_LETTORE) === "1"; } catch (e) { return false; } }
 // 32 lettere e numeri senza quelli che si confondono (niente I, O, 0, 1): 256 e' multiplo di 32, quindi nessuna lettera e' piu' probabile
 function lettereACaso(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x => ALFABETO_PONTE[x % ALFABETO_PONTE.length]).join(""); }
@@ -14025,7 +14038,7 @@ function postaRicevuta(m) {
 function guardaPosta() {
   clearTimeout(postaTimer);
   const nuove = postaNuova();
-  if (nuove.length && lettorePosta() && iaAccesa() && !postaInLettura && !rilettureInCorso && !letturaInCorso() && !letturaDaControllare() && !letturaCondivisaOccupata()) {   // 1.53.1: non durante una rilettura
+  if (nuove.length && lettorePosta() && iaAccesa() && !giroLegge() && !postaInLettura && !rilettureInCorso && !letturaInCorso() && !letturaDaControllare() && !letturaCondivisaOccupata()) {   // 1.58.1: se legge il giro, il PC non legge da solo   // 1.53.1: non durante una rilettura
     const attesa = ATTESA_POSTA - (Date.now() - ultimoArrivoPosta);
     if (attesa > 0) postaTimer = setTimeout(guardaPosta, attesa + 250);
     else { leggiPosta(nuove, { silenzioso: true }); return; }
