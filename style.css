@@ -8544,3 +8544,51 @@ body.premium:has(.bs-arcade):has(#sgrTendina) .sofia-mini{display:none}   /* sta
 body.premium:has(.bs-arcade) .sgr-fantasma{bottom:calc(102px + env(safe-area-inset-bottom,0px))}
 body.premium:has(.bs-arcade) .sgr-fantasma.in-tendina{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){body.premium .bs-arcade-t.acceso .ar-pozzo::after,body.premium .bs-arcade-t.acceso .ar-pcima{animation:none!important}body.premium .bs-arcade-t.acceso .ar-pozzo::after{opacity:.85}}
+/* ---- 1.60.1 · i pulsanti del foglio della camera ridisegnati da Gemini (Argon, 7/11) ---- */
+/* la scelta dell'urgenza (qui e nel «Nuovo guasto»): spenti tutti uguali, color crema; acceso solo quello scelto, pieno del suo colore */
+.urg-scelta{gap:8px}
+.urg-b{min-height:48px;padding:6px 6px;border:1.5px solid #E2DDD5;border-radius:12px;background:#FAF8F5;color:#6E6458;font:600 15px/1.15 var(--f-ui,system-ui);box-shadow:0 2px 4px rgba(29,49,86,.06);transform:none}
+.urg-b1,.urg-b2{border-color:#E2DDD5;color:#6E6458}
+.urg-b .urg-ico{opacity:.5}
+.urg-b:active{background:#EFECE6;transform:none;box-shadow:0 1px 2px rgba(29,49,86,.06)}
+.urg-b.on{color:#FFFFFF;font-weight:800;box-shadow:0 2px 6px rgba(29,49,86,.18)}
+.urg-b.on .urg-ico{opacity:1}
+.urg-b0.on{background:#1D3156;border-color:#1D3156}
+.urg-b1.on{background:#D9540D;border-color:#D9540D}
+.urg-b2.on{background:#A81A1A;border-color:#A81A1A}
+.urg-b0.on:active{background:#13223D;border-color:#13223D}
+.urg-b1.on:active{background:#B34105;border-color:#B34105}
+.urg-b2.on:active{background:#851212;border-color:#851212}
+/* le schede dei guasti: il bordo ha il colore dell'urgenza (blu notte, arancio, rosso) */
+.mgp-g{border:2px solid #1D3156;border-radius:16px;background:#F7F8FB}
+.mgp-g.mgp-g1{border:2px solid #D9540D;background:#FFF7EF}
+.mgp-g.mgp-g2{border:2px solid #A81A1A;background:#FDF2F2}
+/* «✓ Sistemato»: verde, a tutta larghezza */
+.mgp-ok{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;margin-top:10px;padding:10px 14px;border:0;border-radius:12px;background:#2F7D52;color:#FFFFFF;font:800 17px/1.1 var(--f-ui,system-ui);box-shadow:0 2px 4px rgba(47,125,82,.2);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.mgp-ok .ic{width:20px;height:20px;flex:0 0 auto;stroke-width:3}
+.mgp-ok:active{background:#215939;box-shadow:none}
+/* «Aggiungi un guasto»: tre tasti bianchi col bordo d'oro, l'icona grande sopra */
+.mgp-nuovo-t{color:#1D3156}
+.mgp-piu{display:inline-block;margin-right:2px;color:#1D3156;font-size:18px;line-height:1}
+.mgp-b{min-height:60px;gap:3px;padding:6px 4px;border:1.5px solid #D4AF37;border-radius:12px;background:#FFFFFF;color:#1D3156;font:700 14px/1.15 var(--f-body);box-shadow:0 2px 6px rgba(212,175,55,.08)}
+.mgp-b span{font-size:26px}
+.mgp-b:active{background:#FAF6EA;border-color:#B3922E;transform:none;box-shadow:none}
+/* «Chiudi» di questo foglio: bianco col bordo blu notte */
+.panel:has(.mgp-segno)>.big.close{min-height:50px;margin-top:14px;padding:12px;border:1.5px solid #1D3156;border-radius:12px;background:#FFFFFF;color:#1D3156;--tx:#1D3156;font:800 16px/1.1 var(--f-display);text-transform:none;letter-spacing:0;text-shadow:none;box-shadow:none}
+.panel:has(.mgp-segno)>.big.close::before{display:none}
+.panel:has(.mgp-segno)>.big.close:active{background:#F0F4FA;transform:none}
+/* tema scuro */
+:root[data-theme="dark"] .urg-b{background:#24211E;border-color:#3A352F;color:#B8AE9F}
+:root[data-theme="dark"] .urg-b1:not(.on),:root[data-theme="dark"] .urg-b2:not(.on){color:#B8AE9F}
+:root[data-theme="dark"] .urg-b:active{background:#2E2A26}
+:root[data-theme="dark"] .urg-b.on{color:#FFFFFF}
+:root[data-theme="dark"] .urg-b0.on{background:#2B4A80;border-color:#2B4A80}
+:root[data-theme="dark"] .urg-b1.on{background:#D9540D;border-color:#D9540D}
+:root[data-theme="dark"] .urg-b2.on{background:#A81A1A;border-color:#A81A1A}
+:root[data-theme="dark"] .mgp-g{background:#1C1F27;border-color:#4A6390;color:#F5F5F4}
+:root[data-theme="dark"] .mgp-g.mgp-g1{background:#2A1D14;border-color:#E8590C}
+:root[data-theme="dark"] .mgp-g.mgp-g2{background:#2A1515;border-color:#E05252}
+:root[data-theme="dark"] .mgp-b{background:#1C1917;color:#F5F5F4;border-color:#B8962E}
+:root[data-theme="dark"] .mgp-nuovo{background:#2A2418;border-color:#7A6236}
+:root[data-theme="dark"] .mgp-nuovo-t,:root[data-theme="dark"] .mgp-piu{color:#F1DDB5}
+:root[data-theme="dark"] .panel:has(.mgp-segno)>.big.close{background:#1C1917;color:#E8EEF8;--tx:#E8EEF8;border-color:#8FA3C8}

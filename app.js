@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.60.0";
+export const VERSIONE = "1.60.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -12472,7 +12472,7 @@ function urgenza(m) { return (m && m.stato !== "fatto" && LIV_GUASTO[m.gravita])
 function etichettaUrg(m, cls) { const u = urgenza(m); return u ? `<span class="${cls} ${u === 2 ? "urg2" : "urg1"}">${u === 2 ? "🚨 Urgentissimo" : "⚠️ Urgente"}</span>` : ""; }
 const SPIEGA_URG = { 0: "Normale: lo vedi qui e nel bollettino della sera.", 1: "Urgente: te lo ricorda Sofia nelle sue notifiche di ogni giorno.", 2: "Urgentissimo: ti arriva una notifica ogni 2 ore (dalle 7 alle 22) finché non è sistemato." };
 function sceltaUrgenza(liv, attr, id, corta) {
-  return `<div class="urg-scelta" role="group" aria-label="Quanto è urgente">${[[0, "Normale"], [1, "⚠️ Urgente"], [2, "🚨 Urgentissimo"]].map(([l, t]) =>
+  return `<div class="urg-scelta" role="group" aria-label="Quanto è urgente">${[[0, "Normale"], [1, '<span class="urg-ico" aria-hidden="true">⚠️</span> Urgente'], [2, '<span class="urg-ico" aria-hidden="true">🚨</span> Urgentissimo']].map(([l, t]) =>
     `<button type="button" class="urg-b urg-b${l}${liv === l ? " on" : ""}" aria-pressed="${liv === l}" ${attr}="${esc(id ? id + "|" + l : String(l))}">${t}</button>`).join("")}</div>
     ${corta ? "" : `<p class="urg-spiega">${esc(SPIEGA_URG[liv] || SPIEGA_URG[0])}</p>`}`;
 }
@@ -12578,14 +12578,15 @@ function foglioManPosto(f) {
   const lista = guastiDelPosto(posto), mod = puoModificare();
   const com = c && S.caratteristiche && S.caratteristiche[c.id];
   const riga = (m) => `<div class="mgp-g mgp-g${urgenza(m)}">
-      <button type="button" class="mgp-tit" data-man-apri="${esc(m.id)}"><b>${urgenza(m) === 2 ? "🚨 " : urgenza(m) === 1 ? "⚠️ " : ""}${esc(m.titolo || "Guasto")}</b>${m.nota ? `<span class="mgp-nota">${esc(m.nota)}</span>` : ""}<small>⏳ ${esc(daGiorni(giorniGuasto(m)))}${m.da ? ` · segnalato da ${esc(m.da)}` : ""}${m.foto ? " · 📷 c'è la foto" : ""} · apri ›</small></button>
+      <button type="button" class="mgp-tit" data-man-apri="${esc(m.id)}"><b>${urgenza(m) === 2 ? "🚨 " : urgenza(m) === 1 ? "⚠️ " : "🔧 "}${esc(m.titolo || "Guasto")}</b>${m.nota ? `<span class="mgp-nota">${esc(m.nota)}</span>` : ""}<small>⏳ ${esc(daGiorni(giorniGuasto(m)))}${m.da ? ` · segnalato da ${esc(m.da)}` : ""}${m.foto ? " · 📷 c'è la foto" : ""} · apri ›</small></button>
       ${mod ? sceltaUrgenza(urgenza(m), "data-man-grav", m.id, true) : ""}
-      ${mod ? `<button type="button" class="big ok mgp-ok" data-man-ok-posto="${esc(m.id)}">${ICONA("spunta")} Sistemato</button>` : ""}
+      ${mod ? `<button type="button" class="mgp-ok" data-man-ok-posto="${esc(m.id)}">${ICONA("spunta")}<span>Sistemato</span></button>` : ""}
     </div>`;
-  return `<h3 class="sog-camera">${icoPorta()}<span>${c ? `Camera <b>${esc(c.nome)}</b>` : "<b>Spazi comuni e in generale</b>"}</span></h3>
+  // 1.60.1: i pulsanti di questo foglio li ha ridisegnati Gemini (vedi specifiche 160.1); «mgp-segno» fa riconoscere il foglio allo stile di «Chiudi»
+  return `<i class="mgp-segno" hidden></i><h3 class="sog-camera">${icoPorta()}<span>${c ? `Camera <b>${esc(c.nome)}</b>` : "<b>Spazi comuni e in generale</b>"}</span></h3>
     <div class="muted">${com ? `${esc(com)} · ` : ""}${lista.length ? (lista.length === 1 ? "🔧 Un guasto da sistemare" : `🔧 ${lista.length} guasti da sistemare`) : "✓ Qui è tutto a posto"}</div>
     ${lista.map(riga).join("")}
-    ${mod ? `<div class="mgp-nuovo"><b class="mgp-nuovo-t">➕ Aggiungi un guasto${c ? ` in ${esc(c.nome)}` : ""}</b><div class="mgp-tasti">
+    ${mod ? `<div class="mgp-nuovo"><b class="mgp-nuovo-t"><span class="mgp-piu" aria-hidden="true">✚</span> Aggiungi un guasto${c ? ` in ${esc(c.nome)}` : ""}</b><div class="mgp-tasti">
       <button type="button" class="mgp-b" data-man-voce="${esc(f.posto || "_")}"><span aria-hidden="true">🎤</span>Dillo a voce</button>
       <button type="button" class="mgp-b" data-man-foto="${esc(f.posto || "_")}"><span aria-hidden="true">📷</span>Fai una foto</button>
       <button type="button" class="mgp-b" data-man-scrivi="${esc(f.posto || "_")}"><span aria-hidden="true">✍️</span>Scrivi</button>

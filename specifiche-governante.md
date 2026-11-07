@@ -2922,3 +2922,19 @@ il primo disegno: «sì, mi piace, però fallo ancora più tridimensionale… so
   esce dal pozzo e pulsa piano, come le lucine dei tasti delle sale giochi; il numerino dice quante cose sono. Se non c'è
   niente resta spento. Il numerino di prima (le domande di «Parla con Sofia») resta nella finestra di Sofia.
 - Nella pagina Segreteria la barra si alza un poco e la tendina della segretaria con lei: il tasto non finisce sotto la tendina.
+
+## 160.1 La 1.60.1 · i pulsanti del foglio della camera, ridisegnati da Gemini
+
+Michele (7/11), sul foglio che si apre toccando una camera nella Manutenzione: «questa parte non mi piace, la grafica…
+non mi piacciono i pulsanti… falli disegnare da Gemini dei pulsanti idonei». Disegno di Gemini (Argon, ragionamento alto,
+chat nuova del 7/11 sera), con la foto del foglio senza nomi veri.
+
+- **L'urgenza** (qui e nel «Nuovo guasto»): i tre tasti spenti sono tutti uguali, color crema (#FAF8F5, bordo #E2DDD5,
+  scritta grigia, le icone ⚠️ 🚨 sbiadite); quello scelto si accende pieno del suo colore con la scritta bianca: Normale blu
+  notte #1D3156, Urgente arancio #D9540D, Urgentissimo rosso #A81A1A. Alti 48 px, angoli 12 px. Premuti diventano più scuri.
+- **Le schede dei guasti** hanno il bordo del colore dell'urgenza (blu notte, arancio, rosso); il titolo ha 🔧 se è normale.
+- **«✓ Sistemato»**: verde #2F7D52 a tutta larghezza, scritta bianca, alto 50 px (premuto #215939). Prima era marrone.
+- **«Aggiungi un guasto»**: «✚» blu notte nel titolo; i tre tasti «Dillo a voce / Fai una foto / Scrivi» bianchi col bordo
+  d'oro #D4AF37 e l'icona grande sopra, alti 60 px (premuti crema #FAF6EA).
+- **«Chiudi»** di questo foglio: bianco col bordo blu notte e la scritta blu notte, alto 50 px.
+- Scritte un filo più grandi di quelle proposte da Gemini (15–17 px invece di 13–15) perché si leggano bene al volo.
