@@ -2938,3 +2938,45 @@ chat nuova del 7/11 sera), con la foto del foglio senza nomi veri.
   d'oro #D4AF37 e l'icona grande sopra, alti 60 px (premuti crema #FAF6EA).
 - **«Chiudi»** di questo foglio: bianco col bordo blu notte e la scritta blu notte, alto 50 px.
 - Scritte un filo più grandi di quelle proposte da Gemini (15–17 px invece di 13–15) perché si leggano bene al volo.
+
+## 162 · La Segreteria nuova (app 1.62.0, giro 1.28.0)
+
+Michele, 7/11: «in segreteria non mi piace avere una parte dove mi scrive tutti i messaggi di WhatsApp… deve poterli leggere
+lei… mi deve dire che cosa ha capito lei e che cosa vorrebbe fare rispetto a quei messaggi… e queste sono anche le notifiche
+che mi devono arrivare, altrimenti a me mi arrivano due volte… la segretaria deve avere un ruolo di smistamento». Il disegno
+l'ha fatto Gemini (Argon, ragionamento Alto) e Michele l'ha approvato («sì, falla così»; «1» per «Cosa ho capito»).
+
+**La pagina** (niente più messaggi di WhatsApp e niente più chat della segretaria):
+1. Testata: il viso di Sofia segretaria, «Segreteria», «Sofia, la tua assistente».
+2. **Riassunto di oggi** (crema #FFFDF9, bordo oro #D4AF37): arrivi e partenze, pulizie delle signore, guasti da riparare
+   subito, quello che aspetta Michele. «🔊 Ascolta il riassunto» lo legge (con la voce di Sofia se è accesa, se no con la voce
+   del telefono), insieme alle cose da fare e alle proposte.
+3. **I quattro cassetti** (due per riga; sotto i 360 px uno per riga; oltre 2-3 righe «Vedi tutte»):
+   - 🔔 **Da fare tu** (rosso #A81A1A): le cose che deve fare Michele in persona (chiavi, chiamate, appuntamenti) con
+     «entro» e chi l'ha chiesto. «Fatto» (verde #2F7D52) · «⏰ Ricordami tra 1 ora» (sposta l'allarme).
+   - ✋ **Ti propongo** (arancio #D9540D): le proposte delle letture. «Sì, fallo» · «Cambia» (apre la chat con Sofia già
+     scritta) · «No».
+   - ✅ **Ho fatto io** (verde): quello che ha fatto da sola oggi e ieri, numerato. «Annulla» · «Perché?» (le parole di Sofia
+     e il messaggio da cui viene; per il foglio di papà la lista dei cambi, ognuno col suo Annulla). Il foglio di papà è una
+     riga sola («📊 Aggiornato il prospetto dal foglio di papà: 3 cambi»).
+   - ⭐ **Da sapere** (blu #1D3156): le note salvate e le cose che non è riuscita a fare.
+4. **Documenti degli ospiti** (Alloggiati Web): «Camera AURORA» · «📸 Inquadra documento» per chi è arrivato oggi e ieri.
+5. **🧠 Cosa ho capito** (oggi; se oggi niente, l'ultimo giorno): una scheda per persona (Papà, Lucia, Selena… «Tu» per
+   Michele) con le cose capite in parole di Sofia (mai il messaggio), il pallino di dove le ha messe (giallo = aspetta te,
+   verde = fatto, grigio = da sapere) e «Hai capito male?» (va nel taccuino; se c'è la chiave, rilegge subito e rimette a
+   posto). Le domande «❓ Non sono sicura» coi tasti delle risposte (o «Rispondi»); quelle sul foglio di papà vanno nel
+   taccuino, così Argon ne tiene conto al prossimo foglio.
+6. **Cosa ho imparato** (oro chiaro): le ultime due cose del taccuino.
+
+**Il tasto d'oro** si accende per: le cose «Da fare tu» non fatte, le proposte e le domande senza risposta (3 giorni).
+
+**La lettura delle chat** (lettura.js) adesso dà anche: `perTe` (le cose da fare per Michele: cosa, entro, chi, messaggio),
+`capito` (per persona: chi, cosa in parole sue, dove l'ha messa), `chi` e `messaggio` nelle azioni e nelle proposte, `chi`
+nei dubbi. Nella scheda della Segreteria `perTe` ha lo stato (`fatto`, `rimanda`), che scrive solo l'app; il giro scrive
+solo `perTeAvvisi` (quando e quante volte ha suonato).
+
+**Le notifiche** (giro 1.28.0): la lettura delle chat avvisa SOLO se c'è una cosa da decidere (proposte, dubbi, ore) o un
+guasto urgente (titolo «✋ Sofia ti propone…» o «🚨 Guasto urgente…»). «🔔 Da fare: …» vibra e resta finché non la tocchi,
+col tasto «✅ Fatto»: subito, poi ogni ora finché non è fatta (se c'è «entro» e manca più di un'ora, dopo la prima aspetta
+fino a un'ora prima); dalle 7 alle 22:30, al massimo 12 volte, per le cose di oggi e di ieri. Si spegne con
+`avvisi.giroFareTu = false`. Le letture fatte dall'app sul PC avvisano con la stessa regola.

@@ -115,6 +115,7 @@ export function rimettiTelefoni(j, mappa) {
   if (!j || typeof j !== "object") return j;
   const vero = (x) => { const m = /\[\s*telefono\s*(\d{1,3})\s*\]/i.exec(String(x || "")); return m && mappa ? (mappa.get(`[telefono${m[1]}]`) || "") : ""; };
   for (const k of ["soggiorni", "telefoni"]) if (Array.isArray(j[k])) for (const x of j[k]) { if (x && typeof x === "object") x.telefono = vero(x.telefono); }   // 1.38.0: anche la rubrica
+  if (Array.isArray(j.perTe) && mappa) for (const x of j.perTe) { if (x && typeof x === "object" && x.cosa) x.cosa = String(x.cosa).replace(/\[\s*telefono\s*(\d{1,3})\s*\]/gi, (m, n) => mappa.get(`[telefono${n}]`) || m); }   // 1.62.0
   return j;
 }
 // il tipo di ospite detto a Sofia: le ditte col loro codice (sono anche clienti col nome), cosi' nessun nome esce in chiaro
@@ -135,7 +136,34 @@ export function perSegreteria(j) {
   const p = (k, n) => (Array.isArray(x[k]) ? x[k] : []).filter(v => v && typeof v === "object").slice(0, n).map(v => { const o = {}; for (const [a, b] of Object.entries(v)) { if (b === undefined || b === null) continue; if (Array.isArray(b)) { const l = b.filter(z => z !== null && typeof z !== "object").slice(0, 14).map(z => typeof z === "string" ? z.slice(0, 80) : z); if (l.length) o[a] = l; } else if (typeof b !== "object") o[a] = typeof b === "string" ? b.slice(0, 400) : b; } return o; });   // 1.51.0: anche le liste
   return { risposta: String(x.risposta || "").slice(0, 700), soggiorni: p("soggiorni", 60), togli: p("togli", 20), indicazioni: p("indicazioni", 20), assenze: p("assenze", 10), guasti: p("guasti", 10), spesa: p("spesa", 10), note: p("note", 10), ore: p("ore", 14), telefoni: p("telefoni", 10),
     ...(Array.isArray(x.azioni) ? { azioni: p("azioni", 24), proposte: p("proposte", 12) } : {}),   // 1.51.0
-    dubbi: (Array.isArray(x.dubbi) ? x.dubbi : []).slice(0, 12).map(d => ({ domanda: String(d && typeof d === "object" ? (d.domanda || d.testo || "") : d || "").slice(0, 200), risposte: d && typeof d === "object" && Array.isArray(d.risposte) ? d.risposte.slice(0, 4).map(r => String(r).slice(0, 40)) : [] })).filter(d => d.domanda) };
+    ...(Array.isArray(x.perTe) ? { perTe: p("perTe", 8) } : {}), ...(Array.isArray(x.capito) ? { righe: p("capito", 30) } : {}),   // 1.62.0
+    dubbi: (Array.isArray(x.dubbi) ? x.dubbi : []).slice(0, 12).map(d => ({ domanda: String(d && typeof d === "object" ? (d.domanda || d.testo || "") : d || "").slice(0, 200), risposte: d && typeof d === "object" && Array.isArray(d.risposte) ? d.risposte.slice(0, 4).map(r => String(r).slice(0, 40)) : [], ...(d && typeof d === "object" && d.chi ? { chi: String(d.chi).slice(0, 40) } : {}) })).filter(d => d.domanda) };
+}
+// 1.62.0 (Segreteria nuova): «🔔 Da fare tu» — le cose che deve fare Michele in persona, con lo stato (fatto, rimanda) che
+// segna l'app e che il giro guarda per l'allarme. «entro»: «AAAA-MM-GGTHH:MM» (ora di Lesina), «AAAA-MM-GG» o vuoto.
+export function entroDa(t, oggi) {
+  const s = String(t || "").trim(); let m;
+  const ok = (h, mi) => Number(h) <= 23 && Number(mi) <= 59;
+  if ((m = /^(\d{4}-\d{2}-\d{2})[ T](\d{1,2})[:.](\d{2})/.exec(s)) && ok(m[2], m[3])) return `${m[1]}T${m[2].padStart(2, "0")}:${m[3]}`;
+  if ((m = /^(\d{1,2})[:.](\d{2})$/.exec(s)) && oggi && ok(m[1], m[2])) return `${oggi}T${m[1].padStart(2, "0")}:${m[2]}`;
+  if ((m = /^(\d{4}-\d{2}-\d{2})$/.exec(s))) return m[1];
+  return "";
+}
+export function perTeDa(j, oggi) {
+  return (Array.isArray(j && j.perTe) ? j.perTe : []).filter(x => x && typeof x === "object" && String(x.cosa || "").trim()).slice(0, 8).map((x, i) => ({
+    k: "t" + i, testo: String(x.cosa).replace(/\s+/g, " ").trim().slice(0, 160), entro: entroDa(x.entro, oggi), chi: String(x.chi || "").replace(/\s+/g, " ").trim().slice(0, 40),
+    msg: String(x.messaggio || "").replace(/\s+/g, " ").trim().slice(0, 200), fatto: "", rimanda: "" }));
+}
+// rileggendo (con una correzione) le cose già fatte restano fatte
+const nPerTe = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+export function perTeTieni(nuove, vecchie) {
+  return (nuove || []).map(t => { const v = (vecchie || []).find(y => y && nPerTe(y.testo) === nPerTe(t.testo)); return v ? { ...t, fatto: v.fatto || "", rimanda: v.rimanda || "" } : t; });
+}
+// e quante volte ha già suonato (il giro): così una rilettura non la fa risuonare subito
+export function perTeAvvisiTieni(nuove, vecchie, avvisi) {
+  const out = {};
+  for (const t of (nuove || [])) { const v = (vecchie || []).find(y => y && nPerTe(y.testo) === nPerTe(t.testo)); if (v && avvisi && avvisi[v.k]) out[t.k] = avvisi[v.k]; }
+  return out;
 }
 
 // ---- il taccuino senza nomi di ospiti ---------------------------------------------------------------------------------
@@ -412,12 +440,19 @@ REGOLE DELLE AZIONI:
 - Quello che pensi ma non è detto chiaro va in "proposte", con "perche" = la domanda corta per Michele (lui risponde con un tocco). Esempio: Michele dice «i ripassi di oggi sono Lella e Passerella» e nel giro di oggi ce ne sono anche altri → una proposta {"tipo":"pulizie","modo":"non_serve",...} con gli altri e "perche":"Nel giro di oggi ci sono anche Fenicotteri e Tramonto: li tolgo?".
 - Solo cose da oggi in poi: niente per i giorni passati, niente per le ore già passate di oggi.
 - I soldi (paghe, buste, prezzi) non si toccano con le azioni.
+- In ogni azione e in ogni proposta aggiungi "chi" (chi l'ha detto: «Papà», «Lucia», «Michele»…) e "messaggio" (le sue parole, corte): servono a Michele per capire perché l'hai fatta.
+
+LE COSE CHE DEVE FARE MICHELE IN PERSONA ("perTe"): quello che nessun altro può fare al posto suo, né le signore né l'app: prendere, portare o lasciare le CHIAVI, chiamare o rispondere a qualcuno, andare in albergo o da un ospite a un'ora, comprare o pagare una cosa urgente, decidere una cosa che gli chiedono. Una riga per cosa, corta, dando del tu («Metti le chiavi in Aurora»). In "entro" il giorno e l'ora entro cui farla, se detti («entro le 15» = oggi alle 15:00), altrimenti vuoto. Solo le cose ancora da fare: se nelle chat risulta già fatta, non metterla. Un guasto NON va qui (va nelle azioni): qui solo se chiedono a Michele di fare lui una cosa precisa. Il telefono suona finché Michele non la segna fatta: niente cose inutili.
+
+COSA HAI CAPITO ("capito"): per ogni persona che ha scritto, una riga per ogni cosa che hai capito, con parole TUE e corte (non copiare il messaggio): «vuole che metti le chiavi in Aurora entro le 15», «domani non viene». In "dove" scrivi dove l'hai messa: "fare" (in perTe), "propongo" (nelle proposte o nei dubbi), "fatto" (nelle azioni, nelle assenze, nella spesa, nei telefoni), "sapere" (nelle note). I saluti e le chiacchiere non metterli.
 
 RISPONDI SOLO con questo JSON:
 {"risposta":"2-4 frasi semplici per Michele: chi ha scritto e di cosa, e cosa metti nell'app",
  "azioni":[{"tipo":"…"}],
  "proposte":[{"tipo":"…","perche":"la domanda corta per Michele"}],
- "dubbi":[{"domanda":"domanda corta per Michele su una cosa non chiara","risposte":["2-4 risposte brevi possibili"]}],
+ "dubbi":[{"domanda":"domanda corta per Michele su una cosa non chiara","risposte":["2-4 risposte brevi possibili"],"chi":"di chi è il messaggio che non capisci"}],
+ "perTe":[{"cosa":"Metti le chiavi in Aurora","entro":"AAAA-MM-GG HH:MM oppure vuoto","chi":"chi te l'ha chiesto","messaggio":"le sue parole"}],
+ "capito":[{"chi":"Papà","cosa":"vuole che metti le chiavi in Aurora entro le 15","dove":"fare"}],
  "assenze":[{"signora":"p2","dal":"AAAA-MM-GG","al":"AAAA-MM-GG (uguale a dal se è un giorno solo)","testo":"corto, per Michele (es. Selena sabato non viene)","messaggio":"le sue parole","sicurezza":"alta"}],
  "spesa":[{"prodotto":"il prodotto che manca, corto","signora":"p1 oppure vuoto","chi":"chi l'ha detto","messaggio":"le sue parole"}],
  "note":[{"giorno":"AAAA-MM-GG","testo":"una cosa importante da sapere per Michele, corta","chi":"chi l'ha detto","messaggio":"le sue parole"}],

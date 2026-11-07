@@ -8592,3 +8592,109 @@ body.premium:has(.bs-arcade) .sgr-fantasma.in-tendina{bottom:calc(112px + env(sa
 :root[data-theme="dark"] .mgp-nuovo{background:#2A2418;border-color:#7A6236}
 :root[data-theme="dark"] .mgp-nuovo-t,:root[data-theme="dark"] .mgp-piu{color:#F1DDB5}
 :root[data-theme="dark"] .panel:has(.mgp-segno)>.big.close{background:#1C1917;color:#E8EEF8;--tx:#E8EEF8;border-color:#8FA3C8}
+/* ===========================================================================================================
+   1.62.0 LA SEGRETERIA NUOVA (disegno di Gemini, misure in specifiche 162): crema #FAF8F5, blu #1D3156, oro #D4AF37,
+   i quattro cassetti (rosso #A81A1A, arancio #D9540D, verde #2F7D52, blu), raggi 16/12/8, scritte almeno 13-14 px.
+   =========================================================================================================== */
+.sg2{--sg-crema:#FAF8F5;--sg-blu:#1D3156;--sg-oro:#D4AF37;--sg-rosso:#A81A1A;--sg-arancio:#D9540D;--sg-verde:#2F7D52;--sg-grigio:#6E6458;--sg-carta:#FFFDF9;
+  background:var(--sg-crema);border-radius:20px;padding:16px 14px 18px;margin:4px 0 10px;color:var(--sg-blu);box-shadow:0 2px 6px rgba(29,49,86,.05)}
+.sg2-testa{display:flex;align-items:center;gap:12px;margin:0 0 6px}
+.sg2-viso{width:60px;height:60px;border-radius:50%;object-fit:cover;background:#F3E1B0;flex:0 0 auto;box-shadow:0 2px 6px rgba(29,49,86,.12)}
+.sg2 .sg2-testa h2{margin:0;font-size:26px;line-height:1.1;font-weight:800;color:var(--sg-blu)}
+.sg2-testa p{margin:2px 0 0;font-size:15px;color:#5B6B7A}
+.sg2 h3.sg2-tit{margin:16px 2px 8px;font-size:18px;line-height:1.2;font-weight:800;letter-spacing:.01em;text-transform:uppercase;color:var(--sg-blu)}
+.sg2 .cw-banner{margin:10px 0 0}
+/* 1) il riassunto */
+.sg2-riass{display:flex;align-items:center;gap:10px;background:var(--sg-carta);border:1.5px solid var(--sg-oro);border-radius:16px;padding:12px}
+.sg2-riass p{margin:0;flex:1;font-size:14px;line-height:1.4;color:var(--sg-blu)}
+.sg2-ascolta{flex:0 0 auto;display:flex;align-items:center;gap:6px;min-width:122px;max-width:136px;min-height:54px;padding:6px 10px;border-radius:12px;background:var(--sg-carta);border:1.5px solid var(--sg-oro);color:var(--sg-blu);font:700 13px/1.15 inherit;text-align:left;cursor:pointer}
+.sg2-ascolta .sg2-alt{font-size:22px}
+.sg2-ascolta:active{background:#FAF2D3}
+/* 2) i quattro cassetti */
+.sg2-cassetti{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
+.sg2-c{border-radius:16px;padding:10px 10px 8px;min-width:0}
+.sg2-c.largo{grid-column:1/-1}
+.sg2-c h4{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:16px;font-weight:800;line-height:1.15}
+.sg2-n{margin-left:auto;font-style:normal;font-size:12px;font-weight:800;min-width:22px;height:22px;border-radius:11px;display:inline-grid;place-items:center;padding:0 6px;color:#fff}
+.sg2-c.fare{background:#FFF5F5;border:2px solid var(--sg-rosso)}.sg2-c.fare h4{color:var(--sg-rosso)}.sg2-c.fare .sg2-n{background:var(--sg-rosso)}
+.sg2-c.prop{background:#FFF9F5;border:2px solid var(--sg-arancio)}.sg2-c.prop h4{color:var(--sg-arancio)}.sg2-c.prop .sg2-n{background:var(--sg-arancio)}
+.sg2-c.fatto{background:#F4FAF6;border:1.5px solid var(--sg-verde)}.sg2-c.fatto h4{color:var(--sg-verde)}.sg2-c.fatto .sg2-n{background:var(--sg-verde)}
+.sg2-c.sapere{background:#F4F6F9;border:1.5px solid var(--sg-blu)}.sg2-c.sapere h4{color:var(--sg-blu)}.sg2-c.sapere .sg2-n{background:var(--sg-blu)}
+.sg2-r{padding:0 0 10px;margin:0 0 10px;border-bottom:1px solid rgba(29,49,86,.1);min-width:0}
+.sg2-r:last-of-type{border-bottom:0;margin-bottom:2px;padding-bottom:4px}
+.sg2-t{display:block;font-size:14px;line-height:1.3;color:var(--sg-blu);overflow-wrap:anywhere}
+.sg2-x{display:block;font-size:14px;line-height:1.35;color:var(--sg-blu);overflow-wrap:anywhere}
+.sg2-r.prop .sg2-t{margin:0 0 3px}
+.sg2-r small{display:block;margin:3px 0 0;font-size:13px;line-height:1.3;color:var(--sg-grigio)}
+.sg2-r small.sg2-rim{color:var(--sg-rosso);font-weight:700}
+.sg2-vuoto{margin:0 0 4px;font-size:13px;line-height:1.35;color:var(--sg-grigio)}
+.sg2-tutte{display:block;width:100%;margin:4px 0 2px;padding:8px;border-radius:10px;background:rgba(255,255,255,.75);border:1px solid rgba(29,49,86,.15);color:var(--sg-blu);font:700 13px/1 inherit;cursor:pointer}
+/* i tasti */
+.sg2-bt{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.sg2-b{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:44px;padding:6px 10px;border-radius:12px;font:700 14px/1.15 inherit;text-align:center;cursor:pointer;flex:1 1 auto;min-width:0;-webkit-tap-highlight-color:transparent}
+.sg2-b:disabled{opacity:.55}
+.sg2-b.verde{background:var(--sg-verde);border:0;color:#fff;min-height:48px;flex:0 1 72px}
+.sg2-b.verde:active{background:#1F5738}
+.sg2-b.verde.pieno{display:flex;width:100%;margin:8px 0 0}
+.sg2-b.rosso{background:#fff;border:1.5px solid var(--sg-rosso);color:var(--sg-rosso);font-size:13px}
+.sg2-r.fare .sg2-b.rosso{min-height:48px;flex:1 1 92px}
+.sg2-b.rosso:active{background:#FFF0F0}
+.sg2-b.oro{background:#fff;border:1.5px solid var(--sg-oro);color:var(--sg-blu);font-size:13px}
+.sg2-b.oro:active{background:#FAF2D3}
+.sg2-b.piccolo{min-height:36px;padding:4px 10px;background:#fff;border:1px solid #E2DDD5;color:var(--sg-blu);font-size:13px;font-weight:600;flex:0 1 auto}
+.sg2-b.piccolo:active{background:#F5F3EE}
+.sg2-b.oro-pieno{background:var(--sg-oro);border:0;color:var(--sg-blu);font-size:13px;min-height:44px;flex:0 0 auto;padding:6px 12px}
+.sg2-b.oro-pieno:active{background:#BA9629}
+.sg2-b.risp{background:#fff;border:1px solid var(--sg-oro);color:var(--sg-blu);font-size:13px;font-weight:600;min-height:40px;flex:0 1 auto;padding:4px 12px}
+.sg2-b.risp:active{background:var(--sg-oro);color:#fff}
+/* 3) i documenti */
+.sg2-doc{background:var(--sg-carta);border:1.5px solid var(--sg-oro);border-radius:16px;padding:6px 12px 10px}
+.sg2-doc-r{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,.35)}
+.sg2-doc-r>span{font-size:14px;line-height:1.25;min-width:0}
+.sg2-doc-r small{display:block;font-size:13px;color:var(--sg-grigio)}
+.sg2-doc .sg2-vuoto{padding:8px 0 4px}
+.sg2-doc-apri{display:block;margin:8px 0 0 auto;background:none;border:0;color:var(--sg-blu);font:700 13px/1 inherit;text-decoration:underline;cursor:pointer;padding:6px 0}
+/* 4) cosa ho capito */
+.sg2-capito{background:#F5F7FA;border:1.5px solid var(--sg-blu);border-radius:16px;padding:12px 10px}
+.sg2-capito>h4{margin:0 0 10px;text-align:center;font-size:17px;font-weight:800;color:var(--sg-blu)}
+.sg2-pers{background:#fff;border-radius:12px;padding:10px 12px 8px;margin:0 0 10px;box-shadow:0 1px 4px rgba(29,49,86,.1)}
+.sg2-pers:last-child{margin-bottom:0}
+.sg2-pers h5{margin:0 0 6px;font-size:14px;font-weight:900;letter-spacing:.03em;color:var(--sg-blu)}
+.sg2-capr{margin:0 0 8px}
+.sg2-capr p{margin:0 0 3px;font-size:14px;line-height:1.35;color:var(--sg-blu)}
+.sg2-dove{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sg-grigio)}
+.sg2-pall{display:inline-block;width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+.sg2-pall.giallo{background:#FFC72C}.sg2-pall.verde{background:#2F7D52}.sg2-pall.grigio{background:#9EA8B6}
+.sg2-dubbio{background:#FFF5D1;border-radius:10px;padding:10px;margin:6px 0 8px}
+.sg2-dubbio b{display:block;font-size:14px;line-height:1.35;color:var(--sg-blu)}
+.sg2-risp{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.sg2-male{display:block;margin:2px 0 0 auto;background:none;border:0;padding:6px 0;color:var(--sg-grigio);font-size:13px;text-decoration:underline;cursor:pointer}
+.sg2-male:active{color:var(--sg-rosso)}
+.sg2-imp{margin:12px 0 0;background:#F3E1B0;border:1.5px solid var(--sg-oro);border-radius:16px;padding:12px}
+.sg2-imp b{display:block;margin:0 0 4px;font-size:15px;color:var(--sg-blu)}
+.sg2-imp p{margin:4px 0 0;font-size:14px;font-weight:600;line-height:1.35;color:var(--sg-blu)}
+/* le finestrine «Perché?», «Hai capito male?», «Rispondi» */
+.sg2-dlg{text-align:left}
+.sg2-dlg .sg2-dlg-p{margin:0 0 10px;font-size:15px;line-height:1.4}
+.sg2-dlg-l{margin:0 0 12px;padding:0 0 0 18px;max-height:42vh;overflow:auto}
+.sg2-dlg-l li{margin:0 0 8px;font-size:14px;line-height:1.35}
+.sg2-dlg-l .sg2-b.piccolo{min-height:32px;margin-left:4px;vertical-align:middle}
+/* telefoni stretti: un cassetto per riga */
+@media (max-width:389px){.sg2-riass{flex-direction:column;align-items:stretch}.sg2-ascolta{max-width:none;justify-content:center}.sg2-c h4{font-size:15px}}
+@media (max-width:359px){.sg2-cassetti{grid-template-columns:1fr}}
+/* tema scuro */
+:root[data-theme="dark"] .sg2{--sg-blu:#E8EDF5;--sg-grigio:#B7AEA2;--sg-carta:#26262A;background:#1C1C1F;box-shadow:none}
+:root[data-theme="dark"] .sg2-testa p{color:#A9B4C0}
+:root[data-theme="dark"] .sg2-c.fare{background:#2E1A1A;border-color:#D24848}:root[data-theme="dark"] .sg2-c.fare h4{color:#FF8A8A}
+:root[data-theme="dark"] .sg2-c.prop{background:#2E2218;border-color:#E8763A}:root[data-theme="dark"] .sg2-c.prop h4{color:#FFA36E}
+:root[data-theme="dark"] .sg2-c.fatto{background:#18291F;border-color:#4FA474}:root[data-theme="dark"] .sg2-c.fatto h4{color:#7BD4A0}
+:root[data-theme="dark"] .sg2-c.sapere{background:#1B2230;border-color:#7F95BF}:root[data-theme="dark"] .sg2-c.sapere h4{color:#B9C9EA}
+:root[data-theme="dark"] .sg2-r{border-bottom-color:rgba(255,255,255,.1)}
+:root[data-theme="dark"] .sg2-b.rosso,:root[data-theme="dark"] .sg2-b.oro,:root[data-theme="dark"] .sg2-b.piccolo,:root[data-theme="dark"] .sg2-b.risp,:root[data-theme="dark"] .sg2-tutte{background:#2A2A2E;color:#F2F2F5}
+:root[data-theme="dark"] .sg2-b.rosso{color:#FF8A8A;border-color:#D24848}
+:root[data-theme="dark"] .sg2-capito{background:#202329;border-color:#7F95BF}
+:root[data-theme="dark"] .sg2-pers{background:#2A2A2E;box-shadow:none}
+:root[data-theme="dark"] .sg2-dubbio{background:#3A3317}
+:root[data-theme="dark"] .sg2-imp{background:#3A321C}
+:root[data-theme="dark"] .sg2-b.oro-pieno{color:#1D3156}
+:root[data-theme="dark"] .sg2-c.sapere .sg2-n{background:#7F95BF;color:#1C1C1F}

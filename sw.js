@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.60.1";
+const VERSIONE = "1.62.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -49,6 +49,15 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   // 1.58.0: «✅ Sistemato» (guasto urgentissimo): si apre l'app, che chiede «È sistemato?» e lo segna
   const dd = e.notification.data || {};
+  // 1.62.0: «✅ Fatto» sull'allarme «🔔 Da fare» (le cose che deve fare Michele in persona): l'app la segna fatta
+  if (e.action === "fattoTu" && dd.rif) {
+    e.waitUntil((async () => {
+      const fin = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const c of fin) { if ("focus" in c) { try { await c.focus(); } catch (err) {} try { c.postMessage({ tipo: "tuFatto", id: dd.rif }); } catch (err) {} return; } }
+      if (self.clients.openWindow) await self.clients.openWindow(new URL("./index.html?tuFatto=" + encodeURIComponent(dd.rif), self.registration.scope).href);
+    })());
+    return;
+  }
   if (e.action === "fatto" && dd.rif) {
     e.waitUntil((async () => {
       const fin = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
@@ -84,6 +93,7 @@ self.addEventListener("push", (e) => {
     // 1.58.0: il guasto urgentissimo ha i tasti «✅ Sistemato» e «Apri», vibra più forte e resta finché non lo tocchi
     self.registration.showNotification(titolo, { body: testo, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag, renotify: true,
       ...(d.azioni === "fatto" && rif ? { actions: [{ action: "fatto", title: "✅ Sistemato" }, { action: "apri", title: "Apri" }] } : {}),
+      ...(d.azioni === "fattoTu" && rif ? { actions: [{ action: "fattoTu", title: "✅ Fatto" }, { action: "apri", title: "Apri" }] } : {}),   // 1.62.0
       ...(d.vibra ? { vibrate: [300, 120, 300, 120, 300], requireInteraction: true } : {}),
       data: { url, push: true, lettura: !!d.lettura, segreteria: d.segreteria === "lettura" ? "lettura" : !!d.segreteria, id, dove, rif } }),
     salvaAvviso({ id, titolo, testo, dove, rif, quando: new Date().toISOString() }),
