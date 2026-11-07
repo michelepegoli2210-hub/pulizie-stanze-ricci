@@ -39,6 +39,15 @@
 //  parte), che apre l'app sul messaggio; poi il segno «avvisato». Quelli già letti o di più di 2 giorni non si mandano.
 //  E LE NOTIFICHE PIÙ CHIARE (Michele: «più chiare, e che toccandole si apra quella parte dell'app con la scritta»): il
 //  disegnino e la cosa nel titolo, e «dove» aprire l'app (signore, casa, altro, messaggi; la Segreteria come prima).
+//  1.25.0 (app 1.58.0): I GUASTI URGENTI E URGENTISSIMI (Michele, 7/11: «per i guasti la possibilità di metterli urgenti e
+//  urgentissimi: gli urgenti mi devono arrivare insieme alle notifiche di Sofia di ogni giorno, gli urgentissimi ogni 2 ore»).
+//  Gli URGENTI: una riga «🔧 Da riparare subito: …» in fondo al piano del mattino, alle sintesi, alle letture di WhatsApp; nel
+//  bollettino della sera stanno nei guasti. Gli URGENTISSIMI: una notifica loro («🚨 Urgentissimo: …») al primo giro e poi ogni
+//  2 ore, dalle 7 alle 22, finché il guasto non è «fatto» (segno manutenzione/<id>.avvisatoUrg); col tasto «✅ Sistemato».
+//  E LE NOTIFICHE CHIARISSIME (Michele: «le notifiche a me devono essere ultra comprensibili»): nel titolo la cosa e il numero
+//  («☀️ Oggi 6 pulizie · 1 arrivo»), dentro una riga per cosa, col suo disegnino, la prima riga è la più importante (è quella che
+//  il telefono fa vedere da chiusa); le letture di WhatsApp dicono con le parole di Sofia cosa è successo, non «3 cose».
+//  E le ragazze nuove (app 1.57.0, zone «s…» in impostazioni/camere.zone) contano anche qui.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -46,7 +55,7 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat, sintesiSera } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.24.0";
+export const VERSIONE_GIRO = "1.25.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -65,10 +74,11 @@ function casa(st) {
   const camere = camereDi(st.camereDoc);
   const camera = (id) => !id ? { id: "", nome: "Lavoro generale", ordine: 99 } : camere.find(c => c.id === id) || LUOGHI_COMUNI.find(l => l.id === id) || (id === "stelle" ? { id, nome: "Rifiniture in altre camere", ordine: 99 } : { id, nome: id.charAt(0).toUpperCase() + id.slice(1), ordine: 99 });   // come camera() dell'app
   const squadra = {};
-  for (const z of Object.keys(ZONE)) squadra[z] = { ...(SQUADRA_BASE[z] || { nome: "", attiva: true, camere: [] }), ...((st.squadra || {})[z] || {}) };
+  const ZONE_T = { ...ZONE, ...((st.camereDoc && st.camereDoc.zone && typeof st.camereDoc.zone === "object") ? st.camereDoc.zone : {}) };   // 1.25.0: anche le ragazze nuove
+  for (const z of Object.keys(ZONE_T)) squadra[z] = { ...(SQUADRA_BASE[z] || { nome: "", attiva: true, camere: [] }), ...((st.squadra || {})[z] || {}) };
   for (const [k, v] of Object.entries(st.squadra || {})) if (!squadra[k] && v && typeof v === "object") squadra[k] = { nome: "", attiva: true, camere: [], ...v };
   const SIG = (z) => { const s = squadra[z]; if (s && s.nome) return s.nome; const p = Object.values(st.ruoli || {}).find(r => r && r.ruolo === "addetta" && r.zona === z && r.nome && !/^signora/i.test(r.nome)); if (p) return p.nome; return `Signora ${(ZONE[z] || {}).breve || z}`; };
-  const signore = () => Object.entries(ZONE).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0)).map(([id, v]) => ({ id, ...v })).filter(z => squadra[z.id] && squadra[z.id].attiva !== false);
+  const signore = () => Object.entries(ZONE_T).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0)).map(([id, v]) => ({ id, ...v })).filter(z => squadra[z.id] && squadra[z.id].attiva !== false);
   const tag = (z) => { const t = ((st.avvisi || {}).tag || {})[z]; return t ? (String(t).startsWith("@") ? t : "@" + t) : SIG(z); };
   const ordine = (id) => camera(id).ordine || 99;
   const visibile = (p) => p && p.tipo !== "stelle" && !p.nonServe;      // il giro delle rifiniture lo vedono nell'app (qui non si ricalcola); 1.20.0: senza quelle che non servono
@@ -109,41 +119,65 @@ function arriviNonPronti(st, oggi) {
   const k = casa(st), arrivi = new Set(k.arriviDi(oggi));
   return k.delGiorno(oggi).filter(p => arrivi.has(p.camera) && k.aperta(p) && p.stato !== "problema");
 }
+// ---- 1.25.0: i guasti urgenti e urgentissimi ----------------------------------------------------------------------------
+export const LIVELLO_GUASTO = { urgente: 1, urgentissimo: 2 };
+export const livelloGuasto = (m) => (m && LIVELLO_GUASTO[m.gravita]) || 0;
+export function cosaGuasto(m, camera) {
+  const cosa = String((m && m.titolo) || "Un guasto").replace(/[.\s]+$/, ""), c = m && m.camera ? camera(m.camera) : null;
+  return `${cosa}${c && c.nome ? ` (${c.nome})` : ""}`;
+}
+// la riga in fondo alle notifiche di ogni giorno: «🔧 Da riparare subito: 🚨 Caldaia (Via Trento 47); La doccia perde (Salvatore)»
+export function rigaUrgenti(guasti, camera) {
+  const ls = Object.values(guasti || {}).filter(m => m && m.stato !== "fatto" && livelloGuasto(m) >= 1)
+    .sort((a, b) => livelloGuasto(b) - livelloGuasto(a) || String(a.data || "").localeCompare(String(b.data || "")));
+  if (!ls.length) return "";
+  return `🔧 Da riparare subito: ${ls.slice(0, 2).map(m => `${livelloGuasto(m) === 2 ? "🚨 " : ""}${cosaGuasto(m, camera)}`).join("; ")}${ls.length > 2 ? ` (e altri ${ls.length - 2})` : ""}`;
+}
+const giornoParlato = (iso, oggi) => !iso ? "" : iso === oggi ? "oggi" : iso === L.aggiungiGiorni(oggi, -1) ? "ieri" : L.dataBreve(iso);
+export const OGNI_URG_MS = 2 * 3600e3 - 5 * 60e3;   // ogni 2 ore (il giro passa ogni 10 minuti: 5 di margine)
 function oreMinuti(min) { const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h} h${m ? " " + String(m).padStart(2, "0") : ""}` : `${m} min`; }
 export function testoBollettino(st, oggi, domani) {
-  const k = casa(st), righe = [`🌙 Il bollettino di Sofia · ${L.dataLunga(oggi)}`];
-  // oggi
-  const pezzi = k.signore().map(z => { const ls = k.delGiorno(oggi, z.id); if (!ls.length) return ""; const fatte = ls.filter(p => p.stato === "fatta"), manca = ls.filter(p => k.aperta(p)); return `${k.SIG(z.id)} ${fatte.length} su ${ls.length}${manca.length ? ` (manca: ${manca.map(p => k.camera(p.camera).nome).join(", ")})` : " ✓"}`; }).filter(Boolean);
-  righe.push(pezzi.length ? `Oggi: ${pezzi.join(" · ")}` : "Oggi: nessuna pulizia.");
-  // quello che ha fatto da sola
-  const reg = ((st.registro || {}).voci || []).filter(v => v && v.giorno === oggi);
-  if (reg.length) {
-    const ann = reg.filter(v => v.annullata).length;
-    righe.push("", `Ho fatto da sola: ${reg.length} ${reg.length === 1 ? "cosa" : "cose"}${ann ? ` (${ann} annullat${ann === 1 ? "a" : "e"} da te)` : ""}`);
-    reg.slice(-5).forEach(v => righe.push(` • ${String(v.testo || "").slice(0, 120)}${v.annullata ? " (annullata)" : ""}`));
-  }
+  // 1.25.0: una riga per cosa, col suo disegnino; la prima (il conto delle pulizie) è quella che il telefono fa vedere da chiusa
+  const k = casa(st), righe = [];
+  const perSig = k.signore().map(z => ({ z, ls: k.delGiorno(oggi, z.id) })).filter(x => x.ls.length);
+  const tot = perSig.reduce((s, x) => s + x.ls.length, 0), fatte = perSig.reduce((s, x) => s + x.ls.filter(p => p.stato === "fatta").length, 0);
+  if (tot) {
+    righe.push(`${fatte === tot ? "✅" : "🧹"} Pulizie di oggi: ${fatte} su ${tot} fatte`);
+    for (const x of perSig) { const manca = x.ls.filter(p => k.aperta(p)); if (manca.length) righe.push(`⏳ ${k.SIG(x.z.id)}: manca ${[...new Set(manca.map(p => k.camera(p.camera).nome))].join(", ")}`); }
+  } else righe.push("🧹 Oggi nessuna pulizia.");
   // i guasti
   const guasti = Object.values(st.manutenzione || {}).filter(m => m && m.stato !== "fatto");
   if (guasti.length) {
     const arrivi2 = new Set([...k.arriviDi(oggi), ...k.arriviDi(domani)]);
-    const urg = guasti.filter(m => m.gravita === "urgente" || (m.camera && arrivi2.has(m.camera)));
-    righe.push("", `Guasti aperti: ${guasti.length}${urg.length ? ` — da guardare subito: ${urg.slice(0, 3).map(m => `${m.camera ? k.camera(m.camera).nome + ": " : ""}${m.titolo || "lavoro"}${m.camera && arrivi2.has(m.camera) ? " (arriva un ospite)" : ""}`).join(" · ")}` : ""}`);
+    const sub = guasti.filter(m => livelloGuasto(m) >= 1 || (m.camera && arrivi2.has(m.camera))).sort((a, b) => livelloGuasto(b) - livelloGuasto(a));
+    righe.push(`🔧 Guasti da sistemare: ${guasti.length}${sub.length ? ` — subito: ${sub.slice(0, 3).map(m => `${livelloGuasto(m) === 2 ? "🚨 " : ""}${cosaGuasto(m, k.camera)}${m.camera && arrivi2.has(m.camera) ? ", arriva un ospite" : ""}`).join("; ")}` : ""}`);
+  }
+  // quello che ha fatto da sola
+  const reg = ((st.registro || {}).voci || []).filter(v => v && v.giorno === oggi);
+  if (reg.length) {
+    const ann = reg.filter(v => v.annullata).length;
+    righe.push(`🤖 Ho fatto da sola ${reg.length} ${reg.length === 1 ? "cosa" : "cose"}${ann ? ` (${ann} annullat${ann === 1 ? "a" : "e"} da te)` : ""}: ${reg.slice(-2).map(v => String(v.testo || "").replace(/\s+/g, " ").slice(0, 70)).join("; ")}`);
   }
   // domani
   const carico = k.signore().map(z => { const ls = k.delGiorno(domani, z.id); return { z, n: ls.length, min: ls.reduce((s, p) => s + (Number(p.minuti) || 0), 0) }; }).filter(x => x.n);
   if (carico.length) {
-    righe.push("", `Domani: ${carico.map(x => `${k.SIG(x.z.id)} ${x.n} ${x.n === 1 ? "pulizia" : "pulizie"}${x.min ? ` (${oreMinuti(x.min)})` : ""}`).join(" · ")}`);
-    if (carico.length >= 2) { const s = [...carico].sort((a, b) => b.min - a.min); if (s[0].min - s[s.length - 1].min > 45) righe.push(`  ${k.SIG(s[0].z.id)} ha ${oreMinuti(s[0].min - s[s.length - 1].min)} di lavoro in più: se vuoi, di' a Sofia di spostarne una a ${k.SIG(s[s.length - 1].z.id)}.`); }
-  } else righe.push("", "Domani: nessuna pulizia in programma.");
-  const arrDom = [...new Set(k.arriviDi(domani))]; if (arrDom.length) righe.push(`Arrivi domani: ${arrDom.map(c => k.camera(c).nome).join(", ")}`);
-  const mDom = k.messaggio(domani); if (mDom) righe.push(`Messaggio per domani alle signore: «${String(mDom.testo).slice(0, 120)}»`);
+    righe.push(`📅 Domani: ${carico.map(x => `${k.SIG(x.z.id)} ${x.n} ${x.n === 1 ? "pulizia" : "pulizie"}${x.min ? ` (${oreMinuti(x.min)})` : ""}`).join(", ")}`);
+    if (carico.length >= 2) { const s = [...carico].sort((a, b) => b.min - a.min); if (s[0].min - s[s.length - 1].min > 45) righe.push(`⚖️ ${k.SIG(s[0].z.id)} ha ${oreMinuti(s[0].min - s[s.length - 1].min)} di lavoro in più: se vuoi, di' a Sofia di spostarne una.`); }
+  } else righe.push("📅 Domani: nessuna pulizia.");
+  const arrDom = [...new Set(k.arriviDi(domani))]; if (arrDom.length) righe.push(`🧳 Domani arriva qualcuno in: ${arrDom.map(c => k.camera(c).nome).join(", ")}`);
+  const mDom = k.messaggio(domani); if (mDom) righe.push(`📣 Domani alle ragazze: «${String(mDom.testo).replace(/\s+/g, " ").slice(0, 100)}»`);
   // cosa aspetta il suo «Sì»
   const conv = Array.isArray((st.chat || {}).conversazione) ? st.chat.conversazione : [];
   const aspetta = conv.slice(-30).filter(m => m && m.chi === "gov" && Array.isArray(m.tasti) && m.tasti.some(t => t && t.k === "si") && !m.scelto).length;
-  if (aspetta) righe.push("", `Aspettano il tuo «Sì»: ${aspetta} ${aspetta === 1 ? "proposta" : "proposte"} di Sofia (apri l'app per vederle).`);
+  if (aspetta) righe.push(`✋ Aspetta${aspetta === 1 ? "" : "no"} il tuo «Sì»: ${aspetta} ${aspetta === 1 ? "proposta" : "proposte"} di Sofia. Apri l'app per vederle.`);
   return righe.join("\n");
 }
-
+// 1.25.0: un testo lungo (la sintesi della segretaria) diventa una frase per riga: sul telefono si legge al volo
+export function frasiInRighe(testo) {
+  const t = String(testo || "").replace(/\s+/g, " ").trim(); if (!t) return "";
+  const frasi = t.split(/(?<=[.!?…])\s+(?=[A-ZÀ-ÖØ-Þ«"0-9🔧🧹🧳📅📣✅⚠️💬])/u).map(f => f.trim()).filter(Boolean);
+  return frasi.length > 1 ? frasi.slice(0, 8).map(f => `• ${f}`).join("\n") : t;
+}
 // ---- il giro ------------------------------------------------------------------------------------------
 export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "" }) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
@@ -156,8 +190,10 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   // 1.17.0: gli avvisi sul telefono del titolare (si legge il documento solo se c'è qualcosa da dirgli)
   let ps = null;
   const iscrizioni = () => Object.entries((ps && ps.iscrizioni) || {}).filter(([, v]) => v && v.sub && v.sub.endpoint && (v.chi || "titolare") === "titolare");
-  const mandaMe = async (testo, cosa, titolo = "Sofia", urgente = false, extra = {}) => {
+  const mandaMe = async (testo, cosa, titolo = "Sofia", urgente = false, extra0 = {}) => {
     let okk = false;
+    const { conUrgenti, ...extra } = extra0 || {};
+    if (conUrgenti) { const r = await urgentiRiga(); if (r) testo = `${testo}\n${r}`; }   // 1.25.0
     if (tgMe) okk = (await telegram(a.token, a.chatMio, testo)) || okk;
     if (push && ps && ps.vapidPublic && ps.vapidPrivato) {
       const finite = [];
@@ -166,6 +202,11 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     }
     esiti.push(`${cosa}${okk ? "" : " (non è arrivato)"}`); return okk;
   };
+  // 1.25.0: i guasti aperti e i nomi delle camere, letti una volta sola per giro (solo se servono)
+  let guastiG = null, cameraG = null, urgCache = null;
+  const guastiDi = async () => guastiG || (guastiG = (await db.guastiAperti()) || {});
+  const cameraDi = async () => { if (cameraG) return cameraG; const cd = await db.doc("impostazioni", "camere"); const cs = camereDi(cd); cameraG = (id) => cs.find(c => c.id === id) || LUOGHI_COMUNI.find(l => l.id === id) || { id, nome: id }; return cameraG; };
+  const urgentiRiga = async () => { if (urgCache !== null) return urgCache; try { urgCache = rigaUrgenti(await guastiDi(), await cameraDi()); } catch (e) { console.warn("guasti urgenti:", e && e.message); urgCache = ""; } return urgCache; };
   const oraPiano = MIN(Number(a.oraPiano) || 7);
   const dentro = (da, a2) => t.minuti >= da && t.minuti < a2;
   const serve = {
@@ -208,10 +249,13 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
         }
         fatti.piano = t.hhmm;
         if (puoMe) {
-          const n = k.signore().map(z => { const c = k.delGiorno(oggi, z.id).filter(p => p.stato !== "fatta").length; return c ? `${k.SIG(z.id)} ${c}` : ""; }).filter(Boolean).join(", ");
-          const arr = [...new Set(k.arriviDi(oggi))].map(c => k.camera(c).nome);
-          const quante = k.signore().map(z => { const c = k.delGiorno(oggi, z.id).filter(p => p.stato !== "fatta").length; return c ? `${k.SIG(z.id)} ${c} ${c === 1 ? "pulizia" : "pulizie"}` : ""; }).filter(Boolean);
-          await mandaMe(`${quante.length ? `Oggi ${quante.join(", ")}.` : `Oggi: ${n}.`}${arr.length ? ` Arrivano ospiti in ${arr.join(", ")}.` : ""}${alGruppo ? " Il piano è già andato alle signore." : ""}`, "tre righe al titolare", "☀️ Il piano di oggi", false, { dove: "signore", tag: "sofia-piano" });
+          // 1.25.0: nel titolo quante pulizie e quanti arrivi; dentro una riga per ragazza con le sue camere
+          const perSig = k.signore().map(z => ({ z, ls: k.delGiorno(oggi, z.id).filter(p => p.stato !== "fatta") })).filter(x => x.ls.length);
+          const tot = perSig.reduce((s, x) => s + x.ls.length, 0), arr = [...new Set(k.arriviDi(oggi))].map(c => k.camera(c).nome);
+          const righe = perSig.map(x => `🧹 ${k.SIG(x.z.id)}: ${[...new Set(x.ls.map(p => k.camera(p.camera).nome))].join(", ")}`);
+          if (arr.length) righe.push(`🧳 Arriva qualcuno in: ${arr.join(", ")}`);
+          if (alGruppo) righe.push("✅ Il piano è già andato alle ragazze.");
+          await mandaMe(righe.join("\n"), "tre righe al titolare", `☀️ Oggi ${tot} ${tot === 1 ? "pulizia" : "pulizie"}${arr.length ? ` · ${arr.length} ${arr.length === 1 ? "arrivo" : "arrivi"}` : ""}`, false, { dove: "signore", tag: "sofia-piano", conUrgenti: true });
         }
       }
     }
@@ -225,7 +269,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     }
     if (serve.allarme) {
       const ls = arriviNonPronti(st, oggi);
-      if (ls.length && puoMe) await mandaMe(`${ls.map(p => k.camera(p.camera).nome).join(", ")}: oggi ${ls.length === 1 ? "arriva un ospite e la camera non risulta" : "arrivano ospiti e le camere non risultano"} ancora ${ls.length === 1 ? "pronta" : "pronte"}.`, "avviso arrivi al titolare", ls.length === 1 ? `⚠️ ${k.camera(ls[0].camera).nome} non è pronta` : "⚠️ Camere non pronte", true, { dove: "signore", tag: "sofia-allarme" });
+      if (ls.length && puoMe) await mandaMe([`🧳 Oggi ${ls.length === 1 ? "arriva un ospite, ma la camera non risulta ancora pulita" : "arrivano ospiti, ma le camere non risultano ancora pulite"}.`, ...ls.map(p => `🧹 ${k.camera(p.camera).nome}: la fa ${p.zona ? k.SIG(p.zona) : "—"}`), "👉 Tocca per vedere a che punto sono."].join("\n"), "avviso arrivi al titolare", ls.length === 1 ? `⚠️ ${k.camera(ls[0].camera).nome} non è ancora pronta` : `⚠️ ${ls.length} camere non ancora pronte`, true, { dove: "signore", tag: "sofia-allarme" });
       fatti.allarme = ls.length ? t.hhmm : "niente";
     }
     if (serve.chiusura) {
@@ -245,7 +289,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       if (ponti.length) {
         const vivo = Math.max(...ponti.map(p => Number(p.vivo)));
         if (adesso.getTime() - vivo > 40 * 60 * 1000) {
-          if (puoMe) await mandaMe(`📵 Il ponte WhatsApp non dà segni dalle ${oraRoma(new Date(vivo)).hhmm}: il PC è acceso? Finché è spento, i messaggi del gruppo aspettano.`, "avviso ponte spento", "📵 Il ponte WhatsApp è fermo", false, { dove: "altro", tag: "sofia-ponte" });
+          if (puoMe) await mandaMe(`Il programma sul PC che porta WhatsApp all'app è fermo dalle ${oraRoma(new Date(vivo)).hhmm}.\n💻 Il PC è acceso? Finché è spento, Sofia non legge i messaggi.`, "avviso ponte spento", "📵 WhatsApp non arriva più all'app", false, { dove: "altro", tag: "sofia-ponte" });
           fatti.ponte = t.hhmm;
         }
       }      // 1.18.1: senza ponte (o col ponte acceso) non segno niente: si ricontrolla al prossimo giro
@@ -262,7 +306,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase, minuti: t.minuti });
     if (lettura.avvisa) {
       if (!ps) ps = await db.doc("importazioni", "push-sofia");
-      await mandaMe(lettura.avvisa.testo, lettura.avvisataLid !== undefined ? "avviso della lettura da controllare" : "lettura delle chat", lettura.avvisa.titolo, true, lettura.avvisa.extra || { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" });
+      await mandaMe(lettura.avvisa.testo, lettura.avvisataLid !== undefined ? "avviso della lettura da controllare" : "lettura delle chat", lettura.avvisa.titolo, true, { ...(lettura.avvisa.extra || { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" }), conUrgenti: true });
       // 1.18.1: la lettura fatta dal telefono/PC (o di notte): il segno «avvisata», solo se è ancora quella (stesso numero)
       if (lettura.avvisataLid !== undefined) { try { await db.segnaSe("importazioni", "lettura-sofia", "lid", lettura.avvisataLid, { avvisata: adesso.toISOString() }); } catch (e) { console.warn("avvisata:", e && e.message); } }
     }
@@ -292,7 +336,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
         if (s.esito === "fatta") {
           if (!ps) ps = await db.doc("importazioni", "push-sofia");
           const puoMe2 = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
-          if (puoMe2) await mandaMe(String(s.testo || "").slice(0, 700), "la sintesi della segretaria", mattina ? "📋 La sintesi di stamattina" : "📋 La sintesi di oggi", false, { url: "./index.html?segreteria=1", segreteria: true, tag: "sofia-sintesi" });
+          if (puoMe2) await mandaMe(frasiInRighe(s.testo).slice(0, 700), "la sintesi della segretaria", mattina ? "📋 La sintesi di stamattina" : "📋 La sintesi di oggi", false, { url: "./index.html?segreteria=1", segreteria: true, tag: "sofia-sintesi", conUrgenti: true });
         }
         fatti[chiaveS(o)] = t.hhmm; esiti.push(`sintesi delle ${o}: ${s.esito}${s.n ? ` (${s.n} messaggi)` : ""}`);
       }
@@ -313,11 +357,35 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
         if (!puoMe3) { esiti.push("messaggi delle signore: nessun telefono con le notifiche accese"); break; }
         const chi = String(m.nome || "Una signora"), ora = quando ? oraRoma(new Date(quando)).hhmm : "";
         const corpo = m.tipo === "foto" ? `📷 Ti ha mandato una foto${m.testo ? `: «${m.testo}»` : "."}` : m.tipo === "file" ? String(m.testo || "") : `«${m.testo || ""}»`;
-        const okk = await mandaMe(`${corpo}${ora ? ` (alle ${ora})` : ""} · Tocca per leggerlo nell'app.`, `messaggio di ${chi}`, `💬 ${chi} ti scrive${m.prova ? " (prova)" : ""}`, true, { dove: "messaggi", rif: String(m.id).slice(0, 80), tag: ("sofia-msg-" + String(m.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40) });
+        const okk = await mandaMe(`${corpo}\n🕐 ${ora ? `alle ${ora} · ` : ""}tocca per leggerlo e rispondere`, `messaggio di ${chi}`, `💬 ${chi} ti scrive${m.prova ? " (prova)" : ""}`, true, { dove: "messaggi", rif: String(m.id).slice(0, 80), tag: ("sofia-msg-" + String(m.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40) });
         if (okk) await db.merge("messaggi_signore", m.id, { avvisato: adesso.toISOString() });
       }
     }
   } catch (e) { console.warn("messaggi delle signore:", e && e.message); esiti.push("messaggi delle signore: errore " + String((e && e.message) || e).slice(0, 80)); }
+  // 1.25.0: i guasti URGENTISSIMI: una notifica loro al primo giro, poi ogni 2 ore, dalle 7 alle 22, finché non sono «fatto»
+  try {
+    if (t.minuti >= MIN(7) && t.minuti < MIN(22)) {
+      const dovuti = Object.values(await guastiDi()).filter(m => m && m.id && m.stato !== "fatto" && m.gravita === "urgentissimo" && adesso.getTime() - (Date.parse(m.avvisatoUrg || "") || 0) >= OGNI_URG_MS)
+        .sort((x, y) => String(x.urgDal || x.data || "").localeCompare(String(y.urgDal || y.data || "")));
+      if (dovuti.length) {
+        if (!ps) ps = await db.doc("importazioni", "push-sofia");
+        const puoMe4 = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
+        if (!puoMe4) esiti.push("guasti urgentissimi: nessun telefono con le notifiche accese");
+        else {
+          const camera = await cameraDi();
+          for (const m of dovuti.slice(0, 5)) {
+            const n = (Number(m.avvisiUrg) || 0) + 1, c = m.camera ? camera(m.camera) : null;
+            const testo = [`📍 ${c && c.nome ? c.nome : "In generale"}${m.da ? ` · l'ha segnalato ${m.da}` : ""}${m.data ? ` ${giornoParlato(m.data, oggi)}` : ""}`,
+              m.nota ? `📝 ${String(m.nota).replace(/\s+/g, " ").slice(0, 120)}` : "",
+              n > 1 ? `🔁 Te lo ricordo per la ${n}ª volta: ogni 2 ore, finché non è sistemato.` : "🔁 Te lo ricordo ogni 2 ore, finché non è sistemato.",
+              "👉 Quando è a posto tocca «✅ Sistemato»."].filter(Boolean).join("\n");
+            const okk = await mandaMe(testo, `guasto urgentissimo: ${String(m.titolo || m.id).slice(0, 60)}`, `🚨 Urgentissimo: ${String(m.titolo || "un guasto").slice(0, 60)}`, true, { dove: "manutenzione", rif: String(m.id).slice(0, 80), tag: ("sofia-urg-" + String(m.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), azioni: "fatto", vibra: true });
+            if (okk) await db.merge("manutenzione", m.id, { avvisatoUrg: adesso.toISOString(), avvisiUrg: n });
+          }
+        }
+      }
+    }
+  } catch (e) { console.warn("guasti urgentissimi:", e && e.message); esiti.push("guasti urgentissimi: errore " + String((e && e.message) || e).slice(0, 80)); }
   const vecchi = Array.isArray(stato0 && stato0.esiti) ? stato0.esiti : [];
   const notevole = lettura && !/^(niente di nuovo|aspetto|aspetta|la sta leggendo)/.test(lettura.esito || "");
   const letturaInfo = notevole ? { quando: adesso.toISOString(), esito: lettura.esito, n: lettura.n || 0 } : ((stato0 && stato0.lettura) || null);
@@ -352,7 +420,7 @@ export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
       // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
-      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.dove ? { dove: String(dati.dove) } : {}), ...(dati.rif ? { rif: String(dati.rif) } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.dove ? { dove: String(dati.dove) } : {}), ...(dati.rif ? { rif: String(dati.rif) } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}), ...(dati.azioni ? { azioni: String(dati.azioni).slice(0, 20) } : {}), ...(dati.vibra ? { vibra: true } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
       return { ok: true, stato: (r && r.statusCode) || null };
     } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };

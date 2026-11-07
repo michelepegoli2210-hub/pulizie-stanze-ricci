@@ -47,10 +47,20 @@ export function testoRiassunto(r) {
 }
 // 1.22.0: l'avviso di una lettura del modo nuovo: cosa c'è da mettere a posto (lo fa l'app) e cosa chiede; apre la Segreteria
 export function avvisoApplica(x, nomeGov) {
-  const n = Number(x && x.n) || 0, r = (x && x.riassunto) || {};
+  // 1.25.0 (Michele, 7/11: «le notifiche devono essere ultra comprensibili»): nel titolo quante cose e quante domande; dentro le
+  // parole di Sofia (la «risposta» della lettura: 2-4 frasi semplici, chi ha scritto e di cosa), poi i guasti uno per riga
+  const n = Number(x && x.n) || 0, r = (x && x.riassunto) || {}, jj = (x && x.j) || {};
+  const nomeCamera = typeof (x && x.nomeCamera) === "function" ? x.nomeCamera : (id) => id;
   const cose = (Number(r.azioni) || 0) + (Number(r.guasti) || 0) + (Number(r.assenze) || 0) + (Number(r.spesa) || 0) + (Number(r.note) || 0) + (Number(r.telefoni) || 0), domande = (Number(r.proposte) || 0) + (Number(r.dubbi) || 0) + (Number(r.ore) || 0);
   const chats = [...new Set((Array.isArray(x && x.fonte && x.fonte.chats) ? x.fonte.chats : []).map(c => String(c).replace(/^chat con /, "")).filter(Boolean))].slice(0, 3).join(", ");
-  return { titolo: `${nomeGov || "Sofia"} · WhatsApp`, testo: `Ho letto ${n === 1 ? "un messaggio" : n ? n + " messaggi" : "i messaggi"}${chats ? ` (${chats})` : ""}: ${cose ? `${cose === 1 ? "una cosa" : cose + " cose"} da mettere a posto nell'app` : "niente da cambiare nell'app"}${domande ? `, ${domande === 1 ? "una domanda" : domande + " domande"} per te` : ""}. Tocca per vedere.`, extra: { url: "./index.html?segreteria=lettura", segreteria: "lettura", tag: "sofia-lettura" } };
+  const righe = [];
+  const risp = String(jj.risposta || "").replace(/\s+/g, " ").trim();
+  righe.push(risp ? (risp.length > 320 ? risp.slice(0, 317).replace(/\s+\S*$/, "") + "…" : risp) : `Ho letto ${n === 1 ? "un messaggio" : n ? n + " messaggi" : "i messaggi"}${chats ? ` (${chats})` : ""}.`);
+  const guasti = (Array.isArray(jj.azioni) ? jj.azioni : []).filter(a => a && a.tipo === "manutenzione" && a.modo !== "chiudi" && a.cosa).slice(0, 3);
+  for (const a of guasti) righe.push(`${a.urgente ? "🚨" : "🔧"} ${String(a.cosa).replace(/\s+/g, " ").slice(0, 80)}${a.camera ? ` (${nomeCamera(a.camera)})` : ""}`);
+  righe.push(domande ? `👉 ${domande === 1 ? "C'è una domanda" : `Ci sono ${domande} domande`} per te: tocca per rispondere.` : "👉 Tocca per vedere.");
+  const titolo = `📲 WhatsApp: ${cose ? `${cose === 1 ? "una cosa" : cose + " cose"} nell'app` : "niente da cambiare"}${domande ? ` · ${domande === 1 ? "una domanda" : domande + " domande"} per te` : ""}`;
+  return { titolo, testo: righe.join("\n"), extra: { url: "./index.html?segreteria=lettura", segreteria: "lettura", tag: "sofia-lettura" } };
 }
 // 1.18.1: il testo dell'avviso «ho letto» (lo stesso per le letture del giro e per quelle del telefono)
 export function avvisoLettura(x, nomeGov) {
@@ -216,7 +226,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     for (const pid of ids) { try { await db.merge("posta", pid, { letto: true }); } catch (e) {} }
     return {
       esito: ha ? "letto" : "letto, niente da cambiare", ts: ultimoTs, n: scelti.length, riassunto, modello: r.modello || "",
-      avvisa: avvisoOra ? (chat ? avvisoApplica({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov) : avvisoLettura({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov)) : null,
+      avvisa: avvisoOra ? (chat ? avvisoApplica({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] }, j, nomeCamera: (cid) => ((ctx.camere || []).find(c => c.id === cid) || { nome: cid }).nome }, ctx.nomeGov) : avvisoLettura({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov)) : null,
     };
   } catch (e) {
     const msg = String((e && e.message) || e).slice(0, 200);
