@@ -48,6 +48,8 @@
 //  («☀️ Oggi 6 pulizie · 1 arrivo»), dentro una riga per cosa, col suo disegnino, la prima riga è la più importante (è quella che
 //  il telefono fa vedere da chiusa); le letture di WhatsApp dicono con le parole di Sofia cosa è successo, non «3 cose».
 //  E le ragazze nuove (app 1.57.0, zone «s…» in impostazioni/camere.zone) contano anche qui.
+//  1.26.0 (app 1.58.1): SI RISPARMIA. Argon legge le chat solo alle 8, 12, 16 e 20 (il turno fatto resta in letturaTurno);
+//  prima il modello economico guarda i messaggi nuovi: le cose urgenti si leggono subito, i saluti mai (vedi lettura-giro.mjs).
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -55,7 +57,7 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat, sintesiSera } from "./lettura-giro.mjs";
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.25.0";
+export const VERSIONE_GIRO = "1.26.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -303,7 +305,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     return { camere: k.camere, signore: k.signore().map(z => ({ id: z.id, nome: k.SIG(z.id), zona: z.nome || "" })) };
   };
   try {
-    lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase, minuti: t.minuti });
+    lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase, minuti: t.minuti, turnoLetto: String((stato0 && stato0.letturaTurno) || "") });   // 1.26.0: il turno
     if (lettura.avvisa) {
       if (!ps) ps = await db.doc("importazioni", "push-sofia");
       await mandaMe(lettura.avvisa.testo, lettura.avvisataLid !== undefined ? "avviso della lettura da controllare" : "lettura delle chat", lettura.avvisa.titolo, true, { ...(lettura.avvisa.extra || { url: "./index.html?lettura=1", lettura: true, tag: "sofia-lettura" }), conUrgenti: true });
@@ -392,7 +394,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   // 1.18.1: chi ha fatto partire il giro (il ponte sul PC, l'orario di GitHub, Michele a mano) e quando scade la chiave del ponte
   const chi = /^[a-z ]{1,20}$/.test(String(da || "")) ? String(da) : "";
   const spinta = chi === "ponte" ? { spinta: { ultima: adesso.toISOString(), scade: /^\d{4}-\d{2}-\d{2}$/.test(String(scade || "")) ? String(scade) : null } } : {};
-  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, ...(chi ? { ultimoDa: chi } : {}), ...spinta, letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
+  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, ...(chi ? { ultimoDa: chi } : {}), ...spinta, letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), letturaTurno: (lettura && lettura.turno) || String((stato0 && stato0.letturaTurno) || ""), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
   return { ora: t.hhmm, giorno: oggi, fatti, esiti, lettura: lettura ? lettura.esito : null, da: chi || null };
 }
 

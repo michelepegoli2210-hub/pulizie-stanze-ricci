@@ -19,6 +19,14 @@
 //  legge sempre col modo nuovo (avvisi.prospettoChat non conta più) e una lettura «da_controllare» del tipo di prima non ferma
 //  più la posta: se è di meno di 3 ore la rileggo insieme alla posta nuova (quella di prima diventa «sostituita»), altrimenti
 //  la metto da parte («scartata», in Segreteria c'è «🔄 Rileggila»). Niente più avviso «Tocca per controllare e salvare».
+//  1.26.0 (app 1.58.1): SI RISPARMIA (Michele, 7/11: «ogni 4 ore… le cose tipo solo ok, trascrizione: il modello gratuito, fammi
+//  risparmiare parecchio… i guasti e le indicazioni urgenti me le devi mettere subito nell'applicazione; per tutto il resto va
+//  bene ogni 4 ore»). Argon (il modello caro) legge le chat solo alle 8, alle 12, alle 16 e alle 20. A ogni giro, se ci sono
+//  messaggi nuovi, prima li guarda il modello economico (IL VAGLIO, solo i messaggi nuovi e una paginetta di istruzioni):
+//  «urgente» (un guasto, un danno, una cosa da fare oggi o subito) → Argon legge SUBITO, come prima; «niente» (ok, grazie,
+//  saluti) → Argon non li legge mai; «normale» → aspettano il turno. Il giudizio resta sul messaggio (posta/<id>.vaglio): ogni
+//  messaggio si guarda una volta sola. Se il vaglio non riesce si legge subito (meglio spendere che perdere un guasto).
+//  I vocali li trascrive il modello economico (Argon legge il testo); anche la sintesi delle 8:30 e delle 20:30.
 // ============================================================================
 import * as L from "../logica.js";
 import * as LET from "../lettura.js";
@@ -28,12 +36,47 @@ import { TIPI_OSPITE } from "../regole.js";
 
 export const QUIETE_MS = 5 * 60 * 1000, LOCK_MS = 15 * 60 * 1000, SCADE_MS = 24 * 3600 * 1000, MARGINE_MS = 60 * 60 * 1000;
 const MAX_VOCALI = 60, MAX_FOTO = 4;
+// 1.26.0: i vocali, il vaglio e la sintesi: prima il modello economico (flash-lite), poi quello di mezzo; mai Argon
+export const ORDINE_ECONOMICO = ["svelta", "sveglia"];
 // 1.18.1: l'avviso di una lettura fatta da un telefono parte dopo 2 minuti (se nel frattempo l'ha aperta, niente avviso);
 // gli avvisi delle letture solo dalle 7 alle 22:30 (minuti dell'ora di Roma; senza ora, sempre)
 export const ATTESA_AVVISO_MS = 2 * 60 * 1000, ORE_AVVISO = [7 * 60, 22 * 60 + 30];
 // 1.23.0: una lettura del tipo di prima di meno di 3 ore si rilegge; quella più vecchia si mette da parte con questa frase (la stessa dell'app)
 export const FRESCA_MS = 3 * 3600 * 1000, NON_VECCHIA = "Era una lettura del tipo di prima (da spuntare e salvare): l'ho messa da parte. Se vuoi, tocca «🔄 Rileggila»: la rileggo e metto a posto l'app da sola.";
 export const oraDiAvvisi = (minuti) => minuti === undefined || minuti === null || (minuti >= ORE_AVVISO[0] && minuti < ORE_AVVISO[1]);
+// 1.26.0: I TURNI DI ARGON (le chat si leggono alle 8, 12, 16 e 20) e IL VAGLIO (il modello economico guarda i messaggi nuovi)
+export const ORE_LETTURA = [8, 12, 16, 20];
+// l'ultimo turno già cominciato, per esempio "2026-11-07@12"; prima delle 8 vale quello delle 20 di ieri
+export function turnoLettura(oggi, minuti) {
+  const h = Math.floor((Number(minuti) || 0) / 60), passati = ORE_LETTURA.filter(x => x <= h);
+  return passati.length ? `${oggi}@${String(passati[passati.length - 1]).padStart(2, "0")}` : `${L.aggiungiGiorni(oggi, -1)}@${String(ORE_LETTURA[ORE_LETTURA.length - 1]).padStart(2, "0")}`;
+}
+export function prossimaLettura(minuti) {
+  const h = Math.floor((Number(minuti) || 0) / 60), p = ORE_LETTURA.find(x => x > h);
+  return p !== undefined ? `delle ${p}` : `delle ${ORE_LETTURA[0]} di domattina`;
+}
+export function istruzioniVaglio(base) {
+  const camere = ((base && base.camere) || []).map(c => String(c.nome || "").replace(" · ", " ")).filter(Boolean).join(", ");
+  const signore = ((base && base.signore) || []).map(s => s && s.nome).filter(Boolean).join(", ");
+  return [
+    `VAGLIO. Sei la segretaria delle Stanze di Ricci, un piccolo albergo${camere ? ` (le camere: ${camere})` : ""}${signore ? `; le signore delle pulizie: ${signore}` : ""}.`,
+    "Ti mando SOLO i messaggi WhatsApp appena arrivati. Non devi rispondere e non devi fare niente: devi solo dire se c'è qualcosa di URGENTE.",
+    'Rispondi SOLO con un JSON così: {"tipo":"urgente","perche":"poche parole"}; al posto di "urgente" puoi mettere "normale" o "niente".',
+    "- urgente: un guasto o un danno (perde acqua, si è rotto, non funziona, non c'è acqua calda, manca la luce, la porta o la serratura non va, si è allagato, un pericolo); oppure una cosa da fare OGGI o SUBITO (una camera da preparare per chi arriva oggi, un cambio per oggi, «subito», «urgente», «adesso», «entro le…»); oppure una persona o un ospite che sta male o ha un problema adesso.",
+    "- niente: solo saluti, «ok», «va bene», «grazie», emoji, auguri, cose che non riguardano l'albergo.",
+    "- normale: tutto il resto (cose per i prossimi giorni, informazioni, domande che possono aspettare qualche ora).",
+    "Se hai un dubbio tra urgente e normale, scegli urgente. Se anche una sola cosa è urgente, la risposta è urgente.",
+  ].join("\n");
+}
+// ritorna { tipo: urgente | normale | niente, perche, modello }; una risposta che non si capisce vale «urgente» (si legge subito)
+export async function vaglia(gemini, msgs, immagini, base) {
+  const righe = msgs.map(m => `${m.ora ? m.ora + " " : ""}${m.chi || "?"}${m.chat ? ` (${m.chat})` : ""}: ${String(m.testo || "").slice(0, 600)}`);
+  const foto = immagini && immagini.length ? immagini : null;
+  const { r } = await chiediGemini(gemini, { sistema: istruzioniVaglio(base), storia: [], testo: `I messaggi appena arrivati${foto ? ` (ti mando anche ${foto.length === 1 ? "una foto" : foto.length + " foto"}: guardale)` : ""}:\n${righe.join("\n").slice(-8000)}`, immagine: foto, secondi: 45, maxToken: 400 }, ORDINE_ECONOMICO);
+  const j = LET.jsonDaRisposta(r.grezzo) || {};
+  const t = String(j.tipo || "").toLowerCase().trim();
+  return { tipo: ["urgente", "normale", "niente"].includes(t) ? t : "urgente", perche: String(j.perche || "").slice(0, 120), modello: r.modello || "" };
+}
 
 // il nome di Sofia, come lo mostra l'app (tutto maiuscolo → normale)
 export function nomeGovDa(gov) {
@@ -122,10 +165,48 @@ export async function ctxDalDatabase(db, { oggi, camere, signore }) {
   return ctx;
 }
 
+// 1.26.0: i messaggi della posta come li legge Sofia (col nome della chat davanti se sono più di una)
+export function messaggiDa(lista, oggi) {
+  const chats = new Map();
+  for (const p of lista) { const nome = p.chat || "Albergo"; if (!chats.has(nome)) chats.set(nome, p.gruppo !== false); }
+  const piu = chats.size > 1;
+  const msgs = lista.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "", chatNome: chats.get(nome) ? nome : "chat con " + nome, mio: !!p.mio }; })
+    .sort((x, y) => ((x.data || "") + (x.ora || "")).localeCompare((y.data || "") + (y.ora || "")));
+  return { msgs, chats };
+}
+// i vocali: quelli già trascritti si usano, gli altri li trascrive il modello economico (6 per volta; la trascrizione resta nel messaggio)
+export async function trascriviVocali(db, gemini, msgs, base) {
+  const daTrascrivere = msgs.filter(m => m.tipo === "audio" && m.media && !m.trascrizione).slice(-MAX_VOCALI);
+  for (const m of msgs) if (m.tipo === "audio" && m.trascrizione) m.testo = `🎤 (vocale) ${m.trascrizione}`;
+  const nomiCamere = base.camere.map(c => String(c.nome).replace(" · ", " ")).join(", ");
+  for (let i = 0; i < daTrascrivere.length; i += 6) {
+    const lotto = daTrascrivere.slice(i, i + 6), parti = [];
+    for (const m of lotto) { const x = await db.doc("posta_media", m.id); if (x && x.dati && x.dati.length < 8e6) parti.push({ m, mime: x.mime || "audio/ogg", dati: x.dati }); }
+    if (!parti.length) continue;
+    try {
+      const { r } = await chiediGemini(gemini, { sistema: LET.istruzioniTrascrizione(nomiCamere, parti.length, { signore: (base.signore || []).map(s => s.nome) }), storia: [], testo: LET.testoTrascrizione(parti.length), immagine: parti.map(p => ({ mime: p.mime, dati: p.dati })), secondi: 120, maxToken: 8000 }, ORDINE_ECONOMICO);
+      const j = LET.jsonDaRisposta(r.grezzo), lista = j && Array.isArray(j.vocali) ? j.vocali : [];
+      for (const [k, p] of parti.entries()) {
+        const t = String(lista[k] || "").trim();
+        p.m.testo = t ? `🎤 (vocale) ${t}` : "🎤 (un vocale che non ho capito)";
+        if (t) { p.m.trascrizione = t; try { await db.merge("posta", p.m.id, { trascrizione: t.slice(0, 7000) }); } catch (e) {} }
+      }
+    } catch (e) { console.warn("trascrizione:", e && e.message); for (const p of parti) p.m.testo = "🎤 (un vocale che non sono riuscita ad ascoltare)"; if (/credito|402|prepay/i.test(String(e && e.message))) throw e; }
+  }
+}
+// le foto: le ultime 4 le guarda insieme ai messaggi; i messaggi senza testo prendono una riga che dice cosa sono
+export async function fotoEtesti(db, msgs) {
+  const did = (m) => (m.didascalia ? " " + m.didascalia : "");
+  const immagini = [];
+  for (const m of msgs.filter(m => m.tipo === "foto" && m.media).slice(-MAX_FOTO)) { const x = await db.doc("posta_media", m.id); if (x && x.dati) { immagini.push({ mime: x.mime || "image/jpeg", dati: x.dati }); m.testo = `📷 (foto n. ${immagini.length}: la vedi tra le immagini)${did(m)}`; } }
+  for (const m of msgs) if (!m.testo) m.testo = m.tipo === "audio" ? "🎤 (un vocale che non ho ascoltato)" : m.tipo === "foto" ? "📷 (una foto)" + did(m) : "";
+  return immagini;
+}
+
 // ---- la lettura --------------------------------------------------------------------------------------------------------
 // ritorna { esito, ts (fin dove ha guardato la posta), riassunto?, n?, avvisa?: {titolo, testo}, avvisataLid?, credito? }
 // minuti: l'ora di Roma in minuti (1.18.1: gli avvisi delle letture solo dalle 7 alle 22:30)
-export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, letturaTs = 0, oggi, prendiBase, minuti }) {
+export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, letturaTs = 0, oggi, prendiBase, minuti, turnoLetto = "" }) {
   if (a.giroLettura === false) return { esito: "spenta", ts: letturaTs };
   if (!gemini || (!gemini.chiave && typeof gemini.chiedi !== "function")) return { esito: "senza chiave", ts: letturaTs };
   const ora = adesso.getTime(), t0 = Date.now(), finito = () => new Date(ora + (Date.now() - t0)).toISOString();
@@ -151,51 +232,54 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
   if (lett && lett.stato === "in_lettura" && ora - Date.parse(lett.quando || 0) < LOCK_MS) return { esito: "la sta leggendo il telefono", ts: letturaTs };
   const da = letturaTs ? letturaTs - MARGINE_MS : ora - SCADE_MS;
   const nuove = Object.values((await db.postaDa(da)) || {}).filter(p => p && p.id && !p.letto && (p.tipo === "testo" || p.tipo === "audio" || p.tipo === "foto"));
-  if (!nuove.length && !vecchie.length) return { esito: "niente di nuovo", ts: letturaTs };
+  const turnoOra = minuti !== undefined && minuti !== null ? turnoLettura(oggi, minuti) : "";   // 1.26.0: il turno passa anche se non c'è niente
+  if (!nuove.length && !vecchie.length) return { esito: "niente di nuovo", ts: letturaTs, turno: turnoOra };
   if (nuove.some(p => ora - (Number(p.ts) || 0) < QUIETE_MS)) return { esito: "aspetto che finiscano di scrivere", ts: letturaTs };
   const ultimoTs = Math.max(letturaTs || 0, ...nuove.map(p => Number(p.ts) || 0));
   const tutte = [...nuove];
   for (const id of vecchie) if (!tutte.some(p => p.id === id)) { const p = await db.doc("posta", id); if (p) tutte.push(p); }
   if (!tutte.length) return { esito: "niente di nuovo", ts: ultimoTs };
+  // 1.26.0: IL VAGLIO (solo dal giro, che sa l'ora; le letture di prima da rifare si leggono subito, come prima)
+  let turnoNuovo = "", baseVaglio = null;
+  if (!vecchie.length && minuti !== undefined && minuti !== null) {
+    const turno = turnoLettura(oggi, minuti), dovuto = turnoLetto !== turno;
+    let urgente = tutte.some(p => p.vaglio === "urgente");
+    const daVagliare = tutte.filter(p => !p.vaglio);
+    if (daVagliare.length && !urgente) {
+      let tipo = "urgente", perche = "";
+      try {
+        baseVaglio = await prendiBase();
+        const { msgs: mv } = messaggiDa(daVagliare, oggi);
+        await trascriviVocali(db, gemini, mv, baseVaglio);
+        for (const m of mv) if (m.trascrizione) { const p = daVagliare.find(x => x.id === m.id); if (p) p.trascrizione = m.trascrizione; }
+        const imm = await fotoEtesti(db, mv);
+        const v = await vaglia(gemini, mv.filter(m => m.testo), imm, baseVaglio);
+        tipo = v.tipo; perche = v.perche;
+      } catch (e) { console.warn("vaglio:", e && e.message); tipo = "urgente"; perche = "il controllo non è riuscito: leggo subito"; }
+      for (const p of daVagliare) { p.vaglio = tipo; try { await db.merge("posta", p.id, { vaglio: tipo, ...(perche ? { vaglioPerche: perche.slice(0, 120) } : {}) }); } catch (e) {} }
+      if (tipo === "urgente") urgente = true;
+    }
+    if (!urgente && tutte.every(p => p.vaglio === "niente")) {   // solo saluti: Argon non serve
+      for (const p of tutte) { try { await db.merge("posta", p.id, { letto: true }); } catch (e) {} }
+      return { esito: `niente da leggere (solo saluti: ${tutte.length === 1 ? "un messaggio" : tutte.length + " messaggi"})`, ts: ultimoTs, turno: dovuto ? turno : "" };
+    }
+    if (!urgente && !dovuto) return { esito: `aspetto il turno ${prossimaLettura(minuti)} (${tutte.length === 1 ? "un messaggio" : tutte.length + " messaggi"}; le cose urgenti le leggo subito)`, ts: letturaTs };
+    turnoNuovo = dovuto ? turno : "";
+  }
   const ids = tutte.map(p => p.id), id = "giro_" + ora.toString(36);
   if (sostituisci && sostituisci !== "-") { try { await db.merge("importazioni", "segreteria_" + sostituisci, { esito: "sostituita" }); } catch (e) {} }   // 1.23.0
   await db.salva("importazioni", "lettura-sofia", { lid: id, stato: "in_lettura", da: "giro", quando: adesso.toISOString(), postaIds: ids });
   try {
-    const base = await prendiBase();      // camere e signore (si leggono solo quando c'è davvero da leggere)
+    const base = baseVaglio || await prendiBase();      // camere e signore (si leggono solo quando c'è davvero da leggere; 1.26.0: se le ha già prese il vaglio, quelle)
     // le chat: col nome davanti se sono più di una (come l'app)
-    const chats = new Map();
-    for (const p of tutte) { const nome = p.chat || "Albergo"; if (!chats.has(nome)) chats.set(nome, p.gruppo !== false); }
-    const piu = chats.size > 1;
-    const msgs = tutte.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "", chatNome: chats.get(nome) ? nome : "chat con " + nome, mio: !!p.mio }; })
-      .sort((x, y) => ((x.data || "") + (x.ora || "")).localeCompare((y.data || "") + (y.ora || "")));
-    // i vocali: quelli già trascritti si usano, gli altri si trascrivono (6 per volta)
-    const daTrascrivere = msgs.filter(m => m.tipo === "audio" && m.media && !m.trascrizione).slice(-MAX_VOCALI);
-    for (const m of msgs) if (m.tipo === "audio" && m.trascrizione) m.testo = `🎤 (vocale) ${m.trascrizione}`;
-    const nomiCamere = base.camere.map(c => String(c.nome).replace(" · ", " ")).join(", ");
-    for (let i = 0; i < daTrascrivere.length; i += 6) {
-      const lotto = daTrascrivere.slice(i, i + 6), parti = [];
-      for (const m of lotto) { const x = await db.doc("posta_media", m.id); if (x && x.dati && x.dati.length < 8e6) parti.push({ m, mime: x.mime || "audio/ogg", dati: x.dati }); }
-      if (!parti.length) continue;
-      try {
-        const { r } = await chiediGemini(gemini, { sistema: LET.istruzioniTrascrizione(nomiCamere, parti.length, { signore: (base.signore || []).map(s => s.nome) }), storia: [], testo: LET.testoTrascrizione(parti.length), immagine: parti.map(p => ({ mime: p.mime, dati: p.dati })), secondi: 120, maxToken: 8000 });
-        const j = LET.jsonDaRisposta(r.grezzo), lista = j && Array.isArray(j.vocali) ? j.vocali : [];
-        for (const [k, p] of parti.entries()) {
-          const t = String(lista[k] || "").trim();
-          p.m.testo = t ? `🎤 (vocale) ${t}` : "🎤 (un vocale che non ho capito)";
-          if (t) { p.m.trascrizione = t; try { await db.merge("posta", p.m.id, { trascrizione: t.slice(0, 7000) }); } catch (e) {} }
-        }
-      } catch (e) { console.warn("trascrizione:", e && e.message); for (const p of parti) p.m.testo = "🎤 (un vocale che non sono riuscita ad ascoltare)"; if (/credito|402|prepay/i.test(String(e && e.message))) throw e; }
-    }
-    // le foto: le ultime 4 le guarda insieme ai messaggi
-    const did = (m) => (m.didascalia ? " " + m.didascalia : "");
-    const immagini = [];
-    for (const m of msgs.filter(m => m.tipo === "foto" && m.media).slice(-MAX_FOTO)) { const x = await db.doc("posta_media", m.id); if (x && x.dati) { immagini.push({ mime: x.mime || "image/jpeg", dati: x.dati }); m.testo = `📷 (foto n. ${immagini.length}: la vedi tra le immagini)${did(m)}`; } }
-    for (const m of msgs) if (!m.testo) m.testo = m.tipo === "audio" ? "🎤 (un vocale che non ho ascoltato)" : m.tipo === "foto" ? "📷 (una foto)" + did(m) : "";
+    const { msgs, chats } = messaggiDa(tutte, oggi);   // 1.26.0: i tre pezzi qui sotto ora sono funzioni (li usa anche il vaglio)
+    await trascriviVocali(db, gemini, msgs, base);
+    const immagini = await fotoEtesti(db, msgs);
     const scelti = msgs.filter(m => m.testo);
     if (!scelti.length) {
       for (const pid of ids) { try { await db.merge("posta", pid, { letto: true }); } catch (e) {} }
       await db.salva("importazioni", "lettura-sofia", { lid: id, stato: "vuota", da: "giro", quando: adesso.toISOString(), postaIds: ids, n: 0 });
-      return { esito: "niente da leggere", ts: ultimoTs };
+      return { esito: "niente da leggere", ts: ultimoTs, turno: turnoNuovo };
     }
     // chi fa il prospetto: «Papà» (il nome che il ponte dà alla sua chat)
     const papa = scelti.some(m => m.chi === "Papà") ? "Papà" : "";
@@ -225,7 +309,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     await db.salva("importazioni", "lettura-sofia", { lid: id, stato: statoNuovo, da: "giro", quando: finito(), j, modello: r.modello || "", ripiego: !!ripiego, n: scelti.length, testo: testoPapa.slice(0, 20000), fonte, postaIds: ids, riassunto, ...(avvisoOra ? { avvisata: adesso.toISOString() } : {}) });
     for (const pid of ids) { try { await db.merge("posta", pid, { letto: true }); } catch (e) {} }
     return {
-      esito: ha ? "letto" : "letto, niente da cambiare", ts: ultimoTs, n: scelti.length, riassunto, modello: r.modello || "",
+      esito: ha ? "letto" : "letto, niente da cambiare", ts: ultimoTs, n: scelti.length, riassunto, modello: r.modello || "", turno: turnoNuovo,
       avvisa: avvisoOra ? (chat ? avvisoApplica({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] }, j, nomeCamera: (cid) => ((ctx.camere || []).find(c => c.id === cid) || { nome: cid }).nome }, ctx.nomeGov) : avvisoLettura({ n: scelti.length, riassunto, fonte: { chats: [...chats.keys()] } }, ctx.nomeGov)) : null,
     };
   } catch (e) {
@@ -313,7 +397,7 @@ export async function sintesiSera({ db, gemini, adesso = new Date(), a = {}, ogg
       .map(x => `${oraRomaDi(x.quando)} (${x.da === "giro" ? "letta da sola" : "letta dal telefono"}; ${ESITI_SINTESI[x.esito] || x.esito || "?"}): ${vociLettura(x, ctx, codici).join("; ") || "niente da segnare"}`);   // 1.22.0: anche le cose fatte
   } catch (e) { console.warn("sintesi/letture:", e && e.message); }
   const { r } = await chiediGemini(gemini, { sistema: LET.istruzioniSegretaria(ctx, { ora }), storia: [],
-    testo: LET.testoPerSegretaria({ chat, n: msgs.length, oggi: L.dataGiornoLungo(oggi), ieri: L.dataGiornoLungo(L.aggiungiGiorni(oggi, -1)), letture, piano: "", domanda: domanda || "Com'è andata oggi? Fammi la sintesi della giornata." }), secondi: 60, maxToken: 1500 }, ["sveglia", "svelta"]);
+    testo: LET.testoPerSegretaria({ chat, n: msgs.length, oggi: L.dataGiornoLungo(oggi), ieri: L.dataGiornoLungo(L.aggiungiGiorni(oggi, -1)), letture, piano: "", domanda: domanda || "Com'è andata oggi? Fammi la sintesi della giornata." }), secondi: 60, maxToken: 1500 }, ORDINE_ECONOMICO);   // 1.26.0: prima il modello economico
   const j = LET.jsonDaRisposta(r.grezzo) || {};
   const testo = codici.daCodici(String(j.testo || j.risposta || "").trim()).replace(/\*\*?/g, "").slice(0, 1400);
   if (!testo) throw new Error("Gemini ha risposto in un modo che non capisco");
