@@ -8385,3 +8385,72 @@ body.sig-laguna.sig-laguna.sig-laguna.sig-laguna.camere-matita .sheet .inizio.sf
 :root[data-theme="dark"] .urg-b2:not(.on){color:#FF8A80}
 :root[data-theme="dark"] .urg-b0.on{background:#5A6273;border-color:#5A6273}
 @media (max-width:370px){.urg-b{font-size:13.5px;min-height:48px}}
+/* ============================================================================
+   1.59.0 LA MANUTENZIONE A RIQUADRI (disegno di Gemini): a posto / da aggiustare / urgente / urgentissimo
+   ============================================================================ */
+.mg-conta{flex-wrap:wrap;row-gap:6px}
+.mg-n i{font-style:normal;font-size:15px;line-height:1}
+.mg-n.mg-n0{background:#FFFFFF;border:2px dashed #7FB08F;color:#2F5D42}
+.mg-n.mg-n0 b{color:#2F7D52}
+.mg-n.mg-n1{background:#F9F0DB;border:2px solid #B4842E;color:#5C4115}
+.mg-n.mg-n2{background:#FFF1E6;border:2px solid #D9540D;color:#7B2E05}
+.mg-n.mg-n3{background:#FCEBEB;border:3px double #A81A1A;color:#5F0909}
+.mg-n.mg-n2 b,.mg-n.mg-n3 b{color:inherit}
+.fa-c.mg{gap:2px;min-height:146px}
+.fa-c.mg .mg-ico{display:block;flex:0 0 auto;width:40px;height:40px;margin:2px 0 1px}
+.fa-c.mg0{background:#F3F8F4;border:2px dashed #7FB08F;color:#2F5D42}
+.fa-c.mg0 .fa-nome{color:#3F5F4A}
+.fa-c.mg1{background:#F9F0DB;border:2px solid #B4842E;color:#1C1917;box-shadow:0 4px 10px -6px rgba(133,101,53,.55)}
+.fa-c.mg2{background:#FFF1E6;border:2.5px solid #D9540D;color:#1C1917;box-shadow:0 4px 12px -6px rgba(217,84,13,.55)}
+.fa-c.mg2 .fa-nome{color:#7B2E05}
+.fa-c.mg3{border:3.5px solid transparent;background:linear-gradient(#FCEBEB,#FCEBEB) padding-box,repeating-linear-gradient(-45deg,#A81A1A 0 6px,#FFFFFF 6px 11px) border-box;color:#1C1917;box-shadow:0 4px 14px -5px rgba(168,26,26,.6)}
+.fa-c.mg3 .fa-nome{color:#5F0909}
+.mg-parola{display:block;font:800 13.5px/1.1 var(--f-body);letter-spacing:.6px}
+.fa-c.mg0 .mg-parola{font-size:16px;letter-spacing:2px;color:#2F7D52}
+.fa-c.mg2 .mg-parola{color:#B23F06}
+.fa-c.mg3 .mg-parola{color:#A81A1A;font-size:12.5px;letter-spacing:.3px}
+.mg-cosa{display:-webkit-box;max-width:100%;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical;font:800 13.5px/1.18 var(--f-display);color:#1C1917;overflow-wrap:anywhere}
+.mg-piu{display:inline-block;padding:0 5px;border-radius:7px;background:#26345C;color:#FFFFFF;font:800 11px/1.5 var(--f-body);vertical-align:1px}
+.fa-lune.mg-da{gap:0}
+.fa-lune.mg-da em{margin:0;color:#FFFFFF}
+.fa-c.mg-largo{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;column-gap:8px;min-height:0;width:100%;padding:10px 10px 9px}
+.fa-c.mg-largo .fa-nome{flex:0 0 100%}
+.fa-c.mg-largo .mg-ico{width:30px;height:30px;margin:0}
+.fa-c.mg-largo .mg-cosa,.fa-c.mg-largo .fa-fino{flex:0 1 auto}
+.fa-c.mg-largo .fa-lune{flex:0 0 calc(100% + 20px);margin:6px -10px -9px}
+/* il foglio di un posto */
+.mgp-g{margin:12px 0 0;padding:12px;border-radius:14px;background:#FFFFFF;border:2px solid #E7DCC6}
+.mgp-g.mgp-g1{border-color:#E39A2F;background:#FFF8EF}
+.mgp-g.mgp-g2{border:3px solid #C62828;background:#FFF5F5}
+.mgp-tit{display:block;width:100%;margin:0 0 8px;padding:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.mgp-tit b{display:block;font:800 18px/1.2 var(--f-display);color:#1C1917}
+.mgp-nota{display:block;margin-top:3px;font:600 14.5px/1.3 var(--f-body);color:#44403C}
+.mgp-tit small{display:block;margin-top:5px;font:600 13px/1.3 var(--f-body);color:#78716C}
+.mgp-ok{margin-top:8px}
+.mgp-nuovo{margin:16px 0 4px;padding:12px;border-radius:16px;background:#F6EAD1;border:2px solid #D9BF8C}
+.mgp-nuovo-t{display:block;margin:0 0 10px;font:800 16px/1.2 var(--f-body);color:#5C4115}
+.mgp-tasti{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mgp-b{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:84px;padding:8px 4px;border:2px solid #B4842E;border-radius:16px;background:#FFFFFF;color:#1C1917;font:800 14px/1.15 var(--f-body);cursor:pointer;box-shadow:0 3px 0 #D9BF8C;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.mgp-b span{font-size:28px;line-height:1}
+.mgp-b:active{transform:translateY(3px);box-shadow:none}
+/* il guasto nuovo: il microfono accanto e la foto */
+.mg-detta-riga{display:flex;gap:8px;align-items:stretch}
+.mg-detta-riga input{flex:1 1 auto;min-width:0}
+.mg-detta{flex:0 0 auto;width:52px;border:2px solid #B4842E;border-radius:12px;background:#FFFFFF;font-size:24px;cursor:pointer}
+.mg-foto-b{display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.mg-foto-img{display:block;width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin:4px 0 8px}
+/* la tendina di Sofia: le camere si toccano */
+body.premium .sofia-hero .casa-nuvola button.dtf-cm{width:100%;margin:0;font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body.premium .sofia-hero .casa-nuvola button.dtf-cm:active{transform:scale(.96)}
+/* il soggiorno: com'è la camera e cosa si fa sempre */
+.sog-cam-box{margin:10px 0 4px;padding:10px 12px 2px;border-radius:14px;background:#FBF8F2;border:1px solid #E7DCC6}
+.sog-cam-box .campo{margin-bottom:10px}
+:root[data-theme="dark"] .fa-c.mg0{background:#16241B;border-color:#3F7A52;color:#B7D9C2}
+:root[data-theme="dark"] .fa-c.mg1{background:#3A2F1F;border-color:#B4842E;color:#F5F5F4}
+:root[data-theme="dark"] .fa-c.mg2{background:#3A2416;color:#F5F5F4}
+:root[data-theme="dark"] .fa-c.mg3{background:linear-gradient(#3A1818,#3A1818) padding-box,repeating-linear-gradient(-45deg,#E05252 0 6px,#2A1212 6px 11px) border-box;color:#F5F5F4}
+:root[data-theme="dark"] .mg-cosa{color:#F5F5F4}
+:root[data-theme="dark"] .mgp-g,:root[data-theme="dark"] .mgp-b,:root[data-theme="dark"] .sog-cam-box{background:#1C1917;color:#F5F5F4}
+:root[data-theme="dark"] .mgp-tit b{color:#F5F5F4}
+/* i due campi affiancati (es. «Arriva il» e «Parte il») non escono più dal foglio */
+.due>.campo,.due>.campo>input{min-width:0}

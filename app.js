@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.58.1";
+export const VERSIONE = "1.59.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1421,6 +1421,7 @@ function avviaAscolto() {
   if (proprietario()) { ascoltaPonte(); S.stop.push(fermaPonte); }
   // cose da fare sempre, camera per camera (es. Salvatore: balcone)
   S.stop.push(db.ascoltaDoc("impostazioni", "promemoria", d => { S.promemoria = { ...(d || {}) }; delete S.promemoria.id; disegna(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "caratteristiche", d => { S.caratteristiche = { ...(d || {}) }; delete S.caratteristiche.id; }));   // 1.59.0: com'è ogni camera
   // 1.52.0: i segni di Michele «ogni volta» sui disegni delle camere (li leggono anche le signore)
   S.stop.push(db.ascoltaDoc("impostazioni", "segni", d => { S.segniFissi = { ...(d || {}) }; delete S.segniFissi.id; disegna(); }));
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
@@ -6524,8 +6525,9 @@ function vistaManutenzionePremium() {
   const riga = (m, fatto) => { const c = m.camera ? camera(m.camera) : null;
     const quando = fatto ? `Fatto ${m.fatto ? L.dataGiornoLungo(m.fatto.slice(0, 10)) : ""}${m.fattoDa ? " · " + m.fattoDa : ""}` : `${m.stato === "chiamato" ? "Tecnico chiamato · " : ""}segnalato ${m.data ? L.dataGiornoLungo(m.data) : ""}${m.da ? " da " + m.da : ""}`;
     return `<div class="m13-riga ${fatto ? "fatto" : ""}"><button type="button" class="m13-apri" data-man="${esc(m.id)}"><span class="m13-dove">${c ? esc(c.nome) : "In generale"}</span>${!fatto ? etichettaUrg(m, "m13-urg") : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<span class="m13-nota">${esc(m.nota)}</span>` : ""}<span class="m13-quando">${esc(quando)}</span></button>${!fatto && puoModificare() ? `<button type="button" class="m13-ok" data-man-risolto="${esc(m.id)}">${ico2("spunta")}<span>Risolto</span></button>` : ""}</div>`; };
-  return `<section class="m13-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><div class="m13-tit"><span class="o13-lico">${ico2("chiave")}</span><h2>Lavori da fare${aperti.length ? ` <span>(${aperti.length})</span>` : ""}</h2>${puoModificare() ? `<button type="button" class="o13-lav-piu" data-nuovo-man>${ico2("piu")}<span>Guasto</span></button>` : ""}</div></section>
-    <section class="m13-lista">${aperti.length ? aperti.map(m => riga(m, false)).join("") : `<p class="m13-vuoto">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
+  return `<section class="m13-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><div class="m13-tit"><span class="o13-lico">${ico2("chiave")}</span><h2>Manutenzione</h2>${puoModificare() ? `<button type="button" class="o13-lav-piu" data-nuovo-man>${ico2("piu")}<span>Guasto</span></button>` : ""}</div></section>
+    ${grigliaGuasti()}   ${"" /* 1.59.0: prima i riquadri (disegno di Gemini), l'elenco sotto */}
+    ${aperti.length ? `<section class="m13-fatti m13-elenco"><details><summary>Vedi tutto in elenco (${aperti.length})</summary><div class="m13-lista">${aperti.map(m => riga(m, false)).join("")}</div></details></section>` : ""}
     ${fatti.length ? `<section class="m13-fatti"><details><summary>Fatti (${fatti.length})</summary><div class="m13-lista">${fatti.slice(0, 40).map(m => riga(m, true)).join("")}</div></details></section>` : ""}`;
 }
 // "Detta": si apre il foglio del messaggio e il telefono scrive mentre Michele parla (poi tocca "Manda alle signore")
@@ -6555,14 +6557,15 @@ function vistaManutenzione() {
   const riga = (m) => { const c = m.camera ? camera(m.camera) : null; const p = m.pulizia ? S.pulizie[m.pulizia] : null;
     return `<button class="row man-riga" data-man="${esc(m.id)}"><span>${m.stato !== "fatto" ? etichettaUrg(m, "m13-urg") : ""}${c ? `<b>${esc(c.nome)}</b> · ` : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<br><span class="muted">${esc(m.nota)}</span>` : ""}<br><span class="muted small">${m.stato === "fatto" ? `Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""} · ` : ""}segnalato ${esc(L.dataGiornoLungo(m.data || m.creato?.slice(0, 10) || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}${m.foto ? " · 📷 foto" : ""}${p && p.stato !== "problema" ? " · camera poi ripulita" : ""}</span></span>${m.stato === "fatto" ? `<span class="badge done">Fatto</span>` : `<span class="badge warn">Da fare</span>`}</button>`; };
   return `<section class="card flat man-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><h2 style="margin:8px 0 0">${ICONA("attrezzi")} Lavori di manutenzione</h2><p class="muted small" style="margin:2px 0 0">Qui finisce tutto quello che si rompe o va sistemato: i problemi che segnalano le signore (restano anche dopo che la camera è stata ripulita) e i lavori che aggiungi tu. Tocca una riga per i dettagli e per segnarla fatta.</p></section>
+  ${grigliaGuasti()}
   <section class="card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">${aperti.length ? `<span class="led" role="img" aria-label="da fare"></span>` : ""}Da fare <span class="muted">· ${aperti.length}</span></h2>${puoModificare() ? `<button class="btnsm" data-nuovo-man>+ Lavoro</button>` : ""}</div>
-    ${aperti.length ? `<div class="rows" style="margin-top:10px">${aperti.map(riga).join("")}</div>` : `<p class="muted" style="margin:10px 0 0">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
+    ${aperti.length ? `<details style="margin-top:8px"><summary>Vedi tutto in elenco</summary><div class="rows" style="margin-top:10px">${aperti.map(riga).join("")}</div></details>` : `<p class="muted" style="margin:10px 0 0">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
   ${fatti.length ? `<section class="card"><details><summary>Fatti (${fatti.length})</summary><div class="rows" style="margin-top:8px">${fatti.slice(0, 40).map(riga).join("")}</div></details></section>` : ""}`;
 }
 function foglioManutenzione(f) {
   const m = S.manutenzione[f.id]; if (!m) return `<h3>Lavoro</h3><p class="muted">Non c'è più.</p>`;
   const c = m.camera ? camera(m.camera) : null, p = m.pulizia ? S.pulizie[m.pulizia] : null;
-  const foto = f.foto === undefined && m.foto && m.pulizia ? (caricaFotoManutenzione(f), `<p class="muted small">Carico la foto…</p>`) : f.foto ? `<img src="${f.foto}" alt="Foto del problema" style="width:100%;border-radius:14px;margin:8px 0">` : "";
+  const foto = f.foto === undefined && m.foto && (m.fotoId || m.pulizia) ? (caricaFotoManutenzione(f), `<p class="muted small">Carico la foto…</p>`) : f.foto ? `<img src="${f.foto}" alt="Foto del problema" style="width:100%;border-radius:14px;margin:8px 0">` : "";
   return `${f.avviso ? bannerAvviso(f.avviso) : ""}<h3>${c ? esc(c.nome) : "Lavoro"}</h3><div class="muted">${esc(m.titolo || "")}</div>
     ${puoModificare() && m.stato !== "fatto" ? `<div class="urg-box"><b class="urg-tit">Quanto è urgente?</b>${sceltaUrgenza(urgenza(m), "data-man-grav", m.id)}</div>` : ""}
     <div class="kind ${m.stato === "fatto" ? "money" : ""}">${m.stato === "fatto" ? `✓ Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""}` : m.stato === "chiamato" ? `Tecnico chiamato ${m.chiamato ? esc(L.dataBreve(m.chiamato)) : ""}` : "Da fare"}</div><span class="kind info">segnalato ${esc(L.dataGiornoLungo(m.data || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}</span>
@@ -6574,15 +6577,16 @@ function foglioManutenzione(f) {
     <button class="big undo" data-man-cancella="${esc(m.id)}">Cancella questa voce</button>` : ""}`;
 }
 async function caricaFotoManutenzione(f) {
-  try { const d = await S.db.leggi("foto", S.manutenzione[f.id]?.pulizia); f.foto = d?.dati || ""; } catch (e) { f.foto = ""; }
+  try { /* 1.59.0: anche le foto dei guasti scritti da Michele */ const m0 = S.manutenzione[f.id] || {}; const d = await S.db.leggi("foto", m0.fotoId || m0.pulizia); f.foto = d?.dati || ""; } catch (e) { f.foto = ""; }
   if (S.foglio === f) disegnaFoglio();
 }
 function foglioNuovoLavoroMan(f) {
   return `<h3>Nuovo lavoro di manutenzione</h3><div class="muted">Qualcosa da riparare o sistemare (non una pulizia: per quelle c'è "lavoro extra").</div>
     <form id="formMan">
-      <div class="campo"><label for="mTit">Cosa c'è da fare</label><input id="mTit" data-keep type="text" placeholder="es. Cambiare la lampadina del bagno" required></div>
+      <div class="campo"><label for="mTit">Cosa c'è da fare</label><div class="mg-detta-riga"><input id="mTit" data-keep type="text" placeholder="es. Cambiare la lampadina del bagno" required><button type="button" class="mg-detta" data-man-detta aria-label="Dillo a voce">🎤</button></div></div>
       <div class="campo"><label for="mCam">Dove</label><select id="mCam"><option value="">— nessuna camera in particolare —</option>${S.camere.map(c => `<option value="${c.id}" ${f.camera === c.id ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</select></div>
       <div class="campo"><label for="mNota">Note</label><textarea id="mNota" data-keep placeholder="facoltative"></textarea></div>
+      <div class="campo mg-foto">${f.foto ? `<img src="${f.foto}" alt="La foto del guasto" class="mg-foto-img"><button type="button" class="btnsm ghost" data-man-foto-via>✕ Togli la foto</button>` : `<label class="big undo mg-foto-b"><span aria-hidden="true">📷</span> Aggiungi una foto<input id="mFoto" type="file" accept="image/*" hidden></label>`}</div>
       <div class="urg-box"><b class="urg-tit">Quanto è urgente?</b>${sceltaUrgenza(Number(f.grav) || 0, "data-nman-grav")}</div>
       <button class="big main" type="submit">Aggiungi</button>
     </form>`;
@@ -6592,9 +6596,10 @@ async function salvaNuovoLavoroMan() {
   const cam = $("#mCam").value; const c = cam ? camera(cam) : null;
   const id = `man_${Date.now()}`;
   const liv = Number(S.foglio && S.foglio.grav) || 0;   // 1.58.0
-  const voce = { pulizia: null, camera: cam || null, zona: c ? c.zona : null, data: L.oggiISO(), titolo, nota: $("#mNota").value.trim(), da: S.utente.nome || "", fonte: "mano", foto: false, stato: "aperto", creato: S.db.adesso(), fatto: null, fattoDa: "", ...patchUrgenza(liv) };
+  const foto = (S.foglio && S.foglio.foto) || "";   // 1.59.0: la foto del guasto (foto/<id>)
+  const voce = { pulizia: null, camera: cam || null, zona: c ? c.zona : null, data: L.oggiISO(), titolo, nota: $("#mNota").value.trim(), da: S.utente.nome || "", fonte: "mano", foto: false, stato: "aperto", creato: S.db.adesso(), fatto: null, fattoDa: "", ...patchUrgenza(liv), ...(foto ? { foto: true, fotoId: id } : {}) };
   chiudiFoglio();
-  try { await S.db.salva("manutenzione", id, voce, false); toast(liv === 2 ? "Aggiunto: 🚨 ti avviso ogni 2 ore finché non è sistemato" : liv === 1 ? "Aggiunto: ⚠️ te lo ricorda Sofia nelle sue notifiche" : "Lavoro aggiunto"); } catch (e) { erroreScrittura(e); }
+  try { if (foto) await S.db.salva("foto", id, { dati: foto, data: L.oggiISO(), zona: c ? c.zona : null, guasto: id }, false); await S.db.salva("manutenzione", id, voce, false); toast(liv === 2 ? "Aggiunto: 🚨 ti avviso ogni 2 ore finché non è sistemato" : liv === 1 ? "Aggiunto: ⚠️ te lo ricorda Sofia nelle sue notifiche" : "Lavoro aggiunto"); } catch (e) { erroreScrittura(e); }
 }
 async function aggiornaManutenzione(id, patch, msg) {
   if (!S.manutenzione[id]) return;
@@ -7632,7 +7637,7 @@ function dettaglioFacile(k, ls, fatte) {
     const elenco = zoneOrdinate().flatMap(z => camereZona(z.id)), tutte = elenco.concat(S.camere.filter(c => !elenco.includes(c)));
     const piene = tutte.filter(cm => L.ospiteIl(sog, cm.id, oggi)).length, libere = tutte.length - piene;
     titolo = tit(icoLetto(true), "Chi dorme stanotte?");
-    const celle = tutte.map(cm => { const s = L.ospiteIl(sog, cm.id, oggi); return s ? `<span class="dtf-cm piena"><b>${nomeCam(cm)}</b><small>${esc(nomeCortoOspite(s))}</small></span>` : `<span class="dtf-cm libera"><b>${nomeCam(cm)}</b><small>libera</small></span>`; }).join("");
+    const celle = tutte.map(cm => { const s = L.ospiteIl(sog, cm.id, oggi); return s ? `<button type="button" class="dtf-cm piena" data-dtf-sog="${esc(s.id)}" aria-label="${nomeCam(cm)}: ${esc(nomeCortoOspite(s))}"><b>${nomeCam(cm)}</b><small>${esc(nomeCortoOspite(s))}</small></button>` : `<button type="button" class="dtf-cm libera" data-dtf-cella="${esc(cm.id)}|${oggi}" aria-label="${nomeCam(cm)}: libera"><b>${nomeCam(cm)}</b><small>libera</small></button>`; }).join("");   // 1.59.0: si toccano
     corpo = `<span class="dtf-conta"><span class="dtf-n pieno">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="dtf-n libero">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "libera" : "libere"}</span></span><span class="dtf-griglia">${celle}</span>`;
     tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "manutenzione") {
@@ -12430,10 +12435,10 @@ const LIV_GUASTO = { urgente: 1, urgentissimo: 2 };
 function urgenza(m) { return (m && m.stato !== "fatto" && LIV_GUASTO[m.gravita]) || 0; }
 function etichettaUrg(m, cls) { const u = urgenza(m); return u ? `<span class="${cls} ${u === 2 ? "urg2" : "urg1"}">${u === 2 ? "🚨 Urgentissimo" : "⚠️ Urgente"}</span>` : ""; }
 const SPIEGA_URG = { 0: "Normale: lo vedi qui e nel bollettino della sera.", 1: "Urgente: te lo ricorda Sofia nelle sue notifiche di ogni giorno.", 2: "Urgentissimo: ti arriva una notifica ogni 2 ore (dalle 7 alle 22) finché non è sistemato." };
-function sceltaUrgenza(liv, attr, id) {
+function sceltaUrgenza(liv, attr, id, corta) {
   return `<div class="urg-scelta" role="group" aria-label="Quanto è urgente">${[[0, "Normale"], [1, "⚠️ Urgente"], [2, "🚨 Urgentissimo"]].map(([l, t]) =>
     `<button type="button" class="urg-b urg-b${l}${liv === l ? " on" : ""}" aria-pressed="${liv === l}" ${attr}="${esc(id ? id + "|" + l : String(l))}">${t}</button>`).join("")}</div>
-    <p class="urg-spiega">${esc(SPIEGA_URG[liv] || SPIEGA_URG[0])}</p>`;
+    ${corta ? "" : `<p class="urg-spiega">${esc(SPIEGA_URG[liv] || SPIEGA_URG[0])}</p>`}`;
 }
 function patchUrgenza(liv) {
   const gravita = liv === 2 ? "urgentissimo" : liv === 1 ? "urgente" : "normale";
@@ -12475,6 +12480,151 @@ document.addEventListener("click", (e) => {
 }, true);
 // la camera scelta per un guasto nuovo resta anche se il foglio si ridisegna (le tendine non si tengono da sole)
 document.addEventListener("change", (e) => { const t = e.target; if (t && t.id === "mCam" && S.foglio && S.foglio.tipo === "nuovoMan") S.foglio.camera = t.value; }, true);
+// ============================================================================
+//  1.59.0 LA MANUTENZIONE A RIQUADRI (Michele, 7/11: «una schermata come “Chi dorme stanotte?”, però coi guasti: appena la
+//  apro devo vedere tutti i guasti da fare; quelle da aggiustare hanno un colore, quelle a posto un altro, le urgenti un altro,
+//  le urgentissime un altro; ci clicco sopra… i guasti li devo poter dire a voce o fare una foto»). Disegnata da Gemini (chat
+//  «Restyling UX Web App», 7/11): «Cosa c'è da aggiustare?», le pastiglie col conto, la stessa griglia di «Chi dorme stanotte?»
+//  per piani più «Spazi comuni / In generale». I 4 stati si capiscono anche senza i colori: bordo tratteggiato e scudo col
+//  segno = a posto; bordo pieno e chiave inglese = da aggiustare; triangolo = urgente; bordo a strisce e sirena = urgentissimo;
+//  nella fascia blu da quanti giorni aspetta. Toccando un riquadro: il foglio di quel posto coi suoi guasti (Normale / Urgente /
+//  Urgentissimo, «✓ Sistemato») e tre tasti grandi: «🎤 Dillo a voce», «📷 Fai una foto», «✍️ Scrivi».
+//  E (stessa richiesta) nella tendina di Sofia «Chi dorme stanotte?» le camere si toccano: si apre il soggiorno (o un arrivo
+//  nuovo se è libera), dove adesso ci sono anche «Com'è questa camera» e «Ogni volta in questa camera si fa anche».
+// ============================================================================
+const MG_ICONE = {
+  0: `<svg class="mg-ico" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><path d="M20 4.5l12.5 4.6v9.6c0 8.7-5.4 14.6-12.5 16.8C12.9 33.3 7.5 27.4 7.5 18.7V9.1z" fill="#2F7D52"/><path d="M13.8 19.6l4.4 4.4 8.2-8.6" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  1: `<svg class="mg-ico" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><path d="M27.6 5.6a8 8 0 0 0-9.3 10.6L6.6 27.9a3.1 3.1 0 0 0 4.4 4.4l11.7-11.7a8 8 0 0 0 10.6-9.3l-4.8 4.8-4.3-.6-.6-4.3z" fill="#8A6A2F"/><circle cx="8.9" cy="30.1" r="1.3" fill="#F6EAD1"/></svg>`,
+  2: `<svg class="mg-ico" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><path d="M20 5.5L35.5 33h-31z" fill="#E8590C" stroke="#E8590C" stroke-width="2.4" stroke-linejoin="round"/><rect x="18.1" y="14" width="3.8" height="10.6" rx="1.9" fill="#FFFFFF"/><circle cx="20" cy="28.4" r="2.2" fill="#FFFFFF"/></svg>`,
+  3: `<svg class="mg-ico" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><path d="M20 4.5v4.2M8.6 9.8l2.9 2.9M31.4 9.8l-2.9 2.9M5 19.5h4M31 19.5h4" stroke="#C62828" stroke-width="2.6" stroke-linecap="round"/><path d="M11.5 27.5a8.5 8.5 0 0 1 17 0z" fill="#C62828"/><path d="M16.6 22.6a4 4 0 0 1 3.4-2.6" fill="none" stroke="#FFD9D9" stroke-width="2" stroke-linecap="round"/><rect x="8.5" y="27.5" width="23" height="5.5" rx="1.6" fill="#7F1D1D"/></svg>`,
+};
+// il posto di un guasto: la camera (se esiste) oppure "" = spazi comuni / in generale
+function postoGuasto(m) { return m && m.camera && S.camere.some(c => c.id === m.camera) ? m.camera : ""; }
+function giorniGuasto(m) { const d = (m && (m.data || String(m.creato || "").slice(0, 10))) || ""; return /^\d{4}-\d\d-\d\d$/.test(d) ? Math.max(0, L.giorniTra(d, L.oggiISO())) : 0; }
+const daGiorni = (g) => g === 0 ? "da oggi" : g === 1 ? "da 1 giorno" : `da ${g} giorni`;
+// i guasti di un posto: prima i più urgenti, poi i più vecchi
+function guastiDelPosto(posto) { return lavoriAperti().filter(m => postoGuasto(m) === posto).sort((a, b) => (urgenza(b) - urgenza(a)) || (giorniGuasto(b) - giorniGuasto(a))); }
+// 0 a posto · 1 da aggiustare · 2 urgente · 3 urgentissimo
+function statoPosto(lista) { return lista && lista.length ? 1 + Math.max(...lista.map(urgenza)) : 0; }
+function nomeRiquadro(c) { return c.tipo === "casa" ? (NOMI_SETTIMANA[c.id] || nomeBreveCamera(c)) : nomeBreveCamera(c); }
+function riquadroGuasti(posto, nome, largo) {
+  const lista = guastiDelPosto(posto), st = statoPosto(lista), primo = lista[0];
+  const parola = st === 0 ? "A POSTO" : st === 2 ? "URGENTE" : st === 3 ? "URGENTISSIMO" : "";
+  const cosa = st === 0 ? `<span class="fa-fino">Niente da fare</span>` : `<span class="mg-cosa">${esc(String(primo.titolo || "Guasto").slice(0, 60))}${lista.length > 1 ? ` <b class="mg-piu">+${lista.length - 1}</b>` : ""}</span>`;
+  const banda = st ? `<span class="fa-lune mg-da"><em>${esc(daGiorni(Math.max(...lista.map(giorniGuasto))))}</em></span>` : "";
+  const aria = st === 0 ? `${nome}: a posto` : `${nome}: ${lista.length === 1 ? "un guasto" : lista.length + " guasti"}${st === 3 ? ", urgentissimo" : st === 2 ? ", urgente" : ""}`;
+  return `<button type="button" class="fa-c mg mg${st}${largo ? " mg-largo" : ""}" data-man-posto="${esc(posto || "_")}" aria-label="${esc(aria)}"><b class="fa-nome">${esc(nome)}</b>${MG_ICONE[st]}${parola ? `<b class="mg-parola">${parola}</b>` : ""}${cosa}${banda}</button>`;
+}
+function grigliaGuasti() {
+  const aperti = lavoriAperti();
+  const zone = zoneOrdinate().map(z => ({ z, cam: camereZona(z.id) })).filter(x => x.cam.length);
+  const mostrate = new Set(zone.flatMap(x => x.cam.map(c => c.id)));
+  const altre = S.camere.filter(c => !mostrate.has(c.id));
+  const tutte = [...zone.flatMap(x => x.cam), ...altre];
+  const aPosto = tutte.filter(c => !guastiDelPosto(c.id).length).length;
+  const n2 = aperti.filter(m => urgenza(m) === 2).length, n1 = aperti.filter(m => urgenza(m) === 1).length;
+  const pastiglie = `<span class="fa-n mg-n mg-n0"><i aria-hidden="true">✓</i><b>${aPosto}</b> a posto</span>`
+    + (aperti.length ? `<span class="fa-n mg-n mg-n1"><i aria-hidden="true">🔧</i><b>${aperti.length}</b> da aggiustare</span>` : "")
+    + (n2 ? `<span class="fa-n mg-n mg-n3"><i aria-hidden="true">🚨</i><b>${n2}</b> ${n2 === 1 ? "urgentissimo" : "urgentissimi"}</span>` : n1 ? `<span class="fa-n mg-n mg-n2"><i aria-hidden="true">⚠️</i><b>${n1}</b> ${n1 === 1 ? "urgente" : "urgenti"}</span>` : "");
+  const gruppi = zone.map(({ z, cam }) => `<div class="fa-gruppo"><div class="fa-t">${esc(z.breve || z.nome)}${cam.some(c => c.lato === "S") ? " + " + cam.filter(c => c.lato === "S").map(c => esc(c.nome)).join(", ") : ""}</div><div class="fa-griglia">${cam.map(c => riquadroGuasti(c.id, nomeRiquadro(c))).join("")}</div></div>`).join("")
+    + (altre.length ? `<div class="fa-gruppo"><div class="fa-t">Altre camere</div><div class="fa-griglia">${altre.map(c => riquadroGuasti(c.id, nomeRiquadro(c))).join("")}</div></div>` : "")
+    + `<div class="fa-gruppo"><div class="fa-t">Spazi comuni / In generale</div>${riquadroGuasti("", "Scale, terrazzo, lavanderia…", true)}</div>`;
+  return `<section class="card mp fa mg-card" aria-label="Cosa c'è da aggiustare">
+    <h2 class="fa-titolo">Cosa c'è da aggiustare?</h2>
+    <div class="fa-conta mg-conta">${pastiglie}</div>
+    ${gruppi}
+    <div class="fa-aiuto">tocca un riquadro: vedi i guasti e ne aggiungi uno, anche a voce o con una foto</div>
+  </section>`;
+}
+// il foglio di un posto: i suoi guasti e i tre tasti per aggiungerne uno
+function foglioManPosto(f) {
+  const posto = f.posto === "_" ? "" : String(f.posto || ""), c = posto ? camera(posto) : null;
+  const lista = guastiDelPosto(posto), mod = puoModificare();
+  const com = c && S.caratteristiche && S.caratteristiche[c.id];
+  const riga = (m) => `<div class="mgp-g mgp-g${urgenza(m)}">
+      <button type="button" class="mgp-tit" data-man-apri="${esc(m.id)}"><b>${urgenza(m) === 2 ? "🚨 " : urgenza(m) === 1 ? "⚠️ " : ""}${esc(m.titolo || "Guasto")}</b>${m.nota ? `<span class="mgp-nota">${esc(m.nota)}</span>` : ""}<small>⏳ ${esc(daGiorni(giorniGuasto(m)))}${m.da ? ` · segnalato da ${esc(m.da)}` : ""}${m.foto ? " · 📷 c'è la foto" : ""} · apri ›</small></button>
+      ${mod ? sceltaUrgenza(urgenza(m), "data-man-grav", m.id, true) : ""}
+      ${mod ? `<button type="button" class="big ok mgp-ok" data-man-ok-posto="${esc(m.id)}">${ICONA("spunta")} Sistemato</button>` : ""}
+    </div>`;
+  return `<h3 class="sog-camera">${icoPorta()}<span>${c ? `Camera <b>${esc(c.nome)}</b>` : "<b>Spazi comuni e in generale</b>"}</span></h3>
+    <div class="muted">${com ? `${esc(com)} · ` : ""}${lista.length ? (lista.length === 1 ? "🔧 Un guasto da sistemare" : `🔧 ${lista.length} guasti da sistemare`) : "✓ Qui è tutto a posto"}</div>
+    ${lista.map(riga).join("")}
+    ${mod ? `<div class="mgp-nuovo"><b class="mgp-nuovo-t">➕ Aggiungi un guasto${c ? ` in ${esc(c.nome)}` : ""}</b><div class="mgp-tasti">
+      <button type="button" class="mgp-b" data-man-voce="${esc(f.posto || "_")}"><span aria-hidden="true">🎤</span>Dillo a voce</button>
+      <button type="button" class="mgp-b" data-man-foto="${esc(f.posto || "_")}"><span aria-hidden="true">📷</span>Fai una foto</button>
+      <button type="button" class="mgp-b" data-man-scrivi="${esc(f.posto || "_")}"><span aria-hidden="true">✍️</span>Scrivi</button>
+    </div></div>` : ""}`;
+}
+// il guasto nuovo da un posto: il foglio «Nuovo lavoro» con la camera già scelta (poi la voce, la foto o la tastiera)
+function nuovoGuastoDa(posto, come) {
+  const cam = posto && posto !== "_" ? posto : "";
+  apriFoglio({ tipo: "nuovoMan", camera: cam });
+  if (come === "foto") { const i = document.getElementById("mFoto"); if (i) { try { i.click(); } catch (e) {} } return; }   // nello stesso tocco: il telefono apre la fotocamera
+  if (come === "voce") { dettaGuasto(); return; }
+  setTimeout(() => { const t = document.getElementById("mTit"); if (t) t.focus(); }, 80);
+}
+// «Dillo a voce»: il telefono scrive nel «Cosa c'è da fare» mentre Michele parla (come «Detta» dei messaggi)
+let dettaGuastoViva = null;
+function dettaGuasto() {
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const campo = () => document.getElementById("mTit");
+  if (!R) { setTimeout(() => { const x = campo(); if (x) x.focus(); }, 80); toast("Per dirlo a voce usa il microfono della tastiera"); return; }
+  setTimeout(() => {
+    const x = campo(); if (!x) return;
+    if (dettaGuastoViva) { try { dettaGuastoViva.stop(); } catch (e) {} }
+    const prima = x.value.trim() ? x.value.trim() + " " : "";
+    let r; try { r = new R(); } catch (e) { x.focus(); return; }
+    dettaGuastoViva = r;
+    r.lang = "it-IT"; r.interimResults = true; r.continuous = true;
+    let silenzio = null; const riarma = (ms) => { clearTimeout(silenzio); silenzio = setTimeout(() => { try { r.stop(); } catch (e) {} }, ms); };
+    x.classList.add("detta-viva"); x.placeholder = "Parla adesso: scrivo io…";
+    r.onresult = (e) => { let s = ""; for (let i = 0; i < e.results.length; i++) s += e.results[i][0].transcript; const y = campo(); if (y) y.value = (prima + s.trim()).replace(/^./, ch => ch.toUpperCase()); riarma(2500); };
+    r.onerror = () => { const y = campo(); if (y) { y.classList.remove("detta-viva"); y.focus(); } };
+    r.onend = () => { clearTimeout(silenzio); dettaGuastoViva = null; const y = campo(); if (y) { y.classList.remove("detta-viva"); y.placeholder = "es. Cambiare la lampadina del bagno"; } };
+    try { r.start(); riarma(9000); } catch (e) { x.classList.remove("detta-viva"); x.focus(); }
+  }, 120);
+}
+// la foto del guasto nuovo: piccola (come quelle delle signore), si vede subito nel foglio; si salva con «Aggiungi»
+async function fotoGuastoScelta(file) {
+  if (!file || !S.foglio || S.foglio.tipo !== "nuovoMan") return;
+  try { const d = await rimpicciolisciFoto(file); if (S.foglio && S.foglio.tipo === "nuovoMan") { S.foglio.foto = d; disegnaFoglio(); } }
+  catch (e) { toast("Non riesco a leggere questa foto: provane un'altra"); }
+}
+// «Com'è questa camera» (resta per tutti gli ospiti): impostazioni/caratteristiche = { camera: "matrimoniale, balcone…" }
+async function salvaCaratteristica(cameraId, testo) {
+  if (!proprietario() || !cameraId) return;
+  const nuovo = { ...(S.caratteristiche || {}) }; const t = String(testo || "").trim().slice(0, 200);
+  if (t) nuovo[cameraId] = t; else delete nuovo[cameraId]; delete nuovo.id;
+  S.caratteristiche = nuovo;
+  try { await S.db.salva("impostazioni", "caratteristiche", nuovo); toast(t ? `Salvato: ${camera(cameraId).nome} è «${t}»` : `Tolto «com'è» di ${camera(cameraId).nome}`); } catch (e) { erroreScrittura(e); }
+}
+// i tocchi (delegati: i fogli si ridisegnano da soli e il tocco non si perde)
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-man-posto],[data-man-apri],[data-man-ok-posto],[data-man-voce],[data-man-foto],[data-man-scrivi],[data-man-detta],[data-man-foto-via],[data-dtf-sog],[data-dtf-cella]") : null;
+  if (!t) return;
+  if (t.hasAttribute("data-man-posto")) { apriFoglio({ tipo: "manPosto", posto: t.getAttribute("data-man-posto") }); return; }
+  if (t.hasAttribute("data-man-apri")) { apriFoglio({ tipo: "manutenzione", id: t.getAttribute("data-man-apri") }); return; }
+  if (t.hasAttribute("data-dtf-sog")) { apriFoglio({ tipo: "soggiorno", id: t.getAttribute("data-dtf-sog") }); return; }
+  if (t.hasAttribute("data-dtf-cella")) {
+    if (!puoModificare()) return;
+    const [cam, g] = t.getAttribute("data-dtf-cella").split("|"); const occ = L.ospiteIl(soggiorniLista(), cam, g);
+    apriFoglio(occ ? { tipo: "soggiorno", id: occ.id } : { tipo: "soggiorno", camera: cam, giorno: g }); return;
+  }
+  if (!puoModificare()) return;
+  if (t.hasAttribute("data-man-ok-posto")) { aggiornaManutenzione(t.getAttribute("data-man-ok-posto"), { stato: "fatto", fatto: S.db.adesso(), fattoDa: (S.utente && S.utente.nome) || "" }, "✅ Sistemato"); return; }
+  if (t.hasAttribute("data-man-voce")) { nuovoGuastoDa(t.getAttribute("data-man-voce"), "voce"); return; }
+  if (t.hasAttribute("data-man-foto")) { nuovoGuastoDa(t.getAttribute("data-man-foto"), "foto"); return; }
+  if (t.hasAttribute("data-man-scrivi")) { nuovoGuastoDa(t.getAttribute("data-man-scrivi"), "scrivi"); return; }
+  if (t.hasAttribute("data-man-detta")) { e.preventDefault(); dettaGuasto(); return; }
+  if (t.hasAttribute("data-man-foto-via")) { e.preventDefault(); if (S.foglio) { delete S.foglio.foto; disegnaFoglio(); } }
+});
+document.addEventListener("change", (e) => {
+  const t = e.target; if (!t || !t.matches) return;
+  if (t.id === "mFoto" && t.files && t.files[0]) { fotoGuastoScelta(t.files[0]); return; }
+  // si salva al giro dopo (mai mentre il campo sta perdendo il tocco: ridisegnare lì fa un errore) e solo se è cambiato
+  if (t.matches("[data-car-sog]")) { const id = t.getAttribute("data-car-sog"), v = t.value; if (String((S.caratteristiche || {})[id] || "") !== v.trim()) setTimeout(() => salvaCaratteristica(id, v), 0); return; }
+  if (t.matches("[data-prom-sog]")) { const id = t.getAttribute("data-prom-sog"), v = t.value; if (String((S.promemoria || {})[id] || "") !== v.trim()) setTimeout(() => salvaPromemoria(id, v), 0); }
+}, true);
 function vistaAltro() {
   const r = S.regole;
   return cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
@@ -12579,6 +12729,7 @@ function disegnaFoglio() {
   else if (f.tipo === "chatPapa") html = foglioChatPapa(f);
   else if (f.tipo === "manutenzione") html = foglioManutenzione(f);
   else if (f.tipo === "nuovoMan") html = foglioNuovoLavoroMan(f);
+  else if (f.tipo === "manPosto") html = foglioManPosto(f);   // 1.59.0
   else if (f.tipo === "luogoPulito") html = foglioLuogoPulito(f);
   else if (f.tipo === "tabLuogo") html = foglioTabLuogo(f);
   else if (f.tipo === "rivedi") html = foglioRivedi(f);
@@ -12714,17 +12865,18 @@ function foglioSoggiorno(f) {
   const modoSog = L.modoSoggiorno(d, S.clienti), ricordaSog = !L.NOMI_MODI.includes(d.modo);
   const tel = telefonoDi(d);
   return `<h3 class="sog-camera">${icoPorta()}<span>Camera <b>${esc(c.nome)}</b></span></h3><div class="muted">${s ? "Cambia il soggiorno" : "Nuovo arrivo"} · la notte della partenza non si conta</div>
+    ${mod ? `<div class="sog-cam-box"><div class="campo"><label for="sCom">Com'è questa camera (resta per tutti gli ospiti)</label><input id="sCom" data-keep type="text" data-car-sog="${esc(c.id)}" value="${esc((S.caratteristiche || {})[c.id] || "")}" placeholder="es. matrimoniale + singolo, balcone sul corso"></div><div class="campo"><label for="sProm">Ogni volta, in questa camera le signore fanno anche</label><input id="sProm" data-keep type="text" data-prom-sog="${esc(c.id)}" value="${esc((S.promemoria || {})[c.id] || "")}" placeholder="es. il balcone, dietro la TV"></div></div>` : ""}
     <form id="formSog">
-      <div class="campo"><label for="sNome">Ospite: nome e cognome (o ditta)</label><input id="sNome" type="text" list="nomiNoti" value="${esc(d.nome)}" placeholder="es. Manna Giuseppe" ${mod ? "" : "disabled"} required><datalist id="nomiNoti">${nomi.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
-      <div class="campo"><label for="sTel">Telefono dell'ospite (solo proprietari: le signore non lo vedono)</label><div class="sog-tel"><input id="sTel" type="text" inputmode="tel" autocomplete="off" value="${esc(d.telefono || tel || "")}" placeholder="es. 333 123 4567" ${mod ? "" : "disabled"}>${tel ? `<a class="sog-chiama" href="${esc(telHref(tel))}">${icoTel()}Chiama</a>` : ""}</div></div>
-      <div class="due"><div class="campo"><label for="sInizio">Arriva il</label><input id="sInizio" type="date" value="${d.inizio}" ${mod ? "" : "disabled"} required></div><div class="campo"><label for="sFine">Parte il</label><input id="sFine" type="date" value="${d.fine}" ${mod ? "" : "disabled"} required></div></div>
-      <div class="due"><div class="campo"><label for="sTipo">Tipo</label><select id="sTipo" ${mod ? "" : "disabled"}>${Object.entries(TIPI_OSPITE).map(([k, t]) => `<option value="${k}" ${d.tipo === k ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></div><div class="campo"><label for="sPers">Persone</label><input id="sPers" type="number" min="1" max="10" value="${d.persone || 1}" ${mod ? "" : "disabled"}></div></div>
-      <div class="campo"><label>Tipo di ospite per le pulizie</label><div class="modi-scelta">${L.NOMI_MODI.map(k => `<button type="button" class="modo-btn modo-${k}" aria-pressed="${modoSog === k}" data-sog-modo="${k}" ${mod ? "" : "disabled"}><b>${esc(G.MODI[k].nome)}</b><span>${esc(MODO_BREVE[k])}</span></button>`).join("")}</div>
-        <div class="seg" style="margin-top:8px;display:flex"><button type="button" aria-pressed="${ricordaSog}" data-sog-ricorda="1" ${mod ? "" : "disabled"}>Sempre per ${esc(nomeCl || "questo nome")}</button><button type="button" aria-pressed="${!ricordaSog}" data-sog-ricorda="0" ${mod ? "" : "disabled"}>Solo per questo soggiorno</button></div>
+      <div class="campo"><label for="sNome">Ospite: nome e cognome (o ditta)</label><input id="sNome" data-keep type="text" list="nomiNoti" value="${esc(d.nome)}" placeholder="es. Manna Giuseppe" ${mod ? "" : "disabled"} required><datalist id="nomiNoti">${nomi.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="campo"><label for="sTel">Telefono dell'ospite (solo proprietari: le signore non lo vedono)</label><div class="sog-tel"><input id="sTel" data-keep type="text" inputmode="tel" autocomplete="off" value="${esc(d.telefono || tel || "")}" placeholder="es. 333 123 4567" ${mod ? "" : "disabled"}>${tel ? `<a class="sog-chiama" href="${esc(telHref(tel))}">${icoTel()}Chiama</a>` : ""}</div></div>
+      <div class="due"><div class="campo"><label for="sInizio">Arriva il</label><input id="sInizio" data-keep type="date" value="${d.inizio}" ${mod ? "" : "disabled"} required></div><div class="campo"><label for="sFine">Parte il</label><input id="sFine" data-keep type="date" value="${d.fine}" ${mod ? "" : "disabled"} required></div></div>
+      <div class="due"><div class="campo"><label for="sTipo">Tipo</label><select id="sTipo" ${mod ? "" : "disabled"}>${Object.entries(TIPI_OSPITE).map(([k, t]) => `<option value="${k}" ${d.tipo === k ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></div><div class="campo"><label for="sPers">Persone</label><input id="sPers" data-keep type="number" min="1" max="10" value="${d.persone || 1}" ${mod ? "" : "disabled"}></div></div>
+      <div class="campo"><label>Tipo di ospite per le pulizie</label><div class="modi-scelta">${L.NOMI_MODI.map(k => `<button type="button" class="modo-btn modo-${k}" aria-pressed="${(f.modoScelto || modoSog) === k}" data-sog-modo="${k}" ${mod ? "" : "disabled"}><b>${esc(G.MODI[k].nome)}</b><span>${esc(MODO_BREVE[k])}</span></button>`).join("")}</div>
+        <div class="seg" style="margin-top:8px;display:flex"><button type="button" aria-pressed="${f.ricorda !== undefined ? f.ricorda : ricordaSog}" data-sog-ricorda="1" ${mod ? "" : "disabled"}>Sempre per ${esc(nomeCl || "questo nome")}</button><button type="button" aria-pressed="${f.ricorda !== undefined ? !f.ricorda : !ricordaSog}" data-sog-ricorda="0" ${mod ? "" : "disabled"}>Solo per questo soggiorno</button></div>
         <p class="muted small" style="margin:6px 0 0">${clienteNoto ? `Per ${esc(clienteNoto.nome || nomeCl)} l'app ricorda: <b>${esc(G.MODI[clienteNoto.modo]?.nome || clienteNoto.modo)}</b>.` : "Decide i ritmi delle rifiniture e le stelle della camera finché c'è questo ospite."}${/zara1|zara2/.test(c.id) ? " In via Zara 1° e 2° chi è Tecnici altrove conta come Operai." : ""}</p></div>
-      <div class="campo"><label for="sSup">Supplemento per ogni pulizia (€) — ospite impegnativo</label><input id="sSup" type="number" min="0" step="0.5" value="${d.supplemento || 0}" ${mod ? "" : "disabled"}></div>
-      <div class="campo"><label for="sNota">Istruzioni per le signore (le vedono)</label><input id="sNota" type="text" value="${esc(d.nota || "")}" placeholder="es. asciugamani doppi, lettino in più" ${mod ? "" : "disabled"}></div>
-      <div class="campo"><label for="sPriv">Nota privata (solo proprietari: telefoni, prezzi…)</label><input id="sPriv" type="text" value="${esc(d.notaPrivata || "")}" ${mod ? "" : "disabled"}></div>
+      <div class="campo"><label for="sSup">Supplemento per ogni pulizia (€) — ospite impegnativo</label><input id="sSup" data-keep type="number" min="0" step="0.5" value="${d.supplemento || 0}" ${mod ? "" : "disabled"}></div>
+      <div class="campo"><label for="sNota">Istruzioni per le signore (le vedono)</label><input id="sNota" data-keep type="text" value="${esc(d.nota || "")}" placeholder="es. asciugamani doppi, lettino in più" ${mod ? "" : "disabled"}></div>
+      <div class="campo"><label for="sPriv">Nota privata (solo proprietari: telefoni, prezzi…)</label><input id="sPriv" data-keep type="text" value="${esc(d.notaPrivata || "")}" ${mod ? "" : "disabled"}></div>
       ${(() => { const cl = clienteNoto, pv = d.nome ? (S.clientiPrivati || {})[L.normNome(nomeCl)] : null; const r = [cl && cl.istruzioni ? `alle signore, sempre: «${esc(cl.istruzioni)}»` : "", cl && cl.supplemento ? `${eur(cl.supplemento)} in più a ogni pulizia` : "", pv && pv.nota ? `nota privata: «${esc(pv.nota)}»` : ""].filter(Boolean); return r.length ? `<p class="note info" style="margin:6px 0 0">La scheda di ${esc(nomeCl)}: ${r.join(" · ")}. Si cambia parlando con ${esc(nomeGov())}.</p>` : ""; })()}
       ${mod ? `<button class="big main" type="submit">Salva</button>` : ""}
     </form>
@@ -14581,10 +14733,10 @@ function collegaFoglio() {
     if (form) form.onsubmit = (e) => { e.preventDefault(); salvaSoggiorno(f); };
     let toccato = false;
     const premiModo = k => document.querySelectorAll("[data-sog-modo]").forEach(x => x.setAttribute("aria-pressed", x.dataset.sogModo === k ? "true" : "false"));
-    document.querySelectorAll("[data-sog-modo]").forEach(b => b.onclick = () => { toccato = true; premiModo(b.dataset.sogModo); });
-    document.querySelectorAll("[data-sog-ricorda]").forEach(b => b.onclick = () => document.querySelectorAll("[data-sog-ricorda]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false")));
+    document.querySelectorAll("[data-sog-modo]").forEach(b => b.onclick = () => { toccato = true; premiModo(b.dataset.sogModo); f.modoScelto = b.dataset.sogModo; });   // 1.59.0: la scelta resta se il foglio si ridisegna
+    document.querySelectorAll("[data-sog-ricorda]").forEach(b => b.onclick = () => { f.ricorda = b.dataset.sogRicorda === "1"; document.querySelectorAll("[data-sog-ricorda]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false")); });
     // scrivendo un nome già noto, il tipo di ospite si mette da solo (finché non lo tocchi tu)
-    const nomeIn = $("#sNome"); if (nomeIn) nomeIn.oninput = () => { if (toccato) return; const cl = L.clienteDi(nomeIn.value, S.clienti); if (cl && L.NOMI_MODI.includes(cl.modo)) premiModo(cl.modo); };
+    const nomeIn = $("#sNome"); if (nomeIn) nomeIn.oninput = () => { if (toccato) return; const cl = L.clienteDi(nomeIn.value, S.clienti); if (cl && L.NOMI_MODI.includes(cl.modo)) { premiModo(cl.modo); f.modoScelto = cl.modo; } };
     document.querySelectorAll("[data-sog-azione]").forEach(b => b.onclick = () => azioneSoggiorno(f, b.dataset.sogAzione));
   }
   if (f.tipo === "nota") {
