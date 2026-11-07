@@ -2980,3 +2980,17 @@ guasto urgente (titolo «✋ Sofia ti propone…» o «🚨 Guasto urgente…»)
 col tasto «✅ Fatto»: subito, poi ogni ora finché non è fatta (se c'è «entro» e manca più di un'ora, dopo la prima aspetta
 fino a un'ora prima); dalle 7 alle 22:30, al massimo 12 volte, per le cose di oggi e di ieri. Si spegne con
 `avvisi.giroFareTu = false`. Le letture fatte dall'app sul PC avvisano con la stessa regola.
+
+## 162.1 · Sofia segretaria in testa alla Segreteria (app 1.62.1)
+
+Michele, 7/11 sera: «nella segreteria ci deve stare Sofia segretaria a fantasmino con cui ci posso parlare… proprio in alto
+come sta adesso, ma si deve muovere, e se ci clicco sopra mi deve parlare con i filmati a fantasmino di Sofia segretaria».
+- In testa, al posto del viso fermo: Sofia segretaria ritagliata (segr-riposo-3d.webm, sempre in movimento) su un alone oro.
+  Dove i filmati trasparenti non vanno (o col «movimento ridotto»), la figura ferma che respira piano.
+- **Toccandola** racconta la giornata (il riassunto e le cose che aspettano Michele) col filmato «parla» (segr-parla-3d.webm),
+  e quello che dice resta scritto nella nuvoletta sotto di lei; toccandola di nuovo si ferma. Lo stesso fa «🔊 Ascolta».
+- **«🎤 Chiedile qualcosa»**: Michele le fa una domanda a voce (3 secondi di silenzio = finito); lei risponde a voce (con la
+  voce di Sofia se è accesa, se no con quella del telefono) e la risposta resta nella nuvoletta (con ✕ per chiuderla). È lo
+  stesso cervello della chat della segretaria di prima (anche le correzioni: «hai capito male…» rilegge e rimette a posto).
+  Dove il microfono non c'è, si apre la finestrina per scrivere la domanda.
+- Il filmato non riparte a ogni disegno della pagina (è tenuto da parte e si sposta nel suo posto).

@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.62.0";
+export const VERSIONE = "1.62.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1557,6 +1557,7 @@ function disegna() {
   if (avvisoAtteso) guardaAvviso();   // 1.55.13
   if (manFattoAtteso) guardaManFatto();   // 1.58.0
   if (tuFattoAtteso) guardaTuFatto();   // 1.62.0
+  try { sg2SofiaMonta(); } catch (e) {}   // 1.62.1: Sofia segretaria in testa alla Segreteria
   if (condivisaInAttesa && S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie) { condivisaInAttesa = false; setTimeout(guardaCondivisa, 0); }   // 1.51.0
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
   try { indietroVista(); } catch (e) {}   // 1.7.0
@@ -5804,7 +5805,7 @@ function vistaSegreteria() {
   const imparate = (Array.isArray(S.taccuino) ? S.taccuino : []).filter(v => v && v.testo).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))).slice(0, 2);
   const imparato = imparate.length ? `<div class="sg2-imp"><b><span aria-hidden="true">🧠</span> Cosa ho imparato</b>${imparate.map(v => `<p>${esc(String(v.testo).replace(/^Correzione di Michele:\s*/i, ""))}</p>`).join("")}</div>` : "";
   const banner = mod ? bannerLettura() : "";
-  return `<section class="sg2"><div class="sg2-testa"><img class="sg2-viso" src="segr-viso.webp" alt=""><div><h2>Segreteria</h2><p>${esc(nome)}, la tua assistente</p></div></div>
+  return `<section class="sg2"><div class="sg2-testa"><button type="button" class="sg2-sofia" data-sg2-sofia aria-label="${esc(nome)}: toccala e ti racconta la giornata" aria-pressed="false"><span class="sg2-sofia-posto"></span></button><div class="sg2-tt"><h2>Segreteria</h2><p>${esc(nome)}, la tua assistente</p><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Chiedile qualcosa"}</button><small class="sg2-tocca">👆 Toccala: ti racconta la giornata</small></div></div>${sg2BollaHtml()}
     ${banner}
     <h3 class="sg2-tit">1) Riassunto di oggi</h3>
     <div class="sg2-riass"><p>${riass.join("<br>")}</p><button type="button" class="sg2-ascolta" data-sg2-ascolta><span class="sg2-alt" aria-hidden="true">🔊</span><span>Ascolta il riassunto</span></button></div>
@@ -5900,10 +5901,11 @@ function sg2Cambia(lid, k) {
   S.vista = "sofia"; disegna(); window.scrollTo(0, 0);
   setTimeout(() => { const i = document.getElementById("casaTesto"); if (i) { i.value = testo; i.focus(); try { i.setSelectionRange(testo.length, testo.length); } catch (e) {} } }, 120);
 }
-function sg2Ascolta() {
+function sg2Ascolta() {   // 1.62.1: lo dice Sofia in testa (col filmato «parla») e resta scritto nella nuvoletta
   const testo = sg2DaLeggere(); if (!testo) return;
-  if (voceAccesa()) { try { VOCE.sbloccaAudio(); } catch (e) {} parlaConVoce(testo, { inChat: true }); return; }
-  try { const u = new SpeechSynthesisUtterance(testo); u.lang = "it-IT"; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { toast("Su questo telefono non riesco a parlare."); }
+  if (voceInCorso || sg2ParlaTel) { sg2Zitta(); return; }
+  S.sg2Bolla = { stato: "detto", testo }; disegna();
+  sg2Dici(testo);
 }
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria") return;
@@ -5930,6 +5932,115 @@ function guardaTuFatto() {
   S.vista = "segreteria"; disegna(); window.scrollTo(0, 0);
   sg2Fatto(rif.slice(0, i), rif.slice(i + 2));
 }
+// ---- 1.62.1 SOFIA SEGRETARIA IN TESTA, CHE SI MUOVE E PARLA (Michele, 7/11 sera: «nella segreteria ci deve stare Sofia
+//  segretaria a fantasmino con cui ci posso parlare… proprio in alto come sta adesso, ma si deve muovere, e se ci clicco sopra
+//  mi deve parlare con i filmati a fantasmino di Sofia segretaria»). In testa alla pagina il filmato ritagliato (riposo: sempre
+//  in movimento); toccandola racconta la giornata (il riassunto e le cose che aspettano Michele) col filmato «parla»;
+//  «🎤 Chiedile qualcosa» le fa una domanda a voce: risponde a voce e la risposta resta scritta nella nuvoletta.
+//  Il filmato non riparte a ogni disegno: è tenuto da parte e si sposta nel suo posto (come filmMontaTenuti). Dove la
+//  trasparenza dei filmati non va (o col «movimento ridotto»), la figura ferma che respira piano.
+// ----------------------------------------------------------------------------
+let sg2Sofia = null, sg2ParlaTel = false, sg2Rec = null;
+function sg2SofiaMonta() {
+  const posto = document.querySelector(".sg2-sofia-posto");
+  if (!posto) { if (sg2Sofia) sg2Sofia.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); return; }
+  const rit = ritaglioOK();
+  if (sg2Sofia && (sg2Sofia.dataset.rit || "") !== (rit ? "1" : "")) { sg2Sofia.remove(); sg2Sofia = null; }
+  if (!sg2Sofia) {
+    const el = document.createElement("span"); el.className = "sg2-sf"; el.dataset.rit = rit ? "1" : "";
+    el.innerHTML = rit ? `<video class="sg2-sf-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sg2-sf-parla" src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>`}`
+      : `<img class="sg2-sf-img" src="${FILM_SEGR.poster}" alt="">`;
+    const v = el.querySelector(".sg2-sf-riposo"), vp = el.querySelector(".sg2-sf-parla"), img = el.querySelector("img");
+    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.poster = FILM_CAPO_TRE.poster; v.src = FILM_CAPO_TRE.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
+    if (vp) vp.addEventListener("error", () => { segrParlaManca = true; vp.remove(); });
+    if (img) img.onerror = () => { if (img.dataset.ripiego) return; img.dataset.ripiego = "1"; img.src = "segr-viso.webp"; };
+    sg2Sofia = el;
+  }
+  if (sg2Sofia.parentNode !== posto) { posto.textContent = ""; posto.appendChild(sg2Sofia); }
+  const parla = !!(voceInCorso || sg2ParlaTel), v = sg2Sofia.querySelector(".sg2-sf-riposo"), vp = sg2Sofia.querySelector(".sg2-sf-parla");
+  if (v && v.paused) { try { v.play().catch(() => {}); } catch (e) {} }
+  if (vp) { if (parla && vp.paused) { try { vp.play().catch(() => {}); } catch (e) {} } else if (!parla && !vp.paused) { try { vp.pause(); } catch (e) {} } }
+  sg2Sofia.classList.toggle("parla", parla);
+  const b = document.querySelector(".sg2-sofia"); if (b) b.setAttribute("aria-pressed", parla ? "true" : "false");
+}
+// la nuvoletta sotto Sofia: «ti ascolto», «ci penso», o quello che dice
+function sg2BollaHtml() {
+  const bo = S.sg2Bolla; if (!bo) return "";
+  const testo = bo.stato === "ascolto" ? esc(bo.testo || "🎤 Ti ascolto…") : bo.stato === "pensa" ? "…ci penso" : escNl(bo.testo || "");
+  return `<div class="sg2-bolla ${esc(bo.stato || "")}" role="status" aria-live="polite">${bo.domanda ? `<small>Tu: «${esc(bo.domanda)}»</small>` : ""}<p>${testo}</p>${bo.vai ? `<button type="button" class="sg2-b piccolo" data-sgr-vai-gov="${esc(bo.vai)}">Chiedilo alla governante</button>` : ""}${bo.stato === "detto" ? `<button type="button" class="sg2-bolla-x" data-sg2-bolla-via aria-label="Chiudi">✕</button>` : ""}</div>`;
+}
+// parla: con la voce di Sofia se è accesa, se no con la voce del telefono (e il filmato «parla» intanto)
+function sg2Zitta() {
+  try { if (voceInCorso) zittisciVoce(); } catch (e) {}
+  try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+  if (sg2ParlaTel) { sg2ParlaTel = false; disegna(); }
+}
+async function sg2Dici(testo) {
+  const t = String(testo || "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim(); if (!t) return;
+  sg2Zitta();
+  if (voceAccesa()) { try { VOCE.sbloccaAudio(); } catch (e) {} try { await parlaConVoce(t, { inChat: true }); } catch (e) {} return; }
+  try {
+    const u = new SpeechSynthesisUtterance(t); u.lang = "it-IT";
+    const fine = () => { if (!sg2ParlaTel) return; sg2ParlaTel = false; disegna(); };
+    u.onend = fine; u.onerror = fine;
+    speechSynthesis.cancel(); sg2ParlaTel = true; disegna(); speechSynthesis.speak(u);
+  } catch (e) { sg2ParlaTel = false; toast("Su questo telefono non riesco a parlare."); }
+}
+// toccata: racconta la giornata (se sta parlando, si ferma)
+function sg2Tocca() {
+  if (voceInCorso || sg2ParlaTel) { sg2Zitta(); return; }
+  const h = new Date().getHours(), frase = `${h < 13 ? "Buongiorno" : h < 18 ? "Buon pomeriggio" : "Buonasera"} Michele. ${sg2DaLeggere()}`;
+  S.sg2Bolla = { stato: "detto", testo: frase.replace(/<[^>]+>/g, "") }; disegna();
+  sg2Dici(frase);
+}
+// una domanda a Sofia (a voce o scritta): risponde lei, come prima nella chat della segretaria, ma a voce e nella nuvoletta
+async function sg2Chiedi(t) {
+  S.sg2Bolla = { stato: "pensa", domanda: t }; disegna();
+  if (!S.sgrChatCaricata) { try { await caricaSgrChat(); } catch (e) {} }
+  const righe = [...sgrChat(), { chi: "io", testo: t, ora: S.db.adesso() }];
+  S.sgrChat = righe; S.sgrChatCaricata = true; salvaSgrChat(righe);
+  let fine;
+  try { fine = await segretariaRispondi(t, righe); }
+  catch (e) { console.warn("segreteria/rispondi", e); fine = { testo: `Non sono riuscita a rispondere: ${String((e && e.message) || e).slice(0, 160)}` }; }
+  S.sgrChat = [...sgrChat(), { chi: "gov", testo: fine.testo, ora: S.db.adesso(), ...(fine.tipo ? { tipo: fine.tipo } : {}) }]; salvaSgrChat(S.sgrChat);
+  S.sg2Bolla = { stato: "detto", domanda: t, testo: fine.testo, vai: fine.vai || "" }; disegna();
+  const dopo = fine.dopo ? fine.dopo() : null;   // una correzione: rilegge e rimette a posto
+  await sg2Dici(fine.testo);
+  if (dopo) {
+    try { await dopo; } catch (e) { console.warn("segreteria/dopo", e); }
+    const u = sgrChat().slice(-1)[0]; if (u && u.chi === "gov" && u.testo !== fine.testo) { S.sg2Bolla = { stato: "detto", domanda: t, testo: u.testo }; disegna(); }
+  }
+}
+function sg2Scrivi() {
+  sg2Dialogo(`<div class="chiusura-t"><span aria-hidden="true">💬</span><span>Chiedi a ${esc(nomeGov())}</span></div>
+    <label class="campo" style="margin:0 0 8px"><span>La tua domanda</span><textarea data-sg2-testo rows="2" placeholder="Es. Com'è andata oggi?"></textarea></label>
+    <button class="big main" data-sg2-ok>Chiedi</button><button class="big undo" data-chiudi>Lascia stare</button>`, (el, chiudi) => {
+    el.querySelector("[data-sg2-ok]").onclick = () => { const t = String(el.querySelector("[data-sg2-testo]").value || "").trim(); if (!t) { toast("Scrivi la domanda."); return; } chiudi(); sg2Chiedi(t); };
+    setTimeout(() => { try { el.querySelector("[data-sg2-testo]").focus(); } catch (e) {} }, 50);
+  });
+}
+// il microfono: ascolta finché parli (3 secondi di silenzio = hai finito), poi chiede
+function sg2Mic() {
+  if (sg2Rec) { try { sg2Rec.stop(); } catch (e) {} return; }
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  sg2Zitta();
+  if (!R) { sg2Scrivi(); return; }   // qui il microfono non c'è: la domanda si scrive
+  try { VOCE.sbloccaAudio(); } catch (e) {}
+  const r = new R(); r.lang = "it-IT"; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
+  let finale = "", visto = "", silenzio = null;
+  const riarma = (ms) => { clearTimeout(silenzio); silenzio = setTimeout(() => { try { r.stop(); } catch (e) {} }, ms); };
+  r.onresult = (e) => { const t = testoDaRisultati(e); finale = t.finale; visto = t.visto; if (S.sg2Bolla && S.sg2Bolla.stato === "ascolto") S.sg2Bolla.testo = visto; const p = document.querySelector(".sg2-bolla.ascolto p"); if (p) p.textContent = visto || "…"; riarma(3000); };
+  r.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("Il telefono non mi dà il microfono: dallo a questa app nelle impostazioni"); else if (e.error !== "aborted" && e.error !== "no-speech") toast("Il microfono non ha funzionato: riprova"); };
+  r.onend = () => { sg2Rec = null; clearTimeout(silenzio); const t = (finale || visto || "").trim(); if (t) sg2Chiedi(t); else { S.sg2Bolla = null; disegna(); } };
+  try { r.start(); sg2Rec = r; S.sg2Bolla = { stato: "ascolto", testo: "" }; disegna(); riarma(9000); if (voceAccesa()) { try { VOCE.scaldaLive(VOCE.leggiVoce(), confIA().chiave); } catch (e) {} } }
+  catch (e) { sg2Rec = null; toast("Microfono non disponibile: scrivi la domanda"); sg2Scrivi(); }
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria") return;
+  if (t.closest("[data-sg2-sofia]")) { sg2Tocca(); return; }
+  if (t.closest("[data-sg2-mic]")) { sg2Mic(); return; }
+  if (t.closest("[data-sg2-bolla-via]")) { S.sg2Bolla = null; disegna(); return; }
+});
 // (1.39.0-1.60: la Segreteria di prima, coi messaggi e la chat della segretaria: non si usa più)
 function vistaSegreteriaPrima() {
   const letture = segreteriaLetture();
