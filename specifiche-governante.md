@@ -2994,3 +2994,18 @@ come sta adesso, ma si deve muovere, e se ci clicco sopra mi deve parlare con i 
   stesso cervello della chat della segretaria di prima (anche le correzioni: «hai capito male…» rilegge e rimette a posto).
   Dove il microfono non c'è, si apre la finestrina per scrivere la domanda.
 - Il filmato non riparte a ogni disegno della pagina (è tenuto da parte e si sposta nel suo posto).
+
+## 1.63.0 · La barra in basso: tutti tasti da sala giochi (8/11)
+Michele: «il tasto centrale lo devi fare più in basso e più centrato nella barra, e poi gli altri, Prospetto, Piantine,
+Paghe e Oggi, devi far fare dei pulsanti molto simili a questi ma di un blu bello mare scuro, ma di alluminio satinato».
+- Il tasto d'oro della Segreteria non sporge più sopra la barra: sta dentro, in mezzo (uguale distanza a destra e a
+  sinistra; sopra e sotto il gruppo tasto + nome lo stesso spazio). Il numerino resta dentro la barra.
+- Oggi, Prospetto, Piantine e Paghe sono tasti da sala giochi come quello d'oro, un po' più piccoli, di alluminio
+  satinato blu mare scuro: la ghiera con il suo spessore, il pozzo scuro, il pistone che scende quando lo premi (vibra
+  appena e la pagina si apre subito dopo), la grana fine del metallo satinato. Sul pistone il disegno della pagina,
+  inciso chiaro come l'alluminio sotto la vernice.
+- La pagina dove sei: il suo tasto ha la luce accesa nel pozzo (azzurra, ferma). Il tasto d'oro si accende ancora
+  (e pulsa) quando la segretaria ha qualcosa per Michele.
+- Un tasto toccato nella pagina dove sei già va giù e torna su (prima quello d'oro restava schiacciato).
+- La barra è un po' più alta (circa 89 px invece di 75 + il tasto che sporgeva): le cose sopra la barra (avvisi,
+  scrivi a Sofia, fondo della pagina) seguono la sua altezza vera. Telefoni stretti: tasti un po' più piccoli.

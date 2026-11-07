@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.62.1";
+export const VERSIONE = "1.63.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -353,7 +353,11 @@ function barraSotto() {
     // tendina e tra le stanze sotto Sofia.
     if (k === "sofia") return `<button type="button" class="bs-t bs-sofia bs-arcade-t${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare)" : ""}"><span class="bs-arcade"><span class="ar-ombra"></span><span class="ar-glato"></span><span class="ar-gcima"></span><span class="ar-pozzo"></span><span class="ar-plato"></span><span class="ar-pcima"></span>${nSeg ? `<i class="nav-conta" aria-hidden="true">${nSeg > 99 ? "99+" : nSeg}</i>` : ""}</span><span class="bs-n">Segreteria</span></button>`;
     const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
-    return `<button type="button" class="bs-t" data-bs="${k}" aria-pressed="${att}"><span class="bs-ico">${ic2 ? ico2(ic2) : NAV_ICO[ic]}</span><span class="bs-n">${esc(n)}</span></button>`;
+    // 1.63.0 (Michele, 8/11: «gli altri, Prospetto, Piantine, Paghe e Oggi, devi far fare dei pulsanti molto simili a
+    // questi ma di un blu bello mare scuro, ma di alluminio satinato»): anche loro sono tasti da sala giochi, un po' più
+    // piccoli di quello d'oro, di alluminio satinato blu mare scuro, col disegno inciso sul pistone; quello della pagina
+    // dove sei ha la luce accesa nel pozzo
+    return `<button type="button" class="bs-t bs-blu" data-bs="${k}" aria-pressed="${att}"><span class="bs-tasto" aria-hidden="true"><span class="tb-ombra"></span><span class="tb-glato"></span><span class="tb-gcima"></span><span class="tb-pozzo"></span><span class="tb-plato"></span><span class="tb-pcima"><span class="tb-ico">${ic2 ? ico2(ic2) : NAV_ICO[ic]}</span></span></span><span class="bs-n">${esc(n)}</span></button>`;
   }).join("");
   if (b.dataset.html !== html) {
     b.innerHTML = html; b.dataset.html = html;
@@ -366,7 +370,9 @@ function barraSotto() {
         window.scrollTo({ top: 0, behavior: stessa ? "smooth" : "auto" });
       };
       // 1.60.0: il tasto d'oro va giù (e vibra) e la segreteria si apre subito dopo: si sente che l'hai premuto
-      if (t.classList.contains("bs-arcade-t")) { t.classList.add("giu"); vibra(18); setTimeout(vai, 170); } else vai();
+      // 1.63.0: così anche i tasti blu; e il tasto torna su anche se resti nella stessa pagina (prima restava giù)
+      const blu = t.classList.contains("bs-blu");
+      if (blu || t.classList.contains("bs-arcade-t")) { t.classList.add("giu"); vibra(blu ? 12 : 18); setTimeout(vai, 170); setTimeout(() => t.classList.remove("giu"), 320); } else vai();
     });
   }
   b.hidden = false; document.body.classList.add("con-sotto");

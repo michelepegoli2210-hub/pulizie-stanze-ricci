@@ -8731,3 +8731,69 @@ body.premium:has(.bs-arcade) .sgr-fantasma.in-tendina{bottom:calc(112px + env(sa
 :root[data-theme="dark"] .sg2-bolla,:root[data-theme="dark"] .sg2-bolla::before{background:#2A2A2E}
 :root[data-theme="dark"] .sg2-mic{background:#2A2A2E;color:#F2F2F5}
 :root[data-theme="dark"] .sg2-sofia::before{background:radial-gradient(ellipse at 50% 35%,rgba(243,225,176,.35) 0%,rgba(243,225,176,.12) 58%,rgba(243,225,176,0) 100%)}
+
+/* ---- 1.63.0 · la barra in basso, tutta di tasti da sala giochi (Michele, 8/11: «il tasto centrale lo devi fare più in
+   basso e più centrato nella barra, e poi gli altri, Prospetto, Piantine, Paghe e Oggi, devi far fare dei pulsanti molto
+   simili a questi ma di un blu bello mare scuro, ma di alluminio satinato»).
+   Il tasto d'oro non sporge più sopra la barra: sta dentro, in mezzo; ai lati quattro tasti uguali, un po' più piccoli,
+   di alluminio blu mare scuro satinato (righine fini come il metallo spazzolato, luci morbide), col disegno inciso sul
+   pistone (chiaro, come l'alluminio sotto la vernice). Quello della pagina dove sei ha la luce accesa nel pozzo. ---- */
+body.premium .barra-sotto{padding-top:2px}
+body.premium .bs-t{min-height:0;gap:3px;padding-top:0}
+/* il tasto d'oro: dentro la barra, non sporge più */
+body.premium .bs-arcade{margin-top:0;margin-bottom:-4px}
+body.premium .bs-arcade .nav-conta{top:-1px;right:-8px}   /* il numerino resta dentro la barra */
+/* i tasti blu */
+body.premium .bs-blu{position:relative}
+body.premium .bs-tasto{position:relative;display:block;flex:none;width:62px;height:54px;margin-bottom:-4px}
+body.premium .bs-tasto>span{position:absolute;display:block}
+/* l'ombra del tasto sulla barra */
+body.premium .bs-tasto .tb-ombra{left:3px;right:3px;top:33px;height:21px;border-radius:50%;background:radial-gradient(closest-side,rgba(3,16,30,.55),rgba(3,16,30,.22) 60%,rgba(3,16,30,0));filter:blur(1.5px)}
+/* lo spessore della ghiera: alluminio blu spazzolato (righine verticali fini), luce da sinistra */
+body.premium .bs-tasto .tb-glato{left:0;top:12px;width:62px;height:38px;border-radius:50%;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23g)'/%3E%3C/svg%3E") 0 0/32px 32px,
+    linear-gradient(90deg,#010A15 0%,#031C36 10%,#08345F 30%,#3571A8 43%,#0A3A68 57%,#042142 78%,#010A15 100%);
+  background-blend-mode:overlay,normal;box-shadow:inset 0 -2px 2px rgba(0,0,0,.4)}
+/* la faccia di sopra della ghiera: un anello satinato, luci morbide che girano e righine tonde fini */
+body.premium .bs-tasto .tb-gcima{left:0;top:7px;width:62px;height:38px;border-radius:50%;
+  background:radial-gradient(ellipse closest-side,transparent 0 66%,rgba(2,10,20,.75) 69%,rgba(205,228,246,0) 75%,rgba(205,228,246,.45) 84%,rgba(205,228,246,0) 93%,rgba(2,10,20,.55) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23g)'/%3E%3C/svg%3E") 0 0/32px 32px,
+    conic-gradient(from 210deg,#73A8D8 0deg,#1C5791 40deg,#09325E 90deg,#04203F 140deg,#0D3F6F 190deg,#4C86BE 235deg,#0C3B6C 285deg,#05274B 325deg,#73A8D8 360deg);
+  background-blend-mode:normal,overlay,normal}
+/* il pozzo quasi nero e la sua luce (acceso = sei in quella pagina) */
+body.premium .bs-tasto .tb-pozzo{left:9px;top:14px;width:44px;height:26px;border-radius:50%;background:radial-gradient(ellipse at 50% 30%,#0E2134 0%,#071524 55%,#020912 100%);box-shadow:inset 0 4px 5px rgba(0,0,0,.9),inset 0 -1px 2px rgba(120,180,230,.25)}
+body.premium .bs-tasto .tb-pozzo::after{content:"";position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .25s ease;background:radial-gradient(ellipse at 50% 55%,#EEFCFF 0%,#97E3FF 35%,#2C9DD8 70%,#0B4A78 100%);box-shadow:inset 0 3px 4px rgba(0,0,0,.45),0 0 12px 4px rgba(90,200,255,.7)}
+/* il pistone: il fianco (cilindro satinato) e la cima (cupola satinata col disegno inciso) */
+body.premium .bs-tasto .tb-plato{left:11px;top:16px;width:40px;height:20px;border-radius:0 0 20px 20px / 0 0 11px 11px;transition:top .06s ease-out,height .06s ease-out;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23g)'/%3E%3C/svg%3E") 0 0/32px 32px,
+    linear-gradient(90deg,#010A15 0%,#031C36 12%,#08345F 30%,#336FA6 42%,#0A3A68 56%,#042142 78%,#010A15 100%);
+  background-blend-mode:overlay,normal;
+  box-shadow:0 2px 3px rgba(0,0,0,.55)}
+body.premium .bs-tasto .tb-pcima{left:11px;top:5px;width:40px;height:23px;border-radius:50%;transition:top .06s ease-out,filter .06s;
+  background:radial-gradient(ellipse at 34% 24%,rgba(214,234,252,.48) 0%,rgba(214,234,252,.15) 30%,rgba(214,234,252,0) 52%),
+    radial-gradient(ellipse at 60% 95%,rgba(1,10,22,.45) 0%,rgba(1,10,22,0) 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23g)'/%3E%3C/svg%3E") 0 0/32px 32px,
+    conic-gradient(from 200deg,#6EA3D4 0deg,#15528D 50deg,#09315E 110deg,#042141 160deg,#0F437A 210deg,#4680BA 250deg,#0C3D71 300deg,#6EA3D4 360deg);
+  background-blend-mode:normal,normal,overlay,normal;
+  box-shadow:inset 0 -3px 4px rgba(2,14,28,.55),inset 0 1.5px 1px rgba(214,234,250,.7),inset 0 0 0 1px rgba(3,20,36,.5)}
+/* il disegno inciso sulla cima: chiaro, schiacciato come la cima vista un po' dall'alto */
+body.premium .bs-tasto .tb-ico{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:20px;height:20px;margin:-10px 0 0 -10px;transform:scaleY(.72)}
+body.premium .bs-tasto .tb-ico svg{width:20px;height:20px;color:#EAF3FB;stroke-width:2.1;filter:drop-shadow(0 .8px 0 rgba(2,12,24,.65))}
+body.premium .bs-tasto .tb-ico .acc{fill:rgba(232,200,130,.5);stroke:#F0DDB0}
+/* premuto: il pistone entra nella ghiera */
+body.premium .bs-blu:active .tb-pcima,body.premium .bs-blu.giu .tb-pcima{top:11px;filter:brightness(.9)}
+body.premium .bs-blu:active .tb-plato,body.premium .bs-blu.giu .tb-plato{top:22px;height:14px}
+/* la pagina dove sei: la luce accesa nel pozzo, il disegno più chiaro */
+body.premium .bs-blu[aria-pressed="true"] .tb-pozzo::after{opacity:1}
+body.premium .bs-blu[aria-pressed="true"] .tb-pcima{filter:brightness(1.1)}
+body.premium .bs-blu[aria-pressed="true"]:active .tb-pcima,body.premium .bs-blu[aria-pressed="true"].giu .tb-pcima{filter:brightness(.98)}
+body.premium .bs-blu[aria-pressed="true"] .tb-ico svg{color:#FFFFFF;filter:drop-shadow(0 0 2px rgba(150,222,255,.95)) drop-shadow(0 .8px 0 rgba(2,12,24,.5))}
+/* tema scuro: l'ombra più scura sulla barra */
+:root[data-theme="dark"] body.premium .bs-tasto .tb-ombra{background:radial-gradient(closest-side,rgba(0,0,0,.75),rgba(0,0,0,.3) 60%,rgba(0,0,0,0))}
+@media (max-width:380px){body.premium .bs-tasto{transform:scale(.92);transform-origin:50% 100%}}
+@media (max-width:340px){body.premium .bs-tasto{transform:scale(.84)}body.premium .bs-arcade{transform:scale(.9);transform-origin:50% 100%;margin-top:-6px}}
+@media (prefers-reduced-motion:reduce){body.premium .bs-tasto .tb-pozzo::after{transition:none}}
+/* la barra ora è un po' più alta: le cose che le stanno sopra seguono la sua altezza vera */
+body.con-sotto main{padding-bottom:calc(var(--alto-sotto,86px) + 18px + env(safe-area-inset-bottom,0px))}
+body.con-sotto .toast{bottom:calc(var(--alto-sotto,86px) + 12px + env(safe-area-inset-bottom,0px))}
+body.con-sotto .sv-scrivi{bottom:calc(var(--alto-sotto,86px) + 8px)}
