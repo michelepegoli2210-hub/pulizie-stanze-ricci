@@ -215,6 +215,9 @@ export function zonaDi(camera, regole = REGOLE_BASE) {
 export function passaggiCamera(camera, regole = REGOLE_BASE, iso = null) {
   const r = { ...REGOLE_BASE, ...(regole || {}) };
   if (iso && regimeDi(iso, r) === "estate") return [];
+  // 1.57.0: i giorni scelti da Michele per questo posto (impostazioni/regole.giorniCamere[id] = [{ giorno, tipo }]; null = il calendario)
+  const mie = r.giorniCamere && r.giorniCamere[camera.id];
+  if (Array.isArray(mie)) return mie.filter(x => x && Number.isInteger(Number(x.giorno)) && Number(x.giorno) >= 0 && Number(x.giorno) <= 6).map(x => ({ giorno: Number(x.giorno), tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), zona: zonaDi(camera, r), insieme: "", parte: "", minuti: 0, daCalendario: false, scelto: true }));
   const cal = CALENDARIO_CAMERE[camera.id];
   if (cal && !cal.aperto && !r.ignoraCalendario) return cal.passi.map(x => ({ giorno: x.giorno, tipo: x.tipo === "totale" ? (camera.tipo === "casa" ? "totale_casa" : "totale") : (camera.tipo === "casa" ? "casa" : "ripasso"), zona: x.zona || camera.zona, insieme: x.insieme || "", parte: x.parte || "", minuti: Number(x.minuti) || 0, daCalendario: true }));
   return ((camera.tipo === "casa" ? r.casa : r.camera) || []).map(x => ({ ...x, zona: camera.zona, daCalendario: false }));

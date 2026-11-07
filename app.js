@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.56.1";
+export const VERSIONE = "1.57.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1404,6 +1404,7 @@ function avviaAscolto() {
   // 0.88 - il taccuino di Sofia: sta in "importazioni" perche' e' l'unica raccolta che le regole di Firestore fanno leggere SOLO ai proprietari
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "taccuino-sofia", d => { S.taccuino = Array.isArray(d?.voci) ? d.voci : []; disegna(); setTimeout(guastiDalTaccuino, 2500); }));
   if (proprietario()) S.stop.push(ascoltaMessaggiSig());   // 1.55.13: i messaggi delle signore per Michele
+  if (proprietario()) S.stop.push(db.ascolta("ruoli", {}, (m) => { S.ruoli = m || {}; S.caricati.ruoli = true; if (S.vista === "piantine" || S.vista === "altro" || (S.foglio && /^rg/.test(S.foglio.tipo || ""))) disegna(); }, (e) => console.warn("ruoli", e)));   // 1.57.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
@@ -1428,7 +1429,7 @@ function avviaAscolto() {
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; S.caricati.avvisi = true; disegna(); pianoDelMattino(); }));   // 1.51.0: caricati.avvisi
   S.stop.push(db.ascoltaDoc("impostazioni", "listino", d => { S.listino = L.listinoCompleto(d); try { aggiornaAscoltoTurni(); } catch (e) {} disegna(); pianifica(); }));
-  S.stop.push(db.ascoltaDoc("impostazioni", "squadra", d => { const x = { ...(d || {}) }; delete x.id; delete x.aggiornato; S.squadra = Object.keys(x).length ? x : null; disegna(); pianifica(); })); // le signore: nomi, attive, camere loro // anche le signore: serve per contare ore, stelle e controlli
+  S.stop.push(db.ascoltaDoc("impostazioni", "squadra", d => { const x = { ...(d || {}) }; delete x.id; delete x.aggiornato; S.squadra = Object.keys(x).length ? x : null; S.caricati.squadra = true; disegna(); pianifica(); }, () => { S.caricati.squadra = true; pianifica(); })); // le signore: nomi, attive, camere loro // anche le signore: serve per contare ore, stelle e controlli
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
   if (addetta()) wherePul.push(["zona", "==", u.zona]);
@@ -1457,11 +1458,12 @@ function mostraErrore(err) {
 // ---------------------------------------------------------------------------
 let timerPiano = null, pianoInCorso = false;
 function pianifica() {
-  if (!proprietario() || !S.caricati.pulizie || !S.caricati.soggiorni) return;
+  if (!proprietario() || !S.caricati.pulizie || !S.caricati.soggiorni || !S.caricati.squadra) return;   // 1.57.0: anche chi sono le ragazze
   clearTimeout(timerPiano);
   timerPiano = setTimeout(eseguiPiano, 900);
 }
 async function eseguiPiano() {
+  if (!proprietario() || !S.caricati.squadra) return;   // 1.57.0: un piano rimasto in attesa dopo un cambio di utente non scrive niente
   if (pianoInCorso) { pianifica(); return; }
   pianoInCorso = true;
   try {
@@ -1470,7 +1472,12 @@ async function eseguiPiano() {
     const a = L.aggiungiGiorni(oggi, S.regole.giorniAvanti ?? 14);
     const attese = L.pianoPulizie(S.camere, soggiorniLista(), S.regole, S.listino, da, a, Object.values(S.note), S.clienti);
     // le camere date a una collaboratrice passano a lei (Paghe → Le signore): la pulizia, la paga e i controlli
-    for (const p of attese) { const z = signoraDiCamera(p.camera); if (z && z !== p.zona) { p.zona = z; p.insieme = ""; } }
+    const sqP = squadra();   // 1.57.0
+    for (const p of attese) {
+      const z = signoraDiCamera(p.camera); if (z) { p.zona = z; p.insieme = ""; continue; }
+      const za = zonaAttiva(p.zona, sqP); if (za !== p.zona) p.zona = za;
+      if (p.insieme) { const zi = zonaAttiva(p.insieme, sqP); p.insieme = zi && zi !== p.zona ? zi : ""; }
+    }
     const esistenti = {};
     for (const [id, p] of Object.entries(S.pulizie)) if (p.data >= da && p.data <= a) esistenti[id] = p;
     const diff = L.differenzePiano(attese, esistenti);
@@ -1823,7 +1830,7 @@ function tesseraGrande(c, iso, perSignora) {
   const dett = p.dettagli ? `<span class="tess-dett">${ICONA("nota")}Dettagli</span>` : "";
   const attr = perSignora ? `data-dettagli="${esc(p.id)}"` : `data-pul="${esc(p.id)}"`;
   const prezzo = !perSignora ? `<span class="tess-pr">${eur(p.importo)}</span>` : "";
-  return `<button class="tess ${cls}" ${attr}>${prezzo}<span class="${clsNome}">${esc(c.nome)}</span><span class="tess-lavoro">${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${testoRifiniture(p) ? `<span class="tess-rif">⭐ ${esc(testoRifiniture(p))}</span>` : ""}${!perSignora && disegniVeri(c) ? `<span class="tess-rif">✏️ ${segniManoDi(p).length ? `${segniManoDi(p).length} ${segniManoDi(p).length === 1 ? "segno" : "segni"} sul disegno` : "Disegno: tocca per segnare"}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
+  return `<button class="tess ${cls}" ${attr}>${prezzo}${!perSignora && p.zona && S.zone[p.zona] && p.zona !== "ap" ? tondoRagazza(p.zona, "mini tess-chi") : ""}<span class="${clsNome}">${esc(c.nome)}</span><span class="tess-lavoro">${p.origine === "governante" ? "⭐ " : ""}${esc(titoloLavoro(p))}</span>${chi ? `<span class="tess-osp">${chi}</span>` : ""}${testoRifiniture(p) ? `<span class="tess-rif">⭐ ${esc(testoRifiniture(p))}</span>` : ""}${!perSignora && disegniVeri(c) ? `<span class="tess-rif">✏️ ${segniManoDi(p).length ? `${segniManoDi(p).length} ${segniManoDi(p).length === 1 ? "segno" : "segni"} sul disegno` : "Disegno: tocca per segnare"}</span>` : ""}${flag}${dett}<span class="badge ${cls} tess-stato">${stato}</span>${azione ? `<span class="tess-az">${azione}</span>` : ""}</button>`;
 }
 // Lavori del giorno che non stanno in una casella della piantina (lavori extra e lavori della governante)
 function lavoriInPiu(z, iso, rs) {
@@ -2077,7 +2084,8 @@ function scegliRigaNonRiesco(p) {
 
 function vistaPiantina(z, perSignora) {
   const iso = S.giorno;
-  const lavori = pulizieDelGiorno(iso, z), finiti = lavori.filter(p => p.stato !== "da_fare").length;
+  const sueC = perSignora ? null : new Set(camereZona(z).map(c => c.id));   // 1.57.0: per Michele conta il piano, chiunque lo pulisca
+  const lavori = sueC ? pulizieDelGiorno(iso).filter(p => sueC.has(p.camera)) : pulizieDelGiorno(iso, z), finiti = lavori.filter(p => p.stato !== "da_fare").length;
   const rif = RIFIUTI.find(r => r.giorno === (L.giornoSettimana(iso) + 1) % 7);
   const titolo = lavori.length ? `${iso === L.oggiISO() ? "Oggi" : L.dataBreve(iso)}: ${finiti} su ${lavori.length} ${finiti === 1 ? "fatta" : "fatte"}` : `${iso === L.oggiISO() ? "Oggi" : L.dataBreve(iso)} niente da pulire qui`;
   return `<section class="card piantina-card"><h2 style="margin:0 2px 2px">${titolo}</h2>
@@ -2241,9 +2249,9 @@ function pattoOre() {
 // ---- Paghe (Michele), a ore -----------------------------------------------------------------------------------------
 function vistaPagheOre() {
   const chiave = L.settimanaCorrente(), prec = L.settimanaPrecedente(chiave), mod = puoModificare();
-  const blocchi = signore().map(z => {
+  const blocchi = signorePaghe().map(z => {
     const b = bustaOre(z.id, chiave), pd = S.pagamenti[`${z.id}_${chiave}`], bp = bustaOre(z.id, prec), pp = S.pagamenti[`${z.id}_${prec}`];
-    return `<section class="card zone paga-ore"><div class="head"><h2 style="margin:0">${esc(SIG(z.id))}</h2><b style="font:800 22px var(--f-display)">${eur(b.totale)}</b></div>
+    return `<section class="card zone paga-ore"><div class="head"><h2 style="margin:0">${esc(SIG(z.id))}${z.andata ? ` <small class="muted" style="font-weight:600">· non lavora più</small>` : ""}</h2><b style="font:800 22px var(--f-display)">${eur(b.totale)}</b></div>
       <div class="muted">${esc(testoOreTurno(b.minuti))} in ${b.giorni.length} ${b.giorni.length === 1 ? "giorno" : "giorni"} · ${eur(b.tariffa)} l'ora · settimana ${L.etichettaSettimana(chiave)}</div>
       ${b.rettifiche.euro || b.stime ? `<div class="muted small" style="margin:2px 0 6px">${b.rettifiche.euro ? `ore <b>${eur(b.ore)}</b> ${b.rettifiche.euro > 0 ? "+ premi" : "− rettifiche"} <b>${eur(Math.abs(b.rettifiche.euro))}</b> = <b>${eur(b.totale)}</b>` : ""}${b.stime ? `${b.rettifiche.euro ? " · " : ""}<span style="color:var(--warn)">${b.stime} ${b.stime === 1 ? "giorno senza orario completo" : "giorni senza orario completo"} (stima dalle camere): mettilo con «Orario»</span>` : ""}</div>` : ""}
       <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${mod ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : mod ? (b.totale ? `<button class="btnsm" data-pay="${z.id}|${chiave}">Segna come pagata</button>` : `<span class="pill nulla">Niente da pagare</span>`) : `<span class="pill open">da pagare</span>`}</div>
@@ -4801,7 +4809,7 @@ function messaggiArrivati(m) {
       if (!reg) return;
       for (const x of nuovi.slice(-3)) {
         const corpo = x.tipo === "foto" ? `📷 Ti ha mandato una foto${x.testo ? `: «${x.testo}»` : "."}` : x.tipo === "file" ? String(x.testo || "") : `«${x.testo || ""}»`;
-        reg.showNotification(`💬 ${x.nome || "Una signora"} ti scrive${x.prova ? " (prova)" : ""}`, { body: `${corpo} (alle ${L.oraBreve(x.ora)}) · Tocca per leggerlo nell'app.`, icon: "icon-192.png", badge: "icon-192.png", tag: ("sofia-msg-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), renotify: true, data: { push: true, id: "qui-" + Date.now().toString(36), dove: "messaggi", rif: x.id } });
+        reg.showNotification(`💬 ${x.nome || "Una signora"} ti scrive${x.prova ? " (prova)" : ""}`, { body: `${corpo} (alle ${L.oraBreve(x.ora)}) · Tocca per leggerlo nell'app.`, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag: ("sofia-msg-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), renotify: true, data: { push: true, id: "qui-" + Date.now().toString(36), dove: "messaggi", rif: x.id } });
       }
     }).catch(() => {});
   } catch (e) {}
@@ -6387,7 +6395,7 @@ function vistaProprietario() {
   let corpo = "";
   if (v === "oggi") corpo = vistaOggiGestione();
   else if (v === "prospetto") corpo = vistaTabellone();
-  else if (v === "piantine") corpo = zoneOrdinate().map(z => vistaPiantina(z.id, false)).join("");
+  else if (v === "piantine") corpo = cardRagazze() + piantineRagazze();   // 1.57.0
   else if (v === "paghe") corpo = vistaPaghe();
   else if (v === "altro") corpo = vistaAltro();
   else if (v === "foglio") corpo = vistaFoglio();
@@ -6724,7 +6732,7 @@ async function salvaGov(patch) {
 }
 // "Va bene": il consiglio diventa un lavoro nella settimana della signora (una pulizia come le altre, tipo "fondo")
 async function accettaProposte(lista) {
-  const ops = lista.map(c => ({ tipo: "salva", coll: "pulizie", id: idPuliziaGov(c), merge: false, dati: { id: idPuliziaGov(c), data: c.data, camera: c.luogo, zona: c.zona, tipo: "fondo", titolo: c.cosa, passi: [], come: c.come, minuti: c.minuti, icona: c.icona, perche: c.perche, importo: c.grande ? L.prezzoFondo(S.listino, camera(c.luogo)) : (c.euro || 0), grande: !!c.grande, stato: "da_fare", origine: "governante", regola: c.regola, creato: S.db.adesso(), da: S.utente.nome || "" } }));
+  const ops = lista.map(c => ({ tipo: "salva", coll: "pulizie", id: idPuliziaGov(c), merge: false, dati: { id: idPuliziaGov(c), data: c.data, camera: c.luogo, zona: zonaAttiva(c.zona), tipo: "fondo", titolo: c.cosa, passi: [], come: c.come, minuti: c.minuti, icona: c.icona, perche: c.perche, importo: c.grande ? L.prezzoFondo(S.listino, camera(c.luogo)) : (c.euro || 0), grande: !!c.grande, stato: "da_fare", origine: "governante", regola: c.regola, creato: S.db.adesso(), da: S.utente.nome || "" } }));
   if (!ops.length) return;
   for (const op of ops) S.pulizie[op.id] = op.dati;
   disegna();
@@ -8050,7 +8058,7 @@ async function rispondiParole(i, k) {
   // "dove?" → scelgo le camere e rifaccio la proposta
   if (msg.azioneDove) {
     const a = { ...msg.azioneDove };
-    a.camere = k === "tutte" ? S.camere.map(c => c.id) : String(k).startsWith("zona:") ? S.camere.filter(c => (signoraDiCamera(c.id) || L.zonaDi(c, S.regole)) === k.slice(5)).map(c => c.id) : [];
+    a.camere = k === "tutte" ? S.camere.map(c => c.id) : String(k).startsWith("zona:") ? S.camere.filter(c => chiPulisce(c.id).includes(k.slice(5))).map(c => c.id) : [];
     const nuovo = [...conv]; nuovo[i] = { ...msg, tasti: null, scelto: k === "tutte" ? "In tutte" : "Camere di " + SIG(k.slice(5)) };
     nuovo.push({ chi: "gov", testo: testoProposta(a), tasti: [{ k: "si", testo: "Sì, fallo" }, { k: "no", testo: "No, lascia" }], azione: a, ora: S.db.adesso() });
     return salvaConversazione(nuovo);
@@ -8560,7 +8568,7 @@ async function eseguiParole(a) {
   if (a.tipo === "messaggio") { await scriviMessaggio(a.giorno, a.testo); return `Fatto: le signore lo leggono ${a.giorno === L.oggiISO() ? "oggi" : L.dataBreve(a.giorno)} in cima alla loro schermata.`; }
   if (a.tipo === "fatto") {
     const regole = [a.regola, ...(a.altre || [])], n = [];
-    for (const r of regole) for (const id of a.camere) { const c = camera(id); await registraFatto(r.id, id, signoraDiCamera(id) || c.zona, a.giorno); n.push(id); }
+    for (const r of regole) for (const id of a.camere) { const c = camera(id); await registraFatto(r.id, id, chiPulisceUna(id, c.zona), a.giorno); n.push(id); }
     return `Fatto: segnata «${regole.map(r => r.nome).join(", ")}» in ${a.camere.length} ${a.camere.length === 1 ? "posto" : "posti"} il ${L.dataBreve(a.giorno)}. Non la richiedo più finché non torna il suo turno.`;
   }
   if (a.tipo === "togli") {
@@ -8600,7 +8608,7 @@ async function eseguiParole(a) {
       const cam = camera(id);
       const prossima = Object.values(S.pulizie).filter(p => p.camera === id && p.data > oggi && p.origine !== "governante" && p.tipo !== "extra" && p.stato === "da_fare").sort((x, y) => x.data < y.data ? -1 : 1)[0];
       const data = a.giorno || (prossima ? prossima.data : L.aggiungiGiorni(oggi, 1));
-      const zona = (prossima && !a.giorno) ? prossima.zona : (signoraDiCamera(id) || L.zonaDi(cam, S.regole));
+      const zona = (prossima && !a.giorno) ? prossima.zona : chiPulisceUna(id, L.zonaDi(cam, S.regole));
       const pid = `${data}_${id}_x${Date.now().toString(36)}${n}`;
       ops.push({ tipo: "salva", coll: "pulizie", id: pid, dati: { id: pid, data, camera: id, zona, tipo: "extra", titolo: a.cosa || a.regola.nome, passi: a.regola && a.regola.come ? [a.regola.come] : [], regola: a.regola ? a.regola.id : null, minuti: a.minuti, importo: euro, stato: "da_fare", origine: "mano", creato: S.db.adesso(), da: "la governante" } });
       quando.push(`${cam.nome} ${L.dataBreve(data)}`); n++;
@@ -9042,7 +9050,7 @@ function iaAccesa() { return proprietario() && IA.accesa(confIA()); }
 function postiIA() { return [...S.camere, ...G.LUOGHI_COMUNI]; }
 function elenchiIA() {
   const camere = postiIA().map(c => {
-    const z = signoraDiCamera(c.id) || c.zona;
+    const z = chiPulisceUna(c.id, c.zona);
     const che = c.tipo === "casa" ? "appartamento" : c.tipo === "comune" ? "zona comune" : "camera";
     let modo = ""; try { if (c.tipo !== "comune") modo = ", modo " + G.MODI[G.modoDi(c, L.oggiISO(), ctxGov())].nome; } catch (e) {}
     return `${c.id} = ${c.nome} (${che}, ${S.zone[z]?.nome || z}${SIG(z) ? ", la pulisce " + SIG(z) : ""}${modo})`;
@@ -9847,14 +9855,14 @@ async function accendiAvvisiTelefono() {
     const id = idTelefono(), voce = { sub: JSON.parse(JSON.stringify(sub)), chi: "titolare", nome: nomeTelefono(), quando: S.db.adesso() };
     await S.db.salva("importazioni", "push-sofia", { iscrizioni: { [id]: voce } }, true);
     S.pushSofia = { ...(S.pushSofia || {}), iscrizioni: { ...((S.pushSofia || {}).iscrizioni || {}), [id]: voce } };
-    try { await reg.showNotification("Sofia", { body: "Fatto: da adesso ti scrivo anche qui, sul telefono.", icon: "icon-192.png", tag: "sofia-prova", data: { push: true } }); } catch (e) {}
+    try { await reg.showNotification("Sofia", { body: "Fatto: da adesso ti scrivo anche qui, sul telefono.", icon: "icona-casa-192.png", tag: "sofia-prova", data: { push: true } }); } catch (e) {}
     toast("Avvisi accesi su questo telefono ✓");
     disegna(); return true;
   } catch (e) { console.warn("avvisi telefono", e); toast("Non ci sono riuscita: " + String((e && e.message) || e).slice(0, 90)); return false; }
   finally { accendoAvvisi = false; }
 }
 async function provaAvvisoTelefono() {
-  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification("Sofia", { body: "Prova: gli avvisi su questo telefono funzionano.", icon: "icon-192.png", tag: "sofia-prova", data: { push: true } }); toast("Guarda le notifiche del telefono"); }
+  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification("Sofia", { body: "Prova: gli avvisi su questo telefono funzionano.", icon: "icona-casa-192.png", tag: "sofia-prova", data: { push: true } }); toast("Guarda le notifiche del telefono"); }
   catch (e) { toast("Non riesco a mostrare l'avviso: " + String((e && e.message) || e).slice(0, 80)); }
 }
 function cardAvvisiTelefono() {
@@ -11059,7 +11067,7 @@ function vistaTabellone() {
   const corpoMese = `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
   const pillole = `<div class="pr-numeri"><span><b>${occOggi}/${S.camere.length}</b> stanotte</span><span><b>${notti}</b> notti</span>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<span><i style="background:${TIPI_OSPITE[k]?.colore || "var(--c-altro)"}"></i><b>${v}</b> ${esc(TIPI_OSPITE[k]?.nome || k)}</span>`).join("")}</div>`;
-  const azioni = puoModificare() ? `<button type="button" class="pr-ins2" data-inserisci>＋ Prospetto</button><button type="button" class="pr-wa2" data-ins-wa-subito aria-label="Il prospetto da WhatsApp">${ICO_WA}</button>` : "";
+  const azioni = puoModificare() ? `<button type="button" class="pr-ins2" data-inserisci>＋ Prospetto</button><button type="button" class="pr-voce2" data-prosp-voce aria-label="Dillo a voce">${ICO_LINEA.mic}</button><button type="button" class="pr-wa2" data-ins-wa-subito aria-label="Il prospetto da WhatsApp">${ICO_WA}</button>` : "";
   const viste = `<div class="seg pr-viste tre"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo === "facile"}" data-board="facile">Facile</button><button type="button" aria-pressed="${modo === "settimana" || modo === "mese"}" data-board="${modo === "mese" ? "mese" : "settimana"}">Settimana</button></div>`;
   const nav = `<section class="card flat pr-nav"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
     <div class="pr-nav-sotto">${pillole}<button type="button" class="pr-mese" data-board="${modo === "mese" ? "settimana" : "mese"}">${modo === "mese" ? "Vedi la settimana" : "Vedi il mese"}</button></div></section>`;
@@ -11337,11 +11345,11 @@ function cardContoProspetto() {
 function vistaPaghe() {
   if (pagaAOre()) return vistaPagheOre();
   const chiave = L.settimanaCorrente();
-  const blocchi = signore().map(z => {
+  const blocchi = signorePaghe().map(z => {
     const t = totaleBusta(z.id, chiave), { lista, totale } = t;
     const pd = S.pagamenti[`${z.id}_${chiave}`];
     const prec = L.settimanaPrecedente(chiave), tp = totaleBusta(z.id, prec), pp = S.pagamenti[`${z.id}_${prec}`];
-    return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(SIG(z.id))}</h2><b style="font:800 22px var(--f-display)">${eur(totale)}</b></div>
+    return `<section class="card zone"><div class="head"><h2 style="margin:0">${esc(SIG(z.id))}${z.andata ? ` <small class="muted" style="font-weight:600">· non lavora più</small>` : ""}</h2><b style="font:800 22px var(--f-display)">${eur(totale)}</b></div>
       <div class="muted">${lista.length} ${lista.length === 1 ? "pulizia" : "pulizie"} · settimana ${L.etichettaSettimana(chiave)}</div>
       <div class="muted small" style="margin:2px 0 6px">${rigaConto(t)}</div>
       <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${puoModificare() ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : puoModificare() ? (totale ? `<button class="btnsm" data-pay="${z.id}|${chiave}">Segna come pagata</button>` : `<span class="pill nulla">Niente da pagare</span>`) : `<span class="pill open">da pagare</span>`}</div>
@@ -11447,32 +11455,11 @@ function cardTempiVeri() {
     <p class="muted small" style="margin:0 0 6px">Quanto ci mettono davvero, da "Inizia" a "Fatto", negli ultimi 2 mesi. ${fuori ? `${fuori} ${fuori === 1 ? "posto è lontano" : "posti sono lontani"} dal tempo standard: con un tocco metti il tempo vero (la paga di quel posto cambia di conseguenza).` : "Tutto in linea con l'orario di base."}</p>
     <div class="rows">${lista.slice(0, 12).map(riga).join("")}</div>`;
 }
-// Paghe → Le signore: chi sono (col loro nome), chi lavora adesso, e le camere di una collaboratrice nuova
+// Paghe → Le signore (1.57.0): nomi, quante sono e quali camere fanno si cambiano in «Le signore» (la scheda «Le ragazze»)
 function cardSignore() {
-  const mod = puoModificare(), sq = squadra(), zone = zoneOrdinate();
-  const chiave = L.settimanaCorrente();
-  const riga = (z) => {
-    const v = sq[z.id] || {}, attiva = v.attiva !== false;
-    const t = attiva ? totaleBusta(z.id, chiave) : null;
-    const sue = (v.camere || []).map(id => camera(id).nome);
-    const lav = attiva ? Object.values(S.pulizie).filter(p => p.zona === z.id && p.data >= L.aggiungiGiorni(L.oggiISO(), -1) && p.data <= L.aggiungiGiorni(L.oggiISO(), 6)) : [];
-    const camereSett = [...new Set(lav.map(p => camera(p.camera).nome))];
-    return `<div class="sig-riga-ed ${attiva ? "" : "spenta"}">
-      <div class="sig-riga-top">${avatarZona(z.id, "mini")}<input type="text" value="${esc(v.nome || "")}" placeholder="${esc("Signora " + (z.breve || z.id))}" data-sig-nome="${z.id}" ${mod ? "" : "disabled"} aria-label="Nome">
-        <span class="seg"><button aria-pressed="${attiva}" data-sig-attiva="${z.id}|1" ${mod ? "" : "disabled"}>Lavora</button><button aria-pressed="${!attiva}" data-sig-attiva="${z.id}|0" ${mod ? "" : "disabled"}>No</button></span></div>
-      ${attiva && mod ? `<div class="sig-capelli">Capelli: ${["castana", "bionda", "mora", "rossa", "grigia"].map(c => `<button class="cap ${c}" aria-pressed="${(v.capelli || "castana") === c}" data-sig-capelli="${z.id}|${c}" title="${c}" aria-label="${c}"></button>`).join("")}</div>` : ""}
-      <div class="muted small">${esc(z.nome)}${attiva ? ` · questa settimana ${camereSett.length} ${camereSett.length === 1 ? "posto" : "posti"}${t && t.totale ? ` · ${eur(t.totale)} finora` : ""}` : " · non lavora: le sue camere le fanno le altre"}</div>
-      ${attiva && sue.length ? `<div class="muted small">Camere sue: ${esc(sue.join(", "))}</div>` : ""}
-      ${attiva && mod ? `<details><summary>Quali camere fa lei</summary><p class="muted small" style="margin:6px 0">Di solito le camere le decide il calendario. Qui si spostano a mano: quelle che segni passano a lei (lista, paga e controlli), dalle prossime pulizie.</p>
-        <div class="rows">${S.camere.map(c => { const mia = (v.camere || []).includes(c.id); const altra = signoraDiCamera(c.id); return `<div class="row"><span>${esc(c.nome)}${!mia && altra ? ` <span class="muted small">(di ${esc(SIG(altra))})</span>` : ""}</span><span class="seg"><button aria-pressed="${mia}" data-sig-camera="${z.id}|${c.id}|1">Sua</button><button aria-pressed="${!mia}" data-sig-camera="${z.id}|${c.id}|0">No</button></span></div>`; }).join("")}</div></details>` : ""}
-    </div>`;
-  };
-  const attive = zone.filter(z => (sq[z.id] || {}).attiva !== false).length;
-  return `<section class="card signore-card"><h2 style="margin:0 0 4px">Le signore</h2><p class="muted small" style="margin:0 0 10px">Adesso sono ${attive}. Scrivi il loro nome: l'app le chiama così dappertutto (paghe, controlli, messaggi). Se una non lavora più, metti "No". Per una collaboratrice nuova tocca "Aggiungi una signora" e segna le camere che fa lei.</p>
-    ${zone.map(riga).join("")}
-    ${mod ? `<details style="margin-top:10px"><summary>Aggiungi una signora</summary><form id="formSignora"><div class="campo"><label for="sgNome">Come si chiama</label><input id="sgNome" type="text" placeholder="es. Maria" required></div>
-      <p class="muted small" style="margin:0 0 8px">Nasce senza camere: segnale tu qui sotto, oppure lasciale e dalle i lavori a mano. Per farla entrare nell'app serve anche l'accesso (⋯ → Persone: nome per entrare e password).</p>
-      <button class="big main" type="submit">Aggiungi</button></form></details>` : ""}</section>`;
+  if (!puoModificare()) return "";
+  const att = signore();
+  return `<section class="card signore-card"><h2 style="margin:0 0 4px">Le ragazze</h2><p class="muted small" style="margin:0 0 10px">${att.length ? esc(att.map(z => SIG(z.id)).join(", ")) : "Nessuna al lavoro"}. Nomi, quante sono e quali camere fanno: in «Le signore».</p><button class="btnsm" data-vista="piantine">Cambiale in «Le signore» ›</button></section>`;
 }
 // Paghe → Orario di base e tariffe: i minuti standard, le tariffe orarie, i lavori fissi, le stelle, i controlli
 function cardOrarioBase() {
@@ -11482,7 +11469,7 @@ function cardOrarioBase() {
   const rigaStella = (lab, k) => `<label for="ps_${k}">${lab}</label><span class="unita"><input id="ps_${k}" type="number" min="0" step="0.5" value="${pz[k]}" data-prezzo-stella="${k}" ${mod ? "" : "disabled"}><small>€</small></span>`;
   const cam = id => S.camere.find(c => c.id === id) || CAMERE.find(c => c.id === id) || { id, nome: id, tipo: "camera" };
   const esempio = (id, tipo) => { const c = cam(id); const m = L.minutiPulizia(l, c, tipo); return `${esc(c.nome)} ${tipo === "ripasso" || tipo === "casa" ? "ripasso" : "cambio"}: ${esc(L.testoOre(m))} · ${eur(L.prezzoPulizia(l, c, tipo))}`; };
-  const giorniSel = (chiave, val) => `<select data-listino-sel="${chiave}" ${mod ? "" : "disabled"}>${[1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}" ${+val === d ? "selected" : ""}>${L.GIORNI[d]}</option>`).join("")}</select>`;
+  const giorniSel = (chiave, val) => `<select data-listino-sel="${chiave}" ${mod ? "" : "disabled"}>${[1, 2, 3, 4, 5, 6, 0, -1].map(d => `<option value="${d}" ${+val === d ? "selected" : ""}>${d < 0 ? "spento" : L.GIORNI[d]}</option>`).join("")}</select>`;
   const zoneSel = (chiave, val) => `<select data-listino-sel="${chiave}" ${mod ? "" : "disabled"}>${signore().map(z => `<option value="${z.id}" ${val === z.id ? "selected" : ""}>${esc(SIG(z.id))}</option>`).join("")}</select>`;
   const zonaStelleSel = (val) => `<select data-listino-sel="zonaStelle" ${mod ? "" : "disabled"}>${signore().filter(z => z.id !== "ap").map(z => `<option value="${z.id}" ${val === z.id ? "selected" : ""}>Solo ${esc(SIG(z.id))}</option>`).join("")}<option value="tutte" ${val === "tutte" ? "selected" : ""}>Tutte e due, ognuna le sue camere</option></select>`;
   const fissi = (l.fissi || []).map((f, i) => `<div class="row" style="grid-template-columns:1fr auto;gap:6px"><span><b>${esc(f.titolo)}</b><br><span class="muted small">${eur(L.euroDaMinuti(f.minuti, l.tariffe[f.tariffa || "albergo"]))} · ${esc(L.testoOre(f.minuti))}</span></span><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${giorniSel(`fissi.${i}.giorno`, f.giorno)}${zoneSel(`fissi.${i}.zona`, f.zona)}<input type="number" min="0" step="5" value="${f.minuti}" data-listino="fissi.${i}.minuti" style="width:72px" ${mod ? "" : "disabled"}><small>min</small></span></div>`).join("");
@@ -12027,6 +12014,402 @@ function foglioCopia(f) {
 function alWsTesta() {
   return `<button type="button" class="al-ws-stato${alWsPronto() ? " acceso" : ""}" data-alws-apri>${alWsPronto() ? "📨 Invio automatico alla Polizia: acceso ✓" : "📨 Invio automatico alla Polizia: impostalo"} ›</button>`;
 }
+// ============================================================================
+//  1.57.0 I TASTI VERI (Michele, 7/11: «il pulsante Fatto delle signore non funziona benissimo: sarebbe opportuno che
+//  vibrasse quando si preme, e si deve premere veramente: deve dare la sensazione che venga premuto»).
+//  - Al tocco il telefono vibra (un colpetto); al «Sì» della domanda (camera pulita, ho finito) due colpetti.
+//  - Il tasto va GIÙ davvero, anche con un tocco velocissimo (la classe «premuto» la mette l'app subito, non il
+//    browser quando gli pare), e torna su quando si lascia il dito.
+//  - Il tocco non si perde più: se mentre il dito è sul tasto l'app ridisegna la pagina (arriva un aggiornamento), il
+//    tasto nuovo resta giù e il tocco vale lo stesso. Un secondo tocco veloce non chiude più la domanda appena aperta.
+//  - Su iPhone le pagine non possono vibrare: dove c'è (iOS 18) si usa il «clic» dell'interruttore del telefono.
+// ============================================================================
+const TASTI_VERI = ".gp-fatto,.ag-finito,.sg-finito,[data-ho-finito],[data-turno-inizio],.gp-stella,.conferma .big";
+const TASTI_CHIAVI = ["data-fatta-camera", "data-ho-finito", "data-turno-inizio", "data-stelle", "data-fatta-foglio", "data-si", "data-no"];
+let tastoGiu = null, tastoClic = null, vibratoAlle = 0;
+function vibra(schema) {
+  try {
+    if (typeof navigator.vibrate === "function") {
+      if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return false;   // prima del primo tocco il telefono non lo permette
+      const ok = navigator.vibrate(schema) !== false; if (ok) vibratoAlle = Date.now(); return ok;
+    }
+    if (!/iP(hone|ad|od)/.test(navigator.userAgent || "") && !(navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return false;
+    const l = document.createElement("label"); l.setAttribute("aria-hidden", "true"); l.style.display = "none";
+    const i = document.createElement("input"); i.type = "checkbox"; i.setAttribute("switch", ""); i.tabIndex = -1; l.appendChild(i);
+    document.head.appendChild(l); l.click(); l.remove(); vibratoAlle = Date.now(); return true;
+  } catch (e) { return false; }
+}
+function chiaveTasto(el) { for (const a of TASTI_CHIAVI) if (el.hasAttribute(a)) return `[${a}="${CSS.escape(el.getAttribute(a))}"]`; return null; }
+function tastoOra(t) { if (t.el && t.el.isConnected) return t.el; const n = t.chiave ? document.querySelector(t.chiave) : null; if (n) t.el = n; return n; }
+function alzaTasto(t, subito) {
+  const resta = subito ? 0 : Math.max(0, 150 - (Date.now() - t.t));   // giù almeno 150 ms: si vede anche il tocco più veloce
+  setTimeout(() => { const el = tastoOra(t); if (el && !(tastoGiu && tastoGiu.el === el)) el.classList.remove("premuto"); }, resta);
+}
+document.addEventListener("pointerdown", (e) => {
+  if (e.button > 0) return;
+  const el = e.target && e.target.closest ? e.target.closest(TASTI_VERI) : null;
+  if (!el || el.disabled || el.getAttribute("aria-disabled") === "true") return;
+  tastoGiu = { el, orig: el, chiave: chiaveTasto(el), x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
+  el.classList.add("premuto");
+  vibra(18);
+}, true);
+document.addEventListener("pointermove", (e) => {
+  const t = tastoGiu; if (!t || e.pointerId !== t.id) return;
+  if (Math.abs(e.clientX - t.x) > 14 || Math.abs(e.clientY - t.y) > 14) { tastoGiu = null; alzaTasto(t, true); }   // stava scorrendo: niente
+}, true);
+document.addEventListener("pointercancel", (e) => { const t = tastoGiu; if (t && e.pointerId === t.id) { tastoGiu = null; alzaTasto(t, true); } }, true);
+document.addEventListener("pointerup", (e) => {
+  const t = tastoGiu; if (!t || e.pointerId !== t.id) return;
+  tastoGiu = null; alzaTasto(t, false);
+  // la pagina è stata ridisegnata col dito sul tasto: il browser non darebbe il «clic» (il tasto di prima non c'è più)
+  if (!t.orig.isConnected && t.chiave) setTimeout(() => {
+    if (tastoClic && tastoClic.chiave === t.chiave && Date.now() - tastoClic.t < 900) return;
+    const n = document.querySelector(t.chiave); if (n && !n.disabled) n.click();
+  }, 80);
+}, true);
+document.addEventListener("click", (e) => {
+  const el = e.target && e.target.closest ? e.target.closest(TASTI_VERI) : null; if (!el) return;
+  tastoClic = { chiave: chiaveTasto(el), t: Date.now() };
+  if (el.matches(".conferma [data-si]")) vibra([22, 70, 38]);   // «Sì, è pulita»: due colpetti
+  else if (Date.now() - vibratoAlle > 700) vibra(18);           // il primo tocco della giornata: vibra al clic
+}, true);
+// la domanda appena aperta («È pulita?», «Hai finito?») non si chiude e non risponde da sola con un secondo tocco veloce
+const confermeNate = new WeakMap();
+document.addEventListener("click", (e) => {
+  const c = e.target && e.target.closest ? e.target.closest(".conferma") : null; if (!c) return;
+  const t = confermeNate.get(c); if (t && Date.now() - t < 450) { e.stopImmediatePropagation(); e.preventDefault(); }
+}, true);
+new MutationObserver((ms) => {
+  for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && n.classList && n.classList.contains("conferma")) confermeNate.set(n, Date.now());
+  const t = tastoGiu;   // il dito è ancora sul tasto e la pagina è cambiata: il tasto nuovo resta giù
+  if (t && !t.el.isConnected) { const n = t.chiave ? document.querySelector(t.chiave) : null; if (n) { n.classList.add("premuto"); t.el = n; } }
+}).observe(document.documentElement, { childList: true, subtree: true });
+// ============================================================================
+//  1.57.0 LE RAGAZZE E LE LORO CAMERE (Michele, 7/11: «nella sezione delle signore dammi l'opportunità di decidere nome e
+//  quantità di ragazze e quali camere devono fare, perché le ragazze cambiano spesso e spesso cambiano cosa puliscono»).
+//  In «Le signore», in cima, la scheda «Le ragazze»: chi lavora adesso (nome, cosa fa, con che nome entra dal telefono),
+//  «🧹 Chi pulisce le camere» (per ogni camera, appartamento e lavoro fisso si tocca il nome della ragazza), «＋ Aggiungi
+//  una ragazza» (anche «al posto di» una che va via) e, toccando una ragazza, «Non lavora più» (tutto il suo lavoro passa a
+//  un'altra). Vale dalle prossime pulizie: quelle già fatte e le paghe restano a chi le ha fatte. Ogni ragazza ha la sua zona
+//  (anche nelle paghe), il suo colore e la sua iniziale.
+//  E I GIORNI (Michele, 7/11: «voglio poter cambiare anche le giornate molto agevolmente, perché non è detto che sia sempre
+//  il mercoledì, il venerdì eccetera»): in «Chi pulisce e quando» sotto ogni camera i 7 giorni; un tocco cambia il giorno:
+//  niente → 🧹 ripasso → 🛏️ cambio completo → niente. Anche i lavori fissi (terrazzo, scale) si spostano di giorno con un
+//  tocco. I giorni scelti stanno in impostazioni/regole.giorniCamere[camera] = [{ giorno, tipo }] (null = come il
+//  calendario) e il piano li usa al posto del calendario (logica.passaggiCamera); d'estate contano arrivi e partenze.
+// ============================================================================
+const COLORI_RAGAZZE = ["#1E8E5A", "#7B4BB7", "#D0661A", "#2470B8", "#C03A62", "#6A7A20", "#0E8C8C", "#9A6B12"];
+function coloreRagazza(z) { const i = zoneOrdinate().filter(x => x.id !== "ap").findIndex(x => x.id === z); return COLORI_RAGAZZE[(i < 0 ? 0 : i) % COLORI_RAGAZZE.length]; }
+function inizialeRagazza(z) { return (String(SIG(z)).replace(/^signora\s+/i, "").trim().charAt(0) || "?").toUpperCase(); }
+function tondoRagazza(z, cls = "") { return `<span class="rg-tondo${cls ? " " + cls : ""}" style="--rg:${coloreRagazza(z)}" aria-hidden="true">${esc(inizialeRagazza(z))}</span>`; }
+// chi fa davvero il lavoro di una zona: se quella ragazza non lavora più, chi ha preso il suo posto (anche a catena)
+function zonaAttiva(z, sq = squadra()) {
+  let cur = z; const visti = new Set();
+  while (cur && sq[cur] && sq[cur].attiva === false && sq[cur].passaA && !visti.has(cur)) { visti.add(cur); cur = sq[cur].passaA; }
+  return cur || z;
+}
+// chi pulisce un posto senza le scelte di Michele: il calendario (o la regola di base), poi chi ha preso il posto di chi è andata via
+function rgBase(c, sq = squadra()) {
+  const r = { ...REGOLE_BASE, ...(S.regole || {}) };
+  const passi = L.regimeDi(L.oggiISO(), r) !== "estate" ? L.passaggiCamera(c, r, null) : [];
+  const zs = passi.length ? passi.map(x => x.zona || c.zona) : [L.zonaDi(c, r)];
+  return [...new Set(zs.map(z => zonaAttiva(z, sq)))];
+}
+// chi pulisce un posto adesso: la ragazza scelta da Michele, altrimenti quella del calendario (una o due, «insieme»)
+function chiPulisce(id, sq = squadra()) { const sua = signoraDiCamera(id); if (sua) return [sua]; const c = S.camere.find(x => x.id === id); return c ? rgBase(c, sq) : []; }
+function chiPulisceUna(id, riserva) { return chiPulisce(id)[0] || zonaAttiva(riserva || ""); }
+const RG_TIPO = { ripasso: "ripasso", totale: "cambio", casa: "ripasso", totale_casa: "cambio" };
+function rgGiorni(c) {
+  const r = { ...REGOLE_BASE, ...(S.regole || {}) };
+  if (L.regimeDi(L.oggiISO(), r) === "estate") return "d'estate: quando parte o arriva qualcuno";
+  const passi = L.passaggiCamera(c, r, null);
+  const perG = new Map();
+  for (const x of passi) { const g = Number(x.giorno); if (!perG.has(g)) perG.set(g, new Set()); perG.get(g).add(RG_TIPO[x.tipo] || x.tipo); }
+  const ord = [...perG.keys()].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));   // da lunedì
+  return ord.map(g => `${L.GIORNI[g]} ${[...perG.get(g)].join(" e ")}`).join(" · ");
+}
+function rgFissi() { return (L.listinoCompleto(S.listino).fissi || []).map(f => ({ ...f, chi: zonaAttiva(f.zona) })); }
+const rgGiornoOk = (g) => Number.isInteger(Number(g)) && Number(g) >= 0 && Number(g) <= 6 && g !== null && g !== "";
+function rgNomeFisso(f) { return `${f.titolo || "Lavoro fisso"} (${rgGiornoOk(f.giorno) ? L.GIORNI[Number(f.giorno)] : "spento"})`; }
+// ---- i giorni ------------------------------------------------------------------------------------------------------------
+const RG_SETTIMANA = [1, 2, 3, 4, 5, 6, 0];   // da lunedì a domenica
+const RG_GG = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+const rgEstate = () => L.regimeDi(L.oggiISO(), { ...REGOLE_BASE, ...(S.regole || {}) }) === "estate";
+// per ogni giorno della settimana: niente, «ripasso» o «totale» (il cambio completo), e quante ragazze (2 = «insieme»)
+function rgStatoGiorni(c) {
+  const out = {};
+  for (const x of L.passaggiCamera(c, { ...REGOLE_BASE, ...(S.regole || {}) }, null)) {
+    const g = Number(x.giorno), t = x.tipo === "totale" || x.tipo === "totale_casa" ? "totale" : "ripasso";
+    if (!out[g]) out[g] = { tipo: t, n: 0 }; if (t === "totale") out[g].tipo = "totale"; out[g].n++;
+  }
+  return out;
+}
+function rgGiorniScelti(id) { const g = S.regole && S.regole.giorniCamere && S.regole.giorniCamere[id]; return Array.isArray(g) ? g : null; }
+// la settimana di una ragazza: giorno → [«🛏️ Salvatore», «🧹 Trento 47», «Terrazzo»]
+function rgSettimanaDi(z) {
+  const r = { ...REGOLE_BASE, ...(S.regole || {}) }, sq = squadra(), out = new Map();
+  if (rgEstate()) return out;
+  const metti = (g, x) => { if (!out.has(g)) out.set(g, []); if (!out.get(g).includes(x)) out.get(g).push(x); };
+  for (const c of [...S.camere].sort((a, b) => (a.ordine || 99) - (b.ordine || 99))) {
+    const sua = signoraDiCamera(c.id);
+    for (const x of L.passaggiCamera(c, r, null)) if ((sua || zonaAttiva(x.zona || c.zona, sq)) === z) metti(Number(x.giorno), `${x.tipo === "totale" || x.tipo === "totale_casa" ? "🛏️" : "🧹"} ${nomeBreveCamera(c)}`);
+  }
+  for (const f of rgFissi()) if (f.chi === z && rgGiornoOk(f.giorno)) metti(Number(f.giorno), f.titolo || "Lavoro fisso");
+  return out;
+}
+function rgGiorniBreve(z) { const s = rgSettimanaDi(z); return RG_SETTIMANA.filter(g => s.has(g)).map(g => RG_GG[g]).join(" · "); }
+// i posti di una ragazza (nell'ordine della casa) e i suoi lavori fissi
+function rgPostiDi(z) {
+  const sq = squadra();
+  const camere = S.camere.filter(c => chiPulisce(c.id, sq).includes(z)).sort((a, b) => (a.ordine || 99) - (b.ordine || 99)).map(c => nomeBreveCamera(c));
+  const fissi = rgFissi().filter(f => f.chi === z && rgGiornoOk(f.giorno)).map(rgNomeFisso);
+  return { camere, fissi };
+}
+// l'accesso dal telefono: le schede «signora delle pulizie» in Persone (il nome per entrare è lo stesso, cambia chi è)
+function rgLoginDi(z) { return Object.values(S.ruoli || {}).filter(r => r && r.ruolo === "addetta" && r.zona === z); }
+function rgLoginLiberi() { const att = new Set(signore().map(x => x.id)); return Object.values(S.ruoli || {}).filter(r => r && r.ruolo === "addetta" && !att.has(r.zona)); }
+const rgLogin = (r) => r.login || String(r.id || "").split("@")[0];
+function rgEx() { const att = new Set(signore().map(x => x.id)), sq = squadra(); return zoneOrdinate().filter(z => !att.has(z.id) && sq[z.id] && sq[z.id].nome); }
+
+// ---- la scheda in cima a «Le signore» ----------------------------------------------------------------------------------
+function cardRagazze() {
+  if (!proprietario()) return "";
+  const att = signore(), caricati = !!S.caricati.ruoli;
+  const righe = att.map(z => {
+    const { camere, fissi } = rgPostiDi(z.id), acc = rgLoginDi(z.id).map(rgLogin);
+    const cosa = [...camere, ...fissi];
+    return `<button type="button" class="rg-riga" data-rg-apri="${esc(z.id)}" aria-label="${esc(SIG(z.id))}: cambia">
+      ${tondoRagazza(z.id)}<span class="rg-x"><b>${esc(SIG(z.id))}</b>
+        <small class="rg-cosa">${cosa.length ? `Fa: ${esc(cosa.join(", "))}` : `<span class="rg-vuota">Ancora niente: dalle le camere in «Chi pulisce e quando»</span>`}</small>
+        ${cosa.length && !rgEstate() && rgGiorniBreve(z.id) ? `<small class="rg-quando">📅 ${esc(rgGiorniBreve(z.id))}</small>` : ""}
+        ${caricati ? `<small class="rg-acc">${acc.length ? `📱 Entra come «${esc(acc.join("», «"))}»` : `<span class="rg-vuota">📱 Non ha ancora un accesso dal telefono</span>`}</small>` : ""}</span>
+      <span class="rg-vai" aria-hidden="true">›</span></button>`;
+  }).join("");
+  const ex = rgEx();
+  const orfani = S.camere.filter(c => !chiPulisce(c.id).some(z => att.some(x => x.id === z)));
+  return `<section class="card rg-card"><div class="rg-testa"><h2>Le ragazze</h2><span class="rg-n">${att.length}</span></div>
+    <p class="rg-spiega">Chi lavora e cosa pulisce. Cambi quando vuoi: vale dalle prossime pulizie.</p>
+    ${orfani.length ? `<p class="rg-avviso">⚠️ ${orfani.length === 1 ? "Un posto non ha" : orfani.length + " posti non hanno"} nessuna ragazza: ${esc(orfani.map(nomeBreveCamera).join(", "))}. Tocca «Chi pulisce e quando».</p>` : ""}
+    <div class="rg-lista">${righe || `<p class="rg-spiega">Nessuna ragazza al lavoro.</p>`}</div>
+    <div class="rg-tasti"><button type="button" class="rg-tasto main" data-rg-camere>🧹 Chi pulisce e quando</button><button type="button" class="rg-tasto" data-rg-nuova>＋ Aggiungi una ragazza</button></div>
+    ${ex.length ? `<details class="rg-ex"><summary>Non lavorano più (${ex.length})</summary>${ex.map(z => { const v = squadra()[z.id] || {}, a = v.passaA && S.zone[v.passaA] ? SIG(zonaAttiva(v.passaA)) : ""; return `<div class="rg-ex-riga">${tondoRagazza(z.id, "spento")}<span class="rg-x"><b>${esc(SIG(z.id))}</b><small>${v.finoAl ? `fino al ${esc(L.dataLunga(v.finoAl))}` : "non lavora"}${a ? ` · il suo lavoro lo fa ${esc(a)}` : ""}</small></span><button type="button" class="rg-mini" data-rg-riprendi="${esc(z.id)}">Riprendila</button></div>`; }).join("")}</details>` : ""}
+  </section>`;
+}
+
+// ---- il foglio «Chi pulisce e quando» ----------------------------------------------------------------------------------
+// i 7 giorni di un posto: un tocco cambia niente → 🧹 ripasso → 🛏️ cambio completo → niente
+function rgSettimana(c) {
+  const st = rgStatoGiorni(c);
+  return `<span class="rg-sett" role="group" aria-label="${esc(nomeBreveCamera(c))}: i giorni">${RG_SETTIMANA.map(g => { const s = st[g], k = s ? (s.tipo === "totale" ? "c" : "r") : "";
+    return `<button type="button" class="rg-g${k ? " " + k : ""}" data-rg-giorno="${esc(c.id)}|${g}" aria-label="${L.GIORNI[g]}: ${s ? (s.tipo === "totale" ? "cambio completo" : "ripasso") : "niente"}"><span>${RG_GG[g]}</span><i aria-hidden="true">${s ? (s.tipo === "totale" ? "🛏️" : "🧹") : "·"}</i>${s && s.n > 1 ? `<b class="rg-g-due" aria-hidden="true">2</b>` : ""}</button>`; }).join("")}</span>`;
+}
+function rgSettimanaFisso(f) {
+  return `<span class="rg-sett" role="group" aria-label="${esc(f.titolo || "Lavoro fisso")}: il giorno">${RG_SETTIMANA.map(g => { const on = rgGiornoOk(f.giorno) && Number(f.giorno) === g;
+    return `<button type="button" class="rg-g${on ? " c" : ""}" data-rg-fgiorno="${esc(f.id)}|${g}" aria-pressed="${on}" aria-label="${L.GIORNI[g]}${on ? ": questo" : ""}"><span>${RG_GG[g]}</span><i aria-hidden="true">${on ? "✓" : "·"}</i></button>`; }).join("")}</span>`;
+}
+function rgGruppo(c) { return c.tipo === "casa" ? "Appartamenti" : c.lato === "S" ? (c.via ? c.via.replace(/^./, x => x.toUpperCase()) : "Fuori") : c.zona === "p1" ? "1° piano" : c.zona === "p2" ? "2° piano" : "Altre camere"; }
+function rgScelta(chiave, attuali, att) {
+  return `<span class="rg-scelta">${att.map(z => { const on = attuali.includes(z.id); return `<button type="button" class="rg-chip${on ? " on" : ""}${on && attuali.length > 1 ? " piu" : ""}" style="--rg:${coloreRagazza(z.id)}" aria-pressed="${on}" ${chiave}="${esc(z.id)}">${esc(SIG(z.id))}</button>`; }).join("")}</span>`;
+}
+function foglioRgCamere() {
+  const att = signore(), sq = squadra(), gruppi = new Map();
+  for (const c of [...S.camere].sort((a, b) => (a.ordine || 99) - (b.ordine || 99))) { const g = rgGruppo(c); if (!gruppi.has(g)) gruppi.set(g, []); gruppi.get(g).push(c); }
+  const riga = (c) => {
+    const chi = chiPulisce(c.id, sq), scelta = !!signoraDiCamera(c.id), base = rgBase(c, sq);
+    const insieme = chi.length > 1, nessuna = !chi.some(z => att.some(x => x.id === z));
+    const giorni = rgGiorni(c), scelti = !!rgGiorniScelti(c.id);
+    return `<div class="rg-cam${nessuna ? " orfana" : ""}" data-rg-riga="${esc(c.id)}"><span class="rg-cam-x"><b>${esc(nomeBreveCamera(c))}</b><small>${esc(giorni || "nessun giorno fisso: solo quando arriva o parte qualcuno")}${insieme ? " · insieme" : ""}</small>${nessuna ? `<small class="rg-rosso">⚠️ nessuna ragazza: scegline una</small>` : ""}</span>
+      ${rgScelta(`data-rg-cam="${esc(c.id)}" data-rg-chi`, chi, att)}${scelta && base.length > 1 ? `<button type="button" class="rg-come" data-rg-cam="${esc(c.id)}" data-rg-chi="">↺ insieme come prima</button>` : ""}
+      ${rgSettimana(c)}${scelti ? `<button type="button" class="rg-come" data-rg-giorni-prima="${esc(c.id)}">↺ i giorni di prima</button>` : ""}</div>`;
+  };
+  const fissi = rgFissi();
+  return `<h3>Chi pulisce e quando</h3>
+    <p class="muted small" style="margin:0 0 8px">Tocca il nome della ragazza che la fa. Sotto, i giorni: un tocco sul giorno lo cambia. Vale dalle prossime pulizie: quelle già fatte restano com'erano.</p>
+    <p class="rg-legenda"><span class="rg-g mini"><i>·</i></span> niente <span class="rg-freccia">→</span> <span class="rg-g mini r"><i>🧹</i></span> ripasso <span class="rg-freccia">→</span> <span class="rg-g mini c"><i>🛏️</i></span> cambio completo</p>
+    ${rgEstate() ? `<p class="rg-avviso">☀️ Adesso è estate: i giorni fissi non contano, si pulisce quando arriva o parte qualcuno. Quelli che scegli valgono da settembre.</p>` : ""}
+    ${att.length ? "" : `<p class="rg-avviso">Prima aggiungi una ragazza.</p>`}
+    ${[...gruppi.entries()].map(([g, cs]) => `<div class="rg-gruppo">${esc(g)}</div>${cs.map(riga).join("")}`).join("")}
+    ${fissi.length ? `<div class="rg-gruppo">Altri lavori</div>${fissi.map(f => { const nessuna = !att.some(x => x.id === f.chi); const acceso = rgGiornoOk(f.giorno); return `<div class="rg-cam${nessuna && acceso ? " orfana" : ""}"><span class="rg-cam-x"><b>${esc(f.titolo || "Lavoro fisso")}</b><small>${acceso ? esc(L.GIORNI[Number(f.giorno)]) : "spento: tocca un giorno per rimetterlo"}${f.minuti ? ` · ${esc(oreTessera(Number(f.minuti)))}` : ""}</small>${nessuna && acceso ? `<small class="rg-rosso">⚠️ nessuna ragazza: scegline una</small>` : ""}</span>${rgScelta(`data-rg-fisso="${esc(f.id)}" data-rg-chi`, [f.chi], att)}${rgSettimanaFisso(f)}</div>`; }).join("")}<p class="muted small" style="margin:8px 0 0">Per spegnere un lavoro fisso tocca di nuovo il suo giorno.</p>` : ""}`;
+}
+
+// ---- il foglio di una ragazza: il nome, cosa fa, il telefono, «Non lavora più» ---------------------------------------------
+function foglioRgRagazza(f) {
+  const z = f.z, v = squadra()[z] || {}, att = signore(), altre = att.filter(x => x.id !== z);
+  const { camere, fissi } = rgPostiDi(z), acc = rgLoginDi(z), liberi = rgLoginLiberi();
+  const tel = !S.caricati.ruoli ? "" : acc.length
+    ? `<p class="rg-riga-info">📱 Entra dal telefono come <b>«${esc(acc.map(rgLogin).join("», «"))}»</b> con la sua password.</p>`
+    : liberi.length ? `<p class="rg-riga-info">📱 Non ha ancora un accesso. Dalle uno di questi (poi le dici la password):</p><div class="rg-scelta larga">${liberi.map(r => `<button type="button" class="rg-chip" style="--rg:${coloreRagazza(z)}" data-rg-login="${esc(z)}|${esc(r.id)}">«${esc(rgLogin(r))}»${r.zona && S.zone[r.zona] && squadra()[r.zona] && squadra()[r.zona].nome ? ` <small>(era di ${esc(SIG(r.zona))})</small>` : ""}</button>`).join("")}</div>`
+    : `<p class="rg-riga-info">📱 Non ha un accesso e non ce ne sono di liberi: scrivimelo e ti preparo io i passi per crearne uno.</p>`;
+  const via = f.via
+    ? `<div class="rg-via"><p class="rg-domanda">Il lavoro di ${esc(SIG(z))} (camere, giorni, lavori fissi) da adesso lo fa:</p>
+        <div class="rg-scelta larga">${altre.map(x => `<button type="button" class="rg-chip${f.a === x.id ? " on" : ""}" style="--rg:${coloreRagazza(x.id)}" aria-pressed="${f.a === x.id}" data-rg-a="${esc(x.id)}">${esc(SIG(x.id))}</button>`).join("")}<button type="button" class="rg-chip nuova" data-rg-nuova-al-posto="${esc(z)}">＋ una ragazza nuova</button></div>
+        <p class="muted small" style="margin:8px 0 0">Le pulizie già fatte restano sue, e lei resta nelle paghe per i giorni che ha fatto.</p>
+        <button type="button" class="big ko" data-rg-smetti="${esc(z)}" ${f.a ? "" : "disabled"}>Sì: ${esc(SIG(z))} non lavora più</button></div>`
+    : `<button type="button" class="big undo rg-via-apri" data-rg-via="${esc(z)}">${esc(SIG(z))} non lavora più</button>`;
+  return `<h3 class="rg-titolo">${tondoRagazza(z, "grande")}<span>${esc(SIG(z))}</span></h3>
+    <div class="campo"><label for="rgNomeMod">Il nome (per correggerlo)</label><span class="rg-nome-riga"><input id="rgNomeMod" type="text" data-keep value="${esc(v.nome || SIG(z))}" autocomplete="off"><button type="button" class="btnsm" data-rg-rinomina="${esc(z)}">Salva</button></span></div>
+    <p class="muted small" style="margin:-4px 0 12px">Se arriva un'altra ragazza al suo posto non cambiare il nome: tocca «${esc(SIG(z))} non lavora più» qui sotto, così le paghe restano giuste.</p>
+    <div class="rg-blocco"><b>La sua settimana</b>${(() => { const s = rgSettimanaDi(z), gg = RG_SETTIMANA.filter(g => s.has(g));
+      return rgEstate() ? `<p>D'estate non ci sono giorni fissi: pulisce quando arriva o parte qualcuno (${esc([...camere, ...fissi].join(", ") || "nessun posto")}).</p>` : gg.length ? `<ul class="rg-sett-lista">${gg.map(g => `<li><b>${esc(L.GIORNI[g])}</b> ${esc(s.get(g).join(", "))}</li>`).join("")}</ul>` : `<p>Ancora niente.</p>`; })()}
+      <button type="button" class="rg-tasto main" data-rg-camere>🧹 Cambia camere e giorni</button></div>
+    <div class="rg-blocco">${tel}</div>
+    ${via}`;
+}
+
+// ---- il foglio «Una ragazza nuova» -------------------------------------------------------------------------------------
+function foglioRgNuova(f) {
+  const att = signore(), liberi = rgLoginLiberi(), posto = f.alPosto && att.some(x => x.id === f.alPosto) ? f.alPosto : "";
+  const suoi = posto ? rgLoginDi(posto) : [];
+  const scelte = [...liberi, ...suoi.filter(r => !liberi.some(x => x.id === r.id))];
+  const login = f.login !== undefined ? f.login : (liberi[0] ? liberi[0].id : suoi[0] ? suoi[0].id : "");
+  return `<h3>Una ragazza nuova</h3>
+    <div class="campo"><label for="rgNome">Come si chiama</label><input id="rgNome" type="text" data-keep placeholder="es. Maria" autocomplete="off" autocapitalize="words"></div>
+    <p class="rg-domanda">Arriva al posto di una che va via?</p>
+    <div class="rg-scelta larga"><button type="button" class="rg-chip${!posto ? " on" : ""}" aria-pressed="${!posto}" data-rg-posto="">No, è in più</button>${att.map(x => `<button type="button" class="rg-chip${posto === x.id ? " on" : ""}" style="--rg:${coloreRagazza(x.id)}" aria-pressed="${posto === x.id}" data-rg-posto="${esc(x.id)}">Al posto di ${esc(SIG(x.id))}</button>`).join("")}</div>
+    <p class="muted small" style="margin:8px 0 12px">${posto ? `Fa tutto il lavoro di ${esc(SIG(posto))} (camere, giorni, lavori fissi), dalle prossime pulizie. ${esc(SIG(posto))} resta nelle paghe per i giorni che ha fatto.` : "Nasce senza camere: dopo le tocchi le sue in «Chi pulisce le camere»."}</p>
+    ${S.caricati.ruoli ? `<p class="rg-domanda">📱 Con che nome entra dal suo telefono?</p>
+      <div class="rg-scelta larga">${scelte.map(r => `<button type="button" class="rg-chip${login === r.id ? " on" : ""}" aria-pressed="${login === r.id}" data-rg-nlogin="${esc(r.id)}">«${esc(rgLogin(r))}»${r.zona && squadra()[r.zona] && squadra()[r.zona].nome ? ` <small>(era di ${esc(SIG(r.zona))})</small>` : ""}</button>`).join("")}<button type="button" class="rg-chip${!login ? " on" : ""}" aria-pressed="${!login}" data-rg-nlogin="">Per ora nessuno</button></div>
+      ${login && S.ruoli[login] && S.ruoli[login].zona && squadra()[S.ruoli[login].zona] && squadra()[S.ruoli[login].zona].nome ? `<p class="muted small" style="margin:8px 0 0">«${esc(rgLogin(S.ruoli[login]))}» era di ${esc(SIG(S.ruoli[login].zona))}: se ha ancora l'app sul telefono, cambia la password (te lo spiego io) prima di darla alla ragazza nuova.</p>` : ""}` : ""}
+    <button type="button" class="big ok" data-rg-crea style="margin-top:14px">Aggiungi</button>`;
+}
+
+// ---- salvare -----------------------------------------------------------------------------------------------------------
+function rgCopia() { const sq = squadra(), out = {}; for (const [k, v] of Object.entries(sq)) out[k] = { ...v, camere: [...(v.camere || [])] }; return out; }
+async function rgSalvaSquadra(nuovo) {
+  for (const v of Object.values(nuovo)) for (const k of Object.keys(v)) if (v[k] === undefined) delete v[k];
+  S.squadra = nuovo; disegna();
+  try { await S.db.salva("impostazioni", "squadra", { ...nuovo, aggiornato: S.db.adesso() }, false); pianifica(); return true; }
+  catch (e) { erroreScrittura(e); return false; }
+}
+async function rgAssegna(id, z) {
+  const sq = squadra(), nuovo = rgCopia();
+  for (const v of Object.values(nuovo)) v.camere = v.camere.filter(x => x !== id);
+  const c = S.camere.find(x => x.id === id), base = c ? rgBase(c, sq) : [];
+  if (z && !(base.length === 1 && base[0] === z) && nuovo[z]) nuovo[z].camere.push(id);
+  if (await rgSalvaSquadra(nuovo)) toast(z ? `${c ? nomeBreveCamera(c) : id}: la fa ${SIG(z)}, dalle prossime pulizie` : `${c ? nomeBreveCamera(c) : id}: come il calendario`);
+}
+async function rgAssegnaFisso(fid, z) {
+  const l = JSON.parse(JSON.stringify(L.listinoCompleto(S.listino))), f = (l.fissi || []).find(x => x.id === fid); if (!f || !z) return;
+  f.zona = z; const prima = S.listino; S.listino = L.listinoCompleto(l); disegna();
+  try { await S.db.salva("impostazioni", "listino", { ...S.listino, aggiornato: S.db.adesso() }, false); pianifica(); toast(`${rgNomeFisso(f)}: lo fa ${SIG(z)}`); }
+  catch (e) { S.listino = prima; disegna(); erroreScrittura(e); }
+}
+async function rgSalvaGiorni(id, lista) {
+  const tutti = { ...((S.regole && S.regole.giorniCamere) || {}) }; tutti[id] = lista;   // null = come il calendario
+  S.regole = { ...S.regole, giorniCamere: tutti }; disegna();
+  try { await S.db.salva("impostazioni", "regole", { giorniCamere: tutti }, true); pianifica(); return true; }   // tutta la mappa: così anche la copia di prova la tiene uguale
+  catch (e) { erroreScrittura(e); return false; }
+}
+async function rgGiorno(id, g) {
+  const c = S.camere.find(x => x.id === id); if (!c || !(g >= 0 && g <= 6)) return;
+  const st = rgStatoGiorni(c), ora = st[g] ? st[g].tipo : "", dopo = ora === "" ? "ripasso" : ora === "ripasso" ? "totale" : "";
+  const lista = RG_SETTIMANA.filter(x => x !== g && st[x]).map(x => ({ giorno: x, tipo: st[x].tipo }));
+  if (dopo) lista.push({ giorno: g, tipo: dopo });
+  lista.sort((a, b) => RG_SETTIMANA.indexOf(a.giorno) - RG_SETTIMANA.indexOf(b.giorno));
+  if (await rgSalvaGiorni(id, lista)) toast(`${nomeBreveCamera(c)}, ${L.GIORNI[g]}: ${dopo === "totale" ? "cambio completo" : dopo === "ripasso" ? "ripasso" : "niente"}`);
+}
+async function rgGiorniPrima(id) { const c = S.camere.find(x => x.id === id); if (await rgSalvaGiorni(id, null)) toast(`${c ? nomeBreveCamera(c) : id}: i giorni di prima`); }
+async function rgGiornoFisso(fid, g) {
+  const l = JSON.parse(JSON.stringify(L.listinoCompleto(S.listino))), f = (l.fissi || []).find(x => x.id === fid); if (!f || !(g >= 0 && g <= 6)) return;
+  f.giorno = rgGiornoOk(f.giorno) && Number(f.giorno) === g ? -1 : g;   // ritoccando il suo giorno si spegne
+  const prima = S.listino; S.listino = L.listinoCompleto(l); disegna();
+  try { await S.db.salva("impostazioni", "listino", { ...S.listino, aggiornato: S.db.adesso() }, false); pianifica(); toast(`${f.titolo || "Lavoro fisso"}: ${f.giorno >= 0 ? L.GIORNI[f.giorno] : "spento"}`); }
+  catch (e) { S.listino = prima; disegna(); erroreScrittura(e); }
+}
+async function rgRinomina(z, nome) {
+  nome = String(nome || "").trim().replace(/\s+/g, " ").slice(0, 30); if (!nome) { toast("Scrivi il nome"); return; }
+  const nuovo = rgCopia(); if (!nuovo[z]) return; nuovo[z].nome = nome;
+  if (!await rgSalvaSquadra(nuovo)) return;
+  try {
+    if (!ZONE[z] && S.zone[z]) { const zone = { ...S.zone, [z]: { ...S.zone[z], nome, breve: nome } }; S.zone = zone; await S.db.salva("impostazioni", "camere", { zone }, true); }
+    for (const r of rgLoginDi(z)) await S.db.aggiorna("ruoli", r.id, { nome });
+  } catch (e) { erroreScrittura(e); }
+  toast("Nome salvato");
+}
+// va via: tutto il suo lavoro (anche quello del calendario e i lavori fissi) passa ad «a»
+function rgVia(nuovo, z, a) {
+  if (!nuovo[z] || !nuovo[a] || z === a) return;
+  nuovo[a].camere = [...new Set([...nuovo[a].camere, ...nuovo[z].camere])];
+  nuovo[z] = { ...nuovo[z], attiva: false, passaA: a, finoAl: L.oggiISO(), camere: [] };
+  for (const [k, v] of Object.entries(nuovo)) if (k !== z && v.passaA === z) v.passaA = a;
+}
+async function rgSmetti(z, a) {
+  const nuovo = rgCopia(); if (!nuovo[z] || !nuovo[a]) return;
+  const nome = SIG(z); rgVia(nuovo, z, a);
+  if (await rgSalvaSquadra(nuovo)) { chiudiFoglio(); toast(`${nome} non lavora più: il suo lavoro lo fa ${SIG(a)}`); }
+}
+async function rgRiprendi(z) {
+  const nuovo = rgCopia(); if (!nuovo[z]) return;
+  const { passaA, finoAl, ...resto } = nuovo[z]; nuovo[z] = { ...resto, attiva: true };
+  if (await rgSalvaSquadra(nuovo)) toast(`${SIG(z)} lavora di nuovo: guarda le sue camere`);
+}
+async function rgDaiLogin(z, rid) {
+  const r = S.ruoli[rid]; if (!r) return;
+  try { await S.db.aggiorna("ruoli", rid, { zona: z, nome: SIG(z) }); S.ruoli[rid] = { ...r, zona: z, nome: SIG(z) }; disegna(); toast(`${SIG(z)} entra come «${rgLogin(r)}»`); }
+  catch (e) { erroreScrittura(e); }
+}
+async function rgCrea(f) {
+  const nome = String(($("#rgNome") || {}).value || "").trim().replace(/\s+/g, " ").slice(0, 30);
+  if (!nome) { toast("Scrivi come si chiama"); const i = $("#rgNome"); if (i) i.focus(); return; }
+  if (signore().some(x => SIG(x.id).toLowerCase() === nome.toLowerCase()) && !await chiedi(`C'è già una ${nome} che lavora. La aggiungo lo stesso?`, { si: "Sì, aggiungi" })) return;
+  const posto = f.alPosto && signore().some(x => x.id === f.alPosto) ? f.alPosto : "";
+  const liberi = rgLoginLiberi(), suoi = posto ? rgLoginDi(posto) : [];
+  const login = f.login !== undefined ? f.login : (liberi[0] ? liberi[0].id : suoi[0] ? suoi[0].id : "");
+  const id = "s" + Date.now().toString(36);
+  const ord = Math.max(0, ...zoneOrdinate().map(z => Number(z.ordine) || 0)) + 1;
+  const zone = { ...S.zone, [id]: { nome, breve: nome, ordine: ord } };
+  const nuovo = rgCopia(); nuovo[id] = { nome, attiva: true, camere: [], dal: L.oggiISO() };
+  const via = posto ? SIG(posto) : "";
+  if (posto) rgVia(nuovo, posto, id);
+  S.zone = zone;
+  try { await S.db.salva("impostazioni", "camere", { zone }, true); } catch (e) { erroreScrittura(e); return; }
+  if (!await rgSalvaSquadra(nuovo)) return;
+  if (login && S.ruoli[login]) await rgDaiLogin(id, login);
+  if (posto) { chiudiFoglio(); toast(`${nome} al posto di ${via}: fa tutto il suo lavoro`); }
+  else { apriFoglio({ tipo: "rgCamere" }); toast(`${nome} aggiunta: ora toccale le sue camere`); }
+}
+// ---- i tocchi ----------------------------------------------------------------------------------------------------------
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-rg-apri],[data-rg-camere],[data-rg-nuova],[data-rg-riprendi],[data-rg-cam],[data-rg-fisso],[data-rg-via],[data-rg-a],[data-rg-smetti],[data-rg-nuova-al-posto],[data-rg-posto],[data-rg-nlogin],[data-rg-crea],[data-rg-rinomina],[data-rg-login],[data-rg-giorno],[data-rg-giorni-prima],[data-rg-fgiorno]") : null;
+  if (!t || !proprietario()) return;
+  e.preventDefault(); e.stopPropagation();
+  const f = S.foglio || {}, d = t.dataset;
+  if (t.hasAttribute("data-rg-apri")) { apriFoglio({ tipo: "rgRagazza", z: d.rgApri }); return; }
+  if (t.hasAttribute("data-rg-camere")) { if (S.foglio) { S.foglio = { tipo: "rgCamere" }; disegnaFoglio(); } else apriFoglio({ tipo: "rgCamere" }); return; }
+  if (t.hasAttribute("data-rg-nuova")) { apriFoglio({ tipo: "rgNuova" }); return; }
+  if (t.hasAttribute("data-rg-riprendi")) { rgRiprendi(d.rgRiprendi); return; }
+  if (t.hasAttribute("data-rg-cam")) { if (!t.classList.contains("on") || t.classList.contains("piu") || d.rgChi === "") rgAssegna(d.rgCam, d.rgChi || ""); return; }   // «insieme»: toccarne una la lascia da sola
+  if (t.hasAttribute("data-rg-fisso")) { if (!t.classList.contains("on")) rgAssegnaFisso(d.rgFisso, d.rgChi); return; }
+  if (t.hasAttribute("data-rg-via")) { S.foglio = { ...f, via: true, a: signore().filter(x => x.id !== d.rgVia).length === 1 ? signore().find(x => x.id !== d.rgVia).id : "" }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-rg-a")) { S.foglio = { ...f, a: d.rgA }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-rg-smetti")) { if (!t.disabled && f.a) rgSmetti(d.rgSmetti, f.a); return; }
+  if (t.hasAttribute("data-rg-nuova-al-posto")) { S.foglio = { tipo: "rgNuova", alPosto: d.rgNuovaAlPosto }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-rg-posto")) { const { login, ...resto } = f; S.foglio = { ...resto, alPosto: d.rgPosto }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-rg-nlogin")) { S.foglio = { ...f, login: d.rgNlogin }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-rg-crea")) { rgCrea(f); return; }
+  if (t.hasAttribute("data-rg-rinomina")) { rgRinomina(d.rgRinomina, ($("#rgNomeMod") || {}).value); return; }
+  if (t.hasAttribute("data-rg-login")) { const [z, rid] = d.rgLogin.split("|"); rgDaiLogin(z, rid); return; }
+  if (t.hasAttribute("data-rg-giorno")) { const [id, g] = d.rgGiorno.split("|"); rgGiorno(id, Number(g)); return; }
+  if (t.hasAttribute("data-rg-giorni-prima")) { rgGiorniPrima(d.rgGiorniPrima); return; }
+  if (t.hasAttribute("data-rg-fgiorno")) { const [fid, g] = d.rgFgiorno.split("|"); rgGiornoFisso(fid, Number(g)); }
+}, true);
+// i lavori della giornata che non stanno sulle piantine dei piani (una ragazza nuova non ha un «suo» piano)
+function cardAltriLavori(z, iso) {
+  const primari = new Set(S.camere.map(c => (S.pulizie[`${iso}_${c.id}`] || pulizieDelGiorno(iso).find(x => x.camera === c.id) || {}).id).filter(Boolean));   // quelle già sulle piantine
+  const lav = pulizieDelGiorno(iso, z).filter(p => !primari.has(p.id)); if (!lav.length) return "";
+  return `<section class="card piantina-card"><h2 style="margin:0 2px 8px" class="rg-titolo">${tondoRagazza(z)}<span>${esc(SIG(z))}: ${lav.length === 1 ? "un altro lavoro" : lav.length + " altri lavori"} ${iso === L.oggiISO() ? "oggi" : L.dataBreve(iso)}</span></h2><div class="tess-griglia">${lav.map(p => tesseraLavoro(p, false)).join("")}</div></section>`;
+}
+function piantineRagazze() {
+  const iso = S.giorno, piani = zoneOrdinate().filter(z => camereZona(z.id).length);
+  const altre = signore().filter(z => !camereZona(z.id).length);
+  return piani.map(z => vistaPiantina(z.id, false)).join("") + altre.map(z => cardAltriLavori(z.id, iso)).join("");
+}
+// nelle paghe: chi lavora adesso, e anche chi è andata via ma ha ancora una settimana da pagare
+function signorePaghe() {
+  const att = signore(), ids = new Set(att.map(z => z.id)), chiave = L.settimanaCorrente(), prec = L.settimanaPrecedente(chiave);
+  const daPagare = (z) => [chiave, prec].some(k => !S.pagamenti[`${z}_${k}`] && (pagaAOre() ? bustaOre(z, k).totale : totaleBusta(z, k).totale));
+  return [...att, ...rgEx().filter(z => !ids.has(z.id) && daPagare(z.id)).map(z => ({ ...z, ...(squadra()[z.id] || {}), nome: SIG(z.id), zonaNome: z.nome, andata: true }))];
+}
 function vistaAltro() {
   const r = S.regole;
   return cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
@@ -12089,7 +12472,7 @@ function vistaAvvisi() {
 //  Fogli (pannelli dal basso)
 // ---------------------------------------------------------------------------
 function elFoglio() { let s = $(".sheet"); if (!s) { s = document.createElement("div"); s.className = "sheet"; document.body.appendChild(s); s.onclick = e => { if (e.target === s) chiudiFoglio(); }; } return s; }
-function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); try { guidaCompagna(); guidaNuvola(); guidaFinito(); } catch (e) {} }
+function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; try { if (voceP) { const v = voceP; voceP = null; v.attivo = false; if (v.rec) { v.rec.onend = null; v.rec.stop(); } } } catch (e) {} if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); try { guidaCompagna(); guidaNuvola(); guidaFinito(); } catch (e) {} }
 function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); if (f && f.tipo === "dettatura") segnaVista(); try { guidaFinito(); } catch (e) {} }   // 1.55.12: via HO FINITO fisso
 // 1.18.1: il foglio di una lettura condivisa (fatta dal giro, da questo o da un altro telefono) l'hai aperto: lo segno, così il
 // giro non ti manda l'avviso «ho letto» per una lettura che hai già visto. Una volta sola per lettura.
@@ -12112,6 +12495,9 @@ function disegnaFoglio() {
   else if (f.tipo === "messaggio") html = foglioMessaggio(f);
   else if (f.tipo === "alloggiato") html = foglioAlloggiato(f);   // 1.56.0
   else if (f.tipo === "alWs") html = foglioAlWs(f);   // 1.56.1
+  else if (f.tipo === "rgCamere") html = foglioRgCamere(f);   // 1.57.0
+  else if (f.tipo === "rgRagazza") html = foglioRgRagazza(f);
+  else if (f.tipo === "rgNuova") html = foglioRgNuova(f);
   else if (f.tipo === "alEsito") html = foglioAlEsito(f);
   else if (f.tipo === "copia") html = foglioCopia(f);
   else if (f.tipo === "controllo") html = foglioControllo(f);
@@ -12381,6 +12767,7 @@ Se non dici i giorni metto da lunedì a venerdì; se non dici il nome metto l'ul
     <details class="dt-originale"><summary>Correggi il testo o la settimana</summary>${settimana}${scrivere}${esempi}</details>
     ${salva}`;
   return `${testa}
+    ${f.voce && !f.copia ? pannelloVoce(f) : ""}
     ${settimana}
     ${scrivere}
     ${tastoSofia}${f.copia ? "" : partiSofiaHtml(d, "testa")}
@@ -12417,8 +12804,98 @@ function aggiungiTestoDettatura(f, testo) {
   if (t) { t.value = d.testo; t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
   aggiornaAnteprimaDettatura(f);
 }
+// ============================================================================
+//  1.56.2 IL PROSPETTO A VOCE (6/11, Michele: «nella sezione del prospetto ci deve stare una modalità di poter dire il
+//  prospetto anche a voce»). Nel Prospetto il tasto 🎤 (e «🎤 Dillo a voce» in «＋ Prospetto»): si apre il foglio del
+//  prospetto e l'app ascolta subito, senza fermarsi alle pause; quello che dice compare mentre parla, ogni frase diventa
+//  una riga e sotto si vede subito «Ho capito così» (le regole fisse della dettatura, gratis: niente IA). Si ferma con
+//  «✋ Ho finito», dicendo «ho finito» o «basta», oppure da sola dopo un minuto di silenzio. Il microfono resta del telefono:
+//  la voce la trasforma in testo il telefono stesso. Per le frasi difficili resta «Fammelo capire da Sofia».
+// ============================================================================
+let voceP = null;   // { attivo, rec, provvisorio, ultima, partenze, avviso }
+const VOCE_FINE = /^(?:ho finito|finito|basta|fine|stop|basta così|ho fatto)[.!]?$/i;
+function voceDisponibile() { try { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); } catch (e) { return false; } }
+// una frase detta: una riga nuova nel testo (senza aprire la tastiera) e l'anteprima aggiornata
+function aggiungiTestoVoce(testo) {
+  const f = S.foglio; if (!f || f.tipo !== "dettatura") return;
+  const d = statoDettatura(), t = $("#dtTesto");
+  const attuale = String(t ? t.value : d.testo).replace(/\s+$/, "");
+  d.testo = (attuale ? attuale + "\n" : "") + String(testo || "").trim();
+  if (t) { t.value = d.testo; t.scrollTop = t.scrollHeight; }
+  if (d.ia) d.ia = null;   // il testo è cambiato: vale di nuovo quello che c'è scritto
+  aggiornaAnteprimaDettatura(f);
+}
+function mostraVoce() {
+  const p = $("#dtVoceProvv"); if (p) p.textContent = voceP && voceP.provvisorio ? `«${voceP.provvisorio}…»` : "";
+}
+function avviaVoceProspetto() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast("Questo telefono non mi fa ascoltare da qui: tocca la casella e usa il microfono 🎤 della tastiera."); const t = $("#dtTesto"); if (t) t.focus(); return; }
+  if (voceP && voceP.attivo) return;
+  voceP = { attivo: true, rec: null, provvisorio: "", ultima: Date.now(), partenze: 0, avviso: "" };
+  const parti = () => {
+    const v = voceP; if (!v || !v.attivo) return;
+    if (Date.now() - v.ultima > 60000 || v.partenze >= 40) { fermaVoceProspetto("Mi sono fermata: non sentivo più niente. Tocca 🎤 per parlare ancora."); return; }
+    let rec;
+    try { rec = new SR(); } catch (e) { fermaVoceProspetto("Il microfono non parte: tocca la casella e usa il microfono 🎤 della tastiera."); return; }
+    v.rec = rec; v.partenze++;
+    rec.lang = "it-IT"; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      if (voceP !== v || !v.attivo) return;
+      let provv = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i], t = String((r[0] && r[0].transcript) || "").trim();
+        if (!t) continue;
+        if (r.isFinal) {
+          v.ultima = Date.now();
+          if (VOCE_FINE.test(t)) { v.provvisorio = ""; fermaVoceProspetto(); return; }
+          const senzaFine = t.replace(/[\s,.]*(?:ho finito|basta così)[.!]?$/i, "");
+          if (senzaFine) aggiungiTestoVoce(senzaFine);
+          if (senzaFine !== t) { v.provvisorio = ""; fermaVoceProspetto(); return; }
+        } else { provv += (provv ? " " : "") + t; v.ultima = Date.now(); }
+      }
+      v.provvisorio = provv; mostraVoce();
+    };
+    rec.onerror = (ev) => {
+      if (voceP !== v) return;
+      const er = ev && ev.error;
+      if (er === "not-allowed" || er === "service-not-allowed") fermaVoceProspetto("Il telefono non mi dà il microfono: tocca il lucchetto accanto all'indirizzo, permetti il microfono e riprova.");
+      else if (er === "audio-capture") fermaVoceProspetto("Non trovo il microfono del telefono.");
+      // «no-speech», «network», «aborted»: riparte da sola (onend)
+    };
+    rec.onend = () => { if (voceP === v && v.attivo) setTimeout(parti, 300); };
+    try { rec.start(); } catch (e) { setTimeout(parti, 600); }
+  };
+  parti();
+  if (S.foglio && S.foglio.tipo === "dettatura") { S.foglio.voce = true; disegnaFoglio(); }
+}
+function fermaVoceProspetto(avviso) {
+  const v = voceP; if (!v) return;
+  v.attivo = false; voceP = null;
+  try { if (v.rec) { v.rec.onend = null; v.rec.stop(); } } catch (e) {}
+  if (S.foglio && S.foglio.tipo === "dettatura") { S.foglio.voceAvviso = avviso || ""; disegnaFoglio(); }
+}
+// il riquadro in cima al foglio: il microfono grande, «Ti ascolto…», quello che sta dicendo, «✋ Ho finito»
+function pannelloVoce(f) {
+  const on = !!(voceP && voceP.attivo);
+  return `<div class="dt-voce${on ? " on" : ""}">
+    <button type="button" class="dt-voce-mic" data-dett-voce aria-label="${on ? "Ho finito" : "Parla"}">${ICO_LINEA.mic}</button>
+    <div class="dt-voce-x"><b>${on ? "Ti ascolto…" : "Tocca 🎤 e dimmi il prospetto"}</b>
+      <small>${on ? "Una camera alla volta, con calma: «Salvatore, Manna, due persone, da lunedì a venerdì». Quando hai finito di' «ho finito»." : f.voceAvviso ? esc(f.voceAvviso) : "Sotto vedi cosa ho capito: togli la spunta a quello che non va, poi «Salva»."}</small>
+      <p id="dtVoceProvv" class="dt-voce-provv" aria-live="polite"></p></div>
+    ${on ? `<button type="button" class="dt-voce-fine" data-dett-voce-fine>✋ Ho finito</button>` : ""}
+  </div>`;
+}
+// dal Prospetto (🎤) e da «＋ Prospetto» (🎤 Dillo a voce)
+function dettaturaAVoce() {
+  apriDettaturaCon("", null);
+  if (S.foglio && S.foglio.tipo === "dettatura") S.foglio.voce = true;
+  avviaVoceProspetto();
+  if (!voceDisponibile()) disegnaFoglio();
+}
 let riconoscimento = null;
 function parlaDettatura(f) {
+  if (S.foglio && S.foglio.tipo === "dettatura") { S.foglio.voce = true; avviaVoceProspetto(); return; }   // 1.56.2: anche il tastino «Parla» ascolta senza fermarsi
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const b = $("[data-dett-parla]");
   if (!SR) { toast("Tocca la casella e usa il microfono 🎤 della tastiera."); return; }
@@ -12615,6 +13092,7 @@ function foglioInserisci() {
   return `<h3>Inserisci il prospetto</h3>
     <div class="muted">Scegli da dove arriva. Prima di salvare vedi sempre cosa ho capito.</div>
     <div class="ins-scelte">
+      ${tasto("data-ins-voce", ICO_LINEA.mic, "Dillo a voce", "Parla: una camera alla volta, ti ascolto finché non dici «ho finito»", "voce")}
       ${tasto("data-ins-wa", ICO_WA, "Da WhatsApp", "Hai copiato il messaggio? Tocca qui e lo incollo io", "wa")}
       ${file("insChat", ".txt,.zip,text/plain,application/zip,audio/*,image/*", ICO_LINEA.chat, "Le chat di WhatsApp", "Papà e il gruppo Albergo, anche i vocali: " + esc(nomeGov()) + " ascolta e legge tutto")}
       ${file("insFoto", "image/*", ICO_LINEA.foto, "Foto del foglio", "Scatta o scegli la foto: la legge " + esc(nomeGov()))}
@@ -13281,7 +13759,7 @@ async function avvisaSulTelefono(titolo, corpo, url = "./index.html?lettura=1") 
   try {
     if (document.hidden && "Notification" in window && Notification.permission === "granted") {
       const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) { await reg.showNotification(titolo, { body: corpo, icon: "icon-192.png", badge: "icon-192.png", tag: "sofia-lettura", renotify: true, data: { url, ...(/segreteria/.test(url) ? { segreteria: "lettura" } : {}) } }); fatto = true; }
+      if (reg) { await reg.showNotification(titolo, { body: corpo, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag: "sofia-lettura", renotify: true, data: { url, ...(/segreteria/.test(url) ? { segreteria: "lettura" } : {}) } }); fatto = true; }
     }
   } catch (e) { console.warn("notifica", e); }
   try { if (S.avvisi && S.avvisi.token && S.avvisi.chatMio) await inviaTelegram(`👩 ${titolo}\n${corpo}`, "sofiaLettura", { aMe: true }); } catch (e) {}
@@ -13867,6 +14345,7 @@ function collega() {
   document.querySelectorAll("#fileFoglio, .fileFoglio").forEach(ff => ff.onchange = () => { if (ff.files && ff.files[0]) leggiFileExcel(ff.files[0]); });
   document.querySelectorAll("[data-dettatura]").forEach(b => b.onclick = () => { if (!puoModificare()) return; apriFoglio({ tipo: "dettatura" }); setTimeout(() => $("#dtTesto")?.focus(), 50); });
   document.querySelectorAll("[data-inserisci]").forEach(b => b.onclick = () => { if (!puoModificare()) return; apriFoglio({ tipo: "inserisci" }); });
+  document.querySelectorAll("[data-prosp-voce]").forEach(b => b.onclick = () => { if (!puoModificare()) return; dettaturaAVoce(); });   // 1.56.2
   document.querySelectorAll("[data-ins-wa-subito]").forEach(b => b.onclick = () => { if (!puoModificare()) return; incollaDaWhatsApp(); });
   document.querySelectorAll("[data-dettatura-copia]").forEach(b => b.onclick = () => { if (!puoModificare()) return; const d = statoDettatura(); d.scelte = {}; d.comportamenti = {}; apriFoglio({ tipo: "dettatura", copia: true }); });
   document.querySelectorAll("[data-scelta]").forEach(c => c.onchange = () => { const s = S.importazione?.ris.soggiorni[Number(c.dataset.scelta)]; if (s) { s.scelto = c.checked; disegna(); } });
@@ -13936,6 +14415,7 @@ function collegaFoglio() {
   if (f.tipo === "chatPapa") { collegaChatPapa(); return; }
   if (f.tipo === "inserisci") {
     document.querySelectorAll("[data-ins-wa]").forEach(b => b.onclick = () => incollaDaWhatsApp());
+    document.querySelectorAll("[data-ins-voce]").forEach(b => b.onclick = () => dettaturaAVoce());   // 1.56.2
     document.querySelectorAll(".panel .insFoto").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) leggiFotoProspetto(fl); });
     document.querySelectorAll(".panel .fileFoglio").forEach(i => i.onchange = () => { const fl = i.files && i.files[0]; i.value = ""; if (fl) { chiudiFoglio(); leggiFileExcel(fl); } });
     document.querySelectorAll(".panel .insChat").forEach(i => i.onchange = async () => { const fl = [...(i.files || [])]; i.value = ""; if (!fl.length) return; chiediPermessoAvvisi(); await apriChatWA(fl); });
@@ -13959,6 +14439,8 @@ function collegaFoglio() {
     document.querySelectorAll("[data-dett-scarta]").forEach(b => b.onclick = () => scartaLettura());
     document.querySelectorAll("[data-dett-base]").forEach(b => b.onclick = () => { d.base = b.dataset.dettBase; d.scelte = {}; d.comportamenti = {}; disegnaFoglio(); });
     document.querySelectorAll("[data-dett-parla]").forEach(b => b.onclick = () => parlaDettatura(f));
+    document.querySelectorAll("[data-dett-voce]").forEach(b => b.onclick = () => { if (voceP && voceP.attivo) fermaVoceProspetto(); else avviaVoceProspetto(); });   // 1.56.2
+    document.querySelectorAll("[data-dett-voce-fine]").forEach(b => b.onclick = () => fermaVoceProspetto());
     document.querySelectorAll("[data-dett-incolla]").forEach(b => b.onclick = () => incollaDettatura(f));
     document.querySelectorAll("[data-dett-pulisci]").forEach(b => b.onclick = () => { d.testo = ""; d.scelte = {}; d.comportamenti = {}; if (t) { t.value = ""; t.focus(); } aggiornaAnteprimaDettatura(f); });
     document.querySelectorAll("[data-dett-copia-ia]").forEach(b => b.onclick = copiaRichiestaIA);
