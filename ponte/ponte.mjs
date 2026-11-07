@@ -25,7 +25,7 @@ import http from "node:http";
 import { exec } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const VERSIONE = "1.1.0";
+export const VERSIONE = "1.2.0";
 const CARTELLA = path.dirname(fileURLToPath(import.meta.url));
 const DATI = process.env.PONTE_DATI || CARTELLA;            // dove il ponte tiene le sue cose (accesso, WhatsApp, messaggi visti)
 const FILE_CONF = path.join(DATI, "config.json");
@@ -80,7 +80,10 @@ export function dataOra(ts) {
 }
 
 // ---------------------------------------------------------------------------------- il messaggio -> la posta di Sofia
-// Ritorna null per quello che non serve (reazioni, adesivi, messaggi di sistema, video, documenti).
+// Ritorna null per quello che non serve (reazioni, adesivi, messaggi di sistema, video, documenti che non sono fogli Excel).
+// 1.2.0 (Michele, 7/11: «insegnali a leggere i file Excel, ovviamente»): i FOGLI EXCEL (.xlsx .xlsm .xls .ods) passano
+// come tipo «excel», col file in posta_media (come le foto) e il nome del file nella didascalia: l'app li mette da
+// sola nel prospetto (il foglio di papà). Gli altri documenti (pdf, word…) restano fuori.
 export function daMessaggio(m, { chat, gruppo, normalizza, tipoDi }) {
   if (!m || !m.message || !m.key) return null;
   const c = normalizza ? normalizza(m.message) : m.message; if (!c) return null;
@@ -95,7 +98,18 @@ export function daMessaggio(m, { chat, gruppo, normalizza, tipoDi }) {
   if (tipoWA === "imageMessage") { const x = c.imageMessage || {}; return { ...base, tipo: "foto", testo: "", didascalia: String(x.caption || "").slice(0, 2000), mime: x.mimetype || "image/jpeg", peso: lungo(x.fileLength) }; }
   if (tipoWA === "audioMessage") { const x = c.audioMessage || {}; return { ...base, tipo: "audio", testo: "", durata: Number(x.seconds || 0), mime: String(x.mimetype || "audio/ogg").split(";")[0], peso: lungo(x.fileLength) }; }
   if (tipoWA === "videoMessage" && c.videoMessage && c.videoMessage.caption) return { ...base, tipo: "testo", testo: "🎬 (un video) " + String(c.videoMessage.caption).slice(0, 2000) };
+  if (tipoWA === "documentMessage" || tipoWA === "documentWithCaptionMessage") {
+    const x = (tipoWA === "documentMessage" ? c.documentMessage : (c.documentWithCaptionMessage && c.documentWithCaptionMessage.message && c.documentWithCaptionMessage.message.documentMessage)) || {};
+    if (!eFoglioExcel(x)) return null;
+    const nome = String(x.fileName || x.title || "foglio.xlsx").slice(0, 200);
+    return { ...base, tipo: "excel", testo: "", didascalia: (nome + (x.caption ? " — " + String(x.caption) : "")).slice(0, 2000), mime: String(x.mimetype || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").split(";")[0], peso: lungo(x.fileLength) };
+  }
   return null;
+}
+// 1.2.0: è un foglio Excel? (dal nome del file o dal tipo che dice WhatsApp)
+export function eFoglioExcel(x) {
+  const nome = String((x && (x.fileName || x.title)) || ""), mime = String((x && x.mimetype) || "");
+  return /\.(xlsx|xlsm|xls|ods)$/i.test(nome.trim()) || /spreadsheetml|ms-excel|opendocument\.spreadsheet/i.test(mime);
 }
 
 // ---------------------------------------------------------------------------------- il database dell'app (Firestore, via internet)
@@ -207,7 +221,7 @@ export const inAttesa = () => daRiprovare.length;
 export async function deposita(p, scarica) {
   if (visti.has(p.id)) return "visto";
   const doc = { chat: p.chat, gruppo: p.gruppo, chi: p.chi, mio: p.mio, ts: p.ts, data: p.data, ora: p.ora, tipo: p.tipo, testo: p.testo || "", ...(p.didascalia ? { didascalia: p.didascalia } : {}), ...(p.durata ? { durata: p.durata } : {}), ...(p.mime ? { mime: p.mime } : {}), ...(p.storico ? { storico: true } : {}) };
-  if ((p.tipo === "audio" || p.tipo === "foto") && scarica) {
+  if ((p.tipo === "audio" || p.tipo === "foto" || p.tipo === "excel") && scarica) {
     // il file si prende da WhatsApp; se non si riesce (troppo grande, scaduto) passa una riga che lo dice.
     // Se invece non risponde il database, l'errore sale e il messaggio si riprova piu' tardi.
     let buf = null, perche = "";
@@ -218,11 +232,11 @@ export async function deposita(p, scarica) {
       if (buf.length > MAX_MEDIA) throw new Error("troppo grande");
     } catch (e) { buf = null; perche = e.message; }
     if (buf) { await fsCrea("posta_media", p.id, { mime: p.mime || "application/octet-stream", dati: buf.toString("base64"), ts: p.ts }); doc.media = true; }
-    else { doc.media = false; doc.testo = p.tipo === "audio" ? `🎤 (vocale non passato: ${perche})` : `📷 (foto non passata: ${perche})${p.didascalia ? " " + p.didascalia : ""}`; }
+    else { doc.media = false; doc.testo = p.tipo === "audio" ? `🎤 (vocale non passato: ${perche})` : p.tipo === "excel" ? `📊 (foglio Excel non passato: ${perche})${p.didascalia ? " " + p.didascalia : ""}` : `📷 (foto non passata: ${perche})${p.didascalia ? " " + p.didascalia : ""}`; }
   }
   const r = await fsCrea("posta", p.id, doc);
   ricordaVisto(p.id);
-  if (r === "ok") { stato.contati++; stato.ultimo = Date.now(); annota(`${p.chat}: ${p.chi}${p.tipo === "testo" ? " ha scritto" : p.tipo === "audio" ? " ha mandato un vocale" : " ha mandato una foto"}${p.storico ? " (dei giorni scorsi)" : ""}`); if (!p.storico) dopoMessaggio(); }
+  if (r === "ok") { stato.contati++; stato.ultimo = Date.now(); annota(`${p.chat}: ${p.chi}${p.tipo === "testo" ? " ha scritto" : p.tipo === "audio" ? " ha mandato un vocale" : p.tipo === "excel" ? " ha mandato un foglio Excel" : " ha mandato una foto"}${p.storico ? " (dei giorni scorsi)" : ""}`); if (!p.storico) dopoMessaggio(); }
   return r;
 }
 
@@ -285,7 +299,7 @@ export async function trattaMessaggio(m, storico) {
     }
     if (visti.has(p.id)) return;
     const s = sock;
-    const scarica = (p.tipo === "audio" || p.tipo === "foto") ? () => bw.downloadMediaMessage(m, "buffer", {}, { logger: bw.logger, reuploadRequest: s.updateMediaMessage }) : null;
+    const scarica = (p.tipo === "audio" || p.tipo === "foto" || p.tipo === "excel") ? () => bw.downloadMediaMessage(m, "buffer", {}, { logger: bw.logger, reuploadRequest: s.updateMediaMessage }) : null;
     try { await deposita(p, scarica); }
     catch (e) { annota("Il database non risponde, riprovo fra un minuto: " + e.message); mettiDaRiprovare(p, scarica); }
   } catch (e) { annota("Non sono riuscito a passare un messaggio: " + e.message); }

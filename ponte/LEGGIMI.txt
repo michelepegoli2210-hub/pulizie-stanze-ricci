@@ -1,7 +1,8 @@
 IL PONTE DI SOFIA
 =================
 Fa arrivare a Sofia (l'app Pulizie Ricci) i messaggi del gruppo WhatsApp "Albergo":
-scritti, vocali e foto. Sofia li ascolta, capisce il prospetto e ti avvisa. Non salva niente
+scritti, vocali, foto e i fogli Excel (il prospetto di papa'). Sofia li ascolta, capisce e ti avvisa;
+il foglio Excel lo mette da sola nel prospetto. Non salva niente
 senza il tuo "Salva".
 
 IL PONTE LEGGE SOLTANTO: non scrive mai niente su WhatsApp, non segna i messaggi come letti,
