@@ -22,11 +22,11 @@ export const FORNITORI = {
     elencoLeggi: (j) => (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => String(m.name || "").replace(/^models\//, "")),
     url: (m) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`,
     testa: (k) => ({ "content-type": "application/json", "x-goog-api-key": k }),
-    corpo: (sistema, storia, testo, m, immagine, maxToken) => ({
+    corpo: (sistema, storia, testo, m, immagine, maxToken, livello) => ({
       system_instruction: { parts: [{ text: sistema }] },
       contents: [...storia.map(m => ({ role: m.chi === "io" ? "user" : "model", parts: [{ text: m.testo }] })),
         { role: "user", parts: [...(immagine ? (Array.isArray(immagine) ? immagine : [immagine]).filter(x => x && x.dati).map(x => ({ inline_data: { mime_type: x.mime || "image/jpeg", data: x.dati } })) : []), { text: testo }] }],
-      generationConfig: configGemini(m, maxToken),
+      generationConfig: configGemini(m, maxToken, livello),
     }),
     leggeFoto: true,
     leggi: (j) => (((j.candidates || [])[0] || {}).content?.parts || []).map(p => p.text || "").join(""),
@@ -75,9 +75,10 @@ export const FORNITORE_BASE = "gemini";
 // scritto chiaro (thinkingLevel: "low" = veloce, "medium" = quello di serie di Google, "high" = al massimo; si sceglie in Altro) e
 // niente temperature (per Argon Google la ignora). Per gli altri modelli resta tutto come prima.
 export const LIVELLI_ARGON = ["low", "medium", "high"];   // 1.0.2: anche "low" (Veloce), per le risposte di tutti i giorni
-export function configGemini(m, maxToken) {
+// giro 1.27.0: «livello» (facoltativo) vale per una domanda sola: il foglio di papà lo legge Argon al massimo («high»)
+export function configGemini(m, maxToken, livello = "") {
   if (/argon/i.test(String(m || ""))) {
-    const lv = leggiConf().ragionamento;
+    const lv = LIVELLI_ARGON.includes(livello) ? livello : leggiConf().ragionamento;
     return { maxOutputTokens: 32768, responseMimeType: "application/json", thinkingConfig: { thinkingLevel: LIVELLI_ARGON.includes(lv) ? lv : "medium" } };
   }
   return { temperature: maxToken ? 0.2 : 0.4, maxOutputTokens: maxToken || 4000, responseMimeType: "application/json" };
@@ -393,7 +394,7 @@ export async function provaChiave(conf) {
 }
 
 // La domanda vera: le mando la fotografia, lo storico corto e quello che ha scritto Michele.
-export async function chiedi({ conf, sistema, storia = [], testo, immagine = null, secondi = 40, maxToken = 0 }) {
+export async function chiedi({ conf, sistema, storia = [], testo, immagine = null, secondi = 40, maxToken = 0, livello = "" }) {
   const f = FORNITORI[conf.fornitore]; if (!f) throw new Error("Fornitore sconosciuto.");
   if (!conf.chiave) throw new Error("Manca la chiave.");
   if (immagine && !f.leggeFoto) throw new Error("Le foto le sa leggere solo Gemini.");
@@ -402,7 +403,7 @@ export async function chiedi({ conf, sistema, storia = [], testo, immagine = nul
   const corti = storia.slice(-12).filter(m => m && m.testo && (m.chi === "io" || m.chi === "gov")).map(m => ({ chi: m.chi, testo: String(m.testo).slice(0, 900) }));
   // il primo messaggio deve essere di Michele: se no certi server si lamentano
   while (corti.length && corti[0].chi !== "io") corti.shift();
-  const j = await chiamata(f.url(modello), f.testa(conf.chiave), f.corpo(sistema, corti, testo, modello, immagine, maxToken), immagine ? Math.max(secondi, 60) : secondi);
+  const j = await chiamata(f.url(modello), f.testa(conf.chiave), f.corpo(sistema, corti, testo, modello, immagine, maxToken, livello), immagine ? Math.max(secondi, 60) : secondi);
   const txt = f.leggi(j);
   if (!txt || !txt.trim()) throw new Error("Ha risposto vuoto.");
   return { ...leggiRisposta(txt), modello, grezzo: txt };

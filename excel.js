@@ -99,7 +99,7 @@ function meseAnnoDelFoglio(foglio, opz) {
 // ---------------------------------------------------------------------------
 //  3) Le colonne: quale camera è
 // ---------------------------------------------------------------------------
-function etichetteColonne(foglio) {
+export function etichetteColonne(foglio) {
   const righe = [[], []];
   for (let r = 0; r < 2; r++) for (let c = 0; c <= foglio.maxC; c++) righe[r][c] = foglio.celle[r]?.[c]?.t || "";
   for (const m of foglio.merges) {
@@ -109,7 +109,7 @@ function etichetteColonne(foglio) {
   }
   return righe;
 }
-function cameraDaEtichetta(et2, et1) {
+export function cameraDaEtichetta(et2, et1) {
   const prova = [et2, et1].filter(Boolean).map(normalizza);
   for (const p of prova) {
     if (COLONNE_EXCEL[p]) return { camera: COLONNE_EXCEL[p] };
