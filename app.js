@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.57.0";
+export const VERSIONE = "1.58.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -833,7 +833,7 @@ function dettaglioHtml(k, ls, fatte) {
   } else if (k === "manutenzione") {
     const ap = lavoriAperti();
     titolo = ap.length ? `Lavori da fare: <b>${ap.length}</b>` : "Niente da sistemare";
-    righe = ap.map(m => { const cm = m.camera ? camera(m.camera) : null; return r(`${m.gravita === "urgente" ? `<b class="dt-urg">URGENTE</b> · ` : ""}<b>${esc(cm ? cm.nome : "In generale")}</b> · ${esc(m.titolo || "Lavoro")}${m.nota ? ` — ${esc(m.nota)}` : ""}${m.data ? `<small>segnalato ${esc(giornoParlato(m.data))}</small>` : ""}${tastiLavoro(m, "dt")}`); });   // 1.50.0
+    righe = ap.map(m => { const cm = m.camera ? camera(m.camera) : null; return r(`${urgenza(m) ? `<b class="dt-urg">${urgenza(m) === 2 ? "URGENTISSIMO" : "URGENTE"}</b> · ` : ""}<b>${esc(cm ? cm.nome : "In generale")}</b> · ${esc(m.titolo || "Lavoro")}${m.nota ? ` — ${esc(m.nota)}` : ""}${m.data ? `<small>segnalato ${esc(giornoParlato(m.data))}</small>` : ""}${tastiLavoro(m, "dt")}`); });   // 1.50.0
     sofia = dice(c && c.testo ? c.testo : umoreGov().testo); tasto = pagina("manutenzione", "Apri i lavori");
   } else if (k === "arrivi") {
     const arr = sog.filter(s => s.inizio === domani), part = sog.filter(s => s.fine === domani);
@@ -1208,7 +1208,7 @@ function parteTesto(p) { return p.parte && L.PARTE_TESTO[p.parte] ? ` · ${L.PAR
 function titoloLavoro(p) { return titoloBase(p) + parteTesto(p); }
 // Un problema "aperto": la camera è in stato problema e nessuno ha ancora segnato il lavoro come fatto in Manutenzione
 function problemaAperto(p) { return !!p && p.stato === "problema" && S.manutenzione[`pul_${p.id}`]?.stato !== "fatto"; }
-function lavoriAperti() { return Object.values(S.manutenzione).filter(m => m.stato !== "fatto").sort((a, b) => ((b.gravita === "urgente") - (a.gravita === "urgente")) || ((a.data || "") < (b.data || "") ? 1 : -1)); }   // 1.51.0: gli urgenti in cima
+function lavoriAperti() { return Object.values(S.manutenzione).filter(m => m.stato !== "fatto").sort((a, b) => (urgenza(b) - urgenza(a)) || ((a.data || "") < (b.data || "") ? 1 : -1)); }   // 1.51.0: gli urgenti in cima
 function lavoriFatti() { return Object.values(S.manutenzione).filter(m => m.stato === "fatto").sort((a, b) => (a.fatto || "") < (b.fatto || "") ? 1 : -1); }
 // Avatar della signora (le donnine: una diversa per zona)
 function avatarZona(z, cls = "piccola") { const v = ["scopa", "secchio", "saluto", "festa"][zoneOrdinate().findIndex(x => x.id === z)] || "scopa"; const col = (squadra()[z] || {}).capelli || null; return DONNINA(v, cls, col); }
@@ -1540,6 +1540,7 @@ function disegna() {
   if (letturaAttesa) guardaLettura();
   if (segreteriaAttesa) guardaSegreteria();   // 1.49.0
   if (avvisoAtteso) guardaAvviso();   // 1.55.13
+  if (manFattoAtteso) guardaManFatto();   // 1.58.0
   if (condivisaInAttesa && S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie) { condivisaInAttesa = false; setTimeout(guardaCondivisa, 0); }   // 1.51.0
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
   try { indietroVista(); } catch (e) {}   // 1.7.0
@@ -4659,7 +4660,7 @@ function rigaMsgSig(m, evid) {
 }
 function bannerAvviso(a) {
   const ora = a && a.quando ? L.oraBreve(a.quando) : "";
-  return `<div class="av-banner" role="status"><div class="av-eti">🔔 La notifica${ora ? ` delle ${esc(ora)}` : ""}</div>${a.titolo ? `<b class="av-tit">${esc(a.titolo)}</b>` : ""}${a.testo ? `<p class="av-testo">${esc(a.testo)}</p>` : ""}</div>`;
+  return `<div class="av-banner" role="status"><div class="av-eti">🔔 La notifica${ora ? ` delle ${esc(ora)}` : ""}</div>${a.titolo ? `<b class="av-tit">${esc(a.titolo)}</b>` : ""}${a.testo ? `<p class="av-testo">${esc(a.testo).replace(/\n/g, "<br>")}</p>` : ""}</div>`;
 }
 function foglioPostaSig(f) {
   const tutti = Object.values(S.messaggiSig || {}).filter(Boolean).sort((a, b) => String(b.ora || "").localeCompare(String(a.ora || "")));
@@ -4720,6 +4721,7 @@ async function guardaAvviso() {
   if (!a || (!a.titolo && !a.testo)) return;
   if (S.veroUtente) esciComeSignora();   // stava provando la parte delle signore: torna alla sua
   if (a.dove === "messaggi") { S.vista = "oggi"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "postaSig", rif: String(a.rif || ""), avviso: a }); return; }
+  if (a.dove === "manutenzione" && a.rif && S.manutenzione[a.rif]) { S.vista = "manutenzione"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "manutenzione", id: String(a.rif), avviso: a }); return; }   // 1.58.0
   S.vista = VISTA_AVVISO[a.dove] || S.vista || "oggi"; disegna(); window.scrollTo(0, 0);
   apriFoglio({ tipo: "avviso", titolo: a.titolo || "", testo: a.testo || "", dove: a.dove || "", quando: a.quando || "" });
 }
@@ -6521,7 +6523,7 @@ function vistaManutenzionePremium() {
   const aperti = lavoriAperti(), fatti = lavoriFatti();
   const riga = (m, fatto) => { const c = m.camera ? camera(m.camera) : null;
     const quando = fatto ? `Fatto ${m.fatto ? L.dataGiornoLungo(m.fatto.slice(0, 10)) : ""}${m.fattoDa ? " · " + m.fattoDa : ""}` : `${m.stato === "chiamato" ? "Tecnico chiamato · " : ""}segnalato ${m.data ? L.dataGiornoLungo(m.data) : ""}${m.da ? " da " + m.da : ""}`;
-    return `<div class="m13-riga ${fatto ? "fatto" : ""}"><button type="button" class="m13-apri" data-man="${esc(m.id)}"><span class="m13-dove">${c ? esc(c.nome) : "In generale"}</span>${!fatto && m.gravita === "urgente" ? `<span class="m13-urg">Urgente</span>` : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<span class="m13-nota">${esc(m.nota)}</span>` : ""}<span class="m13-quando">${esc(quando)}</span></button>${!fatto && puoModificare() ? `<button type="button" class="m13-ok" data-man-risolto="${esc(m.id)}">${ico2("spunta")}<span>Risolto</span></button>` : ""}</div>`; };
+    return `<div class="m13-riga ${fatto ? "fatto" : ""}"><button type="button" class="m13-apri" data-man="${esc(m.id)}"><span class="m13-dove">${c ? esc(c.nome) : "In generale"}</span>${!fatto ? etichettaUrg(m, "m13-urg") : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<span class="m13-nota">${esc(m.nota)}</span>` : ""}<span class="m13-quando">${esc(quando)}</span></button>${!fatto && puoModificare() ? `<button type="button" class="m13-ok" data-man-risolto="${esc(m.id)}">${ico2("spunta")}<span>Risolto</span></button>` : ""}</div>`; };
   return `<section class="m13-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><div class="m13-tit"><span class="o13-lico">${ico2("chiave")}</span><h2>Lavori da fare${aperti.length ? ` <span>(${aperti.length})</span>` : ""}</h2>${puoModificare() ? `<button type="button" class="o13-lav-piu" data-nuovo-man>${ico2("piu")}<span>Guasto</span></button>` : ""}</div></section>
     <section class="m13-lista">${aperti.length ? aperti.map(m => riga(m, false)).join("") : `<p class="m13-vuoto">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
     ${fatti.length ? `<section class="m13-fatti"><details><summary>Fatti (${fatti.length})</summary><div class="m13-lista">${fatti.slice(0, 40).map(m => riga(m, true)).join("")}</div></details></section>` : ""}`;
@@ -6551,7 +6553,7 @@ function vistaManutenzione() {
   if (premiumScelto()) return vistaManutenzionePremium();
   const aperti = lavoriAperti(), fatti = lavoriFatti();
   const riga = (m) => { const c = m.camera ? camera(m.camera) : null; const p = m.pulizia ? S.pulizie[m.pulizia] : null;
-    return `<button class="row man-riga" data-man="${esc(m.id)}"><span>${c ? `<b>${esc(c.nome)}</b> · ` : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<br><span class="muted">${esc(m.nota)}</span>` : ""}<br><span class="muted small">${m.stato === "fatto" ? `Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""} · ` : ""}segnalato ${esc(L.dataGiornoLungo(m.data || m.creato?.slice(0, 10) || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}${m.foto ? " · 📷 foto" : ""}${p && p.stato !== "problema" ? " · camera poi ripulita" : ""}</span></span>${m.stato === "fatto" ? `<span class="badge done">Fatto</span>` : `<span class="badge warn">Da fare</span>`}</button>`; };
+    return `<button class="row man-riga" data-man="${esc(m.id)}"><span>${m.stato !== "fatto" ? etichettaUrg(m, "m13-urg") : ""}${c ? `<b>${esc(c.nome)}</b> · ` : ""}<b>${esc(m.titolo || "Lavoro")}</b>${m.nota ? `<br><span class="muted">${esc(m.nota)}</span>` : ""}<br><span class="muted small">${m.stato === "fatto" ? `Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""} · ` : ""}segnalato ${esc(L.dataGiornoLungo(m.data || m.creato?.slice(0, 10) || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}${m.foto ? " · 📷 foto" : ""}${p && p.stato !== "problema" ? " · camera poi ripulita" : ""}</span></span>${m.stato === "fatto" ? `<span class="badge done">Fatto</span>` : `<span class="badge warn">Da fare</span>`}</button>`; };
   return `<section class="card flat man-testa"><button class="nonna-link indietro" data-vista="oggi">${ICONA("indietro")}Oggi</button><h2 style="margin:8px 0 0">${ICONA("attrezzi")} Lavori di manutenzione</h2><p class="muted small" style="margin:2px 0 0">Qui finisce tutto quello che si rompe o va sistemato: i problemi che segnalano le signore (restano anche dopo che la camera è stata ripulita) e i lavori che aggiungi tu. Tocca una riga per i dettagli e per segnarla fatta.</p></section>
   <section class="card"><div class="head" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">${aperti.length ? `<span class="led" role="img" aria-label="da fare"></span>` : ""}Da fare <span class="muted">· ${aperti.length}</span></h2>${puoModificare() ? `<button class="btnsm" data-nuovo-man>+ Lavoro</button>` : ""}</div>
     ${aperti.length ? `<div class="rows" style="margin-top:10px">${aperti.map(riga).join("")}</div>` : `<p class="muted" style="margin:10px 0 0">Niente da sistemare. Quando una signora segnala un problema, compare qui.</p>`}</section>
@@ -6561,7 +6563,8 @@ function foglioManutenzione(f) {
   const m = S.manutenzione[f.id]; if (!m) return `<h3>Lavoro</h3><p class="muted">Non c'è più.</p>`;
   const c = m.camera ? camera(m.camera) : null, p = m.pulizia ? S.pulizie[m.pulizia] : null;
   const foto = f.foto === undefined && m.foto && m.pulizia ? (caricaFotoManutenzione(f), `<p class="muted small">Carico la foto…</p>`) : f.foto ? `<img src="${f.foto}" alt="Foto del problema" style="width:100%;border-radius:14px;margin:8px 0">` : "";
-  return `<h3>${c ? esc(c.nome) : "Lavoro"}</h3><div class="muted">${esc(m.titolo || "")}</div>
+  return `${f.avviso ? bannerAvviso(f.avviso) : ""}<h3>${c ? esc(c.nome) : "Lavoro"}</h3><div class="muted">${esc(m.titolo || "")}</div>
+    ${puoModificare() && m.stato !== "fatto" ? `<div class="urg-box"><b class="urg-tit">Quanto è urgente?</b>${sceltaUrgenza(urgenza(m), "data-man-grav", m.id)}</div>` : ""}
     <div class="kind ${m.stato === "fatto" ? "money" : ""}">${m.stato === "fatto" ? `✓ Fatto ${m.fatto ? esc(L.dataGiornoLungo(m.fatto.slice(0, 10))) : ""}${m.fattoDa ? " da " + esc(m.fattoDa) : ""}` : m.stato === "chiamato" ? `Tecnico chiamato ${m.chiamato ? esc(L.dataBreve(m.chiamato)) : ""}` : "Da fare"}</div><span class="kind info">segnalato ${esc(L.dataGiornoLungo(m.data || L.oggiISO()))}${m.da ? " da " + esc(m.da) : ""}</span>
     ${p ? `<p class="muted small" style="margin:8px 0 0">Camera ${p.stato === "problema" ? "ancora ferma sul problema" : "poi ripulita (" + esc(statoTesto(p)) + ")"} · <button class="nonna-link" style="min-height:0;padding:4px 10px;margin:0" data-pul="${esc(p.id)}">apri la pulizia</button></p>` : ""}
     ${foto}
@@ -6577,9 +6580,10 @@ async function caricaFotoManutenzione(f) {
 function foglioNuovoLavoroMan(f) {
   return `<h3>Nuovo lavoro di manutenzione</h3><div class="muted">Qualcosa da riparare o sistemare (non una pulizia: per quelle c'è "lavoro extra").</div>
     <form id="formMan">
-      <div class="campo"><label for="mTit">Cosa c'è da fare</label><input id="mTit" type="text" placeholder="es. Cambiare la lampadina del bagno" required></div>
+      <div class="campo"><label for="mTit">Cosa c'è da fare</label><input id="mTit" data-keep type="text" placeholder="es. Cambiare la lampadina del bagno" required></div>
       <div class="campo"><label for="mCam">Dove</label><select id="mCam"><option value="">— nessuna camera in particolare —</option>${S.camere.map(c => `<option value="${c.id}" ${f.camera === c.id ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</select></div>
-      <div class="campo"><label for="mNota">Note</label><textarea id="mNota" placeholder="facoltative"></textarea></div>
+      <div class="campo"><label for="mNota">Note</label><textarea id="mNota" data-keep placeholder="facoltative"></textarea></div>
+      <div class="urg-box"><b class="urg-tit">Quanto è urgente?</b>${sceltaUrgenza(Number(f.grav) || 0, "data-nman-grav")}</div>
       <button class="big main" type="submit">Aggiungi</button>
     </form>`;
 }
@@ -6587,9 +6591,10 @@ async function salvaNuovoLavoroMan() {
   const titolo = $("#mTit").value.trim(); if (!titolo) return;
   const cam = $("#mCam").value; const c = cam ? camera(cam) : null;
   const id = `man_${Date.now()}`;
-  const voce = { pulizia: null, camera: cam || null, zona: c ? c.zona : null, data: L.oggiISO(), titolo, nota: $("#mNota").value.trim(), da: S.utente.nome || "", fonte: "mano", foto: false, stato: "aperto", creato: S.db.adesso(), fatto: null, fattoDa: "" };
+  const liv = Number(S.foglio && S.foglio.grav) || 0;   // 1.58.0
+  const voce = { pulizia: null, camera: cam || null, zona: c ? c.zona : null, data: L.oggiISO(), titolo, nota: $("#mNota").value.trim(), da: S.utente.nome || "", fonte: "mano", foto: false, stato: "aperto", creato: S.db.adesso(), fatto: null, fattoDa: "", ...patchUrgenza(liv) };
   chiudiFoglio();
-  try { await S.db.salva("manutenzione", id, voce, false); toast("Lavoro aggiunto"); } catch (e) { erroreScrittura(e); }
+  try { await S.db.salva("manutenzione", id, voce, false); toast(liv === 2 ? "Aggiunto: 🚨 ti avviso ogni 2 ore finché non è sistemato" : liv === 1 ? "Aggiunto: ⚠️ te lo ricorda Sofia nelle sue notifiche" : "Lavoro aggiunto"); } catch (e) { erroreScrittura(e); }
 }
 async function aggiornaManutenzione(id, patch, msg) {
   if (!S.manutenzione[id]) return;
@@ -7632,11 +7637,11 @@ function dettaglioFacile(k, ls, fatte) {
     tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "manutenzione") {
     const ap = lavoriAperti();
-    const urg = ap.filter(m => m.gravita === "urgente").length;
+    const urg = ap.filter(m => urgenza(m) >= 1).length;
     titolo = tit(icoChiave(), ap.length ? `Da aggiustare: ${ap.length}${urg ? ` <small class="dtf-urg-n">(${urg} ${urg === 1 ? "urgente" : "urgenti"})</small>` : ""}` : "Niente da aggiustare");
     corpo = ap.length ? ap.map(m => {
       const cm = m.camera ? camera(m.camera) : null, g = m.data ? parolaGiorno(m.data) : "";
-      return `<span class="dtf-r dtf-man${m.gravita === "urgente" ? " urgente" : ""}"><span class="dtf-r-t">${m.gravita === "urgente" ? `<span class="dtf-urg">Urgente</span>` : ""}<b class="dtf-nome">${esc(m.titolo || "Lavoro")}</b></span><span class="dtf-dove">${cm ? `${icoPorta()}${esc(cm.nome)}` : "In generale"}${g ? ` · segnalato ${/^\d/.test(g) ? "il " : ""}${esc(g)}` : ""}</span>${m.nota ? `<span class="dtf-nota2">${esc(m.nota)}</span>` : ""}${tastiLavoro(m, "dtf")}</span>`;   // 1.50.0: Risolto / Cancella
+      return `<span class="dtf-r dtf-man${urgenza(m) ? " urgente" : ""}"><span class="dtf-r-t">${urgenza(m) ? `<span class="dtf-urg">${urgenza(m) === 2 ? "Urgentissimo" : "Urgente"}</span>` : ""}<b class="dtf-nome">${esc(m.titolo || "Lavoro")}</b></span><span class="dtf-dove">${cm ? `${icoPorta()}${esc(cm.nome)}` : "In generale"}${g ? ` · segnalato ${/^\d/.test(g) ? "il " : ""}${esc(g)}` : ""}</span>${m.nota ? `<span class="dtf-nota2">${esc(m.nota)}</span>` : ""}${tastiLavoro(m, "dtf")}</span>`;   // 1.50.0: Risolto / Cancella
     }).join("") : vuoto("Tutto a posto: niente da aggiustare.");
     tasto = pagina("manutenzione", "Apri i lavori");
   } else if (k === "sofia") {
@@ -12410,6 +12415,66 @@ function signorePaghe() {
   const daPagare = (z) => [chiave, prec].some(k => !S.pagamenti[`${z}_${k}`] && (pagaAOre() ? bustaOre(z, k).totale : totaleBusta(z, k).totale));
   return [...att, ...rgEx().filter(z => !ids.has(z.id) && daPagare(z.id)).map(z => ({ ...z, ...(squadra()[z.id] || {}), nome: SIG(z.id), zonaNome: z.nome, andata: true }))];
 }
+// ============================================================================
+//  1.58.0 I GUASTI NORMALI, URGENTI E URGENTISSIMI (Michele, 7/11: «per i guasti la possibilità di metterli urgenti e
+//  urgentissimi: nella sezione manutenzione devo poter scegliere tra i pulsanti normale, urgente, urgentissimo. Gli urgenti
+//  mi devono arrivare insieme alle notifiche di Sofia di ogni giorno, gli urgentissimi ogni 2 ore»).
+//  - In ogni guasto (e quando se ne aggiunge uno) tre tasti: «Normale», «⚠️ Urgente», «🚨 Urgentissimo» (campo gravita).
+//  - La lista dei lavori mette prima gli urgentissimi (rossi), poi gli urgenti (arancio), poi gli altri.
+//  - Le notifiche le manda il giro di Sofia (giro 1.25.0): gli urgenti in una riga «🔧 Da riparare subito» dentro le sue
+//    notifiche di ogni giorno; gli urgentissimi con una notifica loro ogni 2 ore (dalle 7 alle 22) finché non sono sistemati,
+//    col tasto «✅ Sistemato»: toccandolo si apre l'app, che chiede «È sistemato?» e lo segna (le notifiche si fermano).
+//  - La notifica toccata di un guasto apre proprio quel guasto (col testo della notifica sopra).
+// ============================================================================
+const LIV_GUASTO = { urgente: 1, urgentissimo: 2 };
+function urgenza(m) { return (m && m.stato !== "fatto" && LIV_GUASTO[m.gravita]) || 0; }
+function etichettaUrg(m, cls) { const u = urgenza(m); return u ? `<span class="${cls} ${u === 2 ? "urg2" : "urg1"}">${u === 2 ? "🚨 Urgentissimo" : "⚠️ Urgente"}</span>` : ""; }
+const SPIEGA_URG = { 0: "Normale: lo vedi qui e nel bollettino della sera.", 1: "Urgente: te lo ricorda Sofia nelle sue notifiche di ogni giorno.", 2: "Urgentissimo: ti arriva una notifica ogni 2 ore (dalle 7 alle 22) finché non è sistemato." };
+function sceltaUrgenza(liv, attr, id) {
+  return `<div class="urg-scelta" role="group" aria-label="Quanto è urgente">${[[0, "Normale"], [1, "⚠️ Urgente"], [2, "🚨 Urgentissimo"]].map(([l, t]) =>
+    `<button type="button" class="urg-b urg-b${l}${liv === l ? " on" : ""}" aria-pressed="${liv === l}" ${attr}="${esc(id ? id + "|" + l : String(l))}">${t}</button>`).join("")}</div>
+    <p class="urg-spiega">${esc(SPIEGA_URG[liv] || SPIEGA_URG[0])}</p>`;
+}
+function patchUrgenza(liv) {
+  const gravita = liv === 2 ? "urgentissimo" : liv === 1 ? "urgente" : "normale";
+  return liv === 2 ? { gravita, urgDal: S.db.adesso(), avvisatoUrg: null, avvisiUrg: 0 } : { gravita, avvisatoUrg: null };
+}
+function cambiaUrgenza(id, liv) {
+  const m = S.manutenzione[id]; if (!m || urgenza(m) === liv && (liv || m.gravita !== "urgente")) return;
+  aggiornaManutenzione(id, patchUrgenza(liv), liv === 2 ? "🚨 Urgentissimo: ti arriva una notifica ogni 2 ore finché non è sistemato" : liv === 1 ? "⚠️ Urgente: te lo ricorda Sofia nelle sue notifiche" : "Normale");
+}
+// il tasto «✅ Sistemato» della notifica: l'app si apre (o si mostra) e chiede conferma
+let manFattoAtteso = null;
+try { const u4 = new URL(location.href); if (u4.searchParams.has("manFatto")) { manFattoAtteso = String(u4.searchParams.get("manFatto") || "").slice(0, 80); u4.searchParams.delete("manFatto"); history.replaceState(null, "", u4.pathname + u4.search + u4.hash); } } catch (e) {}
+try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.tipo === "manFatto" && e.data.id) { manFattoAtteso = String(e.data.id).slice(0, 80); guardaManFatto(); } }); } catch (e) {}
+let manFattoInCorso = false;
+async function guardaManFatto() {
+  if (!manFattoAtteso || manFattoInCorso || !S.pronto || !S.utente || !proprietario() || !S.caricati.manutenzione) return;
+  const id = manFattoAtteso; manFattoAtteso = null; manFattoInCorso = true;
+  try {
+    const m = S.manutenzione[id];
+    if (S.veroUtente) esciComeSignora();
+    S.vista = "manutenzione"; if (S.foglio) chiudiFoglio(); disegna(); window.scrollTo(0, 0);
+    if (!m) { toast("Questo guasto non c'è più"); return; }
+    if (m.stato === "fatto") { toast("Era già segnato sistemato ✓"); return; }
+    const c = m.camera ? camera(m.camera) : null;
+    if (!await chiedi(`«${m.titolo || "Il guasto"}»${c ? ` in ${c.nome}` : ""}: è sistemato? Le notifiche ogni 2 ore si fermano.`, { si: "✅ Sì, è sistemato", no: "No, non ancora" })) { apriFoglio({ tipo: "manutenzione", id }); return; }
+    aggiornaManutenzione(id, { stato: "fatto", fatto: S.db.adesso(), fattoDa: S.utente.nome || "" }, "✅ Sistemato: niente più notifiche");
+  } finally { manFattoInCorso = false; }
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-man-grav],[data-nman-grav]") : null;
+  if (!t || !proprietario()) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-man-grav")) { const [id, l] = t.getAttribute("data-man-grav").split("|"); cambiaUrgenza(id, Number(l) || 0); return; }
+  if (S.foglio && S.foglio.tipo === "nuovoMan") {   // senza ridisegnare il foglio: quello che hai scritto resta
+    const l = Number(t.getAttribute("data-nman-grav")) || 0; S.foglio.grav = l;
+    const box = t.closest(".urg-scelta"); if (box) box.querySelectorAll(".urg-b").forEach(b => { const on = b === t; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+    const sp = box && box.nextElementSibling; if (sp && sp.classList.contains("urg-spiega")) sp.textContent = SPIEGA_URG[l];
+  }
+}, true);
+// la camera scelta per un guasto nuovo resta anche se il foglio si ridisegna (le tendine non si tengono da sole)
+document.addEventListener("change", (e) => { const t = e.target; if (t && t.id === "mCam" && S.foglio && S.foglio.tipo === "nuovoMan") S.foglio.camera = t.value; }, true);
 function vistaAltro() {
   const r = S.regole;
   return cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>

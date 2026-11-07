@@ -2834,3 +2834,24 @@ I GIORNI. Michele (7/11, subito dopo): «voglio poter cambiare anche le giornate
 L'ICONA: Michele (7/11) ha scelto la 2, quella chiara: la casa blu su fondo crema, come la barra in alto dell'app (icone15602/crema; ICONE=crema python3 fase15602.py).
 - Corretto: la lista «Persone e accessi» (Impostazioni) era sempre vuota perché l'app non leggeva le schede «ruoli»: ora le legge (solo i proprietari).
 - Prove: prova1570 (i tasti: vibrazione, giù e su, il tocco durante un ridisegno, la domanda che non si chiude da sola; le ragazze: scheda, chi pulisce e quando, i giorni delle camere e dei lavori fissi, la settimana di una ragazza, una ragazza nuova al posto di un'altra, il piano che segue, le paghe, l'accesso, riprendila, la pagina della ragazza nuova).
+
+## 158.0 La 1.58.0 (7 novembre): I GUASTI URGENTI E URGENTISSIMI, LE NOTIFICHE CHIARISSIME
+
+Michele (7/11): «per i guasti la possibilità di metterli urgenti e urgentissimi: nella sezione manutenzione devo poter scegliere tra i pulsanti normale, urgente, urgentissimo. Per gli urgenti la notifica mi deve arrivare insieme alle notifiche di Sofia, quelle che mi manda normalmente durante il giorno. Gli urgentissimi me li deve mandare ogni 2 ore. E devi migliorare molto le notifiche sul mio telefono: devono essere ultra comprensibili».
+
+I TRE TASTI (app 1.58.0)
+- In ogni guasto aperto (Manutenzione → tocca il guasto) e quando se ne aggiunge uno: «Quanto è urgente?» → «Normale» · «⚠️ Urgente» · «🚨 Urgentissimo», con sotto cosa succede. Campo gravita = normale | urgente | urgentissimo (Sofia, dalla foto o da WhatsApp, mette già «urgente» quando serve: Michele può cambiarlo).
+- La lista dei lavori: prima gli urgentissimi (etichetta rossa «🚨 Urgentissimo»), poi gli urgenti (arancio «⚠️ Urgente»), poi gli altri; anche nelle notizie di Sofia («Urgentissimo»/«Urgente»).
+- La notifica di un guasto toccata apre proprio quel guasto, col testo della notifica sopra (a righe).
+
+LE NOTIFICHE (giro di Sofia 1.25.0)
+- URGENTI: una riga «🔧 Da riparare subito: …» in fondo alle notifiche di ogni giorno (il piano del mattino, le sintesi della segretaria, le letture di WhatsApp); nel bollettino della sera stanno nei guasti, per primi.
+- URGENTISSIMI: una notifica loro, «🚨 Urgentissimo: La doccia perde», dove, chi l'ha segnalato e quando, la nota; al primo giro dopo che l'hai messo urgentissimo e poi ogni 2 ore, dalle 7 alle 22 (di notte no), finché non è sistemato. Vibra più forte e resta sul telefono finché non la tocchi; il tasto «✅ Sistemato» apre l'app, che chiede «È sistemato?» e lo segna (le notifiche si fermano). Segni: manutenzione/<id>.avvisatoUrg e avvisiUrg (quante volte).
+- CHIARISSIME: nel titolo la cosa e il numero; dentro una riga per cosa, col suo disegnino; la prima riga è la più importante (è quella che il telefono fa vedere a notifica chiusa).
+  - ☀️ «Oggi 6 pulizie · 1 arrivo» → «🧹 Lucia: Salvatore, Aurora» · «🧹 Selena: Alba» · «🧳 Arriva qualcuno in: Salvatore» · «✅ Il piano è già andato alle ragazze».
+  - ⚠️ «Salvatore non è ancora pronta» → «🧳 Oggi arriva un ospite, ma la camera non risulta ancora pulita» · «🧹 Salvatore: la fa Lucia» · «👉 Tocca per vedere a che punto sono».
+  - 🌙 «Com'è andata oggi» → «🧹 Pulizie di oggi: 5 su 6 fatte» · «⏳ Selena: manca Alba» · «🔧 Guasti da sistemare: 2 — subito: …» · «🤖 Ho fatto da sola …» · «📅 Domani: …» · «🧳 Domani arriva qualcuno in: …» · «✋ Aspetta il tuo «Sì» …».
+  - 📲 «WhatsApp: 2 cose nell'app · una domanda per te» → le parole di Sofia (chi ha scritto e di cosa, 2-4 frasi), i guasti uno per riga (🚨 se urgente), «👉 C'è una domanda per te: tocca per rispondere».
+  - 📋 la sintesi: una frase per riga. 💬 i messaggi delle ragazze: il messaggio da solo sulla prima riga, sotto «🕐 alle 8:55 · tocca per leggerlo e rispondere». 📵 «WhatsApp non arriva più all'app».
+- Il giro conta anche le ragazze nuove (le zone «s…» dell'app 1.57.0).
+- Prove: prova1580giro (urgentissimi ogni 2 ore, di notte no, sistemato basta; la riga degli urgenti; le ragazze nuove; il bollettino; la lettura di WhatsApp; la sintesi a righe; il pacchetto col tasto e la vibrazione), prova1580 (i tre tasti, l'ordine, le etichette, il guasto nuovo, «✅ Sistemato» dalla notifica, la notifica toccata che apre il guasto, il service worker coi tasti).
