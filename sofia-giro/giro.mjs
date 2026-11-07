@@ -50,14 +50,21 @@
 //  E le ragazze nuove (app 1.57.0, zone «s…» in impostazioni/camere.zone) contano anche qui.
 //  1.26.0 (app 1.58.1): SI RISPARMIA. Argon legge le chat solo alle 8, 12, 16 e 20 (il turno fatto resta in letturaTurno);
 //  prima il modello economico guarda i messaggi nuovi: le cose urgenti si leggono subito, i saluti mai (vedi lettura-giro.mjs).
+//  1.27.0 (ponte 1.2.0): IL FOGLIO DI PAPÀ LO LEGGE ARGON (Michele, 7/11: «il prospetto lo devi interpretare con Argon massima
+//  intelligenza e anche contestualizzarlo rispetto ai messaggi… e lo deve aggiornare in automatico da solo… tutta una cascata
+//  che deve partire dal prospetto»). Il file Excel che arriva dal gruppo (posta tipo «excel») lo legge Argon al massimo, col
+//  prospetto dell'app e i messaggi delle ultime settimane: i soggiorni si mettono a posto da soli (solo i cambi), ognuno con
+//  «Annulla» in Segreteria; l'app del titolare rifà le pulizie e le stelle (vedi prospetto-giro.mjs). Prima delle chat, così
+//  la lettura delle chat vede già il prospetto nuovo. L'avviso «📊 Foglio di papà» solo se cambia qualcosa (avvisi.giroFoglio).
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
 import { LUOGHI_COMUNI } from "../governante.js";
-import { leggiChat, sintesiSera } from "./lettura-giro.mjs";
+import { leggiChat, sintesiSera, oraDiAvvisi } from "./lettura-giro.mjs";
+import { leggiFogliPapa } from "./prospetto-giro.mjs";   // 1.27.0
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.26.0";
+export const VERSIONE_GIRO = "1.27.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -304,6 +311,19 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     const k = casa({ camereDoc, squadra, ruoli, avvisi: a });
     return { camere: k.camere, signore: k.signore().map(z => ({ id: z.id, nome: k.SIG(z.id), zona: z.nome || "" })) };
   };
+  // 1.27.0: il foglio Excel di papà dal gruppo: lo legge Argon (al massimo) e mette a posto il prospetto da solo, prima delle chat
+  let creditoFoglio = false;
+  try {
+    const fp = await leggiFogliPapa({ db, gemini, oggi, adesso, prendiBase });
+    if (fp) {
+      if (fp.esito) esiti.push(fp.esito);
+      creditoFoglio = !!fp.credito;
+      if (fp.avviso && a.giroFoglio !== false && oraDiAvvisi(t.minuti)) {
+        if (!ps) ps = await db.doc("importazioni", "push-sofia");
+        await mandaMe(fp.avviso.testo, "avviso del foglio di papà", fp.avviso.titolo, false, fp.avviso.extra);
+      }
+    }
+  } catch (e) { console.warn("foglio di papà:", e && e.message); esiti.push("foglio di papà: errore " + String((e && e.message) || e).slice(0, 80)); }
   try {
     lettura = await leggiChat({ db, gemini, adesso, a, letturaTs: Number(stato0 && stato0.letturaTs) || 0, oggi, prendiBase, minuti: t.minuti, turnoLetto: String((stato0 && stato0.letturaTurno) || "") });   // 1.26.0: il turno
     if (lettura.avvisa) {
@@ -313,7 +333,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       if (lettura.avvisataLid !== undefined) { try { await db.segnaSe("importazioni", "lettura-sofia", "lid", lettura.avvisataLid, { avvisata: adesso.toISOString() }); } catch (e) { console.warn("avvisata:", e && e.message); } }
     }
     else if (lettura.esito && /^(letto|niente da leggere|non riuscita)/.test(lettura.esito)) esiti.push(`lettura delle chat: ${lettura.esito}`);
-    if (lettura.credito && fatti.creditoAvvisato !== oggi && t.minuti >= MIN(7) && t.minuti < MIN(22, 30)) {
+    if ((lettura.credito || creditoFoglio) && fatti.creditoAvvisato !== oggi && t.minuti >= MIN(7) && t.minuti < MIN(22, 30)) {
       if (!ps) ps = await db.doc("importazioni", "push-sofia");
       await mandaMe("Non riesco a leggere le chat: il credito di Gemini è finito. Ricaricalo su aistudio.google.com/billing (intanto i messaggi aspettano).", "avviso credito finito", "💳 Il credito di Gemini è finito", true, { dove: "altro", tag: "sofia-credito" });
       fatti.creditoAvvisato = oggi;
@@ -415,6 +435,16 @@ export function dbAdmin(fs) {
     // 1.18.1: aggiorna il documento solo se il campo ha ancora quel valore (la lettura non è cambiata nel frattempo)
     segnaSe: (c, id, campo, valore, dati) => fs.runTransaction(async (tr) => { const ref = fs.collection(c).doc(id); const s = await tr.get(ref); if (!s.exists || (s.data() || {})[campo] !== valore) return false; tr.update(ref, dati); return true; }),
     sostituisci: (c, id, campo, valore) => fs.collection(c).doc(id).update({ [campo]: valore }),
+    // 1.27.0: il foglio di papà (i file Excel arrivati dal ponte), le note dal giorno X, e più scritture insieme (a pacchi di 400)
+    postaExcel: async () => comeOggetto(await fs.collection("posta").where("tipo", "==", "excel").get()),
+    noteDa: async (iso) => comeOggetto(await fs.collection("note").where("data", ">=", iso).get()),
+    scrivi: async (ops) => {
+      for (let i = 0; i < ops.length; i += 400) {
+        const b = fs.batch();
+        for (const o of ops.slice(i, i + 400)) { const ref = fs.collection(o.coll).doc(o.id); if (o.tipo === "cancella") b.delete(ref); else if (o.tipo === "aggiorna") b.update(ref, o.dati); else if (o.merge) b.set(ref, o.dati, { merge: true }); else b.set(ref, o.dati); }
+        await b.commit();
+      }
+    },
   };
 }
 // 1.17.0: un avviso sul telefono (Web Push). Le chiavi VAPID le ha create l'app nel telefono del titolare (importazioni/push-sofia).
