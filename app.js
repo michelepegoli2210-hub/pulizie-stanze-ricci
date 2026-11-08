@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.66.1";
+export const VERSIONE = "1.67.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -12299,13 +12299,19 @@ document.addEventListener("input", (e) => {
 //  occhiali da sole, che è la parte che mi gestisce in tutto e per tutto: io faccio l'accesso con i nuovi account, non
 //  devo fare niente altro, forse solo le foto che mi dici tu di fare; per il resto pubblica Sofia, scrive Sofia; io non
 //  voglio neanche vedere il risultato, perché non ho né Facebook né Instagram»).
-//  La sezione «📣 Sofia social» (da «Altro»): in cima Sofia influencer (finché non c'è il suo ritratto nuovo, quella che
-//  saluta); poi le tre cose in ordine: 1 le pagine (le apre Michele, una volta sola: Instagram e la Pagina Facebook;
-//  «Come si fa» passo passo), 2 il collegamento (lo facciamo insieme dal PC, la strada ufficiale di Meta: niente mouse
-//  comandato, così le pagine non rischiano), 3 le foto che servono (le fa Michele col telefono, una per riga, «📷 Fatta»).
-//  Sotto: cosa farà Sofia, le sue regole (dice sempre che è l'assistente virtuale — obbligo europeo dal 2/8/2026 —, niente
-//  prezzi o promesse inventate, i reclami li passa a Michele), i costi, e il tasto «⏸ Ferma Sofia social».
-//  Stato in importazioni/social (solo i proprietari); le foto nella raccolta «foto» (social_…), ridotte (max 1600 px).
+//  1.67.0 IL MOTORE VERO (8/11 mattina, Michele: «io faccio l'accesso a Facebook e Instagram, e poi se la vede tutto
+//  completamente lei… non ci credo molto»). Prima la sezione prometteva e basta; adesso il lavoro lo fa il giro di Sofia
+//  (giro 1.31.0, social-giro.mjs, su GitHub, anche a PC spento e senza l'abbonamento a Claude) e qui si vede com'è davvero:
+//   - lo stato vero (aspetta le foto / il collegamento / controllo la chiave / al lavoro / foto finite / chiave da rifare /
+//     serve l'account professionale / ferma), il prossimo post, quanti post e risposte questa settimana, l'ultimo post;
+//   - «Il collegamento»: il foglio con i passi su Meta e la casella gialla dove Michele incolla la chiave di Instagram;
+//     l'app la controlla subito (se Instagram risponde al telefono/PC) e la salva in importazioni/social-chiave (solo i
+//     proprietari; fuori dalla copia di sicurezza). Il giro la ricontrolla e la rinnova da solo ogni 10 giorni;
+//   - «Fammi vedere la prova»: le bozze dei prossimi post (foto + testo) che Sofia prepara da sola appena ci sono le foto;
+//   - le foto scartate da Sofia (persone, cose degli ospiti, buie…) con il perché; le foto si tagliano già nella misura
+//     che Instagram accetta (da 4:5 a 1,91:1);
+//   - quello che NON fa ancora, detto chiaro: i messaggi privati (serve il pezzo su Cloudflare), la Pagina Facebook, i video.
+//  Stato in importazioni/social (l'app scrive: pagine, foto, fermo, chiaveMessa; il giro: motore, bozze, pubblicati, conti).
 // ============================================================================
 const SOC_FOTO = [
   { k: "facciata", t: "La facciata con l'insegna", c: "di giorno, col sole alle spalle, tutta dritta" },
@@ -12318,42 +12324,97 @@ const SOC_FOTO = [
   { k: "uccelli", t: "Gli uccelli della laguna", c: "aironi o fenicotteri, anche da lontano (per chi fa birdwatching)" },
 ];
 const SOC_COME = {
-  instagram: { tit: "📸 Aprire Instagram (5 minuti)", passi: ["Scarica l'app Instagram sul telefono (se non c'è) e tocca «Crea un nuovo account».", "Nome utente: <b>lestanzediricci</b> (se è già preso: <b>lestanzediricci.lesina</b>).", "Usa un'email solo per l'albergo (meglio una nuova) e una password che ti segni bene.", "Nelle impostazioni del profilo cerca <b>«account professionale»</b> → <b>Azienda</b> → categoria <b>Hotel</b> o <b>Bed and breakfast</b>.", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperto»</b>. Il resto lo faccio io."] },
-  facebook: { tit: "📘 Aprire la Pagina Facebook (5 minuti)", passi: ["Facebook per aprire una Pagina chiede un profilo personale: se non ce l'hai, creane uno (anche solo per questo, non lo userai).", "Dal profilo: <b>Menu → Pagine → Crea una Pagina</b>.", "Nome: <b>Le Stanze di Ricci</b>; categoria: <b>Bed and breakfast</b> (o Hotel).", "Collega la Pagina a Instagram, se te lo chiede (sì).", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperta»</b>. Il resto lo faccio io."] },
+  instagram: { tit: "📸 Aprire Instagram (5 minuti)", passi: ["Scarica l'app Instagram sul telefono (se non c'è) e tocca «Crea un nuovo account».", "Nome utente: <b>lestanzediricci</b> (se è già preso: <b>lestanzediricci.lesina</b>).", "Usa un'email solo per l'albergo (meglio una nuova) e una password che ti segni bene.", "Nelle impostazioni del profilo cerca <b>«account professionale»</b> → <b>Azienda</b> → categoria <b>Hotel</b> o <b>Bed and breakfast</b>.", "Nella <b>bio</b> metti il link per prenotare (per ora il tuo WhatsApp; poi il sito): Sofia scrive sempre «trovi tutto nel link in bio».", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperto»</b>."] },
+  facebook: { tit: "📘 Aprire la Pagina Facebook (5 minuti)", passi: ["Facebook per aprire una Pagina chiede un profilo personale, <b>col tuo nome vero</b> (i profili finti li chiudono, e con loro la Pagina). Serve anche per collegare Instagram.", "Dal profilo: <b>Menu → Pagine → Crea una Pagina</b>.", "Nome: <b>Le Stanze di Ricci</b>; categoria: <b>Bed and breakfast</b> (o Hotel).", "Collega la Pagina a Instagram, se te lo chiede (sì).", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperta»</b>."] },
+};
+const SOC_STATI = {
+  "aspetta-foto": ["attesa", "⏳ Aspetta le foto"], "aspetta-chiave": ["attesa", "⏳ Aspetta il collegamento"], controllo: ["attesa", "⏳ Sto controllando la chiave"],
+  "al-lavoro": ["va", "▶ Al lavoro"], foto: ["attesa", "📷 Mi servono foto nuove"], chiave: ["fermo", "⚠ La chiave è da rifare"],
+  personale: ["fermo", "⚠ Serve l'account professionale"], ferma: ["fermo", "⏸ Ferma"],
 };
 const socStato = () => S.social || {};
 function socPronta(k) { const p = (socStato().pagine || {})[k]; return !!(p && p.aperta); }
+function socFotoOk(s, k) { const f = (s.foto || {})[k], no = ((s.motore || {}).fotoNo || {})[k]; return !!(f && f.quando && !(no && no.quando === f.quando)); }
+function socStatoMotore() {
+  const s = socStato(), m = s.motore || {};
+  if (s.fermo) return "ferma";
+  const vista = Math.max(Date.parse(m.chiaveControllata || "") || 0, Date.parse((m.ig || {}).controllata || "") || 0);
+  if (s.chiaveMessa && (Date.parse(s.chiaveMessa) || 0) > vista) return "controllo";
+  if (m.stato && SOC_STATI[m.stato] && m.stato !== "ferma") return m.stato;
+  return SOC_FOTO.some(f => socFotoOk(s, f.k)) ? "aspetta-chiave" : "aspetta-foto";
+}
+function socSettimana(iso) {   // «2026-W46», come il giro
+  const d = new Date(iso + "T12:00:00Z"), g = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - g + 3);
+  const primo = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  return `${d.getUTCFullYear()}-W${String(1 + Math.round(((d - primo) / 86400000 - 3 + ((primo.getUTCDay() + 6) % 7)) / 7)).padStart(2, "0")}`;
+}
+function socConti() { const c = socStato().conti || {}; return c.settimana === socSettimana(L.oggiISO()) ? { post: Number(c.post) || 0, risposte: Number(c.risposte) || 0 } : { post: 0, risposte: 0 }; }
 function cardSocialAltro() {
   if (!proprietario()) return "";
-  const s = socStato(), n = SOC_FOTO.filter(f => (s.foto || {})[f.k]).length;
-  return `<button type="button" class="card soc-entra" data-soc-vai><img src="cons-saluto.webp" alt="" class="soc-entra-img"><span><b>📣 Sofia social manager</b><small>Facebook e Instagram delle Stanze di Ricci: li gestisce lei. ${s.fermo ? "⏸ Ferma." : socPronta("instagram") || socPronta("facebook") ? "Pagine aperte." : "Prima: le pagine (le apri tu)."}${n ? ` · Foto ${n}/${SOC_FOTO.length}` : ""}</small></span><span aria-hidden="true">›</span></button>`;
+  const s = socStato(), n = SOC_FOTO.filter(f => (s.foto || {})[f.k]).length, st = socStatoMotore(), c = socConti();
+  const riga = st === "al-lavoro" ? `▶ Al lavoro: questa settimana ${c.post} post e ${c.risposte} ${c.risposte === 1 ? "risposta" : "risposte"}.` : `${SOC_STATI[st][1]}. Foto ${n}/${SOC_FOTO.length}.`;
+  return `<button type="button" class="card soc-entra" data-soc-vai><img src="cons-saluto.webp" alt="" class="soc-entra-img"><span><b>📣 Sofia social manager</b><small>Instagram delle Stanze di Ricci: lo gestisce lei. ${esc(riga)}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
+function socDataOra(giorno, ora) { return `${L.dataLunga(giorno)}${ora ? ` alle ${ora}` : ""}`; }
 function vistaSocial() {
-  const s = socStato(), foto = s.foto || {}, fatte = SOC_FOTO.filter(f => foto[f.k]).length;
+  const s = socStato(), m = s.motore || {}, foto = s.foto || {}, fatte = SOC_FOTO.filter(f => foto[f.k]).length, st = socStatoMotore(), c = socConti();
   const pag = (k, nome, cosa) => `<li class="soc-pag${socPronta(k) ? " ok" : ""}"><span class="soc-pag-n"><b>${nome}</b><small>${socPronta(k) ? `✓ aperta${(s.pagine[k] || {}).nome ? ` · ${esc(s.pagine[k].nome)}` : ""}` : cosa}</small></span>${socPronta(k) ? `<button type="button" class="btnsm ghost" data-soc-riapri="${k}">Cambia</button>` : `<button type="button" class="btnsm" data-soc-come="${k}">Come si fa ›</button>`}</li>`;
-  const stato = s.fermo ? `<span class="soc-pill fermo">⏸ Ferma</span>` : (socPronta("instagram") || socPronta("facebook")) && s.collegata ? `<span class="soc-pill va">▶ Al lavoro</span>` : `<span class="soc-pill attesa">⏳ Aspetta le pagine</span>`;
+  const collegata = m.ig && m.ig.nome && st !== "chiave" && st !== "controllo";
+  const coll = st === "controllo" ? `<p class="note info" style="margin:0 0 8px">⏳ Ho la chiave nuova: entro 10 minuti la controllo e qui compare «✓ Collegata».</p><button type="button" class="btnsm ghost" data-soc-chiave>Rifai la chiave</button>`
+    : st === "chiave" ? `<p class="note warn" style="margin:0 0 8px">⚠ La chiave di Instagram non va più (scaduta o tolta): rifalla, 2 minuti.</p><button type="button" class="big main" data-soc-chiave>🔑 Rifai la chiave di Instagram</button>`
+    : st === "personale" ? `<p class="note warn" style="margin:0 0 8px">⚠ L'Instagram collegato è ancora «personale»: Instagram non mi fa pubblicare. Sul telefono: <b>Impostazioni → Tipo di account → Passa all'account professionale → Azienda</b>. Poi faccio io, da sola.</p>`
+    : collegata ? `<p class="note ok" style="margin:0 0 8px">✓ Collegata: <b>@${esc(m.ig.nome)}</b>${m.ig.scade ? ` · la chiave dura fino a ${esc(L.dataLunga(String(m.ig.scade).slice(0, 10)))} e la rinnovo da sola` : ""}.</p><button type="button" class="btnsm ghost" data-soc-chiave>Rifai la chiave</button>`
+    : `<p style="margin:0 0 8px">${socPronta("instagram") ? "Instagram c'è: adesso mi colleghi, dal PC (10 minuti, se vuoi lo facciamo insieme)." : "Prima apri Instagram (passo 1); poi, dal PC, mi colleghi: 10 minuti, se vuoi lo facciamo insieme."} Uso la strada ufficiale di Meta per le attività: l'account non rischia niente e funziona anche a PC spento.</p><button type="button" class="big main" data-soc-chiave>🔑 Collega Instagram</button>`;
+  const no = m.fotoNo || {};
+  const ultimo = (Array.isArray(s.pubblicati) ? s.pubblicati : []).filter(p => p && p.link).slice(-1)[0];
+  const errore = m.errore && m.errore.testo && Date.now() - (Date.parse(m.errore.quando || "") || 0) < 2 * 86400000 ? `<p class="note warn small" style="margin:8px 0 0">L'ultima volta qualcosa non è andato: «${esc(m.errore.testo)}». Riprovo io.</p>` : "";
+  const lavoro = st === "al-lavoro" || st === "foto" ? `<section class="card soc-lavoro"><h3>Il mio lavoro</h3>
+      <div class="soc-conti"><span><b>${c.post}</b><small>post questa settimana</small></span><span><b>${c.risposte}</b><small>risposte ai commenti</small></span></div>
+      ${m.prossimo && m.prossimo.giorno ? `<p class="small" style="margin:8px 0 0">📅 Prossimo post: <b>${esc(socDataOra(m.prossimo.giorno, m.prossimo.ora))}</b>.</p>` : ""}
+      ${ultimo ? `<p class="small" style="margin:6px 0 0">🖼️ Ultimo post: ${esc(csQuando(ultimo.quando) || "")} · <a href="${esc(ultimo.link)}" target="_blank" rel="noopener">aprilo su Instagram ›</a></p>` : ""}${errore}</section>` : "";
+  const bozze = (Array.isArray(s.bozze) ? s.bozze : []).filter(b => b && b.k && b.testo).slice(0, 3);
+  const prova = `<details class="card soc-prova"${S.socProvaAperta ? " open" : ""} data-soc-prova><summary><b>👀 Fammi vedere la prova</b><small>${bozze.length ? `i prossimi ${bozze.length === 1 ? "post" : bozze.length + " post"}, come li vedrà la gente` : "appena ci sono le foto, Sofia prepara i post da sola"}</small></summary>
+      ${bozze.length ? `<div class="soc-bozze">${bozze.map(b => `<article class="soc-bozza"><div class="soc-bozza-testa"><i aria-hidden="true">LR</i><b>${esc((m.ig && m.ig.nome) || (s.pagine && s.pagine.instagram && s.pagine.instagram.nome) || "lestanzediricci")}</b><small>prova</small></div><img alt="" data-soc-bozza-foto="${esc(b.k)}"><p>${esc(b.testo).replace(/\n/g, "<br>")}</p></article>`).join("")}</div>
+        <p class="muted small" style="margin:8px 0 0">Sono bozze: escono da sole nei giorni dei post. Se una non ti piace, rifai quella foto e Sofia riscrive il post.</p>` : `<p class="muted small" style="margin:8px 0 0">Fai almeno una foto (passo 3): entro pochi minuti Sofia la guarda e scrive il post. Le vedi qui, anche prima del collegamento.</p>`}</details>`;
   return `<section class="card soc-testa"><button type="button" class="btnsm ghost" data-soc-torna>‹ Altro</button>
       <div class="soc-sofia"><span class="soc-foto"><img src="${esc(s.ritratto || "cons-saluto.webp")}" alt="Sofia social manager"><i class="soc-occhiali" aria-hidden="true">🕶️</i></span>
-        <span class="soc-tt"><h2>Sofia · social manager</h2><p>Facebook e Instagram delle Stanze di Ricci: li faccio io. Tu apri le pagine e fai le foto che ti chiedo; al resto penso io.</p>${stato}</span></div></section>
+        <span class="soc-tt"><h2>Sofia · social manager</h2><p>L'Instagram delle Stanze di Ricci lo faccio io: scrivo, pubblico e rispondo ai commenti. Tu apri l'account, mi colleghi una volta e fai le foto che ti chiedo.</p><span class="soc-pill ${SOC_STATI[st][0]}">${SOC_STATI[st][1]}</span></span></div></section>
+    ${lavoro}
     <section class="card soc-passo"><h3><b>1</b> Le pagine <small>le apri tu, una volta sola</small></h3>
-      <ul class="soc-pagine">${pag("instagram", "📸 Instagram", "da aprire")}${pag("facebook", "📘 Pagina Facebook", "da aprire (serve un profilo personale)")}</ul></section>
-    <section class="card soc-passo"><h3><b>2</b> Il collegamento <small>lo facciamo insieme, dal PC</small></h3>
-      <p>${s.collegata ? "✓ Collegata: pubblico e rispondo io." : socPronta("instagram") || socPronta("facebook") ? "Le pagine ci sono: la prossima volta che sei al PC mi colleghi (10 minuti). Uso la strada ufficiale di Meta, quella per le attività: le pagine non rischiano niente e funziona anche col PC spento." : "Quando le pagine ci sono, mi colleghi una volta dal PC (10 minuti). Uso la strada ufficiale di Meta, quella per le attività: niente programmi che muovono il mouse, così le pagine non rischiano niente e funziona anche col PC spento."}</p></section>
+      <ul class="soc-pagine">${pag("facebook", "📘 Profilo e Pagina Facebook", "da aprire (serve anche per collegare Instagram)")}${pag("instagram", "📸 Instagram", "da aprire, poi «account professionale»")}</ul></section>
+    <section class="card soc-passo"><h3><b>2</b> Il collegamento <small>dal PC, una volta sola</small></h3>${coll}</section>
     <section class="card soc-passo"><h3><b>3</b> Le foto che mi servono <small>${fatte}/${SOC_FOTO.length}, col telefono</small></h3>
-      <p class="muted small" style="margin:0 0 8px">Fotografa in orizzontale, con tanta luce, senza persone e senza cose degli ospiti. Una alla volta, quando capita.</p>
-      <ul class="soc-foto-lista">${SOC_FOTO.map(f => `<li class="${foto[f.k] ? "ok" : ""}"><span><b>${foto[f.k] ? "✓ " : ""}${esc(f.t)}</b><small>${esc(f.c)}</small></span><label class="btnsm${foto[f.k] ? " ghost" : ""}">${foto[f.k] ? "Rifalla" : "📷 Fatta"}<input type="file" accept="image/*" capture="environment" hidden data-soc-foto="${f.k}"></label></li>`).join("")}</ul></section>
-    <section class="card soc-piano"><h3>Cosa farò io</h3><ul>
-      <li>3 post a settimana e un video corto: le camere, la laguna, gli uccelli, il paese, i weekend in bici e a piedi.</li>
-      <li>In italiano e in inglese; d'estate più spesso.</li>
-      <li>Rispondo ai messaggi e ai commenti in pochi minuti, anche di notte.</li>
-      <li>Chi vuole prenotare lo mando a prenotare (sul sito, quando c'è, o al tuo numero).</li></ul>
+      <p class="muted small" style="margin:0 0 8px">Fotografa in orizzontale, con tanta luce, senza persone e senza cose degli ospiti. Una alla volta, quando capita. Prima di pubblicarla la guardo io: se non va te lo dico.</p>
+      <ul class="soc-foto-lista">${SOC_FOTO.map(f => { const sc = foto[f.k] && no[f.k] && no[f.k].quando === foto[f.k].quando; return `<li class="${sc ? "no" : foto[f.k] ? "ok" : ""}"><span><b>${sc ? "⚠ " : foto[f.k] ? "✓ " : ""}${esc(f.t)}</b><small>${sc ? `Da rifare: ${esc(no[f.k].motivo || "")}` : esc(f.c)}</small></span><label class="btnsm${foto[f.k] && !sc ? " ghost" : ""}">${foto[f.k] ? "Rifalla" : "📷 Fatta"}<input type="file" accept="image/*" capture="environment" hidden data-soc-foto="${f.k}"></label></li>`; }).join("")}</ul></section>
+    ${prova}
+    <section class="card soc-piano"><h3>Cosa faccio</h3><ul>
+      <li>2 post a settimana per cominciare (martedì e sabato, dalle 18:30), poi 3 (anche il giovedì); d'estate anche la domenica.</li>
+      <li>Con le tue foto; i testi in italiano e in inglese.</li>
+      <li>Rispondo ai commenti, di giorno, entro 10–20 minuti.</li>
+      <li>Chi vuole prenotare lo mando al link nella bio (il tuo WhatsApp, poi il sito).</li></ul>
+      <h3>Cosa non faccio ancora</h3><ul>
+      <li>I messaggi privati: Meta vuole una risposta entro 30 secondi, serve un pezzettino sempre acceso (Cloudflare, gratis). Lo preparo dopo.</li>
+      <li>La Pagina Facebook: dopo Instagram.</li>
+      <li>I video corti: dopo.</li>
+      <li>Mettere like, seguire persone o commentare gli altri: Meta non lo permette ai programmi.</li></ul>
       <h3>Le mie regole</h3><ul>
-      <li>Dico sempre che sono l'assistente virtuale delle Stanze di Ricci (in Europa è obbligatorio dal 2 agosto 2026).</li>
-      <li>Niente prezzi o promesse inventate: se non lo so, chiedo a te in Segreteria.</li>
+      <li>Nelle risposte dico sempre che sono l'assistente virtuale delle Stanze di Ricci (in Europa è obbligatorio dal 2 agosto 2026).</li>
+      <li>Niente prezzi o promesse inventate: per prezzi e date mando al link nella bio.</li>
       <li>Un reclamo o una cosa delicata: rispondo con gentilezza e lo passo subito a te.</li>
+      <li>Insulti e pubblicità li nascondo.</li>
       <li>Niente foto di persone o di cose degli ospiti.</li></ul>
-      <p class="muted small" style="margin:8px 0 0">Costi: testi e risposte quasi niente; una foto ritoccata pochi centesimi; un video meno di 1 €. Il tuo Google AI Pro ha circa 10 $ al mese per queste cose (da attivare una volta).</p></section>
-    <section class="card soc-ferma">${s.fermo ? `<button type="button" class="big main" data-soc-fermo="0">▶ Fai ripartire Sofia social</button><p class="muted small" style="margin:8px 0 0">Ferma dal ${esc(csQuando(s.fermoDal) || "")}: non pubblica e non risponde.</p>` : `<button type="button" class="big undo" data-soc-fermo="1">⏸ Ferma Sofia social</button><p class="muted small" style="margin:8px 0 0">Se un giorno serve: smette subito di pubblicare e di rispondere, finché non la fai ripartire.</p>`}</section>`;
+      <p class="muted small" style="margin:8px 0 0">Costi: i testi e le risposte li scrive Gemini, pochi centesimi al mese. Lavoro su GitHub, gratis, anche a PC spento.</p></section>
+    ${S.socProvaAperta && bozze.length ? (setTimeout(socFotoBozze, 0), "") : ""}<section class="card soc-ferma">${s.fermo ? `<button type="button" class="big main" data-soc-fermo="0">▶ Fai ripartire Sofia social</button><p class="muted small" style="margin:8px 0 0">Ferma dal ${esc(csQuando(s.fermoDal) || "")}: non pubblica e non risponde.</p>` : `<button type="button" class="big undo" data-soc-fermo="1">⏸ Ferma Sofia social</button><p class="muted small" style="margin:8px 0 0">Se un giorno serve: smette subito di pubblicare e di rispondere, finché non la fai ripartire.</p>`}</section>`;
+}
+// le foto delle bozze (dal database, una volta sola)
+S.socFotoCache = S.socFotoCache || {};
+async function socFotoBozze() {
+  for (const el of document.querySelectorAll("[data-soc-bozza-foto]")) {
+    const k = el.getAttribute("data-soc-bozza-foto"), q = ((socStato().foto || {})[k] || {}).quando || "";
+    let c = S.socFotoCache[k];
+    if (!c || c.quando !== q) { try { const d = await S.db.leggi("foto", `social_${k}`); c = S.socFotoCache[k] = { quando: q, dati: (d && d.dati) || "" }; } catch (e) { c = { quando: q, dati: "" }; } }
+    if (c.dati && el.isConnected) el.src = c.dati;
+  }
 }
 function foglioSocialCome(f) {
   const c = SOC_COME[f.pagina]; if (!c) return "";
@@ -12362,16 +12423,66 @@ function foglioSocialCome(f) {
     <button type="button" class="big main" data-soc-aperta="${esc(f.pagina)}">${f.pagina === "facebook" ? "Fatto: l'ho aperta" : "Fatto: l'ho aperto"}</button>
     <button type="button" class="big undo" data-chiudi>Lo faccio dopo</button>`;
 }
+// 1.67.0: il collegamento. La chiave la incolla Michele (mai l'app per lui); l'app la controlla e la salva per il giro
+function foglioSocialChiave(f = {}) {
+  return `<h3>🔑 Collega Instagram</h3>
+    <p class="small" style="margin:0 0 8px">Dal PC, col profilo Facebook che hai aperto. Ci vogliono 10 minuti; se vuoi lo facciamo insieme. (I nomi dei tasti di Meta possono cambiare un po'.)</p>
+    <ol class="soc-come">
+      <li>Vai su <b>developers.facebook.com</b> ed entra col tuo Facebook. La prima volta ti chiede di registrarti come sviluppatore: conferma il telefono e l'email.</li>
+      <li><b>Le mie app → Crea app</b>. Come uso scegli quello per <b>gestire messaggi e contenuti su Instagram</b>. Nome: <b>Sofia social</b>.</li>
+      <li>Nella app: <b>Instagram → Configurazione dell'API con login di Instagram</b> → <b>Genera token di accesso</b> → <b>Aggiungi account</b> → entra con l'Instagram dell'albergo e accetta.</li>
+      <li>Accanto all'account tocca <b>Genera token</b>, poi <b>Copia</b>: è una scritta lunga che comincia con <b>IG</b>.</li>
+      <li>Incollala qui sotto, nella casella gialla, e tocca <b>Controlla e salva</b>.</li>
+    </ol>
+    <label class="campo soc-chiave"><span>La chiave di Instagram</span><textarea id="socChiave" rows="3" placeholder="Incolla qui (comincia con IG…)" spellcheck="false" autocomplete="off" autocapitalize="off" data-keep></textarea></label>
+    <div id="socEsito" class="note ${esc((f.esito && f.esito.cls) || "")}"${f.esito ? "" : " hidden"}>${f.esito ? f.esito.html : ""}</div>
+    <button type="button" class="big main" data-soc-chiave-salva>Controlla e salva</button>
+    <button type="button" class="big undo" data-chiudi>Lo faccio dopo</button>
+    <p class="muted small" style="margin:8px 0 0">La chiave resta solo nel tuo database (la leggono solo i proprietari) e non va nella copia di sicurezza. Instagram la tiene buona 60 giorni: io la rinnovo da sola.</p>`;
+}
+const SOC_CHIAVE_RX = /^IG[A-Za-z0-9_\-]{40,}$/;
+async function socProvaChiave(chiave) {   // {ok, nome, tipo} · {ok:false, errore} · {ok:null} se Instagram non risponde da qui
+  try {
+    const r = await fetch(`https://graph.instagram.com/me?fields=user_id,username,account_type&access_token=${encodeURIComponent(chiave)}`, { cache: "no-store" });
+    const j = await r.json().catch(() => ({}));
+    if (j && j.error) return { ok: false, errore: Number(j.error.code) === 190 ? "Instagram dice che la chiave non è giusta o è scaduta: rifalla (passo 4) e incollala di nuovo." : "Instagram non la accetta: rifalla (passo 4)." };
+    if (j && j.username) return { ok: true, nome: String(j.username), tipo: String(j.account_type || "") };
+    return { ok: null };
+  } catch (e) { return { ok: null }; }
+}
+async function socSalvaChiave() {
+  const el = document.getElementById("socChiave"), out = document.getElementById("socEsito");
+  const chiave = String((el && el.value) || "").replace(/\s+/g, "");
+  const mostra = (cls, html) => {   // resta anche quando l'app ridisegna il foglio
+    if (S.foglio && S.foglio.tipo === "socialChiave") S.foglio.esito = { cls, html };
+    const o = document.getElementById("socEsito") || out; if (o) { o.className = "note " + cls; o.innerHTML = html; o.hidden = false; }
+  };
+  if (!SOC_CHIAVE_RX.test(chiave)) { mostra("warn", chiave.length < 40 ? "Incolla la chiave intera: è lunga e comincia con <b>IG</b>." : "Questa non sembra la chiave di Instagram: deve cominciare con <b>IG</b>."); return; }
+  mostra("info", "Controllo con Instagram…");
+  const p = await socProvaChiave(chiave);
+  if (p.ok === false) { mostra("warn", esc(p.errore)); return; }
+  const ora = new Date().toISOString();
+  await S.db.salva("importazioni", "social-chiave", { token: chiave, messa: ora, stato: "nuova" }, false);
+  await socSalva({ chiaveMessa: ora });
+  for (const x of [el, document.getElementById("socChiave")]) if (x) x.value = "";   // via dalla casella (anche se l'app ha ridisegnato il foglio)
+  if (p.ok && !/^(BUSINESS|MEDIA_CREATOR|CREATOR)$/i.test(p.tipo)) mostra("warn", `La chiave è giusta (<b>@${esc(p.nome)}</b>), ma l'account è ancora «personale»: sul telefono passa all'<b>account professionale → Azienda</b>. La chiave l'ho salvata.`);
+  else mostra("ok", p.ok ? `✓ È giusta: <b>@${esc(p.nome)}</b>. L'ho salvata: da adesso lavoro io.` : "✓ Salvata. Entro 10 minuti la controllo e qui compare «✓ Collegata».");
+  toast(p.ok ? "✓ Instagram collegato" : "✓ Chiave salvata");
+  disegna();
+}
 async function socSalva(dati) { S.social = { ...socStato(), ...dati }; await S.db.salva("importazioni", "social", dati); }
-// la foto: ridotta (lato lungo 1600 px, al massimo ~750 KB) così sta nel database e va bene per Instagram
+// la foto: tagliata nella misura che Instagram accetta (da 4:5 a 1,91:1), ridotta (lato lungo 1600 px, al massimo ~750 KB)
 function socRiduci(file) {
   return new Promise((ok, ko) => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
       try {
-        const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        const W = img.naturalWidth, H = img.naturalHeight; let sx = 0, sy = 0, sw = W, sh = H;
+        if (W / H < 0.8) { sh = Math.round(W / 0.8); sy = Math.round((H - sh) / 2); }        // in verticale: tengo il centro, 4:5
+        else if (W / H > 1.91) { sw = Math.round(H * 1.91); sx = Math.round((W - sw) / 2); } // panoramica: tengo il centro
+        const k = Math.min(1, 1600 / Math.max(sw, sh)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(sw * k)); c.height = Math.max(1, Math.round(sh * k));
+        c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
         let q = 0.82, out = c.toDataURL("image/jpeg", q);
         while (out.length > 750000 && q > 0.35) { q -= 0.08; out = c.toDataURL("image/jpeg", q); }
         ok({ dati: out, w: c.width, h: c.height });
@@ -12388,19 +12499,21 @@ async function socFoto(k, file) {
     const r = await socRiduci(file), ora = new Date().toISOString();
     await S.db.salva("foto", `social_${k}`, { social: true, chiave: k, dati: r.dati, w: r.w, h: r.h, quando: ora, da: (S.utente && (S.utente.nome || S.utente.email)) || "" }, false);
     await socSalva({ foto: { ...(socStato().foto || {}), [k]: { quando: ora } } });
-    disegna(); toast("✓ Foto salvata: grazie!");
+    disegna(); toast("✓ Foto salvata: fra poco la guardo e preparo il post");
   } catch (e) { erroreScrittura(e); }
 }
 document.addEventListener("click", (e) => {
-  const t = e.target && e.target.closest ? e.target.closest("[data-soc-vai],[data-soc-torna],[data-soc-come],[data-soc-riapri],[data-soc-aperta],[data-soc-fermo]") : null;
+  const t = e.target && e.target.closest ? e.target.closest("[data-soc-vai],[data-soc-torna],[data-soc-come],[data-soc-riapri],[data-soc-aperta],[data-soc-fermo],[data-soc-chiave],[data-soc-chiave-salva]") : null;
   if (!t) return;
   e.preventDefault(); e.stopPropagation();
   if (t.hasAttribute("data-soc-vai")) { S.vista = "social"; chiudiFoglio(); disegna(); window.scrollTo(0, 0); return; }
   if (t.hasAttribute("data-soc-torna")) { S.vista = "altro"; disegna(); window.scrollTo(0, 0); return; }
   if (t.hasAttribute("data-soc-come") || t.hasAttribute("data-soc-riapri")) { apriFoglio({ tipo: "socialCome", pagina: t.getAttribute("data-soc-come") || t.getAttribute("data-soc-riapri") }); return; }
+  if (t.hasAttribute("data-soc-chiave")) { apriFoglio({ tipo: "socialChiave" }); return; }   // (un foglio nuovo: niente esito vecchio)
+  if (t.hasAttribute("data-soc-chiave-salva")) { t.disabled = true; socSalvaChiave().catch(erroreScrittura).finally(() => { t.disabled = false; }); return; }
   if (t.hasAttribute("data-soc-aperta")) {
     const k = t.getAttribute("data-soc-aperta"), el = document.getElementById("socNome"), nome = String((el && el.value) || "").trim().slice(0, 60);
-    socSalva({ pagine: { ...(socStato().pagine || {}), [k]: { aperta: true, quando: new Date().toISOString(), ...(nome ? { nome } : {}) } } }).then(() => { chiudiFoglio(); disegna(); toast(k === "instagram" ? "✓ Instagram aperto: al collegamento penso io" : "✓ Pagina aperta: al collegamento penso io"); }).catch(erroreScrittura);
+    socSalva({ pagine: { ...(socStato().pagine || {}), [k]: { aperta: true, quando: new Date().toISOString(), ...(nome ? { nome } : {}) } } }).then(() => { chiudiFoglio(); disegna(); toast(k === "instagram" ? "✓ Instagram aperto: adesso il collegamento (passo 2)" : "✓ Pagina aperta"); }).catch(erroreScrittura);
     return;
   }
   if (t.hasAttribute("data-soc-fermo")) {
@@ -12408,6 +12521,7 @@ document.addEventListener("click", (e) => {
     (async () => { if (fermo && !await chiedi("Fermo Sofia social? Smette subito di pubblicare e di rispondere, finché non la fai ripartire.", { si: "Sì, fermala" })) return; await socSalva({ fermo, fermoDal: fermo ? new Date().toISOString() : "" }); disegna(); toast(fermo ? "⏸ Sofia social è ferma" : "▶ Sofia social riparte"); })().catch(erroreScrittura);
   }
 }, true);
+document.addEventListener("toggle", (e) => { const t = e.target; if (t && t.hasAttribute && t.hasAttribute("data-soc-prova")) { S.socProvaAperta = t.open; if (t.open) socFotoBozze(); } }, true);
 document.addEventListener("change", (e) => {
   const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-soc-foto")) return;
   const f = t.files && t.files[0]; const k = t.getAttribute("data-soc-foto"); t.value = "";
@@ -13561,6 +13675,7 @@ function disegnaFoglio() {
   else if (f.tipo === "cassetta") html = foglioCassetta(f);   // 1.64.0
   else if (f.tipo === "calendario") html = foglioCalendario(f);   // 1.65.0
   else if (f.tipo === "socialCome") html = foglioSocialCome(f);   // 1.66.0
+  else if (f.tipo === "socialChiave") html = foglioSocialChiave(f);   // 1.67.0
   else if (f.tipo === "rgCamere") html = foglioRgCamere(f);   // 1.57.0
   else if (f.tipo === "rgRagazza") html = foglioRgRagazza(f);
   else if (f.tipo === "rgNuova") html = foglioRgNuova(f);

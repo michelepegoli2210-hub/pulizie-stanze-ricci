@@ -8968,3 +8968,31 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 :root[data-theme="dark"] .soc-pag.ok,:root[data-theme="dark"] .soc-foto-lista li.ok{background:rgba(34,197,94,.12)}
 :root[data-theme="dark"] .soc-passo h3>b{background:#F5F5F4;color:#1C1917}
 .soc-pag .btnsm,.soc-foto-lista .btnsm{flex:none;white-space:nowrap}
+/* ---- 1.67.0 · Sofia social manager: il motore vero (stato, lavoro, collegamento, prova) ---- */
+.soc-entra .chev{flex:none;font-size:22px;color:#A8A29E}
+.soc-lavoro h3{margin:0 0 8px;font-size:17px}
+.soc-conti{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.soc-conti span{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:#F7F4EE}
+.soc-conti b{font:800 26px/1 var(--f-body);font-variant-numeric:tabular-nums}
+.soc-conti small{font-size:12.5px;color:#57534E}
+.soc-foto-lista li.no{background:#FEF3C7}
+#socChiave,body.premium #socChiave{width:100%;box-sizing:border-box;min-height:84px;padding:10px 12px;border:2px solid #F59E0B;border-radius:12px;background:#FFF7CC;color:#1C1917;font:500 14px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all;resize:vertical}
+#socChiave:focus,body.premium #socChiave:focus{border-color:#F59E0B;box-shadow:none;outline:3px solid #FBBF24;outline-offset:1px}
+#socEsito{margin:8px 0}
+.soc-prova{padding:12px 14px}
+.soc-prova>summary{display:flex;flex-direction:column;gap:2px;cursor:pointer;list-style:none}
+.soc-prova>summary::-webkit-details-marker{display:none}
+.soc-prova>summary b{font-size:16px}
+.soc-prova>summary small{font-size:13px;color:#57534E}
+.soc-bozze{display:grid;gap:12px;margin-top:10px}
+.soc-bozza{border:1px solid #E7E5E4;border-radius:14px;overflow:hidden;background:#FFFFFF;color:#1C1917}
+.soc-bozza-testa{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.soc-bozza-testa i{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#16233F;color:#E9CF8E;font:700 11px/1 var(--f-body);font-style:normal}
+.soc-bozza-testa b{font-size:14px}
+.soc-bozza-testa small{margin-left:auto;padding:2px 8px;border-radius:999px;background:#FEF3C7;color:#78350F;font-size:11.5px;font-weight:700}
+.soc-bozza img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#E7E5E4}
+.soc-bozza p{margin:0;padding:10px 12px 12px;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+:root[data-theme="dark"] .soc-conti span{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .soc-conti small,:root[data-theme="dark"] .soc-prova>summary small{color:#C9C3B8}
+:root[data-theme="dark"] .soc-foto-lista li.no{background:rgba(245,158,11,.16)}
+.soc-prova>summary::marker{content:""}

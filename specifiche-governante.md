@@ -3132,3 +3132,16 @@ Visto sull'app vera la notte stessa: «NOVEMBRE 2026 · piene 161% · Diretto 62
 (gli operai, una ditta con due persone segnate a parte) contavano due volte. Ora ogni camera conta una volta per notte:
 «piene» va da 0 a 100% e le notti sono notti di camera (se nella stessa notte c'è un cliente di Booking e uno diretto,
 conta Booking, così il colore del sito si vede). La griglia resta uguale.
+
+## 1.67.0 + giro 1.31.0 · Sofia social manager: il motore vero (8/11/2026)
+
+Michele, 8/11 mattina: «io faccio l'accesso a Facebook e Instagram, e poi se la vede tutto completamente lei… non ci credo molto». Aveva ragione: la sezione 1.66.0 prometteva e basta. Adesso:
+
+- **Il motore (giro 1.31.0, `sofia-giro/social-giro.mjs`)**, su GitHub ogni 10 minuti, anche a PC spento e senza l'abbonamento a Claude:
+  - **chiave di Instagram** (in `importazioni/social-chiave`, solo i proprietari, fuori dalla copia di sicurezza): controllata (account professionale?), rinnovata da sola ogni 10 giorni (Instagram la tiene 60 giorni); se non va più, un avviso a Michele.
+  - **bozze**: appena ci sono le foto, Gemini guarda la foto (niente persone, cose degli ospiti, foto buie o storte → la scarta e lo dice) e scrive il post (italiano + inglese, hashtag da una lista fissa). Dal testo si tolgono prezzi, telefoni, indirizzi. Michele le vede in «👀 Fammi vedere la prova», anche prima del collegamento.
+  - **post**: martedì e sabato dalle 18:30 le prime due settimane, poi anche il giovedì; d'estate anche la domenica. Uno al giorno; se su Instagram ce n'è già uno di oggi non lo raddoppia. La stessa foto non torna prima di 12 giorni; foto finite → «Mi servono foto nuove» (una volta a settimana). La foto va su un indirizzo pubblico (ramo `social-foto` del progetto) perché Instagram la prende da lì.
+  - **commenti**: ai nuovi (post degli ultimi 30 giorni) risponde Gemini, corto e gentile, firma «— Sofia, assistente virtuale delle Stanze di Ricci» (nella lingua del commento); spam e insulti nascosti; reclami: risposta gentile + avviso a Michele. A Gemini vanno i testi, mai i nomi di chi scrive.
+  - nel registro pubblico di GitHub solo quanti: mai chiave, indirizzi, testi dei commenti, nomi.
+- **L'app (1.67.0)**: lo stato vero (aspetta le foto / il collegamento / controllo la chiave / al lavoro / foto finite / chiave da rifare / account personale / ferma), «Il mio lavoro» (post e risposte della settimana, prossimo post, ultimo post), il foglio «🔑 Collega Instagram» con i passi su Meta e la casella gialla (controllo subito con Instagram, poi la salva), le foto scartate col perché, le foto tagliate nella misura di Instagram (da 4:5 a 1,91:1).
+- **Detto chiaro, non ancora**: messaggi privati (Meta vuole risposta entro 30 secondi → pezzo su Cloudflare, dopo), Pagina Facebook (dopo), video (dopo).
