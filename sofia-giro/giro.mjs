@@ -75,7 +75,7 @@ import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGN
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.31.0";
+export const VERSIONE_GIRO = "1.31.1";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -474,7 +474,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   // 1.18.1: chi ha fatto partire il giro (il ponte sul PC, l'orario di GitHub, Michele a mano) e quando scade la chiave del ponte
   const chi = /^[a-z ]{1,20}$/.test(String(da || "")) ? String(da) : "";
   const spinta = chi === "ponte" ? { spinta: { ultima: adesso.toISOString(), scade: /^\d{4}-\d{2}-\d{2}$/.test(String(scade || "")) ? String(scade) : null } } : {};
-  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, ...(chi ? { ultimoDa: chi } : {}), ...spinta, letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), letturaTurno: (lettura && lettura.turno) || String((stato0 && stato0.letturaTurno) || ""), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
+  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, ...(chi ? { ultimoDa: chi } : {}), ...spinta, ...(chi === "orologio" ? { orologio: { ultima: adesso.toISOString() } } : {}), letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), letturaTurno: (lettura && lettura.turno) || String((stato0 && stato0.letturaTurno) || ""), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
   return { ora: t.hhmm, giorno: oggi, fatti, esiti, lettura: lettura ? lettura.esito : null, da: chi || null };
 }
 
