@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.69.0";
+export const VERSIONE = "1.69.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5364,7 +5364,7 @@ function segnalaVisto(id) {
   const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
   const el = document.createElement("div"); el.className = "conferma";
   el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>Cosa manca?</span></div>
-    <p class="muted" style="margin:0 0 6px">Lo dico solo a Michele. Se la camera serve oggi, sistemala tu: Michele sposta i soldi a te.</p>
+    <p class="muted" style="margin:0 0 6px">Lo dico solo a Michele. Se la camera serve oggi, sistemala tu${pagaAOre() ? ": è dentro le tue ore." : ": Michele sposta i soldi a te."}</p>
     <div class="chiusura-voci sig-scelta">${voci.map(x => `<button class="big undo" data-r="${esc(x.k)}">${esc(x.testo)}</button>`).join("")}</div>
     <button class="big close" data-no>Lascia stare</button></div>`;
   document.body.appendChild(el);
@@ -5422,7 +5422,7 @@ function difettoVisto(id) {
   const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
   const el = document.createElement("div"); el.className = "conferma";
   el.innerHTML = `<div class="conferma-box chiusura ag-conferma" role="dialog"><div class="chiusura-t">${ICONA("avviso")}<span>${esc(pianoBreve(v.zona))} di ${esc(L.dataBreve(v.data))}: cosa hai trovato?</span></div>
-    <p class="muted small" style="margin:0 0 8px">${v.vistoOra && v.vistoDa !== "direzione" ? `Visto da ${esc(v.vistoNome || SIG(v.vistoDa))} alle ${esc(L.oraBreve(v.vistoOra))}: «non fatta» le toglie ${eur(argonConf().vistoEuro)} e a ${esc(v.finitoDa || SIG(v.zona))} la rifinitura.` : "Non c'è ancora il Visto di una collega: si toglie solo la rifinitura."}${v.rodaggio ? " Siamo in rodaggio: lo segno, ma non tolgo niente." : ""}</p>
+    <p class="muted small" style="margin:0 0 8px">${pagaAOre() ? `${v.vistoOra && v.vistoDa !== "direzione" ? `Visto da ${esc(v.vistoNome || SIG(v.vistoDa))} alle ${esc(L.oraBreve(v.vistoOra))}. ` : ""}Con la paga a ore «non fatta» non toglie soldi: resta scritto, per chi l'ha fatta${v.vistoOra && v.vistoDa !== "direzione" ? " e per chi ha dato il Visto" : ""}.` : `${v.vistoOra && v.vistoDa !== "direzione" ? `Visto da ${esc(v.vistoNome || SIG(v.vistoDa))} alle ${esc(L.oraBreve(v.vistoOra))}: «non fatta» le toglie ${eur(argonConf().vistoEuro)} e a ${esc(v.finitoDa || SIG(v.zona))} la rifinitura.` : "Non c'è ancora il Visto di una collega: si toglie solo la rifinitura."}${v.rodaggio ? " Siamo in rodaggio: lo segno, ma non tolgo niente." : ""}`}</p>
     <div class="ag-difetti">${voci.map((x, i) => `<div class="ag-difetto"><b>${x.rif ? "⭐ " : ""}${esc(x.nome)}${x.euro && !pagaAOre() ? ` <small>${eur(x.euro)}</small>` : ""}</b><div class="ag-difetto-tasti"><button class="btnsm" data-d="${i}|no">Non fatta</button>${x.rif && altra ? `<button class="btnsm ghost" data-d="${i}|rifatta">L'ha fatta ${esc(SIG(altra))}</button>` : ""}</div></div>`).join("")}</div>
     <button class="big close" data-no>Lascia stare</button></div>`;
   document.body.appendChild(el);
@@ -5437,7 +5437,7 @@ async function segnaDifetto(id, x, modo, altra) {
   const patch = { difetti: [...(v.difetti || []), d], smentito: firmato ? true : !!v.smentito, smentitoOra: firmato ? (v.smentitoOra || S.db.adesso()) : (v.smentitoOra || null) };
   S.visti[id] = { ...v, ...patch }; disegna();
   try { await S.db.aggiorna("visti", id, patch); } catch (e) { erroreScrittura(e); return; }
-  toast(modo === "rifatta" ? `Segnato: ${x.nome} l'ha fatta ${SIG(altra)}. I soldi passano a lei.` : `Segnato: ${x.nome} non fatta.${firmato ? ` ${v.vistoNome || SIG(v.vistoDa)} perde ${eur(argonConf().vistoEuro)}.` : ""}`);
+  toast(pagaAOre() ? (modo === "rifatta" ? `Segnato: ${x.nome} l'ha fatta ${SIG(altra)}.` : `Segnato: ${x.nome} non fatta.${firmato ? ` Resta scritto anche nel Visto di ${v.vistoNome || SIG(v.vistoDa)}.` : ""}`) : (modo === "rifatta" ? `Segnato: ${x.nome} l'ha fatta ${SIG(altra)}. I soldi passano a lei.` : `Segnato: ${x.nome} non fatta.${firmato ? ` ${v.vistoNome || SIG(v.vistoDa)} perde ${eur(argonConf().vistoEuro)}.` : ""}`));
   // la seconda volta nello stesso mese: due settimane senza rifiniture e senza Visti, per tutte e due (Michele decide col tasto)
   if (firmato && !v.rodaggio && L.smentitiNelMese(S.visti, v.vistoDa, v.data).length >= 2 && !L.argonSospesa(S.argon, v.vistoDa, L.oggiISO())) proponiSospensione(v.vistoDa, v.data);
 }
@@ -5574,7 +5574,7 @@ function cardArgon() {
     <div class="row"><span>Oggi ci sono io in albergo (le rifiniture si fanno anche se la signora è sola)</span><span class="seg"><button aria-pressed="${presente}" data-argon-presenza="1">Sì</button><button aria-pressed="${!presente}" data-argon-presenza="0">No</button></span></div>
     <div class="floorlabel" style="margin-top:10px">Questa settimana</div>
     ${settimana.length ? settimana.map(rigaV).join("") : `<p class="muted small" style="margin:0">Ancora nessun «Ho finito».</p>`}
-    ${c.premioEuro ? (() => { const r = signore().map(z => { const pr = L.premioSettimana(S.visti, S.controlli, S.pulizie, z.id, chiave, S.argon); return pr.stato === "spento" ? "" : `<b>${esc(SIG(z.id))}</b> ${pr.stato === "pieno" ? `${eur(pr.euro)}, pieno` : pr.stato === "meta" ? `${eur(pr.euro)} (${esc(pr.perche.map(x => x.testo).join(", "))})` : pr.stato === "vuoto" ? `vuoto (${esc(pr.perche.map(x => x.testo).join(", "))})` : `${pr.giorni} ${pr.giorni === 1 ? "giorno" : "giorni"} di lavoro, ne servono ${pr.minimo}`}`; }).filter(Boolean); return r.length ? `<p class="muted small ag-premi" style="margin:8px 0 0">🐷 Salvadanaio: ${r.join(" · ")}</p>` : ""; })() : ""}
+    ${c.premioEuro && !pagaAOre() ? (() => { const r = signore().map(z => { const pr = L.premioSettimana(S.visti, S.controlli, S.pulizie, z.id, chiave, S.argon); return pr.stato === "spento" ? "" : `<b>${esc(SIG(z.id))}</b> ${pr.stato === "pieno" ? `${eur(pr.euro)}, pieno` : pr.stato === "meta" ? `${eur(pr.euro)} (${esc(pr.perche.map(x => x.testo).join(", "))})` : pr.stato === "vuoto" ? `vuoto (${esc(pr.perche.map(x => x.testo).join(", "))})` : `${pr.giorni} ${pr.giorni === 1 ? "giorno" : "giorni"} di lavoro, ne servono ${pr.minimo}`}`; }).filter(Boolean); return r.length ? `<p class="muted small ag-premi" style="margin:8px 0 0">🐷 Salvadanaio: ${r.join(" · ")}</p>` : ""; })() : ""}
     ${giro}${cardTracce()}${fiutoHtml}
     <details style="margin-top:10px"><summary>Le regole in numeri</summary>
       <div class="listino" style="margin-top:8px">${num("Soldi per ogni Visto", "vistoEuro", 0.5, "€")}${num("Visti pagati a settimana, a testa", "vistiMax", 1, "")}${num("Il Visto si accende dopo", "minutiVisto", 1, "min")}${num("I tasti funzionano dalle", "oreDa", 1, "")}${num("…alle", "oreA", 1, "")}${num("Il salvadanaio della settimana (0 = niente)", "premioEuro", 0.5, "€")}${num("…con almeno questi giorni di lavoro", "premioGiorni", 1, "giorni")}</div>
