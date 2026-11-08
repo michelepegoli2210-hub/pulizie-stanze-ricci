@@ -75,7 +75,7 @@ import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGN
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.31.1";
+export const VERSIONE_GIRO = "1.31.2";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {

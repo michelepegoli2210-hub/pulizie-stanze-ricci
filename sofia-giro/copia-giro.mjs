@@ -50,7 +50,12 @@ const SEGRETI = new Set(["social-chiave"]);
 async function leggiRaccolta(ref, raccolte, conti, profondita) {
   const s = await ref.get();
   const docs = {};
-  for (const d of s.docs) if (!(ref.path === "importazioni" && SEGRETI.has(d.id))) docs[d.id] = semplice(d.data());   // 1.31.0: le chiavi no
+  for (const d of s.docs) {
+    if (ref.path === "importazioni" && SEGRETI.has(d.id)) continue;   // 1.31.0: le chiavi no
+    const x = semplice(d.data());
+    if (ref.path === "visti" && /_foto$/.test(d.id) && x && typeof x === "object" && x.img) { x.img = null; x.fotoTolta = true; }   // 1.31.2: le foto a sorpresa no (pesano)
+    docs[d.id] = x;
+  }
   raccolte[ref.path] = docs; conti[ref.path] = Object.keys(docs).length;
   if (profondita >= 3) return;
   const sotto = [];
