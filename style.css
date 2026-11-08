@@ -9023,3 +9023,35 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 :root[data-theme="dark"] .pc-passi li.ora,:root[data-theme="dark"] .oro-riga.ko{background:rgba(245,158,11,.16)}
 :root[data-theme="dark"] .pc-t small,:root[data-theme="dark"] .pc-card h2 small{color:#C9C3B8}
 :root[data-theme="dark"] .pc-n,:root[data-theme="dark"] .oro-incolla>b{background:#F5F5F4;color:#1C1917}
+/* ---- 1.69.0 · Il codice alla porta e i controlli ---- */
+.pres-ov{position:fixed;inset:0;z-index:60;background:rgba(12,10,9,.62);display:flex;align-items:flex-end;justify-content:center;padding:12px;overscroll-behavior:contain}
+.pres-box{background:#FFFFFF;color:#1C1917;width:100%;max-width:440px;max-height:94dvh;overflow:auto;border-radius:22px;padding:18px 16px 14px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+.pres-box [hidden]{display:none !important}
+.pres-box h3{margin:0 0 4px;font:800 21px/1.2 var(--f-display);color:inherit}
+.pres-sotto{margin:0 0 10px;font-size:15px;line-height:1.4;color:#44403C}
+.pres-grande{margin:6px 0 4px;font-size:17px;line-height:1.4;font-weight:600}
+.pres-camera{position:relative;width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#0C0A09}
+.pres-camera.foto{aspect-ratio:4/3}
+.pres-camera video,.pres-camera img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pres-mirino{position:absolute;inset:16%;border:4px solid #FBBF24;border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.28)}
+.pres-camera.letto .pres-mirino{border-color:#22C55E}
+.pres-stato{margin:10px 0 0;font-size:15px;line-height:1.4;font-weight:600;color:#1C1917}
+.pres-stato.ko{color:#B91C1C}
+.pres-nota{margin:8px 0 0;font-size:13px;line-height:1.4;color:#57534E}
+.pres-dove .big{margin-top:8px}
+.gs-turno.pres-foto-da{background:#FFF7CC}
+.pres-segni{display:inline-block;margin-top:2px;color:#15803D}
+.pres-segni.ko{color:#B45309;font-weight:600}
+.pres-vedi{border:0;background:none;padding:0;margin-left:4px;color:#2563EB;text-decoration:underline;font:inherit;cursor:pointer}
+.pres-prop-paghe{margin-top:6px;padding:8px 10px;border-radius:10px;background:#FEF3C7;font-size:13px;line-height:1.4;color:#1C1917;white-space:normal}
+.pres-prop-paghe span{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.pres-quattro{margin:6px 0 0;padding-left:20px;font-size:13.5px;line-height:1.45;display:grid;gap:4px;text-align:left}
+:root[data-theme="dark"] .pres-box{background:#1C1917;color:#F5F5F4}
+:root[data-theme="dark"] .pres-sotto,:root[data-theme="dark"] .pres-nota{color:#D6D3D1}
+:root[data-theme="dark"] .pres-stato{color:#F5F5F4}
+:root[data-theme="dark"] .pres-stato.ko{color:#FCA5A5}
+:root[data-theme="dark"] .pres-prop-paghe{background:rgba(245,158,11,.16);color:#F5F5F4}
+:root[data-theme="dark"] .gs-turno.pres-foto-da{background:rgba(245,158,11,.16)}
+:root[data-theme="dark"] .pres-segni{color:#86EFAC}
+:root[data-theme="dark"] .pres-segni.ko{color:#FCD34D}
+:root[data-theme="dark"] .pres-vedi{color:#93C5FD}

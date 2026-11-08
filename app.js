@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.68.0";
+export const VERSIONE = "1.69.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1447,6 +1447,9 @@ function avviaAscolto() {
   S.stop.push(db.ascoltaDoc("impostazioni", "caratteristiche", d => { S.caratteristiche = { ...(d || {}) }; delete S.caratteristiche.id; }));   // 1.59.0: com'è ogni camera
   // 1.52.0: i segni di Michele «ogni volta» sui disegni delle camere (li leggono anche le signore)
   S.stop.push(db.ascoltaDoc("impostazioni", "segni", d => { S.segniFissi = { ...(d || {}) }; delete S.segniFissi.id; disegna(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "presenze", d => { S.presenze = { ...(d || {}) }; delete S.presenze.id; disegna(); }));   // 1.69.0: il codice alla porta
+  if (proprietario()) presSegreti().catch(() => {});
+  setTimeout(() => { try { presDaIndirizzo(); } catch (e) {} }, 2500);
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
   S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteRiequilibra(); governanteAutomatica(); segnaInizioGovernante(); pianiPresto(); }));
   S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; const daUnire = []; for (const r of Object.values(m)) { const tolta = CAMERE_TOLTE[r.luogo]; const luogo = tolta ? tolta.unitaA : r.luogo; if (tolta) daUnire.push(r); const k = G.chiaveRegistro(G.nuovoId(r.regola), luogo); const prev = S.registro[k]; if (!prev || (r.ultima || "") > (prev.ultima || "")) S.registro[k] = { ...r, regola: G.nuovoId(r.regola), luogo }; } disegna(); governanteAutomatica(); unisciRegistroTolte(daUnire); }, mostraErrore));
@@ -2144,11 +2147,17 @@ function minutiDa(ini) { return Math.max(0, Math.round((Date.now() - new Date(in
 // senza tutte e due le ore, una stima: dall'arrivo all'ultima camera segnata, se no le ore standard delle camere fatte
 function turnoDelGiorno(z, iso) {
   const v = L.vistoDi(S.visti, z, iso) || null;
-  const inizio = (v && (v.turnoInizio || v.arrivoOra)) || null, fine = (v && (v.turnoFine || v.finitoOra)) || null;
+  let inizio = (v && (v.turnoInizio || v.arrivoOra)) || null, fine = (v && (v.turnoFine || v.finitoOra)) || null;
   const corretto = !!(v && (v.turnoInizio || v.turnoFine));
   const fatte = Object.values(S.pulizie || {}).filter(p => p && p.zona === z && p.data === iso && p.stato === "fatta" && p.tipo !== "stelle");
-  if (inizio && fine && new Date(fine) > new Date(inizio)) return { v, inizio, fine, minuti: Math.round((new Date(fine) - new Date(inizio)) / 60000), stima: false, corretto, camere: fatte.length };
-  if (inizio && !fine && iso === L.oggiISO() && new Date(inizio) <= new Date()) return { v, inizio, fine: null, minuti: minutiDa(inizio), stima: false, aperto: true, inCorso: true, corretto, camere: fatte.length };   // oggi, l'orario corre
+  // 1.69.0: il giorno col codice alla porta (le regole di Michele): senza codice entrando l'orario parte dalla prima camera,
+  // senza codice uscendo finisce all'ultima camera segnata; dopo il Sì di Michele a una proposta di Sofia valgono presMinuti
+  const pres = presUsa(z, iso, v); let daCamere = "";
+  if (pres && v && !v.turnoInizio && !v.arrivoOra) { const a = presInizioDaCamere(z, iso, v); if (a) { inizio = a; daCamere = "inizio"; } }
+  if (pres && v && !v.turnoFine && v.finitoOra) { const u = presUscitaDi(z, iso); if (u && u.esito === "senza-codice") { const b = presFineDaCamere(z, iso, v, inizio); if (b && (!inizio || new Date(b) > new Date(inizio))) { fine = b; daCamere = daCamere ? "tutto" : "fine"; } } }
+  const presCorretto = !!(v && v.presMinuti != null && Number.isFinite(Number(v.presMinuti)));
+  if (inizio && fine && new Date(fine) > new Date(inizio)) { const veri = Math.round((new Date(fine) - new Date(inizio)) / 60000); return { v, inizio, fine, minuti: presCorretto ? Math.max(0, Math.round(Number(v.presMinuti))) : veri, minutiVeri: veri, stima: false, corretto, presCorretto, pres, daCamere, camere: fatte.length }; }
+  if (inizio && !fine && iso === L.oggiISO() && new Date(inizio) <= new Date()) return { v, inizio, fine: null, minuti: minutiDa(inizio), stima: false, aperto: true, inCorso: true, corretto, pres, camere: fatte.length };   // oggi, l'orario corre
   // 1.38.0: le ore che la signora ha scritto su WhatsApp («oggi 2 ore e mezza»), lette da Sofia e spuntate da Michele
   const dette = v && v.oreDette && Number(v.oreDette.minuti) > 0 ? v.oreDette : null;
   if (dette) return { v, inizio, fine, minuti: Math.round(Number(dette.minuti)), stima: false, dette: true, corretto, camere: fatte.length };
@@ -2190,15 +2199,16 @@ function isoDaOra(iso, hhmm) {
 // ---- la signora: il tasto «Sono arrivata», l'orario che corre, il giorno fatto ------------------------------------------
 // dove = "sopra": solo il tasto «Sono arrivata» (sta SOPRA Sofia, la prima cosa che si vede); "sotto": l'orario che corre e il
 // giorno fatto (sotto quello che dice Sofia); "tutto": l'uno o l'altro (le schermate senza Sofia grande)
-function cardTurno(z, anteprima, dove = "tutto") {
+function cardTurno(z, anteprima, dove = "tutto") { return cardTurnoBase(z, anteprima, dove) + (dove !== "sopra" ? presCardFoto(z, anteprima) : ""); }   // 1.69.0: + la foto a sorpresa
+function cardTurnoBase(z, anteprima, dove = "tutto") {
   if (anteprima || !pagaAOre() || !addetta()) return "";
   const oggi = L.oggiISO(), v = L.vistoDi(S.visti, z, oggi), t = turnoDelGiorno(z, oggi);
   const ini = (v && (v.turnoInizio || v.arrivoOra)) || null, fin = (v && (v.turnoFine || v.finitoOra)) || null;
-  if (!ini && !fin) return dove !== "sotto" && pulizieDelGiorno(oggi, z).length ? `<section class="gs-turno da-fare"><button type="button" class="gs-turno-via" data-turno-inizio>${ICONA("gioca")}<span class="gs-turno-x"><b>Sono arrivata</b><small>Tocca appena entri: parte il tuo orario</small></span></button></section>` : "";
+  if (!ini && !fin) return dove !== "sotto" && pulizieDelGiorno(oggi, z).length ? `<section class="gs-turno da-fare"><button type="button" class="gs-turno-via" data-turno-inizio>${ICONA("gioca")}<span class="gs-turno-x">${presAccese() ? "<b>📷 Sono arrivata</b><small>Inquadra il codice alla porta: parte il tuo orario</small>" : "<b>Sono arrivata</b><small>Tocca appena entri: parte il tuo orario</small>"}</span></button></section>` : "";
   if (dove === "sopra") return "";
   if (ini && !fin && argonLei()) return `<section class="gs-turno in-corso wa-mia"><span class="gs-turno-x"><b>Sono arrivata</b><small>⏱️ L'orario corre: <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></small></span><span class="wa-meta"><time class="wa-ora">${esc(L.oraBreve(ini))}</time><span class="wa-spunte" aria-hidden="true">${msSvg("done_all")}</span></span></section>`;   // 1.55.4
-  if (ini && !fin) return `<section class="gs-turno in-corso"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(ini))} · <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></b><small>L'orario corre. Quando vai via tocca qui, o HO FINITO in fondo.</small></span>${pulizieDelGiorno(oggi, z).length ? `<button type="button" class="gs-turno-via-fine" data-turno-fine>⏹ Vado via</button>` : ""}</section>`;
-  if (!ini) return `<section class="gs-turno manca"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Hai finito alle ${esc(L.oraBreve(fin))}</b><small>Manca l'ora in cui sei arrivata: la mette Michele.</small></span></section>`;
+  if (ini && !fin) return `<section class="gs-turno in-corso"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(ini))} · <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></b><small>${presAccese() ? "L'orario corre. Quando vai via: HO FINITO e inquadra il codice alla porta." : "L'orario corre. Quando vai via tocca qui, o HO FINITO in fondo."}</small></span>${pulizieDelGiorno(oggi, z).length ? `<button type="button" class="gs-turno-via-fine" data-turno-fine>⏹ Vado via</button>` : ""}</section>`;
+  if (!ini) return `<section class="gs-turno manca"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Hai finito alle ${esc(L.oraBreve(fin))}</b><small>${t && t.inizio && t.daCamere ? `Entrando non hai inquadrato il codice: conto dalla prima camera (${esc(L.oraBreve(t.inizio))}) · ${esc(testoOreTurno(t.minuti))}` : "Manca l'ora in cui sei arrivata: la mette Michele."}</small></span></section>`;
   return `<section class="gs-turno fatto"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Oggi ${esc(L.oraBreve(ini))} → ${esc(L.oraBreve(fin))} · ${esc(testoOreTurno(t ? t.minuti : 0))}</b><small>${eur(euroOre(t ? t.minuti : 0))} · ${eur(tariffaOra())} l'ora</small></span></section>`;
 }
 // la spilla sulla scena di Sofia (sotto la data): l'orario che corre, o il giorno fatto
@@ -2215,26 +2225,28 @@ function turnoPill(z, anteprima) {
 function turnoDetto(z, iso) {
   if (!pagaAOre() || !addetta()) return "";
   const v = L.vistoDi(S.visti, z, iso); if (v && (v.arrivoOra || v.turnoInizio || v.finitoOra)) return "";
-  return pulizieDelGiorno(iso, z).length ? "Prima di tutto tocca il tasto verde «Sono arrivata»: parte il tuo orario." : "";
+  return pulizieDelGiorno(iso, z).length ? (presAccese() ? "Prima di tutto, alla porta: tocca «Sono arrivata» e inquadra il codice. Parte il tuo orario." : "Prima di tutto tocca il tasto verde «Sono arrivata»: parte il tuo orario.") : "";
 }
 function turnoGira() { document.querySelectorAll("[data-turno-ore]").forEach(el => { const s = testoOreTurno(minutiDa(el.dataset.turnoOre)); if (el.textContent !== s) el.textContent = s; }); }
 let turnoTimer = null;
 function turnoAvvia() { if (turnoTimer) return; turnoTimer = setInterval(() => { if (!document.hidden) turnoGira(); }, 20000); try { document.addEventListener("visibilitychange", () => { if (!document.hidden) turnoGira(); }); } catch (e) {} }
 try { turnoAvvia(); } catch (e) {}
-async function turnoInizia() {
+async function turnoInizia(extra = null) {
   if (!addetta() || !pagaAOre()) return;
+  if (!extra && presAccese()) { presArrivo(); return; }   // 1.69.0: col codice alla porta l'orario parte solo inquadrandolo
   const z = S.utente.zona, iso = L.oggiISO(), id = L.idVisto(z, iso), c = argonConf();
   const gia = S.visti[id];
   if (gia && (gia.arrivoOra || gia.turnoInizio || gia.finitoOra)) { disegna(); return; }
   if (!L.argonOrario(S.argon)) { toast(`Il tasto funziona dalle ${c.oreDa} alle ${c.oreA}.`); return; }
-  const adesso = S.db.adesso();
-  const v = { zona: z, data: iso, arrivoOra: adesso, arrivoDa: SIG(z), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga) };
+  const adesso = (extra && extra.arrivoOra) || S.db.adesso();
+  const v = { zona: z, data: iso, arrivoOra: adesso, arrivoDa: SIG(z), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga), ...(extra && extra.arrivoQR ? { arrivoQR: extra.arrivoQR } : {}) };
   S.visti[id] = { ...(gia || {}), ...v, id }; disegna();
   try { await S.db.salva("visti", id, v, true); }
   catch (e) { delete S.visti[id]; disegna(); erroreScrittura(e); return; }
   toast(`Orario partito alle ${L.oraBreve(adesso)}. Buon lavoro!`);
   try { if (argonLei() && !guidaMuta()) guidaParla(`Orario partito alle ${L.oraBreve(adesso).replace(":", " e ")}. Buon lavoro, ${nomeSignora()}!`); } catch (e) {}
   inviaTelegram(`⏱️ ${SIG(z)} è arrivata alle ${L.oraBreve(adesso)} (${pianoBreve(z)}).`, "pulita");
+  if (extra && extra.arrivoQR) presAvvisaMichele(z, "arrivo", extra.arrivoQR, adesso);   // 1.69.0: solo a Michele, solo se non va
 }
 // l'ora di arrivo da proporre se la signora ha dimenticato il tasto: il primo «Comincio» di oggi, se no le 8
 function arrivoProposto(z, iso) {
@@ -2245,7 +2257,7 @@ function arrivoProposto(z, iso) {
 function rigaTurno(z, g, mod) {
   const t = g.t, quando = `${L.GIORNI[L.giornoSettimana(g.iso)]} ${L.giornoDelMese(g.iso)}`;
   const ore = t.dette ? `ore scritte su WhatsApp${t.inizio ? ` (arrivata alle ${L.oraBreve(t.inizio)})` : ""}` : t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : t.inCorso ? `dalle ${L.oraBreve(t.inizio)} · l'orario corre` : t.inizio ? `dalle ${L.oraBreve(t.inizio)}, senza HO FINITO` : t.fine ? `fino alle ${L.oraBreve(t.fine)}, senza l'arrivo` : "senza orario";
-  return `<div class="row turno-riga ${t.stima ? "stima" : ""}"><span><b>${esc(quando)}</b> · ${esc(ore)}<br><span class="muted small">${esc(testoOreTurno(t.minuti))}${t.stima ? " · stima dalle camere" : ""}${t.corretto ? " · orario messo da Michele" : ""}${t.camere ? ` · ${t.camere} ${t.camere === 1 ? "camera" : "camere"}` : ""}</span></span><span style="display:flex;gap:6px;align-items:center"><span class="s ${t.stima ? "warn" : "done"}">${eur(euroOre(t.minuti))}</span>${mod ? `<button class="btnsm ghost" data-turno-orario="${esc(z)}|${g.iso}">Orario</button>` : ""}</span></div>`;
+  return `<div class="row turno-riga ${t.stima ? "stima" : ""}"><span><b>${esc(quando)}</b> · ${esc(ore)}<br><span class="muted small">${esc(testoOreTurno(t.minuti))}${t.stima ? " · stima dalle camere" : ""}${t.corretto ? " · orario messo da Michele" : ""}${t.presCorretto ? ` · corrette da Michele (erano ${testoOreTurno(t.minutiVeri)})` : ""}${t.camere ? ` · ${t.camere} ${t.camere === 1 ? "camera" : "camere"}` : ""}</span>${presSegni(z, g.iso, mod)}</span><span style="display:flex;gap:6px;align-items:center"><span class="s ${t.stima ? "warn" : "done"}">${eur(euroOre(t.minuti))}</span>${mod ? `<button class="btnsm ghost" data-turno-orario="${esc(z)}|${g.iso}">Orario</button>` : ""}</span></div>`;
 }
 function vistaStoricoOre(z) {
   const righe = []; let k = L.settimanaCorrente();
@@ -2258,7 +2270,7 @@ function vistaSoldiOre(z) {
     <div>${esc(testoOreTurno(b.minuti))} di lavoro · ${eur(b.tariffa)} l'ora · ${pagato ? `<span class="pill paid">✓ Pagata ${esc(pagato.quando || "")}</span>` : `<span class="pill open">Si paga sabato alle 14</span>`}</div>
     ${b.rettifiche.euro ? `<div class="small" style="margin-top:6px;opacity:.92">ore <b>${eur(b.ore)}</b> ${b.rettifiche.euro > 0 ? "+ premio" : "− rettifica"} <b>${eur(Math.abs(b.rettifiche.euro))}</b></div>` : ""}</section>`;
   const giorni = `<section class="card"><h2>I tuoi giorni</h2>${b.giorni.length ? `<div class="rows">${b.giorni.map(g => rigaTurno(z, g, false)).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. La mattina tocca «Sono arrivata», alla fine «HO FINITO»: il giorno compare qui con le sue ore.</p>`}${righeBusta({ rettifiche: b.rettifiche, premio: null })}</section>`;
-  const spiega = `<section class="card"><h2 style="margin:0 0 4px">Come si conta</h2><p class="muted small" style="margin:0">Si pagano le ore che segni tu: dal tasto <b>«Sono arrivata»</b> a <b>«HO FINITO»</b>, ${eur(b.tariffa)} l'ora. Le rifiniture ⭐ non si pagano a parte: sono dentro le tue ore; ${esc(nomeGov())} ti dice dove farle. Se un giorno dimentichi un tasto, Michele mette l'orario a mano.</p></section>`;
+  const spiega = `<section class="card"><h2 style="margin:0 0 4px">Come si conta</h2><p class="muted small" style="margin:0">${presAccese() ? `Si pagano le ore dal <b>codice alla porta</b> entrando al codice uscendo, ${eur(b.tariffa)} l'ora.` : `Si pagano le ore che segni tu: dal tasto <b>«Sono arrivata»</b> a <b>«HO FINITO»</b>, ${eur(b.tariffa)} l'ora.`} Le rifiniture ⭐ non si pagano a parte: sono dentro le tue ore; ${esc(nomeGov())} ti dice dove farle. ${presAccese() ? "Se uscendo non inquadri il codice, l'orario finisce all'ultima camera che hai segnato; se entrando non lo inquadri, parte dalla prima camera." : "Se un giorno dimentichi un tasto, Michele mette l'orario a mano."}</p></section>`;
   const patto = argonLei() ? `<section class="card center"><button class="big undo" data-patto>Il patto e le 11 Regole</button></section>` : "";
   return wallet + giorni + spiega + patto + vistaStoricoOre(z);
 }
@@ -2271,6 +2283,10 @@ function pattoOre() {
     "I soldi.": `Si contano i minuti da «Sono arrivata» a «Ho finito», ${t} l'ora. Se un giorno dimentichi un tasto, Michele mette l'orario a mano. Il sabato alle 14 la settimana si chiude.`,
     "Lealtà.": "Se la direzione trova non fatto un lavoro già «visto», se ne parla subito e si rifà. Chi dà il «Visto» senza guardare perde la fiducia della squadra.",
   };
+  if (presAccese()) {   // 1.69.0: col codice alla porta
+    ore["Benvenuta."] = `Qui si pagano le ore che lavori: ${t} l'ora, uguale per tutte. Appena arrivi, alla porta: tocca «📷 Sono arrivata» e inquadra il codice. Quando hai finito tutto, «HO FINITO» e inquadri lo stesso codice.`;
+    ore["I soldi."] = `Si contano i minuti dal codice inquadrato entrando a quello inquadrato uscendo, ${t} l'ora. Senza codice uscendo l'orario finisce all'ultima camera segnata; senza codice entrando parte dalla prima. Il sabato alle 14 la settimana si chiude.`;
+  }
   return L.PATTO.filter(([k]) => k !== "Il salvadanaio.").map(([k, x]) => [k, ore[k] || x]);
 }
 // ---- Paghe (Michele), a ore -----------------------------------------------------------------------------------------
@@ -2285,7 +2301,7 @@ function vistaPagheOre() {
       ${bp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(bp.totale)} ancora da pagare ${mod ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
       <details open><summary>Giorno per giorno</summary>${b.giorni.length ? `<div class="rows">${b.giorni.map(g => rigaTurno(z.id, g, mod)).join("")}</div>` : `<p class="muted small" style="margin:6px 0">Ancora nessun giorno questa settimana.</p>`}${righeBusta({ rettifiche: b.rettifiche, premio: null })}${mod ? `<div style="margin-top:8px"><button class="btnsm" data-turno-nuovo="${z.id}">Aggiungi un giorno a mano</button></div>` : ""}</details></section>`;
   }).join("");
-  return cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + cardSignore() + cardOrarioBase();
+  return cardPresenze() + cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + cardSignore() + cardOrarioBase();
 }
 // mettere o correggere l'orario di un giorno (solo Michele): si scrive nel documento del giorno (turnoInizio/turnoFine)
 function turnoDialogo(z, iso) {
@@ -3285,6 +3301,7 @@ async function fattaCamera(id) {
   if (principale) chiudi(principale, scelta.nonFatte);
   for (const f of fondi) if (!scelta.fondiNon.has(f.id)) chiudi(f, new Set());
   Promise.all(attese).catch(() => {});
+  if (principale) presDopoFatta(principale);   // 1.69.0: la foto a sorpresa
   // Sofia va avanti: il passo della camera dopo (ancora da fare); se non ne restano, il passo finale e si apre HO FINITO
   const restano = pulizieDelGiorno(iso, z).filter(x => x.tipo !== "stelle" && (x.stato === "da_fare" || x.stato === "in_corso"));
   const g = guidaOra(z, iso); let i = -1;
@@ -5235,8 +5252,11 @@ async function hoFinito() {
   // 1.32.0: le stelle delle camere già chiuse col «✓ Fatto» sono state confermate lì: qui si chiedono solo le altre
   const daChiedere = rif.filter(r => { const x = S.pulizie[r.pulizia]; return !x || x.stato !== "fatta"; });
   // 1.35.0: paga a ore: se stamattina non ha toccato «Sono arrivata» (il documento del giorno non c'è), l'ora la chiede qui
-  const vg = S.visti[L.idVisto(z, iso)], chiediArrivo = pagaAOre() && !vg ? arrivoProposto(z, iso) : null;
+  const vg = S.visti[L.idVisto(z, iso)], chiediArrivo = pagaAOre() && !vg && !presAccese() ? arrivoProposto(z, iso) : null;   // 1.69.0: col codice non si chiede (parte dalla prima camera)
   const scelta = await confermaHoFinito(lavori, daChiedere, nonChiuse, chiediArrivo); if (!scelta) return;
+  // 1.69.0: col codice alla porta, prima la foto a sorpresa (se manca), poi il codice uscendo (chiuso = HO FINITO non si fa)
+  let uscita = null;
+  if (pagaAOre() && presAccese()) { await presFotoPrimaDiUscire(z, iso); uscita = await presUscita(); if (!uscita) return; }
   const chiuse = lavori.filter(p => p.stato !== "problema" && p.stato !== "non_fatta");
   // 1) le camere si chiudono come col «Ho finito» di ogni camera: lista fatta per intero, le rifiniture non fatte segnate
   //    (anche il giro delle rifiniture nelle altre camere quando oggi è vuoto, e quindi nascosto: la giornata è chiusa)
@@ -5253,13 +5273,14 @@ async function hoFinito() {
   // 2) il documento del Visto: cosa c'è da guardare, scritto sopra il tasto di chi c'è dopo
   const fatte = rif.filter(r => !scelta.nonFatte.has(`${r.k}@${r.pulizia}`));
   const id = L.idVisto(z, iso);
-  const v = { zona: z, data: iso, settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga), finitoOra: S.db.adesso(), finitoDa: SIG(z),
+  const v = { zona: z, data: iso, settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga), finitoOra: (uscita && uscita.ora) || S.db.adesso(), finitoDa: SIG(z),
     camere: chiuse.filter(p => p.tipo !== "stelle" && camera(p.camera).tipo !== "casa").map(p => ({ id: p.id, camera: p.camera, nome: camera(p.camera).nome, titolo: titoloLavoro(p), arrivo: !!p.arrivo, comune: camera(p.camera).tipo === "comune" || p.tipo === "fisso" })),   // solo l'albergo: gli appartamenti nessuno li può guardare
     rifiniture: fatte, euroRifiniture: Math.round(fatte.reduce((s, r) => s + (r.euro || 0), 0) * 100) / 100, rodaggio: L.argonRodaggio(S.argon, iso) };
   if (chiediArrivo && scelta.arrivo) { const a = isoDaOra(iso, scelta.arrivo); if (a && new Date(a) < new Date(v.finitoOra)) { v.arrivoOra = a; v.arrivoDa = SIG(z); v.arrivoDetto = true; } }
   S.visti[id] = { ...(S.visti[id] || {}), ...v, id }; disegna(); window.scrollTo(0, 0);
   const turnoOggi = pagaAOre() ? turnoDelGiorno(z, iso) : null, oreDette = turnoOggi && turnoOggi.inizio && !turnoOggi.stima ? ` Oggi ${testoOreDette(turnoOggi.minuti)} di lavoro.` : "";
   S.db.salva("visti", id, v, true).catch(erroreScrittura);
+  if (uscita) presSalvaUscita(z, iso, uscita);   // 1.69.0
   Promise.all(attese).catch(() => {});
   const vedono = nomiChiVede(chiVedeIl(z, iso));
   inviaTelegram(`🏁 ${v.finitoDa} ha finito il ${pianoBreve(z)} alle ${L.oraBreve(v.finitoOra)}: ${v.camere.length} ${v.camere.length === 1 ? "camera" : "camere"}${fatte.length ? `, ${fatte.length} rifiniture${pagaAOre() ? "" : ` (${eur(v.euroRifiniture)})`} in attesa del Visto` : ""}${turnoOggi && turnoOggi.inizio && !turnoOggi.stima ? ` · ⏱️ dalle ${L.oraBreve(turnoOggi.inizio)}: ${testoOreTurno(turnoOggi.minuti)} (${eur(euroOre(turnoOggi.minuti))})` : pagaAOre() ? " · ⏱️ senza l'ora di arrivo: stima dalle camere, da sistemare in Paghe → Orario" : ""}.`, "pulita");
@@ -5770,7 +5791,7 @@ function sg2Riassunto() {
   if (pul.length) frasi.push(`Le signore: ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}${fatte ? `, ${fatte} già ${fatte === 1 ? "fatta" : "fatte"}` : ""}.`);
   const g = Object.values(S.manutenzione || {}).filter(m => urgenza(m) >= 1);
   if (g.length) frasi.push(`${g.length === 1 ? "Un guasto da riparare subito" : `${g.length} guasti da riparare subito`}: ${g.slice(0, 2).map(m => `${esc(m.titolo || "guasto")}${m.camera ? " in " + camera(m.camera).nome : ""}`).join(", ")}.`);
-  const t = sg2PerTe().length, p = sg2Proposte().length, d = sg2Domande().length;
+  const t = sg2PerTe().length, p = sg2Proposte().length + presProposte().length, d = sg2Domande().length;
   frasi.push(t || p || d ? `Per te: ${[t ? `${t} ${t === 1 ? "cosa da fare" : "cose da fare"}` : "", p ? `${p} ${p === 1 ? "proposta" : "proposte"}` : "", d ? `${d} ${d === 1 ? "domanda" : "domande"}` : ""].filter(Boolean).join(", ")}.` : "Per te non c'è niente che aspetta.");
   return frasi;
 }
@@ -5789,6 +5810,7 @@ function vistaSegreteria() {
     ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde" data-sg2-fatto="${esc(t.lid)}|${esc(t.k)}">Fatto</button><button type="button" class="sg2-b rosso" data-sg2-ricorda="${esc(t.lid)}|${esc(t.k)}"><span aria-hidden="true">⏰</span> Ricordami tra 1 ora</button></div>` : ""}</div>`);
   const prop = sg2Proposte().map(p => `<div class="sg2-r prop">${p.perche ? `<b class="sg2-t">${esc(p.perche)}</b>` : ""}<span class="sg2-x">${esc(p.testo)}</span>
     ${mod ? `<button type="button" class="sg2-b verde pieno" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">Sì, fallo</button><div class="sg2-bt"><button type="button" class="sg2-b oro" data-sg2-cambia="${esc(p.lid)}|${esc(p.k)}">Cambia</button><button type="button" class="sg2-b rosso" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">No</button></div>` : ""}</div>`);
+  prop.unshift(...presProposte().map(x => presPropRiga(x, mod)));   // 1.69.0: le ore che non tornano
   const fatti = sg2Fatti().map((f, i) => `<div class="sg2-r fatto"><span class="sg2-x"><b>${i + 1}.</b> ${esc(f.testo)}</span><small>${esc([sg2Quando(f.quando), f.sotto].filter(Boolean).join(" · "))}</small>
     <div class="sg2-bt">${mod ? `<button type="button" class="sg2-b piccolo" data-sg2-annulla="${esc(f.lid)}|${esc(f.ks.join(","))}">Annulla</button>` : ""}<button type="button" class="sg2-b piccolo" data-sg2-perche="${esc(f.lid)}|${esc(f.ks.join(","))}">Perché?</button></div></div>`);
   const sapere = sg2Sapere().map(s => `<div class="sg2-r sapere"><span class="sg2-x">${esc(s.testo)}</span><small>${esc(sg2Quando(s.quando))}</small></div>`);
@@ -12369,6 +12391,7 @@ function cardDaFarePC() {
     { t: "📸 Instagram professionale", c: "dal telefono · 5 minuti", fatto: socPronta("instagram"), tasto: 'data-soc-come="instagram"' },
     { t: "🔑 Collega Instagram a Sofia", c: "su Meta, dal PC · 10 minuti", fatto: !!(m.ig && m.ig.nome) && !["chiave", "personale"].includes(m.stato), tasto: "data-soc-chiave", dopo: socPronta("instagram") ? "" : "dopo il passo 4" },
     { t: "🪪 Alloggiati Web: il passaggio", c: "le schedine partono da sole · 10 minuti, le password le scrivi tu", fatto: alWsPronto(), tasto: "data-alws-apri" },
+    ...(pagaAOre() ? [{ t: "🖨️ I codici della porta", c: "stampa i 4 fogli e il foglietto per le signore · 2 minuti", fatto: !!presConf().stampati, tasto: "data-pres-stampa" }] : []),   // 1.69.0
   ];
   const fatti = passi.filter(p => p.fatto).length;
   if (fatti === passi.length) return "";
@@ -12390,6 +12413,575 @@ document.addEventListener("input", (e) => {   // incollata giusta: si prova da s
   const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-oro-chiave")) return;
   if (ORO_CHIAVE_RX.test(String(t.value || "").replace(/\s+/g, ""))) oroAccendi().catch(() => {});
 }, true);
+// ============================================================================
+//  1.69.0 IL CODICE ALLA PORTA E I CONTROLLI CONTRO GLI IMBROGLI (8/11, Michele: «un piccolo codice QR vicino il portone…
+//  attraverso la telecamera non mi possono più imbrogliare»; poi «Codice + posizione», «All'ultima camera», «Mi propone Sì/No»,
+//  «mettimi dei sistemi antifrode inattaccabili»). La paga resta a ore; cambia come parte e come si ferma l'orario.
+//  I quattro controlli:
+//   1 IL POSTO: entrando e uscendo la signora inquadra CON L'APP il foglio attaccato dentro la porta. Nel codice c'è un segreto
+//     (importazioni/presenze-segreti, lo legge solo Michele): un codice fatto in casa, o il link salvato, non vale. Nell'istante
+//     in cui inquadra, l'app guarda dov'è il telefono (solo in quel momento: non la segue) e salva solo «alla porta» o «lontano
+//     N metri», mai dove si trova.
+//   2 L'ORA: presa da internet (l'intestazione Date del sito, con una richiesta HEAD che il service worker lascia passare).
+//   3 IL LAVORO: ogni giorno Sofia confronta l'orario con le camere segnate (arrivo → prima camera, ultima camera → uscita, buchi
+//     tra una camera e l'altra, tempo giusto delle camere + mezz'ora). Se mancano almeno 20 minuti, propone a Michele UNA
+//     correzione per giorno (Segreteria «Ti propongo» e Paghe): Sì → vale presMinuti; No → resta com'è.
+//   4 LA QUALITÀ: la foto a sorpresa (circa un giorno su due, una camera lasciata dagli ospiti, scattata con l'app, non dalla
+//     galleria) + il Visto fra colleghe.
+//  Le regole scelte da Michele: senza codice uscendo l'orario finisce all'ultima camera segnata; senza codice entrando parte dalla
+//  prima camera. Le regole di Firestore NON cambiano: la signora crea documenti della sua zona in «visti» (<zona>_<giorno>_uscita,
+//  _sorpresa; la foto in _foto, SENZA il campo «data», così non la scarica chi ascolta i visti). Il documento del giorno si crea
+//  all'arrivo (arrivoQR) e HO FINITO lo aggiorna solo coi campi di sempre.
+// ============================================================================
+const PRES_POSTI = { palazzo: "Il palazzo (il portone)", sauro: "Via Nazario Sauro (Lella e Nicole)", zara: "Via Zara", trento: "Via Trento" };
+const PRES_CORTO = { palazzo: "il portone", sauro: "via Nazario Sauro", zara: "via Zara", trento: "via Trento" };
+const PRES_URL = "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/?presenza=";
+const PRES_MARGINE = 20;   // minuti: sotto, Sofia non propone niente («2 euro in più un giorno non ci interessano»)
+const presConf = () => S.presenze || {};
+const presAccese = () => !!presConf().attivo;
+const presRaggio = () => Math.max(50, Number(presConf().raggio) || 150);
+const presMin = (ms) => Math.round(ms / 60000);
+const presCap = (s) => { s = String(s || ""); return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
+function presLeggi(testo) {   // «…?presenza=palazzo.k7x2q9mzTe» → { posto, codice }
+  const m = String(testo || "").match(/[?&]presenza=([a-z]+)(?:\.([A-Za-z0-9]{4,40}))?/);
+  return m && PRES_POSTI[m[1]] ? { posto: m[1], codice: m[2] || "" } : null;
+}
+function presMetri(a, b) {
+  const r = 6371000, ra = (x) => Number(x) * Math.PI / 180, dLat = ra(b.lat) - ra(a.lat), dLng = ra(b.lng) - ra(a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(ra(a.lat)) * Math.cos(ra(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * r * Math.asin(Math.min(1, Math.sqrt(h))));
+}
+function presPosizione(ms = 12000) {   // solo adesso, una volta: { lat, lng, precisione } oppure null
+  return new Promise((ok) => {
+    if (!navigator.geolocation) return ok(null);
+    let fatto = false; const fine = (x) => { if (!fatto) { fatto = true; ok(x); } };
+    setTimeout(() => fine(null), ms + 1500);
+    try { navigator.geolocation.getCurrentPosition((p) => fine({ lat: p.coords.latitude, lng: p.coords.longitude, precisione: Math.round(p.coords.accuracy || 0) }), () => fine(null), { enableHighAccuracy: true, timeout: ms, maximumAge: 0 }); }
+    catch (e) { fine(null); }
+  });
+}
+function presPorte() { const p = presConf().posti || {}; return Object.keys(PRES_POSTI).filter(k => p[k] && Number(p[k].lat) && Number(p[k].lng)); }
+// com'è andata: ok (alla porta) · lontano · senza-posizione · da-tarare (la porta non è ancora insegnata)
+function presEsito(posto, pos) {
+  if (!pos) return { esito: "senza-posizione" };
+  const posti = presConf().posti || {}, porte = presPorte(), marg = Math.min(Number(pos.precisione) || 0, 150);
+  if (posto && porte.includes(posto)) {
+    const rif = posti[posto], metri = presMetri(rif, pos), tolto = metri - marg - Math.min(Number(rif.precisione) || 0, 100);
+    return { esito: tolto <= presRaggio() ? "ok" : "lontano", metri, precisione: pos.precisione };
+  }
+  if (!porte.length) return { esito: "da-tarare", precisione: pos.precisione };
+  // porta non ancora insegnata: la porta insegnata più vicina, con un raggio largo (le case sono tutte in paese)
+  const metri = Math.min(...porte.map(k => presMetri(posti[k], pos)));
+  return { esito: metri - marg <= 1500 ? "da-tarare" : "lontano", metri, precisione: pos.precisione };
+}
+// l'ora vera: l'intestazione Date del sito (HEAD: il service worker non la tocca). Se il telefono sbaglia di più di 90 secondi,
+// vale l'ora di internet; senza rete vale quella del telefono, segnata «non verificata».
+async function presOraVera() {
+  try {
+    const t0 = Date.now(), r = await fetch(`./index.html?oravera=${t0}`, { method: "HEAD", cache: "no-store" }), t1 = Date.now();
+    const d = Date.parse(r.headers.get("date") || "");
+    if (!isFinite(d)) throw new Error("senza data");
+    const scarto = d + 500 - Math.round((t0 + t1) / 2);
+    const ora = Math.abs(scarto) > 90000 ? new Date(Date.now() + scarto) : new Date();
+    return { iso: ora.toISOString(), verificata: true, scartoMin: Math.abs(scarto) > 90000 ? Math.round(scarto / 60000) : 0 };
+  } catch (e) { return { iso: new Date().toISOString(), verificata: false, scartoMin: 0 }; }
+}
+// quello che si salva (niente valori vuoti: Firestore non li vuole)
+function presQR(q) {
+  const r = { esito: q.esito || "senza-posizione", oraVerificata: !!q.oraVerificata };
+  if (q.posto) r.posto = q.posto;
+  if (q.codice) r.codice = q.codice;
+  if (q.senzaCodice) r.senzaCodice = true;
+  if (Number.isFinite(q.metri)) r.metri = q.metri;
+  if (Number.isFinite(q.precisione)) r.precisione = q.precisione;
+  if (q.scartoMin) r.scartoMin = q.scartoMin;
+  return r;
+}
+function presDistanza(m) { return m >= 1000 ? `${(m / 1000).toFixed(1).replace(".", ",")} km` : `${m} m`; }
+function presTesto(q) {
+  if (!q) return "";
+  if (q.esito === "senza-codice") return "⚠ senza codice: l'orario finisce all'ultima camera";
+  const dove = q.posto ? PRES_CORTO[q.posto] : "";
+  if (q.senzaCodice) return q.esito === "ok" ? "⚠ senza codice, ma il telefono era alla porta" : q.esito === "lontano" ? `⚠ senza codice e lontano dalla porta (${presDistanza(q.metri)})` : q.esito === "da-tarare" ? "⚠ senza codice" : "⚠ senza codice e senza posizione";
+  if (q.esito === "ok") return `📷 alla porta${dove ? ` (${dove})` : ""} ✓`;
+  if (q.esito === "lontano") return `⚠ codice inquadrato lontano dalla porta (${presDistanza(q.metri)})`;
+  if (q.esito === "senza-posizione") return `📷 codice${dove ? ` (${dove})` : ""} · ⚠ senza posizione`;
+  if (q.esito === "da-tarare") return `📷 codice${dove ? ` (${dove})` : ""} · porta non ancora insegnata`;
+  return "";
+}
+// ---- i documenti del giorno ---------------------------------------------------------------------------------------------
+function presUscitaDoc(z, iso) { return (S.visti || {})[`${L.idVisto(z, iso)}_uscita`] || null; }
+function presUscitaDi(z, iso) { const u = presUscitaDoc(z, iso); return u && u.uscitaQR ? u.uscitaQR : null; }
+function presSorpresaDoc(z, iso) { return (S.visti || {})[`${L.idVisto(z, iso)}_sorpresa`] || null; }
+function presUsa(z, iso, v) { return !!(v && (v.arrivoQR || v.presenza)) || !!presUscitaDoc(z, iso); }
+// le camere del giorno con i loro tempi (l'ora del telefono riportata a quella di internet, se sbagliava): solo quelle segnate
+// una per una, non quelle chiuse tutte insieme da HO FINITO
+function presStanze(z, iso, v) {
+  const fin = v && v.finitoOra ? Date.parse(v.finitoOra) : Infinity, sc = ((v && v.arrivoQR && Number(v.arrivoQR.scartoMin)) || 0) * 60000;
+  const fatte = Object.values(S.pulizie || {}).filter(p => p && p.zona === z && p.data === iso && p.stato === "fatta" && !p.nonServe);
+  const std = fatte.reduce((s, p) => s + Math.max(0, Number(p.minuti) || 0), 0);
+  const segnate = fatte.filter(p => p.tipo !== "stelle" && p.ora && Date.parse(p.ora) + sc < fin - 120000).map(p => {
+    const f = Date.parse(p.ora) + sc, dur = Math.max(10, Number(p.minuti) || 30) * 60000, i0 = p.inizio ? Date.parse(p.inizio) + sc : NaN;
+    return { p, f, i: isFinite(i0) && i0 < f ? i0 : f - dur };
+  }).sort((a, b) => a.i - b.i);
+  return { fatte, std, segnate };
+}
+function presInizioDaCamere(z, iso, v) { const s = presStanze(z, iso, v).segnate; return s.length ? new Date(s[0].i).toISOString() : null; }
+function presFineDaCamere(z, iso, v, inizio) {
+  const st = presStanze(z, iso, v), so = presSorpresaDoc(z, iso);
+  const t = [...st.segnate.map(x => x.f), so && so.esito === "fatta" && so.ora ? Date.parse(so.ora) : 0].filter(Boolean);
+  if (t.length) return new Date(Math.max(...t)).toISOString();
+  if (inizio && st.std) return new Date(Date.parse(inizio) + st.std * 60000).toISOString();
+  return null;
+}
+// ---- la finestra della fotocamera (sopra tutto: disegna() non la tocca) ---------------------------------------------------
+let presOv = null, presRivelatore = null, presJsqr = false;
+function presCameraFerma(o) {
+  if (!o) return;
+  if (o.giro) { clearTimeout(o.giro); o.giro = null; }
+  if (o.flusso) { try { o.flusso.getTracks().forEach(t => t.stop()); } catch (e) {} o.flusso = null; }
+}
+function presOvChiudi(valore) {
+  const o = presOv; if (!o) return;
+  presOv = null; presCameraFerma(o);
+  try { o.el.remove(); } catch (e) {}
+  try { indietroChiudi("presenza"); } catch (e) {}
+  try { o.fine(valore); } catch (e) {}
+}
+function presOvApri(html, cls) {
+  if (presOv) presOvChiudi(null);
+  const el = document.createElement("div");
+  el.className = `pres-ov ${cls || ""}`; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
+  el.innerHTML = `<div class="pres-box">${html}</div>`;
+  document.body.appendChild(el);
+  let fine = null; const p = new Promise((ok) => { fine = ok; });
+  const o = { el, fine, flusso: null, giro: null }; presOv = o;
+  el.addEventListener("click", (e) => presClicOv(e, o));
+  try { indietroApri("presenza", () => presOvChiudi(null)); } catch (e) {}
+  return { o, p };
+}
+function presStato(o, testo, ko = false) { const s = o && o.el.querySelector(".pres-stato"); if (s) { s.textContent = testo; s.classList.toggle("ko", !!ko); } }
+async function presCameraAccendi(o, foto = false) {
+  const v = o.el.querySelector("video"); if (!v || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+  try { o.flusso = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: foto ? 1920 : 1280 }, height: { ideal: foto ? 1080 : 720 } }, audio: false }); }
+  catch (e) { return false; }
+  if (presOv !== o) { presCameraFerma(o); return false; }
+  v.srcObject = o.flusso; try { await v.play(); } catch (e) {}
+  return true;
+}
+async function presPreparaLettore() {
+  if (!presRivelatore && "BarcodeDetector" in window) { try { const f = await window.BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) presRivelatore = new window.BarcodeDetector({ formats: ["qr_code"] }); } catch (e) {} }
+  if (!presRivelatore && !window.jsQR && !presJsqr) { presJsqr = true; await new Promise((ok) => { const s = document.createElement("script"); s.src = "jsqr.js"; s.onload = ok; s.onerror = () => { presJsqr = false; ok(); }; document.head.appendChild(s); }); }
+}
+let presTela = null;
+async function presLeggiFotogramma(v) {
+  if (!v || v.readyState < 2 || !v.videoWidth) return "";
+  try {
+    if (presRivelatore) { const r = await presRivelatore.detect(v); return (r && r[0] && r[0].rawValue) || ""; }
+    if (window.jsQR) {
+      const w = Math.min(720, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth), c = presTela || (presTela = document.createElement("canvas"));
+      c.width = w; c.height = h; const g = c.getContext("2d", { willReadFrequently: true }); g.drawImage(v, 0, 0, w, h);
+      const r = window.jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" });
+      return (r && r.data) || "";
+    }
+  } catch (e) {}
+  return "";
+}
+// ---- lo scanner: arrivo · uscita · taratura (Michele insegna la porta) -----------------------------------------------------
+//  → { posto, codice, ora, oraVerificata, scartoMin, esito, metri, precisione } · taratura: { posto, codice, ora, pos }
+//  · «Non ci riesco»: arrivo { senzaCodice, posto scelto, esito… } · uscita { esito: "senza-codice" } · chiusa: null
+function presScanner(modo) {
+  const T = { arrivo: ["📷 Inquadra il codice alla porta", "Così parte il tuo orario."], uscita: ["📷 Ultima cosa: il codice alla porta", "Così si ferma il tuo orario."], taratura: ["📍 Insegna all'app dov'è questa porta", "Stai davanti al foglio attaccato e inquadralo: l'app si segna dov'è la porta."] }[modo];
+  const prima = modo === "uscita";   // all'uscita prima un passo senza fotocamera: magari è ancora in camera
+  const { o, p } = presOvApri(`<h3>${T[0]}</h3><p class="pres-sotto">${T[1]}</p>
+    <div class="pres-fase1"${prima ? "" : " hidden"}><p class="pres-grande">Quando sei alla porta, inquadra il codice attaccato lì.</p><button type="button" class="big ok" data-pres-vai>📷 Sono alla porta: inquadro</button></div>
+    <div class="pres-fase2"${prima ? " hidden" : ""}><div class="pres-camera"><video playsinline muted autoplay></video><span class="pres-mirino" aria-hidden="true"></span></div><p class="pres-stato" role="status">Accendo la fotocamera…</p></div>
+    <div class="pres-dove" hidden><p class="pres-grande">Dove sei?</p>${Object.entries(PRES_POSTI).map(([k, n]) => `<button type="button" class="big skip" data-pres-dove="${k}">${esc(n)}</button>`).join("")}</div>
+    ${modo !== "taratura" ? `<p class="pres-nota">Quando inquadri, l'app guarda dove sei solo in quel momento, per sapere che sei alla porta. Non ti segue.</p>` : ""}
+    ${modo === "arrivo" ? `<button type="button" class="big undo" data-pres-senza>Non ci riesco: vado avanti senza codice</button>` : modo === "uscita" ? `<button type="button" class="big undo" data-pres-senza>Non ci riesco: esco senza codice</button>` : ""}
+    <button type="button" class="big undo" data-pres-chiudi>${modo === "uscita" ? "Aspetta, torno su" : "Chiudi"}</button>`, "pres-codice");
+  o.modo = modo;
+  if (!prima) presAvviaLettura(o);
+  return p;
+}
+async function presAvviaLettura(o) {
+  presStato(o, "Accendo la fotocamera…");
+  const ok = await presCameraAccendi(o);
+  if (presOv !== o) return;
+  if (!ok) { presStato(o, "Non riesco ad aprire la fotocamera. Quando il telefono lo chiede, tocca «Consenti». Se non va, tocca «Non ci riesco».", true); return; }
+  presStato(o, "Metti il codice dentro il riquadro.");
+  await presPreparaLettore();
+  const giro = async () => {
+    o.giro = null;
+    if (presOv !== o || !o.flusso) return;
+    const testo = await presLeggiFotogramma(o.el.querySelector("video"));
+    if (presOv !== o || !o.flusso) return;
+    if (testo) {
+      const q = presLeggi(testo);
+      if (q) { presCodiceLetto(o, q); return; }
+      presStato(o, "Questo non è il codice della porta delle Stanze di Ricci: inquadra il foglio attaccato alla porta.", true);
+      o.giro = setTimeout(giro, 1200); return;
+    }
+    o.giro = setTimeout(giro, 220);
+  };
+  giro();
+}
+async function presCodiceLetto(o, q) {
+  presCameraFerma(o);
+  try { if (navigator.vibrate) navigator.vibrate(120); } catch (e) {}
+  const cam = o.el.querySelector(".pres-camera"); if (cam) cam.classList.add("letto");
+  presStato(o, `✓ Codice letto: ${PRES_POSTI[q.posto]}. Guardo dove sei…`);
+  const [t, pos] = await Promise.all([presOraVera(), presPosizione()]);
+  if (presOv !== o) return;
+  if (o.modo === "taratura") { presOvChiudi({ ...q, ora: t.iso, pos }); return; }
+  presOvChiudi({ ...q, ora: t.iso, oraVerificata: t.verificata, scartoMin: t.scartoMin, ...presEsito(q.posto, pos) });
+}
+async function presSenzaCodice(o) {
+  presCameraFerma(o);
+  if (o.modo === "uscita") {
+    presStato(o, "Va bene: l'orario finisce all'ultima camera che hai segnato.");
+    const t = await presOraVera(); if (presOv !== o) return;
+    presOvChiudi({ senzaCodice: true, esito: "senza-codice", ora: t.iso, oraVerificata: t.verificata, scartoMin: t.scartoMin }); return;
+  }
+  // all'arrivo: dove sei? (poi la posizione, come col codice)
+  o.el.querySelector(".pres-fase2").hidden = true; o.el.querySelector(".pres-dove").hidden = false;
+  const b = o.el.querySelector("[data-pres-senza]"); if (b) b.hidden = true;
+}
+async function presSenzaCodiceDove(o, posto) {
+  o.el.querySelector(".pres-dove").hidden = true; o.el.querySelector(".pres-fase2").hidden = false;
+  const cam = o.el.querySelector(".pres-camera"); if (cam) cam.hidden = true;
+  presStato(o, "Guardo dove sei…");
+  const [t, pos] = await Promise.all([presOraVera(), presPosizione()]);
+  if (presOv !== o) return;
+  presOvChiudi({ posto, senzaCodice: true, ora: t.iso, oraVerificata: t.verificata, scartoMin: t.scartoMin, ...presEsito(posto, pos) });
+}
+function presClicOv(e, o) {
+  const t = e.target && e.target.closest ? e.target.closest("button") : null;
+  if (!t || presOv !== o) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-pres-chiudi")) { presOvChiudi(null); return; }
+  if (t.hasAttribute("data-pres-vai")) { o.el.querySelector(".pres-fase1").hidden = true; o.el.querySelector(".pres-fase2").hidden = false; presAvviaLettura(o); return; }
+  if (t.hasAttribute("data-pres-senza")) { presSenzaCodice(o); return; }
+  if (t.hasAttribute("data-pres-dove")) { presSenzaCodiceDove(o, t.getAttribute("data-pres-dove")); return; }
+  if (t.hasAttribute("data-pres-scatta")) { presScattaOra(o); return; }
+  if (t.hasAttribute("data-pres-rifai")) { o.scatto = null; presFotoVista(o, false); return; }
+  if (t.hasAttribute("data-pres-manda")) { presMandaFoto(o); return; }
+  if (t.hasAttribute("data-pres-dopo")) { if (o.primaDiUscire) presFotoSaltata(o); else presOvChiudi(null); return; }
+  if (t.hasAttribute("data-pres-ok")) { presOvChiudi(true); }
+}
+// ---- la signora: entrata e uscita -----------------------------------------------------------------------------------------
+async function presArrivo() {
+  if (!addetta() || !pagaAOre()) return;
+  const z = S.utente.zona, iso = L.oggiISO(), gia = S.visti[L.idVisto(z, iso)], c = argonConf();
+  if (gia && (gia.arrivoOra || gia.turnoInizio || gia.finitoOra)) { toast("L'orario di oggi è già partito."); disegna(); return; }
+  if (!L.argonOrario(S.argon)) { toast(`Il codice funziona dalle ${c.oreDa} alle ${c.oreA}.`); return; }
+  const q = await presScanner("arrivo"); if (!q) return;
+  await turnoInizia({ arrivoOra: q.ora, arrivoQR: presQR(q) });
+}
+async function presUscita() {   // dentro HO FINITO → { ora, qr } · null (ha chiuso: HO FINITO non si fa)
+  const q = await presScanner("uscita"); if (!q) return null;
+  return { ora: q.ora || S.db.adesso(), qr: presQR(q) };
+}
+function presSalvaUscita(z, iso, u) {
+  const id = `${L.idVisto(z, iso)}_uscita`, d = { zona: z, data: iso, tipo: "uscita", uscitaOra: u.ora, uscitaQR: u.qr };
+  S.visti[id] = { ...d, id };
+  S.db.salva("visti", id, d, false).catch((e) => console.warn("uscita", e?.code || e));
+  presAvvisaMichele(z, "uscita", u.qr, u.ora);
+}
+// solo a Michele (mai nel gruppo delle signore), e solo se qualcosa non va
+function presAvvisaMichele(z, quando, q, ora) {
+  try {
+    if (!q || (q.esito === "ok" && !q.senzaCodice) || (q.esito === "da-tarare" && !q.senzaCodice)) return;
+    inviaTelegram(`⚠ ${SIG(z)}, ${quando === "arrivo" ? "entrata" : "uscita"} delle ${L.oraBreve(ora || S.db.adesso())}: ${presTesto(q)}. Se le ore non tornano, Sofia te lo propone in Segreteria.`, "pulita", { aMe: true });
+  } catch (e) {}
+}
+// ---- la foto a sorpresa ----------------------------------------------------------------------------------------------------
+function presHash(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function presSorpresaCamera(z, iso) {   // circa un giorno su due, una camera lasciata dagli ospiti (vuota: niente cose degli ospiti)
+  if (!presAccese()) return null;
+  const h = presHash(`${z}|${iso}|foto`); if (h % 2) return null;
+  const c = pulizieDelGiorno(iso, z).filter(p => p && p.partenza && p.tipo !== "stelle" && !p.nonServe && camera(p.camera).tipo !== "comune").sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  return c.length ? c[(h >>> 1) % c.length] : null;
+}
+function presFotoDaFare(z, iso) {
+  const p = presSorpresaCamera(z, iso); if (!p || presSorpresaDoc(z, iso)) return null;
+  const x = S.pulizie[p.id]; return x && x.stato === "fatta" ? x : null;
+}
+function presDopoFatta(p) {   // dopo «Fatto» di una camera: se è quella della foto, la chiede subito
+  try {
+    if (!p || !addetta() || !presAccese()) return;
+    const z = S.utente.zona, iso = L.oggiISO(), s = presSorpresaCamera(z, iso);
+    if (!s || s.id !== p.id || presSorpresaDoc(z, iso)) return;
+    setTimeout(() => { if (!presOv && !document.querySelector(".conferma")) presFoto(p.id, false); }, 1200);
+  } catch (e) {}
+}
+function presCardFoto(z, anteprima) {
+  if (anteprima || !addetta() || !pagaAOre()) return "";
+  const p = presFotoDaFare(z, L.oggiISO()); if (!p) return "";
+  return `<section class="gs-turno pres-foto-da"><span class="gs-turno-ico" aria-hidden="true">📸</span><span class="gs-turno-x"><b>Foto a sorpresa: ${esc(camera(p.camera).nome)}</b><small>Fai la foto della camera pronta, con l'app</small></span><button type="button" class="gs-turno-via-fine" data-pres-foto="${esc(p.id)}">📸 Fai la foto</button></section>`;
+}
+function presFoto(pid, primaDiUscire = false) {
+  const p = S.pulizie[pid]; if (!p) return Promise.resolve(null);
+  const { o, p: pr } = presOvApri(`<h3>📸 Foto a sorpresa</h3><p class="pres-sotto">Fai una foto di <b>${esc(camera(p.camera).nome)}</b> pronta per i nuovi ospiti: dalla porta, che si veda tutta la camera. Niente persone nella foto.</p>
+    <div class="pres-camera foto"><video playsinline muted autoplay></video><img class="pres-anteprima" alt="La foto appena fatta" hidden></div>
+    <p class="pres-stato" role="status">Accendo la fotocamera…</p>
+    <button type="button" class="big ok" data-pres-scatta>📸 Scatta</button><button type="button" class="big ok" data-pres-manda hidden>Sì, mandala</button><button type="button" class="big skip" data-pres-rifai hidden>Rifai</button>
+    <button type="button" class="big undo" data-pres-dopo>${primaDiUscire ? "Non posso: vado avanti senza foto" : "Non posso adesso"}</button>`, "pres-foto");
+  o.modo = "foto"; o.pid = pid; o.primaDiUscire = primaDiUscire;
+  presCameraAccendi(o, true).then((ok) => { if (presOv === o) presStato(o, ok ? "Quando la camera si vede bene, tocca «Scatta»." : "Non riesco ad aprire la fotocamera: quando il telefono lo chiede, tocca «Consenti».", !ok); });
+  return pr;
+}
+function presFotoVista(o, anteprima) {
+  const v = o.el.querySelector("video"), img = o.el.querySelector(".pres-anteprima");
+  v.hidden = anteprima; img.hidden = !anteprima;
+  o.el.querySelector("[data-pres-scatta]").hidden = anteprima;
+  o.el.querySelector("[data-pres-manda]").hidden = !anteprima; o.el.querySelector("[data-pres-rifai]").hidden = !anteprima;
+  presStato(o, anteprima ? "Si vede bene tutta la camera? Allora mandala." : "Quando la camera si vede bene, tocca «Scatta».");
+}
+function presScattaOra(o) {
+  const v = o.el.querySelector("video"); if (!v || !v.videoWidth) { presStato(o, "La fotocamera non è ancora pronta: aspetta un attimo.", true); return; }
+  const k = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight)), w = Math.round(v.videoWidth * k), h = Math.round(v.videoHeight * k);
+  const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(v, 0, 0, w, h);
+  let q = 0.72, url = c.toDataURL("image/jpeg", q);
+  while (url.length > 600000 && q > 0.4) { q -= 0.08; url = c.toDataURL("image/jpeg", q); }
+  o.scatto = { url, w, h };
+  o.el.querySelector(".pres-anteprima").src = url;
+  presFotoVista(o, true);
+}
+async function presMandaFoto(o) {
+  const p = S.pulizie[o.pid]; if (!p || !o.scatto) return;
+  const z = S.utente.zona, iso = L.oggiISO(), base = L.idVisto(z, iso);
+  presStato(o, "Mando la foto…");
+  const t = await presOraVera(); if (presOv !== o) return;
+  const foto = { zona: z, giorno: iso, tipo: "foto", camera: p.camera, nome: camera(p.camera).nome, ora: t.iso, img: o.scatto.url, w: o.scatto.w, h: o.scatto.h };
+  const so = { zona: z, data: iso, tipo: "sorpresa", camera: p.camera, ora: t.iso, esito: "fatta", oraVerificata: !!t.verificata };
+  S.db.salva("visti", `${base}_foto`, foto, false).catch((e) => console.warn("foto", e?.code || e));   // senza rete parte dopo, da sola
+  S.visti[`${base}_sorpresa`] = { ...so, id: `${base}_sorpresa` };
+  S.db.salva("visti", `${base}_sorpresa`, so, false).catch((e) => console.warn("sorpresa", e?.code || e));
+  presOvChiudi("fatta"); toast("✓ Foto mandata. Grazie!"); disegna();
+}
+async function presFotoSaltata(o) {
+  const p = S.pulizie[o.pid], z = S.utente.zona, iso = L.oggiISO(), base = L.idVisto(z, iso);
+  const t = await presOraVera();
+  const so = { zona: z, data: iso, tipo: "sorpresa", camera: (p && p.camera) || "", ora: t.iso, esito: "saltata" };
+  S.visti[`${base}_sorpresa`] = { ...so, id: `${base}_sorpresa` };
+  S.db.salva("visti", `${base}_sorpresa`, so, false).catch((e) => console.warn("sorpresa", e?.code || e));
+  presOvChiudi("saltata");
+}
+async function presFotoPrimaDiUscire(z, iso) { const p = presFotoDaFare(z, iso); if (p) await presFoto(p.id, true); }
+// ---- Sofia fa i conti: UNA proposta per giorno, solo se mancano almeno 20 minuti ------------------------------------------------
+function presDifetto(q, seg) {
+  if (!q) return "";
+  if (q.senzaCodice) return q.esito === "lontano" ? `non ha inquadrato il codice e il telefono era lontano dalla porta (${presDistanza(q.metri)})` : q.esito === "senza-posizione" ? "non ha inquadrato il codice e il telefono non ha dato la posizione" : "non ha inquadrato il codice";
+  if (q.posto && seg && seg[q.posto] && q.codice !== seg[q.posto]) return "ha inquadrato un codice che non è quello stampato";
+  if (q.esito === "lontano") return `ha inquadrato il codice lontano dalla porta (${presDistanza(q.metri)})`;
+  if (q.esito === "senza-posizione") return "il telefono non ha dato la posizione";
+  if (q.oraVerificata === false) return "l'ora non si è potuta controllare con internet";
+  return "";
+}
+function presVerifica(z, iso) {
+  const v = L.vistoDi(S.visti, z, iso); if (!v || !presUsa(z, iso, v)) return null;
+  if (v.turnoInizio || v.turnoFine || v.presMinuti != null || (v.presDeciso && v.presDeciso.giorno) || (v.oreDette && Number(v.oreDette.minuti) > 0)) return null;
+  const t = turnoDelGiorno(z, iso); if (!t || !t.inizio || !t.fine || t.inCorso || t.stima || t.dette) return null;
+  const ini = Date.parse(t.inizio), fin = Date.parse(t.fine), M = presMin(fin - ini); if (!(M > 0)) return null;
+  const st = presStanze(z, iso, v); if (!st.fatte.length) return null;
+  const seg = S.presSegreti || null, aQ = v.arrivoQR || null, uQ = presUscitaDi(z, iso), so = presSorpresaDoc(z, iso);
+  const valido = (q) => !!(q && q.posto && !q.senzaCodice && q.esito === "ok" && !presDifetto(q, seg));
+  const perche = [], ora = (ms) => L.oraBreve(new Date(ms).toISOString());
+  const dA = presDifetto(aQ, seg); if (dA) perche.push(`entrando ${dA}`);
+  if (uQ && uQ.esito !== "senza-codice") { const dU = presDifetto(uQ, seg); if (dU) perche.push(`uscendo ${dU}`); }
+  let a = ini, b = fin, buchi = 0;
+  if (st.segnate.length) {
+    const primo = st.segnate[0].i, ultimo = Math.max(...st.segnate.map(x => x.f), so && so.esito === "fatta" && so.ora ? Date.parse(so.ora) : 0);
+    const lA = (valido(aQ) ? 25 : 10) * 60000, lU = (valido(uQ) ? 25 : 10) * 60000;
+    if (primo - lA > a) { perche.push(`l'orario è partito alle ${ora(ini)}, la prima camera l'ha cominciata verso le ${ora(primo)}`); a = primo - lA; }
+    if (ultimo + lU < b) { perche.push(`l'ultima camera l'ha finita alle ${ora(ultimo)}, l'orario si è chiuso alle ${ora(fin)}`); b = ultimo + lU; }
+    let fino = st.segnate[0].f;
+    for (let k = 1; k < st.segnate.length; k++) {
+      const x = st.segnate[k], g = presMin(x.i - fino);
+      if (g > 40) { buchi += g - 20; perche.push(`tra le ${ora(fino)} e le ${ora(x.i)} non ha segnato niente (${testoOreTurno(g)})`); }
+      fino = Math.max(fino, x.f);
+    }
+  }
+  let P = Math.max(0, presMin(b - a) - buchi);
+  const giusto = st.std + 30 + (so && so.esito === "fatta" ? 5 : 0);
+  if (P > giusto) { const n = st.fatte.filter(p => p.tipo !== "stelle").length; perche.push(`per il lavoro fatto (${n} ${n === 1 ? "camera" : "camere"}${st.fatte.length > n ? " e le rifiniture" : ""}) il tempo giusto è ${testoOreTurno(st.std)}, più mezz'ora di margine`); P = giusto; }
+  if (M - P < PRES_MARGINE || !perche.length) return null;
+  return { k: L.idVisto(z, iso), z, iso, M, P, perche };
+}
+function presProposte() {
+  if (!puoModificare() || !pagaAOre()) return [];
+  const out = [], oggi = L.oggiISO();
+  for (const z of signore()) for (let i = 0; i <= 7; i++) { const x = presVerifica(z.id, L.aggiungiGiorni(oggi, -i)); if (x) out.push(x); }
+  return out;
+}
+function presGiorno(iso) { return `${L.GIORNI[L.giornoSettimana(iso)]} ${L.giornoDelMese(iso)}`; }
+function presPropRiga(x, mod = true) {
+  return `<div class="sg2-r prop pres-prop"><b class="sg2-t">⏱️ ${esc(SIG(x.z))} · ${esc(presGiorno(x.iso))}: ${esc(testoOreTurno(x.M))} → ${esc(testoOreTurno(x.P))}</b><span class="sg2-x">${esc(presCap(x.perche.join("; ")))}. Conto ${esc(testoOreTurno(x.P))} (${eur(euroOre(x.P))} invece di ${eur(euroOre(x.M))})?</span>
+    ${mod ? `<button type="button" class="sg2-b verde pieno" data-pres-si="${esc(x.k)}">Sì, conto ${esc(testoOreTurno(x.P))}</button><div class="sg2-bt"><button type="button" class="sg2-b rosso" data-pres-no="${esc(x.k)}">No, lascio ${esc(testoOreTurno(x.M))}</button></div>` : ""}</div>`;
+}
+function presPropPaghe(x) {
+  return `<div class="pres-prop-paghe"><b>⚠ ${esc(presCap(x.perche.join("; ")))}.</b> Sofia propone di contare ${esc(testoOreTurno(x.P))} invece di ${esc(testoOreTurno(x.M))}.<span><button type="button" class="btnsm" data-pres-si="${esc(x.k)}">Sì, ${esc(testoOreTurno(x.P))}</button><button type="button" class="btnsm ghost" data-pres-no="${esc(x.k)}">No, lascio</button></span></div>`;
+}
+async function presDecidi(k, si) {
+  if (!puoModificare()) return;
+  const i = k.indexOf("_"), z = k.slice(0, i), iso = k.slice(i + 1), x = presVerifica(z, iso); if (!x) { disegna(); return; }
+  const patch = si ? { presMinuti: x.P, presDeciso: { giorno: "si", era: x.M, quando: S.db.adesso() } } : { presDeciso: { giorno: "no", era: x.M, quando: S.db.adesso() } };
+  S.visti[k] = { ...(S.visti[k] || {}), ...patch }; disegna();
+  try { await S.db.salva("visti", k, patch, true); toast(si ? `Fatto: conto ${testoOreTurno(x.P)} (${SIG(z)}, ${presGiorno(iso)})` : `Va bene: restano ${testoOreTurno(x.M)}`); } catch (e) { erroreScrittura(e); }
+}
+// in Paghe (e nei giorni della signora), sotto le ore: com'è andata col codice e la foto
+function presSegni(z, iso, mod) {
+  const v = L.vistoDi(S.visti, z, iso); if (!v || !presUsa(z, iso, v)) return "";
+  const a = v.arrivoQR, u = presUscitaDi(z, iso), so = presSorpresaDoc(z, iso), t = turnoDelGiorno(z, iso), parti = [];
+  if (a) parti.push(`entrata: ${presTesto(a)}`); else if (t && (t.daCamere === "inizio" || t.daCamere === "tutto")) parti.push("entrata senza codice: dalla prima camera");
+  if (u) parti.push(`uscita: ${presTesto(u)}`);
+  if (so) parti.push(so.esito === "fatta" ? `📸 foto a sorpresa alle ${L.oraBreve(so.ora)}` : "⚠ foto a sorpresa saltata");
+  const brutto = (a && (a.esito === "lontano" || a.esito === "senza-posizione" || a.senzaCodice)) || (u && u.esito !== "ok" && u.esito !== "da-tarare") || (so && so.esito !== "fatta");
+  const prop = mod ? presVerifica(z, iso) : null;
+  return `<br><span class="small pres-segni${brutto ? " ko" : ""}">${esc(parti.join(" · "))}${mod && so && so.esito === "fatta" ? ` <button type="button" class="pres-vedi" data-pres-vedi="${esc(L.idVisto(z, iso))}">vedi la foto</button>` : ""}</span>${prop ? presPropPaghe(prop) : ""}`;
+}
+async function presVediFoto(base) {
+  const { o } = presOvApri(`<h3>📸 La foto a sorpresa</h3><div class="pres-camera foto"><img class="pres-anteprima" alt="La foto a sorpresa"></div><p class="pres-stato" role="status">Carico la foto…</p><button type="button" class="big undo" data-pres-chiudi>Chiudi</button>`, "pres-foto");
+  let d = null; try { d = await S.db.leggi("visti", `${base}_foto`); } catch (e) {}
+  if (presOv !== o) return;
+  if (!d || !d.img) { presStato(o, "La foto non c'è ancora: se la signora era senza rete, arriva appena si collega.", true); return; }
+  o.el.querySelector(".pres-anteprima").src = d.img;
+  presStato(o, `${d.nome || ""} · ${L.dataBreve(d.giorno)} alle ${L.oraBreve(d.ora)}`);
+}
+// ---- Michele: i codici segreti, la stampa, le porte -------------------------------------------------------------------------
+function presCasuale(n) { const a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789", b = new Uint8Array(n); crypto.getRandomValues(b); return [...b].map(x => a[x % a.length]).join(""); }
+async function presSegreti(crea = false) {
+  if (!proprietario()) return null;
+  if (S.presSegreti && (!crea || Object.keys(PRES_POSTI).every(k => S.presSegreti[k]))) return S.presSegreti;
+  let d = null; try { d = await S.db.leggi("importazioni", "presenze-segreti"); } catch (e) {}
+  const s = {}; for (const k of Object.keys(PRES_POSTI)) if (d && /^[A-Za-z0-9]{6,40}$/.test(String(d[k] || ""))) s[k] = d[k];
+  if (crea && Object.keys(s).length < Object.keys(PRES_POSTI).length) {
+    for (const k of Object.keys(PRES_POSTI)) if (!s[k]) s[k] = presCasuale(10);
+    await S.db.salva("importazioni", "presenze-segreti", { ...s, creati: new Date().toISOString() }, true);
+  }
+  S.presSegreti = Object.keys(s).length ? s : null;
+  return S.presSegreti;
+}
+async function presSalva(dati) { S.presenze = { ...presConf(), ...dati }; await S.db.salva("impostazioni", "presenze", dati, true); }
+function presCaricaScript(src, pronto) {
+  if (pronto()) return Promise.resolve();
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = src; s.onload = () => (pronto() ? ok() : ko(new Error(src))); s.onerror = () => ko(new Error(src)); document.head.appendChild(s); });
+}
+function presQrSvg(testo) { const q = window.qrcode(0, "M"); q.addData(testo); q.make(); return q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }); }
+function presPaginaStampa(seg) {
+  const porte = Object.entries(PRES_POSTI).map(([k, n]) => `<section class="pg porta"><div class="top">LE STANZE DI RICCI · L'ORARIO DI LAVORO</div><h1>${esc(n)}</h1>
+    <div class="qr">${presQrSvg(PRES_URL + k + "." + seg[k])}</div>
+    <ol class="passi"><li><b>1</b><span>Apri l'app delle pulizie.</span></li><li><b>2</b><span>Entrando tocca <b>«📷 Sono arrivata»</b>.<br>Uscendo tocca <b>«HO FINITO»</b>.</span></li><li><b>3</b><span>Inquadra questo codice.</span></li></ol>
+    <p class="nota">Quando inquadri, l'app guarda dove sei solo in quel momento, per sapere che sei alla porta. Non ti segue.</p>
+    <p class="piede">Non staccare questo foglio. Se si rovina, dillo a Michele.</p></section>`).join("");
+  const sig = signore().length ? signore() : [{ id: "" }];
+  const fogli = sig.map(z => `<section class="pg foglietto"><div class="top">LE STANZE DI RICCI</div><h2>Come si segna l'orario di lavoro</h2><p class="chi">Foglio per la signora: <b>${esc(z.id ? SIG(z.id) : "")}</b> ____________________</p>
+    <ol class="punti">
+      <li><b>Cosa devi fare.</b> Entrando apri l'app, tocca «📷 Sono arrivata» e inquadra il codice attaccato alla porta. Uscendo tocca «HO FINITO» e inquadra lo stesso codice.</li>
+      <li><b>Come si paga.</b> A ore: dal codice inquadrato entrando a quello inquadrato uscendo. Se uscendo non inquadri il codice, l'orario finisce all'ultima camera che hai segnato nell'app. Se entrando non lo inquadri, parte dalla prima camera.</li>
+      <li><b>La posizione del telefono.</b> Solo nel momento in cui inquadri il codice (entrando e uscendo) l'app controlla che il telefono sia vicino alla porta. Non salva dove ti trovi: salva solo se eri alla porta, o a quanti metri. Durante il lavoro e fuori dal lavoro l'app non sa dove sei. La prima volta il telefono chiede il permesso: tocca «Consenti».</li>
+      <li><b>L'ora.</b> È quella di internet, non quella del telefono.</li>
+      <li><b>La foto a sorpresa.</b> Alcuni giorni, quando segni come fatta una camera lasciata dagli ospiti, l'app ti chiede una foto della camera pronta, fatta con l'app. Nella foto non ci devono essere persone. Le foto servono per controllare il lavoro; alcune possono andare sulla pagina Instagram dell'albergo.</li>
+      <li><b>I controlli.</b> Ogni giorno l'app confronta l'orario con le camere fatte. Se qualcosa non torna (per esempio il codice inquadrato lontano dalla porta, o molte più ore del tempo giusto per le camere fatte), il titolare lo vede e decide. Se non sei d'accordo, ne parlate.</li>
+      <li><b>Chi vede questi dati.</b> Solo il titolare. Servono per pagare le ore giuste e si tengono per il tempo che serve per la paga e per gli obblighi di legge.</li>
+      <li><b>I tuoi diritti.</b> Puoi chiedere in ogni momento di vedere i tuoi orari e i dati salvati, e di correggerli se sono sbagliati.</li>
+    </ol>
+    <p class="firma">Ho letto e ho capito.<br><br>Nome ______________________ &nbsp; Firma ______________________ &nbsp; Data ____________</p>
+    <p class="firma">Per Le Stanze di Ricci (il titolare): ______________________</p></section>`).join("");
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I codici della porta</title><style>
+    @page{size:A4;margin:14mm}
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#111;background:#E7E5E4}
+    .barra{position:sticky;top:0;z-index:2;background:#1C1917;color:#fff;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .barra p{margin:0;font-size:15px;line-height:1.4;flex:1 1 320px}.barra button{font:700 17px system-ui,sans-serif;padding:12px 22px;border-radius:999px;border:0;background:#FBBF24;color:#1C1917;cursor:pointer}
+    .pg{background:#fff;width:210mm;max-width:100%;min-height:297mm;margin:12px auto;padding:16mm 14mm;page-break-after:always;break-after:page;display:flex;flex-direction:column}
+    .top{font:700 13px system-ui,sans-serif;letter-spacing:.14em;color:#57534E;text-align:center}
+    .porta h1{font-size:40px;line-height:1.1;text-align:center;margin:10mm 0 6mm}
+    .qr{width:125mm;max-width:100%;margin:0 auto}.qr svg{display:block;width:100%;height:auto}
+    .passi{list-style:none;padding:0;margin:8mm auto 0;max-width:150mm;display:grid;gap:5mm}
+    .passi li{display:flex;gap:5mm;align-items:center;font-size:22px;line-height:1.3}
+    .passi li>b{flex:none;width:12mm;height:12mm;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:22px}
+    .nota{margin:8mm auto 0;max-width:150mm;font-size:15px;color:#44403C;text-align:center}
+    .piede{margin-top:auto;font-size:13px;color:#78716C;text-align:center}
+    .foglietto h2{font-size:26px;margin:6mm 0 3mm}.foglietto .chi{font-size:15px;margin:0 0 4mm}
+    .punti{margin:0;padding-left:6mm;display:grid;gap:3.2mm;font-size:14.5px;line-height:1.45}
+    .firma{margin-top:8mm;font-size:15px}
+    @media print{body{background:#fff}.barra{display:none}.pg{margin:0;width:auto;min-height:0;height:269mm;padding:0}}
+    </style></head><body><div class="barra"><p><b>4 fogli per le porte + 1 foglietto per ogni signora.</b> Attacca i fogli <b>dentro</b> la porta, all'altezza degli occhi, in una bustina di plastica trasparente. Poi, davanti a ogni foglio, apri l'app sul telefono: Paghe → «📷 Il codice alla porta» → «📍 Inquadra». Il foglietto lo fai leggere e firmare a ogni signora (una copia a lei, una a te).</p><button type="button" onclick="window.print()">🖨️ Stampa</button></div>${porte}${fogli}</body></html>`;
+}
+async function presStampa() {
+  if (!proprietario()) return;
+  const w = window.open("", "_blank");   // subito, dentro il tocco (se no il telefono la blocca)
+  if (!w) { toast("Il telefono ha bloccato la pagina da stampare: riprova, o stampa dal PC."); return; }
+  try { w.document.write("<p style='font:18px system-ui,sans-serif;padding:24px'>Preparo i fogli…</p>"); } catch (e) {}
+  try {
+    const seg = await presSegreti(true);
+    await presCaricaScript("qrcode.js", () => typeof window.qrcode === "function");
+    const html = presPaginaStampa(seg);
+    w.document.open(); w.document.write(html); w.document.close();
+    if (!presConf().stampati) await presSalva({ stampati: true, stampatiIl: new Date().toISOString() });
+    disegna();
+  } catch (e) { console.warn("stampa codici", e); try { w.close(); } catch (x) {} toast("Non riesco a preparare i fogli: riprova fra un minuto."); }
+}
+async function presTara(dato = null) {
+  if (!proprietario()) return;
+  const q = dato || await presScanner("taratura"); if (!q || !q.posto) return;
+  const pos = q.pos || null;
+  if (!pos) { toast("Non riesco a sapere dove sei: accendi la posizione del telefono e riprova."); return; }
+  const seg = await presSegreti();
+  if (seg && seg[q.posto] && q.codice !== seg[q.posto]) { toast("Questo foglio non è quello stampato dall'app: stampa i fogli da Paghe e riprova."); return; }
+  const c = presConf(), posti = { ...(c.posti || {}), [q.posto]: { lat: pos.lat, lng: pos.lng, precisione: pos.precisione, quando: q.ora || new Date().toISOString() } };
+  const accendo = !c.attivo && c.spento !== true;
+  await presSalva({ posti, ...(accendo ? { attivo: true, dal: L.oggiISO(), acceso: new Date().toISOString() } : {}) });
+  disegna();
+  toast(`📍 Imparato: ${PRES_POSTI[q.posto]}${pos.precisione > 60 ? ` (posizione poco precisa: ± ${pos.precisione} m; se puoi, rifallo davanti alla porta, fuori)` : ""}${accendo ? ". Il codice alla porta è acceso" : ""}`);
+}
+function cardPresenze() {
+  if (!proprietario() || !pagaAOre()) return "";
+  const c = presConf(), porte = presPorte(), tutte = Object.keys(PRES_POSTI);
+  const passo = (ok, ora, n, tit, sotto, tasto) => `<li class="${ok ? "ok" : ora ? "ora" : ""}"><span class="pc-n">${ok ? "✓" : n}</span><span class="pc-t"><b>${tit}</b><small>${sotto}</small></span>${tasto}</li>`;
+  const stato = c.attivo ? "acceso ✓" : c.spento ? "spento" : "da preparare";
+  return `<section class="card pres-card pc-card"><h2>📷 Il codice alla porta <small>${stato}</small></h2>
+    <p class="muted small" style="margin:0 0 8px">Le signore fanno partire e fermare l'orario inquadrando con l'app il foglio attaccato alla porta. Sofia controlla il posto, l'ora e il lavoro fatto: se qualcosa non torna te lo propone, e tu tocchi Sì o No.</p>
+    <ol class="pc-passi">
+      ${passo(!!c.stampati, !c.stampati, 1, "Stampa i fogli", "4 codici per le porte e il foglietto da far firmare a ogni signora", `<button type="button" class="btnsm${c.stampati ? " ghost" : ""}" data-pres-stampa>🖨️ Stampa</button>`)}
+      ${passo(porte.length === tutte.length, !!c.stampati && porte.length < tutte.length, 2, "Attaccali e insegna all'app dov'è ogni porta", porte.length ? `Fatto: ${esc(porte.map(k => PRES_CORTO[k]).join(", "))}.${porte.length < tutte.length ? ` Manca: ${esc(tutte.filter(k => !porte.includes(k)).map(k => PRES_CORTO[k]).join(", "))}.` : ""} Davanti al foglio, col telefono: tocca e inquadralo.` : "Davanti a ogni foglio attaccato, col tuo telefono: tocca e inquadralo (10 secondi a porta).", `<button type="button" class="btnsm${porte.length === tutte.length ? " ghost" : ""}" data-pres-tara>📍 Inquadra</button>`)}
+      ${passo(!!c.attivo, !c.attivo && porte.length > 0, 3, c.attivo ? "Acceso" : "Accendi", c.attivo ? "Le signore vedono «📷 Sono arrivata» e a HO FINITO inquadrano il codice." : "Si accende da solo quando insegni la prima porta.", `<button type="button" class="btnsm ghost" data-pres-attiva="${c.attivo ? "0" : "1"}">${c.attivo ? "Spegni" : "Accendi"}</button>`)}
+    </ol>
+    <details style="margin-top:8px"><summary>I quattro controlli</summary><ol class="pres-quattro">
+      <li><b>Il posto.</b> Il codice dentro la porta (con un segreto: un codice fatto in casa non vale) e la posizione presa solo nel momento in cui lo inquadrano.</li>
+      <li><b>L'ora.</b> Presa da internet, non dal telefono.</li>
+      <li><b>Il lavoro.</b> Arrivo → prima camera, ultima camera → uscita, i buchi tra una camera e l'altra, il tempo giusto delle camere più mezz'ora. Sotto i 20 minuti non ti propone niente.</li>
+      <li><b>La qualità.</b> La foto a sorpresa (circa un giorno su due, una camera lasciata dagli ospiti) e il Visto fra colleghe.</li></ol></details></section>`;
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-pres-stampa],[data-pres-tara],[data-pres-attiva],[data-pres-si],[data-pres-no],[data-pres-foto],[data-pres-vedi]") : null;
+  if (!t || (presOv && presOv.el.contains(t))) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-pres-stampa")) { presStampa(); return; }
+  if (t.hasAttribute("data-pres-tara")) { presTara().catch(erroreScrittura); return; }
+  if (t.hasAttribute("data-pres-attiva")) { const on = t.getAttribute("data-pres-attiva") === "1"; presSalva(on ? { attivo: true, spento: false, dal: presConf().dal || L.oggiISO(), acceso: new Date().toISOString() } : { attivo: false, spento: true }).then(() => { disegna(); toast(on ? "📷 Il codice alla porta è acceso" : "Il codice alla porta è spento: resta il tasto di prima"); }).catch(erroreScrittura); return; }
+  if (t.hasAttribute("data-pres-si")) { presDecidi(t.getAttribute("data-pres-si"), true); return; }
+  if (t.hasAttribute("data-pres-no")) { presDecidi(t.getAttribute("data-pres-no"), false); return; }
+  if (t.hasAttribute("data-pres-foto")) { presFoto(t.getAttribute("data-pres-foto"), false); return; }
+  if (t.hasAttribute("data-pres-vedi")) { presVediFoto(t.getAttribute("data-pres-vedi")); }
+}, true);
+// inquadrato con la fotocamera del telefono: l'app si apre con ?presenza=<posto>.<segreto>. Per la signora il link NON basta
+// (si può salvare e riaprire da casa): si apre la fotocamera dell'app. Per Michele: «Insegno qui questa porta?»
+function presDaIndirizzo() {
+  try {
+    const u = new URL(location.href), q = presLeggi(u.search); if (!q) return;
+    u.searchParams.delete("presenza"); history.replaceState(history.state, "", u.pathname + (u.search || "") + u.hash);
+    if (addetta() && presAccese()) { const v = L.vistoDi(S.visti, S.utente.zona, L.oggiISO()); if (!(v && (v.arrivoOra || v.turnoInizio || v.finitoOra))) presArrivo(); else toast("Per fermare l'orario tocca HO FINITO e inquadra il codice."); return; }
+    if (proprietario()) presChiediTara(q);
+  } catch (e) {}
+}
+async function presChiediTara(q) {
+  const { p } = presOvApri(`<h3>📍 ${esc(PRES_POSTI[q.posto])}</h3><p class="pres-sotto">Sei davanti a questa porta? Allora l'app si segna qui dov'è.</p><button type="button" class="big ok" data-pres-ok>Sì, sono qui: insegna la porta</button><button type="button" class="big undo" data-pres-chiudi>No</button>`, "pres-codice");
+  if (!(await p)) return;
+  const [t, pos] = await Promise.all([presOraVera(), presPosizione()]);
+  await presTara({ ...q, ora: t.iso, pos });
+}
 // ============================================================================
 //  1.66.0 SOFIA SOCIAL MANAGER (8/11 notte, Michele: «fai una nuova sezione con Sofia vestita da influencer con gli
 //  occhiali da sole, che è la parte che mi gestisce in tutto e per tutto: io faccio l'accesso con i nuovi account, non
@@ -15942,6 +16534,7 @@ async function segnaFatta(id) {
   if (addetta() && !await confermaFinito(p)) return;
   registraPuliziaFatta(p);
   cambiaStato(p, "fatta", "");
+  presDopoFatta(p);   // 1.69.0: la foto a sorpresa
   const frasi = ["Bravissima!", "Ottimo lavoro!", "Grande!", "Perfetto!"];
   toast(`${frasi[Math.floor(Math.random() * frasi.length)]} ${camera(p.camera).nome} è pulita ✓`, { testo: "Ho sbagliato", fai: () => { cambiaStato(S.pulizie[p.id], prima === "fatta" ? "da_fare" : prima, ""); const t = $(".toast"); if (t) t.remove(); } });
   setTimeout(() => { const t = $(".toast"); if (t && /è pulita/.test(t.textContent)) t.remove(); }, 8000);
@@ -16346,7 +16939,8 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
       const reg = await navigator.serviceWorker.register("./sw.js");
-      const proponi = (nuovo) => { if (navigator.serviceWorker.controller) toast("C'è una versione nuova dell'app.", { testo: "Aggiorna", fai: () => { nuovo.postMessage({ tipo: "attiva" }); } }); };
+      const apertaAlle = Date.now();   // 1.69.0: appena aperta (niente a metà) la versione nuova si mette da sola
+      const proponi = (nuovo) => { if (!navigator.serviceWorker.controller) return; if (Date.now() - apertaAlle < 20000 && !S.foglio && !document.querySelector(".conferma,.pres-ov")) { nuovo.postMessage({ tipo: "attiva" }); return; } toast("C'è una versione nuova dell'app.", { testo: "Aggiorna", fai: () => { nuovo.postMessage({ tipo: "attiva" }); } }); };
       const segui = (nuovo) => { if (!nuovo) return; if (nuovo.state === "installed") proponi(nuovo); else nuovo.addEventListener("statechange", () => { if (nuovo.state === "installed") proponi(nuovo); }); };
       // versione nuova già scaricata (in attesa) o in arrivo: lo dico subito
       if (reg.waiting) segui(reg.waiting);
