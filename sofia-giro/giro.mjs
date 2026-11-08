@@ -70,9 +70,10 @@ import { LUOGHI_COMUNI } from "../governante.js";
 import { leggiChat, sintesiSera, oraDiAvvisi } from "./lettura-giro.mjs";
 import { leggiFogliPapa } from "./prospetto-giro.mjs";   // 1.27.0
 import { allarmiPerTe } from "./perte-giro.mjs";   // 1.28.0
+import { copiaDovuta, faiCopia, mandaCassetta, pulito as pulitoCopia } from "./copia-giro.mjs";   // 1.29.0: la copia di sicurezza
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.28.1";
+export const VERSIONE_GIRO = "1.29.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -196,7 +197,7 @@ export function frasiInRighe(testo) {
   return frasi.length > 1 ? frasi.slice(0, 8).map(f => `• ${f}`).join("\n") : t;
 }
 // ---- il giro ------------------------------------------------------------------------------------------
-export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "" }) {
+export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "", copia = null }) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
   const esiti = [];
   const [stato0, avvisi] = await Promise.all([db.doc("importazioni", "giro-sofia"), db.doc("impostazioni", "avvisi")]);
@@ -423,6 +424,14 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       }
     }
   } catch (e) { console.warn("guasti urgentissimi:", e && e.message); esiti.push("guasti urgentissimi: errore " + String((e && e.message) || e).slice(0, 80)); }
+  // 1.29.0: la copia di sicurezza di ogni settimana, nel Google Drive di Michele (copia-giro.mjs). Nel registro pubblico
+  // di GitHub solo com'è andata, mai dati né l'indirizzo della cassetta.
+  if (copia && copia.fs && copia.manda) {
+    try {
+      const cs = await db.doc("importazioni", "copia-sicurezza");
+      if (copiaDovuta(cs, adesso)) { const r = await faiCopia({ fs: copia.fs, db, adesso, manda: copia.manda, conf: cs, giorno: oggi }); esiti.push(r.esito); }
+    } catch (e) { console.warn("copia di sicurezza:", pulitoCopia(e)); esiti.push("copia di sicurezza: errore " + pulitoCopia(e)); }
+  }
   const vecchi = Array.isArray(stato0 && stato0.esiti) ? stato0.esiti : [];
   const notevole = lettura && !/^(niente di nuovo|aspetto|aspetta|la sta leggendo)/.test(lettura.esito || "");
   const letturaInfo = notevole ? { quando: adesso.toISOString(), esito: lettura.esito, n: lettura.n || 0 } : ((stato0 && stato0.lettura) || null);
@@ -514,7 +523,7 @@ async function main() {
   // 1.18.1: chi lo fa partire: il ponte sul PC (input "da"), l'orario di GitHub, o Michele col tasto «Run workflow»
   const ev = String(process.env.GITHUB_EVENT_NAME || "");
   const da = String(process.env.GIRO_DA || "").trim().toLowerCase() || (ev === "schedule" ? "orario" : ev === "workflow_dispatch" ? "a mano" : "");
-  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null, da, scade: String(process.env.GIRO_SCADE || "").trim() });
+  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null, da, scade: String(process.env.GIRO_SCADE || "").trim(), copia: { fs: getFirestore(), manda: mandaCassetta } });
   console.log("Sofia sempre accesa:", JSON.stringify(esito));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(e => { console.error("Sofia sempre accesa: errore", e && e.message); process.exitCode = 1; });
