@@ -8996,3 +8996,30 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 :root[data-theme="dark"] .soc-conti small,:root[data-theme="dark"] .soc-prova>summary small{color:#C9C3B8}
 :root[data-theme="dark"] .soc-foto-lista li.no{background:rgba(245,158,11,.16)}
 .soc-prova>summary::marker{content:""}
+/* ---- 1.68.0 · L'orologio di Sofia e «Da fare al PC» ---- */
+.pc-card h2{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px}
+.pc-card h2 small{font-weight:600;font-size:13px;color:#78716C}
+.pc-passi{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pc-passi li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#F7F4EE}
+.pc-passi li.ok{background:#ECF7EF}
+.pc-passi li.ora{background:#FFF7CC;box-shadow:inset 0 0 0 2px #F59E0B}
+.pc-n{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#1C1917;color:#FFFFFF;font:800 14px/1 var(--f-body)}
+.pc-passi li.ok .pc-n{background:#15803D}
+.pc-t{flex:1 1 auto;display:flex;flex-direction:column;gap:2px;min-width:0}
+.pc-t b{font-size:15px}
+.pc-t small{font-size:12.5px;line-height:1.35;color:#57534E}
+.pc-passi .btnsm{flex:none;white-space:nowrap}
+.pc-dopo{flex:none;font-size:12px;color:#78716C;font-style:italic}
+.oro-riga{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:10px 12px;border-radius:12px;background:#ECF7EF}
+.oro-riga.ko{background:#FEF3C7}
+.oro-riga p{margin:0;font-size:13.5px;line-height:1.4}
+.oro-riga .btnsm{flex:none;white-space:nowrap}
+.oro-incolla{display:flex;align-items:flex-start;gap:10px;width:100%}
+.oro-incolla>b{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#1C1917;color:#FFFFFF;font-size:14px}
+#oroChiave,body.premium #oroChiave{flex:1 1 auto;min-width:0;min-height:64px;padding:10px 12px;border:2px solid #F59E0B;border-radius:12px;background:#FFF7CC;color:#1C1917;font:500 13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all;resize:vertical;box-shadow:none}
+#oroChiave:focus,body.premium #oroChiave:focus{border-color:#F59E0B;outline:3px solid #FBBF24;outline-offset:1px;box-shadow:none}
+:root[data-theme="dark"] .pc-passi li{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .pc-passi li.ok,:root[data-theme="dark"] .oro-riga{background:rgba(34,197,94,.12)}
+:root[data-theme="dark"] .pc-passi li.ora,:root[data-theme="dark"] .oro-riga.ko{background:rgba(245,158,11,.16)}
+:root[data-theme="dark"] .pc-t small,:root[data-theme="dark"] .pc-card h2 small{color:#C9C3B8}
+:root[data-theme="dark"] .pc-n,:root[data-theme="dark"] .oro-incolla>b{background:#F5F5F4;color:#1C1917}

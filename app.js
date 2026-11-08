@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.67.0";
+export const VERSIONE = "1.68.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -10354,7 +10354,7 @@ function cardSempreAccesa() {
   const voce = (k, t) => { const x = f[k]; const fatto = x && /^\d/.test(String(x)); return `<li>${fatto ? "✅" : x === "app" ? "✅" : x ? "➖" : "⏳"} ${t}${fatto ? ` <small>alle ${esc(x)}</small>` : x === "app" ? " <small>(l'ha mandato l'app)</small>" : x === "niente" ? " <small>(non serviva)</small>" : ""}</li>`; };
   const sw = (k, t) => `<label class="giro-sw"><span>${t}</span><input type="checkbox" data-giro-sw="${k}" ${a[k] === false ? "" : "checked"}></label>`;
   return `<section class="card giro-card"><h2>${esc(nomeGov())} sempre accesa</h2>
-    <p class="note ${viva ? "ok" : "warn"}" style="margin:0 0 8px">${viva ? `Accesa ✓ · ultimo giro alle ${esc(L.oraBreve(g.ultimo))}` : `Ferma dalle ${esc(L.oraBreve(g.ultimo))} del ${esc(L.dataBreve(String(g.ultimo).slice(0, 10)))}: GitHub a volte la fa partire con ore di ritardo${g.spinta ? " e il PC è spento (o il ponte è fermo)" : ""}. Se resta ferma più di un giorno: su GitHub → Actions → «Sofia sempre accesa» controlla che sia abilitata.`}</p>
+    <p class="note ${viva ? "ok" : "warn"}" style="margin:0 0 8px">${viva ? `Accesa ✓ · ultimo giro alle ${esc(L.oraBreve(g.ultimo))}` : `Ferma dalle ${esc(L.oraBreve(g.ultimo))} del ${esc(L.dataBreve(String(g.ultimo).slice(0, 10)))}: GitHub a volte la fa partire con ore di ritardo${g.spinta ? " e il PC è spento (o il ponte è fermo)" : ""}.${oroAcceso() ? "" : " Rimedio: accendi l'orologio di Sofia (Altro → La copia di sicurezza, 2 minuti)."} Se resta ferma più di un giorno: su GitHub → Actions → «Sofia sempre accesa» controlla che sia abilitata.`}</p>
     ${rigaSpinta(g)}
     <p class="small muted" style="margin:0 0 4px">Oggi:</p>
     <ul class="giro-oggi">${voce("piano", a.token && a.chat ? "Piano del giorno alle signore (dalle 7)" : "Il piano del giorno a te (dalle 7)")}${voce("arrivi", "Priorità alle camere con un arrivo (12:30)")}${voce("allarme", "Avviso a te se una camera non è pronta (13:30)")}${voce("chiusura", "Promemoria delle pulizie da segnare (15:00)")}${voce("bollettino", "Bollettino della sera a te (20:00)")}</ul>
@@ -12295,6 +12295,102 @@ document.addEventListener("input", (e) => {
 }, true);
 
 // ============================================================================
+//  1.68.0 L'OROLOGIO DI SOFIA E «DA FARE AL PC» (8/11, Michele: «io mi metterò pomeriggio al PC… fai tutto quello che puoi
+//  fare tu, preparami tutto… e risolvi questi problemi qua»).
+//  Il problema: GitHub da solo fa partire il giro di Sofia «quando può» (l'8/11 nessun giro dalle 7:44 alle 12:15): in
+//  pratica il giro partiva solo quando l'app era aperta sul PC. La soluzione: la cassetta (versione 3, nel Google di Michele)
+//  fa partire il giro ogni 10 minuti (di notte una volta all'ora), anche a PC spento, con una chiave di GitHub che Michele
+//  incolla qui: va SOLO alla cassetta (mai nel database, mai nella pagina, mai nel registro). Il giro (1.31.1) segna
+//  giro-sofia.orologio.ultima quando lo fa partire l'orologio, così l'app vede se l'orologio va.
+//  «🗓️ Da fare al PC», in cima ad «Altro»: le cose da fare una volta sola, in ordine, con lo stato vero e il tasto giusto.
+// ============================================================================
+const GH_OROLOGIO = "https://github.com/settings/personal-access-tokens/new?name=Orologio%20di%20Sofia&description=La%20cassetta%20su%20Google%20fa%20partire%20il%20giro%20di%20Sofia%20ogni%2010%20minuti%20(solo%20Actions%20di%20pulizie-stanze-ricci)&target_name=michelepegoli2210-hub&expires_in=366&actions=write";
+const ORO_CHIAVE_RX = /^github_pat_[A-Za-z0-9_]{40,}$/;
+const oroAcceso = () => !!(S.copia && S.copia.orologio && S.copia.orologio.acceso);
+function oroUltimo() { const g = S.giroSofia || {}; return (g.orologio && g.orologio.ultima) || ""; }
+function oroGiorniScade() { const o = (S.copia && S.copia.orologio) || {}; return /^\d{4}-\d{2}-\d{2}$/.test(o.scade || "") ? Math.round((Date.parse(o.scade + "T12:00:00") - Date.now()) / 86400000) : null; }
+function oroVa() { const u = oroUltimo(), min = u ? (Date.now() - Date.parse(u)) / 60000 : Infinity, h = new Date().getHours(); return min < (h >= 23 || h < 7 ? 80 : 35); }
+// nella scheda della copia di sicurezza
+function oroRiga() {
+  if (!csPronta()) return "";
+  if (!oroAcceso()) return `<div class="oro-riga"><p><b>⏰ L'orologio di Sofia: spento.</b> Così il giro di Sofia parte solo quando l'app è aperta sul PC. Accendilo (2 minuti): parte da solo ogni 10 minuti, anche a PC spento.</p><button type="button" class="btnsm" data-oro-apri>⏰ Accendi l'orologio</button></div>`;
+  const u = oroUltimo(), va = oroVa(), gg = oroGiorniScade(), scade = gg !== null && gg <= 30;
+  return `<div class="oro-riga${va && !scade ? "" : " ko"}"><p>${va ? `<b>⏰ L'orologio di Sofia è acceso ✓</b> · ultimo giro ${esc(csQuando(u))}.` : u ? `<b>⏰ L'orologio è acceso, ma non fa partire il giro da ${esc(csQuando(u))}.</b> Tocca «Controlla».` : `<b>⏰ L'orologio è acceso:</b> il primo giro parte entro 10 minuti.`}${scade ? ` <b>La chiave di GitHub ${gg < 0 ? "è scaduta" : `scade fra ${gg} ${gg === 1 ? "giorno" : "giorni"}`}: rifalla (2 minuti).</b>` : ""}</p><button type="button" class="btnsm ghost" data-oro-apri>${va && !scade ? "⚙️ L'orologio" : "Controlla / rifai"}</button></div>`;
+}
+function foglioOrologio(f) {
+  if (!csPronta()) return `<h3>⏰ L'orologio di Sofia</h3><p class="note warn">Prima collega la cassetta su Google (la copia di sicurezza): l'orologio sta lì dentro.</p><button type="button" class="big main" data-cs-apri>📦 Collega la cassetta</button>`;
+  const esito = `<p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || f.esito || (f.provo ? "Provo con GitHub…" : "Quando incolli la chiave, la provo da sola."))}</p>`;
+  const o = S.copia.orologio || {};
+  if (oroAcceso() && !f.rifai) return `<h3>⏰ L'orologio di Sofia</h3>
+    <p class="note ok">✓ Acceso${o.quando ? ` dal ${esc(L.dataLunga(String(o.quando).slice(0, 10)))}` : ""}: il giro di Sofia parte ogni 10 minuti, anche a PC spento${o.scade ? `. La chiave di GitHub dura fino a ${esc(L.dataLunga(o.scade))}` : ""}.</p>
+    <ol class="rg-passi"><li><button type="button" class="rg-b" data-oro-stato><b>✓</b>Controlla l'orologio</button></li><li><button type="button" class="rg-b" data-oro-rifai><b>↺</b>Rifai la chiave di GitHub</button></li></ol>${esito}`;
+  return `<h3>⏰ Accendi l'orologio di Sofia</h3>
+    <p class="small" style="margin:0 0 8px">Così il giro di Sofia parte ogni 10 minuti (di notte una volta all'ora) anche a PC spento. Serve una chiave di GitHub: la incolli qui e va solo nella tua cassetta su Google, non resta nell'app. Dal PC: 2 minuti.</p>
+    <ol class="rg-passi">
+      <li><a class="rg-b" href="${GH_OROLOGIO}" target="_blank" rel="noopener"><b>1</b>Apri GitHub (la pagina è già pronta)</a></li>
+      <li><span class="rg-t"><b>2</b><span>Su GitHub, a metà pagina, in <b>«Repository access»</b> scegli <b>«Only select repositories»</b> e poi <b>pulizie-stanze-ricci</b>. Il resto è già scritto. In fondo tocca <b>«Generate token»</b> (e, se lo richiede, di nuovo <b>«Generate token»</b>). Poi tocca i <b>due foglietti</b> accanto alla chiave verde: così è copiata.</span></span></li>
+      <li><label class="oro-incolla"><b>3</b><textarea id="oroChiave" rows="2" data-keep data-oro-chiave autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Incolla qui la chiave (comincia con github_pat_)"></textarea></label></li>
+      <li><button type="button" class="rg-b verde" data-oro-accendi${f.provo ? " disabled" : ""}><b>4</b>Accendi l'orologio</button></li>
+    </ol>${esito}`;
+}
+async function oroAccendi() {
+  const f = S.foglio; if (!f || f.tipo !== "orologio" || f.provo || !csPronta()) return;
+  const el = document.getElementById("oroChiave"), chiave = String((el && el.value) || "").replace(/\s+/g, "");
+  if (!ORO_CHIAVE_RX.test(chiave)) { S.foglio = { ...f, esito: "", errore: chiave.length < 40 ? "Incolla la chiave intera: comincia con github_pat_ ed è lunga." : "Questa non sembra la chiave di GitHub: deve cominciare con github_pat_." }; disegnaFoglio(); return; }
+  S.foglio = { ...f, provo: true, errore: "", esito: "" }; disegnaFoglio();
+  const r = await alWsChiama(S.copia.url, { azione: "orologio", segreto: S.copia.segreto, chiave }, 60000);
+  for (const x of [el, document.getElementById("oroChiave")]) if (x) x.value = "";   // via dalla casella, comunque sia andata
+  if (!S.foglio || S.foglio.tipo !== "orologio") return;
+  if (!r || !r.ok) { S.foglio = { tipo: "orologio", rifai: !!f.rifai, errore: (r && r.errore) || "La cassetta non ha risposto: riprova fra un minuto." }; disegnaFoglio(); return; }
+  const dati = { orologio: { acceso: true, quando: new Date().toISOString(), scade: /^\d{4}-\d{2}-\d{2}$/.test(String(r.scade || "")) ? r.scade : "" } };
+  try { await S.db.salva("importazioni", "copia-sicurezza", dati); } catch (e) {}
+  S.copia = { ...(S.copia || {}), ...dati };
+  S.foglio = { tipo: "orologio", esito: "✓ L'orologio è acceso: il primo giro è partito adesso, poi ogni 10 minuti, anche a PC spento." };
+  disegna(); toast("⏰ Orologio acceso");
+}
+async function oroStato() {
+  S.foglio = { tipo: "orologio", provo: true }; disegnaFoglio();
+  const r = await alWsChiama(S.copia.url, { azione: "orologioStato", segreto: S.copia.segreto }, 60000);
+  if (!S.foglio || S.foglio.tipo !== "orologio") return;
+  const msg = !r || !r.ok ? { errore: (r && r.errore) || "La cassetta non ha risposto: riprova fra un minuto." }
+    : !r.acceso ? { errore: "L'orologio nella cassetta è spento: rifai la chiave di GitHub (↺)." }
+    : r.errore ? { errore: `L'orologio c'è, ma GitHub dice: ${r.errore}` }
+    : { esito: `✓ L'orologio va: ultimo giro fatto partire ${csQuando(r.ultimo) || "poco fa"}.` };
+  S.foglio = { tipo: "orologio", ...msg }; disegnaFoglio();
+}
+// ---- «Da fare al PC» (in cima ad «Altro») ----------------------------------------------------------------------------
+function cardDaFarePC() {
+  if (!proprietario()) return "";
+  const s = socStato(), m = s.motore || {};
+  const passi = [
+    { t: "📦 La cassetta su Google", c: "le copie di sicurezza (e l'orologio) · 5 minuti", fatto: csPronta(), tasto: "data-cs-apri" },
+    { t: "⏰ L'orologio di Sofia", c: "il giro parte da solo, anche a PC spento · 2 minuti", fatto: oroAcceso(), tasto: "data-oro-apri", dopo: csPronta() ? "" : "dopo il passo 1" },
+    { t: "📘 Profilo e Pagina Facebook", c: "col tuo nome vero · 10 minuti", fatto: socPronta("facebook"), tasto: 'data-soc-come="facebook"' },
+    { t: "📸 Instagram professionale", c: "dal telefono · 5 minuti", fatto: socPronta("instagram"), tasto: 'data-soc-come="instagram"' },
+    { t: "🔑 Collega Instagram a Sofia", c: "su Meta, dal PC · 10 minuti", fatto: !!(m.ig && m.ig.nome) && !["chiave", "personale"].includes(m.stato), tasto: "data-soc-chiave", dopo: socPronta("instagram") ? "" : "dopo il passo 4" },
+    { t: "🪪 Alloggiati Web: il passaggio", c: "le schedine partono da sole · 10 minuti, le password le scrivi tu", fatto: alWsPronto(), tasto: "data-alws-apri" },
+  ];
+  const fatti = passi.filter(p => p.fatto).length;
+  if (fatti === passi.length) return "";
+  const primo = passi.findIndex(p => !p.fatto && !p.dopo);
+  return `<section class="card pc-card"><h2>🗓️ Da fare al PC <small>una volta sola · ${fatti}/${passi.length} fatte</small></h2>
+    <p class="muted small" style="margin:0 0 8px">In quest'ordine. Ogni tasto apre i passi giusti, con la casella gialla dove incollare.</p>
+    <ol class="pc-passi">${passi.map((p, i) => `<li class="${p.fatto ? "ok" : i === primo ? "ora" : ""}"><span class="pc-n">${p.fatto ? "✓" : i + 1}</span><span class="pc-t"><b>${p.t}</b><small>${p.fatto ? "fatto" : esc(p.c)}</small></span>${p.fatto ? "" : p.dopo ? `<span class="pc-dopo">${esc(p.dopo)}</span>` : `<button type="button" class="btnsm${i === primo ? "" : " ghost"}" ${p.tasto}>${i === primo ? "Comincia ›" : "Fallo ›"}</button>`}</li>`).join("")}</ol></section>`;
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-oro-apri],[data-oro-accendi],[data-oro-stato],[data-oro-rifai]") : null;
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-oro-apri")) { apriFoglio({ tipo: "orologio" }); return; }
+  if (t.hasAttribute("data-oro-accendi")) { if (!t.disabled) oroAccendi().catch(() => {}); return; }
+  if (t.hasAttribute("data-oro-stato")) { oroStato().catch(() => {}); return; }
+  if (t.hasAttribute("data-oro-rifai")) { S.foglio = { tipo: "orologio", rifai: true }; disegnaFoglio(); }
+}, true);
+document.addEventListener("input", (e) => {   // incollata giusta: si prova da sola
+  const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-oro-chiave")) return;
+  if (ORO_CHIAVE_RX.test(String(t.value || "").replace(/\s+/g, ""))) oroAccendi().catch(() => {});
+}, true);
+// ============================================================================
 //  1.66.0 SOFIA SOCIAL MANAGER (8/11 notte, Michele: «fai una nuova sezione con Sofia vestita da influencer con gli
 //  occhiali da sole, che è la parte che mi gestisce in tutto e per tutto: io faccio l'accesso con i nuovi account, non
 //  devo fare niente altro, forse solo le foto che mi dici tu di fare; per il resto pubblica Sofia, scrive Sofia; io non
@@ -12324,8 +12420,8 @@ const SOC_FOTO = [
   { k: "uccelli", t: "Gli uccelli della laguna", c: "aironi o fenicotteri, anche da lontano (per chi fa birdwatching)" },
 ];
 const SOC_COME = {
-  instagram: { tit: "📸 Aprire Instagram (5 minuti)", passi: ["Scarica l'app Instagram sul telefono (se non c'è) e tocca «Crea un nuovo account».", "Nome utente: <b>lestanzediricci</b> (se è già preso: <b>lestanzediricci.lesina</b>).", "Usa un'email solo per l'albergo (meglio una nuova) e una password che ti segni bene.", "Nelle impostazioni del profilo cerca <b>«account professionale»</b> → <b>Azienda</b> → categoria <b>Hotel</b> o <b>Bed and breakfast</b>.", "Nella <b>bio</b> metti il link per prenotare (per ora il tuo WhatsApp; poi il sito): Sofia scrive sempre «trovi tutto nel link in bio».", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperto»</b>."] },
-  facebook: { tit: "📘 Aprire la Pagina Facebook (5 minuti)", passi: ["Facebook per aprire una Pagina chiede un profilo personale, <b>col tuo nome vero</b> (i profili finti li chiudono, e con loro la Pagina). Serve anche per collegare Instagram.", "Dal profilo: <b>Menu → Pagine → Crea una Pagina</b>.", "Nome: <b>Le Stanze di Ricci</b>; categoria: <b>Bed and breakfast</b> (o Hotel).", "Collega la Pagina a Instagram, se te lo chiede (sì).", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperta»</b>."] },
+  instagram: { tit: "📸 Aprire Instagram professionale (5 minuti, dal telefono)", passi: ["Sul telefono apri l'app <b>Instagram</b> (se non c'è, scaricala) e tocca <b>«Crea un nuovo account»</b>. Se ti propone di usare il profilo Facebook appena aperto, va bene.", "Nome utente: <b>lestanzediricci</b> (se è già preso: <b>lestanzediricci.lesina</b>). Usa un'email solo per l'albergo e una password che ti segni.", "Poi: <b>Profilo → ☰ in alto a destra → «Tipo di account e strumenti» → «Passa a un account professionale» → «Azienda»</b> → categoria <b>Hotel</b> o <b>Bed and breakfast</b>. (I nomi possono cambiare un po'.)", "Nella <b>bio</b> metti il link per prenotare (per ora il tuo WhatsApp; poi il sito): Sofia scrive sempre «trovi tutto nel link in bio».", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperto»</b>."] },
+  facebook: { tit: "📘 Profilo e Pagina Facebook (10 minuti, dal PC)", passi: ["Apri l'iscrizione: <a class=\"btnsm\" href=\"https://www.facebook.com/r.php\" target=\"_blank\" rel=\"noopener\">Iscriviti a Facebook ›</a><br>Col tuo <b>nome vero</b> (i profili finti li chiudono, e con loro la Pagina), la tua email o il tuo numero e una password che ti segni. Serve anche per collegare Instagram a Sofia.", "Facebook ti manda un <b>codice</b> (per email o SMS): scrivilo dove te lo chiede.", "Poi crea la Pagina dell'albergo: <a class=\"btnsm\" href=\"https://www.facebook.com/pages/create\" target=\"_blank\" rel=\"noopener\">Crea la Pagina ›</a><br>Nome: <b>Le Stanze di Ricci</b> · Categoria: scrivi <b>Bed and breakfast</b> e sceglilo · <b>Crea Pagina</b>. Foto e orari li puoi saltare.", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperta»</b>."] },
 };
 const SOC_STATI = {
   "aspetta-foto": ["attesa", "⏳ Aspetta le foto"], "aspetta-chiave": ["attesa", "⏳ Aspetta il collegamento"], controllo: ["attesa", "⏳ Sto controllando la chiave"],
@@ -12730,7 +12826,7 @@ function cardCopia() {
     <p class="muted small" style="margin:0 0 10px">Ogni settimana, da sola, nel tuo Google Drive: cartella «Copie di sicurezza - Le Stanze di Ricci» (tiene le ultime 26, mezzo anno).</p>
     <div class="cs-tasti">${!c.ultima ? "" : csChiesta(c) ? `<span class="cs-attesa">⏳ Copia chiesta: arriva ${csProssimo()}</span>` : `<button type="button" class="btnsm" data-cs-subito>Fai una copia adesso</button>`}
       ${csLinkGiusto(c.link) ? `<a class="btnsm ghost" href="${esc(c.link)}" target="_blank" rel="noopener">Apri la cartella su Drive</a>` : ""}
-      <button type="button" class="btnsm ghost" data-cs-apri>⚙️ Il collegamento</button></div></section>`;
+      <button type="button" class="btnsm ghost" data-cs-apri>⚙️ Il collegamento</button></div>${oroRiga()}</section>`;
 }
 // ---- in Oggi: solo se qualcosa non va ----------------------------------------------------------------------------------
 function bannerCopia(iso) {
@@ -13587,7 +13683,7 @@ document.addEventListener("change", (e) => {
 }, true);
 function vistaAltro() {
   const r = S.regole;
-  return cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardDaFarePC() + cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -13676,6 +13772,7 @@ function disegnaFoglio() {
   else if (f.tipo === "calendario") html = foglioCalendario(f);   // 1.65.0
   else if (f.tipo === "socialCome") html = foglioSocialCome(f);   // 1.66.0
   else if (f.tipo === "socialChiave") html = foglioSocialChiave(f);   // 1.67.0
+  else if (f.tipo === "orologio") html = foglioOrologio(f);   // 1.68.0
   else if (f.tipo === "rgCamere") html = foglioRgCamere(f);   // 1.57.0
   else if (f.tipo === "rgRagazza") html = foglioRgRagazza(f);
   else if (f.tipo === "rgNuova") html = foglioRgNuova(f);

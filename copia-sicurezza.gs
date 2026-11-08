@@ -1,4 +1,4 @@
-/* Le Stanze di Ricci · LA CASSETTA DELLE COPIE DI SICUREZZA E DEI CALENDARI (versione 2, 8 novembre 2026)
+/* Le Stanze di Ricci · LA CASSETTA DELLE COPIE DI SICUREZZA, DEI CALENDARI E DELL'OROLOGIO (versione 3, 8 novembre 2026)
  *
  * Una volta a settimana Sofia (il giro automatico) fa una copia di TUTTI i dati dell'app e la manda qui. Questo piccolo
  * programma, nel tuo account Google, la mette nel tuo Google Drive, nella cartella «Copie di sicurezza - Le Stanze di
@@ -10,12 +10,19 @@
  * e la cassetta le dà a Booking, Airbnb ed Expedia con un link per camera (…/exec?cal=alba&per=booking&k=…), così loro
  * chiudono da soli le date prese da te. Il link funziona solo con la chiave giusta.
  *
+ * L'OROLOGIO DI SOFIA (versione 3): GitHub da solo fa partire il giro di Sofia «quando può» (l'8/11 nessun giro dalle 7:44
+ * alle 12:15). Con la chiave di GitHub che incolli nell'app (solo «Actions» del progetto pulizie-stanze-ricci) la cassetta lo fa
+ * partire lei ogni 10 minuti (di notte una volta all'ora), anche a PC spento. La chiave resta qui, nelle proprietà di questo
+ * programma: la cassetta non la rimanda mai indietro a nessuno.
+ *
  * Come si mette (una volta sola): Esegui il deployment → Nuovo deployment → ⚙️ App web → Esegui come: Me →
  * Chi ha accesso: Chiunque → Esegui il deployment → Autorizza l'accesso → copia l'«URL app web» nell'app.
  */
 var CARTELLA = "Copie di sicurezza - Le Stanze di Ricci";
 var TIENI = 26;
-var VERSIONE = "2";
+var VERSIONE = "3";
+var GH_REPO = "michelepegoli2210-hub/pulizie-stanze-ricci", GH_GIRO = "sofia-giro.yml";
+var GH_CHIAVE = /^github_pat_[A-Za-z0-9_]{40,}$/;
 var NOME_GIUSTO = /^stanze-ricci-copia-\d{4}-\d{2}-\d{2}(-[a-z0-9]{1,12})?\.json\.gz$/;
 
 function doGet(e) {
@@ -95,9 +102,55 @@ function gestisci_(req) {
     P.setProperty("calChiave", chiaveC);
     return { ok: true, camere: nomi.length };
   }
+  if (azione === "orologio") {   // la chiave di GitHub: la provo (parte un giro), la tengo qui e accendo l'orologio
+    var gh = String(req.chiave || "").replace(/\s+/g, "");
+    if (!GH_CHIAVE.test(gh)) return { ok: false, errore: gh.length < 40 ? "Incolla la chiave intera: comincia con github_pat_ ed è lunga." : "Questa non sembra la chiave di GitHub: deve cominciare con github_pat_." };
+    var pr = spingi_(gh);
+    if (!pr.ok) return { ok: false, errore: pr.errore };
+    P.setProperty("ghChiave", gh); P.setProperty("orologioUltimo", new Date().toISOString()); P.deleteProperty("orologioErrore");
+    if (pr.scade) P.setProperty("ghScade", pr.scade); else P.deleteProperty("ghScade");
+    accendiOrologio_();
+    return { ok: true, scade: pr.scade || "", acceso: true };
+  }
+  if (azione === "orologioStato") return { ok: true, acceso: !!P.getProperty("ghChiave") && haOrologio_(), ultimo: P.getProperty("orologioUltimo") || "", errore: P.getProperty("orologioErrore") || "", scade: P.getProperty("ghScade") || "" };
+  if (azione === "orologioSpegni") { spegniOrologio_(); P.deleteProperty("ghChiave"); P.deleteProperty("ghScade"); return { ok: true, acceso: false }; }
   if (azione === "togli") { P.deleteProperty("segreto"); return { ok: true }; }
   return { ok: false, errore: "Non so fare: " + azione };
 }
+
+// ---- l'orologio (versione 3) ----------------------------------------------------------------------------------------
+// ogni 10 minuti (lo chiama Google da solo): fa partire il giro di Sofia su GitHub. Di notte (23-6) una volta all'ora.
+function orologio() {
+  var P = PropertiesService.getScriptProperties(), gh = P.getProperty("ghChiave");
+  if (!gh) { spegniOrologio_(); return; }
+  var adesso = new Date(), ora = Number(Utilities.formatDate(adesso, "Europe/Rome", "H")), min = Number(Utilities.formatDate(adesso, "Europe/Rome", "m"));
+  if ((ora >= 23 || ora < 6) && min >= 10) return;
+  var r = spingi_(gh);
+  P.setProperty("orologioUltimo", adesso.toISOString());
+  if (r.ok) { P.deleteProperty("orologioErrore"); if (r.scade) P.setProperty("ghScade", r.scade); }
+  else P.setProperty("orologioErrore", r.errore);
+}
+function spingi_(gh) {
+  var r;
+  try {
+    r = UrlFetchApp.fetch("https://api.github.com/repos/" + GH_REPO + "/actions/workflows/" + GH_GIRO + "/dispatches", {
+      method: "post", contentType: "application/json", muteHttpExceptions: true,
+      headers: { Authorization: "Bearer " + gh, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+      payload: JSON.stringify({ ref: "main", inputs: { da: "orologio" } })
+    });
+  } catch (x) { return { ok: false, errore: "GitHub non risponde (" + String(x && x.message ? x.message : x).slice(0, 60) + ")." }; }
+  var st = r.getResponseCode(), h = r.getHeaders() || {}, scade = "";
+  for (var k in h) if (String(k).toLowerCase() === "github-authentication-token-expiration") { var m = String(h[k]).match(/(\d{4}-\d{2}-\d{2})/); if (m) scade = m[1]; }
+  if (st === 204 || st === 200) return { ok: true, scade: scade };
+  if (st === 401) return { ok: false, errore: "GitHub dice che la chiave non è giusta o è scaduta: rifalla e incollala di nuovo." };
+  if (st === 403) return { ok: false, errore: "La chiave c'è, ma non ha il permesso giusto: rifalla con «Actions: Read and write»." };
+  if (st === 404) return { ok: false, errore: "La chiave non vede il progetto: rifalla scegliendo «Only select repositories» → pulizie-stanze-ricci." };
+  var msg = ""; try { msg = String(JSON.parse(r.getContentText()).message || ""); } catch (x) {}
+  return { ok: false, errore: "GitHub non accetta (" + st + (msg ? ": " + msg.slice(0, 80) : "") + ")." };
+}
+function haOrologio_() { var t = ScriptApp.getProjectTriggers(); for (var i = 0; i < t.length; i++) if (t[i].getHandlerFunction() === "orologio") return true; return false; }
+function spegniOrologio_() { var t = ScriptApp.getProjectTriggers(); for (var i = 0; i < t.length; i++) if (t[i].getHandlerFunction() === "orologio") ScriptApp.deleteTrigger(t[i]); }
+function accendiOrologio_() { spegniOrologio_(); ScriptApp.newTrigger("orologio").timeBased().everyMinutes(10).create(); }
 
 function cartella_() {
   var it = DriveApp.getFoldersByName(CARTELLA);
