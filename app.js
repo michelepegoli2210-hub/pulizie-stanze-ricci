@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.63.2";
+export const VERSIONE = "1.64.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1426,6 +1426,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(ascoltaMessaggiSig());   // 1.55.13: i messaggi delle signore per Michele
   if (proprietario()) S.stop.push(db.ascolta("ruoli", {}, (m) => { S.ruoli = m || {}; S.caricati.ruoli = true; if (S.vista === "piantine" || S.vista === "altro" || (S.foglio && /^rg/.test(S.foglio.tipo || ""))) disegna(); }, (e) => console.warn("ruoli", e)));   // 1.57.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "copia-sicurezza", d => { S.copia = d ? { ...d } : null; if (S.vista === "altro" || S.vista === "oggi" || (S.foglio && S.foglio.tipo === "cassetta")) disegna(); }));   // 1.64.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lettura-sofia", d => { S.letturaCondivisa = d ? { ...d } : null; S.caricati.letturaCondivisa = true; guardaCondivisa(); disegna(); if (lettorePosta() && !letturaCondivisaOccupata()) guardaPosta(); }));   // 1.18.0; 1.53.1: appena la lettura condivisa si libera, la posta che aspettava riparte (prima ripartiva solo al messaggio dopo)
@@ -6856,7 +6857,7 @@ function vistaOggiGestione() {
   const msg = messaggioDelGiorno(iso);
   const messaggio = `<section class="card msg-card"><div class="head"><h2 style="margin:0">Messaggio alle signore</h2>${puoModificare() ? `<button class="btnsm ${msg ? "ghost" : ""}" data-msg-giorno="${iso}">${msg ? "Cambia" : "Scrivi"}</button>` : ""}</div>
     ${msg ? `<div class="pro-msg-x" style="margin-top:6px">${esc(msg.testo)}</div><p class="muted small" style="margin:6px 0 0">Scritto da ${esc(msg.da || "")}${msg.ora ? " alle " + L.oraBreve(msg.ora) : ""} · lo vedono in cima alla loro schermata</p>` : `<p class="muted small" style="margin:6px 0 0">Nessun messaggio per ${esc(quandoEtichetta(iso).toLowerCase())}. Tocca «Scrivi»: le signore lo vedono in grande.</p>`}</section>`;
-  return bannerAlloggiati(iso) + `<section class="card flat">${premiumScelto() ? "" : `<h2 style="margin:0">${L.dataLunga(iso)}</h2>`}<p class="muted small" style="margin:0">Tocca una camera o una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + grigliaCamere(iso) + messaggio + avviso + blocchi + bottone;
+  return bannerAlloggiati(iso) + bannerCopia(iso) + `<section class="card flat">${premiumScelto() ? "" : `<h2 style="margin:0">${L.dataLunga(iso)}</h2>`}<p class="muted small" style="margin:0">Tocca una camera o una riga per i dettagli. Le pulizie si creano da sole dal prospetto.</p></section>` + grigliaCamere(iso) + messaggio + avviso + blocchi + bottone;
 }
 
 // ---- le signore (avatar) e i lavori di manutenzione, in cima a Oggi ----------------------
@@ -6887,7 +6888,7 @@ function vistaOggiPremium(iso) {
   const tutte = zone.flatMap(z => pulizieDelGiorno(iso, z.id));
   const fatte = tutte.filter(p => p.stato === "fatta").length, inCorso = tutte.filter(p => p.stato === "in_corso").length;
   const tasti = puoModificare() ? `<section class="o13-tasti"><button type="button" class="o13-tasto o13-wa" data-whatsapp-piano="${iso}">${ico2("manda")}<span>Piano su WhatsApp</span></button><button type="button" class="o13-tasto o13-extra" data-nuovo-lavoro>${ico2("piu")}<span>Lavoro extra</span></button></section>` : "";
-  return `<div class="o13">${bannerAlloggiati(iso)}${avviso130(iso)}${cruscotto130(iso, tutte.length, fatte, inCorso)}${fisarmoniche130(iso, zone)}${tasti}</div>`;
+  return `<div class="o13">${bannerAlloggiati(iso)}${bannerCopia(iso)}${avviso130(iso)}${cruscotto130(iso, tutte.length, fatte, inCorso)}${fisarmoniche130(iso, zone)}${tasti}</div>`;
 }
 // l'avviso alle signore: etichetta e "Detta" piccolo sulla prima riga, sotto il testo intero su due righe (Gemini: "un
 // avviso che non si legge a colpo d'occhio tradisce la sua funzione"); un tocco sul testo lo apre per cambiarlo
@@ -12289,6 +12290,132 @@ document.addEventListener("input", (e) => {
 }, true);
 
 // ============================================================================
+//  1.64.0 LA COPIA DI SICUREZZA DI OGNI SETTIMANA (8/11, Michele: «che l'app non diventi mai a pagamento e soprattutto di
+//  non perderla mai»). Una volta a settimana il giro di Sofia (giro 1.29.0, copia-giro.mjs) copia TUTTI i dati e li manda
+//  alla «cassetta» (copia-sicurezza.gs): un piccolo programma nell'account Google di Michele che li mette nel suo Google
+//  Drive, cartella «Copie di sicurezza - Le Stanze di Ricci» (tiene le ultime 26). Si collega una volta sola, dal PC, come
+//  il passaggio di Alloggiati. L'indirizzo e il «segreto» stanno in importazioni/copia-sicurezza (solo i proprietari li
+//  leggono); lì il giro scrive com'è andata. In «Altro» la scheda «📦 La copia di sicurezza»; in Oggi un avviso giallo
+//  SOLO se la copia non arriva da più di 10 giorni (o è collegata e non è mai arrivata da 2 giorni).
+// ============================================================================
+const CS_CODICE = "copia-sicurezza.gs";
+const csPronta = () => !!(S.copia && S.copia.url && S.copia.segreto && S.copia.pronta);
+const csUrlGiusto = (u) => /^https:\/\/script\.google\.com\/(?:a\/[^/]+\/)?macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/.test(String(u || "").trim());
+const csLinkGiusto = (u) => /^https:\/\/drive\.google\.com\/[A-Za-z0-9/?=_&.-]+$/.test(String(u || ""));
+function csGiorniDa(iso) { const t = Date.parse(iso || ""); return t ? Math.floor((Date.now() - t) / 86400000) : null; }
+function csQuando(iso) {   // «oggi alle 7:15», «ieri alle 7:15», «domenica 9 novembre»
+  const t = Date.parse(iso || ""); if (!t) return "";
+  const d = new Date(t), g = L.oggiISO(), giorno = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const ora = `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+  if (giorno === g) return `oggi alle ${ora}`;
+  if (giorno === L.aggiungiGiorni(g, -1)) return `ieri alle ${ora}`;
+  return L.dataLunga(giorno);
+}
+const csMb = (b) => !b ? "" : b < 1048576 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1048576).toFixed(1).replace(".", ",")} MB`;
+// il giro di Sofia passa ogni 10 minuti dalle 5 (le 6 d'estate) alle 23
+function csProssimo() { const h = new Date().getHours(); return h >= 23 || h < 6 ? "domattina presto" : "entro 10 minuti"; }
+const csChiesta = (c) => !!(c && c.subito && Date.parse(c.subito) > Math.max(Date.parse(c.ultima || "") || 0, Date.parse(c.tentativo || "") || 0));
+const csErrore = (c) => !!(c && c.esito === "errore" && (Date.parse(c.tentativo || "") || 0) > (Date.parse(c.ultima || "") || 0));
+// ---- in «Altro» ---------------------------------------------------------------------------------------------------------
+function cardCopia() {
+  if (!proprietario()) return "";
+  const c = S.copia || {};
+  if (!csPronta()) return `<section class="card cs-card"><h2>📦 La copia di sicurezza</h2>
+    <p class="muted small" style="margin:0 0 10px">Ogni settimana una copia di <b>tutti</b> i dati dell'app (prospetto, pulizie, paghe, guasti, Sofia…) va da sola nel tuo <b>Google Drive</b>. Così, qualunque cosa succeda, l'app non la perdi mai.</p>
+    <button type="button" class="big main" data-cs-apri>📦 Collegala (5 minuti, dal PC)</button></section>`;
+  const giorni = csGiorniDa(c.ultima), vecchia = giorni !== null && giorni > 10, errore = csErrore(c);
+  const stato = c.ultima ? `✓ Ultima copia: <b>${esc(csQuando(c.ultima))}</b>${c.byte ? ` · ${esc(csMb(c.byte))}` : ""}${c.cose ? ` · ${Number(c.cose)} cose` : ""}` : `⏳ La prima copia arriva ${csProssimo()}.`;
+  return `<section class="card cs-card"><h2>📦 La copia di sicurezza</h2>
+    <p class="cs-stato${vecchia || errore ? " ko" : ""}">${stato}</p>
+    ${errore ? `<p class="al-avviso">L'ultima volta non è andata (${esc(c.errore || "la cassetta non ha risposto")}). Sofia riprova da sola tra qualche ora.</p>` : ""}
+    <p class="muted small" style="margin:0 0 10px">Ogni settimana, da sola, nel tuo Google Drive: cartella «Copie di sicurezza - Le Stanze di Ricci» (tiene le ultime 26, mezzo anno).</p>
+    <div class="cs-tasti">${!c.ultima ? "" : csChiesta(c) ? `<span class="cs-attesa">⏳ Copia chiesta: arriva ${csProssimo()}</span>` : `<button type="button" class="btnsm" data-cs-subito>Fai una copia adesso</button>`}
+      ${csLinkGiusto(c.link) ? `<a class="btnsm ghost" href="${esc(c.link)}" target="_blank" rel="noopener">Apri la cartella su Drive</a>` : ""}
+      <button type="button" class="btnsm ghost" data-cs-apri>⚙️ Il collegamento</button></div></section>`;
+}
+// ---- in Oggi: solo se qualcosa non va ----------------------------------------------------------------------------------
+function bannerCopia(iso) {
+  try {
+    if (iso !== L.oggiISO() || !proprietario() || !csPronta()) return "";
+    const c = S.copia, giorni = csGiorniDa(c.ultima), dalCollegamento = csGiorniDa(c.quando);
+    const male = c.ultima ? giorni > 10 : dalCollegamento !== null && dalCollegamento >= 2;
+    if (!male) return "";
+    return `<button type="button" class="al-banner cs-banner" data-cs-vai><span class="al-banner-ico" aria-hidden="true">📦</span><span class="al-banner-x"><b>La copia di sicurezza</b><small>${c.ultima ? `non arriva da ${giorni} giorni` : "non è ancora arrivata"} · tocca per vedere</small></span><span aria-hidden="true">›</span></button>`;
+  } catch (e) { return ""; }
+}
+// ---- il foglio per collegarla (una volta sola, dal PC) -----------------------------------------------------------------
+function foglioCassetta(f) {
+  if (csPronta() && !f.rifai) return `<h3>📦 La copia di sicurezza</h3>
+    <p class="note info">✓ Collegata${S.copia.quando ? ` dal ${esc(L.dataLunga(String(S.copia.quando).slice(0, 10)))}` : ""}. Ogni settimana la copia va da sola nel tuo Google Drive.</p>
+    <ol class="rg-passi"><li><button type="button" class="rg-b" data-cs-prova><b>✓</b>Prova il collegamento</button></li>
+      <li><button type="button" class="rg-b" data-cs-rifai><b>↺</b>Collegala di nuovo</button></li></ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || f.esito || (f.provo ? "Provo…" : "Serve rifarlo solo se cambi account Google o rifai il programma."))}</p>`;
+  return `<h3>📦 Collega la copia di sicurezza</h3>
+    <p class="muted small" style="margin:0 0 10px">Si fa una volta sola, meglio dal PC: 5 minuti. Serve un piccolo programma nel tuo account Google (gratis) che mette le copie nel tuo Google Drive. Non legge niente fuori dalla sua cartella.</p>
+    <ol class="rg-passi">
+      <li><button type="button" class="rg-b" data-cs-copia><b>1</b>Copia il codice</button></li>
+      <li><a class="rg-b" href="https://script.new" target="_blank" rel="noopener"><b>2</b>Apri Google: un progetto nuovo</a></li>
+      <li><span class="rg-t"><b>3</b><span>Su Google: clic nel testo, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, poi 💾. In alto a destra <b>«Esegui il deployment» → «Nuovo deployment»</b> → ⚙️ <b>«App web»</b> → <b>«Chi ha accesso: Chiunque»</b> → <b>«Esegui il deployment»</b> → <b>«Autorizza l'accesso»</b> (se dice «Google non ha verificato questa app»: <b>«Avanzate»</b> → <b>«Vai a…»</b> → <b>«Consenti»</b>: è il tuo programma). Poi copia l'<b>«URL app web»</b>.</span></span></li>
+      <li><label class="gh-incolla"><b>4</b><input id="csUrl" type="text" data-keep autocomplete="off" spellcheck="false" placeholder="Incolla qui l'URL app web" aria-label="Incolla qui l'indirizzo della cassetta" data-cs-url value="${esc(f.url || "")}"></label></li>
+      <li><button type="button" class="rg-b verde" data-cs-accendi${f.urlOk ? "" : " disabled"}><b>5</b>Collega e fai la prima copia</button></li>
+    </ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || (f.provo ? "Controllo…" : f.urlOk ? "✓ La cassetta risponde. Tocca il 5." : "Quando incolli l'indirizzo, lo controllo da sola."))}</p>`;
+}
+async function csUrl(u) {
+  if (!S.foglio || S.foglio.tipo !== "cassetta") return;
+  S.foglio = { ...S.foglio, url: u, errore: "", urlOk: false, provo: true }; disegnaFoglio();
+  const j = await alWsChiama(u, null, 30000);
+  if (!S.foglio || S.foglio.tipo !== "cassetta") return;
+  const giusta = !!(j && j.cassetta);
+  S.foglio = { ...S.foglio, provo: false, url: u, urlOk: giusta, errore: giusta ? "" : j && j.passaggio ? "Questo è l'indirizzo del passaggio di Alloggiati, non della cassetta: rifai i passi con il codice nuovo (il tasto 1)." : `Questo indirizzo non risponde come la cassetta${j && j.errore ? ` (${j.errore})` : ""}. Controlla di aver copiato l'«URL app web» e scelto «Chi ha accesso: Chiunque».` };
+  disegnaFoglio();
+}
+async function csAccendi() {
+  const f = S.foglio; if (!f || f.tipo !== "cassetta" || f.provo) return;
+  const el = document.getElementById("csUrl"), url = String((el && el.value) || f.url || "").trim();
+  if (!csUrlGiusto(url)) { S.foglio = { ...f, url, errore: "Prima incolla l'«URL app web» (comincia con https://script.google.com/macros/s/…)." }; disegnaFoglio(); return; }
+  const segreto = S.copia && S.copia.url === url && S.copia.segreto ? S.copia.segreto : alWsSegreto();
+  S.foglio = { ...f, url, provo: true, errore: "" }; disegnaFoglio();
+  const r = await alWsChiama(url, { azione: "imposta", segreto }, 60000);
+  if (!S.foglio || S.foglio.tipo !== "cassetta") return;
+  if (!r.ok) { S.foglio = { ...S.foglio, provo: false, errore: r.errore || "Non ci sono riuscita." }; disegnaFoglio(); return; }
+  const ora = new Date().toISOString();
+  const dati = { url, segreto, pronta: true, quando: ora, subito: ora, esito: "", errore: "", ...(csLinkGiusto(r.link) ? { link: r.link } : {}) };
+  try { await S.db.salva("importazioni", "copia-sicurezza", dati); }
+  catch (e) { S.foglio = { ...S.foglio, provo: false, errore: "La cassetta va, ma non riesco a salvarla nell'app: riprova." }; disegnaFoglio(); return; }
+  S.copia = { ...(S.copia || {}), ...dati };
+  S.foglio = { tipo: "cassetta" }; disegna(); toast(`✓ Collegata: la prima copia arriva ${csProssimo()}`);
+}
+async function csSubito() {
+  try { const ora = new Date().toISOString(); await S.db.salva("importazioni", "copia-sicurezza", { subito: ora }); S.copia = { ...(S.copia || {}), subito: ora }; disegna(); toast(`Copia chiesta: arriva ${csProssimo()}`); }
+  catch (e) { erroreScrittura(e); }
+}
+async function csCopiaCodice() {
+  let codice = "";
+  try { const r = await fetch(CS_CODICE, { cache: "no-store" }); if (r.ok) codice = await r.text(); } catch (e) {}
+  if (!/function doPost/.test(codice)) { toast("Non riesco a prendere il codice: c'è internet?"); return; }
+  try { await navigator.clipboard.writeText(codice); toast("Codice copiato ✓ Ora «Apri Google»"); }
+  catch (e) { apriFoglio({ tipo: "copia", titolo: "Il codice della cassetta", testo: codice }); }
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-cs-apri],[data-cs-copia],[data-cs-accendi],[data-cs-prova],[data-cs-rifai],[data-cs-subito],[data-cs-vai]") : null;
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-cs-vai")) { S.vista = "altro"; chiudiFoglio(); disegna(); setTimeout(() => { const c = document.querySelector(".cs-card"); if (c) c.scrollIntoView({ block: "center" }); }, 80); return; }
+  if (t.hasAttribute("data-cs-apri")) { apriFoglio({ tipo: "cassetta" }); return; }
+  if (t.hasAttribute("data-cs-copia")) { csCopiaCodice(); return; }
+  if (t.hasAttribute("data-cs-accendi")) { if (!t.disabled) csAccendi(); return; }
+  if (t.hasAttribute("data-cs-rifai")) { S.foglio = { tipo: "cassetta", rifai: true }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-cs-subito")) { csSubito(); return; }
+  if (t.hasAttribute("data-cs-prova")) {
+    (async () => { S.foglio = { tipo: "cassetta", provo: true }; disegnaFoglio(); const r = await alWsChiama(S.copia.url, { azione: "prova", segreto: S.copia.segreto }, 60000); if (!S.foglio || S.foglio.tipo !== "cassetta") return; S.foglio = { tipo: "cassetta", esito: r.ok ? `✓ La cassetta risponde: nel tuo Drive ci sono ${Number(r.copie) || 0} ${Number(r.copie) === 1 ? "copia" : "copie"}.` : "", errore: r.ok ? "" : (r.errore || "La cassetta non risponde.") }; disegnaFoglio(); })();
+  }
+}, true);
+document.addEventListener("input", (e) => {
+  const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-cs-url")) return;
+  const u = String(t.value || "").trim(); if (csUrlGiusto(u)) csUrl(u);   // incollato giusto: si controlla da solo
+}, true);
+// ============================================================================
 //  1.56.1 ALLOGGIATI CHE SI MANDA DA SOLA (6/11, Michele: «dai allora mettiamo che si compila da solo»)
 //  Il servizio della Polizia (Alloggiati Web, «servizio web») non accetta richieste dalle app nel browser: in mezzo c'è
 //  «il passaggio», un piccolo programma (alloggiati-passaggio.gs) nell'account Google di Michele (Google Apps Script,
@@ -13086,10 +13213,11 @@ function vistaAltro() {
     ${puoModificare() ? `<label class="big main" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">📄 Carica il foglio di papà<input id="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><p class="muted small" style="margin:8px 0 0">Legge il file Excel con regole fisse e ti fa controllare prima di salvare. Niente viene cambiato finché non premi "Salva nel prospetto".</p>` : ""}
   </section>
   ${vistaPersone()}
+  ${cardCopia()}
   ${cardAzzera()}
   <div class="menu">
     <button data-esporta="xlsx">Esporta in Excel<span>Pulizie, pagamenti, prospetto e note in un file .xlsx</span></button>
-    <button data-esporta="json">Copia di sicurezza completa<span>Un file con tutti i dati (si può ricaricare in futuro)</span></button>
+    <button data-esporta="json">⬇️ Scarica una copia adesso<span>Un file con tutti i dati, da tenere da parte (quella di ogni settimana va da sola nel tuo Drive)</span></button>
     ${S.db.modalita === "prova" ? `<button data-azzera-prova>Azzera i dati di prova<span>Ricomincia con gli esempi puliti</span></button>` : ""}
     <button data-esci>Esci<span>${esc(S.utente.email || S.utente.nome || "")}</span></button>
   </div>
@@ -13144,6 +13272,7 @@ function disegnaFoglio() {
   else if (f.tipo === "messaggio") html = foglioMessaggio(f);
   else if (f.tipo === "alloggiato") html = foglioAlloggiato(f);   // 1.56.0
   else if (f.tipo === "alWs") html = foglioAlWs(f);   // 1.56.1
+  else if (f.tipo === "cassetta") html = foglioCassetta(f);   // 1.64.0
   else if (f.tipo === "rgCamere") html = foglioRgCamere(f);   // 1.57.0
   else if (f.tipo === "rgRagazza") html = foglioRgRagazza(f);
   else if (f.tipo === "rgNuova") html = foglioRgNuova(f);
@@ -15495,10 +15624,14 @@ async function caricaStorico() {
   } catch (e) { console.error(e); }
 }
 
+// 1.64.0: tutte le raccolte che l'app sa leggere (prima solo 5); le cinque di sempre restano anche in cima, come prima
+const RACCOLTE_COPIA = ["soggiorni", "pulizie", "pagamenti", "note", "impostazioni", "importazioni", "manutenzione", "visti", "foto", "ruoli", "posta", "posta_media", "governante_registro", "controlli", "messaggi_signore", "ponti"];
 async function esportaTutto() {
   try {
-    const [sog, pul, pag, note, imp] = await Promise.all(["soggiorni", "pulizie", "pagamenti", "note", "impostazioni"].map(c => S.db.leggiTutti(c, {})));
-    const dati = { esportato: new Date().toISOString(), versione: VERSIONE, soggiorni: sog, pulizie: pul, pagamenti: pag, note, impostazioni: imp };
+    toast("Preparo la copia…");
+    const raccolte = {};
+    for (const c of RACCOLTE_COPIA) { try { raccolte[c] = await S.db.leggiTutti(c, {}); } catch (e) {} }
+    const dati = { esportato: new Date().toISOString(), versione: VERSIONE, soggiorni: raccolte.soggiorni || {}, pulizie: raccolte.pulizie || {}, pagamenti: raccolte.pagamenti || {}, note: raccolte.note || {}, impostazioni: raccolte.impostazioni || {}, raccolte };
     const blob = new Blob([JSON.stringify(dati, null, 2)], { type: "application/json" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `stanze-ricci-copia-${L.oggiISO()}.json`; document.body.appendChild(a); a.click(); a.remove();
     toast("Copia di sicurezza scaricata");

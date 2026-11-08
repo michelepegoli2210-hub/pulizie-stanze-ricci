@@ -3028,3 +3028,29 @@ attraggono ancora troppo l'occhio». Tra tre misure provate in foto ha scelto la
   come sfumati nella barra; il nome sotto è più chiaro. Quello della pagina dove sei si vede di più (e il suo nome è
   scuro); quando ne tocchi uno si vede pieno mentre va giù.
 - Così lo sguardo va a Sofia in cima alla pagina; nella barra si nota solo il tasto d'oro.
+
+## 1.64.0 e giro 1.29.0 · La copia di sicurezza di ogni settimana (8/11, notte)
+Michele (6/11): «l'app finora mi è costata forse 650 €: che funzioni per sempre, che non diventi mai a pagamento e
+soprattutto di non perderla mai» → going with «una copia automatica dei dati ogni settimana». L'8/11 notte: «fai tutto».
+- COSA: una volta a settimana il giro di Sofia (quello che gira su GitHub ogni 10 minuti, col PC spento) copia TUTTI i
+  dati dell'app — ogni raccolta del database, anche quelle che nasceranno dopo (prospetto, pulizie, paghe, guasti, note,
+  la Segreteria e le letture, le impostazioni, le ragazze, i vocali e i fogli arrivati dal ponte…) — in un file compresso
+  e lo manda nel GOOGLE DRIVE di Michele, cartella «Copie di sicurezza - Le Stanze di Ricci». Tiene le ultime 26 copie
+  (mezzo anno); le più vecchie vanno nel Cestino di Drive. Una copia rifatta lo stesso giorno sostituisce quella di prima.
+- LA CASSETTA (copia-sicurezza.gs): un piccolo programma nell'account Google di Michele (Google Apps Script, gratis), come
+  il passaggio di Alloggiati: riceve la copia e la mette nella cartella. Risponde solo a chi conosce il «segreto» scelto
+  dall'app quando la si collega; non legge niente del Drive fuori dalla sua cartella.
+- COLLEGARLA (una volta sola, dal PC, 5 minuti): «Altro» → «📦 La copia di sicurezza» → «Collegala»: 1 Copia il codice,
+  2 Apri Google (script.new), 3 incolla, 💾, «Esegui il deployment» → «Nuovo deployment» → «App web» → «Chi ha accesso:
+  Chiunque» → «Autorizza l'accesso», 4 incolla l'«URL app web» nella casella gialla (si controlla da sola), 5 «Collega e
+  fai la prima copia». La prima copia arriva al giro dopo (entro 10 minuti; di notte, la mattina presto).
+- NELL'APP: la scheda dice «✓ Ultima copia: oggi alle 7:15 · 2,3 MB · 1043 cose»; «Fai una copia adesso» (al giro dopo);
+  «Apri la cartella su Drive». Se l'ultima volta non è andata lo dice, e Sofia riprova da sola dopo 3 ore.
+  In Oggi un avviso giallo «📦 La copia di sicurezza non arriva da N giorni» SOLO se qualcosa non va (più di 10 giorni).
+- «⬇️ Scarica una copia adesso» (in fondo ad «Altro»): ora prende tutte le raccolte che l'app sa leggere (prima solo 5).
+- RISERVATEZZA: nel registro di GitHub, che tutti possono leggere, va solo «copia di sicurezza: fatta (N cose, X MB)»:
+  mai dati, mai l'indirizzo della cassetta (anche negli errori gli indirizzi diventano «(indirizzo)»).
+- SE UN GIORNO SERVE RIMETTERE I DATI: la copia è un file .json.gz (se è grande, in pezzi .pezzo-1-di-2…, da unire in
+  ordine); dentro ogni raccolta coi suoi documenti, e le date/i file scritti in modo che si possano rimettere identici.
+- Prove: prova-copia.mjs (la cassetta con Drive finto, la copia in pezzi, le 26 copie, gli errori), prova-giro129.mjs
+  (il giro: quando la fa, una volta sola, «adesso», dopo un errore riprova dopo 3 ore, niente nel registro), prova1640.

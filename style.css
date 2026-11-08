@@ -8849,3 +8849,14 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 :root[data-theme="dark"] body.premium .bs-blu .bs-n{color:rgba(168,159,145,.62)}
 :root[data-theme="dark"] body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#F3E3B8}
 @media (prefers-reduced-motion:reduce){body.premium .bs-tasto{transition:none}}
+
+/* ---- 1.64.0 · la copia di sicurezza di ogni settimana (scheda in «Altro», avviso in Oggi solo se qualcosa non va) ---- */
+.cs-card h2{margin:0 0 8px}
+.cs-stato{margin:0 0 8px;padding:10px 12px;border-radius:12px;background:#ECF7EF;color:#14532D;font-weight:600;line-height:1.35}
+.cs-stato.ko{background:#FFF8DC;color:#3D2C00;border:1px solid #F2C94C}
+.cs-tasti{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cs-tasti a.btnsm{text-decoration:none;display:inline-flex;align-items:center}
+.cs-attesa{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:999px;background:#EEF2F7;color:#334155;font-weight:600;font-size:14px}
+:root[data-theme="dark"] .cs-stato{background:rgba(34,197,94,.12);color:#BBF7D0}
+:root[data-theme="dark"] .cs-stato.ko{background:rgba(242,201,76,.12);color:#FDE68A;border-color:rgba(242,201,76,.45)}
+:root[data-theme="dark"] .cs-attesa{background:rgba(255,255,255,.08);color:#CBD5E1}
