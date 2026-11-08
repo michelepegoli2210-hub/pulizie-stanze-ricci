@@ -71,9 +71,10 @@ import { leggiChat, sintesiSera, oraDiAvvisi } from "./lettura-giro.mjs";
 import { leggiFogliPapa } from "./prospetto-giro.mjs";   // 1.27.0
 import { allarmiPerTe } from "./perte-giro.mjs";   // 1.28.0
 import { copiaDovuta, faiCopia, mandaCassetta, pulito as pulitoCopia } from "./copia-giro.mjs";   // 1.29.0: la copia di sicurezza
+import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGNI_MS as OGNI_CAL_MS } from "./calendari-giro.mjs";   // 1.30.0: il channel manager gratis
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.29.0";
+export const VERSIONE_GIRO = "1.30.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -197,7 +198,7 @@ export function frasiInRighe(testo) {
   return frasi.length > 1 ? frasi.slice(0, 8).map(f => `• ${f}`).join("\n") : t;
 }
 // ---- il giro ------------------------------------------------------------------------------------------
-export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "", copia = null }) {
+export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "", copia = null, calendari = null }) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
   const esiti = [];
   const [stato0, avvisi] = await Promise.all([db.doc("importazioni", "giro-sofia"), db.doc("impostazioni", "avvisi")]);
@@ -424,6 +425,28 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       }
     }
   } catch (e) { console.warn("guasti urgentissimi:", e && e.message); esiti.push("guasti urgentissimi: errore " + String((e && e.message) || e).slice(0, 80)); }
+  // 1.30.0: il channel manager gratis (calendari-giro.mjs): ogni ora i calendari di Booking, Airbnb ed Expedia nel prospetto
+  // (date prese, senza nomi; cambi e cancellazioni da soli; la camera presa due volte → un avviso a Michele) e i nostri
+  // calendari alla cassetta su Google (solo quando cambiano). Nel registro solo quanti: mai indirizzi né nomi.
+  if (calendari && calendari.scarica) {
+    const via = (e) => String((e && e.message) || e || "").replace(/https?:\/\/\S+/g, "(indirizzo)").slice(0, 80);
+    try {
+      const cc = await db.doc("importazioni", "canali");
+      if (calendariDovuti(cc, adesso)) {
+        const r = await leggiCalendari({ db, adesso, oggi, scarica: calendari.scarica, avvisa: async (x) => {
+          if (!ps) ps = await db.doc("importazioni", "push-sofia");
+          const cam = (await cameraDi())(x.camera), sito = { booking: "Booking", airbnb: "Airbnb", expedia: "Expedia" }[x.canale] || x.canale;
+          return mandaMe(`${cam.nome}: dal ${L.dataLunga(x.inizio)} al ${L.dataLunga(x.fine)} c'è una prenotazione da ${sito}, ma in quei giorni c'è già ${x.con}. Controlla subito su ${sito}.`, "camera presa due volte", `⚠ ${cam.nome} presa due volte`, true, { dove: "prospetto", tag: `sofia-doppia-${x.camera}` });
+        } });
+        if (r) esiti.push(r.esito);
+      }
+      if (cc && cc.chiave && copia && copia.manda && adesso.getTime() - (Date.parse(cc.calProva || "") || 0) >= OGNI_CAL_MS) {
+        const cs = await db.doc("importazioni", "copia-sicurezza");
+        if (cs && cs.pronta) { const cc2 = await db.doc("importazioni", "canali"); const m = await mandaCalendari({ db, oggi, manda: copia.manda, cassetta: cs, conf: cc2, soggiorni: await db.soggiorniDa(oggi) }); if (m) esiti.push(m.esito); }
+        await db.merge("importazioni", "canali", { calProva: adesso.toISOString() });
+      }
+    } catch (e) { console.warn("calendari:", via(e)); esiti.push("calendari: errore " + via(e)); }
+  }
   // 1.29.0: la copia di sicurezza di ogni settimana, nel Google Drive di Michele (copia-giro.mjs). Nel registro pubblico
   // di GitHub solo com'è andata, mai dati né l'indirizzo della cassetta.
   if (copia && copia.fs && copia.manda) {
@@ -523,7 +546,7 @@ async function main() {
   // 1.18.1: chi lo fa partire: il ponte sul PC (input "da"), l'orario di GitHub, o Michele col tasto «Run workflow»
   const ev = String(process.env.GITHUB_EVENT_NAME || "");
   const da = String(process.env.GIRO_DA || "").trim().toLowerCase() || (ev === "schedule" ? "orario" : ev === "workflow_dispatch" ? "a mano" : "");
-  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null, da, scade: String(process.env.GIRO_SCADE || "").trim(), copia: { fs: getFirestore(), manda: mandaCassetta } });
+  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null, da, scade: String(process.env.GIRO_SCADE || "").trim(), copia: { fs: getFirestore(), manda: mandaCassetta }, calendari: { scarica: scaricaCalendario } });
   console.log("Sofia sempre accesa:", JSON.stringify(esito));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(e => { console.error("Sofia sempre accesa: errore", e && e.message); process.exitCode = 1; });
