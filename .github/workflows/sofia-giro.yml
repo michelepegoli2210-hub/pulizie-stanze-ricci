@@ -25,8 +25,9 @@ on:
         type: string
         default: ""
         required: false
+# 1.31.0: il giro scrive nel progetto SOLO le foto per Instagram, nel ramo «social-foto» (Instagram le prende da un indirizzo pubblico)
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: sofia-giro
   cancel-in-progress: false
@@ -61,3 +62,4 @@ jobs:
           PROVA_AVVISO: ${{ inputs.prova }}
           GIRO_DA: ${{ inputs.da }}
           GIRO_SCADE: ${{ inputs.scade }}
+          GITHUB_TOKEN: ${{ github.token }}
