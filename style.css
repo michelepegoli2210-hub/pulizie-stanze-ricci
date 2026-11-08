@@ -8860,3 +8860,74 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 :root[data-theme="dark"] .cs-stato{background:rgba(34,197,94,.12);color:#BBF7D0}
 :root[data-theme="dark"] .cs-stato.ko{background:rgba(242,201,76,.12);color:#FDE68A;border-color:rgba(242,201,76,.45)}
 :root[data-theme="dark"] .cs-attesa{background:rgba(255,255,255,.08);color:#CBD5E1}
+
+/* ---- 1.65.0 · Prospetto → Anno (i 12 mesi coi colori del canale) e il channel manager gratis ---- */
+.an-testa h2{margin:0 0 6px}
+.an-leg{display:flex;flex-wrap:wrap;gap:6px}
+.an-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 6px;border-radius:999px;background:#F4F1EA;color:#1C1917;font:700 13px/1.25 var(--f-body);white-space:nowrap}
+.an-chip i,.can-btn i{display:inline-block;width:12px;height:12px;border-radius:4px;background:#D6D0C4;flex:none}
+.an-diretto>i{background:#2E9E5B}.an-booking>i{background:#2F6FDB}.an-airbnb>i{background:#E0525E}.an-expedia>i{background:#E3B11B}.an-libera>i{background:#EEE9DF;box-shadow:inset 0 0 0 1px #D6D0C4}
+.an-mese{display:block;width:100%;text-align:left;padding:12px;cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.an-mese:active{transform:scale(.995)}
+.an-tit{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}
+.an-tit b{font:800 17px/1.15 var(--f-body);letter-spacing:.05em;color:#1C1917}
+.an-perc{font:700 13px/1 var(--f-body);color:#57534E;white-space:nowrap}
+.an-conti{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 8px}
+.an-conti .an-chip{font-size:12.5px}
+.an-nn{font:600 12px var(--f-body);color:#78716C}
+.an-vuoto{font:600 13px var(--f-body);color:#78716C}
+.an-griglia{position:relative;display:grid;grid-template-columns:62px 1fr;column-gap:6px;row-gap:3px;--lab:62px}
+.an-cam{font:700 11px/14px var(--f-body);color:#44403C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.an-num{display:grid;height:12px;font:700 9.5px/12px var(--f-body);color:#78716C}
+.an-num span{white-space:nowrap}
+.an-giorni{display:grid;height:14px;border-radius:4px;background:#EEE9DF;overflow:hidden}
+.an-b{grid-row:1;display:flex;align-items:center;justify-content:center;min-width:0;height:14px;margin:0 1px;border-radius:4px;color:#FFFFFF;font:800 9.5px/1 var(--f-body);overflow:hidden}
+.an-b.da-prima{margin-left:0;border-top-left-radius:0;border-bottom-left-radius:0}
+.an-b.va-oltre{margin-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
+.an-b.an-diretto{background:#2E9E5B}.an-b.an-booking{background:#2F6FDB}.an-b.an-airbnb{background:#E0525E}.an-b.an-expedia{background:#E3B11B;color:#3D2C00}
+.an-oggi{position:absolute;top:0;bottom:0;z-index:2;width:2px;margin-left:-1px;border-radius:2px;background:#DC2626;pointer-events:none;left:calc(var(--lab) + 6px + (100% - var(--lab) - 6px) * (var(--col) - .5) / var(--n))}
+.stay .an-let{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:5px;background:rgba(255,255,255,.28);font:800 10.5px/1 var(--f-body);font-style:normal;flex:none}
+.boardleg .an-colori{margin-left:auto}
+.seg.pr-viste.quattro button{padding:0 2px;font-size:12.5px;letter-spacing:-.2px}
+.pr-riga:has(.pr-viste.quattro) .pr-ins2{padding:0 11px}
+/* il channel manager */
+.can-card h2{margin:0 0 6px}
+.can-scelte{display:grid;gap:8px;margin:8px 0}
+.can-opz{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border:2px solid #E7E2D8;border-radius:14px;background:#FFFFFF;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.can-opz b{font-size:15px;line-height:1.25}
+.can-opz small{font-size:13px;line-height:1.35;color:#57534E}
+.can-opz[aria-pressed="true"]{border-color:#2E9E5B;background:#F0FAF3}
+.can-lista{list-style:none;margin:8px 0;padding:0;display:grid;gap:6px}
+.can-riga{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chip nome x" "stato stato x";align-items:center;gap:3px 8px;padding:8px 10px;border-radius:12px;background:#F7F4EE}
+.can-riga .an-chip{grid-area:chip;background:#FFFFFF}
+.can-riga b{grid-area:nome;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.can-riga small{grid-area:stato;font-size:12.5px;color:#57534E}
+.can-riga small.ko{color:#B91C1C}
+.can-riga button{grid-area:x}
+.can-conflitti{margin:8px 0;padding:10px 12px;border:1px solid #FCA5A5;border-radius:12px;background:#FEE2E2;color:#7F1D1D}
+.can-conflitti p{margin:4px 0 0;font-size:14px}
+.can-nostri{margin-top:10px}
+.can-nostri summary{cursor:pointer;font-weight:700}
+.can-link{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.can-link li{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.can-link b{min-width:92px}
+.can-scelta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+.can-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 13px;border:2px solid #E7E2D8;border-radius:12px;background:#FFFFFF;color:#1C1917;font:800 15px/1 var(--f-body);cursor:pointer}
+.can-btn[aria-pressed="true"]{border-color:#1C1917;box-shadow:inset 0 0 0 1px #1C1917}
+.can-btn:disabled{opacity:.6;cursor:default}
+.can-camere{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.can-cam{padding:8px 11px;border:2px solid #E7E2D8;border-radius:10px;background:#FFFFFF;color:#1C1917;font:700 14px/1 var(--f-body);cursor:pointer}
+.can-cam[aria-pressed="true"]{border-color:#1C1917;background:#1C1917;color:#FFFFFF}
+.can-passi>li{display:block}
+:root[data-theme="dark"] .an-chip{background:rgba(255,255,255,.08);color:#E7E5E4}
+:root[data-theme="dark"] .an-tit b{color:#F5F5F4}
+:root[data-theme="dark"] .an-perc,:root[data-theme="dark"] .an-nn,:root[data-theme="dark"] .an-vuoto,:root[data-theme="dark"] .an-num{color:#A8A29E}
+:root[data-theme="dark"] .an-cam{color:#D6D3D1}
+:root[data-theme="dark"] .an-giorni{background:rgba(255,255,255,.09)}
+:root[data-theme="dark"] .can-opz,:root[data-theme="dark"] .can-btn,:root[data-theme="dark"] .can-cam{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:#F5F5F4}
+:root[data-theme="dark"] .can-opz small{color:#C9C3B8}
+:root[data-theme="dark"] .can-opz[aria-pressed="true"]{border-color:#4ADE80;background:rgba(74,222,128,.10)}
+:root[data-theme="dark"] .can-riga{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .can-riga .an-chip{background:rgba(255,255,255,.10)}
+:root[data-theme="dark"] .can-riga small{color:#C9C3B8}
+:root[data-theme="dark"] .can-cam[aria-pressed="true"]{background:#F5F5F4;color:#1C1917}

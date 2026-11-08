@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.64.0";
+export const VERSIONE = "1.65.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1164,7 +1164,7 @@ function nomeSignora() { const u = S.utente; if (u?.zona) { const n = SIG(u.zona
 const S = {
   db: null, utente: null, pronto: false,
   vista: "oggi", giorno: L.oggiISO(), settimana: L.lunediDi(L.oggiISO()),
-  board: { modo: (() => { try { return localStorage.getItem("ricci_vista_pr") === "facile" ? "facile" : "mappa"; } catch (e) { return "mappa"; } })(), inizio: L.oggiISO() },   // 1.0.8: o la Facile, se l'ultima volta su questo telefono si e' usata quella   // 1.0.5: si apre sulla mappa delle camere; 1.0.7: la settimana parte da oggi
+  board: { modo: (() => { try { return localStorage.getItem("ricci_vista_pr") === "facile" ? "facile" : localStorage.getItem("ricci_vista_pr") === "anno" ? "anno" : "mappa"; } catch (e) { return "mappa"; } })(), inizio: L.oggiISO() },   // 1.0.8: o la Facile, se l'ultima volta su questo telefono si e' usata quella   // 1.0.5: si apre sulla mappa delle camere; 1.0.7: la settimana parte da oggi
   camere: CAMERE.slice(), zone: ZONE, squadra: null, regole: { ...REGOLE_BASE }, listino: L.listinoCompleto(null),
   pulizie: {}, pagamenti: {}, soggiorni: {}, note: {}, ruoli: {}, economia: {}, taccuino: [], controlli: {}, controlliA: {}, controlliB: {}, fattiAltrui: {}, clientiPrivati: {}, argon: null, argonGiro: undefined, visti: {}, pulizieAltre: {}, argonErrore: "", impControlli: null, messaggi: {}, avvisi: null, promemoria: {}, veroUtente: null,
   manutenzione: {}, sigZona: null, sigSett: L.lunediDi(L.oggiISO()),
@@ -1426,6 +1426,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(ascoltaMessaggiSig());   // 1.55.13: i messaggi delle signore per Michele
   if (proprietario()) S.stop.push(db.ascolta("ruoli", {}, (m) => { S.ruoli = m || {}; S.caricati.ruoli = true; if (S.vista === "piantine" || S.vista === "altro" || (S.foglio && /^rg/.test(S.foglio.tipo || ""))) disegna(); }, (e) => console.warn("ruoli", e)));   // 1.57.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "canali", d => { S.canaliCal = d ? { ...d } : null; if (S.vista === "prospetto" || (S.foglio && S.foglio.tipo === "calendario")) disegna(); }));   // 1.65.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "copia-sicurezza", d => { S.copia = d ? { ...d } : null; if (S.vista === "altro" || S.vista === "oggi" || (S.foglio && S.foglio.tipo === "cassetta")) disegna(); }));   // 1.64.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
@@ -11482,9 +11483,10 @@ function vistaTabellone() {
       for (const s of sog.filter(s => s.camera === c.id)) {
         const i0 = Math.max(0, L.giorniTra(da, s.inizio)), i1 = Math.min(N, L.giorniTra(da, s.fine));
         if (i1 <= i0) continue;
-        const col = TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore;
+        const perCanale = S.board.colori === "canale", kc = canaleDi(s);   // 1.65.0
+        const col = perCanale ? CANALI[kc].colore : (TIPI_OSPITE[s.tipo]?.colore || TIPI_OSPITE.altro.colore);
         const q = s.tipo === "unk" || s.dubbio;
-        html += `<button class="stay ${q ? "q" : ""} ${L.giorniTra(da, s.fine) > N ? "open" : ""}" style="grid-column:${i0 + 2}/${i1 + 2};grid-row:${riga};${q ? "" : `background:${col}`}" data-sog="${esc(s.id)}" title="${esc(s.nome)}">${q ? "? " : ""}${esc(s.nome)}${s.persone > 1 ? ` · ${s.persone}` : ""}</button>`;
+        html += `<button class="stay ${q ? "q" : ""} ${L.giorniTra(da, s.fine) > N ? "open" : ""}" style="grid-column:${i0 + 2}/${i1 + 2};grid-row:${riga};${q ? "" : `background:${col}`}${perCanale && !q ? `;color:${CANALI[kc].testo}` : ""}" data-sog="${esc(s.id)}" title="${esc(s.nome)}">${perCanale ? `<i class="an-let">${CANALI[kc].breve}</i>` : ""}${q ? "? " : ""}${esc(s.nome)}${s.persone > 1 ? ` · ${s.persone}` : ""}</button>`;
       }
       for (const n of Object.values(S.note).filter(n => n.camera === c.id && n.data >= da && n.data < a)) {
         html += `<button class="mk" style="grid-column:${L.giorniTra(da, n.data) + 2};grid-row:${riga}" data-nota="${esc(n.id)}" aria-label="Nota">!</button>`;
@@ -11507,14 +11509,15 @@ function vistaTabellone() {
   const noteP = Object.values(S.note).filter(n => n.data >= da && n.data < a).sort((x, y) => x.data < y.data ? -1 : 1);
   // 1.0.5: in cima i tasti (+ Prospetto, WhatsApp) e la scelta Mappa / Settimana; poi la mappa delle camere OPPURE la
   // settimana (o il mese); in fondo i dubbi e le note
-  const modo = S.board.modo === "mese" ? "mese" : S.board.modo === "settimana" ? "settimana" : S.board.modo === "facile" ? "facile" : "mappa";
+  const modo = S.board.modo === "mese" ? "mese" : S.board.modo === "settimana" ? "settimana" : S.board.modo === "facile" ? "facile" : S.board.modo === "anno" ? "anno" : "mappa";
   const corpoMese = `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
-    <div class="boardleg">${Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
+    <div class="boardleg">${S.board.colori === "canale" ? legCanali() : Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<button type="button" class="btnsm ghost an-colori" data-board-colori="${S.board.colori === "canale" ? "ospite" : "canale"}">${S.board.colori === "canale" ? "Colori: chi è l'ospite" : "Colori: da dove arriva"}</button><span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
   const pillole = `<div class="pr-numeri"><span><b>${occOggi}/${S.camere.length}</b> stanotte</span><span><b>${notti}</b> notti</span>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<span><i style="background:${TIPI_OSPITE[k]?.colore || "var(--c-altro)"}"></i><b>${v}</b> ${esc(TIPI_OSPITE[k]?.nome || k)}</span>`).join("")}</div>`;
   const azioni = puoModificare() ? `<button type="button" class="pr-ins2" data-inserisci>＋ Prospetto</button><button type="button" class="pr-voce2" data-prosp-voce aria-label="Dillo a voce">${ICO_LINEA.mic}</button><button type="button" class="pr-wa2" data-ins-wa-subito aria-label="Il prospetto da WhatsApp">${ICO_WA}</button>` : "";
-  const viste = `<div class="seg pr-viste tre"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo === "facile"}" data-board="facile">Facile</button><button type="button" aria-pressed="${modo === "settimana" || modo === "mese"}" data-board="${modo === "mese" ? "mese" : "settimana"}">Settimana</button></div>`;
+  const viste = `<div class="seg pr-viste quattro"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo === "facile"}" data-board="facile">Facile</button><button type="button" aria-pressed="${modo === "settimana" || modo === "mese"}" data-board="${modo === "mese" ? "mese" : "settimana"}">Settimana</button><button type="button" aria-pressed="${modo === "anno"}" data-board="anno">Anno</button></div>`;   // 1.65.0: + Anno
   const nav = `<section class="card flat pr-nav"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
     <div class="pr-nav-sotto">${pillole}<button type="button" class="pr-mese" data-board="${modo === "mese" ? "settimana" : "mese"}">${modo === "mese" ? "Vedi la settimana" : "Vedi il mese"}</button></div></section>`;
+  if (modo === "anno") return `<div class="pr-riga">${azioni}${viste}</div>${vistaAnno()}`;   // 1.65.0
   const corpo = modo === "mappa" ? mappaCamere() : modo === "facile" ? vistaFacile() : modo === "settimana" ? nav + settimanaCompatta(da) : nav + corpoMese;
   return `<div class="pr-riga">${azioni}${viste}</div>
   ${corpo}
@@ -12289,6 +12292,165 @@ document.addEventListener("input", (e) => {
   sg.innerHTML = r.map(x => `<button type="button" data-al-scegli="${esc(campo)}|${esc(x.c)}">${esc(x.n)}${x.comune && x.p ? ` <small>(${esc(x.p)})</small>` : x.comune ? "" : " <small>stato</small>"}${x.vivo ? "" : " <small>· non c'è più</small>"}</button>`).join("");
 }, true);
 
+// ============================================================================
+//  1.65.0 TUTTO L'ANNO E DA DOVE ARRIVA IL CLIENTE · IL CHANNEL MANAGER GRATIS (8/11 notte, Michele: «fammi anche l'opzione
+//  di poter scegliere il channel manager, con un calendario chiarissimo da scuola elementare come c'è adesso per il
+//  prospetto ma per tutto l'anno, che mi dica se l'affitto è diretto, Booking, Airbnb oppure Expedia»; «per adesso il
+//  channel manager lo voglio gratis»).
+//  - Ogni soggiorno ha il suo CANALE: diretto (di solito: ditte, telefonate, il foglio di papà), Booking, Airbnb, Expedia.
+//    Si sceglie nel foglio del soggiorno («Da dove arriva»); quelli che arrivano dai calendari lo hanno già.
+//  - Prospetto → «Anno»: i 12 mesi da questo, ogni mese una griglia (una riga per camera, un quadratino per giorno) coi
+//    colori del canale e le notti di ogni canale; toccando un mese si apre il mese grande, colorato allo stesso modo.
+//  - IL CHANNEL MANAGER GRATIS: i calendari (iCal) di Booking, Airbnb ed Expedia, uno per camera, li legge il giro di
+//    Sofia ogni ora: le date prese diventano soggiorni nel prospetto (senza il nome del cliente, che i calendari non danno),
+//    si tolgono da soli se il cliente cancella, e se si accavallano con un altro cliente Sofia avvisa subito.
+//    I nostri calendari da dare a Booking e Airbnb (così chiudono le date prese da noi) li serve la cassetta su Google.
+//    La scelta «a pagamento» (Beds24) è segnata: si collega quando Michele vuole.
+//    Indirizzi dei calendari e chiave in importazioni/canali (solo i proprietari li leggono); lì il giro scrive com'è andata.
+// ============================================================================
+const CANALI = {
+  diretto: { nome: "Diretto", breve: "D", colore: "#2E9E5B", testo: "#FFFFFF" },
+  booking: { nome: "Booking", breve: "B", colore: "#2F6FDB", testo: "#FFFFFF" },
+  airbnb: { nome: "Airbnb", breve: "A", colore: "#E0525E", testo: "#FFFFFF" },
+  expedia: { nome: "Expedia", breve: "E", colore: "#E3B11B", testo: "#3D2C00" },
+};
+const CANALI_SITI = ["booking", "airbnb", "expedia"];
+function canaleDi(s) { const c = s && s.canale; return CANALI[c] ? c : "diretto"; }
+const legCanali = () => Object.entries(CANALI).map(([k, c]) => `<span class="an-chip an-${k}"><i></i>${esc(c.nome)}</span>`).join("");
+function nomeCortoCamera(c) { const n = String((c && (c.breve || c.nome)) || "").replace(/^(app\.?|appartamento)\s+/i, "").replace(/^via\s+/i, ""); return n.length > 11 ? n.slice(0, 10) + "…" : n; }
+// ---- Prospetto → Anno ---------------------------------------------------------------------------------------------------
+function vistaAnno() {
+  const oggi = L.oggiISO(), sog = soggiorniLista().filter(s => s && s.camera && s.inizio && s.fine && s.fine > s.inizio);
+  const camere = []; for (const z of zoneOrdinate()) for (const c of camereZona(z.id)) camere.push(c);
+  const mesi = []; let p = L.primoDelMese(oggi); for (let i = 0; i < 12; i++) { mesi.push(p); p = L.aggiungiGiorni(L.ultimoDelMese(p), 1); }
+  return `<section class="card an-testa"><h2>📅 Tutto l'anno</h2>
+    <p class="muted small" style="margin:0 0 8px">Ogni riga è una camera, ogni quadratino un giorno. Il colore dice da dove arriva il cliente. Tocca un mese per vederlo grande.</p>
+    <div class="an-leg">${legCanali()}<span class="an-chip an-libera"><i></i>Libera</span></div></section>
+    ${mesi.map(m => anMese(m, camere, sog, oggi)).join("")}
+    ${cardCanali()}`;
+}
+function anMese(p, camere, sog, oggi) {
+  const fine = L.aggiungiGiorni(L.ultimoDelMese(p), 1), N = L.giorniTra(p, fine);
+  const notti = { diretto: 0, booking: 0, airbnb: 0, expedia: 0 }; let piene = 0, righe = "";
+  for (const c of camere) {
+    let barre = "";
+    for (const s of sog) {
+      if (s.camera !== c.id || s.fine <= p || s.inizio >= fine) continue;
+      const i0 = Math.max(0, L.giorniTra(p, s.inizio)), i1 = Math.min(N, L.giorniTra(p, s.fine)); if (i1 <= i0) continue;
+      const k = canaleDi(s); notti[k] += i1 - i0; piene += i1 - i0;
+      barre += `<span class="an-b an-${k}${s.inizio < p ? " da-prima" : ""}${s.fine > fine ? " va-oltre" : ""}" style="grid-column:${i0 + 1}/${i1 + 1}" title="${esc(c.nome)} · ${esc(s.nome || "")}">${i1 - i0 >= 3 ? CANALI[k].breve : ""}</span>`;
+    }
+    righe += `<span class="an-cam">${esc(nomeCortoCamera(c))}</span><span class="an-giorni" style="grid-template-columns:repeat(${N},1fr)">${barre}</span>`;
+  }
+  const tot = camere.length * N, perc = tot ? Math.round(piene / tot * 100) : 0;
+  const col = oggi >= p && oggi < fine ? L.giorniTra(p, oggi) + 1 : 0;
+  const numeri = [1, 8, 15, 22, 29].filter(g => g <= N).map(g => `<span style="grid-column:${g}">${g}</span>`).join("");
+  const conti = Object.entries(notti).filter(([, v]) => v).map(([k, v]) => `<span class="an-chip an-${k}"><i></i>${esc(CANALI[k].nome)} <b>${v}</b></span>`).join("");
+  return `<button type="button" class="card an-mese" data-anno-mese="${p}" aria-label="Apri ${esc(L.meseLungo(p))}">
+    <span class="an-tit"><b>${esc(L.meseLungo(p).toUpperCase())}</b><span class="an-perc">piene ${perc}%</span></span>
+    <span class="an-conti">${conti || `<span class="an-vuoto">Nessuna prenotazione</span>`}${conti ? `<span class="an-nn">notti</span>` : ""}</span>
+    <span class="an-griglia" style="--n:${N}">${col ? `<span class="an-oggi" style="--col:${col}" aria-hidden="true"></span>` : ""}<span class="an-cam"></span><span class="an-num" style="grid-template-columns:repeat(${N},1fr)">${numeri}</span>${righe}</span>
+  </button>`;
+}
+// ---- il channel manager: la scheda in fondo all'Anno ----------------------------------------------------------------------
+const canCal = () => (S.canaliCal && S.canaliCal.calendari) || {};
+function canUrlGiusto(u) { u = String(u || "").trim(); return /^https:\/\/[^\s"'<>]{8,}$/.test(u) && !/^https:\/\/script\.google\.com\//.test(u); }
+function canSitoNoto(canale, u) { return canale === "booking" ? /(^https:\/\/([a-z0-9-]+\.)?booking\.com\/)/i.test(u) : canale === "airbnb" ? /^https:\/\/([a-z0-9-]+\.)?airbnb\.[a-z.]+\//i.test(u) : canale === "expedia" ? /^https:\/\/([a-z0-9-]+\.)?(expedia|vrbo|homeaway)\.[a-z.]+\//i.test(u) : false; }
+function canQuando(iso) { try { return csQuando(iso); } catch (e) { return ""; } }
+function cardCanali() {
+  if (!proprietario()) return "";
+  const conf = S.canaliCal || {}, cal = Object.entries(canCal()).sort((a, b) => ordineCamera(a[1].camera) - ordineCamera(b[1].camera) || (a[1].canale < b[1].canale ? -1 : 1));
+  const stato = conf.stato || {}, conflitti = (Array.isArray(conf.conflitti) ? conf.conflitti : []).filter(x => x && x.fine >= L.oggiISO());
+  const scelta = conf.scelta === "pagamento" ? "pagamento" : "gratis";
+  const righe = cal.map(([id, c]) => {
+    const st = stato[id] || {}, ok = st.letto && !st.errore;
+    return `<li class="can-riga"><span class="an-chip an-${esc(c.canale)}"><i></i>${esc((CANALI[c.canale] || {}).nome || c.canale)}</span><b>${esc(camera(c.camera).nome)}</b><small class="${st.errore ? "ko" : ""}">${st.errore ? `⚠ ${esc(st.errore)}` : ok ? `✓ letto ${esc(canQuando(st.letto))}${Number(st.n) ? ` · ${Number(st.n)} ${Number(st.n) === 1 ? "prenotazione" : "prenotazioni"}` : " · nessuna prenotazione"}` : "⏳ Sofia lo legge entro un'ora"}</small><button type="button" class="btnsm ghost" data-can-togli="${esc(id)}" aria-label="Togli">✕</button></li>`;
+  }).join("");
+  const nostri = csPronta() && conf.chiave ? `<details class="can-nostri"><summary>📤 I nostri calendari, da dare a Booking e Airbnb</summary>
+      <p class="muted small">Così, quando una camera la prendi tu (diretto o dall'altro sito), Booking e Airbnb la chiudono da soli. Su Booking: <b>Sincronizza calendari → Importa</b>; su Airbnb: <b>Calendario → Collega un altro calendario</b>. Incolla il link della camera giusta.</p>
+      <ul class="can-link">${camereOrdinateCanali().map(c => `<li><b>${esc(c.nome)}</b>${["booking", "airbnb", "expedia"].map(k => `<button type="button" class="btnsm ghost" data-can-copia="${esc(canLinkNostro(c.id, k))}">per ${esc(CANALI[k].nome)}</button>`).join("")}</li>`).join("")}</ul></details>` : `<p class="muted small" style="margin:8px 0 0">📤 Per far chiudere a Booking e Airbnb le date prese da te serve la cassetta su Google (la stessa della copia di sicurezza, in «Altro»).</p>`;
+  return `<section class="card can-card"><h2>🔗 Il channel manager</h2>
+    <div class="can-scelte">
+      <button type="button" class="can-opz" data-can-scelta="gratis" aria-pressed="${scelta === "gratis"}"><b>Gratis — i calendari collegati</b><small>Booking, Airbnb ed Expedia mandano le date prese: qui diventano camere piene (senza il nome del cliente). Si aggiornano ogni 2-3 ore.</small></button>
+      <button type="button" class="can-opz" data-can-scelta="pagamento" aria-pressed="${scelta === "pagamento"}"><b>A pagamento — Beds24 (circa 30-40 € al mese)</b><small>Arrivano anche nomi e messaggi: Sofia risponde lei ai clienti dentro Booking e Airbnb. Si disdice con un mese di preavviso.</small></button>
+    </div>
+    ${scelta === "pagamento" ? `<p class="note info">Segnato: lo vuoi a pagamento. Quando dici «vai», apri tu l'account Beds24 (5 minuti, ti guido io) e io lo collego. Fino ad allora restano i calendari gratis.</p>` : ""}
+    ${conflitti.length ? `<div class="can-conflitti"><b>⚠ Camere prese due volte</b>${conflitti.map(x => `<p>${esc(camera(x.camera).nome)}: ${esc(L.dataMedia(x.inizio))} → ${esc(L.dataMedia(x.fine))} · ${esc((CANALI[x.canale] || {}).nome || x.canale)} e ${esc(x.con || "un altro cliente")}</p>`).join("")}</div>` : ""}
+    ${righe ? `<ul class="can-lista">${righe}</ul>` : `<p class="muted small" style="margin:8px 0">Nessun calendario collegato ancora.</p>`}
+    <button type="button" class="big main" data-can-aggiungi>＋ Collega un calendario</button>
+    ${nostri}</section>`;
+}
+function camereOrdinateCanali() { const out = []; for (const z of zoneOrdinate()) for (const c of camereZona(z.id)) out.push(c); return out; }
+function canLinkNostro(cam, per) { const u = S.copia && S.copia.url, k = S.canaliCal && S.canaliCal.chiave; return u && k ? `${u}?cal=${encodeURIComponent(cam)}&per=${per}&k=${k}` : ""; }
+// ---- il foglio per collegare un calendario ------------------------------------------------------------------------------
+const CAN_DOVE = {
+  booking: "Sull'extranet di Booking: <b>Tariffe e disponibilità → Sincronizza calendari</b>, scegli la camera, <b>Esporta</b> e copia il link.",
+  airbnb: "Su Airbnb: <b>Calendario</b> della camera → <b>Disponibilità</b> → <b>Collega un altro calendario / Esporta</b> e copia il link.",
+  expedia: "Su Expedia Partner Central: nel calendario della camera cerca <b>Esporta</b> o <b>iCal</b> e copia il link.",
+};
+function foglioCalendario(f) {
+  const can = f.canale || "", cam = f.camera || "";
+  const scegliCan = CANALI_SITI.map(k => `<button type="button" class="can-btn an-${k}" aria-pressed="${can === k}" data-can-f-canale="${k}"><i></i>${esc(CANALI[k].nome)}</button>`).join("");
+  const scegliCam = camereOrdinateCanali().map(c => `<button type="button" class="can-cam" aria-pressed="${cam === c.id}" data-can-f-camera="${esc(c.id)}">${esc(c.nome)}</button>`).join("");
+  const url = String(f.url || ""), giusto = canUrlGiusto(url), noto = giusto && can && canSitoNoto(can, url);
+  return `<h3>🔗 Collega un calendario</h3>
+    <ol class="rg-passi can-passi">
+      <li><span class="rg-t"><b>1</b><span>Da dove arriva?</span></span><div class="can-scelta">${scegliCan}</div></li>
+      <li><span class="rg-t"><b>2</b><span>Per quale camera?</span></span><div class="can-camere">${scegliCam}</div></li>
+      ${can ? `<li><span class="rg-t"><b>3</b><span>${CAN_DOVE[can]}</span></span></li>` : ""}
+      <li><label class="gh-incolla"><b>${can ? 4 : 3}</b><input id="canUrl" type="text" data-keep autocomplete="off" spellcheck="false" placeholder="Incolla qui il link del calendario" aria-label="Incolla qui il link del calendario" data-can-url value="${esc(url)}"></label></li>
+      <li><button type="button" class="rg-b verde" data-can-collega${can && cam && giusto ? "" : " disabled"}><b>${can ? 5 : 4}</b>Collega</button></li>
+    </ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || (!can ? "Scegli da dove arriva." : !cam ? "Scegli la camera." : !url ? "Incolla il link del calendario." : !giusto ? "Questo non sembra il link di un calendario (deve cominciare con https://)." : noto ? `✓ È un link di ${CANALI[can].nome}. Tocca «Collega».` : `Il link non sembra di ${CANALI[can].nome}: controlla, poi tocca «Collega» lo stesso se sei sicuro.`))}</p>`;
+}
+async function canCollega() {
+  const f = S.foglio; if (!f || f.tipo !== "calendario") return;
+  const el = document.getElementById("canUrl"), url = String((el && el.value) || f.url || "").trim();
+  if (!f.canale || !f.camera || !canUrlGiusto(url)) return;
+  const id = `${f.camera}-${f.canale}`;
+  const doppio = Object.entries(canCal()).find(([k, c]) => k !== id && c.url === url);
+  if (doppio) { S.foglio = { ...f, url, errore: `Questo link è già collegato a ${camera(doppio[1].camera).nome}.` }; disegnaFoglio(); return; }
+  const chiave = (S.canaliCal && S.canaliCal.chiave) || alWsSegreto();
+  try {
+    await S.db.salva("importazioni", "canali", { chiave, calendari: { [id]: { canale: f.canale, camera: f.camera, url, aggiunto: new Date().toISOString() } } });
+    S.canaliCal = { ...(S.canaliCal || {}), chiave, calendari: { ...canCal(), [id]: { canale: f.canale, camera: f.camera, url, aggiunto: new Date().toISOString() } } };
+    chiudiFoglio(); disegna(); toast(`✓ Collegato: ${camera(f.camera).nome} da ${CANALI[f.canale].nome}. Sofia lo legge entro un'ora`);
+  } catch (e) { erroreScrittura(e); }
+}
+async function canTogli(id) {
+  const c = canCal()[id]; if (!c) return;
+  if (!await chiedi(`Scollego il calendario di ${CANALI[c.canale] ? CANALI[c.canale].nome : c.canale} per ${camera(c.camera).nome}? Le prenotazioni arrivate da lì restano nel prospetto.`, { si: "Sì, scollega" })) return;
+  const resto = { ...canCal() }; delete resto[id];
+  try { await S.db.salva("importazioni", "canali", { ...(S.canaliCal || {}), calendari: resto }, false); S.canaliCal = { ...(S.canaliCal || {}), calendari: resto }; disegna(); toast("Scollegato"); }
+  catch (e) { erroreScrittura(e); }
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-anno-mese],[data-board-colori],[data-sog-canale],[data-can-aggiungi],[data-can-f-canale],[data-can-f-camera],[data-can-collega],[data-can-togli],[data-can-scelta],[data-can-copia]") : null;
+  if (!t) return;
+  if (t.hasAttribute("data-sog-canale")) {   // nel foglio del soggiorno: senza ridisegnare (non si perde quello che hai scritto)
+    if (t.disabled) return; e.preventDefault();
+    const f = S.foglio; if (f && f.tipo === "soggiorno") f.canaleScelto = t.getAttribute("data-sog-canale");
+    document.querySelectorAll("[data-sog-canale]").forEach(x => x.setAttribute("aria-pressed", x === t ? "true" : "false")); return;
+  }
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-anno-mese")) { S.board = { ...S.board, modo: "mese", inizio: t.getAttribute("data-anno-mese"), colori: "canale" }; disegna(); window.scrollTo(0, 0); try { caricaStorico(); } catch (x) {} return; }
+  if (t.hasAttribute("data-board-colori")) { S.board = { ...S.board, colori: t.getAttribute("data-board-colori") === "canale" ? "canale" : "" }; disegna(); return; }
+  if (t.hasAttribute("data-can-aggiungi")) { apriFoglio({ tipo: "calendario" }); return; }
+  if (t.hasAttribute("data-can-f-canale")) { const el = document.getElementById("canUrl"); S.foglio = { ...S.foglio, canale: t.getAttribute("data-can-f-canale"), url: el ? el.value : S.foglio.url, errore: "" }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-can-f-camera")) { const el = document.getElementById("canUrl"); S.foglio = { ...S.foglio, camera: t.getAttribute("data-can-f-camera"), url: el ? el.value : S.foglio.url, errore: "" }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-can-collega")) { if (!t.disabled) canCollega(); return; }
+  if (t.hasAttribute("data-can-togli")) { canTogli(t.getAttribute("data-can-togli")); return; }
+  if (t.hasAttribute("data-can-scelta")) { const v = t.getAttribute("data-can-scelta") === "pagamento" ? "pagamento" : "gratis"; S.canaliCal = { ...(S.canaliCal || {}), scelta: v }; S.db.salva("importazioni", "canali", { scelta: v }).catch(erroreScrittura); disegna(); return; }
+  if (t.hasAttribute("data-can-copia")) { const u = t.getAttribute("data-can-copia"); if (!u) return; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast("Link copiato ✓ Incollalo su Booking o Airbnb")).catch(() => apriFoglio({ tipo: "copia", titolo: "Il link del calendario", testo: u })); }
+}, true);
+document.addEventListener("input", (e) => {
+  const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-can-url") || !S.foglio || S.foglio.tipo !== "calendario") return;
+  S.foglio.url = String(t.value || "").trim();
+  const ora = canUrlGiusto(S.foglio.url) && !!S.foglio.canale && !!S.foglio.camera;
+  const b = document.querySelector("[data-can-collega]"); if (b) b.disabled = !ora;
+  const p = document.querySelector(".sheet .gh-esito");
+  if (p) { const tmp = document.createElement("div"); tmp.innerHTML = foglioCalendario(S.foglio); const np = tmp.querySelector(".gh-esito"); if (np) { p.textContent = np.textContent; p.className = np.className; } }
+}, true);
 // ============================================================================
 //  1.64.0 LA COPIA DI SICUREZZA DI OGNI SETTIMANA (8/11, Michele: «che l'app non diventi mai a pagamento e soprattutto di
 //  non perderla mai»). Una volta a settimana il giro di Sofia (giro 1.29.0, copia-giro.mjs) copia TUTTI i dati e li manda
@@ -13273,6 +13435,7 @@ function disegnaFoglio() {
   else if (f.tipo === "alloggiato") html = foglioAlloggiato(f);   // 1.56.0
   else if (f.tipo === "alWs") html = foglioAlWs(f);   // 1.56.1
   else if (f.tipo === "cassetta") html = foglioCassetta(f);   // 1.64.0
+  else if (f.tipo === "calendario") html = foglioCalendario(f);   // 1.65.0
   else if (f.tipo === "rgCamere") html = foglioRgCamere(f);   // 1.57.0
   else if (f.tipo === "rgRagazza") html = foglioRgRagazza(f);
   else if (f.tipo === "rgNuova") html = foglioRgNuova(f);
@@ -13431,6 +13594,7 @@ function foglioSoggiorno(f) {
     ${mod ? `<div class="sog-cam-box"><div class="campo"><label for="sCom">Com'è questa camera (resta per tutti gli ospiti)</label><input id="sCom" data-keep type="text" data-car-sog="${esc(c.id)}" value="${esc((S.caratteristiche || {})[c.id] || "")}" placeholder="es. matrimoniale + singolo, balcone sul corso"></div><div class="campo"><label for="sProm">Ogni volta, in questa camera le signore fanno anche</label><input id="sProm" data-keep type="text" data-prom-sog="${esc(c.id)}" value="${esc((S.promemoria || {})[c.id] || "")}" placeholder="es. il balcone, dietro la TV"></div></div>` : ""}
     <form id="formSog">
       <div class="campo"><label for="sNome">Ospite: nome e cognome (o ditta)</label><input id="sNome" data-keep type="text" list="nomiNoti" value="${esc(d.nome)}" placeholder="es. Manna Giuseppe" ${mod ? "" : "disabled"} required><datalist id="nomiNoti">${nomi.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="campo"><label>Da dove arriva</label><div class="can-scelta">${Object.entries(CANALI).map(([k, c]) => `<button type="button" class="can-btn an-${k}" aria-pressed="${(f.canaleScelto || canaleDi(d)) === k}" data-sog-canale="${k}" ${mod ? "" : "disabled"}><i></i>${esc(c.nome)}</button>`).join("")}</div>${d.origine === "calendario" ? `<p class="muted small" style="margin:6px 0 0">Arriva dal calendario di ${esc(CANALI[canaleDi(d)].nome)}: date e cancellazioni si aggiornano da sole.</p>` : ""}</div>
       <div class="campo"><label for="sTel">Telefono dell'ospite (solo proprietari: le signore non lo vedono)</label><div class="sog-tel"><input id="sTel" data-keep type="text" inputmode="tel" autocomplete="off" value="${esc(d.telefono || tel || "")}" placeholder="es. 333 123 4567" ${mod ? "" : "disabled"}>${tel ? `<a class="sog-chiama" href="${esc(telHref(tel))}">${icoTel()}Chiama</a>` : ""}</div></div>
       <div class="due"><div class="campo"><label for="sInizio">Arriva il</label><input id="sInizio" data-keep type="date" value="${d.inizio}" ${mod ? "" : "disabled"} required></div><div class="campo"><label for="sFine">Parte il</label><input id="sFine" data-keep type="date" value="${d.fine}" ${mod ? "" : "disabled"} required></div></div>
       <div class="due"><div class="campo"><label for="sTipo">Tipo</label><select id="sTipo" ${mod ? "" : "disabled"}>${Object.entries(TIPI_OSPITE).map(([k, t]) => `<option value="${k}" ${d.tipo === k ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></div><div class="campo"><label for="sPers">Persone</label><input id="sPers" data-keep type="number" min="1" max="10" value="${d.persone || 1}" ${mod ? "" : "disabled"}></div></div>
@@ -15087,7 +15251,7 @@ function collega() {
   document.querySelectorAll("[data-board]").forEach(b => b.onclick = () => {
     const prima = S.board.modo, nuovo = b.dataset.board, oggi = L.oggiISO();
     S.board.modo = nuovo;
-    if (nuovo === "mappa" || nuovo === "facile") { try { localStorage.setItem("ricci_vista_pr", nuovo); } catch (e) {} }
+    if (nuovo === "mappa" || nuovo === "facile" || nuovo === "anno") { try { localStorage.setItem("ricci_vista_pr", nuovo); } catch (e) {} }
     if (nuovo === "settimana") S.board.inizio = prima === "mese" && L.primoDelMese(S.board.inizio) !== L.primoDelMese(oggi) ? L.primoDelMese(S.board.inizio) : oggi;
     disegna();
   });
@@ -15587,6 +15751,7 @@ async function salvaSoggiorno(f) {
   if (altri.length && !await chiedi(`In ${camera(cam).nome} in quei giorni c'è già ${altri.map(a => a.nome).join(", ")}. Salvo lo stesso?`, { si: "Sì, salva lo stesso" })) return;
   const modo = document.querySelector('[data-sog-modo][aria-pressed="true"]')?.dataset.sogModo || "", ricorda = document.querySelector('[data-sog-ricorda][aria-pressed="true"]')?.dataset.sogRicorda !== "0";
   const d = { camera: cam, inizio, fine, nome, tipo: $("#sTipo").value, persone: Number($("#sPers").value) || 1, supplemento: Math.max(0, Number($("#sSup").value) || 0), nota: $("#sNota").value.trim(), notaPrivata: $("#sPriv").value.trim(), telefono: ($("#sTel")?.value || "").trim(), dubbio: $("#sTipo").value === "unk", origine: f.id ? (S.soggiorni[f.id].origine || "mano") : "mano", mesi: mesiCoperti(inizio, fine), modificato: S.db.adesso(), da: S.utente.nome || "" };
+  if (f.canaleScelto && CANALI[f.canaleScelto]) d.canale = f.canaleScelto;   // 1.65.0: da dove arriva
   // il tipo di ospite: sul soggiorno se è solo per stavolta, altrimenti ricordato per quel nome (e il soggiorno lo eredita)
   if (L.NOMI_MODI.includes(modo)) { if (ricorda) { const nomeCl = L.nomeCliente(nome) || nome, k = L.normNome(nomeCl); if (k && (L.clienteDi(nome, S.clienti)?.modo !== modo)) { S.clienti = { ...S.clienti, [k]: { modo, nome: nomeCl, aggiornato: L.oggiISO() } }; try { await S.db.salva("impostazioni", "clienti", { [k]: S.clienti[k] }, true); } catch (e) { erroreScrittura(e); } } d.modo = ""; } else d.modo = modo; }
   const id = f.id || `${inizio}_${cam}_${Date.now().toString(36)}`;

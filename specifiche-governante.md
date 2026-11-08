@@ -3054,3 +3054,45 @@ soprattutto di non perderla mai» → going with «una copia automatica dei dati
   ordine); dentro ogni raccolta coi suoi documenti, e le date/i file scritti in modo che si possano rimettere identici.
 - Prove: prova-copia.mjs (la cassetta con Drive finto, la copia in pezzi, le 26 copie, gli errori), prova-giro129.mjs
   (il giro: quando la fa, una volta sola, «adesso», dopo un errore riprova dopo 3 ore, niente nel registro), prova1640.
+
+## 1.65.0 e giro 1.30.0 · Tutto l'anno coi canali e il channel manager gratis (8/11, notte)
+Michele: «fammi anche l'opzione di poter scegliere il channel manager, con un calendario chiarissimo da scuola elementare
+come c'è adesso per il prospetto ma per tutto l'anno, che mi dica se l'affitto è diretto, Booking, Airbnb oppure
+Expedia»; «per adesso il channel manager lo voglio gratis».
+- IL CANALE: ogni soggiorno dice da dove arriva il cliente: Diretto (verde: ditte, telefonate, il foglio di papà),
+  Booking (blu), Airbnb (rosa), Expedia (giallo). Nel foglio del soggiorno «Da dove arriva» (quattro tasti); quelli
+  arrivati dai calendari lo hanno già e lo dicono («date e cancellazioni si aggiornano da sole»).
+- PROSPETTO → «ANNO» (quarto tasto, dopo Mappa · Facile · Settimana): i 12 mesi da questo. Ogni mese: il nome grande,
+  «piene 49%», le notti di ogni canale («Diretto 188 · Booking 3 notti») e la griglia: una riga per camera, un
+  quadratino per giorno, colorato col canale (con la lettera D/B/A/E se è lungo), grigio = libera, la riga rossa = oggi.
+  Toccando un mese si apre il mese grande coi colori del canale (la «B» sulla barra); «Colori: chi è l'ospite» torna
+  ai colori di prima (e «Colori: da dove arriva» li rimette).
+- IL CHANNEL MANAGER (scheda in fondo all'Anno):
+  - LA SCELTA: «Gratis — i calendari collegati» (acceso) oppure «A pagamento — Beds24 (circa 30-40 € al mese)»: arrivano
+    anche nomi e messaggi e Sofia risponde lei ai clienti dentro Booking e Airbnb; si disdice con un mese di preavviso.
+    Scegliendolo resta segnato: si collega quando Michele dice «vai» (l'account Beds24 lo apre lui).
+  - COLLEGARE UN CALENDARIO: «＋ Collega un calendario» → 1 da dove (Booking, Airbnb, Expedia) → 2 quale camera → 3 dove
+    trovare il link sul sito → 4 incolla il link nella casella gialla (riconosce se è davvero di quel sito) → 5 Collega.
+    Nella lista: «Booking · Alba · ✓ letto oggi alle 14:10 · 2 prenotazioni» (o «⚠ il sito non risponde»); ✕ scollega.
+  - OGNI ORA il giro di Sofia legge i calendari collegati: le date prese diventano soggiorni «Booking.com» / «Airbnb» /
+    «Expedia» (i calendari non danno il nome del cliente); se il cliente cambia le date si aggiornano, se cancella il
+    soggiorno sparisce (solo quelli arrivati dal calendario, da oggi in poi). I giorni chiusi a mano su Airbnb non sono
+    clienti e non entrano. Se le date coincidono (±1 giorno) con un soggiorno già messo a mano nella stessa camera è lo
+    stesso cliente: gli si mette solo il canale, niente doppione.
+  - CAMERA PRESA DUE VOLTE: se una prenotazione dal calendario si accavalla con un altro cliente nella stessa camera, la
+    scheda lo dice in rosso («⚠ Camere prese due volte · Alba: mar 17 nov → ven 20 nov · Booking e Fondamenta») e a
+    Michele arriva SUBITO l'avviso «⚠ Alba presa due volte» (una volta sola per ogni caso).
+  - I NOSTRI CALENDARI (per far chiudere a Booking, Airbnb ed Expedia le date prese da noi): li serve la cassetta su
+    Google (copia-sicurezza.gs, versione 2: la stessa della copia di sicurezza). Ogni ora, se è cambiato qualcosa, il
+    giro le manda le date prese di ogni camera (nessun nome); nella scheda «📤 I nostri calendari» c'è il link di ogni
+    camera da incollare su Booking («Sincronizza calendari → Importa») e su Airbnb. Il link per Booking non rimanda a
+    Booking le prenotazioni arrivate da Booking (e così per gli altri). Senza la chiave giusta il calendario è vuoto.
+  - LA VERITÀ: Booking e Airbnb leggono i calendari ogni 2-3 ore: d'inverno nessun problema; d'estate, in quelle ore,
+    due clienti potrebbero prendere la stessa camera (raro) — per questo l'avviso subito. Booking dà il calendario solo
+    se ogni camera è un tipo di camera a sé (fino a 20) e senza un channel manager a pagamento.
+- RISERVATEZZA: i link dei calendari (che hanno dentro una chiave) stanno in importazioni/canali (solo i proprietari);
+  nel registro pubblico di GitHub solo i numeri («calendari: 2 letti, 1 prenotazione nuova»), mai indirizzi né nomi.
+- Prove: prova1650 (l'Anno, il mese coi canali, «Da dove arriva», collegare, lo stato, i doppioni, la scelta, ✕,
+  360 px scuro), prova-calendari.mjs (leggere i calendari veri di Booking e Airbnb, nascere/cambiare/sparire, lo stesso
+  cliente a mano, la camera presa due volte, il sito che non risponde, i nostri calendari dalla cassetta v2),
+  prova-giro130.mjs (dentro il giro: ogni ora, l'avviso, la cassetta, niente nel registro), prova-copia con la v2.
