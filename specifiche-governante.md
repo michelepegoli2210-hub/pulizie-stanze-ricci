@@ -3096,3 +3096,33 @@ Expedia»; «per adesso il channel manager lo voglio gratis».
   360 px scuro), prova-calendari.mjs (leggere i calendari veri di Booking e Airbnb, nascere/cambiare/sparire, lo stesso
   cliente a mano, la camera presa due volte, il sito che non risponde, i nostri calendari dalla cassetta v2),
   prova-giro130.mjs (dentro il giro: ogni ora, l'avviso, la cassetta, niente nel registro), prova-copia con la v2.
+
+## 1.66.0 · Sofia social manager (8/11, notte)
+Michele: «per quanto riguarda Sofia social manager fai una nuova sezione con Sofia vestita da influencer con gli occhiali
+da sole, che è la parte che mi gestisce in tutto e per tutto: io faccio l'accesso con i nuovi account, non devo fare
+niente altro, forse solo le foto che mi dici tu di fare; per il resto pubblica Sofia, scrive Sofia; io non voglio
+neanche vedere il risultato, perché non ho né Facebook né Instagram». Prima (stessa notte): Facebook e Instagram non
+li può gestire lui; Sofia deve fare post, foto, video e rispondere ai messaggi da sola, anche senza l'abbonamento a Claude.
+- DOVE: «Altro» → «📣 Sofia social manager» (con la sua faccia e a che punto è) → la sezione.
+- IN CIMA: Sofia (il ritratto da influencer con gli occhiali da sole lo fa Gemini: finché non c'è, quella che saluta,
+  col distintivo 🕶️), «Facebook e Instagram delle Stanze di Ricci: li faccio io», e a che punto è (⏳ aspetta le
+  pagine · ▶ al lavoro · ⏸ ferma).
+- 1 LE PAGINE (le apre Michele, una volta sola — gli account non li può creare nessun altro per lui): Instagram
+  (nome lestanzediricci, account professionale → Azienda → Hotel/B&B) e la Pagina Facebook «Le Stanze di Ricci» (Facebook
+  chiede un profilo personale per aprirla). «Come si fa ›» passo passo; «Fatto: l'ho aperto» (col nome, se vuole).
+- 2 IL COLLEGAMENTO: la strada ufficiale di Meta per le attività (Instagram API / Pagine), da fare insieme dal PC una volta
+  (10 minuti): niente programmi che muovono il mouse (Facebook e Instagram bloccano le pagine usate così) e funziona col
+  PC spento. (Da fare quando le pagine ci sono.)
+- 3 LE FOTO CHE SERVONO: otto righe (facciata con l'insegna, la camera più bella, un bagno, il terrazzo, la laguna al
+  tramonto, il paese di sera, un dettaglio, gli uccelli della laguna), ognuna con come farla e «📷 Fatta» (la fotocamera
+  del telefono); la foto si riduce (lato lungo 1600 px) e va nella raccolta «foto» (social_…); la riga diventa verde.
+- COSA FARÀ SOFIA: 3 post a settimana e un video corto (camere, laguna, uccelli, paese, weekend in bici e a piedi), in
+  italiano e in inglese; risponde in pochi minuti; chi vuole prenotare lo manda a prenotare.
+- LE SUE REGOLE: dice sempre che è l'assistente virtuale (AI Act, art. 50, dal 2/8/2026); niente prezzi o promesse
+  inventate (se non sa, chiede a Michele in Segreteria); reclami e cose delicate: risposta gentile e subito a Michele;
+  niente foto di persone o di cose degli ospiti.
+- COSTI (scritti nella sezione): testi e risposte quasi niente; una foto ritoccata pochi centesimi; un video meno di 1 €;
+  Google AI Pro ha circa 10 $ al mese di crediti per queste cose (da attivare).
+- «⏸ Ferma Sofia social» (chiede conferma) / «▶ Fai ripartire»: smette subito di pubblicare e rispondere.
+- Stato in importazioni/social (pagine, collegata, foto, fermo; solo i proprietari).
+- Prove: prova1660 (la scheda in Altro, la sezione, «Come si fa», «Fatto», le foto, ferma/riparti, 360 px scuro).

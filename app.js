@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.65.0";
+export const VERSIONE = "1.66.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1426,6 +1426,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(ascoltaMessaggiSig());   // 1.55.13: i messaggi delle signore per Michele
   if (proprietario()) S.stop.push(db.ascolta("ruoli", {}, (m) => { S.ruoli = m || {}; S.caricati.ruoli = true; if (S.vista === "piantine" || S.vista === "altro" || (S.foglio && /^rg/.test(S.foglio.tipo || ""))) disegna(); }, (e) => console.warn("ruoli", e)));   // 1.57.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "social", d => { S.social = d ? { ...d } : null; if (S.vista === "social" || S.vista === "altro") disegna(); }));   // 1.66.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "canali", d => { S.canaliCal = d ? { ...d } : null; if (S.vista === "prospetto" || (S.foglio && S.foglio.tipo === "calendario")) disegna(); }));   // 1.65.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "copia-sicurezza", d => { S.copia = d ? { ...d } : null; if (S.vista === "altro" || S.vista === "oggi" || (S.foglio && S.foglio.tipo === "cassetta")) disegna(); }));   // 1.64.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
@@ -6820,6 +6821,7 @@ function vistaProprietario() {
   else if (v === "sofia") corpo = vistaSofia();
   else if (v === "segreteria") corpo = vistaSegreteria();   // 1.39.0
   else if (v === "alloggiati") corpo = vistaAlloggiati();   // 1.56.0
+  else if (v === "social") corpo = vistaSocial();   // 1.66.0
   else if (v === "signora") corpo = vistaSignora(S.sigZona || zoneOrdinate()[0].id);
   else corpo = vistaOggiGestione();
   return tabs + corpo;
@@ -12293,6 +12295,125 @@ document.addEventListener("input", (e) => {
 }, true);
 
 // ============================================================================
+//  1.66.0 SOFIA SOCIAL MANAGER (8/11 notte, Michele: «fai una nuova sezione con Sofia vestita da influencer con gli
+//  occhiali da sole, che è la parte che mi gestisce in tutto e per tutto: io faccio l'accesso con i nuovi account, non
+//  devo fare niente altro, forse solo le foto che mi dici tu di fare; per il resto pubblica Sofia, scrive Sofia; io non
+//  voglio neanche vedere il risultato, perché non ho né Facebook né Instagram»).
+//  La sezione «📣 Sofia social» (da «Altro»): in cima Sofia influencer (finché non c'è il suo ritratto nuovo, quella che
+//  saluta); poi le tre cose in ordine: 1 le pagine (le apre Michele, una volta sola: Instagram e la Pagina Facebook;
+//  «Come si fa» passo passo), 2 il collegamento (lo facciamo insieme dal PC, la strada ufficiale di Meta: niente mouse
+//  comandato, così le pagine non rischiano), 3 le foto che servono (le fa Michele col telefono, una per riga, «📷 Fatta»).
+//  Sotto: cosa farà Sofia, le sue regole (dice sempre che è l'assistente virtuale — obbligo europeo dal 2/8/2026 —, niente
+//  prezzi o promesse inventate, i reclami li passa a Michele), i costi, e il tasto «⏸ Ferma Sofia social».
+//  Stato in importazioni/social (solo i proprietari); le foto nella raccolta «foto» (social_…), ridotte (max 1600 px).
+// ============================================================================
+const SOC_FOTO = [
+  { k: "facciata", t: "La facciata con l'insegna", c: "di giorno, col sole alle spalle, tutta dritta" },
+  { k: "camera-bella", t: "La camera più bella", c: "letto fatto, luce accesa, finestra aperta; dall'angolo della porta" },
+  { k: "bagno", t: "Un bagno pulito", c: "asciugamani piegati, tutto in ordine" },
+  { k: "terrazzo", t: "Il terrazzo", c: "di pomeriggio, con un po' di cielo" },
+  { k: "laguna", t: "La laguna di Lesina", c: "al tramonto, dal punto più vicino a piedi" },
+  { k: "paese", t: "Il paese", c: "il corso o la piazza, di sera con le luci" },
+  { k: "dettaglio", t: "Un dettaglio che fa casa", c: "il portachiavi col logo, il letto rifatto, un fiore" },
+  { k: "uccelli", t: "Gli uccelli della laguna", c: "aironi o fenicotteri, anche da lontano (per chi fa birdwatching)" },
+];
+const SOC_COME = {
+  instagram: { tit: "📸 Aprire Instagram (5 minuti)", passi: ["Scarica l'app Instagram sul telefono (se non c'è) e tocca «Crea un nuovo account».", "Nome utente: <b>lestanzediricci</b> (se è già preso: <b>lestanzediricci.lesina</b>).", "Usa un'email solo per l'albergo (meglio una nuova) e una password che ti segni bene.", "Nelle impostazioni del profilo cerca <b>«account professionale»</b> → <b>Azienda</b> → categoria <b>Hotel</b> o <b>Bed and breakfast</b>.", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperto»</b>. Il resto lo faccio io."] },
+  facebook: { tit: "📘 Aprire la Pagina Facebook (5 minuti)", passi: ["Facebook per aprire una Pagina chiede un profilo personale: se non ce l'hai, creane uno (anche solo per questo, non lo userai).", "Dal profilo: <b>Menu → Pagine → Crea una Pagina</b>.", "Nome: <b>Le Stanze di Ricci</b>; categoria: <b>Bed and breakfast</b> (o Hotel).", "Collega la Pagina a Instagram, se te lo chiede (sì).", "Fatto: torna qui e tocca <b>«Fatto: l'ho aperta»</b>. Il resto lo faccio io."] },
+};
+const socStato = () => S.social || {};
+function socPronta(k) { const p = (socStato().pagine || {})[k]; return !!(p && p.aperta); }
+function cardSocialAltro() {
+  if (!proprietario()) return "";
+  const s = socStato(), n = SOC_FOTO.filter(f => (s.foto || {})[f.k]).length;
+  return `<button type="button" class="card soc-entra" data-soc-vai><img src="cons-saluto.webp" alt="" class="soc-entra-img"><span><b>📣 Sofia social manager</b><small>Facebook e Instagram delle Stanze di Ricci: li gestisce lei. ${s.fermo ? "⏸ Ferma." : socPronta("instagram") || socPronta("facebook") ? "Pagine aperte." : "Prima: le pagine (le apri tu)."}${n ? ` · Foto ${n}/${SOC_FOTO.length}` : ""}</small></span><span aria-hidden="true">›</span></button>`;
+}
+function vistaSocial() {
+  const s = socStato(), foto = s.foto || {}, fatte = SOC_FOTO.filter(f => foto[f.k]).length;
+  const pag = (k, nome, cosa) => `<li class="soc-pag${socPronta(k) ? " ok" : ""}"><span class="soc-pag-n"><b>${nome}</b><small>${socPronta(k) ? `✓ aperta${(s.pagine[k] || {}).nome ? ` · ${esc(s.pagine[k].nome)}` : ""}` : cosa}</small></span>${socPronta(k) ? `<button type="button" class="btnsm ghost" data-soc-riapri="${k}">Cambia</button>` : `<button type="button" class="btnsm" data-soc-come="${k}">Come si fa ›</button>`}</li>`;
+  const stato = s.fermo ? `<span class="soc-pill fermo">⏸ Ferma</span>` : (socPronta("instagram") || socPronta("facebook")) && s.collegata ? `<span class="soc-pill va">▶ Al lavoro</span>` : `<span class="soc-pill attesa">⏳ Aspetta le pagine</span>`;
+  return `<section class="card soc-testa"><button type="button" class="btnsm ghost" data-soc-torna>‹ Altro</button>
+      <div class="soc-sofia"><span class="soc-foto"><img src="${esc(s.ritratto || "cons-saluto.webp")}" alt="Sofia social manager"><i class="soc-occhiali" aria-hidden="true">🕶️</i></span>
+        <span class="soc-tt"><h2>Sofia · social manager</h2><p>Facebook e Instagram delle Stanze di Ricci: li faccio io. Tu apri le pagine e fai le foto che ti chiedo; al resto penso io.</p>${stato}</span></div></section>
+    <section class="card soc-passo"><h3><b>1</b> Le pagine <small>le apri tu, una volta sola</small></h3>
+      <ul class="soc-pagine">${pag("instagram", "📸 Instagram", "da aprire")}${pag("facebook", "📘 Pagina Facebook", "da aprire (serve un profilo personale)")}</ul></section>
+    <section class="card soc-passo"><h3><b>2</b> Il collegamento <small>lo facciamo insieme, dal PC</small></h3>
+      <p>${s.collegata ? "✓ Collegata: pubblico e rispondo io." : socPronta("instagram") || socPronta("facebook") ? "Le pagine ci sono: la prossima volta che sei al PC mi colleghi (10 minuti). Uso la strada ufficiale di Meta, quella per le attività: le pagine non rischiano niente e funziona anche col PC spento." : "Quando le pagine ci sono, mi colleghi una volta dal PC (10 minuti). Uso la strada ufficiale di Meta, quella per le attività: niente programmi che muovono il mouse, così le pagine non rischiano niente e funziona anche col PC spento."}</p></section>
+    <section class="card soc-passo"><h3><b>3</b> Le foto che mi servono <small>${fatte}/${SOC_FOTO.length}, col telefono</small></h3>
+      <p class="muted small" style="margin:0 0 8px">Fotografa in orizzontale, con tanta luce, senza persone e senza cose degli ospiti. Una alla volta, quando capita.</p>
+      <ul class="soc-foto-lista">${SOC_FOTO.map(f => `<li class="${foto[f.k] ? "ok" : ""}"><span><b>${foto[f.k] ? "✓ " : ""}${esc(f.t)}</b><small>${esc(f.c)}</small></span><label class="btnsm${foto[f.k] ? " ghost" : ""}">${foto[f.k] ? "Rifalla" : "📷 Fatta"}<input type="file" accept="image/*" capture="environment" hidden data-soc-foto="${f.k}"></label></li>`).join("")}</ul></section>
+    <section class="card soc-piano"><h3>Cosa farò io</h3><ul>
+      <li>3 post a settimana e un video corto: le camere, la laguna, gli uccelli, il paese, i weekend in bici e a piedi.</li>
+      <li>In italiano e in inglese; d'estate più spesso.</li>
+      <li>Rispondo ai messaggi e ai commenti in pochi minuti, anche di notte.</li>
+      <li>Chi vuole prenotare lo mando a prenotare (sul sito, quando c'è, o al tuo numero).</li></ul>
+      <h3>Le mie regole</h3><ul>
+      <li>Dico sempre che sono l'assistente virtuale delle Stanze di Ricci (in Europa è obbligatorio dal 2 agosto 2026).</li>
+      <li>Niente prezzi o promesse inventate: se non lo so, chiedo a te in Segreteria.</li>
+      <li>Un reclamo o una cosa delicata: rispondo con gentilezza e lo passo subito a te.</li>
+      <li>Niente foto di persone o di cose degli ospiti.</li></ul>
+      <p class="muted small" style="margin:8px 0 0">Costi: testi e risposte quasi niente; una foto ritoccata pochi centesimi; un video meno di 1 €. Il tuo Google AI Pro ha circa 10 $ al mese per queste cose (da attivare una volta).</p></section>
+    <section class="card soc-ferma">${s.fermo ? `<button type="button" class="big main" data-soc-fermo="0">▶ Fai ripartire Sofia social</button><p class="muted small" style="margin:8px 0 0">Ferma dal ${esc(csQuando(s.fermoDal) || "")}: non pubblica e non risponde.</p>` : `<button type="button" class="big undo" data-soc-fermo="1">⏸ Ferma Sofia social</button><p class="muted small" style="margin:8px 0 0">Se un giorno serve: smette subito di pubblicare e di rispondere, finché non la fai ripartire.</p>`}</section>`;
+}
+function foglioSocialCome(f) {
+  const c = SOC_COME[f.pagina]; if (!c) return "";
+  return `<h3>${c.tit}</h3><ol class="soc-come">${c.passi.map(p => `<li>${p}</li>`).join("")}</ol>
+    <label class="campo" style="margin:10px 0 8px"><span>Il nome che hai scelto (facoltativo)</span><input id="socNome" type="text" data-keep autocomplete="off" placeholder="${f.pagina === "instagram" ? "es. lestanzediricci" : "es. Le Stanze di Ricci"}"></label>
+    <button type="button" class="big main" data-soc-aperta="${esc(f.pagina)}">${f.pagina === "facebook" ? "Fatto: l'ho aperta" : "Fatto: l'ho aperto"}</button>
+    <button type="button" class="big undo" data-chiudi>Lo faccio dopo</button>`;
+}
+async function socSalva(dati) { S.social = { ...socStato(), ...dati }; await S.db.salva("importazioni", "social", dati); }
+// la foto: ridotta (lato lungo 1600 px, al massimo ~750 KB) così sta nel database e va bene per Instagram
+function socRiduci(file) {
+  return new Promise((ok, ko) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      try {
+        const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        let q = 0.82, out = c.toDataURL("image/jpeg", q);
+        while (out.length > 750000 && q > 0.35) { q -= 0.08; out = c.toDataURL("image/jpeg", q); }
+        ok({ dati: out, w: c.width, h: c.height });
+      } catch (e) { ko(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); ko(new Error("immagine non leggibile")); };
+    img.src = url;
+  });
+}
+async function socFoto(k, file) {
+  if (!file || !SOC_FOTO.some(f => f.k === k)) return;
+  try {
+    toast("Salvo la foto…");
+    const r = await socRiduci(file), ora = new Date().toISOString();
+    await S.db.salva("foto", `social_${k}`, { social: true, chiave: k, dati: r.dati, w: r.w, h: r.h, quando: ora, da: (S.utente && (S.utente.nome || S.utente.email)) || "" }, false);
+    await socSalva({ foto: { ...(socStato().foto || {}), [k]: { quando: ora } } });
+    disegna(); toast("✓ Foto salvata: grazie!");
+  } catch (e) { erroreScrittura(e); }
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-soc-vai],[data-soc-torna],[data-soc-come],[data-soc-riapri],[data-soc-aperta],[data-soc-fermo]") : null;
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-soc-vai")) { S.vista = "social"; chiudiFoglio(); disegna(); window.scrollTo(0, 0); return; }
+  if (t.hasAttribute("data-soc-torna")) { S.vista = "altro"; disegna(); window.scrollTo(0, 0); return; }
+  if (t.hasAttribute("data-soc-come") || t.hasAttribute("data-soc-riapri")) { apriFoglio({ tipo: "socialCome", pagina: t.getAttribute("data-soc-come") || t.getAttribute("data-soc-riapri") }); return; }
+  if (t.hasAttribute("data-soc-aperta")) {
+    const k = t.getAttribute("data-soc-aperta"), el = document.getElementById("socNome"), nome = String((el && el.value) || "").trim().slice(0, 60);
+    socSalva({ pagine: { ...(socStato().pagine || {}), [k]: { aperta: true, quando: new Date().toISOString(), ...(nome ? { nome } : {}) } } }).then(() => { chiudiFoglio(); disegna(); toast(k === "instagram" ? "✓ Instagram aperto: al collegamento penso io" : "✓ Pagina aperta: al collegamento penso io"); }).catch(erroreScrittura);
+    return;
+  }
+  if (t.hasAttribute("data-soc-fermo")) {
+    const fermo = t.getAttribute("data-soc-fermo") === "1";
+    (async () => { if (fermo && !await chiedi("Fermo Sofia social? Smette subito di pubblicare e di rispondere, finché non la fai ripartire.", { si: "Sì, fermala" })) return; await socSalva({ fermo, fermoDal: fermo ? new Date().toISOString() : "" }); disegna(); toast(fermo ? "⏸ Sofia social è ferma" : "▶ Sofia social riparte"); })().catch(erroreScrittura);
+  }
+}, true);
+document.addEventListener("change", (e) => {
+  const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-soc-foto")) return;
+  const f = t.files && t.files[0]; const k = t.getAttribute("data-soc-foto"); t.value = "";
+  if (f) socFoto(k, f);
+}, true);
+// ============================================================================
 //  1.65.0 TUTTO L'ANNO E DA DOVE ARRIVA IL CLIENTE · IL CHANNEL MANAGER GRATIS (8/11 notte, Michele: «fammi anche l'opzione
 //  di poter scegliere il channel manager, con un calendario chiarissimo da scuola elementare come c'è adesso per il
 //  prospetto ma per tutto l'anno, che mi dica se l'affitto è diretto, Booking, Airbnb oppure Expedia»; «per adesso il
@@ -13375,6 +13496,7 @@ function vistaAltro() {
     ${puoModificare() ? `<label class="big main" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">📄 Carica il foglio di papà<input id="fileFoglio" type="file" accept=".xlsx,.xls,.xlsm" hidden></label><p class="muted small" style="margin:8px 0 0">Legge il file Excel con regole fisse e ti fa controllare prima di salvare. Niente viene cambiato finché non premi "Salva nel prospetto".</p>` : ""}
   </section>
   ${vistaPersone()}
+  ${cardSocialAltro()}
   ${cardCopia()}
   ${cardAzzera()}
   <div class="menu">
@@ -13436,6 +13558,7 @@ function disegnaFoglio() {
   else if (f.tipo === "alWs") html = foglioAlWs(f);   // 1.56.1
   else if (f.tipo === "cassetta") html = foglioCassetta(f);   // 1.64.0
   else if (f.tipo === "calendario") html = foglioCalendario(f);   // 1.65.0
+  else if (f.tipo === "socialCome") html = foglioSocialCome(f);   // 1.66.0
   else if (f.tipo === "rgCamere") html = foglioRgCamere(f);   // 1.57.0
   else if (f.tipo === "rgRagazza") html = foglioRgRagazza(f);
   else if (f.tipo === "rgNuova") html = foglioRgNuova(f);
