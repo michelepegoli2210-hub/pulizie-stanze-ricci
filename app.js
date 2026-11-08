@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.66.0";
+export const VERSIONE = "1.66.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -12454,13 +12454,15 @@ function anMese(p, camere, sog, oggi) {
   const fine = L.aggiungiGiorni(L.ultimoDelMese(p), 1), N = L.giorniTra(p, fine);
   const notti = { diretto: 0, booking: 0, airbnb: 0, expedia: 0 }; let piene = 0, righe = "";
   for (const c of camere) {
-    let barre = "";
+    let barre = ""; const notte = new Array(N).fill("");   // 1.66.1: ogni camera conta una volta per notte (anche con due ospiti dentro)
     for (const s of sog) {
       if (s.camera !== c.id || s.fine <= p || s.inizio >= fine) continue;
       const i0 = Math.max(0, L.giorniTra(p, s.inizio)), i1 = Math.min(N, L.giorniTra(p, s.fine)); if (i1 <= i0) continue;
-      const k = canaleDi(s); notti[k] += i1 - i0; piene += i1 - i0;
+      const k = canaleDi(s);
+      for (let i = i0; i < i1; i++) if (!notte[i] || (notte[i] === "diretto" && k !== "diretto")) notte[i] = k;
       barre += `<span class="an-b an-${k}${s.inizio < p ? " da-prima" : ""}${s.fine > fine ? " va-oltre" : ""}" style="grid-column:${i0 + 1}/${i1 + 1}" title="${esc(c.nome)} · ${esc(s.nome || "")}">${i1 - i0 >= 3 ? CANALI[k].breve : ""}</span>`;
     }
+    for (const k of notte) if (k) { notti[k]++; piene++; }
     righe += `<span class="an-cam">${esc(nomeCortoCamera(c))}</span><span class="an-giorni" style="grid-template-columns:repeat(${N},1fr)">${barre}</span>`;
   }
   const tot = camere.length * N, perc = tot ? Math.round(piene / tot * 100) : 0;

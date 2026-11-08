@@ -3126,3 +3126,9 @@ li può gestire lui; Sofia deve fare post, foto, video e rispondere ai messaggi 
 - «⏸ Ferma Sofia social» (chiede conferma) / «▶ Fai ripartire»: smette subito di pubblicare e rispondere.
 - Stato in importazioni/social (pagine, collegata, foto, fermo; solo i proprietari).
 - Prove: prova1660 (la scheda in Altro, la sezione, «Come si fa», «Fatto», le foto, ferma/riparti, 360 px scuro).
+
+## 1.66.1 · Anno: «piene» non passa più il 100%
+Visto sull'app vera la notte stessa: «NOVEMBRE 2026 · piene 161% · Diretto 626 notti». Due ospiti nella stessa camera
+(gli operai, una ditta con due persone segnate a parte) contavano due volte. Ora ogni camera conta una volta per notte:
+«piene» va da 0 a 100% e le notti sono notti di camera (se nella stessa notte c'è un cliente di Booking e uno diretto,
+conta Booking, così il colore del sito si vede). La griglia resta uguale.
