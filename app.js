@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.69.2";
+export const VERSIONE = "1.70.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -80,8 +80,9 @@ const CAPELLI = { castana: "#6B4226", bionda: "#D9A441", mora: "#2E2A28", rossa:
 // cambiano solo bocca e occhi. Michele porta 2-4 immagini, l'app le scambia a tempo
 // con la voce vera. Stanno solo su questo telefono (sono pesanti e alle signore non servono).
 const CHIAVE_FACCE = "ricci_gov_facce";
-const FACCE_PRONTE = { base: "cons-testa.webp", occhi: "cons-testa-occhi.webp" };
-const CORPO_PRONTO = { corpo: "cons-base.webp", saluto: "cons-saluto.webp", riposo: "cons-riposo.webp", indica: "cons-indica.webp", cuore: "cons-cuore.webp", pollice: "cons-pollice.webp", b1: "cons-b1.webp", b2: "cons-b2.webp", b3: "cons-b3.webp", felice: "cons-felice.webp", occhi: "cons-occhi.webp", osx: "cons-osx.webp", odx: "cons-odx.webp", osu: "cons-osu.webp" };
+// 1.70.0 (Michele, 8/11: «l'altra Sofia… non la voglio vedere più da nessuna parte»): la faccia piccola è la testa della Sofia
+// di casa (sofia-viso.webp, ritagliata dal poster di casa). Via la Consuela a pose e i disegni.
+const FACCE_PRONTE = { base: "sofia-viso.webp" };
 const FILM_PRONTO = { parla: "cons-parla.mp4", riposo: "cons-riposo.mp4", poster: "cons-poster.webp", abbina: "cons-film.json" };
 // 0.80: SOLO FILMATI (decisione di Michele del 21 ottobre: "lascia stare la sincronia della bocca,
 // metti soltanto i filmati"). Quando parla si vede un video in cui lei parla davvero, quando ascolta o
@@ -123,7 +124,7 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr-riposo-3d.webm", parla: "segr-parla-3d.webm", poster: "segr-poster-3d.webp" };   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
+const FILM_SEGR = { riposo: "segr2-riposo-3d.webm", parla: "segr2-parla-3d.webm", poster: "segr2-poster-3d.webp" };   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -893,213 +894,22 @@ document.addEventListener("click", (e) => {
   messaggioApri(true);   // 1.6.5: si legge anche a tendina chiusa; 1.7.0: Indietro lo richiude
   benvenutoSofia();
 }, true);
-function corpoPronto() { const f = facceGov(); return f.base === FACCE_PRONTE.base ? CORPO_PRONTO : null; }
-function CORPO_CONS(cls) {
-  const c = CORPO_PRONTO, im = (k, n) => `<img class="${n}" src="${c[k]}" alt="">`;
-  return `<span class="donnina gov-fig gov-corpo ${cls}" role="img" aria-label="${esc(nomeGov())}">
-    <span class="cg-giro"><span class="cg-salto">
-      <span class="cg-pose">${im("corpo", "cg-p cg-base")}${im("saluto", "cg-p cg-saluto")}${im("riposo", "cg-p cg-riposo")}${im("indica", "cg-p cg-indica")}${im("cuore", "cg-p cg-cuore")}${im("pollice", "cg-p cg-pollice")}</span>
-      ${im("b1", "cg-t cg-b1")}${im("b3", "cg-t cg-b3")}${im("b2", "cg-t cg-b2")}${im("felice", "cg-t cg-felice")}${im("osu", "cg-t cg-osu")}${im("osx", "cg-t cg-osx")}${im("odx", "cg-t cg-odx")}${im("occhi", "cg-t cg-occhi")}
-    </span></span></span>`;
-}
-const POSE = [
-  { k: "base", nome: "Faccia normale", aiuto: "bocca chiusa, occhi aperti. Questa serve sempre." },
-  { k: "m1", nome: "Bocca socchiusa", aiuto: "stessa posa, labbra appena aperte." },
-  { k: "m2", nome: "Bocca aperta", aiuto: "stessa posa, bocca aperta come quando dice «a»." },
-  { k: "occhi", nome: "Occhi chiusi", aiuto: "stessa posa, occhi chiusi: serve per farla sbattere le palpebre." },
-];
-let facceCache = null;
-function facceGov() {
-  if (facceCache) return facceCache;
-  let f = {};
-  try { f = JSON.parse(localStorage.getItem(CHIAVE_FACCE) || "{}") || {}; } catch (e) { f = {}; }
-  if (!f.base) { try { const vecchia = localStorage.getItem("ricci_gov_foto"); if (vecchia) f.base = vecchia; } catch (e) {} }
-  try { if (!Object.keys(f).length && stileGov() === "consuela") f = { ...FACCE_PRONTE }; } catch (e) {}
-  facceCache = f; return f;
-}
-function fotoGov() { return facceGov().base || ""; }
-function salvaFaccia(k, dataUrl) {
-  let f = {};
-  try { f = JSON.parse(localStorage.getItem(CHIAVE_FACCE) || "{}") || {}; } catch (e) { f = {}; }
-  if (dataUrl) f[k] = dataUrl; else delete f[k];
-  if (k === "base" && !dataUrl) { try { localStorage.removeItem("ricci_gov_foto"); } catch (e) {} }
-  try { localStorage.setItem(CHIAVE_FACCE, JSON.stringify(f)); facceCache = f; return true; }
-  catch (e) { console.warn("facce", e); return false; }
-}
-function togliFacce() { try { localStorage.removeItem(CHIAVE_FACCE); localStorage.removeItem("ricci_gov_foto"); } catch (e) {} facceCache = null; }
-// La foto ritagliata quadrata e rimpicciolita: 460 px, così pesa poco e si vede bene
-function rimpicciolisci(file, lato = 460) {
-  return new Promise((ok, no) => {
-    const fr = new FileReader();
-    fr.onerror = () => no(new Error("Non riesco a leggere la foto."));
-    fr.onload = () => {
-      const im = new Image();
-      im.onerror = () => no(new Error("Questa non è una foto che so leggere."));
-      im.onload = () => {
-        const m = Math.min(im.width, im.height), sx = (im.width - m) / 2, sy = (im.height - m) / 2;
-        const cv = document.createElement("canvas"); cv.width = cv.height = lato;
-        const cx = cv.getContext("2d"); cx.drawImage(im, sx, sy, m, m, 0, 0, lato, lato);
-        ok(cv.toDataURL("image/jpeg", 0.85));
-      };
-      im.src = fr.result;
-    };
-    fr.readAsDataURL(file);
-  });
-}
-// Il pupazzo: tutte le facce impilate, si accende quella giusta
+// 1.70.0: una faccia sola, sempre quella (niente più «La sua faccia»: piatta, contornata, Consuela, foto dal telefono). Le facce
+// messe da questo telefono con le versioni di prima si cancellano alla prima apertura.
+function corpoPronto() { return true; }
+function facceGov() { return FACCE_PRONTE; }
+function fotoGov() { return FACCE_PRONTE.base; }
+function togliFacce() { try { localStorage.removeItem(CHIAVE_FACCE); localStorage.removeItem("ricci_gov_foto"); } catch (e) {} }
+try { if (localStorage.getItem(CHIAVE_FACCE) || localStorage.getItem("ricci_gov_foto")) togliFacce(); } catch (e) {}
+// Il pupazzo: in piccolo la testa (della Sofia di casa, o della capo-governante per le signore); in grande il filmato
 function FACCIA_FOTO(cls = "") {
   if (sofiaCapo()) return /grande|film/.test(cls) ? filmPosto(cls) : `<span class="donnina gov-fig gov-foto capo ${cls}" role="img" aria-label="${esc(nomeGov())}"><span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa"><img class="f-base" src="${FILM_CAPO.viso}" alt=""></span></span></span><i class="gov-alone"></i></span>`;   // 1.25.0
-  const f = facceGov();
-  if (/grande|film/.test(cls) && corpoPronto()) return FILM_PRONTO.riposo ? filmPosto(cls) : CORPO_CONS(cls);   // 1.43.0: il filmato tenuto da parte
-  const strato = (k, c) => f[k] ? `<img class="${c}" src="${f[k]}" alt="">` : "";
-  return `<span class="donnina gov-fig gov-foto ${f.m1 || f.m2 ? "parlante" : ""} ${cls}" role="img" aria-label="${esc(nomeGov())}">
-    <span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa">${strato("base", "f-base")}${strato("m1", "f-m1")}${strato("m3", "f-m3")}${strato("m2", "f-m2")}${strato("felice", "f-felice")}${strato("pensa", "f-pensa")}${strato("occhi", "f-occhi")}</span></span></span><i class="gov-alone"></i></span>`;
+  if (/grande|film/.test(cls)) return filmPosto(cls);   // 1.43.0: il filmato tenuto da parte
+  return `<span class="donnina gov-fig gov-foto ${cls}" role="img" aria-label="${esc(nomeGov())}"><span class="gf-vetro"><span class="gf-corpo"><span class="gf-testa"><img class="f-base" src="${FACCE_PRONTE.base}" alt=""></span></span></span><i class="gov-alone"></i></span>`;
 }
-const PROMPT_FACCIA = `3D animated character portrait, stylized realism, Pixar and Disney style CGI render. A friendly Italian woman, about 35 years old, warm brown eyes, dark brown hair pulled back in a neat low bun with a few loose strands framing her face, light olive skin with soft subsurface scattering, subtle freckles, glossy natural lips, long detailed eyelashes, gentle closed-mouth smile. She wears a navy blue housekeeper uniform with a crisp white collar. Head and shoulders, facing the camera straight on, centered. Soft cinematic studio lighting, warm key light and a cool rim light on the hair. Plain smooth dark blue gradient background, slightly out of focus. Ultra detailed hair strands, clean skin shading, high quality 3D render, square 1:1, sharp focus on the eyes. No text, no watermark, one person only, no hands in frame.`;
-const STESSA = "Keep everything exactly the same: same character, same face, same hairstyle, same clothes, same pose, same camera angle, same lighting, same background.";
-const PROMPT_VARIANTI = [
-  STESSA + " Change ONLY the mouth: lips slightly parted, as if she is starting to speak. Eyes stay open and identical.",
-  STESSA + " Change ONLY the mouth: open in a relaxed oval, as if saying the vowel AH, upper teeth slightly visible. Eyes stay open and identical.",
-  STESSA + " Change ONLY the eyes: both eyes gently closed, eyelashes resting down. Mouth stays closed and identical.",
-];
-function stileGov() { const v = (S.gov && S.gov.stile) || ""; return v === "contorno" ? "contorno" : v === "piatta" ? "piatta" : "consuela"; }
-let CONTA_DONNINA = 0;
-function tinta(hex, d) {
-  const h = String(hex).replace("#", ""), pieno = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
-  const n = parseInt(pieno, 16) || 0, cl = v => Math.max(0, Math.min(255, Math.round(v)));
-  const r = cl((n >> 16 & 255) + d), g = cl((n >> 8 & 255) + d), b = cl((n & 255) + d);
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-}
-// --- Stile "piatta": come le mascotte delle app per le lingue --------------
-// La differenza vera non è la faccia: è che NON c'è nessun contorno nero,
-// le forme sono geometriche (rettangoli stondati e cerchi), i colori sono
-// pochi e pieni, gli occhi sono due fagioli scuri e le mani sono manopole.
-function GOVERNANTE_PIATTA(cls = "", colore = null) {
-  const cap = CAPELLI[colore] || colore || "#4A2E1F", capS = tinta(cap, -22);
-  const PEL = "#F6CBA6", PELS = "#E3AE85", AB = "#3E7BD6", ABS = "#2F63B4";
-  const BIA = "#FFFFFF", BIA2 = "#E8EDF5", SC = "#2B3A55", OCC = "#2A2320", ORO = "#FFC93C";
-  return `<svg class="donnina gov-fig gov-piatta ${cls}" viewBox="0 0 124 140" aria-hidden="true">
-  <ellipse cx="62" cy="133" rx="27" ry="4" fill="rgba(43,58,85,.14)"/>
-  <g class="busto">
-    <rect x="51" y="110" width="9" height="16" rx="4.5" fill="${PELS}"/><rect x="64" y="110" width="9" height="16" rx="4.5" fill="${PELS}"/>
-    <rect x="45" y="122" width="18" height="9" rx="4.5" fill="${SC}"/><rect x="61" y="122" width="18" height="9" rx="4.5" fill="${SC}"/>
-    <path d="M62 70c-12 0-19 5-20 12l-5 28c-1 5 10 7 25 7s26-2 25-7l-5-28c-1-7-8-12-20-12Z" fill="${AB}"/>
-    <path d="M62 70c12 0 19 5 20 12l5 28c1 5-10 7-25 7Z" fill="${ABS}"/>
-    <rect x="50" y="90" width="24" height="26" rx="7" fill="${BIA}"/>
-    <rect x="50" y="90" width="24" height="5" rx="2.5" fill="${BIA2}"/>
-    <rect x="56" y="101" width="12" height="9" rx="3" fill="${BIA2}"/>
-    <path d="M54 69h16l-8 10Z" fill="${BIA}"/>
-    <circle cx="62" cy="80" r="3" fill="${ORO}"/>
-    <g class="braccio-sx"><rect x="31" y="77" width="11" height="27" rx="5.5" fill="${AB}"/>
-      <circle cx="36.5" cy="106" r="7" fill="${PEL}"/></g>
-    <g class="braccio-dx">
-      <g class="taccuino"><rect x="83" y="58" width="25" height="29" rx="5" fill="${BIA}"/>
-        <rect x="83" y="58" width="25" height="7" rx="3.5" fill="${ORO}"/>
-        <rect x="88" y="70" width="15" height="3.4" rx="1.7" fill="${BIA2}"/><rect x="88" y="76" width="15" height="3.4" rx="1.7" fill="${BIA2}"/><rect x="88" y="82" width="10" height="3.4" rx="1.7" fill="${BIA2}"/></g>
-      <rect x="82" y="76" width="11" height="22" rx="5.5" fill="${ABS}"/>
-      <circle cx="87.5" cy="90" r="7" fill="${PEL}"/></g>
-  </g>
-  <g class="testa">
-    <rect x="34" y="14" width="56" height="44" rx="22" fill="${cap}"/>
-    <circle cx="62" cy="15" r="11" fill="${cap}"/>
-    <rect x="37" y="16" width="50" height="52" rx="24" fill="${PEL}"/>
-    <path d="M37 32c0-10 7-16 25-16s25 6 25 16c-2-7-9-10-15-9-5 3-11 4-15 2-10-1-18 1-20 7Z" fill="${cap}"/>
-    <g class="ciocca"><rect x="34" y="30" width="6.5" height="22" rx="3.2" fill="${capS}"/><rect x="83.5" y="30" width="6.5" height="20" rx="3.2" fill="${capS}"/></g>
-    <circle cx="46" cy="53" r="5" fill="#F79AA4" opacity=".5"/><circle cx="78" cy="53" r="5" fill="#F79AA4" opacity=".5"/>
-    <g class="occhi">
-      <g class="pupille">
-        <rect x="50" y="40" width="7.6" height="12" rx="3.8" fill="${OCC}"/><rect x="66.4" y="40" width="7.6" height="12" rx="3.8" fill="${OCC}"/>
-        <circle cx="52.4" cy="43.4" r="1.8" fill="#fff"/><circle cx="68.8" cy="43.4" r="1.8" fill="#fff"/>
-      </g>
-    </g>
-    <g class="palpebre"><rect x="48.4" y="43.6" width="10.8" height="4.8" rx="2.4" fill="${PEL}"/><rect x="64.8" y="43.6" width="10.8" height="4.8" rx="2.4" fill="${PEL}"/></g>
-    <g class="sopracciglia"><rect x="48.4" y="34" width="10.8" height="3.4" rx="1.7" fill="${capS}"/><rect x="64.8" y="34" width="10.8" height="3.4" rx="1.7" fill="${capS}"/></g>
-    <g class="bocca"><path d="M56 57c1.8 3.6 4 5.4 6 5.4s4.2-1.8 6-5.4Z" fill="${OCC}"/></g>
-    <g class="bocca-parla">
-      <g class="vA"><rect x="55" y="55" width="14" height="11" rx="5.5" fill="${OCC}"/><rect x="58" y="61" width="8" height="3.4" rx="1.7" fill="#E07C88"/></g>
-      <g class="vB"><rect x="57.5" y="55" width="9" height="10" rx="4.5" fill="${OCC}"/></g>
-      <g class="vC"><rect x="55" y="57" width="14" height="5" rx="2.5" fill="${OCC}"/></g>
-    </g>
-    <path class="sorriso" d="M53.5 56c2.6 6 5.6 8 8.5 8s5.9-2 8.5-8Z" fill="${OCC}"/>
-    <rect class="broncio" x="55" y="59" width="14" height="3.6" rx="1.8" fill="${OCC}" transform="rotate(-4 62 61)"/>
-  </g>
-</svg>`;
-}
-function GOVERNANTE(cls = "", colore = null) {
-  const u = "gv" + (++CONTA_DONNINA);
-  const cap = CAPELLI[colore] || colore || "#6B3F26", capS = tinta(cap, -34), capL = tinta(cap, 30);
-  const occhio = colore === "bionda" ? "#2E7FA8" : colore === "rossa" ? "#4E8A4A" : "#5A3418";
-  // Stile "mascotte": tinte piatte, contorno grosso, occhi grandi, niente sfumature.
-  const T = "#22313B", PEL = "#F8C9A4", PELS = "#E7A87C";
-  const AB = "#2E6FB8", ABS = "#245A99", BIA = "#FDFCF8", ORO = "#F2C14E";
-  const l = (d, w = 3) => `stroke="${T}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
-  return `<svg class="donnina gov-fig ${cls}" viewBox="0 0 124 140" aria-hidden="true">
-  <ellipse cx="62" cy="134" rx="30" ry="4.5" fill="rgba(34,49,59,.18)"/>
-  <g class="busto">
-    <path d="M50 116h10v12H50z" fill="${PELS}" ${l("", 2.6)}/><path d="M64 116h10v12H64z" fill="${PELS}" ${l("", 2.6)}/>
-    <path d="M44 126h20a4 4 0 0 1 0 8H44a4 4 0 0 1 0-8Z" fill="${T}"/>
-    <path d="M60 126h20a4 4 0 0 1 0 8H60a4 4 0 0 1 0-8Z" fill="${T}"/>
-    <path d="M62 70c-14 0-21 6-22 14l-4 30c-1 6 6 8 26 8s27-2 26-8l-4-30c-1-8-8-14-22-14Z" fill="${AB}" ${l("")}/>
-    <path d="M62 70c14 0 21 6 22 14l4 30c1 6-6 8-26 8Z" fill="${ABS}" opacity=".45"/>
-    <path d="M50 94h24c2 0 3 1 3 3l2 21c0 2-6 3-15 3s-15-1-15-3l2-21c0-2 1-3 3-3Z" fill="${BIA}" ${l("", 2.6)}/>
-    <path d="M47 97c-5 1-8 3-10 5M77 97c5 1 8 3 10 5" fill="none" ${l("", 2.6)}/>
-    <path d="M49 100h26" fill="none" stroke="${T}" stroke-width="2.4" stroke-linecap="round" opacity=".5"/>
-    <rect x="56" y="106" width="14" height="9" rx="2" fill="none" stroke="${T}" stroke-width="2.2" opacity=".45"/>
-    <path d="M52 70c3 6 6 9 10 9s7-3 10-9c-4-2-14-2-20 0Z" fill="${BIA}" ${l("", 2.6)}/>
-    <circle cx="62" cy="80" r="3.4" fill="${ORO}" ${l("", 2.2)}/>
-    <g class="braccio-sx"><path d="M43 80c-10 4-16 13-16 24" fill="none" stroke="${T}" stroke-width="10.5" stroke-linecap="round"/>
-      <path d="M43 80c-10 4-16 13-16 24" fill="none" stroke="${AB}" stroke-width="7" stroke-linecap="round"/>
-      <circle cx="27" cy="109" r="7" fill="${PEL}" ${l("", 2.6)}/></g>
-    <g class="braccio-dx"><path d="M81 80c11 3 17 10 17 19" fill="none" stroke="${T}" stroke-width="10.5" stroke-linecap="round"/>
-      <path d="M81 80c11 3 17 10 17 19" fill="none" stroke="${AB}" stroke-width="7" stroke-linecap="round"/>
-      <circle cx="98" cy="101" r="7" fill="${PEL}" ${l("", 2.6)}/>
-      <g class="taccuino"><rect x="90" y="74" width="23" height="27" rx="4" fill="${BIA}" ${l("", 2.6)}/>
-        <path d="M95 83h13M95 89h13M95 95h9" fill="none" stroke="${T}" stroke-width="2.2" stroke-linecap="round" opacity=".55"/>
-        <rect x="90" y="74" width="23" height="6" rx="3" fill="${ORO}" ${l("", 2.2)}/></g></g>
-    <path d="M56 64h12v10H56z" fill="${PELS}" ${l("", 2.6)}/>
-  </g>
-  <g class="testa">
-    <path d="M62 10c-18 0-29 12-29 28 0 4 1 8 2 11h54c1-3 2-7 2-11 0-16-11-28-29-28Z" fill="${cap}" ${l("")}/>
-    <circle cx="62" cy="13" r="10" fill="${cap}" ${l("")}/>
-    <path d="M57 8c3-2 7-2 10 1" fill="none" stroke="${capL}" stroke-width="2.6" stroke-linecap="round"/>
-    <ellipse cx="34" cy="46" rx="5" ry="6.5" fill="${PEL}" ${l("", 2.6)}/><ellipse cx="90" cy="46" rx="5" ry="6.5" fill="${PEL}" ${l("", 2.6)}/>
-    <circle cx="62" cy="43" r="27" fill="${PEL}" ${l("")}/>
-    <path d="M35 39c1-16 12-26 27-26s26 10 27 26c-4-9-13-13-20-12-4 4-11 5-16 3-8 0-15 3-18 9Z" fill="${cap}" ${l("")}/>
-    <g class="ciocca"><path d="M36 38c-4 7-5 14-4 20" fill="none" stroke="${cap}" stroke-width="5.5" stroke-linecap="round"/>
-      <path d="M88 38c4 7 5 13 4 19" fill="none" stroke="${cap}" stroke-width="5" stroke-linecap="round"/></g>
-    <circle cx="45" cy="55" r="5.5" fill="#F79AA0" opacity=".65"/><circle cx="79" cy="55" r="5.5" fill="#F79AA0" opacity=".65"/>
-    <g class="occhi">
-      <ellipse cx="51" cy="45" rx="8.4" ry="9.4" fill="${BIA}" ${l("", 2.8)}/>
-      <ellipse cx="73" cy="45" rx="8.4" ry="9.4" fill="${BIA}" ${l("", 2.8)}/>
-      <g class="pupille">
-        <circle cx="51.6" cy="46" r="5.2" fill="${occhio}"/><circle cx="73.6" cy="46" r="5.2" fill="${occhio}"/>
-        <circle cx="51.6" cy="46" r="2.8" fill="#15202A"/><circle cx="73.6" cy="46" r="2.8" fill="#15202A"/>
-        <circle cx="49.6" cy="43.4" r="2.2" fill="#fff"/><circle cx="71.6" cy="43.4" r="2.2" fill="#fff"/>
-        <circle cx="53.6" cy="48.4" r="1" fill="#fff" opacity=".8"/><circle cx="75.6" cy="48.4" r="1" fill="#fff" opacity=".8"/>
-      </g>
-    </g>
-    <g class="palpebre">
-      <path d="M42.6 45a8.4 9.4 0 0 1 16.8 0Z" fill="${PEL}" ${l("", 2.8)}/>
-      <path d="M64.6 45a8.4 9.4 0 0 1 16.8 0Z" fill="${PEL}" ${l("", 2.8)}/>
-    </g>
-    <g class="sopracciglia">
-      <path d="M43 32.5c3-3.4 9-3.8 13-1" fill="none" stroke="${capS}" stroke-width="3.4" stroke-linecap="round"/>
-      <path d="M68 31.5c4-2.8 10-2.4 13 1" fill="none" stroke="${capS}" stroke-width="3.4" stroke-linecap="round"/>
-    </g>
-    <path d="M62 48c-1.6 3-2.6 4.6-1 5.6" fill="none" stroke="${PELS}" stroke-width="2.4" stroke-linecap="round"/>
-    <g class="bocca"><path d="M55 58c2.6 3.6 5 5 7 5s4.4-1.4 7-5" fill="none" stroke="${T}" stroke-width="3" stroke-linecap="round"/></g>
-    <g class="bocca-parla">
-      <g class="vA"><ellipse cx="62" cy="60" rx="8" ry="6" fill="#8E3B44" ${l("", 2.6)}/><path d="M55.4 57.6c4.4-1.6 8.8-1.6 13.2 0-4.4 1.4-8.8 1.4-13.2 0Z" fill="${BIA}"/><ellipse cx="62" cy="63.4" rx="4" ry="2.2" fill="#E0828C"/></g>
-      <g class="vB"><ellipse cx="62" cy="60" rx="4.6" ry="5.6" fill="#8E3B44" ${l("", 2.6)}/><ellipse cx="62" cy="62" rx="2.4" ry="1.6" fill="#E0828C"/></g>
-      <g class="vC"><ellipse cx="62" cy="59" rx="7.4" ry="2.6" fill="#8E3B44" ${l("", 2.6)}/></g>
-    </g>
-    <path class="sorriso" d="M52 56c3.6 6 7 8 10 8s6.4-2 10-8c-6 2.4-14 2.4-20 0Z" fill="#8E3B44" ${l("", 2.8)}/>
-    <path class="broncio" d="M55 62c2.6-3.6 5-5 7-5s4.4 1.4 7 5" fill="none" stroke="${T}" stroke-width="3" stroke-linecap="round"/>
-  </g>
-</svg>`;
-}
+function stileGov() { return "sofia"; }
 function DONNINA(v = "scopa", cls = "", colore = null) {
-  if (v === "governante") return fotoGov() || sofiaCapo() ? FACCIA_FOTO(cls) : (stileGov() === "contorno" ? GOVERNANTE(cls, colore) : GOVERNANTE_PIATTA(cls, colore));
+  if (v === "governante") return FACCIA_FOTO(cls);   // 1.70.0: sempre la Sofia di casa (o la capo-governante, per le signore)
   const pelle = "#F7C9A5", pelle2 = "#E6AE87", capelli = CAPELLI[colore] || colore || "#6B4226";
   const vestito = { scopa: "#4F7BE8", festa: "#EF6F7B", secchio: "#23B5A3", saluto: "#9A6BF2", governante: "#1F2A44" }[v] || "#4F7BE8";
   const braccio = (d) => `<path d="${d}" stroke="${pelle}" stroke-width="7.5" fill="none" stroke-linecap="round"/>`;
@@ -1451,7 +1261,7 @@ function avviaAscolto() {
   if (proprietario()) presSegreti().catch(() => {});
   setTimeout(() => { try { presDaIndirizzo(); } catch (e) {} }, 2500);
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
-  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; S.caricati.gov = true; disegna(); governanteRiequilibra(); governanteAutomatica(); segnaInizioGovernante(); pianiPresto(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "governante", d => { S.gov = d ? { ...d } : null; if (S.gov) delete S.gov.id; if (S.gov && S.gov.nome && S.gov.nome !== "Sofia" && proprietario()) { S.gov.nome = "Sofia"; db.salva("impostazioni", "governante", { nome: "Sofia" }, true).catch(() => {}); }   /* 1.70.0: anche il giro la chiama Sofia */ S.caricati.gov = true; disegna(); governanteRiequilibra(); governanteAutomatica(); segnaInizioGovernante(); pianiPresto(); }));
   S.stop.push(db.ascolta("governante_registro", { where: addetta() ? [["zona", "==", u.zona]] : [] }, (m) => { S.registro = {}; const daUnire = []; for (const r of Object.values(m)) { const tolta = CAMERE_TOLTE[r.luogo]; const luogo = tolta ? tolta.unitaA : r.luogo; if (tolta) daUnire.push(r); const k = G.chiaveRegistro(G.nuovoId(r.regola), luogo); const prev = S.registro[k]; if (!prev || (r.ultima || "") > (prev.ultima || "")) S.registro[k] = { ...r, regola: G.nuovoId(r.regola), luogo }; } disegna(); governanteAutomatica(); unisciRegistroTolte(daUnire); }, mostraErrore));
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; S.caricati.avvisi = true; disegna(); pianoDelMattino(); }));   // 1.51.0: caricati.avvisi
@@ -1554,7 +1364,7 @@ function disegna() {
   disegnaStanze();   // 1.41.0: le stanze sotto Sofia, sopra la striscia dei giorni
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
   sofiaFuori();
-  guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito(); fantasmaSegreteria();   // 1.40.0
+  guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito(); fantasmaSegreteria(); segrFuori();   // 1.40.0; 1.70.0
   sofiaMini();
   voceBarra();   // 1.11.0
   orologioAvvia();
@@ -1570,6 +1380,7 @@ function disegna() {
   if (manFattoAtteso) guardaManFatto();   // 1.58.0
   if (tuFattoAtteso) guardaTuFatto();   // 1.62.0
   try { sg2SofiaMonta(); } catch (e) {}   // 1.62.1: Sofia segretaria in testa alla Segreteria
+  try { socFilmMonta(); } catch (e) {}   // 1.70.0: il filmato di Sofia influencer
   if (condivisaInAttesa && S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie) { condivisaInAttesa = false; setTimeout(guardaCondivisa, 0); }   // 1.51.0
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
   try { indietroVista(); } catch (e) {}   // 1.7.0
@@ -5982,9 +5793,9 @@ function sg2SofiaMonta() {
     el.innerHTML = rit ? `<video class="sg2-sf-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sg2-sf-parla" src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>`}`
       : `<img class="sg2-sf-img" src="${FILM_SEGR.poster}" alt="">`;
     const v = el.querySelector(".sg2-sf-riposo"), vp = el.querySelector(".sg2-sf-parla"), img = el.querySelector("img");
-    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.poster = FILM_CAPO_TRE.poster; v.src = FILM_CAPO_TRE.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
+    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.removeAttribute("src"); try { v.load(); } catch (e) {} });
     if (vp) vp.addEventListener("error", () => { segrParlaManca = true; vp.remove(); });
-    if (img) img.onerror = () => { if (img.dataset.ripiego) return; img.dataset.ripiego = "1"; img.src = "segr-viso.webp"; };
+    if (img) img.onerror = () => { if (img.dataset.ripiego) return; img.dataset.ripiego = "1"; img.src = "segr2-viso.webp"; };
     sg2Sofia = el;
   }
   if (sg2Sofia.parentNode !== posto) { posto.textContent = ""; posto.appendChild(sg2Sofia); }
@@ -5993,6 +5804,30 @@ function sg2SofiaMonta() {
   if (vp) { if (parla && vp.paused) { try { vp.play().catch(() => {}); } catch (e) {} } else if (!parla && !vp.paused) { try { vp.pause(); } catch (e) {} } }
   sg2Sofia.classList.toggle("parla", parla);
   const b = document.querySelector(".sg2-sofia"); if (b) b.setAttribute("aria-pressed", parla ? "true" : "false");
+}
+// 1.70.0 (Michele: «parla anche quella di sopra, Sofia segretaria: è tutto un casino»): in Segreteria parla SOLO la segretaria.
+// Se la sua figura in cima si vede, parla lì; se sei sceso più giù, esce lei (la segretaria, non la governante) in basso a destra
+// finché parla, senza nuvoletta. Un tocco la zittisce.
+function sg2TestaInVista() { const h = document.querySelector(".sg2-sofia"); if (!h) return false; const r = h.getBoundingClientRect(); return r.height > 40 && r.bottom > 70 && r.top < (window.innerHeight || 800) - 90; }
+function segrFuori() {
+  let f = document.getElementById("segrFuori");
+  let vuoi = false;
+  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && (voceInCorso || sg2ParlaTel) && !sg2TestaInVista() && !document.querySelector(".sheet")); } catch (e) {}
+  if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (f.classList.contains("su")) return; f.hidden = true; f.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); }, 360); } return; }
+  const rit = ritaglioOK() && !segrParlaManca;
+  if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
+  if (!f) {
+    f = document.createElement("button"); f.type = "button"; f.id = "segrFuori"; f.className = "segr-fuori"; f.hidden = true; f.dataset.rit = rit ? "1" : "";
+    f.innerHTML = `<span class="sgf-fig">${rit ? `<video src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`}</span><span class="sgf-x" aria-hidden="true">✕</span>`;
+    const v = f.querySelector("video");
+    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.src = FILM_SEGR.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
+    f.onclick = (e) => { e.preventDefault(); sg2Zitta(); disegna(); };
+    document.body.appendChild(f);
+  }
+  f.setAttribute("aria-label", `${nomeGov()} sta parlando: tocca per farla smettere`);
+  const v = f.querySelector("video"); if (v && v.paused) { try { v.play().catch(() => {}); } catch (e) {} }
+  clearTimeout(f._via);
+  if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); } else f.classList.add("su");
 }
 // la nuvoletta sotto Sofia: «ti ascolto», «ci penso», o quello che dice
 function sg2BollaHtml() {
@@ -6149,7 +5984,7 @@ function fantasmaSegreteria() {
     f.innerHTML = rit ? `<video class="sgr-f-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sgr-f-parla" src="${FILM_SEGR.parla}" muted playsinline loop preload="auto"></video>`}` : `<img src="${FILM_SEGR.poster}" alt="">`;
     const v = f.querySelector("video.sgr-f-riposo"), vp = f.querySelector("video.sgr-f-parla"), img = f.querySelector("img");
     // finché i filmati da segretaria non ci sono (o non si caricano), la capo-governante di sempre
-    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.poster = FILM_CAPO_TRE.poster; v.src = FILM_CAPO_TRE.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
+    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.removeAttribute("src"); try { v.load(); } catch (e) {} });
     if (vp) vp.addEventListener("error", () => { segrParlaManca = true; vp.remove(); f.classList.remove("parla"); });   // 1.49.0: il filmato «parla» non c'è ancora
     if (img) img.onerror = () => { if (img.dataset.ripiego) return; img.dataset.ripiego = "1"; img.src = FILM_CAPO_TRE.poster; };
     document.body.appendChild(f);
@@ -6197,6 +6032,7 @@ const STANZE = [
   { id: "governante", nome: "La governante", vista: "governante" },
   { id: "sofia", nome: "Parla con Sofia", vista: "sofia" },
   { id: "altro", nome: "Impostazioni", vista: "altro" },
+  { id: "influencer", nome: "Sofia influencer", vista: "social" },   // 1.70.0: la sua sezione, larga, sotto le altre
 ];
 // la riga sotto il nome: cosa c'è dentro oggi (numeri presi dall'app, sempre giusti)
 function sottoStanza(id) {
@@ -6210,6 +6046,7 @@ function sottoStanza(id) {
     if (id === "governante") { let s = ""; try { s = sottoGovernante(); } catch (e) {} return s || "le stelle e il catalogo"; }
     if (id === "sofia") { const d = domandeSofia(); return d ? `${d} ${d === 1 ? "cosa da guardare" : "cose da guardare"}` : "tutto chiaro"; }
     if (id === "altro") return "il ponte, la chiave, le regole";
+    if (id === "influencer") { const st = socStatoMotore(), c = socConti(); return st === "al-lavoro" ? `Instagram: ${c.post} ${c.post === 1 ? "post" : "post"} questa settimana` : "Instagram: " + String(SOC_STATI[st][1]).replace(/^\S+\s/, "").toLowerCase(); }
   } catch (e) {}
   return "";
 }
@@ -6350,6 +6187,24 @@ function lettureDiOggiPerIA(oggi) {
   });
 }
 // la segretaria risponde (il modello gratuito): sintesi, risposta, correzione (→ rilettura con Argon) o «è roba da governante»
+// 1.70.0 (dalla foto di Michele: la segretaria rispondeva «{ "tipo": "risposta", "testo": "Ieri hai detto a Papà… gabinet»): la
+// risposta arrivava tagliata a metà (il tetto era basso e il modello ci ragiona dentro), il JSON non si leggeva e si vedeva così
+// com'era. Adesso il tetto è più alto e da un JSON rotto si prende lo stesso il «testo» (fino all'ultima frase intera): i codici mai.
+function sembraJson(s) { return /^\s*(?:```(?:json)?\s*)?\{/i.test(String(s || "")); }
+function jsonRotto(s) {
+  const t = String(s || ""); if (!sembraJson(t)) return {};
+  const campo = (k) => {
+    const m = t.match(new RegExp(`"${k}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)("?)`));
+    if (!m) return "";
+    let v = m[1].replace(/\\(u[0-9a-fA-F]{4}|[\s\S])/g, (x, c) => c.length === 5 ? String.fromCharCode(parseInt(c.slice(1), 16)) : c === "n" ? "\n" : c === "t" ? " " : c === "r" ? "" : c);
+    if (!m[2]) {   // tagliata: fino all'ultima frase intera, se no all'ultima parola intera coi puntini
+      const fine = Math.max(v.lastIndexOf(". "), v.lastIndexOf("! "), v.lastIndexOf("? "), v.lastIndexOf(".\n"), /[.!?]$/.test(v.trim()) ? v.trim().length - 1 : -1);
+      v = fine > v.length * 0.5 ? v.slice(0, fine + 1) : v.replace(/\s+\S*$/, "").replace(/[\s,;:]+$/, "") + "…";
+    }
+    return v.trim();
+  };
+  return { tipo: campo("tipo"), testo: campo("testo") || campo("risposta"), correzione: campo("correzione") };
+}
 async function segretariaRispondi(domanda, righe) {
   if (!iaAccesa()) throw new Error(`su questo telefono manca la chiave di Gemini (Impostazioni → ${nomeGov()} intelligente)`);
   const oggi = L.oggiISO(), ieri = L.aggiungiGiorni(oggi, -1), domani = L.aggiungiGiorni(oggi, 1);
@@ -6360,10 +6215,10 @@ async function segretariaRispondi(domanda, righe) {
   const sistema = LET.istruzioniSegretaria({ ...ctxLettura(), persone: [...new Set(msgs.map(m => m.chi).filter(Boolean))] }, { ora: `${String(oraRoma()).padStart(2, "0")} circa` });
   const testo = LET.testoPerSegretaria({ chat, n: msgs.length, oggi: L.dataGiornoLungo(oggi), ieri: L.dataGiornoLungo(ieri), letture: lettureDiOggiPerIA(oggi), piano, domanda });
   const storia = righe.slice(-7, -1).filter(m => m && (m.chi === "io" || m.chi === "gov") && m.testo).map(m => ({ chi: m.chi, testo: String(m.testo).slice(0, 600) }));
-  const r = await chiediPiccola({ sistema, storia, testo, secondi: 45, maxToken: 1500, cervello: true }, confIA());
-  const j = LET.jsonDaRisposta(r.grezzo) || {};
+  const r = await chiediPiccola({ sistema, storia, testo, secondi: 45, maxToken: 4000, cervello: true }, confIA());   // 1.70.0: 1500 tagliava
+  const j = LET.jsonDaRisposta(r.grezzo) || jsonRotto(r.grezzo);
   const tipo = ["sintesi", "risposta", "correzione", "governante"].includes(j.tipo) ? j.tipo : "risposta";
-  const grezzo = String(j.testo || j.risposta || (j.tipo ? "" : r.grezzo) || "").trim();
+  const grezzo = String(j.testo || j.risposta || (j.tipo || sembraJson(r.grezzo) ? "" : r.grezzo) || "").trim();
   const detto = daCodici(grezzo).replace(/\*\*?/g, "").slice(0, 1400) || "Non ho capito bene: riprova con parole semplici.";
   if (tipo === "correzione") {
     const corr = daCodici(String(j.correzione || domanda)).slice(0, 400), x = segreteriaLetture()[0];
@@ -6466,7 +6321,7 @@ function tendinaSegreteria() {
   const benvenuto = `<div class="sgr-c-riga lei"><div class="sgr-c-bolla">Sono ${esc(nome)}, la segretaria: leggo le chat di WhatsApp e ti racconto cosa è successo. Chiedimi «Com'è andata oggi?» col microfono o coi tasti qui sotto; se ho capito male una cosa, correggimi. Il prospetto non lo tocco: arriva dal foglio Excel di papà.</div></div>`;
   const apri = "";   // 1.53.0: niente più «Apri la lettura e salva» (le letture delle chat non aspettano il controllo)
   return `<section class="sgr-tendina ${aperta ? "aperta" : ""}" id="sgrTendina">
-    <button type="button" class="sgr-maniglia" data-sgr-tendina aria-expanded="${aperta}"><img class="sgr-m-viso" src="segr-viso.webp" alt=""><span><b>${esc(nome)}, la segretaria</b><small>${aperta ? "Tocca qui per chiudere" : "Tocca e chiedile com'è andata oggi"}</small></span><i class="sgr-m-freccia" aria-hidden="true">${aperta ? "⌄" : "⌃"}</i></button>
+    <button type="button" class="sgr-maniglia" data-sgr-tendina aria-expanded="${aperta}"><img class="sgr-m-viso" src="segr2-viso.webp" alt=""><span><b>${esc(nome)}, la segretaria</b><small>${aperta ? "Tocca qui per chiudere" : "Tocca e chiedile com'è andata oggi"}</small></span><i class="sgr-m-freccia" aria-hidden="true">${aperta ? "⌄" : "⌃"}</i></button>
     ${aperta ? `<div class="sgr-t-corpo"><button type="button" class="sgr-t-figura" data-sgr-figura aria-label="${esc(nome)}: tocca per farla smettere di parlare">${sgrPillHtml()}</button><div class="sgr-t-chat"><div class="sgr-c-msgs" id="sgrMsgs">${benvenuto}${sint}${bolle}</div>${apri}
       <div class="sgr-t-veloci" role="group" aria-label="Domande veloci">${SGR_VELOCI.map(v => `<button type="button" data-sgr-veloce="${esc(v)}">${esc(v)}</button>`).join("")}</div>
       <form class="sgr-t-form" id="sgrScrivi" autocomplete="off"><input type="text" id="sgrTesto" data-keep placeholder="Scrivi o parla…" maxlength="400" enterkeyhint="send"><button type="button" class="sgr-t-mic${sgrRec ? " ascolta" : ""}" data-sgr-mic aria-pressed="${!!sgrRec}" aria-label="Parla con ${esc(nome)}">${MIC_SEGR_SVG}</button><button type="submit" class="sgr-t-manda" aria-label="Manda">➤</button></form>
@@ -7111,13 +6966,8 @@ function regoleGov() { return G.regoleAttive(govImp()); }
 function govImp() { const g = S.gov || {}, ps = g.prezziStelle || {}; if (ps.tariffa != null && ps.tariffa !== "") return S.gov; return { ...g, prezziStelle: { ...ps, tariffa: L.listinoCompleto(S.listino).tariffe.albergo } }; }
 function prezziRif() { return G.prezziStelle(govImp()); }
 // 0.41: la governante ha un nome. Michele glielo cambia in Governante → Regole.
-const NOMI_GOV = ["Sofia", "Sveva", "Lesia", "Daunia", "Perla", "Consuela", "Rosa", "Stella"];
-function nomeGov() {
-  const n = (S.gov && String(S.gov.nome || "").trim()) || "";
-  // 0.96: scritto tutto maiuscolo ("SOFIA") si mostra come un nome normale ("Sofia"), come gli altri tasti
-  if (n && n === n.toUpperCase() && n !== n.toLowerCase()) return n.split(/(\s+)/).map(w => w.charAt(0) + w.slice(1).toLowerCase()).join("");
-  return n || "Consuela";
-}
+// 1.70.0 (Michele: «a me piace Sofia e deve essere sempre quello»): si chiama sempre Sofia; la scelta del nome non c'è più
+function nomeGov() { return "Sofia"; }
 // Il nome di chi è entrato, per il saluto ("Buongiorno Michele!")
 function nomeMio() { const n = String(S.utente?.nome || "").trim().split(/\s+/)[0]; const v = n && !/^prova/i.test(n) ? n : "Michele"; return v.charAt(0).toUpperCase() + v.slice(1); }
 // Una spinta al giorno, senza IA: la stessa per tutta la giornata
@@ -9356,7 +9206,7 @@ function sofiaInVista() {
 function sofiaFuori() {
   let f = document.getElementById("sofiaFuori");
   let vuoi = false;
-  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista() && !(addetta() && compagnaBase()) && !tendinaSegreteriaAperta()); } catch (e) {}   // 1.49.0: a tendina aperta parla la segretaria
+  try { vuoi = !!(voceInCorso && S.pronto && S.utente && S.utente.ruolo && (!addetta() || argonLei()) && sofiaFuoriVoluta() && !sofiaInVista() && !(addetta() && compagnaBase()) && !(S.vista === "segreteria" && proprietario())); } catch (e) {}   // 1.49.0: a tendina aperta parla la segretaria; 1.70.0: in Segreteria parla solo lei (segrFuori)
   if (!vuoi) {
     document.body.classList.remove("con-sofia-fuori");
     if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) f.hidden = true; try { guidaNuvola(); } catch (e) {} }, 420); }
@@ -9397,7 +9247,7 @@ function heroInVista() {
 function sofiaMini() {
   let m = document.getElementById("sofiaMini"), nv = document.getElementById("sofiaMiniNuvola");
   let vuoi = false;
-  try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && !S.utente.finta && S.vista !== "sofia" && S.vista !== "governante" && !heroInVista() && !tendinaSegreteriaAperta()); } catch (e) {}   // 1.49.0: a tendina aperta c'è il microfono della segretaria
+  try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && !addetta() && !S.utente.finta && S.vista !== "sofia" && S.vista !== "governante" && !heroInVista() && S.vista !== "segreteria"); } catch (e) {}   // 1.49.0: a tendina aperta c'è il microfono della segretaria; 1.70.0: in tutta la Segreteria
   try { if (vuoi && premiumVisto() && ["oggi", "manutenzione", "signora"].includes(S.vista) && !miniAperto && !micAttivo && !voceInCorso && !["ascolto", "pensa", "parla"].includes(document.body.dataset.cons || "")) vuoi = false; } catch (e) {}
   if (!vuoi) {
     if (m) m.hidden = true; if (nv) nv.hidden = true;
@@ -9437,6 +9287,9 @@ function sofiaMini() {
     if (eRisposta) { html = u.html; tasti = u.tasti; } else html = `<div class="cc-lei sm-parla">${esc(voceTesto.trim()).replace(/\n/g, "<br>")}</div>`;
     chiaveN = "v|" + voceTesto;
   }
+  // 1.70.0 (Michele: «la nuvoletta non serve, perché già c'è scritto da qualche parte: lei deve soltanto parlare»): con la voce
+  // accesa accanto a Sofia niente nuvoletta; resta solo coi tasti Sì/No da toccare (e a voce spenta, per leggere la risposta)
+  if (html && !tasti && voceAccesa()) html = "";
   // 1.11.0: nel modo voce niente testo nella nuvoletta: solo i tasti Si'/No (se ci sono) e «Leggi il testo»
   if (modoVoce && html) html = `${tasti ? ((html.match(/<div class="cc-tasti">[\s\S]*?<\/div>/) || [""])[0]) : ""}<button type="button" class="sm-leggi" data-vb-testo>Leggi il testo</button>`;
   const testo = nv.querySelector(".sm-testo");
@@ -9474,7 +9327,7 @@ try {
 let sofiaFuoriScroll = null;
 function casaInCima() { try { document.body.classList.toggle("casa-in-cima", (window.scrollY || 0) < 16 && !!document.getElementById("sofiaHero")); } catch (e) {} }
 try { window.addEventListener("scroll", casaInCima, { passive: true }); } catch (e) {}
-try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); sofiaMini(); voceBarra(); }, 140); }, { passive: true }); } catch (e) {}
+try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); if (voceInCorso || sg2ParlaTel) segrFuori(); sofiaMini(); voceBarra(); }, 140); }, { passive: true }); } catch (e) {}
 // 1.3.0 (Gemini): mentre si scorre, la linguetta del microfono si fa trasparente e si ritira (non copre i tasti a destra)
 let scorreT = null;
 try { window.addEventListener("scroll", () => { document.body.classList.add("scorre"); clearTimeout(scorreT); scorreT = setTimeout(() => document.body.classList.remove("scorre"), 600); }, { passive: true }); } catch (e) {}
@@ -10596,23 +10449,6 @@ function cardIA() {
   const scelta = Object.entries(IA.FORNITORI).map(([k, v]) => `<button type="button" aria-pressed="${c.fornitore === k}" data-ia-fornitore="${k}">${esc(v.nome)}</button>`).join("");
   return `<section class="card ia-card"><div class="ia-testa"><h2 style="margin:0">La governante intelligente</h2>${stato}</div>
     <p class="muted small" style="margin:6px 0 10px">Senza chiave la governante capisce solo le parole del catalogo: funziona, ma è un elenco, non un cervello. Con una <b>chiave</b> dietro ci pensa un'intelligenza artificiale vera: legge i numeri della casa, si accorge delle cose da sola e ti dà consigli. Decide sempre tu: lei chiede «Confermo?» e non fa niente finché non tocchi <b>Sì</b>.</p>
-    <div class="ia-passo"><b>0.</b> Come si chiama
-      <div class="voce-scelte">${NOMI_GOV.map(n => `<button type="button" class="voce-chip" aria-pressed="${nomeGov() === n}" data-gov-nome="${esc(n)}">${esc(n)}</button>`).join("")}</div>
-      <div class="ia-riga"><input type="text" id="iaNome" data-keep value="${esc(nomeGov())}" placeholder="il nome che vuoi" maxlength="18" autocomplete="off"><button type="button" class="btnsm" data-ia-nome>Salva</button></div>
-      <span class="small muted">È lei che ti parla e che lascia le spiegazioni alle signore. Tocca un nome o scrivine uno tuo: lo usa dappertutto. Non mettere il nome di una delle signore, se no vi confondete.</span></div>
-    <div class="ia-passo"><b>0b.</b> La sua faccia
-      <div class="seg"><button type="button" aria-pressed="${!fotoGov() && stileGov() === "piatta"}" data-faccia="piatta">Piatta</button><button type="button" aria-pressed="${!fotoGov() && stileGov() === "contorno"}" data-faccia="contorno">Contornata</button><button type="button" aria-pressed="${stileGov() === "consuela"}" data-faccia="consuela">Consuela</button><button type="button" aria-pressed="${!!fotoGov() && stileGov() !== "consuela"}" data-faccia="foto" ${fotoGov() ? "" : "disabled"}>Foto</button></div>
-      <div class="facce-griglia">${POSE.map((x, i) => { const c = facceGov()[x.k]; return `<div class="faccia-slot ${c ? "piena" : ""}">
-        <label class="faccia-box">${c ? `<img src="${c}" alt="">` : `<span class="faccia-vuoto">${i + 1}</span>`}<input type="file" accept="image/*" data-posa="${x.k}" hidden></label>
-        <b>${esc(x.nome)}</b><span class="small muted">${esc(x.aiuto)}</span>
-        ${c ? `<button type="button" class="nonna-link" style="min-height:0;padding:2px 8px;margin-top:2px" data-posa-togli="${x.k}">togli</button>` : ""}</div>`; }).join("")}</div>
-      <span class="small muted">Serve solo la prima. Se ci metti anche la <b>bocca socchiusa</b> e la <b>bocca aperta</b>, quando parla l'app le scambia a tempo con la voce e sembra che parli davvero — è lo stesso trucco di quell'app che mi hai fatto vedere: stesso personaggio, stessa posa, cambia solo la bocca. Con gli <b>occhi chiusi</b> sbatte anche le palpebre.</span>
-      <details class="gov-dett" style="margin-top:8px"><summary class="small">Come me le faccio, queste immagini?</summary>
-        <p class="muted small" style="margin:6px 0 0">Su <b>openart.ai</b> (o con le immagini di ChatGPT o Gemini): entra nel <b>nuovo spazio di lavoro</b>, <b>Crea immagine</b>, incolla il primo testo e genera. Quando la ragazza ti piace, <b>non generarne altre</b>: usa <b>Modifica immagine</b> (o "Chatta per modificare") sulla stessa, e incolla gli altri tre testi uno per volta. Se le generi da capo esce un'altra persona.</p>
-        <div class="prompt-box"><code id="promptFaccia">${esc(PROMPT_FACCIA)}</code><button type="button" class="btnsm" data-copia-prompt="base">Copia</button></div>
-        ${PROMPT_VARIANTI.map((t, i) => `<div class="prompt-box"><code>${esc(POSE[i + 1].nome)}: ${esc(t)}</code><button type="button" class="btnsm ghost" data-copia-prompt="${i}">Copia</button></div>`).join("")}
-        <p class="muted small" style="margin:6px 0 0">Poi scarichi le immagini sul telefono e le metti nei quattro riquadri qui sopra.</p></details>
-      <span class="small muted" style="margin-top:6px">Stanno solo su questo telefono, non le vedono le signore. Usa un personaggio inventato o una foto tua — non la foto di una persona vera senza il suo permesso.</span></div>
     <div class="ia-passo"><b>1.</b> Chi le presta il cervello<div class="seg ia-seg">${scelta}</div></div>
     <div class="ia-passo"><b>2.</b> Quanto deve essere sveglia
       <div class="seg"><button type="button" aria-pressed="${q === "svelta"}" data-ia-qualita="svelta">Svelta</button><button type="button" aria-pressed="${q === "sveglia"}" data-ia-qualita="sveglia">Pensa di più</button><button type="button" aria-pressed="${q === "argon"}" data-ia-qualita="argon">Argon</button></div>
@@ -10652,40 +10488,6 @@ function cardIA() {
     ${c.chiave ? `<button class="nonna-link" style="margin:8px 0 0" data-ia-cancella>Cancella la chiave da questo telefono</button>` : ""}</section>`;
 }
 function collegaIA() {
-  document.querySelectorAll("[data-faccia]").forEach(b => b.onclick = () => {
-    const k = b.dataset.faccia;
-    if (k === "foto") return document.querySelector("[data-posa='base']")?.click();
-    if (fotoGov()) togliFacce();
-    salvaGov({ stile: k }).then(() => toast(k === "piatta" ? "Stile piatto, come le app delle lingue" : k === "contorno" ? "Stile col contorno" : "Eccomi, sono Consuela"));
-    disegna();
-  });
-  document.querySelectorAll("[data-faccia-togli]").forEach(b => b.onclick = () => { togliFacce(); disegna(); toast("Tolte: torna il disegno"); });
-  document.querySelectorAll("[data-posa]").forEach(i => i.onchange = async () => {
-    const f = i.files && i.files[0], k = i.dataset.posa; i.value = "";
-    if (!f) return;
-    if (!/^image\//.test(f.type)) return toast("Scegli un'immagine");
-    try {
-      const d = await rimpicciolisci(f);
-      if (!salvaFaccia(k, d)) return toast("Il telefono non ha spazio: togli un'immagine");
-      disegna(); toast(k === "base" ? "Fatto: adesso ha questa faccia" : "Messa");
-    } catch (e) { toast(String(e.message || "Non riesco a usare questa immagine")); }
-  });
-  document.querySelectorAll("[data-posa-togli]").forEach(b => b.onclick = () => { salvaFaccia(b.dataset.posaTogli, ""); disegna(); toast("Tolta"); });
-  document.querySelectorAll("[data-copia-prompt]").forEach(b => b.onclick = async () => {
-    const k = b.dataset.copiaPrompt;
-    const t = k === "base" ? PROMPT_FACCIA : PROMPT_VARIANTI[Number(k)];
-    try { await navigator.clipboard.writeText(t); toast("Copiato: incollalo nel sito che disegna"); }
-    catch (e) { toast("Tieni premuto sul testo e copia a mano"); }
-  });
-  document.querySelectorAll("[data-gov-nome]").forEach(b => b.onclick = () => {
-    const n = b.dataset.govNome;
-    const inp = document.getElementById("iaNome"); if (inp) inp.value = n; // la casella "si ricorda" quello che c'era: la aggiorno a mano
-    salvaGov({ nome: n }).then(() => { try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} const i2 = document.getElementById("iaNome"); if (i2) i2.value = n; toast(`Da adesso si chiama ${n}`); });
-  });
-  document.querySelectorAll("[data-ia-nome]").forEach(b => b.onclick = () => {
-    const n = (document.getElementById("iaNome")?.value || "").trim().slice(0, 18);
-    salvaGov({ nome: n }).then(() => { try { localStorage.removeItem(CHIAVE_CONSIGLIO); } catch (e) {} toast(n ? `Da adesso si chiama ${n}` : "Nome tolto: torna «Anna»"); });
-  });
   document.querySelectorAll("[data-ia-fornitore]").forEach(b => b.onclick = () => { IA.salvaConf({ fornitore: b.dataset.iaFornitore, modello: "" }); provaIA = null; disegna(); });
   document.querySelectorAll("[data-ia-qualita]").forEach(b => b.onclick = () => { IA.salvaConf({ qualita: b.dataset.iaQualita, modello: "" }); provaIA = null; disegna(); toast("Cerco il modello giusto: tocca «Prova»"); });
   document.querySelectorAll("[data-ia-apri]").forEach(b => b.onclick = () => { window.open("https://" + b.dataset.iaApri, "_blank", "noopener"); });
@@ -13037,11 +12839,35 @@ function socSettimana(iso) {   // «2026-W46», come il giro
   return `${d.getUTCFullYear()}-W${String(1 + Math.round(((d - primo) / 86400000 - 3 + ((primo.getUTCDay() + 6) % 7)) / 7)).padStart(2, "0")}`;
 }
 function socConti() { const c = socStato().conti || {}; return c.settimana === socSettimana(L.oggiISO()) ? { post: Number(c.post) || 0, risposte: Number(c.risposte) || 0 } : { post: 0, risposte: 0 }; }
+// 1.70.0 SOFIA INFLUENCER (Michele: «Sofia Miss Universo che diventa influencer… deve essere un filmato pure, e ci deve essere
+// proprio la sezione influencer»; poi: «gli occhi non si devono vedere, occhiali opportuni per il suo viso»; «se fosse Lesina meglio
+// ancora»). In cima alla sezione il suo filmato (Gemini: occhiali da sole scuri, giacca di lino crema, maglietta blu, la laguna
+// dietro): parte da solo quando entri e si ferma sull'ultimo sorriso; toccandolo riparte. È tenuto da parte (non riparte a ogni
+// disegno). Sotto, sempre scritto: assistente virtuale creata con l'IA (AI Act, art. 50).
+const FILM_INFLU = { video: "sofia-influencer.mp4", poster: "sofia-influencer.webp", viso: "sofia-influencer-viso.webp" };
+let socFilm = null;
+function socFilmMonta() {
+  const posto = document.querySelector(".soc-film-posto");
+  if (!posto) { if (socFilm) { socFilm._fuori = true; const v = socFilm.querySelector("video"); if (v && !v.paused) { try { v.pause(); } catch (e) {} } } return; }
+  if (!socFilm) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "soc-film"; b.setAttribute("aria-label", "Sofia influencer: tocca per rivederla");
+    b.innerHTML = `<video src="${FILM_INFLU.video}" poster="${FILM_INFLU.poster}" muted playsinline preload="auto"></video><small>Assistente virtuale · creata con l'IA</small>`;
+    const v = b.querySelector("video");
+    b.onclick = (e) => { e.preventDefault(); try { v.currentTime = 0; v.play().catch(() => {}); } catch (er) {} };
+    socFilm = b; socFilm._fuori = true;
+  }
+  if (socFilm.parentNode !== posto) { posto.textContent = ""; posto.appendChild(socFilm); }
+  if (socFilm._fuori) {   // appena entri nella sezione: dall'inizio
+    socFilm._fuori = false;
+    const v = socFilm.querySelector("video");
+    if (!motoRidotto()) { try { v.currentTime = 0; v.play().catch(() => {}); } catch (e) {} }
+  }
+}
 function cardSocialAltro() {
   if (!proprietario()) return "";
   const s = socStato(), n = SOC_FOTO.filter(f => (s.foto || {})[f.k]).length, st = socStatoMotore(), c = socConti();
   const riga = st === "al-lavoro" ? `▶ Al lavoro: questa settimana ${c.post} post e ${c.risposte} ${c.risposte === 1 ? "risposta" : "risposte"}.` : `${SOC_STATI[st][1]}. Foto ${n}/${SOC_FOTO.length}.`;
-  return `<button type="button" class="card soc-entra" data-soc-vai><img src="cons-saluto.webp" alt="" class="soc-entra-img"><span><b>📣 Sofia social manager</b><small>Instagram delle Stanze di Ricci: lo gestisce lei. ${esc(riga)}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+  return `<button type="button" class="card soc-entra" data-soc-vai><img src="${FILM_INFLU.viso}" alt="" class="soc-entra-img"><span><b>📣 Sofia influencer</b><small>Instagram delle Stanze di Ricci: lo gestisce lei. ${esc(riga)}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
 function socDataOra(giorno, ora) { return `${L.dataLunga(giorno)}${ora ? ` alle ${ora}` : ""}`; }
 function vistaSocial() {
@@ -13065,8 +12891,8 @@ function vistaSocial() {
       ${bozze.length ? `<div class="soc-bozze">${bozze.map(b => `<article class="soc-bozza"><div class="soc-bozza-testa"><i aria-hidden="true">LR</i><b>${esc((m.ig && m.ig.nome) || (s.pagine && s.pagine.instagram && s.pagine.instagram.nome) || "lestanzediricci")}</b><small>prova</small></div><img alt="" data-soc-bozza-foto="${esc(b.k)}"><p>${esc(b.testo).replace(/\n/g, "<br>")}</p></article>`).join("")}</div>
         <p class="muted small" style="margin:8px 0 0">Sono bozze: escono da sole nei giorni dei post. Se una non ti piace, rifai quella foto e Sofia riscrive il post.</p>` : `<p class="muted small" style="margin:8px 0 0">Fai almeno una foto (passo 3): entro pochi minuti Sofia la guarda e scrive il post. Le vedi qui, anche prima del collegamento.</p>`}</details>`;
   return `<section class="card soc-testa"><button type="button" class="btnsm ghost" data-soc-torna>‹ Altro</button>
-      <div class="soc-sofia"><span class="soc-foto"><img src="${esc(s.ritratto || "cons-saluto.webp")}" alt="Sofia social manager"><i class="soc-occhiali" aria-hidden="true">🕶️</i></span>
-        <span class="soc-tt"><h2>Sofia · social manager</h2><p>L'Instagram delle Stanze di Ricci lo faccio io: scrivo, pubblico e rispondo ai commenti. Tu apri l'account, mi colleghi una volta e fai le foto che ti chiedo.</p><span class="soc-pill ${SOC_STATI[st][0]}">${SOC_STATI[st][1]}</span></span></div></section>
+      <div class="soc-sofia"><span class="soc-film-posto"></span>
+        <span class="soc-tt"><h2>Sofia · influencer</h2><p>L'Instagram delle Stanze di Ricci lo faccio io: scrivo, pubblico e rispondo ai commenti. Tu apri l'account, mi colleghi una volta e fai le foto che ti chiedo.</p><span class="soc-pill ${SOC_STATI[st][0]}">${SOC_STATI[st][1]}</span></span></div></section>
     ${lavoro}
     <section class="card soc-passo"><h3><b>1</b> Le pagine <small>le apri tu, una volta sola</small></h3>
       <ul class="soc-pagine">${pag("facebook", "📘 Profilo e Pagina Facebook", "da aprire (serve anche per collegare Instagram)")}${pag("instagram", "📸 Instagram", "da aprire, poi «account professionale»")}</ul></section>
