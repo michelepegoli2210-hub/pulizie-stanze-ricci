@@ -45,11 +45,13 @@ export function semplice(v) {
 
 // tutte le raccolte, con i documenti; le sotto-raccolte (se un giorno ci saranno) col loro percorso «raccolta/doc/sotto»
 async function aPacchi(lista, quanti, fn) { for (let i = 0; i < lista.length; i += quanti) await Promise.all(lista.slice(i, i + quanti).map(fn)); }
+// 1.31.0: le chiavi non vanno nella copia (la chiave di Instagram: se serve, Michele la rifà in 2 minuti)
+const SEGRETI = new Set(["social-chiave"]);
 async function leggiRaccolta(ref, raccolte, conti, profondita) {
   const s = await ref.get();
   const docs = {};
-  for (const d of s.docs) docs[d.id] = semplice(d.data());
-  raccolte[ref.path] = docs; conti[ref.path] = s.docs.length;
+  for (const d of s.docs) if (!(ref.path === "importazioni" && SEGRETI.has(d.id))) docs[d.id] = semplice(d.data());   // 1.31.0: le chiavi no
+  raccolte[ref.path] = docs; conti[ref.path] = Object.keys(docs).length;
   if (profondita >= 3) return;
   const sotto = [];
   await aPacchi(s.docs, 25, async (d) => { try { if (d.ref && typeof d.ref.listCollections === "function") for (const sc of await d.ref.listCollections()) sotto.push(sc); } catch (e) {} });
