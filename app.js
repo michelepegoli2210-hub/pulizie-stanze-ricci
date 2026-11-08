@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.69.1";
+export const VERSIONE = "1.69.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5538,7 +5538,7 @@ function argonTesseraValore() {
 function dettaglioArgon() {
   const r = (html) => `<span class="dt-r">${html}</span>`;
   const righe = [];
-  for (const v of vistiDaDare(null)) righe.push(r(`<b>${esc(pianoBreve(v.zona))}</b> · ${esc(v.finitoDa || SIG(v.zona))} ha finito alle ${esc(L.oraBreve(v.finitoOra))}${(v.rifiniture || []).length ? ` · ${v.rifiniture.length} rifiniture ${eur(v.euroRifiniture)}` : ""}<small>aspetta il Visto${(() => { const w = nomiChiVede(chiVedeIl(v.zona, v.data)); return w.length ? " di " + esc(w.join(" o ")) : ""; })()}</small>`));
+  for (const v of vistiDaDare(null)) righe.push(r(`<b>${esc(pianoBreve(v.zona))}</b> · ${esc(v.finitoDa || SIG(v.zona))} ha finito alle ${esc(L.oraBreve(v.finitoOra))}${(v.rifiniture || []).length ? ` · ${v.rifiniture.length} rifiniture${pagaAOre() ? "" : " " + eur(v.euroRifiniture)}` : ""}<small>aspetta il Visto${(() => { const w = nomiChiVede(chiVedeIl(v.zona, v.data)); return w.length ? " di " + esc(w.join(" o ")) : ""; })()}</small>`));
   const g = giroArgon();
   if (g && !g.vuoto && !g.esito) righe.push(r(`<b>Il giro del venerdì:</b> ${esc(testoGiro(g).replace(/^👁 Il giro del venerdì: /, ""))}`));
   for (const v of Object.values(S.visti || {}).filter(v => v && v.segnalato && v.data >= L.aggiungiGiorni(L.oggiISO(), -3))) righe.push(r(`<b>${esc(v.segnalato.da)}:</b> nel ${esc(pianoBreve(v.zona))} manca «${esc(v.segnalato.testo)}»`));
@@ -5559,7 +5559,7 @@ function cardArgon() {
   const giri = [...signore().map(z => ({ id: z.id, nome: SIG(z.id) })), { id: "direzione", nome: "La direzione (tu o papà)" }].map(x => `<div class="row" style="grid-template-columns:1fr auto"><span>${esc(x.nome)}</span><span class="ag-giorni">${gg.map(d => `<button aria-pressed="${(c.giriVisto[x.id] || []).map(Number).includes(d)}" data-argon-giro="${x.id}|${d}">${L.GG[d]}</button>`).join("")}</span></div>`).join("");
   const settimana = Object.values(S.visti || {}).filter(v => v && v.finitoOra && (v.settimana || L.chiaveSettimana(v.finitoOra, S.regole.chiusuraPaga)) === chiave).sort((a, b) => (a.finitoOra < b.finitoOra ? 1 : -1));
   const rigaV = v => { const id = v.id || L.idVisto(v.zona, v.data); const nRif = (v.rifiniture || []).length, dif = (v.difetti || []).length;
-    return `<div class="row one ag-riga-v"><span><b>${esc(L.dataBreve(v.data))} · ${esc(pianoBreve(v.zona))}</b> (${esc(v.finitoDa || SIG(v.zona))}) finito alle ${esc(L.oraBreve(v.finitoOra))} · ${(v.camere || []).length} camere${nRif ? ` · ${nRif} rifiniture ${eur(v.euroRifiniture)}` : ""}<br><span class="muted small">${v.vistoOra ? `Visto da ${esc(v.vistoNome || v.vistoDa)} alle ${esc(L.oraBreve(v.vistoOra))}` : serveVisto(v) ? "aspetta il Visto" : "da sola: solo le camere, nessun Visto"}${v.smentito ? ` · <b style="color:var(--warn)">smentito</b>` : ""}${dif ? ` · ${v.difetti.map(d => `${d.nome}${d.rifattaDa ? " → " + SIG(d.rifattaDa) : " non fatta"}`).join(", ")}` : ""}${v.segnalato ? ` · ✋ ${esc(v.segnalato.da)}: manca «${esc(v.segnalato.testo)}»` : ""}${v.rodaggio ? " · rodaggio" : ""}</span></span>
+    return `<div class="row one ag-riga-v"><span><b>${esc(L.dataBreve(v.data))} · ${esc(pianoBreve(v.zona))}</b> (${esc(v.finitoDa || SIG(v.zona))}) finito alle ${esc(L.oraBreve(v.finitoOra))} · ${(v.camere || []).length} camere${nRif ? ` · ${nRif} rifiniture${pagaAOre() ? "" : " " + eur(v.euroRifiniture)}` : ""}<br><span class="muted small">${v.vistoOra ? `Visto da ${esc(v.vistoNome || v.vistoDa)} alle ${esc(L.oraBreve(v.vistoOra))}` : serveVisto(v) ? "aspetta il Visto" : "da sola: solo le camere, nessun Visto"}${v.smentito ? ` · <b style="color:var(--warn)">smentito</b>` : ""}${dif ? ` · ${v.difetti.map(d => `${d.nome}${d.rifattaDa ? " → " + SIG(d.rifattaDa) : " non fatta"}`).join(", ")}` : ""}${v.segnalato ? ` · ✋ ${esc(v.segnalato.da)}: manca «${esc(v.segnalato.testo)}»` : ""}${v.rodaggio ? " · rodaggio" : ""}</span></span>
       <span class="ag-riga-tasti">${!v.vistoOra ? `<button class="btnsm" data-dai-visto="${esc(id)}">Visto direzione</button>` : ""}<button class="btnsm ghost" data-visto-difetto="${esc(id)}">Ho trovato non fatto</button></span></div>`; };
   const g = giroArgon(), giroAperto = g && !g.vuoto;
   const giro = giroAperto ? `<div class="floorlabel" style="margin-top:12px">Il giro del venerdì</div><div class="row one"><span>${esc(testoGiro(g).replace(/^👁 /, ""))}${g.esito ? `<br><span class="muted small">${g.esito === "ok" ? "Era a posto ✓" : "Trovato non fatto"}</span>` : ""}</span>${!g.esito ? `<span class="ag-riga-tasti"><button class="btnsm" data-argon-giro-esito="ok">Era a posto</button><button class="btnsm ghost" data-argon-giro-esito="no">Non fatto</button></span>` : ""}</div>` : "";
