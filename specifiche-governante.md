@@ -3018,3 +3018,13 @@ sguardo da Sofia».
 - La luce del tasto della pagina dove sei è più tenue.
 - Il tasto d'oro, quando la segretaria ha qualcosa, ha una luce tenue e FERMA (prima pulsava): il numerino dice quante.
 - Lo sguardo deve andare a Sofia: in cima alla pagina è lei la cosa più viva; la barra resta sotto, tranquilla.
+
+## 1.63.2 · Il tasto d'oro com'era; i tasti blu piccoli e quasi nascosti (8/11)
+Michele: «il tasto segreteria andava bene; sono gli altri che devi fare ancora meno visibili, forse un po' più piccoli:
+attraggono ancora troppo l'occhio». Tra tre misure provate in foto ha scelto la 3 (la più discreta).
+- Il tasto d'oro della Segreteria è tornato quello della 1.63.0: lucido, dentro la barra, in mezzo; quando la
+  segretaria ha qualcosa si accende e pulsa, col numerino.
+- Oggi, Prospetto, Piantine e Paghe: la stessa forma (1.63.1, blu mare scuro opaco), ma più piccoli (70%) e velati,
+  come sfumati nella barra; il nome sotto è più chiaro. Quello della pagina dove sei si vede di più (e il suo nome è
+  scuro); quando ne tocchi uno si vede pieno mentre va giù.
+- Così lo sguardo va a Sofia in cima alla pagina; nella barra si nota solo il tasto d'oro.
