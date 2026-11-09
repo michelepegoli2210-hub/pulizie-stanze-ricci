@@ -3187,3 +3187,9 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Adesso, prima di annullare più cambi insieme (o il foglio di papà), l'app chiede «Sei sicuro?».
   - I cambi annullati di oggi e di ieri restano in «✅ Ho fatto io», su fondo giallo, col tasto **«↪ Rimetti»**: rimette le camere com'erano dopo la lettura, ma solo dove nessuno le ha toccate nel frattempo (il resto lo lascia com'è e lo dice). Lo stesso tasto c'è anche nella scheda della lettura, accanto ad «annullato».
   - In «Cosa ho capito» il foglio coi cambi annullati non dice più «era già tutto giusto».
+
+- **1.71.0** (9/11 sera, Michele, dopo l'allagamento di quattro camere):
+  - **Segreteria**: «non deve essere una ripetizione del mio WhatsApp»; «Cosa ho capito» (i messaggi ricopiati come un amanuense) non serve e le domande «Non sono sicura» non le può fare («devo capire lei»). Via la sezione 4 e via le domande: il numero sul tasto della Segreteria conta solo «Da fare tu» e «Ti propongo». Nelle letture delle chat e del foglio di papà Sofia non chiede più: decide la cosa più probabile o lascia com'è. Gli piacciono «Da fare tu», «Ho fatto io» (le ore di Selena messe da sola) e «Da sapere» (le note come ripasso).
+  - **La segretaria** «si vedeva molto male, tipo un bug»: nel ritaglio ballavano il tablet, la scrivania e le foglie della pianta. Adesso è un busto pulito che sfuma sotto il petto (`segr4-*`, niente verde, il bordo che salta da un fotogramma all'altro da circa 2.000 punti a meno di 150); anche quella che esce in basso a destra.
+  - **Prospetto**: i tasti Mappa · Facile · Settimana · **Mese** · Anno; il tasto **«📄 Foglio»**: il foglio di papà caricato dall'app lo legge Sofia con Argon come quelli che arrivano dal gruppo (importazioni/foglio_app_*, giro 1.32.0), e il giro parte subito se sul telefono c'è la spinta di GitHub.
+  - **Sofia influencer**: la foto della casella con la faccia intera e centrata.

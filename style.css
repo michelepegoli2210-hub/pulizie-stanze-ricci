@@ -9090,3 +9090,15 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 :root[data-theme="dark"] .sg2-r.annullato{background:#3A2E14;border-color:#8A6A2A}
 :root[data-theme="dark"] .sg2-r.annullato .sg2-x{color:#F3D9A4}
 .sgr-fatto .sgr-b.si{margin-left:6px}
+/* 1.71.0: il Prospetto per settimana, mese e anno, e il tasto «📄 Foglio» */
+.seg.pr-viste.cinque button{padding:0 2px;font-size:13px;letter-spacing:-.2px}
+@media (max-width:400px){.seg.pr-viste.cinque button{font-size:11.5px;letter-spacing:-.3px;padding:0 1px}}
+.pr-fg2{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;height:40px;padding:0 12px;border:1.5px solid #856535;border-radius:11px;background:#FFFFFF;color:#856535;font:800 14px/1 var(--f-body);cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.pr-fg2:active{background:#F5EFE4}
+.pr-fg2:focus-visible{outline:3px solid #856535;outline-offset:2px}
+:root[data-theme="dark"] .pr-fg2{background:#2A2A2E;color:#E9C98B;border-color:#8A6A2A}
+/* 1.71.0: Sofia influencer, la foto della casella intera (la faccia non più tagliata) */
+.stanza[data-stanza="influencer"] .stanza-img{object-position:50% 50%}
+/* 1.71.0: la segretaria che esce in basso a destra è un busto: la casella è più bassa e il busto poggia sul bordo */
+.segr-fuori{aspect-ratio:3/4;height:min(250px,34svh);min-height:160px}
+.segr-fuori .sgf-fig video,.segr-fuori .sgf-fig img{object-fit:cover;object-position:50% 0}

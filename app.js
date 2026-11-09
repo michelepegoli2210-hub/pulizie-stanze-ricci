@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.70.2";
+export const VERSIONE = "1.71.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -124,7 +124,7 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr3-riposo-3d.webm", ascolta: "segr3-ascolta-3d.webm", parla: "segr2-parla-3d.webm", poster: "segr3-poster-3d.webp" };   // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
+const FILM_SEGR = { riposo: "segr4-riposo-3d.webm", ascolta: "segr4-ascolta-3d.webm", parla: "segr4-parla-3d.webm", poster: "segr4-poster-3d.webp" };   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -755,6 +755,30 @@ document.addEventListener("click", (e) => {
   if (b.closest("#sofiaMiniNuvola")) { miniAperto = false; voceTesto = ""; clearTimeout(miniChiudi); miniChiudi = null; setTimeout(sofiaMini, 0); }
   rispondiParole(Number(i), k).then(() => { if (modoVoce) parlaUltima(); }).catch(err => console.warn("casa/tasto", err));   // 1.11.0
 }, true);
+// 1.71.0 (Michele: «deve essere agevole anche il fatto caricare il prospetto»): «📄 Foglio» nel Prospetto. Il file va in
+// importazioni/foglio_app_<n> e lo legge Sofia con Argon, come i fogli che papà manda nel gruppo (sofia-giro/prospetto-giro.mjs):
+// confronta col prospetto di adesso, scrive solo i cambi e li mette in Segreteria («Ho fatto io», con «Annulla» e «↪ Rimetti»).
+// Il giro parte subito se su questo telefono c'è la spinta di GitHub; se no al giro dopo (ogni 10 minuti, dalle 5 alle 23).
+document.addEventListener("change", (e) => {
+  const inp = e.target && e.target.id === "prFoglio" ? e.target : null; if (!inp) return;
+  const f = inp.files && inp.files[0]; inp.value = "";
+  caricaFoglioPerSofia(f).catch(err => { console.warn("foglio", err); erroreScrittura(err); });
+}, true);
+async function caricaFoglioPerSofia(file) {
+  if (!file || !puoModificare()) return;
+  const nome = String(file.name || "foglio.xlsx").slice(0, 120);
+  if (!/\.(xlsx|xlsm|xls|ods)$/i.test(nome)) { toast("Questo non è un foglio Excel: scegli il file del prospetto di papà."); return; }
+  if (file.size > 700 * 1024) { toast("Il foglio è troppo grande per Sofia: caricalo da Impostazioni → «📄 Carica il foglio di papà»."); return; }
+  const dati = await inBase64(file), adesso = new Date(), iso = adesso.toISOString();
+  const id = "foglio_app_" + adesso.getTime().toString(36);
+  await S.db.salva("importazioni", id, { tipo: "foglio_app", nome, didascalia: nome, mime: file.type || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", dati, ts: adesso.getTime(), data: L.oggiISO(), ora: L.oraBreve(iso), chat: "App", chi: (S.utente && S.utente.nome) || "Michele", mio: true, caricato: iso }, false);
+  let subito = false;
+  try { if (typeof spintaConf === "function" && spintaConf()) subito = !!(await spingiGiro("il foglio di papà caricato dall'app")).ok; } catch (e) {}
+  const m = minutiRoma();
+  toast(subito ? `Fatto: ${nomeGov()} legge «${nome}» adesso e mette a posto il prospetto da sola. Tra un paio di minuti lo vedi in Segreteria, in «Ho fatto io».`
+    : m >= 5 * 60 && m < 23 * 60 ? `Fatto: ${nomeGov()} legge «${nome}» al prossimo giro (entro 10 minuti) e mette a posto il prospetto da sola. Poi lo vedi in Segreteria, in «Ho fatto io».`
+    : `Fatto: ${nomeGov()} legge «${nome}» domattina alle 5 e mette a posto il prospetto da sola. Poi lo vedi in Segreteria, in «Ho fatto io».`);
+}
 // 0.85 - LA GRAFFETTA: il foglio Excel di papà va nella lettura del foglio che c'era già; la FOTO del prospetto
 // la legge Sofia (Gemini vede le immagini) e propone le righe, come quando glielo dici a voce.
 document.addEventListener("change", (e) => {
@@ -5427,13 +5451,12 @@ const SEGRETERIA_MAX = 40;
 function segreteriaLetture() { return Object.values(S.segreteria || {}).filter(x => x && x.lid).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))); }
 // 1.53.0: niente più «da controllare» (la segretaria fa lei): mentre legge, le letture, le domande che aspettano te
 // (le proposte e i dubbi senza risposta delle letture degli ultimi tre giorni: quelle più vecchie non servono più)
-function domandeSegreteria() {
+function domandeSegreteria() {   // 1.71.0: solo «Da fare tu» e «Ti propongo» (le domande non ci sono più)
   const da = L.aggiungiGiorni(L.oggiISO(), -2); let n = 0;
   for (const x of segreteriaLetture()) {
     if (!x || ["scartata", "sostituita"].includes(x.esito) || String(x.quando || "").slice(0, 10) < da) continue;
-    n += (Array.isArray(x.proposte) ? x.proposte : []).filter(p => p && !p.esito).length + (Array.isArray(x.domande) ? x.domande : []).filter(d => d && !d.risposta).length;
-    n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto).length;   // 1.62.0: «Da fare tu»
-    if (String(x.lid).startsWith("xl")) n += (Array.isArray(x.non) ? x.non : []).filter((t, i) => /^❓/.test(String(t)) && !(x.nonRisposte || {})[i]).length;   // e le domande sul foglio di papà
+    n += (Array.isArray(x.proposte) ? x.proposte : []).filter(p => p && !p.esito).length;
+    n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto).length;
   }
   return n;
 }
@@ -5576,6 +5599,7 @@ function sg2Sapere() {
 }
 // ❓ le domande che aspettano una risposta (dalle letture delle chat e dal foglio di papà)
 function sg2Domande() {
+  return [];   // 1.71.0 (Michele, 9/11: «io non posso andare lì a rimettere tutto, devo capire lei»): niente domande, decide Sofia
   const out = [];
   for (const x of sg2Letture()) {
     (Array.isArray(x.domande) ? x.domande : []).forEach((d, i) => { if (d && d.domanda && !d.risposta) out.push({ lid: x.lid, i, domanda: d.domanda, risposte: d.risposte || [], chi: d.chi || "", quando: x.quando }); });
@@ -5671,7 +5695,6 @@ function vistaSegreteria() {
     <div class="sg2-riass"><p>${riass.join("<br>")}</p><button type="button" class="sg2-ascolta" data-sg2-ascolta><span class="sg2-alt" aria-hidden="true">🔊</span><span>Ascolta il riassunto</span></button></div>
     <h3 class="sg2-tit">2) I quattro cassetti</h3>${cassetti}
     <h3 class="sg2-tit">3) <span aria-hidden="true">🪪</span> Documenti degli ospiti</h3>${doc}
-    <h3 class="sg2-tit">4) <span aria-hidden="true">🧠</span> Cosa ho capito</h3>${capito}${imparato}
   </section><div class="sgr-spazio" aria-hidden="true"></div>`;
 }
 // il testo da leggere a voce: il riassunto e le cose che aspettano Michele
@@ -11421,10 +11444,10 @@ function vistaTabellone() {
   const corpoMese = `<section class="card" style="padding:10px"><div class="board-wrap">${html}</div>
     <div class="boardleg">${S.board.colori === "canale" ? legCanali() : Object.entries(TIPI_OSPITE).map(([k, t]) => `<span><i style="${k === "unk" ? "border:2px dashed var(--c-unk)" : "background:" + t.colore}"></i>${esc(t.nome)}</span>`).join("")}<button type="button" class="btnsm ghost an-colori" data-board-colori="${S.board.colori === "canale" ? "ospite" : "canale"}">${S.board.colori === "canale" ? "Colori: chi è l'ospite" : "Colori: da dove arriva"}</button><span><i style="background:var(--flamingo);border-radius:50%"></i>Nota</span><span><i style="background:var(--accent)"></i>Pulizia (RIP / TOT / CASA)</span><span><i style="background:var(--done)"></i>Fatta ✓</span></div></section>`;
   const pillole = `<div class="pr-numeri"><span><b>${occOggi}/${S.camere.length}</b> stanotte</span><span><b>${notti}</b> notti</span>${Object.entries(perTipo).filter(([k]) => k !== "unk").sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => `<span><i style="background:${TIPI_OSPITE[k]?.colore || "var(--c-altro)"}"></i><b>${v}</b> ${esc(TIPI_OSPITE[k]?.nome || k)}</span>`).join("")}</div>`;
-  const azioni = puoModificare() ? `<button type="button" class="pr-ins2" data-inserisci>＋ Prospetto</button><button type="button" class="pr-voce2" data-prosp-voce aria-label="Dillo a voce">${ICO_LINEA.mic}</button><button type="button" class="pr-wa2" data-ins-wa-subito aria-label="Il prospetto da WhatsApp">${ICO_WA}</button>` : "";
-  const viste = `<div class="seg pr-viste quattro"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo === "facile"}" data-board="facile">Facile</button><button type="button" aria-pressed="${modo === "settimana" || modo === "mese"}" data-board="${modo === "mese" ? "mese" : "settimana"}">Settimana</button><button type="button" aria-pressed="${modo === "anno"}" data-board="anno">Anno</button></div>`;   // 1.65.0: + Anno
+  const azioni = puoModificare() ? `<label class="pr-fg2" role="button" tabindex="0" aria-label="Carica il foglio di papà: lo legge Sofia"><span aria-hidden="true">📄</span> Foglio<input type="file" id="prFoglio" accept=".xlsx,.xls,.xlsm,.ods" hidden></label><button type="button" class="pr-ins2" data-inserisci>＋ Prospetto</button><button type="button" class="pr-voce2" data-prosp-voce aria-label="Dillo a voce">${ICO_LINEA.mic}</button><button type="button" class="pr-wa2" data-ins-wa-subito aria-label="Il prospetto da WhatsApp">${ICO_WA}</button>` : "";
+  const viste = `<div class="seg pr-viste cinque"><button type="button" aria-pressed="${modo === "mappa"}" data-board="mappa">Mappa</button><button type="button" aria-pressed="${modo === "facile"}" data-board="facile">Facile</button><button type="button" aria-pressed="${modo === "settimana"}" data-board="settimana">Settimana</button><button type="button" aria-pressed="${modo === "mese"}" data-board="mese">Mese</button><button type="button" aria-pressed="${modo === "anno"}" data-board="anno">Anno</button></div>`;   // 1.71.0 (Michele: «settimanale ma anche mensile, oltre che anno»)   // 1.65.0: + Anno
   const nav = `<section class="card flat pr-nav"><div class="navmese"><button data-boardnav="-1" aria-label="Indietro">‹</button><b>${esc(titolo)}</b><button data-boardnav="1" aria-label="Avanti">›</button></div>
-    <div class="pr-nav-sotto">${pillole}<button type="button" class="pr-mese" data-board="${modo === "mese" ? "settimana" : "mese"}">${modo === "mese" ? "Vedi la settimana" : "Vedi il mese"}</button></div></section>`;
+    <div class="pr-nav-sotto">${pillole}</div></section>`;
   if (modo === "anno") return `<div class="pr-riga">${azioni}${viste}</div>${vistaAnno()}`;   // 1.65.0
   const corpo = modo === "mappa" ? mappaCamere() : modo === "facile" ? vistaFacile() : modo === "settimana" ? nav + settimanaCompatta(da) : nav + corpoMese;
   return `<div class="pr-riga">${azioni}${viste}</div>
@@ -16094,6 +16117,7 @@ function collega() {
     S.board.modo = nuovo;
     if (nuovo === "mappa" || nuovo === "facile" || nuovo === "anno") { try { localStorage.setItem("ricci_vista_pr", nuovo); } catch (e) {} }
     if (nuovo === "settimana") S.board.inizio = prima === "mese" && L.primoDelMese(S.board.inizio) !== L.primoDelMese(oggi) ? L.primoDelMese(S.board.inizio) : oggi;
+    if (nuovo === "mese" && prima !== "mese") S.board.inizio = L.primoDelMese(S.board.inizio || oggi);   // 1.71.0
     disegna();
   });
   document.querySelectorAll("[data-boardnav]").forEach(b => b.onclick = () => { const n = Number(b.dataset.boardnav); if (S.board.modo !== "mese") S.board.inizio = L.aggiungiGiorni(S.board.inizio, 7 * n); else { const d = L.daISO(L.primoDelMese(S.board.inizio)); d.setUTCMonth(d.getUTCMonth() + n); S.board.inizio = L.aISO(d); } caricaStorico(); disegna(); });

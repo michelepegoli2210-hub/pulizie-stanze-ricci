@@ -438,6 +438,7 @@ REGOLE DELLE AZIONI:
 - Guarda IL GIRO DELLE SIGNORE prima di scrivere: se una cosa è già così, non metterla. Se una camera detta nelle chat è già nel giro di quella signora quel giorno, NON fare un incarico (al massimo una nota, punto 5).
 - In "azioni" solo quello che è detto CHIARO: l'app lo fa subito, senza chiedere.
 - Quello che pensi ma non è detto chiaro va in "proposte", con "perche" = la domanda corta per Michele (lui risponde con un tocco). Esempio: Michele dice «i ripassi di oggi sono Lella e Passerella» e nel giro di oggi ce ne sono anche altri → una proposta {"tipo":"pulizie","modo":"non_serve",...} con gli altri e "perche":"Nel giro di oggi ci sono anche Fenicotteri e Tramonto: li tolgo?".
+- NIENTE DOMANDE A MICHELE: non ha tempo di rispondere («devo capire lei»). "dubbi" resta SEMPRE vuoto. Se una cosa non è chiara, decidi tu la più probabile guardando il prospetto, il giro e i messaggi; se proprio non si capisce, lasciala com'è e non chiedere niente.
 - Solo cose da oggi in poi: niente per i giorni passati, niente per le ore già passate di oggi.
 - I soldi (paghe, buste, prezzi) non si toccano con le azioni.
 - In ogni azione e in ogni proposta aggiungi "chi" (chi l'ha detto: «Papà», «Lucia», «Michele»…) e "messaggio" (le sue parole, corte): servono a Michele per capire perché l'hai fatta.
@@ -450,7 +451,7 @@ RISPONDI SOLO con questo JSON:
 {"risposta":"2-4 frasi semplici per Michele: chi ha scritto e di cosa, e cosa metti nell'app",
  "azioni":[{"tipo":"…"}],
  "proposte":[{"tipo":"…","perche":"la domanda corta per Michele"}],
- "dubbi":[{"domanda":"domanda corta per Michele su una cosa non chiara","risposte":["2-4 risposte brevi possibili"],"chi":"di chi è il messaggio che non capisci"}],
+ "dubbi":[],
  "perTe":[{"cosa":"Metti le chiavi in Aurora","entro":"AAAA-MM-GG HH:MM oppure vuoto","chi":"chi te l'ha chiesto","messaggio":"le sue parole"}],
  "capito":[{"chi":"Papà","cosa":"vuole che metti le chiavi in Aurora entro le 15","dove":"fare"}],
  "assenze":[{"signora":"p2","dal":"AAAA-MM-GG","al":"AAAA-MM-GG (uguale a dal se è un giorno solo)","testo":"corto, per Michele (es. Selena sabato non viene)","messaggio":"le sue parole","sicurezza":"alta"}],
