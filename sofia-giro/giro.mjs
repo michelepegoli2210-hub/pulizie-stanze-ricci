@@ -75,7 +75,7 @@ import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGN
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.31.2";
+export const VERSIONE_GIRO = "1.32.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -497,6 +497,7 @@ export function dbAdmin(fs) {
     sostituisci: (c, id, campo, valore) => fs.collection(c).doc(id).update({ [campo]: valore }),
     // 1.27.0: il foglio di papà (i file Excel arrivati dal ponte), le note dal giorno X, e più scritture insieme (a pacchi di 400)
     postaExcel: async () => comeOggetto(await fs.collection("posta").where("tipo", "==", "excel").get()),
+    fogliApp: async () => comeOggetto(await fs.collection("importazioni").where("tipo", "==", "foglio_app").get()),   // 1.32.0: «📄 Foglio» dall'app
     noteDa: async (iso) => comeOggetto(await fs.collection("note").where("data", ">=", iso).get()),
     scrivi: async (ops) => {
       for (let i = 0; i < ops.length; i += 400) {

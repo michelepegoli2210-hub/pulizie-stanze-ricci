@@ -48,6 +48,8 @@ export function fogliDaLeggere(posta, adesso = new Date()) {
     || (p.prospetto === "in_lettura" && t - (Date.parse(p.prospettoDa || "") || 0) > BLOCCO_MS)))
     .sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));
 }
+// 1.32.0: dove si segna come è andata: il foglio dal gruppo nella posta, quello caricato dall'app nel suo documento
+export const collDi = (p) => (p && p.__coll) || "posta";
 export const nomeDelFile = (p) => String((p && p.didascalia) || "foglio.xlsx").split(" — ")[0].trim().slice(0, 120) || "foglio.xlsx";
 
 // ---- 2) il periodo da riscrivere: dentro i mesi del foglio, di seguito, da tre giorni fa a due mesi e mezzo avanti ---------
@@ -154,8 +156,8 @@ ${ctx.taccuino || "(vuoto)"}
 COME DECIDERE:
 1. Il FOGLIO è la base: quello che dice il foglio vale.
 2. I MESSAGGI correggono il foglio solo se sono PIÙ RECENTI del foglio e dicono chiaro una cosa diversa (es. «[O4] arriva martedì e non lunedì», «la ditta in Alba è disdetta»): allora segui il messaggio e scrivi il perché nel campo "perche". I messaggi vecchi ti servono a capire chi è chi, le abitudini, i nomi scritti male.
-3. Il PROSPETTO DI ADESSO nell'app ti serve per capire cosa è cambiato e per riconoscere gli stessi ospiti. Un soggiorno scritto dal foglio di prima che il foglio nuovo non ha più va TOLTO: mettilo in "tolti". Un soggiorno scritto A MANO da Michele (o da Sofia) che il foglio non ha: se il foglio è più vecchio di quello che ha scritto Michele, o non è chiaro, tienilo com'è (scrivilo nei soggiorni uguale all'app) e fai la domanda in "dubbi".
-4. Se una cosa non è chiara (punto di domanda, «forse», colore senza nome, scritta che non capisci) NON inventare: metti il soggiorno con "dubbio": true e in "motivo" cosa non è chiaro, e la domanda per Michele in "dubbi".
+3. Il PROSPETTO DI ADESSO nell'app ti serve per capire cosa è cambiato e per riconoscere gli stessi ospiti. Un soggiorno scritto dal foglio di prima che il foglio nuovo non ha più va TOLTO: mettilo in "tolti". Un soggiorno scritto A MANO da Michele (o da Sofia) che il foglio non ha: se il foglio è più vecchio di quello che ha scritto Michele, o non è chiaro, tienilo com'è (scrivilo nei soggiorni uguale all'app). NON fare domande: Michele non ha tempo di rispondere.
+4. Se una cosa non è chiara (punto di domanda, «forse», colore senza nome, scritta che non capisci) decidi tu la più probabile guardando i messaggi, il prospetto di adesso e le abitudini; se proprio non si capisce, scrivi il soggiorno come lo dice il foglio con "dubbio": true e in "motivo" cosa non è chiaro. NON fare domande: "dubbi" resta vuoto.
 5. Scrivi TUTTI i soggiorni che toccano il periodo, anche quelli che non cambiano e quelli che cominciano prima del periodo ma continuano dentro (con le date vere). Niente soggiorni fuori dal periodo.
 6. "fine" è il giorno in cui l'ospite lascia la camera (la notte di "fine" la camera è libera). "persone" scrivilo solo se lo sai. "nota" è solo un'istruzione per le signore scritta nel foglio o in un messaggio (copiala com'è, corta); i commenti di papà no.
 7. Per tenere corta la risposta: non scrivere i campi vuoti ("nota", "motivo", "perche") e "dubbio" quando è false.
@@ -164,7 +166,7 @@ RISPONDI SOLO CON QUESTO JSON (niente altro testo):
 {"riassunto": "una o due frasi semplici per Michele: cosa è cambiato nel prospetto",
  "soggiorni": [{"camera": "aurora", "inizio": "AAAA-MM-GG", "fine": "AAAA-MM-GG", "nome": "[O3]", "tipo": "ferr", "persone": 2, "nota": "", "dubbio": true, "motivo": "", "perche": ""}],
  "tolti": [{"camera": "alba", "nome": "[O5]", "inizio": "AAAA-MM-GG", "perche": "nel foglio non c'è più"}],
- "dubbi": [{"camera": "alba", "domanda": "domanda semplice per Michele"}]}`;
+ "dubbi": []}`;
 }
 export function testoFoglio({ oggi, periodo, nomeFile, arrivo, prima, griglia, regole, attuale, messaggi }) {
   return `OGGI è ${L.dataGiornoLungo(oggi)} (${oggi}).
@@ -324,7 +326,7 @@ export function messaggiContesto(posta, letture, adesso = new Date()) {
 // ---- 10) aprire un foglio (le regole fisse: non costa niente) ---------------------------------------------------------------
 export async function apriFoglio(db, p, oggi) {
   const x = { p, nomeFile: nomeDelFile(p), fogli: null, ris: null, periodo: null, problema: "" };
-  const media = p.media ? await db.doc("posta_media", p.id) : null;
+  const media = p.__coll === "importazioni" ? (p.dati ? { dati: p.dati } : null) : p.media ? await db.doc("posta_media", p.id) : null;   // 1.32.0
   if (!media || !media.dati) { x.problema = "senza file"; return x; }
   try {
     const X = lettoreExcel();
@@ -345,7 +347,10 @@ export function superati(aperti) {
 
 // ---- 11) tutto insieme ------------------------------------------------------------------------------------------------------
 export async function leggiFogliPapa({ db, gemini, oggi, adesso = new Date(), prendiBase }) {
-  const pendenti = fogliDaLeggere(await db.postaExcel(), adesso);
+  // 1.32.0 (app 1.71.0): anche i fogli caricati dall'app col tasto «📄 Foglio» del Prospetto (importazioni/foglio_app_*)
+  const tutti = { ...(await db.postaExcel()) };
+  if (db.fogliApp) for (const [k, v] of Object.entries(await db.fogliApp())) if (v) tutti["app:" + k] = { ...v, id: v.id || k, tipo: "excel", media: true, __coll: "importazioni" };
+  const pendenti = fogliDaLeggere(tutti, adesso);
   if (!pendenti.length) return null;
   const aperti = [];
   for (const p of pendenti) { try { aperti.push(await apriFoglio(db, p, oggi)); } catch (e) { aperti.push({ p, nomeFile: nomeDelFile(p), problema: "illeggibile" }); } }
@@ -357,10 +362,10 @@ export async function leggiFogliPapa({ db, gemini, oggi, adesso = new Date(), pr
       : x.problema === "illeggibile" ? `Il foglio «${x.nomeFile}» non riesco ad aprirlo: caricalo tu in Altro → «📄 Carica il foglio di papà».`
       : x.problema === "fuori periodo" ? `Il foglio «${x.nomeFile}» ha solo mesi passati o troppo avanti: il prospetto non l'ho toccato.`
       : `«${x.nomeFile}» non è il prospetto (non ha fogli coi nomi dei mesi): non ho toccato niente.`;
-    try { const lid = await segreteria(x.p, x.nomeFile, { esito: "vuota", capito: { risposta: r } }); await db.merge("posta", x.p.id, { prospetto: x.problema, prospettoLid: lid, letto: true }); esiti.push(`foglio «${x.nomeFile}»: ${x.problema}`); } catch (e) { console.warn("foglio di papà:", e && e.message); }
+    try { const lid = await segreteria(x.p, x.nomeFile, { esito: "vuota", capito: { risposta: r } }); await db.merge(collDi(x.p), x.p.id, { prospetto: x.problema, prospettoLid: lid, letto: true }); esiti.push(`foglio «${x.nomeFile}»: ${x.problema}`); } catch (e) { console.warn("foglio di papà:", e && e.message); }
   }
   const buoni = aperti.filter(y => !y.problema), via = superati(buoni);
-  for (const x of buoni.filter(y => via.has(y.p.id))) { try { await db.merge("posta", x.p.id, { prospetto: "superato", letto: true }); esiti.push(`foglio «${x.nomeFile}»: superato da uno più nuovo`); } catch (e) {} }
+  for (const x of buoni.filter(y => via.has(y.p.id))) { try { await db.merge(collDi(x.p), x.p.id, { prospetto: "superato", letto: true }); esiti.push(`foglio «${x.nomeFile}»: superato da uno più nuovo`); } catch (e) {} }
   const x = buoni.find(y => !via.has(y.p.id));
   if (!x) return { esito: esiti.join(" · ") || "niente" };
   const r = await leggiUnFoglio({ db, gemini, oggi, adesso, prendiBase, x, segreteria });
@@ -370,7 +375,7 @@ export async function leggiFogliPapa({ db, gemini, oggi, adesso = new Date(), pr
 export async function leggiUnFoglio({ db, gemini, oggi, adesso, prendiBase, x, segreteria }) {
   const { p, nomeFile, fogli, ris, periodo } = x;
   // il segno «lo sto leggendo» (se un altro giro l'ha preso nel frattempo, niente)
-  const ok = await db.segnaSe("posta", p.id, "prospettoDa", p.prospettoDa, { prospetto: "in_lettura", prospettoDa: adesso.toISOString() });
+  const ok = await db.segnaSe(collDi(p), p.id, "prospettoDa", p.prospettoDa, { prospetto: "in_lettura", prospettoDa: adesso.toISOString() });
   if (!ok) return { esito: `foglio «${nomeFile}»: lo sta leggendo un altro giro` };
   const tentativi = (Number(p.prospettoTentativi) || 0) + 1;
   try {
@@ -417,7 +422,7 @@ export async function leggiUnFoglio({ db, gemini, oggi, adesso, prendiBase, x, s
       catch (e) {
         credito = /credito|402|prepay|billing|credit/i.test(String(e && e.message));
         if (tentativi < MAX_TENTATIVI) {
-          await db.merge("posta", p.id, { prospetto: "riprova", prospettoTentativi: tentativi, prospettoErrore: ("Argon: " + String((e && e.message) || e)).slice(0, 160) });
+          await db.merge(collDi(p), p.id, { prospetto: "riprova", prospettoTentativi: tentativi, prospettoErrore: ("Argon: " + String((e && e.message) || e)).slice(0, 160) });
           return { esito: `foglio «${nomeFile}»: Argon non ha risposto (tentativo ${tentativi}), riprovo al prossimo giro`, credito };
         }
         perche = "Argon non ha risposto tre volte"; finali = null; j = null;
@@ -449,7 +454,7 @@ export async function leggiUnFoglio({ db, gemini, oggi, adesso, prendiBase, x, s
       : `${modo === "riserva" ? `(${perche}: l'ho letto col modello di riserva) ` : ""}${j && j.riassunto ? codici.daCodici(String(j.riassunto)).replace(/\s+/g, " ").trim().slice(0, 400) : `Ho letto il foglio «${nomeFile}»: ${cambiTxt}.`}`;
     const lid = await segreteria(p, nomeFile, { esito: fatti.length ? "fatta" : "vuota", capito: { risposta: riassunto }, fatti, non: dubbi, modello, ripiego: modo !== "argon", applicata: adesso.toISOString(), applicataDa: "giro",
       prospetto: { foglio: nomeFile, modo, da: periodo.da, a: periodo.a, mesi: periodo.mesi.map(m => m.nome), nuovi: cmp.nuovi.length, cambiati: cmp.cambiati.length, tolti: cmp.tolti.length - tenuti.length, tenuti: tenuti.length, uguali: cmp.uguali.length } });
-    await db.merge("posta", p.id, { prospetto: "fatto", prospettoLid: lid, prospettoTentativi: tentativi, letto: true });
+    await db.merge(collDi(p), p.id, { prospetto: "fatto", prospettoLid: lid, prospettoTentativi: tentativi, letto: true });
     // l'avviso per Michele (lo manda il giro, negli orari degli avvisi): solo se è cambiato il prospetto (i dubbi da soli stanno
     // in Segreteria: lo stesso foglio rimandato non deve riavvisare gli stessi dubbi)
     const nD = dubbi.length;
@@ -463,7 +468,7 @@ export async function leggiUnFoglio({ db, gemini, oggi, adesso, prendiBase, x, s
     try {
       let lid = "";
       if (finito) lid = await segreteria(p, nomeFile, { esito: "vuota", capito: { risposta: `Il foglio «${nomeFile}» non sono riuscita a metterlo nel prospetto (tre prove andate male): caricalo tu in Altro → «📄 Carica il foglio di papà».` } });
-      await db.merge("posta", p.id, { prospetto: finito ? "errore" : "riprova", prospettoTentativi: tentativi, prospettoErrore: String((e && e.message) || e).slice(0, 160), ...(finito ? { prospettoLid: lid, letto: true } : {}) });
+      await db.merge(collDi(p), p.id, { prospetto: finito ? "errore" : "riprova", prospettoTentativi: tentativi, prospettoErrore: String((e && e.message) || e).slice(0, 160), ...(finito ? { prospettoLid: lid, letto: true } : {}) });
     } catch (e2) {}
     return { esito: `foglio «${nomeFile}»: errore ${String((e && e.message) || e).slice(0, 80)}${finito ? " (lasciato stare)" : ""}` };
   }
