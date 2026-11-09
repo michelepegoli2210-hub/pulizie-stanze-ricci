@@ -9082,3 +9082,11 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 /* 1.70.1: Sofia influencer, finito il filmato resta lì ferma */
 .soc-film video.soc-ferma{opacity:0;transition:opacity .5s ease}
 .soc-film.ferma video.soc-ferma{opacity:1}
+/* 1.70.2: i cambi annullati, col tasto «↪ Rimetti» */
+.sg2-r.annullato{background:#FFF7E6;border:1px dashed #E0B85C;border-radius:12px;padding:8px 10px 10px;margin:0 0 10px}
+.sg2-r.annullato:last-of-type{border-bottom:1px dashed #E0B85C;padding-bottom:10px}
+.sg2-r.annullato .sg2-x{font-weight:700;color:#7A4B00}
+.sg2-b.verde.rimetti{flex:0 1 auto;min-height:44px;padding:6px 16px;font-weight:800;font-size:15px}
+:root[data-theme="dark"] .sg2-r.annullato{background:#3A2E14;border-color:#8A6A2A}
+:root[data-theme="dark"] .sg2-r.annullato .sg2-x{color:#F3D9A4}
+.sgr-fatto .sgr-b.si{margin-left:6px}

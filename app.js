@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.70.1";
+export const VERSIONE = "1.70.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5551,6 +5551,20 @@ function sg2Fatti() {
   }
   return out.sort((a, b) => String(b.quando).localeCompare(String(a.quando)));
 }
+// 1.70.2: i cambi annullati di oggi e di ieri, da poter rimettere (il foglio di papà: una riga sola)
+function sg2Annullati() {
+  const out = [];
+  for (const x of sg2Letture(2)) {
+    const ann = (Array.isArray(x.fatti) ? x.fatti : []).filter(f => f && f.k && f.annullato && f.tipo !== "no" && (f.voci || []).length);
+    if (!ann.length) continue;
+    const quando = ann.map(f => f.annullatoQuando || "").sort().slice(-1)[0] || x.applicata || x.quando;
+    if (String(x.lid).startsWith("xl")) {
+      const n = ann.filter(f => f.tipo === "prospetto").length;
+      out.push({ lid: x.lid, ks: ann.map(f => f.k), quando, foglio: true, testo: `📊 Il prospetto dal foglio di papà: ${n ? `${n} ${n === 1 ? "cambio annullato" : "cambi annullati"}` : "note annullate"}`, sotto: x.prospetto && x.prospetto.foglio ? x.prospetto.foglio : "" });
+    } else for (const f of ann) out.push({ lid: x.lid, ks: [f.k], quando, testo: `Annullato: ${String(f.testo).replace(/^\S+\s/, "")}`, sotto: f.chi ? `l'aveva detto ${f.chi}` : "" });
+  }
+  return out.sort((a, b) => String(b.quando).localeCompare(String(a.quando)));
+}
 // ⭐ da sapere: le note salvate e le cose che non è riuscita a fare (oggi e ieri)
 function sg2Sapere() {
   const out = [];
@@ -5584,8 +5598,8 @@ function sg2Capito() {
   for (const x of tutte.filter(y => String(y.quando).slice(0, 10) === giorno)) {
     const righe = x.capito && Array.isArray(x.capito.righe) ? x.capito.righe : [];
     if (String(x.lid).startsWith("xl")) {   // il foglio di papà: una riga sola, sotto Papà
-      const n = (x.fatti || []).filter(f => f && f.tipo === "prospetto" && !f.annullato).length;
-      metti("Papà", { cosa: `ha mandato il foglio del prospetto${x.prospetto && x.prospetto.foglio ? ` («${x.prospetto.foglio}»)` : ""}: ${n ? `${n} ${n === 1 ? "cambio" : "cambi"}` : "era già tutto giusto"}`, dove: n ? "fatto" : "sapere" }).lid ||= x.lid;
+      const n = (x.fatti || []).filter(f => f && f.tipo === "prospetto" && !f.annullato).length, na = (x.fatti || []).filter(f => f && f.tipo === "prospetto" && f.annullato).length;   // 1.70.2
+      metti("Papà", { cosa: `ha mandato il foglio del prospetto${x.prospetto && x.prospetto.foglio ? ` («${x.prospetto.foglio}»)` : ""}: ${n ? `${n} ${n === 1 ? "cambio" : "cambi"}${na ? ` (${na} annullati)` : ""}` : na ? `i ${na} cambi sono stati annullati: se era per sbaglio, tocca «↪ Rimetti» in «Ho fatto io»` : "era già tutto giusto"}`, dove: n ? "fatto" : "sapere" }).lid ||= x.lid;
     } else if (righe.length) for (const r of righe) { if (r && r.cosa && SG2_DOVE[r.dove]) metti(r.chi, { cosa: String(r.cosa), dove: r.dove }).lid = x.lid; }
     else if (x.capito && x.capito.risposta) metti("", { cosa: String(x.capito.risposta), dove: (x.fatti || []).length ? "fatto" : "sapere" }).lid ||= x.lid;
   }
@@ -5624,11 +5638,15 @@ function vistaSegreteria() {
   prop.unshift(...presProposte().map(x => presPropRiga(x, mod)));   // 1.69.0: le ore che non tornano
   const fatti = sg2Fatti().map((f, i) => `<div class="sg2-r fatto"><span class="sg2-x"><b>${i + 1}.</b> ${esc(f.testo)}</span><small>${esc([sg2Quando(f.quando), f.sotto].filter(Boolean).join(" · "))}</small>
     <div class="sg2-bt">${mod ? `<button type="button" class="sg2-b piccolo" data-sg2-annulla="${esc(f.lid)}|${esc(f.ks.join(","))}">Annulla</button>` : ""}<button type="button" class="sg2-b piccolo" data-sg2-perche="${esc(f.lid)}|${esc(f.ks.join(","))}">Perché?</button></div></div>`);
+  // 1.70.2: i cambi annullati (oggi e ieri) col tasto «↪ Rimetti», sopra gli altri
+  const annullati = sg2Annullati().map(f => `<div class="sg2-r fatto annullato"><span class="sg2-x">${esc(f.testo)}</span><small>${esc([`annullato ${sg2Quando(f.quando)}`, f.sotto].filter(Boolean).join(" · "))}</small>
+    ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde rimetti" data-sg2-rimetti="${esc(f.lid)}|${esc(f.ks.join(","))}">↪ Rimetti</button></div>` : ""}</div>`);
+  fatti.unshift(...annullati);
   const sapere = sg2Sapere().map(s => `<div class="sg2-r sapere"><span class="sg2-x">${esc(s.testo)}</span><small>${esc(sg2Quando(s.quando))}</small></div>`);
   const cassetti = `<div class="sg2-cassetti">
     ${sg2Cassetto("fare", `<span aria-hidden="true">🔔</span> Da fare tu`, perTe, "Niente da fare: quando qualcuno chiede una cosa a te, la trovi qui (e il telefono suona).", "fare", 3)}
     ${sg2Cassetto("prop", `<span aria-hidden="true">✋</span> Ti propongo`, prop, "Nessuna proposta.", "prop", 2)}
-    ${sg2Cassetto("fatto", `<span aria-hidden="true">✅</span> Ho fatto io`, fatti, "Oggi non ho ancora cambiato niente nell'app.", "fatto", 3)}
+    ${sg2Cassetto("fatto", `<span aria-hidden="true">✅</span> Ho fatto io`, fatti, "Oggi non ho ancora cambiato niente nell'app.", "fatto", Math.max(3, annullati.length + 1))}
     ${sg2Cassetto("sapere", `<span aria-hidden="true">⭐</span> Da sapere`, sapere, "Niente di nuovo da sapere.", "sapere", 3)}</div>`;
   // i documenti degli ospiti arrivati oggi e ieri (Alloggiati Web): la riga per camera, il tasto per inquadrare
   let doc = "";
@@ -5756,7 +5774,20 @@ document.addEventListener("click", (e) => {
   if ((x = b("[data-sg2-fatto]"))) { const [lid, k] = x.dataset.sg2Fatto.split("|"); x.disabled = true; sg2Fatto(lid, k); return; }
   if ((x = b("[data-sg2-ricorda]"))) { const [lid, k] = x.dataset.sg2Ricorda.split("|"); const quando = new Date(Date.now() + 3600 * 1000); sg2PerTeSegna(lid, k, { rimanda: quando.toISOString() }).then(r => { if (r) toast(`Te lo ricordo alle ${L.oraBreve(quando.toISOString())}.`); }); return; }
   if ((x = b("[data-sg2-cambia]"))) { const [lid, k] = x.dataset.sg2Cambia.split("|"); sg2Cambia(lid, k); return; }
-  if ((x = b("[data-sg2-annulla]"))) { const [lid, ks] = x.dataset.sg2Annulla.split("|"); x.disabled = true; (async () => { const lista = ks.split(",").filter(Boolean); let ultimo = ""; for (const k of lista) { try { ultimo = await annullaFatto(lid, k, true) || ultimo; } catch (err) { erroreScrittura(err); } } toast(lista.length > 1 ? `Annullati i ${lista.length} cambi.` : String(ultimo || "Annullato.").slice(0, 140)); })(); return; }
+  if ((x = b("[data-sg2-annulla]"))) { const [lid, ks] = x.dataset.sg2Annulla.split("|"); x.disabled = true; const bott = x; (async () => {
+    const lista = ks.split(",").filter(Boolean), foglio = String(lid).startsWith("xl");
+    // 1.70.2: tanti cambi insieme (il foglio di papà) non si tolgono con un tocco solo per sbaglio
+    if (lista.length > 1 || foglio) {
+      const fx = (((S.segreteria || {})["segreteria_" + lid] || {}).fatti || []).filter(f => f && lista.includes(f.k)), np = fx.filter(f => f.tipo === "prospetto").length, nn = fx.length - np;
+      const dom = foglio ? `Tolgo dal prospetto ${np === 1 ? "il cambio" : np ? `tutti i ${np} cambi` : "le note"} del foglio di papà${np && nn ? " e le sue note" : ""}? Le camere tornano come prima del foglio.` : `Annullo tutti i ${lista.length} cambi?`;
+      const ok = await chiedi(dom, { si: "Sì, annulla", no: "No, lascia com'è", pericolo: true }); if (!ok) { bott.disabled = false; return; }
+    }
+    let ultimo = ""; for (const k of lista) { try { ultimo = await annullaFatto(lid, k, true) || ultimo; } catch (err) { erroreScrittura(err); } }
+    toast(lista.length > 1 ? "Annullato. Se era per sbaglio, in «Ho fatto io» c'è «↪ Rimetti»." : String(ultimo || "Annullato.").slice(0, 140)); })(); return; }
+  if ((x = b("[data-sg2-rimetti]"))) { const [lid, ks] = x.dataset.sg2Rimetti.split("|"); x.disabled = true; const bott = x; (async () => {   // 1.70.2
+    const lista = ks.split(",").filter(Boolean); let ultimo = "", parziale = false;
+    for (const k of lista) { try { const m = await rimettiFatto(lid, k, true); if (/in parte/.test(m)) parziale = true; ultimo = m || ultimo; } catch (err) { bott.disabled = false; erroreScrittura(err); return; } }
+    toast(parziale ? "Rimesso, ma non tutto: qualcosa nel frattempo è cambiato e l'ho lasciato com'è." : lista.length > 1 ? `Rimesso tutto: il prospetto è di nuovo come l'aveva messo ${nomeGov()}.` : String(ultimo || "Rimesso.").slice(0, 140)); })(); return; }
   if ((x = b("[data-sg2-perche]"))) { const [lid, ks] = x.dataset.sg2Perche.split("|"); sg2Perche(lid, ks.split(",")); return; }
   if ((x = b("[data-sg2-male]"))) { const [n, lid] = x.dataset.sg2Male.split("|"); sg2Male(n, lid); return; }
   if ((x = b("[data-sg2-rispondi]"))) { const [lid, i, tipo] = x.dataset.sg2Rispondi.split("|"); sg2Rispondi(lid, Number(i), tipo); return; }
@@ -6542,6 +6573,51 @@ async function annullaFatto(lid, k, muto = false) {
   if (!muto) toast(msg.slice(0, 140));
   return msg;
 }
+// 1.70.2 (Michele, 9/11: «per sbaglio nell'applicazione l'ho cancellato… ripubblicalo»): un cambio annullato si RIMETTE com'era
+// dopo la lettura (le «voci» prima/dopo), ma solo dove è ancora come l'ha lasciato «Annulla»: se nel frattempo qualcuno l'ha
+// cambiato, quel pezzo si lascia com'è e lo si dice.
+const jsonStabile = (v) => JSON.stringify(v, (k, x) => (x && typeof x === "object" && !Array.isArray(x)) ? Object.fromEntries(Object.keys(x).sort().map(kk => [kk, x[kk]])) : x);
+async function rimettiFatto(lid, k, muto = false) {
+  const x = (S.segreteria || {})["segreteria_" + lid]; if (!x) return "";
+  const fatti = Array.isArray(x.fatti) ? x.fatti.map(f => ({ ...f })) : [], f = fatti.find(y => y.k === k);
+  if (!f || !f.annullato) return "";
+  const ops = [], saltati = [];
+  for (const v of (f.voci || [])) {
+    const prima = v.prima ? JSON.parse(v.prima) : null, dopo = v.dopo ? JSON.parse(v.dopo) : null;
+    let cur = null; try { cur = await S.db.leggi(v.coll, v.id); } catch (e) {} if (cur) { cur = { ...cur }; delete cur.id; }
+    if (!prima && dopo) {   // l'aveva creato la lettura e Annulla l'ha tolto: lo rimetto
+      if (cur) { if (jsonStabile(cur) !== jsonStabile(dopo)) saltati.push(v); continue; }
+      ops.push({ tipo: "salva", coll: v.coll, id: v.id, dati: dopo, merge: false });
+    } else if (prima && !dopo) {   // l'aveva tolto la lettura e Annulla l'ha rimesso: lo ritolgo, se è ancora uguale
+      if (!cur) continue;
+      if (v.coll === "pulizie" && cur.stato && cur.stato !== "da_fare") { saltati.push(v); continue; }
+      if (jsonStabile(cur) !== jsonStabile(prima)) { saltati.push(v); continue; }
+      ops.push({ tipo: "cancella", coll: v.coll, id: v.id });
+    } else if (prima && dopo) {   // l'aveva cambiato: rimetto i campi del cambio, se sono ancora come li ha lasciati Annulla
+      const campi = [...new Set([...Object.keys(prima), ...Object.keys(dopo)])].filter(c => JSON.stringify(prima[c]) !== JSON.stringify(dopo[c]));
+      if (!campi.length) continue;
+      if (!cur) { saltati.push(v); continue; }
+      if (campi.every(c => jsonStabile(cur[c]) === jsonStabile(dopo[c]))) continue;   // è già così
+      if (campi.some(c => jsonStabile(cur[c]) !== jsonStabile(prima[c]))) { saltati.push(v); continue; }
+      const nuovo = { ...cur }; for (const c of campi) { if (dopo[c] === undefined) delete nuovo[c]; else nuovo[c] = dopo[c]; }
+      ops.push({ tipo: "salva", coll: v.coll, id: v.id, dati: nuovo, merge: false });
+    }
+  }
+  if (ops.length) await S.db.scrivi(ops);
+  for (const o of ops) {
+    const box = { pulizie: S.pulizie, soggiorni: S.soggiorni, manutenzione: S.manutenzione, pagamenti: S.pagamenti, visti: S.visti }[o.coll]; if (!box) continue;
+    if (o.tipo === "cancella") delete box[o.id]; else if (o.tipo === "salva") box[o.id] = { id: o.id, ...o.dati };
+  }
+  if (saltati.length) f.nonRimesso = "nel frattempo è cambiato: quel pezzo l'ho lasciato com'è";
+  else { f.annullato = false; delete f.annullatoQuando; delete f.nonAnnullato; delete f.nonRimesso; f.rimessoQuando = new Date().toISOString(); }
+  x.fatti = fatti;
+  try { await S.db.aggiorna("importazioni", "segreteria_" + lid, { fatti }); } catch (e) { console.warn("segreteria/rimetti", e); }
+  try { pianifica(); } catch (e) {}
+  disegna();
+  const msg = saltati.length ? "L'ho rimesso solo in parte: nel frattempo qualcosa è cambiato e quel pezzo l'ho lasciato com'è." : `Rimesso: ${String(f.testo).replace(/^\S+\s/, "")}`;
+  if (!muto) toast(msg.slice(0, 140));
+  return msg;
+}
 // «Sì, fallo» / «No» su una proposta
 async function rispostaProposta(lid, k, si) {
   const x = (S.segreteria || {})["segreteria_" + lid]; if (!x) return;
@@ -6666,7 +6742,7 @@ function cardSegreteriaNuova(x, aperta) {
   const puoRileggere = vecchia && !rileggo && !rileggendoLid && puoModificare() && iaAccesa() && messaggi.length && !["salvata", "vuota", "sostituita"].includes(x.esito) && giorno >= L.aggiungiGiorni(L.oggiISO(), -1);
   const chats = [...new Set(messaggi.map(m => String(m.chat || "").replace(/^chat con /, "")).filter(Boolean))].slice(0, 4).join(", ");
   const testa = `<div class="sgr-l-testa"><div><b>${esc(quando)}</b><span class="pill ${esito[1]}">${esc(esito[0])}</span></div><small>${x.da === "giro" ? "letta da sola" : `letta dal ${esc(x.nome || "telefono")}`} · ${messaggi.length} ${messaggi.length === 1 ? "messaggio" : "messaggi"}${chats ? ` · ${esc(chats)}` : ""}</small></div>`;
-  const rf = (f) => `<div class="sgr-fatto ${f.annullato ? "annullato" : ""}"><span class="sgr-f-t">${esc(f.testo)}${f.nonAnnullato ? `<small>${esc(f.nonAnnullato)}</small>` : ""}</span>${f.annullato ? `<span class="sgr-giud">annullato</span>` : puoModificare() && (f.voci || []).length ? `<button type="button" class="sgr-b" data-sgr-annulla="${esc(x.lid)}|${esc(f.k)}">↩ Annulla</button>` : ""}</div>`;
+  const rf = (f) => `<div class="sgr-fatto ${f.annullato ? "annullato" : ""}"><span class="sgr-f-t">${esc(f.testo)}${f.nonAnnullato ? `<small>${esc(f.nonAnnullato)}</small>` : ""}</span>${f.annullato ? `<span class="sgr-giud">annullato</span>${puoModificare() && (f.voci || []).length ? `<button type="button" class="sgr-b si" data-sgr-rimetti="${esc(x.lid)}|${esc(f.k)}">↪ Rimetti</button>` : ""}` : puoModificare() && (f.voci || []).length ? `<button type="button" class="sgr-b" data-sgr-annulla="${esc(x.lid)}|${esc(f.k)}">↩ Annulla</button>` : ""}</div>`;
   const rp = (p) => `<div class="sgr-prop ${p.esito ? "fatta" : ""}"><span class="sgr-f-t">${p.perche ? `<b>${esc(p.perche)}</b><br>` : ""}${esc(p.testo)}</span>${p.esito ? `<span class="sgr-giud">${p.esito === "si" ? "✓ fatto" : "lasciato"}</span>` : puoModificare() ? `<span class="sgr-azioni"><button type="button" class="sgr-b si" data-sgr-si="${esc(x.lid)}|${esc(p.k)}">Sì, fallo</button><button type="button" class="sgr-b no" data-sgr-no="${esc(x.lid)}|${esc(p.k)}">No</button></span>` : ""}</div>`;
   const rd = (d, i) => `<div class="sgr-prop ${d.risposta ? "fatta" : ""}"><span class="sgr-f-t"><b>${esc(d.domanda)}</b></span>${d.risposta ? `<span class="sgr-giud">→ ${esc(d.risposta)}</span>` : puoModificare() && (d.risposte || []).length ? `<span class="sgr-azioni">${d.risposte.map((r, j) => `<button type="button" class="sgr-b" data-sgr-risp="${esc(x.lid)}|${i}|${j}">${esc(r)}</button>`).join("")}</span>` : `<small>Rispondi nella chat qui sotto.</small>`}</div>`;
   const msgHtml = (m) => `<div class="sgr-msg ${m.mio ? "mio" : ""} ${m.tipo === "audio" ? "voce" : ""}"><small>${m.chat ? esc(m.chat) + " · " : ""}<b>${esc(m.chi || "?")}</b>${m.ora ? " · " + esc(m.ora) : ""}${m.data ? ` · ${esc(L.dataMedia(m.data))}` : ""}</small><p>${escNl(m.testo || "")}</p></div>`;
@@ -6682,6 +6758,7 @@ function cardSegreteriaNuova(x, aperta) {
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t) return;
   const an = t.closest("[data-sgr-annulla]"); if (an) { const [lid, k] = an.dataset.sgrAnnulla.split("|"); an.disabled = true; annullaFatto(lid, k).catch(err => { an.disabled = false; erroreScrittura(err); }); return; }
+  const ri = t.closest("[data-sgr-rimetti]"); if (ri) { const [lid, k] = ri.dataset.sgrRimetti.split("|"); ri.disabled = true; rimettiFatto(lid, k).catch(err => { ri.disabled = false; erroreScrittura(err); }); return; }   // 1.70.2
   const si = t.closest("[data-sgr-si]"); if (si) { const [lid, k] = si.dataset.sgrSi.split("|"); si.disabled = true; rispostaProposta(lid, k, true); return; }
   const no = t.closest("[data-sgr-no]"); if (no) { const [lid, k] = no.dataset.sgrNo.split("|"); rispostaProposta(lid, k, false); return; }
   const rl = t.closest("[data-sgr-rileggi]"); if (rl) { rl.disabled = true; rileggiDaCapo(rl.dataset.sgrRileggi); return; }
