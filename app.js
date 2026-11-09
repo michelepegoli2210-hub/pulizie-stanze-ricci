@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.71.0";
+export const VERSIONE = "1.72.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5468,7 +5468,7 @@ function segretariaAlLavoro() {
     return (x.stato === "in_lettura" && Date.now() - Date.parse(x.quando || 0) < 15 * 60 * 1000) || (x.stato === "applicando" && Date.now() - Date.parse(x.applicaQuando || x.quando || 0) < 10 * 60 * 1000);
   } catch (e) { return false; }
 }
-function segreteriaSotto() { const l = segreteriaLetture(), dom = domandeSegreteria(); if (segretariaAlLavoro()) return `${nomeGov()} sta leggendo i messaggi…`; return l.length ? `${l.length} ${l.length === 1 ? "lettura" : "letture"}${dom ? ` · ${dom} ${dom === 1 ? "domanda" : "domande"} per te` : ""}` : `le chat lette da ${nomeGov()}`; }
+function segreteriaSotto() { const l = segreteriaLetture(), dom = domandeSegreteria(); if (segretariaAlLavoro()) return `${nomeGov()} sta leggendo i messaggi…`; return l.length ? `${l.length} ${l.length === 1 ? "lettura" : "letture"}${dom ? ` · ${dom} ${dom === 1 ? "cosa" : "cose"} per te` : ""}` : `le chat lette da ${nomeGov()}`; }
 // la lettura appena fatta dall'app: i messaggi (coi vocali trascritti) e quello che Sofia ha capito, coi nomi veri
 async function salvaSegreteria(d, j, extra = {}) {
   try {
@@ -5533,12 +5533,14 @@ function abbinaSegreteria(messaggi, voci) {
 //      «Hai capito male?»; le domande «Non sono sicura» coi tasti delle risposte; e COSA HO IMPARATO (il taccuino).
 // ============================================================================
 const SG2_GIORNI = 3;   // da fare, proposte e domande restano 3 giorni; quello che ha fatto si vede oggi e ieri
+// 1.72.0: il giorno italiano di un orario salvato in UTC («…T23:25:00.000Z»): dopo mezzanotte diceva «ieri 00:25»
+function giornoLocale(iso) { const s = String(iso || ""); if (/T\d.*(Z|[+-]\d\d:?\d\d)$/.test(s)) { const d = new Date(s); if (!isNaN(d)) return L.oggiISO(d); } return s.slice(0, 10); }
 function sg2Letture(giorni = SG2_GIORNI) {
   const da = L.aggiungiGiorni(L.oggiISO(), -(giorni - 1));
-  return segreteriaLetture().filter(x => x && !["scartata", "sostituita"].includes(x.esito) && String(x.quando || "").slice(0, 10) >= da);
+  return segreteriaLetture().filter(x => x && !["scartata", "sostituita"].includes(x.esito) && giornoLocale(x.quando) >= da);
 }
 function sg2Quando(iso) {
-  const g = String(iso || "").slice(0, 10), oggi = L.oggiISO(); if (!g) return "";
+  const g = giornoLocale(iso), oggi = L.oggiISO(); if (!g) return "";
   const ora = /T\d/.test(String(iso)) ? L.oraBreve(iso) : "";
   return g === oggi ? `oggi${ora ? " " + ora : ""}` : g === L.aggiungiGiorni(oggi, -1) ? `ieri${ora ? " " + ora : ""}` : `${L.dataMedia(g)}${ora ? " " + ora : ""}`;
 }
@@ -6097,7 +6099,7 @@ const STANZE = [
 function sottoStanza(id) {
   try {
     const oggi = L.oggiISO();
-    if (id === "segreteria") { const l = segreteriaLetture(), dom = domandeSegreteria(), nuove = postaNuova().length; return segretariaAlLavoro() ? "sta leggendo i messaggi…" : nuove ? `${nuove} ${nuove === 1 ? "messaggio nuovo" : "messaggi nuovi"}` : dom ? `${dom} ${dom === 1 ? "domanda" : "domande"} per te` : l.length ? "tutto a posto" : `le chat lette da ${nomeGov()}`; }   // 1.53.0: niente più «da controllare»
+    if (id === "segreteria") { const l = segreteriaLetture(), dom = domandeSegreteria(), nuove = postaNuova().length; return segretariaAlLavoro() ? "sta leggendo i messaggi…" : nuove ? `${nuove} ${nuove === 1 ? "messaggio nuovo" : "messaggi nuovi"}` : dom ? `${dom} ${dom === 1 ? "cosa" : "cose"} per te` : l.length ? "tutto a posto" : `le chat lette da ${nomeGov()}`; }   // 1.53.0: niente più «da controllare»
     if (id === "prospetto") { const piene = S.camere.filter(c => c.id && L.ospiteIl(soggiorniLista(), c.id, oggi)).length; return `${piene} ${piene === 1 ? "camera piena" : "camere piene"} su ${S.camere.length}`; }
     if (id === "signore") { const tutte = signore().flatMap(z => pulizieDelGiorno(oggi, z.id)), f = tutte.filter(p => p.stato === "fatta").length; return tutte.length ? `oggi ${f} su ${tutte.length} pulizie` : "oggi niente pulizie"; }
     if (id === "manutenzione") { const n = lavoriAperti().length; return n ? `${n} ${n === 1 ? "lavoro da fare" : "lavori da fare"}` : "niente in sospeso"; }
@@ -6873,8 +6875,25 @@ function vistaOggiPremium(iso) {
   const tutte = zone.flatMap(z => pulizieDelGiorno(iso, z.id));
   const fatte = tutte.filter(p => p.stato === "fatta").length, inCorso = tutte.filter(p => p.stato === "in_corso").length;
   const tasti = puoModificare() ? `<section class="o13-tasti"><button type="button" class="o13-tasto o13-wa" data-whatsapp-piano="${iso}">${ico2("manda")}<span>Piano su WhatsApp</span></button><button type="button" class="o13-tasto o13-extra" data-nuovo-lavoro>${ico2("piu")}<span>Lavoro extra</span></button></section>` : "";
-  return `<div class="o13">${bannerAlloggiati(iso)}${bannerCopia(iso)}${avviso130(iso)}${cruscotto130(iso, tutte.length, fatte, inCorso)}${fisarmoniche130(iso, zone)}${tasti}</div>`;
+  return `<div class="o13">${bannerAlloggiati(iso)}${bannerCopia(iso)}${avviso130(iso)}${cruscotto130(iso, tutte.length, fatte, inCorso)}${fisarmoniche130(iso, zone)}${tasti}${rigaArgonFondo()}</div>`;
 }
+// 1.72.0 (Michele, 10/11: «togli la parte ArgonCloud… mettila più sotto, anche verso la fine, perché ancora non capisco
+// benissimo che cos'è»): non sta più nella tendina di Sofia; è l'ultima cosa della pagina Oggi, con scritto cos'è.
+// Un tocco apre Paghe, proprio sulla scheda di ArgonCloud.
+function rigaArgonFondo() {
+  try {
+    if (!puoModificare() || !proprietario() || !cloudAttivo()) return "";
+    const a = argonTesseraValore();
+    return `<button type="button" class="argon-riga${a.att ? " att" : ""}" data-argon-riga aria-label="ArgonCloud: ${esc(a.v)}. Cos'è: le signore si controllano le camere a vicenda, il Visto"><span class="argon-riga-ico" aria-hidden="true">${icoNuvola()}</span><span class="argon-riga-x"><b>ArgonCloud <em>· ${esc(a.v)}</em></b><small>cos'è: le signore si controllano le camere a vicenda (il «Visto»)</small></span><span class="argon-riga-va" aria-hidden="true">›</span></button>`;
+  } catch (e) { return ""; }
+}
+document.addEventListener("click", (e) => {
+  const b = e.target && e.target.closest && e.target.closest("[data-argon-riga]");
+  if (!b) return;
+  e.preventDefault();
+  S.vista = "paghe"; disegna(); window.scrollTo(0, 0);
+  setTimeout(() => { const c = document.querySelector(".argon-card"); if (c) c.scrollIntoView({ block: "start" }); }, 120);
+});
 // l'avviso alle signore: etichetta e "Detta" piccolo sulla prima riga, sotto il testo intero su due righe (Gemini: "un
 // avviso che non si legge a colpo d'occhio tradisce la sua funzione"); un tocco sul testo lo apre per cambiarlo
 function avviso130(iso) {
@@ -7833,7 +7852,7 @@ function righeNotizie(ls, fatte, man, dom) {
   out.push(r(ico2("lavori2"), "arancio", "Lavori da fare", man ? String(man) : "nessuno", "manutenzione", man > 0));
   out.push(r(ico2("arrivi2"), "blu", "Arrivi domani", arrivi.length ? String(arrivi.length) : "nessuno", "arrivi", false));   // 1.19.0: i nomi toccando la tessera
   out.push(r(ico2("camere2"), "oro", "Camere piene", `${piene} su ${S.camere.length}`, "camere", false));
-  if (cloudAttivo()) { const a = argonTesseraValore(); out.push(r(ico2("spunta"), "verde", "ArgonCloud", esc(a.v), "argon", a.att, true)); }   // 1.12.0
+  if (cloudAttivo() && !premiumScelto()) { const a = argonTesseraValore(); out.push(r(ico2("spunta"), "verde", "ArgonCloud", esc(a.v), "argon", a.att, true)); }   // 1.12.0; 1.72.0: nello stile nuovo sta in fondo alla pagina
   if (dom) out.push(r(ico2("domande2"), "rosso", esc(nomeGov()) + " chiede", `${dom} ${dom === 1 ? "domanda" : "domande"} per te`, "sofia", true, true));
   return out.join("");
 }
@@ -7914,7 +7933,7 @@ function notizieFacili(ls, fatte, man, dom) {
   out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: "domani", larga: true,
     sotto: chiDomani ? `<small class="of-s2">${esc(chiDomani)}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` });
   if (dom) out.push({ k: "sofia", vai: "sofia", ico: icoDomande(), n: String(dom), parole: `${dom === 1 ? "domanda" : "domande"} di ${nomeGov()} per te`, corto: dom === 1 ? "domanda" : "domande", tono: "att", larga: true, dici: `${nomeGov()} ha ${dom} ${dom === 1 ? "domanda" : "domande"} per te` });
-  if (cloudAttivo()) { const a = argonTesseraValore(); out.push({ k: "argon", vai: "argon", ico: icoNuvola(), n: "ArgonCloud", parole: a.v, testo: true, mn: a.att ? (String(a.v).match(/^\d+/) || ["!"])[0] : "✓", corto: "ArgonCloud", tono: a.att ? "att" : "", larga: true, dici: `ArgonCloud: ${a.v}` }); }
+  if (cloudAttivo() && !premiumScelto()) { const a = argonTesseraValore(); out.push({ k: "argon", vai: "argon", ico: icoNuvola(), n: "ArgonCloud", parole: a.v, testo: true, mn: a.att ? (String(a.v).match(/^\d+/) || ["!"])[0] : "✓", corto: "ArgonCloud", tono: a.att ? "att" : "", larga: true, dici: `ArgonCloud: ${a.v}` }); }
   return out;
 }
 // le schede a figure del riquadro aperto (le quattro in alto, poi le larghe)
@@ -11602,7 +11621,7 @@ function vistaFacile() {
     piene++;
     const resta = L.giorniTra(g, s.fine), lune = resta > 7 ? 1 : resta;
     const arriva = s.inizio === g ? `<i class="fa-arriva">arriva ${g === oggi ? "oggi" : esc(giornoParola(g))}</i>` : "";
-    return `<button type="button" class="fa-c piena${s.tipo === "unk" || s.dubbio ? " dubbio" : ""}" data-sog="${esc(s.id)}" aria-label="${nomeC}: ${esc(nomeOspite(s))}, ${esc(finoA(s.fine))}, ancora ${resta} ${resta === 1 ? "notte" : "notti"}">${arriva}<b class="fa-nome">${nomeC}</b>${icoLetto(true)}<b class="fa-chi">${s.tipo === "unk" || s.dubbio ? "? " : ""}${esc(nomeOspite(s))}</b><span class="fa-fino">${esc(finoA(s.fine)).replace(/(\d+°? [a-z]+)$/, '<span class="fa-nw">$1</span>')}</span><span class="fa-lune" title="ancora ${resta} ${resta === 1 ? "notte" : "notti"}">${icoLuna().repeat(lune)}${resta > 7 ? `<em>${resta} notti</em>` : ""}</span></button>`;
+    return `<button type="button" class="fa-c piena${s.tipo === "unk" || s.dubbio ? " dubbio" : ""}" data-sog="${esc(s.id)}" aria-label="${nomeC}: ${esc(nomeOspite(s))}, ${esc(finoA(s.fine))}, ancora ${resta} ${resta === 1 ? "notte" : "notti"}">${arriva}<b class="fa-nome">${nomeC}</b>${icoLetto(true)}<b class="fa-chi">${s.tipo === "unk" || s.dubbio ? "? " : ""}${esc(nomeOspite(s))}</b><span class="fa-fino">${esc(finoA(s.fine)).replace(/(\d+°? [a-z]+)$/, '<span class="fa-nw">$1</span>')}</span><span class="fa-lune${lune >= 6 ? " molte" : ""}" title="ancora ${resta} ${resta === 1 ? "notte" : "notti"}">${icoLuna().repeat(lune)}<em>${resta > 7 ? `${resta} notti` : resta}</em></span></button>`;   // 1.71.1: sempre il numero accanto alle lunette
   };
   const gruppi = zoneOrdinate().map(z => { const cam = camereZona(z.id); return `<div class="fa-gruppo"><div class="fa-t">${esc(z.breve || z.nome)}${cam.some(c => c.lato === "S") ? " + " + cam.filter(c => c.lato === "S").map(c => esc(c.nome)).join(", ") : ""}</div><div class="fa-griglia">${cam.map(riquadro).join("")}</div></div>`; }).join("");
   const quale = g === oggi ? "stanotte" : g === L.aggiungiGiorni(oggi, 1) ? "domani notte" : L.GIORNI[L.giornoSettimana(g)] + " notte";
@@ -11612,7 +11631,7 @@ function vistaFacile() {
     <h2 class="fa-titolo">Chi dorme ${esc(quale)}?</h2>
     <div class="fa-conta"><span class="fa-n piene">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="fa-n libere">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "libera" : "libere"}</span></div>
     ${gruppi}
-    <div class="fa-aiuto"><span class="fa-notte" aria-hidden="true">${icoLuna()}</span>= una notte che resta · tocca una camera per vedere tutto</div>
+    <div class="fa-aiuto"><span class="fa-notte" aria-hidden="true">${icoLuna()}</span>= una notte che resta, e accanto quante sono · tocca una camera per vedere tutto</div>
   </section>`;
 }
 // 1.0.6: CHI DORME quella notte, ospite per ospite (lo stesso nome in piu' camere = un ospite solo, per esempio una
