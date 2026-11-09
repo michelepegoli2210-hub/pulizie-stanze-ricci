@@ -9075,3 +9075,10 @@ body.premium .bs-blu[aria-pressed="true"] .bs-n{color:#0F172A}
 .segr-fuori .sgf-x{position:absolute;top:6%;right:2px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.95);color:#1C1917;font:800 14px/1 system-ui;box-shadow:0 4px 12px rgba(0,0,0,.28)}
 .segr-fuori:focus-visible{outline:3px solid var(--oro,#8A6D32);outline-offset:4px;border-radius:22px}
 @media (prefers-reduced-motion:reduce){.segr-fuori,.segr-fuori.su{transition:none;transform:none}.segr-fuori .sgf-fig img{animation:none}}
+/* 1.70.1: la segretaria che ti ascolta (mentre il microfono è acceso e mentre ci pensa) */
+.sg2-sf .sg2-sf-ascolta{opacity:0}
+.sg2-sf.ascolta .sg2-sf-ascolta{opacity:1}
+.sg2-sf.ascolta .sg2-sf-riposo{opacity:0}
+/* 1.70.1: Sofia influencer, finito il filmato resta lì ferma */
+.soc-film video.soc-ferma{opacity:0;transition:opacity .5s ease}
+.soc-film.ferma video.soc-ferma{opacity:1}

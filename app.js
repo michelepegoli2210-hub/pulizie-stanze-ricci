@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.70.0";
+export const VERSIONE = "1.70.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -124,7 +124,7 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr2-riposo-3d.webm", parla: "segr2-parla-3d.webm", poster: "segr2-poster-3d.webp" };   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
+const FILM_SEGR = { riposo: "segr3-riposo-3d.webm", ascolta: "segr3-ascolta-3d.webm", parla: "segr2-parla-3d.webm", poster: "segr3-poster-3d.webp" };   // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -5790,11 +5790,12 @@ function sg2SofiaMonta() {
   if (sg2Sofia && (sg2Sofia.dataset.rit || "") !== (rit ? "1" : "")) { sg2Sofia.remove(); sg2Sofia = null; }
   if (!sg2Sofia) {
     const el = document.createElement("span"); el.className = "sg2-sf"; el.dataset.rit = rit ? "1" : "";
-    el.innerHTML = rit ? `<video class="sg2-sf-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sg2-sf-parla" src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>`}`
+    el.innerHTML = rit ? `<video class="sg2-sf-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video><video class="sg2-sf-ascolta" src="${FILM_SEGR.ascolta}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sg2-sf-parla" src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>`}`
       : `<img class="sg2-sf-img" src="${FILM_SEGR.poster}" alt="">`;
     const v = el.querySelector(".sg2-sf-riposo"), vp = el.querySelector(".sg2-sf-parla"), img = el.querySelector("img");
     if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.removeAttribute("src"); try { v.load(); } catch (e) {} });
     if (vp) vp.addEventListener("error", () => { segrParlaManca = true; vp.remove(); });
+    const va = el.querySelector(".sg2-sf-ascolta"); if (va) va.addEventListener("error", () => { va.remove(); el.classList.remove("ascolta"); });   // 1.70.1
     if (img) img.onerror = () => { if (img.dataset.ripiego) return; img.dataset.ripiego = "1"; img.src = "segr2-viso.webp"; };
     sg2Sofia = el;
   }
@@ -5803,6 +5804,10 @@ function sg2SofiaMonta() {
   if (v && v.paused) { try { v.play().catch(() => {}); } catch (e) {} }
   if (vp) { if (parla && vp.paused) { try { vp.play().catch(() => {}); } catch (e) {} } else if (!parla && !vp.paused) { try { vp.pause(); } catch (e) {} } }
   sg2Sofia.classList.toggle("parla", parla);
+  // 1.70.1: mentre il microfono ti ascolta (e mentre ci pensa) il filmato in cui ti ascolta
+  const ascolta = !parla && !!(sg2Rec || ["ascolto", "pensa"].includes((S.sg2Bolla || {}).stato)), va = sg2Sofia.querySelector(".sg2-sf-ascolta");
+  if (va) { if (ascolta && va.paused) { try { va.currentTime = 0; va.play().catch(() => {}); } catch (e) {} } else if (!ascolta && !va.paused) { try { va.pause(); } catch (e) {} } }
+  sg2Sofia.classList.toggle("ascolta", ascolta && !!va);
   const b = document.querySelector(".sg2-sofia"); if (b) b.setAttribute("aria-pressed", parla ? "true" : "false");
 }
 // 1.70.0 (Michele: «parla anche quella di sopra, Sofia segretaria: è tutto un casino»): in Segreteria parla SOLO la segretaria.
@@ -12844,24 +12849,28 @@ function socConti() { const c = socStato().conti || {}; return c.settimana === s
 // ancora»). In cima alla sezione il suo filmato (Gemini: occhiali da sole scuri, giacca di lino crema, maglietta blu, la laguna
 // dietro): parte da solo quando entri e si ferma sull'ultimo sorriso; toccandolo riparte. È tenuto da parte (non riparte a ogni
 // disegno). Sotto, sempre scritto: assistente virtuale creata con l'IA (AI Act, art. 50).
-const FILM_INFLU = { video: "sofia-influencer.mp4", poster: "sofia-influencer.webp", viso: "sofia-influencer-viso.webp" };
+const FILM_INFLU = { video: "sofia-influencer.mp4", ferma: "sofia-influencer-ferma.mp4", poster: "sofia-influencer.webp", viso: "sofia-influencer-viso.webp" };   // 1.70.1: anche «sta ferma»
 let socFilm = null;
 function socFilmMonta() {
   const posto = document.querySelector(".soc-film-posto");
-  if (!posto) { if (socFilm) { socFilm._fuori = true; const v = socFilm.querySelector("video"); if (v && !v.paused) { try { v.pause(); } catch (e) {} } } return; }
+  if (!posto) { if (socFilm) { socFilm._fuori = true; socFilm.querySelectorAll("video").forEach(v => { if (!v.paused) { try { v.pause(); } catch (e) {} } }); } return; }
   if (!socFilm) {
     const b = document.createElement("button"); b.type = "button"; b.className = "soc-film"; b.setAttribute("aria-label", "Sofia influencer: tocca per rivederla");
-    b.innerHTML = `<video src="${FILM_INFLU.video}" poster="${FILM_INFLU.poster}" muted playsinline preload="auto"></video><small>Assistente virtuale · creata con l'IA</small>`;
-    const v = b.querySelector("video");
-    b.onclick = (e) => { e.preventDefault(); try { v.currentTime = 0; v.play().catch(() => {}); } catch (er) {} };
+    b.innerHTML = `<video class="soc-intro" src="${FILM_INFLU.video}" poster="${FILM_INFLU.poster}" muted playsinline preload="auto"></video><video class="soc-ferma" src="${FILM_INFLU.ferma}" muted playsinline loop preload="auto"></video><small>Assistente virtuale · creata con l'IA</small>`;
+    const v = b.querySelector(".soc-intro"), f = b.querySelector(".soc-ferma");
+    // 1.70.1: finito il filmato, resta lì ferma (il giro «sta ferma» parte proprio dall'ultimo fotogramma: nessun salto)
+    v.addEventListener("ended", () => { if (!f || f.dataset.via) return; try { f.currentTime = 0; f.play().catch(() => {}); } catch (e) {} b.classList.add("ferma"); });
+    if (f) f.addEventListener("error", () => { f.dataset.via = "1"; b.classList.remove("ferma"); });
+    b.onclick = (e) => { e.preventDefault(); b.classList.remove("ferma"); try { if (f) f.pause(); v.currentTime = 0; v.play().catch(() => {}); } catch (er) {} };
     socFilm = b; socFilm._fuori = true;
   }
   if (socFilm.parentNode !== posto) { posto.textContent = ""; posto.appendChild(socFilm); }
   if (socFilm._fuori) {   // appena entri nella sezione: dall'inizio
     socFilm._fuori = false;
-    const v = socFilm.querySelector("video");
+    const v = socFilm.querySelector(".soc-intro"), f = socFilm.querySelector(".soc-ferma");
+    socFilm.classList.remove("ferma"); if (f) { try { f.pause(); } catch (e) {} }
     if (!motoRidotto()) { try { v.currentTime = 0; v.play().catch(() => {}); } catch (e) {} }
-  }
+  } else if (socFilm.classList.contains("ferma")) { const f = socFilm.querySelector(".soc-ferma"); if (f && f.paused && !motoRidotto()) { try { f.play().catch(() => {}); } catch (e) {} } }
 }
 function cardSocialAltro() {
   if (!proprietario()) return "";
