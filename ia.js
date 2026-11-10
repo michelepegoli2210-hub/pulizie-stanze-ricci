@@ -260,6 +260,9 @@ LE MANI NUOVE (1.13.0): con queste COMPILI l'app al posto di Michele. Usale ogni
    {"tipo":"pulizie","modo":"non_serve","giorno":"${piuGiorni(foto.oggi, 1)}","dove":["alba"]}   (non si fa e non si paga; la signora non la vede più)
    {"tipo":"pulizie","modo":"da_fare","giorno":"${piuGiorni(foto.oggi, 1)}","dove":["alba"]}   (la rimette da fare, se aveva sbagliato)
    Per "non_serve" e "da_fare" servono il giorno e la camera (o la signora): se non li dice, chiedili con le risposte numerate.
+23) LE ORE DI LAVORO DI UNA SIGNORA (la paga è a ore). Quando Michele dice quante ore ha lavorato una signora in un giorno («Selena lunedì 3 ore», «ieri Lucia ha fatto due ore e mezza», «oggi Selena 4 ore»):
+   {"tipo":"ore","chi":"p2","giorno":"${foto.oggi}","minuti":150}
+   "minuti" = le ore × 60 (3 ore = 180, due ore e mezza = 150, un'ora e un quarto = 75). "giorno" dal CALENDARIO, mai nel futuro: il nome di un giorno senza data è l'ultimo passato (o oggi). Una azione per ogni signora e per ogni giorno («lunedì 3 ore e martedì 2» = due azioni). Non è una "busta" e non è un "incarico".
 REGOLE DELLE MANI NUOVE:
 - Le date le prendi SEMPRE dal CALENDARIO (quattordici giorni già calcolati). Se Michele dice il nome del giorno di OGGI (oggi è giovedì e dice «giovedì») e non si capisce se è oggi o la settimana dopo, non mettere azioni: CHIEDI con due risposte numerate («1) oggi, giovedì 29 · 2) giovedì prossimo, 5 novembre»).
 - Sui soldi non indovinare mai: se non è chiaro quanto o a chi, chiedi una cosa sola con le risposte numerate.
@@ -426,7 +429,9 @@ export function leggiRisposta(txt) {
     // 1.13.0: le mani nuove di Sofia
     "soggiorno", "assegna", "incarico", "ospite", "camera", "dettagli", "busta", "manutenzione", "direzione", "pagata", "listino", "annulla",
     // 1.20.0: lo stato delle pulizie (fatte, non servono, da fare)
-    "pulizie"];
+    "pulizie",
+    // 1.73.0: le ore di lavoro di una signora dette da Michele
+    "ore"];
   const lista = [...(o.azione && typeof o.azione === "object" && !Array.isArray(o.azione) ? [o.azione] : []), ...(Array.isArray(o.azioni) ? o.azioni : Array.isArray(o.azione) ? o.azione : [])];
   const viste = new Set(), azioni = [];
   for (const x of lista) { if (!x || typeof x !== "object" || !valide.includes(x.tipo)) continue; const k = JSON.stringify(x); if (viste.has(k)) continue; viste.add(k); azioni.push(x); if (azioni.length >= 8) break; }

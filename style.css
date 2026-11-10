@@ -9193,3 +9193,67 @@ body.premium .bs-blu[aria-pressed="true"] .tb-pcima{filter:brightness(1.08)}
 body.premium .bs-blu[aria-pressed="true"] .tb-ico svg{color:#2A1C04;filter:drop-shadow(0 .8px 0 rgba(255,236,196,.6))}
 body.premium .bs-blu .bs-n{color:#7D6A4E}
 :root[data-theme="dark"] body.premium .bs-blu .bs-n{color:rgba(214,190,140,.66)}
+
+/* ---- 1.73.0 · più spazio al filmato di Sofia (Michele, 10/11 00:43: «questi riquadri devono essere ancora leggermente più
+   sottili, più piccoli, e la parte dei tasti la devi ridurre di molto, rimpicciolendo tutti i tasti compreso quello centrale…
+   tutto lo spazio che ricavi fai vedere sempre di più: obiettivo far vedere il più possibile il filmato di Sofia»).
+   La tendina chiusa: tessera «Domani» alta 38 (era 44), figurine alte 58 (erano 70), riquadro alto 124 (era 150).
+   La barra dei tasti: tutti i tasti più piccoli (quelli d'oro satinato a metà, quello della Segreteria poco più della metà),
+   le scritte più piccole: la barra è alta circa 56 invece di 89. L'altezza della casa segue la barra (--alto-sotto): tutto
+   quello che si libera va a Sofia. ---- */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 124px);height:124px;padding-top:14px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 188px);height:188px;padding-top:14px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani{flex:0 0 38px;height:38px;margin:0 46px 5px 0;padding:1px 9px 1px 4px;gap:5px;border-radius:12px;border-width:1.5px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico{width:36px;height:24px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico svg{width:36px;height:23px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-n{font-size:18px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-p{font-size:13.5px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-s2{font-size:12px;line-height:1.1}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .cr-va{font-size:17px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-saluto{top:14px;right:10px;width:40px;height:38px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-freccia{width:34px;height:34px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-freccia svg{width:20px;height:20px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csf{gap:5px}
+body.premium .sofia-hero .casa-nuvola .csf-c{height:58px;padding:3px 2px;border-radius:12px;gap:0}
+body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:34px;height:21px}
+body.premium .sofia-hero .casa-nuvola .csf-n{font-size:15px}
+body.premium .sofia-hero .casa-nuvola .csf-p{font-size:10.5px;line-height:1.25}
+@media (max-width:374px){
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 130px);height:130px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 200px);height:200px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico{width:32px;height:22px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico svg{width:32px;height:21px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-n{font-size:17px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-p{font-size:12.5px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-s2{font-size:11.5px}
+  body.premium .sofia-hero .casa-nuvola .csf-c{height:64px}
+  body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:30px;height:19px}
+  body.premium .sofia-hero .casa-nuvola .csf-n{font-size:14px}
+  body.premium .sofia-hero .casa-nuvola .csf-p{font-size:10px;line-height:1.12}
+}
+/* la barra: tasti più piccoli (zoom rimpicciolisce anche il posto che occupano, non solo il disegno) */
+body.premium .barra-sotto{grid-template-columns:1fr 1fr 64px 1fr 1fr;padding-top:3px;padding-bottom:calc(3px + env(safe-area-inset-bottom,0px))}
+body.premium:has(.bs-arcade):has(#sgrTendina) .barra-sotto{padding-top:3px}
+body.premium .bs-t{min-height:0;gap:1px;padding:0}
+body.premium .bs-t,body.premium .bs-sofia .bs-n{font-size:12.5px;line-height:1.05}
+body.premium .bs-tasto,body.premium .bs-blu .bs-tasto{transform:none;zoom:.5;margin-bottom:0}
+body.premium .bs-arcade{zoom:.56;margin:0;transform:none}
+body.premium .bs-arcade .nav-conta{zoom:1.5;top:-4px;right:-10px}
+@media (max-width:380px){body.premium .bs-tasto,body.premium .bs-blu .bs-tasto{transform:none;zoom:.46}}
+@media (max-width:375px){body.premium .bs-t,body.premium .bs-sofia .bs-n{font-size:12px}}
+@media (max-width:340px){body.premium .bs-tasto,body.premium .bs-blu .bs-tasto{transform:none;zoom:.42}body.premium .bs-arcade{zoom:.5;transform:none;margin-top:0}}
+/* il filmato: sotto sfuma solo nell'ultimo 5% (sul telefono il bordo del filmato resta sempre sotto il riquadro) */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-card.tre .casa-fig video{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,#000 95%,transparent 100%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,#000 95%,transparent 100%);mask-composite:intersect}
+/* la riga «Scrivi a Sofia», a chat chiusa, sta parcheggiata sotto la barra: con la barra più bassa si intravedeva attraverso */
+body.premium .sofia-hero:not(.nuvola-aperta) .casa-scrivi-riga{visibility:hidden;transition:top .26s cubic-bezier(.22,1,.36,1),visibility 0s linear .26s}
+/* in Segreteria la tendina della segretaria e il suo spazio seguono la barra vera (prima erano numeri fissi per la barra alta) */
+body.premium:has(.bs-arcade) .sgr-tendina{bottom:calc(var(--alto-sotto,56px) + 6px)}
+body.premium:has(.bs-arcade) .sgr-spazio{height:calc(var(--alto-sotto,56px) + 22px)}
+body.premium:has(.bs-arcade) .sgr-fantasma{bottom:calc(var(--alto-sotto,56px) + 12px)}
+body.premium:has(.bs-arcade) .sgr-fantasma.in-tendina{bottom:calc(var(--alto-sotto,56px) + 22px)}
+
+/* ---- 1.73.0 · i filmati di Sofia interi, a taglio netto (Michele: «non cercare di mescolarli… anche se cambia la sua forma non
+   fa niente della continuità»): per la Sofia di Michele niente dissolvenza quando passa da ferma a parla e ritorno. La
+   governante delle signore (data-capo) resta com'era. ---- */
+.gov-film:not([data-capo="1"]) video{transition-property:scale,transform,translate!important}
