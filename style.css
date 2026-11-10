@@ -9323,3 +9323,48 @@ body.premium .casa-lato .casa-ascolta .cl-tondo,body.premium .casa-lato .casa-to
 body.premium .casa-lato .casa-ascolta .cl-tondo svg,body.premium .casa-lato .casa-tondo svg{width:18px;height:18px}
 body.premium .casa-lato .casa-ascolta span{font-size:10.5px}
 body.premium .casa-lato{gap:8px}
+
+/* ---- 1.74.1 · ancora più spazio a Sofia (Michele, 10/11 alle 3:18): la tendina chiusa più bassa e proporzionata (linguetta
+   13, «Domani» 34, figurine 44: alta 102 invece di 122; con due file 150), la striscia della tendina nascosta 13, la barra in
+   basso più schiacciata (icone 40x25, scritte 11,5: alta circa 44 invece di 54). Tutto quello che si libera va a Sofia. ---- */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 102px);height:102px;padding-top:13px;padding-bottom:6px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 150px);height:150px;padding-top:13px;padding-bottom:6px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani{flex:0 0 34px;height:34px;margin:0 44px 4px 0;padding:0 8px 0 4px;border-radius:11px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico{width:32px;height:21px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico svg{width:32px;height:20px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-n{font-size:17px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-p{font-size:13px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-s2{font-size:11.5px;line-height:1.05}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-saluto{top:13px;height:34px;width:38px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-freccia{width:30px;height:30px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-freccia svg{width:18px;height:18px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .csf{gap:4px}
+body.premium .sofia-hero .casa-nuvola .csf-c{height:44px;padding:1px 2px 2px;border-radius:10px;gap:0}
+body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:26px;height:16px}
+body.premium .sofia-hero .casa-nuvola .csf-n{font-size:13px;line-height:1}
+body.premium .sofia-hero .casa-nuvola .csf-p{font-size:9.5px;line-height:1.2}
+@media (max-width:374px){
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 108px);height:108px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 162px);height:162px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico{width:28px;height:19px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-ico svg{width:28px;height:18px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-n{font-size:16px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-p{font-size:12px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-domani .of-s2{font-size:11px}
+  body.premium .sofia-hero .casa-nuvola .csf-c{height:50px}
+  body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:24px;height:15px}
+  body.premium .sofia-hero .casa-nuvola .csf-n{font-size:12.5px}
+  body.premium .sofia-hero .casa-nuvola .csf-p{font-size:9.2px;line-height:1.1}
+}
+/* la linguetta con la freccina: più bassa */
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-nascondi{height:13px;width:120px;margin-left:-60px}
+body.premium .sofia-hero.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-nascondi svg{width:20px;height:10px}
+body.premium .sofia-hero.tenda-chiusa.tenda-nascosta:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 13px)!important;height:13px!important}
+body.premium .sofia-hero.tenda-chiusa.tenda-nascosta:not(.nuvola-aperta) .casa-nuvola .casa-nascondi{height:13px}
+/* la barra in basso più schiacciata */
+body.premium .barra-sotto{padding-top:3px;padding-bottom:calc(2px + env(safe-area-inset-bottom,0px))}
+body.premium .bs-ico2 .bs-fig{width:46px;height:26px;border-radius:9px}
+body.premium .bs-ico2 .bs-fig svg{width:40px;height:25px}
+body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-size:11.5px;line-height:1}
+body.premium .bs-ico2 .nav-conta{top:-4px;right:-2px;min-width:16px;height:15px;font-size:9.5px;line-height:12px;padding:0 4px}
+@media (max-width:360px){body.premium .bs-ico2 .bs-fig{width:42px;height:24px}body.premium .bs-ico2 .bs-fig svg{width:37px;height:23px}body.premium .bs-t.bs-ico2 .bs-n{font-size:11px}}

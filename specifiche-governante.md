@@ -3213,3 +3213,4 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - La pagina si scorre anche col dito sulla tendina chiusa (prima la tendina tratteneva il dito).
   - «Le Stanze di Ricci» con la casetta più piccoli; il microfono accanto a Sofia come gli altri due tondi (44 e 38).
   - Sofia ferma più calma: restano gli spezzoni ascolta e aspetta (misurati: le mani ferme); via posa e posa 2 (i gesti). cons-riposo-calmo, 17,75 s. Stessa Sofia, stessi fotogrammi.
+- **1.74.1** (10/11 alle 3:18, Michele con la foto: «abbassa ancora la tendina, più stretta ma proporzionata; schiaccia di più le figurine; lo spazio con la freccina sotto Sofia riducilo; schiaccia la barra delle icone Oggi, Prospetto, Segreteria, Piantine e Paghe; lo spazio che ricavi fallo vedere a Sofia»): tendina chiusa alta 102 (linguetta 13, «Domani» 34, figurine 44), striscia della tendina nascosta 13, barra in basso alta circa 44 (icone 40x25). Lo spazio va alla casa di Sofia.
