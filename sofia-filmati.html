@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Tutti i filmati di Sofia</title>
+<style>
+/* 1.74.2 · la pagina con tutti i filmati di Sofia (Michele, 10/11: «vorrei che mi facessi vedere tutti i filmati che hai registrato
+   nell'applicazione»): ogni spezzone col suo numero; si tocca e si guarda in grande, in giro continuo. */
+@font-face{font-family:"Montserrat";font-weight:600;src:url(fonts/montserrat-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Montserrat";font-weight:800;src:url(fonts/montserrat-latin-800-normal.woff2) format("woff2")}
+:root{--fondo:#0E1525;--carta:#172238;--oro:#D4AF6A;--testo:#F3EDE2;--muto:#B9B2A6}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% -10%,#24314d 0%,var(--fondo) 60%) fixed;color:var(--testo);font:500 15px/1.4 Montserrat,system-ui,sans-serif;padding:18px 16px 40px}
+header{max-width:1100px;margin:0 auto 6px}
+h1{font-weight:800;font-size:24px;margin:4px 0 6px;color:var(--oro)}
+header p{margin:0 0 4px;color:var(--muto)}
+h2{max-width:1100px;margin:26px auto 4px;font-size:18px;font-weight:800}
+.nota{max-width:1100px;margin:0 auto 10px;color:var(--muto);font-size:13.5px}
+.griglia{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.carta{position:relative;display:flex;flex-direction:column;text-align:left;background:var(--carta);border:1px solid rgba(212,175,106,.25);border-radius:14px;padding:0 0 10px;color:inherit;font:inherit;cursor:pointer;overflow:hidden}
+.carta img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:#1b2233}
+.carta.uso{border-color:var(--oro);box-shadow:0 0 0 1px var(--oro)}
+.num{position:absolute;top:8px;left:8px;min-width:38px;height:38px;padding:0 8px;border-radius:19px;background:var(--oro);color:#1b1408;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.45)}
+.tit{font-weight:800;font-size:14.5px;margin:8px 10px 2px}
+.sotto{font-size:12px;color:var(--muto);margin:0 10px}
+#lettore{position:fixed;inset:0;background:rgba(6,9,16,.94);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:12px}
+#lettore.aperto{display:flex}
+#lettore video{max-width:100%;max-height:calc(100dvh - 120px);aspect-ratio:9/16;border-radius:16px;background:linear-gradient(180deg,#2a3550,#141b2b)}
+.barra{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;justify-content:center}
+.barra b{font-size:22px;color:var(--oro)}
+.barra button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:10px 16px;background:var(--oro);color:#1b1408;cursor:pointer}
+.barra button.sec{background:#2a3550;color:var(--testo)}
+</style>
+</head>
+<body>
+<header>
+<h1>Tutti i filmati di Sofia</h1>
+<p>Tocca un filmato per guardarlo in grande: gira di continuo, come nell'app.</p>
+<p>Poi scrivimi i numeri: quale vuoi quando sta ferma e quale quando risponde. Quelli col bordo d'oro sono quelli in uso adesso.</p>
+</header>
+<h2>Quando sta ferma</h2><p class="nota">Se nessuno ti piace perché ti guarda troppo negli occhi, ne faccio fare di nuovi dove guarda un po&#x27; di lato.</p><div class="griglia"><button type="button" class="carta uso" data-f="cons-riposo-intero.mp4" data-da="0" data-a="9.25" data-n="1" data-t="Ascolta"><img src="filmati-anteprime/01.jpg" alt="" loading="lazy"><b class="num">1</b><span class="tit">Ascolta</span><span class="sotto">In uso adesso quando sta ferma · 9 s</span></button><button type="button" class="carta uso" data-f="cons-riposo-intero.mp4" data-da="19.25" data-a="27.75" data-n="2" data-t="Aspetta"><img src="filmati-anteprime/02.jpg" alt="" loading="lazy"><b class="num">2</b><span class="tit">Aspetta</span><span class="sotto">In uso adesso quando sta ferma · 8 s</span></button><button type="button" class="carta" data-f="cons-riposo-intero.mp4" data-da="9.25" data-a="19.25" data-n="3" data-t="Posa"><img src="filmati-anteprime/03.jpg" alt="" loading="lazy"><b class="num">3</b><span class="tit">Posa</span><span class="sotto">Tolta il 10/11: muove le mani · 10 s</span></button><button type="button" class="carta" data-f="cons-riposo-intero.mp4" data-da="27.75" data-a="37.75" data-n="4" data-t="Posa 2"><img src="filmati-anteprime/04.jpg" alt="" loading="lazy"><b class="num">4</b><span class="tit">Posa 2</span><span class="sotto">Tolta il 10/11: muove le mani · 10 s</span></button><button type="button" class="carta" data-f="cons-pensa.mp4" data-da="0" data-a="2.75" data-n="5" data-t="Pensa"><img src="filmati-anteprime/05.jpg" alt="" loading="lazy"><b class="num">5</b><span class="tit">Pensa</span><span class="sotto">Corto: guarda in basso · 3 s</span></button><button type="button" class="carta" data-f="cons-ascolta.mp4" data-da="0" data-a="2.583" data-n="6" data-t="Ascolta (corto)"><img src="filmati-anteprime/06.jpg" alt="" loading="lazy"><b class="num">6</b><span class="tit">Ascolta (corto)</span><span class="sotto">Corto · 3 s</span></button><button type="button" class="carta" data-f="cons-attesa.mp4" data-da="0" data-a="6.25" data-n="7" data-t="Attesa"><img src="filmati-anteprime/07.jpg" alt="" loading="lazy"><b class="num">7</b><span class="tit">Attesa</span><span class="sotto">Si tocca la giacca · 6 s</span></button><button type="button" class="carta" data-f="cons-attesa2.mp4" data-da="0" data-a="4.25" data-n="8" data-t="Attesa 2"><img src="filmati-anteprime/08.jpg" alt="" loading="lazy"><b class="num">8</b><span class="tit">Attesa 2</span><span class="sotto">Mano sul petto · 4 s</span></button><button type="button" class="carta" data-f="cons-indica.mp4" data-da="0" data-a="12.25" data-n="9" data-t="Indica"><img src="filmati-anteprime/09.jpg" alt="" loading="lazy"><b class="num">9</b><span class="tit">Indica</span><span class="sotto">Indica con la mano · 12 s</span></button></div><h2>Quando risponde</h2><p class="nota">Dimmi quale ti piace di più: posso tenere solo quelli.</p><div class="griglia"><button type="button" class="carta uso" data-f="cons-parla-intero.mp4" data-da="0" data-a="10" data-n="10" data-t="Risponde 1"><img src="filmati-anteprime/10.jpg" alt="" loading="lazy"><b class="num">10</b><span class="tit">Risponde 1</span><span class="sotto">In uso adesso quando risponde · 10 s</span></button><button type="button" class="carta uso" data-f="cons-parla-intero.mp4" data-da="10" data-a="18.458" data-n="11" data-t="Risponde 2"><img src="filmati-anteprime/11.jpg" alt="" loading="lazy"><b class="num">11</b><span class="tit">Risponde 2</span><span class="sotto">In uso adesso quando risponde · 8 s</span></button><button type="button" class="carta uso" data-f="cons-parla-intero.mp4" data-da="18.458" data-a="28.458" data-n="12" data-t="Risponde 3"><img src="filmati-anteprime/12.jpg" alt="" loading="lazy"><b class="num">12</b><span class="tit">Risponde 3</span><span class="sotto">In uso adesso quando risponde · 10 s</span></button><button type="button" class="carta uso" data-f="cons-parla-intero.mp4" data-da="28.458" data-a="37" data-n="13" data-t="Risponde 4"><img src="filmati-anteprime/13.jpg" alt="" loading="lazy"><b class="num">13</b><span class="tit">Risponde 4</span><span class="sotto">In uso adesso quando risponde · 9 s</span></button><button type="button" class="carta uso" data-f="cons-parla-intero.mp4" data-da="37" data-a="46.25" data-n="14" data-t="Risponde 5"><img src="filmati-anteprime/14.jpg" alt="" loading="lazy"><b class="num">14</b><span class="tit">Risponde 5</span><span class="sotto">In uso adesso quando risponde · 9 s</span></button><button type="button" class="carta" data-f="cons-parla2.mp4" data-da="0" data-a="10.0" data-n="15" data-t="Risponde 6"><img src="filmati-anteprime/15.jpg" alt="" loading="lazy"><b class="num">15</b><span class="tit">Risponde 6</span><span class="sotto">Non in uso · 10 s</span></button></div><h2>Con la spilla nuova (il simbolo delle Stanze di Ricci)</h2><p class="nota">Sono gli stessi filmati di adesso, cambia solo la spilla. Nell&#x27;app, in Altro, c&#x27;è la scelta «Com&#x27;era / Nuova».</p><div class="griglia"><button type="button" class="carta" data-f="cons-riposo-spilla.mp4" data-da="0" data-a="17.75" data-n="16" data-t="Ferma, con la spilla nuova"><img src="filmati-anteprime/16.jpg" alt="" loading="lazy"><b class="num">16</b><span class="tit">Ferma, con la spilla nuova</span><span class="sotto">Dalla versione 1.74.2 · 18 s</span></button><button type="button" class="carta" data-f="cons-parla-spilla.mp4" data-da="0" data-a="46.25" data-n="17" data-t="Risponde, con la spilla nuova"><img src="filmati-anteprime/17.jpg" alt="" loading="lazy"><b class="num">17</b><span class="tit">Risponde, con la spilla nuova</span><span class="sotto">Dalla versione 1.74.2 · 46 s</span></button></div><h2>Gli altri personaggi</h2><div class="griglia"><button type="button" class="carta" data-f="segr4-riposo-3d.webm" data-da="0" data-a="9.125" data-n="18" data-t="Segretaria ferma"><img src="filmati-anteprime/18.jpg" alt="" loading="lazy"><b class="num">18</b><span class="tit">Segretaria ferma</span><span class="sotto">Nella Segreteria · 9 s</span></button><button type="button" class="carta" data-f="segr4-ascolta-3d.webm" data-da="0" data-a="9.209" data-n="19" data-t="Segretaria ascolta"><img src="filmati-anteprime/19.jpg" alt="" loading="lazy"><b class="num">19</b><span class="tit">Segretaria ascolta</span><span class="sotto">Nella Segreteria · 9 s</span></button><button type="button" class="carta" data-f="segr4-parla-3d.webm" data-da="0" data-a="5.0" data-n="20" data-t="Segretaria parla"><img src="filmati-anteprime/20.jpg" alt="" loading="lazy"><b class="num">20</b><span class="tit">Segretaria parla</span><span class="sotto">Nella Segreteria · 5 s</span></button><button type="button" class="carta" data-f="capo-riposo.mp4" data-da="0" data-a="6.333" data-n="21" data-t="Sofia delle signore, ferma"><img src="filmati-anteprime/21.jpg" alt="" loading="lazy"><b class="num">21</b><span class="tit">Sofia delle signore, ferma</span><span class="sotto">La vedono le signore · 6 s</span></button><button type="button" class="carta" data-f="capo-parla.mp4" data-da="0" data-a="14.583" data-n="22" data-t="Sofia delle signore, parla"><img src="filmati-anteprime/22.jpg" alt="" loading="lazy"><b class="num">22</b><span class="tit">Sofia delle signore, parla</span><span class="sotto">La vedono le signore · 15 s</span></button><button type="button" class="carta" data-f="sofia-influencer.mp4" data-da="0" data-a="10.0" data-n="23" data-t="Sofia influencer"><img src="filmati-anteprime/23.jpg" alt="" loading="lazy"><b class="num">23</b><span class="tit">Sofia influencer</span><span class="sotto">Per i social · 10 s</span></button><button type="button" class="carta" data-f="sofia-influencer-ferma.mp4" data-da="0" data-a="9.0" data-n="24" data-t="Sofia influencer, ferma"><img src="filmati-anteprime/24.jpg" alt="" loading="lazy"><b class="num">24</b><span class="tit">Sofia influencer, ferma</span><span class="sotto">Per i social · 9 s</span></button></div><h2>Montaggi vecchi</h2><p class="nota">Erano in uso prima del 9 novembre.</p><div class="griglia"><button type="button" class="carta" data-f="cons-riposo.mp4" data-da="0" data-a="28.542" data-n="25" data-t="Montaggio vecchio, ferma"><img src="filmati-anteprime/25.jpg" alt="" loading="lazy"><b class="num">25</b><span class="tit">Montaggio vecchio, ferma</span><span class="sotto">Con le dissolvenze (prima della 1.73) · 29 s</span></button><button type="button" class="carta" data-f="cons-parla.mp4" data-da="0" data-a="33.458" data-n="26" data-t="Montaggio vecchio, risponde"><img src="filmati-anteprime/26.jpg" alt="" loading="lazy"><b class="num">26</b><span class="tit">Montaggio vecchio, risponde</span><span class="sotto">Con le dissolvenze (prima della 1.73) · 33 s</span></button></div>
+<div id="lettore" role="dialog" aria-modal="true" aria-label="Filmato di Sofia">
+<video id="video" playsinline muted preload="auto"></video>
+<div class="barra"><b id="lt-n"></b><span id="lt-t"></span><button type="button" class="sec" id="prima">‹ Prima</button><button type="button" class="sec" id="dopo">Dopo ›</button><button type="button" id="chiudi">Chiudi</button></div>
+</div>
+<script>
+const v = document.getElementById("video"), L = document.getElementById("lettore");
+const carte = [...document.querySelectorAll(".carta")];
+let i = -1, da = 0, a = 0;
+function apri(k) {
+  i = (k + carte.length) % carte.length; const c = carte[i];
+  da = Number(c.dataset.da) || 0; a = Number(c.dataset.a) || 0;
+  document.getElementById("lt-n").textContent = c.dataset.n;
+  document.getElementById("lt-t").textContent = c.dataset.t;
+  L.classList.add("aperto");
+  const src = c.dataset.f;
+  const parti = () => { try { v.currentTime = da; } catch (e) {} v.play().catch(() => {}); };
+  if (v.getAttribute("src") !== src) { v.setAttribute("src", src); v.load(); v.addEventListener("loadedmetadata", parti, { once: true }); } else parti();
+}
+v.addEventListener("timeupdate", () => { if (a && v.currentTime >= a - 0.06) v.currentTime = da; });
+v.addEventListener("ended", () => { v.currentTime = da; v.play().catch(() => {}); });
+carte.forEach((c, k) => c.addEventListener("click", () => apri(k)));
+document.getElementById("chiudi").onclick = () => { v.pause(); L.classList.remove("aperto"); };
+document.getElementById("prima").onclick = () => apri(i - 1);
+document.getElementById("dopo").onclick = () => apri(i + 1);
+document.addEventListener("keydown", (e) => { if (!L.classList.contains("aperto")) return; if (e.key === "Escape") document.getElementById("chiudi").click(); if (e.key === "ArrowRight") apri(i + 1); if (e.key === "ArrowLeft") apri(i - 1); });
+v.addEventListener("click", () => v.paused ? v.play() : v.pause());
+</script>
+</body>
+</html>
