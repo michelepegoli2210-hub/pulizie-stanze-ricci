@@ -3,13 +3,13 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.73.0";
+const VERSIONE = "1.74.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
 // e restano; quando un filmato cambia gli si cambia nome. FILMATI = quelli che l'app usa: gli altri si tolgono.
 const CACHE_FILM = "ricci-filmati-1";
-const FILMATI = ["./cons-parla-intero.mp4", "./cons-riposo-intero.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr4-riposo-3d.webm", "./segr4-ascolta-3d.webm", "./segr4-parla-3d.webm", "./sofia-influencer.mp4", "./sofia-influencer-ferma.mp4", "./cons-parla-intero-3d.webm", "./cons-riposo-intero-3d.webm"];
+const FILMATI = ["./cons-parla-intero.mp4", "./cons-riposo-calmo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr4-riposo-3d.webm", "./segr4-ascolta-3d.webm", "./segr4-parla-3d.webm", "./sofia-influencer.mp4", "./sofia-influencer-ferma.mp4", "./cons-parla-intero-3d.webm", "./cons-riposo-calmo-3d.webm"];
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./lettura.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",

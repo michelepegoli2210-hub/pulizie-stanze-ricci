@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.73.0";
+export const VERSIONE = "1.74.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -83,7 +83,7 @@ const CHIAVE_FACCE = "ricci_gov_facce";
 // 1.70.0 (Michele, 8/11: «l'altra Sofia… non la voglio vedere più da nessuna parte»): la faccia piccola è la testa della Sofia
 // di casa (sofia-viso.webp, ritagliata dal poster di casa). Via la Consuela a pose e i disegni.
 const FACCE_PRONTE = { base: "sofia-viso.webp" };
-const FILM_PRONTO = { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-intero.mp4", poster: "cons-poster-intero.webp" };   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+const FILM_PRONTO = { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" };   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // 0.80: SOLO FILMATI (decisione di Michele del 21 ottobre: "lascia stare la sincronia della bocca,
 // metti soltanto i filmati"). Quando parla si vede un video in cui lei parla davvero, quando ascolta o
 // non fa niente uno in cui sta li' (ascolta, annuisce, pose). 0.81: due filmati lunghi soltanto.
@@ -104,7 +104,10 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 // cui parla) sono gli spezzoni di Gemini INTERI, uno dopo l'altro a taglio netto (il filmato li fa vedere in fila e poi
 // ricomincia). Quando lei comincia o smette di parlare si cambia DI COLPO (niente dissolvenza) e si parte dall'INIZIO dello
 // spezzone che viene dopo quello visto l'ultima volta. Qui i fotogrammi (24 al secondo) dove comincia ogni spezzone.
-const FILM_SPEZZONI = {"riposo": [0, 222, 462, 666], "parla": [0, 240, 443, 683, 888]};
+// 1.74.0 (Michele: «quando non deve né rispondere né ascoltare Sofia si muove troppo, fa troppi gesti… meno gesti, ma non
+// cambiare assolutamente il soggetto»): ferma restano i due spezzoni calmi (ascolta 9,25 s e aspetta 8,5 s: misurati, le mani
+// non si muovono); posa e posa 2, quelli coi gesti, sono tolti (cons-riposo-calmo, 17,75 s)
+const FILM_SPEZZONI = {"riposo": [0, 222], "parla": [0, 240, 443, 683, 888]};
 function filmSpezzoneDi(quale, t) { const l = FILM_SPEZZONI[quale] || [0]; let i = 0; for (let k = 0; k < l.length; k++) if ((Number(t) || 0) * 24 >= l[k] - 0.5) i = k; return i; }
 function filmInizioSpezzone(box, da, quale, t) {
   const l = FILM_SPEZZONI[quale]; if (!l || !l.length) return 0;
@@ -125,7 +128,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-intero-3d.webm", poster: "cons-poster-intero-3d.webp" };   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" };   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
@@ -333,6 +336,27 @@ function NAV_HTML(v, inCasa) {
 // 0.97 - PREMIUM: i tasti delle sezioni in una barra fissa IN BASSO, sotto il pollice (come le app di lusso), con
 // Sofia al centro (la sua faccia). Negli altri stili restano i tasti tondi vicino a Sofia (0.96).
 const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], ["sofia", "", ""], ["piantine", "Piantine", "mappa"], ["paghe", "Paghe", "euro"]];
+// 1.74.0 (Michele, 10/11: «i tasti sotto li devi togliere completamente… delle icone come quelle di sopra, pulizie oggi, da
+// aggiustare, arrivi domani, camere piene… cerca di farle magnificamente bene»): le icone della barra, disegni nostri nello
+// stesso stile delle figurine (64x40, colori pieni, bordo scuro). Oggi: il calendario col giorno e il sole; Prospetto: il
+// tabellone coi soggiorni e la lunetta; Segreteria: l'agenda d'oro con la penna; Piantine: la pianta della casa con le stanze;
+// Paghe: la banconota e le monete.
+function icoNavOggi(g) {
+  return `<svg viewBox="0 0 64 40" aria-hidden="true"><g stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round"><path d="M12.5 3.2V5.6M12.5 19.4V21.8M3.2 12.5H5.6M19.4 12.5H21.8M5.9 5.9L7.6 7.6M17.4 17.4L19.1 19.1M5.9 19.1L7.6 17.4M17.4 7.6L19.1 5.9"/></g><circle cx="12.5" cy="12.5" r="5.2" fill="#FACC15" stroke="#CA8A04" stroke-width="1.3"/><rect x="21.5" y="7.5" width="27" height="30" rx="4.2" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/><path d="M21.5 16V11.7Q21.5 7.5 25.7 7.5H44.3Q48.5 7.5 48.5 11.7V16Z" fill="#EF4444" stroke="#B91C1C" stroke-width="1.1"/><rect x="27.2" y="4" width="2.8" height="6.8" rx="1.4" fill="#475569"/><rect x="40" y="4" width="2.8" height="6.8" rx="1.4" fill="#475569"/><text x="35" y="33.2" text-anchor="middle" font-size="15" font-weight="800" fill="#1E293B" font-family="Plus Jakarta Sans,Arial,sans-serif">${Number(g) || ""}</text></svg>`;
+}
+function icoNavProspetto() {
+  return `<svg viewBox="0 0 64 40" aria-hidden="true"><rect x="7.5" y="4.5" width="45" height="32" rx="4.2" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/><path d="M7.5 12.5V8.7Q7.5 4.5 11.7 4.5H48.3Q52.5 4.5 52.5 8.7V12.5Z" fill="#1E3A5F"/><path d="M19 12.5V36.5M30 12.5V36.5M41 12.5V36.5" stroke="#E2E8F0" stroke-width="1.1"/><rect x="11" y="15.5" width="26" height="5.4" rx="2.7" fill="#3B82F6" stroke="#1D4ED8" stroke-width=".9"/><rect x="22" y="23.4" width="27" height="5.4" rx="2.7" fill="#22C55E" stroke="#15803D" stroke-width=".9"/><rect x="11" y="31" width="17" height="3.4" rx="1.7" fill="#F59E0B"/><circle cx="12.5" cy="8.5" r="1.3" fill="#93C5FD"/><circle cx="16.5" cy="8.5" r="1.3" fill="#93C5FD"/><path transform="translate(48 23) scale(.95)" d="M7.09 1.82A6.6 6.6 0 1 0 13.88 10.42A5.6 5.6 0 0 1 7.09 1.82z" fill="#F7C948" stroke="#CA8A04" stroke-width="1.1"/></svg>`;
+}
+function icoNavSegreteria() {
+  return `<svg viewBox="0 0 64 40" aria-hidden="true"><rect x="15" y="3.5" width="30" height="34" rx="4.4" fill="#D4AF6A" stroke="#8C621E" stroke-width="1.5"/><rect x="20.5" y="5.5" width="22.5" height="30" rx="2.6" fill="#FFFDF7" stroke="#B88A3A" stroke-width="1.1"/><path d="M24.5 12.5H39M24.5 18H39M24.5 23.5H34.5" stroke="#94A3B8" stroke-width="1.7" stroke-linecap="round"/><g fill="#FFFDF7" stroke="#8C621E" stroke-width="1"><circle cx="18" cy="11" r="1.7"/><circle cx="18" cy="20.5" r="1.7"/><circle cx="18" cy="30" r="1.7"/></g><g transform="rotate(38 47 21)"><rect x="44.3" y="6" width="5.4" height="22" rx="2.2" fill="#2563EB" stroke="#1D4ED8" stroke-width="1"/><rect x="44.3" y="9.5" width="5.4" height="2.2" fill="#93C5FD"/><path d="M44.3 28L47 34.4L49.7 28Z" fill="#F2C9A5" stroke="#8A5A3C" stroke-width=".9" stroke-linejoin="round"/><path d="M46.3 32.2L47 34.4L47.7 32.2Z" fill="#334155"/></g><path d="M8 7.5L9.2 11.3L13 12.5L9.2 13.7L8 17.5L6.8 13.7L3 12.5L6.8 11.3Z" fill="#FACC15"/></svg>`;
+}
+function icoNavPiantine() {
+  return `<svg viewBox="0 0 64 40" aria-hidden="true"><rect x="8" y="4.5" width="48" height="32" rx="3.4" fill="#F8FAFC"/><rect x="9" y="5.5" width="22" height="15" fill="#DBEAFE"/><rect x="34" y="23" width="21" height="12.5" fill="#FEF3C7"/><rect x="8" y="4.5" width="48" height="32" rx="3.4" fill="none" stroke="#334155" stroke-width="2.2"/><path d="M32.5 4.5V15M32.5 21V36.5M8 21.5H22.5M29 21.5H56" stroke="#334155" stroke-width="2.2"/><path d="M22.5 21.5A6.5 6.5 0 0 1 29 15" fill="none" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="2 1.6"/><rect x="12.5" y="8.5" width="11" height="9.2" rx="1.6" fill="#FFFFFF" stroke="#3B82F6" stroke-width="1.3"/><rect x="14" y="9.8" width="8" height="2.8" rx="1.2" fill="#93C5FD"/><circle cx="44" cy="12.5" r="4.4" fill="#FFFFFF" stroke="#A16207" stroke-width="1.3"/><circle cx="44" cy="12.5" r="1.4" fill="#FACC15"/><rect x="38" y="27" width="13" height="5" rx="1.6" fill="#FFFFFF" stroke="#A16207" stroke-width="1.1"/><circle cx="16" cy="29" r="3.2" fill="#22C55E" stroke="#15803D" stroke-width="1"/><path d="M16 32.2V34" stroke="#A16207" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+}
+function icoNavPaghe() {
+  const moneta = (y, chiara) => `<ellipse cx="45" cy="${y + 4.4}" rx="10" ry="3.4" fill="#B45309"/><rect x="35" y="${y}" width="20" height="4.4" fill="#D97706"/><ellipse cx="45" cy="${y}" rx="10" ry="3.4" fill="${chiara ? "#FDE047" : "#FACC15"}" stroke="#CA8A04" stroke-width="1.1"/>`;
+  return `<svg viewBox="0 0 64 40" aria-hidden="true"><g transform="rotate(-9 27 18)"><rect x="6" y="7" width="40" height="21" rx="3.2" fill="#86EFAC" stroke="#15803D" stroke-width="1.5"/><rect x="9.5" y="10.5" width="33" height="14" rx="2" fill="none" stroke="#22C55E" stroke-width="1"/><circle cx="26" cy="17.5" r="5.8" fill="#DCFCE7" stroke="#15803D" stroke-width="1.1"/><text x="26" y="21.2" text-anchor="middle" font-size="10" font-weight="800" fill="#15803D" font-family="Plus Jakarta Sans,Arial,sans-serif">€</text></g>${moneta(31.5, false)}${moneta(26.5, false)}${moneta(21.5, true)}<text x="45" y="24.6" text-anchor="middle" font-size="6.5" font-weight="800" fill="#A16207" font-family="Plus Jakarta Sans,Arial,sans-serif">€</text></svg>`;
+}
 // la stella d'oro zecchino a quattro punte (curva astroidale), sfaccettata, coi raggi piccoli in diagonale e cinque
 // granelli di polvere d'oro (fuori dal gruppo che gira). Disegno nostro.
 // 1.13.2: stella a quattro punte sfaccettata (metà chiara e metà scura per punta, luce da in alto a sinistra), d'oro sulla moneta blu notte
@@ -366,13 +390,16 @@ function barraSotto() {
     // ACCENDE (la luce che esce dal pozzo, come le lucine dei tasti delle sale giochi) quando la segretaria ha qualcosa per
     // lui: proposte o domande delle ultime letture; il numerino dice quante. «Parla con Sofia» resta nel «Parla» della
     // tendina e tra le stanze sotto Sofia.
-    if (k === "sofia") return `<button type="button" class="bs-t bs-sofia bs-arcade-t${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare)" : ""}"><span class="bs-arcade"><span class="ar-ombra"></span><span class="ar-glato"></span><span class="ar-gcima"></span><span class="ar-pozzo"></span><span class="ar-plato"></span><span class="ar-pcima"></span>${nSeg ? `<i class="nav-conta" aria-hidden="true">${nSeg > 99 ? "99+" : nSeg}</i>` : ""}</span><span class="bs-n">Segreteria</span></button>`;
+    // 1.74.0: niente più tasto da sala giochi: l'agenda d'oro, col numerino di quello che la segretaria ha per te
+    if (k === "sofia") return `<button type="button" class="bs-t bs-ico2 bs-seg${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare)" : ""}"><span class="bs-fig" aria-hidden="true">${icoNavSegreteria()}${nSeg ? `<i class="nav-conta">${nSeg > 99 ? "99+" : nSeg}</i>` : ""}</span><span class="bs-n">Segreteria</span></button>`;
     const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
     // 1.63.0 (Michele, 8/11: «gli altri, Prospetto, Piantine, Paghe e Oggi, devi far fare dei pulsanti molto simili a
     // questi ma di un blu bello mare scuro, ma di alluminio satinato»): anche loro sono tasti da sala giochi, un po' più
     // piccoli di quello d'oro, di alluminio satinato blu mare scuro, col disegno inciso sul pistone; quello della pagina
     // dove sei ha la luce accesa nel pozzo
-    return `<button type="button" class="bs-t bs-blu" data-bs="${k}" aria-pressed="${att}"><span class="bs-tasto" aria-hidden="true"><span class="tb-ombra"></span><span class="tb-glato"></span><span class="tb-gcima"></span><span class="tb-pozzo"></span><span class="tb-plato"></span><span class="tb-pcima"><span class="tb-ico">${ic2 ? ico2(ic2) : NAV_ICO[ic]}</span></span></span><span class="bs-n">${esc(n)}</span></button>`;
+    // 1.74.0: al posto dei tasti d'oro, le icone disegnate (la pagina dove sei ha lo sfondo color sabbia)
+    const fig = k === "oggi" ? icoNavOggi(L.giornoDelMese(L.oggiISO())) : k === "prospetto" ? icoNavProspetto() : k === "piantine" ? icoNavPiantine() : k === "paghe" ? icoNavPaghe() : (ic2 ? ico2(ic2) : NAV_ICO[ic]);
+    return `<button type="button" class="bs-t bs-ico2" data-bs="${k}" aria-pressed="${att}"><span class="bs-fig" aria-hidden="true">${fig}</span><span class="bs-n">${esc(n)}</span></button>`;
   }).join("");
   if (b.dataset.html !== html) {
     b.innerHTML = html; b.dataset.html = html;
@@ -386,7 +413,7 @@ function barraSotto() {
       };
       // 1.60.0: il tasto d'oro va giù (e vibra) e la segreteria si apre subito dopo: si sente che l'hai premuto
       // 1.63.0: così anche i tasti blu; e il tasto torna su anche se resti nella stessa pagina (prima restava giù)
-      const blu = t.classList.contains("bs-blu");
+      const blu = t.classList.contains("bs-blu") || t.classList.contains("bs-ico2");   // 1.74.0: anche le icone nuove vanno giù (e vibrano)
       if (blu || t.classList.contains("bs-arcade-t")) { t.classList.add("giu"); vibra(blu ? 12 : 18); setTimeout(vai, 170); setTimeout(() => t.classList.remove("giu"), 320); } else vai();
     });
   }
@@ -7377,6 +7404,7 @@ function casaOssatura(tre) {
     <div class="casa-nuvola" id="casaNuvola">
       <span class="casa-vene" aria-hidden="true"></span>
       <span class="casa-presa" aria-hidden="true"></span>
+      <button type="button" class="casa-nascondi" data-tenda-nascondi aria-expanded="true" aria-label="Nascondi il riquadro: si vede tutta ${esc(nomeGov())}"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="casa-schede" role="tablist" aria-label="Notizie o chat">
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="notizie" aria-selected="true">${ICO_LINEA.foglio}<span>Notizie di oggi</span></button>
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="chat" aria-selected="false">${ICO_LINEA.chat}<span>Chat</span><i class="cs-conta" hidden></i></button>
@@ -7506,9 +7534,30 @@ function tendaVuoleChiusa() {
   } catch (e) {}
   return true;
 }
+// 1.74.0 (Michele, 10/11: «tutta questa parte… io possa con un tasto, con un gesto, completamente toglierla e rimanga
+// sottilissima, e con un gesto ricacciarla, e con la freccetta aprirla completamente»): la terza posizione, NASCOSTA. Dalla
+// tendina chiusa: un tocco sulla linguetta in alto (la freccina in giù) o il dito che scende sulla linguetta. Resta una
+// striscia sottile con la freccina in su: un tocco o il dito che sale la rimette com'era. La scelta resta in memoria.
+const CHIAVE_NASCOSTA = "ricci_tenda_nascosta";
+function tendaNascostaMemoria() { try { return localStorage.getItem(CHIAVE_NASCOSTA) === "1"; } catch (e) { return false; } }
+function tendaNascondi(si, ricorda) {
+  const h = document.getElementById("sofiaHero"); if (!h) return;
+  si = !!si;
+  if (si && !h.classList.contains("tenda-chiusa")) tendaApri(false);
+  h.classList.toggle("tenda-nascosta", si);
+  const b = h.querySelector(".casa-nascondi"); if (b) { b.setAttribute("aria-expanded", si ? "false" : "true"); b.setAttribute("aria-label", si ? "Rimetti il riquadro delle notizie" : `Nascondi il riquadro: si vede tutta ${nomeGov()}`); }
+  if (ricorda !== false) { try { localStorage.setItem(CHIAVE_NASCOSTA, si ? "1" : "0"); } catch (e) {} }
+}
+document.addEventListener("click", (e) => {
+  const x = e.target; if (!x || !x.closest) return;
+  const h = document.getElementById("sofiaHero"); if (!h || !h.contains(x)) return;
+  const nasc = h.classList.contains("tenda-nascosta");
+  if (x.closest("[data-tenda-nascondi]") || (nasc && x.closest(".casa-nuvola"))) { e.preventDefault(); e.stopPropagation(); tendaNascondi(!nasc); }
+}, true);
 function tendaApri(si, ricorda) {
   const h = document.getElementById("sofiaHero"); if (!h) return;
   si = !!si;
+  if (si) h.classList.remove("tenda-nascosta");   // 1.74.0: aprendola tutta non è più nascosta
   h.classList.toggle("tenda-chiusa", !si);
   if (!si) messaggioApri(false);   // 1.6.5
   const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", si ? "true" : "false");
@@ -7592,16 +7641,18 @@ function tendaMisura(h, top) {
   h.style.setProperty("--tenda-top", `calc(var(--h-casa) * ${v.toFixed(4)})`);
 }
 document.addEventListener("touchstart", (e) => {
-  const x = e.target && e.target.closest && e.target.closest("#sofiaHero .casa-schede, #sofiaHero .casa-saluto, #sofiaHero .casa-presa");
   const h = document.getElementById("sofiaHero");
+  const x = e.target && e.target.closest && (e.target.closest("#sofiaHero .casa-schede, #sofiaHero .casa-saluto, #sofiaHero .casa-presa, #sofiaHero .casa-nascondi") || (h && h.classList.contains("tenda-nascosta") ? e.target.closest("#sofiaHero .casa-nuvola") : null));   // 1.74.0
   if (!x || !h || h.classList.contains("nuvola-aperta") || !e.touches || !e.touches[0]) { tendaDito = null; return; }
   const hr = h.getBoundingClientRect(), r = h.querySelector(".casa-nuvola").getBoundingClientRect();
-  tendaDito = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), top0: r.top - hr.top, chiusa: h.classList.contains("tenda-chiusa"), mosso: false };
+  tendaDito = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), top0: r.top - hr.top, chiusa: h.classList.contains("tenda-chiusa"), nascosta: h.classList.contains("tenda-nascosta"), mosso: false };
 }, { passive: true });
 document.addEventListener("touchmove", (e) => {
   if (!tendaDito || !e.touches || !e.touches[0]) return;
   const h = document.getElementById("sofiaHero"); if (!h) { tendaDito = null; return; }
   const dy = e.touches[0].clientY - tendaDito.y, dx = e.touches[0].clientX - tendaDito.x;
+  // 1.74.0: nascosta, o chiusa col dito che scende: niente trascinamento, si decide quando il dito si alza
+  if (tendaDito.nascosta || (tendaDito.chiusa && !tendaDito.mosso && dy > 0)) { if (Math.abs(dy) >= 8 && Math.abs(dy) > Math.abs(dx)) tendaDito.gesto = true; return; }
   if (!tendaDito.mosso) {
     if (Math.abs(dy) < 8 || Math.abs(dy) < Math.abs(dx)) return;
     tendaDito.mosso = true; h.classList.add("tenda-trascina");
@@ -7616,6 +7667,11 @@ document.addEventListener("touchend", (e) => {
   const h = document.getElementById("sofiaHero"); if (!h) return;
   const tt = e.changedTouches && e.changedTouches[0]; const dy = tt ? tt.clientY - d.y : 0, dx = tt ? tt.clientX - d.x : 0, dt = Date.now() - d.t;
   const colpo = dt < 320 && Math.abs(dy) >= 35 && Math.abs(dy) > Math.abs(dx);
+  if (d.nascosta || (d.chiusa && !d.mosso && d.gesto)) {   // 1.74.0
+    if (d.nascosta && dy <= -25 && Math.abs(dy) > Math.abs(dx)) tendaNascondi(false);
+    else if (!d.nascosta && dy >= 25 && Math.abs(dy) > Math.abs(dx)) tendaNascondi(true);
+    return;
+  }
   if (!d.mosso) { if (colpo && !h.classList.contains("nuvola-aperta")) tendaApri(dy < 0); return; }   // un tocco: lo fa il click; un colpo secco: apre/chiude
   h.classList.remove("tenda-trascina");
   const L = d.lim || tendaLimiti(h), top = d.top0 + dy;
@@ -8199,7 +8255,7 @@ function disegnaCasa() {
     h.dataset.tre = tre;
     h.innerHTML = casaOssatura(!!tre);
     tendaMisuraApplica(h);   // 1.7.0: la misura scelta col dito
-    if (tendaVuoleChiusa()) { h.classList.add("tenda-chiusa"); const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", "false"); }
+    if (tendaVuoleChiusa()) { h.classList.add("tenda-chiusa"); const b = h.querySelector(".casa-saluto"); if (b) b.setAttribute("aria-expanded", "false"); if (tendaNascostaMemoria()) { h.classList.add("tenda-nascosta"); const n = h.querySelector(".casa-nascondi"); if (n) { n.setAttribute("aria-expanded", "false"); n.setAttribute("aria-label", "Rimetti il riquadro delle notizie"); } } }   // 1.74.0: anche nascosta
     const t = document.querySelector("header");
     document.body.insertBefore(h, t || document.body.firstChild);
     window.scrollTo(0, 0);
