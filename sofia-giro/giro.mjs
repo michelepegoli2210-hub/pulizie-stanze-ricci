@@ -63,6 +63,11 @@
 //  subito e poi ogni ora finché non le segna fatte (avvisi.giroFareTu = false le spegne).
 //  1.28.1: per il vaglio è urgente anche una cosa che chiedono a Michele di fare lui (le chiavi, chiamare, andare in albergo):
 //  così la lettura (e l'allarme) arriva subito e non al turno di lettura dopo.
+//  1.34.0 (app 1.76.0): A MICHELE NON SI RIPETE QUELLO CHE HA SCRITTO LUI (Michele, 10/11 sera: «non devo rileggere gli stessi
+//  messaggi che ho costruito io… trova un escamotage, qualcosa che abbia utilità, questo ponte»). Dai suoi messaggi la lettura
+//  delle chat tiene solo le azioni nell'app (lettura.js senzaEco); se a una richiesta di un altro lui ha già scritto in quella
+//  chat, l'allarme «Da fare tu» non suona più; i promemoria li chiede lui («Sofia ricordamelo»): una scheda loro, che suona
+//  all'ora detta (perte-giro.mjs, lettura-giro.mjs).
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -76,7 +81,7 @@ import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./so
 import { portaPostaAlbergo } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.33.0";
+export const VERSIONE_GIRO = "1.34.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {

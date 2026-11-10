@@ -63,6 +63,7 @@ export function istruzioniVaglio(base) {
     "Ti mando SOLO i messaggi WhatsApp appena arrivati. Non devi rispondere e non devi fare niente: devi solo dire se c'è qualcosa di URGENTE.",
     'Rispondi SOLO con un JSON così: {"tipo":"urgente","perche":"poche parole"}; al posto di "urgente" puoi mettere "normale" o "niente".',
     "- urgente: un guasto o un danno (perde acqua, si è rotto, non funziona, non c'è acqua calda, manca la luce, la porta o la serratura non va, si è allagato, un pericolo); oppure una cosa da fare OGGI o SUBITO (una camera da preparare per chi arriva oggi, un cambio per oggi, «subito», «urgente», «adesso», «entro le…»); oppure una cosa che chiedono a MICHELE di fare lui in persona (le chiavi da mettere o da portare, chiamare qualcuno, andare in albergo, portare o comprare una cosa); oppure una persona o un ospite che sta male o ha un problema adesso.",
+    "- I messaggi di «Michele (il titolare)» li ha scritti lui: non sono mai una richiesta fatta a lui, e non sono urgenti perché li ha detti lui (un guasto che segnala lui, sì). Se a una richiesta Michele ha già risposto dopo, nella stessa chat, l'ha già vista: per quella non serve più «urgente».",   // 1.34.0
     "- niente: solo saluti, «ok», «va bene», «grazie», emoji, auguri, cose che non riguardano l'albergo.",
     "- normale: tutto il resto (cose per i prossimi giorni, informazioni, domande che possono aspettare qualche ora).",
     "Se hai un dubbio tra urgente e normale, scegli urgente. Se anche una sola cosa è urgente, la risposta è urgente.",
@@ -70,7 +71,7 @@ export function istruzioniVaglio(base) {
 }
 // ritorna { tipo: urgente | normale | niente, perche, modello }; una risposta che non si capisce vale «urgente» (si legge subito)
 export async function vaglia(gemini, msgs, immagini, base) {
-  const righe = msgs.map(m => `${m.ora ? m.ora + " " : ""}${m.chi || "?"}${m.chat ? ` (${m.chat})` : ""}: ${String(m.testo || "").slice(0, 600)}`);
+  const righe = msgs.map(m => `${m.ora ? m.ora + " " : ""}${m.mio ? "Michele (il titolare)" : (m.chi || "?")}${m.chat ? ` (${m.chat})` : ""}: ${String(m.testo || "").slice(0, 600)}`);   // 1.34.0: i suoi messaggi si riconoscono
   const foto = immagini && immagini.length ? immagini : null;
   const { r } = await chiediGemini(gemini, { sistema: istruzioniVaglio(base), storia: [], testo: `I messaggi appena arrivati${foto ? ` (ti mando anche ${foto.length === 1 ? "una foto" : foto.length + " foto"}: guardale)` : ""}:\n${righe.join("\n").slice(-8000)}`, immagine: foto, secondi: 45, maxToken: 400 }, ORDINE_ECONOMICO);
   const j = LET.jsonDaRisposta(r.grezzo) || {};
@@ -172,7 +173,7 @@ export function messaggiDa(lista, oggi) {
   const chats = new Map();
   for (const p of lista) { const nome = p.chat || "Albergo"; if (!chats.has(nome)) chats.set(nome, p.gruppo !== false); }
   const piu = chats.size > 1;
-  const msgs = lista.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "", chatNome: chats.get(nome) ? nome : "chat con " + nome, mio: !!p.mio }; })
+  const msgs = lista.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "", chatNome: chats.get(nome) ? nome : "chat con " + nome, mio: !!p.mio, ts: Number(p.ts) || 0 }; })
     .sort((x, y) => ((x.data || "") + (x.ora || "")).localeCompare((y.data || "") + (y.ora || "")));
   return { msgs, chats };
 }
@@ -295,6 +296,7 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
       const giorni = [0, 1, 2].map(n => L.aggiungiGiorni(oggi, n));
       try { ctx.giro = Object.values((await db.pulizieDi(giorni)) || {}).filter(p => p && !p.nonServe && p.stato !== "non_fatta" && p.tipo !== "stelle").map(p => ({ data: p.data, zona: p.zona, camera: p.camera || "", tipo: p.tipo, titolo: p.titolo || "", insieme: p.insieme || "", stato: p.stato || "" })); ctx.giroGiorni = giorni; } catch (e) { console.warn("giro delle signore:", e && e.message); }
       if (minuti !== undefined && minuti !== null) ctx.ora = `${String(Math.floor(minuti / 60)).padStart(2, "0")}:${String(minuti % 60).padStart(2, "0")}`;
+      ctx.numeri = true;   // 1.34.0: ogni messaggio col suo numero (Sofia lo riscrive in "n": da dove viene una cosa)
     }
     ctx.persone = [...new Set(scelti.flatMap(m => [m.chi, m.chat && String(m.chat).replace(/^chat con /, "")]).filter(Boolean))];
     const codici = LET.creaCodici(ctx);
@@ -302,8 +304,28 @@ export async function leggiChat({ db, gemini, adesso = new Date(), a = {}, lettu
     const { r, ripiego } = await chiediGemini(gemini, { sistema: LET.istruzioniLettura(ctx, codici), storia: [], testo: `${immagini.length ? `Ti mando anche ${immagini.length === 1 ? "una foto" : immagini.length + " foto"} della chat (numerate nell'ordine, nei messaggi trovi "foto n. 1"...): se sono il prospetto scritto a mano o stampato, leggile come il resto.\n` : ""}ECCO I MESSAGGI (${scelti.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}`, immagine: immagini.length ? immagini : null, secondi: 150, maxToken: 16000 });
     const j0 = LET.rimettiTelefoni(LET.jsonDaRisposta(r.grezzo), telefoni);
     if (!j0 || typeof j0 !== "object") throw new Error("Gemini ha risposto in un modo che non capisco");
-    const j = ctx.prospettoChat === false ? { ...codici.daCodiciProfondo(j0), soggiorni: [], togli: [] } : codici.daCodiciProfondo(j0);   // 1.22.0: dalle chat niente prospetto (arriva dal foglio Excel)
     const chat = ctx.prospettoChat === false;   // 1.22.0: il modo nuovo: la lettura la mette a posto l'app (da_applicare)
+    let j = chat ? { ...codici.daCodiciProfondo(j0), soggiorni: [], togli: [] } : codici.daCodiciProfondo(j0);   // 1.22.0: dalle chat niente prospetto (arriva dal foglio Excel)
+    // 1.34.0 (app 1.76.0): A MICHELE NON SI RIPETE QUELLO CHE HA SCRITTO LUI: via i «Da fare tu», le note e le righe che vengono dai
+    // suoi messaggi (restano le azioni); i promemoria che chiede lui («Sofia ricordamelo») hanno una scheda loro, una volta sola
+    // (la scheda si chiama come il messaggio: rileggendo non si rifà e «Fatto» resta)
+    if (chat) {
+      j = LET.senzaEco(j, scelti, { nomeGov: ctx.nomeGov, nomeMio: ctx.nomeMio });
+      const chiesti = (Array.isArray(j.perTe) ? j.perTe : []).filter(x => x && x.richiesto === true);
+      if (chiesti.length) {
+        j = { ...j, perTe: j.perTe.filter(x => !(x && x.richiesto === true)) };
+        for (const [i, x] of chiesti.entries()) {
+          try {
+            const mid = String(x.mid || "").replace(/[^A-Za-z0-9]/g, "").slice(-40);
+            const s = LET.schedaRicordo({ testo: x.cosa, entro: LET.entroDa(x.entro, oggi), da: "chat", adesso, msg: x.messaggio, chat: x.chat, codice: String(i) });
+            if (!s) continue;
+            const lid = mid ? "tu_c" + mid : s.lid;
+            if (mid && await db.doc("importazioni", "segreteria_" + lid)) continue;
+            await db.salva("importazioni", "segreteria_" + lid, { ...s.doc, lid });
+          } catch (e) { console.warn("promemoria:", e && e.message); }
+        }
+      }
+    }
     const riassunto = riassuntoGiro(j, ctx), ha = chat ? !!(riassunto.perTe || riassunto.azioni || riassunto.proposte || riassunto.dubbi || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni) : !!(riassunto.cambi || riassunto.indicazioni || riassunto.assenze || riassunto.guasti || riassunto.spesa || riassunto.note || riassunto.ore || riassunto.telefoni);
     const statoNuovo = ha ? (chat ? "da_applicare" : "da_controllare") : "vuota";
     // 1.39.0: la Segreteria: i messaggi (coi vocali trascritti) e quello che Sofia ha capito restano da parte, per «Giusto / Correggi»
