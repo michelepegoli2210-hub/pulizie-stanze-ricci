@@ -17,6 +17,8 @@
 //   - I PROMEMORIA CHIESTI DA LUI (richiesto: true; «Sofia ricordamelo» in un messaggio, o detto a Sofia nell'app): suonano
 //     all'ora detta (da 10 minuti prima), se c'è solo il giorno dalle 8 di quel giorno, senza ora un'ora dopo; poi ogni ora
 //     finché non tocca «Fatto», come le altre.
+//  1.34.1: le cose già viste si segnano a ogni giro (anche fuori dagli orari degli allarmi: suona = false); se il messaggio
+//  della richiesta non si trova, vale la chat privata con chi l'ha chiesta e l'ora della lettura.
 // ============================================================================
 import * as L from "../logica.js";
 import * as LET from "../lettura.js";
@@ -76,11 +78,15 @@ export function testoAllarme(p, x, t, n) {
 export function fontePerTe(p, x) {
   if (p.chat && (Number(p.mts) || p.mdata)) return { chat: String(p.chat), ts: Number(p.mts) || 0, quando: `${p.mdata || ""} ${p.mora || ""}` };
   const msgs = Array.isArray(x && x.messaggi) ? x.messaggi : [];
-  if (!msgs.length || !p.msg) return null;
-  const f = LET.fonteDi({ messaggio: p.msg, chi: p.chi }, msgs);
-  if (f.i < 0 || f.come !== "testo") return null;
-  const m = msgs[f.i];
-  return { chat: String(m.chat || ""), ts: 0, quando: `${m.data || ""} ${m.ora || ""}`, mio: !!m.mio };
+  if (msgs.length && p.msg) {
+    const f = LET.fonteDi({ messaggio: p.msg, chi: p.chi }, msgs);
+    if (f.i >= 0 && f.come === "testo") { const m = msgs[f.i]; return { chat: String(m.chat || ""), ts: 0, quando: `${m.data || ""} ${m.ora || ""}`, mio: !!m.mio }; }
+  }
+  // 1.34.1: il messaggio non si trova (Sofia l'ha riassunto con parole sue). Se la cosa l'ha chiesta una persona, vale la chat
+  // privata con lei e l'ora della LETTURA (la richiesta è di prima): se dopo Michele le ha scritto lì, l'ha vista
+  const chi = String(p.chi || "").trim(), letta = Date.parse((x && x.quando) || "") || 0;
+  if (chi && letta && !LET.eMichele(chi)) return { chat: "chat con " + chi, ts: letta, quando: "", perNome: true };
+  return null;
 }
 const nomeChat = (q) => { const n = q.chat || "Albergo"; return q.gruppo === false ? "chat con " + n : n; };
 // 1.34.0: le cose che Michele ha già visto (ha scritto dopo, in quella chat): si segna perTeAvvisi.<k>.visto, e non suonano più
@@ -102,7 +108,8 @@ export async function segnaViste({ db, letture, adesso, t }) {
     let vista = f.mio === true;   // (schede di prima) veniva da un suo messaggio: non era una richiesta
     if (!vista) {
       if (!mie) mie = Object.values((await db.postaDa(adesso.getTime() - ((Number(t.minuti) || 0) + 24 * 60 + 60) * 60000)) || {}).filter(q => q && q.mio);   // i suoi messaggi da ieri
-      vista = mie.some(q => nomeChat(q) === f.chat && (f.ts && Number(q.ts) ? Number(q.ts) > f.ts : `${q.data || ""} ${q.ora || ""}` > f.quando));
+      const stessa = (q) => f.perNome ? nomeChat(q).toLowerCase() === f.chat.toLowerCase() : nomeChat(q) === f.chat;   // 1.34.1
+      vista = mie.some(q => stessa(q) && (f.ts && Number(q.ts) ? Number(q.ts) > f.ts : !f.perNome && `${q.data || ""} ${q.ora || ""}` > f.quando));
     }
     if (!vista) continue;
     const avvisi = { ...(x.perTeAvvisi || {}), [p.k]: { ...((x.perTeAvvisi || {})[p.k] || {}), visto: adesso.toISOString(), ...(f.mio === true ? { sua: true } : {}) } };
@@ -113,9 +120,10 @@ export async function segnaViste({ db, letture, adesso, t }) {
   return n;
 }
 // a ogni giro: fa suonare quelle dovute e segna quando
-export async function allarmiPerTe({ db, adesso, t, manda }) {
+export async function allarmiPerTe({ db, adesso, t, manda, suona = true }) {
   const letture = Object.fromEntries(Object.entries((await db.importazioniDa(L.aggiungiGiorni(t.iso, -1))) || {}).filter(([id]) => String(id).startsWith("segreteria_") && !String(id).startsWith("segreteria_xl")));
   try { await segnaViste({ db, letture, adesso, t }); } catch (e) { console.warn("da fare/viste:", e && e.message); }   // 1.34.0
+  if (!suona) return 0;   // 1.34.1: fuori orario (22:30–7) si segna solo quello che ha già visto; non si suona
   const dovuti = allarmiDovuti(letture, adesso, t);
   let n = 0;
   for (const d of dovuti.slice(0, 4)) {

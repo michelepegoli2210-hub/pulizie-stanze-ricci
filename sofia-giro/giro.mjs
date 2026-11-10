@@ -81,7 +81,7 @@ import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./so
 import { portaPostaAlbergo } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.34.0";
+export const VERSIONE_GIRO = "1.34.1";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -363,9 +363,10 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     }
   } catch (e) { console.warn("lettura delle chat:", e && e.message); esiti.push("lettura delle chat: errore " + String((e && e.message) || e).slice(0, 80)); }
   // 1.28.0: «🔔 Da fare tu»: le cose che deve fare Michele in persona suonano (vibrano) finché non le segna fatte
-  if (a.giroFareTu !== false && oraDiAvvisi(t.minuti)) {
+  // 1.34.1: le cose che ha già visto (ha risposto su WhatsApp) si segnano a ogni giro; si suona solo negli orari degli allarmi
+  if (a.giroFareTu !== false) {
     try {
-      const n = await allarmiPerTe({ db, adesso, t, manda: async (testo, titolo, extra) => { if (!ps) ps = await db.doc("importazioni", "push-sofia"); return mandaMe(testo, "allarme «da fare»", titolo, true, extra); } });
+      const n = await allarmiPerTe({ db, adesso, t, suona: oraDiAvvisi(t.minuti), manda: async (testo, titolo, extra) => { if (!ps) ps = await db.doc("importazioni", "push-sofia"); return mandaMe(testo, "allarme «da fare»", titolo, true, extra); } });
       if (n) fatti.daFare = t.hhmm;
     } catch (e) { console.warn("da fare:", e && e.message); esiti.push("allarme da fare: errore " + String((e && e.message) || e).slice(0, 80)); }
   }
