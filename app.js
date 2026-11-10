@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.75.0";
+export const VERSIONE = "1.76.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5525,7 +5525,7 @@ setInterval(() => { try { argonVenerdi(); } catch (e) {} }, 5 * 60 * 1000);
 //  Solo i titolari (la raccolta "importazioni" è loro); i numeri di telefono non escono mai da qui.
 // ============================================================================
 const SEGRETERIA_MAX = 40;
-function segreteriaLetture() { return Object.values(S.segreteria || {}).filter(x => x && x.lid).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))); }
+function segreteriaLetture() { return Object.values(S.segreteria || {}).filter(x => x && x.lid && !eRicordo(x)).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))); }
 // 1.53.0: niente più «da controllare» (la segretaria fa lei): mentre legge, le letture, le domande che aspettano te
 // (le proposte e i dubbi senza risposta delle letture degli ultimi tre giorni: quelle più vecchie non servono più)
 function domandeSegreteria() {   // 1.71.0: solo «Da fare tu» e «Ti propongo» (le domande non ci sono più)
@@ -5533,8 +5533,9 @@ function domandeSegreteria() {   // 1.71.0: solo «Da fare tu» e «Ti propongo�
   for (const x of segreteriaLetture()) {
     if (!x || ["scartata", "sostituita"].includes(x.esito) || String(x.quando || "").slice(0, 10) < da) continue;
     n += (Array.isArray(x.proposte) ? x.proposte : []).filter(p => p && !p.esito).length;
-    n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto).length;
+    n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto && !sg2Mia(t, x) && !sg2Vista(t, x)).length;   // 1.76.0: non le cose dette da lui, non quelle che ha già visto
   }
+  for (const x of sg2Ricordi()) n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto && sg2Adesso(t)).length;   // 1.76.0: i suoi promemoria, quando è l'ora
   return n;
 }
 // sta leggendo le chat: questo telefono (la posta del ponte), oppure il giro ad app chiusa, oppure un telefono che mette a posto
@@ -5630,8 +5631,9 @@ function sg2Entro(t) {
 // 🔔 le cose da fare per Michele, ancora aperte (le più urgenti prima)
 function sg2PerTe() {
   const out = [];
-  for (const x of sg2Letture()) for (const t of (Array.isArray(x.perTe) ? x.perTe : [])) if (t && t.k && t.testo && !t.fatto) out.push({ ...t, lid: x.lid, quando: x.quando });
-  return out.sort((a, b) => (a.entro || "9999") < (b.entro || "9999") ? -1 : (a.entro || "9999") > (b.entro || "9999") ? 1 : String(a.quando).localeCompare(String(b.quando)));
+  // 1.76.0: non le cose dette da lui; in più i promemoria che ha chiesto (le schede «tu_»); quelle già viste in fondo
+  for (const x of [...sg2Letture(), ...sg2Ricordi()]) for (const t of (Array.isArray(x.perTe) ? x.perTe : [])) if (t && t.k && t.testo && !t.fatto && !sg2Mia(t, x)) out.push({ ...t, lid: x.lid, quando: x.quando, vista: sg2Vista(t, x) });
+  return out.sort((a, b) => (a.vista ? 1 : 0) - (b.vista ? 1 : 0) || ((a.entro || "9999") < (b.entro || "9999") ? -1 : (a.entro || "9999") > (b.entro || "9999") ? 1 : String(a.quando).localeCompare(String(b.quando))));
 }
 // ✋ le proposte che aspettano il «Sì»
 function sg2Proposte() {
@@ -5649,7 +5651,7 @@ function sg2Fatti() {
       const n = fatti.filter(f => f.tipo === "prospetto").length, note = fatti.some(f => f.tipo === "note");
       const nome = x.prospetto && x.prospetto.foglio ? x.prospetto.foglio : "il foglio";
       out.push({ lid: x.lid, ks: fatti.map(f => f.k), quando: x.applicata || x.quando, foglio: true, testo: `📊 Aggiornato il prospetto dal foglio di papà: ${n ? `${n} ${n === 1 ? "cambio" : "cambi"}` : "solo le note"}${n && note ? " e le note" : ""}`, sotto: nome });
-    } else for (const f of fatti) out.push({ lid: x.lid, ks: [f.k], quando: x.applicata || x.quando, testo: f.testo, sotto: f.chi ? `l'ha detto ${f.chi}` : "" });
+    } else for (const f of fatti) out.push({ lid: x.lid, ks: [f.k], quando: x.applicata || x.quando, testo: f.testo, sotto: f.chi && !LET.eMichele(f.chi) ? `l'ha detto ${f.chi}` : "" });
   }
   return out.sort((a, b) => String(b.quando).localeCompare(String(a.quando)));
 }
@@ -5663,7 +5665,7 @@ function sg2Annullati() {
     if (String(x.lid).startsWith("xl")) {
       const n = ann.filter(f => f.tipo === "prospetto").length;
       out.push({ lid: x.lid, ks: ann.map(f => f.k), quando, foglio: true, testo: `📊 Il prospetto dal foglio di papà: ${n ? `${n} ${n === 1 ? "cambio annullato" : "cambi annullati"}` : "note annullate"}`, sotto: x.prospetto && x.prospetto.foglio ? x.prospetto.foglio : "" });
-    } else for (const f of ann) out.push({ lid: x.lid, ks: [f.k], quando, testo: `Annullato: ${String(f.testo).replace(/^\S+\s/, "")}`, sotto: f.chi ? `l'aveva detto ${f.chi}` : "" });
+    } else for (const f of ann) out.push({ lid: x.lid, ks: [f.k], quando, testo: `Annullato: ${String(f.testo).replace(/^\S+\s/, "")}`, sotto: f.chi && !LET.eMichele(f.chi) ? `l'aveva detto ${f.chi}` : "" });
   }
   return out.sort((a, b) => String(b.quando).localeCompare(String(a.quando)));
 }
@@ -5671,7 +5673,7 @@ function sg2Annullati() {
 function sg2Sapere() {
   const out = [];
   for (const x of sg2Letture(2)) {
-    for (const f of (Array.isArray(x.fatti) ? x.fatti : [])) if (f && f.tipo === "no" && !f.annullato) out.push({ testo: String(f.testo).replace(/^📌\s*/, ""), quando: x.quando });
+    for (const f of (Array.isArray(x.fatti) ? x.fatti : [])) if (f && f.tipo === "no" && !f.annullato && !LET.eMichele(f.chi)) out.push({ testo: String(f.testo).replace(/^📌\s*/, ""), quando: x.quando });   // 1.76.0: non le note prese dalle sue parole
     for (const t of (Array.isArray(x.non) ? x.non : [])) if (t && !/^❓/.test(String(t))) out.push({ testo: String(t), quando: x.quando });
   }
   return out.sort((a, b) => String(b.quando).localeCompare(String(a.quando)));
@@ -5719,23 +5721,124 @@ function sg2Riassunto() {
   if (pul.length) frasi.push(`Le signore: ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}${fatte ? `, ${fatte} già ${fatte === 1 ? "fatta" : "fatte"}` : ""}.`);
   const g = Object.values(S.manutenzione || {}).filter(m => urgenza(m) >= 1);
   if (g.length) frasi.push(`${g.length === 1 ? "Un guasto da riparare subito" : `${g.length} guasti da riparare subito`}: ${g.slice(0, 2).map(m => `${esc(m.titolo || "guasto")}${m.camera ? " in " + camera(m.camera).nome : ""}`).join(", ")}.`);
-  const t = sg2PerTe().length, p = sg2Proposte().length + presProposte().length, d = sg2Domande().length;
+  const t = sg2PerTe().filter(y => !y.vista && sg2Adesso(y)).length, p = sg2Proposte().length + presProposte().length, d = sg2Domande().length;   // 1.76.0
   frasi.push(t || p || d ? `Per te: ${[t ? `${t} ${t === 1 ? "cosa da fare" : "cose da fare"}` : "", p ? `${p} ${p === 1 ? "proposta" : "proposte"}` : "", d ? `${d} ${d === 1 ? "domanda" : "domande"}` : ""].filter(Boolean).join(", ")}.` : "Per te non c'è niente che aspetta.");
   return frasi;
 }
 function sg2Pallino(dove) { const d = SG2_DOVE[dove] || SG2_DOVE.sapere; return `<span class="sg2-dove"><i class="sg2-pall ${d[0]}" aria-hidden="true"></i>${esc(d[1])}</span>`; }
-function sg2Cassetto(cls, titolo, righe, vuoto, chiave, max = 3) {
+function sg2Cassetto(cls, titolo, righe, vuoto, chiave, max = 3, piede = "", conta = null) {   // 1.76.0: piede (un tasto in fondo) e conta (il numero accanto al titolo, se non è quello delle righe)
   const tutte = !!(S.sg2Tutte && S.sg2Tutte[chiave]), vis = tutte ? righe : righe.slice(0, max);
   const altre = righe.length - vis.length;
-  return `<section class="sg2-c ${cls}${tutte && righe.length > max ? " largo" : ""}"><h4>${titolo}${righe.length > 1 ? `<i class="sg2-n">${righe.length}</i>` : ""}</h4>
+  return `<section class="sg2-c ${cls}${tutte && righe.length > max ? " largo" : ""}"><h4>${titolo}${(conta === null ? righe.length : conta) > 1 ? `<i class="sg2-n">${conta === null ? righe.length : conta}</i>` : ""}</h4>
     ${righe.length ? vis.join("") : `<p class="sg2-vuoto">${esc(vuoto)}</p>`}
-    ${altre > 0 ? `<button type="button" class="sg2-tutte" data-sg2-tutte="${chiave}">Vedi tutte (${righe.length})</button>` : tutte && righe.length > max ? `<button type="button" class="sg2-tutte" data-sg2-tutte="${chiave}">Mostra meno</button>` : ""}</section>`;
+    ${altre > 0 ? `<button type="button" class="sg2-tutte" data-sg2-tutte="${chiave}">Vedi tutte (${righe.length})</button>` : tutte && righe.length > max ? `<button type="button" class="sg2-tutte" data-sg2-tutte="${chiave}">Mostra meno</button>` : ""}${piede}</section>`;
+}
+// ============================================================================
+//  1.76.0 A MICHELE NON SI RIPETE QUELLO CHE HA SCRITTO LUI · I PROMEMORIA LI CHIEDE LUI (Michele, 10/11 sera: «non devo
+//  rileggere gli stessi messaggi che ho costruito io, altrimenti non è neanche un promemoria. Qualora io ne abbia bisogno
+//  glielo dico: ricordamelo, mettimelo nelle urgenti, urgentissime… neanche in segreteria non mi deve ripetere… faccio un
+//  messaggio adesso a mio padre, dopo un po' me lo ripropone: che senso ha? Trova un escamotage, qualcosa che abbia
+//  utilità, questo ponte»). Quel giorno: 56 messaggi letti, 25 suoi; 4 cose in «Da fare tu» (una detta da lui in un vocale,
+//  due a cui aveva già risposto) e il telefono aveva suonato 31 volte.
+//  - Le letture (lettura.js senzaEco, nell'app e nel giro) dai SUOI messaggi tengono solo le azioni nell'app: mai «Da fare
+//    tu», «Da sapere» o righe di «capito». Qui lo stesso vale per le schede di prima: una cosa «chiesta da Michele» non si
+//    mostra e non si conta (sg2Mia).
+//  - L'ESCAMOTAGE: i suoi messaggi CHIUDONO. Se a una richiesta di un altro lui ha scritto dopo in quella chat, l'ha vista
+//    (visto: lo segna la lettura, o il giro in perTeAvvisi): resta in «Da fare tu», in fondo e più chiara, non suona e non
+//    si conta nel numerino. «⏰ Ricordami tra 1 ora» la fa tornare un promemoria suo.
+//  - I PROMEMORIA LI CHIEDE LUI: «Sofia ricordamelo» dentro un suo messaggio WhatsApp (lo capisce la lettura), oppure
+//    «ricordami di… alle 15» detto o scritto a Sofia nell'app (promemoriaDetto: lo fa l'app da sola, niente IA), oppure
+//    «＋ Ricordami una cosa» nel cassetto «Da fare tu». Ogni promemoria è una scheda sua (importazioni/segreteria_tu_…, con una
+//    sola cosa richiesto: true): il giro la fa suonare all'ora detta e poi ogni ora finché non è «Fatto».
+// ============================================================================
+function eRicordo(x) { return !!x && String(x.lid || "").startsWith("tu_"); }
+function sg2Avviso(t, x) { return ((x && x.perTeAvvisi) || {})[t.k] || {}; }
+function sg2Mia(t, x) { return !t.richiesto && (LET.eMichele(t.chi) || !!sg2Avviso(t, x).sua); }   // detta da lui: non gliela ripeto
+function sg2Vista(t, x) { return !t.richiesto && !!(t.visto || sg2Avviso(t, x).visto); }             // ha già scritto dopo, in quella chat
+function sg2Ricordi() {
+  const da = L.aggiungiGiorni(L.oggiISO(), -(SG2_GIORNI - 1));
+  return Object.values(S.segreteria || {}).filter(x => eRicordo(x) && giornoLocale(x.quando) >= da).sort((a, b) => String(a.quando || "").localeCompare(String(b.quando || "")));
+}
+// quando suona un promemoria: «oggi alle 18:00», «domani alle 10:00», «ven 13 nov alle 09:00», «domani» (dalle 8), «tra poco»
+function sg2Alle(t) {
+  const e = String(t.entro || ""); if (!e) return "tra poco";
+  const g = e.slice(0, 10), ora = e.length > 10 ? e.slice(11, 16) : "", oggi = L.oggiISO();
+  const giorno = g === oggi ? "oggi" : g === L.aggiungiGiorni(oggi, 1) ? "domani" : L.dataMedia(g);
+  return `${giorno}${ora ? " alle " + ora : ""}`;
+}
+// un promemoria è «di adesso» (si conta e si legge a voce) quando la sua ora è arrivata; le richieste degli altri sempre
+function sg2Adesso(t) {
+  if (!t.richiesto || !t.entro) return true;
+  const e = String(t.entro), g = e.slice(0, 10), ora = e.length > 10 ? e.slice(11, 16) : "", oggi = L.oggiISO();
+  return g < oggi || (g === oggi && (!ora || Number(ora.slice(0, 2)) * 60 + Number(ora.slice(3, 5)) <= minutiRoma() + 10));
+}
+// la scheda di un promemoria: si vede subito, poi si salva. «lid» fisso (dal messaggio WhatsApp) = una volta sola
+async function creaRicordo({ testo, entro = "", da = "app", msg = "", chat = "", lid = "" }) {
+  const s = LET.schedaRicordo({ testo, entro, da, adesso: new Date(), msg, chat }); if (!s) return null;
+  const id = lid || s.lid, doc = { ...s.doc, lid: id };
+  if (lid && (S.segreteria || {})["segreteria_" + id]) return null;   // quel messaggio ha già il suo promemoria
+  S.segreteria = { ...(S.segreteria || {}), ["segreteria_" + id]: { id: "segreteria_" + id, ...doc } };
+  disegna();
+  try { await S.db.salva("importazioni", "segreteria_" + id, doc, false); }
+  catch (e) { const m = { ...(S.segreteria || {}) }; delete m["segreteria_" + id]; S.segreteria = m; disegna(); erroreScrittura(e); return null; }
+  return doc.perTe[0];
+}
+function ricordoDetto(p) {
+  const q = p.entro ? sg2Alle(p) : "tra un'ora";
+  return `Va bene. ${q.charAt(0).toUpperCase() + q.slice(1)} ti ricordo: «${p.testo}». Lo trovi in Segreteria, in «Da fare tu».`;
+}
+// «ricordami di chiamare papà alle 15», detto o scritto a Sofia: lo segna l'app da sola. Ritorna quello che Sofia risponde,
+// oppure null se non è un promemoria (allora risponde lei, come sempre)
+async function promemoriaDetto(t) {
+  if (!proprietario() || !puoModificare()) return null;
+  let r = null; try { r = LET.promemoriaDa(t, L.oggiISO(), minutiRoma(), nomeGov()); } catch (e) { r = null; }
+  if (!r) return null;
+  if (r.vuoto) return "Cosa ti devo ricordare? Dimmelo tutto insieme, per esempio: «ricordami di chiamare papà alle 15».";
+  const p = await creaRicordo({ testo: r.testo, entro: r.entro, da: "app", msg: t });
+  return p ? ricordoDetto(p) : "Non sono riuscita a segnarlo. Riprova.";
+}
+// «＋ Ricordami una cosa»: la cosa e quando (tra un'ora, oggi, domani, un altro giorno)
+function sg2NuovoRicordo() {
+  const oggi = L.oggiISO(), m = minutiRoma(), prossima = `${String(Math.min(23, Math.floor(m / 60) + 1)).padStart(2, "0")}:00`;
+  sg2Dialogo(`<div class="chiusura-t"><span aria-hidden="true">⏰</span><span>Cosa ti devo ricordare?</span></div>
+    <label class="campo" style="margin:0 0 8px"><span>La cosa</span><textarea data-sg2-rtesto rows="2" maxlength="160" placeholder="Es. Chiamare il commercialista"></textarea></label>
+    <div class="floorlabel" style="margin:2px 0 6px">Quando</div>
+    <div class="seg sg2-rq" role="group" aria-label="Quando"><button type="button" aria-pressed="true" data-sg2-rq="ora">Tra un'ora</button><button type="button" aria-pressed="false" data-sg2-rq="oggi">Oggi</button><button type="button" aria-pressed="false" data-sg2-rq="domani">Domani</button><button type="button" aria-pressed="false" data-sg2-rq="altro">Un altro giorno</button></div>
+    <div class="sg2-rquando" data-sg2-rbox hidden><label class="campo" data-sg2-rgiorno-box hidden><span>Giorno</span><input type="date" data-sg2-rgiorno min="${esc(oggi)}" value="${esc(L.aggiungiGiorni(oggi, 2))}"></label><label class="campo"><span>Ora</span><input type="time" data-sg2-rora value="${esc(prossima)}"></label></div>
+    <button class="big main" data-sg2-rok>Ricordamelo</button><button class="big undo" data-chiudi>Lascia stare</button>`, (el, chiudi) => {
+    let quando = "ora";
+    const box = el.querySelector("[data-sg2-rbox]"), gBox = el.querySelector("[data-sg2-rgiorno-box]"), ora = el.querySelector("[data-sg2-rora]");
+    el.querySelectorAll("[data-sg2-rq]").forEach(b => b.onclick = () => {
+      quando = b.dataset.sg2Rq;
+      el.querySelectorAll("[data-sg2-rq]").forEach(y => y.setAttribute("aria-pressed", y === b ? "true" : "false"));
+      box.hidden = quando === "ora"; gBox.hidden = quando !== "altro";
+      if (quando === "domani" || quando === "altro") ora.value = "09:00"; else if (quando === "oggi") ora.value = prossima;
+    });
+    el.querySelector("[data-sg2-rok]").onclick = async () => {
+      const testo = String(el.querySelector("[data-sg2-rtesto]").value || "").replace(/\s+/g, " ").trim();
+      if (!testo) { toast("Scrivi cosa ti devo ricordare."); return; }
+      let entro = "";
+      if (quando !== "ora") {
+        const giorno = quando === "oggi" ? oggi : quando === "domani" ? L.aggiungiGiorni(oggi, 1) : String(el.querySelector("[data-sg2-rgiorno]").value || "");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(giorno) || giorno < oggi) { toast("Scegli un giorno da oggi in poi."); return; }
+        const hm = /^\d{2}:\d{2}$/.test(String(ora.value || "")) ? ora.value : "";
+        if (giorno === oggi && hm && Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5)) <= minutiRoma()) { toast("Quell'ora oggi è già passata."); return; }
+        entro = hm ? `${giorno}T${hm}` : giorno;
+      }
+      chiudi();
+      const p = await creaRicordo({ testo, entro, da: "app" });
+      if (p) toast(`${ricordoDetto(p)}`.slice(0, 140));
+    };
+    setTimeout(() => { try { el.querySelector("[data-sg2-rtesto]").focus(); } catch (e) {} }, 50);
+  });
 }
 function vistaSegreteria() {
   const nome = nomeGov(), mod = puoModificare();
   const riass = sg2Riassunto();
-  const perTe = sg2PerTe().map(t => `<div class="sg2-r fare"><b class="sg2-t">${esc(t.testo)}</b>${sg2Entro(t) || t.chi ? `<small>${esc([sg2Entro(t), t.chi ? `l'ha chiesto ${t.chi}` : ""].filter(Boolean).join(" · "))}</small>` : ""}${t.rimanda && Date.parse(t.rimanda) > Date.now() ? `<small class="sg2-rim">⏰ te lo ricordo alle ${esc(L.oraBreve(t.rimanda))}</small>` : ""}
-    ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde" data-sg2-fatto="${esc(t.lid)}|${esc(t.k)}">Fatto</button><button type="button" class="sg2-b rosso" data-sg2-ricorda="${esc(t.lid)}|${esc(t.k)}"><span aria-hidden="true">⏰</span> Ricordami tra 1 ora</button></div>` : ""}</div>`);
+  // 1.76.0: un promemoria chiesto da lui dice quando suona; una richiesta che ha già visto (ha risposto su WhatsApp) è più chiara e non suona
+  const sottoPerTe = (t) => t.richiesto ? `⏰ Me l'hai chiesto tu · ${sg2Alle(t)}` : [sg2Entro(t), t.chi ? `l'ha chiesto ${t.chi}` : ""].filter(Boolean).join(" · ");
+  const perTe = sg2PerTe().map(t => `<div class="sg2-r fare${t.vista ? " vista" : ""}${t.richiesto ? " chiesto" : ""}"><b class="sg2-t">${esc(t.testo)}</b>${sottoPerTe(t) ? `<small>${esc(sottoPerTe(t))}</small>` : ""}${t.vista ? `<small class="sg2-vista">✓ Hai già risposto su WhatsApp: non suono più</small>` : ""}${t.rimanda && Date.parse(t.rimanda) > Date.now() ? `<small class="sg2-rim">⏰ te lo ricordo alle ${esc(L.oraBreve(t.rimanda))}</small>` : ""}
+    ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde" data-sg2-fatto="${esc(t.lid)}|${esc(t.k)}">Fatto</button><button type="button" class="sg2-b rosso" data-sg2-ricorda="${esc(t.lid)}|${esc(t.k)}${t.vista ? "|v" : ""}"><span aria-hidden="true">⏰</span> Ricordami tra 1 ora</button></div>` : ""}</div>`);
   const prop = sg2Proposte().map(p => `<div class="sg2-r prop">${p.perche ? `<b class="sg2-t">${esc(p.perche)}</b>` : ""}<span class="sg2-x">${esc(p.testo)}</span>
     ${mod ? `<button type="button" class="sg2-b verde pieno" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">Sì, fallo</button><div class="sg2-bt"><button type="button" class="sg2-b oro" data-sg2-cambia="${esc(p.lid)}|${esc(p.k)}">Cambia</button><button type="button" class="sg2-b rosso" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">No</button></div>` : ""}</div>`);
   prop.unshift(...presProposte().map(x => presPropRiga(x, mod)));   // 1.69.0: le ore che non tornano
@@ -5747,7 +5850,7 @@ function vistaSegreteria() {
   fatti.unshift(...annullati);
   const sapere = sg2Sapere().map(s => `<div class="sg2-r sapere"><span class="sg2-x">${esc(s.testo)}</span><small>${esc(sg2Quando(s.quando))}</small></div>`);
   const cassetti = `<div class="sg2-cassetti">
-    ${sg2Cassetto("fare", `<span aria-hidden="true">🔔</span> Da fare tu`, perTe, "Niente da fare: quando qualcuno chiede una cosa a te, la trovi qui (e il telefono suona).", "fare", 3)}
+    ${sg2Cassetto("fare", `<span aria-hidden="true">🔔</span> Da fare tu`, perTe, "Niente da fare. Qui trovi solo quello che ti chiedono gli altri (il telefono suona finché non rispondi su WhatsApp) e i promemoria che mi chiedi tu.", "fare", 3, mod ? `<button type="button" class="sg2-tutte sg2-nuovo" data-sg2-nuovo><span aria-hidden="true">＋</span> Ricordami una cosa</button>` : "", sg2PerTe().filter(y => !y.vista && sg2Adesso(y)).length)}
     ${sg2Cassetto("prop", `<span aria-hidden="true">✋</span> Ti propongo`, prop, "Nessuna proposta.", "prop", 2)}
     ${sg2Cassetto("fatto", `<span aria-hidden="true">✅</span> Ho fatto io`, fatti, "Oggi non ho ancora cambiato niente nell'app.", "fatto", Math.max(3, annullati.length + 1))}
     ${sg2Cassetto("sapere", `<span aria-hidden="true">⭐</span> Da sapere`, sapere, "Niente di nuovo da sapere.", "sapere", 3)}</div>`;
@@ -5780,7 +5883,7 @@ function vistaSegreteria() {
 function sg2DaLeggere() {
   const pulito = (t) => String(t || "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
   const parti = sg2Riassunto().map(pulito);
-  const t = sg2PerTe(); if (t.length) parti.push(`Da fare tu: ${t.slice(0, 3).map(x => `${x.testo}${sg2Entro(x) ? ", " + sg2Entro(x) : ""}`).join("; ")}.`);
+  const t = sg2PerTe().filter(y => !y.vista && sg2Adesso(y)); if (t.length) parti.push(`Da fare tu: ${t.slice(0, 3).map(x => `${x.testo}${sg2Entro(x) ? ", " + sg2Entro(x) : ""}`).join("; ")}.`);
   const p = sg2Proposte(); if (p.length) parti.push(`Ti propongo: ${p.slice(0, 2).map(x => x.perche || x.testo).join("; ")}.`);
   return parti.join(" ");
 }
@@ -5874,7 +5977,8 @@ document.addEventListener("click", (e) => {
   const b = (sel) => t.closest(sel);
   let x;
   if ((x = b("[data-sg2-fatto]"))) { const [lid, k] = x.dataset.sg2Fatto.split("|"); x.disabled = true; sg2Fatto(lid, k); return; }
-  if ((x = b("[data-sg2-ricorda]"))) { const [lid, k] = x.dataset.sg2Ricorda.split("|"); const quando = new Date(Date.now() + 3600 * 1000); sg2PerTeSegna(lid, k, { rimanda: quando.toISOString() }).then(r => { if (r) toast(`Te lo ricordo alle ${L.oraBreve(quando.toISOString())}.`); }); return; }
+  if (b("[data-sg2-nuovo]")) { sg2NuovoRicordo(); return; }   // 1.76.0: «＋ Ricordami una cosa»; qui sotto: «Ricordami tra 1 ora» su una cosa già vista la fa tornare un promemoria suo
+  if ((x = b("[data-sg2-ricorda]"))) { const [lid, k, v] = x.dataset.sg2Ricorda.split("|"); const quando = new Date(Date.now() + 3600 * 1000); sg2PerTeSegna(lid, k, { rimanda: quando.toISOString(), ...(v === "v" ? { richiesto: true } : {}) }).then(r => { if (r) toast(`Te lo ricordo alle ${L.oraBreve(quando.toISOString())}.`); }); return; }
   if ((x = b("[data-sg2-cambia]"))) { const [lid, k] = x.dataset.sg2Cambia.split("|"); sg2Cambia(lid, k); return; }
   if ((x = b("[data-sg2-annulla]"))) { const [lid, ks] = x.dataset.sg2Annulla.split("|"); x.disabled = true; const bott = x; (async () => {
     const lista = ks.split(",").filter(Boolean), foglio = String(lid).startsWith("xl");
@@ -6004,7 +6108,7 @@ async function sg2Chiedi(t) {
   const righe = [...sgrChat(), { chi: "io", testo: t, ora: S.db.adesso() }];
   S.sgrChat = righe; S.sgrChatCaricata = true; salvaSgrChat(righe);
   let fine;
-  try { fine = await segretariaRispondi(t, righe); }
+  try { const pro = await promemoriaDetto(t); fine = pro ? { testo: pro } : await segretariaRispondi(t, righe); }   // 1.76.0: «ricordami…» lo segna l'app, senza IA
   catch (e) { console.warn("segreteria/rispondi", e); fine = { testo: `Non sono riuscita a rispondere: ${String((e && e.message) || e).slice(0, 160)}` }; }
   S.sgrChat = [...sgrChat(), { chi: "gov", testo: fine.testo, ora: S.db.adesso(), ...(fine.tipo ? { tipo: fine.tipo } : {}) }]; salvaSgrChat(S.sgrChat);
   S.sg2Bolla = { stato: "detto", domanda: t, testo: fine.testo, vai: fine.vai || "" }; disegna();
@@ -6387,7 +6491,7 @@ async function segreteriaManda(testo) {
   salvaSgrChat(righe);
   if (voceAccesa()) { try { VOCE.scaldaLive(VOCE.leggiVoce(), confIA().chiave); } catch (e) {} }
   let fine;
-  try { fine = await segretariaRispondi(t, righe); }
+  try { const pro = await promemoriaDetto(t); fine = pro ? { testo: pro } : await segretariaRispondi(t, righe); }   // 1.76.0: «ricordami…» lo segna l'app, senza IA
   catch (e) { console.warn("segreteria/rispondi", e); fine = { testo: `Non sono riuscita a rispondere: ${String((e && e.message) || e).slice(0, 160)}` }; }
   const m = { chi: "gov", testo: fine.testo, ora: S.db.adesso(), ...(fine.tipo ? { tipo: fine.tipo } : {}), ...(fine.vai ? { vai: fine.vai } : {}) };
   S.sgrChat = [...sgrChat(), m]; S.sgrScrive = false; disegna(); sgrScorri();
@@ -6563,6 +6667,7 @@ function azioneDaLettura(g) {
   a.muto = true;   // avvisi e note per le signore: le leggono nell'app, niente Telegram (così «↩ Annulla» li toglie davvero)
   if (a.tipo === "manutenzione" && a.modo === "apri") {
     a.urgente = g.urgente === true || /^(si|true|1)$/i.test(String(g.urgente || ""));
+    if (/urgentissim/i.test(String(g.gravita || ""))) { a.urgente = true; a.urgentissimo = true; }   // 1.76.0: «Sofia mettilo nelle urgentissime»
     if (lavoriAperti().some(m => (m.camera || null) === (a.camera || null) && simileTesto(m.titolo, a.cosa))) return NON(`«${a.cosa}» è già tra i lavori da fare.`);
   }
   if (a.tipo === "messaggio" && a.modo === "togli") return null;
@@ -6574,7 +6679,7 @@ function testoFatto(a) {
   const q = (iso) => quandoTesto(iso);
   const cam = (id) => id ? camera(id).nome : "";
   switch (a.tipo) {
-    case "manutenzione": return a.modo === "apri" ? `🔧 Nei lavori${a.urgente ? " URGENTI" : " da fare"}: «${a.cosa}»${a.camera ? " · " + cam(a.camera) : ""}` : `✅ Lavoro sistemato: ${(a.titoli || []).join(", ")}`;
+    case "manutenzione": return a.modo === "apri" ? `🔧 Nei lavori${a.urgentissimo ? " URGENTISSIMI" : a.urgente ? " URGENTI" : " da fare"}: «${a.cosa}»${a.camera ? " · " + cam(a.camera) : ""}` : `✅ Lavoro sistemato: ${(a.titoli || []).join(", ")}`;
     case "pulizie": { const cs = (a.camere || []).map(cam), dove = cs.join(", "), piu = cs.length > 1, chi = Object.keys(a.perSig || {}).map(SIG).join(" e "), Q = q(a.da).replace(/^./, c => c.toUpperCase()); return a.modo === "non_serve" ? `🚫 ${Q} ${dove}: ${piu ? "non servono, tolte" : "non serve, tolta"} dal giro${chi ? " di " + chi : ""}` : `↺ ${Q} ${dove}: di nuovo da fare${chi ? " (" + chi + ")" : ""}`; }
     case "incarico": return `➕ ${q(a.giorno).replace(/^./, c => c.toUpperCase())} nella giornata di ${SIG(a.chi)}: ${a.camera ? cam(a.camera) + " — " : ""}${a.cosa} (${a.minuti} min)`;
     case "assegna": return `👭 ${q(a.giorno).replace(/^./, c => c.toUpperCase())} ${a.righe.map(r => cam(r.camera)).join(", ")}: ${a.chi.length === 2 ? "insieme " + a.chi.map(SIG).join(" e ") : "la fa " + SIG(a.chi[0])}`;
@@ -8459,8 +8564,10 @@ async function parlaGov(testo, perIA) {
   govScrive = true; disegna();
   if (voceAccesa()) { try { VOCE.scaldaLive(VOCE.leggiVoce(), confIA().chiave); } catch (e) {} }
   let msg = null;
+  // 1.76.0: «ricordami di… alle 15» è un promemoria per lui: lo segna l'app da sola (niente IA) e suona all'ora detta
+  try { const pro = await promemoriaDetto(t); if (pro) msg = { chi: "gov", testo: pro, ora: S.db.adesso() }; } catch (e) { console.warn("promemoria", e); }
   // prima prova la governante intelligente; se non c'è o non risponde, si torna alle parole del catalogo
-  if (iaAccesa()) {
+  if (!msg && iaAccesa()) {
     // 1.14.0 (C): è una correzione? Sofia lo sa subito, e la lezione si segna
     let corr = null; try { corr = correzioneDi(t, conv); } catch (e) { corr = null; }
     if (corr) {
@@ -9024,7 +9131,7 @@ async function eseguiMani(a) {
       if (a.modo === "apri") {
         let id = `man_${Date.now()}`; while (S.manutenzione[id]) id += "b";   // 1.51.0
         const c = a.camera ? camera(a.camera) : null;
-        const voce = { pulizia: null, camera: a.camera || null, zona: c ? c.zona : null, data: oggi, titolo: a.cosa, nota: "", da: nomeGov(), fonte: "sofia", foto: false, stato: "aperto", creato: adesso, fatto: null, fattoDa: "", ...(a.urgente ? { gravita: "urgente" } : {}) };   // 1.51.0
+        const voce = { pulizia: null, camera: a.camera || null, zona: c ? c.zona : null, data: oggi, titolo: a.cosa, nota: "", da: nomeGov(), fonte: "sofia", foto: false, stato: "aperto", creato: adesso, fatto: null, fattoDa: "", ...(a.urgentissimo ? patchUrgenza(2) : a.urgente ? { gravita: "urgente" } : {}) };   // 1.51.0; 1.76.0: urgentissimo
         await S.db.salva("manutenzione", id, voce, false); S.manutenzione[id] = { id, ...voce };
         if (a.daTaccuino && taccuinoVoci().some(y => y.id === a.daTaccuino)) await salvaTaccuino(taccuinoVoci().filter(y => y.id !== a.daTaccuino));   // 1.13.3
         disegna();
@@ -15260,10 +15367,10 @@ function papaRicordato() { try { return localStorage.getItem(CHIAVE_PAPA) || "";
 function istruzioniLettura(messaggi, opz = {}) {
   let tacc = ""; try { tacc = taccuinoPerIA(); } catch (e) {}
   const persone = Array.isArray(messaggi) ? [...new Set(messaggi.flatMap(m => [m && m.chi, m && m.chat && String(m.chat).replace(/^chat con /, "")]).filter(Boolean))] : [];
-  return LET.istruzioniLettura({ ...ctxLettura(), taccuino: tacc, persone, prospettoChat: !opz.chat }, codiciOspiti());   // 1.51.0: le chat di WhatsApp (modo nuovo) senza prospetto e con le azioni
+  return LET.istruzioniLettura({ ...ctxLettura(), taccuino: tacc, persone, prospettoChat: !opz.chat, numeri: !!opz.chat }, codiciOspiti());   // 1.51.0: le chat di WhatsApp (modo nuovo) senza prospetto e con le azioni
 }
 // i messaggi scelti, pronti per Sofia: "[gio 23 ott 09:12] Papà: ..." (coi nomi noti in codice e senza telefoni)
-function testoPerLettura(messaggi, papa) { return LET.testoPerLettura(messaggi, papa, ctxLettura(), codiciOspiti()); }
+function testoPerLettura(messaggi, papa, opz = {}) { return LET.testoPerLettura(messaggi, papa, { ...ctxLettura(), ...(opz.numeri ? { numeri: true } : {}) }, codiciOspiti()); }   // 1.76.0: nelle chat ogni messaggio col suo numero
 function jsonDaRisposta(txt) { return LET.jsonDaRisposta(txt); }
 function cameraDaSofia(x) {
   const t = String(x || "").trim(); if (!t) return null;
@@ -15411,7 +15518,7 @@ async function leggiConSofia(messaggi, opz = {}) {
   if (!iaAccesa()) { d.ia = { errore: "chiave" }; if (S.foglio && S.foglio.tipo === "dettatura") disegnaFoglio(); return; }
   const giro = ++letturaGiro;
   d.ultimaLettura = { messaggi, papa: opz.papa || "", immagini: Array.isArray(opz.immagini) ? opz.immagini : [] };
-  const { testo, tagliati, telefoni } = testoPerLettura(messaggi, opz.papa || "");
+  const { testo, tagliati, telefoni } = testoPerLettura(messaggi, opz.papa || "", { numeri: modoChat(d) });
   const immagini = Array.isArray(opz.immagini) ? opz.immagini.filter(x => x && x.dati) : [];
   d.ia = { leggo: true, n: messaggi.length, tagliati, fase: immagini.length ? `Leggo i messaggi e guardo ${immagini.length === 1 ? "la foto" : immagini.length + " foto"}` : "" };
   // se il foglio l'hai chiuso tu mentre ascoltava i vocali, non lo riapro: si aggiorna la striscia "sta leggendo"
@@ -15420,8 +15527,16 @@ async function leggiConSofia(messaggi, opz = {}) {
     const chat = modoChat(d);   // 1.51.0
     const { r, ripiego } = await chiediLettura({ sistema: istruzioniLettura(messaggi, { chat }), storia: [], testo: `${immagini.length ? `Ti mando anche ${immagini.length === 1 ? "una foto" : immagini.length + " foto"} della chat (numerate nell'ordine, nei messaggi trovi "foto n. 1"...): se sono il prospetto scritto a mano o stampato, leggile come il resto.\n` : ""}ECCO I MESSAGGI (${messaggi.length}${tagliati ? `, i ${tagliati} più vecchi li ho lasciati fuori` : ""}):\n${testo}${Array.isArray(opz.correzioni) && opz.correzioni.length ? `\n\nCORREZIONI DI MICHELE (valgono più di tutto quello che avevi capito; applicale e digli in «risposta» cosa hai cambiato):\n${opz.correzioni.map((c, i) => `${i + 1}. ${c}`).join("\n")}` : ""}`, immagine: immagini.length ? immagini.map(x => ({ mime: x.mime, dati: x.dati })) : null, secondi: 150, maxToken: 16000 });
     if (giro !== letturaGiro) return;
-    const j = rimettiTelefoni(jsonDaRisposta(r.grezzo), telefoni);
+    let j = rimettiTelefoni(jsonDaRisposta(r.grezzo), telefoni);
     if (!j) throw new Error("ha risposto in un modo che non capisco. Riprova.");
+    // 1.76.0: A MICHELE NON SI RIPETE QUELLO CHE HA SCRITTO LUI: dai suoi messaggi restano solo le azioni (via «Da fare tu», note e
+    // righe); i promemoria che chiede lui («Sofia ricordamelo») hanno una scheda loro (più giù, creaRicordo)
+    let chiesti = [];
+    if (chat) {
+      j = LET.senzaEco(daCodiciProfondo(j), messaggi, { nomeGov: nomeGov(), nomeMio: nomeMio() });
+      chiesti = (Array.isArray(j.perTe) ? j.perTe : []).filter(y => y && y.richiesto === true);
+      if (chiesti.length) j = { ...j, perTe: j.perTe.filter(y => !(y && y.richiesto === true)) };
+    }
     const x = lettoDaSofia(j, { chat });
     d.ia = { ...x, modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length, tagliati, testo: d.testo };
     d.scelte = {}; d.comportamenti = {};
@@ -15429,6 +15544,7 @@ async function leggiConSofia(messaggi, opz = {}) {
       const extra = { modello: r.modello || "", ripiego: !!ripiego, n: messaggi.length }, jv = daCodiciProfondo(j);
       if (Array.isArray(d.postaIds) && d.postaIds.length) await condividiLettura(d, j, extra, "applicando");
       const lid = await salvaSegreteria(d, jv, { ...extra, esito: "da_applicare" });
+      for (const y of chiesti) { const mid = String(y.mid || "").replace(/[^A-Za-z0-9]/g, "").slice(-40); try { await creaRicordo({ testo: y.cosa, entro: LET.entroDa(y.entro, L.oggiISO()), da: "chat", msg: y.messaggio, chat: y.chat, lid: mid ? "tu_c" + mid : "" }); } catch (e) { console.warn("promemoria", e); } }   // 1.76.0
       const ap = await applicaLettura({ lid, j: jv, postaIds: Array.isArray(d.postaIds) ? d.postaIds : [] });
       d.applicata = ap;
       if (Array.isArray(d.postaIds) && d.postaIds.length) { try { await S.db.aggiorna("importazioni", "lettura-sofia", { stato: "applicata", applicata: new Date().toISOString(), fatti: ap.fatti.length }); } catch (e) { console.warn("lettura/applicata", e); } }
@@ -16056,7 +16172,7 @@ async function leggiPosta(nuove, opz = {}) {
   try {
     const media = new Map(), messaggi = [], perChat = new Map();
     for (const p of nuove) {
-      let m = { id: p.id, mio: !!p.mio, tipo: p.tipo || "testo", data: p.data || L.oggiISO(), ora: p.ora || "", chi: p.chi || "", testo: p.testo || "" };   // 1.39.0: id, mio e tipo (per la Segreteria)
+      let m = { id: p.id, mio: !!p.mio, tipo: p.tipo || "testo", data: p.data || L.oggiISO(), ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", ts: Number(p.ts) || 0 };   // 1.39.0: id, mio e tipo (per la Segreteria)
       const nomeChat = p.chat || "Albergo";
       if (!perChat.has(nomeChat)) perChat.set(nomeChat, { nome: nomeChat, messaggi: [], attiva: true, gruppo: p.gruppo !== false });
       if (p.tipo === "audio" && p.trascrizione) m = { ...m, testo: `🎤 (vocale) ${p.trascrizione}` };   // 1.51.0

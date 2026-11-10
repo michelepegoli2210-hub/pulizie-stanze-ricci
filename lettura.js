@@ -152,7 +152,10 @@ export function entroDa(t, oggi) {
 export function perTeDa(j, oggi) {
   return (Array.isArray(j && j.perTe) ? j.perTe : []).filter(x => x && typeof x === "object" && String(x.cosa || "").trim()).slice(0, 8).map((x, i) => ({
     k: "t" + i, testo: String(x.cosa).replace(/\s+/g, " ").trim().slice(0, 160), entro: entroDa(x.entro, oggi), chi: String(x.chi || "").replace(/\s+/g, " ").trim().slice(0, 40),
-    msg: String(x.messaggio || "").replace(/\s+/g, " ").trim().slice(0, 200), fatto: "", rimanda: "" }));
+    msg: String(x.messaggio || "").replace(/\s+/g, " ").trim().slice(0, 200), fatto: "", rimanda: "",
+    // 1.76.0: se l'ha chiesta lui a Sofia, se l'ha già vista (ha scritto dopo in quella chat), e da dove viene (chat e ora del messaggio)
+    ...(x.richiesto === true ? { richiesto: true } : {}), ...(x.visto === true ? { visto: true } : {}),
+    ...(x.chat ? { chat: String(x.chat).slice(0, 60) } : {}), ...(x.mdata ? { mdata: String(x.mdata).slice(0, 10) } : {}), ...(x.mora ? { mora: String(x.mora).slice(0, 5) } : {}), ...(Number(x.mts) ? { mts: Number(x.mts) } : {}) }));
 }
 // rileggendo (con una correzione) le cose già fatte restano fatte
 const nPerTe = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -290,14 +293,23 @@ ${soloExcel ? `- "soggiorni" e "togli": SEMPRE [] — il prospetto arriva dal fo
 // i messaggi scelti, pronti per Sofia: "[gio 23 ott 09:12] Papà: ..." (coi nomi noti in codice e senza telefoni)
 export function testoPerLettura(messaggi, papa, ctx, codici = creaCodici(ctx)) {
   // chi scrive: "Papà" per chi fa il prospetto, "Michele" per lui; gli altri col nome della rubrica (signore, famiglia)
-  const chi = (x) => {
-    if (!x) return "";
+  // 1.76.0: se il ponte dice di chi è il messaggio (mio: true/false), «Michele» è SOLO lui: un altro Michele (il socio) resta
+  // col suo nome, così Sofia non scambia i suoi consigli per decisioni di Michele e sa quali messaggi lui conosce già.
+  // Con ctx.numeri ogni riga comincia col numero del messaggio (#1, #2…): Sofia lo riscrive in "n" (da dove viene una cosa).
+  const chi = (m) => {
+    const x = m.chi; if (!x) return "";
+    if (typeof m.mio === "boolean") {
+      if (m.mio) return "Michele";
+      if (papa && x === papa) return "Papà";
+      if (/^michele$/i.test(String(x).trim()) || x === ctx.nomeMio) { const c = String(m.chatNome || m.chat || ""); return /^chat con /i.test(c) ? codici.aCodici(c.replace(/^chat con /i, "")).slice(0, 30) : "Michele (un altro, non il titolare)"; }
+      return codici.aCodici(x).slice(0, 30);
+    }
     if (papa && x === papa) return "Papà";
     if (/michele/i.test(x) || x === ctx.nomeMio) return "Michele";
     return codici.aCodici(x).slice(0, 30);
   };
   const telefoni = new Map();
-  const righe = messaggi.map(m => `${m.data ? `[${L.dataMedia(m.data)}${m.ora ? " " + m.ora : ""}] ` : ""}${m.chat ? `(${m.chat}) ` : ""}${m.chi ? chi(m.chi) + ": " : ""}${telefoniInSegnaposto(codici.aCodici(m.testo), telefoni)}`);
+  const righe = messaggi.map((m, i) => `${ctx.numeri ? `#${i + 1} ` : ""}${m.data ? `[${L.dataMedia(m.data)}${m.ora ? " " + m.ora : ""}] ` : ""}${m.chat ? `(${m.chat}) ` : ""}${m.chi ? chi(m) + ": " : ""}${telefoniInSegnaposto(codici.aCodici(m.testo), telefoni)}`);
   let testo = righe.join("\n"), tagliati = 0;
   const MAX = 140000;
   while (testo.length > MAX && righe.length > 20) { righe.shift(); tagliati++; testo = righe.join("\n"); }
@@ -337,7 +349,7 @@ I TUOI LIMITI (importanti):
 - NON sei la governante: non segni pulizie, stelle o guasti, non scrivi alle signore, non parli di paghe e di soldi, non cambi niente nell'app. Se Michele ti chiede una di queste cose, rispondi con tipo "governante" e UNA frase gentile (per esempio «Questo lo fa la governante: te la apro, così glielo dici»).
 - La MANUTENZIONE la fa Michele: è lui che ripara o chiama il tecnico. Il papà e le signore i guasti li segnalano (a volte il papà ci mette una pezza): non dire mai che il papà sistemerà o controllerà qualcosa; di' cosa non va e che resta da sistemare.
 - I messaggi che cominciano con 🎤 sono vocali trascritti (qualche parola può essere sbagliata; [?] = non si capiva); «un vocale che non ho ancora ascoltato» vuol dire che non sai cosa c'è dentro: dillo. I nomi tra parentesi quadre come [O3] sono ospiti che l'app conosce: riscrivili IDENTICI, con le parentesi.
-- I messaggi di "Michele" li ha scritti lui: sa già cosa ha detto, non ripeterglielo parola per parola; conta quello che gli altri hanno chiesto, detto o deciso, e quello che ne viene fuori.
+- I messaggi di "Michele" li ha scritti lui: sa già cosa ha detto. NON raccontarglieli e non ripeterglieli, nemmeno in breve («hai detto a Papà che…» non si dice mai): racconta solo quello che GLI ALTRI hanno chiesto, detto o deciso, e quello che resta da fare. I suoi messaggi usali solo per capire se una richiesta ha già avuto risposta (allora non è più in sospeso).
 - Le "letture già fatte" sono quello che tu stessa hai già messo da parte nell'app leggendo le chat (guasti, spesa, ore delle signore, cose per le signore) e se Michele le ha già controllate: se te lo chiede, digli dove sta una cosa e se è ancora da controllare.
 
 RISPONDI SEMPRE E SOLO con questo JSON (niente altro intorno):
@@ -399,14 +411,17 @@ ${signoreInParole(ctx)}
 
 LE PERSONE DELLE CHAT: «Michele» è il titolare: usa l'app e decide. «Papà» è suo padre: fa il prospetto (il foglio Excel) e parla spesso con le signore e con gli ospiti. «Michele Santucci» è il socio di Michele: dà consigli. Contano le cose DECISE (da Michele o dal papà), non i consigli e le chiacchiere.
 
+I MESSAGGI DI MICHELE (le righe «Michele:»): li ha scritti o detti lui, quindi li sa già. A te servono per DUE cose sole: (1) fare nell'app quello che lui decide (le AZIONI: il giro delle signore, i lavori, gli avvisi); (2) capire se a una richiesta ha già risposto. A Michele NON SI RIPETE MAI quello che ha scritto lui: da un suo messaggio non nasce mai un "perTe", una "nota" o una riga di "capito", e nella "risposta" non gli racconti quello che ha detto lui. UNICA ECCEZIONE: quando in un messaggio Michele parla a TE chiamandoti per nome («${ctx.nomeGov} ricordamelo», «${ctx.nomeGov} ricordami di chiamare l'idraulico alle 15», «${ctx.nomeGov} segnatelo», «${ctx.nomeGov} mettilo nelle urgenti»): allora fai quello che ti chiede. «Ricordamelo» è un "perTe" con "richiesto": true (in "cosa" la cosa da ricordare, presa anche dai messaggi vicini; in "entro" il giorno e l'ora che dice lui, altrimenti vuoto). «Mettilo nelle urgenti» o «nelle urgentissime» è un lavoro (azione 1) con "urgente": true e, per le urgentissime, anche "gravita":"urgentissimo".
+
 COME SI LEGGONO I MESSAGGI:
-- Ogni messaggio ha la sua data e ora tra parentesi quadre: «domani», «oggi», «stasera», un giorno della settimana valgono rispetto alla DATA DEL MESSAGGIO, non a oggi.
+${ctx.numeri ? `- Ogni messaggio comincia col suo NUMERO (#1, #2, #3…). In ogni cosa che scrivi nel JSON (azioni, proposte, perTe, capito, note, assenze, spesa, ore, telefoni) aggiungi "n": il numero del messaggio da cui l'hai capita (se sono più di uno, quello che conta di più).\n` : ""}- Ogni messaggio ha la sua data e ora tra parentesi quadre: «domani», «oggi», «stasera», un giorno della settimana valgono rispetto alla DATA DEL MESSAGGIO, non a oggi.
 - Davanti c'è la chat tra parentesi tonde: «(chat con Selly)» è la chat privata tra Michele e quella persona; un nome da solo, per esempio «(Albergo)», è un gruppo. Quello che Michele (o il papà) dice a una signora è una DECISIONE. Quello che propone una signora vale se Michele lo conferma («sì», «va bene», «quelli che hai detto tu»).
 - I messaggi che cominciano con 🎤 sono vocali trascritti: le parole possono essere sbagliate, soprattutto i COGNOMI degli ospiti ([?] = non si capiva). Un nome che non è una camera è quasi sempre un OSPITE: guarda nel prospetto qui sotto in quale camera sta (i codici [O..]) e usa QUELLA camera. Non trasformare MAI un nome strano nella camera che gli somiglia (un cognome che suona come «Alba» non è la camera Alba): se non capisci di chi parla, metti una domanda in "dubbi".
 - Le CAMERE hanno nomi di persona (Salvatore, Michele, Aurora, Antonio, Lella, Alba, Nicole): «in Antonio», «ad Aurora», «Salvatore:» sono camere.
 - I messaggi più recenti correggono quelli vecchi; se una cosa risulta già fatta o risolta, non metterla.
 - I nomi degli ospiti che l'app conosce sono CODICI tra parentesi quadre, per esempio [O3]: riscrivili IDENTICI.
 - I numeri di telefono li ho tolti io: al loro posto c'è [telefono1], [telefono2]...; [email] è un'email tolta.
+- I messaggi della chat «(Email albergo)» sono le EMAIL arrivate alla casella dell'albergo (la prima riga, dopo ✉️, è l'oggetto; chi scrive è il mittente o il suo dominio): prenotazioni e cancellazioni (Booking, Expedia, Airbnb), richieste di ospiti, la ditta, il commercialista, il Passaporto Adriatico, la Polizia (Alloggiati). Quello che Michele deve fare o rispondere va in "perTe" con una riga chiara (chi scrive, cosa vuole, entro quando); le presenze o le prenotazioni di una ditta sono prospetto (una riga in "note" che comincia con «Prospetto:»); pubblicità, newsletter e offerte le ignori. Non rispondere tu alle email: al massimo in "perTe" scrivi cosa conviene rispondere.
 - IL PROSPETTO (chi dorme in quale camera e in che giorni) arriva da un FILE EXCEL che pubblica il papà: dalle chat NON lo cambi mai. Se qualcuno parla di arrivi, partenze o giorni di un ospite, scrivi una riga in "note" che comincia con «Prospetto:» (per esempio «Prospetto: papà dice che [O3] resta fino a sabato — controlla il foglio Excel»).
 - La MANUTENZIONE la fa SEMPRE Michele (o chiama lui il tecnico): il papà, le signore e gli ospiti i guasti li SEGNALANO soltanto, anche quando il papà ci mette una pezza. Nel "cosa" scrivi solo cosa non va, mai chi lo sistemerà.
 - Se in fondo ci sono le «CORREZIONI DI MICHELE», valgono più di tutto: rifai tutto di conseguenza e nella "risposta" digli in una frase cosa hai cambiato.
@@ -423,6 +438,7 @@ ${String(ctx.taccuino || "")}
 LE AZIONI: con queste cambi DAVVERO l'app, come farebbe Michele. Una azione per ogni cosa decisa nelle chat.
 1) un GUASTO o una cosa da riparare → {"tipo":"manutenzione","modo":"apri","camera":"tramonto","cosa":"La maniglia del bagno è rotta","urgente":true}
    "camera" vuota se è di tutta la casa (la caldaia, il cancello). "urgente": true se un ospite aspetta, se la camera non si può usare o se c'è un pericolo; altrimenti false.
+   Solo se è Michele a dirti per nome di metterlo «nelle urgentissime», aggiungi "gravita":"urgentissimo" (gli arriva una notifica ogni 2 ore finché non è sistemato).
    Un guasto che Michele (o il tecnico) ha SISTEMATO → {"tipo":"manutenzione","modo":"chiudi","camera":"nicole","cosa":"caldaia"}
 2) una pulizia del giro che quel giorno NON SERVE → {"tipo":"pulizie","modo":"non_serve","giorno":"AAAA-MM-GG","dove":["fenicotteri","tramonto"]}
    una pulizia tolta per sbaglio da RIMETTERE → {"tipo":"pulizie","modo":"da_fare","giorno":"AAAA-MM-GG","dove":["alba"]}
@@ -441,19 +457,19 @@ REGOLE DELLE AZIONI:
 - NIENTE DOMANDE A MICHELE: non ha tempo di rispondere («devo capire lei»). "dubbi" resta SEMPRE vuoto. Se una cosa non è chiara, decidi tu la più probabile guardando il prospetto, il giro e i messaggi; se proprio non si capisce, lasciala com'è e non chiedere niente.
 - Solo cose da oggi in poi: niente per i giorni passati, niente per le ore già passate di oggi.
 - I soldi (paghe, buste, prezzi) non si toccano con le azioni.
-- In ogni azione e in ogni proposta aggiungi "chi" (chi l'ha detto: «Papà», «Lucia», «Michele»…) e "messaggio" (le sue parole, corte): servono a Michele per capire perché l'hai fatta.
+- In ogni azione e in ogni proposta aggiungi "chi" (chi l'ha detto: «Papà», «Lucia», «Michele»…) e "messaggio" (le sue parole, corte)${ctx.numeri ? ` e "n" (il numero del messaggio)` : ""}: servono a Michele per capire perché l'hai fatta.
 
-LE COSE CHE DEVE FARE MICHELE IN PERSONA ("perTe"): quello che nessun altro può fare al posto suo, né le signore né l'app: prendere, portare o lasciare le CHIAVI, chiamare o rispondere a qualcuno, andare in albergo o da un ospite a un'ora, comprare o pagare una cosa urgente, decidere una cosa che gli chiedono. Una riga per cosa, corta, dando del tu («Metti le chiavi in Aurora»). In "entro" il giorno e l'ora entro cui farla, se detti («entro le 15» = oggi alle 15:00), altrimenti vuoto. Solo le cose ancora da fare: se nelle chat risulta già fatta, non metterla. Un guasto NON va qui (va nelle azioni): qui solo se chiedono a Michele di fare lui una cosa precisa. Il telefono suona finché Michele non la segna fatta: niente cose inutili.
+LE COSE CHE DEVE FARE MICHELE IN PERSONA ("perTe"): solo quello che gli chiedono GLI ALTRI (il papà, una signora, il socio, un ospite, un'email) e che nessuno può fare al posto suo, né le signore né l'app: prendere, portare o lasciare le CHIAVI, chiamare o rispondere a qualcuno, andare in albergo o da un ospite a un'ora, comprare o pagare una cosa urgente, decidere una cosa che gli chiedono. Una riga per cosa, corta, dando del tu («Metti le chiavi in Aurora»). In "entro" il giorno e l'ora entro cui farla, se detti («entro le 15» = oggi alle 15:00), altrimenti vuoto. Solo le cose ancora da fare: se nelle chat risulta già fatta, non metterla. MAI una cosa che ha detto o deciso Michele (la sa già), a meno che te la chieda lui per nome (allora "richiesto": true, vedi sopra). Un guasto NON va qui (va nelle azioni): qui solo se chiedono a Michele di fare lui una cosa precisa. Il telefono suona finché Michele non risponde in quella chat o non la segna fatta: niente cose inutili.
 
-COSA HAI CAPITO ("capito"): per ogni persona che ha scritto, una riga per ogni cosa che hai capito, con parole TUE e corte (non copiare il messaggio): «vuole che metti le chiavi in Aurora entro le 15», «domani non viene». In "dove" scrivi dove l'hai messa: "fare" (in perTe), "propongo" (nelle proposte o nei dubbi), "fatto" (nelle azioni, nelle assenze, nella spesa, nei telefoni), "sapere" (nelle note). I saluti e le chiacchiere non metterli.
+COSA HAI CAPITO ("capito"): per ogni persona che ha scritto (MAI Michele: di quello che ha scritto lui non si fanno righe), una riga per ogni cosa che hai capito, con parole TUE e corte (non copiare il messaggio): «vuole che metti le chiavi in Aurora entro le 15», «domani non viene». In "dove" scrivi dove l'hai messa: "fare" (in perTe), "propongo" (nelle proposte o nei dubbi), "fatto" (nelle azioni, nelle assenze, nella spesa, nei telefoni), "sapere" (nelle note). I saluti e le chiacchiere non metterli.
 
 RISPONDI SOLO con questo JSON:
-{"risposta":"2-4 frasi semplici per Michele: chi ha scritto e di cosa, e cosa metti nell'app",
- "azioni":[{"tipo":"…"}],
+{"risposta":"2-4 frasi semplici per Michele: cosa hanno scritto GLI ALTRI e cosa hai messo nell'app (quello che ha scritto lui non glielo ripetere)",
+ "azioni":[{"tipo":"…","n":3}],
  "proposte":[{"tipo":"…","perche":"la domanda corta per Michele"}],
  "dubbi":[],
- "perTe":[{"cosa":"Metti le chiavi in Aurora","entro":"AAAA-MM-GG HH:MM oppure vuoto","chi":"chi te l'ha chiesto","messaggio":"le sue parole"}],
- "capito":[{"chi":"Papà","cosa":"vuole che metti le chiavi in Aurora entro le 15","dove":"fare"}],
+ "perTe":[{"cosa":"Metti le chiavi in Aurora","entro":"AAAA-MM-GG HH:MM oppure vuoto","chi":"chi te l'ha chiesto","messaggio":"le sue parole","n":7,"richiesto":false}],
+ "capito":[{"chi":"Papà","cosa":"vuole che metti le chiavi in Aurora entro le 15","dove":"fare","n":7}],
  "assenze":[{"signora":"p2","dal":"AAAA-MM-GG","al":"AAAA-MM-GG (uguale a dal se è un giorno solo)","testo":"corto, per Michele (es. Selena sabato non viene)","messaggio":"le sue parole","sicurezza":"alta"}],
  "spesa":[{"prodotto":"il prodotto che manca, corto","signora":"p1 oppure vuoto","chi":"chi l'ha detto","messaggio":"le sue parole"}],
  "note":[{"giorno":"AAAA-MM-GG","testo":"una cosa importante da sapere per Michele, corta","chi":"chi l'ha detto","messaggio":"le sue parole"}],
@@ -463,8 +479,185 @@ RISPONDI SOLO con questo JSON:
 REGOLE DEL JSON:
 - "soggiorni" e "togli" SEMPRE vuoti: il prospetto arriva dal foglio Excel.
 - In "assenze" solo quando una signora dice che NON viene in un giorno preciso da oggi in poi ("signora" = il suo codice).
-- In "spesa" i prodotti che mancano o stanno finendo. In "note" solo le cose importanti per Michele che non hanno un altro posto (un appuntamento, chi porta le chiavi, una cosa sul prospetto, un ospite che chiede qualcosa): niente saluti e chiacchiere.
+- In "spesa" i prodotti che mancano o stanno finendo. In "note" solo le cose importanti per Michele che non hanno un altro posto (un appuntamento, chi porta le chiavi, una cosa sul prospetto, un ospite che chiede qualcosa): niente saluti e chiacchiere, e MAI una cosa detta da Michele (lui la sa).
 - In "ore" solo le ore di lavoro scritte dalle signore: una riga per signora e per giorno, in minuti (2 ore e mezza = 150, mezz'ora = 30).
 - In "telefoni" sempre e solo il segnaposto, mai cifre.
 - Le date sempre nel formato AAAA-MM-GG.`;
+}
+
+// ============================================================================
+//  1.76.0 · A MICHELE NON SI RIPETE QUELLO CHE HA SCRITTO LUI (Michele, 10/11 sera: «non devo rileggere gli stessi messaggi
+//  che ho costruito io, altrimenti non è neanche un promemoria. Qualora io ne abbia bisogno glielo dico: ricordamelo,
+//  mettimelo nelle urgenti, urgentissime… neanche in segreteria non mi deve ripetere… faccio un messaggio adesso a mio padre,
+//  dopo un po' me lo ripropone: ma che senso ha? Trova un escamotage, qualcosa che abbia utilità, questo ponte»).
+//  - Dai messaggi di Michele (quelli che il ponte segna come suoi: mio = true) nascono SOLO le azioni nell'app. Mai un «Da
+//    fare tu», un «Da sapere» o una riga di «capito»: senzaEco() li toglie anche se Sofia li ha messi lo stesso.
+//  - L'unica eccezione la decide lui: in un suo messaggio parla a Sofia per nome («Sofia ricordamelo»). Allora è un PROMEMORIA
+//    chiesto ("richiesto": true), che ha la sua scheda in Segreteria (schedaRicordo) e suona all'ora detta.
+//  - L'ESCAMOTAGE: i messaggi di Michele servono a CHIUDERE. Se dopo la richiesta di un altro lui ha scritto in quella chat,
+//    l'ha vista ("visto": true): resta in «Da fare tu» ma il telefono non suona più (rispostoDopo, e nel giro perte-giro.mjs).
+//  Da dove viene una cosa: le parole citate da Sofia ("messaggio") cercate nei messaggi, poi il numero "n", poi "chi".
+// ============================================================================
+const nEco = (s) => PAROLE.norm(String(s || "").replace(/^\s*🎤\s*\(vocale\)\s*/u, ""));
+// «Michele», «tu», «io»: è lui (un altro Michele, per esempio «Michele Santucci», no)
+export function eMichele(chi, nomeMio = "") { const n = nEco(chi); return !!n && (n === "michele" || n === "tu" || n === "io" || n === "me" || (!!nomeMio && n === nEco(nomeMio))); }
+// il messaggio è suo: lo dice il ponte (mio); per le chat esportate a mano (senza «mio») vale il nome, come nel testo per Sofia
+export function mioMessaggio(m, nomeMio = "") { if (!m) return false; if (typeof m.mio === "boolean") return m.mio; const x = String(m.chi || ""); return /michele/i.test(x) || (!!nomeMio && x === nomeMio); }
+const chatDi = (m) => String((m && (m.chatNome || m.chat)) || "");
+function indiceEco(messaggi) { return messaggi.map(m => { const n = nEco(m && m.testo); return { n, p: new Set(n.split(" ").filter(w => w.length >= 3)) }; }); }
+// da quale messaggio viene una cosa capita da Sofia → { i, come: "testo" | "numero" | "" } (i = -1: non si trova).
+// Le parole citate si cercano prima tra i messaggi di chi Sofia dice che l'ha detta («chi»): così la richiesta di papà non si
+// perde se Michele, rispondendo, ha ripetuto le stesse parole; solo se lì non ci sono si guarda tra tutti i messaggi.
+export function fonteDi(x, messaggi, indice = indiceEco(messaggi), nomeMio = "") {
+  const q = nEco(x && (x.messaggio || x.msg || ""));
+  const n = Number(x && x.n), num = Number.isInteger(n) && n >= 1 && n <= messaggi.length ? n - 1 : -1;
+  if (q.length >= 6) {
+    const pq = q.split(" ").filter(w => w.length >= 3);
+    const punti = indice.map(y => (y.n && (y.n.includes(q) || (y.n.length >= 12 && q.includes(y.n)))) ? 1 : pq.length >= 2 ? pq.filter(w => y.p.has(w)).length / pq.length : 0);
+    const migliore = (quali) => {
+      let top = 0; for (const i of quali) if (punti[i] > top) top = punti[i];
+      if (top < 0.6) return -1;
+      const pari = quali.filter(i => Math.abs(punti[i] - top) < 1e-9);
+      return num >= 0 && pari.includes(num) ? num : pari[pari.length - 1];
+    };
+    const tutti = messaggi.map((m, i) => i);
+    const lui = x && String(x.chi || "").trim() ? eMichele(x.chi, nomeMio) : null;
+    let i = lui === null ? -1 : migliore(tutti.filter(k => mioMessaggio(messaggi[k], nomeMio) === lui));
+    if (i < 0) i = migliore(tutti);
+    if (i >= 0) return { i, come: "testo" };
+  }
+  return num >= 0 ? { i: num, come: "numero" } : { i: -1, come: "" };
+}
+// la cosa l'ha detta Michele? Le parole trovate in un messaggio valgono più di tutto; poi il nome scritto da Sofia; poi il numero
+function dettaDaMichele(x, f, messaggi, nomeMio) {
+  if (f.i >= 0 && f.come === "testo") return mioMessaggio(messaggi[f.i], nomeMio);
+  if (x && String(x.chi || "").trim()) return eMichele(x.chi, nomeMio);
+  return f.i >= 0 ? mioMessaggio(messaggi[f.i], nomeMio) : false;
+}
+function nomeNelTesto(nomeGov) { const n = String(nomeGov || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return n.length >= 3 ? new RegExp(`(^|[^\\p{L}])${n}(?=$|[^\\p{L}])`, "iu") : null; }
+// Michele parla a Sofia per nome: in quel messaggio («Sofia ricordami di passare in banca»), oppure subito dopo, nella stessa
+// chat, con un messaggio corto che dice solo a lei cosa farne («Sofia ricordamelo», «Sofia mettilo nelle urgenti»): entro un
+// quarto d'ora e senza messaggi di altri in mezzo
+const SEGUITO_SOFIA = /ricordamel[oaie]|ricordatel[oaie]|segnatel[oaie]|segnamel[oaie]|segnal[oa](?![\p{L}])|mettil[oaie]|mettimel[oaie]|appuntatel[oaie]/iu;
+export function chiestoASofia(messaggi, i, nomeGov, nomeMio = "") {
+  const re = nomeNelTesto(nomeGov), m = messaggi[i]; if (!re || !m) return false;
+  if (mioMessaggio(m, nomeMio) && re.test(String(m.testo || ""))) return true;
+  const minuti = (y) => { const h = /^(\d{1,2}):(\d{2})/.exec(String(y.ora || "")); return h ? Number(h[1]) * 60 + Number(h[2]) : null; };
+  for (const y of messaggi.slice(i + 1).filter(y => y && chatDi(y) === chatDi(m)).slice(0, 3)) {
+    if (!mioMessaggio(y, nomeMio)) return false;
+    if (m.data && y.data && (m.data !== y.data || (minuti(m) !== null && minuti(y) !== null && minuti(y) - minuti(m) > 15))) return false;
+    const t = String(y.testo || "").replace(/^\s*🎤\s*\(vocale\)\s*/u, "");
+    if (re.test(t) && SEGUITO_SOFIA.test(t) && t.length <= 80) return true;
+  }
+  return false;
+}
+// dopo quel messaggio Michele ha scritto nella stessa chat: l'ha visto
+export function rispostoDopo(messaggi, i, nomeMio = "") {
+  const m = messaggi[i]; if (!m) return false;
+  const quando = (y) => `${y.data || ""} ${y.ora || ""}`;
+  return messaggi.some((y, k) => y && k !== i && mioMessaggio(y, nomeMio) && chatDi(y) === chatDi(m)
+    && (Number(y.ts) && Number(m.ts) ? Number(y.ts) > Number(m.ts) : (quando(y) > quando(m) || (quando(y) === quando(m) && k > i))));
+}
+// il JSON di Sofia senza l'eco: via quello che viene dai messaggi di Michele (perTe, note, capito); a ogni «perTe» che resta
+// la sua chat e l'ora del messaggio, «richiesto» se l'ha chiesto lui a Sofia per nome, «visto» se lui ha già scritto dopo
+export function senzaEco(j, messaggi, opz = {}) {
+  if (!j || typeof j !== "object" || !Array.isArray(messaggi) || !messaggi.length) return j;
+  const nomeMio = opz.nomeMio || "", nomeGov = opz.nomeGov || "", ind = indiceEco(messaggi), out = { ...j };
+  const guarda = (x) => {
+    const f = fonteDi(x, messaggi, ind, nomeMio), sua = dettaDaMichele(x, f, messaggi, nomeMio);
+    return { f, sua, chiesto: f.i >= 0 && chiestoASofia(messaggi, f.i, nomeGov, nomeMio) };
+  };
+  if (Array.isArray(j.perTe)) out.perTe = j.perTe.map(x => {
+    if (!x || typeof x !== "object") return null;
+    const { f, sua, chiesto } = guarda(x);
+    if (sua && !chiesto) return null;
+    const m = f.i >= 0 ? messaggi[f.i] : null;
+    const { richiesto, visto, ...resto } = x;
+    return { ...resto, ...(chiesto ? { richiesto: true } : {}),
+      ...(m ? { chat: chatDi(m), mdata: String(m.data || ""), mora: String(m.ora || ""), ...(Number(m.ts) ? { mts: Number(m.ts) } : {}), ...(m.id ? { mid: String(m.id) } : {}) } : {}),
+      ...(!chiesto && m && rispostoDopo(messaggi, f.i, nomeMio) ? { visto: true } : {}) };
+  }).filter(Boolean);
+  if (Array.isArray(j.note)) out.note = j.note.filter(x => { if (!x || typeof x !== "object") return false; const { sua, chiesto } = guarda(x); return !(sua && !chiesto); });
+  if (Array.isArray(j.capito)) out.capito = j.capito.filter(x => { if (!x || typeof x !== "object") return false; if (eMichele(x.chi, nomeMio)) return false; const f = fonteDi(x, messaggi, ind, nomeMio); return !(f.i >= 0 && f.come === "testo" && mioMessaggio(messaggi[f.i], nomeMio)); });
+  return out;
+}
+
+// ---- 1.76.0: I PROMEMORIA CHIESTI DA MICHELE ------------------------------------------------------------------------------
+// l'istante di un'ora di Lesina («AAAA-MM-GG», «HH:MM») → Date (l'ora legale la sa Intl)
+export function istanteDiRoma(giorno, hhmm = "12:00") {
+  const base = Date.parse(`${giorno}T${hhmm}:00Z`); if (isNaN(base)) return null;
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Rome", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date(base)).map(x => [x.type, x.value]));
+  const visto = Date.parse(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00Z`);
+  return isNaN(visto) ? new Date(base) : new Date(base - (visto - base));
+}
+// la scheda di un promemoria: una sola cosa in «Da fare tu» (richiesto: true). «quando» è l'ora del promemoria se è più avanti
+// (così la scheda resta tra quelle vive fino a quel giorno: il giro guarda quelle di oggi e di ieri, l'app quelle di 3 giorni)
+export function schedaRicordo({ testo, entro = "", da = "app", adesso = new Date(), msg = "", chat = "", codice = "" }) {
+  const t = String(testo || "").replace(/\s+/g, " ").trim().slice(0, 160); if (!t) return null;
+  const e = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(entro || "")) ? String(entro) : "";
+  const allOra = e ? istanteDiRoma(e.slice(0, 10), e.length > 10 ? e.slice(11, 16) : "08:00") : null;
+  const quando = allOra && allOra.getTime() > adesso.getTime() ? allOra.toISOString() : adesso.toISOString();
+  const lid = "tu_" + adesso.getTime().toString(36) + String(codice || Math.random().toString(36).slice(2, 5)).replace(/[^a-z0-9]/gi, "").slice(0, 6);
+  return { lid, doc: { lid, quando, da: da === "chat" ? "chat" : "michele", ricordo: true, n: 0, esito: "fatta",
+    perTe: [{ k: "t0", testo: t, entro: e, chi: "", msg: String(msg || "").replace(/\s+/g, " ").trim().slice(0, 200), fatto: "", rimanda: "", richiesto: true, creato: adesso.toISOString(), ...(chat ? { chat: String(chat).slice(0, 60) } : {}) }] } };
+}
+// «ricordami di chiamare l'idraulico domani alle 9», detto o scritto a Sofia nell'app → { testo, entro } («entro» come sopra, o
+// vuoto); { vuoto: true } se non dice cosa; null se non è un promemoria per lui («ricordati che il sabato…» è il taccuino,
+// «ricordami cosa ha detto papà» è una domanda: le lascia a Sofia)
+const NUM_PAROLE = { un: 1, uno: 1, una: 1, "un'": 1, due: 2, tre: 3, quattro: 4, cinque: 5, sei: 6, sette: 7, otto: 8, nove: 9, dieci: 10, undici: 11, dodici: 12 };
+export function promemoriaDa(frase, oggi, minutiOra = null, nomeGov = "") {
+  let t = String(frase || "").replace(/[’`]/g, "'").replace(/\s+/g, " ").trim(); if (!t || /\?\s*$/.test(t)) return null;
+  const nome = String(nomeGov || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  t = t.replace(new RegExp(`^(?:(?:ehi|hey|ciao|senti|allora|ok|okay|buongiorno|buonasera)[, ]+)*${nome ? `(?:${nome}[,!.: ]+)?` : ""}(?:per favore[, ]+|per piacere[, ]+|per cortesia[, ]+)?`, "i"), "");
+  const m = /^(?:(domani|domattina|stasera|oggi|dopodomani)[, ]+)?(?:poi |dopo |puoi |potresti |devi |dovresti )?(ricordam[ie](?:l[oaie])?|ricordarmi|ricordarmel[oaie]|(?:mettimi|fammi|metti|fai|segnami|crea|creami) un promemoria|promemoria)(?=$|[\s,:;.!])[,:;.! ]*(.*)$/i.exec(t);
+  if (!m) return null;
+  if (/^(cosa|che cosa|chi|quando|dove|come|quant[oaie]|qual[ei]?|perch[eé]|se)(\s|$)/i.test(m[3].trim())) return null;   // una domanda sulle chat
+  let resto = ` ${m[1] || ""} ${m[3].trim()} `.replace(/\s+/g, " "), giorno = "", ore = -1, min = 0, delta = -1, fascia = "";
+  const via = (src, fn) => { resto = resto.replace(new RegExp(" " + src + "(?=[\\s,.;:!?])", "i"), (...a) => { fn(...a); return ""; }); };
+  const numero = (s) => /^\d+$/.test(s) ? Number(s) : (NUM_PAROLE[String(s).toLowerCase()] || 0);
+  // tra un'ora, tra 2 ore, tra mezz'ora, tra 10 minuti, tra un quarto d'ora
+  via("(?:tra|fra) (?:un )?quarto d'ora", () => { delta = 15; });
+  via("(?:tra|fra) mezz'? ?ora", () => { delta = 30; });
+  via("(?:tra|fra) (un'|un|una|\\d{1,3}|due|tre|quattro|cinque|sei|sette|otto|nove|dieci) ?(ore|ora|minuti|minuto|min)( e mezz[ao])?", (tutto, q, u, mezza) => { const k = numero(q); delta = /^or/i.test(u) ? k * 60 + (mezza ? 30 : 0) : k; });
+  // il giorno
+  via("(?:dopodomani|dopo domani)", () => { giorno = L.aggiungiGiorni(oggi, 2); });
+  via("(domattina|domani mattina|domani sera|domani pomeriggio|domani)", (tutto, g) => { giorno = L.aggiungiGiorni(oggi, 1); if (/sera/i.test(g)) fascia = "sera"; else if (/pomeriggio/i.test(g)) fascia = "pomeriggio"; else if (/matt/i.test(g)) fascia = "mattina"; });
+  via("(?:stasera|questa sera)", () => { giorno = giorno || oggi; fascia = "sera"; });
+  via("(?:stamattina|questa mattina)", () => { giorno = giorno || oggi; fascia = "mattina"; });
+  via("(?:oggi pomeriggio|questo pomeriggio|nel pomeriggio)", () => { giorno = giorno || oggi; fascia = "pomeriggio"; });
+  via("oggi", () => { giorno = giorno || oggi; });
+  via("(?:di |il |per |entro )?(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?: prossim[oa])?", (tutto, g) => {
+    const i = ["do", "lu", "ma", "me", "gi", "ve", "sa"].indexOf(g.slice(0, 2).toLowerCase()); if (i < 0 || giorno) return;
+    let d = (i - L.giornoSettimana(oggi) + 7) % 7; if (d === 0) d = 7; giorno = L.aggiungiGiorni(oggi, d);
+  });
+  via("(?:di|la) (mattina|sera)", (tutto, f) => { fascia = fascia || f.toLowerCase(); });
+  via("(?:di|nel|il) pomeriggio", () => { fascia = fascia || "pomeriggio"; });
+  // l'ora: alle 15, alle 15:30, alle 9 e mezza, alle 9 e un quarto, all'una, a mezzogiorno
+  via("a mezzogiorno( e mezz[ao])?", (tutto, mezza) => { ore = 12; min = mezza ? 30 : 0; });
+  via("all'una(?: e (mezza|mezzo|un quarto|\\d{1,2}))?", (tutto, e) => { ore = 13; min = !e ? 0 : /mezz/i.test(e) ? 30 : /quarto/i.test(e) ? 15 : Math.min(59, Number(e) || 0); });
+  via("(?:alle ore|alle|per le|verso le|entro le) (\\d{1,2})(?:[:.](\\d{2}))?(?: e (mezza|mezzo|un quarto|tre quarti|\\d{1,2}))?", (tutto, h, mm, e) => {
+    ore = Number(h); min = mm ? Number(mm) : !e ? 0 : /mezz/i.test(e) ? 30 : /tre quarti/i.test(e) ? 45 : /quarto/i.test(e) ? 15 : Number(e) || 0;
+  });
+  if (ore > 23 || min > 59) { ore = -1; min = 0; }
+  const adesso = minutiOra === null || minutiOra === undefined ? null : Number(minutiOra);
+  let entro = "";
+  const hhmm = (h, mi) => `${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}`;
+  if (delta > 0 && adesso !== null) {
+    const tot = adesso + delta;
+    entro = `${L.aggiungiGiorni(oggi, Math.floor(tot / 1440))}T${hhmm(Math.floor((tot % 1440) / 60), tot % 60)}`;
+  } else if (ore >= 0) {
+    if (fascia === "sera" || fascia === "pomeriggio") { if (ore < 12) ore += 12; }
+    else if (fascia !== "mattina" && ore >= 1 && ore <= 6) ore += 12;                       // «alle 3» = le 15
+    if (!giorno) {
+      giorno = oggi;
+      if (adesso !== null && ore * 60 + min <= adesso) {                                    // quell'ora oggi è già passata
+        if (fascia !== "mattina" && ore < 12 && (ore + 12) * 60 + min > adesso) ore += 12;  // «alle 8» detto alle 16 = le 20
+        else giorno = L.aggiungiGiorni(oggi, 1);
+      }
+    }
+    entro = `${giorno}T${hhmm(ore, min)}`;
+  } else if (giorno) entro = fascia === "sera" ? `${giorno}T20:00` : fascia === "pomeriggio" ? `${giorno}T16:00` : fascia === "mattina" && giorno !== oggi ? `${giorno}T08:30` : giorno === oggi ? "" : giorno;
+  const testo = resto.replace(/\s+([,.;:!?])/g, "$1").replace(/\s+/g, " ").trim().replace(/^(?:[,;:.!]\s*)+/, "").replace(/^(?:che devo|che dobbiamo|di dover|del fatto che|il fatto che|di|che)\s+/i, "").replace(/[\s,;:.!]+$/, "").trim();
+  if (!testo || /^(tu|te|lo|la|li|le|questo|questa|quello|quella|tutto|di|che)$/i.test(testo)) return { vuoto: true, entro };
+  return { testo: (testo.charAt(0).toUpperCase() + testo.slice(1)).slice(0, 160), entro };
 }

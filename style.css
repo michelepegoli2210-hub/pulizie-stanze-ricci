@@ -9376,3 +9376,17 @@ body.premium .bs-ico2 .nav-conta{top:-4px;right:-2px;min-width:16px;height:15px;
 
 /* ---- 1.75.0 · in Altro «📬 La posta dell'albergo» (stessa grafica della copia di sicurezza) ---- */
 .pa-card .cs-stato{margin:0 0 8px}
+
+/* ---- 1.76.0 · Segreteria, «Da fare tu»: le richieste che hai già visto (hai risposto su WhatsApp), i promemoria che hai chiesto
+   tu, e «＋ Ricordami una cosa» ---- */
+.sg2-r.fare.vista .sg2-t{font-weight:600;opacity:.72}
+.sg2-r small.sg2-vista{color:#2A7A4F;font-weight:700}
+.sg2-tutte.sg2-nuovo{margin-top:8px;border-style:dashed}
+.seg.sg2-rq{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 8px}
+.seg.sg2-rq button{width:100%;text-align:center}
+.sg2-rquando{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;margin:0 0 8px}
+.sg2-rquando input{width:100%;min-width:0;box-sizing:border-box}
+.sg2-rquando[hidden]{display:none}
+.sg2-rquando .campo{margin:0}
+.sg2-rquando .campo[hidden]{display:none}
+:root[data-theme="dark"] .sg2-r small.sg2-vista{color:#7FD6A4}
