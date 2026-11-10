@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.74.2";
+export const VERSIONE = "1.75.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1308,6 +1308,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "social", d => { S.social = d ? { ...d } : null; if (S.vista === "social" || S.vista === "altro") disegna(); }));   // 1.66.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "canali", d => { S.canaliCal = d ? { ...d } : null; if (S.vista === "prospetto" || (S.foglio && S.foglio.tipo === "calendario")) disegna(); }));   // 1.65.0
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "posta-albergo", d => { S.postaAlb = d ? { ...d } : null; if (S.vista === "altro" || (S.foglio && S.foglio.tipo === "postaAlb")) disegna(); }));   // 1.75.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "copia-sicurezza", d => { S.copia = d ? { ...d } : null; if (S.vista === "altro" || S.vista === "oggi" || (S.foglio && S.foglio.tipo === "cassetta")) disegna(); }));   // 1.64.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
@@ -13475,6 +13476,106 @@ document.addEventListener("input", (e) => {
 //  leggono); lì il giro scrive com'è andata. In «Altro» la scheda «📦 La copia di sicurezza»; in Oggi un avviso giallo
 //  SOLO se la copia non arriva da più di 10 giorni (o è collegata e non è mai arrivata da 2 giorni).
 // ============================================================================
+// ============================================================================
+//  1.75.0 LA POSTA DELL'ALBERGO PER SOFIA SEGRETARIA (10/11, Michele: «essendo dell'albergo questa email Sofia deve avere
+//  l'accesso h24 … anzi Sofia segretaria deve fare questo»). La «casella» (casella-albergo.gs) sta nell'account Google
+//  DELL'ALBERGO e solo legge (permesso Gmail «sola lettura», nel manifest casella-albergo.json). Ogni 10 minuti il giro di
+//  Sofia (giro 1.33.0, posta-giro.mjs) prende le mail nuove della scheda «Principale» e le mette nella posta di Sofia come
+//  chat «Email albergo»: Sofia segretaria le legge con le chat e scrive in Segreteria cosa c'è da fare. Non manda e non
+//  cancella niente. Indirizzo e «segreto» in importazioni/posta-albergo (solo i proprietari li leggono).
+// ============================================================================
+const PA_CODICE = "casella-albergo.gs", PA_MANIFEST = "casella-albergo.json";
+const paPronta = () => !!(S.postaAlb && S.postaAlb.url && S.postaAlb.segreto && S.postaAlb.pronta);
+function cardPostaAlbergo() {
+  if (!proprietario()) return "";
+  const c = S.postaAlb || {};
+  if (!paPronta()) return `<section class="card pa-card"><h2>📬 La posta dell'albergo</h2>
+    <p class="muted small" style="margin:0 0 10px">${esc(nomeGov())} segretaria legge da sola le email dell'albergo, ogni 10 minuti, anche a PC spento, e in Segreteria ti dice cosa è arrivato e cosa c'è da fare. <b>Solo lettura</b>: non manda e non cancella niente.</p>
+    <button type="button" class="big main" data-pa-apri>📬 Collegala (dal PC, con l'account dell'albergo)</button></section>`;
+  const errore = c.errore && (Date.parse(c.erroreQuando || "") || 0) >= (Date.parse(c.ultimoGiro || "") || 0) - 1000;
+  const stato = c.ultimoGiro ? `✓ ${c.indirizzo ? `<b>${esc(c.indirizzo)}</b> · ` : ""}ultimo controllo ${esc(csQuando(c.ultimoGiro))}${c.quante ? ` · ${Number(c.quante)} ${Number(c.quante) === 1 ? "mail letta" : "mail lette"}` : ""}` : `⏳ ${c.indirizzo ? `<b>${esc(c.indirizzo)}</b> · ` : ""}Il primo controllo arriva ${csProssimo()}.`;
+  return `<section class="card pa-card"><h2>📬 La posta dell'albergo</h2>
+    <p class="cs-stato${errore ? " ko" : ""}">${stato}</p>
+    ${errore ? `<p class="al-avviso">L'ultima volta la casella non ha risposto (${esc(c.errore)}). ${esc(nomeGov())} riprova da sola al prossimo giro.</p>` : ""}
+    <p class="muted small" style="margin:0 0 10px">Solo la scheda «Principale» (niente pubblicità). ${esc(nomeGov())} segretaria non risponde e non cancella niente: le risposte te le prepara, le mandi tu.</p>
+    <div class="cs-tasti"><button type="button" class="btnsm ghost" data-pa-apri>⚙️ Il collegamento</button></div></section>`;
+}
+function foglioPostaAlbergo(f) {
+  if (paPronta() && !f.rifai) return `<h3>📬 La posta dell'albergo</h3>
+    <p class="note info">✓ Collegata${S.postaAlb.indirizzo ? `: <b>${esc(S.postaAlb.indirizzo)}</b>` : ""}${S.postaAlb.quando ? `, dal ${esc(L.dataLunga(String(S.postaAlb.quando).slice(0, 10)))}` : ""}. ${esc(nomeGov())} legge le mail nuove ogni 10 minuti.</p>
+    <ol class="rg-passi"><li><button type="button" class="rg-b" data-pa-prova><b>✓</b>Prova il collegamento</button></li>
+      <li><button type="button" class="rg-b" data-pa-rifai><b>↺</b>Collegala di nuovo</button></li>
+      <li><button type="button" class="rg-b" data-pa-togli><b>✕</b>Scollega (Sofia smette di leggerla)</button></li></ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || f.esito || (f.provo ? "Provo…" : "Serve rifarlo solo se cambi account o rifai il programma."))}</p>`;
+  return `<h3>📬 Collega la posta dell'albergo</h3>
+    <p class="muted small" style="margin:0 0 10px">Una volta sola, dal PC: un piccolo programma (gratis) nell'account Google <b>dell'albergo</b> che <b>solo legge</b> la posta. Non manda, non cancella, non sposta niente.</p>
+    <ol class="rg-passi">
+      <li><button type="button" class="rg-b" data-pa-copia="codice"><b>1</b>Copia il codice</button></li>
+      <li><a class="rg-b" href="https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fscript.new" target="_blank" rel="noopener"><b>2</b>Apri Google con l'account dell'albergo</a></li>
+      <li><span class="rg-t"><b>3</b><span>Su Google: clic nel testo, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, poi 💾.</span></span></li>
+      <li><button type="button" class="rg-b" data-pa-copia="manifest"><b>4</b>Copia il permesso «sola lettura»</button></li>
+      <li><span class="rg-t"><b>5</b><span>Su Google: ⚙️ <b>Impostazioni progetto</b> → spunta <b>«Mostra il file manifest "appsscript.json"»</b> → torna al codice, apri <b>appsscript.json</b>, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, 💾. Poi <b>«Esegui il deployment» → «Nuovo deployment»</b> → ⚙️ <b>«App web»</b> → <b>«Chi ha accesso: Chiunque»</b> → <b>«Esegui il deployment»</b> → <b>«Autorizza l'accesso»</b> (se dice «app non verificata»: è la tua, <b>Avanzate → Vai a…</b> → <b>Consenti</b>) → copia l'<b>URL app web</b>.</span></span></li>
+      <li><label class="gh-incolla"><b>6</b><input id="paUrl" type="text" data-keep autocomplete="off" spellcheck="false" placeholder="Incolla qui l'URL app web" aria-label="Incolla qui l'indirizzo della casella" data-pa-url value="${esc(f.url || "")}"></label></li>
+      <li><button type="button" class="rg-b verde" data-pa-accendi${f.urlOk ? "" : " disabled"}><b>7</b>Collega</button></li>
+    </ol>
+    <p class="gh-esito${f.errore ? " ko" : ""}" role="status">${esc(f.errore || (f.provo ? "Controllo…" : f.urlOk ? "✓ La casella risponde. Tocca il 7." : "Quando incolli l'indirizzo, lo controllo da sola."))}</p>`;
+}
+async function paUrl(u) {
+  if (!S.foglio || S.foglio.tipo !== "postaAlb") return;
+  S.foglio = { ...S.foglio, url: u, errore: "", urlOk: false, provo: true }; disegnaFoglio();
+  const j = await alWsChiama(u, null, 30000);
+  if (!S.foglio || S.foglio.tipo !== "postaAlb") return;
+  const giusta = !!(j && j.casella);
+  S.foglio = { ...S.foglio, provo: false, url: u, urlOk: giusta, errore: giusta ? "" : j && (j.cassetta || j.passaggio) ? "Questo è l'indirizzo di un altro programma (la cassetta o il passaggio), non della casella della posta: rifai i passi dal tasto 1." : `Questo indirizzo non risponde come la casella${j && j.errore ? ` (${j.errore})` : ""}. Controlla di aver fatto «Nuovo deployment» come App web, con «Chiunque».` };
+  disegnaFoglio();
+}
+async function paAccendi() {
+  const f = S.foglio; if (!f || f.tipo !== "postaAlb" || f.provo) return;
+  const el = document.getElementById("paUrl"), url = String((el && el.value) || f.url || "").trim();
+  if (!csUrlGiusto(url)) { S.foglio = { ...f, url, errore: "Prima incolla l'«URL app web» (comincia con https://script.google.com/macros/s/…)." }; disegnaFoglio(); return; }
+  const segreto = S.postaAlb && S.postaAlb.url === url && S.postaAlb.segreto ? S.postaAlb.segreto : alWsSegreto();
+  S.foglio = { ...f, url, provo: true, errore: "" }; disegnaFoglio();
+  const r = await alWsChiama(url, { azione: "collega", segreto }, 60000);
+  if (!S.foglio || S.foglio.tipo !== "postaAlb") return;
+  if (!r.ok) { S.foglio = { ...S.foglio, provo: false, errore: r.errore || "Non ci sono riuscita." }; disegnaFoglio(); return; }
+  const ora = new Date().toISOString();
+  const dati = { url, segreto, pronta: true, quando: ora, indirizzo: String(r.indirizzo || "").slice(0, 120), errore: "" };
+  try { await S.db.salva("importazioni", "posta-albergo", dati); }
+  catch (e) { S.foglio = { ...S.foglio, provo: false, errore: "La casella va, ma non riesco a salvarla nell'app: riprova." }; disegnaFoglio(); return; }
+  S.postaAlb = { ...(S.postaAlb || {}), ...dati };
+  S.foglio = { tipo: "postaAlb" }; disegna(); toast(`✓ Collegata: ${nomeGov()} legge la posta ${csProssimo()}`);
+}
+async function paTogli() {
+  if (!paPronta() || !(await chiedi(`Scollego la posta dell'albergo? ${nomeGov()} smette di leggerla (le mail restano dove sono).`, { si: "Sì, scollega" }))) return;
+  try { await alWsChiama(S.postaAlb.url, { azione: "scollega", segreto: S.postaAlb.segreto }, 30000); } catch (e) {}
+  try { await S.db.salva("importazioni", "posta-albergo", { pronta: false, url: "", segreto: "", tolta: new Date().toISOString() }); S.postaAlb = { pronta: false }; S.foglio = null; disegna(); toast("Posta scollegata"); }
+  catch (e) { erroreScrittura(e); }
+}
+async function paCopia(cosa) {
+  const file = cosa === "manifest" ? PA_MANIFEST : PA_CODICE;
+  let testo = "";
+  try { const r = await fetch(file, { cache: "no-store" }); if (r.ok) testo = await r.text(); } catch (e) {}
+  if (cosa === "manifest" ? !/gmail\.readonly/.test(testo) : !/function doPost/.test(testo)) { toast("Non riesco a prenderlo: c'è internet?"); return; }
+  try { await navigator.clipboard.writeText(testo); toast(cosa === "manifest" ? "Permesso copiato ✓ Incollalo in appsscript.json" : "Codice copiato ✓ Ora «Apri Google»"); }
+  catch (e) { apriFoglio({ tipo: "copia", titolo: cosa === "manifest" ? "Il permesso «sola lettura»" : "Il codice della casella", testo }); }
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-pa-apri],[data-pa-copia],[data-pa-accendi],[data-pa-prova],[data-pa-rifai],[data-pa-togli]") : null;
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-pa-apri")) { apriFoglio({ tipo: "postaAlb" }); return; }
+  if (t.hasAttribute("data-pa-copia")) { paCopia(t.getAttribute("data-pa-copia")); return; }
+  if (t.hasAttribute("data-pa-accendi")) { if (!t.disabled) paAccendi(); return; }
+  if (t.hasAttribute("data-pa-rifai")) { S.foglio = { tipo: "postaAlb", rifai: true }; disegnaFoglio(); return; }
+  if (t.hasAttribute("data-pa-togli")) { paTogli(); return; }
+  if (t.hasAttribute("data-pa-prova")) {
+    (async () => { S.foglio = { tipo: "postaAlb", provo: true }; disegnaFoglio(); const r = await alWsChiama(S.postaAlb.url, { azione: "prova", segreto: S.postaAlb.segreto }, 60000); if (!S.foglio || S.foglio.tipo !== "postaAlb") return; S.foglio = { tipo: "postaAlb", esito: r.ok ? `✓ La casella risponde${r.indirizzo ? ": " + r.indirizzo : ""}${r.messaggi ? ` (${r.messaggi} mail in tutto)` : ""}.` : "", errore: r.ok ? "" : (r.errore || "Non risponde.") }; disegnaFoglio(); })();
+  }
+}, true);
+document.addEventListener("input", (e) => {
+  const t = e.target; if (!t || !t.hasAttribute || !t.hasAttribute("data-pa-url")) return;
+  const u = String(t.value || "").trim(); if (csUrlGiusto(u)) paUrl(u);   // incollato giusto: si controlla da solo
+}, true);
 const CS_CODICE = "copia-sicurezza.gs";
 const csPronta = () => !!(S.copia && S.copia.url && S.copia.segreto && S.copia.pronta);
 const csUrlGiusto = (u) => /^https:\/\/script\.google\.com\/(?:a\/[^/]+\/)?macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/.test(String(u || "").trim());
@@ -14391,6 +14492,7 @@ function vistaAltro() {
   </section>
   ${vistaPersone()}
   ${cardSocialAltro()}
+  ${cardPostaAlbergo()}
   ${cardCopia()}
   ${cardAzzera()}
   <div class="menu">
@@ -14451,6 +14553,7 @@ function disegnaFoglio() {
   else if (f.tipo === "alloggiato") html = foglioAlloggiato(f);   // 1.56.0
   else if (f.tipo === "alWs") html = foglioAlWs(f);   // 1.56.1
   else if (f.tipo === "cassetta") html = foglioCassetta(f);   // 1.64.0
+  else if (f.tipo === "postaAlb") html = foglioPostaAlbergo(f);   // 1.75.0
   else if (f.tipo === "calendario") html = foglioCalendario(f);   // 1.65.0
   else if (f.tipo === "socialCome") html = foglioSocialCome(f);   // 1.66.0
   else if (f.tipo === "socialChiave") html = foglioSocialChiave(f);   // 1.67.0

@@ -9373,3 +9373,6 @@ body.premium .bs-ico2 .nav-conta{top:-4px;right:-2px;min-width:16px;height:15px;
 .sofia-ver-tit{margin:14px 0 6px}
 .sofia-filmati-link{display:inline-block;margin-top:10px;font-weight:700;color:var(--oro-scuro,#8C6D3F);text-decoration:none;border-bottom:1px solid currentColor}
 :root[data-theme="dark"] .sofia-filmati-link{color:#D4AF6A}
+
+/* ---- 1.75.0 · in Altro «📬 La posta dell'albergo» (stessa grafica della copia di sicurezza) ---- */
+.pa-card .cs-stato{margin:0 0 8px}
