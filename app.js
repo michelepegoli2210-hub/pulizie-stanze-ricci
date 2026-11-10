@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.74.1";
+export const VERSIONE = "1.74.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -83,7 +83,11 @@ const CHIAVE_FACCE = "ricci_gov_facce";
 // 1.70.0 (Michele, 8/11: «l'altra Sofia… non la voglio vedere più da nessuna parte»): la faccia piccola è la testa della Sofia
 // di casa (sofia-viso.webp, ritagliata dal poster di casa). Via la Consuela a pose e i disegni.
 const FACCE_PRONTE = { base: "sofia-viso.webp" };
-const FILM_PRONTO = { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" };   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+// 1.74.2: «Sofia: Nuova / Com'era» (Altro). Nuova = la spilla d'oro col simbolo delle Stanze di Ricci; com'era = i filmati di prima
+//  (il medaglione), che restano sul sito: Michele può tornare indietro quando vuole.
+const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
+function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
+const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla.mp4", riposo: "cons-riposo-spilla.mp4", poster: "cons-poster-spilla.webp" };   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // 0.80: SOLO FILMATI (decisione di Michele del 21 ottobre: "lascia stare la sincronia della bocca,
 // metti soltanto i filmati"). Quando parla si vede un video in cui lei parla davvero, quando ascolta o
 // non fa niente uno in cui sta li' (ascolta, annuisce, pose). 0.81: due filmati lunghi soltanto.
@@ -128,7 +132,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" };   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-3d.webm", riposo: "cons-riposo-spilla-3d.webm", poster: "cons-poster-spilla-3d.webp" };   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
@@ -8371,6 +8375,10 @@ function cardStileCasa() {
         : `In 3D esce un po' dalla cornice, con la sua ombra, e resta ferma: non si muove col telefono né col mouse. "Piatta" la rimette esattamente com'era.`}</span>
     ${ALFA_OK === "no" || motoRidotto() || !sofia3dVoluta() ? "" : `<div class="seg" style="margin-top:8px"><button type="button" aria-pressed="${!saloneVoluto()}" data-salone="no">Senza niente dietro</button><button type="button" aria-pressed="${saloneVoluto()}" data-salone="si">Col salone dietro</button></div>
     <span class="small muted">Senza niente dietro: lei sta sulla pagina, senza il riquadro marrone alle spalle.</span>`}
+    <p class="sofia-ver-tit"><b>La spilla di ${esc(nomeGov())}</b></p>
+    <div class="seg"><button type="button" aria-pressed="${!sofiaComEra()}" data-sofia-ver="nuova">Nuova</button><button type="button" aria-pressed="${sofiaComEra()}" data-sofia-ver="prima">Com'era</button></div>
+    <span class="small muted">Nuova: la spilla d'oro con il simbolo delle Stanze di Ricci. Com'era: i filmati di prima, con il medaglione, identici. Si cambia quando vuoi.</span>
+    <a class="sofia-filmati-link" href="sofia-filmati.html" target="_blank" rel="noopener">Guarda tutti i filmati di ${esc(nomeGov())}, numerati ›</a>
     <h3>5. Orologio e data</h3>
     <div class="seg"><button type="button" aria-pressed="${orologioVoluto()}" data-orologio-scelta="si">Sì</button><button type="button" aria-pressed="${!orologioVoluto()}" data-orologio-scelta="no">No</button></div>
     <span class="small muted">L'ora grande e il giorno nella barra in cima, in ogni schermata.</span>
@@ -16306,6 +16314,7 @@ function collega() {
   document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
   document.querySelectorAll("button[data-salone]").forEach(b => b.onclick = () => { /* 1.0.4: solo i tasti (la casa ha anche lei data-salone) */ try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
   document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
+  document.querySelectorAll("[data-sofia-ver]").forEach(b => b.onclick = () => { if ((b.dataset.sofiaVer === "prima") === sofiaComEra()) return; try { localStorage.setItem(CHIAVE_SOFIA_VER, b.dataset.sofiaVer); } catch (e) {} toast(b.dataset.sofiaVer === "prima" ? nomeGov() + " com'era: un momento…" : nomeGov() + " con la spilla nuova: un momento…"); setTimeout(() => location.reload(), 700); });   // 1.74.2
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());

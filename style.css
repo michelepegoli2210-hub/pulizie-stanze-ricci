@@ -9368,3 +9368,8 @@ body.premium .bs-ico2 .bs-fig svg{width:40px;height:25px}
 body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-size:11.5px;line-height:1}
 body.premium .bs-ico2 .nav-conta{top:-4px;right:-2px;min-width:16px;height:15px;font-size:9.5px;line-height:12px;padding:0 4px}
 @media (max-width:360px){body.premium .bs-ico2 .bs-fig{width:42px;height:24px}body.premium .bs-ico2 .bs-fig svg{width:37px;height:23px}body.premium .bs-t.bs-ico2 .bs-n{font-size:11px}}
+
+/* ---- 1.74.2 · in Altro: «La spilla di Sofia: Nuova / Com'era» e il link a tutti i filmati ---- */
+.sofia-ver-tit{margin:14px 0 6px}
+.sofia-filmati-link{display:inline-block;margin-top:10px;font-weight:700;color:var(--oro-scuro,#8C6D3F);text-decoration:none;border-bottom:1px solid currentColor}
+:root[data-theme="dark"] .sofia-filmati-link{color:#D4AF6A}
