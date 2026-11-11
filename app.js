@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.1";
+export const VERSIONE = "1.79.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8445,33 +8445,27 @@ function icoDomande() {
 function icoNuvola() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M19 33.5Q10 33.5 10 26Q10 19 17.4 18.4Q19 10.5 27.5 10.5Q35 10.5 37.6 17Q39.6 15.5 42.6 15.5Q49.6 15.5 50.1 22.4Q56 23 56 28.4Q56 33.5 50.4 33.5Z" fill="#E0F2FE" stroke="#0284C7" stroke-width="1.6" stroke-linejoin="round"/><path d="M25 25L30.4 30L40 20.4" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
-// 1.79.1 (Michele, 11/11: «I tasti devono essere molto più inequivocabili», poi «solo disegni diversi»): i disegni dei tasti
-// della casa non si somigliano più. Prima arrivi e partenze erano lo stesso disegno (due omini, una freccia a destra, una
-// porta) con la porta solo spostata; le pulizie di oggi e di domani lo stesso secchio con un calendarietto. Adesso:
-//  - ARRIVI: la casetta (l'albergo) a destra, la freccia VERDE che va DENTRO la porta, l'ospite con la valigia che cammina verso
-//    la casetta;
-//  - PARTENZE: la stessa casetta nello stesso posto, l'ospite che ne è appena uscito e cammina VIA, la freccia ARANCIONE che
-//    punta dall'altra parte (le frecce dei due tasti sono una contro l'altra);
-//  - PULIZIE DI OGGI: il secchio col sole (il sole è «oggi», come nel tasto Oggi in basso);
-//  - PULIZIE DI DOMANI: il calendario grande col numero di domani, il secchio piccolo accanto.
-function icoCasetta() {
-  return `<rect x="42" y="16.4" width="18" height="22" fill="#FFF7E6" stroke="#7C4A1E" stroke-width="1.5"/><path d="M39.6 17.4L51 5.2L62.4 17.4Z" fill="#B45309" stroke="#7C2D12" stroke-width="1.5" stroke-linejoin="round"/><rect x="47" y="24" width="8" height="14.4" fill="#FDE68A" stroke="#7C4A1E" stroke-width="1.3"/><path d="M55 24L58.2 25.3V37.1L55 38.4Z" fill="#C08A4B" stroke="#7C4A1E" stroke-width="1.1" stroke-linejoin="round"/>`;
+// 1.79.2 (Michele, 11/11: «le due icone arrivi oggi e partenze oggi ancora più inequivocabili: deve poter capire anche mia
+// nonna che un giorno viene all'albergo e fa un check in»; fra tre proposte ha scelto «il cartello»): arrivi e partenze sono
+// due CARTELLI, come l'entrata e l'uscita dei negozi. Verde: l'omino con la valigia e la freccia bianca grande che va DENTRO
+// la porta. Arancione: la stessa porta nello stesso posto, l'omino che è uscito e se ne va, la freccia che va VIA. Colore,
+// freccia e omino dicono la stessa cosa tre volte (a chi confonde il verde con l'arancione restano la freccia e l'omino).
+// Poi (Michele: «scrivi in piccolo EXIT nella partenza, ed entra… non so bene come la puoi scrivere negli arrivi»): in piccolo,
+// come sui cartelli veri, EXIT sulle partenze e IN sugli arrivi (ENTRATA era troppo lunga: in quel posto veniva illeggibile).
+// (1.79.1) Le pulizie di oggi hanno il secchio col sole, quelle di domani il calendario grande: icoSecchio.
+function cartello(colore) { return `<rect x=".8" y=".8" width="62.4" height="38.4" rx="8" fill="${colore}"/>`; }
+// l'omino bianco con la valigia (verso 1 = cammina a destra, -1 = a sinistra)
+function cartelloPersona(x, verso) {
+  return `<g transform="translate(${x} 0) scale(${verso} 1)" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="1.4" cy="8.8" r="3.7" fill="#FFFFFF" stroke="none"/><path d="M1 14.8L-.2 24.4" stroke-width="5.6"/><path d="M-.2 24.4L4.4 34.4M-.8 24.4L-4.6 34.4" stroke-width="2.9"/><path d="M2.4 16.2L5.8 21.4" stroke-width="2.2"/><path d="M-1.6 16.4L-5.8 21.2L-7.8 24.2" stroke-width="2"/><rect x="-13.6" y="24" width="8.8" height="10.2" rx="1.8" fill="#FFFFFF" stroke="none"/><circle cx="-11.6" cy="35.8" r="1.3" fill="#FFFFFF" stroke="none"/><circle cx="-6.8" cy="35.8" r="1.3" fill="#FFFFFF" stroke="none"/></g>`;
 }
-// l'ospite che cammina tirandosi dietro la valigia (verso 1 = va a destra, -1 = va a sinistra)
-function icoViaggiatore(x, verso) {
-  return `<g transform="translate(${x} 0) scale(${verso} 1)" stroke-linecap="round" stroke-linejoin="round"><path d="M-6.4 21.6L-7.6 26.2" stroke="#475569" stroke-width="1.6" fill="none"/><rect x="-14" y="26" width="8.8" height="10.6" rx="1.8" fill="#DC2626" stroke="#7F1D1D" stroke-width="1.2"/><path d="M-11.2 27.4V35.2" stroke="#FCA5A5" stroke-width="1.2" fill="none"/><circle cx="-12.2" cy="37.5" r="1.2" fill="#1E293B"/><circle cx="-7" cy="37.5" r="1.2" fill="#1E293B"/><g stroke="#2563EB" fill="none"><circle cx="1.2" cy="8" r="4.2" fill="#2563EB" stroke="none"/><path d="M.8 14.8L-.2 25.8" stroke-width="6.2"/><path d="M.4 26L4.8 36.6M-.6 26L-4.4 36.6" stroke-width="3"/><path d="M2.4 16.6L5.8 21.8M-1.8 16.8L-6.4 21.6" stroke-width="2.3"/></g></g>`;
-}
-// la freccia grossa (la punta in «a»)
-function icoFrecciona(da, a, y, colore) {
-  const v = a > da ? 1 : -1, b = a - v * 6.2;
-  return `<g stroke="${colore}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M${da} ${y}H${a - v}"/><path d="M${b} ${y - 5.8}L${a} ${y}L${b} ${y + 5.8}"/></g>`;
-}
-function icoArrivi() {
-  return `<svg class="of-svg ico-arrivi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M1 38.4H63" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/>${icoViaggiatore(15, 1)}${icoCasetta()}${icoFrecciona(23, 46.4, 28, "#16A34A")}</svg>`;
-}
-function icoPartenze() {
-  return `<svg class="of-svg ico-partenze" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M1 38.4H63" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/>${icoCasetta()}${icoViaggiatore(27.4, -1)}${icoFrecciona(19, 2.6, 28, "#EA580C")}</svg>`;
-}
+// la porta aperta (la luce dentro, l'anta bianca girata verso di noi), sempre a destra
+function cartelloPorta() { return `<rect x="45.4" y="5.6" width="14.6" height="30.8" rx="1.4" fill="#FDE68A" stroke="#FFFFFF" stroke-width="2.4"/><path d="M60 5.6L54.6 8V34L60 36.4Z" fill="#FFFFFF"/>`; }
+// la parola del cartello, bianca, in piccolo, sopra la freccia
+function cartelloParola(testo, x, ancora) { return `<text class="cartello-parola" x="${x}" y="11.4" text-anchor="${ancora}" font-size="8.8" font-weight="800" letter-spacing=".2" fill="#FFFFFF" font-family="Plus Jakarta Sans,Arial,sans-serif">${testo}</text>`; }
+// la freccia piena (la punta in «a»)
+function cartelloFreccia(da, a, y) { const v = a > da ? 1 : -1, collo = a - v * 7.6; return `<path class="cartello-freccia" d="M${da} ${y - 2.9}H${collo}V${y - 7.6}L${a} ${y}L${collo} ${y + 7.6}V${y + 2.9}H${da}Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round"/>`; }
+function icoArrivi() { return `<svg class="of-svg ico-arrivi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${cartello("#16A34A")}${cartelloPorta()}${cartelloPersona(16, 1)}${cartelloFreccia(23.6, 43.8, 21)}${cartelloParola("IN", 33.7, "middle")}</svg>`; }
+function icoPartenze() { return `<svg class="of-svg ico-partenze" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${cartello("#EA580C")}${cartelloPorta()}${cartelloPersona(30.4, -1)}${cartelloFreccia(22.4, 2.8, 21)}${cartelloParola("EXIT", 12.8, "middle")}</svg>`; }
 // il letto da preparare, visto dall'alto: due cuscini = matrimoniale; un cuscino sul letto grande = matrimoniale in singolo;
 // il letto stretto con un cuscino = singolo; la casetta = un appartamento (più letti)
 function icoPrep(tipo) {
