@@ -9700,3 +9700,67 @@ body.premium .bs-ico2 .bs-fig svg{width:49.5px;height:31px}
   body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(30px, calc(50vw - 125px), 42px)}
   body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v{font-size:11.5px}
 }
+
+/* ---- 1.79.12 · Michele (11/11): «fai le icone il 15% più grandi e scrivi in grassetto pulizie oggi, pulizie domani,
+   piene, vuote, guasti, e oggi, prospetto, segreteria, piantine e paghe». Tutti i disegni il 15% più grandi (dopo il 15%
+   della 1.79.11) e le scritte accanto ai disegni in grassetto vero.
+   Perché prima non si vedeva: la scrittura della casa (Plus Jakarta Sans) era caricata solo fino al 700, quindi il
+   «grassetto pieno» (800) chiesto dalla 1.79.8 usciva come il 700. Adesso c'è anche l'800 (ExtraBold, stesso pacchetto
+   @fontsource 5.3.0 del 700 già nell'app), con un nome suo («Jakarta Grassetto») così vale solo per queste scritte e il
+   resto dell'app resta com'è. Le scritte anche più scure e, dove c'è posto (dai 405 px), un poco più grandi (11 invece di 10,3).
+   - tendina chiusa: i cartelli IN ed EXIT fino a 69 di larghezza (sui telefoni più stretti fin dove la parola PARTENZE ci
+     sta intera, il tasto ha 1 px in meno di margine dentro); le figurine 55,2x34,5 (le camere quanto ci sta nella loro
+     metà), alte 67, sotto i 375 px 52,9x33,1 e alte 74; la tendina chiusa 138, 209 con due file (sotto i 375 px 145 e 223);
+   - riquadro aperto: i disegni delle schede 69x43 (sotto i 375 px 57,5x36), il letto vuoto 39,7x24,8; le parole delle schede
+     (già grandi, 14,5) in grassetto (700, prima 600) e più scure: con l'800 andavano a capo una riga in più;
+   - dettagli: il disegno del titolo 61x38, i letti accanto ai numeri 47x28,75;
+   - barra in basso: i disegni 57x35,6 nel riquadro 65,5x37 (fino a 360 px 53x33 nel riquadro 60x34,5). ---- */
+@font-face{font-family:"Jakarta Grassetto";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/plus-jakarta-sans-latin-800-normal.woff2) format("woff2")}
+body.premium .sofia-hero .casa-nuvola .csp{gap:4px;padding:0 4px 0 2px}
+body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(52px, calc(50vw - 137px), 69px);height:auto}
+body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:55.2px;height:34.5px}
+body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:47.8px;max-width:100%;height:auto}
+body.premium .sofia-hero .casa-nuvola .csf-c{height:67px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 138px);height:138px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 209px);height:209px}
+body.premium .sofia-hero .casa-nuvola .csf-p{font-family:"Jakarta Grassetto",var(--f-lettura);font-weight:800;color:#231F1A}
+body.premium .sofia-hero .casa-nuvola .of-ico{width:69px;height:45px}
+body.premium .sofia-hero .casa-nuvola .of-ico svg{width:69px;height:43.1px}
+body.premium .sofia-hero .casa-nuvola .of-s.of-vuote .fa-letto{width:39.7px;height:24.8px}
+body.premium .sofia-hero .casa-nuvola .of-p{font-weight:700;color:#231F1A}
+body.premium .sofia-hero .casa-nuvola .casa-sal .dtf-tico svg{width:61px;height:38px}
+body.premium .sofia-hero .casa-nuvola .dtf-n .fa-letto{width:47px;height:28.75px}
+body.premium .bs-ico2 .bs-fig{width:65.5px;height:37px}
+body.premium .bs-ico2 .bs-fig svg{width:57px;height:35.6px}
+body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-family:"Jakarta Grassetto",var(--f-lettura);font-weight:800;font-size:12px;letter-spacing:0;color:#2E2A25}
+body.premium .bs-t.bs-ico2[aria-pressed="true"] .bs-n{color:#0F172A}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-p,
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-p{color:#E2E8F0}
+:root[data-theme="dark"] body.premium .bs-t.bs-ico2 .bs-n{color:#CBD5E1}
+:root[data-theme="dark"] body.premium .bs-t.bs-ico2[aria-pressed="true"] .bs-n{color:#F3E3B8}
+@media (min-width:405px){
+  body.premium .sofia-hero .casa-nuvola .csf-p{font-size:11px}
+}
+@media (max-width:399px){
+  body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(52px, calc(50vw - 133px), 69px)}
+}
+@media (max-width:374px){
+  body.premium .sofia-hero .casa-nuvola .csp{gap:3px;padding:0 3px 0 2px}
+  body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(36px, calc(50vw - 128px), 55px)}
+  body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:52.9px;height:33.1px}
+  body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:42.3px;height:auto}
+  body.premium .sofia-hero .casa-nuvola .csf-c{height:74px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 145px);height:145px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 223px);height:223px}
+  body.premium .sofia-hero .casa-nuvola .of-ico{width:57.5px;height:37px}
+  body.premium .sofia-hero .casa-nuvola .of-ico svg{width:57.5px;height:36px}
+}
+@media (max-width:360px){
+  body.premium .bs-ico2 .bs-fig{width:60px;height:34.5px}
+  body.premium .bs-ico2 .bs-fig svg{width:53px;height:33.1px}
+  body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-size:11.5px}
+}
+@media (max-width:340px){
+  body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(30px, calc(50vw - 121px), 48px)}
+  body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-size:10.8px}
+}

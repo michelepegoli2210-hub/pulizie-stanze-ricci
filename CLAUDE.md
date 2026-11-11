@@ -68,6 +68,8 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
    «premium» (`localStorage.ricci_stile4 = "premium"`).
 4. Prima di pubblicare: nessun errore in console, nessun file mancante (404), ogni pagina si apre.
 5. Il CSS nuovo va in fondo a `style.css`, in un blocco con la versione; attenti alla specificità (`body.premium …`).
+   La scrittura della casa (Plus Jakarta Sans) è caricata a 600 e 700: un 800 esce come il 700. Per il grassetto vero c'è
+   «Jakarta Grassetto» (solo 800, 1.79.12), usata per le scritte sotto i disegni e nella barra in basso.
 6. Pubblicazione: commit su `main` con messaggio in italiano. Poi sul PC di Michele la notifica «Aggiorna» dell'app, e si
    controlla che la versione sia quella nuova.
 

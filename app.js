@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.11";
+export const VERSIONE = "1.79.12";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8089,8 +8089,8 @@ function tendaLimiti(h) {
   const min = Math.max(lb + 10, hc * .3);   // 1.19.0: i tasti accanto a Sofia adesso stanno piu' in alto
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
   // 1.19.0: alta (appena sotto i tasti, di partenza), media, bassa
-  // 1.79.11: la tendina chiusa è alta 133 (1.79.7: 128; 1.79.0: 120): col dito scende fino a 4 px sopra
-  return { fondo, hc, min, chiusa: fondo - 137, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
+  // 1.79.12: la tendina chiusa è alta 138 (1.79.11: 133; 1.79.7: 128; 1.79.0: 120): col dito scende fino a 4 px sopra
+  return { fondo, hc, min, chiusa: fondo - 142, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
 }
 // 1.19.0: di partenza il riquadro sta al 34% dell'altezza; su un telefono basso, dove i tasti accanto a Sofia arrivano piu'
 // giu', parte appena sotto di loro (senza segnarlo in memoria)
