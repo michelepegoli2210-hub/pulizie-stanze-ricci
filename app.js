@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.10";
+export const VERSIONE = "1.79.11";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8089,7 +8089,8 @@ function tendaLimiti(h) {
   const min = Math.max(lb + 10, hc * .3);   // 1.19.0: i tasti accanto a Sofia adesso stanno piu' in alto
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
   // 1.19.0: alta (appena sotto i tasti, di partenza), media, bassa
-  return { fondo, hc, min, chiusa: fondo - 132, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
+  // 1.79.11: la tendina chiusa è alta 133 (1.79.7: 128; 1.79.0: 120): col dito scende fino a 4 px sopra
+  return { fondo, hc, min, chiusa: fondo - 137, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
 }
 // 1.19.0: di partenza il riquadro sta al 34% dell'altezza; su un telefono basso, dove i tasti accanto a Sofia arrivano piu'
 // giu', parte appena sotto di loro (senza segnarlo in memoria)
@@ -8637,14 +8638,18 @@ function notizieFacili(ls, fatte, man, dom) {
   const chiDomani = Object.entries(perSig).map(([s, n]) => `${s} ${n}`).join(" · ");
   const n = ls.length, resta = n - fatte, problemi = ls.filter(p => p.stato === "problema").length, out = [];
   // i due tasti grandi: il numero sono le PERSONE («col numero delle persone ovviamente, ospiti»)
-  const porta = (k, ico, lista, ospiti, verbo, verbi) => {
-    const cam = lista.length, uno = ospiti === 1, in_ = `in ${cam} ${cam === 1 ? "camera" : "camere"}`;
-    return { k, vai: k, ico, porta: true, n: String(ospiti), uno: uno ? "ospite" : "ospiti", verbo: uno ? verbo : verbi, due: `${uno ? verbo : verbi} oggi`,   // 1.79.4: «verbo» va in grassetto parole: `${uno ? "ospite " + verbo : "ospiti " + verbi} oggi`, corto: `${uno ? verbo : verbi} oggi`,
+  // 1.79.11 (Michele, 11/11: «grammaticalmente è più corretto dire ARRIVI e PARTENZE senza la scritta ospiti»): sul tasto il
+  // numero e sotto ARRIVI / PARTENZE (ARRIVO / PARTENZA per una persona), senza «ospiti»; il numero resta quello delle persone.
+  // Per chi non vede resta la frase intera («Oggi arrivano 3 ospiti, in 3 camere»). (Prima un commento in mezzo alla riga si
+  // mangiava «parole» e «corto»: adesso ci sono.)
+  const porta = (k, ico, lista, ospiti, verbo, verbi, nome, nomi) => {
+    const cam = lista.length, uno = ospiti === 1, in_ = `in ${cam} ${cam === 1 ? "camera" : "camere"}`, parola = uno ? nome : nomi;
+    return { k, vai: k, ico, porta: true, n: String(ospiti), uno: "", verbo: parola, due: `${parola} oggi`, parole: `${parola} oggi`, corto: parola,
       sotto: cam ? `<small class="of-s2">${in_}</small>` : "", tono: cam ? "att" : "",
       dici: cam ? `Oggi ${uno ? verbo : verbi} ${ospiti} ${uno ? "ospite" : "ospiti"}, ${in_}` : `Oggi non ${verbo} nessuno` };
   };
-  out.push(porta("arriviOggi", icoArrivi(), mv.arr, mv.ospitiArr, "arriva", "arrivano"));
-  out.push(porta("partenzeOggi", icoPartenze(), mv.par, mv.ospitiPar, "parte", "partono"));
+  out.push(porta("arriviOggi", icoArrivi(), mv.arr, mv.ospitiArr, "arriva", "arrivano", "arrivo", "arrivi"));
+  out.push(porta("partenzeOggi", icoPartenze(), mv.par, mv.ospitiPar, "parte", "partono", "partenza", "partenze"));
   out.push({ k: "pulizie", vai: "pulizie", ico: icoSecchio(), n: n ? `${fatte} su ${n}` : "0", parole: n ? `${n === 1 ? "pulizia fatta" : "pulizie fatte"}${resta ? "" : " ✓"}` : "pulizie oggi", corto: "pulizie oggi",
     sotto: n ? `<span class="of-barra" aria-hidden="true"><i style="width:${Math.round(fatte / n * 100)}%"></i></span>` : "", tono: resta > 0 ? "att" : n ? "ok" : "",
     dici: n ? `Pulizie di oggi: ${fatte} fatte su ${n}` : "Oggi nessuna pulizia" });
@@ -8655,8 +8660,9 @@ function notizieFacili(ls, fatte, man, dom) {
     doppia: { ico: icoLettoCasa(false), n: String(libere), corto: libere === 1 ? "vuota" : "vuote" },
     sotto: `<small class="of-s of-vuote">${icoLettoCasa(false)}<span>${libere} ${libere === 1 ? "vuota" : "vuote"}</span></small>`,
     dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "vuota" : "vuote"}` });
-  out.push({ k: "manutenzione", vai: "manutenzione", ico: icoChiave(), n: String(man), parole: "da aggiustare", corto: "da aggiustare", tono: man > 0 ? "att" : "",
-    dici: man ? `${man} ${man === 1 ? "cosa" : "cose"} da aggiustare` : "Niente da aggiustare" });
+  // 1.79.11 (Michele: «al posto di da aggiustare metti GUASTI»): la figurina e la scheda dicono «guasti» («guasto» per uno)
+  out.push({ k: "manutenzione", vai: "manutenzione", ico: icoChiave(), n: String(man), parole: man === 1 ? "guasto" : "guasti", corto: man === 1 ? "guasto" : "guasti", tono: man > 0 ? "att" : "",
+    dici: man ? `${man} ${man === 1 ? "guasto" : "guasti"} da aggiustare` : "Nessun guasto" });
   const nm = messaggiSigNuovi();   // 1.55.13: i messaggi delle signore per Michele
   if (nm.length) out.push({ k: "messaggi", vai: "messaggi", ico: icoBusta(), n: String(nm.length), parole: nm.length === 1 ? `messaggio di ${nm[0].nome || "una signora"}` : "messaggi dalle signore", corto: nm.length === 1 ? "messaggio" : "messaggi", tono: "att", larga: true, dici: nm.length === 1 ? `${nm[0].nome || "Una signora"} ti ha scritto: ${nm[0].testo || "una foto"}` : `${nm.length} messaggi dalle signore` });
   if (spintaDaProporre()) out.push({ k: "spintaGh", vai: "spintaGh", ico: icoNuvola(), n: "⚡", mn: "⚡", parole: "un passo per te: le notifiche subito", corto: "notifiche", tono: "att", larga: true, dici: "Un passo per te: con una chiave di GitHub le notifiche partono subito da questo PC" });   // 1.55.14
@@ -8674,7 +8680,7 @@ function schedeFacili(ls, fatte, man, dom) {
 // 1.79.0: a tendina chiusa, in alto, i due tasti grandi: «3 ospiti arrivano oggi» (la porta, gli omini che entrano) e «7 ospiti
 // partono oggi» (gli omini che se ne vanno). Un tocco apre chi arriva e dove va, oppure chi parte.
 function porteFacili(ls, fatte, man, dom) {
-  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b> ${esc(o.uno)}</span><span class="csp-2"><b class="csp-v">${esc(o.verbo)}</b></span></span></button>`).join("");   // 1.79.4: «arrivano» / «partono» in grassetto; 1.79.5 (Michele: «ARRIVANO, senza oggi»): solo la parola, in maiuscolo e in rilievo (lo stile)
+  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b>${o.uno ? " " + esc(o.uno) : ""}</span><span class="csp-2"><b class="csp-v">${esc(o.verbo)}</b></span></span></button>`).join("");   // 1.79.4: «arrivano» / «partono» in grassetto; 1.79.5 (Michele: «ARRIVANO, senza oggi»): solo la parola, in maiuscolo e in rilievo (lo stile)
 }
 // 1.21.2: le figurine della tendina chiusa: tutte le notizie della giornata. 1.79.0: senza i due tasti grandi, che stanno sopra;
 // le camere hanno due metà (il letto pieno e il letto vuoto, ognuno col suo numero)
@@ -8718,7 +8724,7 @@ function domaniFacile() {
 function miniFacile(ls, fatte, man, dom) {
   const n = ls.length, fig = (cls, ico, num, parola) => `<span class="csm-c${cls}"><span class="csm-ico" aria-hidden="true">${ico}</span><b>${num}</b><span class="csm-p">${parola}</span></span>`;
   const p1 = fig(n - fatte > 0 ? " att" : "", icoSecchio(), n ? `${fatte} su ${n}` : "0", n ? "oggi" : "pulizie oggi");
-  const p2 = man ? fig(" att", icoChiave(), man, "da aggiustare") : dom ? fig(" att", icoDomande(), dom, dom === 1 ? "domanda" : "domande") : "";
+  const p2 = man ? fig(" att", icoChiave(), man, man === 1 ? "guasto" : "guasti") : dom ? fig(" att", icoDomande(), dom, dom === 1 ? "domanda" : "domande") : "";
   return p1 + p2;
 }
 // il fumetto di Sofia (lo stesso messaggio della pagina di prima: saluto, testo, «👉» la cosa da fare) e le schede

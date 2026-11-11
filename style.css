@@ -9655,3 +9655,48 @@ body.premium .sofia-hero .casa-nuvola .of-s.of-vuote .fa-letto{width:30px;height
    grassetto pieno (800 invece di 600, come ARRIVANO e PARTONO), con la stessa grandezza e lo stesso colore. Ci stanno su
    tutti i telefoni (da 320 px; sotto i 375 px «pulizie domani» e «da aggiustare» vanno su due righe, come prima) ---- */
 body.premium .sofia-hero .casa-nuvola .csf-p{font-weight:800}
+
+/* ---- 1.79.11 · Michele (11/11): «fai il 15 percento più grandi tutte le icone comprese quelle di sotto prospetto segreteria
+   eccetera». Tutti i disegni il 15% più grandi (le scritte restano come sono):
+   - tendina chiusa: i cartelli IN ed EXIT 60x37,5. «PARTENZE» è più lunga di «PARTONO»: sui telefoni più stretti il cartello
+     cresce fin dove la parola ci sta ancora intera (a 393 px 60, a 375 px 52 come prima, a 360 px 47, a 320 px 35; sotto i
+     400 px la parola 13 px, sotto i 341 px 11,5 px). Le figurine 48x30, le due metà delle camere 41,6x26 o quanto ci sta
+     nella loro metà (sotto i 375 px 46x28,75 e 36,8x23); figurine alte 62 (68), tendina chiusa 133, 199 con due file
+     (139 e 211);
+   - riquadro aperto: i disegni delle schede 60x38 (sotto i 375 px 50x32), il letto vuoto sotto le camere piene 34,5x21,6;
+   - dettagli: il disegno del titolo 53x33, i letti accanto ai numeri 41x25;
+   - barra in basso: i disegni 49,5x31 nel riquadro 57x32 (fino a 360 px 46x28,75 nel riquadro 52x30). ---- */
+body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:60px;height:auto}
+body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:48px;height:30px}
+body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico{max-width:100%}
+body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:41.6px;max-width:100%;height:auto}
+body.premium .sofia-hero .casa-nuvola .csf-c{height:62px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 133px);height:133px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 199px);height:199px}
+body.premium .sofia-hero .casa-nuvola .of-ico{width:60px;height:39px}
+body.premium .sofia-hero .casa-nuvola .of-ico svg{width:60px;height:38px}
+body.premium .sofia-hero .casa-nuvola .of-s.of-vuote .fa-letto{width:34.5px;height:21.6px}
+body.premium .sofia-hero .casa-nuvola .casa-sal .dtf-tico svg{width:53px;height:33px}
+body.premium .sofia-hero .casa-nuvola .dtf-n .fa-letto{width:41px;height:25px}
+body.premium .bs-ico2 .bs-fig{width:57px;height:32px}
+body.premium .bs-ico2 .bs-fig svg{width:49.5px;height:31px}
+@media (max-width:399px){
+  body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(52px, calc(50vw - 136px), 60px)}
+  body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v{font-size:13px}
+}
+@media (max-width:374px){
+  body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(36px, calc(50vw - 133px), 48px)}
+  body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v{font-size:12.8px}
+  body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:46px;height:28.75px}
+  body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:36.8px;height:auto}
+  body.premium .sofia-hero .casa-nuvola .csf-c{height:68px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 139px);height:139px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 211px);height:211px}
+  body.premium .sofia-hero .casa-nuvola .of-ico{width:50px}
+  body.premium .sofia-hero .casa-nuvola .of-ico svg{width:50px;height:32px}
+}
+@media (max-width:360px){body.premium .bs-ico2 .bs-fig{width:52px;height:30px}body.premium .bs-ico2 .bs-fig svg{width:46px;height:28.75px}}
+@media (max-width:340px){
+  body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(30px, calc(50vw - 125px), 42px)}
+  body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v{font-size:11.5px}
+}
