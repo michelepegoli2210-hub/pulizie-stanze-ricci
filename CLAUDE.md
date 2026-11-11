@@ -49,6 +49,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   senza IA (`timbroDi` in `lettura.js`). I turni passati da WhatsApp aspettano sempre il «Sì» di Michele. Il conto del
   giorno è in `turnoDelGiorno`: i turni si uniscono e i pezzi sovrapposti contano una volta; cosa fa un «Sì» lo dice
   `oreEffetto`. Le regole di Firestore non cambiano: i turni in più sono documenti `visti/<zona>_<giorno>_2…4`.
+- La casa (1.79.0), tendina chiusa: due tasti grandi (ospiti che arrivano e che partono oggi, `movimentiDelGiorno`), poi
+  pulizie oggi, pulizie domani, camere piene e vuote, da aggiustare (`notizieFacili`). I dettagli sono in `dettaglioFacile`:
+  la piantina di chi arriva e di chi parte, il letto da preparare (`preparazioneCamera`). Michele legge male le scritte
+  piccole: i tasti non si rimpiccioliscono.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

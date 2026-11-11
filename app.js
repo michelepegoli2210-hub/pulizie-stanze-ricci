@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.78.0";
+export const VERSIONE = "1.79.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -897,13 +897,13 @@ function casaVaiPagina(k) {
   if (k === "messaggi") { apriFoglio({ tipo: "postaSig" }); return; }   // 1.55.13
   if (k === "regoleMsg") { apriFoglio({ tipo: "regoleMsg" }); return; }
   if (k === "spintaGh") { apriFoglio({ tipo: "spintaGh" }); return; }   // 1.55.14
-  if (k === "arrivi" || k === "camere") k = "prospetto";
+  if (k === "arrivi" || k === "camere" || k === "arriviOggi" || k === "partenzeOggi") k = "prospetto";   // 1.79.0: anche chi arriva e chi parte oggi
   if (k === "domani") { const d = L.aggiungiGiorni(L.oggiISO(), 1); S.giorno = d; S.settimana = L.lunediDi(d); k = "prospetto"; }   // 1.10.0
   if (k === "pulizie") { const a = document.getElementById("app"); const top = a ? a.getBoundingClientRect().top + window.scrollY - 70 : window.innerHeight; window.scrollTo({ top, behavior: "smooth" }); return; }
   S.vista = k; disegna(); window.scrollTo(0, 0);
 }
 // 1.7.1: il dettaglio di una riga, scritto grande dentro il riquadro di Sofia
-const DETTAGLI = { pulizie: 1, manutenzione: 1, arrivi: 1, camere: 1, sofia: 1, domani: 1, argon: 1 };
+const DETTAGLI = { pulizie: 1, manutenzione: 1, arrivi: 1, camere: 1, sofia: 1, domani: 1, argon: 1, arriviOggi: 1, partenzeOggi: 1 };   // 1.79.0: chi arriva e chi parte oggi
 function dettaglioApri(k) {
   const h = document.getElementById("sofiaHero"); if (!h || h.classList.contains("nuvola-aperta")) return false;
   h.dataset.dettaglio = k;
@@ -912,6 +912,7 @@ function dettaglioApri(k) {
   return true;
 }
 function dettaglioHtml(k, ls, fatte) {
+  if (k === "arriviOggi" || k === "partenzeOggi") return dettaglioFacile(k, ls, fatte);   // 1.79.0: sono nati a figure: uguali anche nella pagina «Come prima»
   const c = consiglioOggi(), oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
   const dice = (testo) => testo ? `<span class="dt-sofia"><i aria-hidden="true">✦</i>${esc(testo)}</span>` : "";
   const r = (html) => `<span class="dt-r">${html}</span>`;
@@ -7852,6 +7853,7 @@ function casaOssatura(tre) {
         <button type="button" role="tab" class="cs-tab" data-casa-scheda="chat" aria-selected="false">${ICO_LINEA.chat}<span>Chat</span><i class="cs-conta" hidden></i></button>
       </div>
       <button type="button" class="cr-riga cr-tess cs-domani" data-casa-vai="domani" aria-label="Le pulizie di domani"></button>
+      <div class="cs-porte" role="group" aria-label="Chi arriva e chi parte oggi"></div>
       <button type="button" class="casa-saluto" data-tenda aria-expanded="true" aria-label="Apri o chiudi le notizie"><b class="casa-ciao"></b><i class="cs-mini" hidden></i><span class="cs-freccia" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
       <div class="csf" role="group" aria-label="Le notizie di oggi"></div>
       <div class="casa-testo">
@@ -8063,7 +8065,7 @@ function tendaLimiti(h) {
   const min = Math.max(lb + 10, hc * .3);   // 1.19.0: i tasti accanto a Sofia adesso stanno piu' in alto
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
   // 1.19.0: alta (appena sotto i tasti, di partenza), media, bassa
-  return { fondo, hc, min, chiusa: fondo - 108, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
+  return { fondo, hc, min, chiusa: fondo - 124, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
 }
 // 1.19.0: di partenza il riquadro sta al 34% dell'altezza; su un telefono basso, dove i tasti accanto a Sofia arrivano piu'
 // giu', parte appena sotto di loro (senza segnarlo in memoria)
@@ -8342,6 +8344,9 @@ function casaAggiorna(h) {
   {
     const cf = q(".csf");
     if (cf) { const fg = facile ? figurineFacili(ls, fatte, man, dom) : null, hh = fg ? fg.html : ""; if (cf._hh !== hh) { cf._hh = hh; cf.innerHTML = hh; } h.classList.toggle("csf-2", !!fg && fg.n > 4); }
+    // 1.79.0 (il disegno di Michele): sopra le figurine i due tasti grandi, chi arriva e chi parte oggi
+    const cp = q(".cs-porte");
+    if (cp) { const hh = facile ? porteFacili(ls, fatte, man, dom) : ""; if (cp._hh !== hh) { cp._hh = hh; cp.innerHTML = hh; } }
   }
   const det = h.dataset.dettaglio ? (facile ? dettaglioFacile : dettaglioHtml)(h.dataset.dettaglio, ls, fatte) : null;   // 1.7.1; 1.21.0: nella vista facile a figure
   if (sal) { if (det) { if (sal.innerHTML !== det.titolo) sal.innerHTML = det.titolo; sal.classList.remove("lunga"); } else { const t = c && c.saluto ? c.saluto : `${saluto()}, ${nomeMio()}!`; sal.textContent = t; sal.classList.toggle("lunga", t.length > 58); } }
@@ -8440,6 +8445,33 @@ function icoDomande() {
 function icoNuvola() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M19 33.5Q10 33.5 10 26Q10 19 17.4 18.4Q19 10.5 27.5 10.5Q35 10.5 37.6 17Q39.6 15.5 42.6 15.5Q49.6 15.5 50.1 22.4Q56 23 56 28.4Q56 33.5 50.4 33.5Z" fill="#E0F2FE" stroke="#0284C7" stroke-width="1.6" stroke-linejoin="round"/><path d="M25 25L30.4 30L40 20.4" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
+// 1.79.0 (Michele, 10/11: «una porta che si apre… degli omini che entrano… e gli omini che se ne vanno»): le figure dei due
+// tasti grandi. Disegni nostri, colori pieni come le altre: la porta aperta con la luce dentro, gli omini che camminano e la
+// freccia (verde = entrano, arancione = se ne vanno). Negli arrivi gli omini vanno VERSO la porta; nelle partenze la porta
+// resta alle loro spalle.
+function icoOmini(x1, x2, c1, c2) {
+  // un omino che cammina verso destra: la testa, il busto un po' in avanti, le gambe aperte, un braccio avanti
+  const omino = (x, c, alto) => { const t = alto ? 7.4 : 10.4, r = alto ? 4 : 3.5, y = alto ? 12.6 : 14.8;
+    return `<g stroke="${c}" stroke-linecap="round" fill="none"><circle cx="${x + .8}" cy="${t}" r="${r}" fill="${c}" stroke="none"/><path d="M${x + .4} ${y + 2.6} L${x - .4} 25.6" stroke-width="${alto ? 6.4 : 5.6}"/><path d="M${x - .6} 26 L${x - 4.2} 36.2 M${x + .2} 26 L${x + 4.8} 36.2" stroke-width="2.9"/><path d="M${x + 2.6} ${y + 3.6} L${x + 6.2} ${y + 9}" stroke-width="2.2"/></g>`; };
+  return omino(x1, c1, true) + omino(x2, c2, false);
+}
+function icoArrivi() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M2 38.4H62" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/>${icoOmini(8, 21.5, "#2563EB", "#EA8A2E")}<path d="M30.4 23H38.4" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round"/><path d="M34.8 18.2L39.6 23L34.8 27.8" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="43" y="3" width="18.4" height="35.4" rx="1.6" fill="#FDE68A" stroke="#7C4A1E" stroke-width="2.2"/><path d="M61.4 3L51.6 6.4V35L61.4 38.4Z" fill="#C08A4B" stroke="#7C4A1E" stroke-width="1.5" stroke-linejoin="round"/><circle cx="54" cy="21.4" r="1.3" fill="#FACC15" stroke="#7C4A1E" stroke-width=".6"/></svg>`;
+}
+function icoPartenze() {
+  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M2 38.4H62" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/><rect x="2.6" y="3" width="18.4" height="35.4" rx="1.6" fill="#FDE68A" stroke="#7C4A1E" stroke-width="2.2"/><path d="M2.6 3L12.4 6.4V35L2.6 38.4Z" fill="#C08A4B" stroke="#7C4A1E" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="21.4" r="1.3" fill="#FACC15" stroke="#7C4A1E" stroke-width=".6"/>${icoOmini(30, 43.5, "#2563EB", "#EA8A2E")}<path d="M52.6 23H60.4" stroke="#EA580C" stroke-width="3.2" stroke-linecap="round"/><path d="M56.8 18.2L61.6 23L56.8 27.8" fill="none" stroke="#EA580C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+// il letto da preparare, visto dall'alto: due cuscini = matrimoniale; un cuscino sul letto grande = matrimoniale in singolo;
+// il letto stretto con un cuscino = singolo; la casetta = un appartamento (più letti)
+function icoPrep(tipo) {
+  if (tipo === "casa") return `<svg class="ico-prep" viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><path d="M3 12L15 2.6L27 12" fill="none" stroke="#7C4A1E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 11V22H24V11" fill="#FDE68A" stroke="#7C4A1E" stroke-width="1.8" stroke-linejoin="round"/><rect x="12.4" y="14" width="5.2" height="8" fill="#C08A4B" stroke="#7C4A1E" stroke-width="1.2"/></svg>`;
+  const largo = tipo !== "singolo", w = largo ? 26 : 15, x = largo ? 2 : 7.5;
+  const cuscino = (cx) => `<rect x="${cx}" y="3.4" width="9.4" height="5.6" rx="2" fill="#FFFFFF" stroke="#64748B" stroke-width="1.1"/>`;
+  const cuscini = tipo === "doppio" ? cuscino(x + 2.4) + cuscino(x + 14.2) : tipo === "uso" ? cuscino(x + 2.4) + `<rect x="${x + 14.2}" y="3.4" width="9.4" height="5.6" rx="2" fill="none" stroke="#B8AE9F" stroke-width="1" stroke-dasharray="2 1.6"/>` : cuscino(x + 2.8);
+  return `<svg class="ico-prep" viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><rect x="${x}" y="1.2" width="${w}" height="21.6" rx="3" fill="#F8FAFC" stroke="#6B4F23" stroke-width="1.5"/><path d="M${x} 11.4H${x + w}V19.8Q${x + w} 22.8 ${x + w - 3} 22.8H${x + 3}Q${x} 22.8 ${x} 19.8Z" fill="#3B6FD6" stroke="#6B4F23" stroke-width="1.5" stroke-linejoin="round"/><path d="M${x + .8} 13.4H${x + w - .8}" stroke="#BFDBFE" stroke-width="2"/>${cuscini}</svg>`;
+}
+// un omino piccolo (uno per persona, fino a quattro)
+function icoOmino() { return `<svg class="ico-omino" viewBox="0 0 10 16" width="10" height="16" aria-hidden="true"><circle cx="5" cy="3.4" r="3" fill="currentColor"/><path d="M1 15V10.4Q1 7.2 5 7.2Q9 7.2 9 10.4V15Z" fill="currentColor"/></svg>`; }
 // il giorno a parole: «oggi», «domani», «ieri», «venerdì» (entro 6 giorni), altrimenti «22 novembre»
 function parolaGiorno(d) { const n = L.giorniTra(L.oggiISO(), d); return n === 0 ? "oggi" : n === 1 ? "domani" : n === -1 ? "ieri" : Math.abs(n) <= 6 ? L.GIORNI[L.giornoSettimana(d)] : `${L.giornoDelMese(d)} ${L.MESI[L.daISO(d).getUTCMonth()]}`; }
 function finoAGiorno(d) { const p = parolaGiorno(d); if (!/^\d/.test(p)) return `fino a ${p}`; const n = parseInt(p, 10); return n === 8 || n === 11 ? `fino all'${p}` : `fino al ${n === 1 ? p.replace(/^1(?=\s)/, "1°") : p}`; }
@@ -8452,42 +8484,104 @@ function elencoParole(a) { return a.length < 2 ? (a[0] || "") : `${a.slice(0, -1
 // 1.53.0 (Michele: «questa parte cose delle chat da controllare ed il conseguente Sofia cosa capisce si può togliere, non serve
 // più»): via la scheda «N cose dalle chat da controllare» (e «Sofia sta leggendo le chat»). Le chat le legge e le mette a posto
 // la segretaria; quello che ha fatto, e quello che ti chiede, sta in Segreteria.
+// ---- 1.79.0 (Michele, 10/11, col disegno sulla foto della casa: «dove stanno le frecce nere devi mettere degli omini che
+// entrano, e che ci sia scritto arrivi di oggi col numero delle persone… a fianco una porta che si apre, ospiti che partono…
+// dove stanno i cerchietti rossi le pulizie che si devono fare oggi e le pulizie che bisogna fare domani… dove stanno quelli
+// gialli camere piene oggi, camere vuote, con un letto a fianco vuoto… dove sta il verde la manutenzione»).
+// Le notizie cambiano ordine. In testa i DUE TASTI GRANDI: chi arriva e chi parte OGGI, contati a persone. Poi: pulizie di
+// oggi, pulizie di domani, camere piene e vuote, manutenzione. Gli arrivi di domani non spariscono: stanno in fondo a «Chi
+// arriva oggi?» e dentro «Pulizie di domani».
+// Chi arriva e chi parte in un giorno. Chi resta nella stessa camera con un soggiorno nuovo (uno finisce e l'altro comincia lo
+// stesso giorno, stesso nome) non parte e non arriva.
+function movimentiDelGiorno(iso) {
+  const vere = new Set(S.camere.map(c => c.id)), sog = soggiorniLista().filter(s => s && vere.has(s.camera) && s.inizio < s.fine);
+  const chi = (s) => PAROLE.norm(nomeOspite(s)), stesso = (a, b) => a.camera === b.camera && a.id !== b.id && !!chi(a) && chi(a) === chi(b);
+  const entra = sog.filter(s => s.inizio === iso), esce = sog.filter(s => s.fine === iso);
+  const ord = (a, b) => ordineCamera(a.camera) - ordineCamera(b.camera), persone = (l) => l.reduce((t, s) => t + (Number(s.persone) || 1), 0);
+  const arr = entra.filter(a => !esce.some(p => stesso(a, p))).sort(ord), par = esce.filter(p => !entra.some(a => stesso(a, p))).sort(ord);
+  return { arr, par, ospitiArr: persone(arr), ospitiPar: persone(par) };
+}
+// come si prepara una camera (Michele: «mi deve dire rispetto agli arrivi se si deve fare un matrimoniale, se si deve fare un
+// singolo»): «Matrimoniale · per 2»; il letto grande per una persona sola è «Matrimoniale in singolo · per 1» (parole sue);
+// la camera col letto singolo «Singolo · per 1»; negli appartamenti, che hanno più letti, solo «per 4 persone»
+function preparazioneCamera(c, n) {
+  if (!c || !c.id || c.tipo === "comune") return null;
+  n = Math.max(0, Number(n) || 0);
+  const casa = c.tipo === "casa", doppio = (Number(c.posti) || 2) >= 2;
+  const tipo = casa ? "casa" : !doppio ? "singolo" : n === 1 ? "uso" : "doppio";
+  const letto = { casa: "", singolo: "Singolo", uso: "Matrimoniale in singolo", doppio: "Matrimoniale" }[tipo];
+  const per = n ? (casa ? `per ${n} ${n === 1 ? "persona" : "persone"}` : `per ${n}`) : "";
+  if (!letto && !per) return null;
+  return { tipo, letto, n, per, testo: [letto, per].filter(Boolean).join(" · ") };
+}
+function prepHtml(pr) { return pr ? `<span class="dtf-prep ${pr.tipo}">${icoPrep(pr.tipo)}<span>${pr.letto ? `<b>${esc(pr.letto)}</b>` : ""}${pr.letto && pr.per ? " · " : ""}${esc(pr.per)}</span></span>` : ""; }
+// a che punto è la pulizia di una camera in quel giorno (per chi arriva: è pronta?)
+function statoCameraGiorno(cid, iso) {
+  const l = pulizieDelGiorno(iso).filter(p => p.camera === cid && p.tipo !== "stelle" && p.tipo !== "extra" && p.tipo !== "fisso" && p.origine !== "governante");
+  if (!l.length) return null;
+  const chi = [...new Set(l.map(p => SIG(p.zona)))].join(" e ");
+  if (l.some(p => p.stato === "problema")) return { k: "prob", testo: "problema nella camera" };
+  if (l.every(p => p.stato === "fatta")) return { k: "ok", testo: "✓ pulita" };
+  if (l.some(p => p.stato === "in_corso")) return { k: "corso", testo: `la sta pulendo ${chi}` };
+  if (l.some(p => p.stato === "non_fatta")) return { k: "prob", testo: "non pulita" };
+  return { k: "da", testo: `da pulire · ${chi}` };
+}
 function notizieFacili(ls, fatte, man, dom) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
-  const arrivi = sog.filter(s => s.inizio === domani).length;
+  const mv = movimentiDelGiorno(oggi);
   const piene = S.camere.filter(c => L.ospiteIl(sog, c.id, oggi)).length, libere = S.camere.length - piene;
   const dm = pulizieDelGiorno(domani).filter(p => p.tipo !== "stelle"), perSig = {};
   dm.forEach(p => { const s = SIG(p.zona); perSig[s] = (perSig[s] || 0) + 1; });
   const chiDomani = Object.entries(perSig).map(([s, n]) => `${s} ${n}`).join(" · ");
   const n = ls.length, resta = n - fatte, problemi = ls.filter(p => p.stato === "problema").length, out = [];
+  // i due tasti grandi: il numero sono le PERSONE («col numero delle persone ovviamente, ospiti»)
+  const porta = (k, ico, lista, ospiti, verbo, verbi) => {
+    const cam = lista.length, uno = ospiti === 1, in_ = `in ${cam} ${cam === 1 ? "camera" : "camere"}`;
+    return { k, vai: k, ico, porta: true, n: String(ospiti), uno: uno ? "ospite" : "ospiti", due: `${uno ? verbo : verbi} oggi`, parole: `${uno ? "ospite " + verbo : "ospiti " + verbi} oggi`, corto: `${uno ? verbo : verbi} oggi`,
+      sotto: cam ? `<small class="of-s2">${in_}</small>` : "", tono: cam ? "att" : "",
+      dici: cam ? `Oggi ${uno ? verbo : verbi} ${ospiti} ${uno ? "ospite" : "ospiti"}, ${in_}` : `Oggi non ${verbo} nessuno` };
+  };
+  out.push(porta("arriviOggi", icoArrivi(), mv.arr, mv.ospitiArr, "arriva", "arrivano"));
+  out.push(porta("partenzeOggi", icoPartenze(), mv.par, mv.ospitiPar, "parte", "partono"));
   out.push({ k: "pulizie", vai: "pulizie", ico: icoSecchio(), n: n ? `${fatte} su ${n}` : "0", parole: n ? `${n === 1 ? "pulizia fatta" : "pulizie fatte"}${resta ? "" : " ✓"}` : "pulizie oggi", corto: "pulizie oggi",
     sotto: n ? `<span class="of-barra" aria-hidden="true"><i style="width:${Math.round(fatte / n * 100)}%"></i></span>` : "", tono: resta > 0 ? "att" : n ? "ok" : "",
     dici: n ? `Pulizie di oggi: ${fatte} fatte su ${n}` : "Oggi nessuna pulizia" });
+  out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), uno: dm.length === 1 ? "pulizia" : "pulizie", due: "domani", parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: dm.length === 1 ? "pulizia domani" : "pulizie domani", tono: dm.length ? "att" : "",
+    sotto: chiDomani ? `<small class="of-s2 of-chi">${Object.entries(perSig).map(([s, q]) => `<span>${esc(s)} ${q}</span>`).join("")}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` });
+  // le camere: il letto pieno e, a fianco, il letto vuoto
+  out.push({ k: "camere", vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", corto: piene === 1 ? "piena" : "piene",
+    doppia: { ico: icoLetto(false), n: String(libere), corto: libere === 1 ? "vuota" : "vuote" },
+    sotto: `<small class="of-s of-vuote">${icoLetto(false)}<span>${libere} ${libere === 1 ? "vuota" : "vuote"}</span></small>`,
+    dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "vuota" : "vuote"}` });
   out.push({ k: "manutenzione", vai: "manutenzione", ico: icoChiave(), n: String(man), parole: "da aggiustare", corto: "da aggiustare", tono: man > 0 ? "att" : "",
     dici: man ? `${man} ${man === 1 ? "cosa" : "cose"} da aggiustare` : "Niente da aggiustare" });
-  out.push({ k: "arrivi", vai: "arrivi", ico: icoValigia(), n: String(arrivi), parole: arrivi === 1 ? "arrivo domani" : "arrivi domani", corto: arrivi === 1 ? "arrivo domani" : "arrivi domani", dici: `Domani ${arrivi} ${arrivi === 1 ? "arrivo" : "arrivi"}` });
-  out.push({ k: "camere", vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", corto: piene === 1 ? "camera piena" : "camere piene", sotto: `<small class="of-s">${libere} ${libere === 1 ? "libera" : "libere"}</small>`,
-    dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "libera" : "libere"}` });
   const nm = messaggiSigNuovi();   // 1.55.13: i messaggi delle signore per Michele
   if (nm.length) out.push({ k: "messaggi", vai: "messaggi", ico: icoBusta(), n: String(nm.length), parole: nm.length === 1 ? `messaggio di ${nm[0].nome || "una signora"}` : "messaggi dalle signore", corto: nm.length === 1 ? "messaggio" : "messaggi", tono: "att", larga: true, dici: nm.length === 1 ? `${nm[0].nome || "Una signora"} ti ha scritto: ${nm[0].testo || "una foto"}` : `${nm.length} messaggi dalle signore` });
   if (spintaDaProporre()) out.push({ k: "spintaGh", vai: "spintaGh", ico: icoNuvola(), n: "⚡", mn: "⚡", parole: "un passo per te: le notifiche subito", corto: "notifiche", tono: "att", larga: true, dici: "Un passo per te: con una chiave di GitHub le notifiche partono subito da questo PC" });   // 1.55.14
   if (regoleMsgVecchie()) out.push({ k: "regoleMsg", vai: "regoleMsg", ico: icoAttenzione(), n: "!", mn: "!", parole: "un passo per te: le regole di Firebase", corto: "regole", tono: "rosso", larga: true, dici: "Per ricevere i messaggi delle signore, pubblica le regole nuove di Firebase" });
   if (problemi) out.push({ k: "problemi", vai: "pulizie", ico: icoAttenzione(), n: String(problemi), parole: problemi === 1 ? "problema in una camera" : "problemi nelle camere", corto: problemi === 1 ? "problema" : "problemi", tono: "rosso", larga: true, dici: `Oggi ${problemi} ${problemi === 1 ? "problema" : "problemi"} nelle camere` });
-  out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: "domani", larga: true,
-    sotto: chiDomani ? `<small class="of-s2">${esc(chiDomani)}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` });
   if (dom) out.push({ k: "sofia", vai: "sofia", ico: icoDomande(), n: String(dom), parole: `${dom === 1 ? "domanda" : "domande"} di ${nomeGov()} per te`, corto: dom === 1 ? "domanda" : "domande", tono: "att", larga: true, dici: `${nomeGov()} ha ${dom} ${dom === 1 ? "domanda" : "domande"} per te` });
   if (cloudAttivo() && !premiumScelto()) { const a = argonTesseraValore(); out.push({ k: "argon", vai: "argon", ico: icoNuvola(), n: "ArgonCloud", parole: a.v, testo: true, mn: a.att ? (String(a.v).match(/^\d+/) || ["!"])[0] : "✓", corto: "ArgonCloud", tono: a.att ? "att" : "", larga: true, dici: `ArgonCloud: ${a.v}` }); }
   return out;
 }
-// le schede a figure del riquadro aperto (le quattro in alto, poi le larghe)
+// le schede a figure del riquadro aperto: arrivi e partenze di oggi, pulizie di oggi e di domani, camere, manutenzione; poi le larghe
 function schedeFacili(ls, fatte, man, dom) {
-  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}</b><span class="of-p">${esc(o.parole)}</span>${o.sotto || ""}</span></button>`;
+  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}${o.porta ? " of-porta" : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}${o.uno ? `<i class="of-u">${esc(o.uno)}</i>` : ""}</b><span class="of-p">${esc(o.uno ? o.due : o.parole)}</span>${o.sotto || ""}</span></button>`;
   return notizieFacili(ls, fatte, man, dom).map(scheda).join("");
 }
-// 1.21.2: le figurine della tendina chiusa: tutte le notizie della giornata (tranne «domani», che ha la sua tessera sopra)
+// 1.79.0: a tendina chiusa, in alto, i due tasti grandi: «3 ospiti arrivano oggi» (la porta, gli omini che entrano) e «7 ospiti
+// partono oggi» (gli omini che se ne vanno). Un tocco apre chi arriva e dove va, oppure chi parte.
+function porteFacili(ls, fatte, man, dom) {
+  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b> ${esc(o.uno)}</span><span class="csp-2">${esc(o.due)}</span></span></button>`).join("");
+}
+// 1.21.2: le figurine della tendina chiusa: tutte le notizie della giornata. 1.79.0: senza i due tasti grandi, che stanno sopra;
+// le camere hanno due metà (il letto pieno e il letto vuoto, ognuno col suo numero)
 function figurineFacili(ls, fatte, man, dom) {
-  const l = notizieFacili(ls, fatte, man, dom).filter(o => o.k !== "domani");
-  return { n: l.length, html: l.map(o => `<button type="button" class="csf-c${o.tono ? " " + o.tono : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="csf-ico" aria-hidden="true">${o.ico}</span><b class="csf-n">${esc(o.mn || o.n)}</b><span class="csf-p">${esc(o.corto)}</span></button>`).join("") };
+  const l = notizieFacili(ls, fatte, man, dom).filter(o => !o.porta);
+  const meta = (ico, n, p) => `<span class="csf-m"><span class="csf-ico" aria-hidden="true">${ico}</span><b class="csf-n">${esc(n)}</b><span class="csf-p">${esc(p)}</span></span>`;
+  return { n: l.length, html: l.map(o => o.doppia
+    ? `<button type="button" class="csf-c csf-due${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}">${meta(o.ico, o.n, o.corto)}${meta(o.doppia.ico, o.doppia.n, o.doppia.corto)}</button>`
+    : `<button type="button" class="csf-c${o.tono ? " " + o.tono : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="csf-ico" aria-hidden="true">${o.ico}</span><b class="csf-n">${esc(o.mn || o.n)}</b><span class="csf-p">${esc(o.corto)}</span></button>`).join("") };
 }
 // la busta (le chat lette da Sofia: dalla 1.53 non si usa più in Oggi) e il triangolo (un problema in una camera)
 function icoBusta() {
@@ -8541,7 +8635,9 @@ function oggiFacileHtml(c, u, ls, fatte, man, dom) {
 }
 // il dettaglio a figure (toccata una scheda): niente messaggio di Sofia ripetuto (confondeva), una cosa per riga, le camere
 // a bottoni (✓ verde = fatta), le signore col loro nome; ArgonCloud resta com'era
-const DETTAGLI_FACILI = { pulizie: 1, domani: 1, arrivi: 1, camere: 1, manutenzione: 1, sofia: 1 };
+const DETTAGLI_FACILI = { pulizie: 1, domani: 1, arrivi: 1, camere: 1, manutenzione: 1, sofia: 1, arriviOggi: 1, partenzeOggi: 1 };
+// «il 22 novembre», «l'8 novembre», «il 1° dicembre»; entro la settimana «oggi», «domani», «venerdì»
+function ilGiorno(d) { const p = parolaGiorno(d); if (!/^\d/.test(p)) return p; const n = parseInt(p, 10); return n === 8 || n === 11 ? `l'${p}` : `il ${n === 1 ? p.replace(/^1(?=\s)/, "1°") : p}`; }
 function dettaglioFacile(k, ls, fatte) {
   if (!DETTAGLI_FACILI[k]) return dettaglioHtml(k, ls, fatte);
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
@@ -8560,12 +8656,26 @@ function dettaglioFacile(k, ls, fatte) {
       const tipo = p.stato === "in_corso" ? "in corso" : p.tipo === "ripasso" ? "veloce" : p.tipo === "extra" ? "extra" : "";
       return `<span class="dtf-k${st ? " " + st : ""}">${segno}${nomeCam(camera(p.camera))}${tipo ? ` <small>${tipo}</small>` : ""}</span>`;
     };
+    // 1.79.0 (Michele: «la preparazione: mi deve dire rispetto agli arrivi se si deve fare un matrimoniale, se si deve fare un
+    // singolo… devono essere ben visibili nella sezione pulizie di oggi. Lo stesso nelle pulizie di domani, conseguente alle
+    // partenze e anche agli arrivi»): una riga per camera. A sinistra la camera (verde = fatta), a destra il letto da preparare
+    // e per quanti; sotto il perché: parte, arriva (e chi), resta fino a…
+    const corto = (nome) => nome ? nomeCortoOspite({ nome }) : "";
+    const riga = (p) => {
+      if (p.tipo === "stelle") return `<span class="dtf-pz solo"><span class="dtf-pz-c">${chip(p)}</span></span>`;
+      const c = camera(p.camera), per = perChiCamera(p, c), pr = per ? preparazioneCamera(c, per.n) : null;
+      const pil = pilloleOspite(p).map(([t, , testo]) => {
+        const chi = t === "arriva" ? corto(p.arrivo ? p.ospite : p.prossimoNome) : t === "resta" ? corto(p.ospite) : t === "parte" && !p.arrivo ? corto(p.ospite) : "";
+        return `<span class="dtf-pl ${t}">${esc(testo)}${chi ? `: ${esc(chi)}` : ""}</span>`;
+      }).join("");
+      return `<span class="dtf-pz${pr || pil ? "" : " solo"}"><span class="dtf-pz-c">${chip(p)}</span>${pr || pil ? `<span class="dtf-pz-t">${prepHtml(pr)}${pil ? `<span class="dtf-pls">${pil}</span>` : ""}</span>` : ""}</span>`;
+    };
     const gruppi = new Map(); for (const p of tutte) { const z = p.zona || "?"; if (!gruppi.has(z)) gruppi.set(z, []); gruppi.get(z).push(p); }
     const ord = zoneOrdinate().map(z => z.id), pos = (z) => { const i = ord.indexOf(z); return i < 0 ? 99 : i; };
     const blocchi = [...gruppi.entries()].sort((a, b) => pos(a[0]) - pos(b[0])).map(([z, l]) => {
       const v = l.filter(p => p.tipo !== "stelle"), f = v.filter(p => p.stato === "fatta").length, nome = SIG(z);
       const conto = !v.length ? "rifiniture" : k === "pulizie" ? `${f} su ${v.length} ${v.length === 1 ? "fatta" : "fatte"}` : `${v.length} ${v.length === 1 ? "pulizia" : "pulizie"}`;
-      return `<span class="dtf-sig"><span class="dtf-sig-t"><i class="dtf-av" aria-hidden="true">${esc(nome.charAt(0).toUpperCase())}</i><b>${esc(nome)}</b><span class="dtf-conto">${conto}</span>${S.zone[z] && signore().some(x => x.id === z) ? `<button type="button" class="dtf-prova" data-prova-signora="${esc(z)}">👀 Prova</button>` : ""}</span><span class="dtf-cam">${l.map(chip).join("")}</span></span>`;
+      return `<span class="dtf-sig"><span class="dtf-sig-t"><i class="dtf-av" aria-hidden="true">${esc(nome.charAt(0).toUpperCase())}</i><b>${esc(nome)}</b><span class="dtf-conto">${conto}</span>${S.zone[z] && signore().some(x => x.id === z) ? `<button type="button" class="dtf-prova" data-prova-signora="${esc(z)}">👀 Prova</button>` : ""}</span><span class="dtf-pzs">${l.map(riga).join("")}</span></span>`;
     });
     if (!tutte.length) corpo = vuoto(k === "pulizie" ? "Oggi nessuna pulizia." : "Domani nessuna pulizia: nessuno da chiamare.");
     else {
@@ -8575,6 +8685,56 @@ function dettaglioFacile(k, ls, fatte) {
       corpo = conta + (k === "domani" ? `<span class="dtf-nota">📞 Da chiamare: ${elencoParole(nomi)}</span>` : "") + blocchi.join("");
     }
     tasto = k === "pulizie" ? pagina("pulizie", "Apri l'elenco di oggi") : pagina("domani", "Apri il prospetto di domani");
+  } else if (k === "arriviOggi" || k === "partenzeOggi") {
+    // 1.79.0 (Michele: «premo un tasto e mi dice per fare i check-in chi arriva, così so dove stanno, con un prospetto come ce
+    // l'ho nelle piantine, ben chiaro, quasi da scuola elementare, per capire dove vanno gli arrivi. Il tasto a destra, le
+    // partenze, mi dice chi sta partendo»). In alto quanti ospiti e quante camere; poi LA PIANTINA (i piani col corridoio in
+    // mezzo, gli appartamenti): le camere di chi arriva sono verdi e grandi (di chi parte arancioni), col nome e gli omini, le
+    // altre chiare; sotto una scheda per ospite: la camera, il letto da preparare, se è pulita, fino a quando resta, le note.
+    // Un tocco apre l'ospite. In fondo chi arriva (o parte) domani.
+    const arriva = k === "arriviOggi", mv = movimentiDelGiorno(oggi), md = movimentiDelGiorno(domani);
+    const lista = arriva ? mv.arr : mv.par, ospiti = arriva ? mv.ospitiArr : mv.ospitiPar, pers = (n) => `${n} ${n === 1 ? "persona" : "persone"}`;
+    titolo = tit(arriva ? icoArrivi() : icoPartenze(), lista.length ? (arriva ? "Chi arriva oggi?" : "Chi parte oggi?") : (arriva ? "Oggi non arriva nessuno" : "Oggi non parte nessuno"));
+    const cella = (c) => {
+      const s = lista.find(x => x.camera === c.id);
+      if (!s) return `<span class="dpm-c ${L.ospiteIl(sog, c.id, oggi) ? "piena" : "vuota"}"><b>${nomeCam(c)}</b></span>`;
+      const n = Number(s.persone) || 1;
+      return `<button type="button" class="dpm-c ${arriva ? "arr" : "par"}" data-dtf-sog="${esc(s.id)}" aria-label="${nomeCam(c)}: ${arriva ? "arriva" : "parte"} ${esc(nomeOspite(s))}, ${pers(n)}"><b>${nomeCam(c)}</b><span class="dpm-chi">${esc(nomeCortoOspite(s))}</span><span class="dpm-per">${icoOmino().repeat(Math.min(4, n))}<i>${pers(n)}</i></span></button>`;
+    };
+    const inZona = new Set();
+    const piani = zoneOrdinate().map(z => {
+      const cam = camereZona(z.id); if (!cam.length) return ""; cam.forEach(c => inZona.add(c.id));
+      const sx = cam.filter(c => c.lato === "L"), dx = cam.filter(c => c.lato === "R"), via = cam.filter(c => c.lato === "S"), altre = cam.filter(c => !["L", "R", "S"].includes(c.lato));
+      let dentro = "";
+      if (sx.length || dx.length) dentro += `<span class="dpm-piano"><span class="dpm-lato">${sx.map(cella).join("")}</span><span class="dpm-corr" aria-hidden="true"><i>corridoio</i></span><span class="dpm-lato">${dx.map(cella).join("")}</span></span>`;
+      if (via.length) dentro += `<span class="dpm-fuori"><small>${esc(via[0].via || "via N. Sauro")}</small><span class="dpm-griglia">${via.map(cella).join("")}</span></span>`;
+      if (altre.length) dentro += `<span class="dpm-griglia">${altre.map(cella).join("")}</span>`;
+      return `<span class="dpm-z"><span class="dpm-zt">${esc(z.breve || z.nome)}</span>${dentro}</span>`;
+    }).join("");
+    const fuori = S.camere.filter(c => !inZona.has(c.id));
+    const pianta = `<span class="dpm" role="group" aria-label="Dove sono le camere">${piani}${fuori.length ? `<span class="dpm-z"><span class="dpm-zt">Altre</span><span class="dpm-griglia">${fuori.map(cella).join("")}</span></span>` : ""}</span>`;
+    const scheda = (s) => {
+      const c = camera(s.camera), n = Number(s.persone) || 1, st = statoCameraGiorno(c.id, oggi), gu = guastiDelPosto(c.id), righe = [];
+      if (arriva) {
+        const prima = mv.par.find(p => p.camera === s.camera);
+        righe.push(`<span class="dtf-mv-2">${prepHtml(preparazioneCamera(c, n))}${st ? `<span class="dtf-pl ${st.k}">${esc(st.testo)}</span>` : ""}</span>`);
+        righe.push(`<span class="dtf-mv-3">${esc(maiuscola(finoAGiorno(s.fine)))} · ${esc(nottiDi(s))}${prima ? ` · prima esce ${esc(nomeCortoOspite(prima))}` : ""}</span>`);
+      } else {
+        const dopo = sog.filter(x => x.camera === s.camera && x.id !== s.id && x.inizio >= oggi && x.inizio < x.fine).sort((a, b) => a.inizio < b.inizio ? -1 : 1)[0];
+        righe.push(`<span class="dtf-mv-2"><span class="dtf-pl per">${pers(n)}</span>${st ? `<span class="dtf-pl ${st.k}">${esc(st.testo)}</span>` : ""}</span>`);
+        righe.push(`<span class="dtf-mv-3">${dopo ? `${dopo.inizio === oggi ? "Oggi stesso" : esc(maiuscola(ilGiorno(dopo.inizio)))} arriva ${esc(nomeCortoOspite(dopo))}` : "Poi la camera resta vuota"}</span>`);
+      }
+      if (gu.length) righe.push(`<span class="dtf-mv-2"><span class="dtf-pl guasto">🔧 ${esc(gu.length === 1 ? String(gu[0].titolo || "una cosa da aggiustare") : `${gu.length} cose da aggiustare`)}</span></span>`);
+      if (s.nota) righe.push(`<span class="dtf-nota2">${esc(String(s.nota).slice(0, 160))}</span>`);
+      if (proprietario() && s.notaPrivata) righe.push(`<span class="dtf-nota2">🔒 ${esc(String(s.notaPrivata).slice(0, 160))}</span>`);
+      return `<button type="button" class="dtf-mv ${arriva ? "arr" : "par"}" data-dtf-sog="${esc(s.id)}"><span class="dtf-mv-1"><b class="dtf-nome">${esc(nomeOspite(s))}</b><span class="dtf-k">${icoPorta()}${nomeCam(c)}</span></span>${righe.join("")}</button>`;
+    };
+    const dm = arriva ? md.arr : md.par, nd = arriva ? md.ospitiArr : md.ospitiPar;
+    const domaniHtml = dm.length ? `<span class="dtf-blocco"><span class="dtf-bt">${arriva ? "Domani arrivano" : "Domani partono"}: ${nd} ${nd === 1 ? "ospite" : "ospiti"}</span><span class="dtf-cam">${dm.map(s => `<button type="button" class="dtf-k via" data-dtf-sog="${esc(s.id)}">${esc(nomeCortoOspite(s))} <small>${nomeCam(camera(s.camera))}</small></button>`).join("")}</span></span>` : "";
+    corpo = (lista.length
+      ? `<span class="dtf-conta"><span class="dtf-n ${arriva ? "arr" : "par"}"><b>${ospiti}</b> ${ospiti === 1 ? "ospite" : "ospiti"}</span><span class="dtf-n da"><b>${lista.length}</b> ${lista.length === 1 ? "camera" : "camere"}</span></span>${pianta}${lista.map(scheda).join("")}<span class="dtf-nota mgd-aiuto">Tocca un ospite: si apre la sua scheda.</span>`
+      : vuoto(arriva ? "Oggi nessun arrivo." : "Oggi nessuna partenza.")) + domaniHtml;
+    tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "arrivi") {
     const arr = sog.filter(s => s.inizio === domani), part = sog.filter(s => s.fine === domani);
     titolo = tit(icoValigia(), arr.length ? "Chi arriva domani?" : "Domani non arriva nessuno");
@@ -8588,11 +8748,12 @@ function dettaglioFacile(k, ls, fatte) {
     if (!corpo) corpo = vuoto("Domani nessuno arriva e nessuno va via.");
     tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "camere") {
+    // 1.79.0: «vuota» al posto di «libera» (Michele: «camere piene oggi, camere vuote»), come sul tasto
     const elenco = zoneOrdinate().flatMap(z => camereZona(z.id)), tutte = elenco.concat(S.camere.filter(c => !elenco.includes(c)));
     const piene = tutte.filter(cm => L.ospiteIl(sog, cm.id, oggi)).length, libere = tutte.length - piene;
     titolo = tit(icoLetto(true), "Chi dorme stanotte?");
-    const celle = tutte.map(cm => { const s = L.ospiteIl(sog, cm.id, oggi); return s ? `<button type="button" class="dtf-cm piena" data-dtf-sog="${esc(s.id)}" aria-label="${nomeCam(cm)}: ${esc(nomeCortoOspite(s))}"><b>${nomeCam(cm)}</b><small>${esc(nomeCortoOspite(s))}</small></button>` : `<button type="button" class="dtf-cm libera" data-dtf-cella="${esc(cm.id)}|${oggi}" aria-label="${nomeCam(cm)}: libera"><b>${nomeCam(cm)}</b><small>libera</small></button>`; }).join("");   // 1.59.0: si toccano
-    corpo = `<span class="dtf-conta"><span class="dtf-n pieno">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="dtf-n libero">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "libera" : "libere"}</span></span><span class="dtf-griglia">${celle}</span>`;
+    const celle = tutte.map(cm => { const s = L.ospiteIl(sog, cm.id, oggi); return s ? `<button type="button" class="dtf-cm piena" data-dtf-sog="${esc(s.id)}" aria-label="${nomeCam(cm)}: ${esc(nomeCortoOspite(s))}"><b>${nomeCam(cm)}</b><small>${esc(nomeCortoOspite(s))}</small></button>` : `<button type="button" class="dtf-cm libera" data-dtf-cella="${esc(cm.id)}|${oggi}" aria-label="${nomeCam(cm)}: vuota"><b>${nomeCam(cm)}</b><small>vuota</small></button>`; }).join("");   // 1.59.0: si toccano
+    corpo = `<span class="dtf-conta"><span class="dtf-n pieno">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="dtf-n libero">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "vuota" : "vuote"}</span></span><span class="dtf-griglia">${celle}</span>`;
     tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "manutenzione") {
     // 1.59.1 (Michele, 7/11: «non deve essere un elenco fatto così… appena la apro devo vedere tutti i guasti… tipo "Chi dorme

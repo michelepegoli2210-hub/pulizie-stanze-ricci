@@ -9430,3 +9430,169 @@ body.premium .bs-ico2 .nav-conta{top:-4px;right:-2px;min-width:16px;height:15px;
 :root[data-theme="dark"] .paga-attesa>b{color:#FCD34D}
 :root[data-theme="dark"] .paga-attesa-r small{color:#D6D3D1}
 :root[data-theme="dark"] .paga-attesa-r small.ore-avviso,:root[data-theme="dark"] .turno-riga .turno-troppe,:root[data-theme="dark"] .sg2-r.prop small.sg2-ore.ore-avviso{color:#FBBF24}
+
+/* ---- 1.79.0 · LA CASA COME NEL DISEGNO DI MICHELE (10/11: «dove stanno le frecce nere devi mettere degli omini che entrano…
+   a fianco una porta che si apre, ospiti che partono… i tasti sono leggermente troppo piccoli, non ci leggo molto bene: falli
+   un 8% più grandi, anche quelli di sotto»). A tendina chiusa: in alto DUE TASTI GRANDI (chi arriva oggi, chi parte oggi) al
+   posto della tessera «pulizie domani»; sotto le figurine (pulizie oggi, pulizie domani, camere piene e vuote, da aggiustare)
+   l'8% più grandi: alte 49 invece di 44, numero 14, scritta 10,3. La tendina chiusa è alta 120 (era 102), con due file 173.
+   La barra in basso l'8% più grande. Nei dettagli: la piantina di chi arriva e di chi parte, il letto da preparare. ---- */
+.cs-porte{display:none}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 120px);height:120px;padding-top:13px;padding-bottom:7px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 173px);height:173px;padding-top:13px;padding-bottom:7px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cr-riga.cr-tess.cs-domani{display:none}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-porte{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;flex:0 0 47px;height:47px;margin:0 44px 4px 0}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-saluto{top:13px;height:47px;width:38px}
+body.premium .sofia-hero .casa-nuvola .csp{display:flex;align-items:center;gap:5px;min-width:0;height:100%;margin:0;padding:0 5px 0 3px;border-radius:12px;box-sizing:border-box;background:#FFFFFF;border:1.5px solid #E3D5B4;box-shadow:0 2px 6px -4px rgba(15,23,42,.2);color:#0F172A;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+body.premium .sofia-hero .casa-nuvola .csp.att{background:#F6EAD1;border-color:#D9BF8C}
+body.premium .sofia-hero .casa-nuvola .csp:active{transform:scale(.97)}
+body.premium .sofia-hero .casa-nuvola .csp-ico{flex:0 0 auto;display:flex}
+body.premium .sofia-hero .casa-nuvola .csp-ico svg{display:block;width:52px;height:32.5px}
+body.premium .sofia-hero .casa-nuvola .csp-t{display:flex;flex-direction:column;justify-content:center;gap:0;min-width:0}
+body.premium .sofia-hero .casa-nuvola .csp-1{display:block;font:600 13.5px/1 var(--f-lettura);color:#3F3A33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.premium .sofia-hero .casa-nuvola .csp-n{margin-right:1px;font:700 21px/1.15 var(--f-lettura);font-variant-numeric:lining-nums proportional-nums;color:#0F172A}
+body.premium .sofia-hero .casa-nuvola .csp-2{display:block;font:600 12.5px/1.05 var(--f-lettura);color:#3F3A33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* le figurine: l'8% più grandi */
+body.premium .sofia-hero .casa-nuvola .csf-c{height:49px;padding:1px 2px 2px;border-radius:11px}
+body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:28px;height:17.5px}
+body.premium .sofia-hero .casa-nuvola .csf-n{font-size:14px;line-height:1}
+body.premium .sofia-hero .casa-nuvola .csf-p{font-size:10.3px;line-height:1.2}
+/* le camere: due metà, il letto pieno e il letto vuoto */
+body.premium .sofia-hero .casa-nuvola .csf-c.csf-due{flex-direction:row;align-items:center;justify-content:space-evenly;gap:0;padding-left:1px;padding-right:1px}
+body.premium .sofia-hero .casa-nuvola .csf-m{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;flex:1 1 0;min-width:0}
+body.premium .sofia-hero .casa-nuvola .csf-m+.csf-m{border-left:1px solid rgba(154,116,50,.28)}
+body.premium .sofia-hero .casa-nuvola .csf-m:last-child .csf-n{color:#15803D}
+body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:26px;height:16.5px}
+@media (max-width:374px){
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 125px);height:125px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 183px);height:183px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-porte{margin-right:40px;gap:3px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-saluto{width:36px;right:10px}
+  body.premium .sofia-hero .casa-nuvola .csp{gap:3px;padding:0 3px 0 2px}
+  body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:42px;height:26px}
+  body.premium .sofia-hero .casa-nuvola .csp-1{font-size:12.5px}
+  body.premium .sofia-hero .casa-nuvola .csp-n{font-size:19px}
+  body.premium .sofia-hero .casa-nuvola .csp-2{font-size:11.3px}
+  body.premium .sofia-hero .casa-nuvola .csf-c{height:54px}
+  body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:26px;height:16px}
+  body.premium .sofia-hero .casa-nuvola .csf-n{font-size:13.5px}
+  body.premium .sofia-hero .casa-nuvola .csf-p{font-size:9.9px;line-height:1.1}
+  body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:23px;height:14.5px}
+}
+/* il riquadro aperto: «3 ospiti» accanto al numero, il letto vuoto sotto le camere piene */
+body.premium .sofia-hero .casa-nuvola .of-u{margin-left:5px;font:600 15px/1 var(--f-lettura);font-style:normal;color:#3F3A33}
+body.premium .sofia-hero .casa-nuvola .of-s2.of-chi{display:flex;flex-wrap:wrap;gap:0 9px}
+body.premium .sofia-hero .casa-nuvola .of-s2.of-chi span{white-space:nowrap}
+body.premium .sofia-hero .casa-nuvola .of-s.of-vuote{display:flex;align-items:center;gap:4px;margin-top:1px}
+body.premium .sofia-hero .casa-nuvola .of-s.of-vuote .fa-letto{display:block;flex:0 0 auto;width:27px;height:17px}
+/* ---- i dettagli: il letto da preparare, le pillole (parte, arriva, resta), le righe delle pulizie ---- */
+body.premium .sofia-hero .casa-nuvola .dtf-prep{display:inline-flex;align-items:center;gap:6px;min-width:0;font:600 15.5px/1.2 var(--f-lettura);color:#0F172A}
+body.premium .sofia-hero .casa-nuvola .dtf-prep b{font-weight:700}
+body.premium .sofia-hero .casa-nuvola .dtf-prep .ico-prep{flex:0 0 auto;display:block;width:29px;height:23px}
+body.premium .sofia-hero .casa-nuvola .dtf-pls{display:flex;flex-wrap:wrap;gap:4px 5px;margin-top:5px}
+body.premium .sofia-hero .casa-nuvola .dtf-pl{display:inline-flex;align-items:center;min-height:25px;max-width:100%;padding:2px 10px;border-radius:999px;box-sizing:border-box;background:#F1F5F9;color:#334155;font:600 14px/1.2 var(--f-lettura);overflow-wrap:anywhere}
+body.premium .sofia-hero .casa-nuvola .dtf-pl.parte{background:#FFEDD5;color:#9A3412}
+body.premium .sofia-hero .casa-nuvola .dtf-pl.arriva,
+body.premium .sofia-hero .casa-nuvola .dtf-pl.ok{background:#DCFCE7;color:#166534}
+body.premium .sofia-hero .casa-nuvola .dtf-pl.da{background:#FEF3C7;color:#92400E}
+body.premium .sofia-hero .casa-nuvola .dtf-pl.corso{background:#DBEAFE;color:#1E40AF}
+body.premium .sofia-hero .casa-nuvola .dtf-pl.prob,
+body.premium .sofia-hero .casa-nuvola .dtf-pl.guasto{background:#FEE2E2;color:#991B1B}
+body.premium .sofia-hero .casa-nuvola .dtf-pl.insieme{background:#EDE9FE;color:#5B21B6}
+body.premium .sofia-hero .casa-nuvola .dtf-pzs{display:block}
+body.premium .sofia-hero .casa-nuvola .dtf-pz{display:grid;grid-template-columns:minmax(0,128px) minmax(0,1fr);gap:4px 9px;align-items:start;padding:8px 0;border-top:1px solid #EFE3C8}
+body.premium .sofia-hero .casa-nuvola .dtf-pz:first-child{border-top:0;padding-top:2px}
+body.premium .sofia-hero .casa-nuvola .dtf-pz.solo{grid-template-columns:minmax(0,1fr)}
+body.premium .sofia-hero .casa-nuvola .dtf-pz-c{display:flex;min-width:0}
+body.premium .sofia-hero .casa-nuvola .dtf-pz-c .dtf-k{display:block;max-width:100%;padding:6px 11px;overflow-wrap:normal;word-break:normal}
+body.premium .sofia-hero .casa-nuvola .dtf-pz-c .dtf-k small{display:block;margin-top:1px}
+body.premium .sofia-hero .casa-nuvola .dtf-pz-t{display:block;min-width:0;padding-top:4px}
+/* ---- chi arriva e chi parte: i contatori, la piantina, le schede ---- */
+body.premium .sofia-hero .casa-nuvola .dtf-n.arr{background:#DCFCE7;border:2px solid #86EFAC}
+body.premium .sofia-hero .casa-nuvola .dtf-n.par{background:#FFEDD5;border:2px solid #FDBA74}
+body.premium .sofia-hero .casa-nuvola .dpm{display:block;margin:0 0 14px}
+body.premium .sofia-hero .casa-nuvola .dpm-z{display:block;margin:0 0 9px}
+body.premium .sofia-hero .casa-nuvola .dpm-zt{display:block;margin:0 0 5px;font:700 14.5px/1.2 var(--f-lettura);color:#8C621E}
+body.premium .sofia-hero .casa-nuvola .dpm-piano{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:0 5px}
+body.premium .sofia-hero .casa-nuvola .dpm-lato{display:flex;flex-direction:column;gap:5px;min-width:0}
+body.premium .sofia-hero .casa-nuvola .dpm-corr{display:flex;align-items:center;justify-content:center;border-radius:7px;background:#EFE6D2;overflow:hidden}
+body.premium .sofia-hero .casa-nuvola .dpm-corr i{font:700 9.5px/1 var(--f-lettura);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:#A08C63;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap}
+body.premium .sofia-hero .casa-nuvola .dpm-fuori{display:block;margin-top:6px}
+body.premium .sofia-hero .casa-nuvola .dpm-fuori small{display:block;margin:0 0 3px;font:600 12.5px/1.2 var(--f-lettura);color:#8A7B5C}
+body.premium .sofia-hero .casa-nuvola .dpm-griglia{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+body.premium .sofia-hero .casa-nuvola .dpm-c{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0;min-height:34px;margin:0;padding:4px 9px;border-radius:10px;box-sizing:border-box;background:#FBF6EA;border:1.5px solid #E7DCC3;color:#6B5A3A;font:inherit;text-align:left}
+body.premium .sofia-hero .casa-nuvola .dpm-c b{display:block;max-width:100%;font:700 14px/1.15 var(--f-lettura);color:#7A6A4A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.premium .sofia-hero .casa-nuvola .dpm-c.vuota{background:#FFFFFF;border:1.5px dashed #BCD3C2}
+body.premium .sofia-hero .casa-nuvola .dpm-c.arr,
+body.premium .sofia-hero .casa-nuvola .dpm-c.par{min-height:70px;padding:6px 9px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+body.premium .sofia-hero .casa-nuvola .dpm-c.arr{background:#DCFCE7;border:2.5px solid #16A34A;box-shadow:0 3px 8px -5px rgba(22,101,52,.6)}
+body.premium .sofia-hero .casa-nuvola .dpm-c.par{background:#FFEDD5;border:2.5px solid #EA580C;box-shadow:0 3px 8px -5px rgba(154,52,18,.6)}
+body.premium .sofia-hero .casa-nuvola .dpm-c.arr:active,
+body.premium .sofia-hero .casa-nuvola .dpm-c.par:active{transform:scale(.97)}
+body.premium .sofia-hero .casa-nuvola .dpm-c.arr b{font-size:16.5px;color:#14532D}
+body.premium .sofia-hero .casa-nuvola .dpm-c.par b{font-size:16.5px;color:#7C2D12}
+body.premium .sofia-hero .casa-nuvola .dpm-chi{display:block;max-width:100%;font:700 15px/1.15 var(--f-lettura);color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.premium .sofia-hero .casa-nuvola .dpm-per{display:flex;align-items:center;gap:2px;max-width:100%;font:600 13px/1.1 var(--f-lettura);color:#166534;white-space:nowrap}
+body.premium .sofia-hero .casa-nuvola .dpm-c.par .dpm-per{color:#9A3412}
+body.premium .sofia-hero .casa-nuvola .dpm-per .ico-omino{flex:0 0 auto;display:block;width:8px;height:13px}
+body.premium .sofia-hero .casa-nuvola .dpm-per i{margin-left:3px;font-style:normal}
+body.premium .sofia-hero .casa-nuvola .dtf-mv{display:block;width:100%;margin:0 0 8px;padding:9px 11px 10px 15px;border-radius:14px;box-sizing:border-box;background:#FFFFFF;border:1.5px solid #E3D5B4;color:#0F172A;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+body.premium .sofia-hero .casa-nuvola .dtf-mv.arr{box-shadow:inset 6px 0 0 #16A34A}
+body.premium .sofia-hero .casa-nuvola .dtf-mv.par{box-shadow:inset 6px 0 0 #EA580C}
+body.premium .sofia-hero .casa-nuvola .dtf-mv:active{transform:scale(.985)}
+body.premium .sofia-hero .casa-nuvola .dtf-mv-1{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 8px}
+body.premium .sofia-hero .casa-nuvola .dtf-mv-1 .dtf-nome{min-width:0;overflow-wrap:anywhere}
+body.premium .sofia-hero .casa-nuvola .dtf-mv-2{display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;margin-top:7px}
+body.premium .sofia-hero .casa-nuvola .dtf-mv-3{display:block;margin-top:6px;font:600 15px/1.3 var(--f-lettura);color:#57534E}
+body.premium .sofia-hero .casa-nuvola button.dtf-k{margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+@media (max-width:374px){
+  body.premium .sofia-hero .casa-nuvola .dtf-pz{grid-template-columns:minmax(0,112px) minmax(0,1fr);gap:4px 7px}
+  body.premium .sofia-hero .casa-nuvola .dtf-pz-c .dtf-k{padding:6px 8px;font-size:15px}
+  body.premium .sofia-hero .casa-nuvola .dtf-prep{font-size:14.5px}
+  body.premium .sofia-hero .casa-nuvola .dpm-piano{grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);gap:0 4px}
+  body.premium .sofia-hero .casa-nuvola .dpm-c{padding-left:7px;padding-right:7px}
+}
+/* tema scuro */
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp{background:#131B2D;border-color:rgba(212,175,106,.32);color:#F8FAFC;box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp.att{background:#3A2F1F;border-color:#7A6236}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp-n{color:#F8FAFC}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp-1,
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp-2,
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-u{color:#CBD5E1}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-m+.csf-m{border-left-color:rgba(212,175,106,.3)}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csf-m:last-child .csf-n{color:#6FD08F}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-prep{color:#F8FAFC}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl{background:rgba(148,163,184,.2);color:#CBD5E1}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.parte{background:rgba(234,88,12,.24);color:#FDBA74}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.arriva,
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.ok{background:rgba(34,197,94,.2);color:#86EFAC}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.da{background:rgba(245,158,11,.2);color:#FCD34D}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.corso{background:rgba(59,130,246,.24);color:#93C5FD}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.prob,
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.guasto{background:rgba(239,68,68,.24);color:#FCA5A5}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pl.insieme{background:rgba(139,92,246,.24);color:#C4B5FD}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-pz{border-top-color:rgba(212,175,106,.22)}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-n.arr{background:#14301F;border-color:#2F7A4A}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-n.par{background:#3B2414;border-color:#9A4A1A}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-zt{color:#D4AF6A}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-corr{background:rgba(212,175,106,.12)}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-corr i{color:#A89F91}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-fuori small{color:#A89F91}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c{background:#161E31;border-color:rgba(212,175,106,.22);color:#A89F91}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c b{color:#A89F91}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c.vuota{background:transparent;border-color:#3F7A52}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c.arr{background:#14301F;border-color:#22C55E;box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c.par{background:#3B2414;border-color:#EA580C;box-shadow:none}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c.arr b{color:#BBF7D0}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c.par b{color:#FED7AA}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-chi{color:#F8FAFC}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-per{color:#86EFAC}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dpm-c.par .dpm-per{color:#FDBA74}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-mv{background:#131B2D;border-color:rgba(212,175,106,.32);color:#F8FAFC}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .dtf-mv-3{color:#CBD5E1}
+/* ---- la barra in basso: l'8% più grande (figure 50x28 e 43x27 invece di 46x26 e 40x25; scritte 12,4 invece di 11,5) ---- */
+body.premium .barra-sotto{padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+body.premium .bs-ico2 .bs-fig{width:50px;height:28px;border-radius:10px}
+body.premium .bs-ico2 .bs-fig svg{width:43px;height:27px}
+body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-size:12.4px;line-height:1}
+@media (max-width:360px){body.premium .bs-ico2 .bs-fig{width:45px;height:26px}body.premium .bs-ico2 .bs-fig svg{width:40px;height:25px}body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-size:11.9px}}
