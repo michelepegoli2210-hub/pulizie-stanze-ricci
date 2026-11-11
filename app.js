@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.3";
+export const VERSIONE = "1.79.4";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8544,7 +8544,7 @@ function notizieFacili(ls, fatte, man, dom) {
   // i due tasti grandi: il numero sono le PERSONE («col numero delle persone ovviamente, ospiti»)
   const porta = (k, ico, lista, ospiti, verbo, verbi) => {
     const cam = lista.length, uno = ospiti === 1, in_ = `in ${cam} ${cam === 1 ? "camera" : "camere"}`;
-    return { k, vai: k, ico, porta: true, n: String(ospiti), uno: uno ? "ospite" : "ospiti", due: `${uno ? verbo : verbi} oggi`, parole: `${uno ? "ospite " + verbo : "ospiti " + verbi} oggi`, corto: `${uno ? verbo : verbi} oggi`,
+    return { k, vai: k, ico, porta: true, n: String(ospiti), uno: uno ? "ospite" : "ospiti", verbo: uno ? verbo : verbi, due: `${uno ? verbo : verbi} oggi`,   // 1.79.4: «verbo» va in grassetto parole: `${uno ? "ospite " + verbo : "ospiti " + verbi} oggi`, corto: `${uno ? verbo : verbi} oggi`,
       sotto: cam ? `<small class="of-s2">${in_}</small>` : "", tono: cam ? "att" : "",
       dici: cam ? `Oggi ${uno ? verbo : verbi} ${ospiti} ${uno ? "ospite" : "ospiti"}, ${in_}` : `Oggi non ${verbo} nessuno` };
   };
@@ -8573,13 +8573,13 @@ function notizieFacili(ls, fatte, man, dom) {
 }
 // le schede a figure del riquadro aperto: arrivi e partenze di oggi, pulizie di oggi e di domani, camere, manutenzione; poi le larghe
 function schedeFacili(ls, fatte, man, dom) {
-  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}${o.porta ? " of-porta" : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}${o.uno ? `<i class="of-u">${esc(o.uno)}</i>` : ""}</b><span class="of-p">${esc(o.uno ? o.due : o.parole)}</span>${o.sotto || ""}</span></button>`;
+  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}${o.porta ? " of-porta" : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}${o.uno ? `<i class="of-u">${esc(o.uno)}</i>` : ""}</b><span class="of-p">${o.porta ? `<b class="of-v">${esc(o.verbo)}</b> oggi` : esc(o.uno ? o.due : o.parole)}</span>${o.sotto || ""}</span></button>`;   // 1.79.4: «arrivano» / «partono» in grassetto
   return notizieFacili(ls, fatte, man, dom).map(scheda).join("");
 }
 // 1.79.0: a tendina chiusa, in alto, i due tasti grandi: «3 ospiti arrivano oggi» (la porta, gli omini che entrano) e «7 ospiti
 // partono oggi» (gli omini che se ne vanno). Un tocco apre chi arriva e dove va, oppure chi parte.
 function porteFacili(ls, fatte, man, dom) {
-  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b> ${esc(o.uno)}</span><span class="csp-2">${esc(o.due)}</span></span></button>`).join("");
+  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b> ${esc(o.uno)}</span><span class="csp-2"><b class="csp-v">${esc(o.verbo)}</b> oggi</span></span></button>`).join("");   // 1.79.4: «arrivano» / «partono» in grassetto
 }
 // 1.21.2: le figurine della tendina chiusa: tutte le notizie della giornata. 1.79.0: senza i due tasti grandi, che stanno sopra;
 // le camere hanno due metà (il letto pieno e il letto vuoto, ognuno col suo numero)
