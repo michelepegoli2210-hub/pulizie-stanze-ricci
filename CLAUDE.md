@@ -54,7 +54,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   la piantina di chi arriva e di chi parte, il letto da preparare (`preparazioneCamera`). Michele legge male le scritte
   piccole: i tasti non si rimpiccioliscono. Ogni tasto ha un disegno che non somiglia agli altri («inequivocabili»: «deve
   capirlo anche mia nonna»): arrivi e partenze sono i cartelli IN (verde) ed EXIT (rosso) disegnati come quelli veri
-  (1.79.3); le pulizie di oggi hanno il sole, quelle di domani il calendario (1.79.1).
+  (1.79.3). Le altre figurine raccontano con le persone cosa c'è dentro (1.79.7): la signora delle pulizie col sole (oggi);
+  oggi → domani cerchiato col secchio (domani); il letto con chi dorme o rifatto (camere); il rubinetto e l'operaio (da
+  aggiustare); Sofia che alza la mano (domande).
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

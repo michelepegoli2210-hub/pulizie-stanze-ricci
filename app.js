@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.6";
+export const VERSIONE = "1.79.7";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8065,7 +8065,7 @@ function tendaLimiti(h) {
   const min = Math.max(lb + 10, hc * .3);   // 1.19.0: i tasti accanto a Sofia adesso stanno piu' in alto
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
   // 1.19.0: alta (appena sotto i tasti, di partenza), media, bassa
-  return { fondo, hc, min, chiusa: fondo - 124, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
+  return { fondo, hc, min, chiusa: fondo - 132, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
 }
 // 1.19.0: di partenza il riquadro sta al 34% dell'altezza; su un telefono basso, dove i tasti accanto a Sofia arrivano piu'
 // giu', parte appena sotto di loro (senza segnarlo in memoria)
@@ -8422,25 +8422,96 @@ document.addEventListener("click", (e) => {
   const sc = h.querySelector(".casa-nuvola .casa-testo"); if (sc) sc.scrollTop = 0;
   toast(v === "facile" ? "Pagina facile" : "Pagina come prima");
 }, true);
-// le figure (disegni originali, colori pieni come il letto del prospetto facile): il secchio delle pulizie (con il foglio del
-// calendario per domani), la valigia di chi arriva, chiave inglese e cacciavite per le cose da aggiustare, il fumetto delle
-// domande, la nuvola di ArgonCloud
-// il secchio delle pulizie. Oggi: il secchio col sole accanto. Domani (col giorno): il calendario grande col numero di domani
-// e il secchio piccolo accanto, così le due figure non si somigliano
+// le figure (disegni originali, colori pieni come il letto del prospetto facile): il secchio delle pulizie, la valigia di chi
+// arriva, l'operaio per le cose da aggiustare, Sofia con le domande, la nuvola di ArgonCloud
+// ---- 1.79.7 (Michele, 11/11: «Proponimi altre icone molto più chiare e inequivocabili… che descrivano che cosa c'è contenuto
+// all'interno di quel pulsante» · «farmi altre proposte simili alla A, ancora più chiare, ancora più per l'utenza proprio
+// media… per chi… questa applicazione o di albergo non ha mai visto niente»; la sua scelta: «mi piacciono tutte le A2, tranne
+// i letti… mi piace di più nella A1»). Ogni figurina racconta con le persone cosa c'è dentro il tasto:
+// - pulizie di oggi: la signora delle pulizie col mocio, il secchio con la schiuma, il pavimento che brilla e il sole (oggi);
+// - pulizie di domani: il foglio di oggi (grigio) → quello di domani, cerchiato di rosso, e lo stesso secchio col mocio
+//   (Michele: «mi piace il fatto che si vede il giorno prima e il giorno dopo, però ci deve essere qualcosa che… simboleggi
+//   le pulizie… altrimenti sembra il prospetto del giorno dopo»);
+// - camere: il letto con chi dorme e la luna; il letto rifatto e vuoto con la spunta verde (icoLettoCasa);
+// - da aggiustare: il rubinetto che perde e l'operaio col casco che arriva con la chiave inglese (icoChiave);
+// - domande: Sofia che alza la mano, col fumetto del punto di domanda (icoDomande).
+// Le stesse figure nelle schede del riquadro aperto e nei titoli dei dettagli.
+const FIG79 = { pelle: "#F2C9A5", pelleB: "#B9835F", capelli: "#5B3A29", testo: "Plus Jakarta Sans,Arial,sans-serif" };
+function fig79Sole(cx, cy) {
+  let raggi = ""; for (let a = 0; a < 360; a += 45) { const t = a * Math.PI / 180; raggi += `M${(cx + Math.cos(t) * 6.2).toFixed(1)} ${(cy + Math.sin(t) * 6.2).toFixed(1)}L${(cx + Math.cos(t) * 8.4).toFixed(1)} ${(cy + Math.sin(t) * 8.4).toFixed(1)}`; }
+  return `<path d="${raggi}" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="4.6" fill="#FACC15" stroke="#CA8A04" stroke-width="1"/>`;
+}
+function fig79Luna(x, y) { return `<path d="M${x} ${y - 5.6}A5.8 5.8 0 1 0 ${x + 4.6} ${y + 3.4}A4.6 4.6 0 1 1 ${x} ${y - 5.6}Z" fill="#FACC15" stroke="#CA8A04" stroke-width=".9" stroke-linejoin="round"/>`; }
+function fig79Stellina(x, y, r) { return `<path d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z" fill="#FDE047" stroke="#CA8A04" stroke-width=".7" stroke-linejoin="round"/>`; }
+function fig79Numero(x, y, s, c, n) { return `<text x="${x}" y="${y}" text-anchor="middle" font-size="${s}" font-weight="800" fill="${c}" font-family="${FIG79.testo}">${Number(n) || ""}</text>`; }
+// la signora delle pulizie (vestito azzurro, grembiule bianco, chignon) col mocio
+function fig79Signora() {
+  return `<path d="M37.2 3.6L29.4 33.4" stroke="#8B5A2B" stroke-width="2.4" stroke-linecap="round"/><path d="M24.2 33.4H34.6L36 38.6H22.8Z" fill="#E2E8F0" stroke="#64748B" stroke-width="1.1" stroke-linejoin="round"/>`
+    + `<path d="M15.4 36.8V30.6M20 36.8V30.6" stroke="#334155" stroke-width="2.4" stroke-linecap="round"/>`
+    + `<path d="M13.2 15.4Q17.6 13.4 22 15.4L24.4 31.4H10.8Z" fill="#3B82F6" stroke="#1D4ED8" stroke-width="1.2" stroke-linejoin="round"/><path d="M15.2 18.4H20L21.2 29.4H14Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width=".8"/>`
+    + `<path d="M21.4 17.2L27.6 21.4L31.4 19.4" fill="none" stroke="${FIG79.pelle}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`
+    + `<circle cx="17.6" cy="9.4" r="4.6" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/>`
+    + `<path d="M12.8 9.2Q13 3.6 17.8 3.8Q22.6 4 22.4 8.6Q20.4 6.4 16.6 6.8Q14.4 7.2 12.8 9.2Z" fill="${FIG79.capelli}"/><circle cx="12.4" cy="7" r="2.2" fill="${FIG79.capelli}"/>`;
+}
+// il secchio azzurro con la schiuma (spostato di dx); col mocio dentro per le pulizie di domani
+function fig79Secchio(dx, mocio) {
+  return `<g transform="translate(${dx} 0)">${mocio ? `<path d="M49.6 27.4L53.4 3.6" stroke="#8B5A2B" stroke-width="2.4" stroke-linecap="round"/>` : ""}`
+    + `<path d="M40.8 28.2H55.2L53.2 38.2H42.8Z" fill="#60A5FA" stroke="#1D4ED8" stroke-width="1.2" stroke-linejoin="round"/>`
+    + `<g fill="#FFFFFF" stroke="#BFDBFE" stroke-width=".9"><circle cx="44.2" cy="27.2" r="2.6"/><circle cx="48.2" cy="26" r="3.1"/><circle cx="52.2" cy="27.2" r="2.4"/></g></g>`;
+}
+// le pulizie. Oggi (senza giorno): la signora col mocio e il secchio, il pavimento che brilla, il sole. Domani (col numero di
+// domani): il foglio di oggi grigio → il foglio di domani cerchiato di rosso, e il secchio col mocio
 function icoSecchio(giorno) {
-  const cal = giorno != null;
-  const secchio = (t) => `<g transform="${t}"><path d="M21 16.5C21 4 43 4 43 16.5" fill="none" stroke="#64748B" stroke-width="2.4" stroke-linecap="round"/><path d="M17.5 17.5H46.5L43.2 36.3Q42.9 38 41.2 38H22.8Q21.1 38 20.8 36.3Z" fill="#3B82F6" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round"/><path d="M23.6 22.5L25 33.5" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round"/><rect x="15.8" y="14.6" width="32.4" height="4.8" rx="2.4" fill="#60A5FA" stroke="#1D4ED8" stroke-width="1.3"/><g fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.1"><circle cx="22.5" cy="13.4" r="4.3"/><circle cx="30" cy="10.8" r="5.4"/><circle cx="38" cy="11.9" r="4.7"/><circle cx="44" cy="14" r="3.1"/></g></g>`;
-  if (!cal) return `<svg class="of-svg ico-pulizie-oggi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${secchio("translate(-9 0)")}<path d="M59.4 12.6L62.2 12.6M57.2 18.0L59.2 20.0M51.8 20.2L51.8 23.0M46.4 18.0L44.4 20.0M44.2 12.6L41.4 12.6M46.4 7.2L44.4 5.2M51.8 5.0L51.8 2.2M57.2 7.2L59.2 5.2" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round"/><circle cx="51.8" cy="12.6" r="5.7" fill="#FACC15" stroke="#CA8A04" stroke-width="1.2"/></svg>`;
-  return `<svg class="of-svg ico-pulizie-domani" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><rect x="3" y="7" width="28" height="31" rx="3.6" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/><path d="M3 15.4V10.6Q3 7 6.6 7H27.4Q31 7 31 10.6V15.4Z" fill="#EF4444"/><rect x="9.2" y="3.6" width="2.8" height="7" rx="1.4" fill="#475569"/><rect x="22" y="3.6" width="2.8" height="7" rx="1.4" fill="#475569"/><text x="17" y="33" text-anchor="middle" font-size="16.5" font-weight="800" fill="#1E293B" font-family="Plus Jakarta Sans,Arial,sans-serif">${Number(giorno) || ""}</text>${secchio("translate(27.6 11.6) scale(.7)")}</svg>`;
+  if (giorno == null) return `<svg class="of-svg ico-pulizie-oggi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${fig79Sole(55, 9)}${fig79Signora()}${fig79Secchio(0, false)}${fig79Stellina(42.4, 15.6, 3.6)}${fig79Stellina(38.2, 23.4, 2.2)}${fig79Stellina(8.4, 33.6, 2.4)}</svg>`;
+  const oggi = L.giornoDelMese(L.oggiISO());
+  return `<svg class="of-svg ico-pulizie-domani" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">`
+    + `<rect x="1.4" y="13.8" width="12.6" height="17.6" rx="2" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1"/><path d="M1.4 15.8Q1.4 13.8 3.4 13.8H12Q14 13.8 14 15.8V18.4H1.4Z" fill="#94A3B8"/>${fig79Numero(7.7, 28.2, 7.6, "#94A3B8", oggi)}`
+    + `<path d="M16.2 22.6H20.4" stroke="#334155" stroke-width="2" stroke-linecap="round"/><path d="M19.4 19.6L22.6 22.6L19.4 25.6Z" fill="#334155" stroke="#334155" stroke-width=".9" stroke-linejoin="round"/>`
+    + `<rect x="24.2" y="5.4" width="21.2" height="30" rx="2.6" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.3"/><path d="M24.2 8Q24.2 5.4 26.8 5.4H42.8Q45.4 5.4 45.4 8V12.6H24.2Z" fill="#EF4444"/>`
+    + `<rect x="28.9" y="2.6" width="2.4" height="5.2" rx="1.2" fill="#475569"/><rect x="38.3" y="2.6" width="2.4" height="5.2" rx="1.2" fill="#475569"/>${fig79Numero(34.8, 30, 13, "#1E293B", giorno)}`
+    + `<ellipse cx="34.8" cy="25.4" rx="8.6" ry="6.6" transform="rotate(-8 34.8 25.4)" fill="none" stroke="#DC2626" stroke-width="1.6"/>${fig79Secchio(6.6, true)}</svg>`;
 }
 function icoValigia() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M4.5 22H16.5" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16.8L17.2 22L12 27.2" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 10V6.4Q32 4 34.4 4H41.6Q44 4 44 6.4V10" fill="none" stroke="#7C4A1E" stroke-width="2.6" stroke-linecap="round"/><rect x="23" y="10" width="30" height="24.5" rx="4.2" fill="#EA8A2E" stroke="#9A4F0E" stroke-width="1.5"/><path d="M31 10V34.5M45 10V34.5" stroke="#9A4F0E" stroke-width="2.2"/><path d="M26.5 14.5V30" stroke="#F6B26B" stroke-width="2" stroke-linecap="round"/><circle cx="28.5" cy="36.6" r="2.6" fill="#334155"/><circle cx="47.5" cy="36.6" r="2.6" fill="#334155"/></svg>`;
 }
+// 1.79.7: da aggiustare = il rubinetto che perde (la goccia, la pozza) e l'operaio col casco giallo e la tuta blu che arriva con
+// la chiave inglese (l'operaio è disegnato girato verso il rubinetto)
 function icoChiave() {
-  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><g transform="rotate(32 32 20)"><rect x="15" y="17.3" width="29" height="5.4" rx="2.7" fill="#94A3B8" stroke="#475569" stroke-width="1.3"/><path d="M56.07 17.5A7.5 7.5 0 1 0 56.07 22.5L50.6 22.5L50.6 17.5Z" fill="#94A3B8" stroke="#475569" stroke-width="1.3" stroke-linejoin="round"/><circle cx="16.4" cy="20" r="4.4" fill="#94A3B8" stroke="#475569" stroke-width="1.3"/><circle cx="16.4" cy="20" r="1.8" fill="#E2E8F0" stroke="#475569" stroke-width=".9"/></g><g transform="rotate(-32 32 20)"><rect x="9" y="16.2" width="15" height="7.6" rx="3.2" fill="#EF4444" stroke="#B91C1C" stroke-width="1.3"/><path d="M12 18.2V21.8M15.5 18.2V21.8M19 18.2V21.8" stroke="#FCA5A5" stroke-width="1.2" stroke-linecap="round"/><rect x="24" y="17.7" width="3" height="4.6" rx=".8" fill="#CBD5E1" stroke="#64748B" stroke-width=".8"/><rect x="27" y="18.9" width="19" height="2.2" fill="#CBD5E1" stroke="#64748B" stroke-width=".8"/><path d="M46 18.9L50.6 20L46 21.1Z" fill="#64748B"/></g></svg>`;
+  return `<svg class="of-svg ico-aggiustare" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><g transform="translate(.6 6.6) scale(.8)">`
+    + `<rect x="3" y="8.4" width="5.6" height="12" rx="1.2" fill="#CBD5E1" stroke="#64748B" stroke-width="1"/><path d="M8.6 11.2H22.4Q28.6 11.2 28.6 17.4V20.2H23.2V17.8Q23.2 16.6 22 16.6H8.6Z" fill="#94A3B8" stroke="#475569" stroke-width="1.1" stroke-linejoin="round"/>`
+    + `<rect x="14.2" y="6.2" width="3.4" height="5.2" fill="#94A3B8" stroke="#475569" stroke-width="1"/><rect x="10.2" y="3.4" width="11.4" height="3.4" rx="1.7" fill="#EF4444" stroke="#B91C1C" stroke-width="1"/>`
+    + `<path d="M25.9 22.6Q23.6 26 23.6 27.6A2.3 2.3 0 0 0 28.2 27.6Q28.2 26 25.9 22.6Z" fill="#3B82F6" stroke="#1D4ED8" stroke-width=".8"/><ellipse cx="25.9" cy="36.4" rx="7.4" ry="1.8" fill="#BFDBFE" stroke="#60A5FA" stroke-width=".8"/></g>`
+    + `<g transform="translate(74.4 0) scale(-1 1)">`
+    + `<path d="M12.4 38.6V34.4Q12.4 27.4 19.4 26.4L24.6 25.8L29.8 26.4Q36.8 27.4 36.8 34.4V38.6Z" fill="#2563EB" stroke="#1E3A8A" stroke-width="1.1" stroke-linejoin="round"/>`
+    + `<path d="M18.6 27.4V38.6M30.6 27.4V38.6" stroke="#93C5FD" stroke-width="1.4"/><rect x="20.4" y="31.4" width="8.4" height="5" rx="1" fill="#1D4ED8" stroke="#93C5FD" stroke-width=".9"/>`
+    + `<path d="M34.6 29.4L42.4 21.4" stroke="#2563EB" stroke-width="4.2" stroke-linecap="round"/>`
+    + `<circle cx="24.6" cy="17.4" r="7" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/><circle cx="22.2" cy="17.6" r=".9" fill="#1E293B"/><circle cx="27" cy="17.6" r=".9" fill="#1E293B"/><path d="M22.4 20.6Q24.6 22.4 26.8 20.6" fill="none" stroke="#9A3412" stroke-width=".9" stroke-linecap="round"/>`
+    + `<path d="M16.8 14.6Q17.2 6.4 24.6 6.2Q32 6.4 32.4 14.6Z" fill="#FACC15" stroke="#A16207" stroke-width="1" stroke-linejoin="round"/><path d="M15 14.6H34.2" stroke="#A16207" stroke-width="2" stroke-linecap="round"/><path d="M24.6 6.4V14" stroke="#CA8A04" stroke-width="1.2"/>`
+    + `<g transform="translate(46.6 13.4) rotate(42)"><rect x="-1.5" y="-1" width="3" height="15" rx="1.4" fill="#94A3B8" stroke="#475569" stroke-width=".9"/><path d="M-4.4 -7.4A4.6 4.6 0 1 0 4.4 -7.4L1.5 -3.4H-1.5Z" fill="#94A3B8" stroke="#475569" stroke-width="1" stroke-linejoin="round"/></g>`
+    + `<circle cx="43" cy="20.8" r="2.8" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/></g></svg>`;
 }
+// 1.79.7: le domande = Sofia (capelli castani, giacca blu) che alza la mano, col fumetto d'oro del punto di domanda
 function icoDomande() {
-  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M13 3.5H51Q57.5 3.5 57.5 10V24.5Q57.5 31 51 31H31.5L22 38.2V31H13Q6.5 31 6.5 24.5V10Q6.5 3.5 13 3.5Z" fill="#D4AF6A" stroke="#8C621E" stroke-width="1.5" stroke-linejoin="round"/><text x="32" y="25.6" text-anchor="middle" font-size="21" font-weight="700" fill="#FFFFFF" font-family="Plus Jakarta Sans,Arial,sans-serif">?</text></svg>`;
+  return `<svg class="of-svg ico-domande" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">`
+    + `<path d="M29 31.4L31.8 16.8" stroke="#1E3A8A" stroke-width="4.4" stroke-linecap="round"/><ellipse cx="32.2" cy="13.4" rx="2.7" ry="3.4" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/><path d="M29.8 14.6L28.6 12.6" stroke="${FIG79.pelleB}" stroke-width="1.6" stroke-linecap="round"/>`
+    + `<path d="M6.6 38.6Q6.6 27 19.4 25.6Q32.2 27 32.2 38.6Z" fill="#1E3A8A" stroke="#172554" stroke-width="1.1" stroke-linejoin="round"/><path d="M15.8 26L19.4 32.4L23 26Z" fill="#FFFFFF"/>`
+    + `<path d="M10.4 20.2Q9.2 7 19.4 6.6Q29.6 7 28.4 20.2Q27 25.4 24.6 24.2V14.4H14.2V24.2Q11.8 25.4 10.4 20.2Z" fill="${FIG79.capelli}"/>`
+    + `<ellipse cx="19.4" cy="16.6" rx="6.4" ry="7.4" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/><path d="M12.8 15.2Q14 8.6 19.6 8.8Q25.4 9 26 15.2Q23.4 11.8 19.6 12Q15.6 12.2 12.8 15.2Z" fill="${FIG79.capelli}"/>`
+    + `<circle cx="17" cy="17" r=".9" fill="#3F2A1D"/><circle cx="21.8" cy="17" r=".9" fill="#3F2A1D"/><path d="M17.4 20.6Q19.4 22.2 21.4 20.6" fill="none" stroke="#B4533C" stroke-width="1" stroke-linecap="round"/>`
+    + `<path d="M40 3.6H58Q62.4 3.6 62.4 8V22Q62.4 26.4 58 26.4H47.2L40.6 32.2V26.4H40Q35.6 26.4 35.6 22V8Q35.6 3.6 40 3.6Z" fill="#D4AF6A" stroke="#8C621E" stroke-width="1.3" stroke-linejoin="round"/>`
+    + `<text x="49" y="22.4" text-anchor="middle" font-size="18" font-weight="800" fill="#FFFFFF" font-family="${FIG79.testo}">?</text></svg>`;
+}
+// 1.79.7: le camere della casa (tendina, schede, «Chi dorme stanotte?»): il letto di legno con chi dorme sotto la coperta blu,
+// «z z» e la luna; il letto rifatto e vuoto con la spunta verde e la luna. Il prospetto facile tiene il suo letto (icoLetto).
+function icoLettoCasa(pieno) {
+  const telaio = `<rect x="5.4" y="16" width="4" height="21" rx="1.4" fill="#8A6D32" stroke="#6B4F23" stroke-width="1"/><rect x="54.6" y="23" width="4" height="14" rx="1.4" fill="#8A6D32" stroke="#6B4F23" stroke-width="1"/><rect x="6" y="28.4" width="52" height="5.6" rx="1.8" fill="#A47A3C" stroke="#6B4F23" stroke-width="1"/>`;
+  const dentro = pieno
+    ? `<rect x="10.4" y="21.4" width="10" height="6.2" rx="3" fill="#FFFFFF" stroke="#CBD5E1" stroke-width=".9"/><circle cx="15.6" cy="20.6" r="4.2" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/><path d="M11.6 19.4Q12.4 15.6 16 16Q19.4 16.4 19.6 19.2Q17.6 17.6 15.4 18Q13.2 18.4 11.6 19.4Z" fill="${FIG79.capelli}"/>`
+      + `<path d="M19.2 20.6H51.4Q54.6 20.6 54.6 23.8V28.6H19.2Z" fill="#3B82F6" stroke="#1D4ED8" stroke-width="1.1" stroke-linejoin="round"/><path d="M20.4 23.4H53.4" stroke="#93C5FD" stroke-width="1.6"/>`
+      + `<text x="25" y="13.2" font-size="7.4" font-weight="800" fill="#64748B" font-family="${FIG79.testo}">z</text><text x="30.4" y="9" font-size="5.6" font-weight="800" fill="#94A3B8" font-family="${FIG79.testo}">z</text>${fig79Luna(46, 9)}`
+    : `<rect x="10.4" y="21.4" width="10" height="6.2" rx="3" fill="#FFFFFF" stroke="#9CC9A9" stroke-width="1"/><path d="M21.2 24.2H51.4Q54.6 24.2 54.6 26.6V28.6H21.2Z" fill="#FFFFFF" stroke="#9CC9A9" stroke-width="1.1" stroke-linejoin="round"/>`
+      + `<path d="M33 22.2L37.4 26.2L45.6 18" fill="none" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>${fig79Luna(52, 9)}`;
+  return `<svg class="of-svg fa-letto ico-letto-${pieno ? "pieno" : "vuoto"}" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${telaio}${dentro}</svg>`;
 }
 function icoNuvola() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M19 33.5Q10 33.5 10 26Q10 19 17.4 18.4Q19 10.5 27.5 10.5Q35 10.5 37.6 17Q39.6 15.5 42.6 15.5Q49.6 15.5 50.1 22.4Q56 23 56 28.4Q56 33.5 50.4 33.5Z" fill="#E0F2FE" stroke="#0284C7" stroke-width="1.6" stroke-linejoin="round"/><path d="M25 25L30.4 30L40 20.4" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -8556,9 +8627,9 @@ function notizieFacili(ls, fatte, man, dom) {
   out.push({ k: "domani", vai: "domani", ico: icoSecchio(L.giornoDelMese(domani)), n: String(dm.length), uno: dm.length === 1 ? "pulizia" : "pulizie", due: "domani", parole: dm.length === 1 ? "pulizia domani" : "pulizie domani", corto: dm.length === 1 ? "pulizia domani" : "pulizie domani", tono: dm.length ? "att" : "",
     sotto: chiDomani ? `<small class="of-s2 of-chi">${Object.entries(perSig).map(([s, q]) => `<span>${esc(s)} ${q}</span>`).join("")}</small>` : "", dici: `Domani ${dm.length} ${dm.length === 1 ? "pulizia" : "pulizie"}${chiDomani ? ": " + chiDomani : ""}` });
   // le camere: il letto pieno e, a fianco, il letto vuoto
-  out.push({ k: "camere", vai: "camere", ico: icoLetto(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", corto: piene === 1 ? "piena" : "piene",
-    doppia: { ico: icoLetto(false), n: String(libere), corto: libere === 1 ? "vuota" : "vuote" },
-    sotto: `<small class="of-s of-vuote">${icoLetto(false)}<span>${libere} ${libere === 1 ? "vuota" : "vuote"}</span></small>`,
+  out.push({ k: "camere", vai: "camere", ico: icoLettoCasa(true), n: String(piene), parole: piene === 1 ? "camera piena" : "camere piene", corto: piene === 1 ? "piena" : "piene",
+    doppia: { ico: icoLettoCasa(false), n: String(libere), corto: libere === 1 ? "vuota" : "vuote" },
+    sotto: `<small class="of-s of-vuote">${icoLettoCasa(false)}<span>${libere} ${libere === 1 ? "vuota" : "vuote"}</span></small>`,
     dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "vuota" : "vuote"}` });
   out.push({ k: "manutenzione", vai: "manutenzione", ico: icoChiave(), n: String(man), parole: "da aggiustare", corto: "da aggiustare", tono: man > 0 ? "att" : "",
     dici: man ? `${man} ${man === 1 ? "cosa" : "cose"} da aggiustare` : "Niente da aggiustare" });
@@ -8758,9 +8829,9 @@ function dettaglioFacile(k, ls, fatte) {
     // 1.79.0: «vuota» al posto di «libera» (Michele: «camere piene oggi, camere vuote»), come sul tasto
     const elenco = zoneOrdinate().flatMap(z => camereZona(z.id)), tutte = elenco.concat(S.camere.filter(c => !elenco.includes(c)));
     const piene = tutte.filter(cm => L.ospiteIl(sog, cm.id, oggi)).length, libere = tutte.length - piene;
-    titolo = tit(icoLetto(true), "Chi dorme stanotte?");
+    titolo = tit(icoLettoCasa(true), "Chi dorme stanotte?");
     const celle = tutte.map(cm => { const s = L.ospiteIl(sog, cm.id, oggi); return s ? `<button type="button" class="dtf-cm piena" data-dtf-sog="${esc(s.id)}" aria-label="${nomeCam(cm)}: ${esc(nomeCortoOspite(s))}"><b>${nomeCam(cm)}</b><small>${esc(nomeCortoOspite(s))}</small></button>` : `<button type="button" class="dtf-cm libera" data-dtf-cella="${esc(cm.id)}|${oggi}" aria-label="${nomeCam(cm)}: vuota"><b>${nomeCam(cm)}</b><small>vuota</small></button>`; }).join("");   // 1.59.0: si toccano
-    corpo = `<span class="dtf-conta"><span class="dtf-n pieno">${icoLetto(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="dtf-n libero">${icoLetto(false)}<b>${libere}</b> ${libere === 1 ? "vuota" : "vuote"}</span></span><span class="dtf-griglia">${celle}</span>`;
+    corpo = `<span class="dtf-conta"><span class="dtf-n pieno">${icoLettoCasa(true)}<b>${piene}</b> ${piene === 1 ? "piena" : "piene"}</span><span class="dtf-n libero">${icoLettoCasa(false)}<b>${libere}</b> ${libere === 1 ? "vuota" : "vuote"}</span></span><span class="dtf-griglia">${celle}</span>`;
     tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "manutenzione") {
     // 1.59.1 (Michele, 7/11: «non deve essere un elenco fatto così… appena la apro devo vedere tutti i guasti… tipo "Chi dorme

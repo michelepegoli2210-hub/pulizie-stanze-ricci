@@ -9629,3 +9629,23 @@ body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v,
 body.premium .sofia-hero .casa-nuvola .of-p b.of-v,
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v,
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-p b.of-v{text-shadow:none}
+
+/* ---- 1.79.7 · Michele (11/11): «Proponimi altre icone molto più chiare e inequivocabili… che descrivano che cosa c'è contenuto
+   all'interno di quel pulsante» → «ancora più per l'utenza proprio media»; scelta: «tutte le A2, tranne i letti». Le figurine
+   della tendina chiusa hanno i disegni nuovi, più grandi: 42x26 invece di 28x17,5 (le due metà delle camere 36x22,5 invece di
+   26x16,5). Le figurine sono alte 57 invece di 49, la tendina chiusa 128 invece di 120 (189 invece di 173 con due file).
+   Sotto i 375 px: figurine 63 (le scritte vanno su due righe), disegni 40x25 (le camere 32x20), tendina 134 (201 con due
+   file). Nel riquadro aperto il letto vuoto sotto le camere piene è 30x18,75. ---- */
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 128px);height:128px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 189px);height:189px}
+body.premium .sofia-hero .casa-nuvola .csf-c{height:57px}
+body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:42px;height:26.25px}
+body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:36px;height:22.5px}
+body.premium .sofia-hero .casa-nuvola .of-s.of-vuote .fa-letto{width:30px;height:18.75px}
+@media (max-width:374px){
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 134px);height:134px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 201px);height:201px}
+  body.premium .sofia-hero .casa-nuvola .csf-c{height:63px}
+  body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:40px;height:25px}
+  body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:32px;height:20px}
+}
