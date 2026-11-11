@@ -52,7 +52,8 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - La casa (1.79.0), tendina chiusa: due tasti grandi (ospiti che arrivano e che partono oggi, `movimentiDelGiorno`), poi
   pulizie oggi, pulizie domani, camere piene e vuote, da aggiustare (`notizieFacili`). I dettagli sono in `dettaglioFacile`:
   la piantina di chi arriva e di chi parte, il letto da preparare (`preparazioneCamera`). Michele legge male le scritte
-  piccole: i tasti non si rimpiccioliscono.
+  piccole: i tasti non si rimpiccioliscono. Ogni tasto ha un disegno che non somiglia agli altri (1.79.1, «inequivocabili»):
+  arrivi e partenze hanno la casetta nello stesso posto e le frecce opposte; le pulizie di oggi il sole, di domani il calendario.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

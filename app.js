@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.0";
+export const VERSIONE = "1.79.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8425,13 +8425,13 @@ document.addEventListener("click", (e) => {
 // le figure (disegni originali, colori pieni come il letto del prospetto facile): il secchio delle pulizie (con il foglio del
 // calendario per domani), la valigia di chi arriva, chiave inglese e cacciavite per le cose da aggiustare, il fumetto delle
 // domande, la nuvola di ArgonCloud
+// il secchio delle pulizie. Oggi: il secchio col sole accanto. Domani (col giorno): il calendario grande col numero di domani
+// e il secchio piccolo accanto, così le due figure non si somigliano
 function icoSecchio(giorno) {
   const cal = giorno != null;
-  const secchio = `<g${cal ? ' transform="translate(-5 0)"' : ""}><path d="M21 16.5C21 4 43 4 43 16.5" fill="none" stroke="#64748B" stroke-width="2.4" stroke-linecap="round"/><path d="M17.5 17.5H46.5L43.2 36.3Q42.9 38 41.2 38H22.8Q21.1 38 20.8 36.3Z" fill="#3B82F6" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round"/><path d="M23.6 22.5L25 33.5" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round"/><rect x="15.8" y="14.6" width="32.4" height="4.8" rx="2.4" fill="#60A5FA" stroke="#1D4ED8" stroke-width="1.3"/><g fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.1"><circle cx="22.5" cy="13.4" r="4.3"/><circle cx="30" cy="10.8" r="5.4"/><circle cx="38" cy="11.9" r="4.7"/><circle cx="44" cy="14" r="3.1"/></g></g>`;
-  const destra = cal
-    ? `<rect x="46" y="15" width="17" height="21" rx="3" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.3"/><path d="M46 21.5V18Q46 15 49 15H60Q63 15 63 18V21.5Z" fill="#EF4444"/><rect x="49.4" y="12.8" width="2" height="4.6" rx="1" fill="#475569"/><rect x="57.6" y="12.8" width="2" height="4.6" rx="1" fill="#475569"/><text x="54.5" y="32.6" text-anchor="middle" font-size="11" font-weight="700" fill="#1E293B" font-family="Plus Jakarta Sans,Arial,sans-serif">${Number(giorno) || ""}</text>`
-    : `<rect x="50" y="27" width="11" height="11" rx="2.6" fill="#FACC15" stroke="#CA8A04" stroke-width="1.2"/><g fill="#CA8A04" opacity=".55"><circle cx="53" cy="30.6" r="1"/><circle cx="57.4" cy="33.4" r="1"/><circle cx="53.8" cy="35.4" r=".8"/></g><path d="M8 6.5L9.3 10.7L13.5 12L9.3 13.3L8 17.5L6.7 13.3L2.5 12L6.7 10.7Z" fill="#FACC15"/>`;
-  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${secchio}${destra}</svg>`;
+  const secchio = (t) => `<g transform="${t}"><path d="M21 16.5C21 4 43 4 43 16.5" fill="none" stroke="#64748B" stroke-width="2.4" stroke-linecap="round"/><path d="M17.5 17.5H46.5L43.2 36.3Q42.9 38 41.2 38H22.8Q21.1 38 20.8 36.3Z" fill="#3B82F6" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round"/><path d="M23.6 22.5L25 33.5" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round"/><rect x="15.8" y="14.6" width="32.4" height="4.8" rx="2.4" fill="#60A5FA" stroke="#1D4ED8" stroke-width="1.3"/><g fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.1"><circle cx="22.5" cy="13.4" r="4.3"/><circle cx="30" cy="10.8" r="5.4"/><circle cx="38" cy="11.9" r="4.7"/><circle cx="44" cy="14" r="3.1"/></g></g>`;
+  if (!cal) return `<svg class="of-svg ico-pulizie-oggi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${secchio("translate(-9 0)")}<path d="M59.4 12.6L62.2 12.6M57.2 18.0L59.2 20.0M51.8 20.2L51.8 23.0M46.4 18.0L44.4 20.0M44.2 12.6L41.4 12.6M46.4 7.2L44.4 5.2M51.8 5.0L51.8 2.2M57.2 7.2L59.2 5.2" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round"/><circle cx="51.8" cy="12.6" r="5.7" fill="#FACC15" stroke="#CA8A04" stroke-width="1.2"/></svg>`;
+  return `<svg class="of-svg ico-pulizie-domani" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><rect x="3" y="7" width="28" height="31" rx="3.6" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/><path d="M3 15.4V10.6Q3 7 6.6 7H27.4Q31 7 31 10.6V15.4Z" fill="#EF4444"/><rect x="9.2" y="3.6" width="2.8" height="7" rx="1.4" fill="#475569"/><rect x="22" y="3.6" width="2.8" height="7" rx="1.4" fill="#475569"/><text x="17" y="33" text-anchor="middle" font-size="16.5" font-weight="800" fill="#1E293B" font-family="Plus Jakarta Sans,Arial,sans-serif">${Number(giorno) || ""}</text>${secchio("translate(27.6 11.6) scale(.7)")}</svg>`;
 }
 function icoValigia() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M4.5 22H16.5" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16.8L17.2 22L12 27.2" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 10V6.4Q32 4 34.4 4H41.6Q44 4 44 6.4V10" fill="none" stroke="#7C4A1E" stroke-width="2.6" stroke-linecap="round"/><rect x="23" y="10" width="30" height="24.5" rx="4.2" fill="#EA8A2E" stroke="#9A4F0E" stroke-width="1.5"/><path d="M31 10V34.5M45 10V34.5" stroke="#9A4F0E" stroke-width="2.2"/><path d="M26.5 14.5V30" stroke="#F6B26B" stroke-width="2" stroke-linecap="round"/><circle cx="28.5" cy="36.6" r="2.6" fill="#334155"/><circle cx="47.5" cy="36.6" r="2.6" fill="#334155"/></svg>`;
@@ -8445,21 +8445,32 @@ function icoDomande() {
 function icoNuvola() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M19 33.5Q10 33.5 10 26Q10 19 17.4 18.4Q19 10.5 27.5 10.5Q35 10.5 37.6 17Q39.6 15.5 42.6 15.5Q49.6 15.5 50.1 22.4Q56 23 56 28.4Q56 33.5 50.4 33.5Z" fill="#E0F2FE" stroke="#0284C7" stroke-width="1.6" stroke-linejoin="round"/><path d="M25 25L30.4 30L40 20.4" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
-// 1.79.0 (Michele, 10/11: «una porta che si apre… degli omini che entrano… e gli omini che se ne vanno»): le figure dei due
-// tasti grandi. Disegni nostri, colori pieni come le altre: la porta aperta con la luce dentro, gli omini che camminano e la
-// freccia (verde = entrano, arancione = se ne vanno). Negli arrivi gli omini vanno VERSO la porta; nelle partenze la porta
-// resta alle loro spalle.
-function icoOmini(x1, x2, c1, c2) {
-  // un omino che cammina verso destra: la testa, il busto un po' in avanti, le gambe aperte, un braccio avanti
-  const omino = (x, c, alto) => { const t = alto ? 7.4 : 10.4, r = alto ? 4 : 3.5, y = alto ? 12.6 : 14.8;
-    return `<g stroke="${c}" stroke-linecap="round" fill="none"><circle cx="${x + .8}" cy="${t}" r="${r}" fill="${c}" stroke="none"/><path d="M${x + .4} ${y + 2.6} L${x - .4} 25.6" stroke-width="${alto ? 6.4 : 5.6}"/><path d="M${x - .6} 26 L${x - 4.2} 36.2 M${x + .2} 26 L${x + 4.8} 36.2" stroke-width="2.9"/><path d="M${x + 2.6} ${y + 3.6} L${x + 6.2} ${y + 9}" stroke-width="2.2"/></g>`; };
-  return omino(x1, c1, true) + omino(x2, c2, false);
+// 1.79.1 (Michele, 11/11: «I tasti devono essere molto più inequivocabili», poi «solo disegni diversi»): i disegni dei tasti
+// della casa non si somigliano più. Prima arrivi e partenze erano lo stesso disegno (due omini, una freccia a destra, una
+// porta) con la porta solo spostata; le pulizie di oggi e di domani lo stesso secchio con un calendarietto. Adesso:
+//  - ARRIVI: la casetta (l'albergo) a destra, la freccia VERDE che va DENTRO la porta, l'ospite con la valigia che cammina verso
+//    la casetta;
+//  - PARTENZE: la stessa casetta nello stesso posto, l'ospite che ne è appena uscito e cammina VIA, la freccia ARANCIONE che
+//    punta dall'altra parte (le frecce dei due tasti sono una contro l'altra);
+//  - PULIZIE DI OGGI: il secchio col sole (il sole è «oggi», come nel tasto Oggi in basso);
+//  - PULIZIE DI DOMANI: il calendario grande col numero di domani, il secchio piccolo accanto.
+function icoCasetta() {
+  return `<rect x="42" y="16.4" width="18" height="22" fill="#FFF7E6" stroke="#7C4A1E" stroke-width="1.5"/><path d="M39.6 17.4L51 5.2L62.4 17.4Z" fill="#B45309" stroke="#7C2D12" stroke-width="1.5" stroke-linejoin="round"/><rect x="47" y="24" width="8" height="14.4" fill="#FDE68A" stroke="#7C4A1E" stroke-width="1.3"/><path d="M55 24L58.2 25.3V37.1L55 38.4Z" fill="#C08A4B" stroke="#7C4A1E" stroke-width="1.1" stroke-linejoin="round"/>`;
+}
+// l'ospite che cammina tirandosi dietro la valigia (verso 1 = va a destra, -1 = va a sinistra)
+function icoViaggiatore(x, verso) {
+  return `<g transform="translate(${x} 0) scale(${verso} 1)" stroke-linecap="round" stroke-linejoin="round"><path d="M-6.4 21.6L-7.6 26.2" stroke="#475569" stroke-width="1.6" fill="none"/><rect x="-14" y="26" width="8.8" height="10.6" rx="1.8" fill="#DC2626" stroke="#7F1D1D" stroke-width="1.2"/><path d="M-11.2 27.4V35.2" stroke="#FCA5A5" stroke-width="1.2" fill="none"/><circle cx="-12.2" cy="37.5" r="1.2" fill="#1E293B"/><circle cx="-7" cy="37.5" r="1.2" fill="#1E293B"/><g stroke="#2563EB" fill="none"><circle cx="1.2" cy="8" r="4.2" fill="#2563EB" stroke="none"/><path d="M.8 14.8L-.2 25.8" stroke-width="6.2"/><path d="M.4 26L4.8 36.6M-.6 26L-4.4 36.6" stroke-width="3"/><path d="M2.4 16.6L5.8 21.8M-1.8 16.8L-6.4 21.6" stroke-width="2.3"/></g></g>`;
+}
+// la freccia grossa (la punta in «a»)
+function icoFrecciona(da, a, y, colore) {
+  const v = a > da ? 1 : -1, b = a - v * 6.2;
+  return `<g stroke="${colore}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M${da} ${y}H${a - v}"/><path d="M${b} ${y - 5.8}L${a} ${y}L${b} ${y + 5.8}"/></g>`;
 }
 function icoArrivi() {
-  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M2 38.4H62" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/>${icoOmini(8, 21.5, "#2563EB", "#EA8A2E")}<path d="M30.4 23H38.4" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round"/><path d="M34.8 18.2L39.6 23L34.8 27.8" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="43" y="3" width="18.4" height="35.4" rx="1.6" fill="#FDE68A" stroke="#7C4A1E" stroke-width="2.2"/><path d="M61.4 3L51.6 6.4V35L61.4 38.4Z" fill="#C08A4B" stroke="#7C4A1E" stroke-width="1.5" stroke-linejoin="round"/><circle cx="54" cy="21.4" r="1.3" fill="#FACC15" stroke="#7C4A1E" stroke-width=".6"/></svg>`;
+  return `<svg class="of-svg ico-arrivi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M1 38.4H63" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/>${icoViaggiatore(15, 1)}${icoCasetta()}${icoFrecciona(23, 46.4, 28, "#16A34A")}</svg>`;
 }
 function icoPartenze() {
-  return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M2 38.4H62" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/><rect x="2.6" y="3" width="18.4" height="35.4" rx="1.6" fill="#FDE68A" stroke="#7C4A1E" stroke-width="2.2"/><path d="M2.6 3L12.4 6.4V35L2.6 38.4Z" fill="#C08A4B" stroke="#7C4A1E" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="21.4" r="1.3" fill="#FACC15" stroke="#7C4A1E" stroke-width=".6"/>${icoOmini(30, 43.5, "#2563EB", "#EA8A2E")}<path d="M52.6 23H60.4" stroke="#EA580C" stroke-width="3.2" stroke-linecap="round"/><path d="M56.8 18.2L61.6 23L56.8 27.8" fill="none" stroke="#EA580C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="of-svg ico-partenze" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M1 38.4H63" stroke="#D6C7A6" stroke-width="1.5" stroke-linecap="round"/>${icoCasetta()}${icoViaggiatore(27.4, -1)}${icoFrecciona(19, 2.6, 28, "#EA580C")}</svg>`;
 }
 // il letto da preparare, visto dall'alto: due cuscini = matrimoniale; un cuscino sul letto grande = matrimoniale in singolo;
 // il letto stretto con un cuscino = singolo; la casetta = un appartamento (più letti)
