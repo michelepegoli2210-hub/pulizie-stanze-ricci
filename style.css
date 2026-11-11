@@ -9649,3 +9649,9 @@ body.premium .sofia-hero .casa-nuvola .of-s.of-vuote .fa-letto{width:30px;height
   body.premium .sofia-hero .casa-nuvola .csf-ico svg{width:40px;height:25px}
   body.premium .sofia-hero .casa-nuvola .csf-due .csf-ico svg{width:32px;height:20px}
 }
+
+/* ---- 1.79.8 · Michele (11/11): «le scritte che stanno pulizie oggi, pulizie domani, piene, vuote, da aggiustare, domande,
+   siano in grassetto… la stessa scritta, soltanto in grassetto». Sotto le figurine della tendina chiusa le parole sono in
+   grassetto pieno (800 invece di 600, come ARRIVANO e PARTONO), con la stessa grandezza e lo stesso colore. Ci stanno su
+   tutti i telefoni (da 320 px; sotto i 375 px «pulizie domani» e «da aggiustare» vanno su due righe, come prima) ---- */
+body.premium .sofia-hero .casa-nuvola .csf-p{font-weight:800}
