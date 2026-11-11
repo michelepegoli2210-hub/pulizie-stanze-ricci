@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.14";
+export const VERSIONE = "1.79.15";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -362,13 +362,65 @@ function icoNavProspetto() {
     + testa(10.4, 17.6, 3.6) + testa(23, 25.8, 3.6) + testa(10.4, 33.2, 3.3)
     + `<path transform="translate(46.4 20.8) scale(1.22)" d="M7.09 1.82A6.6 6.6 0 1 0 13.88 10.42A5.6 5.6 0 0 1 7.09 1.82z" fill="#F7C948" stroke="#CA8A04" stroke-width="1.1"/></svg>`;
 }
-// 1.79.14 (Michele, 11/11: «Gemini mi ha generato questa immagine stilizzata, sempre a forma di icona, di Sofia segretaria.
-// Quindi metti questa come tasto, uguale, precisa, identica. Forse farla sorridere leggermente di più»): la Segreteria è quel
-// disegno, Sofia segretaria alla scrivania che scrive al computer col telefono che squilla, preso dalla sua immagine così
-// com'è (segr-tasto.webp: tolti lo sfondo della barra e il numerino rosso, che mette già l'app; richiuso l'angolo dello
-// schermo che il numerino copriva; il sorriso un poco più largo). Prima (1.79.9) Sofia disegnata al telefono col blocco.
+// 1.79.15 (Michele, 12/11: «farla più definita, Sofia, deve essere in 4K… i colori si impastano fra il grigio del computer
+// e il grigio del suo vestito»): il disegno di Gemini della 1.79.14 (Sofia segretaria alla scrivania che scrive al computer,
+// col telefono che squilla) ridisegnato a vettori, nitido a qualunque grandezza, ricalcato sulle stesse forme (346x278).
+// I colori separati: la giacca grigio chiaro, lo schermo antracite, la tastiera scura, la scrivania di legno, la sedia blu.
+// Il sorriso un poco più largo. Niente id e niente immagini: si può disegnare più volte. Disegno nostro.
 function icoNavSegreteria() {
-  return `<svg class="nav-segreteria nav-seg-foto" viewBox="0 0 64 40" aria-hidden="true"><image href="segr-tasto.webp" x="7.1" y="0" width="49.8" height="40" preserveAspectRatio="xMidYMid meet"/></svg>`;
+  const P = { pelle: "#F6D5BF", pelleO: "#E8B396", pelleB: "#B97A5D", capelli: "#4A2B1C", capelliL: "#7B4A30", capelliB: "#2A170E",
+    giacca: "#B3BBC5", giaccaO: "#8D96A2", giaccaB: "#3E4550", camicia: "#FFFFFF", camiciaO: "#E3E7EC",
+    schermo: "#2B3038", schermoL: "#48505C", schermoB: "#14171B", legno: "#E9C996", legnoF: "#C99A5F", legnoB: "#94683A",
+    sedia: "#26344D", sediaL: "#3A4C6C", sediaB: "#141C2B", tastiera: "#3F454E", tastieraL: "#6B7380", blu: "#3B82F6", bluO: "#1D4ED8", bluB: "#1E3A8A", onde: "#475569" };
+  const occhio = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="6.6" ry="4.9" fill="#FFFFFF" stroke="${P.pelleB}" stroke-width=".9"/>`
+    + `<circle cx="${x + .6}" cy="${y + .3}" r="4.1" fill="#6B4228"/><circle cx="${x + .6}" cy="${y + .3}" r="2.2" fill="#160C06"/><circle cx="${x + 2}" cy="${y - 1.2}" r="1.3" fill="#FFFFFF"/>`
+    + `<path d="M${x - 7.4} ${y - .6}Q${x - 1} ${y - 7.6} ${x + 7.2} ${y - 1.8}L${x + 8.6} ${y - 3.4}" fill="none" stroke="#1E120B" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return `<svg class="nav-segreteria nav-seg-hd" viewBox="0 0 346 278" aria-hidden="true">`
+    // la sedia dietro di lei
+    + `<path d="M12 178Q12 158 32 154L60 152V250H12Z" fill="${P.sedia}" stroke="${P.sediaB}" stroke-width="2.6" stroke-linejoin="round"/><path d="M20 174Q21 164 32 162L44 161" fill="none" stroke="${P.sediaL}" stroke-width="3" stroke-linecap="round"/>`
+    // i capelli dietro: tanti, mossi (le onde sul bordo), che scendono sulla spalla di qua; di là dietro la spalla
+    + `<path d="M122 3C98 2 80 12 70 30C62 44 60 58 56 66C52 74 58 80 54 90C49 101 42 106 44 120C46 132 38 138 36 150C34 162 44 168 40 180C37 190 44 200 56 200C64 200 70 196 74 190L92 150H182C190 140 194 128 190 116C187 104 194 96 192 82C190 68 194 56 188 40C182 24 166 8 146 5C138 3 130 3 122 3Z" fill="${P.capelli}" stroke="${P.capelliB}" stroke-width="2.4" stroke-linejoin="round"/>`
+    + `<path d="M74 40C66 56 70 66 64 78C58 90 52 98 54 112M58 124C50 136 54 148 48 160M84 66C80 84 84 96 78 110C74 120 70 128 70 140M186 56C190 70 186 84 188 98" fill="none" stroke="${P.capelliL}" stroke-width="3" stroke-linecap="round" opacity=".75"/>`
+    // il collo
+    + `<path d="M131 106V136Q144 145 157 136V104Z" fill="${P.pelleO}" stroke="${P.pelleB}" stroke-width="1.6"/>`
+    // la giacca grigio chiaro, spalle tonde, revers stretti, la camicia bianca
+    + `<path d="M60 174C62 157 80 145 104 139L118 136L140 156L162 136L172 137C186 140 196 148 200 162L208 214L202 250H64L54 214Z" fill="${P.giacca}" stroke="${P.giaccaB}" stroke-width="2.6" stroke-linejoin="round"/>`
+    + `<path d="M120 137L140 196L160 137Q140 148 120 137Z" fill="${P.camicia}" stroke="${P.giaccaB}" stroke-width="1.4" stroke-linejoin="round"/><path d="M127 141L140 176L153 141" fill="none" stroke="${P.camiciaO}" stroke-width="2"/>`
+    + `<path d="M118 136L108 150L120 166L112 172L136 210L140 196Z" fill="${P.giaccaO}" stroke="${P.giaccaB}" stroke-width="1.8" stroke-linejoin="round"/>`
+    + `<path d="M162 136L172 150L160 166L168 172L144 210L140 196Z" fill="${P.giaccaO}" stroke="${P.giaccaB}" stroke-width="1.8" stroke-linejoin="round"/>`
+    + `<circle cx="140" cy="224" r="3" fill="${P.giaccaB}"/>`
+    // il braccio di qua (a sinistra) che va alla tastiera, con la piega
+    + `<path d="M62 178C54 198 56 219 68 234C80 246 104 247 124 240L126 226C108 230 92 224 86 210C80 196 80 184 78 174Z" fill="${P.giaccaO}" stroke="${P.giaccaB}" stroke-width="2.4" stroke-linejoin="round"/><path d="M70 212Q78 226 94 232" fill="none" stroke="${P.giaccaB}" stroke-width="1.4" stroke-linecap="round" opacity=".6"/>`
+    // la scrivania (il piano in prospettiva e il bordo davanti)
+    + `<path d="M4 240L344 224V246L4 262Z" fill="${P.legno}" stroke="${P.legnoB}" stroke-width="2.4" stroke-linejoin="round"/><path d="M4 262L344 246V278H4Z" fill="${P.legnoF}" stroke="${P.legnoB}" stroke-width="2.4" stroke-linejoin="round"/><path d="M10 245L338 229.6" stroke="#F6DFB8" stroke-width="2.4" stroke-linecap="round"/>`
+    // la tastiera sul tavolo, coi tasti chiari
+    + `<path d="M100 240L218 231L227 247L106 257Z" fill="${P.tastiera}" stroke="#1F2329" stroke-width="2" stroke-linejoin="round"/><path d="M110 244.6L217 236.6M112 249L221 241M114 253.4L224 245.4" stroke="#A3ABB7" stroke-width="2.2" stroke-dasharray="6 2.6"/>`
+    // le mani sulla tastiera, con le dita e il polsino bianco della camicia
+    + `<path d="M110 228L120 225L124 238L114 241Z" fill="#FFFFFF" stroke="${P.giaccaB}" stroke-width="1.4" stroke-linejoin="round"/>`
+    + `<path d="M118 232C121 224 136 222 145 227C150 230 150 237 145 240L141 242L138 238.6L134.6 242L131 238.6L127.4 242C120 242 116 238 118 232Z" fill="${P.pelle}" stroke="${P.pelleB}" stroke-width="1.6" stroke-linejoin="round"/>`
+    // il braccio di là (a destra) col polsino e la mano
+    + `<path d="M192 156C204 174 210 194 208 214L203 229L186 226C190 210 188 192 181 178Z" fill="${P.giaccaO}" stroke="${P.giaccaB}" stroke-width="2.4" stroke-linejoin="round"/><path d="M196 178Q203 196 201 214" fill="none" stroke="${P.giaccaB}" stroke-width="1.3" stroke-linecap="round" opacity=".55"/>`
+    + `<path d="M186 222L202 225L200 232L184 229Z" fill="#FFFFFF" stroke="${P.giaccaB}" stroke-width="1.4" stroke-linejoin="round"/>`
+    + `<path d="M181 228C185 222 199 221 206 225C210 229 208 235 202 236L198 237.4L195 234L191.6 237.4L188 234.4C182 234.6 179 232 181 228Z" fill="${P.pelle}" stroke="${P.pelleB}" stroke-width="1.6" stroke-linejoin="round"/>`
+    // lo schermo del computer (di spalle, antracite) col piede
+    + `<path d="M222 114L342 100L334 214L216 212Z" fill="${P.schermo}" stroke="${P.schermoB}" stroke-width="2.8" stroke-linejoin="round"/><path d="M226 119L337 106" stroke="${P.schermoL}" stroke-width="3.2" stroke-linecap="round"/><path d="M230 204L330 206" stroke="#20242A" stroke-width="2.2" stroke-linecap="round"/>`
+    + `<path d="M268 212H298L301 242H265Z" fill="#3A414B" stroke="${P.schermoB}" stroke-width="2.2" stroke-linejoin="round"/><ellipse cx="283" cy="244" rx="33" ry="6.6" fill="#22262C" stroke="${P.schermoB}" stroke-width="2"/>`
+    // la testa (un poco girata verso lo schermo): il viso, gli occhi, il sorriso, la frangia, le ciocche davanti, la perla
+    + `<g transform="translate(6 0)">` + `<path d="M108 64C110 44 126 34 144 36C162 38 172 54 170 74C168 96 158 114 140 118C124 121 110 108 107 90Z" fill="${P.pelle}" stroke="${P.pelleB}" stroke-width="1.8"/>`
+    + `<ellipse cx="121" cy="96" rx="6.4" ry="3.6" fill="#F09A92" opacity=".45"/><ellipse cx="162" cy="95" rx="5.6" ry="3.4" fill="#F09A92" opacity=".45"/>`
+    + occhio(128, 80) + occhio(155, 79)
+    + `<path d="M119 67Q127 62 136 66M147 65Q155 61 163 66" fill="none" stroke="${P.capelli}" stroke-width="2.6" stroke-linecap="round"/>`
+    + `<path d="M144 85Q142.6 92 146.6 95" fill="none" stroke="#C98C70" stroke-width="1.8" stroke-linecap="round"/>`
+    + `<path d="M128.6 100.4Q142 117 157.4 99.6Q142 107 128.6 100.4Z" fill="#A83A44" stroke="#7E2730" stroke-width="1.2" stroke-linejoin="round"/><path d="M132 102.2Q142.4 107.4 154 101.6Q142.6 105 132 102.2Z" fill="#FFFFFF"/>`
+    + `<path d="M104 72C100 50 108 30 128 22C146 16 166 20 178 36C184 46 182 58 176 64C170 52 160 46 150 44C140 44 132 50 124 58C116 60 108 64 104 72Z" fill="${P.capelli}" stroke="${P.capelliB}" stroke-width="2" stroke-linejoin="round"/><path d="M114 38C128 27 150 25 168 34M126 54C134 47 144 44 156 45" fill="none" stroke="${P.capelliL}" stroke-width="2.8" stroke-linecap="round" opacity=".85"/>`
+    + `</g>`
+    + `<path d="M106 58C96 66 92 80 96 92C100 104 92 112 90 124C88 136 96 146 92 158C88 170 80 176 78 186C76 194 72 198 66 202C84 202 96 192 100 178C104 164 98 154 100 142C102 130 110 122 108 108C106 94 104 80 112 66Z" fill="${P.capelli}" stroke="${P.capelliB}" stroke-width="2" stroke-linejoin="round"/><path d="M100 76C98 88 102 98 98 110C95 120 94 130 96 142" fill="none" stroke="${P.capelliL}" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>`
+    + `<g transform="translate(6 0)">` + `<path d="M170 46C178 58 178 72 176 86C174 100 180 112 184 124C187 134 190 142 194 150C184 150 176 144 172 134C168 124 168 110 168 98C168 84 166 70 170 46Z" fill="${P.capelli}" stroke="${P.capelliB}" stroke-width="2" stroke-linejoin="round"/><path d="M174 74C174 92 178 108 184 122" fill="none" stroke="${P.capelliL}" stroke-width="2.2" stroke-linecap="round" opacity=".8"/>`
+    + `<circle cx="171.6" cy="101" r="3.2" fill="#FFFFFF" stroke="#C9CED6" stroke-width="1"/>` + `</g>`
+    // il telefono blu che squilla, con le onde
+    + `<g transform="translate(232 60) rotate(-45)"><path d="M-6 -27Q-17 -27 -19 -14Q-23 0 -19 14Q-17 27 -6 27H5Q10 27 10 22V13Q10 8 5 8H-4Q-7 0 -4 -8H5Q10 -8 10 -13V-22Q10 -27 5 -27Z" fill="${P.blu}" stroke="${P.bluB}" stroke-width="2.6" stroke-linejoin="round"/><path d="M-14 -12Q-17 0 -14 12" fill="none" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/></g>`
+    + `<g fill="none" stroke="${P.onde}" stroke-width="4.4" stroke-linecap="round"><path d="M244 34Q252 38 254 48"/><path d="M246 21Q262 26 267 45"/><path d="M249 8Q272 14 280 41"/></g>`
+    + `</svg>`;
 }
 function icoNavPiantine() {
   return `<svg viewBox="0 0 64 40" aria-hidden="true"><rect x="8" y="4.5" width="48" height="32" rx="3.4" fill="#F8FAFC"/><rect x="9" y="5.5" width="22" height="15" fill="#DBEAFE"/><rect x="34" y="23" width="21" height="12.5" fill="#FEF3C7"/><rect x="8" y="4.5" width="48" height="32" rx="3.4" fill="none" stroke="#334155" stroke-width="2.2"/><path d="M32.5 4.5V15M32.5 21V36.5M8 21.5H22.5M29 21.5H56" stroke="#334155" stroke-width="2.2"/><path d="M22.5 21.5A6.5 6.5 0 0 1 29 15" fill="none" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="2 1.6"/><rect x="12.5" y="8.5" width="11" height="9.2" rx="1.6" fill="#FFFFFF" stroke="#3B82F6" stroke-width="1.3"/><rect x="14" y="9.8" width="8" height="2.8" rx="1.2" fill="#93C5FD"/><circle cx="44" cy="12.5" r="4.4" fill="#FFFFFF" stroke="#A16207" stroke-width="1.3"/><circle cx="44" cy="12.5" r="1.4" fill="#FACC15"/><rect x="38" y="27" width="13" height="5" rx="1.6" fill="#FFFFFF" stroke="#A16207" stroke-width="1.1"/><circle cx="16" cy="29" r="3.2" fill="#22C55E" stroke="#15803D" stroke-width="1"/><path d="M16 32.2V34" stroke="#A16207" stroke-width="1.4" stroke-linecap="round"/></svg>`;

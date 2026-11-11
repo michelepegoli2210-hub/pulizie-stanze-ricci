@@ -57,7 +57,8 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   (1.79.3). Le altre figurine raccontano con le persone cosa c'è dentro (1.79.7): la signora delle pulizie col sole (oggi);
   oggi → domani cerchiato col secchio (domani); il letto con chi dorme o rifatto (camere); il rubinetto e l'operaio (da
   aggiustare); Sofia che alza la mano (domande). Nella barra in basso il tasto Segreteria è il disegno di Sofia segretaria
-  al computer che Gemini ha fatto per Michele, preso così com'è (1.79.14: «uguale, precisa, identica»).
+  al computer che Gemini ha fatto per Michele (1.79.14: «uguale, precisa, identica»), ridisegnato a vettori perché sia
+  nitido (1.79.15: «deve essere in 4K»), coi colori separati (la giacca chiara, lo schermo scuro).
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
