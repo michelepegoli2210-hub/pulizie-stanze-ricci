@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.2";
+export const VERSIONE = "1.79.3";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8445,27 +8445,29 @@ function icoDomande() {
 function icoNuvola() {
   return `<svg class="of-svg" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M19 33.5Q10 33.5 10 26Q10 19 17.4 18.4Q19 10.5 27.5 10.5Q35 10.5 37.6 17Q39.6 15.5 42.6 15.5Q49.6 15.5 50.1 22.4Q56 23 56 28.4Q56 33.5 50.4 33.5Z" fill="#E0F2FE" stroke="#0284C7" stroke-width="1.6" stroke-linejoin="round"/><path d="M25 25L30.4 30L40 20.4" fill="none" stroke="#16A34A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
-// 1.79.2 (Michele, 11/11: «le due icone arrivi oggi e partenze oggi ancora più inequivocabili: deve poter capire anche mia
-// nonna che un giorno viene all'albergo e fa un check in»; fra tre proposte ha scelto «il cartello»): arrivi e partenze sono
-// due CARTELLI, come l'entrata e l'uscita dei negozi. Verde: l'omino con la valigia e la freccia bianca grande che va DENTRO
-// la porta. Arancione: la stessa porta nello stesso posto, l'omino che è uscito e se ne va, la freccia che va VIA. Colore,
-// freccia e omino dicono la stessa cosa tre volte (a chi confonde il verde con l'arancione restano la freccia e l'omino).
-// Poi (Michele: «scrivi in piccolo EXIT nella partenza, ed entra… non so bene come la puoi scrivere negli arrivi»): in piccolo,
-// come sui cartelli veri, EXIT sulle partenze e IN sugli arrivi (ENTRATA era troppo lunga: in quel posto veniva illeggibile).
+// 1.79.3 (Michele, 11/11: «le due icone arrivi oggi e partenze oggi ancora più inequivocabili: deve poterlo capire anche mia
+// nonna, che un giorno viene all'albergo e fa un check-in» → il cartello, con «EXIT» in piccolo → «Migliorare ancora di più così
+// da renderle veramente uguali ai cartelli universali di exit e in»; colori: «IN verde, EXIT rosso»). Arrivi e partenze sono
+// i cartelli IN ed EXIT disegnati come quelli veri (come all'entrata e all'uscita di parcheggi e negozi): fondo pieno (verde
+// IN, rosso EXIT) col bordino bianco; da una parte la parola in maiuscolo con la freccia sotto, nel suo riquadro; dall'altra
+// la porta e l'omino bianco. IN: l'omino cammina dentro la porta, la freccia va a sinistra. EXIT: l'omino che corre (quello
+// dell'uscita di emergenza) esce dalla porta, la freccia va a destra. Disegni nostri.
 // (1.79.1) Le pulizie di oggi hanno il secchio col sole, quelle di domani il calendario grande: icoSecchio.
-function cartello(colore) { return `<rect x=".8" y=".8" width="62.4" height="38.4" rx="8" fill="${colore}"/>`; }
-// l'omino bianco con la valigia (verso 1 = cammina a destra, -1 = a sinistra)
-function cartelloPersona(x, verso) {
-  return `<g transform="translate(${x} 0) scale(${verso} 1)" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="1.4" cy="8.8" r="3.7" fill="#FFFFFF" stroke="none"/><path d="M1 14.8L-.2 24.4" stroke-width="5.6"/><path d="M-.2 24.4L4.4 34.4M-.8 24.4L-4.6 34.4" stroke-width="2.9"/><path d="M2.4 16.2L5.8 21.4" stroke-width="2.2"/><path d="M-1.6 16.4L-5.8 21.2L-7.8 24.2" stroke-width="2"/><rect x="-13.6" y="24" width="8.8" height="10.2" rx="1.8" fill="#FFFFFF" stroke="none"/><circle cx="-11.6" cy="35.8" r="1.3" fill="#FFFFFF" stroke="none"/><circle cx="-6.8" cy="35.8" r="1.3" fill="#FFFFFF" stroke="none"/></g>`;
+function cartelloFondo(c) { return `<rect class="cartello-fondo" x=".8" y=".8" width="62.4" height="38.4" rx="5" fill="${c}"/><rect x="2.5" y="2.5" width="59" height="35" rx="3.4" fill="none" stroke="#FFFFFF" stroke-width="1.1"/>`; }
+function cartelloPorta(x) { return `<rect class="cartello-porta" x="${x}" y="6.2" width="10" height="27.8" fill="none" stroke="#FFFFFF" stroke-width="2.4"/>`; }
+function cartelloDivisorio(x) { return `<path class="cartello-divisorio" d="M${x} 6.4V33.6" stroke="#FFFFFF" stroke-width="1"/>`; }
+function cartelloParola(t, x) { return `<text class="cartello-parola" x="${x}" y="14.4" text-anchor="middle" font-size="8.8" font-weight="800" letter-spacing=".2" fill="#FFFFFF" font-family="Plus Jakarta Sans,Arial,sans-serif">${t}</text>`; }
+function cartelloFreccia(cx, cy, verso) { const v = verso; return `<path class="cartello-freccia" d="M${cx - 8 * v} ${cy - 2.7}H${cx + 1.4 * v}V${cy - 6.4}L${cx + 8.2 * v} ${cy}L${cx + 1.4 * v} ${cy + 6.4}V${cy + 2.7}H${cx - 8 * v}Z" fill="#FFFFFF"/>`; }
+// l'omino che corre (come quello dell'uscita di emergenza) e l'omino che cammina: disegnati verso destra (verso = -1 li gira);
+// intorno un filo del colore del fondo, così dove passa davanti alla porta si stacca da lei
+const OMINO_CORRE = [["M2.6 -8.8L0 0", 4.6], ["M2.8 -8.4L6.4 -6.6L9.2 -9.2", 2.5], ["M1.6 -8.2L-2.2 -5.4L-4.8 -7.4", 2.5], ["M.6 .4L5.4 1.8L4.8 7.4", 3], ["M-.4 .6L-3 4.6L-7.6 5.6", 3]];
+const OMINO_CAMMINA = [["M1.8 -8.8L0 0", 4.6], ["M2.2 -8.2L4.4 -4.6L6.4 -2.6", 2.4], ["M1 -8L-1.6 -4.8L-3.6 -3.2", 2.4], ["M.4 .4L3.4 3.4L5 7.8", 3], ["M-.4 .4L-2.2 4.2L-5.4 6.6", 3]];
+function cartelloOmino(pezzi, testa, hx, hy, verso, fondo, s = 1) {
+  const g = (col, piu) => `<g fill="none" stroke="${col}" stroke-linecap="round" stroke-linejoin="round">${pezzi.map(([d, w]) => `<path d="${d}" stroke-width="${w + piu}"/>`).join("")}<circle cx="${testa[0]}" cy="${testa[1]}" r="${2.9 + piu / 2}" fill="${col}" stroke="none"/></g>`;
+  return `<g class="cartello-omino" transform="translate(${hx} ${hy}) scale(${verso * s} ${s})">${g(fondo, 2.2)}${g("#FFFFFF", 0)}</g>`;
 }
-// la porta aperta (la luce dentro, l'anta bianca girata verso di noi), sempre a destra
-function cartelloPorta() { return `<rect x="45.4" y="5.6" width="14.6" height="30.8" rx="1.4" fill="#FDE68A" stroke="#FFFFFF" stroke-width="2.4"/><path d="M60 5.6L54.6 8V34L60 36.4Z" fill="#FFFFFF"/>`; }
-// la parola del cartello, bianca, in piccolo, sopra la freccia
-function cartelloParola(testo, x, ancora) { return `<text class="cartello-parola" x="${x}" y="11.4" text-anchor="${ancora}" font-size="8.8" font-weight="800" letter-spacing=".2" fill="#FFFFFF" font-family="Plus Jakarta Sans,Arial,sans-serif">${testo}</text>`; }
-// la freccia piena (la punta in «a»)
-function cartelloFreccia(da, a, y) { const v = a > da ? 1 : -1, collo = a - v * 7.6; return `<path class="cartello-freccia" d="M${da} ${y - 2.9}H${collo}V${y - 7.6}L${a} ${y}L${collo} ${y + 7.6}V${y + 2.9}H${da}Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round"/>`; }
-function icoArrivi() { return `<svg class="of-svg ico-arrivi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${cartello("#16A34A")}${cartelloPorta()}${cartelloPersona(16, 1)}${cartelloFreccia(23.6, 43.8, 21)}${cartelloParola("IN", 33.7, "middle")}</svg>`; }
-function icoPartenze() { return `<svg class="of-svg ico-partenze" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${cartello("#EA580C")}${cartelloPorta()}${cartelloPersona(30.4, -1)}${cartelloFreccia(22.4, 2.8, 21)}${cartelloParola("EXIT", 12.8, "middle")}</svg>`; }
+function icoArrivi() { const c = "#16A34A"; return `<svg class="of-svg ico-arrivi" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${cartelloFondo(c)}${cartelloParola("IN", 14.4)}${cartelloFreccia(14.4, 25.4, -1)}${cartelloDivisorio(26.4)}${cartelloPorta(33.6)}${cartelloOmino(OMINO_CAMMINA, [2.4, -13.4], 47.6, 24.8, -1, c, 1.06)}</svg>`; }
+function icoPartenze() { const c = "#DC2626"; return `<svg class="of-svg ico-partenze" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">${cartelloFondo(c)}${cartelloPorta(20.4)}${cartelloOmino(OMINO_CORRE, [4.2, -13.4], 15.2, 25, 1, c)}${cartelloDivisorio(37.6)}${cartelloParola("EXIT", 49.6)}${cartelloFreccia(49.6, 25.4, 1)}</svg>`; }
 // il letto da preparare, visto dall'alto: due cuscini = matrimoniale; un cuscino sul letto grande = matrimoniale in singolo;
 // il letto stretto con un cuscino = singolo; la casetta = un appartamento (più letti)
 function icoPrep(tipo) {

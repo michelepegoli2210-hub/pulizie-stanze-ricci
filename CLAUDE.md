@@ -53,8 +53,8 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   pulizie oggi, pulizie domani, camere piene e vuote, da aggiustare (`notizieFacili`). I dettagli sono in `dettaglioFacile`:
   la piantina di chi arriva e di chi parte, il letto da preparare (`preparazioneCamera`). Michele legge male le scritte
   piccole: i tasti non si rimpiccioliscono. Ogni tasto ha un disegno che non somiglia agli altri («inequivocabili»: «deve
-  capirlo anche mia nonna»): arrivi e partenze sono due cartelli (1.79.2: verde, l'omino entra dalla porta; arancione, esce e va
-  via); le pulizie di oggi hanno il sole, quelle di domani il calendario (1.79.1).
+  capirlo anche mia nonna»): arrivi e partenze sono i cartelli IN (verde) ed EXIT (rosso) disegnati come quelli veri
+  (1.79.3); le pulizie di oggi hanno il sole, quelle di domani il calendario (1.79.1).
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
