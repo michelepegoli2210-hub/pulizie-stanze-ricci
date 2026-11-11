@@ -9622,3 +9622,10 @@ body.premium .sofia-hero .casa-nuvola .csf-p{padding-bottom:3px;margin-bottom:-3
 }
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v,
 :root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-p b.of-v{color:#F8FAFC;-webkit-text-stroke-color:#F8FAFC;text-shadow:1px 1px 0 #7A6236,1.5px 2px 0 #3A2F1F,1px 3px 4px rgba(0,0,0,.5)}
+
+/* ---- 1.79.6 · Michele (11/11): «per le scritte partenze e arrivi togli il rilievo e rimani il grassetto». ARRIVANO / PARTONO
+   restano in maiuscolo e in grassetto pieno, senza il bordo d'oro sotto le lettere ---- */
+body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v,
+body.premium .sofia-hero .casa-nuvola .of-p b.of-v,
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v,
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .of-p b.of-v{text-shadow:none}
