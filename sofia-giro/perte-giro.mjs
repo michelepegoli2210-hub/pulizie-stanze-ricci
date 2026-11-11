@@ -38,6 +38,7 @@ export function allarmiDovuti(letture, adesso, t) {
       const a = avvisi[p.k] || {}, n = Number(a.n) || 0, ultimo = Date.parse(a.ultimo || "") || 0;
       if (!p.richiesto && (LET.eMichele(p.chi) || p.visto || a.visto)) continue;   // 1.34.0: detta da lui, oppure l'ha già vista (ha scritto dopo in quella chat)
       if (n >= MAX_ALLARMI) continue;
+      if (p.unaVolta && n >= 1) continue;                                           // 1.35.0: «Metti tu le ore di …» suona una volta sola
       if (p.rimanda && Date.parse(p.rimanda) > ora) continue;                       // «Ricordami tra 1 ora»
       if (ultimo && ora - ultimo < OGNI_MS - MARGINE_MS) continue;                  // ha già suonato da meno di un'ora
       if (p.richiesto) {                                                            // 1.34.0: un promemoria chiesto da lui: all'ora detta

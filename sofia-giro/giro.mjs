@@ -79,9 +79,10 @@ import { copiaDovuta, faiCopia, mandaCassetta, pulito as pulitoCopia } from "./c
 import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGNI_MS as OGNI_CAL_MS } from "./calendari-giro.mjs";   // 1.30.0: il channel manager gratis
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
 import { portaPostaAlbergo } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
+import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'orologio: «arrivata» / «finito» su WhatsApp e i tasti dell'app
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.34.1";
+export const VERSIONE_GIRO = "1.35.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -362,6 +363,13 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
       fatti.creditoAvvisato = oggi;
     }
   } catch (e) { console.warn("lettura delle chat:", e && e.message); esiti.push("lettura delle chat: errore " + String((e && e.message) || e).slice(0, 80)); }
+  // 1.35.0 (app 1.78.0): L'OROLOGIO. «arrivata» / «finito» su WhatsApp (e i tasti dell'app) → i turni al minuto, che Michele
+  // conferma; il timer da far vedere alle signore. Dopo la lettura (i vocali sono già trascritti), prima degli allarmi.
+  let orario = null;
+  try {
+    orario = await orarioSignore({ db, adesso, t: { iso: oggi, minuti: t.minuti }, prendiBase, stato: (stato0 && stato0.orario) || null, a });
+    if (orario && orario.esito) esiti.push(orario.esito);
+  } catch (e) { console.warn("turni delle signore:", e && e.message); esiti.push("turni delle signore: errore " + String((e && e.message) || e).slice(0, 80)); }
   // 1.28.0: «🔔 Da fare tu»: le cose che deve fare Michele in persona suonano (vibrano) finché non le segna fatte
   // 1.34.1: le cose che ha già visto (ha risposto su WhatsApp) si segnano a ogni giro; si suona solo negli orari degli allarmi
   if (a.giroFareTu !== false) {
@@ -487,7 +495,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   // 1.18.1: chi ha fatto partire il giro (il ponte sul PC, l'orario di GitHub, Michele a mano) e quando scade la chiave del ponte
   const chi = /^[a-z ]{1,20}$/.test(String(da || "")) ? String(da) : "";
   const spinta = chi === "ponte" ? { spinta: { ultima: adesso.toISOString(), scade: /^\d{4}-\d{2}-\d{2}$/.test(String(scade || "")) ? String(scade) : null } } : {};
-  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, ...(chi ? { ultimoDa: chi } : {}), ...spinta, ...(chi === "orologio" ? { orologio: { ultima: adesso.toISOString() } } : {}), letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), letturaTurno: (lettura && lettura.turno) || String((stato0 && stato0.letturaTurno) || ""), ...(letturaInfo ? { lettura: letturaInfo } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
+  await db.merge("importazioni", "giro-sofia", { giorno: oggi, fatti, ultimo: adesso.toISOString(), versione: VERSIONE_GIRO, ...(chi ? { ultimoDa: chi } : {}), ...spinta, ...(chi === "orologio" ? { orologio: { ultima: adesso.toISOString() } } : {}), letturaTs: lettura && lettura.ts ? lettura.ts : (Number(stato0 && stato0.letturaTs) || 0), letturaTurno: (lettura && lettura.turno) || String((stato0 && stato0.letturaTurno) || ""), ...(letturaInfo ? { lettura: letturaInfo } : {}), ...(orario && orario.stato ? { orario: orario.stato } : {}), esiti: [...vecchi, ...esiti.map(cosa => ({ quando: adesso.toISOString(), cosa }))].slice(-30) });
   return { ora: t.hhmm, giorno: oggi, fatti, esiti, lettura: lettura ? lettura.esito : null, da: chi || null };
 }
 
