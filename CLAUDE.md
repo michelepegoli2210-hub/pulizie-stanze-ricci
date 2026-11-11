@@ -44,6 +44,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - La paga è solo a ore (1.77.0, «togli completamente tutti i prezzi… soltanto un timer»): con `pagaAOre()` nell'app non si
   vede e Sofia non dice nessun prezzo a pezzo (camera, stella, controllo, Visto). Restano le ore × la tariffa e i conti
   della casa. Un giorno senza orario resta «senza orario», fuori dal totale. La paga a camera resta nel codice, nascosta.
+- L'orologio (1.78.0, giro 1.35.0) è uno, i modi per farlo partire sono due: i tasti dell'app («Sono arrivata», HO FINITO,
+  «Sono tornata», «Vado via») oppure «arrivata» / «finito» scritti su WhatsApp, che `sofia-giro/orario-giro.mjs` riconosce
+  senza IA (`timbroDi` in `lettura.js`). I turni passati da WhatsApp aspettano sempre il «Sì» di Michele. Il conto del
+  giorno è in `turnoDelGiorno`: i turni si uniscono e i pezzi sovrapposti contano una volta; cosa fa un «Sì» lo dice
+  `oreEffetto`. Le regole di Firestore non cambiano: i turni in più sono documenti `visti/<zona>_<giorno>_2…4`.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

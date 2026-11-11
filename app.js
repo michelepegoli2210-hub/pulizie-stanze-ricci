@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.77.0";
+export const VERSIONE = "1.78.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1315,7 +1315,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lettura-sofia", d => { S.letturaCondivisa = d ? { ...d } : null; S.caricati.letturaCondivisa = true; guardaCondivisa(); disegna(); if (lettorePosta() && !letturaCondivisaOccupata()) guardaPosta(); }));   // 1.18.0; 1.53.1: appena la lettura condivisa si libera, la posta che aspettava riparte (prima ripartiva solo al messaggio dopo)
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "sofia-autonomia", d => { S.autonomia = d ? { livello: d.livello } : null; S.caricati.autonomia = true; if (S.vista === "altro") disegna(); }));   // 1.15.0; 1.51.0: caricati.autonomia
   // 1.39.0: la Segreteria: una scheda per ogni lettura delle chat (importazioni/segreteria_<lettura>)
-  if (proprietario()) S.stop.push(db.ascolta("importazioni", { where: [["__id__", ">=", "segreteria_"], ["__id__", "<", "segreteria`"]] }, (m) => { S.segreteria = m || {}; if (S.vista === "segreteria" || S.vista === "sofia") disegna(); }, (e) => console.warn("segreteria", e)));
+  if (proprietario()) S.stop.push(db.ascolta("importazioni", { where: [["__id__", ">=", "segreteria_"], ["__id__", "<", "segreteria`"]] }, (m) => { S.segreteria = m || {}; if (S.vista === "segreteria" || S.vista === "sofia" || S.vista === "paghe") disegna(); }, (e) => console.warn("segreteria", e)));
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "registro-sofia", d => { S.registroSofia = Array.isArray(d?.voci) ? d.voci : []; if (S.vista === "altro") disegna(); }));   // 1.15.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lezioni-sofia", d => { S.lezioni = Array.isArray(d?.voci) ? d.voci : []; if (S.vista === "altro") disegna(); }));   // 1.14.0 (C)
   // 1.13.0: le note private dei clienti (dette a Sofia): stanno in "importazioni", che le signore non leggono
@@ -1329,6 +1329,7 @@ function avviaAscolto() {
   // 1.52.0: i segni di Michele «ogni volta» sui disegni delle camere (li leggono anche le signore)
   S.stop.push(db.ascoltaDoc("impostazioni", "segni", d => { S.segniFissi = { ...(d || {}) }; delete S.segniFissi.id; disegna(); }));
   S.stop.push(db.ascoltaDoc("impostazioni", "presenze", d => { S.presenze = { ...(d || {}) }; delete S.presenze.id; disegna(); }));   // 1.69.0: il codice alla porta
+  S.stop.push(db.ascoltaDoc("impostazioni", "timer-wa", d => { S.timerWa = d ? { ...d } : null; if (S.timerWa) delete S.timerWa.id; disegna(); }));   // 1.78.0: il timer partito da WhatsApp (lo scrive il giro di Sofia)
   if (proprietario()) presSegreti().catch(() => {});
   setTimeout(() => { try { presDaIndirizzo(); } catch (e) {} }, 2500);
   // la governante: regole modificate, soglie, rinvii (tutti) e il registro "ultima volta fatto"
@@ -2030,10 +2031,63 @@ function pagaAOre() { return modoPaga() === "ore"; }
 function tariffaOra() { const t = Number(S.listino && S.listino.tariffaOra); return t > 0 ? t : 10; }
 function euroOre(minuti) { return Math.round((Number(minuti) || 0) / 60 * tariffaOra() * 100) / 100; }
 function minutiDa(ini) { return Math.max(0, Math.round((Date.now() - new Date(ini)) / 60000)); }
+// ============================================================================
+//  1.78.0 · L'OROLOGIO: IL TASTO DELL'APP OPPURE «ARRIVATA» / «FINITO» SU WHATSAPP
+//  Michele, 11/11: «non possiamo pagare così, così arrotondati sempre. Dobbiamo pagare più precisamente, o almeno i
+//  controlli» · «va bene orologio di WhatsApp e dall'app loro vedono solo le indicazioni… però ci deve stare una sorta di
+//  timer» · «anche dall'applicazione possono premere il timer, oppure "sono arrivata all'albergo"».
+//  L'orologio è uno, i modi per farlo partire sono due:
+//   - NELL'APP: «Sono arrivata» fa partire il timer, HO FINITO lo ferma (come prima). Se la signora torna nel pomeriggio:
+//     «Sono tornata» fa ripartire un altro turno e «Vado via» lo ferma (documenti visti/<zona>_<giorno>_2, _3, _4: li crea
+//     lei, le regole di Firestore non cambiano). I turni dell'app si contano da soli, come sempre.
+//   - SU WHATSAPP: «arrivata» e «finito». Il giro di Sofia li mette in coppia (anche coi tasti dell'app) e propone il turno,
+//     al minuto, in Segreteria e in Paghe: resta il «Sì» di Michele. Con il Sì il turno entra nel giorno (oreDette.parti,
+//     «timbro»). Nell'app della signora il timer partito da WhatsApp si vede lo stesso (impostazioni/timer-wa).
+//  IL CONTO DEL GIORNO: tutti i turni (dell'app e di WhatsApp confermati) messi uno accanto all'altro; i pezzi che si
+//  sovrappongono contano UNA volta sola (lo stesso turno segnato nei due modi non raddoppia). In più le ore scritte a parole
+//  e confermate come aggiunta («pomeriggio altre 2 ore»: oreDette.parti con «piu»). Se Michele dice lui le ore, valgono le sue.
+//  IL CONTROLLO: accanto alle ore, il lavoro che c'era quel giorno nell'app; se le ore sono troppe, un segno ⚠️.
+// ============================================================================
+// il timer partito da WhatsApp, oggi (lo scrive il giro in impostazioni/timer-wa): { aperto: { dalle, inizio } | null, turni: [...] }
+function waDi(z) {
+  const o = S.timerWa, x = o && o.giorno === L.oggiISO() && o.wa ? o.wa[z] : null;
+  return { aperto: x && x.aperto && x.aperto.inizio ? x.aperto : null, turni: x && Array.isArray(x.turni) ? x.turni.filter(y => y && y.inizio && y.fine) : [] };
+}
+// gli altri turni dell'app nello stesso giorno («Sono tornata»): [{ n, inizio, fine | null }]
+function turniAltri(z, iso) {
+  const base = L.idVisto(z, iso), out = [];
+  for (const n of [2, 3, 4]) { const v = (S.visti || {})[`${base}_${n}`]; if (v && v.arrivoOra) out.push({ n, inizio: v.arrivoOra, fine: v.finitoOra && new Date(v.finitoOra) > new Date(v.arrivoOra) ? v.finitoOra : null }); }
+  return out;
+}
+// i turni dell'orologio di WhatsApp confermati da Michele, e le ore scritte a parole confermate «in più»
+function pezziOrologio(od) {
+  const pp = od && od.da === "whatsapp" && Array.isArray(od.parti) ? od.parti : [];
+  return pp.filter(x => x && x.timbro && x.inizio && x.fine && new Date(x.fine) > new Date(x.inizio)).map(x => ({ inizio: x.inizio, fine: x.fine, fonte: "wa" }));
+}
+function minutiInPiu(od) {
+  const pp = od && od.da === "whatsapp" && Array.isArray(od.parti) ? od.parti : [];
+  return pp.filter(x => x && x.piu && !x.timbro).reduce((s, x) => s + Math.max(0, Math.round(Number(x.minuti) || 0)), 0);
+}
+// più turni messi in fila: quelli che si toccano o si sovrappongono diventano uno solo (così niente è contato due volte)
+function unisciTurni(lista) {
+  const xs = (lista || []).map(x => ({ a: Date.parse(x.inizio), b: Date.parse(x.fine), wa: x.fonte === "wa", app: x.fonte !== "wa" })).filter(x => x.a && x.b && x.b > x.a).sort((p, q) => p.a - q.a), out = [];
+  for (const x of xs) { const u = out[out.length - 1]; if (u && x.a <= u.b) { u.b = Math.max(u.b, x.b); u.wa = u.wa || x.wa; u.app = u.app || x.app; } else out.push({ ...x }); }
+  return out.map(x => ({ inizio: new Date(x.a).toISOString(), fine: new Date(x.b).toISOString(), wa: x.wa, app: x.app }));
+}
+function minutiTurni(lista) { return Math.round((lista || []).reduce((s, x) => s + (Date.parse(x.fine) - Date.parse(x.inizio)), 0) / 60000); }
+function testoSegmenti(segmenti) { return (segmenti || []).map(s => `${L.oraBreve(s.inizio)} → ${L.oraBreve(s.fine)}${s.wa && !s.app ? " (WhatsApp)" : ""}`).join(" + "); }
+// IL CONTROLLO: il lavoro che c'era quel giorno nell'app (le camere, coi loro minuti di serie); le ore sono «troppe» se passano
+// il lavoro di più di mezz'ora e di più di un quarto
+function lavoroDelGiorno(z, iso) {
+  let lavori = []; try { lavori = pulizieDelGiorno(iso, z).filter(p => p && p.stato !== "non_fatta" && p.tipo !== "stelle"); } catch (e) {}
+  const minuti = lavori.reduce((s, p) => s + (Number(p.minuti) || 0), 0);
+  return { camere: lavori.length, minuti, troppe: (m) => lavori.length > 0 && minuti > 0 && Math.round(Number(m) || 0) > minuti + Math.max(30, Math.round(minuti * 0.25)) };
+}
 // l'orario di un giorno: dall'arrivo (il tasto, o l'ora messa da Michele) alla fine (HO FINITO, o l'ora messa da Michele);
-// senza tutte e due le ore, una stima: dall'arrivo all'ultima camera segnata, se no le ore standard delle camere fatte
-function turnoDelGiorno(z, iso) {
-  const v = L.vistoDi(S.visti, z, iso) || null;
+// senza tutte e due le ore, una stima: dall'arrivo all'ultima camera segnata, se no le ore standard delle camere fatte.
+// «prova» (1.78.0) = campi da mettere sopra il documento del giorno, per sapere quanto farebbe DOPO un «Sì» (oreEffetto)
+function turnoDelGiorno(z, iso, prova = null) {
+  const v0 = L.vistoDi(S.visti, z, iso) || null, v = prova ? { ...(v0 || { zona: z, data: iso }), ...prova } : v0;
   let inizio = (v && (v.turnoInizio || v.arrivoOra)) || null, fine = (v && (v.turnoFine || v.finitoOra)) || null;
   const corretto = !!(v && (v.turnoInizio || v.turnoFine));
   const fatte = Object.values(S.pulizie || {}).filter(p => p && p.zona === z && p.data === iso && p.stato === "fatta" && p.tipo !== "stelle");
@@ -2043,10 +2097,28 @@ function turnoDelGiorno(z, iso) {
   if (pres && v && !v.turnoInizio && !v.arrivoOra) { const a = presInizioDaCamere(z, iso, v); if (a) { inizio = a; daCamere = "inizio"; } }
   if (pres && v && !v.turnoFine && v.finitoOra) { const u = presUscitaDi(z, iso); if (u && u.esito === "senza-codice") { const b = presFineDaCamere(z, iso, v, inizio); if (b && (!inizio || new Date(b) > new Date(inizio))) { fine = b; daCamere = daCamere ? "tutto" : "fine"; } } }
   const presCorretto = !!(v && v.presMinuti != null && Number.isFinite(Number(v.presMinuti)));
+  // 1.78.0: PIÙ TURNI NELLO STESSO GIORNO (i «Sono tornata» dell'app, i turni di WhatsApp confermati, le ore scritte «in più»):
+  // i turni si mettono in fila e i pezzi sovrapposti contano una volta sola. Un «Sono arrivata» rimasto senza HO FINITO si
+  // chiude da solo se un turno confermato finisce dopo; quello che corre adesso è l'ultimo tasto toccato senza la fine.
+  const od = v && v.oreDette && Number(v.oreDette.minuti) > 0 ? v.oreDette : null;
+  const altri = turniAltri(z, iso), pezzi = pezziOrologio(od), inPiu = minutiInPiu(od);
+  if (altri.length || pezzi.length || inPiu) {
+    const oggi = iso === L.oggiISO(), chiuso = !!(inizio && fine && new Date(fine) > new Date(inizio));
+    const segmenti = unisciTurni([...(chiuso ? [{ inizio, fine, fonte: "app" }] : []), ...altri.filter(x => x.fine).map(x => ({ inizio: x.inizio, fine: x.fine, fonte: "app" })), ...pezzi]);
+    const ap2 = altri.filter(x => !x.fine).pop() || null;
+    const ap1 = inizio && !fine && !pezzi.some(p => new Date(p.fine) > new Date(inizio)) ? inizio : null;
+    const aperta = [ap2 && ap2.inizio, ap1].filter(Boolean).sort().pop() || null;
+    const corre = oggi && aperta && new Date(aperta) <= new Date() ? aperta : null;
+    if (segmenti.length || inPiu || corre) {
+      const veri = minutiTurni(segmenti) + inPiu, corr = presCorretto && (chiuso || !!v.presTutto);
+      return { v, inizio: segmenti.length ? segmenti[0].inizio : corre, fine: corre ? null : (segmenti.length ? segmenti[segmenti.length - 1].fine : null), minuti: (corr ? Math.max(0, Math.round(Number(v.presMinuti))) : veri) + (corre ? minutiDa(corre) : 0), minutiVeri: veri, stima: false, corretto, presCorretto: corr, pres, daCamere, camere: fatte.length,
+        uniti: true, segmenti, inPiu, corre, inCorso: !!corre, aperto: !!corre || (!oggi && !!aperta), senzaFine: !oggi && aperta ? aperta : null };
+    }
+  }
   if (inizio && fine && new Date(fine) > new Date(inizio)) { const veri = Math.round((new Date(fine) - new Date(inizio)) / 60000); return { v, inizio, fine, minuti: presCorretto ? Math.max(0, Math.round(Number(v.presMinuti))) : veri, minutiVeri: veri, stima: false, corretto, presCorretto, pres, daCamere, camere: fatte.length }; }
   if (inizio && !fine && iso === L.oggiISO() && new Date(inizio) <= new Date()) return { v, inizio, fine: null, minuti: minutiDa(inizio), stima: false, aperto: true, inCorso: true, corretto, pres, camere: fatte.length };   // oggi, l'orario corre
   // 1.38.0: le ore che la signora ha scritto su WhatsApp («oggi 2 ore e mezza»), lette da Sofia e spuntate da Michele
-  const dette = v && v.oreDette && Number(v.oreDette.minuti) > 0 ? v.oreDette : null;
+  const dette = od;
   if (dette) return { v, inizio, fine, minuti: Math.round(Number(dette.minuti)), stima: false, dette: true, corretto, camere: fatte.length };
   if (!fatte.length && !inizio) return null;
   const ultima = fatte.map(p => p.ora).filter(Boolean).sort().pop() || null;
@@ -2092,27 +2164,51 @@ function cardTurnoBase(z, anteprima, dove = "tutto") {
   if (anteprima || !pagaAOre() || !addetta()) return "";
   const oggi = L.oggiISO(), v = L.vistoDi(S.visti, z, oggi), t = turnoDelGiorno(z, oggi);
   const ini = (v && (v.turnoInizio || v.arrivoOra)) || null, fin = (v && (v.turnoFine || v.finitoOra)) || null;
-  if (!ini && !fin) return dove !== "sotto" && pulizieDelGiorno(oggi, z).length ? `<section class="gs-turno da-fare"><button type="button" class="gs-turno-via" data-turno-inizio>${ICONA("gioca")}<span class="gs-turno-x">${presAccese() ? "<b>📷 Sono arrivata</b><small>Inquadra il codice alla porta: parte il tuo orario</small>" : "<b>Sono arrivata</b><small>Tocca appena entri: parte il tuo orario</small>"}</span></button></section>` : "";
+  // 1.78.0: gli altri turni di oggi («Sono tornata») e il timer partito da WhatsApp
+  const altri = turniAltri(z, oggi), wa = waDi(z), lavori = pulizieDelGiorno(oggi, z).length;
+  const contati = t && t.uniti ? t.segmenti : ini && fin && new Date(fin) > new Date(ini) ? [{ inizio: ini, fine: fin, app: true }] : [];
+  const dentro = (x) => contati.some(s => Math.min(Date.parse(s.fine), Date.parse(x.fine)) - Math.max(Date.parse(s.inizio), Date.parse(x.inizio)) >= (Date.parse(x.fine) - Date.parse(x.inizio)) - 2 * 60000);
+  const attesa = wa.turni.filter(x => !dentro(x));   // i turni passati da WhatsApp che aspettano il «Sì» di Michele
+  const rigaWa = attesa.map(x => `<small class="gs-turno-wa">Da WhatsApp: ${esc(x.dalle || L.oraBreve(x.inizio))} → ${esc(x.alle || L.oraBreve(x.fine))} · ${esc(testoOreTurno(x.minuti))} (lo conferma Michele)</small>`).join("");
+  const fermoDaWa = (da) => wa.turni.some(x => Date.parse(x.fine) > Date.parse(da));   // dopo quel «Sono arrivata» ha scritto «finito» su WhatsApp
+  const ap2 = altri.filter(x => !x.fine).pop() || null;
+  const correApp = ap2 ? ap2.inizio : ini && !fin && !fermoDaWa(ini) && !(t && t.uniti && !t.inCorso) ? ini : null;
+  const correWa = !correApp && wa.aperto ? wa.aperto.inizio : null;
+  if (!ini && !fin && !altri.length && !wa.turni.length && !wa.aperto && !contati.length) return dove !== "sotto" && lavori ? `<section class="gs-turno da-fare"><button type="button" class="gs-turno-via" data-turno-inizio>${ICONA("gioca")}<span class="gs-turno-x">${presAccese() ? "<b>📷 Sono arrivata</b><small>Inquadra il codice alla porta: parte il tuo orario</small>" : "<b>Sono arrivata</b><small>Tocca appena entri: parte il tuo orario</small>"}</span></button></section>` : "";
   if (dove === "sopra") return "";
-  if (ini && !fin && argonLei()) return `<section class="gs-turno in-corso wa-mia"><span class="gs-turno-x"><b>Sono arrivata</b><small>⏱️ L'orario corre: <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></small></span><span class="wa-meta"><time class="wa-ora">${esc(L.oraBreve(ini))}</time><span class="wa-spunte" aria-hidden="true">${msSvg("done_all")}</span></span></section>`;   // 1.55.4
-  if (ini && !fin) return `<section class="gs-turno in-corso"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(ini))} · <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></b><small>${presAccese() ? "L'orario corre. Quando vai via: HO FINITO e inquadra il codice alla porta." : "L'orario corre. Quando vai via tocca qui, o HO FINITO in fondo."}</small></span>${pulizieDelGiorno(oggi, z).length ? `<button type="button" class="gs-turno-via-fine" data-turno-fine>⏹ Vado via</button>` : ""}</section>`;
-  if (!ini) return `<section class="gs-turno manca"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Hai finito alle ${esc(L.oraBreve(fin))}</b><small>${t && t.inizio && t.daCamere ? `Entrando non hai inquadrato il codice: conto dalla prima camera (${esc(L.oraBreve(t.inizio))}) · ${esc(testoOreTurno(t.minuti))}` : "Manca l'ora in cui sei arrivata: la mette Michele."}</small></span></section>`;
-  return `<section class="gs-turno fatto"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Oggi ${esc(L.oraBreve(ini))} → ${esc(L.oraBreve(fin))} · ${esc(testoOreTurno(t ? t.minuti : 0))}</b><small>${eur(euroOre(t ? t.minuti : 0))} · ${eur(tariffaOra())} l'ora</small></span></section>`;
+  const rigaPrima = contati.length && (correApp || correWa) ? `<small class="gs-turno-prima">Prima: ${esc(testoSegmenti(contati))}</small>` : "";
+  if (correApp && !ap2 && argonLei()) return `<section class="gs-turno in-corso wa-mia"><span class="gs-turno-x"><b>Sono arrivata</b><small>⏱️ L'orario corre: <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></small></span><span class="wa-meta"><time class="wa-ora">${esc(L.oraBreve(ini))}</time><span class="wa-spunte" aria-hidden="true">${msSvg("done_all")}</span></span></section>`;   // 1.55.4
+  if (correApp && !ap2) return `<section class="gs-turno in-corso"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(ini))} · <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></b><small>${presAccese() ? "L'orario corre. Quando vai via: HO FINITO e inquadra il codice alla porta." : "L'orario corre. Quando vai via tocca qui, o HO FINITO in fondo."}</small></span>${pulizieDelGiorno(oggi, z).length ? `<button type="button" class="gs-turno-via-fine" data-turno-fine>⏹ Vado via</button>` : ""}</section>`;
+  // il turno ripartito con «Sono tornata»: corre, e «Vado via» lo ferma
+  if (correApp) return `<section class="gs-turno in-corso di-nuovo"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(correApp))} · <span data-turno-ore="${esc(correApp)}">${esc(testoOreTurno(minutiDa(correApp)))}</span></b><small>L'orario corre di nuovo. Quando vai via tocca qui.</small>${rigaPrima}${rigaWa}</span><button type="button" class="gs-turno-via-fine" data-turno-ferma="${ap2.n}">⏹ Vado via</button></section>`;
+  // il timer partito da WhatsApp («arrivata»): corre anche qui
+  if (correWa) return `<section class="gs-turno in-corso da-wa"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Dalle ${esc(L.oraBreve(correWa))} · <span data-turno-ore="${esc(correWa)}">${esc(testoOreTurno(minutiDa(correWa)))}</span></b><small>Orario partito da WhatsApp. Quando vai via scrivi «finito» su WhatsApp${!fin && lavori ? ", o tocca HO FINITO" : ""}.</small>${rigaPrima}${rigaWa}</span></section>`;
+  // fermo: i turni di oggi, e «Sono tornata» per ripartire
+  const torna = !presAccese() && altri.length < 3 ? `<button type="button" class="gs-turno-via-fine torna" data-turno-torna>↩ Sono tornata</button>` : "";
+  if (contati.length) return `<section class="gs-turno fatto"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Oggi ${esc(testoSegmenti(contati))}${t && t.inPiu ? ` + ${esc(testoOreTurno(t.inPiu))}` : ""} · ${esc(testoOreTurno(t ? t.minuti : 0))}</b><small>${eur(euroOre(t ? t.minuti : 0))} · ${eur(tariffaOra())} l'ora</small>${rigaWa}</span>${torna}</section>`;
+  if (attesa.length) return `<section class="gs-turno fatto da-wa"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Oggi ${esc(attesa.map(x => `${x.dalle || L.oraBreve(x.inizio)} → ${x.alle || L.oraBreve(x.fine)}`).join(" + "))} · ${esc(testoOreTurno(attesa.reduce((s, x) => s + (Number(x.minuti) || 0), 0)))}</b><small>Da WhatsApp: lo conferma Michele.</small></span>${torna}</section>`;
+  if (!ini && fin) return `<section class="gs-turno manca"><span class="gs-turno-ico" aria-hidden="true">⏱️</span><span class="gs-turno-x"><b>Hai finito alle ${esc(L.oraBreve(fin))}</b><small>${t && t.inizio && t.daCamere ? `Entrando non hai inquadrato il codice: conto dalla prima camera (${esc(L.oraBreve(t.inizio))}) · ${esc(testoOreTurno(t.minuti))}` : "Manca l'ora in cui sei arrivata: la mette Michele."}</small></span>${torna}</section>`;
+  return "";
 }
 // la spilla sulla scena di Sofia (sotto la data): l'orario che corre, o il giorno fatto
 function turnoPill(z, anteprima) {
   if (anteprima || !pagaAOre() || !addetta()) return "";
   const oggi = L.oggiISO(), v = L.vistoDi(S.visti, z, oggi);
   const ini = (v && (v.turnoInizio || v.arrivoOra)) || null, fin = (v && (v.turnoFine || v.finitoOra)) || null;
-  if (!ini) return "";
-  if (!fin) return `<span class="gs-turno-pill-r"><span class="gs-turno-pill corre"><i aria-hidden="true">⏱️</i>dalle ${esc(L.oraBreve(ini))} · <span data-turno-ore="${esc(ini)}">${esc(testoOreTurno(minutiDa(ini)))}</span></span></span>`;
-  const t = turnoDelGiorno(z, oggi);
+  // 1.78.0: più turni nel giorno, o il timer partito da WhatsApp
+  const t = turnoDelGiorno(z, oggi), wa = waDi(z);
+  const corre = (da) => `<span class="gs-turno-pill-r"><span class="gs-turno-pill corre"><i aria-hidden="true">⏱️</i>dalle ${esc(L.oraBreve(da))} · <span data-turno-ore="${esc(da)}">${esc(testoOreTurno(minutiDa(da)))}</span></span></span>`;
+  if (t && t.uniti) return t.inCorso ? corre(t.corre) : `<span class="gs-turno-pill-r"><span class="gs-turno-pill fatto"><i aria-hidden="true">⏱️</i>oggi · ${esc(testoOreTurno(t.minuti))}</span></span>`;
+  if (!ini) return wa.aperto ? corre(wa.aperto.inizio) : "";
+  if (!fin) return wa.turni.some(x => Date.parse(x.fine) > Date.parse(ini)) ? "" : corre(ini);
   return `<span class="gs-turno-pill-r"><span class="gs-turno-pill fatto"><i aria-hidden="true">⏱️</i>${esc(L.oraBreve(ini))} → ${esc(L.oraBreve(fin))} · ${esc(testoOreTurno(t ? t.minuti : 0))}</span></span>`;
 }
 // la frase di Sofia la mattina, finché il tasto non è stato toccato
 function turnoDetto(z, iso) {
   if (!pagaAOre() || !addetta()) return "";
   const v = L.vistoDi(S.visti, z, iso); if (v && (v.arrivoOra || v.turnoInizio || v.finitoOra)) return "";
+  if (turniAltri(z, iso).length) return "";   // 1.78.0: l'orario è già partito con «Sono tornata», o da WhatsApp
+  if (iso === L.oggiISO()) { const wa = waDi(z); if (wa.aperto || wa.turni.length) return ""; }
   return pulizieDelGiorno(iso, z).length ? (presAccese() ? "Prima di tutto, alla porta: tocca «Sono arrivata» e inquadra il codice. Parte il tuo orario." : "Prima di tutto tocca il tasto verde «Sono arrivata»: parte il tuo orario.") : "";
 }
 function turnoGira() { document.querySelectorAll("[data-turno-ore]").forEach(el => { const s = testoOreTurno(minutiDa(el.dataset.turnoOre)); if (el.textContent !== s) el.textContent = s; }); }
@@ -2125,6 +2221,7 @@ async function turnoInizia(extra = null) {
   const z = S.utente.zona, iso = L.oggiISO(), id = L.idVisto(z, iso), c = argonConf();
   const gia = S.visti[id];
   if (gia && (gia.arrivoOra || gia.turnoInizio || gia.finitoOra)) { disegna(); return; }
+  if (gia && !extra) { turnoTorna(true); return; }   // 1.78.0: il documento del giorno l'ha già creato Michele (un «Sì» alle ore): l'arrivo va in un turno a parte
   if (!L.argonOrario(S.argon)) { toast(`Il tasto funziona dalle ${c.oreDa} alle ${c.oreA}.`); return; }
   const adesso = (extra && extra.arrivoOra) || S.db.adesso();
   const v = { zona: z, data: iso, arrivoOra: adesso, arrivoDa: SIG(z), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga), ...(extra && extra.arrivoQR ? { arrivoQR: extra.arrivoQR } : {}) };
@@ -2141,11 +2238,20 @@ function arrivoProposto(z, iso) {
   const inizi = Object.values(S.pulizie || {}).filter(p => p && p.zona === z && p.data === iso && p.inizio).map(p => p.inizio).sort();
   return inizi.length ? L.oraBreve(inizi[0]) : "08:00";
 }
+// 1.78.0: l'ora da proporre a chi è tornata senza toccare «Sono tornata»: il primo «Comincio» dopo la fine di prima, se no un'ora fa
+function tornataProposta(z, iso, dopo) {
+  const inizi = Object.values(S.pulizie || {}).filter(p => p && p.zona === z && p.data === iso && p.inizio && new Date(p.inizio) > new Date(dopo)).map(p => p.inizio).sort();
+  return L.oraBreve(new Date(inizi.length ? inizi[0] : Math.max(new Date(dopo).getTime() + 60000, Date.now() - 60 * 60000)).toISOString());
+}
 // ---- I miei soldi, a ore --------------------------------------------------------------------------------------------
 function rigaTurno(z, g, mod) {
   const t = g.t, quando = `${L.GIORNI[L.giornoSettimana(g.iso)]} ${L.giornoDelMese(g.iso)}`;
-  const ore = t.dette ? `${t.v && t.v.oreDette && t.v.oreDette.da === "michele" ? "ore dette da Michele" : "ore scritte su WhatsApp"}${oreParti(t.v && t.v.oreDette)}${t.inizio ? ` (arrivata alle ${L.oraBreve(t.inizio)})` : ""}` : t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : t.inCorso ? `dalle ${L.oraBreve(t.inizio)} · l'orario corre` : t.inizio ? `dalle ${L.oraBreve(t.inizio)}, senza HO FINITO` : t.fine ? `fino alle ${L.oraBreve(t.fine)}, senza l'arrivo` : "senza orario";
-  return `<div class="row turno-riga ${t.stima ? "stima" : ""}"><span><b>${esc(quando)}</b> · ${esc(ore)}<br><span class="muted small">${t.senzaOrario ? (mod ? "manca l'orario: non è nel totale" : "manca l'orario: lo mette Michele") : esc(testoOreTurno(t.minuti))}${t.stima && !t.senzaOrario ? " · stima dalle camere" : ""}${t.corretto ? " · orario messo da Michele" : ""}${t.presCorretto ? ` · corrette da Michele (erano ${testoOreTurno(t.minutiVeri)})` : ""}${t.camere ? ` · ${t.camere} ${t.camere === 1 ? "camera" : "camere"}` : ""}</span>${presSegni(z, g.iso, mod)}</span><span style="display:flex;gap:6px;align-items:center"><span class="s ${t.stima ? "warn" : "done"}">${t.senzaOrario ? "–" : eur(euroOre(t.minuti))}</span>${mod ? `<button class="btnsm ${t.senzaOrario ? "" : "ghost"}" data-turno-orario="${esc(z)}|${g.iso}">Orario</button>` : ""}</span></div>`;
+  // 1.78.0: più turni nel giorno (dell'app e di WhatsApp), le ore scritte «in più», quello che corre
+  const ore = t.uniti ? [testoSegmenti(t.segmenti), t.inPiu ? `${testoOreTurno(t.inPiu)} scritte su WhatsApp` : "", t.inCorso ? `dalle ${L.oraBreve(t.corre)} · l'orario corre` : t.senzaFine ? `dalle ${L.oraBreve(t.senzaFine)}, senza la fine` : ""].filter(Boolean).join(" + ")
+    : t.dette ? `${t.v && t.v.oreDette && t.v.oreDette.da === "michele" ? "ore dette da Michele" : "ore scritte su WhatsApp"}${oreParti(t.v && t.v.oreDette)}${t.inizio ? ` (arrivata alle ${L.oraBreve(t.inizio)})` : ""}` : t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : t.inCorso ? `dalle ${L.oraBreve(t.inizio)} · l'orario corre` : t.inizio ? `dalle ${L.oraBreve(t.inizio)}, senza HO FINITO` : t.fine ? `fino alle ${L.oraBreve(t.fine)}, senza l'arrivo` : "senza orario";
+  // IL CONTROLLO (solo per Michele): il lavoro che c'era quel giorno, e il segno se le ore sono troppe
+  const lav = mod && !t.stima && !t.inCorso ? lavoroDelGiorno(z, g.iso) : null, troppe = !!(lav && lav.troppe(t.minuti));
+  return `<div class="row turno-riga ${t.stima ? "stima" : ""}${troppe ? " troppe" : ""}"><span><b>${esc(quando)}</b> · ${esc(ore)}<br><span class="muted small">${t.senzaOrario ? (mod ? "manca l'orario: non è nel totale" : "manca l'orario: lo mette Michele") : esc(testoOreTurno(t.minuti))}${t.stima && !t.senzaOrario ? " · stima dalle camere" : ""}${t.corretto ? " · orario messo da Michele" : ""}${t.presCorretto ? ` · corrette da Michele (erano ${testoOreTurno(t.minutiVeri)})` : ""}${t.camere ? ` · ${t.camere} ${t.camere === 1 ? "camera" : "camere"}` : ""}${lav && lav.camere ? ` · lavoro segnato: circa ${esc(testoOreTurno(lav.minuti))}` : ""}${troppe ? ` · <b class="turno-troppe">⚠️ più ore del lavoro</b>` : ""}</span>${presSegni(z, g.iso, mod)}</span><span style="display:flex;gap:6px;align-items:center"><span class="s ${t.stima ? "warn" : "done"}">${t.senzaOrario ? "–" : eur(euroOre(t.minuti))}</span>${mod ? `<button class="btnsm ${t.senzaOrario ? "" : "ghost"}" data-turno-orario="${esc(z)}|${g.iso}">Orario</button>` : ""}</span></div>`;
 }
 function vistaStoricoOre(z) {
   const righe = []; let k = L.settimanaCorrente();
@@ -2157,18 +2263,18 @@ function vistaSoldiOre(z) {
   const wallet = `<section class="wallet"><div class="lbl">Questa settimana · ${L.etichettaSettimana(chiave)}</div><div class="amt">${eur(b.totale)}</div>
     <div>${esc(testoOreTurno(b.minuti))} di lavoro · ${eur(b.tariffa)} l'ora · ${pagato ? `<span class="pill paid">✓ Pagata ${esc(pagato.quando || "")}</span>` : `<span class="pill open">Si paga sabato alle 14</span>`}</div>
     ${b.rettifiche.euro ? `<div class="small" style="margin-top:6px;opacity:.92">ore <b>${eur(b.ore)}</b> ${b.rettifiche.euro > 0 ? "+ premio" : "− rettifica"} <b>${eur(Math.abs(b.rettifiche.euro))}</b></div>` : ""}</section>`;
-  const giorni = `<section class="card"><h2>I tuoi giorni</h2>${b.giorni.length ? `<div class="rows">${b.giorni.map(g => rigaTurno(z, g, false)).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. La mattina tocca «Sono arrivata», alla fine «HO FINITO»: il giorno compare qui con le sue ore.</p>`}${righeBusta({ rettifiche: b.rettifiche, premio: null })}</section>`;
-  const spiega = `<section class="card"><h2 style="margin:0 0 4px">Come si conta</h2><p class="muted small" style="margin:0">${presAccese() ? `Si pagano le ore dal <b>codice alla porta</b> entrando al codice uscendo, ${eur(b.tariffa)} l'ora.` : `Si pagano le ore che segni tu: dal tasto <b>«Sono arrivata»</b> a <b>«HO FINITO»</b>, ${eur(b.tariffa)} l'ora.`} Le rifiniture ⭐ non si pagano a parte: sono dentro le tue ore; ${esc(nomeGov())} ti dice dove farle. ${presAccese() ? "Se uscendo non inquadri il codice, l'orario finisce all'ultima camera che hai segnato; se entrando non lo inquadri, parte dalla prima camera." : "Se un giorno dimentichi un tasto, Michele mette l'orario a mano."}</p></section>`;
+  const giorni = `<section class="card"><h2>I tuoi giorni</h2>${b.giorni.length ? `<div class="rows">${b.giorni.map(g => rigaTurno(z, g, false)).join("")}</div>` : `<p class="muted" style="margin:0">Ancora niente. La mattina tocca «Sono arrivata» (o scrivi «arrivata» su WhatsApp), alla fine «HO FINITO» (o scrivi «finito»): il giorno compare qui con le sue ore.</p>`}${righeBusta({ rettifiche: b.rettifiche, premio: null })}</section>`;
+  const spiega = `<section class="card"><h2 style="margin:0 0 4px">Come si conta</h2><p class="muted small" style="margin:0">${presAccese() ? `Si pagano le ore dal <b>codice alla porta</b> entrando al codice uscendo, ${eur(b.tariffa)} l'ora.` : `Si pagano le ore che segni tu: dal tasto <b>«Sono arrivata»</b> a <b>«HO FINITO»</b>, oppure scrivendo <b>«arrivata»</b> e <b>«finito»</b> su WhatsApp (vale l'ora del messaggio, e Michele lo conferma), ${eur(b.tariffa)} l'ora. Se torni nel pomeriggio tocca <b>«Sono tornata»</b> (o scrivi di nuovo «arrivata»): le ore si sommano.`} Le rifiniture ⭐ non si pagano a parte: sono dentro le tue ore; ${esc(nomeGov())} ti dice dove farle. ${presAccese() ? "Se uscendo non inquadri il codice, l'orario finisce all'ultima camera che hai segnato; se entrando non lo inquadri, parte dalla prima camera." : "Se un giorno dimentichi un tasto, Michele mette l'orario a mano."}</p></section>`;
   const patto = argonLei() ? `<section class="card center"><button class="big undo" data-patto>Il patto e le 11 Regole</button></section>` : "";
   return wallet + giorni + spiega + patto + vistaStoricoOre(z);
 }
 // il patto, quando si paga a ore: le stesse voci, senza soldi per stelle e Visti e senza salvadanaio
 function pattoOre() {
   const t = eur(tariffaOra()), ore = {
-    "Benvenuta.": `Qui si pagano le ore che lavori: ${t} l'ora, uguale per tutte. Appena arrivi tocca «Sono arrivata»: parte il tuo orario. Quando hai finito tutto, «Ho finito» lo ferma.`,
+    "Benvenuta.": `Qui si pagano le ore che lavori: ${t} l'ora, uguale per tutte. Appena arrivi tocca «Sono arrivata» (o scrivi «arrivata» su WhatsApp): parte il tuo orario. Quando hai finito tutto, «Ho finito» lo ferma (o scrivi «finito»).`,
     "Le rifiniture.": "Sono i lavori in più, dentro le tue ore: non si pagano a parte. Sofia ti dice dove farle, col disegno della camera; tu le fai bene, come il resto.",
     "Il Visto di uscita.": "Prima di andare via, chi è in albergo dopo di te (o la direzione) dà uno sguardo ai punti del giorno e preme «Visto». È un controllo tra colleghe: non dà soldi.",
-    "I soldi.": `Si contano i minuti da «Sono arrivata» a «Ho finito», ${t} l'ora. Se un giorno dimentichi un tasto, Michele mette l'orario a mano. Il sabato alle 14 la settimana si chiude.`,
+    "I soldi.": `Si contano i minuti da «Sono arrivata» a «Ho finito», nell'app o scritti su WhatsApp, ${t} l'ora. Se torni nel pomeriggio l'orario riparte e le ore si sommano. Se un giorno dimentichi, Michele mette l'orario a mano. Il sabato alle 14 la settimana si chiude.`,
     "Lealtà.": "Se la direzione trova non fatto un lavoro già «visto», se ne parla subito e si rifà. Chi dà il «Visto» senza guardare perde la fiducia della squadra.",
   };
   if (presAccese()) {   // 1.69.0: col codice alla porta
@@ -2185,7 +2291,8 @@ function vistaPagheOre() {
     return `<section class="card zone paga-ore"><div class="head"><h2 style="margin:0">${esc(SIG(z.id))}${z.andata ? ` <small class="muted" style="font-weight:600">· non lavora più</small>` : ""}</h2><b style="font:800 22px var(--f-display)">${eur(b.totale)}</b></div>
       <div class="muted">${esc(testoOreTurno(b.minuti))} in ${b.conOre} ${b.conOre === 1 ? "giorno" : "giorni"} · ${eur(b.tariffa)} l'ora · settimana ${L.etichettaSettimana(chiave)}</div>
       ${b.rettifiche.euro || b.stime ? `<div class="muted small" style="margin:2px 0 6px">${b.rettifiche.euro ? `ore <b>${eur(b.ore)}</b> ${b.rettifiche.euro > 0 ? "+ premi" : "− rettifiche"} <b>${eur(Math.abs(b.rettifiche.euro))}</b> = <b>${eur(b.totale)}</b>` : ""}${b.stime ? `${b.rettifiche.euro ? " · " : ""}<span style="color:var(--warn)">${b.senza === b.stime ? `${b.stime} ${b.stime === 1 ? "giorno senza orario: non è" : "giorni senza orario: non sono"} nel totale. Mettilo con «Orario»` : `${b.stime} ${b.stime === 1 ? "giorno senza orario completo" : "giorni senza orario completo"}${b.senza ? ` (${b.senza} fuori dal totale)` : " (stima dalle camere)"}: mettilo con «Orario»`}</span>` : ""}</div>` : ""}
-      <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${mod ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : mod ? (b.totale ? `<button class="btnsm" data-pay="${z.id}|${chiave}">Segna come pagata</button>` : b.senza ? `<span class="pill open">Prima metti l'orario</span>` : `<span class="pill nulla">Niente da pagare</span>`) : `<span class="pill open">da pagare</span>`}</div>
+      <div>${pd ? `<span class="pill paid">✓ Pagata ${esc(pd.quando || "")}</span> ${mod ? `<button class="btnsm ghost" data-unpay="${z.id}|${chiave}">Annulla</button>` : ""}` : mod ? (b.totale ? `<button class="btnsm" data-pay="${z.id}|${chiave}">Segna come pagata</button>` : b.senza ? `<span class="pill open">Prima metti l'orario</span>` : orePendenti(z.id).length ? `<span class="pill open">Prima rispondi qui sotto</span>` : `<span class="pill nulla">Niente da pagare</span>`) : `<span class="pill open">da pagare</span>`}</div>
+      ${orePendentiHtml(z.id, mod)}
       ${bp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(bp.totale)} ancora da pagare ${mod ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
       <details open><summary>Giorno per giorno</summary>${b.giorni.length ? `<div class="rows">${b.giorni.map(g => rigaTurno(z.id, g, mod)).join("")}</div>` : `<p class="muted small" style="margin:6px 0">Ancora nessun giorno questa settimana.</p>`}${righeBusta({ rettifiche: b.rettifiche, premio: null })}${mod ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px"><button class="btnsm" data-turno-nuovo="${z.id}">Aggiungi un giorno a mano</button><button class="btnsm ghost" data-ore-mano="${z.id}">Aggiungi solo le ore</button></div>` : ""}</details></section>`;
   }).join("");
@@ -2202,7 +2309,7 @@ function turnoDialogo(z, iso) {
     el.innerHTML = `<div class="conferma-box chiusura turno-dialogo" role="dialog"><div class="chiusura-t">${ICONA("orologio")}<span>L'orario di ${esc(SIG(z))}${iso ? ` · ${esc(L.dataBreve(iso))}` : ""}</span></div>
       ${iso ? "" : `<label class="campo" style="margin:0 0 8px"><span>Giorno</span><input type="date" data-t-giorno value="${L.oggiISO()}"></label>`}
       <div class="due"><label class="campo"><span>Arrivata alle</span><input type="time" data-t-ini value="${esc(ini)}"></label><label class="campo"><span>Finito alle</span><input type="time" data-t-fin value="${esc(fin)}"></label></div>
-      ${t && t.senzaOrario ? `<p class="muted small" style="margin:0 0 6px">Finora questo giorno era senza orario: non era nel totale.</p>` : t && t.stima ? `<p class="muted small" style="margin:0 0 6px">Finora era una stima dalle camere (${esc(testoOreTurno(t.minuti))}).</p>` : t && t.dette ? `<p class="muted small" style="margin:0 0 6px">Finora valevano le ore scritte su WhatsApp (${esc(testoOreTurno(t.minuti))}): con un orario preciso vince l'orario.</p>` : ""}
+      ${t && t.senzaOrario ? `<p class="muted small" style="margin:0 0 6px">Finora questo giorno era senza orario: non era nel totale.</p>` : t && t.stima ? `<p class="muted small" style="margin:0 0 6px">Finora era una stima dalle camere (${esc(testoOreTurno(t.minuti))}).</p>` : t && t.dette ? `<p class="muted small" style="margin:0 0 6px">Finora valevano le ore scritte su WhatsApp (${esc(testoOreTurno(t.minuti))}): con un orario preciso vince l'orario.</p>` : t && t.uniti ? `<p class="muted small" style="margin:0 0 6px">Quel giorno ha più turni (${esc(testoSegmenti(t.segmenti))}): qui metti o correggi il primo, gli altri restano. Per cambiare il totale usa «Aggiungi solo le ore».</p>` : ""}
       <button class="big ok" data-si>Salva l'orario</button><button class="big undo" data-no>Annulla</button></div>`;
     document.body.appendChild(el);
     el.querySelector("[data-si]").onclick = () => { const g = iso || (el.querySelector("[data-t-giorno]") || {}).value; const a = el.querySelector("[data-t-ini]").value, b = el.querySelector("[data-t-fin]").value; el.remove(); ok({ iso: g, ini: a, fin: b }); };
@@ -2251,6 +2358,179 @@ function oreParti(od) {
   if (pp.length < 2 || pp.reduce((s, x) => s + Math.round(Number(x && x.minuti) || 0), 0) !== Math.round(Number(od.minuti) || 0)) return "";
   return ` in ${pp.length} volte (${pp.map(x => testoOreTurno(x.minuti)).join(" + ")})`;
 }
+// ---- 1.78.0 · IL CONTO DI UN «SÌ» -----------------------------------------------------------------------------------
+// Cosa diventano le ore di un giorno se Michele conferma una proposta di ore: un turno dell'orologio di WhatsApp («timbro»),
+// o le ore scritte a parole. Si calcola ADESSO, su quello che c'è segnato in questo momento: la riga della Segreteria (e di
+// Paghe) lo dice prima del Sì, e il Sì fa esattamente quello.
+//  - un turno dell'orologio si aggiunge agli altri turni del giorno (dell'app e di WhatsApp): i pezzi sovrapposti contano una
+//    volta sola; se è già tutto dentro il timer dell'app non c'è niente da fare (la proposta sparisce); prende il posto delle
+//    ore scritte a parole, se quel giorno c'erano solo quelle;
+//  - le ore scritte a parole, in un giorno che ha già il timer: se dicono che è un altro pezzo («pomeriggio altre 2 ore») e il
+//    timer non ha già il pomeriggio, si AGGIUNGONO; se no sono il totale del giorno («oggi 3 ore», «in tutto 5 ore»): uguali al
+//    timer (10 minuti più o meno) non c'è niente da fare, diverse valgono loro AL POSTO del timer (non si sommano mai da sole:
+//    prima, dette «Sì», non facevano niente). In un giorno senza timer, come nella 1.77.0 (mattina e pomeriggio si sommano).
+// → null (non si può dire) · { niente: true, perche } · { tipo, prima, dopo, aggiunge, dati, frase }
+function oreEffetto(v) {
+  if (!v || !v.zona || !v.giorno) return null;
+  const z = v.zona, iso = v.giorno, vd = L.vistoDi(S.visti, z, iso) || null, adesso = S.db.adesso();
+  const od = vd && vd.oreDette && Number(vd.oreDette.minuti) > 0 ? vd.oreDette : null;
+  let t = null; try { t = turnoDelGiorno(z, iso); } catch (e) {}
+  const corsa = (x) => x && x.inCorso ? minutiDa(x.corre || x.inizio) : 0;
+  const conta = (x) => !x || x.stima ? 0 : Math.max(0, Math.round(Number(x.minuti) || 0) - corsa(x));   // quanto vale il giorno, senza il pezzo che corre ancora
+  const veri = (x) => !x || x.stima ? 0 : x.uniti || (x.inizio && x.fine && !x.dette) ? Math.round(Number(x.minutiVeri) || 0) : x.dette ? Math.round(Number(x.minuti) || 0) : 0;
+  const uguale = (a, b) => { const x = String(a || "").trim().toLowerCase(), y = String(b || "").trim().toLowerCase(); return !!x && x === y; };
+  const partiPrima = od && od.da === "whatsapp" && Array.isArray(od.parti) ? od.parti.filter(x => x && (x.timbro || x.piu)) : [];   // i turni dell'orologio e le ore «in più» già confermati
+  const testoParti = (pp) => pp.map(x => x.timbro ? `${x.dalle || ""}–${x.alle || ""}` : String(x.testo || "")).filter(Boolean).join(" + ").slice(0, 320);
+  const somma = (pp) => pp.reduce((s, x) => s + Math.max(0, Math.round(Number(x && x.minuti) || 0)), 0);
+  // ---- un turno dell'orologio
+  if (v.timbro && v.inizio && v.fine) {
+    if (!(new Date(v.fine) > new Date(v.inizio))) return null;
+    if (partiPrima.some(x => x.timbro && ((v.lid && x.lid === v.lid) || (x.inizio === v.inizio && x.fine === v.fine)))) return { niente: true, perche: "doppio" };
+    const scritte = !!(od && !partiPrima.length && t && t.dette);   // quel giorno valgono ore scritte a parole (o dette da Michele): il turno prende il loro posto
+    const pezzo = { timbro: true, inizio: v.inizio, fine: v.fine, dalle: v.dalle || L.oraBreve(v.inizio), alle: v.alle || L.oraBreve(v.fine), minuti: Math.round(Number(v.minuti) || 0), lid: v.lid || "", testo: String(v.messaggio || "").slice(0, 160), ...(v.daApp ? { daApp: v.daApp } : {}) };
+    const parti = [...partiPrima, pezzo].slice(-8);
+    const nuovo = { minuti: somma(parti), da: "whatsapp", orologio: true, chi: v.chi || (od && od.chi) || "", testo: testoParti(parti), quando: adesso, lid: v.lid || "", parti };
+    let td = null; try { td = turnoDelGiorno(z, iso, { oreDette: nuovo }); } catch (e) {}
+    if (!td) return null;
+    const corr = !!(t && t.presCorretto), aggiunge = veri(td) - (scritte ? 0 : veri(t));
+    if (!scritte && aggiunge <= 2) return { niente: true, perche: "contato" };   // il timer dell'app ce l'ha già: lo stesso turno segnato due volte
+    const prima = conta(t), dopo = corr ? prima + aggiunge : conta(td);
+    const dati = { zona: z, data: iso, oreDette: nuovo, ...(corr ? { presMinuti: Math.max(0, Math.round(Number(vd.presMinuti) || 0)) + aggiunge, presTutto: true } : {}) };
+    const frase = (scritte ? `Quel giorno ha ${testoOreTurno(prima)} scritte a parole: con il Sì al loro posto va questo turno, ${testoOreTurno(dopo)}.`
+      : prima ? `Quel giorno ha già ${testoOreTurno(prima)}: con il Sì fa ${testoOreTurno(dopo)}${aggiunge < pezzo.minuti - 2 ? " (una parte era già contata)" : ""}.`
+      : `Con il Sì quel giorno fa ${testoOreTurno(dopo)}.`) + (t && t.inCorso && !td.inCorso ? " Il timer dell'app, che corre ancora, si ferma." : "");
+    return { tipo: scritte ? "cambio" : "orologio", prima, dopo, aggiunge, dati, frase };
+  }
+  // ---- le ore scritte a parole
+  const suoi = Math.round(Number(v.suoi) || (v.somma ? Number(v.somma.piu) : Number(v.minuti)) || 0);
+  if (!(suoi > 0)) return null;
+  const pezzo = { minuti: suoi, testo: String(v.messaggio || "").slice(0, 160), lid: v.lid || "" };
+  const haTimer = !!(t && !t.stima && (t.uniti ? t.segmenti.length > 0 : (t.inizio && t.fine && !t.dette)));   // quel giorno c'è un turno chiuso del timer (dell'app o di WhatsApp)
+  if (haTimer) {
+    if (partiPrima.some(x => x.piu && uguale(x.testo, v.messaggio) && (!v.lid || !x.lid || x.lid === v.lid))) return { niente: true, perche: "doppio" };
+    const prima = conta(t), m = String(v.messaggio || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const totale = /\b(in tutto|in totale|totale|corregg\w*|sbagliat\w*|scusa\w*|anzi|erano|invece)\b/.test(m);
+    const altroPezzo = /\b(pomeriggio|stasera|sera|serata|dopo pranzo|di nuovo|tornata|ritornata|rientrata|altr[ae]|in piu|ancora|aggiung\w*|piu tardi)\b/.test(m);   // dice che è un altro pezzo di lavoro
+    const segm = t.uniti ? t.segmenti : [{ inizio: t.inizio, fine: t.fine }];
+    const timerPomeriggio = segm.some(s => L.oraBreve(s.inizio) >= "13:00" || L.oraBreve(s.fine) >= "15:00");
+    if (!totale && altroPezzo) {
+      // «pomeriggio altre 2 ore»: si aggiungono al timer. Ma se il timer ha già il pomeriggio, vale il timer (non si paga due volte)
+      if (timerPomeriggio) return { niente: true, perche: "timer" };
+      if (prima + suoi > 16 * 60) return null;
+      const parti = [...partiPrima, { ...pezzo, piu: true }].slice(-8), corr = !!t.presCorretto;
+      const nuovo = { minuti: somma(parti), da: "whatsapp", ...(parti.some(x => x.timbro) ? { orologio: true } : {}), dove: [...new Set([partiPrima.length && od ? od.dove : "", v.dove].filter(Boolean))].join(", ").slice(0, 120), chi: v.chi || (od && od.chi) || "", testo: testoParti(parti), quando: adesso, lid: v.lid || "", parti };
+      return { tipo: "piu", prima, dopo: prima + suoi, aggiunge: suoi, dati: { zona: z, data: iso, oreDette: nuovo, ...(corr ? { presMinuti: Math.max(0, Math.round(Number(vd.presMinuti) || 0)) + suoi, presTutto: true } : {}) }, frase: `Il timer di quel giorno ha già ${testoOreTurno(prima)}: con il Sì aggiungo queste ${testoOreTurno(suoi)} e fa ${testoOreTurno(prima + suoi)}.` };
+    }
+    // «oggi 3 ore» (o «in tutto 3 ore»): è il totale del giorno. Se è quello del timer (10 minuti più o meno) non c'è niente da fare;
+    // se no, col Sì valgono le ore scritte AL POSTO del timer: non si sommano
+    if (Math.abs(prima - suoi) <= (totale ? 0 : 10)) return { niente: true, perche: "uguale" };
+    return { tipo: "totale", prima, dopo: suoi, aggiunge: suoi - prima, dati: { zona: z, data: iso, presMinuti: suoi, presTutto: true, presDa: `${nomeGov()} (ore scritte su WhatsApp)`, presQuando: adesso }, frase: `Il timer di quel giorno dice ${testoOreTurno(prima)}, qui scrive ${testoOreTurno(suoi)}: con il Sì il giorno vale ${testoOreTurno(suoi)} (non si sommano).` };
+  }
+  // ---- senza timer: come nella 1.77.0 (due messaggi dello stesso giorno si sommano, il totale o la correzione prendono il posto)
+  const som = oreSomma(od, suoi, v.messaggio || "", v.lid || "");
+  if (som && som.doppio) return { niente: true, perche: "doppio" };
+  const gia = od ? Math.round(Number(od.minuti) || 0) : 0, dopo = som ? som.totale : (v.somma ? Math.round(Number(v.minuti) || 0) : suoi);
+  if (!som && gia === dopo) return { niente: true, perche: "uguale" };
+  const primaParti = od && Array.isArray(od.parti) && od.parti.length && somma(od.parti) === gia ? od.parti : od ? [{ minuti: gia, testo: String(od.testo || "").slice(0, 160), lid: od.lid || "" }] : [];
+  const nuovo = som
+    ? { minuti: som.totale, dove: [...new Set([od.dove, v.dove].filter(Boolean))].join(", ").slice(0, 120), chi: v.chi || od.chi || "", testo: `${od.testo || ""} + ${v.messaggio || ""}`.slice(0, 320), da: "whatsapp", quando: adesso, lid: v.lid || "", parti: [...primaParti, pezzo].slice(-6) }
+    : { minuti: dopo, dove: v.dove || "", chi: v.chi || "", testo: v.messaggio || "", da: "whatsapp", quando: adesso, lid: v.lid || "", parti: [{ ...pezzo, minuti: dopo }] };
+  const frase = som ? `Quel giorno ha già ${testoOreTurno(som.prima)} scritte su WhatsApp: con il Sì fa ${testoOreTurno(dopo)}.` : gia ? `Quel giorno ha ${testoOreTurno(gia)} già segnate: con il Sì diventano ${testoOreTurno(dopo)}.` : `Con il Sì quel giorno fa ${testoOreTurno(dopo)}.`;
+  return { tipo: som ? "somma" : gia ? "cambio" : "nuove", prima: som ? som.prima : gia, dopo, aggiunge: dopo - (som ? som.prima : gia), dati: { zona: z, data: iso, oreDette: nuovo }, frase };
+}
+// una proposta di ore che non cambierebbe niente (un turno che il timer dell'app ha già dentro, le stesse ore già segnate, lo
+// stesso messaggio riletto): non serve, non si vede e non si conta
+function oreGiaContate(p) {
+  if (!p || !p.ore) return false;
+  try { const v = JSON.parse(p.ore); if (!v) return false; const e = oreEffetto(v); return !!(e && e.niente); } catch (e) { return false; }
+}
+// le proposte di ore non scadono dopo 3 giorni come le altre: restano (in «Ti propongo» e in Paghe) finché Michele risponde, fino
+// a 14 giorni dal giorno lavorato. Se no un turno non confermato in tempo spariva, e con lui le ore.
+function sg2OreVecchie() {
+  const oggi = L.oggiISO(), da3 = L.aggiungiGiorni(oggi, -(SG2_GIORNI - 1)), da14 = L.aggiungiGiorni(oggi, -14), da16 = L.aggiungiGiorni(oggi, -16), out = [];
+  for (const x of segreteriaLetture()) {
+    if (!x || ["scartata", "sostituita"].includes(x.esito)) continue;
+    const g = giornoLocale(x.quando); if (g >= da3 || g < da16) continue;
+    for (const p of (Array.isArray(x.proposte) ? x.proposte : [])) {
+      if (!p || !p.k || p.esito || !p.ore) continue;
+      let v = null; try { v = JSON.parse(p.ore); } catch (e) {}
+      if (v && v.giorno && v.giorno >= da14 && !oreGiaContate(p)) out.push({ ...p, lid: x.lid, quando: x.quando });
+    }
+  }
+  return out;
+}
+// le righe sotto una proposta di ore: (se serve) da dove viene, cosa cambia col Sì, e IL CONTROLLO: il lavoro di quel giorno,
+// con un avviso a parte se le ore sono troppe
+function oreRighe(p, v0 = null) {
+  let v = v0; if (!v) { try { v = JSON.parse(p.ore); } catch (e) { v = null; } }
+  if (!v || !v.zona || !v.giorno) return { righe: [], avviso: "", troppe: false };
+  let e = null; try { e = oreEffetto(v); } catch (err) { console.warn("ore", err); }
+  const righe = [];
+  if (v.timbro && v.daApp) righe.push(v.daApp === "inizio" ? "Arrivo dal tasto dell'app, uscita da «finito» su WhatsApp." : "Arrivo da «arrivata» su WhatsApp, uscita dal tasto dell'app.");
+  if (e && e.frase) righe.push(e.frase);
+  const lav = lavoroDelGiorno(v.zona, v.giorno), dopo = e && !e.niente ? Math.round(Number(e.dopo) || 0) : 0, troppe = !!dopo && lav.troppe(dopo);
+  righe.push(lav.camere ? `Lavoro di quel giorno: ${lav.camere} ${lav.camere === 1 ? "camera" : "camere"}, circa ${testoOreTurno(lav.minuti)}.` : "Quel giorno nell'app non aveva camere segnate.");
+  return { righe, avviso: troppe ? `⚠️ ${testoOreTurno(dopo - lav.minuti)} più del lavoro.` : "", troppe };
+}
+// il titolo di una proposta di ore: per un turno dell'orologio si scrive adesso («oggi», «ieri», «mercoledì 11»), così resta giusto
+// anche nei giorni dopo; per le ore scritte a parole resta quello della lettura
+function oreTitolo(p, v0 = null) {
+  let v = v0; if (!v) { try { v = JSON.parse(p.ore); } catch (e) { v = null; } }
+  if (!v || !v.timbro || !v.zona || !v.giorno) return String((p && p.testo) || "");
+  return `⏱️ ${SIG(v.zona)} ${quandoTesto(v.giorno)}: ${v.dalle || L.oraBreve(v.inizio)} → ${v.alle || L.oraBreve(v.fine)} = ${testoOreTurno(v.minuti)}`;
+}
+// le ore di una signora che aspettano il «Sì» (i turni dell'orologio e le ore scritte): si vedono anche in Paghe, sotto il suo nome
+function orePendenti(z) {
+  const out = [];
+  for (const p of sg2Proposte()) { if (!p.ore) continue; let v = null; try { v = JSON.parse(p.ore); } catch (e) {} if (v && v.zona === z) out.push({ p, v }); }
+  return out.sort((a, b) => String(a.v.giorno).localeCompare(String(b.v.giorno)) || String(a.v.inizio || "").localeCompare(String(b.v.inizio || "")));
+}
+function orePendentiHtml(z, mod) {
+  const wa = waDi(z), lista = mod ? orePendenti(z) : [];
+  const adesso = wa.aperto ? `<div class="paga-wa-ora"><span aria-hidden="true">⏱️</span> Adesso è al lavoro: ha scritto «arrivata» alle ${esc(wa.aperto.dalle || L.oraBreve(wa.aperto.inizio))} · <span data-turno-ore="${esc(wa.aperto.inizio)}">${esc(testoOreTurno(minutiDa(wa.aperto.inizio)))}</span></div>` : "";
+  if (!lista.length) return adesso;
+  return `${adesso}<div class="paga-attesa"><b>${lista.length === 1 ? "Aspetta il tuo Sì" : `Aspettano il tuo Sì (${lista.length})`}</b>${lista.map(({ p, v }) => { const r = oreRighe(p, v); return `<div class="paga-attesa-r${r.troppe ? " troppe" : ""}"><span>${esc(oreTitolo(p, v).replace(/^⏱️\s*/, ""))}${r.righe.length ? `<small>${r.righe.map(esc).join(" ")}</small>` : ""}${r.avviso ? `<small class="ore-avviso">${esc(r.avviso)}</small>` : ""}</span><span class="paga-attesa-b"><button type="button" class="btnsm" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">Sì</button><button type="button" class="btnsm ghost" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">No</button></span></div>`; }).join("")}</div>`;
+}
+// «Metti tu le ore di …» (un «finito» senza «arrivata», o il contrario): se dopo Michele ha messo mano all'orario di quel giorno, è fatta
+function sg2OrarioFatto(t) {
+  const o = t && t.orario; if (!o || !o.zona || !o.giorno) return false;
+  const v = L.vistoDi(S.visti, o.zona, o.giorno); if (!v) return false;
+  const da = String(t.creato || "");
+  return [v.turnoQuando, v.presQuando, v.oreDette && v.oreDette.da === "michele" ? v.oreDette.quando : ""].some(q => q && String(q) > da);
+}
+// ---- «Sono tornata»: un altro turno nello stesso giorno (il pomeriggio), e «Vado via» che lo ferma ------------------------
+// Le regole di Firestore lasciano alla signora CREARE documenti della sua zona in «visti» e cambiarci solo la fine: ogni turno in
+// più è un documento suo (<zona>_<giorno>_2, _3, _4) con l'arrivo; «Vado via» ci scrive la fine. Serve anche quando il documento
+// del giorno l'ha già creato Michele (un «Sì» alle ore della mattina): lì la signora non può scrivere l'arrivo.
+async function turnoTorna(subito = false) {
+  if (!addetta() || !pagaAOre() || presAccese()) return;
+  const z = S.utente.zona, iso = L.oggiISO(), base = L.idVisto(z, iso), c = argonConf();
+  if (!L.argonOrario(S.argon)) { toast(`Il tasto funziona dalle ${c.oreDa} alle ${c.oreA}.`); return; }
+  const altri = turniAltri(z, iso);
+  if (altri.some(x => !x.fine)) { disegna(); return; }
+  if (!subito && !(await chiedi("Sei tornata a lavorare? Riparte il tuo orario.", { si: "Sì, sono tornata", no: "No" }))) return;
+  if (!S.visti[base]) { turnoInizia(); return; }
+  const n = 2 + altri.length;
+  if (n > 4) { toast("Per oggi i turni sono già quattro: scrivilo a Michele."); return; }
+  const adesso = S.db.adesso(), id = `${base}_${n}`, v = { zona: z, data: iso, parte: n, tipo: "turno", arrivoOra: adesso, arrivoDa: SIG(z), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga) };
+  S.visti[id] = { ...v, id }; disegna();
+  try { await S.db.salva("visti", id, v, true); }
+  catch (e) { delete S.visti[id]; disegna(); erroreScrittura(e); return; }
+  toast(`Orario partito alle ${L.oraBreve(adesso)}. Buon lavoro!`);
+  inviaTelegram(`⏱️ ${SIG(z)} è ${subito ? "arrivata" : "tornata"} alle ${L.oraBreve(adesso)} (${pianoBreve(z)}).`, "pulita");
+}
+async function turnoFerma(n, zitto = false) {
+  if (!addetta() || !pagaAOre()) return;
+  const z = S.utente.zona, iso = L.oggiISO(), id = `${L.idVisto(z, iso)}_${Number(n)}`, v = S.visti[id];
+  if (!v || !v.arrivoOra || v.finitoOra) { disegna(); return; }
+  if (!zitto && !(await chiedi("Vai via adesso? Si ferma il tuo orario.", { si: "Sì, vado via", no: "No, resto" }))) return;
+  const adesso = S.db.adesso(), patch = { finitoOra: adesso, finitoDa: SIG(z) }, prima = { ...v };
+  S.visti[id] = { ...v, ...patch }; disegna();
+  try { await S.db.salva("visti", id, patch, true); }
+  catch (e) { S.visti[id] = prima; disegna(); erroreScrittura(e); return; }
+  const min = Math.max(0, Math.round((new Date(adesso) - new Date(v.arrivoOra)) / 60000));
+  if (!zitto) { toast(`Orario fermato alle ${L.oraBreve(adesso)}: ${testoOreTurno(min)}.`); inviaTelegram(`🏁 ${SIG(z)} è andata via alle ${L.oraBreve(adesso)}: dalle ${L.oraBreve(v.arrivoOra)}, ${testoOreTurno(min)}.`, "pulita"); }
+}
 function minutiDaOre(s) {
   const x = String(s || "").trim().toLowerCase().replace(/\s+/g, "");
   let m = x.match(/^(\d{1,2})[:h.](\d{2})$/); if (m && Number(m[2]) < 60) return Number(m[1]) * 60 + Number(m[2]);
@@ -2278,6 +2558,8 @@ document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t) return;
   const a = t.closest("[data-turno-inizio]"); if (a) { e.preventDefault(); e.stopPropagation(); turnoInizia(); return; }
   const fine = t.closest("[data-turno-fine]"); if (fine) { e.preventDefault(); e.stopPropagation(); try { hoFinito(); } catch (err) { console.warn(err); } return; }
+  const torna = t.closest("[data-turno-torna]"); if (torna) { e.preventDefault(); e.stopPropagation(); turnoTorna(); return; }   // 1.78.0
+  const ferma = t.closest("[data-turno-ferma]"); if (ferma) { e.preventDefault(); e.stopPropagation(); turnoFerma(ferma.dataset.turnoFerma); return; }
   const o = t.closest("[data-turno-orario]"); if (o) { e.preventDefault(); const [z, iso] = o.dataset.turnoOrario.split("|"); turnoSalva(z, iso); return; }
   const n = t.closest("[data-turno-nuovo]"); if (n) { e.preventDefault(); turnoSalva(n.dataset.turnoNuovo, null); return; }
   const om = t.closest("[data-ore-mano]"); if (om) { e.preventDefault(); oreManoSalva(om.dataset.oreMano); return; }   // 1.73.0
@@ -2834,7 +3116,7 @@ function guidaRispondi(frasi) {
   if (ha(/ (michele|raccomand|ha detto|dice il capo|messaggi)/)) { const n = lavori.filter(p => p.dettagli || p.istruzioni); const m = messaggioDelGiorno(oggi); guidaParla(n.length || m ? [m ? `Michele ti scrive: ${senzaPunto(m.testo)}.` : "", ...n.map(p => `Da ${nomeDetto(p)}: ${senzaPunto([p.dettagli, p.istruzioni].filter(Boolean).join(". "))}.`)].filter(Boolean).join(" ") : "Oggi Michele non ha lasciato raccomandazioni."); return; }
   if (ha(/ (finit|ho fatto tutto|abbiamo fatto|chiudo)/)) { guidaParla("Quando hai fatto tutto il giro, tocca il tasto verde HO FINITO. Ti rileggo le rifiniture e poi puoi andare."); return; }
   if (ha(/ (visto|controll|guardare|guardo)/)) { const d = vistiDaDare(z), vd = nomiChiVede(chiVedeIl(z, oggi)); guidaParla([d.length ? `Devi guardare il lavoro di ${elencoParlato([...new Set(d.map(x => x.finitoDa || SIG(x.zona)))])}: sali, guarda i punti scritti e tocca VISTO.` : "Oggi non c'è niente da guardare.", vd.length ? `Il tuo lavoro lo guarda ${elencoParlato(vd)}.` : "Il tuo lavoro oggi non lo guarda nessuno: solo le camere."].join(" ")); return; }
-  if (ha(/ (ore|quanto ci|quanto tempo|tempo)/)) { if (pagaAOre()) { const tg = turnoDelGiorno(z, L.oggiISO()); guidaParla(tg && tg.inizio && !tg.fine ? `Sei qui da ${testoOreDette(minutiDa(tg.inizio))}. Il tempo lo segna il cronometro: finisci con calma e poi tocca HO FINITO.` : tg && tg.inizio && tg.fine ? `Oggi hai lavorato ${testoOreDette(tg.minuti)}.` : "Il tempo lo segna il cronometro: tocca Sono arrivata quando entri e HO FINITO quando hai finito."); return; } const m = minutiGiornata(lavori, rif); guidaParla(m ? `Oggi hai circa ${L.testoOre(m)} di lavoro.` : "Oggi non hai lavori."); return; }
+  if (ha(/ (ore|quanto ci|quanto tempo|tempo)/)) { if (pagaAOre()) { const tg = turnoDelGiorno(z, L.oggiISO()); guidaParla(tg && tg.inizio && !tg.fine ? `Sei qui da ${testoOreDette(minutiDa(tg.corre || tg.inizio))}. Il tempo lo segna il cronometro: finisci con calma e poi tocca HO FINITO.` : tg && tg.inizio && tg.fine ? `Oggi hai lavorato ${testoOreDette(tg.minuti)}.` : "Il tempo lo segna il cronometro: tocca Sono arrivata quando entri e HO FINITO quando hai finito."); return; } const m = minutiGiornata(lavori, rif); guidaParla(m ? `Oggi hai circa ${L.testoOre(m)} di lavoro.` : "Oggi non hai lavori."); return; }
   if (ha(/ (salvadanaio|premio|soldi|paga|quante ore|le mie ore|ore ho fatto|ore fatte)/)) { if (pagaAOre()) { const b = bustaOre(z, L.settimanaCorrente()); guidaParla(`Questa settimana hai ${testoOreDette(b.minuti)} di lavoro: ${eur(b.totale)}. Le stelle non si pagano a parte: sono dentro le tue ore. Il resto lo trovi in «I miei soldi»: l'icona dei soldi in alto.`); return; } const pr = L.premioSettimana(S.visti, S.controlli, S.pulizie, z, L.settimanaCorrente(), S.argon); guidaParla(pr.stato === "spento" ? "I soldi li trovi in «I miei soldi»: l'icona dei soldi in alto." : `Il salvadanaio di questa settimana ha ${eur(pr.stato === "pochi" ? pr.promesso : pr.euro)}. Gli altri soldi li trovi in: I miei soldi.`); return; }
   if (ha(/ (cosa devo|che devo|cosa faccio|che faccio|cosa c e|che c e|da fare|camere|giro|oggi|aiut)/)) { guida.chiesto++; const p = g.passo; guidaParla((guida.chiesto > 1 ? "Nessun problema, te lo ripeto con calma. " : "") + (p.k === "cam" || p.k === "fine" || p.k === "ricorda" ? p.testo : g.passi[0].testo)); return; }
   guidaParla("Ti posso dire solo le cose di oggi: le camere, cosa fare in ogni camera, le rifiniture e cosa ha detto Michele. Chiedimi: cosa devo fare? Oppure: e poi? Oppure il nome di una camera.");
@@ -5167,8 +5449,8 @@ function guidaNuvola() {
 }
 try { window.addEventListener("scroll", () => { guidaTondo(); guidaNuvola(); }, { passive: true }); } catch (e) {}
 // «Ho finito»: Sofia rilegge le rifiniture del giorno; si tolgono quelle non fatte; poi tutto si chiude in un colpo
-function confermaHoFinito(lavori, rif, nonChiuse, arrivo = null) {
-  const domanda = (rif.length ? `Hai fatto le rifiniture? ${rifinitureParlate(rif)} Se sì, tocca: sì, ho finito. Ed esci pure.` : "Hai finito tutto il giro? Se sì, tocca: sì, ho finito.") + (arrivo ? " Stamattina non hai toccato Sono arrivata: scrivi a che ora sei arrivata, poi tocca: sì, ho finito." : "");
+function confermaHoFinito(lavori, rif, nonChiuse, arrivo = null, torna = false) {
+  const domanda = (rif.length ? `Hai fatto le rifiniture? ${rifinitureParlate(rif)} Se sì, tocca: sì, ho finito. Ed esci pure.` : "Hai finito tutto il giro? Se sì, tocca: sì, ho finito.") + (arrivo && torna ? " Sei tornata senza toccare Sono tornata: scrivi a che ora sei tornata, poi tocca: sì, ho finito." : arrivo ? " Stamattina non hai toccato Sono arrivata: scrivi a che ora sei arrivata, poi tocca: sì, ho finito." : "");
   argonLeggi(domanda, true);
   return new Promise((ok) => {
     const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
@@ -5178,7 +5460,7 @@ function confermaHoFinito(lavori, rif, nonChiuse, arrivo = null) {
       ${rif.length ? `<div class="chiusura-voci">${rif.map(r => `<label class="chiusura-voce"><input type="checkbox" checked data-voce="${esc(r.k)}@${esc(r.pulizia)}"><span>${esc(testoRif(r))}<small>${pagaAOre() ? "" : prezziRif().aOre && r.minuti ? `${r.minuti} min` : eur(r.euro)}</small></span></label>`).join("")}</div>` : ""}
       ${(() => { const r = lavori.filter(p => p.dettagli && p.stato !== "non_fatta"); return r.length ? `<div class="ag-ricorda"><b>📣 ${esc(r[0].dettagliDa || "Michele")} ti aveva chiesto:</b>${r.map(p => `<span>${esc(p.tipo === "stelle" ? "Altre camere" : camera(p.camera).nome)}: «${esc(p.dettagli)}»</span>`).join("")}</div>` : ""; })()}
       ${nonChiuse.length ? `<p class="muted small" style="margin:6px 0">${esc(nonChiuse.map(p => camera(p.camera).nome).join(", "))}: ${nonChiuse.length === 1 ? "resta col suo problema, non la segno pulita" : "restano col loro problema, non le segno pulite"}.</p>` : ""}
-      ${arrivo ? `<div class="ag-arrivo"><label class="campo" style="margin:6px 0 10px"><span>⏱️ Stamattina non hai toccato «Sono arrivata». A che ora sei arrivata?</span><input type="time" data-arrivo value="${esc(arrivo)}"></label></div>` : ""}
+      ${arrivo ? `<div class="ag-arrivo"><label class="campo" style="margin:6px 0 10px"><span>${torna ? "⏱️ Sei tornata senza toccare «Sono tornata». A che ora sei tornata?" : "⏱️ Stamattina non hai toccato «Sono arrivata». A che ora sei arrivata?"}</span><input type="time" data-arrivo value="${esc(arrivo)}"></label></div>` : ""}
       <button class="big ok" data-si>Sì, ho finito ✓</button><button class="big undo" data-no>Aspetta, torno su</button></div>`;
     document.body.appendChild(el);
     el.querySelector("[data-si]").onclick = () => { const non = new Set([...el.querySelectorAll("[data-voce]")].filter(x => !x.checked).map(x => x.dataset.voce)); const arr = (el.querySelector("[data-arrivo]") || {}).value || null; el.remove(); ok({ nonFatte: non, arrivo: arr }); };
@@ -5196,8 +5478,11 @@ async function hoFinito() {
   // 1.32.0: le stelle delle camere già chiuse col «✓ Fatto» sono state confermate lì: qui si chiedono solo le altre
   const daChiedere = rif.filter(r => { const x = S.pulizie[r.pulizia]; return !x || x.stato !== "fatta"; });
   // 1.35.0: paga a ore: se stamattina non ha toccato «Sono arrivata» (il documento del giorno non c'è), l'ora la chiede qui
-  const vg = S.visti[L.idVisto(z, iso)], chiediArrivo = pagaAOre() && !vg && !presAccese() ? arrivoProposto(z, iso) : null;   // 1.69.0: col codice non si chiede (parte dalla prima camera)
-  const scelta = await confermaHoFinito(lavori, daChiedere, nonChiuse, chiediArrivo); if (!scelta) return;
+  const vg = S.visti[L.idVisto(z, iso)], chiediArrivo = pagaAOre() && !vg && !presAccese() && !waDi(z).aperto && !waDi(z).turni.length ? arrivoProposto(z, iso) : null;   // 1.69.0: col codice non si chiede (parte dalla prima camera)
+  // 1.78.0: HO FINITO una seconda volta (è tornata per un lavoro nuovo) senza aver toccato «Sono tornata», più di mezz'ora dopo:
+  // le si chiede a che ora è tornata e nasce un turno a parte (prima la fine del primo turno si spostava: si pagava anche la pausa)
+  const chiediTorna = pagaAOre() && !presAccese() && vg && vg.finitoOra && !turniAltri(z, iso).some(x => !x.fine) && turniAltri(z, iso).length < 3 && (Date.now() - new Date(vg.finitoOra)) > 30 * 60000 ? tornataProposta(z, iso, vg.finitoOra) : null;
+  const scelta = await confermaHoFinito(lavori, daChiedere, nonChiuse, chiediArrivo || chiediTorna, !!chiediTorna); if (!scelta) return;
   // 1.69.0: col codice alla porta, prima la foto a sorpresa (se manca), poi il codice uscendo (chiuso = HO FINITO non si fa)
   let uscita = null;
   if (pagaAOre() && presAccese()) { await presFotoPrimaDiUscire(z, iso); uscita = await presUscita(); if (!uscita) return; }
@@ -5217,7 +5502,14 @@ async function hoFinito() {
   // 2) il documento del Visto: cosa c'è da guardare, scritto sopra il tasto di chi c'è dopo
   const fatte = rif.filter(r => !scelta.nonFatte.has(`${r.k}@${r.pulizia}`));
   const id = L.idVisto(z, iso);
-  const v = { zona: z, data: iso, settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga), finitoOra: (uscita && uscita.ora) || S.db.adesso(), finitoDa: SIG(z),
+  // 1.78.0: se corre un turno ripartito con «Sono tornata», HO FINITO ferma quello (la fine del primo turno, se c'era già, resta la sua)
+  const oraFine = (uscita && uscita.ora) || S.db.adesso(), altroAperto = pagaAOre() ? turniAltri(z, iso).filter(x => !x.fine).pop() || null : null, finitoPrima = (S.visti[id] && S.visti[id].finitoOra) || null;
+  if (altroAperto) { const id2 = `${id}_${altroAperto.n}`, patch2 = { finitoOra: oraFine, finitoDa: SIG(z) }; S.visti[id2] = { ...(S.visti[id2] || {}), ...patch2 }; S.db.salva("visti", id2, patch2, true).catch(erroreScrittura); }
+  if (chiediTorna && finitoPrima) {   // è tornata senza «Sono tornata»: il turno a parte, dall'ora che ha scritto a adesso
+    const a2 = scelta.arrivo ? isoDaOra(iso, scelta.arrivo) : null, n2 = 2 + turniAltri(z, iso).length;
+    if (a2 && new Date(a2) > new Date(finitoPrima) && new Date(a2) < new Date(oraFine)) { const id2 = `${id}_${n2}`, d2 = { zona: z, data: iso, parte: n2, tipo: "turno", arrivoOra: a2, arrivoDa: SIG(z), arrivoDetto: true, finitoOra: oraFine, finitoDa: SIG(z), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga) }; S.visti[id2] = { ...d2, id: id2 }; S.db.salva("visti", id2, d2, true).catch(erroreScrittura); }
+  }
+  const v = { zona: z, data: iso, settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga), finitoOra: (altroAperto || chiediTorna) && finitoPrima ? finitoPrima : oraFine, finitoDa: SIG(z),
     camere: chiuse.filter(p => p.tipo !== "stelle" && camera(p.camera).tipo !== "casa").map(p => ({ id: p.id, camera: p.camera, nome: camera(p.camera).nome, titolo: titoloLavoro(p), arrivo: !!p.arrivo, comune: camera(p.camera).tipo === "comune" || p.tipo === "fisso" })),   // solo l'albergo: gli appartamenti nessuno li può guardare
     rifiniture: fatte, euroRifiniture: Math.round(fatte.reduce((s, r) => s + (r.euro || 0), 0) * 100) / 100, rodaggio: L.argonRodaggio(S.argon, iso) };
   if (chiediArrivo && scelta.arrivo) { const a = isoDaOra(iso, scelta.arrivo); if (a && new Date(a) < new Date(v.finitoOra)) { v.arrivoOra = a; v.arrivoDa = SIG(z); v.arrivoDetto = true; } }
@@ -5227,7 +5519,7 @@ async function hoFinito() {
   if (uscita) presSalvaUscita(z, iso, uscita);   // 1.69.0
   Promise.all(attese).catch(() => {});
   const vedono = nomiChiVede(chiVedeIl(z, iso));
-  inviaTelegram(`🏁 ${v.finitoDa} ha finito il ${pianoBreve(z)} alle ${L.oraBreve(v.finitoOra)}: ${v.camere.length} ${v.camere.length === 1 ? "camera" : "camere"}${fatte.length ? `, ${fatte.length} rifiniture${pagaAOre() ? "" : ` (${eur(v.euroRifiniture)})`} in attesa del Visto` : ""}${turnoOggi && turnoOggi.inizio && !turnoOggi.stima ? ` · ⏱️ dalle ${L.oraBreve(turnoOggi.inizio)}: ${testoOreTurno(turnoOggi.minuti)} (${eur(euroOre(turnoOggi.minuti))})` : pagaAOre() ? " · ⏱️ senza l'ora di arrivo: il giorno resta senza orario, da mettere in Paghe → Orario" : ""}.`, "pulita");
+  inviaTelegram(`🏁 ${v.finitoDa} ha finito il ${pianoBreve(z)} alle ${L.oraBreve(oraFine)}: ${v.camere.length} ${v.camere.length === 1 ? "camera" : "camere"}${fatte.length ? `, ${fatte.length} rifiniture${pagaAOre() ? "" : ` (${eur(v.euroRifiniture)})`} in attesa del Visto` : ""}${turnoOggi && turnoOggi.inizio && !turnoOggi.stima ? ` · ⏱️ ${turnoOggi.uniti && turnoOggi.segmenti.length > 1 ? `oggi ${testoSegmenti(turnoOggi.segmenti)}` : `dalle ${L.oraBreve(turnoOggi.inizio)}`}: ${testoOreTurno(turnoOggi.minuti)} (${eur(euroOre(turnoOggi.minuti))})` : pagaAOre() ? (waDi(z).aperto ? ` · ⏱️ arrivata alle ${waDi(z).aperto.dalle || L.oraBreve(waDi(z).aperto.inizio)} (WhatsApp): il turno te lo propongo in Segreteria` : " · ⏱️ senza l'ora di arrivo: il giorno resta senza orario, da mettere in Paghe → Orario") : ""}.`, "pulita");
   setTimeout(() => argonLeggi(fatte.length ? `Brava ${nomeSignora()}. Hai finito.${oreDette} Le rifiniture aspettano il Visto di ${elencoParlato(vedono) || "chi passa dopo"}. Puoi andare.` : `Brava ${nomeSignora()}, hai finito.${oreDette} Puoi andare.`, true), 400);
 }
 // ---- il «Visto» di chi c'è dopo ----------------------------------------------------------------------------------------
@@ -5502,7 +5794,7 @@ function cardArgon() {
   const num = (lab, k, step = 1, unita = "") => `<label for="ag_${k}">${lab}</label><span class="unita"><input id="ag_${k}" type="number" min="0" step="${step}" value="${c[k]}" data-argon-num="${k}"><small>${unita}</small></span>`;
   const gg = [1, 2, 3, 4, 5, 6];
   const giri = [...signore().map(z => ({ id: z.id, nome: SIG(z.id) })), { id: "direzione", nome: "La direzione (tu o papà)" }].map(x => `<div class="row" style="grid-template-columns:1fr auto"><span>${esc(x.nome)}</span><span class="ag-giorni">${gg.map(d => `<button aria-pressed="${(c.giriVisto[x.id] || []).map(Number).includes(d)}" data-argon-giro="${x.id}|${d}">${L.GG[d]}</button>`).join("")}</span></div>`).join("");
-  const settimana = Object.values(S.visti || {}).filter(v => v && v.finitoOra && (v.settimana || L.chiaveSettimana(v.finitoOra, S.regole.chiusuraPaga)) === chiave).sort((a, b) => (a.finitoOra < b.finitoOra ? 1 : -1));
+  const settimana = Object.values(S.visti || {}).filter(v => v && v.finitoOra && !v.parte && (v.settimana || L.chiaveSettimana(v.finitoOra, S.regole.chiusuraPaga)) === chiave).sort((a, b) => (a.finitoOra < b.finitoOra ? 1 : -1));
   const rigaV = v => { const id = v.id || L.idVisto(v.zona, v.data); const nRif = (v.rifiniture || []).length, dif = (v.difetti || []).length;
     return `<div class="row one ag-riga-v"><span><b>${esc(L.dataBreve(v.data))} · ${esc(pianoBreve(v.zona))}</b> (${esc(v.finitoDa || SIG(v.zona))}) finito alle ${esc(L.oraBreve(v.finitoOra))} · ${(v.camere || []).length} camere${nRif ? ` · ${nRif} rifiniture${pagaAOre() ? "" : " " + eur(v.euroRifiniture)}` : ""}<br><span class="muted small">${v.vistoOra ? `Visto da ${esc(v.vistoNome || v.vistoDa)} alle ${esc(L.oraBreve(v.vistoOra))}` : serveVisto(v) ? "aspetta il Visto" : "da sola: solo le camere, nessun Visto"}${v.smentito ? ` · <b style="color:var(--warn)">smentito</b>` : ""}${dif ? ` · ${v.difetti.map(d => `${d.nome}${d.rifattaDa ? " → " + SIG(d.rifattaDa) : " non fatta"}`).join(", ")}` : ""}${v.segnalato ? ` · ✋ ${esc(v.segnalato.da)}: manca «${esc(v.segnalato.testo)}»` : ""}${v.rodaggio ? " · rodaggio" : ""}</span></span>
       <span class="ag-riga-tasti">${!v.vistoOra ? `<button class="btnsm" data-dai-visto="${esc(id)}">Visto direzione</button>` : ""}<button class="btnsm ghost" data-visto-difetto="${esc(id)}">Ho trovato non fatto</button></span></div>`; };
@@ -5565,10 +5857,11 @@ function domandeSegreteria() {   // 1.71.0: solo «Da fare tu» e «Ti propongo�
   const da = L.aggiungiGiorni(L.oggiISO(), -2); let n = 0;
   for (const x of segreteriaLetture()) {
     if (!x || ["scartata", "sostituita"].includes(x.esito) || String(x.quando || "").slice(0, 10) < da) continue;
-    n += (Array.isArray(x.proposte) ? x.proposte : []).filter(p => p && !p.esito).length;
-    n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto && !sg2Mia(t, x) && !sg2Vista(t, x)).length;   // 1.76.0: non le cose dette da lui, non quelle che ha già visto
+    n += (Array.isArray(x.proposte) ? x.proposte : []).filter(p => p && !p.esito && !oreGiaContate(p)).length;   // 1.78.0: non i turni che il timer dell'app ha già
+    n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto && !sg2Mia(t, x) && !sg2Vista(t, x) && !sg2OrarioFatto(t)).length;   // 1.76.0: non le cose dette da lui, non quelle che ha già visto
   }
   for (const x of sg2Ricordi()) n += (Array.isArray(x.perTe) ? x.perTe : []).filter(t => t && t.testo && !t.fatto && sg2Adesso(t)).length;   // 1.76.0: i suoi promemoria, quando è l'ora
+  try { n += sg2OreVecchie().length; } catch (e) {}   // 1.78.0: le proposte di ore non scadono dopo 3 giorni
   return n;
 }
 // sta leggendo le chat: questo telefono (la posta del ponte), oppure il giro ad app chiusa, oppure un telefono che mette a posto
@@ -5665,14 +5958,14 @@ function sg2Entro(t) {
 function sg2PerTe() {
   const out = [];
   // 1.76.0: non le cose dette da lui; in più i promemoria che ha chiesto (le schede «tu_»); quelle già viste in fondo
-  for (const x of [...sg2Letture(), ...sg2Ricordi()]) for (const t of (Array.isArray(x.perTe) ? x.perTe : [])) if (t && t.k && t.testo && !t.fatto && !sg2Mia(t, x)) out.push({ ...t, lid: x.lid, quando: x.quando, vista: sg2Vista(t, x) });
+  for (const x of [...sg2Letture(), ...sg2Ricordi()]) for (const t of (Array.isArray(x.perTe) ? x.perTe : [])) if (t && t.k && t.testo && !t.fatto && !sg2Mia(t, x) && !sg2OrarioFatto(t)) out.push({ ...t, lid: x.lid, quando: x.quando, vista: sg2Vista(t, x) });
   return out.sort((a, b) => (a.vista ? 1 : 0) - (b.vista ? 1 : 0) || ((a.entro || "9999") < (b.entro || "9999") ? -1 : (a.entro || "9999") > (b.entro || "9999") ? 1 : String(a.quando).localeCompare(String(b.quando))));
 }
 // ✋ le proposte che aspettano il «Sì»
 function sg2Proposte() {
   const out = [];
-  for (const x of sg2Letture()) (Array.isArray(x.proposte) ? x.proposte : []).forEach(p => { if (p && p.k && !p.esito) out.push({ ...p, lid: x.lid, quando: x.quando }); });
-  return out;
+  for (const x of sg2Letture()) (Array.isArray(x.proposte) ? x.proposte : []).forEach(p => { if (p && p.k && !p.esito && !oreGiaContate(p)) out.push({ ...p, lid: x.lid, quando: x.quando }); });
+  return [...out, ...sg2OreVecchie()];   // 1.78.0: le proposte di ore restano finché Michele risponde
 }
 // ✅ quello che ha fatto da sola (oggi e ieri, non annullato): il foglio di papà è una riga sola (tutti i cambi insieme)
 function sg2Fatti() {
@@ -5872,8 +6165,10 @@ function vistaSegreteria() {
   const sottoPerTe = (t) => t.richiesto ? `⏰ Me l'hai chiesto tu · ${sg2Alle(t)}` : [sg2Entro(t), t.chi ? `l'ha chiesto ${t.chi}` : ""].filter(Boolean).join(" · ");
   const perTe = sg2PerTe().map(t => `<div class="sg2-r fare${t.vista ? " vista" : ""}${t.richiesto ? " chiesto" : ""}"><b class="sg2-t">${esc(t.testo)}</b>${sottoPerTe(t) ? `<small>${esc(sottoPerTe(t))}</small>` : ""}${t.vista ? `<small class="sg2-vista">✓ Hai già risposto su WhatsApp: non suono più</small>` : ""}${t.rimanda && Date.parse(t.rimanda) > Date.now() ? `<small class="sg2-rim">⏰ te lo ricordo alle ${esc(L.oraBreve(t.rimanda))}</small>` : ""}
     ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde" data-sg2-fatto="${esc(t.lid)}|${esc(t.k)}">Fatto</button><button type="button" class="sg2-b rosso" data-sg2-ricorda="${esc(t.lid)}|${esc(t.k)}${t.vista ? "|v" : ""}"><span aria-hidden="true">⏰</span> Ricordami tra 1 ora</button></div>` : ""}</div>`);
-  const prop = sg2Proposte().map(p => `<div class="sg2-r prop">${p.perche ? `<b class="sg2-t">${esc(p.perche)}</b>` : ""}<span class="sg2-x">${esc(p.testo)}</span>
-    ${mod ? `<button type="button" class="sg2-b verde pieno" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">Sì, fallo</button><div class="sg2-bt"><button type="button" class="sg2-b oro" data-sg2-cambia="${esc(p.lid)}|${esc(p.k)}">Cambia</button><button type="button" class="sg2-b rosso" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">No</button></div>` : ""}</div>`);
+  // 1.78.0: una proposta di ore dice da dove viene, cosa cambia col Sì e il lavoro che c'era quel giorno (il controllo)
+  // (in grassetto il turno, non la domanda: «Selena oggi: 9:07 → 10:52 = 1 ora e 45 min»)
+  const prop = sg2Proposte().map(p => { const r = p.ore ? oreRighe(p) : null; return `<div class="sg2-r prop${r ? " ore" : ""}${r && r.troppe ? " troppe" : ""}">${r ? `<b class="sg2-t">${esc(oreTitolo(p))}</b>` : `${p.perche ? `<b class="sg2-t">${esc(p.perche)}</b>` : ""}<span class="sg2-x">${esc(p.testo)}</span>`}${r && r.righe.length ? `<small class="sg2-ore">${r.righe.map(esc).join("<br>")}</small>` : ""}${r && r.avviso ? `<small class="sg2-ore ore-avviso">${esc(r.avviso)}</small>` : ""}
+    ${mod ? `<button type="button" class="sg2-b verde pieno" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">Sì, fallo</button><div class="sg2-bt"><button type="button" class="sg2-b oro" data-sg2-cambia="${esc(p.lid)}|${esc(p.k)}">Cambia</button><button type="button" class="sg2-b rosso" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">No</button></div>` : ""}</div>`; });
   prop.unshift(...presProposte().map(x => presPropRiga(x, mod)));   // 1.69.0: le ore che non tornano
   const fatti = sg2Fatti().map((f, i) => `<div class="sg2-r fatto"><span class="sg2-x"><b>${i + 1}.</b> ${esc(f.testo)}</span><small>${esc([sg2Quando(f.quando), f.sotto].filter(Boolean).join(" · "))}</small>
     <div class="sg2-bt">${mod ? `<button type="button" class="sg2-b piccolo" data-sg2-annulla="${esc(f.lid)}|${esc(f.ks.join(","))}">Annulla</button>` : ""}<button type="button" class="sg2-b piccolo" data-sg2-perche="${esc(f.lid)}|${esc(f.ks.join(","))}">Perché?</button></div></div>`);
@@ -5917,7 +6212,7 @@ function sg2DaLeggere() {
   const pulito = (t) => String(t || "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
   const parti = sg2Riassunto().map(pulito);
   const t = sg2PerTe().filter(y => !y.vista && sg2Adesso(y)); if (t.length) parti.push(`Da fare tu: ${t.slice(0, 3).map(x => `${x.testo}${sg2Entro(x) ? ", " + sg2Entro(x) : ""}`).join("; ")}.`);
-  const p = sg2Proposte(); if (p.length) parti.push(`Ti propongo: ${p.slice(0, 2).map(x => x.perche || x.testo).join("; ")}.`);
+  const p = sg2Proposte(); if (p.length) parti.push(`Ti propongo: ${p.slice(0, 2).map(x => x.ore ? oreTitolo(x).replace(/^⏱️\s*/, "") : (x.perche || x.testo)).join("; ")}.`);
   return parti.join(" ");
 }
 async function sg2PerTeSegna(lid, k, dati) {
@@ -6729,6 +7024,8 @@ function testoAltro(cat, v) {
   if (cat === "sp") return `🛒 Nella lista della spesa: ${v.prodotto}`;
   if (cat === "no") return `📌 Nelle tue note di ${quandoTesto(v.giorno)}: ${v.testo}`;
   if (cat === "te") return `📞 Numero di ${v.nome || (v.camera ? camera(v.camera).nome : "") || "?"} ${v.soggiorno ? "nella scheda dell'ospite" : "in rubrica"}`;
+  if (cat === "ore" && v.piuTimer != null) return `⏱️ Ore di ${SIG(v.zona)} ${quandoTesto(v.giorno)}: ${testoOreTurno(v.minuti)} scritte su WhatsApp, da aggiungere al timer (${testoOreTurno(v.piuTimer)})${v.dove ? " · " + v.dove : ""}`;   // 1.78.0
+  if (cat === "ore" && v.alPostoDelTimer != null) return `⏱️ Ore di ${SIG(v.zona)} ${quandoTesto(v.giorno)}: ${testoOreTurno(v.minuti)} in tutto, al posto del timer (${testoOreTurno(v.alPostoDelTimer)})${v.dove ? " · " + v.dove : ""}`;
   if (cat === "ore") return `⏱️ Ore di ${SIG(v.zona)} ${quandoTesto(v.giorno)}: ${v.somma ? `${testoOreTurno(v.somma.prima)} già segnate + ${testoOreTurno(v.somma.piu)} = ${testoOreTurno(v.minuti)}` : `${testoOreTurno(v.minuti)}${v.alPostoDi ? ` (al posto di ${testoOreTurno(v.alPostoDi)} già segnate)` : ""}`}${v.dove ? " · " + v.dove : ""}`;
   return "";
 }
@@ -6760,7 +7057,7 @@ async function applicaLettura({ lid, j, postaIds = [] }) {
   for (const [cat, chiave] of [["as", "assenze"], ["sp", "spesa"], ["no", "note"], ["te", "telefoni"]]) {
     for (const v of (x[chiave] || [])) { const sel = ALTRE_VUOTE(); sel[cat] = [{ ...v, passa: false }]; await fai(testoAltro(cat, v), cat, () => salvaAltreDaSofia(sel), v); }
   }
-  for (const v of (x.ore || [])) proposte.push({ k: "p" + (k++), testo: testoAltro("ore", v), perche: v.somma ? "Le aggiungo alle ore già segnate di quel giorno?" : v.alPostoDi ? "Cambio le ore di quel giorno?" : "Le metto nella paga di quel giorno?", ore: JSON.stringify(v), esito: "" });
+  for (const v of (x.ore || [])) proposte.push({ k: "p" + (k++), testo: testoAltro("ore", v), perche: v.piuTimer != null ? "Le aggiungo al timer di quel giorno?" : v.alPostoDelTimer != null ? "Uso queste ore al posto del timer?" : v.somma ? "Le aggiungo alle ore già segnate di quel giorno?" : v.alPostoDi ? "Cambio le ore di quel giorno?" : "Le metto nella paga di quel giorno?", ore: JSON.stringify(v), esito: "" });
   for (const q of (x.dubbi || [])) domande.push({ domanda: String(q.domanda || "").slice(0, 220), risposte: (q.risposte || []).slice(0, 4), risposta: "", ...(q.chi ? { chi: String(q.chi).slice(0, 40) } : {}) });
   const esito = fatti.length || proposte.length || domande.length ? "fatta" : "vuota";
   const dati = { esito, fatti, proposte, domande, non: non.slice(0, 12), applicata: new Date().toISOString(), applicataDa: nomeTelefono() };
@@ -9241,8 +9538,8 @@ function riassuntoAzione(a) { if (!a) return ""; if (a.tipo === "gruppo") return
 async function segnaOreMichele(z, iso, minuti) {
   let t = null; try { t = turnoDelGiorno(z, iso); } catch (e) {}
   const id = L.idVisto(z, iso), adesso = S.db.adesso(), chi = (S.utente && (S.utente.nome || S.utente.email)) || "Michele";
-  const conOrario = !!(t && t.inizio && t.fine && !t.dette);   // c'è l'orario completo del cronometro: lo correggono
-  const patch = conOrario ? { zona: z, data: iso, presMinuti: minuti, presDa: chi, presQuando: adesso } : { zona: z, data: iso, oreDette: { minuti, da: "michele", chi, quando: adesso } };
+  const conOrario = !!(t && !t.dette && ((t.inizio && t.fine) || t.uniti));   // c'è l'orario completo del cronometro (1.78.0: o più turni dell'orologio): lo correggono
+  const patch = conOrario ? { zona: z, data: iso, presMinuti: minuti, ...(t.uniti ? { presTutto: true } : {}), presDa: chi, presQuando: adesso } : { zona: z, data: iso, oreDette: { minuti, da: "michele", chi, quando: adesso } };
   S.visti[id] = { ...(S.visti[id] || {}), ...patch, id };
   await S.db.salva("visti", id, patch, true);
   disegna();
@@ -12167,6 +12464,7 @@ function cardOrarioBase() {
     ${aOre ? `<p class="muted small" style="margin:0 0 8px"><b>Solo a ore.</b> Si pagano le ore lavorate, tutte alla stessa tariffa: niente prezzi per camera, per stella o per controllo. Le rifiniture ⭐ e il Visto restano come controllo di qualità, senza soldi.</p>` : `<p class="muted small" style="margin:0 0 8px"><b>A ore, col cronometro</b>: la signora tocca «Sono arrivata» quando entra e «Ho finito» alla fine; si pagano i minuti tra le due ore, tutte alla stessa tariffa. Le rifiniture ⭐ e il Visto restano come controllo di qualità, senza soldi a parte. <b>A camera</b>: com'era prima, ore standard per ogni camera, stelle a parte, Visti pagati e salvadanaio. Niente va perso: le impostazioni della paga a camera restano qui sotto.</p>
     <div class="row paga-modo"><span>Come pago</span><span class="seg"><button type="button" aria-pressed="${aOre}" data-modo-paga="ore" ${mod ? "" : "disabled"}>A ore, col cronometro</button><button type="button" aria-pressed="${!aOre}" data-modo-paga="camera" ${mod ? "" : "disabled"}>A camera</button></span></div>`}
     ${aOre ? `<div class="listino" style="margin-top:8px">${num("Tariffa dell'ora (tutte le signore)", "tariffaOra", l.tariffaOra ?? 10, 0.5, "€/ora")}</div><p class="muted small" style="margin:6px 0 0">Se in un giorno manca l'orario, quel giorno resta «senza orario» e non entra nel totale: lo metti tu qui in Paghe con «Orario», oppure arrivano le ore scritte su WhatsApp.</p>
+    <p class="muted small" style="margin:6px 0 0"><b>Il timer delle signore.</b> Fanno partire il tempo in due modi: col tasto «Sono arrivata» dell'app (e «HO FINITO» alla fine; se tornano nel pomeriggio «Sono tornata»), oppure scrivendo «arrivata» e «finito» su WhatsApp. I turni dell'app si contano da soli; quelli di WhatsApp te li propongo, al minuto, in Segreteria e qui sotto il nome della signora: aspettano il tuo Sì. Lo stesso turno segnato nei due modi conta una volta sola. Accanto alle ore trovi il lavoro di quel giorno: se le ore sono troppe compare ⚠️.</p>
     <div class="floorlabel" style="margin-top:14px">Le stelle, dentro le ore</div>
     <p class="muted small" style="margin:0 0 6px">Le rifiniture ⭐ non costano a parte: sono lavoro dentro le ore. Qui decidi quante ne mette l'app ogni giorno a ogni signora (il catalogo è grande: più stelle al giorno = il giro completo si chiude prima) e chi le fa.</p>
     <div class="listino">${num("Stelle al giorno per signora, al massimo", "stelleGiorno", l.stelleGiorno ?? 6, 1, "stelle")}${num("Minuti di stelle al giorno, al massimo", "stelleMinuti", l.stelleMinuti ?? 30, 5, "min")}</div>
@@ -15529,12 +15827,14 @@ function lettoDaSofia(j, opz = {}) {
   const ore = (Array.isArray(j.ore) ? j.ore : []).map((x, i) => {
     const z = x ? zonaDaIA(x.signora || x.chi) : null, g = dataIso(x && x.giorno), min = Math.round(Number(x && x.minuti) || 0);
     if (!z || !g || min < 10 || min > 14 * 60 || g > oggi) return null;
-    let t = null; try { t = turnoDelGiorno(z, g); } catch (e) {}
-    const timer = !!(t && !t.stima && !t.dette), v = L.vistoDi(S.visti, z, g), gia = v && v.oreDette && Number(v.oreDette.minuti) > 0 ? Math.round(Number(v.oreDette.minuti)) : 0;
-    const som = oreSomma(v && v.oreDette, min, corto(x.messaggio, 160), opz.lid || "");   // 1.77.0: il pomeriggio si somma alla mattina
-    const giaDette = (som && som.doppio) || (!som && gia === min);
-    if (giaDette) return null;
-    return { k: "or" + i, zona: z, giorno: g, minuti: som ? som.totale : min, suoi: min, lid: opz.lid || "", ...(som ? { somma: { prima: som.prima, piu: min } } : gia ? { alPostoDi: gia } : {}), dove: corto(x.dove, 80), chi: corto(x.chi, 40), messaggio: corto(x.messaggio, 160), timer, timerMinuti: t ? t.minuti : 0, scelta: !timer };
+    // 1.78.0: il conto lo fa oreEffetto, su quello che c'è segnato adesso (in un giorno che ha già il timer le ore scritte si
+    // aggiungono; se dicono il totale valgono loro; senza timer come nella 1.77.0)
+    const cand = { k: "or" + i, zona: z, giorno: g, minuti: min, suoi: min, lid: opz.lid || "", dove: corto(x.dove, 80), chi: corto(x.chi, 40), messaggio: corto(x.messaggio, 160) };
+    let e = null; try { e = oreEffetto(cand); } catch (err) { console.warn("ore", err); }
+    if (e && e.niente) return null;
+    let t = null; try { t = turnoDelGiorno(z, g); } catch (err) {}
+    const timer = !!(t && !t.stima && !t.dette);
+    return { ...cand, ...(e && e.tipo === "somma" ? { minuti: e.dopo, somma: { prima: e.prima, piu: min } } : e && e.tipo === "cambio" && e.prima ? { alPostoDi: e.prima } : e && e.tipo === "piu" ? { piuTimer: e.prima } : e && e.tipo === "totale" ? { alPostoDelTimer: e.prima } : {}), timer, timerMinuti: t ? t.minuti : 0, scelta: !timer || !!(e && e.tipo === "piu") };
   }).filter(Boolean).slice(0, 14);
   // 1.38.0: i numeri di telefono che non sono di un soggiorno (un tecnico, un fornitore): nella rubrica, mai all'IA
   const telefoni = (Array.isArray(j.telefoni) ? j.telefoni : []).map((x, i) => {
@@ -15714,7 +16014,7 @@ function altreSofiaHtml(x) {
     + sez("Da comprare", sp, sp.map(v => riga(v, "spe", v.zona ? esc(nomeZonaBreve(v.zona)) : "", esc(v.prodotto))).join(""), "Le spuntate vanno nella lista della spesa.")
     + sez("Da sapere per te", no, no.map(v => riga(v, "not", `${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}`, esc(v.testo))).join(""), "Le spuntate vanno nelle tue note di quel giorno.")
     // 1.38.0: le ore scritte dalle signore e i numeri di telefono
-    + sez("Ore scritte dalle signore su WhatsApp", ore, ore.map(v => riga(v, "ore", `${esc(SIG(v.zona))} · ${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}`, `${v.somma ? `${esc(testoOreTurno(v.somma.prima))} già segnate + ${esc(testoOreTurno(v.somma.piu))} = <b>${esc(testoOreTurno(v.minuti))}</b>` : `${esc(testoOreTurno(v.minuti))}${v.alPostoDi ? ` (al posto di ${esc(testoOreTurno(v.alPostoDi))} già segnate)` : ""}`}${v.dove ? ` · ${esc(v.dove)}` : ""}${v.timer ? `<br><span class="muted small">Quel giorno c'è già l'orario del cronometro (${esc(testoOreTurno(v.timerMinuti))}): spunta solo se vuoi usare le ore scritte.</span>` : ""}`)).join(""), "Le spuntate entrano nella paga a ore di quel giorno (dove non c'è l'orario del cronometro).")
+    + sez("Ore scritte dalle signore su WhatsApp", ore, ore.map(v => riga(v, "ore", `${esc(SIG(v.zona))} · ${esc(quandoEtichetta(v.giorno))} ${esc(L.dataMedia(v.giorno))}`, `${v.somma ? `${esc(testoOreTurno(v.somma.prima))} già segnate + ${esc(testoOreTurno(v.somma.piu))} = <b>${esc(testoOreTurno(v.minuti))}</b>` : `${esc(testoOreTurno(v.minuti))}${v.alPostoDi ? ` (al posto di ${esc(testoOreTurno(v.alPostoDi))} già segnate)` : ""}`}${v.dove ? ` · ${esc(v.dove)}` : ""}${v.timer ? `<br><span class="muted small">${v.piuTimer != null ? `Quel giorno il timer ha già ${esc(testoOreTurno(v.piuTimer))}: se spunti, queste ore si aggiungono.` : `Quel giorno c'è già l'orario del cronometro (${esc(testoOreTurno(v.timerMinuti))}): spunta solo se vuoi usare le ore scritte.`}</span>` : ""}`)).join(""), "Le spuntate entrano nella paga a ore di quel giorno (dove non c'è l'orario del cronometro).")
     + sez("Numeri di telefono", te, te.map(v => riga(v, "tel", `${esc(v.nome || (v.camera ? camera(v.camera).nome : "") || "Numero")}${v.chi ? ` · ${esc(v.chi)}` : ""}`, `📞 <b>${esc(telBello(v.telefono))}</b>${v.soggiorno ? `<br><span class="muted small">→ nella scheda dell'ospite di ${esc(camera(v.camera).nome)}${v.soggiornoNome ? ` (${esc(v.soggiornoNome)})` : ""}: lo vedete solo voi, toccando la camera</span>` : `<br><span class="muted small">→ nella rubrica (Altro → Rubrica): lo vedete solo voi</span>`}`)).join(""), "I numeri non vanno mai all'intelligenza artificiale.");
 }
 function altreScelte(d) {
@@ -15751,16 +16051,11 @@ async function salvaAltreDaSofia(a) {
   for (const v of a.no) { try { await notaDellaGovernante(v.giorno, null, `${v.testo}${v.chi ? ` (${v.chi})` : ""}`, true); n.no++; } catch (e) { console.warn("nota", e); } }
   // 1.38.0: le ore scritte dalle signore → nel documento del giorno (oreDette); la paga a ore le usa dove manca il cronometro
   for (const v of (a.ore || [])) {
-    // 1.77.0: il conto si rifà adesso, su quello che c'è segnato in questo momento (due proposte dello stesso giorno dette «Sì» una
-    // dopo l'altra, anche quelle nate prima della 1.77.0: «suoi» sono i minuti di QUEL messaggio)
-    const id = L.idVisto(v.zona, v.giorno), prima = (S.visti[id] || {}).oreDette || null, suoi = Math.round(Number(v.suoi) || (v.somma ? Number(v.somma.piu) : Number(v.minuti)) || 0);
-    const som = oreSomma(prima, suoi, v.messaggio || "", v.lid || "");
-    if (som && som.doppio) continue;   // quel messaggio è già dentro le ore di quel giorno
-    const pezzo = { minuti: suoi, testo: String(v.messaggio || "").slice(0, 160), lid: v.lid || "" };
-    const primaParti = prima && Array.isArray(prima.parti) && prima.parti.length && prima.parti.reduce((s, x) => s + Math.round(Number(x && x.minuti) || 0), 0) === Math.round(Number(prima.minuti) || 0) ? prima.parti : prima ? [{ minuti: Math.round(Number(prima.minuti) || 0), testo: String(prima.testo || "").slice(0, 160), lid: prima.lid || "" }] : [];
-    const dati = { zona: v.zona, data: v.giorno, oreDette: som
-      ? { minuti: som.totale, dove: [...new Set([prima.dove, v.dove].filter(Boolean))].join(", ").slice(0, 120), chi: v.chi || prima.chi || "", testo: `${prima.testo || ""} + ${v.messaggio || ""}`.slice(0, 320), da: "whatsapp", quando: adesso, lid: v.lid || "", parti: [...primaParti, pezzo].slice(-6) }
-      : { minuti: v.somma ? Math.round(Number(v.minuti) || 0) : suoi, dove: v.dove || "", chi: v.chi || "", testo: v.messaggio || "", da: "whatsapp", quando: adesso, lid: v.lid || "", parti: [{ ...pezzo, minuti: v.somma ? Math.round(Number(v.minuti) || 0) : suoi }] } };
+    // 1.78.0: il conto si rifà adesso, su quello che c'è segnato in questo momento (oreEffetto: i turni dell'orologio, le ore
+    // scritte in più, le somme della 1.77.0); se non c'è niente da fare (già contato, lo stesso messaggio) si salta
+    let e = null; try { e = oreEffetto(v); } catch (err) { console.warn("ore", err); }
+    if (!e || e.niente) continue;
+    const id = L.idVisto(v.zona, v.giorno), dati = e.dati;
     S.visti[id] = { ...(S.visti[id] || {}), ...dati, id };
     ops.push({ tipo: "salva", coll: "visti", id, merge: true, dati }); n.ore++;
   }

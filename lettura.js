@@ -285,7 +285,7 @@ ${soloExcel ? `- "soggiorni" e "togli": SEMPRE [] — il prospetto arriva dal fo
 - In "spesa" i prodotti che mancano o stanno finendo (detersivi, carta igienica, sacchi, saponi, lampadine...).
 - In "note" solo le cose importanti per Michele che non vanno da nessun'altra parte (per esempio un appuntamento, chi porta le chiavi, un ospite che chiede qualcosa). Niente saluti e chiacchiere.
 - Se nei messaggi dopo una cosa risulta già fatta o risolta ("ho comprato il detersivo", "aggiustato", "allora vengo"), non metterla.
-- In "ore" solo le ore di lavoro scritte dalle signore delle pulizie: una riga per signora e per giorno, in minuti. Se nello stesso giorno la signora le scrive in più volte (mattina e pomeriggio), UNA riga con la SOMMA; se l'ultimo messaggio dice il totale o corregge, vale l'ultimo.
+- In "ore" solo le ore di lavoro scritte dalle signore delle pulizie: una riga per signora e per giorno, in minuti. Se nello stesso giorno la signora le scrive in più volte (mattina e pomeriggio), UNA riga con la SOMMA; se l'ultimo messaggio dice il totale o corregge, vale l'ultimo. I messaggi corti «arrivata» / «sono arrivata» e «finito» / «ho finito» delle signore sono i TIMBRI dell'orologio: li conta l'app da sola, dall'ora del messaggio. Per loro NON scrivere niente: né in "ore", né una cosa da fare, né una nota.
 - In "telefoni" solo i numeri che NON sono finiti nel campo "telefono" di un soggiorno. Nel campo "telefono" sempre e solo il segnaposto, mai cifre.
 - Le date sempre nel formato AAAA-MM-GG. "sicurezza": "alta", "media" o "bassa".`;
 }
@@ -480,7 +480,7 @@ REGOLE DEL JSON:
 - "soggiorni" e "togli" SEMPRE vuoti: il prospetto arriva dal foglio Excel.
 - In "assenze" solo quando una signora dice che NON viene in un giorno preciso da oggi in poi ("signora" = il suo codice).
 - In "spesa" i prodotti che mancano o stanno finendo. In "note" solo le cose importanti per Michele che non hanno un altro posto (un appuntamento, chi porta le chiavi, una cosa sul prospetto, un ospite che chiede qualcosa): niente saluti e chiacchiere, e MAI una cosa detta da Michele (lui la sa).
-- In "ore" solo le ore di lavoro scritte dalle signore: una riga per signora e per giorno, in minuti (2 ore e mezza = 150, mezz'ora = 30). Se in QUESTI messaggi la stessa signora scrive le ore dello stesso giorno in più volte (la mattina «2 ore», il pomeriggio «1 ora»), fai UNA riga con la SOMMA (180) e in "messaggio" le sue parole, tutte e due; se invece l'ultimo messaggio dice il totale o corregge («in tutto 3 ore», «scusa, erano 2 e mezza»), vale l'ultimo.
+- In "ore" solo le ore di lavoro scritte dalle signore: una riga per signora e per giorno, in minuti (2 ore e mezza = 150, mezz'ora = 30). Se in QUESTI messaggi la stessa signora scrive le ore dello stesso giorno in più volte (la mattina «2 ore», il pomeriggio «1 ora»), fai UNA riga con la SOMMA (180) e in "messaggio" le sue parole, tutte e due; se invece l'ultimo messaggio dice il totale o corregge («in tutto 3 ore», «scusa, erano 2 e mezza»), vale l'ultimo. I messaggi corti «arrivata» / «sono arrivata» e «finito» / «ho finito» delle signore sono i TIMBRI dell'orologio: li conta l'app da sola, dall'ora del messaggio. Per loro NON scrivere niente: né in "ore", né una cosa da fare, né una nota.
 - In "telefoni" sempre e solo il segnaposto, mai cifre.
 - Le date sempre nel formato AAAA-MM-GG.`;
 }
@@ -660,4 +660,82 @@ export function promemoriaDa(frase, oggi, minutiOra = null, nomeGov = "") {
   const testo = resto.replace(/\s+([,.;:!?])/g, "$1").replace(/\s+/g, " ").trim().replace(/^(?:[,;:.!]\s*)+/, "").replace(/^(?:che devo|che dobbiamo|di dover|del fatto che|il fatto che|di|che)\s+/i, "").replace(/[\s,;:.!]+$/, "").trim();
   if (!testo || /^(tu|te|lo|la|li|le|questo|questa|quello|quella|tutto|di|che)$/i.test(testo)) return { vuoto: true, entro };
   return { testo: (testo.charAt(0).toUpperCase() + testo.slice(1)).slice(0, 160), entro };
+}
+
+// ============================================================================
+//  L'OROLOGIO: IL TASTO DELL'APP OPPURE «ARRIVATA» / «FINITO» SU WHATSAPP (app 1.78.0, giro 1.35.0)
+//  Michele, 11/11: «non possiamo pagare così, così arrotondati sempre. Dobbiamo pagare più precisamente» · «va bene orologio
+//  di WhatsApp… però ci deve stare una sorta di timer» · «anche dall'applicazione possono premere il timer».
+//  L'orologio è uno, i modi per farlo partire sono due: il tasto «Sono arrivata» dell'app, oppure scrivere «arrivata» su
+//  WhatsApp (e «finito» quando si va via), mattina e pomeriggio, in qualsiasi casa. L'ora di WhatsApp è quella del messaggio
+//  (non si può cambiare). Il conto, al minuto, lo fa il giro di Sofia senza IA; i turni passati da WhatsApp aspettano il «Sì»
+//  di Michele. Qui le funzioni pure: riconoscere il messaggio, capire chi è la signora, mettere in coppia arrivi e uscite.
+// ============================================================================
+// «arrivata», «sono arrivata all'albergo», «buongiorno, sono arrivata» → "arrivo" · «finito», «ho finito», «finito, vado via»
+// → "fine" · tutto il resto → "". Solo messaggi corti che dicono QUELLO: «finito il detersivo», «è arrivata la signora del 3»,
+// «finita la 5», «ho quasi finito», «arrivo» (= sto arrivando) non sono timbri.
+const TIMBRO_SALUTO = "(?:(?:buongiorno|buon giorno|buonasera|buona sera|buon pomeriggio|ciao|salve|ok|okay|ecco|eccomi|allora|michele|a tutti|a tutte|ragazze|io|noi) )*";
+const TIMBRO_CODA = "(?: (?:ora|adesso|qui|qua|io|anche io|pure io|tutto|per oggi|x oggi|oggi|stamattina|stamani|stasera|buongiorno|buonasera|buona giornata|buona serata|buon pranzo|ciao|grazie|a domani|ci vediamo domani|ci vediamo|vado via|vado a casa|torno a casa|vado|esco|a dopo"
+  + "|(?:in|all|al|allo|alla|a|da|dal|dalla|dai|nel|nella) [a-z]+(?: [a-z]+)?"
+  + "|alle? (?:ore )?\\d{1,2}(?: \\d{2})?(?: e (?:mezza|mezzo|un quarto|\\d{1,2}))?))*";
+const TIMBRO_ARRIVO = new RegExp("^" + TIMBRO_SALUTO + "(?:sono |siamo )?(?:appena )?(?:arrivata|arrivato|arrivate|arrivati|entrata|entrato|entrate|rientrata|tornata|ritornata|inizio|iniziato|comincio|cominciato|incomincio)" + TIMBRO_CODA + "$");
+const TIMBRO_FINE = new RegExp("^" + TIMBRO_SALUTO + "(?:ho |abbiamo )?(?:appena )?(?:finito|terminato|sono uscita|siamo uscite|uscita|uscito|uscite|esco|stacco|staccato|vado via|me ne vado|ho fatto tutto|fatto tutto|fine turno|fine lavoro)" + TIMBRO_CODA + "$");
+const TIMBRO_NO = /\b(detersiv|sapone|carta|candeggin|sacch|prodott|scottex|ammorbident|lenzuol|asciugaman|biancheria|ospit|client|signor|operai|tecnic|idraulic|elettricist|pacco|corriere|manca|mancano|camera|camere|stanza|stanze|bagno|bagni|piano|cucina|scale|terrazz|corridoio|lavatric|meta|quasi|ancora|presto|subito)/;
+export function timbroDi(testo) {
+  if (/\?/.test(String(testo || ""))) return "";   // «finito?» è una domanda
+  const t = String(testo || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!t || t.length > 60 || t.split(" ").length > 9 || TIMBRO_NO.test(t)) return "";
+  if (TIMBRO_ARRIVO.test(t)) return /\b(a casa|casa mia)$/.test(t) ? "" : "arrivo";   // «arrivata a casa» è casa sua, non il lavoro
+  if (TIMBRO_FINE.test(t)) return "fine";
+  return "";
+}
+// chi è la signora che scrive: il nome della chat (o di chi scrive nel gruppo) contro i nomi delle signore dell'app: uguale,
+// una parola uguale, o le prime tre lettere uguali (un soprannome). Come signoreInParole. I titolari non sono signore.
+export function zonaDiNome(nome, signore) {
+  const kn = PAROLE.norm(String(nome || "").replace(/^chat con /i, "")); if (!kn || /^pap[aà]$/i.test(kn) || /michele/.test(kn)) return "";
+  const prime = (s) => PAROLE.norm(s).replace(/\s+/g, "").slice(0, 3);
+  const trovate = (signore || []).filter(z => { if (!z || !z.id || !z.nome) return false; const kz = PAROLE.norm(z.nome); return !!kz && (kn === kz || kn.split(" ").includes(kz) || (prime(kn).length === 3 && prime(kn) === prime(kz))); });
+  return trovate.length === 1 ? trovate[0].id : "";
+}
+// i timbri dei messaggi delle signore (scritti, o vocali già trascritti), in ordine di tempo:
+// [{ zona, giorno, tipo, ts, ora, id, testo, chat, fonte: "wa" }]
+export function timbriDa(posta, signore) {
+  const out = [];
+  for (const p of (posta || [])) {
+    if (!p || p.mio || !Number(p.ts)) continue;
+    const parole = p.tipo === "testo" ? p.testo : p.tipo === "audio" ? p.trascrizione : ""; if (!parole) continue;
+    const tipo = timbroDi(parole); if (!tipo) continue;
+    const zona = zonaDiNome(p.chi, signore) || (p.gruppo === false ? zonaDiNome(p.chat, signore) : ""); if (!zona) continue;
+    const d = new Date(Number(p.ts));
+    out.push({ zona, giorno: p.data || L.oggiISO(d), tipo, ts: Number(p.ts), ora: p.ora || L.oraBreve(d.toISOString()), id: String(p.id || ""), testo: String(parole).replace(/\s+/g, " ").trim().slice(0, 80), chat: p.gruppo === false ? "chat con " + (p.chat || "") : (p.chat || ""), fonte: "wa", ...(p.tipo === "audio" ? { voce: true } : {}) });
+  }
+  return out.sort((a, b) => a.ts - b.ts);
+}
+// I TURNI: ogni «arrivo» col suo «fine» (stessa signora, stesso giorno). Gli eventi possono venire da WhatsApp (fonte "wa") o dai
+// tasti dell'app (fonte "app": «Sono arrivata», HO FINITO): l'orologio è uno solo.
+// → { turni: [{ zona, giorno, inizio, fine, minuti, dalle, alle, idArrivo, idFine, fonteInizio, fonteFine, testoArrivo, testoFine }],
+//     aperti: [arrivi senza fine], orfani: [fine senza arrivo] }
+//  - due «arrivata» entro un'ora senza un «finito» in mezzo sono lo stesso arrivo detto due volte (il tasto e poi WhatsApp):
+//    vale il primo. Più lontani: il primo è rimasto senza «finito» (resta aperto) e ne comincia un altro.
+//  - due «finito» entro un'ora sono lo stesso: vale il primo. Più lontani, senza un «arrivata» in mezzo: manca l'arrivo.
+export const TIMBRO_STESSO_MS = 60 * 60000;
+export function turniDaTimbri(timbri) {
+  const turni = [], aperti = [], orfani = [], per = new Map();
+  for (const x of (timbri || [])) { if (!x || !x.zona || !x.giorno || !Number(x.ts)) continue; const k = `${x.zona}|${x.giorno}`; if (!per.has(k)) per.set(k, []); per.get(k).push(x); }
+  for (const lista of per.values()) {
+    let arrivo = null, ultimaFine = 0;
+    for (const x of lista.sort((a, b) => a.ts - b.ts || (a.tipo === "arrivo" ? -1 : 1))) {
+      if (x.tipo === "arrivo") {
+        if (arrivo && x.ts - arrivo.ts < TIMBRO_STESSO_MS) continue;
+        if (arrivo) aperti.push(arrivo);
+        arrivo = x;
+      } else if (arrivo) {
+        const minuti = Math.round((x.ts - arrivo.ts) / 60000);
+        if (minuti >= 1 && minuti <= 14 * 60) turni.push({ zona: x.zona, giorno: x.giorno, inizio: arrivo.ts, fine: x.ts, minuti, dalle: arrivo.ora, alle: x.ora, idArrivo: arrivo.id, idFine: x.id, fonteInizio: arrivo.fonte || "wa", fonteFine: x.fonte || "wa", testoArrivo: arrivo.testo || "", testoFine: x.testo || "" });
+        arrivo = null; ultimaFine = x.ts;
+      } else if (!ultimaFine || x.ts - ultimaFine > TIMBRO_STESSO_MS) orfani.push(x);
+    }
+    if (arrivo) aperti.push(arrivo);
+  }
+  return { turni: turni.sort((a, b) => a.inizio - b.inizio), aperti, orfani };
 }
