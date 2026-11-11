@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.9";
+export const VERSIONE = "1.79.10";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -348,20 +348,19 @@ const BS_VOCI = [["oggi", "Oggi", "cal"], ["prospetto", "Prospetto", "lista"], [
 function icoNavOggi(g) {
   return `<svg viewBox="0 0 64 40" aria-hidden="true"><g stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round"><path d="M12.5 3.2V5.6M12.5 19.4V21.8M3.2 12.5H5.6M19.4 12.5H21.8M5.9 5.9L7.6 7.6M17.4 17.4L19.1 19.1M5.9 19.1L7.6 17.4M17.4 7.6L19.1 5.9"/></g><circle cx="12.5" cy="12.5" r="5.2" fill="#FACC15" stroke="#CA8A04" stroke-width="1.3"/><rect x="21.5" y="7.5" width="27" height="30" rx="4.2" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/><path d="M21.5 16V11.7Q21.5 7.5 25.7 7.5H44.3Q48.5 7.5 48.5 11.7V16Z" fill="#EF4444" stroke="#B91C1C" stroke-width="1.1"/><rect x="27.2" y="4" width="2.8" height="6.8" rx="1.4" fill="#475569"/><rect x="40" y="4" width="2.8" height="6.8" rx="1.4" fill="#475569"/><text x="35" y="33.2" text-anchor="middle" font-size="15" font-weight="800" fill="#1E293B" font-family="Plus Jakarta Sans,Arial,sans-serif">${Number(g) || ""}</text></svg>`;
 }
-// 1.79.9 (Michele, 11/11: dei tasti in basso «mi piacciono le prime due»; poi «Pubblica quei due»): il Prospetto è la
-// reception: la signora dietro al banco (giacca rossa) che dà la chiave della camera con la targhetta rossa col numero, e il
-// campanello d'oro sul banco. Disegno nostro, nello stile delle figurine della casa.
+// 1.79.10 (Michele, 11/11: «facciamo una alla volta. Fammi delle proposte per l'icona di prospetto, che già mi piaceva quella
+// che stava iniziale, proprio iniziale»; fra quattro proposte: «Mi piace molto il 2»). Il Prospetto torna il tabellone di prima
+// (1.74.0), più grande: il foglio bianco con la testata blu e le colonne dei giorni, una striscia colorata per ogni ospite
+// (quanti giorni resta) con all'inizio la testa di chi ci dorme, e la luna delle notti. (1.79.9 era la reception.)
 function icoNavProspetto() {
+  const testa = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/>`
+    + `<path d="M${(x - r * .95).toFixed(2)} ${(y - r * .15).toFixed(2)}Q${(x - r * .9).toFixed(2)} ${(y - r * 1.2).toFixed(2)} ${x} ${(y - r * 1.15).toFixed(2)}Q${(x + r * .9).toFixed(2)} ${(y - r * 1.2).toFixed(2)} ${(x + r * .95).toFixed(2)} ${(y - r * .15).toFixed(2)}Q${(x + r * .5).toFixed(2)} ${(y - r * .75).toFixed(2)} ${x} ${(y - r * .68).toFixed(2)}Q${(x - r * .5).toFixed(2)} ${(y - r * .75).toFixed(2)} ${(x - r * .95).toFixed(2)} ${(y - r * .15).toFixed(2)}Z" fill="${FIG79.capelli}"/>`;
   return `<svg class="nav-prospetto" viewBox="0 0 64 40" aria-hidden="true">`
-    + `<path d="M8 33Q8 21.6 19.4 20.4Q30.8 21.6 30.8 33Z" fill="#B91C1C" stroke="#7F1D1D" stroke-width="1.1" stroke-linejoin="round"/><path d="M16.4 20.8L19.4 26.4L22.4 20.8Z" fill="#FFFFFF"/>`
-    + `<path d="M11.6 17Q10.4 4.4 19.4 4Q28.4 4.4 27.2 17Q26 21.6 23.8 20.6V11.6H15V20.6Q12.8 21.6 11.6 17Z" fill="${FIG79.capelli}"/>`
-    + `<ellipse cx="19.4" cy="13.4" rx="5.8" ry="6.6" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".9"/><path d="M13.6 12Q14.6 6.2 19.6 6.4Q24.6 6.6 25.2 12Q22.8 9 19.6 9.2Q16.2 9.4 13.6 12Z" fill="${FIG79.capelli}"/>`
-    + `<circle cx="17.2" cy="13.8" r=".85" fill="#3F2A1D"/><circle cx="21.6" cy="13.8" r=".85" fill="#3F2A1D"/><path d="M17.6 17.2Q19.4 18.6 21.2 17.2" fill="none" stroke="#B4533C" stroke-width=".9" stroke-linecap="round"/>`
-    + `<path d="M28.4 25.2L36.6 17.2" stroke="#B91C1C" stroke-width="4.2" stroke-linecap="round"/><circle cx="37.6" cy="16.2" r="2.4" fill="${FIG79.pelle}" stroke="${FIG79.pelleB}" stroke-width=".8"/>`
-    + `<path d="M39 15.4Q42 9.4 46.4 9.6" fill="none" stroke="#94A3B8" stroke-width="1.2"/><path d="M45 7.2H56.6Q58.6 7.2 58 9.2L55.4 18.4Q54.8 20 53.2 20H48.4Q46.8 20 46.2 18.4L43.6 9.2Q43 7.2 45 7.2Z" fill="#DC2626" stroke="#991B1B" stroke-width="1"/>`
-    + `<text x="50.8" y="16.8" text-anchor="middle" font-size="7" font-weight="800" fill="#FFFFFF" font-family="${FIG79.testo}">12</text>`
-    + `<rect x="1.6" y="31.6" width="60.8" height="7" rx="1.6" fill="#A47A3C" stroke="#6B4F23" stroke-width="1"/>`
-    + `<ellipse cx="52" cy="31" rx="7" ry="1.6" fill="#92400E"/><path d="M45.8 30.6Q45.8 23.6 52 23.6Q58.2 23.6 58.2 30.6Z" fill="#FACC15" stroke="#A16207" stroke-width="1"/><circle cx="52" cy="22.6" r="1.4" fill="#CA8A04"/></svg>`;
+    + `<rect x="3.4" y="3.2" width="50.6" height="34" rx="4.4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.5"/><path d="M3.4 11.6V7.6Q3.4 3.2 7.8 3.2H49.6Q54 3.2 54 7.6V11.6Z" fill="#1E3A5F"/>`
+    + `<path d="M16.4 11.6V37.2M29.4 11.6V37.2M42.4 11.6V37.2" stroke="#E2E8F0" stroke-width="1.1"/><circle cx="8.6" cy="7.4" r="1.4" fill="#93C5FD"/><circle cx="13" cy="7.4" r="1.4" fill="#93C5FD"/>`
+    + `<rect x="7.4" y="14.4" width="29" height="6.4" rx="3.2" fill="#3B82F6" stroke="#1D4ED8" stroke-width="1"/><rect x="20" y="22.6" width="30" height="6.4" rx="3.2" fill="#22C55E" stroke="#15803D" stroke-width="1"/><rect x="7.4" y="30.6" width="19" height="5.2" rx="2.6" fill="#F59E0B" stroke="#B45309" stroke-width="1"/>`
+    + testa(10.4, 17.6, 3.6) + testa(23, 25.8, 3.6) + testa(10.4, 33.2, 3.3)
+    + `<path transform="translate(46.4 20.8) scale(1.22)" d="M7.09 1.82A6.6 6.6 0 1 0 13.88 10.42A5.6 5.6 0 0 1 7.09 1.82z" fill="#F7C948" stroke="#CA8A04" stroke-width="1.1"/></svg>`;
 }
 // 1.79.9: la Segreteria è Sofia segretaria al telefono (la cornetta rossa all'orecchio) che si scrive le cose da fare sul
 // blocco: due già spuntate in verde, la penna. Il numerino di quello che ha per te resta in alto a destra.
