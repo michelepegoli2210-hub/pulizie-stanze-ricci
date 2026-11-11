@@ -125,7 +125,7 @@ export function domandeCameraLibera(st) {
     out.push({
       id: chiaveRisposta("libera", `${c.id}|${trovata.da}`), tipo: "libera", chiave: `${c.id}|${trovata.da}`, priorita: 10, quando: urgente ? "subito" : "mattina", urgente,
       titolo: `${c.nome} è libera`,
-      testo: `${c.nome} ${daTesto} ${finoTesto}: la facciamo a fondo ${L.dataBreve(trovata.giorno)} (3 ore, ${L.eur(prezzo)}, ${nomeZona(st.zone || ZONE, L.zonaDi(c, st.regole))})?${ultimaFondo ? ` L'ultima a fondo è di ${L.dataBreve(ultimaFondo)}.` : " Non risulta mai fatta a fondo."}`,
+      testo: `${c.nome} ${daTesto} ${finoTesto}: la facciamo a fondo ${L.dataBreve(trovata.giorno)} (3 ore, ${aOre(st) ? "" : L.eur(prezzo) + ", "}${nomeZona(st.zone || ZONE, L.zonaDi(c, st.regole))})?${ultimaFondo ? ` L'ultima a fondo è di ${L.dataBreve(ultimaFondo)}.` : " Non risulta mai fatta a fondo."}`,
       tasti: [{ k: "si", testo: "Sì, a fondo" }, { k: "stelle", testo: "Solo le stelle in ritardo" }, { k: "no", testo: "No" }],
       parole: true, dati: { camera: c.id, nome: c.nome, da: trovata.da, fino: trovata.fino, giorno: trovata.giorno, giorni: trovata.giorni, prezzo, zona: L.zonaDi(c, st.regole) },
     });
@@ -133,9 +133,30 @@ export function domandeCameraLibera(st) {
   return out.sort((a, b) => a.dati.da < b.dati.da ? -1 : 1);
 }
 // 11. Ogni sabato dalle 14 (chiusura della settimana): il conto delle paghe della settimana appena chiusa e la pagella → "Pago così?"
+// 1.77.0 (Michele: «togli completamente tutti i prezzi, perché dobbiamo far partire soltanto un timer»): con la paga a ore (di serie)
+// le domande non parlano più di prezzi a pezzo, e le paghe della settimana chiusa sono le ore (le conta l'app: st.pagheOre)
+const aOre = (st) => (((st && st.listino) || {}).modoPaga || "ore") === "ore";
 export function domandePaga(st) {
   const chiusa = L.settimanaPrecedente(L.chiaveSettimana(st.adesso || new Date()));
   const zone = Object.entries(st.zone || ZONE).sort((a, b) => (a[1].ordine || 0) - (b[1].ordine || 0));
+  if (aOre(st)) {
+    const po = st.pagheOre; if (!po || po.chiusa !== chiusa) return [];
+    const ro = [];
+    for (const [z] of zone) {
+      const b = (po.per || {})[z]; if (!b || !(Number(b.totale) > 0)) continue;
+      if (st.pagamenti && st.pagamenti[`${z}_${chiusa}`]) continue;
+      ro.push({ zona: z, nome: nomeZona(st.zone || ZONE, z), totale: Number(b.totale), pulizie: Number(b.giorni) || 0, minuti: Number(b.minuti) || 0, giorni: Number(b.giorni) || 0, senza: Number(b.senza) || 0, aOre: true });
+    }
+    if (!ro.length) return [];
+    const totOre = Math.round(ro.reduce((s, r) => s + r.totale, 0) * 100) / 100, senza = ro.reduce((s, r) => s + r.senza, 0);
+    return [{
+      id: chiaveRisposta("paga", chiusa), tipo: "paga", chiave: chiusa, priorita: 5, quando: "report", urgente: false,
+      titolo: `Paghe ${L.etichettaSettimana(chiusa)}`,
+      testo: `Settimana ${L.etichettaSettimana(chiusa)}, le paghe a ore: ${ro.map(r => `${r.nome} ${L.eur(r.totale)} (${L.testoOre(r.minuti)} in ${r.giorni} ${r.giorni === 1 ? "giorno" : "giorni"})`).join(" · ")}. In tutto ${L.eur(totOre)}.${senza ? ` Attento: ${senza === 1 ? "un giorno è senza orario e non è" : senza + " giorni sono senza orario e non sono"} nel conto.` : ""} Pago così?`,
+      tasti: [{ k: "si", testo: "Sì, pago così" }, { k: "guardo", testo: "Guardo prima" }],
+      parole: true, dati: { chiusa, righe: ro, totale: totOre },
+    }];
+  }
   const righe = [];
   for (const [z, v] of zone) {
     const t = L.totaleSettimana(st.pulizie || {}, z, chiusa, st.regole, st.controlli || {}, st.listino || null);
@@ -235,6 +256,7 @@ export function domandeProdotto(st) {
 }
 // 7. Budget delle stelle quasi finito (90% del budget del mese)
 export function domandeBudget(st) {
+  if (aOre(st)) return [];   // 1.77.0: a ore le stelle sono dentro le ore: non c'è un budget in euro
   const oggi = st.oggi, mese = L.meseDi(oggi), gov = st.gov || {};
   const budget = Number((gov.soglie && gov.soglie.budgetStelle) || BUDGET_STELLE_BASE);
   if (!budget) return [];
@@ -353,9 +375,9 @@ export function domandeStelleSettimana(st) {
   const ss = st.stelleSettimana; if (!ss || !ss.righe || !ss.righe.length) return [];
   const oggi = st.oggi, wd = L.giornoSettimana(oggi); if (wd === 0 || wd === 6) return [];
   const chiave = ss.settimana || L.chiaveSettimana(oggi + "T12:00:00");
-  const primi = ss.righe.slice(0, 6).map(r => `${r.luogoNome} ${r.nome.toLowerCase()} (${L.eur(r.euro)})`).join(", ");
+  const primi = ss.righe.slice(0, 6).map(r => `${r.luogoNome} ${r.nome.toLowerCase()}${aOre(st) ? "" : ` (${L.eur(r.euro)})`}`).join(", ");
   return [{ id: chiaveRisposta("stelle", chiave), tipo: "stelle", chiave, priorita: 7, quando: "mattina", urgente: false,
-    titolo: `Le stelle di ${ss.nome || "Selena"} questa settimana`, testo: `Le stelle di ${ss.nome || "Selena"} questa settimana, ${L.eur(ss.euro)} su ${L.eur(ss.obiettivo)}: ${primi}${ss.righe.length > 6 ? ` e altre ${ss.righe.length - 6}` : ""}. Vanno bene?`,
+    titolo: `Le stelle di ${ss.nome || "Selena"} questa settimana`, testo: `Le stelle di ${ss.nome || "Selena"} questa settimana${aOre(st) ? "" : `, ${L.eur(ss.euro)} su ${L.eur(ss.obiettivo)}`}: ${primi}${ss.righe.length > 6 ? ` e altre ${ss.righe.length - 6}` : ""}. Vanno bene?`,
     tasti: [{ k: "ok", testo: "Va bene" }, { k: "cambia", testo: "Cambia" }], parole: true, dati: { chiave, zona: ss.zona } }];
 }
 // 14. Nei giorni in cui Lucia non controlla (es. mercoledì), dalle 13: "guardi tu una camera di Selena?" [Alba] [Tramonto] [Oggi no]

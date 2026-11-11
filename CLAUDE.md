@@ -41,6 +41,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - Gli orari salvati sono in UTC: il giorno si prende con `L.oggiISO(new Date(iso))`, non con `iso.slice(0, 10)`
   (dopo mezzanotte sbaglia di un giorno).
 - `specifiche-governante.md` è il registro delle versioni: una voce per versione, con le parole di Michele tra «».
+- La paga è solo a ore (1.77.0, «togli completamente tutti i prezzi… soltanto un timer»): con `pagaAOre()` nell'app non si
+  vede e Sofia non dice nessun prezzo a pezzo (camera, stella, controllo, Visto). Restano le ore × la tariffa e i conti
+  della casa. Un giorno senza orario resta «senza orario», fuori dal totale. La paga a camera resta nel codice, nascosta.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

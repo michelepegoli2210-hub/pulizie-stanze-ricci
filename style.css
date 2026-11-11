@@ -9390,3 +9390,7 @@ body.premium .bs-ico2 .nav-conta{top:-4px;right:-2px;min-width:16px;height:15px;
 .sg2-rquando .campo{margin:0}
 .sg2-rquando .campo[hidden]{display:none}
 :root[data-theme="dark"] .sg2-r small.sg2-vista{color:#7FD6A4}
+
+/* ---- 1.77.0 · Paghe: la riga del giorno «senza orario» (e della stima) si legge anche col tema scuro (era crema con le
+   scritte chiare) ---- */
+:root[data-theme="dark"] .paga-ore .turno-riga.stima{background:rgba(245,158,11,.16)}

@@ -285,7 +285,7 @@ ${soloExcel ? `- "soggiorni" e "togli": SEMPRE [] — il prospetto arriva dal fo
 - In "spesa" i prodotti che mancano o stanno finendo (detersivi, carta igienica, sacchi, saponi, lampadine...).
 - In "note" solo le cose importanti per Michele che non vanno da nessun'altra parte (per esempio un appuntamento, chi porta le chiavi, un ospite che chiede qualcosa). Niente saluti e chiacchiere.
 - Se nei messaggi dopo una cosa risulta già fatta o risolta ("ho comprato il detersivo", "aggiustato", "allora vengo"), non metterla.
-- In "ore" solo le ore di lavoro scritte dalle signore delle pulizie: una riga per signora e per giorno, in minuti.
+- In "ore" solo le ore di lavoro scritte dalle signore delle pulizie: una riga per signora e per giorno, in minuti. Se nello stesso giorno la signora le scrive in più volte (mattina e pomeriggio), UNA riga con la SOMMA; se l'ultimo messaggio dice il totale o corregge, vale l'ultimo.
 - In "telefoni" solo i numeri che NON sono finiti nel campo "telefono" di un soggiorno. Nel campo "telefono" sempre e solo il segnaposto, mai cifre.
 - Le date sempre nel formato AAAA-MM-GG. "sicurezza": "alta", "media" o "bassa".`;
 }
@@ -480,7 +480,7 @@ REGOLE DEL JSON:
 - "soggiorni" e "togli" SEMPRE vuoti: il prospetto arriva dal foglio Excel.
 - In "assenze" solo quando una signora dice che NON viene in un giorno preciso da oggi in poi ("signora" = il suo codice).
 - In "spesa" i prodotti che mancano o stanno finendo. In "note" solo le cose importanti per Michele che non hanno un altro posto (un appuntamento, chi porta le chiavi, una cosa sul prospetto, un ospite che chiede qualcosa): niente saluti e chiacchiere, e MAI una cosa detta da Michele (lui la sa).
-- In "ore" solo le ore di lavoro scritte dalle signore: una riga per signora e per giorno, in minuti (2 ore e mezza = 150, mezz'ora = 30).
+- In "ore" solo le ore di lavoro scritte dalle signore: una riga per signora e per giorno, in minuti (2 ore e mezza = 150, mezz'ora = 30). Se in QUESTI messaggi la stessa signora scrive le ore dello stesso giorno in più volte (la mattina «2 ore», il pomeriggio «1 ora»), fai UNA riga con la SOMMA (180) e in "messaggio" le sue parole, tutte e due; se invece l'ultimo messaggio dice il totale o corregge («in tutto 3 ore», «scusa, erano 2 e mezza»), vale l'ultimo.
 - In "telefoni" sempre e solo il segnaposto, mai cifre.
 - Le date sempre nel formato AAAA-MM-GG.`;
 }
