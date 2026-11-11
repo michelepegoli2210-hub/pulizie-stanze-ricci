@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.12";
+export const VERSIONE = "1.79.13";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8089,8 +8089,9 @@ function tendaLimiti(h) {
   const min = Math.max(lb + 10, hc * .3);   // 1.19.0: i tasti accanto a Sofia adesso stanno piu' in alto
   // 1.7.1: tre misure a scatti (alta: appena sotto i tasti accanto a lei; media: quella di partenza; bassa: due righe)
   // 1.19.0: alta (appena sotto i tasti, di partenza), media, bassa
-  // 1.79.12: la tendina chiusa è alta 138 (1.79.11: 133; 1.79.7: 128; 1.79.0: 120): col dito scende fino a 4 px sopra
-  return { fondo, hc, min, chiusa: fondo - 142, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
+  // 1.79.13: la tendina chiusa è alta 149, coi tasti grandi che hanno anche «oggi» (1.79.12: 138; 1.79.11: 133; 1.79.0: 120):
+  // col dito scende fino a 4 px sopra
+  return { fondo, hc, min, chiusa: fondo - 153, def: Math.max(min, hc * .34), scatti: [Math.max(min, hc * .34), Math.max(min + 40, hc * .46), Math.max(min + 80, hc * .6)] };
 }
 // 1.19.0: di partenza il riquadro sta al 34% dell'altezza; su un telefono basso, dove i tasti accanto a Sofia arrivano piu'
 // giu', parte appena sotto di loro (senza segnarlo in memoria)
@@ -8680,7 +8681,7 @@ function schedeFacili(ls, fatte, man, dom) {
 // 1.79.0: a tendina chiusa, in alto, i due tasti grandi: «3 ospiti arrivano oggi» (la porta, gli omini che entrano) e «7 ospiti
 // partono oggi» (gli omini che se ne vanno). Un tocco apre chi arriva e dove va, oppure chi parte.
 function porteFacili(ls, fatte, man, dom) {
-  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b>${o.uno ? " " + esc(o.uno) : ""}</span><span class="csp-2"><b class="csp-v">${esc(o.verbo)}</b></span></span></button>`).join("");   // 1.79.4: «arrivano» / «partono» in grassetto; 1.79.5 (Michele: «ARRIVANO, senza oggi»): solo la parola, in maiuscolo e in rilievo (lo stile)
+  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b>${o.uno ? " " + esc(o.uno) : ""}</span><span class="csp-2"><b class="csp-v">${esc(o.verbo)}</b></span><span class="csp-3">oggi</span></span></button>`).join("");   // 1.79.13 (Michele: «devi scrivere arrivi oggi e partenze oggi»): sotto la parola, «oggi»; 1.79.4: «arrivano» / «partono» in grassetto; 1.79.5 (Michele: «ARRIVANO, senza oggi»): solo la parola, in maiuscolo e in rilievo (lo stile)
 }
 // 1.21.2: le figurine della tendina chiusa: tutte le notizie della giornata. 1.79.0: senza i due tasti grandi, che stanno sopra;
 // le camere hanno due metà (il letto pieno e il letto vuoto, ognuno col suo numero)

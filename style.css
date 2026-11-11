@@ -9764,3 +9764,25 @@ body.premium .bs-t.bs-ico2[aria-pressed="true"] .bs-n{color:#0F172A}
   body.premium .sofia-hero .casa-nuvola .csp-ico svg{width:clamp(30px, calc(50vw - 121px), 48px)}
   body.premium .bs-t.bs-ico2 .bs-n,body.premium .bs-t.bs-ico2.bs-seg .bs-n{font-size:10.8px}
 }
+
+/* ---- 1.79.13 · Michele (11/11): «secondo me devi scrivere arrivi oggi e partenze oggi». Sui due tasti grandi della tendina
+   chiusa, sotto ARRIVI / PARTENZE (ARRIVO / PARTENZA per una persona) c'è «oggi», in grassetto vero come le scritte delle
+   figurine. Accanto alla parola non ci sta (PARTENZE riempie già il tasto, il disegno resta grande): va nella riga sotto, e i
+   due tasti sono più alti (il numero e la parola un poco più stretti in altezza, senza rimpicciolire le lettere); la tendina
+   chiusa cresce della stessa misura. La freccia accanto resta in mezzo all'altezza dei tasti. ---- */
+body.premium .sofia-hero .casa-nuvola .csp-3{display:block;font:800 13.5px/1.15 "Jakarta Grassetto",var(--f-lettura);color:#231F1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-bottom:3px;margin-bottom:-3px}
+:root[data-theme="dark"] body.premium .sofia-hero .casa-nuvola .csp-3{color:#E2E8F0}
+body.premium .sofia-hero .casa-nuvola .csp-n{line-height:1.05}
+body.premium .sofia-hero .casa-nuvola .csp-2,
+body.premium .sofia-hero .casa-nuvola .csp-2 b.csp-v{line-height:1.15}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-porte{flex:0 0 58px;height:58px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-saluto{height:58px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 149px);height:149px}
+body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 220px);height:220px}
+@media (max-width:374px){
+  body.premium .sofia-hero .casa-nuvola .csp-3{font-size:12.5px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .cs-porte{flex:0 0 53px;height:53px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola .casa-saluto{height:53px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 151px);height:151px}
+  body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 229px);height:229px}
+}
