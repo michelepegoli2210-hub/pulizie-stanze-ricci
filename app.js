@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.17";
+export const VERSIONE = "1.79.18";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -362,13 +362,12 @@ function icoNavProspetto() {
     + testa(10.4, 17.6, 3.6) + testa(23, 25.8, 3.6) + testa(10.4, 33.2, 3.3)
     + `<path transform="translate(46.4 20.8) scale(1.22)" d="M7.09 1.82A6.6 6.6 0 1 0 13.88 10.42A5.6 5.6 0 0 1 7.09 1.82z" fill="#F7C948" stroke="#CA8A04" stroke-width="1.1"/></svg>`;
 }
-// 1.79.17 (Michele, 12/11: «Così deve essere questa la definizione», con le sue foto nitide di Sofia segretaria; scelta
-// «Studio, più grande»): la Segreteria è la sua foto di Sofia al computer nello studio, nel quadratino con gli angoli tondi e
-// il filo d'oro già nell'immagine (segr-tasto3.webp, con lo sfondo: «non mi piace scontornata»). Il disegno è quadrato
-// (viewBox 40x40); la grandezza (56 px, più dei disegni degli altri tasti, esce sopra la barra) la dà lo stile 1.79.17.
-// Sofia resta quella delle immagini di Michele: non ridisegnarla.
+// 1.79.18 (Michele, 12/11: «Non mi piace, metti quello di prima solo molto molto molto più nitida»): la Segreteria torna il
+// disegno di Gemini della 1.79.14 (Sofia segretaria alla scrivania che scrive al computer, col telefono che squilla), grande
+// come gli altri tasti, nella versione più nitida che si può ricavare dallo screenshot (segr-tasto4.webp). Per averla molto
+// più nitida serve l'immagine grande di Gemini. Sofia resta quella delle immagini di Michele: non ridisegnarla.
 function icoNavSegreteria() {
-  return `<svg class="nav-segreteria nav-seg-foto" viewBox="0 0 40 40" aria-hidden="true"><image href="segr-tasto3.webp" x="0" y="0" width="40" height="40" preserveAspectRatio="xMidYMid meet"/></svg>`;
+  return `<svg class="nav-segreteria nav-seg-foto" viewBox="0 0 64 40" aria-hidden="true"><image href="segr-tasto4.webp" x="7" y="0" width="50" height="40" preserveAspectRatio="xMidYMid meet"/></svg>`;
 }
 function icoNavPiantine() {
   return `<svg viewBox="0 0 64 40" aria-hidden="true"><rect x="8" y="4.5" width="48" height="32" rx="3.4" fill="#F8FAFC"/><rect x="9" y="5.5" width="22" height="15" fill="#DBEAFE"/><rect x="34" y="23" width="21" height="12.5" fill="#FEF3C7"/><rect x="8" y="4.5" width="48" height="32" rx="3.4" fill="none" stroke="#334155" stroke-width="2.2"/><path d="M32.5 4.5V15M32.5 21V36.5M8 21.5H22.5M29 21.5H56" stroke="#334155" stroke-width="2.2"/><path d="M22.5 21.5A6.5 6.5 0 0 1 29 15" fill="none" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="2 1.6"/><rect x="12.5" y="8.5" width="11" height="9.2" rx="1.6" fill="#FFFFFF" stroke="#3B82F6" stroke-width="1.3"/><rect x="14" y="9.8" width="8" height="2.8" rx="1.2" fill="#93C5FD"/><circle cx="44" cy="12.5" r="4.4" fill="#FFFFFF" stroke="#A16207" stroke-width="1.3"/><circle cx="44" cy="12.5" r="1.4" fill="#FACC15"/><rect x="38" y="27" width="13" height="5" rx="1.6" fill="#FFFFFF" stroke="#A16207" stroke-width="1.1"/><circle cx="16" cy="29" r="3.2" fill="#22C55E" stroke="#15803D" stroke-width="1"/><path d="M16 32.2V34" stroke="#A16207" stroke-width="1.4" stroke-linecap="round"/></svg>`;

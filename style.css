@@ -9787,17 +9787,5 @@ body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .cas
   body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .casa-nuvola{top:calc(var(--nv-top) + var(--nv-alto) - 229px);height:229px}
 }
 
-/* ---- 1.79.17 · Michele (12/11): «Così deve essere questa la definizione» (le sue foto nitide di Sofia segretaria) e poi la
-   scelta «Studio, più grande». Il tasto Segreteria è la sua foto di Sofia al computer nello studio, nel quadratino con gli
-   angoli tondi e il filo d'oro (segr-tasto3.webp), più grande degli altri disegni: 56 px (50 fino a 360 px). Esce un poco
-   sopra la barra; la scritta resta in fila con le altre. Quando sei nella Segreteria il quadratino ha l'alone d'oro al posto
-   del riquadro chiaro degli altri tasti. ---- */
-body.premium .barra-sotto [data-bs="segreteria"] .bs-fig{width:60px;height:56px;margin-top:-19px;overflow:visible;background:none;box-shadow:none}
-body.premium .barra-sotto [data-bs="segreteria"] .bs-fig svg{width:56px;height:56px;filter:drop-shadow(0 1px 2px rgba(15,23,42,.28))}
-body.premium .barra-sotto [data-bs="segreteria"][aria-pressed="true"] .bs-fig,
-:root[data-theme="dark"] body.premium .barra-sotto [data-bs="segreteria"][aria-pressed="true"] .bs-fig{background:none;box-shadow:none}
-body.premium .barra-sotto [data-bs="segreteria"][aria-pressed="true"] .bs-fig svg{filter:drop-shadow(0 0 3px rgba(212,175,106,1)) drop-shadow(0 0 2px rgba(212,175,106,.9))}
-@media (max-width:360px){
-  body.premium .barra-sotto [data-bs="segreteria"] .bs-fig{width:54px;height:50px;margin-top:-15.5px}
-  body.premium .barra-sotto [data-bs="segreteria"] .bs-fig svg{width:50px;height:50px}
-}
+/* ---- 1.79.18 · Michele (12/11): «Non mi piace, metti quello di prima…». Tolto il quadratino grande della 1.79.17 (la foto
+   dello studio, 56 px, che usciva sopra la barra): il tasto Segreteria torna grande come gli altri, col disegno di Gemini. ---- */
