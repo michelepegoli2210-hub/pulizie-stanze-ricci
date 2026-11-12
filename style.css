@@ -9934,3 +9934,7 @@ body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
 .ct-c .btnsm{flex:none}
 :root[data-theme="dark"] .ct-domanda .ct-d-t span{color:#C9C3B8}
 :root[data-theme="dark"] .ct-d-b{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16)}
+/* ---- 1.81.2 · il catalogo dei costi: il riquadro «Ore strane» usa lo stesso giallo dei giorni senza ore; in «Giorno per
+   giorno» il giorno strano ha una riga arancione. ---- */
+.ct-g small.ct-g-att{color:#B45309;font-weight:700}
+:root[data-theme="dark"] .ct-g small.ct-g-att{color:#FBBF24}

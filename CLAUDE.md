@@ -77,7 +77,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   Michele); gli extra si pagano solo se chiesti prima, col prezzo deciso prima. Niente cronometri di nascosto.
   Un giorno con la lista ma senza ore non entra: Michele risponde con «Rispondi» (1.81.1: è venuta e mette le ore, non è
   venuta, non lo sa); le risposte stanno in `impostazioni/catalogo` e non toccano né il giro né la paga. Se quel giorno
-  ha fatto tutto l'altra signora, i lavori dell'assente entrano nel giorno di lei.
+  ha fatto tutto l'altra signora, i lavori dell'assente entrano nel giorno di lei. Un orario sotto i 10 minuti non conta
+  (1.81.2: è un tocco per sbaglio); i giorni con molte più ore del lavoro in lista, o pochissime, stanno in «Ore strane»
+  con «Correggi». Le ore che le signore scrivono su WhatsApp non si segnano al posto suo: il tempo lo prende Michele.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
