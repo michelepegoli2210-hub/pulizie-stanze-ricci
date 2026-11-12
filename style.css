@@ -9854,3 +9854,32 @@ button.sofia-filmati-link{background:none;border:0;border-bottom:1px solid curre
 .bf-dett{margin-top:8px}
 .bf-dett summary{font:700 15px/1.3 var(--f-body);cursor:pointer;padding:8px 0}
 .tab-intro{margin:0 0 10px;font-size:15px;line-height:1.4}
+/* ---- 1.80.2 · Michele (12/11): «in alcuni posti, ad esempio in Parla con Sofia, Segreteria, Sofia IA, non riesco né a
+   scrivere e né a leggere tutta la domanda».
+   1) «Parla con Sofia» con una conversazione aperta (.con-chat): Sofia più piccola e i tre tasti su una riga sola (scritte
+      corte), così il riquadro dei messaggi è alto il doppio.
+   2) Con la tastiera aperta davvero (body.tastiera-su): via Sofia, i tasti, i comandi rapidi e la barra in basso; restano i
+      messaggi e la casella, sopra la tastiera.
+   3) «Continua ▾»: compare in basso a destra nel riquadro quando sotto c'è ancora da leggere.
+   4) Il foglio della chat: la testata di Sofia sta dentro i messaggi e scorre con loro.
+   5) Segreteria: accanto a «Chiedile qualcosa» c'è «Scrivile». ---- */
+.sv-corto{display:none}
+body.premium .sofia-vista.con-chat .sv-figura{height:min(17svh,136px)}
+body.premium .sofia-vista.con-chat .sv-tessere{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+body.premium .sofia-vista.con-chat .sv-tessera{height:46px;padding:0 6px;gap:5px;justify-content:center;text-align:center;min-width:0}
+body.premium .sofia-vista.con-chat .sv-tessera.sgr{grid-column:auto}
+body.premium .sofia-vista.con-chat .sv-t-ico,body.premium .sofia-vista.con-chat .sv-lungo{display:none}
+body.premium .sofia-vista.con-chat .sv-corto{display:inline}
+body.premium .sofia-vista.con-chat .sv-tessera b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+body.premium .sofia-vista.con-chat .sv-tessera .nav-conta{margin-left:0;flex:none}
+@media (max-width:340px){body.premium .sofia-vista.con-chat .sv-tessera{padding:0 3px;gap:3px}}
+body.premium.tastiera-su .sofia-vista{min-height:0}
+body.premium.tastiera-su .sofia-vista .sv-figura,body.premium.tastiera-su .sofia-vista .sv-regia-riga,body.premium.tastiera-su .sofia-vista .sv-tessere,body.premium.tastiera-su .sofia-vista .sv-chips{display:none}
+body.premium.tastiera-su .sofia-vista .sv-chat{min-height:70px}
+body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
+.chat-continua{position:sticky;bottom:6px;z-index:2;align-self:flex-end;flex:none;height:38px;margin:-48px 4px 0 0;padding:0 14px;border:1px solid #C5A059;border-radius:19px;background:linear-gradient(135deg,#F3E3B8,#E4C887);color:#0F172A;font:800 15px/36px var(--f-body);box-shadow:0 6px 16px rgba(0,0,0,.35);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.chat-continua[hidden]{display:none}
+.chat-corpo .gov-viva{position:static;margin:0 0 10px}
+.sg2-tt .sg2-mic{margin-right:6px}
+/* la domanda da scrivere sta in alto, così con la tastiera aperta si vedono la casella e «Chiedi» */
+.conferma:has([data-sg2-testo]){align-items:flex-start;padding-top:max(64px,9dvh)}

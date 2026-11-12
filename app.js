@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.80.1";
+export const VERSIONE = "1.80.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -742,7 +742,7 @@ function modoVoceFine(leggi) {
   clearTimeout(modoVoceT); modoVoceT = null;
   modoVoce = false; document.body.classList.remove("modo-voce");
   voceBarra(); try { sofiaMini(); } catch (e) {}
-  const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
+  svChatPosto();   // 1.80.2 (prima: sempre in fondo)
   if (!leggi) return;
   if (S.vista === "oggi" && document.getElementById("sofiaHero")) nuvolaApri(true);
   else if (S.vista !== "sofia" && S.vista !== "governante") { miniAperto = true; try { sofiaMini(); } catch (e) {} }
@@ -1556,7 +1556,7 @@ function disegna() {
   collega();
   if (S.foglio) disegnaFoglio();
   avviaCronometri();
-  const svc = document.getElementById("svChat"); if (svc) svc.scrollTop = svc.scrollHeight;
+  svChatPosto();   // 1.80.2 (prima: sempre in fondo)
   if (condivisoAtteso) guardaCondiviso();
   if (letturaAttesa) guardaLettura();
   if (segreteriaAttesa) guardaSegreteria();   // 1.49.0
@@ -5339,7 +5339,7 @@ function guidaMic() {
   document.body.classList.toggle("con-mic", vuoi);
   const nuovo = !!document.querySelector(".lg-pagina") && !document.querySelector(".sheet");   // 1.54.0: sulla pagina «Chiedi alla governante»; nella camera aperta il tondo di prima
   document.body.classList.toggle("con-lg-mic", nuovo && (vuoi || compagnaVuole()));   // 1.55.0: sta nella barra in basso, a destra
-  tastieraSopra(!!document.querySelector(".lg-pagina"));   // 1.55.7: la barra per scrivere sopra la tastiera (Android)
+  tastieraSopra(!!document.querySelector(".lg-pagina, .sofia-vista"));   // 1.55.7: la barra per scrivere sopra la tastiera (Android)
   if (!vuoi) { if (b) b.hidden = true; chatFaccine(false); return; }
   if (b && (b.dataset.lg || "") !== (nuovo ? "1" : "")) { b.remove(); b = null; }
   if (!b && nuovo) { b = compositore(); document.body.appendChild(b); }   // 1.55.7: la barra per scrivere vera (faccine, graffetta, macchina fotografica, testo, microfono)
@@ -6313,7 +6313,7 @@ function vistaSegreteria() {
   const imparate = (Array.isArray(S.taccuino) ? S.taccuino : []).filter(v => v && v.testo).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))).slice(0, 2);
   const imparato = imparate.length ? `<div class="sg2-imp"><b><span aria-hidden="true">🧠</span> Cosa ho imparato</b>${imparate.map(v => `<p>${esc(String(v.testo).replace(/^Correzione di Michele:\s*/i, ""))}</p>`).join("")}</div>` : "";
   const banner = mod ? bannerLettura() : "";
-  return `<section class="sg2"><div class="sg2-testa"><button type="button" class="sg2-sofia" data-sg2-sofia aria-label="${esc(nome)}: toccala e ti racconta la giornata" aria-pressed="false"><span class="sg2-sofia-posto"></span></button><div class="sg2-tt"><h2>Segreteria</h2><p>${esc(nome)}, la tua assistente</p><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Chiedile qualcosa"}</button><small class="sg2-tocca">👆 Toccala: ti racconta la giornata</small></div></div>${sg2BollaHtml()}
+  return `<section class="sg2"><div class="sg2-testa"><button type="button" class="sg2-sofia" data-sg2-sofia aria-label="${esc(nome)}: toccala e ti racconta la giornata" aria-pressed="false"><span class="sg2-sofia-posto"></span></button><div class="sg2-tt"><h2>Segreteria</h2><p>${esc(nome)}, la tua assistente</p><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Chiedile qualcosa"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi><span aria-hidden="true">✍️</span> Scrivile</button><small class="sg2-tocca">👆 Toccala: ti racconta la giornata</small></div></div>${sg2BollaHtml()}
     ${banner}
     <h3 class="sg2-tit">1) Riassunto di oggi</h3>
     <div class="sg2-riass"><p>${riass.join("<br>")}</p><button type="button" class="sg2-ascolta" data-sg2-ascolta><span class="sg2-alt" aria-hidden="true">🔊</span><span>Ascolta il riassunto</span></button></div>
@@ -6592,6 +6592,7 @@ function sg2Mic() {
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria") return;
   if (t.closest("[data-sg2-sofia]")) { sg2Tocca(); return; }
+  if (t.closest("[data-sg2-scrivi]")) { sg2Zitta(); sg2Scrivi(); return; }   // 1.80.2
   if (t.closest("[data-sg2-mic]")) { sg2Mic(); return; }
   if (t.closest("[data-sg2-bolla-via]")) { S.sg2Bolla = null; disegna(); return; }
 });
@@ -8169,9 +8170,77 @@ function bolleCasa(max = 40) {
   const vuota = `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">Dimmi pure, ${esc(nomeMio())}: scrivimi qui sotto o tocca il microfono e parlami.</div></div></div>`;
   return (bolle || vuota) + attesa;
 }
+// ============================================================================
+//  1.80.2 · LEGGERE TUTTA LA RISPOSTA E SCRIVERE (Michele, 12/11: «in alcuni posti, ad esempio in Parla con Sofia, Segreteria,
+//  Sofia IA, non riesco né a scrivere e né a leggere tutta la domanda»).
+//  - La conversazione non scende più sempre in fondo: se l'ultima risposta di Sofia è più lunga del riquadro ci si ferma al
+//    suo INIZIO (prima si vedeva solo la fine); se ci sta tutta, in fondo come prima (chatUltima). Vale nella prima pagina
+//    (chatGiu) e in «Parla con Sofia».
+//  - In «Parla con Sofia» il riquadro si rifà a ogni disegno: se la conversazione è la stessa resta dove l'hai lasciato, anche
+//    se l'hai fatto scorrere tu per leggere (svChatPosto). Prima ogni disegno lo riportava in fondo.
+//  - Quando sotto c'è ancora da leggere compare «Continua ▾» in basso a destra del riquadro: un tocco scende di una schermata.
+//  - La tastiera: «Parla con Sofia» si accorcia sopra la tastiera come la pagina delle signore (tastieraSopra) e, quando la
+//    tastiera è aperta davvero (body.tastiera-su: lo schermo utile è almeno 140 px più basso mentre si scrive), restano solo i
+//    messaggi e la casella. Se la tastiera si chiude col tasto Indietro del telefono, la casella resta «attiva» ma lo schermo
+//    torna alto: per questo si guarda l'altezza e non solo la casella.
+// ============================================================================
+function chatUltima(box) {
+  if (!box) return;
+  const righe = [...box.querySelectorAll(":scope > .sv-riga")], ultima = righe[righe.length - 1];
+  let top = box.scrollHeight;
+  if (ultima && ultima.classList.contains("sv-lei") && !ultima.querySelector(".cc-pensa") && ultima.offsetHeight > box.clientHeight - 12)
+    top = Math.max(0, box.scrollTop + ultima.getBoundingClientRect().top - box.getBoundingClientRect().top - 8);
+  try { box.scrollTo({ top, behavior: "instant" }); } catch (e) { box.scrollTop = top; }
+  chatContinua(box);
+}
+function chatContinua(box) {
+  if (!box) return;
+  let b = box.querySelector(":scope > .chat-continua");
+  if (!b) {
+    b = document.createElement("button"); b.type = "button"; b.className = "chat-continua"; b.hidden = true;
+    b.setAttribute("aria-label", "Continua a leggere"); b.innerHTML = `Continua <span aria-hidden="true">▾</span>`;
+    b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); box._mano = Date.now(); const giu = Math.max(80, box.clientHeight - 70); try { box.scrollBy({ top: giu, behavior: "smooth" }); } catch (e2) { box.scrollTop += giu; } };
+    box.appendChild(b);
+  }
+  if (!box._continua) { box._continua = true; box.addEventListener("scroll", () => chatContinua(box), { passive: true }); }
+  const sotto = box.scrollHeight - box.scrollTop - box.clientHeight;
+  const serve = sotto > 28;
+  if (b.hidden === serve) b.hidden = !serve;
+}
+let svChatMemo = { firma: "", top: null };
+function svChatPosto() {
+  const box = document.getElementById("svChat"); if (!box) return;
+  const c = conversazione(), u = c[c.length - 1];
+  const firma = `${c.length}|${u ? `${u.chi}|${String(u.testo || "").length}` : ""}|${govScrive ? 1 : 0}`;
+  if (svChatMemo.firma === firma && svChatMemo.top != null) { box.scrollTop = svChatMemo.top; chatContinua(box); }
+  else { chatUltima(box); svChatMemo = { firma, top: box.scrollTop }; }
+  if (!box._memo) { box._memo = true; box.addEventListener("scroll", () => { svChatMemo.top = box.scrollTop; }, { passive: true }); }
+}
+// la tastiera è aperta davvero? Lo schermo utile si è accorciato di almeno 140 px mentre si scrive in una casella
+let tastieraPieno = 0, tastieraLargo = 0;
+function tastieraMisura() {
+  try {
+    const vv = window.visualViewport, w = window.innerWidth || 0;
+    const h = Math.round(vv && vv.scale <= 1.05 ? Math.min(window.innerHeight || 0, vv.height) : (window.innerHeight || 0));
+    if (w !== tastieraLargo) { tastieraLargo = w; tastieraPieno = 0; }
+    if (h > tastieraPieno) tastieraPieno = h;
+    const su = document.body.classList.contains("con-tastiera") && h < tastieraPieno - 140;
+    if (document.body.classList.contains("tastiera-su") !== su) {
+      document.body.classList.toggle("tastiera-su", su);
+      try { misuraBarre(); } catch (e) {}
+      try { svChatPosto(); } catch (e) {}
+    }
+  } catch (e) {}
+}
+try {
+  window.addEventListener("resize", tastieraMisura);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", tastieraMisura);
+  document.addEventListener("focusin", () => setTimeout(tastieraMisura, 0));
+  document.addEventListener("focusout", () => setTimeout(tastieraMisura, 90));
+} catch (e) {}
 function chatGiu(h) {
   const box = (h || document).querySelector("#casaChat"); if (!box) return;
-  try { box.scrollTo({ top: box.scrollHeight, behavior: "instant" }); } catch (e) { box.scrollTop = box.scrollHeight; }
+  chatUltima(box);   // 1.80.2: all'inizio dell'ultima risposta se è più lunga del riquadro; se no in fondo, come prima
 }
 // il numerino rosso sulla linguetta "Chat": le risposte di Sofia arrivate da quando l'hai guardata l'ultima volta
 const CHIAVE_CHAT_VISTI = "ricci_chat_visti";
@@ -8190,8 +8259,8 @@ function casaChatAggiorna(h) {
   const box = h.querySelector("#casaChat"); if (!box) return;
   const premium = document.body.classList.contains("premium");
   const html = premium ? bolleCasa() : ultimoScambio().html;
-  const cambiata = box.innerHTML !== html;
-  if (cambiata) box.innerHTML = html;
+  const cambiata = box._html !== html;   // 1.80.2 (prima box.innerHTML: adesso dentro c'è anche «Continua»)
+  if (cambiata) { box.innerHTML = html; box._html = html; }
   box.classList.toggle("vedi", !!html);
   // 1.0.2: nella nuvoletta si vede subito l'ultima cosa (senza scorrere la pagina): la conversazione, se c'e'
   if (cambiata) {
@@ -9361,8 +9430,7 @@ function foglioChat(f) {
     ${iaAccesa() ? `<div class="chat-veloci">${VELOCI_IA.map((v, i) => `<button type="button" class="chat-veloce" data-ia-veloce="${i}">${esc(v.tasto)}</button>`).join("")}</div>` : ""}
     <p class="muted small center" style="margin:6px 0 0">${micDisponibile() ? "Tocca il microfono e parlale come parleresti a una persona. " : "Per dettare usa il microfono della tastiera. "}Per esempio: «ho messo i piumoni» · «fai lavare le tende in Alba» · «quanto prende ${esc(SIG(signore()[0]?.id || "p1"))}?» · «di' alle signore che domani arrivano gli operai»</p>` : "";
   return `<div class="inizio chat"><div class="inizio-top"><button class="inizio-indietro" data-chiudi>${ICONA("indietro")}<span>Oggi</span></button><span class="chat-titolo">${esc(nomeGov())}</span>${mod ? `<button class="chat-voce" data-voce-tasto aria-pressed="${voceAccesa()}" aria-label="${voceAccesa() ? "Spegni la voce" : "Accendi la voce"}">${ICONA(voceAccesa() ? "altoparlante" : "muto")}</button>` : ""}</div>
-    ${testataGov()}
-    <div class="chat-corpo">${vecchie}${aperte}${gruppi}${piede}${conv}${scrive}</div>
+    <div class="chat-corpo">${testataGov()}${vecchie}${aperte}${gruppi}${piede}${conv}${scrive}</div>
     ${parla}
     <p class="muted small center" style="margin:10px 0 0">Rispondo con i pulsanti o "Dimmelo a parole". Ogni risposta cambia davvero qualcosa nell'app e lo scrivo sotto.${auto.length ? ` Cose che faccio da sola: ${auto.length} (in Regole le spegni).` : ""}</p></div>`;
 }
@@ -11813,7 +11881,7 @@ function collegaChat() {
     if (inFondo) corpo.scrollTop = corpo.scrollHeight;
   };
   if (fp) { const ta = document.getElementById("parlaGov");
-    const cresci = () => { ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; misuraChat(); };
+    const cresci = () => { ta.style.height = "auto"; const alto = ta.scrollHeight + 2; ta.style.height = Math.min(120, alto) + "px"; ta.style.overflowY = alto > 120 ? "auto" : "hidden"; misuraChat(); };   // 1.80.2: + il bordo, e niente barra di scorrimento se il testo ci sta
     ta.oninput = cresci; cresci();
     ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); fp.requestSubmit(); } };
     fp.onsubmit = (e) => { e.preventDefault(); const t = ta.value.trim(); if (!t) { ta.focus(); return; } ta.value = ""; ta.style.height = "auto"; parlaGov(t); };
@@ -12096,12 +12164,12 @@ function vistaSofia() {
   // vuota comincia con un suo messaggio di benvenuto; sopra la casella i comandi rapidi da toccare; la casella in fondo
   const benvenuto = `<div class="sv-riga sv-lei"><span class="sv-foto" aria-hidden="true"></span><div class="sv-colonna"><div class="cc-lei">Dimmi pure, ${esc(nomeMio())}. Puoi scrivermi o parlarmi col microfono: cambio il prospetto, segno un guasto, scrivo alle signore. Prima di fare qualcosa ti chiedo sempre.</div></div></div>`;
   const chips = [["Chi arriva domani?", "manda"], ["Scrivi alle signore: ", "scrivi", "Scrivi alle signore…"], ["Segna un guasto: ", "scrivi", "Segna un guasto…"], ["Com'è il prospetto di questa settimana?", "manda", "Il prospetto della settimana"]];
-  return `<section class="sofia-vista" aria-label="${esc(nome)}">
+  return `<section class="sofia-vista${conv.length ? " con-chat" : ""}" aria-label="${esc(nome)}">
     ${premiumScelto() ? `<div class="sv-figura" aria-hidden="true">${filmPosto("sv-fig", sofia3d())}</div>` : ""}
     ${premiumScelto() ? (regiaArgonHtml() ? `<div class="sv-regia-riga">${regiaArgonHtml()}</div>` : "") : `<div class="sv-testa"><span class="sv-ritratto" aria-hidden="true"></span><div><b>${esc(nome)}</b><span>${pensa ? "ci sta pensando…" : dom ? `ha ${dom === 1 ? "una cosa" : dom + " cose"} da chiederti` : "la tua governante · tutto in ordine"}</span>${regiaArgonHtml()}</div></div>`}
     <div class="sv-tessere">
-      <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">${dom ? "?" : "✓"}</span><b>${dom ? `${esc(nome)} ti chiede` : "Tutto chiaro"}</b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "nessun dubbio sulle camere"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
-      <button type="button" class="sv-tessera" data-vista="governante"><span class="sv-t-ico">${ICONA("stella")}</span><b>I consigli di ${esc(nome)}</b><span>${esc(sottoCons || "tutto in ordine")}</span></button>
+      <button type="button" class="sv-tessera" data-chat-apri><span class="sv-t-ico">${dom ? "?" : "✓"}</span><b><span class="sv-lungo">${dom ? `${esc(nome)} ti chiede` : "Tutto chiaro"}</span><span class="sv-corto">${dom ? "Ti chiede" : "Tutto chiaro"}</span></b><span>${dom ? (dom === 1 ? "una cosa da guardare" : dom + " cose da guardare") : "nessun dubbio sulle camere"}</span>${dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : ""}</button>
+      <button type="button" class="sv-tessera" data-vista="governante"><span class="sv-t-ico">${ICONA("stella")}</span><b><span class="sv-lungo">I consigli di ${esc(nome)}</span><span class="sv-corto">Consigli</span></b><span>${esc(sottoCons || "tutto in ordine")}</span></button>
       <button type="button" class="sv-tessera sgr" data-vista="segreteria"><span class="sv-t-ico">📨</span><b>Segreteria</b><span>${esc(segreteriaSotto())}</span></button>
     </div>
     <div class="sv-chat" id="svChat" aria-live="polite">${bolle || benvenuto}${attesa}</div>

@@ -67,6 +67,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   campo `tolti`, scritto solo da quei tasti): cancellato = l'app non lo fa vedere, resta la foto. Un filmato nuovo va
   aggiunto a `FILMATI` e alla striscia delle anteprime `filmati-anteprime.webp`, nello stesso ordine.
 
+- Le chat con Sofia (1.80.2): una risposta più lunga del riquadro si ferma al suo inizio, non in fondo (`chatUltima`), con
+  «Continua ▾»; il riquadro di «Parla con Sofia» non si sposta a ogni disegno (`svChatPosto`). Lì la pagina si accorcia sopra
+  la tastiera (`tastieraSopra`) e a tastiera aperta davvero (`body.tastiera-su`) restano i messaggi e la casella. Nelle prove
+  la tastiera si fa toccando la casella e accorciando lo schermo (412×470); il cartello «PROVA» va nascosto, se no sposta tutto.
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.
