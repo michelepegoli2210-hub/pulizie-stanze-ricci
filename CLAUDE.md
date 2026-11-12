@@ -72,6 +72,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   la tastiera (`tastieraSopra`) e a tastiera aperta davvero (`body.tastiera-su`) restano i messaggi e la casella. Nelle prove
   la tastiera si fa toccando la casella e accorciando lo schermo (412×470); il cartello «PROVA» va nascosto, se no sposta tutto.
 
+- Il catalogo dei costi (1.81.0), Paghe → «Quanto costa ogni mansione» (`catalogoCosti`): i minuti pagati di ogni giorno
+  spartiti sulla lista del lavoro di quel giorno. Serve a fare i prezzi a camera senza spendere più di adesso (li conferma
+  Michele); gli extra si pagano solo se chiesti prima, col prezzo deciso prima. Niente cronometri di nascosto.
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.

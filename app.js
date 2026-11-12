@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.80.2";
+export const VERSIONE = "1.81.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2410,8 +2410,101 @@ function vistaPagheOre() {
       ${bp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(bp.totale)} ancora da pagare ${mod ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
       <details open><summary>Giorno per giorno</summary>${b.giorni.length ? `<div class="rows">${b.giorni.map(g => rigaTurno(z.id, g, mod)).join("")}</div>` : `<p class="muted small" style="margin:6px 0">Ancora nessun giorno questa settimana.</p>`}${righeBusta({ rettifiche: b.rettifiche, premio: null })}${mod ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px"><button class="btnsm" data-turno-nuovo="${z.id}">Aggiungi un giorno a mano</button><button class="btnsm ghost" data-ore-mano="${z.id}">Aggiungi solo le ore</button></div>` : ""}</details></section>`;
   }).join("");
-  return cardPresenze() + cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + cardSignore() + cardOrarioBase();
+  return cardCatalogo() + cardPresenze() + cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + cardSignore() + cardOrarioBase();   // 1.81.0: in cima il catalogo dei costi
 }
+// ============================================================================
+//  1.81.0 · IL CATALOGO DEI COSTI (Michele, 12/11: «io voglio pagare a camera, però non voglio pagare di più di quanto pago
+//  adesso» · «dovremmo fare una sorta di catalogo per riportare per 3 settimane quanto costa fare una determinata mansione»).
+//  Paghe → «Quanto costa ogni mansione». Per ogni signora e ogni giorno che ha l'orario vero (non una stima) si prendono i
+//  minuti pagati e la lista del lavoro di quel giorno; i minuti si spartiscono sui lavori in proporzione ai loro minuti di
+//  serie. Per ogni mansione: quante volte, quanto è costata in media, dal meno al più. Niente cronometri: bastano l'ora di
+//  arrivo e di uscita (i tasti dell'app, «arrivata» / «finito» su WhatsApp, o l'orario messo da Michele).
+//  I giorni che hanno la lista ma non l'orario non entrano: la pagina li elenca, col tasto «Metti l'orario» (lo stesso di
+//  Paghe). Qui non cambia la paga e non si scrive niente: è un conto, per fare i prezzi a camera giusti.
+// ============================================================================
+// la mansione di un lavoro della lista: la chiave per sommarle e il nome da far leggere
+function catVoce(p) {
+  const c = camera(p.camera) || {};
+  let nome = c.nome || p.camera || ""; try { nome = nomeBreveCamera(c) || nome; } catch (e) {}
+  if (p.tipo === "fisso") return { k: "fisso:" + (p.fisso || p.titolo || p.camera), nome: String(p.titolo || "Lavoro fisso"), ord: 4 };
+  if (p.tipo === "extra") { const t = String(p.titolo || "").trim(); return { k: "extra:" + t.toLowerCase(), nome: "Extra: " + (t || "lavoro in più"), ord: 5 }; }
+  const cambio = p.tipo === "totale" || p.tipo === "totale_casa", casa = c.tipo === "casa" || p.tipo === "casa" || p.tipo === "totale_casa";
+  if (p.tipo !== "ripasso" && !cambio && p.tipo !== "casa") return { k: "altro:" + p.tipo, nome: String((L.TIPI_PULIZIA && L.TIPI_PULIZIA[p.tipo] && L.TIPI_PULIZIA[p.tipo].titolo) || p.titolo || p.tipo), ord: 3 };
+  const suo = casa || !!(S.listino && S.listino.perCasa && S.listino.perCasa[p.camera]);   // un posto che ha i suoi minuti
+  if (suo) return { k: `${cambio ? "cambio" : "ripasso"}:${p.camera}${p.insieme ? ":due" : ""}`, nome: `${cambio ? "Cambio completo" : "Ripasso"} · ${nome}${p.insieme ? " (in due: la sua parte)" : ""}`, ord: casa ? 2 : 1 };
+  if (cambio) { const tg = L.tagliaCamera(S.listino, p.camera); return { k: "cambio:" + tg, nome: `Cambio completo · camera ${tg === "P" ? "piccola" : "grande"}`, ord: 0 }; }
+  return { k: "ripasso", nome: "Ripasso · camera", ord: 0 };
+}
+// la lista del lavoro di quel giorno per quella signora (senza le stelle e senza quello che è stato segnato «non fatto»)
+function catLavori(z, iso) {
+  let l = []; try { l = pulizieDelGiorno(iso, z).filter(p => p && p.stato !== "non_fatta" && p.tipo !== "stelle"); } catch (e) {}
+  return l.map(p => { let std = Number(p.minuti) || 0; if (!std) { try { std = Number(L.minutiPulizia(S.listino, camera(p.camera), p.tipo)) || 0; } catch (e) {} } return { p, std, ...catVoce(p) }; });
+}
+function catalogoCosti(sett) {
+  const oggi = L.oggiISO(), a = L.aggiungiGiorni(oggi, -1), da = L.aggiungiGiorni(oggi, -(sett * 7)), tar = tariffaOra();
+  const giorni = [], senza = [], voci = {}, per = {};
+  for (const z of signore()) {
+    per[z.id] = { contati: 0, senza: 0 };
+    for (let g = da; g <= a; g = L.aggiungiGiorni(g, 1)) {
+      const lav = catLavori(z.id, g); let t = null; try { t = turnoDelGiorno(z.id, g); } catch (e) {}
+      const vero = !!(t && !t.stima && !t.senzaOrario && !t.inCorso && !t.aperto && t.minuti > 0);
+      if (!vero) { if (lav.length) { senza.push({ z: z.id, iso: g, lavori: lav.length }); per[z.id].senza++; } continue; }
+      if (!lav.length) { giorni.push({ z: z.id, iso: g, t, euro: euroOre(t.minuti), lavori: [], senzaLista: true }); continue; }
+      const std = lav.reduce((s, x) => s + x.std, 0);
+      const righe = lav.map(x => { const m = std > 0 ? t.minuti * x.std / std : t.minuti / lav.length; return { ...x, minuti: m, euro: m / 60 * tar }; });
+      giorni.push({ z: z.id, iso: g, t, euro: euroOre(t.minuti), lavori: righe }); per[z.id].contati++;
+      for (const r of righe) {
+        const v = voci[r.k] = voci[r.k] || { k: r.k, nome: r.nome, ord: r.ord, n: 0, minuti: 0, euro: 0, min: Infinity, max: 0 };
+        v.n++; v.minuti += r.minuti; v.euro += r.euro; v.min = Math.min(v.min, r.euro); v.max = Math.max(v.max, r.euro);
+      }
+    }
+  }
+  const dopo = (x, y) => x.iso < y.iso ? 1 : x.iso > y.iso ? -1 : (x.z < y.z ? -1 : 1);
+  return { da, a, sett, tariffa: tar, per, giorni: giorni.sort(dopo), senza: senza.sort(dopo), voci: Object.values(voci).sort((x, y) => x.ord - y.ord || y.n - x.n || (x.nome < y.nome ? -1 : 1)) };
+}
+// la scheda in cima a Paghe
+function cardCatalogo() {
+  if (!proprietario()) return "";
+  let c = null; try { c = catalogoCosti(3); } catch (e) { console.warn("catalogo", e); }
+  const n = c ? c.giorni.filter(g => !g.senzaLista).length : 0, m = c ? c.senza.length : 0;
+  return `<button type="button" class="card ct-entra" data-ct-vai><span class="ct-entra-ico" aria-hidden="true">📒</span><span class="ct-entra-t"><b>Quanto costa ogni mansione</b><small>Il catalogo dei costi, per fare i prezzi a camera. ${n ? `Contati ${n} ${n === 1 ? "giorno" : "giorni"}` : "Ancora nessun giorno contato"}${m ? `, ${m === 1 ? "manca l'orario di 1" : `mancano le ore di ${m}`}` : ""}.</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+}
+function vistaCatalogo() {
+  if (!proprietario()) return vistaPaghe();
+  const sett = S.catSett === 6 ? 6 : 3, c = catalogoCosti(sett), mod = puoModificare();
+  const quando = (iso) => { try { return L.dataGiornoLungo(iso); } catch (e) { return L.dataBreve(iso); } };   // «giovedì 5 nov»
+  const nomi = signore().map(z => `${esc(SIG(z.id))} <b>${c.per[z.id] ? c.per[z.id].contati : 0}</b>`).join(" · ");
+  const testa = `<section class="card ct-testa"><button type="button" class="btnsm ghost" data-ct-torna>‹ Paghe</button>
+      <h2>📒 Quanto costa ogni mansione</h2>
+      <p>Per ogni giorno prendo <b>le ore pagate</b> e <b>la lista del lavoro</b>, e spartisco il costo sulle mansioni. Più giorni ci sono, più il conto è giusto. La paga non cambia: questo è solo un conto.</p>
+      <div class="seg ct-seg" role="group" aria-label="Quante settimane"><button type="button" aria-pressed="${sett === 3}" data-ct-sett="3">Ultime 3 settimane</button><button type="button" aria-pressed="${sett === 6}" data-ct-sett="6">Ultime 6</button></div>
+      <p class="ct-conta" role="status">Giorni contati: ${nomi}.</p></section>`;
+  const senza = c.senza.length ? `<section class="card ct-senza"><h3>⚠ ${c.senza.length === 1 ? "Manca l'orario di 1 giorno" : `Mancano le ore di ${c.senza.length} giorni`}</h3>
+      <p>Senza l'ora di arrivo e di uscita quel giorno non entra nel conto.</p>
+      <div class="rows">${c.senza.slice(0, 10).map(x => `<div class="row ct-s"><span><b>${esc(SIG(x.z))}</b> · ${esc(quando(x.iso))}<br><span class="muted small">${x.lavori} ${x.lavori === 1 ? "lavoro" : "lavori"} in lista</span></span>${mod ? `<button type="button" class="btnsm" data-turno-orario="${esc(x.z)}|${esc(x.iso)}">Metti l'orario</button>` : ""}</div>`).join("")}</div>
+      ${c.senza.length > 10 ? `<p class="muted small" style="margin:8px 0 0">e altri ${c.senza.length - 10} più indietro.</p>` : ""}</section>` : "";
+  const voci = c.voci.length ? `<section class="card ct-voci"><h3>Le mansioni</h3><div class="ct-lista">${c.voci.map(v => {
+      const pochi = v.n < 3;
+      return `<div class="ct-v${pochi ? " pochi" : ""}" data-ct-voce="${esc(v.k)}"><div class="ct-v-n"><b>${esc(v.nome)}</b><small>${v.n} ${v.n === 1 ? "volta" : "volte"} · in media ${Math.round(v.minuti / v.n)} minuti${v.n > 1 ? ` · da ${eur(v.min)} a ${eur(v.max)}` : ""}${pochi ? " · ancora poche volte" : ""}</small></div><b class="ct-v-e">${eur(v.euro / v.n)}</b></div>`; }).join("")}</div>
+      <p class="muted small ct-nota">Il prezzo è quanto ti è costata in media quella mansione, con la paga di adesso (${eur(c.tariffa)} l'ora). Se in quei giorni hanno fatto anche le stelle, il loro tempo è finito dentro le camere.</p></section>`
+    : `<section class="card ct-voci"><h3>Le mansioni</h3><p class="muted" style="margin:0">Ancora nessun giorno che abbia sia le ore sia la lista del lavoro. Appena ce n'è uno, qui compare quanto costa ogni mansione.</p></section>`;
+  const riga = (g) => {
+    const t = g.t, ore = t.uniti ? testoSegmenti(t.segmenti) : t.dette ? "ore scritte" : t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : "";
+    const conta = {}; for (const r of g.lavori) conta[r.nome] = (conta[r.nome] || 0) + 1;
+    const cosa = g.senzaLista ? "quel giorno nella lista non c'era niente: non entra nel conto" : Object.entries(conta).map(([n, q]) => `${q} × ${n}`).join(", ");
+    return `<div class="ct-g"><b>${esc(quando(g.iso))} · ${esc(SIG(g.z))}</b> · ${eur(g.euro)}<small>${ore ? esc(ore) + " · " : ""}${esc(testoOreTurno(t.minuti))}</small><small>${esc(cosa)}</small></div>`;
+  };
+  const giorni = c.giorni.length ? `<section class="card ct-giorni"><details><summary>Giorno per giorno (${c.giorni.length})</summary>${c.giorni.map(riga).join("")}</details></section>` : "";
+  return testa + senza + voci + giorni + `<p class="muted center ct-fondo">Tra tre settimane questi numeri diventano i prezzi a camera. Li decidi tu.</p>`;
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-ct-vai],[data-ct-torna],[data-ct-sett]") : null; if (!t) return;
+  e.preventDefault();
+  if (t.hasAttribute("data-ct-vai")) { S.vista = "catalogo"; chiudiFoglio(); disegna(); window.scrollTo(0, 0); return; }
+  if (t.hasAttribute("data-ct-torna")) { S.vista = "paghe"; disegna(); window.scrollTo(0, 0); return; }
+  if (t.hasAttribute("data-ct-sett")) { S.catSett = Number(t.dataset.ctSett) === 6 ? 6 : 3; disegna(); return; }
+});
+
 // mettere o correggere l'orario di un giorno (solo Michele): si scrive nel documento del giorno (turnoInizio/turnoFine)
 function turnoDialogo(z, iso) {
   const t = iso ? turnoDelGiorno(z, iso) : null;
@@ -7566,6 +7659,7 @@ function vistaProprietario() {
   else if (v === "alloggiati") corpo = vistaAlloggiati();   // 1.56.0
   else if (v === "social") corpo = vistaSocial();   // 1.66.0
   else if (v === "filmati") corpo = vistaFilmati();   // 1.80.0
+  else if (v === "catalogo") corpo = vistaCatalogo();   // 1.81.0
   else if (v === "signora") corpo = vistaSignora(S.sigZona || zoneOrdinate()[0].id);
   else corpo = vistaOggiGestione();
   return tabs + corpo;
