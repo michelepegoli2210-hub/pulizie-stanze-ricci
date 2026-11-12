@@ -81,6 +81,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   (1.81.2: è un tocco per sbaglio); i giorni con molte più ore del lavoro in lista, o pochissime, stanno in «Ore strane»
   con «Correggi». Le ore che le signore scrivono su WhatsApp non si segnano al posto suo: il tempo lo prende Michele.
 
+- Il tempo lo prende Michele (1.82.0), Paghe → in cima «Il tempo delle signore» (`cardTempo`): per ogni signora un tasto
+  che cambia, «È arrivata adesso» / «È andata via adesso» (scrivono `turnoInizio` / `turnoFine` del giorno), poi «Correggi»;
+  il pomeriggio «È tornata adesso» (un turno in più, `_2…4`). Ogni tocco ha «Annulla». È l'orario del giorno di sempre: va
+  in Paghe e nel catalogo dei costi, e si vede anche nell'app della signora (niente di nascosto).
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.

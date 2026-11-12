@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.81.2";
+export const VERSIONE = "1.82.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -2412,8 +2412,126 @@ function vistaPagheOre() {
       ${bp.totale && !pp ? `<div class="avviso">Settimana scorsa (${L.etichettaSettimana(prec)}): ${eur(bp.totale)} ancora da pagare ${mod ? `<button class="btnsm" data-pay="${z.id}|${prec}" style="margin-left:8px">Segna pagata</button>` : ""}</div>` : ""}
       <details open><summary>Giorno per giorno</summary>${b.giorni.length ? `<div class="rows">${b.giorni.map(g => rigaTurno(z.id, g, mod)).join("")}</div>` : `<p class="muted small" style="margin:6px 0">Ancora nessun giorno questa settimana.</p>`}${righeBusta({ rettifiche: b.rettifiche, premio: null })}${mod ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px"><button class="btnsm" data-turno-nuovo="${z.id}">Aggiungi un giorno a mano</button><button class="btnsm ghost" data-ore-mano="${z.id}">Aggiungi solo le ore</button></div>` : ""}</details></section>`;
   }).join("");
-  return cardCatalogo() + cardPresenze() + cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + cardSignore() + cardOrarioBase();   // 1.81.0: in cima il catalogo dei costi
+  return cardTempo() + cardCatalogo() + cardPresenze() + cardArgon() + (puoModificare() ? cardContoProspetto() : "") + blocchi + cardSignore() + cardOrarioBase();   // 1.81.0: in cima il catalogo dei costi
 }
+// ============================================================================
+//  1.82.0 · IL TEMPO LO PRENDE MICHELE (12/11: «devo prendere il timer io» · «la cosa che dovrò fare è di misurare quanto
+//  tempo ci mettono per fare le cose nelle prossime 3 settimane, tutto qua»).
+//  In cima a Paghe la scheda «Il tempo delle signore»: per ogni signora un tasto solo, che cambia. «È arrivata adesso» fa
+//  partire il tempo (turnoInizio nel documento del giorno, come quando Michele mette l'orario a mano), «È andata via adesso»
+//  lo ferma (turnoFine). Se torna nel pomeriggio: «È tornata adesso» apre un altro turno (visti/<zona>_<giorno>_2…4, come il
+//  «Sono tornata» della signora). Ogni tocco ha «Annulla» per 6 secondi; a tempo che corre «Cambia l'ora di arrivo», a giorno
+//  chiuso «Correggi» (la finestrella dell'orario). Niente da scrivere: l'ora la prende l'app.
+//  Queste ore sono l'orario del giorno: vanno in Paghe e, dal giorno dopo, nel catalogo dei costi. Non è un cronometro di
+//  nascosto: l'orario segnato da Michele si vede anche nell'app della signora, come ogni orario del giorno.
+// ============================================================================
+// com'è oggi il tempo di una signora: cosa corre adesso (n = 1 il primo turno, 2…4 quelli dopo) e i turni già chiusi
+function tempoStato(z) {
+  const oggi = L.oggiISO(), v = L.vistoDi(S.visti, z, oggi) || null;
+  let t = null; try { t = turnoDelGiorno(z, oggi); } catch (e) {}
+  const ini = (v && (v.turnoInizio || v.arrivoOra)) || null, fin = (v && (v.turnoFine || v.finitoOra)) || null;
+  const altri = turniAltri(z, oggi), ap2 = altri.filter(x => !x.fine).pop() || null;
+  const corre = ap2 ? { n: ap2.n, da: ap2.inizio } : ini && !fin && new Date(ini) <= new Date() && !(t && t.uniti && !t.inCorso) ? { n: 1, da: ini } : null;
+  const chiusi = t && t.uniti ? t.segmenti : ini && fin && new Date(fin) > new Date(ini) ? [{ inizio: ini, fine: fin }] : [];
+  return { oggi, v, t, ini, fin, corre, chiusi, altri, minuti: t && !t.stima ? Math.round(t.minuti) : 0, dette: !!(t && t.dette && !chiusi.length), wa: waDi(z) };
+}
+function cardTempo() {
+  if (!proprietario() || !puoModificare() || !pagaAOre()) return "";
+  const righe = signore().map(z => {
+    const s = tempoStato(z.id), id = esc(z.id);
+    let stato = "", tasto = "", sotto = "";
+    if (s.corre) {
+      stato = `${s.chiusi.length ? `Prima ${esc(testoSegmenti(s.chiusi))}. ` : ""}${s.corre.n > 1 ? "Tornata" : "Arrivata"} alle ${esc(L.oraBreve(s.corre.da))} · al lavoro da <span data-turno-ore="${esc(s.corre.da)}">${esc(testoOreTurno(minutiDa(s.corre.da)))}</span>`;
+      tasto = `<button type="button" class="tm-b tm-giu" data-tm-via="${id}">È andata via adesso</button>`;
+      sotto = s.corre.n === 1 ? `<button type="button" class="tm-l" data-tm-ora="${id}">Cambia l'ora di arrivo</button>` : "";
+    } else if (s.chiusi.length || s.dette) {
+      stato = s.chiusi.length ? `Oggi ${esc(testoSegmenti(s.chiusi))} · ${esc(testoOreTurno(s.minuti))}` : `Oggi ${esc(testoOreTurno(s.minuti))}, senza l'orario`;
+      tasto = `<button type="button" class="tm-b tm-ok" data-turno-orario="${id}|${esc(s.oggi)}">Correggi</button>`;
+      sotto = s.chiusi.length && s.altri.length < 3 ? `<button type="button" class="tm-l" data-tm-torna="${id}">È tornata adesso</button>` : "";   // con le sole ore niente turno in più: si perderebbero
+    } else if (!s.ini && s.fin) {   // ha toccato HO FINITO senza l'arrivo: l'ora di arrivo la mette lui
+      stato = `Ha finito alle ${esc(L.oraBreve(s.fin))}: manca l'ora di arrivo`;
+      tasto = `<button type="button" class="tm-b tm-ok" data-turno-orario="${id}|${esc(s.oggi)}">Correggi</button>`;
+    } else {
+      stato = s.wa.aperto ? `Su WhatsApp ha scritto «arrivata» alle ${esc(s.wa.aperto.dalle || L.oraBreve(s.wa.aperto.inizio))}` : "Non è ancora arrivata";
+      tasto = `<button type="button" class="tm-b tm-su" data-tm-arriva="${id}">È arrivata adesso</button>`;
+    }
+    return `<div class="tm-r" data-tm-riga="${id}"><div class="tm-t"><b>${esc(SIG(z.id))}</b><span>${stato}</span>${sotto}</div>${tasto}</div>`;
+  }).join("");
+  if (!righe) return "";
+  return `<section class="card tm-card"><h2>⏱ Il tempo delle signore</h2><p>Lo prendi tu: un tocco quando arriva, un tocco quando va via.</p>${righe}</section>`;
+}
+// scrive nel documento di un giorno (o lo toglie se prima non c'era) e ridisegna; → true se è andata
+async function tempoScrivi(id, patch, prima) {
+  S.visti[id] = { ...(prima || {}), ...patch, id }; disegna();
+  try { await S.db.salva("visti", id, patch, true); return true; }
+  catch (e) { if (prima) S.visti[id] = prima; else delete S.visti[id]; disegna(); erroreScrittura(e); return false; }
+}
+async function tempoTogli(id, prima, campi) {
+  try {
+    if (prima) { const patch = Object.fromEntries(campi.map(k => [k, prima[k] != null ? prima[k] : null])); S.visti[id] = { ...(S.visti[id] || {}), ...patch, id }; disegna(); await S.db.salva("visti", id, patch, true); }
+    else { delete S.visti[id]; disegna(); await S.db.cancella("visti", id); }
+    toast("Annullato");
+  } catch (e) { erroreScrittura(e); }
+}
+function tempoChi() { return (S.utente && (S.utente.nome || S.utente.email)) || ""; }
+async function tempoArriva(z) {
+  if (!proprietario() || !puoModificare()) return;
+  const s = tempoStato(z); if (s.corre || s.chiusi.length || s.dette || (!s.ini && s.fin)) { disegna(); return; }
+  const id = L.idVisto(z, s.oggi), adesso = S.db.adesso(), prima = S.visti[id] || null;
+  if (!await tempoScrivi(id, { zona: z, data: s.oggi, turnoInizio: adesso, turnoDa: tempoChi(), turnoQuando: adesso }, prima)) return;
+  toastAnnulla(`${SIG(z)} è arrivata alle ${L.oraBreve(adesso)}: il tempo corre`, () => tempoTogli(id, prima, ["turnoInizio", "turnoDa", "turnoQuando"]));
+}
+async function tempoVia(z) {
+  if (!proprietario() || !puoModificare()) return;
+  const s = tempoStato(z); if (!s.corre) { disegna(); return; }
+  const base = L.idVisto(z, s.oggi), adesso = S.db.adesso(), dopo = s.corre.n > 1, id = dopo ? `${base}_${s.corre.n}` : base, prima = S.visti[id] || null;
+  const patch = dopo ? { finitoOra: adesso, finitoDa: SIG(z) } : { zona: z, data: s.oggi, turnoFine: adesso, turnoDa: tempoChi(), turnoQuando: adesso };
+  if (!await tempoScrivi(id, patch, prima)) return;
+  const min = Math.max(0, Math.round((new Date(adesso) - new Date(s.corre.da)) / 60000));
+  toastAnnulla(`${SIG(z)} è andata via alle ${L.oraBreve(adesso)}: ${testoOreTurno(min)}`, () => tempoTogli(id, prima || {}, dopo ? ["finitoOra", "finitoDa"] : ["turnoFine", "turnoDa", "turnoQuando"]));
+}
+async function tempoTorna(z) {
+  if (!proprietario() || !puoModificare()) return;
+  const s = tempoStato(z); if (s.corre) { disegna(); return; }
+  const base = L.idVisto(z, s.oggi);
+  if (!S.visti[base] || !(s.chiusi.length || s.dette)) { tempoArriva(z); return; }
+  const n = 2 + s.altri.length; if (n > 4) { toast("Per oggi i turni sono già quattro: usa «Correggi»."); return; }
+  const adesso = S.db.adesso(), id = `${base}_${n}`;
+  if (!await tempoScrivi(id, { zona: z, data: s.oggi, parte: n, tipo: "turno", arrivoOra: adesso, arrivoDa: SIG(z), turnoDa: tempoChi(), settimana: L.chiaveSettimana(new Date(), S.regole.chiusuraPaga) }, null)) return;
+  toastAnnulla(`${SIG(z)} è tornata alle ${L.oraBreve(adesso)}: il tempo corre di nuovo`, () => tempoTogli(id, null, []));
+}
+// «Cambia l'ora di arrivo», a tempo che corre (il tocco è arrivato tardi)
+function tempoOraDialogo(z, ora) {
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box chiusura turno-dialogo" role="dialog"><div class="chiusura-t">${ICONA("orologio")}<span>A che ora è arrivata ${esc(SIG(z))}?</span></div>
+      <label class="campo" style="margin:0 0 10px"><span>Arrivata alle</span><input type="time" data-t-ini value="${esc(ora)}"></label>
+      <button class="big ok" data-si>Salva l'ora</button><button class="big undo" data-no>Annulla</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("[data-si]").onclick = () => { const a = el.querySelector("[data-t-ini]").value; el.remove(); ok(a); };
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
+  });
+}
+async function tempoOra(z) {
+  if (!proprietario() || !puoModificare()) return;
+  const s = tempoStato(z); if (!s.corre || s.corre.n !== 1) { disegna(); return; }
+  const r = await tempoOraDialogo(z, L.oraBreve(s.corre.da)); if (!r) return;
+  const a = isoDaOra(s.oggi, r);
+  if (!a || new Date(a) > new Date()) { toast("Controlla l'ora: non può essere più tardi di adesso."); return; }
+  const id = L.idVisto(z, s.oggi), adesso = S.db.adesso();
+  if (await tempoScrivi(id, { zona: z, data: s.oggi, turnoInizio: a, turnoDa: tempoChi(), turnoQuando: adesso }, S.visti[id] || null)) toast(`${SIG(z)}: arrivata alle ${L.oraBreve(a)}`);
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-tm-arriva],[data-tm-via],[data-tm-torna],[data-tm-ora]") : null; if (!t) return;
+  e.preventDefault();
+  if (t.hasAttribute("data-tm-arriva")) { tempoArriva(t.dataset.tmArriva); return; }
+  if (t.hasAttribute("data-tm-via")) { tempoVia(t.dataset.tmVia); return; }
+  if (t.hasAttribute("data-tm-torna")) { tempoTorna(t.dataset.tmTorna); return; }
+  if (t.hasAttribute("data-tm-ora")) { tempoOra(t.dataset.tmOra); return; }
+});
+
 // ============================================================================
 //  1.81.0 · IL CATALOGO DEI COSTI (Michele, 12/11: «io voglio pagare a camera, però non voglio pagare di più di quanto pago
 //  adesso» · «dovremmo fare una sorta di catalogo per riportare per 3 settimane quanto costa fare una determinata mansione»).
