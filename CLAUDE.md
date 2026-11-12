@@ -75,6 +75,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - Il catalogo dei costi (1.81.0), Paghe → «Quanto costa ogni mansione» (`catalogoCosti`): i minuti pagati di ogni giorno
   spartiti sulla lista del lavoro di quel giorno. Serve a fare i prezzi a camera senza spendere più di adesso (li conferma
   Michele); gli extra si pagano solo se chiesti prima, col prezzo deciso prima. Niente cronometri di nascosto.
+  Un giorno con la lista ma senza ore non entra: Michele risponde con «Rispondi» (1.81.1: è venuta e mette le ore, non è
+  venuta, non lo sa); le risposte stanno in `impostazioni/catalogo` e non toccano né il giro né la paga. Se quel giorno
+  ha fatto tutto l'altra signora, i lavori dell'assente entrano nel giorno di lei.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

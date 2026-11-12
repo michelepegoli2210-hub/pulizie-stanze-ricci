@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.81.0";
+export const VERSIONE = "1.81.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1450,6 +1450,8 @@ function avviaAscolto() {
   // avvisi (WhatsApp con un tocco; Telegram automatico se configurato)
   S.stop.push(db.ascoltaDoc("impostazioni", "avvisi", d => { S.avvisi = d ? { ...d } : null; if (S.avvisi) delete S.avvisi.id; S.caricati.avvisi = true; disegna(); pianoDelMattino(); }));   // 1.51.0: caricati.avvisi
   S.stop.push(db.ascoltaDoc("impostazioni", "listino", d => { S.listino = L.listinoCompleto(d); try { aggiornaAscoltoTurni(); } catch (e) {} disegna(); pianifica(); }));
+  // 1.81.1: le risposte di Michele ai giorni senza ore del catalogo dei costi («non è venuta», «le ore non le so»)
+  if (proprietario()) S.stop.push(db.ascoltaDoc("impostazioni", "catalogo", d => { const m = {}; for (const x of (d && Array.isArray(d.giorni) ? d.giorni : [])) if (x && x.z && x.iso && x.cosa) m[`${x.z}|${x.iso}`] = x; S.catGiorni = m; if (S.vista === "catalogo" || S.vista === "paghe") disegna(); }, () => {}));
   S.stop.push(db.ascoltaDoc("impostazioni", "squadra", d => { const x = { ...(d || {}) }; delete x.id; delete x.aggiornato; S.squadra = Object.keys(x).length ? x : null; S.caricati.squadra = true; disegna(); pianifica(); }, () => { S.caricati.squadra = true; pianifica(); })); // le signore: nomi, attive, camere loro // anche le signore: serve per contare ore, stelle e controlli
   // pulizie (le signore: solo la loro zona)
   const wherePul = [["__id__", ">=", da], ["__id__", "<", L.aggiungiGiorni(a, 1)]];
@@ -2419,8 +2421,14 @@ function vistaPagheOre() {
 //  minuti pagati e la lista del lavoro di quel giorno; i minuti si spartiscono sui lavori in proporzione ai loro minuti di
 //  serie. Per ogni mansione: quante volte, quanto è costata in media, dal meno al più. Niente cronometri: bastano l'ora di
 //  arrivo e di uscita (i tasti dell'app, «arrivata» / «finito» su WhatsApp, o l'orario messo da Michele).
-//  I giorni che hanno la lista ma non l'orario non entrano: la pagina li elenca, col tasto «Metti l'orario» (lo stesso di
-//  Paghe). Qui non cambia la paga e non si scrive niente: è un conto, per fare i prezzi a camera giusti.
+//  I giorni che hanno la lista ma non l'orario non entrano: la pagina li elenca. Il conto non cambia la paga.
+//  1.81.1 (lo stesso giorno): sul telefono di Michele il catalogo contava 8 giorni e ne lasciava fuori 19, e per un giorno
+//  in cui la signora non è venuta non c'era modo di dirlo. Ogni giorno senza ore ha «Rispondi» («Com'è andata quel giorno?»):
+//  è venuta (metto l'orario, o solo le ore: entrano anche in Paghe, come sempre) · non è venuta (ha fatto tutto l'altra,
+//  oppure i lavori sono rimasti da fare) · è venuta ma le ore non le so. Le ultime risposte chiudono il giorno: stanno in
+//  impostazioni/catalogo (le scrive solo Michele, da qui), non toccano né il giro né la paga, e si riaprono con «Rimetti».
+//  Se quel giorno ha fatto tutto l'altra, quei lavori entrano nel giorno di lei: se no le sue camere sembrerebbero costare
+//  il doppio. Un giorno chiuso che poi riceve le ore torna a contare da solo (le ore vincono).
 // ============================================================================
 // la mansione di un lavoro della lista: la chiave per sommarle e il nome da far leggere
 function catVoce(p) {
@@ -2442,17 +2450,26 @@ function catLavori(z, iso) {
 }
 function catalogoCosti(sett) {
   const oggi = L.oggiISO(), a = L.aggiungiGiorni(oggi, -1), da = L.aggiungiGiorni(oggi, -(sett * 7)), tar = tariffaOra();
-  const giorni = [], senza = [], voci = {}, per = {};
-  for (const z of signore()) {
-    per[z.id] = { contati: 0, senza: 0 };
+  const sig = signore().map(z => z.id), segni = S.catGiorni || {};
+  const giorni = [], senza = [], chiusi = [], voci = {}, per = {};
+  // l'orario vero di un giorno (non una stima, non «senza orario», non in corso), una volta sola per giorno
+  const tt = {}, vero = (z, g) => { const k = z + "|" + g; if (!(k in tt)) { let t = null; try { t = turnoDelGiorno(z, g); } catch (e) {} tt[k] = t && !t.stima && !t.senzaOrario && !t.inCorso && !t.aperto && t.minuti > 0 ? t : null; } return tt[k]; };
+  // 1.81.1: la risposta di Michele a un giorno senza ore; vale finché quel giorno resta senza ore
+  const segno = (z, g) => { const s = segni[z + "|" + g]; return s && s.cosa && !vero(z, g) ? s : null; };
+  for (const z of sig) {
+    per[z] = { contati: 0, senza: 0 };
     for (let g = da; g <= a; g = L.aggiungiGiorni(g, 1)) {
-      const lav = catLavori(z.id, g); let t = null; try { t = turnoDelGiorno(z.id, g); } catch (e) {}
-      const vero = !!(t && !t.stima && !t.senzaOrario && !t.inCorso && !t.aperto && t.minuti > 0);
-      if (!vero) { if (lav.length) { senza.push({ z: z.id, iso: g, lavori: lav.length }); per[z.id].senza++; } continue; }
-      if (!lav.length) { giorni.push({ z: z.id, iso: g, t, euro: euroOre(t.minuti), lavori: [], senzaLista: true }); continue; }
-      const std = lav.reduce((s, x) => s + x.std, 0);
+      const suoi = catLavori(z, g), s = segno(z, g);
+      if (s) { chiusi.push({ z, iso: g, cosa: s.cosa, fatteDa: s.cosa === "assente" && s.fatteDa && s.fatteDa !== z && sig.includes(s.fatteDa) ? s.fatteDa : "", lavori: suoi.length }); continue; }
+      // i lavori di una collega che quel giorno non è venuta e che ha fatto lei
+      const daAltre = [];
+      for (const y of sig) { if (y === z) continue; const sy = segno(y, g); if (sy && sy.cosa === "assente" && sy.fatteDa === z) daAltre.push(...catLavori(y, g).map(x => ({ ...x, di: y }))); }
+      const lav = [...suoi, ...daAltre], t = vero(z, g);
+      if (!t) { if (lav.length) { senza.push({ z, iso: g, lavori: lav.length }); per[z].senza++; } continue; }
+      if (!lav.length) { giorni.push({ z, iso: g, t, euro: euroOre(t.minuti), lavori: [], senzaLista: true }); continue; }
+      const std = lav.reduce((x, y) => x + y.std, 0);
       const righe = lav.map(x => { const m = std > 0 ? t.minuti * x.std / std : t.minuti / lav.length; return { ...x, minuti: m, euro: m / 60 * tar }; });
-      giorni.push({ z: z.id, iso: g, t, euro: euroOre(t.minuti), lavori: righe }); per[z.id].contati++;
+      giorni.push({ z, iso: g, t, euro: euroOre(t.minuti), lavori: righe, anche: [...new Set(daAltre.map(x => x.di))] }); per[z].contati++;
       for (const r of righe) {
         const v = voci[r.k] = voci[r.k] || { k: r.k, nome: r.nome, ord: r.ord, n: 0, minuti: 0, euro: 0, min: Infinity, max: 0 };
         v.n++; v.minuti += r.minuti; v.euro += r.euro; v.min = Math.min(v.min, r.euro); v.max = Math.max(v.max, r.euro);
@@ -2460,7 +2477,7 @@ function catalogoCosti(sett) {
     }
   }
   const dopo = (x, y) => x.iso < y.iso ? 1 : x.iso > y.iso ? -1 : (x.z < y.z ? -1 : 1);
-  return { da, a, sett, tariffa: tar, per, giorni: giorni.sort(dopo), senza: senza.sort(dopo), voci: Object.values(voci).sort((x, y) => x.ord - y.ord || y.n - x.n || (x.nome < y.nome ? -1 : 1)) };
+  return { da, a, sett, tariffa: tar, per, giorni: giorni.sort(dopo), senza: senza.sort(dopo), chiusi: chiusi.sort(dopo), voci: Object.values(voci).sort((x, y) => x.ord - y.ord || y.n - x.n || (x.nome < y.nome ? -1 : 1)) };
 }
 // la scheda in cima a Paghe
 function cardCatalogo() {
@@ -2469,10 +2486,13 @@ function cardCatalogo() {
   const n = c ? c.giorni.filter(g => !g.senzaLista).length : 0, m = c ? c.senza.length : 0;
   return `<button type="button" class="card ct-entra" data-ct-vai><span class="ct-entra-ico" aria-hidden="true">📒</span><span class="ct-entra-t"><b>Quanto costa ogni mansione</b><small>Il catalogo dei costi, per fare i prezzi a camera. ${n ? `Contati ${n} ${n === 1 ? "giorno" : "giorni"}` : "Ancora nessun giorno contato"}${m ? `, ${m === 1 ? "manca l'orario di 1" : `mancano le ore di ${m}`}` : ""}.</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
+// 1.81.1: cosa ha risposto Michele a un giorno chiuso, in parole
+function catRisposta(x) { return x.cosa === "nonso" ? "è venuta, ma le ore non le sai" : x.fatteDa ? `non è venuta: ha fatto tutto ${SIG(x.fatteDa)}` : "non è venuta: i lavori sono rimasti da fare"; }
 function vistaCatalogo() {
   if (!proprietario()) return vistaPaghe();
   const sett = S.catSett === 6 ? 6 : 3, c = catalogoCosti(sett), mod = puoModificare();
   const quando = (iso) => { try { return L.dataGiornoLungo(iso); } catch (e) { return L.dataBreve(iso); } };   // «giovedì 5 nov»
+  const unito = (s) => String(s).replace(/ /g, "\u00a0");   // 1.81.1: «5 €» resta sulla stessa riga
   const nomi = signore().map(z => `${esc(SIG(z.id))} <b>${c.per[z.id] ? c.per[z.id].contati : 0}</b>`).join(" · ");
   const testa = `<section class="card ct-testa"><button type="button" class="btnsm ghost" data-ct-torna>‹ Paghe</button>
       <h2>📒 Quanto costa ogni mansione</h2>
@@ -2480,29 +2500,95 @@ function vistaCatalogo() {
       <div class="seg ct-seg" role="group" aria-label="Quante settimane"><button type="button" aria-pressed="${sett === 3}" data-ct-sett="3">Ultime 3 settimane</button><button type="button" aria-pressed="${sett === 6}" data-ct-sett="6">Ultime 6</button></div>
       <p class="ct-conta" role="status">Giorni contati: ${nomi}.</p></section>`;
   const senza = c.senza.length ? `<section class="card ct-senza"><h3>⚠ ${c.senza.length === 1 ? "Manca l'orario di 1 giorno" : `Mancano le ore di ${c.senza.length} giorni`}</h3>
-      <p>Senza l'ora di arrivo e di uscita quel giorno non entra nel conto.</p>
-      <div class="rows">${c.senza.slice(0, 10).map(x => `<div class="row ct-s"><span><b>${esc(SIG(x.z))}</b> · ${esc(quando(x.iso))}<br><span class="muted small">${x.lavori} ${x.lavori === 1 ? "lavoro" : "lavori"} in lista</span></span>${mod ? `<button type="button" class="btnsm" data-turno-orario="${esc(x.z)}|${esc(x.iso)}">Metti l'orario</button>` : ""}</div>`).join("")}</div>
-      ${c.senza.length > 10 ? `<p class="muted small" style="margin:8px 0 0">e altri ${c.senza.length - 10} più indietro.</p>` : ""}</section>` : "";
+      <p>Senza le ore quel giorno non entra nel conto.${mod ? " Tocca <b>Rispondi</b> e dimmi com'è andata: se è venuta metti le ore, se non è venuta lo segno e il giorno esce da qui." : ""}</p>
+      <div class="rows">${c.senza.slice(0, 10).map(x => `<div class="row ct-s"><span><b>${esc(SIG(x.z))}</b> · ${esc(quando(x.iso))}<br><span class="muted small">${x.lavori} ${x.lavori === 1 ? "lavoro" : "lavori"} in lista</span></span>${mod ? `<button type="button" class="btnsm" data-ct-giorno="${esc(x.z)}|${esc(x.iso)}">Rispondi</button>` : ""}</div>`).join("")}</div>
+      ${c.senza.length > 10 ? `<p class="muted small ct-altri">e altri ${c.senza.length - 10} più indietro: compaiono man mano che rispondi a questi.</p>` : ""}
+      ${mod ? `<p class="muted small ct-nota">Le ore che metti qui entrano anche in Paghe, nella settimana di quel giorno.</p>` : ""}</section>` : "";
   const voci = c.voci.length ? `<section class="card ct-voci"><h3>Le mansioni</h3><div class="ct-lista">${c.voci.map(v => {
       const pochi = v.n < 3;
-      return `<div class="ct-v${pochi ? " pochi" : ""}" data-ct-voce="${esc(v.k)}"><div class="ct-v-n"><b>${esc(v.nome)}</b><small>${v.n} ${v.n === 1 ? "volta" : "volte"} · in media ${Math.round(v.minuti / v.n)} minuti${v.n > 1 ? ` · da ${eur(v.min)} a ${eur(v.max)}` : ""}${pochi ? " · ancora poche volte" : ""}</small></div><b class="ct-v-e">${eur(v.euro / v.n)}</b></div>`; }).join("")}</div>
+      return `<div class="ct-v${pochi ? " pochi" : ""}" data-ct-voce="${esc(v.k)}"><div class="ct-v-n"><b>${esc(v.nome)}</b><small>${v.n} ${v.n === 1 ? "volta" : "volte"} · in media ${Math.round(v.minuti / v.n)} minuti${v.n > 1 ? ` · da ${unito(eur(v.min))} a ${unito(eur(v.max))}` : ""}${pochi ? " · ancora poche volte" : ""}</small></div><b class="ct-v-e">${eur(v.euro / v.n)}</b></div>`; }).join("")}</div>
       <p class="muted small ct-nota">Il prezzo è quanto ti è costata in media quella mansione, con la paga di adesso (${eur(c.tariffa)} l'ora). Se in quei giorni hanno fatto anche le stelle, il loro tempo è finito dentro le camere.</p></section>`
     : `<section class="card ct-voci"><h3>Le mansioni</h3><p class="muted" style="margin:0">Ancora nessun giorno che abbia sia le ore sia la lista del lavoro. Appena ce n'è uno, qui compare quanto costa ogni mansione.</p></section>`;
   const riga = (g) => {
-    const t = g.t, ore = t.uniti ? testoSegmenti(t.segmenti) : t.dette ? "ore scritte" : t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : "";
+    const t = g.t, ore = t.uniti ? testoSegmenti(t.segmenti) : t.dette ? (t.v && t.v.oreDette && t.v.oreDette.da === "michele" ? "solo le ore, messe da te" : "ore scritte su WhatsApp") : t.inizio && t.fine ? `${L.oraBreve(t.inizio)} → ${L.oraBreve(t.fine)}` : "";
     const conta = {}; for (const r of g.lavori) conta[r.nome] = (conta[r.nome] || 0) + 1;
     const cosa = g.senzaLista ? "quel giorno nella lista non c'era niente: non entra nel conto" : Object.entries(conta).map(([n, q]) => `${q} × ${n}`).join(", ");
-    return `<div class="ct-g"><b>${esc(quando(g.iso))} · ${esc(SIG(g.z))}</b> · ${eur(g.euro)}<small>${ore ? esc(ore) + " · " : ""}${esc(testoOreTurno(t.minuti))}</small><small>${esc(cosa)}</small></div>`;
+    const anche = g.anche && g.anche.length ? `<small class="ct-g-anche">Dentro ci sono anche i lavori di ${esc(elencoParlato(g.anche.map(y => SIG(y))))}, che quel giorno non è venuta.</small>` : "";
+    return `<div class="ct-g"><b>${esc(quando(g.iso))} · ${esc(SIG(g.z))}</b> · ${eur(g.euro)}<small>${ore ? esc(ore) + " · " : ""}${esc(testoOreTurno(t.minuti))}</small><small>${esc(cosa)}</small>${anche}</div>`;
   };
   const giorni = c.giorni.length ? `<section class="card ct-giorni"><details><summary>Giorno per giorno (${c.giorni.length})</summary>${c.giorni.map(riga).join("")}</details></section>` : "";
-  return testa + senza + voci + giorni + `<p class="muted center ct-fondo">Tra tre settimane questi numeri diventano i prezzi a camera. Li decidi tu.</p>`;
+  // 1.81.1: i giorni a cui Michele ha già risposto («non è venuta», «le ore non le so»): chiusi sotto, con «Rimetti»
+  const chiusi = c.chiusi.length ? `<section class="card ct-giorni ct-chiusi"><details><summary>Giorni a cui hai già risposto (${c.chiusi.length})</summary>${c.chiusi.map(x => `<div class="ct-g ct-c"><span><b>${esc(quando(x.iso))} · ${esc(SIG(x.z))}</b><small>${esc(catRisposta(x))}</small></span>${mod ? `<button type="button" class="btnsm ghost" data-ct-rimetti="${esc(x.z)}|${esc(x.iso)}">Rimetti</button>` : ""}</div>`).join("")}</details></section>` : "";
+  return testa + senza + voci + giorni + chiusi + `<p class="muted center ct-fondo">Tra tre settimane questi numeri diventano i prezzi a camera. Li decidi tu.</p>`;
+}
+// ---- 1.81.1: «Rispondi» a un giorno senza ore -------------------------------------------------------------------------
+// una domanda con le risposte una sotto l'altra, scritte grandi (→ la chiave scelta, o null se lascia stare)
+function catDomanda(titolo, domanda, scelte) {
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box ct-domanda" role="dialog" aria-label="${esc(titolo)}"><p class="ct-d-t"><b>${esc(titolo)}</b><span>${esc(domanda)}</span></p>${scelte.map(([v, t]) => `<button type="button" class="ct-d-b" data-v="${esc(v)}">${esc(t)}</button>`).join("")}<button type="button" class="big close" data-no>Lascia stare</button></div>`;
+    document.body.appendChild(el);
+    el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { el.remove(); ok(b.dataset.v); });
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
+  });
+}
+// solo le ore di quel giorno (quando Michele sa quante ore ha pagato, non a che ora è arrivata)
+function catOreDialogo(z, iso) {
+  return new Promise((ok) => {
+    const vecchio = $(".conferma"); if (vecchio) vecchio.remove();
+    const el = document.createElement("div"); el.className = "conferma";
+    el.innerHTML = `<div class="conferma-box chiusura turno-dialogo ore-mano" role="dialog"><div class="chiusura-t">${ICONA("orologio")}<span>Le ore di ${esc(SIG(z))} · ${esc(L.dataBreve(iso))}</span></div>
+      <label class="campo" style="margin:0 0 8px"><span>Quante ore ha fatto</span><input type="text" inputmode="decimal" data-o-ore placeholder="es. 2,5"></label>
+      <p class="muted small" style="margin:0 0 6px">Scrivi le ore così: 3 · 2,5 (due e mezza) · 2:15.</p>
+      <button class="big ok" data-si>Segna le ore</button><button class="big undo" data-no>Annulla</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("[data-si]").onclick = () => { const o = el.querySelector("[data-o-ore]").value; el.remove(); ok(o); };
+    el.querySelector("[data-no]").onclick = () => { el.remove(); ok(null); };
+    el.onclick = (e) => { if (e.target === el) { el.remove(); ok(null); } };
+  });
+}
+async function catOreSalva(z, iso) {
+  if (!puoModificare()) return;
+  const r = await catOreDialogo(z, iso); if (r == null) return;
+  const min = minutiDaOre(r);
+  if (min < 10 || min > 14 * 60) { toast("Controlla le ore: scrivile come 3 oppure 2,5."); return; }
+  try { const fatto = await segnaOreMichele(z, iso, min); toast(fatto.replace(/^Fatto: /, "Segnate ").replace(/\. Le trovi.*$/, "")); } catch (e) { erroreScrittura(e); }
+}
+// scrive (o toglie, con segno = null) la risposta a un giorno: impostazioni/catalogo, l'elenco intero ogni volta
+async function catGiornoSegna(z, iso, segno) {
+  if (!proprietario() || !puoModificare()) return false;
+  const prima = S.catGiorni || {}, dopo = { ...prima }, k = `${z}|${iso}`, limite = L.aggiungiGiorni(L.oggiISO(), -70);
+  if (segno) dopo[k] = { z, iso, cosa: segno.cosa, fatteDa: segno.fatteDa || "", quando: S.db.adesso() }; else delete dopo[k];
+  const lista = Object.values(dopo).filter(x => x && x.z && x.iso && x.cosa && x.iso >= limite);
+  S.catGiorni = Object.fromEntries(lista.map(x => [`${x.z}|${x.iso}`, x])); disegna();
+  try { await S.db.salva("impostazioni", "catalogo", { giorni: lista, aggiornato: S.db.adesso() }, false); return true; }
+  catch (e) { S.catGiorni = prima; disegna(); erroreScrittura(e); return false; }
+}
+async function catGiornoChiedi(z, iso) {
+  if (!proprietario() || !puoModificare()) return;
+  let quando = L.dataBreve(iso); try { quando = L.dataGiornoLungo(iso); } catch (e) {}
+  const altre = signore().map(x => x.id).filter(y => y !== z);
+  const r = await catDomanda(`${SIG(z)} · ${quando}`, "Com'è andata quel giorno?", [
+    ["orario", "È venuta: metto l'orario"], ["ore", "È venuta: metto solo le ore"],
+    ...altre.map(y => ["altra:" + y, `Non è venuta: ha fatto tutto ${SIG(y)}`]),
+    ["nessuno", altre.length ? "Non è venuta: i lavori sono rimasti da fare" : "Non è venuta"],
+    ["nonso", "È venuta, ma le ore non le so"]]);
+  if (!r) return;
+  if (r === "orario") { turnoSalva(z, iso); return; }
+  if (r === "ore") { catOreSalva(z, iso); return; }
+  const segno = r === "nonso" ? { cosa: "nonso", fatteDa: "" } : { cosa: "assente", fatteDa: r.startsWith("altra:") ? r.slice(6) : "" };
+  if (await catGiornoSegna(z, iso, segno)) toastAnnulla(`Segnato: ${quando} ${SIG(z)} ${catRisposta(segno).replace(": ", ", ")}`, () => { catGiornoSegna(z, iso, null); });
 }
 document.addEventListener("click", (e) => {
-  const t = e.target && e.target.closest ? e.target.closest("[data-ct-vai],[data-ct-torna],[data-ct-sett]") : null; if (!t) return;
+  const t = e.target && e.target.closest ? e.target.closest("[data-ct-vai],[data-ct-torna],[data-ct-sett],[data-ct-giorno],[data-ct-rimetti]") : null; if (!t) return;
   e.preventDefault();
   if (t.hasAttribute("data-ct-vai")) { S.vista = "catalogo"; chiudiFoglio(); disegna(); window.scrollTo(0, 0); return; }
   if (t.hasAttribute("data-ct-torna")) { S.vista = "paghe"; disegna(); window.scrollTo(0, 0); return; }
   if (t.hasAttribute("data-ct-sett")) { S.catSett = Number(t.dataset.ctSett) === 6 ? 6 : 3; disegna(); return; }
+  if (t.hasAttribute("data-ct-giorno")) { const [z, iso] = t.dataset.ctGiorno.split("|"); catGiornoChiedi(z, iso); return; }
+  if (t.hasAttribute("data-ct-rimetti")) { const [z, iso] = t.dataset.ctRimetti.split("|"); catGiornoSegna(z, iso, null).then(si => { if (si) toast("Rimesso tra i giorni senza ore"); }); return; }
 });
 
 // mettere o correggere l'orario di un giorno (solo Michele): si scrive nel documento del giorno (turnoInizio/turnoFine)

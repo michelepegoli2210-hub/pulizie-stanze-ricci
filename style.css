@@ -9917,3 +9917,20 @@ body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
 :root[data-theme="dark"] .ct-entra-t small,:root[data-theme="dark"] .ct-v-n small,:root[data-theme="dark"] .ct-g small{color:#C9C3B8}
 :root[data-theme="dark"] .ct-v.pochi .ct-v-e{color:#A8A29E}
 :root[data-theme="dark"] .ct-entra-ico{background:#3A3327;box-shadow:0 0 0 2px #7A6236}
+/* ---- 1.81.1 · sul telefono di Michele il catalogo contava 8 giorni e ne lasciava fuori 19: ogni giorno senza ore ha
+   «Rispondi», che apre una domanda con le risposte una sotto l'altra, scritte grandi e a sinistra (.ct-domanda, .ct-d-b);
+   i giorni a cui ha già risposto stanno chiusi in fondo, con «Rimetti» (.ct-c). ---- */
+.ct-senza .ct-altri{margin:8px 0 0;font-size:14px}
+.ct-senza .ct-nota{margin:10px 0 0;font-size:14px}
+.ct-domanda{text-align:left;padding:20px 16px 14px}
+.ct-domanda .ct-d-t{margin:0 0 12px;display:flex;flex-direction:column;gap:3px}
+.ct-domanda .ct-d-t b{font:800 19px/1.25 var(--f-body)}
+.ct-domanda .ct-d-t span{font:600 17px/1.3 var(--f-body);color:#57534E}
+.ct-d-b{display:block;width:100%;margin:8px 0 0;padding:13px 14px;min-height:54px;border:0;border-radius:14px;background:var(--campo);color:var(--fg);font:700 16.5px/1.25 var(--f-body);text-align:left;cursor:pointer;box-shadow:inset 0 0 0 1.5px rgba(60,40,10,.16)}
+.ct-d-b:active{filter:brightness(.95);transform:translateY(1px)}
+.ct-domanda .big.close{margin-top:12px}
+.ct-c{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.ct-c > span{flex:1 1 auto;min-width:0}
+.ct-c .btnsm{flex:none}
+:root[data-theme="dark"] .ct-domanda .ct-d-t span{color:#C9C3B8}
+:root[data-theme="dark"] .ct-d-b{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16)}
