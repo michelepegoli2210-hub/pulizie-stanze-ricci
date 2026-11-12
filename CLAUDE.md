@@ -56,9 +56,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   capirlo anche mia nonna»): arrivi e partenze sono i cartelli IN (verde) ed EXIT (rosso) disegnati come quelli veri
   (1.79.3). Le altre figurine raccontano con le persone cosa c'è dentro (1.79.7): la signora delle pulizie col sole (oggi);
   oggi → domani cerchiato col secchio (domani); il letto con chi dorme o rifatto (camere); il rubinetto e l'operaio (da
-  aggiustare); Sofia che alza la mano (domande). Nella barra in basso il tasto Segreteria è il disegno di Sofia segretaria
-  al computer che Gemini ha fatto per Michele (1.79.14: «uguale, precisa, identica»), reso più nitido (1.79.16). Non
-  ridisegnare Sofia: il ridisegno a vettori della 1.79.15 per lui «è un'altra».
+  aggiustare); Sofia che alza la mano (domande). Nella barra in basso il tasto Segreteria è la foto nitida di Sofia
+  segretaria al computer che ha dato Michele, nel quadratino con lo sfondo, più grande degli altri disegni (1.79.17).
+  Non ridisegnare Sofia: il ridisegno a vettori della 1.79.15 per lui «è un'altra»; scontornata non gli piace.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
