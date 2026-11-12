@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.79.18";
+export const VERSIONE = "1.80.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -88,6 +88,54 @@ const FACCE_PRONTE = { base: "sofia-viso.webp" };
 const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
 function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
 const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla.mp4", riposo: "cons-riposo-spilla.mp4", poster: "cons-poster-spilla.webp" };   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+// ============================================================================
+//  1.80.0 I FILMATI CANCELLATI (Michele, 12/11: «i filmati di Sofia non mi piacciono per niente… fammi vedere tutti i filmati
+//  caricati nell'app così li cambiamo» → «sì, ma dammi la possibilità di cancellarne qualcuno»).
+//  In «Impostazioni → I filmati di Sofia» (vistaFilmati) ogni filmato che l'app fa vedere ha «Cancella» e «Rimetti».
+//  Cancellato vuol dire che l'app non lo fa più vedere, da nessuna parte; il file resta sul sito, per questo si può rimettere.
+//  L'elenco dei cancellati è in impostazioni/filmati (`tolti`): lo scrivono i tasti di quella pagina, lo leggono tutti i
+//  telefoni (anche quelli delle signore, per la loro Sofia). Una copia resta su questo telefono, così mentre l'app si accende
+//  non parte un filmato cancellato.
+//  - La Sofia di casa ha due filmati lunghi fatti di pezzi (FILM_SPEZZONI): da ferma 2 pezzi, quando parla 5. Si cancella il
+//    pezzo: il filmato salta i pezzi cancellati (filmSaltaTolti) e riparte sempre da uno buono (filmInizioSpezzone).
+//  - Se sono cancellati tutti quelli in cui parla, mentre parla resta quello in cui sta ferma. Se per quel momento non resta
+//    nessun filmato, resta la sua foto (filmFoto: il video senza filmato fa vedere il poster).
+//  - La segretaria, la Sofia delle signore e l'influencer hanno un filmato per momento: senza, resta la foto.
+//  L'ordine di FILMATI è quello delle anteprime in filmati-anteprime.webp (una striscia, 200x356 l'una).
+// ============================================================================
+const FILMATI = [
+  { id: "oggi-ferma-1", g: "oggi", q: "riposo", i: 0, nome: "Ferma: ti ascolta" },
+  { id: "oggi-ferma-2", g: "oggi", q: "riposo", i: 1, nome: "Ferma: aspetta" },
+  { id: "oggi-parla-1", g: "oggi", q: "parla", i: 0, nome: "Parla 1" },
+  { id: "oggi-parla-2", g: "oggi", q: "parla", i: 1, nome: "Parla 2" },
+  { id: "oggi-parla-3", g: "oggi", q: "parla", i: 2, nome: "Parla 3" },
+  { id: "oggi-parla-4", g: "oggi", q: "parla", i: 3, nome: "Parla 4" },
+  { id: "oggi-parla-5", g: "oggi", q: "parla", i: 4, nome: "Parla 5" },
+  { id: "segr-ferma", g: "segr", q: "riposo", nome: "Sta ferma", s: 9 },
+  { id: "segr-ascolta", g: "segr", q: "ascolta", nome: "Ti ascolta", s: 9 },
+  { id: "segr-parla", g: "segr", q: "parla", nome: "Parla", s: 5 },
+  { id: "capo-ferma", g: "capo", q: "riposo", nome: "Sta ferma", s: 6 },
+  { id: "capo-parla", g: "capo", q: "parla", nome: "Parla", s: 15 },
+  { id: "influ-muove", g: "influ", q: "video", nome: "Si muove", s: 10 },
+  { id: "influ-ferma", g: "influ", q: "ferma", nome: "Sta ferma", s: 9 },
+];
+const CHIAVE_FILMATI_TOLTI = "ricci_filmati_tolti";
+let filmatiTolti = new Set((() => { try { const l = JSON.parse(localStorage.getItem(CHIAVE_FILMATI_TOLTI) || "[]"); return Array.isArray(l) ? l.filter(x => typeof x === "string") : []; } catch (e) { return []; } })());
+function filmatoTolto(id) { return filmatiTolti.has(id); }
+// i cancellati di un gruppo, in una riga: chi tiene da parte un filmato già fatto (la segretaria, l'influencer) lo rifà quando cambia
+function filmatiFirma(g) { return FILMATI.filter(f => f.g === g && filmatiTolti.has(f.id)).map(f => f.id).join(","); }
+// l'elenco nuovo dei cancellati (dai tasti della pagina o da impostazioni/filmati): si ricorda su questo telefono e si ridisegna
+function filmatiImposta(lista) {
+  const nuovi = new Set((Array.isArray(lista) ? lista : []).filter(x => typeof x === "string"));
+  if (nuovi.size === filmatiTolti.size && [...nuovi].every(x => filmatiTolti.has(x))) return false;
+  filmatiTolti = nuovi;
+  try { if (nuovi.size) localStorage.setItem(CHIAVE_FILMATI_TOLTI, JSON.stringify([...nuovi])); else localStorage.removeItem(CHIAVE_FILMATI_TOLTI); } catch (e) {}
+  try { disegna(); } catch (e) {}
+  return true;
+}
+// il filmato che gira nella pagina «I filmati di Sofia» e il link ?filmati=1 (qui in alto: disegna() li guarda sempre)
+let fmGira = null, filmatiAttesa = false;
+try { const u2 = new URL(location.href); if (u2.searchParams.has("filmati")) { filmatiAttesa = true; u2.searchParams.delete("filmati"); history.replaceState(null, "", u2.pathname + u2.search + u2.hash); } } catch (e) {}
 // 0.80: SOLO FILMATI (decisione di Michele del 21 ottobre: "lascia stare la sincronia della bocca,
 // metti soltanto i filmati"). Quando parla si vede un video in cui lei parla davvero, quando ascolta o
 // non fa niente uno in cui sta li' (ascolta, annuisce, pose). 0.81: due filmati lunghi soltanto.
@@ -112,12 +160,18 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 // cambiare assolutamente il soggetto»): ferma restano i due spezzoni calmi (ascolta 9,25 s e aspetta 8,5 s: misurati, le mani
 // non si muovono); posa e posa 2, quelli coi gesti, sono tolti (cons-riposo-calmo, 17,75 s)
 const FILM_SPEZZONI = {"riposo": [0, 222], "parla": [0, 240, 443, 683, 888]};
+const FILM_FINE = { riposo: 426, parla: 1110 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
+// 1.80.0: i pezzi cancellati da «I filmati di Sofia» (FILMATI: «oggi-ferma-1», «oggi-parla-3»…) e quelli buoni
+function filmSpezzoneTolto(quale, i) { return filmatoTolto(`oggi-${quale === "parla" ? "parla" : "ferma"}-${i + 1}`); }
+function filmSpezzoniBuoni(quale) { return (FILM_SPEZZONI[quale] || []).map((f, i) => i).filter(i => !filmSpezzoneTolto(quale, i)); }
 function filmSpezzoneDi(quale, t) { const l = FILM_SPEZZONI[quale] || [0]; let i = 0; for (let k = 0; k < l.length; k++) if ((Number(t) || 0) * 24 >= l[k] - 0.5) i = k; return i; }
 function filmInizioSpezzone(box, da, quale, t) {
   const l = FILM_SPEZZONI[quale]; if (!l || !l.length) return 0;
   const ultimo = box._ultimoSpezzone || (box._ultimoSpezzone = {});
   if (da && FILM_SPEZZONI[da]) ultimo[da] = filmSpezzoneDi(da, t);   // lo spezzone che si sta lasciando
-  const i = ((ultimo[quale] ?? -1) + 1) % l.length; ultimo[quale] = i;
+  let i = ((ultimo[quale] ?? -1) + 1) % l.length;
+  for (let k = 0; k < l.length && filmSpezzoneTolto(quale, i); k++) i = (i + 1) % l.length;   // 1.80.0: i pezzi cancellati si saltano
+  ultimo[quale] = i;
   return l[i] / 24 + 0.01;
 }
 // 0.94: SOFIA IN 3D (Michele, 24 ottobre: "la governante deve sembrare piu' 3D", scelta "tutte e due"):
@@ -450,8 +504,12 @@ function FILM_CONS(cls, tre, ritaglio) {
   const capo = !tre && sofiaCapo();   // 1.25.0
   const rit = capo && !!ritaglio;      // 1.32.0: la capo-governante ritagliata (senza sfondo), per Sofia a fianco
   const f = tre ? FILM_TRE : rit ? FILM_CAPO_TRE : capo ? FILM_CAPO : FILM_PRONTO;
-  return `<span class="donnina gov-fig gov-film ${cls}${capo ? " capo" : ""}${rit ? " ritaglio" : ""}" role="img" aria-label="${esc(nomeGov())}" data-film="riposo"${tre ? ' data-tre="1"' : ""}${capo ? ' data-capo="1"' : ""}${rit ? ' data-rit="1"' : ""}>
-    <video class="cf-v" src="${f.riposo}" poster="${f.poster}" autoplay muted playsinline loop preload="auto"></video>
+  // 1.80.0: i filmati cancellati. Senza nessun filmato «ferma» si parte dalla foto (il video senza filmato fa vedere il
+  // poster); se è cancellato il primo pezzo si parte dal primo buono (#t=secondi). Niente di cancellato: tutto come prima.
+  const buoni = capo ? (filmatoTolto("capo-ferma") ? [] : [0]) : filmSpezzoniBuoni("riposo");
+  const foto = !buoni.length, da = !capo && !foto && buoni[0] > 0 ? `#t=${(FILM_SPEZZONI.riposo[buoni[0]] / 24 + 0.01).toFixed(2)}` : "";
+  return `<span class="donnina gov-fig gov-film ${cls}${capo ? " capo" : ""}${rit ? " ritaglio" : ""}" role="img" aria-label="${esc(nomeGov())}" data-film="${foto ? "foto" : "riposo"}"${tre ? ' data-tre="1"' : ""}${capo ? ' data-capo="1"' : ""}${rit ? ' data-rit="1"' : ""}>
+    <video class="cf-v"${foto ? "" : ` src="${f.riposo}${da}"`} poster="${f.poster}"${foto ? "" : " autoplay"} muted playsinline loop preload="${foto ? "none" : "auto"}"></video>
     <video class="cf-v giu" poster="${f.poster}" muted playsinline loop preload="none"></video>
   </span>`;
 }
@@ -478,6 +536,37 @@ function filmMontaTenuti() {
     el.classList.toggle("parla", /\bparla\b/.test(cls));
     if (el.parentNode !== posto) { posto.textContent = ""; posto.appendChild(el); }
   }
+}
+// 1.80.0: c'è almeno un filmato non cancellato per quel momento («riposo» o «parla») in quella casella?
+function filmCe(box, quale) {
+  if (box && box.dataset && box.dataset.capo === "1") return !filmatoTolto(quale === "parla" ? "capo-parla" : "capo-ferma");
+  return filmSpezzoniBuoni(quale).length > 0;
+}
+// 1.80.0: per quel momento i filmati sono tutti cancellati: resta la foto. Il video nascosto si svuota (senza filmato fa
+// vedere il poster) e passa davanti; quello che girava si ferma.
+function filmFoto(box) {
+  if (!box || box.dataset.film === "foto" || box.dataset.occupato === "1") return;
+  const vs = [...box.querySelectorAll("video")]; if (vs.length < 2) return;
+  const su = vs.find(v => !v.classList.contains("giu")) || vs[0], giu = vs.find(v => v !== su);
+  box._prep = null;
+  try { giu.pause(); if (giu.getAttribute("src")) { giu.removeAttribute("src"); giu.load(); } } catch (e) {}
+  giu.classList.remove("giu"); su.classList.add("giu");
+  try { su.pause(); } catch (e) {}
+  box.dataset.film = "foto";
+}
+// 1.80.0: il filmato in vista della Sofia di casa non entra nei pezzi cancellati: poco prima della fine di un pezzo, se
+// quello dopo è cancellato, salta all'inizio del primo buono (anche lo stesso: allora gira solo quello). Se di quel
+// filmato non è cancellato niente non tocca niente: gira tutto, come sempre.
+function filmSaltaTolti(quale, v) {
+  const l = FILM_SPEZZONI[quale]; if (!v || !l || !l.some((f, i) => filmSpezzoneTolto(quale, i))) return false;
+  const t = Number(v.currentTime) || 0, i = filmSpezzoneDi(quale, t);
+  const fine = (i + 1 < l.length ? l[i + 1] : FILM_FINE[quale]) / 24;
+  if (!filmSpezzoneTolto(quale, i) && !(t >= fine - 0.2 && filmSpezzoneTolto(quale, (i + 1) % l.length))) return false;
+  let j = (i + 1) % l.length;
+  for (let k = 0; k < l.length && filmSpezzoneTolto(quale, j); k++) j = (j + 1) % l.length;
+  if (filmSpezzoneTolto(quale, j)) return false;   // tutti cancellati: ci pensa la foto
+  try { v.currentTime = l[j] / 24 + 0.01; } catch (e) { return false; }
+  return true;
 }
 let filmTimer = null;
 // Prepara il filmato `quale` nel video nascosto (gia' al punto giusto) e lo manda in dissolvenza al posto di quello in corso.
@@ -569,15 +658,21 @@ function filmVigila() {
       const parla = vuole && (suono || voceInCorso);
       const ascolta = !parla && forzato === "ascolto";
       const pensa = !parla && !ascolta && forzato === "pensa";
-      const quale = FILM_GRUPPI[parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : "riposo"];
+      let quale = FILM_GRUPPI[parla ? "parla" : ascolta ? "ascolta" : pensa ? "pensa" : "riposo"];
+      // 1.80.0: i filmati cancellati. Senza quelli in cui parla resta quello in cui sta ferma; senza neanche quello, la foto
+      if (quale === "parla" && !filmCe(b, "parla")) quale = "riposo";
+      if (!filmCe(b, quale)) { filmFoto(b); continue; }
       const su = [...b.querySelectorAll("video")].find(v => !v.classList.contains("giu"));
-      // il filmato in vista gira da solo (loop): se per qualche motivo si e' fermato, riparte
-      if (su && !su.loop) su.loop = true;
-      if (su && su.paused && !b.dataset.occupato && su.readyState >= 2) su.play().catch(() => {});
-      else if (su && su.paused && !b.dataset.occupato) filmRianima(su);   // 1.11.0: fermo e senza immagine (dopo lo sfondo)
-      if (su && !su.paused) su._fermoDa = 0;
-      if (su && !su.paused && !b.dataset.occupato && b.offsetWidth > 0) filmSpinta(su);   // 1.11.0
+      if (b.dataset.film !== "foto") {
+        // il filmato in vista gira da solo (loop): se per qualche motivo si e' fermato, riparte
+        if (su && !su.loop) su.loop = true;
+        if (su && su.paused && !b.dataset.occupato && su.readyState >= 2) su.play().catch(() => {});
+        else if (su && su.paused && !b.dataset.occupato) filmRianima(su);   // 1.11.0: fermo e senza immagine (dopo lo sfondo)
+        if (su && !su.paused) su._fermoDa = 0;
+        if (su && !su.paused && !b.dataset.occupato && b.offsetWidth > 0) filmSpinta(su);   // 1.11.0
+      }
       if ((b.dataset.film || "") !== quale) filmUno(quale, b);
+      else if (su && b.dataset.capo !== "1" && !b.dataset.occupato) filmSaltaTolti(quale, su);   // 1.80.0
     }
   }, 150);
 }
@@ -1297,6 +1392,7 @@ function avviaAscolto() {
   const a = L.aggiungiGiorni(oggi, 45);
   // impostazioni condivise
   S.stop.push(db.ascoltaDoc("impostazioni", "camere", d => { if (d?.lista?.length) { const lista = d.lista.filter(c => !CAMERE_TOLTE[c.id]).map(c => { const b = CAMERE.find(x => x.id === c.id); return b ? { ...c, nome: b.nome, piani: b.piani, posti: b.posti ?? c.posti } : c; }); S.camere = [...lista, ...CAMERE.filter(c => !lista.some(x => x.id === c.id))]; } if (d?.zone) S.zone = d.zone; disegna(); pianifica(); }));
+  S.stop.push(db.ascoltaDoc("impostazioni", "filmati", d => { filmatiImposta(d && Array.isArray(d.tolti) ? d.tolti : []); }));   // 1.80.0: i filmati cancellati (a tutti: anche la Sofia delle signore)
   S.stop.push(db.ascoltaDoc("impostazioni", "controlli", d => { S.impControlli = d || null; if (d) delete S.impControlli.id; aggiornaAscoltoAltrui(); aggiornaControllatrice(); disegna(); }));
   // 1.12.0 ArgonCloud: le impostazioni del metodo (le leggono anche le signore: non stanno nel listino)
   S.stop.push(db.ascoltaDoc("impostazioni", "argon", d => { S.argon = d ? { ...d } : null; if (S.argon) delete S.argon.id; aggiornaAscoltoArgon(); disegna(); pianifica(); argonVenerdi(); pianiPresto(); }));
@@ -1464,11 +1560,13 @@ function disegna() {
   if (condivisoAtteso) guardaCondiviso();
   if (letturaAttesa) guardaLettura();
   if (segreteriaAttesa) guardaSegreteria();   // 1.49.0
+  if (filmatiAttesa) guardaFilmati();   // 1.80.0
   if (avvisoAtteso) guardaAvviso();   // 1.55.13
   if (manFattoAtteso) guardaManFatto();   // 1.58.0
   if (tuFattoAtteso) guardaTuFatto();   // 1.62.0
   try { sg2SofiaMonta(); } catch (e) {}   // 1.62.1: Sofia segretaria in testa alla Segreteria
   try { socFilmMonta(); } catch (e) {}   // 1.70.0: il filmato di Sofia influencer
+  try { filmatiMonta(); } catch (e) {}   // 1.80.0: il filmato che gira nella pagina «I filmati di Sofia»
   if (condivisaInAttesa && S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie) { condivisaInAttesa = false; setTimeout(guardaCondivisa, 0); }   // 1.51.0
   if (!chiaveCondivisaGuardata && S.pronto && proprietario() && !S.utente?.finta) prendiChiaveCondivisa();
   try { indietroVista(); } catch (e) {}   // 1.7.0
@@ -6368,12 +6466,16 @@ function sg2SofiaMonta() {
   const posto = document.querySelector(".sg2-sofia-posto");
   if (!posto) { if (sg2Sofia) sg2Sofia.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); return; }
   const rit = ritaglioOK();
-  if (sg2Sofia && (sg2Sofia.dataset.rit || "") !== (rit ? "1" : "")) { sg2Sofia.remove(); sg2Sofia = null; }
+  if (sg2Sofia && ((sg2Sofia.dataset.rit || "") !== (rit ? "1" : "") || (sg2Sofia.dataset.tolti || "") !== filmatiFirma("segr"))) { sg2Sofia.remove(); sg2Sofia = null; }   // 1.80.0: si rifà anche quando cambiano i filmati cancellati
   if (!sg2Sofia) {
     const el = document.createElement("span"); el.className = "sg2-sf"; el.dataset.rit = rit ? "1" : "";
-    el.innerHTML = rit ? `<video class="sg2-sf-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video><video class="sg2-sf-ascolta" src="${FILM_SEGR.ascolta}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sg2-sf-parla" src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>`}`
+    // 1.80.0: i filmati cancellati (I filmati di Sofia): senza «sta ferma» la sua foto, ferma davvero; senza «ti ascolta» o
+    // «parla» in quel momento resta quello in cui sta ferma
+    const tF = filmatoTolto("segr-ferma"), tA = filmatoTolto("segr-ascolta"), tP = filmatoTolto("segr-parla");
+    el.dataset.tolti = filmatiFirma("segr");
+    el.innerHTML = rit ? `${tF ? `<img class="sg2-sf-riposo sg2-sf-foto" src="${FILM_SEGR.poster}" alt="">` : `<video class="sg2-sf-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>`}${tA ? "" : `<video class="sg2-sf-ascolta" src="${FILM_SEGR.ascolta}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>`}${segrParlaManca || tP ? "" : `<video class="sg2-sf-parla" src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>`}`
       : `<img class="sg2-sf-img" src="${FILM_SEGR.poster}" alt="">`;
-    const v = el.querySelector(".sg2-sf-riposo"), vp = el.querySelector(".sg2-sf-parla"), img = el.querySelector("img");
+    const v = el.querySelector("video.sg2-sf-riposo"), vp = el.querySelector(".sg2-sf-parla"), img = el.querySelector("img");
     if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.removeAttribute("src"); try { v.load(); } catch (e) {} });
     if (vp) vp.addEventListener("error", () => { segrParlaManca = true; vp.remove(); });
     const va = el.querySelector(".sg2-sf-ascolta"); if (va) va.addEventListener("error", () => { va.remove(); el.classList.remove("ascolta"); });   // 1.70.1
@@ -6384,7 +6486,7 @@ function sg2SofiaMonta() {
   const parla = !!(voceInCorso || sg2ParlaTel), v = sg2Sofia.querySelector(".sg2-sf-riposo"), vp = sg2Sofia.querySelector(".sg2-sf-parla");
   if (v && v.paused) { try { v.play().catch(() => {}); } catch (e) {} }
   if (vp) { if (parla && vp.paused) { try { vp.play().catch(() => {}); } catch (e) {} } else if (!parla && !vp.paused) { try { vp.pause(); } catch (e) {} } }
-  sg2Sofia.classList.toggle("parla", parla);
+  sg2Sofia.classList.toggle("parla", parla && (!!vp || !!sg2Sofia.querySelector(".sg2-sf-img")));   // 1.80.0: senza il filmato «parla» resta quello fermo (prima la figura spariva)
   // 1.70.1: mentre il microfono ti ascolta (e mentre ci pensa) il filmato in cui ti ascolta
   const ascolta = !parla && !!(sg2Rec || ["ascolto", "pensa"].includes((S.sg2Bolla || {}).stato)), va = sg2Sofia.querySelector(".sg2-sf-ascolta");
   if (va) { if (ascolta && va.paused) { try { va.currentTime = 0; va.play().catch(() => {}); } catch (e) {} } else if (!ascolta && !va.paused) { try { va.pause(); } catch (e) {} } }
@@ -6400,13 +6502,13 @@ function segrFuori() {
   let vuoi = false;
   try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && (voceInCorso || sg2ParlaTel) && !sg2TestaInVista() && !document.querySelector(".sheet")); } catch (e) {}
   if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (f.classList.contains("su")) return; f.hidden = true; f.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); }, 360); } return; }
-  const rit = ritaglioOK() && !segrParlaManca;
+  const rit = ritaglioOK() && !segrParlaManca && !filmatoTolto("segr-parla");   // 1.80.0: «parla» cancellato: la figura ferma
   if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
   if (!f) {
     f = document.createElement("button"); f.type = "button"; f.id = "segrFuori"; f.className = "segr-fuori"; f.hidden = true; f.dataset.rit = rit ? "1" : "";
     f.innerHTML = `<span class="sgf-fig">${rit ? `<video src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`}</span><span class="sgf-x" aria-hidden="true">✕</span>`;
     const v = f.querySelector("video");
-    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.src = FILM_SEGR.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
+    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; if (filmatoTolto("segr-ferma")) return; v.src = FILM_SEGR.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
     f.onclick = (e) => { e.preventDefault(); sg2Zitta(); disegna(); };
     document.body.appendChild(f);
   }
@@ -6563,11 +6665,11 @@ function fantasmaSegreteria() {
   let vuoi = false;
   try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && S.sgrAperta && document.getElementById("sgrTendina") && !document.querySelector(".sheet")); } catch (e) {}   // 1.62.0: la tendina non c'è più   // 1.41.0: solo a tendina aperta (Michele: «troppo trasparente non va bene; quando la premo la vedo»)
   if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su", "parla"); clearTimeout(f._via); f._via = setTimeout(() => { if (!f.classList.contains("su")) { f.hidden = true; f.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); } }, 650); } return; }
-  const rit = ritaglioOK();
-  if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
+  const rit = ritaglioOK() && !filmatoTolto("segr-ferma");   // 1.80.0: «sta ferma» cancellato: la figura ferma
+  if (f && ((f.dataset.rit || "") !== (rit ? "1" : "") || (f.dataset.tolti || "") !== filmatiFirma("segr"))) { f.remove(); f = null; }
   if (!f) {
-    f = document.createElement("div"); f.id = "sgFantasma"; f.className = "sgr-fantasma in-tendina"; f.setAttribute("aria-hidden", "true"); f.hidden = true; f.dataset.rit = rit ? "1" : "";
-    f.innerHTML = rit ? `<video class="sgr-f-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>${segrParlaManca ? "" : `<video class="sgr-f-parla" src="${FILM_SEGR.parla}" muted playsinline loop preload="auto"></video>`}` : `<img src="${FILM_SEGR.poster}" alt="">`;
+    f = document.createElement("div"); f.id = "sgFantasma"; f.dataset.tolti = filmatiFirma("segr"); f.className = "sgr-fantasma in-tendina"; f.setAttribute("aria-hidden", "true"); f.hidden = true; f.dataset.rit = rit ? "1" : "";
+    f.innerHTML = rit ? `<video class="sgr-f-riposo" src="${FILM_SEGR.riposo}" poster="${FILM_SEGR.poster}" autoplay muted playsinline loop preload="auto"></video>${segrParlaManca || filmatoTolto("segr-parla") ? "" : `<video class="sgr-f-parla" src="${FILM_SEGR.parla}" muted playsinline loop preload="auto"></video>`}` : `<img src="${FILM_SEGR.poster}" alt="">`;
     const v = f.querySelector("video.sgr-f-riposo"), vp = f.querySelector("video.sgr-f-parla"), img = f.querySelector("img");
     // finché i filmati da segretaria non ci sono (o non si caricano), la capo-governante di sempre
     if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.removeAttribute("src"); try { v.load(); } catch (e) {} });
@@ -7317,6 +7419,134 @@ document.addEventListener("click", (e) => {
   const rl = t.closest("[data-sgr-rileggi]"); if (rl) { rl.disabled = true; rileggiDaCapo(rl.dataset.sgrRileggi); return; }
   const rr = t.closest("[data-sgr-risp]"); if (rr) { const [lid, i, j] = rr.dataset.sgrRisp.split("|"); const x = (S.segreteria || {})["segreteria_" + lid]; const d = x && x.domande && x.domande[Number(i)]; if (d) rispostaDomanda(lid, Number(i), (d.risposte || [])[Number(j)] || ""); return; }
 });
+// ============================================================================
+//  1.80.0 LA PAGINA «I FILMATI DI SOFIA» (Michele, 12/11: «fammi vedere tutti i filmati caricati nell'app… dammi la possibilità
+//  di cancellarne qualcuno»). In Impostazioni, in cima (cardFilmatiAltro), o col link dell'app che finisce con ?filmati=1.
+//  Una scheda per filmato (FILMATI), a gruppi: l'anteprima (un tocco lo fa girare lì dentro, un altro lo ferma), il numero, il
+//  nome, i secondi e il tasto «Cancella» oppure, se è cancellato, «Rimetti». I tasti scrivono impostazioni/filmati (i
+//  proprietari possono già scriverlo: le regole non cambiano) e l'app cambia subito, qui e sugli altri telefoni.
+//  Il filmato che gira è uno solo, tenuto da parte (fmGira): la pagina si ridisegna a ogni dato nuovo e lui torna al suo posto.
+// ============================================================================
+const FM_GRUPPI = [
+  ["oggi", "Nella pagina Oggi", "La Sofia grande della prima pagina."],
+  ["segr", "Nella Segreteria", "Sofia segretaria, in cima alla pagina."],
+  ["capo", "Quella che vedono le signore", "Sofia col gilet verde, nella loro parte dell'app."],
+  ["influ", "Sofia influencer", "Nella pagina di Instagram."],
+];
+// quale file e quale pezzo (in secondi) fa vedere quel filmato; `a` = 0 vuol dire tutto il file
+function filmatoFile(f) {
+  if (f.g === "oggi") { const l = FILM_SPEZZONI[f.q]; return { file: FILM_PRONTO[f.q], da: l[f.i] / 24, a: (f.i + 1 < l.length ? l[f.i + 1] : FILM_FINE[f.q]) / 24 }; }
+  return { file: (f.g === "segr" ? FILM_SEGR : f.g === "capo" ? FILM_CAPO : FILM_INFLU)[f.q], da: 0, a: 0 };
+}
+function filmatoSecondi(f) { const x = filmatoFile(f); return x.a ? Math.round(x.a - x.da) : f.s; }
+// cosa si vede dove i filmati mancano (una riga sotto il titolo del gruppo)
+function filmatiAvviso(g) {
+  const via = filmatoTolto;
+  if (g === "oggi") { const f = !filmSpezzoniBuoni("riposo").length, p = !filmSpezzoniBuoni("parla").length; return f && p ? "Senza filmati si vede la sua foto, ferma." : f ? "Da ferma si vede la sua foto." : p ? "Quando parla resta il filmato in cui sta ferma." : ""; }
+  if (g === "segr") { const f = via("segr-ferma"), a = via("segr-ascolta"), p = via("segr-parla"); return f && a && p ? "Senza filmati si vede la sua foto, ferma." : f ? "Da ferma si vede la sua foto." : a || p ? "Dove manca il filmato resta quello in cui sta ferma." : ""; }
+  if (g === "capo") { const f = via("capo-ferma"), p = via("capo-parla"); return f && p ? "Senza filmati le signore vedono la sua foto, ferma." : f ? "Da ferma le signore vedono la sua foto." : p ? "Quando parla resta il filmato in cui sta ferma." : ""; }
+  const m = via("influ-muove"), f = via("influ-ferma"); return m && f ? "Senza filmati si vede la sua foto, ferma." : m ? "Resta solo quello in cui sta ferma." : f ? "Finito il filmato resta ferma sull'ultima immagine." : "";
+}
+const FM_ICO = { vai: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.2v13.6L19.2 12z" fill="currentColor"/></svg>`, ferma: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5h3.6v13H7zM13.4 5.5H17v13h-3.6z" fill="currentColor"/></svg>` };
+function vistaFilmati() {
+  const tolti = FILMATI.filter(f => filmatoTolto(f.id)).length, puo = puoModificare();
+  let n = 0;
+  const carta = (f) => {
+    const via = filmatoTolto(f.id), k = FILMATI.indexOf(f), num = ++n, gira = !!(fmGira && fmGira.id === f.id);
+    return `<article class="fm-c${via ? " via" : ""}" data-fm-carta="${f.id}">
+      <button type="button" class="fm-ant${gira ? " gira" : ""}" data-fm-guarda="${f.id}" aria-label="Filmato ${num}, ${esc(f.nome)}: tocca per guardarlo"><span class="fm-img" style="background-position:${(k * 100 / (FILMATI.length - 1)).toFixed(3)}% 0"></span><span class="fm-posto" data-fm="${f.id}"></span><i class="fm-n">${num}</i><i class="fm-play fm-vai">${FM_ICO.vai}</i><i class="fm-play fm-stop">${FM_ICO.ferma}</i>${via ? `<b class="fm-via">Cancellato</b>` : ""}</button>
+      <b class="fm-nome">${esc(f.nome)}</b><small class="fm-s">${filmatoSecondi(f)} secondi</small>
+      ${via ? `<button type="button" class="fm-b rimetti" data-fm-rimetti="${f.id}"${puo ? "" : " disabled"}>↩ Rimetti</button>` : `<button type="button" class="fm-b cancella" data-fm-cancella="${f.id}"${puo ? "" : " disabled"}>✕ Cancella</button>`}
+    </article>`;
+  };
+  return `<section class="card fm-testa"><button type="button" class="btnsm ghost" data-fm-torna>‹ Impostazioni</button>
+      <h2>🎬 I filmati di ${esc(nomeGov())}</h2>
+      <p>Tocca un filmato per guardarlo. <b>Cancella</b>: l'app non lo fa più vedere. <b>Rimetti</b>: torna com'era. Vale su tutti i telefoni.</p>
+      <p class="fm-conta" role="status"><span>Sono <b>${FILMATI.length}</b> filmati. Cancellati: <b>${tolti}</b>.</span>${tolti && puo ? `<button type="button" class="btnsm ghost" data-fm-tutti>↩ Rimetti tutti</button>` : ""}</p></section>
+    ${FM_GRUPPI.map(([g, titolo, sotto]) => { const av = filmatiAvviso(g); return `<section class="card fm-gruppo" data-fm-gruppo="${g}"><h3>${titolo}</h3><p class="muted">${sotto}${av ? `<span class="fm-avviso">${av}</span>` : ""}</p><div class="fm-griglia">${FILMATI.filter(f => f.g === g).map(carta).join("")}</div></section>`; }).join("")}
+    <p class="muted center fm-fondo">Dove non resta nessun filmato, ${esc(nomeGov())} si vede in foto, ferma. I filmati nuovi li fa Gemini.</p>`;
+}
+// la scheda in cima a Impostazioni
+function cardFilmatiAltro() {
+  if (!proprietario()) return "";
+  const tolti = FILMATI.filter(f => filmatoTolto(f.id)).length;
+  return `<button type="button" class="card fm-entra" data-fm-vai><img src="sofia-viso.webp" alt="" class="fm-entra-img"><span><b>🎬 I filmati di ${esc(nomeGov())}</b><small>Guardali tutti e cancella quelli che non ti piacciono. Sono ${FILMATI.length}${tolti ? `, cancellati ${tolti}` : ""}.</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+}
+// il filmato che sta girando nella pagina (uno solo) è fmGira = { id, el }, dichiarato in alto con FILMATI
+function filmatiFerma() {
+  if (!fmGira) return;
+  const v = fmGira.el; fmGira = null;
+  try { v.pause(); v.removeAttribute("src"); v.load(); } catch (e) {}
+  v.remove();
+  document.querySelectorAll(".fm-ant.gira").forEach(b => b.classList.remove("gira"));
+}
+function filmatiGuarda(id) {
+  const f = FILMATI.find(x => x.id === id); if (!f) return;
+  if (fmGira && fmGira.id === id) { filmatiFerma(); return; }   // un altro tocco lo ferma
+  filmatiFerma();
+  const x = filmatoFile(f), v = document.createElement("video");
+  v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.loop = !x.a;
+  if (x.a) {   // un pezzo di un filmato lungo: gira solo quel pezzo
+    const daCapo = () => { try { v.currentTime = x.da + 0.01; } catch (e) {} v.play().catch(() => {}); };
+    const guarda = () => { if (!fmGira || fmGira.el !== v) return; const t = Number(v.currentTime) || 0; if (t >= x.a - 0.06 || t < x.da - 0.25) daCapo(); requestAnimationFrame(guarda); };
+    v.addEventListener("ended", daCapo);
+    v.addEventListener("loadedmetadata", () => { if (x.da > 0.05 && Math.abs((Number(v.currentTime) || 0) - x.da) > 0.2) { try { v.currentTime = x.da + 0.01; } catch (e) {} } requestAnimationFrame(guarda); }, { once: true });
+  }
+  v.addEventListener("error", () => { if (fmGira && fmGira.el === v) { filmatiFerma(); toast("Questo filmato qui non si riesce a vedere."); } });
+  v.src = x.file + (x.da > 0.05 ? `#t=${(x.da + 0.01).toFixed(2)}` : "");
+  fmGira = { id, el: v };
+  filmatiMonta();
+}
+// dopo ogni disegno: il filmato che gira torna nella sua scheda (se la pagina non c'è più, si ferma)
+function filmatiMonta() {
+  if (!fmGira) return;
+  const posto = S.vista === "filmati" ? document.querySelector(`.fm-posto[data-fm="${fmGira.id}"]`) : null;
+  if (!posto) { filmatiFerma(); return; }
+  if (fmGira.el.parentNode !== posto) posto.appendChild(fmGira.el);
+  const b = posto.closest(".fm-ant"); if (b) b.classList.add("gira");
+  if (fmGira.el.paused) fmGira.el.play().catch(() => {});
+}
+// «Cancella» (via = true), «Rimetti» (via = false), «Rimetti tutti» (id = null)
+async function filmatiCambia(id, via) {
+  if (!proprietario() || !puoModificare()) return;
+  const f = id ? FILMATI.find(x => x.id === id) : null; if (id && !f) return;
+  if (!id && !filmatiTolti.size) return;
+  const nuovo = new Set(filmatiTolti);
+  if (!id) nuovo.clear(); else if (via) nuovo.add(id); else nuovo.delete(id);
+  // nell'ordine della pagina; in coda quelli che questa versione non conosce (messi da un telefono più aggiornato)
+  const lista = [...FILMATI.map(x => x.id).filter(x => nuovo.has(x)), ...[...nuovo].filter(x => !FILMATI.some(y => y.id === x))];
+  if (via && fmGira && fmGira.id === id) filmatiFerma();
+  // la scheda toccata resta ferma sotto il dito: se sopra compare o sparisce una riga («Rimetti tutti» in cima, l'avviso
+  // del gruppo) la pagina scorre di quel tanto, subito
+  const dove = () => { const c = id ? document.querySelector(`[data-fm-carta="${id}"]`) : null; return c ? c.getBoundingClientRect().top : null; };
+  const y0 = dove();
+  filmatiImposta(lista);   // subito, su questo telefono
+  const y1 = dove();
+  if (y0 !== null && y1 !== null && Math.abs(y1 - y0) > 1) { try { window.scrollBy({ top: y1 - y0, left: 0, behavior: "instant" }); } catch (e) { window.scrollBy(0, y1 - y0); } }
+  const num = id ? FILMATI.indexOf(f) + 1 : 0;   // il numero che ha nella pagina
+  toast(!id ? "Rimessi tutti i filmati" : via ? `Cancellato il filmato ${num}: non si vede più` : `Rimesso il filmato ${num}`);
+  try { await S.db.salva("impostazioni", "filmati", { tolti: lista, aggiornato: S.db.adesso() }, false); }
+  catch (e) { console.error(e); toast("Non sono riuscita a salvarlo per gli altri telefoni: riprova tra poco"); }
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-fm-vai],[data-fm-torna],[data-fm-guarda],[data-fm-cancella],[data-fm-rimetti],[data-fm-tutti]") : null;
+  if (!t) return;
+  e.preventDefault();
+  if (t.hasAttribute("data-fm-vai")) { S.vista = "filmati"; chiudiFoglio(); disegna(); window.scrollTo(0, 0); return; }
+  if (t.hasAttribute("data-fm-torna")) { filmatiFerma(); S.vista = "altro"; disegna(); window.scrollTo(0, 0); return; }
+  if (t.hasAttribute("data-fm-guarda")) { filmatiGuarda(t.dataset.fmGuarda); return; }
+  if (t.hasAttribute("data-fm-cancella")) { filmatiCambia(t.dataset.fmCancella, true); return; }
+  if (t.hasAttribute("data-fm-rimetti")) { filmatiCambia(t.dataset.fmRimetti, false); return; }
+  if (t.hasAttribute("data-fm-tutti")) { filmatiCambia(null, false); return; }
+});
+// il link dell'app che finisce con ?filmati=1 apre questa pagina ai proprietari (filmatiAttesa, letto in alto con FILMATI)
+function guardaFilmati() {
+  if (!filmatiAttesa || !S.pronto) return;
+  filmatiAttesa = false;
+  if (!proprietario()) return;
+  S.vista = "filmati"; disegna(); window.scrollTo(0, 0);
+}
+
 // ---- schermate dei proprietari ---------------------------------------------------
 function vistaProprietario() {
   const v = S.vista;
@@ -7334,6 +7564,7 @@ function vistaProprietario() {
   else if (v === "segreteria") corpo = vistaSegreteria();   // 1.39.0
   else if (v === "alloggiati") corpo = vistaAlloggiati();   // 1.56.0
   else if (v === "social") corpo = vistaSocial();   // 1.66.0
+  else if (v === "filmati") corpo = vistaFilmati();   // 1.80.0
   else if (v === "signora") corpo = vistaSignora(S.sigZona || zoneOrdinate()[0].id);
   else corpo = vistaOggiGestione();
   return tabs + corpo;
@@ -9077,7 +9308,7 @@ function cardStileCasa() {
     <p class="sofia-ver-tit"><b>La spilla di ${esc(nomeGov())}</b></p>
     <div class="seg"><button type="button" aria-pressed="${!sofiaComEra()}" data-sofia-ver="nuova">Nuova</button><button type="button" aria-pressed="${sofiaComEra()}" data-sofia-ver="prima">Com'era</button></div>
     <span class="small muted">Nuova: la spilla d'oro con il simbolo delle Stanze di Ricci. Com'era: i filmati di prima, con il medaglione, identici. Si cambia quando vuoi.</span>
-    <a class="sofia-filmati-link" href="sofia-filmati.html" target="_blank" rel="noopener">Guarda tutti i filmati di ${esc(nomeGov())}, numerati ›</a>
+    <button type="button" class="sofia-filmati-link" data-fm-vai>Guarda tutti i filmati di ${esc(nomeGov())} e cancella quelli che non vuoi ›</button>
     <h3>5. Orologio e data</h3>
     <div class="seg"><button type="button" aria-pressed="${orologioVoluto()}" data-orologio-scelta="si">Sì</button><button type="button" aria-pressed="${!orologioVoluto()}" data-orologio-scelta="no">No</button></div>
     <span class="small muted">L'ora grande e il giorno nella barra in cima, in ogni schermata.</span>
@@ -13839,22 +14070,32 @@ let socFilm = null;
 function socFilmMonta() {
   const posto = document.querySelector(".soc-film-posto");
   if (!posto) { if (socFilm) { socFilm._fuori = true; socFilm.querySelectorAll("video").forEach(v => { if (!v.paused) { try { v.pause(); } catch (e) {} } }); } return; }
+  if (socFilm && (socFilm.dataset.tolti || "") !== filmatiFirma("influ")) { socFilm.remove(); socFilm = null; }   // 1.80.0: sono cambiati i filmati cancellati: si rifà
   if (!socFilm) {
-    const b = document.createElement("button"); b.type = "button"; b.className = "soc-film"; b.setAttribute("aria-label", "Sofia influencer: tocca per rivederla");
-    b.innerHTML = `<video class="soc-intro" src="${FILM_INFLU.video}" poster="${FILM_INFLU.poster}" muted playsinline preload="auto"></video><video class="soc-ferma" src="${FILM_INFLU.ferma}" muted playsinline loop preload="auto"></video><small>Assistente virtuale · creata con l'IA</small>`;
+    // 1.80.0: i filmati cancellati (I filmati di Sofia): senza «si muove» c'è subito quella ferma; senza «sta ferma» il filmato
+    // si ferma sull'ultima immagine (come sempre quando non si carica); senza niente resta la foto (lo sfondo del tasto)
+    const tM = filmatoTolto("influ-muove"), tF = filmatoTolto("influ-ferma");
+    const b = document.createElement("button"); b.type = "button"; b.className = "soc-film"; b.setAttribute("aria-label", tM ? "Sofia influencer" : "Sofia influencer: tocca per rivederla");
+    b.dataset.tolti = filmatiFirma("influ");
+    b.innerHTML = `${tM ? "" : `<video class="soc-intro" src="${FILM_INFLU.video}" poster="${FILM_INFLU.poster}" muted playsinline preload="auto"></video>`}${tF ? "" : `<video class="soc-ferma" src="${FILM_INFLU.ferma}" muted playsinline loop preload="auto"></video>`}<small>Assistente virtuale · creata con l'IA</small>`;
     const v = b.querySelector(".soc-intro"), f = b.querySelector(".soc-ferma");
     // 1.70.1: finito il filmato, resta lì ferma (il giro «sta ferma» parte proprio dall'ultimo fotogramma: nessun salto)
-    v.addEventListener("ended", () => { if (!f || f.dataset.via) return; try { f.currentTime = 0; f.play().catch(() => {}); } catch (e) {} b.classList.add("ferma"); });
+    if (v) v.addEventListener("ended", () => { if (!f || f.dataset.via) return; try { f.currentTime = 0; f.play().catch(() => {}); } catch (e) {} b.classList.add("ferma"); });
     if (f) f.addEventListener("error", () => { f.dataset.via = "1"; b.classList.remove("ferma"); });
-    b.onclick = (e) => { e.preventDefault(); b.classList.remove("ferma"); try { if (f) f.pause(); v.currentTime = 0; v.play().catch(() => {}); } catch (er) {} };
+    b.onclick = (e) => { e.preventDefault(); if (!v) return; b.classList.remove("ferma"); try { if (f) f.pause(); v.currentTime = 0; v.play().catch(() => {}); } catch (er) {} };
     socFilm = b; socFilm._fuori = true;
   }
   if (socFilm.parentNode !== posto) { posto.textContent = ""; posto.appendChild(socFilm); }
   if (socFilm._fuori) {   // appena entri nella sezione: dall'inizio
     socFilm._fuori = false;
     const v = socFilm.querySelector(".soc-intro"), f = socFilm.querySelector(".soc-ferma");
-    socFilm.classList.remove("ferma"); if (f) { try { f.pause(); } catch (e) {} }
-    if (!motoRidotto()) { try { v.currentTime = 0; v.play().catch(() => {}); } catch (e) {} }
+    if (v) {
+      socFilm.classList.remove("ferma"); if (f) { try { f.pause(); } catch (e) {} }
+      if (!motoRidotto()) { try { v.currentTime = 0; v.play().catch(() => {}); } catch (e) {} }
+    } else if (f && !f.dataset.via) {   // 1.80.0: senza il filmato in cui si muove c'è subito quella ferma
+      socFilm.classList.add("ferma");
+      if (!motoRidotto()) { try { f.play().catch(() => {}); } catch (e) {} }
+    }
   } else if (socFilm.classList.contains("ferma")) { const f = socFilm.querySelector(".soc-ferma"); if (f && f.paused && !motoRidotto()) { try { f.play().catch(() => {}); } catch (e) {} } }
 }
 function cardSocialAltro() {
@@ -15195,7 +15436,7 @@ document.addEventListener("change", (e) => {
 }, true);
 function vistaAltro() {
   const r = S.regole;
-  return cardDaFarePC() + cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardFilmatiAltro() + cardDaFarePC() + cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>

@@ -60,6 +60,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   al computer che Gemini ha fatto per Michele, il più nitido possibile da quello screenshot (1.79.18). Non ridisegnare
   Sofia (1.79.15: «è un'altra»); scontornata e la foto nel quadratino grande (1.79.17) non gli sono piaciute.
 
+- I filmati di Sofia (1.80.0): l'elenco è `FILMATI` in `app.js` (14: la pagina Oggi a pezzi, la segretaria, quella delle
+  signore, l'influencer). Michele li cancella e li rimette da «Impostazioni → I filmati di Sofia» (`impostazioni/filmati`,
+  campo `tolti`, scritto solo da quei tasti): cancellato = l'app non lo fa vedere, resta la foto. Un filmato nuovo va
+  aggiunto a `FILMATI` e alla striscia delle anteprime `filmati-anteprime.webp`, nello stesso ordine.
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.

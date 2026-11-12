@@ -9789,3 +9789,51 @@ body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .cas
 
 /* ---- 1.79.18 · Michele (12/11): «Non mi piace, metti quello di prima…». Tolto il quadratino grande della 1.79.17 (la foto
    dello studio, 56 px, che usciva sopra la barra): il tasto Segreteria torna grande come gli altri, col disegno di Gemini. ---- */
+
+/* ---- 1.80.0 · Michele (12/11): «fammi vedere tutti i filmati caricati nell'app così li cambiamo… dammi la possibilità di
+   cancellarne qualcuno». La pagina «I filmati di Sofia» (Impostazioni, in cima): una scheda per filmato con l'anteprima
+   (un tocco lo fa girare lì dentro), il numero, il nome, i secondi e il tasto «Cancella» / «Rimetti». Due per riga sul
+   telefono; scritte da 14 in su, tasti alti 48. Le anteprime sono una striscia sola (filmati-anteprime.webp, 14 da 200x356).
+   Dove il filmato «sta ferma» della segretaria è cancellato resta la sua foto ferma (.sg2-sf-foto: non respira per finta). ---- */
+.fm-entra{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit;padding:12px 14px}
+.fm-entra-img{width:58px;height:58px;flex:none;border-radius:50%;object-fit:cover;object-position:50% 8%;background:#EFE7DA;box-shadow:0 0 0 2px #D9BF8C}
+.fm-entra span{flex:1 1 auto;display:flex;flex-direction:column;gap:3px;min-width:0}
+.fm-entra b{font-size:16.5px}
+.fm-entra small{font-size:14px;line-height:1.35;color:#57534E}
+.fm-entra .chev{flex:none;font-size:22px;color:#A8A29E}
+:root[data-theme="dark"] .fm-entra small{color:#C9C3B8}
+.fm-testa h2{margin:10px 0 6px}
+.fm-testa p{margin:0 0 8px;font-size:16px;line-height:1.4}
+.fm-testa .fm-conta{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0;font-weight:700}
+.fm-gruppo h3{margin:0 0 2px;font-size:19px;line-height:1.2}
+.fm-gruppo>p{margin:0 0 12px;font-size:14.5px;line-height:1.35}
+.fm-avviso{display:block;margin-top:6px;padding:7px 10px;border-radius:10px;background:#FEF3C7;color:#78350F;font-weight:700}
+.fm-griglia{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px}
+@media (min-width:640px){.fm-griglia{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}}
+.fm-c{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fm-ant{position:relative;display:block;width:100%;aspect-ratio:9/16;margin:0;padding:0;border:0;border-radius:14px;overflow:hidden;background:#EFE7DA;cursor:pointer;box-shadow:0 0 0 1.5px #D9BF8C,0 8px 16px -10px rgba(15,23,42,.5);-webkit-tap-highlight-color:transparent}
+.fm-img{position:absolute;inset:0;background:url(filmati-anteprime.webp) 0 0/1400% 100% no-repeat}
+.fm-posto{position:absolute;inset:0}
+.fm-posto video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#EFE7DA}
+.fm-n{position:absolute;z-index:2;left:7px;top:7px;min-width:28px;height:28px;padding:0 7px;border-radius:14px;box-sizing:border-box;background:#0F172A;color:#FFFFFF;font:800 15px/28px var(--f-lettura,system-ui);font-style:normal;text-align:center}
+.fm-play{position:absolute;z-index:2;right:8px;bottom:8px;width:40px;height:40px;border-radius:50%;background:rgba(15,23,42,.74);color:#FFFFFF}
+.fm-play svg{display:block;width:24px;height:24px;margin:8px}
+.fm-play.fm-stop,.fm-ant.gira .fm-play.fm-vai{display:none}
+.fm-ant.gira .fm-play.fm-stop{display:block}
+.fm-c.via .fm-img{filter:grayscale(1);opacity:.5}
+.fm-via{position:absolute;z-index:2;left:0;right:0;top:44%;padding:7px 0;background:rgba(185,28,28,.92);color:#FFFFFF;font:800 15.5px/1 var(--f-lettura,system-ui);text-align:center}
+.fm-nome{font:800 16px/1.2 var(--f-lettura,system-ui);color:#0F172A;overflow-wrap:anywhere}
+.fm-s{font:600 14px/1.2 var(--f-lettura,system-ui);color:#57534E}
+.fm-b{min-height:48px;margin:2px 0 0;padding:0 8px;border-radius:13px;font:800 16px/1 var(--f-lettura,system-ui);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+.fm-b.cancella{background:#FFFFFF;border:2px solid #DC2626;color:#B91C1C}
+.fm-b.rimetti{background:#15803D;border:2px solid #15803D;color:#FFFFFF}
+.fm-b:active{transform:scale(.97)}
+.fm-b:disabled{opacity:.5;cursor:default}
+.fm-fondo{margin:14px 12px 22px;font-size:14.5px;line-height:1.4}
+body.premium .fm-nome,body.premium .fm-b,body.premium .fm-via,body.premium .fm-n{font-family:"Jakarta Grassetto",var(--f-lettura)}
+:root[data-theme="dark"] .fm-nome{color:#F8FAFC}
+:root[data-theme="dark"] .fm-s{color:#CBD5E1}
+:root[data-theme="dark"] .fm-ant{box-shadow:0 0 0 1.5px #7A6236,0 8px 16px -10px rgba(0,0,0,.7)}
+:root[data-theme="dark"] .fm-b.cancella{background:transparent;border-color:#F87171;color:#FCA5A5}
+:root[data-theme="dark"] .fm-avviso{background:#422006;color:#FDE68A}
+button.sofia-filmati-link{background:none;border:0;border-bottom:1px solid currentColor;border-radius:0;padding:0;font:inherit;font-weight:700;line-height:1.35;text-align:left;cursor:pointer}
