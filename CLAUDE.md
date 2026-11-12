@@ -11,6 +11,8 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - Fai tu tutto quello che puoi: Michele non vuole toccare niente. Chiedigli solo quello che deve fare per forza lui.
 - Alla fine due o tre righe: cosa è cambiato e cosa provare. Le foto delle schermate aiutano.
 - Le chiamate all'IA costano: nelle prove le risposte di Gemini sono sempre finte.
+- Le schermate parlano come lui: niente percentuali, sigle o parole di mestiere («celle», «buchi», «copertura») senza dire
+  cosa sono. Un numero per riga, con accanto cos'è; i dettagli chiusi sotto (1.80.1: «che sono questi buchi?»).
 
 ## Lo fa solo Michele, mai Claude
 - Scrivere password, codici di verifica, numeri di carte, chiavi (GitHub, Gemini, Meta, Telegram…); creare account;
