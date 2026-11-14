@@ -30,6 +30,7 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - Nei log di GitHub Actions (pubblici) mai URL con chiavi, segreti, nomi o testi dei messaggi.
 - Le signore: niente tracciamento continuo (il QR delle presenze guarda la posizione solo mentre scansiona, e loro lo
   sanno). La loro parte dell'app resta gratis, senza IA a pagamento.
+- Negli esempi (dati della prova, aiuti, commenti, registro delle versioni) solo nomi di fantasia: Rossi, Bruno, Greco…
 - Sofia sui social: solo le API ufficiali di Meta, mai il mouse del PC; dice sempre che è un'assistente virtuale (AI Act).
 - Niente foto finte dell'albergo fatte con l'IA; niente loghi o marchi di altri nell'app; la Sofia di prima (il viso
   vecchio) non deve più comparire.
@@ -85,6 +86,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   che cambia, «È arrivata adesso» / «È andata via adesso» (scrivono `turnoInizio` / `turnoFine` del giorno), poi «Correggi»;
   il pomeriggio «È tornata adesso» (un turno in più, `_2…4`). Ogni tocco ha «Annulla». È l'orario del giorno di sempre: va
   in Paghe e nel catalogo dei costi, e si vede anche nell'app della signora (niente di nascosto).
+
+- La vetrina (1.83.0), `?vetrina=1`: la prova coi nomi inventati (ospiti, ditte e signore degli esempi), da mandare a chi
+  conosce Michele. Nella vetrina il telefono salva tutto sotto «vetrina:…» (`index.html`, prima del resto) e le scritte e
+  la voce passano da `testoVetrina` (`db.js`). Le prove restano su `?prova=1`.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

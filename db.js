@@ -5,17 +5,18 @@
 //   - "prova":    dati di esempio salvati solo su questo telefono (senza Firebase)
 //  L'app usa sempre e solo le funzioni qui sotto: così il resto non cambia.
 // ============================================================================
-import { SOGGIORNI_ESEMPIO, CAMERE, REGOLE_BASE, TIPI_PULIZIA } from "./regole.js";
+import { SOGGIORNI_ESEMPIO, CAMERE, REGOLE_BASE, TIPI_PULIZIA, SQUADRA_BASE, TIPI_OSPITE } from "./regole.js";
 import { pianoPulizie, listinoCompleto, prezzoPulizia, aggiungiGiorni, ospiteIl } from "./logica.js";
 
 export async function apriDb(config) {
   const url = new URL(location.href);
-  const vuoleProva = url.searchParams.get("prova") === "1";
+  const vetrina = url.searchParams.get("vetrina") === "1";   // 1.83.0: la vetrina, la prova coi nomi inventati da far vedere
+  const vuoleProva = url.searchParams.get("prova") === "1" || vetrina;
   if (config && config.apiKey && !vuoleProva) {
     try { return await dbFirebase(config); }
     catch (e) { console.error("Firebase non parte, uso la modalità prova", e); }
   }
-  return dbProva();
+  return dbProva(vetrina);
 }
 
 // ---------------------------------------------------------------------------
@@ -115,11 +116,11 @@ async function dbFirebase(config) {
 // ---------------------------------------------------------------------------
 //  PROVA  (senza Firebase: dati di esempio, salvati solo su questo telefono)
 // ---------------------------------------------------------------------------
-function dbProva() {
+function dbProva(vetrina = false) {
   const CHIAVE = "ricci_prova_db_v5";
   let dati = null;
   try { dati = JSON.parse(localStorage.getItem(CHIAVE) || "null"); } catch (e) { dati = null; }
-  if (!dati || !dati.soggiorni) dati = datiIniziali();
+  if (!dati || !dati.soggiorni) dati = vetrina ? perLaVetrina(datiIniziali()) : datiIniziali();
   const salvaTutto = () => { try { localStorage.setItem(CHIAVE, JSON.stringify(dati)); } catch (e) {} };
   const ascoltatori = new Set();
   // come Firestore: si avvisano solo gli ascoltatori della raccolta scritta (prima tutti: venti ridisegni per ogni scrittura)
@@ -157,6 +158,7 @@ function dbProva() {
 
   const db = {
     modalita: "prova",
+    vetrina, vetrinaTesto: vetrina ? testoVetrina : (s) => s,   // 1.83.0
     utenteCorrente: utente,
     onUtente(cb) { cbUtente.add(cb); setTimeout(() => cb(utente), 0); return () => cbUtente.delete(cb); },
     // Nella prova si entra scegliendo chi si è
@@ -199,7 +201,7 @@ function dbProva() {
       salvaTutto(); avvisa(new Set(ops.map(o => o.coll)));
     },
     adesso() { return new Date().toISOString(); },
-    azzeraProva() { dati = datiIniziali(); salvaTutto(); avvisa(); },
+    azzeraProva() { dati = vetrina ? perLaVetrina(datiIniziali()) : datiIniziali(); salvaTutto(); avvisa(); },
   };
   return db;
 
@@ -258,4 +260,37 @@ function dbProva() {
     };
     return { soggiorni, pulizie, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {}, manutenzione };
   }
+}
+
+// ---------------------------------------------------------------------------
+//  1.83.0 · LA VETRINA (?vetrina=1). Michele, 14/11: «iniziamo a mandare qualche link per poter mandare l'applicazione a
+//  chi mi conosce». È la stessa prova (dati di esempio, solo su quel telefono, niente Firebase), ma coi nomi inventati anche
+//  per le signore e le ditte (gli ospiti degli esempi sono già di fantasia), così il link si può mandare a chiunque.
+//  I nomi da cambiare non sono scritti qui: si prendono da SQUADRA_BASE e dalle due ditte di TIPI_OSPITE.
+// ---------------------------------------------------------------------------
+let MAPPA_VETRINA = null;
+function mappaVetrina() {
+  if (MAPPA_VETRINA) return MAPPA_VETRINA;
+  const coppie = [], ha = (w) => coppie.some(c => c[0] === w);
+  const metti = (w, nuovo) => { w = String(w || "").trim(); if (w.length < 3 || ha(w)) return; coppie.push([w, nuovo]); if (w.includes("'")) coppie.push([w.replace(/'/g, "’"), nuovo]); };
+  const SIG = ["Anna", "Maria", "Carla", "Rita"], DITTE = ["Ditta Alfa", "Ditta Beta", "Ditta Gamma"];
+  Object.values(SQUADRA_BASE).map(x => x && x.nome).filter(Boolean).forEach((n, i) => metti(n, SIG[i] || "Signora"));
+  ["fond", "dago"].map(k => TIPI_OSPITE[k] && TIPI_OSPITE[k].nome).filter(Boolean).forEach((n, i) => metti(n, DITTE[i] || "Ditta"));
+  const sfuggi = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parole = coppie.map(c => c[0]).sort((a, b) => b.length - a.length).map(sfuggi);
+  MAPPA_VETRINA = { rx: parole.length ? new RegExp(`(^|[^\\p{L}])(${parole.join("|")})(?![\\p{L}])`, "gu") : null, m: new Map(coppie) };
+  return MAPPA_VETRINA;
+}
+// una scritta coi nomi inventati al posto di quelli degli esempi
+export function testoVetrina(s) {
+  if (typeof s !== "string" || !s) return s;
+  const { rx, m } = mappaVetrina(); if (!rx) return s;
+  return s.replace(rx, (x, prima, w) => prima + (m.get(w) || w));
+}
+// i dati di esempio per la vetrina: ogni scritta passa dai nomi inventati, e le signore hanno il loro nome inventato
+function perLaVetrina(d) {
+  const giro = (x) => typeof x === "string" ? testoVetrina(x) : Array.isArray(x) ? x.map(giro) : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, giro(v)])) : x;
+  const out = giro(d);
+  out.impostazioni = { ...(out.impostazioni || {}), squadra: Object.fromEntries(Object.entries(SQUADRA_BASE).map(([z, x]) => [z, { ...x, nome: x.nome ? testoVetrina(x.nome) : "" }])) };
+  return out;
 }

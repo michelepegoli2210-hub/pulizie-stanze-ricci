@@ -93,9 +93,9 @@ In Gestione → Prospetto (e in Oggi) ci sono tre modi veloci, tutti senza intel
 
 - **🗣️ Dimmi il prospetto**: si scrive o si detta (microfono della tastiera, o il bottone "Parla" dove il telefono lo
   permette) chi arriva, in quale camera e quando, **una riga per camera**. Il file `dettatura.js` capisce le frasi con
-  regole fisse e fa vedere l'anteprima ("Ho capito così") prima di salvare. Esempi: `Salvatore: Manna, 2 persone, da
-  lunedì a venerdì` · `Aurora: Palazzo dal 12 al 16 ottobre` · `Alba: Fondamenta tutto novembre` · `Michele: libera`
-  (toglie chi c'era) · `Nicole: Castaldi parte giovedì` (accorcia) · `Lella: Rahhal resta fino a domenica` (allunga) ·
+  regole fisse e fa vedere l'anteprima ("Ho capito così") prima di salvare. Esempi: `Salvatore: Rossi, 2 persone, da
+  lunedì a venerdì` · `Aurora: Bruno dal 12 al 16 ottobre` · `Alba: Fondamenta tutto novembre` · `Michele: libera`
+  (toglie chi c'era) · `Nicole: Ferri parte giovedì` (accorcia) · `Lella: Fahhar resta fino a domenica` (allunga) ·
   `Fenicotteri come la settimana scorsa` · `settimana prossima` da sola in una riga. Se mancano i giorni mette da lunedì
   a venerdì; se manca il nome mette l'ultimo ospite di quella camera (sempre segnalato in arancione nell'anteprima).
   In alto si sceglie la settimana di cui si parla (questa / prossima / quella dopo); di venerdì, sabato e domenica

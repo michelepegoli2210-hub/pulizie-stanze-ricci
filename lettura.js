@@ -6,7 +6,7 @@
 //  Il "contesto" (ctx) lo prepara chi chiama:
 //   { oggi, camere:[{id,nome,tipo,via,zona}], soggiorni:[{camera,nome,persone,tipo,inizio,fine,nota}], clienti:{id:{nome}},
 //     signore:[{id,nome}], nomeGov, nomeMio, alias:{camera:[modi di dirla]}, tipiOspite, taccuino:"testo per l'IA",
-//     chatPrivate:["Papà","Selly",...] }
+//     chatPrivate:["Papà","Mary",...] }
 //  I nomi degli ospiti che l'app conosce partono come codici [O1], [O2]... (aCodici) e tornano nomi (daCodici);
 //  telefoni ed email non partono mai (segnaposto [telefono1], [email]).
 // ============================================================================
@@ -17,7 +17,7 @@ const NUCLEO_RE = /\s*[·,;(\/]\s*|\s+-\s+/;
 export function nucleoNome(n) { return String(n || "").split(NUCLEO_RE)[0].replace(/\d.*$/, "").replace(/\s+/g, " ").trim(); }
 
 // ---- i codici degli ospiti ---------------------------------------------------------------------------------------------
-// 1.51.0: come SUONA un nome (senza h, senza doppie): «Rahhal», «Raal» → «ral». Serve per i cognomi sbagliati nei vocali trascritti
+// 1.51.0: come SUONA un nome (senza h, senza doppie): «Fahhar», «Faar» → «far». Serve per i cognomi sbagliati nei vocali trascritti
 export function chiaveSuono(w) { return PAROLE.norm(w).replace(/[^a-z]/g, "").replace(/h/g, "").replace(/k/g, "c").replace(/[yj]/g, "i").replace(/w/g, "v").replace(/(.)\1+/g, "$1"); }
 function distanzaParole(a, b) { const m = a.length, n = b.length; if (Math.abs(m - n) > 1) return 2; const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; }
 const PAROLE_COMUNI = new Set(["ciao", "allora", "domani", "oggi", "ieri", "senti", "grazie", "buongiorno", "buonasera", "buonanotte", "mamma", "papa", "michele", "lucia", "selena", "sele", "selly", "ok", "okay", "va", "bene", "si", "no", "eh", "ah", "mo", "uè", "ue", "come", "quando", "dove", "perche", "anche", "pero", "quindi", "poi", "prima", "dopo", "sono", "sta", "stanno", "fammi", "dimmi", "fatti", "vedi", "lascia", "metti"]);
@@ -36,7 +36,7 @@ export function creaCodici(ctx) {
   const aggiungi = (testo, c) => { const t = String(testo || "").trim(); if (t.length >= 2 && c) cand.push({ t, c }); };
   for (const [k, n] of elenco) aggiungi(n, codice.get(k));
   for (const s of sog) { const c = codice.get(PAROLE.norm(nucleoNome(s.nome))); if (c) aggiungi(String(s.nome || "").trim(), c); }
-  // le parole lunghe del nome ("Rega Enzo" -> "Rega", "Enzo"), solo con la maiuscola e solo se sono di un ospite solo
+  // le parole lunghe del nome ("Neri Paolo" -> "Neri", "Paolo"), solo con la maiuscola e solo se sono di un ospite solo
   const parole = new Map();
   for (const [k, n] of elenco) for (const w of n.split(/\s+/)) {
     if (w.length < 4 || !/^[A-ZÀ-Ý]/.test(w) || via.has(PAROLE.norm(w))) continue;
@@ -62,7 +62,7 @@ export function creaCodici(ctx) {
     const n = PAROLE.norm(w); if (!n || via.has(n) || PAROLE_COMUNI.has(n) || (PAROLE.STOP && PAROLE.STOP.has && PAROLE.STOP.has(n))) return null;
     const s = chiaveSuono(w); if (s.length < 3) return null;
     if (suoni.get(s)) return suoni.get(s);
-    if (/^[aeiou]/.test(n) && suoni.get(chiaveSuono(w.slice(1)))) return suoni.get(chiaveSuono(w.slice(1)));   // «Aral» = «a Rahhal»
+    if (/^[aeiou]/.test(n) && suoni.get(chiaveSuono(w.slice(1)))) return suoni.get(chiaveSuono(w.slice(1)));   // «Afar» = «a Fahhar»
     if (s.length >= 6 && !NON_NOME.has(n)) { let trovato = null; for (const [k2, c2] of suoni) if (c2 && k2.length >= 6 && distanzaParole(k2, s) <= 1) { if (trovato && trovato !== c2) return null; trovato = c2; } return trovato; }
     return null;
   };
@@ -415,7 +415,7 @@ I MESSAGGI DI MICHELE (le righe «Michele:»): li ha scritti o detti lui, quindi
 
 COME SI LEGGONO I MESSAGGI:
 ${ctx.numeri ? `- Ogni messaggio comincia col suo NUMERO (#1, #2, #3…). In ogni cosa che scrivi nel JSON (azioni, proposte, perTe, capito, note, assenze, spesa, ore, telefoni) aggiungi "n": il numero del messaggio da cui l'hai capita (se sono più di uno, quello che conta di più).\n` : ""}- Ogni messaggio ha la sua data e ora tra parentesi quadre: «domani», «oggi», «stasera», un giorno della settimana valgono rispetto alla DATA DEL MESSAGGIO, non a oggi.
-- Davanti c'è la chat tra parentesi tonde: «(chat con Selly)» è la chat privata tra Michele e quella persona; un nome da solo, per esempio «(Albergo)», è un gruppo. Quello che Michele (o il papà) dice a una signora è una DECISIONE. Quello che propone una signora vale se Michele lo conferma («sì», «va bene», «quelli che hai detto tu»).
+- Davanti c'è la chat tra parentesi tonde: «(chat con Mary)» è la chat privata tra Michele e quella persona; un nome da solo, per esempio «(Albergo)», è un gruppo. Quello che Michele (o il papà) dice a una signora è una DECISIONE. Quello che propone una signora vale se Michele lo conferma («sì», «va bene», «quelli che hai detto tu»).
 - I messaggi che cominciano con 🎤 sono vocali trascritti: le parole possono essere sbagliate, soprattutto i COGNOMI degli ospiti ([?] = non si capiva). Un nome che non è una camera è quasi sempre un OSPITE: guarda nel prospetto qui sotto in quale camera sta (i codici [O..]) e usa QUELLA camera. Non trasformare MAI un nome strano nella camera che gli somiglia (un cognome che suona come «Alba» non è la camera Alba): se non capisci di chi parla, metti una domanda in "dubbi".
 - Le CAMERE hanno nomi di persona (Salvatore, Michele, Aurora, Antonio, Lella, Alba, Nicole): «in Antonio», «ad Aurora», «Salvatore:» sono camere.
 - I messaggi più recenti correggono quelli vecchi; se una cosa risulta già fatta o risolta, non metterla.

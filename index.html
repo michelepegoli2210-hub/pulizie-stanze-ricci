@@ -14,6 +14,34 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icona-casa-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="style.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Le Stanze di Ricci">
+<meta property="og:title" content="Le Stanze di Ricci · l'app delle pulizie">
+<meta property="og:description" content="Pulizie, prospetto e paghe de Le Stanze di Ricci (Lesina), con Sofia.">
+<meta property="og:image" content="https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/anteprima-link.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="it_IT">
+<script>
+/* 1.83.0 · LA VETRINA (?vetrina=1): l'app coi dati inventati, da mandare a chi conosce Michele. Tutto quello che l'app salva
+   sul telefono va in un cassetto suo («vetrina:…»): così non legge e non cambia le chiavi e le impostazioni dell'app vera,
+   se è aperta sullo stesso telefono. Deve partire prima di tutto il resto. */
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get("vetrina") !== "1") return;
+    var LS = window.localStorage, P = Storage.prototype, PRE = "vetrina:";
+    var g = P.getItem, s = P.setItem, r = P.removeItem, k = P.key, c = P.clear, lun = Object.getOwnPropertyDescriptor(P, "length");
+    var mie = function (st) { var out = [], n = lun.get.call(st); for (var i = 0; i < n; i++) { var x = k.call(st, i); if (x && x.indexOf(PRE) === 0) out.push(x.slice(PRE.length)); } return out; };
+    P.getItem = function (x) { return this === LS ? g.call(this, PRE + x) : g.call(this, x); };
+    P.setItem = function (x, v) { return this === LS ? s.call(this, PRE + x, v) : s.call(this, x, v); };
+    P.removeItem = function (x) { return this === LS ? r.call(this, PRE + x) : r.call(this, x); };
+    P.key = function (i) { if (this !== LS) return k.call(this, i); var m = mie(this)[i]; return m === undefined ? null : m; };
+    P.clear = function () { if (this !== LS) return c.call(this); var self = this; mie(this).forEach(function (x) { r.call(self, PRE + x); }); };
+    Object.defineProperty(P, "length", { configurable: true, get: function () { return this === LS ? mie(this).length : lun.get.call(this); } });
+    window.VETRINA = true;
+  } catch (e) {}
+})();
+</script>
 <script src="firebase-config.js"></script>
 </head>
 <body>

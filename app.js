@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.82.0";
+export const VERSIONE = "1.83.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1310,6 +1310,7 @@ async function avvia() {
   applicaTema();
   S.db = await apriDb(window.FIREBASE_CONFIG || null);
   if (S.db.modalita === "prova") window.__prova = { S, disegna, db: S.db }; // solo per le prove automatiche
+  if (S.db.vetrina) vetrinaAccendi();   // 1.83.0: la vetrina, coi nomi inventati
   window.addEventListener("online", () => { S.online = true; disegna(); });
   window.addEventListener("offline", () => { S.online = false; disegna(); });
   S.db.onUtente((u) => {
@@ -1541,7 +1542,7 @@ function disegna() {
   // se si sta scrivendo in una casella e arriva un aggiornamento, il testo non deve sparire
   const attivo = document.activeElement, idAttivo = app.contains(attivo) && attivo.id ? attivo.id : null;
   const tenuti = {}; app.querySelectorAll("[data-keep][id]").forEach(e => { tenuti[e.id] = { v: e.value, s: e.selectionStart, e: e.selectionEnd }; });
-  app.innerHTML = (S.utente?.finta ? `<div class="banner finta"><span>Stai guardando l'app come la <b>${esc(S.utente.nome)}</b> (dati veri)</span><button class="btnsm" data-torna-gestione>Torna alla gestione</button>${argonLei() ? sceltaCamereHtml("in-striscia") : ""}</div>` : "") + (S.db?.modalita === "prova" && S.utente ? `<div class="banner info">PROVA · dati di esempio, solo su questo telefono</div>` : "") + corpo;
+  app.innerHTML = (S.utente?.finta ? `<div class="banner finta"><span>Stai guardando l'app come la <b>${esc(S.utente.nome)}</b> (dati veri)</span><button class="btnsm" data-torna-gestione>Torna alla gestione</button>${argonLei() ? sceltaCamereHtml("in-striscia") : ""}</div>` : "") + (S.db?.modalita === "prova" && S.utente ? `<div class="banner info">${S.db.vetrina ? "VETRINA · dati inventati, solo su questo telefono" : "PROVA · dati di esempio, solo su questo telefono"}</div>` : "") + corpo;
   for (const [id, x] of Object.entries(tenuti)) { const e = document.getElementById(id); if (e && e.hasAttribute("data-keep")) e.value = x.v; }
   if (idAttivo) { const e = document.getElementById(idAttivo); if (e) { try { e.focus({ preventScroll: true }); if (tenuti[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(tenuti[idAttivo].s, tenuti[idAttivo].e); } catch (err) {} } }
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
@@ -1623,10 +1624,41 @@ function disegnaTestata() {
     `<button class="day arrow" data-sett="1" aria-label="Settimana dopo">›</button>`;
 }
 
+// ============================================================================
+//  1.83.0 · LA VETRINA (?vetrina=1, Michele 14/11: «mandare l'applicazione a chi mi conosce»). I dati sono già coi nomi
+//  inventati (db.js, perLaVetrina); qui passano dai nomi inventati anche le scritte fisse dell'app che ne hanno di veri
+//  (gli esempi nelle caselle, le note del catalogo della governante) e quello che dice la voce del telefono.
+//  Tutto quello che l'app salva sul telefono sta in un cassetto a parte («vetrina:…», index.html): la vetrina non vede e
+//  non cambia le chiavi e le impostazioni dell'app vera aperta sullo stesso telefono (Gemini, GitHub, colori).
+// ============================================================================
+function vetrinaAccendi() {
+  const T = S.db && S.db.vetrinaTesto; if (typeof T !== "function") return;
+  const ATTR = ["placeholder", "title", "aria-label", "alt"];
+  const attributi = (el) => { if (!el || el.nodeType !== 1) return; for (const a of ATTR) { const v = el.getAttribute(a); if (v) { const n = T(v); if (n !== v) el.setAttribute(a, n); } } };
+  const pulisci = (n) => {
+    if (!n) return;
+    if (n.nodeType === 3) { const v = n.nodeValue, x = T(v); if (x !== v) n.nodeValue = x; return; }
+    if (n.nodeType !== 1) return;
+    const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT);
+    for (let t = w.nextNode(); t; t = w.nextNode()) { const v = t.nodeValue; if (v && v.trim()) { const x = T(v); if (x !== v) t.nodeValue = x; } }
+    attributi(n); n.querySelectorAll("[placeholder],[title],[aria-label],[alt]").forEach(attributi);
+  };
+  pulisci(document.body);
+  new MutationObserver((ms) => {
+    for (const m of ms) {
+      if (m.type === "characterData") pulisci(m.target);
+      else if (m.type === "attributes") attributi(m.target);
+      else for (const n of m.addedNodes) pulisci(n);
+    }
+  }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTR });
+  // la voce del telefono (Sofia senza Gemini): dice i nomi inventati
+  try { const U = window.SpeechSynthesisUtterance; if (U && !U.vetrina) { const V = class extends U { constructor(t) { super(T(String(t == null ? "" : t))); } }; V.vetrina = true; window.SpeechSynthesisUtterance = V; } } catch (e) {}
+}
+
 // ---- accesso ----------------------------------------------------------------
 function vistaAccesso() {
   if (S.db.modalita === "prova") {
-    return `<section class="card accesso"><div class="accesso-testa"><div><h2 style="margin:0 0 4px">Ciao! Chi sei?</h2><p class="muted" style="margin:0">Modalità prova: scegli una volta sola, il telefono se lo ricorda.</p></div>${DONNINA("saluto", "media")}</div></section>
+    return `<section class="card accesso"><div class="accesso-testa"><div>${S.db.vetrina ? `<h2 style="margin:0 0 4px">Ciao! Questa è la vetrina</h2><p class="muted" style="margin:0">L'app delle pulizie de Le Stanze di Ricci, coi dati inventati. Tocca quello che vuoi: resta tutto sul tuo telefono. Chi vuoi essere?</p>` : `<h2 style="margin:0 0 4px">Ciao! Chi sei?</h2><p class="muted" style="margin:0">Modalità prova: scegli una volta sola, il telefono se lo ricorda.</p>`}</div>${DONNINA("saluto", "media")}</div></section>
     <div class="pick">${signore().map(z => `<button data-prova="addetta|${z.id}|">${esc(SIG(z.id))}<span>${camereZona(z.id).map(c => c.nome).join(", ")}</span></button>`).join("")}
     <button class="gest" data-prova="proprietario||Michele">Gestione<span>Prospetto, quadro delle signore e paghe</span></button></div>`;
   }
@@ -11035,7 +11067,7 @@ function fotografiaIA() {
     const parte = soggiorniLista().filter(x => x.fine === oggi).map(x => camera(x.camera).nome);
     return `CAMERE OCCUPATE OGGI: ${dentro.length ? dentro.join(", ") : "nessuna"}${parte.length ? ` · partono oggi: ${parte.join(", ")}` : ""}.`;
   });
-  // 0.98 - il prospetto vero, camera per camera: senza, Sofia non poteva capire "Manna parte giovedì" (i nomi in codice)
+  // 0.98 - il prospetto vero, camera per camera: senza, Sofia non poteva capire "Rossi parte giovedì" (i nomi in codice)
   prova("prospettoCodici", () => {
     const da = L.aggiungiGiorni(oggi, -7), a = L.aggiungiGiorni(oggi, 31);
     return `IL PROSPETTO CAMERA PER CAMERA (soggiorni dal ${L.dataMedia(da)} al ${L.dataMedia(a)}). Gli ospiti sono CODICI tra parentesi quadre: [O3] è sempre la stessa persona; quando ne parli o lo metti nelle righe del prospetto riscrivilo identico, l'app lo trasforma nel nome:\n${prospettoInCodici(da, a)}`;
@@ -11359,7 +11391,7 @@ function azioneDalleParole(testo) {
 // ============================================================================
 const TACCUINO_MAX = 80;
 function taccuinoVoci() { return Array.isArray(S.taccuino) ? S.taccuino.filter(v => v && v.testo) : []; }
-// i nomi scritti nel prospetto ("D'Agostino · 3 operai", "Rega Enzo"): il nome intero, e le singole parole lunghe
+// i nomi scritti nel prospetto ("D'Agostino · 3 operai", "Neri Paolo"): il nome intero, e le singole parole lunghe
 // del nome (quelle solo se scritte con la maiuscola, per non cambiare parole comuni come "palazzo")
 function nomiOspiti() { return LET.nomiOspiti(ctxLettura()); }
 function senzaNomiOspiti(t) { return LET.senzaNomiOspiti(t, ctxLettura()); }
@@ -15877,7 +15909,7 @@ function vistaAltro() {
     ${S.db.modalita === "prova" ? `<button data-azzera-prova>Azzera i dati di prova<span>Ricomincia con gli esempi puliti</span></button>` : ""}
     <button data-esci>Esci<span>${esc(S.utente.email || S.utente.nome || "")}</span></button>
   </div>
-  <p class="muted small center">Le Stanze di Ricci · Pulizie · versione ${VERSIONE} · ${S.db.modalita === "firebase" ? "dati condivisi" : "modalità prova"}</p>`;
+  <p class="muted small center">Le Stanze di Ricci · Pulizie · versione ${VERSIONE} · ${S.db.modalita === "firebase" ? "dati condivisi" : S.db.vetrina ? "vetrina" : "modalità prova"}</p>`;
 }
 
 function vistaAvvisi() {
@@ -15982,7 +16014,7 @@ function disegnaFoglio() {
 function foglioMessaggio(f) {
   const m = S.messaggi[f.giorno];
   return `<h3>Messaggio alle signore</h3><div class="muted">${esc(quandoEtichetta(f.giorno))} · ${esc(L.dataLunga(f.giorno))} · lo vedono in cima alla loro schermata e quando aprono una camera</div>
-    <div class="campo"><label for="msgTesto">Cosa vuoi dire</label><textarea id="msgTesto" data-keep placeholder="es. Oggi arrivano i Castaldi alle 15: Salvatore pronta per le 14. Grazie!" style="min-height:120px">${esc(f.testo ?? m?.testo ?? "")}</textarea></div>
+    <div class="campo"><label for="msgTesto">Cosa vuoi dire</label><textarea id="msgTesto" data-keep placeholder="es. Oggi arrivano i Ferri alle 15: Salvatore pronta per le 14. Grazie!" style="min-height:120px">${esc(f.testo ?? m?.testo ?? "")}</textarea></div>
     <div class="scelte">${["Grazie di tutto!", "Oggi arrivano ospiti nel pomeriggio", "Lasciate le chiavi sul tavolo", "Asciugamani doppi per gli operai", "Controllate i frigoriferi"].map(t => `<button type="button" data-chip-testo="msgTesto|${esc(t)}">${esc(t)}</button>`).join("")}</div>
     <button class="big main" data-salva-msg>Manda alle signore</button>
     <button class="big undo" data-whatsapp-msg>Manda anche su WhatsApp</button>
@@ -16091,7 +16123,7 @@ function foglioSoggiorno(f) {
   return `<h3 class="sog-camera">${icoPorta()}<span>Camera <b>${esc(c.nome)}</b></span></h3><div class="muted">${s ? "Cambia il soggiorno" : "Nuovo arrivo"} · la notte della partenza non si conta</div>
     ${mod ? `<div class="sog-cam-box"><div class="campo"><label for="sCom">Com'è questa camera (resta per tutti gli ospiti)</label><input id="sCom" data-keep type="text" data-car-sog="${esc(c.id)}" value="${esc((S.caratteristiche || {})[c.id] || "")}" placeholder="es. matrimoniale + singolo, balcone sul corso"></div><div class="campo"><label for="sProm">Ogni volta, in questa camera le signore fanno anche</label><input id="sProm" data-keep type="text" data-prom-sog="${esc(c.id)}" value="${esc((S.promemoria || {})[c.id] || "")}" placeholder="es. il balcone, dietro la TV"></div></div>` : ""}
     <form id="formSog">
-      <div class="campo"><label for="sNome">Ospite: nome e cognome (o ditta)</label><input id="sNome" data-keep type="text" list="nomiNoti" value="${esc(d.nome)}" placeholder="es. Manna Giuseppe" ${mod ? "" : "disabled"} required><datalist id="nomiNoti">${nomi.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="campo"><label for="sNome">Ospite: nome e cognome (o ditta)</label><input id="sNome" data-keep type="text" list="nomiNoti" value="${esc(d.nome)}" placeholder="es. Rossi Giuseppe" ${mod ? "" : "disabled"} required><datalist id="nomiNoti">${nomi.map(n => `<option value="${esc(n)}">`).join("")}</datalist></div>
       <div class="campo"><label>Da dove arriva</label><div class="can-scelta">${Object.entries(CANALI).map(([k, c]) => `<button type="button" class="can-btn an-${k}" aria-pressed="${(f.canaleScelto || canaleDi(d)) === k}" data-sog-canale="${k}" ${mod ? "" : "disabled"}><i></i>${esc(c.nome)}</button>`).join("")}</div>${d.origine === "calendario" ? `<p class="muted small" style="margin:6px 0 0">Arriva dal calendario di ${esc(CANALI[canaleDi(d)].nome)}: date e cancellazioni si aggiornano da sole.</p>` : ""}</div>
       <div class="campo"><label for="sTel">Telefono dell'ospite (solo proprietari: le signore non lo vedono)</label><div class="sog-tel"><input id="sTel" data-keep type="text" inputmode="tel" autocomplete="off" value="${esc(d.telefono || tel || "")}" placeholder="es. 333 123 4567" ${mod ? "" : "disabled"}>${tel ? `<a class="sog-chiama" href="${esc(telHref(tel))}">${icoTel()}Chiama</a>` : ""}</div></div>
       <div class="due"><div class="campo"><label for="sInizio">Arriva il</label><input id="sInizio" data-keep type="date" value="${d.inizio}" ${mod ? "" : "disabled"} required></div><div class="campo"><label for="sFine">Parte il</label><input id="sFine" data-keep type="date" value="${d.fine}" ${mod ? "" : "disabled"} required></div></div>
@@ -16183,18 +16215,18 @@ function foglioDettatura(f) {
   const settimana = `<div class="floorlabel" style="margin-top:12px">Di che settimana parliamo?</div>
     <div class="dt-sett">${chip(questa, "Questa")}${chip(prossima, "Prossima")}${chip(dopo, "Quella dopo")}</div>`;
   const scrivere = f.copia ? "" : `<div class="dt-grandi"><button type="button" class="dt-grande wa" data-dett-incolla>${ICO_WA}<span>Incolla da WhatsApp</span></button><label class="dt-grande"><span aria-hidden="true">${ICO_LINEA.foto}</span><span>Foto del foglio</span><input class="insFoto" type="file" accept="image/*" hidden></label></div>
-    <div class="campo"><label for="dtTesto">Il testo${d.fonte && d.fonte.tipo === "foto" && !leggo && d.testo ? " letto dalla foto" : ""} <span class="muted small">(puoi correggerlo)</span></label><textarea id="dtTesto" data-keep rows="5" ${leggo ? "disabled" : ""} placeholder="Salvatore: Manna, 2 persone, da lunedì a venerdì
-Aurora: Palazzo dal 12 al 16
+    <div class="campo"><label for="dtTesto">Il testo${d.fonte && d.fonte.tipo === "foto" && !leggo && d.testo ? " letto dalla foto" : ""} <span class="muted small">(puoi correggerlo)</span></label><textarea id="dtTesto" data-keep rows="5" ${leggo ? "disabled" : ""} placeholder="Salvatore: Rossi, 2 persone, da lunedì a venerdì
+Aurora: Bruno dal 12 al 16
 Alba: Fondamenta tutto novembre
 Michele: libera
-Nicole: Castaldi parte giovedì">${esc(d.testo)}</textarea></div>
+Nicole: Ferri parte giovedì">${esc(d.testo)}</textarea></div>
     <div class="dt-azioni">${parla}<button type="button" class="btnsm ghost" data-dett-pulisci>Pulisci</button></div>`;
-  const esempi = f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Manna, 2 persone, da lunedì a venerdì
-Aurora: Palazzo dal 12 al 16 ottobre
+  const esempi = f.copia ? "" : `<details style="margin-top:12px"><summary>Come si scrive (esempi)</summary><div class="note info" style="white-space:pre-line;margin-top:6px">Salvatore: Rossi, 2 persone, da lunedì a venerdì
+Aurora: Bruno dal 12 al 16 ottobre
 Alba: Fondamenta tutto novembre
-Lella: Rahhal da domenica sera a venerdì (asciugamani doppi)
+Lella: Fahhar da domenica sera a venerdì (asciugamani doppi)
 Michele: libera   → tolgo chi c'era quella settimana
-Nicole: Castaldi parte giovedì   → accorcio il soggiorno
+Nicole: Ferri parte giovedì   → accorcio il soggiorno
 Tramonto: resta fino a domenica   → allungo il soggiorno
 Fenicotteri: come la settimana scorsa
 Via Zara piano terra: D'Agostino, 3 operai, tutto il mese
@@ -16323,7 +16355,7 @@ function pannelloVoce(f) {
   return `<div class="dt-voce${on ? " on" : ""}">
     <button type="button" class="dt-voce-mic" data-dett-voce aria-label="${on ? "Ho finito" : "Parla"}">${ICO_LINEA.mic}</button>
     <div class="dt-voce-x"><b>${on ? "Ti ascolto…" : "Tocca 🎤 e dimmi il prospetto"}</b>
-      <small>${on ? "Una camera alla volta, con calma: «Salvatore, Manna, due persone, da lunedì a venerdì». Quando hai finito di' «ho finito»." : f.voceAvviso ? esc(f.voceAvviso) : "Sotto vedi cosa ho capito: togli la spunta a quello che non va, poi «Salva»."}</small>
+      <small>${on ? "Una camera alla volta, con calma: «Salvatore, Rossi, due persone, da lunedì a venerdì». Quando hai finito di' «ho finito»." : f.voceAvviso ? esc(f.voceAvviso) : "Sotto vedi cosa ho capito: togli la spunta a quello che non va, poi «Salva»."}</small>
       <p id="dtVoceProvv" class="dt-voce-provv" aria-live="polite"></p></div>
     ${on ? `<button type="button" class="dt-voce-fine" data-dett-voce-fine>✋ Ho finito</button>` : ""}
   </div>`;
@@ -16601,7 +16633,7 @@ function fonteDettaturaHtml(d) {
 //    per le signore (giorno, camera, cosa) e le abitudini di papa' da ricordare. Poi l'app li confronta col prospetto
 //    che c'e' (completaRiga: gia' cosi' / cambia / si accavalla) e Michele spunta e salva, come sempre.
 //  - Sofia ora VEDE il prospetto camera per camera (chi, quante persone, arrivo e partenza): senza, non poteva capire
-//    "Manna parte giovedi'". I nomi degli ospiti che l'app conosce partono come CODICI [O1], [O2]... e tornano nomi
+//    "Rossi parte giovedi'". I nomi degli ospiti che l'app conosce partono come CODICI [O1], [O2]... e tornano nomi
 //    nelle risposte (aCodici / daCodici): i nomi gia' noti non lasciano il telefono.
 // ===========================================================================
 // 1.18.0: le funzioni stanno in lettura.js (le usa anche il giro sempre acceso); qui restano col nome di prima
@@ -18523,7 +18555,7 @@ export function toast(testo, azione) {
   clearTimeout(toastTimer); if (!azione) toastTimer = setTimeout(() => t.remove(), 3500);
 }
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && !window.VETRINA) {   // 1.83.0: nella vetrina niente lavoratore di sfondo
   window.addEventListener("load", async () => {
     try {
       const reg = await navigator.serviceWorker.register("./sw.js");

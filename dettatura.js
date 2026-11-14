@@ -3,11 +3,11 @@
 //  (niente intelligenza artificiale: tutto quello che capisce lo mostra prima di salvare)
 //
 //  Esempi che capisce (una riga per camera):
-//    Salvatore: Manna, 2 persone, da lunedì a venerdì
-//    Aurora Palazzo dal 12 al 16 ottobre
+//    Salvatore: Rossi, 2 persone, da lunedì a venerdì
+//    Aurora Bruno dal 12 al 16 ottobre
 //    Alba: Fondamenta tutto novembre
-//    Nicole: Castaldi parte giovedì                      (accorcia il soggiorno che c'è già)
-//    Lella: Rahhal resta fino a domenica                 (allunga il soggiorno che c'è già)
+//    Nicole: Ferri parte giovedì                      (accorcia il soggiorno che c'è già)
+//    Lella: Fahhar resta fino a domenica                 (allunga il soggiorno che c'è già)
 //    Michele libera                                     (toglie chi c'era segnato quella settimana)
 //    Fenicotteri come la settimana scorsa                (copia l'ospite della settimana prima)
 //    settimana prossima                                 (da sola in una riga: quello che segue vale per la settimana dopo)
@@ -220,13 +220,13 @@ function capisciRiga(seg, ctx) {
   let inizioDetto = !!r.inizio, fineDetta = !!r.fine;
   if (!r.inizio) { const mm = cerca(reInizio); if (mm) { const d = risolvi(mm, true); if (d) { r.inizio = d; inizioDetto = true; consuma(mm); } } }
   if (!r.fine) { const mm = cerca(reFine); if (mm) { const d = risolvi(mm, false); if (d) { r.fine = d; fineDetta = true; consuma(mm); } } }
-  // una data da sola ("Manna 12 ottobre", "Manna lunedì") = arrivo
+  // una data da sola ("Rossi 12 ottobre", "Rossi lunedì") = arrivo
   if (!r.inizio) {
     const reSola = new RegExp(`(?:^|[^a-z0-9\\/.])(?:il\\s+|lo\\s+)?${RE_DATA_SINGOLA}`, "g");
     for (const mm of cercaTutti(reSola)) {
       const dopo = w.slice(mm.index + mm[0].length).trimStart();
       if (/^(person|pax|tecnic|opera|ragazz|ospit|posti|letti|p(?![a-z]))/.test(dopo) && !mm[2] && !mm[4] && !mm[6] && !mm[7]) continue; // "2 persone"
-      if (mm[1] && !mm[2] && !mm[4] && Number(mm[1]) < 10 && !/\b(il|lo)\s*$/.test(w.slice(0, mm.index + mm[0].length - mm[1].length))) continue; // "Rega 2" = due persone, non il giorno 2
+      if (mm[1] && !mm[2] && !mm[4] && Number(mm[1]) < 10 && !/\b(il|lo)\s*$/.test(w.slice(0, mm.index + mm[0].length - mm[1].length))) continue; // "Neri 2" = due persone, non il giorno 2
       const d = risolvi(mm, true); if (d) { r.inizio = d; inizioDetto = true; consuma(mm); break; }
     }
   }
@@ -268,7 +268,7 @@ function capisciRiga(seg, ctx) {
   return r;
 }
 
-// ---- 1.0.6: "Pignatelli" e "Pignatelli Antonio" (o "Famiglia Bianchi" e "Bianchi") sono lo stesso ospite ----------
+// ---- 1.0.6: "Greco" e "Greco Antonio" (o "Famiglia Bianchi" e "Bianchi") sono lo stesso ospite ----------
 const TITOLI_NOME = new Set(["sig", "sigg", "sigra", "ra", "na", "ri", "signor", "signora", "signori", "dott", "dottor", "dottore", "dottssa", "ing", "avv", "geom", "prof", "fam", "famiglia", "ditta", "coppia", "sposi"]);
 function paroleDelNome(x) { return normalizzaAllineato(String(x || "").split(/\s*[·,;(\/]\s*|\s+-\s+/)[0]).replace(/[^a-z' ]/g, " ").split(/\s+/).filter(w => w.length > 1 && !TITOLI_NOME.has(w)); }
 export function nomiCompatibili(a, b) {
