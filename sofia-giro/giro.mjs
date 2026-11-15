@@ -78,11 +78,11 @@ import { allarmiPerTe } from "./perte-giro.mjs";   // 1.28.0
 import { copiaDovuta, faiCopia, mandaCassetta, pulito as pulitoCopia } from "./copia-giro.mjs";   // 1.29.0: la copia di sicurezza
 import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGNI_MS as OGNI_CAL_MS } from "./calendari-giro.mjs";   // 1.30.0: il channel manager gratis
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
-import { portaPostaAlbergo } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
+import { portaPostaAlbergo, notificheEmail } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
 import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'orologio: «arrivata» / «finito» su WhatsApp e i tasti dell'app
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.35.0";
+export const VERSIONE_GIRO = "1.36.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -324,10 +324,30 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   }
   // 1.33.0 (app 1.75.0): prima le mail nuove dell'albergo (casella-albergo.gs, sola lettura) nella posta di Sofia: poi le
   // legge con le chat, come chat «Email albergo». Se la casella non è collegata non fa niente.
+  let pa = null;
   try {
-    const pa = await portaPostaAlbergo({ db, adesso, ...(postaAlbergo && postaAlbergo.fetchFn ? { fetchFn: postaAlbergo.fetchFn } : {}) });
+    pa = await portaPostaAlbergo({ db, adesso, ...(postaAlbergo && postaAlbergo.fetchFn ? { fetchFn: postaAlbergo.fetchFn } : {}) });
     if (pa && pa.esito) esiti.push(pa.esito);
   } catch (e) { esiti.push("posta albergo: errore"); console.warn("posta albergo:", e && e.message); }
+  // 1.36.0 (app 1.84.2) · Michele, 15/11: «mi raccomando le email devono avere una notifica più specifica». Ogni mail nuova:
+  // una notifica subito, con chi scrive, l'oggetto e l'inizio del testo (tocca → la Segreteria). Di notte (22:30–6:30)
+  // aspettano il primo giro dopo le 6:30; più di 3 insieme, una sola con l'elenco. Spente dall'interruttore (giroEmail).
+  // Nel registro pubblico di GitHub solo «notifica di una email»: mai chi scrive né l'oggetto.
+  if (pa && Array.isArray(pa.avvisare) && pa.avvisare.length) {
+    try {
+      if (a.giroEmail === false) await db.merge("importazioni", "posta-albergo", { avvisare: [] });
+      else if (t.minuti >= MIN(6, 30) && t.minuti < MIN(22, 30)) {
+        if (!ps) ps = await db.doc("importazioni", "push-sofia");
+        const puoMe5 = tgMe || (!!push && !!ps && !!ps.vapidPublic && iscrizioni().length > 0);
+        if (!puoMe5) esiti.push("email dell'albergo: nessun telefono con le notifiche accese");
+        else {
+          let partite = 0;
+          for (const n of notificheEmail(pa.avvisare, adesso)) if (await mandaMe(n.testo, "notifica di una email dell'albergo", n.titolo, true, { dove: "segreteria", tag: n.tag })) partite++;
+          if (partite) await db.merge("importazioni", "posta-albergo", { avvisare: [] });   // se non è arrivata nessuna, si riprova al giro dopo
+        }
+      }
+    } catch (e) { console.warn("notifiche delle email:", e && e.message); esiti.push("notifiche delle email: errore"); }
+  }
   // 1.18.0: Sofia legge le chat anche ad app chiusa (a ogni giro, se il ponte ha portato posta nuova)
   let lettura = null;
   const prendiBase = async () => {
@@ -407,6 +427,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
     } catch (e) { console.warn("sintesi:", e && e.message); esiti.push(`sintesi delle ${o}: errore ` + String((e && e.message) || e).slice(0, 80)); }
   }
   // 1.24.0 (app 1.55.13): i messaggi delle signore per Michele: una notifica per messaggio, dalle 6:30 alle 22:30
+  // (1.36.0: nel registro, che su GitHub è pubblico, «messaggio di una signora», senza il nome)
   try {
     const nuovi = Object.values((db.messaggiDaAvvisare ? await db.messaggiDaAvvisare() : {}) || {}).filter(m => m && m.id && m.avvisato === false).sort((x, y) => String(x.ora || "").localeCompare(String(y.ora || "")));
     if (nuovi.length && t.minuti >= MIN(6, 30) && t.minuti < MIN(22, 30)) {
@@ -418,7 +439,7 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
         if (!puoMe3) { esiti.push("messaggi delle signore: nessun telefono con le notifiche accese"); break; }
         const chi = String(m.nome || "Una signora"), ora = quando ? oraRoma(new Date(quando)).hhmm : "";
         const corpo = m.tipo === "foto" ? `📷 Ti ha mandato una foto${m.testo ? `: «${m.testo}»` : "."}` : m.tipo === "file" ? String(m.testo || "") : `«${m.testo || ""}»`;
-        const okk = await mandaMe(`${corpo}\n🕐 ${ora ? `alle ${ora} · ` : ""}tocca per leggerlo e rispondere`, `messaggio di ${chi}`, `💬 ${chi} ti scrive${m.prova ? " (prova)" : ""}`, true, { dove: "messaggi", rif: String(m.id).slice(0, 80), tag: ("sofia-msg-" + String(m.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40) });
+        const okk = await mandaMe(`${corpo}\n🕐 ${ora ? `alle ${ora} · ` : ""}tocca per leggerlo e rispondere`, "messaggio di una signora", `💬 ${chi} ti scrive${m.prova ? " (prova)" : ""}`, true, { dove: "messaggi", rif: String(m.id).slice(0, 80), tag: ("sofia-msg-" + String(m.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40) });
         if (okk) await db.merge("messaggi_signore", m.id, { avvisato: adesso.toISOString() });
       }
     }

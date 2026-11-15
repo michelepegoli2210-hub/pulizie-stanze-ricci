@@ -8,12 +8,15 @@
 //  Indirizzo e segreto li salva l'app quando Michele la collega (importazioni/posta-albergo, solo i proprietari li leggono);
 //  qui si scrive com'è andata (ultimoTs, ultimoGiro, quante, errore). Nel registro di GitHub, che tutti possono leggere,
 //  niente indirizzi né testi: solo «posta albergo: N mail» o l'errore generico.
+//  1.36.0 (app 1.84.2) · Michele, 15/11: «mi raccomando le email devono avere una notifica più specifica». Ogni mail nuova
+//  va anche in «avvisare» (importazioni/posta-albergo): il giro manda a Michele una notifica per mail, con chi scrive,
+//  l'oggetto e l'inizio del testo (notificheEmail); di notte aspettano le 6:30; più vecchie di 2 giorni non si avvisano più.
 // ============================================================================
 export const URL_CASELLA = /^https:\/\/script\.google\.com\/(?:a\/[^/]+\/)?macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/;
 const SEGRETO = /^[A-Za-z0-9_-]{24,80}$/;
 export const CHAT_EMAIL = "Email albergo";
 const ID = /^[A-Za-z0-9_-]{4,64}$/;
-const MAX_TESTO = 1800, PRIMA_VOLTA_MS = 24 * 3600 * 1000;
+const MAX_TESTO = 1800, PRIMA_VOLTA_MS = 24 * 3600 * 1000, MAX_AVVISARE = 20, AVVISARE_MS = 48 * 3600 * 1000;
 
 export const casellaPronta = (c) => !!(c && c.pronta && URL_CASELLA.test(String(c.url || "")) && SEGRETO.test(String(c.segreto || "")));
 
@@ -47,6 +50,48 @@ export function mailInPosta(m) {
   return { id: "email_" + String(m.id), dati: { chat: CHAT_EMAIL, gruppo: true, chi, mio: false, ts, data, ora, tipo: "testo", testo, da: "email", dominio: String(m.dominio || "").slice(0, 80) } };
 }
 
+// 1.36.0: le mail da avvisare a Michele, in una riga sola e corte (la notifica non è il posto per tutta la mail)
+const unaRiga = (s) => String(s || "").replace(/\s+/g, " ").trim();
+function taglia(s, n) {
+  s = unaRiga(s);
+  if (s.length <= n) return s;
+  const pz = s.slice(0, n), i = pz.lastIndexOf(" ");
+  return (i > n * 0.6 ? pz.slice(0, i) : pz).replace(/[\s,.;:–-]+$/, "") + "…";
+}
+export function perAvviso(m) {
+  return { id: String(m.id), ts: Number(m.ts) || 0, chi: String(m.chi || m.dominio || "").replace(/[<>]/g, "").trim().slice(0, 60),
+    oggetto: taglia(m.oggetto, 140), inizio: taglia(m.testo, 220), allegati: Number(m.allegati) || 0 };
+}
+// quelle che aspettavano più le nuove (senza doppioni), in ordine, al massimo 20, non più vecchie di 2 giorni
+export function daAvvisare(c, mail, ora) {
+  const prima = (Array.isArray(c && c.avvisare) ? c.avvisare : []).filter(x => x && ID.test(String(x.id || "")) && Number(x.ts) > 0);
+  const visti = new Set(prima.map(x => String(x.id)));
+  const nuove = (Array.isArray(mail) ? mail : []).filter(m => m && ID.test(String(m.id || "")) && Number(m.ts) > 0 && !visti.has(String(m.id))).map(perAvviso);
+  return [...prima, ...nuove].filter(x => ora - Number(x.ts) <= AVVISARE_MS).sort((x, y) => Number(x.ts) - Number(y.ts)).slice(-MAX_AVVISARE);
+}
+// le notifiche: fino a 3 mail una per mail («📧 Email da …»), di più una sola con l'elenco
+export function notificheEmail(lista, adesso = new Date()) {
+  const l = (Array.isArray(lista) ? lista : []).filter(x => x && ID.test(String(x.id || ""))).sort((x, y) => (Number(x.ts) || 0) - (Number(y.ts) || 0));
+  if (!l.length) return [];
+  const oggi = dataOraRoma(adesso.getTime()).data, ieri = dataOraRoma(adesso.getTime() - 24 * 3600 * 1000).data;
+  const quando = (x) => {
+    const { data, ora } = dataOraRoma(Number(x.ts) || adesso.getTime());
+    if ((data === oggi && ora < "06:30") || (data === ieri && ora >= "22:30")) return `🌙 È arrivata stanotte alle ${ora}`;
+    if (data === oggi) return `🕐 È arrivata alle ${ora}`;
+    if (data === ieri) return `🕐 È arrivata ieri alle ${ora}`;
+    return `🕐 È arrivata il ${data.slice(8)}/${data.slice(5, 7)} alle ${ora}`;
+  };
+  const chi = (x) => unaRiga(x.chi) || "qualcuno";
+  if (l.length <= 3) return l.map(x => ({
+    titolo: `📧 Email da ${chi(x)}`.slice(0, 80),
+    testo: [`«${unaRiga(x.oggetto) || "senza oggetto"}»`, unaRiga(x.inizio), x.allegati ? `📎 ${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}` : "", quando(x)].filter(Boolean).join("\n"),
+    tag: ("sofia-email-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40) }));
+  const notte = l.every(x => quando(x).startsWith("🌙"));
+  return [{ titolo: `📧 ${l.length} email nuove all'albergo`,
+    testo: [...l.slice(0, 6).map(x => `• ${chi(x)}: «${taglia(x.oggetto || "senza oggetto", 60)}»`), l.length > 6 ? `…e altre ${l.length - 6}` : "", notte ? "🌙 Sono arrivate stanotte" : ""].filter(Boolean).join("\n"),
+    tag: "sofia-email" }];
+}
+
 // A ogni giro: le mail nuove della casella entrano nella posta di Sofia (prima della lettura delle chat)
 export async function portaPostaAlbergo({ db, adesso = new Date(), fetchFn = fetch, ms = 60000 }) {
   let c = null;
@@ -58,12 +103,13 @@ export async function portaPostaAlbergo({ db, adesso = new Date(), fetchFn = fet
   if (!j || !j.ok) {
     const errore = String((j && j.errore) || "la casella non risponde").slice(0, 160);
     try { await db.merge("importazioni", "posta-albergo", { ultimoGiro: adesso.toISOString(), errore, erroreQuando: adesso.toISOString() }); } catch (e) {}
-    return { esito: "posta albergo: la casella non ha risposto", n: 0, errore: true };
+    return { esito: "posta albergo: la casella non ha risposto", n: 0, errore: true, avvisare: daAvvisare(c, [], ora) };   // 1.36.0: quelle che aspettavano
   }
   const mail = (Array.isArray(j.mail) ? j.mail : []).filter(m => m && Number(m.ts) > da);
   const ops = mail.map(mailInPosta).filter(Boolean).map(x => ({ coll: "posta", id: x.id, dati: x.dati, merge: true }));
   if (ops.length) await db.scrivi(ops);
   const ultimo = Math.max(da, ...mail.map(m => Number(m.ts) || 0));
-  await db.merge("importazioni", "posta-albergo", { ultimoTs: ultimo, ultimoGiro: adesso.toISOString(), errore: "", quante: (Number(c.quante) || 0) + ops.length, ...(ops.length ? { ultimaMail: adesso.toISOString() } : {}) });
-  return { esito: ops.length ? `posta albergo: ${ops.length} ${ops.length === 1 ? "mail nuova" : "mail nuove"}` : null, n: ops.length };
+  const avvisare = daAvvisare(c, ops.length ? mail : [], ora);   // 1.36.0
+  await db.merge("importazioni", "posta-albergo", { ultimoTs: ultimo, ultimoGiro: adesso.toISOString(), errore: "", quante: (Number(c.quante) || 0) + ops.length, ...(ops.length ? { ultimaMail: adesso.toISOString(), avvisare } : {}) });
+  return { esito: ops.length ? `posta albergo: ${ops.length} ${ops.length === 1 ? "mail nuova" : "mail nuove"}` : null, n: ops.length, avvisare };
 }
