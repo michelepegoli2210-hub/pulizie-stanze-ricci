@@ -28,7 +28,7 @@ Funziona su iPhone e Android aprendo un link e mettendola in Home. Niente abbona
 | `catalogo.js` | Il catalogo tradotto per l'app (**generato**, non si tocca a mano) | Mai a mano: lo scrive `strumenti/genera-catalogo.mjs` |
 | `chat.js` | La chat con la governante: le regole delle domande, il tetto di 3 al giorno, "impara" | Per aggiungere una domanda |
 | `governante.js` | La testa della governante: stelle per passaggio, calendario, i tre modi (Tecnici · Operai · Booking), tabellone, conto per stagione, mappa, materiali | Per cambiare come ragiona |
-| `strumenti/` | Gli script da computer: genera il catalogo, legge il CSV, l'unione fatta per la 0.26 | Quando cambia il file del catalogo |
+| `strumenti/` | Gli script da computer: genera il catalogo, legge il CSV, l'unione fatta per la 0.26, `fa-alfa.py` (i filmati di Sofia per l'iPhone, 1.84.0) | Quando cambia il file del catalogo |
 | `db.js` | Il collegamento ai dati (Firebase, oppure modalità prova) | Quasi mai |
 | `firebase-config.js` | I dati del progetto Firebase (pubblici) | Una volta sola, al Passo 2 |
 | `firestore.rules` | Le regole di sicurezza da incollare nella console Firebase | Al Passo 4 |

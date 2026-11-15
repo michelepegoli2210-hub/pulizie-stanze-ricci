@@ -91,6 +91,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   conosce Michele. Nella vetrina il telefono salva tutto sotto «vetrina:…» (`index.html`, prima del resto) e le scritte e
   la voce passano da `testoVetrina` (`db.js`). Le prove restano su `?prova=1`.
 
+- Sofia senza sfondo anche sull'iPhone (1.84.0): dove i webm trasparenti non vanno (`ALFA_OK = "no"`: iPhone, Safari del Mac)
+  ogni `-3d.webm` ha il suo gemello `-alfa.mp4` (colore sopra, trasparenza sotto, `strumenti/fa-alfa.py`) e accanto al video
+  c'è la tela (`canvas.alfa-tela`, WebGL) con le stesse classi; le regole di `style.css` per `video` si copiano per la tela da
+  sole (`telaRegole`). Un webm trasparente nuovo vuole anche il suo gemello. Nelle prove: `getImageData` del 16×16 finto.
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.

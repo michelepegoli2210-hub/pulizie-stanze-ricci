@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.83.0";
+export const VERSIONE = "1.84.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -205,7 +205,241 @@ const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
 function sofia3dVoluta() { try { return localStorage.getItem(CHIAVE_3D) !== "no"; } catch (e) { return true; } }
 function motoRidotto() { try { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } }
-function sofia3d() { return sofia3dVoluta() && ALFA_OK === "si" && !motoRidotto(); }
+function sofia3d() { return sofia3dVoluta() && alfaSi() && !motoRidotto(); }   // 1.84.0: anche con la tela (iPhone)
+// ---------------------------------------------------------------------------
+//  1.84.0 · SOFIA SENZA SFONDO ANCHE SULL'IPHONE (Michele, 15/11: «come mai nell'app di prova che mi hai inviato Sofia ha lo
+//  sfondo del suo filmato, forse perché la mia ragazza ha l'iPhone»; poi «la 4»). L'iPhone (e il Safari del Mac) non sa far
+//  vedere i webm trasparenti: finora lì Sofia restava piatta, col salone dietro, e la segretaria era una foto ferma.
+//  Adesso, dove il webm trasparente non va (ALFA_OK = "no") ma il telefono sa disegnare in WebGL, i filmati trasparenti
+//  diventano i loro gemelli «-alfa.mp4» (fatti con strumenti/fa-alfa.py): mp4 normali, alti il doppio, col colore sopra,
+//  una striscia nera e la trasparenza sotto, in grigio.
+//  LA TELA: accanto a ogni <video> che gira un «-alfa.mp4» si mette un <canvas> con le stesse classi, che a ogni fotogramma
+//  rimette insieme colore e trasparenza. Il video resta al suo posto, invisibile, e tutto il resto del codice (play, pausa,
+//  salti, dissolvenze, filmati cancellati) continua a parlare col video vero. Le regole di style.css scritte per «video» si
+//  copiano una volta sola anche per «canvas:where(.alfa-tela)» (stessa forza), così la tela sta esattamente dove stava il
+//  video, con le stesse maschere, ombre, ingrandimenti e dissolvenze. Su Android e sul computer non cambia niente.
+// ---------------------------------------------------------------------------
+const TELA = { puo: null, regole: 0, coppie: new Set(), raf: 0, mo: null, foto: new Map(), originali: null };
+const TELA_STRISCIA = 16;   // la striscia nera tra il colore e la trasparenza (strumenti/fa-alfa.py)
+// il telefono sa fare la tela? (WebGL e i selettori :where; la prova si fa una volta sola)
+function telaPuo() {
+  if (TELA.puo !== null) return TELA.puo;
+  TELA.puo = false;
+  try {
+    if (!(window.CSS && CSS.supports && CSS.supports("selector(:where(a))"))) return false;
+    const c = document.createElement("canvas"), gl = c.getContext("webgl");
+    if (!gl) return false;
+    try { const x = gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); } catch (e) {}
+    TELA.puo = telaRegole() > 0;   // senza le regole copiate la tela non saprebbe dove stare
+  } catch (e) { TELA.puo = false; }
+  return TELA.puo;
+}
+function alfaTela() { return ALFA_OK === "no" && telaPuo(); }
+function alfaSi() { return ALFA_OK === "si" || alfaTela(); }
+// i filmati trasparenti: i webm dove vanno, i gemelli «-alfa.mp4» dove c'è la tela
+function filmAlfaScegli() {
+  const liste = [FILM_TRE, FILM_CAPO_TRE, FILM_SEGR];
+  if (!TELA.originali) TELA.originali = liste.map(f => ({ ...f }));
+  const tela = alfaTela();
+  liste.forEach((f, i) => { for (const [k, s] of Object.entries(TELA.originali[i])) if (/-3d\.webm$/.test(s)) f[k] = tela ? s.replace(/-3d\.webm$/, "-alfa.mp4") : s; });
+}
+function telaFile(s) { return /-alfa\.mp4(?:[#?]|$)/.test(String(s || "")); }
+// «.x video.y, .z img» → «.x canvas:where(.alfa-tela).y»: solo dove il video è l'ultimo pezzo del selettore
+function telaSelettori(testo) {
+  const parti = []; let prof = 0, q = "", ini = 0;
+  for (let i = 0; i <= testo.length; i++) {
+    const ch = testo[i];
+    if (q) { if (ch === q && testo[i - 1] !== "\\") q = ""; continue; }
+    if (i === testo.length || (ch === "," && !prof)) { parti.push(testo.slice(ini, i).trim()); ini = i + 1; continue; }
+    if (ch === '"' || ch === "'") q = ch; else if (ch === "(" || ch === "[") prof++; else if (ch === ")" || ch === "]") prof--;
+  }
+  const nuove = [];
+  for (const p of parti) {
+    let pr = 0, qq = "", ult = 0;
+    for (let i = 0; i < p.length; i++) {
+      const ch = p[i];
+      if (qq) { if (ch === qq && p[i - 1] !== "\\") qq = ""; continue; }
+      if (ch === '"' || ch === "'") qq = ch; else if (ch === "(" || ch === "[") pr++; else if (ch === ")" || ch === "]") pr--;
+      else if (!pr && /[\s>+~]/.test(ch)) ult = i + 1;
+    }
+    const coda = p.slice(ult);
+    if (!/^video(?![\w-])/.test(coda) || /(^|[\s>+~(,])video(?![\w-])/.test(p.slice(0, ult))) continue;
+    nuove.push(p.slice(0, ult) + "canvas:where(.alfa-tela)" + coda.slice(5));
+  }
+  return nuove.join(", ");
+}
+// copia una volta sola le regole dei video per la tela, subito dopo ognuna (stesso ordine, stessa forza)
+function telaRegole() {
+  if (TELA.regole) return TELA.regole;
+  let n = 0;
+  const giro = (g) => {
+    let l; try { l = g.cssRules; } catch (e) { return; }
+    if (!l) return;
+    for (let i = l.length - 1; i >= 0; i--) {
+      const r = l[i];
+      if (!r.selectorText) { if (r.cssRules && typeof r.insertRule === "function") giro(r); continue; }
+      if (r.selectorText.indexOf("video") < 0 || !r.style || !r.style.cssText) continue;
+      const sel = telaSelettori(r.selectorText);
+      if (sel) { try { g.insertRule(`${sel}{${r.style.cssText}}`, i + 1); n++; } catch (e) {} }
+    }
+  };
+  try { for (const s of document.styleSheets) giro(s); } catch (e) {}
+  TELA.regole = n;
+  return n;
+}
+function telaAvvia() {
+  if (TELA.mo || !alfaTela()) return;
+  try {
+    TELA.mo = new MutationObserver(telaMuta);
+    TELA.mo.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["src", "class"] });
+  } catch (e) { TELA.mo = null; return; }
+  document.querySelectorAll("video").forEach(telaGuarda);
+  // tornando sull'app si ridisegna tutto (il telefono può aver buttato via i disegni)
+  document.addEventListener("visibilitychange", () => { if (document.hidden) return; for (const v of TELA.coppie) if (v._tela) v._tela.f = -1; telaSveglia(); });
+}
+function telaMuta(recs) {
+  for (const r of recs) {
+    if (r.type === "attributes") { if (r.target.tagName === "VIDEO") telaGuarda(r.target); continue; }
+    for (const n of r.addedNodes) {
+      if (n.nodeType !== 1 || n.tagName === "CANVAS") continue;
+      if (n.tagName === "VIDEO") telaGuarda(n); else if (n.firstElementChild) for (const v of n.getElementsByTagName("video")) telaGuarda(v);
+    }
+    // un video tolto da solo (es. il filmato che manca): la sua tela non deve restare lì col fotogramma fermo
+    for (const n of r.removedNodes) {
+      if (n.nodeType !== 1 || n.tagName === "CANVAS") continue;
+      if (n.tagName === "VIDEO" && n._tela && n._tela.c && n._tela.c.previousSibling !== n) n._tela.c.remove();
+      if (TELA.coppie.size) telaSveglia();   // un giro, così chi è uscito dalla pagina lascia libero il WebGL
+    }
+  }
+}
+function telaGuarda(v) { if (telaFile(v.getAttribute("src"))) telaAttacca(v); else if (v._tela) telaStacca(v); }
+function telaNuova(v, t) {
+  const c = document.createElement("canvas");
+  c.width = v.videoWidth || 540; c.height = v.videoHeight > TELA_STRISCIA ? (v.videoHeight - TELA_STRISCIA) >> 1 : 960;
+  c.className = "alfa-tela " + v.className; c.setAttribute("aria-hidden", "true");
+  c.addEventListener("webglcontextlost", (e) => { e.preventDefault(); if (t.c === c) { t.gl = null; t.perso = true; telaSveglia(); } });
+  if (t.c && t.c.parentNode) t.c.replaceWith(c);
+  t.c = c; t.gl = null; t.perso = false; t.rotto = false; t.f = -1; t.s = "";
+}
+function telaAttacca(v) {
+  let t = v._tela;
+  if (!t) {
+    t = v._tela = { c: null, gl: null, k: null, f: -1, s: "", via: 0, perso: false, rotto: false };
+    for (const ev of ["loadeddata", "play", "playing", "seeked", "emptied", "error"]) v.addEventListener(ev, telaSveglia);
+  }
+  if (!t.c) telaNuova(v, t);
+  if (t.c.previousSibling !== v) v.after(t.c);
+  const k = "alfa-tela " + v.className;
+  if (t.c.className !== k) t.c.className = k;
+  if (v.style.getPropertyValue("opacity") !== "0") v.style.setProperty("opacity", "0", "important");
+  if (!v.isConnected) return;   // fuori dalla pagina: si disegna quando torna
+  if (t.perso) telaNuova(v, t);
+  t.via = 0;
+  if (!TELA.coppie.has(v)) { TELA.coppie.add(v); t.f = -1; telaUna(v, t); }   // subito, prima che si veda: niente lampo vuoto
+  telaSveglia();
+}
+function telaLibera(t) {
+  if (t.gl) { try { const x = t.gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); } catch (e) {} }
+  t.gl = null; t.perso = true;
+}
+function telaStacca(v) {
+  const t = v._tela; if (!t) return;
+  telaLibera(t);
+  if (t.c) t.c.remove();
+  v.style.removeProperty("opacity");
+  TELA.coppie.delete(v); v._tela = null;
+}
+function telaSveglia() { if (!TELA.raf && !document.hidden) TELA.raf = requestAnimationFrame(telaPasso); }
+// un passo per tutte le tele: si ridisegna solo quando il filmato è a un fotogramma nuovo (24 al secondo)
+function telaPasso() {
+  TELA.raf = 0;
+  if (document.hidden) return;
+  let ancora = false; const ora = Date.now();
+  for (const v of TELA.coppie) {
+    const t = v._tela;
+    if (!t) { TELA.coppie.delete(v); continue; }
+    if (!v.isConnected) {
+      // fuori dalla pagina (es. un filmato tenuto da parte): dopo 3 secondi si libera la sua parte di WebGL
+      if (!t.via) t.via = ora;
+      if (ora - t.via > 3000) { telaLibera(t); TELA.coppie.delete(v); } else ancora = true;
+      continue;
+    }
+    t.via = 0;
+    if (t.c.previousSibling !== v) v.after(t.c);
+    if (t.perso) telaNuova(v, t);
+    if (telaUna(v, t)) ancora = true;
+  }
+  if (ancora) telaSveglia();
+}
+// disegna quella tela se serve; dice se bisogna ripassare al prossimo giro
+function telaUna(v, t) {
+  if (v.readyState >= 2 && v.videoWidth) {
+    const f = Math.floor((Number(v.currentTime) || 0) * 24 + 0.001), s = v.currentSrc || "";
+    if (f !== t.f || s !== t.s) { if (telaDisegna(v, t)) { t.f = f; t.s = s; } }
+    return !v.paused && !v.ended;
+  }
+  // nessun fotogramma (sta caricando, o il filmato non c'è): la sua foto, come fa il video
+  const p = "foto:" + (v.poster || "");
+  if (t.s !== p) { if (telaFoto(v, t)) { t.s = p; t.f = -1; } else return true; }
+  return !v.paused || v.networkState === 2;
+}
+const TELA_VS = "attribute vec2 p;varying vec2 u;void main(){u=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}";
+const TELA_FS = "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n" +
+  "uniform sampler2D t;uniform vec3 k;varying vec2 u;void main(){" +
+  "if(k.z>.5){vec4 f=texture2D(t,u);gl_FragColor=vec4(f.rgb*f.a,f.a);return;}" +
+  "vec3 c=texture2D(t,vec2(u.x,u.y*k.x)).rgb;float a=dot(texture2D(t,vec2(u.x,k.y+u.y*k.x)).rgb,vec3(.299,.587,.114));" +
+  "a=clamp((a-.025)/.955,0.,1.);gl_FragColor=vec4(min(c,vec3(a)),a);}";
+function telaGL(t) {
+  if (t.gl || t.rotto) return t.gl;
+  try {
+    const gl = t.c.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: true, powerPreference: "low-power" });
+    if (!gl) { t.rotto = true; return null; }
+    const sh = (tipo, src) => { const s = gl.createShader(tipo); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error("shader"); return s; };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, TELA_VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, TELA_FS)); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error("link");
+    gl.useProgram(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const lp = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(lp); gl.vertexAttribPointer(lp, 2, gl.FLOAT, false, 0, 0);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    for (const [a, b] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, b);
+    gl.uniform1i(gl.getUniformLocation(pr, "t"), 0);
+    gl.clearColor(0, 0, 0, 0);
+    t.k = gl.getUniformLocation(pr, "k"); t.gl = gl;
+  } catch (e) { t.rotto = true; t.gl = null; }
+  return t.gl;
+}
+function telaDisegna(v, t) {
+  const W = v.videoWidth, T = v.videoHeight, H = (T - TELA_STRISCIA) >> 1;
+  if (!W || H < 2) return false;
+  if (t.c.width !== W || t.c.height !== H) { t.c.width = W; t.c.height = H; }
+  const gl = telaGL(t); if (!gl) return telaFoto(v, t);
+  try {
+    gl.viewport(0, 0, W, H);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v);
+    gl.uniform3f(t.k, H / T, (H + TELA_STRISCIA) / T, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    return true;
+  } catch (e) { return false; }
+}
+// la foto del video (il poster: Sofia ferma, già senza sfondo); se la tela non sa fare WebGL resta questa
+function telaFoto(v, t) {
+  const p = v.poster || "", gl = telaGL(t);
+  const x = gl ? null : t.c.getContext("2d");
+  if (!p) { if (gl) gl.clear(gl.COLOR_BUFFER_BIT); else if (x) x.clearRect(0, 0, t.c.width, t.c.height); return true; }
+  let im = TELA.foto.get(p);
+  if (!im) { im = new Image(); im.decoding = "async"; im.src = p; TELA.foto.set(p, im); }
+  if (!im.complete) return false;   // non è ancora arrivata: si riprova al prossimo giro
+  if (!im.naturalWidth) return true; // non c'è: resta vuota, come il video senza foto
+  try {
+    if (gl) { gl.viewport(0, 0, t.c.width, t.c.height); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im); gl.uniform3f(t.k, 1, 0, 1); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
+    else if (x) { x.clearRect(0, 0, t.c.width, t.c.height); x.drawImage(im, 0, 0, t.c.width, t.c.height); }
+  } catch (e) { return false; }
+  return true;
+}
+filmAlfaScegli();
+telaAvvia();
 // 1.0.1: in 3D, di serie, NIENTE sfondo dietro di lei (il salone marrone): lei sta sulla pagina. "Il salone" lo rimette.
 const CHIAVE_SALONE = "ricci_sofia_salone";
 function saloneVoluto() { try { return localStorage.getItem(CHIAVE_SALONE) === "si"; } catch (e) { return false; } }
@@ -243,7 +477,8 @@ try {
     if (!ok && ALFA_OK === "si") return;      // qui l'ha gia' fatto bene: un intoppo di una volta non spegne il 3D
     ALFA_OK = v;
     try { localStorage.setItem(CHIAVE_ALFA, v); } catch (e) {}
-    try { if (document.getElementById("sofiaHero")) disegna(); } catch (e) {}
+    try { filmAlfaScegli(); telaAvvia(); } catch (e) {}   // 1.84.0: dove il webm trasparente non va, la tela
+    try { if (document.getElementById("sofiaHero") || (alfaTela() && S.pronto)) disegna(); } catch (e) {}
   });
 } catch (e) {}
 // il movimento del 3D: inclinazione del telefono (giroscopio), mouse sul computer, oppure un respiro lento da sola.
@@ -4820,7 +5055,7 @@ function disegnoLuogo(c, segni, opz) {
 // (la sagoma ritagliata, senza sfondo), ti ascolta e risponde; appena finisce di parlare sparisce. Esce da sola anche quando
 // parla per altri motivi (una camera aperta, «E poi?», «Fatto») e sparisce subito dopo. --------------------------------
 const compagna = { tieni: 0 };
-function ritaglioOK() { return ALFA_OK === "si" && !motoRidotto(); }
+function ritaglioOK() { return alfaSi() && !motoRidotto(); }   // 1.84.0: anche con la tela (iPhone)
 function compagnaBase() { try { return !!(S.pronto && argonLei() && S.vista === "oggi" && sofiaFuoriVoluta() && !document.querySelector(".conferma")); } catch (e) { return false; } }
 function compagnaMostra() { return !!(voceInCorso || guida.parla || guida.ascolta || compagna.tieni > Date.now()); }
 function compagnaVuole() {
@@ -9724,12 +9959,12 @@ function cardStileCasa() {
     <span class="small muted">Se uno stile non ti piace, toccane un altro: torna subito com'era. Vale solo per la tua parte: le signore vedono sempre la loro schermata.</span>
     <h3>4. ${esc(nomeGov())} in 3D</h3>
     <div class="seg"><button type="button" aria-pressed="${sofia3dVoluta()}" data-sofia3d="si">In 3D</button><button type="button" aria-pressed="${!sofia3dVoluta()}" data-sofia3d="no">Piatta</button></div>
-    <span class="small muted">${ALFA_OK === "no"
+    <span class="small muted">${ALFA_OK === "no" && !alfaTela()
       ? `Su questo telefono il 3D non si può fare: ${esc(nomeGov())} resta piatta, come prima.`
       : motoRidotto()
         ? `Il telefono è impostato per avere meno movimento: ${esc(nomeGov())} resta piatta.`
         : `In 3D esce un po' dalla cornice, con la sua ombra, e resta ferma: non si muove col telefono né col mouse. "Piatta" la rimette esattamente com'era.`}</span>
-    ${ALFA_OK === "no" || motoRidotto() || !sofia3dVoluta() ? "" : `<div class="seg" style="margin-top:8px"><button type="button" aria-pressed="${!saloneVoluto()}" data-salone="no">Senza niente dietro</button><button type="button" aria-pressed="${saloneVoluto()}" data-salone="si">Col salone dietro</button></div>
+    ${(ALFA_OK === "no" && !alfaTela()) || motoRidotto() || !sofia3dVoluta() ? "" : `<div class="seg" style="margin-top:8px"><button type="button" aria-pressed="${!saloneVoluto()}" data-salone="no">Senza niente dietro</button><button type="button" aria-pressed="${saloneVoluto()}" data-salone="si">Col salone dietro</button></div>
     <span class="small muted">Senza niente dietro: lei sta sulla pagina, senza il riquadro marrone alle spalle.</span>`}
     <p class="sofia-ver-tit"><b>La spilla di ${esc(nomeGov())}</b></p>
     <div class="seg"><button type="button" aria-pressed="${!sofiaComEra()}" data-sofia-ver="nuova">Nuova</button><button type="button" aria-pressed="${sofiaComEra()}" data-sofia-ver="prima">Com'era</button></div>
@@ -17843,7 +18078,7 @@ function collega() {
   document.querySelectorAll("button[data-salone]").forEach(b => b.onclick = () => { /* 1.0.4: solo i tasti (la casa ha anche lei data-salone) */ try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
   document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
   document.querySelectorAll("[data-sofia-ver]").forEach(b => b.onclick = () => { if ((b.dataset.sofiaVer === "prima") === sofiaComEra()) return; try { localStorage.setItem(CHIAVE_SOFIA_VER, b.dataset.sofiaVer); } catch (e) {} toast(b.dataset.sofiaVer === "prima" ? nomeGov() + " com'era: un momento…" : nomeGov() + " con la spilla nuova: un momento…"); setTimeout(() => location.reload(), 700); });   // 1.74.2
-  document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
+  document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" && !alfaTela() ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
   document.querySelectorAll("[data-esci]").forEach(b => b.onclick = async () => { if (await chiedi("Vuoi uscire dall'app? Per rientrare servirà la password.", { si: "Sì, esco" })) S.db.esci(); });
   document.querySelectorAll("[data-esporta]").forEach(b => b.onclick = () => b.dataset.esporta === "xlsx" ? esportaExcel() : esportaTutto());
   document.querySelectorAll("[data-promemoria]").forEach(i => i.onchange = () => salvaPromemoria(i.dataset.promemoria, i.value));
