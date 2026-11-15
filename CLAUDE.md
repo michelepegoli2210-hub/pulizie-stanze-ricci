@@ -99,7 +99,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - La posta dell'albergo (1.75.0, collegata il 15/11 con la 1.84.1): la casella (`casella-albergo.gs`) chiama l'API di Gmail
   con `UrlFetchApp`, quindi nel manifest serve il servizio avanzato «Gmail» (accende l'API nel progetto di Google). Il tasto
   per aprire Google con l'account dell'albergo va su `script.google.com/home/projects/create` (`script.new` dopo la scelta
-  dell'account dà errore 400).
+  dell'account dà errore 400). Ogni mail nuova ha la sua notifica (giro 1.36.0, `notificheEmail` in `posta-giro.mjs`):
+  «📧 Email da …», l'oggetto e l'inizio; di notte aspetta le 6:30; più di 3 insieme una sola. Nel registro di GitHub
+  (pubblico) solo «notifica di una email»: mai chi scrive né l'oggetto.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

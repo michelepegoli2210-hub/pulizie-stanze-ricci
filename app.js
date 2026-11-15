@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.84.1";
+export const VERSIONE = "1.84.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -12096,7 +12096,7 @@ function cardSempreAccesa() {
     <p class="small muted" style="margin:0 0 4px">Oggi:</p>
     <ul class="giro-oggi">${voce("piano", a.token && a.chat ? "Piano del giorno alle signore (dalle 7)" : "Il piano del giorno a te (dalle 7)")}${voce("arrivi", "Priorità alle camere con un arrivo (12:30)")}${voce("allarme", "Avviso a te se una camera non è pronta (13:30)")}${voce("chiusura", "Promemoria delle pulizie da segnare (15:00)")}${voce("bollettino", "Bollettino della sera a te (20:00)")}</ul>
     ${rigaLetturaGiro(g, a)}
-    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}${sw("giroSintesi", "La sintesi della segretaria, con l'avviso")}</div>${a.giroSintesi === false ? "" : orariSintesiHtml(a)}
+    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}${sw("giroSintesi", "La sintesi della segretaria, con l'avviso")}${sw("giroEmail", "📧 Una notifica per ogni email dell'albergo")}</div>${a.giroSintesi === false ? "" : orariSintesiHtml(a)}
   </section>`;
 }
 // 1.18.1: LA SPINTA DAL PC. L'orario di GitHub è «quando può» (il 31/10 nessun giro dalle 12:29 alle 17:14): il ponte sul
@@ -15145,7 +15145,7 @@ function cardPostaAlbergo() {
 }
 function foglioPostaAlbergo(f) {
   if (paPronta() && !f.rifai) return `<h3>📬 La posta dell'albergo</h3>
-    <p class="note info">✓ Collegata${S.postaAlb.indirizzo ? `: <b>${esc(S.postaAlb.indirizzo)}</b>` : ""}${S.postaAlb.quando ? `, dal ${esc(L.dataLunga(String(S.postaAlb.quando).slice(0, 10)))}` : ""}. ${esc(nomeGov())} legge le mail nuove ogni 10 minuti.</p>
+    <p class="note info">✓ Collegata${S.postaAlb.indirizzo ? `: <b>${esc(S.postaAlb.indirizzo)}</b>` : ""}${S.postaAlb.quando ? `, dal ${esc(L.dataLunga(String(S.postaAlb.quando).slice(0, 10)))}` : ""}. ${esc(nomeGov())} legge le mail nuove ogni 10 minuti.${(S.avvisi || {}).giroEmail === false ? " Le notifiche delle mail sono spente." : " Per ogni mail nuova ti arriva una notifica: chi scrive e l'oggetto (di notte aspetta le 6:30)."}</p>
     <ol class="rg-passi"><li><button type="button" class="rg-b" data-pa-prova><b>✓</b>Prova il collegamento</button></li>
       <li><button type="button" class="rg-b" data-pa-rifai><b>↺</b>Collegala di nuovo</button></li>
       <li><button type="button" class="rg-b" data-pa-togli><b>✕</b>Scollega (Sofia smette di leggerla)</button></li></ol>
