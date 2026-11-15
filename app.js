@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.84.2";
+export const VERSIONE = "1.85.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -199,7 +199,7 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr4-riposo-3d.webm", ascolta: "segr4-ascolta-3d.webm", parla: "segr4-parla-3d.webm", poster: "segr4-poster-3d.webp" };   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
+const FILM_SEGR = { riposo: "segr5-riposo-3d.webm", ascolta: "segr5-ascolta-3d.webm", parla: "segr5-parla-3d.webm", poster: "segr5-poster-3d.webp" };   // 1.85.0 (Michele: «il suo filmato salta troppo»): i segr5, 480x600, il bordo di sotto non lampeggia più, il giro senza salto (strumenti/fai-segr5.py)   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -6904,7 +6904,7 @@ function vistaSegreteria() {
   const imparate = (Array.isArray(S.taccuino) ? S.taccuino : []).filter(v => v && v.testo).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))).slice(0, 2);
   const imparato = imparate.length ? `<div class="sg2-imp"><b><span aria-hidden="true">🧠</span> Cosa ho imparato</b>${imparate.map(v => `<p>${esc(String(v.testo).replace(/^Correzione di Michele:\s*/i, ""))}</p>`).join("")}</div>` : "";
   const banner = mod ? bannerLettura() : "";
-  return `<section class="sg2"><div class="sg2-testa"><button type="button" class="sg2-sofia" data-sg2-sofia aria-label="${esc(nome)}: toccala e ti racconta la giornata" aria-pressed="false"><span class="sg2-sofia-posto"></span></button><div class="sg2-tt"><h2>Segreteria</h2><p>${esc(nome)}, la tua assistente</p><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Chiedile qualcosa"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi><span aria-hidden="true">✍️</span> Scrivile</button><small class="sg2-tocca">👆 Toccala: ti racconta la giornata</small></div></div>${sg2BollaHtml()}
+  return `<section class="sg2"><div class="sg2-testa sg2-palco"><div class="sg2-tt"><h2>Segreteria</h2><p>${esc(nome)}, la tua assistente</p></div><button type="button" class="sg2-sofia" data-sg2-sofia aria-label="${esc(nome)}: toccala e ti racconta la giornata" aria-pressed="false"><span class="sg2-sofia-posto"></span></button><small class="sg2-tocca">👆 Toccala: ti racconta la giornata</small>${sg2BollaHtml()}<div class="sg2-tasti"><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Parlale"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi><span aria-hidden="true">✍️</span> Scrivile</button></div></div>
     ${banner}
     <h3 class="sg2-tit">1) Riassunto di oggi</h3>
     <div class="sg2-riass"><p>${riass.join("<br>")}</p><button type="button" class="sg2-ascolta" data-sg2-ascolta><span class="sg2-alt" aria-hidden="true">🔊</span><span>Ascolta il riassunto</span></button></div>
@@ -7089,22 +7089,33 @@ function sg2SofiaMonta() {
 // finché parla, senza nuvoletta. Un tocco la zittisce.
 function sg2TestaInVista() { const h = document.querySelector(".sg2-sofia"); if (!h) return false; const r = h.getBoundingClientRect(); return r.height > 40 && r.bottom > 70 && r.top < (window.innerHeight || 800) - 90; }
 function segrFuori() {
+  // 1.85.0 (Michele: «dove si trova il fantasmino che parlo con lei?»): giù nella pagina il fantasmino c'è sempre, non solo mentre
+  // parla. Fermo è il suo viso con «🎤 Parlale»: lo tocchi, torni su da lei e ti ascolta. Mentre parla è lei che parla: lo tocchi
+  // e smette.
   let f = document.getElementById("segrFuori");
   let vuoi = false;
-  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && (voceInCorso || sg2ParlaTel) && !sg2TestaInVista() && !document.querySelector(".sheet")); } catch (e) {}
+  const parla = !!(voceInCorso || sg2ParlaTel);
+  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && !sg2TestaInVista() && !document.querySelector(".sheet")); } catch (e) {}
   if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (f.classList.contains("su")) return; f.hidden = true; f.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); }, 360); } return; }
   const rit = ritaglioOK() && !segrParlaManca && !filmatoTolto("segr-parla");   // 1.80.0: «parla» cancellato: la figura ferma
   if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
   if (!f) {
     f = document.createElement("button"); f.type = "button"; f.id = "segrFuori"; f.className = "segr-fuori"; f.hidden = true; f.dataset.rit = rit ? "1" : "";
-    f.innerHTML = `<span class="sgf-fig">${rit ? `<video src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`}</span><span class="sgf-x" aria-hidden="true">✕</span>`;
+    f.innerHTML = `<span class="sgf-fig">${rit ? `<video src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`}</span><span class="sgf-x" aria-hidden="true">✕</span><span class="sgf-calma" aria-hidden="true"><span class="sgf-viso"><img src="${FILM_SEGR.poster}" alt=""></span><span class="sgf-di">🎤 Parlale</span></span>`;
     const v = f.querySelector("video");
     if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; if (filmatoTolto("segr-ferma")) return; v.src = FILM_SEGR.riposo; try { v.load(); v.play().catch(() => {}); } catch (e) {} });
-    f.onclick = (e) => { e.preventDefault(); sg2Zitta(); disegna(); };
+    f.onclick = (e) => {
+      e.preventDefault();
+      if (f.classList.contains("parla")) { sg2Zitta(); disegna(); return; }
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (er) { window.scrollTo(0, 0); }
+      setTimeout(() => { const m = document.querySelector("[data-sg2-mic]"); if (m && !sg2Rec) m.click(); }, 500);
+    };
     document.body.appendChild(f);
   }
-  f.setAttribute("aria-label", `${nomeGov()} sta parlando: tocca per farla smettere`);
-  const v = f.querySelector("video"); if (v && v.paused) { try { v.play().catch(() => {}); } catch (e) {} }
+  f.classList.toggle("parla", parla); f.classList.toggle("calma", !parla);
+  f.setAttribute("aria-label", parla ? `${nomeGov()} sta parlando: tocca per farla smettere` : `Parla con ${nomeGov()}: torni su da lei e ti ascolta`);
+  const v = f.querySelector(".sgf-fig video");
+  if (v) { if (parla && v.paused) { try { v.play().catch(() => {}); } catch (e) {} } else if (!parla && !v.paused) { try { v.pause(); } catch (e) {} } }
   clearTimeout(f._via);
   if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); } else f.classList.add("su");
 }
@@ -11183,7 +11194,7 @@ try {
 let sofiaFuoriScroll = null;
 function casaInCima() { try { document.body.classList.toggle("casa-in-cima", (window.scrollY || 0) < 16 && !!document.getElementById("sofiaHero")); } catch (e) {} }
 try { window.addEventListener("scroll", casaInCima, { passive: true }); } catch (e) {}
-try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); if (voceInCorso || sg2ParlaTel) segrFuori(); sofiaMini(); voceBarra(); }, 140); }, { passive: true }); } catch (e) {}
+try { window.addEventListener("scroll", () => { clearTimeout(sofiaFuoriScroll); sofiaFuoriScroll = setTimeout(() => { if (voceInCorso) sofiaFuori(); if (voceInCorso || sg2ParlaTel || S.vista === "segreteria") segrFuori();   /* 1.85.0 */ sofiaMini(); voceBarra(); }, 140); }, { passive: true }); } catch (e) {}
 // 1.3.0 (Gemini): mentre si scorre, la linguetta del microfono si fa trasparente e si ritira (non copre i tasti a destra)
 let scorreT = null;
 try { window.addEventListener("scroll", () => { document.body.classList.add("scorre"); clearTimeout(scorreT); scorreT = setTimeout(() => document.body.classList.remove("scorre"), 600); }, { passive: true }); } catch (e) {}

@@ -103,6 +103,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   «📧 Email da …», l'oggetto e l'inizio; di notte aspetta le 6:30; più di 3 insieme una sola. Nel registro di GitHub
   (pubblico) solo «notifica di una email»: mai chi scrive né l'oggetto.
 
+- Sofia segretaria (1.85.0): i filmati sono i segr5 (480x600, fatti dai segr4 con `strumenti/fai-segr5.py`: il bordo di sotto
+  uguale in tutti i fotogrammi, il giro che finisce dove ricomincia). In testa alla Segreteria il palco (`.sg2-palco`): lei
+  grande in mezzo, la nuvoletta con quello che dice, «🎤 Parlale» e «✍️ Scrivile». Il fantasmino (`segrFuori`) giù nella
+  pagina c'è sempre: fermo il viso con «🎤 Parlale» (tocchi: torni su e ti ascolta), mentre parla è lei (tocchi: smette).
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.

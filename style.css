@@ -9958,3 +9958,32 @@ body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
 :root[data-theme="dark"] .tm-card > p,:root[data-theme="dark"] .tm-t span{color:#C9C3B8}
 :root[data-theme="dark"] .tm-ok{background:#3A3327;color:#F5EFE3;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18)}
 :root[data-theme="dark"] .tm-l{color:#93C5FD}
+
+/* ---- 1.85.0 · SOFIA SEGRETARIA GRANDE, IN MEZZO (Michele, 15/11: «in alto a sinistra è troppo piccola e quando parla non si
+   capisce neanche… il suo filmato salta troppo»). In testa alla Segreteria il palco: lei grande (viso e spalle, i filmati segr5
+   480x600), sotto quello che dice scritto grande, poi «🎤 Parlale» e «✍️ Scrivile». I filmati passano uno nell'altro in 0,45 s.
+   Il fantasmino giù nella pagina c'è sempre: fermo è il suo viso con «🎤 Parlale», mentre parla è lei che parla. ---- */
+.sg2-testa.sg2-palco{display:block;position:relative;margin:0 0 12px;padding:12px 12px 14px;border-radius:24px;background:#fff;border:2px solid var(--sg-oro);box-shadow:0 4px 14px rgba(29,49,86,.1);text-align:center}
+.sg2-palco .sg2-tt{padding:0}
+.sg2 .sg2-palco h2{font-size:28px}
+.sg2-palco .sg2-tt p{font-size:16px}
+.sg2-palco .sg2-sofia{display:block;position:relative;width:100%;max-width:380px;height:min(310px,68vw);margin:8px auto 0;border-radius:20px;overflow:hidden;background:radial-gradient(circle at 50% 38%,#FFF6E6 0,#F3E4C9 72%)}
+.sg2-palco .sg2-sf video,.sg2-palco .sg2-sf img{object-fit:cover;object-position:50% 0;transition:opacity .45s ease}
+.sg2-palco .sg2-tocca{margin:6px 0 0;font-size:15px}
+.sg2-palco .sg2-bolla{margin:12px 0 0;text-align:left}
+.sg2-palco .sg2-bolla::before{left:calc(50% - 7px)}
+.sg2-palco .sg2-bolla p{font-size:18px;line-height:1.4;font-weight:600}
+.sg2-palco .sg2-bolla small{font-size:15px}
+.sg2-palco .sg2-tasti{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 0}
+.sg2-palco .sg2-tasti .sg2-mic{margin:0;justify-content:center;min-height:54px;font-size:17px;border-width:2px;border-radius:16px}
+:root[data-theme="dark"] .sg2-testa.sg2-palco{background:#1F1F23}
+:root[data-theme="dark"] .sg2-palco .sg2-sofia{background:radial-gradient(circle at 50% 38%,#3A3428 0,#26231E 72%)}
+@media (prefers-reduced-motion:reduce){.sg2-palco .sg2-sf video,.sg2-palco .sg2-sf img{transition:none}}
+.segr-fuori .sgf-calma{display:none}
+.segr-fuori.calma{height:auto;min-height:0;aspect-ratio:auto;width:auto}
+.segr-fuori.calma .sgf-fig,.segr-fuori.calma .sgf-x{display:none}
+.segr-fuori.calma .sgf-calma{display:flex;flex-direction:column;align-items:center;gap:5px;filter:drop-shadow(0 8px 14px rgba(28,25,23,.32))}
+.sgf-viso{position:relative;display:block;width:84px;height:84px;border-radius:50%;overflow:hidden;border:3px solid #fff;background:radial-gradient(circle at 50% 38%,#FFF6E6 0,#F3E4C9 72%)}
+.sgf-viso img{position:absolute;left:50%;top:-14px;width:150px;max-width:none;height:auto;transform:translateX(-50%)}
+.sgf-di{display:block;font-weight:800;font-size:15px;line-height:1.1;color:var(--sg-blu,#1D3156);background:#fff;border:2px solid var(--sg-oro,#C9A34A);border-radius:12px;padding:6px 10px;white-space:nowrap}
+:root[data-theme="dark"] .sgf-di{background:#2A2A2E;color:#F2F2F5}
