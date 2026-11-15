@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.84.0";
+export const VERSIONE = "1.84.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -15154,7 +15154,7 @@ function foglioPostaAlbergo(f) {
     <p class="muted small" style="margin:0 0 10px">Una volta sola, dal PC: un piccolo programma (gratis) nell'account Google <b>dell'albergo</b> che <b>solo legge</b> la posta. Non manda, non cancella, non sposta niente.</p>
     <ol class="rg-passi">
       <li><button type="button" class="rg-b" data-pa-copia="codice"><b>1</b>Copia il codice</button></li>
-      <li><a class="rg-b" href="https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fscript.new" target="_blank" rel="noopener"><b>2</b>Apri Google con l'account dell'albergo</a></li>
+      <li><a class="rg-b" href="https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fscript.google.com%2Fhome%2Fprojects%2Fcreate" target="_blank" rel="noopener"><b>2</b>Apri Google con l'account dell'albergo</a></li>
       <li><span class="rg-t"><b>3</b><span>Su Google: clic nel testo, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, poi 💾.</span></span></li>
       <li><button type="button" class="rg-b" data-pa-copia="manifest"><b>4</b>Copia il permesso «sola lettura»</button></li>
       <li><span class="rg-t"><b>5</b><span>Su Google: ⚙️ <b>Impostazioni progetto</b> → spunta <b>«Mostra il file manifest "appsscript.json"»</b> → torna al codice, apri <b>appsscript.json</b>, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, 💾. Poi <b>«Esegui il deployment» → «Nuovo deployment»</b> → ⚙️ <b>«App web»</b> → <b>«Chi ha accesso: Chiunque»</b> → <b>«Esegui il deployment»</b> → <b>«Autorizza l'accesso»</b> (se dice «app non verificata»: è la tua, <b>Avanzate → Vai a…</b> → <b>Consenti</b>) → copia l'<b>URL app web</b>.</span></span></li>

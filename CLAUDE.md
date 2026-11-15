@@ -96,6 +96,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   c'è la tela (`canvas.alfa-tela`, WebGL) con le stesse classi; le regole di `style.css` per `video` si copiano per la tela da
   sole (`telaRegole`). Un webm trasparente nuovo vuole anche il suo gemello. Nelle prove: `getImageData` del 16×16 finto.
 
+- La posta dell'albergo (1.75.0, collegata il 15/11 con la 1.84.1): la casella (`casella-albergo.gs`) chiama l'API di Gmail
+  con `UrlFetchApp`, quindi nel manifest serve il servizio avanzato «Gmail» (accende l'API nel progetto di Google). Il tasto
+  per aprire Google con l'account dell'albergo va su `script.google.com/home/projects/create` (`script.new` dopo la scelta
+  dell'account dà errore 400).
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.

@@ -12,6 +12,8 @@
  *  1. script.new → incolla questo codice al posto di tutto → 💾
  *  2. ⚙️ Impostazioni progetto → spunta «Mostra il file manifest "appsscript.json" nell'editor» → nell'editor apri
  *     appsscript.json e mettici le impostazioni che copia l'app (il permesso «sola lettura») → 💾
+ *     (1.84.1: dentro c'è anche il servizio «Gmail»: così Google accende l'API di Gmail del progetto. Senza, la casella
+ *     risponde «Gmail non risponde (403)».)
  *  3. Esegui il deployment → Nuovo deployment → ⚙️ App web → Esegui come: Me → Chi ha accesso: Chiunque → Esegui il deployment
  *     → Autorizza l'accesso (Google dice «app non verificata»: è la tua, Avanzate → Vai a … → Consenti)
  *  4. copia l'«URL app web» nell'app: Altro → 📬 La posta dell'albergo.
@@ -50,7 +52,10 @@ function api_(percorso) {
   var r = UrlFetchApp.fetch("https://gmail.googleapis.com/gmail/v1/users/me/" + percorso, {
     headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken() }, muteHttpExceptions: true
   });
-  if (r.getResponseCode() !== 200) throw new Error("Gmail non risponde (" + r.getResponseCode() + ")");
+  if (r.getResponseCode() !== 200) {
+    var msg = ""; try { msg = String((JSON.parse(r.getContentText()).error || {}).message || ""); } catch (x) {}
+    throw new Error("Gmail non risponde (" + r.getResponseCode() + ")" + (msg ? ": " + msg.slice(0, 160) : ""));
+  }
   return JSON.parse(r.getContentText());
 }
 function nuove_(da) {
