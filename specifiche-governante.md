@@ -3304,3 +3304,6 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Cinque parti: **Il mio piano** (lo scrivi o lo detti), **Impegni** (il giorno e l'ora li capisce da quello che dici: «palestra domani alle 9»; «✓ Fatto» lo toglie), **Obiettivi** («✓ Fatto oggi» ogni giorno, «🏁 Raggiunto» lo fa diventare un traguardo), **Traguardi**, **Idee** («🎯 Diventa obiettivo»).
   - «🎤 Dimmi una cosa nuova»: la dici («obiettivo leggere dieci pagine al giorno», «idea …») e la mette al posto giusto; se non capisce dove, chiede «Dove la metto?» con quattro tasti. Si può anche scrivere.
   - La sfera è un disegno nostro e la voce è quella del telefono: non si copiano disegni e voci di altri.
+- **1.86.1** (16/11, notte, Michele, con le foto di un video: «sì, ma l'icona e l'immagine metti quella giusta, la galassia che si muove e gira»). **La galassia di Jarvis.**
+  - L'immagine di quel video è di chi l'ha fatta e non si copia. Jarvis ha la sua: una galassia a spirale (due bracci di stelle, il cuore che brilla) disegnata dall'app, che gira sempre: piano quando sta zitto, più svelta col cuore che batte quando parla, col bordo verde quando ascolta.
+  - È il tasto nella prima pagina (sopra il microfono di Sofia) e il viso di Jarvis nella sua pagina. Col «movimento ridotto» del telefono resta ferma.

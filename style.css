@@ -9989,24 +9989,13 @@ body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
 :root[data-theme="dark"] .sgf-di{background:#2A2A2E;color:#F2F2F5}
 
 /* ---- 1.86.0 · JARVIS, l'app personale del titolare (Michele, 16/11: «il tasto di Jarvis appena sopra il microfono di Sofia…
-   mi deve parlare»). La sfera di luce (un disegno nostro: cerchi d'oro che si allargano sul blu della casa) è il tasto nella
+   mi deve parlare»). La galassia che gira (1.86.1: un disegno nostro, fatto dall'app su una tela; prima cerchi d'oro) è il tasto nella
    prima pagina e il viso di Jarvis nella sua pagina: piano quando sta zitto, svelta quando parla, col bordo verde quando
    ascolta. La pagina è scura e sta sopra a tutto (#jarvis); le scritte sono grandi. ---- */
-.jv-sfera{--jv:170px;position:relative;display:block;width:var(--jv);height:var(--jv);border-radius:50%;background:radial-gradient(circle at 50% 50%,#2B4A8C 0,#16264A 58%,#0B1430 100%);box-shadow:0 0 0 2px rgba(242,193,78,.8),0 0 calc(var(--jv) * .22) rgba(242,193,78,.42);overflow:hidden}
-.jv-sfera i{position:absolute;inset:0;border-radius:50%;border:max(2px,calc(var(--jv) * .014)) solid rgba(242,193,78,.9);opacity:0;animation:jvAnello 3.9s ease-out infinite}
-.jv-sfera i:nth-child(2){animation-delay:1.3s}
-.jv-sfera i:nth-child(3){animation-delay:2.6s}
-.jv-sfera b{position:absolute;left:50%;top:50%;width:26%;height:26%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#FFF7D6 0,#F2C14E 70%);box-shadow:0 0 calc(var(--jv) * .12) calc(var(--jv) * .03) rgba(255,214,110,.85);animation:jvCuore 3.2s ease-in-out infinite}
-@keyframes jvAnello{0%{transform:scale(.3);opacity:.95}80%{opacity:.25}100%{transform:scale(1.02);opacity:0}}
-@keyframes jvCuore{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.14)}}
-@keyframes jvDice{0%{transform:translate(-50%,-50%) scale(.9)}100%{transform:translate(-50%,-50%) scale(1.5)}}
-.jv-sfera.piccola{--jv:46px}
-.jv-sfera.media{--jv:84px}
-.jarvis.parla .jv-sfera i{animation-duration:1.2s}
-.jarvis.parla .jv-sfera i:nth-child(2){animation-delay:.4s}
-.jarvis.parla .jv-sfera i:nth-child(3){animation-delay:.8s}
-.jarvis.parla .jv-sfera b{animation:jvDice .34s ease-in-out infinite alternate}
-.jarvis.ascolta .jv-sfera{box-shadow:0 0 0 4px #4ADE80,0 0 40px rgba(74,222,128,.5)}
+.jv-gal{--jv:200px;display:block;width:var(--jv);height:var(--jv);border-radius:50%;background:radial-gradient(circle at 50% 50%,#1B2C5A 0,#0E1836 62%,#070D22 100%);box-shadow:0 0 0 2px rgba(242,193,78,.75),0 0 calc(var(--jv) * .2) rgba(120,150,255,.45)}   /* 1.86.1: la galassia di Jarvis, su una tela */
+.jv-gal.piccola{--jv:48px}
+.jv-gal.media{--jv:84px}
+.jarvis.ascolta .jv-gal{box-shadow:0 0 0 4px #4ADE80,0 0 40px rgba(74,222,128,.5)}
 .casa-jarvis{display:grid;place-items:center;flex:0 0 auto;width:50px;height:50px;margin:0;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .casa-jarvis:active{transform:scale(.94)}
 body.con-jarvis{overflow:hidden}
@@ -10064,4 +10053,4 @@ body.con-jarvis{overflow:hidden}
 .jv-foglio .jv-aiuto{margin:0}
 .jv-dove{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media (max-width:400px){.jarvis{padding-left:12px;padding-right:12px}.jv-gr{gap:10px}.jv-c{grid-template-columns:36px minmax(0,1fr);padding:10px 8px}.jv-e{font-size:30px}.jv-c b{font-size:18px}.jv-c small{font-size:15px}.jv-testa b{font-size:24px}.jv-dice{font-size:19px}.jv-mic,.jv-scrivi{font-size:17px;padding:8px 10px}}
-@media (prefers-reduced-motion:reduce){.jv-sfera i{animation:none;opacity:.5;transform:scale(.72)}.jv-sfera i:nth-child(2){transform:scale(.5)}.jv-sfera i:nth-child(3){transform:scale(.94)}.jv-sfera b,.jarvis.parla .jv-sfera b,.jv-mic.su{animation:none}}
+@media (prefers-reduced-motion:reduce){.jv-mic.su{animation:none}}

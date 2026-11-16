@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.86.0";
+export const VERSIONE = "1.86.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1803,6 +1803,7 @@ function disegna() {
   if (manFattoAtteso) guardaManFatto();   // 1.58.0
   if (tuFattoAtteso) guardaTuFatto();   // 1.62.0
   try { sg2SofiaMonta(); } catch (e) {}   // 1.62.1: Sofia segretaria in testa alla Segreteria
+  try { jvGalSveglia(); } catch (e) {}   // 1.86.1: la galassia di Jarvis (il suo tasto nella prima pagina)
   try { socFilmMonta(); } catch (e) {}   // 1.70.0: il filmato di Sofia influencer
   try { filmatiMonta(); } catch (e) {}   // 1.80.0: il filmato che gira nella pagina «I filmati di Sofia»
   if (condivisaInAttesa && S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie) { condivisaInAttesa = false; setTimeout(guardaCondivisa, 0); }   // 1.51.0
@@ -18837,19 +18838,76 @@ avvia();
 //    a Gemini, niente su GitHub: qui dentro non si chiama mai S.db né l'IA. Gratis: parla con la voce del telefono (più bassa
 //    e calma; se il telefono ha una voce da uomo usa quella) e ascolta col microfono del telefono.
 //  - Si accende telefono per telefono: il link …/?jarvis=1 (una volta) o l'interruttore in Altro. Spento non si vede niente.
-//  - Il tasto: la sfera di luce sopra il microfono di Sofia, nella prima pagina. Apre la pagina di Jarvis (scura, sopra a
+//  - Il tasto: la galassia che gira (1.86.1), sopra il microfono di Sofia, nella prima pagina. Apre la pagina di Jarvis (scura, sopra a
 //    tutto), che si chiude con Indietro.
-//  - Dentro: la sfera che parla (aprendo ti dice la giornata; toccala e la ripete), Il mio piano, Impegni (il giorno e l'ora
+//  - Dentro: la galassia che parla (aprendo ti dice la giornata; toccala e la ripete), Il mio piano, Impegni (il giorno e l'ora
 //    detti a voce: «palestra domani alle 9»), Obiettivi («✓ Fatto oggi», «🏁 Raggiunto» → diventa un traguardo), Traguardi,
 //    Idee («🎯 Diventa obiettivo»). «🎤 Dimmi una cosa nuova»: la dici e lui la mette al posto giusto; se non capisce dove,
 //    lo chiede.
-//  - La sfera è un disegno nostro (cerchi d'oro che si allargano sul blu della casa): niente marchi né disegni di altri.
+//  - La galassia è un disegno nostro, fatto dall'app coi numeri (1.86.1; prima cerchi d'oro): niente marchi né disegni di altri.
 // ============================================================================
 const JV_CHIAVE = "ricci_jarvis", JV_ACCESO = "ricci_jarvis_acceso", JV_MUTO = "ricci_jarvis_muto";
 const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, foglio: null, rec: null, giro: 0 };
 const JV_SEZ = { piano: ["🗺️", "Il mio piano"], impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], traguardi: ["🏁", "Traguardi"], idee: ["💡", "Idee"] };
 const JV_UNO = { impegni: "Impegno", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
-const JV_SFERA = (cls = "") => `<span class="jv-sfera${cls ? " " + cls : ""}" aria-hidden="true"><i></i><i></i><i></i><b></b></span>`;
+// 1.86.1 (Michele, 16/11 notte: «l'icona e l'immagine… la galassia che si muove e gira»): la faccia di Jarvis è una GALASSIA che
+// gira, disegnata dall'app su una tela (canvas.jv-gal): due bracci a spirale di stelle, il cuore che brilla, un po' inclinata.
+// Gira piano quando sta zitto, svelta (e il cuore batte) quando parla. È un disegno nostro, fatto coi numeri: le stelle sono
+// sempre le stesse (stesso seme) e l'angolo viene dall'orologio, così quando la pagina si ridisegna non «salta».
+const JV_SFERA = (cls = "") => `<canvas class="jv-gal${cls ? " " + cls : ""}" aria-hidden="true"></canvas>`;
+const JV_GAL = { grande: null, piccola: null, angolo: 0, prima: 0, raf: 0, fermo: false };
+function jvGalStelle(n) {
+  let s = 0x2F6E2B1; const rnd = () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const st = [];
+  for (let i = 0; i < n; i++) {
+    const tipo = rnd(); let r, a, c, v;
+    if (tipo < 0.2) { r = Math.pow(rnd(), 1.7) * 0.26; a = rnd() * 6.2832; c = 0; v = 2.2; }                                     // il cuore (gira più svelto)
+    else if (tipo < 0.9) { const b = rnd() < 0.5 ? 0 : 1; r = 0.1 + Math.pow(rnd(), 0.8) * 0.9; a = b * Math.PI + r * 5.4 + (rnd() - 0.5) * (0.42 + (1 - r) * 0.55); c = rnd() < 0.76 ? 1 : 2; v = 1; }   // i due bracci (girano insieme: la spirale resta)
+    else { r = 0.15 + rnd() * 0.85; a = rnd() * 6.2832; c = 1; v = 0.7; }                                                        // stelle sparse
+    st.push({ r, a, v, z: (rnd() - 0.5) * 0.07 * (1 - r), d: 0.6 + rnd() * 1.3, l: 0.4 + rnd() * 0.6, c, f: rnd() * 6.2832, n: rnd() < 0.16 });
+  }
+  return st.sort((x, y) => x.c - y.c);
+}
+const JV_GAL_COL = ["rgb(255,232,170)", "rgb(196,218,255)", "rgb(255,176,205)"];
+function jvGalDisegna(c, t) {
+  const lato = c.clientWidth || 48, px = Math.round(lato * Math.min(2, window.devicePixelRatio || 1));
+  if (c.width !== px) { c.width = px; c.height = px; }
+  const cx = c.getContext("2d"); if (!cx) return;
+  const R = px / 2, piccola = lato <= 110, stelle = piccola ? JV_GAL.piccola : JV_GAL.grande, parla = !!c.closest(".jarvis.parla");
+  cx.globalCompositeOperation = "source-over"; cx.globalAlpha = 1; cx.clearRect(0, 0, px, px);
+  cx.globalCompositeOperation = "lighter";
+  const incl = 0.7, rot = -0.38, cr = Math.cos(rot), sr = Math.sin(rot), giro = JV_GAL.angolo, grana = piccola ? px / 110 : px / 170;
+  let col = -1;
+  for (const s of stelle) {
+    if (s.c !== col) { col = s.c; cx.fillStyle = JV_GAL_COL[col]; }
+    const a = s.a + giro * s.v, x0 = Math.cos(a) * s.r, y0 = Math.sin(a) * s.r * incl + s.z;
+    const x = R + (x0 * cr - y0 * sr) * R * 0.95, y = R + (x0 * sr + y0 * cr) * R * 0.95, d = Math.max(0.8, s.d * grana);
+    if (s.n) { const h = d * 7; cx.globalAlpha = 0.04; cx.beginPath(); cx.arc(x, y, h, 0, 6.2832); cx.fill(); }   // la nebbiolina dei bracci
+    cx.globalAlpha = s.l * (0.72 + 0.28 * Math.sin(t / 650 + s.f));
+    cx.fillRect(x - d / 2, y - d / 2, d, d);
+  }
+  cx.globalAlpha = 1;
+  const k = parla ? 0.34 + 0.08 * Math.sin(t / 120) : 0.27 + 0.02 * Math.sin(t / 900);
+  const n = cx.createRadialGradient(R, R, 0, R, R, R * k);
+  n.addColorStop(0, "rgba(255,250,228,.95)"); n.addColorStop(0.3, "rgba(255,216,128,.5)"); n.addColorStop(1, "rgba(255,190,90,0)");
+  cx.fillStyle = n; cx.beginPath(); cx.arc(R, R, R * k, 0, 6.2832); cx.fill();
+  cx.globalCompositeOperation = "source-over";
+}
+function jvGalPasso(t) {
+  JV_GAL.raf = 0;
+  const cs = document.querySelectorAll("canvas.jv-gal"); if (!cs.length) return;
+  const dt = Math.min(80, JV_GAL.prima ? t - JV_GAL.prima : 16); JV_GAL.prima = t;
+  JV_GAL.angolo += dt / 1000 * (document.querySelector(".jarvis.parla") ? 1.1 : 0.32);
+  if (!document.hidden) { const aperto = !!document.querySelector(".jarvis:not([hidden])"); cs.forEach(c => { if (c.clientWidth && (!aperto || c.closest(".jarvis"))) jvGalDisegna(c, t); }); }
+  if (!JV_GAL.fermo) JV_GAL.raf = requestAnimationFrame(jvGalPasso);
+}
+// dopo ogni disegno: le tele nuove hanno subito la loro galassia, e il giro riparte se si era fermato
+function jvGalSveglia() {
+  const cs = document.querySelectorAll("canvas.jv-gal"); if (!cs.length) return;
+  if (!JV_GAL.grande) { JV_GAL.grande = jvGalStelle(1500); JV_GAL.piccola = jvGalStelle(380); try { JV_GAL.fermo = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {} }
+  const t = performance.now(); cs.forEach(c => { if (!c.dataset.su) { c.dataset.su = "1"; jvGalDisegna(c, t); } });
+  if (!JV_GAL.raf && !JV_GAL.fermo) { JV_GAL.prima = 0; JV_GAL.raf = requestAnimationFrame(jvGalPasso); }
+}
 // a che cosa somiglia (solo per il disegnino accanto): palestra, biliardo, letture, acquisti, persone
 const JV_AREE = [[/palestr|allenament|corsa|correre|pesi|addominali|camminat/i, "💪"], [/biliard|stecca|birilli|goriziana/i, "🎱"], [/legg|libro|libri|pagine|studi/i, "📚"], [/compr|acquist|spesa|ordinare|pagare/i, "🛒"], [/famiglia|amic|cena|regalo|chiamare|telefonare|uscire con/i, "❤️"]];
 const jvArea = (t) => { for (const [re, e] of JV_AREE) if (re.test(String(t || ""))) return e; return "⭐"; };
@@ -18933,7 +18991,7 @@ function jarvisDici(testo, mostra = true) {
   };
   JV.parla = true; jarvisDisegna(); avanti(0);
 }
-// la sfera si muove di più quando parla, diventa verde quando ascolta (senza ridisegnare tutto: non si perde quello che scrivi)
+// la galassia gira più svelta quando parla, ha il bordo verde quando ascolta (senza ridisegnare tutto: non si perde quello che scrivi)
 function jarvisStato() {
   const el = document.getElementById("jarvis"); if (!el) return;
   el.classList.toggle("parla", !!JV.parla); el.classList.toggle("ascolta", !!JV.ascolta);
@@ -18996,7 +19054,7 @@ function jarvisDisegna() {
   el.hidden = false; document.body.classList.add("con-jarvis");
   const d = jarvisDati();
   el.innerHTML = (JV.sez && JV_SEZ[JV.sez] ? jvSezioneHtml(d, JV.sez) : jvCasaHtml(d)) + (JV.foglio ? jvFoglioHtml() : "");
-  jarvisStato();
+  jarvisStato(); jvGalSveglia();
 }
 function jarvisApri() {
   if (!jarvisPuo() || JV.aperto) return;
