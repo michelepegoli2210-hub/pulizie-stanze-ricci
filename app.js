@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.86.1";
+export const VERSIONE = "1.86.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -18838,7 +18838,7 @@ avvia();
 //    a Gemini, niente su GitHub: qui dentro non si chiama mai S.db né l'IA. Gratis: parla con la voce del telefono (più bassa
 //    e calma; se il telefono ha una voce da uomo usa quella) e ascolta col microfono del telefono.
 //  - Si accende telefono per telefono: il link …/?jarvis=1 (una volta) o l'interruttore in Altro. Spento non si vede niente.
-//  - Il tasto: la galassia che gira (1.86.1), sopra il microfono di Sofia, nella prima pagina. Apre la pagina di Jarvis (scura, sopra a
+//  - Il tasto: la galassia che gira (1.86.1; dalla 1.86.2 senza tondo dietro e in 3D), sopra il microfono di Sofia, nella prima pagina. Apre la pagina di Jarvis (scura, sopra a
 //    tutto), che si chiude con Indietro.
 //  - Dentro: la galassia che parla (aprendo ti dice la giornata; toccala e la ripete), Il mio piano, Impegni (il giorno e l'ora
 //    detti a voce: «palestra domani alle 9»), Obiettivi («✓ Fatto oggi», «🏁 Raggiunto» → diventa un traguardo), Traguardi,
@@ -18851,46 +18851,81 @@ const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, fog
 const JV_SEZ = { piano: ["🗺️", "Il mio piano"], impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], traguardi: ["🏁", "Traguardi"], idee: ["💡", "Idee"] };
 const JV_UNO = { impegni: "Impegno", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
 // 1.86.1 (Michele, 16/11 notte: «l'icona e l'immagine… la galassia che si muove e gira»): la faccia di Jarvis è una GALASSIA che
-// gira, disegnata dall'app su una tela (canvas.jv-gal): due bracci a spirale di stelle, il cuore che brilla, un po' inclinata.
+// gira, disegnata dall'app su una tela (canvas.jv-gal): due bracci a spirale di stelle e il cuore che brilla.
+// 1.86.2 (Michele, 16/11: «senza sfondo, deve sembrare 3D»): via il tondo blu col bordo d'oro. La tela è trasparente e la
+// galassia è un oggetto nello spazio: un disco visto di sbieco (il lato vicino è più grande e più acceso del lato lontano),
+// il cuore è una palla di stelle che esce sopra e sotto il disco, e tutta la galassia dondola piano. Si porta dietro il suo
+// «buio» (una nebbia blu notte lungo i bracci), così si vede bene sulla pagina chiara e su quella scura, senza nessun tondo.
 // Gira piano quando sta zitto, svelta (e il cuore batte) quando parla. È un disegno nostro, fatto coi numeri: le stelle sono
 // sempre le stesse (stesso seme) e l'angolo viene dall'orologio, così quando la pagina si ridisegna non «salta».
 const JV_SFERA = (cls = "") => `<canvas class="jv-gal${cls ? " " + cls : ""}" aria-hidden="true"></canvas>`;
-const JV_GAL = { grande: null, piccola: null, angolo: 0, prima: 0, raf: 0, fermo: false };
+const JV_GAL = { grande: null, piccola: null, angolo: 0, prima: 0, raf: 0, fermo: false, fiocchi: null };
 function jvGalStelle(n) {
   let s = 0x2F6E2B1; const rnd = () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const st = [];
   for (let i = 0; i < n; i++) {
-    const tipo = rnd(); let r, a, c, v;
-    if (tipo < 0.2) { r = Math.pow(rnd(), 1.7) * 0.26; a = rnd() * 6.2832; c = 0; v = 2.2; }                                     // il cuore (gira più svelto)
-    else if (tipo < 0.9) { const b = rnd() < 0.5 ? 0 : 1; r = 0.1 + Math.pow(rnd(), 0.8) * 0.9; a = b * Math.PI + r * 5.4 + (rnd() - 0.5) * (0.42 + (1 - r) * 0.55); c = rnd() < 0.76 ? 1 : 2; v = 1; }   // i due bracci (girano insieme: la spirale resta)
-    else { r = 0.15 + rnd() * 0.85; a = rnd() * 6.2832; c = 1; v = 0.7; }                                                        // stelle sparse
-    st.push({ r, a, v, z: (rnd() - 0.5) * 0.07 * (1 - r), d: 0.6 + rnd() * 1.3, l: 0.4 + rnd() * 0.6, c, f: rnd() * 6.2832, n: rnd() < 0.16 });
+    const tipo = rnd(); let r, a, y, c, v;
+    if (tipo < 0.22) { const q = Math.pow(rnd(), 1.5) * 0.3, u = rnd() * 2 - 1; r = q * Math.sqrt(1 - u * u); y = q * u * 0.85; a = rnd() * 6.2832; c = 0; v = 2.2; }   // il cuore: una palla di stelle (gira più svelta)
+    else if (tipo < 0.9) { const b = rnd() < 0.5 ? 0 : 1; r = 0.12 + Math.pow(rnd(), 0.8) * 0.88; a = b * Math.PI + r * 5.4 + (rnd() - 0.5) * (0.42 + (1 - r) * 0.55); y = (rnd() - 0.5) * 0.09 * (1.15 - r); c = rnd() < 0.76 ? 1 : 2; v = 1; }   // i due bracci (girano insieme: la spirale resta)
+    else { r = 0.15 + rnd() * 0.85; a = rnd() * 6.2832; y = (rnd() - 0.5) * 0.1; c = 1; v = 0.7; }   // stelle sparse
+    st.push({ r, a, v, y, d: 0.6 + rnd() * 1.3, l: 0.4 + rnd() * 0.6, c, f: rnd() * 6.2832, n: tipo < 0.9 && rnd() < 0.36 });
   }
-  return st.sort((x, y) => x.c - y.c);
+  st.sort((p, q) => p.c - q.c);
+  st.x = new Float32Array(n); st.yy = new Float32Array(n); st.k = new Float32Array(n);
+  return st;
 }
-const JV_GAL_COL = ["rgb(255,232,170)", "rgb(196,218,255)", "rgb(255,176,205)"];
+// i fiocchi morbidi, fatti una volta sola: [0] la nebbia blu notte, [1..3] le stelle (oro chiaro, azzurro, rosa)
+function jvGalFiocchi() {
+  if (JV_GAL.fiocchi) return JV_GAL.fiocchi;
+  const fa = (lato, fermate) => { const m = document.createElement("canvas"); m.width = m.height = lato; const x = m.getContext("2d"), h = lato / 2, g = x.createRadialGradient(h, h, 0, h, h, h); fermate.forEach(([p, c]) => g.addColorStop(p, c)); x.fillStyle = g; x.fillRect(0, 0, lato, lato); return m; };
+  const stella = (c) => fa(24, [[0, `rgba(${c},1)`], [0.3, `rgba(${c},.9)`], [0.55, `rgba(${c},.28)`], [1, `rgba(${c},0)`]]);
+  return (JV_GAL.fiocchi = [fa(48, [[0, "rgba(24,36,104,1)"], [0.5, "rgba(24,36,104,.55)"], [1, "rgba(24,36,104,0)"]]), stella("255,236,180"), stella("202,222,255"), stella("255,184,210")]);
+}
 function jvGalDisegna(c, t) {
-  const lato = c.clientWidth || 48, px = Math.round(lato * Math.min(2, window.devicePixelRatio || 1));
-  if (c.width !== px) { c.width = px; c.height = px; }
+  const dpr = Math.min(2, window.devicePixelRatio || 1), lato = c.clientWidth || 76, alto = c.clientHeight || lato * 0.88, px = Math.round(lato * dpr), py = Math.round(alto * dpr);
+  if (c.width !== px || c.height !== py) { c.width = px; c.height = py; }
   const cx = c.getContext("2d"); if (!cx) return;
-  const R = px / 2, piccola = lato <= 110, stelle = piccola ? JV_GAL.piccola : JV_GAL.grande, parla = !!c.closest(".jarvis.parla");
-  cx.globalCompositeOperation = "source-over"; cx.globalAlpha = 1; cx.clearRect(0, 0, px, px);
-  cx.globalCompositeOperation = "lighter";
-  const incl = 0.7, rot = -0.38, cr = Math.cos(rot), sr = Math.sin(rot), giro = JV_GAL.angolo, grana = piccola ? px / 110 : px / 170;
-  let col = -1;
-  for (const s of stelle) {
-    if (s.c !== col) { col = s.c; cx.fillStyle = JV_GAL_COL[col]; }
-    const a = s.a + giro * s.v, x0 = Math.cos(a) * s.r, y0 = Math.sin(a) * s.r * incl + s.z;
-    const x = R + (x0 * cr - y0 * sr) * R * 0.95, y = R + (x0 * sr + y0 * cr) * R * 0.95, d = Math.max(0.8, s.d * grana);
-    if (s.n) { const h = d * 7; cx.globalAlpha = 0.04; cx.beginPath(); cx.arc(x, y, h, 0, 6.2832); cx.fill(); }   // la nebbiolina dei bracci
-    cx.globalAlpha = s.l * (0.72 + 0.28 * Math.sin(t / 650 + s.f));
-    cx.fillRect(x - d / 2, y - d / 2, d, d);
+  const R = px / 2, Cx = px / 2, Cy = py / 2, piccola = lato <= 120, stelle = piccola ? JV_GAL.piccola : JV_GAL.grande, parla = !!c.closest(".jarvis.parla");
+  cx.globalCompositeOperation = "source-over"; cx.globalAlpha = 1; cx.clearRect(0, 0, px, py);
+  // la vista: di sbieco, un po' girata, e dondola piano (ferma se il telefono chiede «movimento ridotto»)
+  const don = JV_GAL.fermo ? 0 : 1, T = 0.93 + don * 0.075 * Math.sin(t / 2900), rot = -0.34 + don * 0.05 * Math.sin(t / 4300 + 1);
+  const cT = Math.cos(T), sT = Math.sin(T), cr = Math.cos(rot), sr = Math.sin(rot), giro = JV_GAL.angolo, F = 3.9, S = R * (piccola ? 0.92 : 0.87);
+  const X = stelle.x, Y = stelle.yy, K = stelle.k, n = stelle.length;
+  for (let i = 0; i < n; i++) {
+    const s = stelle[i], a = s.a + giro * s.v, gx = Math.cos(a) * s.r, gz = Math.sin(a) * s.r;
+    const sy = gz * cT - s.y * sT, prof = gz * sT + s.y * cT, k = F / (F - prof);   // prof > 0: verso chi guarda → più grande
+    X[i] = Cx + (gx * cr - sy * sr) * k * S; Y[i] = Cy + (gx * sr + sy * cr) * k * S; K[i] = k;
   }
-  cx.globalAlpha = 1;
-  const k = parla ? 0.34 + 0.08 * Math.sin(t / 120) : 0.27 + 0.02 * Math.sin(t / 900);
-  const n = cx.createRadialGradient(R, R, 0, R, R, R * k);
-  n.addColorStop(0, "rgba(255,250,228,.95)"); n.addColorStop(0.3, "rgba(255,216,128,.5)"); n.addColorStop(1, "rgba(255,190,90,0)");
-  cx.fillStyle = n; cx.beginPath(); cx.arc(R, R, R * k, 0, 6.2832); cx.fill();
+  const fi = jvGalFiocchi();
+  // 1) il buio della galassia: la nebbia blu notte lungo i bracci e attorno al cuore
+  const rn = (piccola ? 0.225 : 0.125) * S, an = piccola ? 0.25 : 0.13;
+  for (let i = 0; i < n; i++) {
+    const s = stelle[i]; if (!s.n) continue;
+    const k = K[i], q = rn * k * (s.c === 0 ? 0.85 : 1.15 - 0.45 * s.r);
+    cx.globalAlpha = an * (0.3 + 0.7 * k);
+    cx.drawImage(fi[0], X[i] - q, Y[i] - q, q * 2, q * 2);
+  }
+  // 2) le stelle (luce che si somma): quelle vicine più grandi e più accese, quelle lontane più piccole e più spente
+  cx.globalCompositeOperation = "lighter";
+  const grana = piccola ? px / 88 : px / 190;
+  let col = -1;
+  for (let i = 0; i < n; i++) {
+    const s = stelle[i]; if (s.c !== col) { col = s.c; cx.fillStyle = ["rgb(255,236,180)", "rgb(202,222,255)", "rgb(255,184,210)"][col]; }
+    const k = K[i], d = s.d * grana * k * Math.sqrt(k);
+    cx.globalAlpha = Math.min(1, s.l * (0.72 + 0.28 * Math.sin(t / 650 + s.f)) * Math.max(0.3, Math.min(1.05, 1.5 * k - 0.62)) * (s.c === 0 ? 0.6 : 1));
+    if (d < 1.5) { const e = Math.max(0.8, d); cx.fillRect(X[i] - e / 2, Y[i] - e / 2, e, e); }
+    else { const e = d * 1.3; cx.drawImage(fi[col + 1], X[i] - e, Y[i] - e, e * 2, e * 2); }
+  }
+  // 3) il cuore che brilla: una palla di luce, col punto più chiaro un po' in alto (sembra tonda)
+  cx.globalCompositeOperation = "source-over"; cx.globalAlpha = 1;
+  const kc = (parla ? 0.27 + 0.06 * Math.sin(t / 120) : 0.215 + 0.016 * Math.sin(t / 900)) * (piccola ? 1.22 : 1), rc = R * kc;
+  const g = cx.createRadialGradient(Cx - rc * 0.13, Cy - rc * 0.17, 0, Cx, Cy, rc);
+  g.addColorStop(0, "rgba(255,250,226,1)"); g.addColorStop(0.2, "rgba(255,226,150,.96)"); g.addColorStop(0.46, "rgba(246,186,84,.62)"); g.addColorStop(0.74, "rgba(232,150,52,.2)"); g.addColorStop(1, "rgba(226,140,44,0)");
+  cx.fillStyle = g; cx.beginPath(); cx.arc(Cx, Cy, rc, 0, 6.2832); cx.fill();
+  // 4) i bordi della tela sfumano nel niente: la galassia non ha mai un taglio dritto
+  cx.globalCompositeOperation = "destination-out";
+  const b = px * 0.09, sf = (x0, y0, x1, y1, rx, ry, rw, rh) => { const m = cx.createLinearGradient(x0, y0, x1, y1); m.addColorStop(0, "rgba(0,0,0,0)"); m.addColorStop(1, "rgba(0,0,0,1)"); cx.fillStyle = m; cx.fillRect(rx, ry, rw, rh); };
+  sf(b, 0, 0, 0, 0, 0, b, py); sf(px - b, 0, px, 0, px - b, 0, b, py); sf(0, b, 0, 0, 0, 0, px, b); sf(0, py - b, 0, py, 0, py - b, px, b);
   cx.globalCompositeOperation = "source-over";
 }
 function jvGalPasso(t) {
@@ -18904,7 +18939,7 @@ function jvGalPasso(t) {
 // dopo ogni disegno: le tele nuove hanno subito la loro galassia, e il giro riparte se si era fermato
 function jvGalSveglia() {
   const cs = document.querySelectorAll("canvas.jv-gal"); if (!cs.length) return;
-  if (!JV_GAL.grande) { JV_GAL.grande = jvGalStelle(1500); JV_GAL.piccola = jvGalStelle(380); try { JV_GAL.fermo = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {} }
+  if (!JV_GAL.grande) { JV_GAL.grande = jvGalStelle(1500); JV_GAL.piccola = jvGalStelle(560); try { JV_GAL.fermo = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {} }
   const t = performance.now(); cs.forEach(c => { if (!c.dataset.su) { c.dataset.su = "1"; jvGalDisegna(c, t); } });
   if (!JV_GAL.raf && !JV_GAL.fermo) { JV_GAL.prima = 0; JV_GAL.raf = requestAnimationFrame(jvGalPasso); }
 }
@@ -18991,7 +19026,7 @@ function jarvisDici(testo, mostra = true) {
   };
   JV.parla = true; jarvisDisegna(); avanti(0);
 }
-// la galassia gira più svelta quando parla, ha il bordo verde quando ascolta (senza ridisegnare tutto: non si perde quello che scrivi)
+// la galassia gira più svelta quando parla, ha un alone verde quando ascolta (senza ridisegnare tutto: non si perde quello che scrivi)
 function jarvisStato() {
   const el = document.getElementById("jarvis"); if (!el) return;
   el.classList.toggle("parla", !!JV.parla); el.classList.toggle("ascolta", !!JV.ascolta);

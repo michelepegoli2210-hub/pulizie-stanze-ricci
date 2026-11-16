@@ -9990,13 +9990,14 @@ body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
 
 /* ---- 1.86.0 · JARVIS, l'app personale del titolare (Michele, 16/11: «il tasto di Jarvis appena sopra il microfono di Sofia…
    mi deve parlare»). La galassia che gira (1.86.1: un disegno nostro, fatto dall'app su una tela; prima cerchi d'oro) è il tasto nella
-   prima pagina e il viso di Jarvis nella sua pagina: piano quando sta zitto, svelta quando parla, col bordo verde quando
+   prima pagina e il viso di Jarvis nella sua pagina: piano quando sta zitto, svelta quando parla, con un alone verde quando
    ascolta. La pagina è scura e sta sopra a tutto (#jarvis); le scritte sono grandi. ---- */
-.jv-gal{--jv:200px;display:block;width:var(--jv);height:var(--jv);border-radius:50%;background:radial-gradient(circle at 50% 50%,#1B2C5A 0,#0E1836 62%,#070D22 100%);box-shadow:0 0 0 2px rgba(242,193,78,.75),0 0 calc(var(--jv) * .2) rgba(120,150,255,.45)}   /* 1.86.1: la galassia di Jarvis, su una tela */
-.jv-gal.piccola{--jv:48px}
-.jv-gal.media{--jv:84px}
-.jarvis.ascolta .jv-gal{box-shadow:0 0 0 4px #4ADE80,0 0 40px rgba(74,222,128,.5)}
-.casa-jarvis{display:grid;place-items:center;flex:0 0 auto;width:50px;height:50px;margin:0;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.jv-gal{--jv:250px;display:block;width:var(--jv);height:calc(var(--jv) * .88)}   /* 1.86.1: la galassia di Jarvis, su una tela · 1.86.2: niente tondo dietro (la tela è trasparente), in 3D */
+.jv-gal.piccola{--jv:78px}
+.jv-gal.media{--jv:100px}
+.jarvis.ascolta .jv-gal{filter:drop-shadow(0 0 10px #4ADE80) drop-shadow(0 0 24px rgba(74,222,128,.55))}   /* 1.86.2: quando ascolta, un alone verde attorno alle stelle */
+.casa-jarvis{position:relative;display:block;flex:0 0 auto;width:78px;height:50px;margin:0 -14px;padding:0;border:0;border-radius:16px;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}   /* 1.86.2: largo quanto la galassia, ma nella colonna occupa 50 px come prima */
+.casa-jarvis .jv-gal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
 .casa-jarvis:active{transform:scale(.94)}
 body.con-jarvis{overflow:hidden}
 .jarvis{position:fixed;inset:0;z-index:10050;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(10px + env(safe-area-inset-top,0px)) 16px calc(26px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#101C3A 0,#0B1430 100%);color:#EEF2FB;font-family:"Plus Jakarta Sans",system-ui,sans-serif;text-align:left}
@@ -10006,7 +10007,7 @@ body.con-jarvis{overflow:hidden}
 .jv-testa b{font-size:28px;font-weight:800;color:#fff;text-align:center}
 .jv-ind{justify-self:start;min-height:46px;padding:0 14px;border-radius:999px;border:1.5px solid rgba(242,193,78,.7);background:transparent;color:#F3E3BC;font:700 17px/1 "Plus Jakarta Sans",system-ui,sans-serif;cursor:pointer}
 .jv-muto{justify-self:end;width:48px;height:48px;padding:0;border-radius:50%;border:1.5px solid rgba(242,193,78,.7);background:transparent;font-size:22px;line-height:1;cursor:pointer}
-.jv-sfera-b{display:block;margin-top:14px;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.jv-sfera-b{display:block;margin-top:6px;padding:0;border:0;background:none;border-radius:28px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .jv-sfera-b:active{transform:scale(.97)}
 .jv-dice{margin-top:16px;margin-bottom:0;padding:14px 16px;border-radius:20px;border:2px solid #F2C14E;background:#1C2C52;font-size:20px;line-height:1.4;font-weight:600;white-space:pre-line;overflow-wrap:anywhere}
 .jv-gr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:16px}

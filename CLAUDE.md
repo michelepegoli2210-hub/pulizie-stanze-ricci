@@ -111,7 +111,7 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - Jarvis (1.86.0) è l'app personale del titolare dentro questa: il piano, gli impegni, gli obiettivi, i traguardi, le idee.
   Sta SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`): il suo codice (in fondo ad `app.js`, `jarvis…` e `jv…`) non
   chiama mai `S.db` né l'IA, e deve restare così. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro);
-  il tasto è la galassia che gira (`canvas.jv-gal`, 1.86.1) sopra il microfono di Sofia. Parla con la voce del telefono e capisce giorno e ora con
+  il tasto è la galassia che gira (`canvas.jv-gal`, 1.86.1; dalla 1.86.2 senza tondo dietro e in 3D: la tela è trasparente) sopra il microfono di Sofia. Parla con la voce del telefono e capisce giorno e ora con
   `LET.promemoriaDa`. La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o voci presi da altri.
 
 ## Una versione nuova

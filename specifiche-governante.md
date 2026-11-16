@@ -3307,3 +3307,8 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
 - **1.86.1** (16/11, notte, Michele, con le foto di un video: «sì, ma l'icona e l'immagine metti quella giusta, la galassia che si muove e gira»). **La galassia di Jarvis.**
   - L'immagine di quel video è di chi l'ha fatta e non si copia. Jarvis ha la sua: una galassia a spirale (due bracci di stelle, il cuore che brilla) disegnata dall'app, che gira sempre: piano quando sta zitto, più svelta col cuore che batte quando parla, col bordo verde quando ascolta.
   - È il tasto nella prima pagina (sopra il microfono di Sofia) e il viso di Jarvis nella sua pagina. Col «movimento ridotto» del telefono resta ferma.
+- **1.86.2** (16/11, Michele: l'icona «senza sfondo, deve sembrare 3D»). **La galassia senza tondo, in 3D.**
+  - Via il tondo blu col bordo d'oro: la galassia sta da sola sulla pagina. È un disco visto di sbieco (il lato vicino più grande e più acceso di quello lontano), col cuore che è una palla d'oro, e dondola piano mentre gira.
+  - Si porta dietro la sua nebbia blu notte lungo i bracci: così si vede bene sia sulla pagina chiara sia su quella scura, senza bisogno di uno sfondo.
+  - Quando ascolta ha un alone verde attorno alle stelle (prima era il bordo verde del tondo). Col «movimento ridotto» resta ferma.
+  - I colori e il disegno restano i nostri (stelle azzurre, cuore d'oro): l'immagine di altri non si copia.
