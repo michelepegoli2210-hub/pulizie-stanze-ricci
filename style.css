@@ -9988,7 +9988,7 @@ body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
 .sgf-di{display:block;font-weight:800;font-size:15px;line-height:1.1;color:var(--sg-blu,#1D3156);background:#fff;border:2px solid var(--sg-oro,#C9A34A);border-radius:12px;padding:6px 10px;white-space:nowrap}
 :root[data-theme="dark"] .sgf-di{background:#2A2A2E;color:#F2F2F5}
 
-/* ---- JARVIS · LA PAGINA PERSONALE DEL TITOLARE (1.86.0 → 1.88.0)
+/* ---- JARVIS · LA PAGINA PERSONALE DEL TITOLARE (1.86.0 → 1.89.0)
    1.86.0: una pagina scura con la galassia. 1.86.1–1.86.2: la galassia (un disegno nostro, su una tela; senza tondo, in 3D).
    1.87.0: «la galassia prende troppo occhio a Sofia»: il tasto è la casetta del logo, in alto (non si vede, è largo come un dito).
    1.88.0 (Michele, 16/11: «a me serviva che io aprivo, come ce l'ho adesso con Sofia, e c'avevo le interfacce» · «Sì, falla
@@ -10099,3 +10099,12 @@ body.con-jarvis{overflow:hidden}
 .jv-quando2 input{min-width:0;margin-top:4px;padding:10px 8px;min-height:52px;font-size:18px}
 @media (max-width:400px){.jarvis{padding-left:10px;padding-right:10px}.jv-eroe{grid-template-columns:104px minmax(0,1fr)}.jv-eroe .jv-gal.media{--jv:104px}.jv-gr{gap:10px}.jv-c{grid-template-columns:38px minmax(0,1fr);padding:10px 8px}.jv-e{font-size:30px}.jv-c b{font-size:18px}.jv-c small{font-size:15px}.jv-testa b{font-size:24px}.jv-dice{font-size:18px}.jv-tt b{font-size:19px}.jv-t{grid-template-columns:48px minmax(0,1fr) auto 40px;gap:6px}.jv-altro{width:40px}.jv-quando{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.jv-quando>:last-child{grid-column:1 / -1}.jv-quando2 input{font-size:16px;padding:10px 6px}}
 @media (prefers-reduced-motion:reduce){.jv-mic.su{animation:none}}
+/* 1.89.0 · la sveglia: la campanella accanto all'ora e la riga in fondo alla pagina (com'è, e il tasto) */
+.jv-camp{font-size:.95em;margin-left:2px}
+.jv-sv{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;border:1.5px solid var(--jv-bordo);border-radius:22px;background:var(--jv-carta)}
+.jv-sv.accesa{border-color:#22A35A}
+.jv-sv-e{font-size:30px;line-height:1;text-align:center}
+.jv-sv-t b{display:block;font-size:19px;font-weight:800;line-height:1.2}
+.jv-sv-t small{display:block;margin-top:2px;font-size:16px;line-height:1.25;font-weight:600;color:var(--jv-tenue)}
+.jv-sv .jv-b{min-height:48px;padding:6px 14px}
+@media (max-width:400px){.jv-sv{grid-template-columns:36px minmax(0,1fr) auto;padding:10px 8px}.jv-sv-e{font-size:26px}.jv-sv .jv-b{padding:6px 10px}}

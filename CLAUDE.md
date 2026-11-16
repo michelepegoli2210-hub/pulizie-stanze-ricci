@@ -113,11 +113,19 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   spuntare (`jvOggi`: prima quello rimasto indietro, poi oggi, poi le cose senza giorno, poi gli obiettivi di ogni giorno);
   sotto Impegni (i prossimi giorni), Obiettivi, Idee, Traguardi, Il mio piano. È chiara come le pagine di Sofia. Si apre dalla
   casetta del logo in alto nella prima pagina (`button.bo-casetta`, invisibile: «la galassia prendeva troppo occhio a Sofia»).
-  Sta SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`): il suo codice (in fondo ad `app.js`, `jarvis…` e `jv…`) non
-  chiama mai `S.db` né l'IA, e deve restare così; le frasi le capisce con poche regole (`jvComando`, `jvCapisci`) e con
-  `LET.promemoriaDa`. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro). Il Jarvis dentro Gemini
-  (1.87.0) non gli è servito: «che faccio, vado a chattare con Gemini?». Vuole le interfacce dentro l'app, come con Sofia.
-  La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o voci presi da altri.
+  Le sue cose stanno SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`): il suo codice (in fondo ad `app.js`, `jarvis…`
+  e `jv…`) non chiama mai l'IA né la rete, e deve restare così; le frasi le capisce con poche regole (`jvComando`,
+  `jvCapisci`) e con `LET.promemoriaDa`. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro). Il Jarvis
+  dentro Gemini (1.87.0) non gli è servito: «che faccio, vado a chattare con Gemini?». Vuole le interfacce dentro l'app, come
+  con Sofia. La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o voci presi da altri.
+- La sveglia di Jarvis (1.89.0, giro 1.37.0; Michele: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti prima…
+  altrimenti non ha senso», e alla proposta «Sì»): circa 10 minuti prima di una cosa con l'ora arriva la notifica, anche ad
+  app chiusa. È l'UNICA cosa di Jarvis che esce dal telefono, e Michele ha detto sì solo a questo: in
+  `importazioni/jarvis-sveglie` vanno un codice e il giorno e l'ora (`telefoni.<telefono>.<codice>`, li scrive
+  `jvSveglieFuori`), MAI che cosa c'è da fare. Il testo resta nel telefono, nella cache `ricci-jarvis`: quando il giro manda
+  «sveglia <codice>» (`sofia-giro/sveglia-giro.mjs`, a ogni giro, entro 15 minuti dall'ora; di notte 65) il lavoratore di
+  sfondo compone la notifica (`mostraSveglia` in `sw.js`). Nel registro di GitHub della sveglia non si scrive niente: l'ora
+  del registro direbbe quando ha un impegno. Funziona finché gira il giro: a PC spento serve «L'orologio di Sofia».
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

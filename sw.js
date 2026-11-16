@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.88.0";
+const VERSIONE = "1.89.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -49,6 +49,15 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   // 1.58.0: «✅ Sistemato» (guasto urgentissimo): si apre l'app, che chiede «È sistemato?» e lo segna
   const dd = e.notification.data || {};
+  // 1.89.0: la sveglia di Jarvis: toccata, apre Jarvis (ad app aperta glielo dico; ad app chiusa la apro con ?jarvis=apri)
+  if (dd.jarvis) {
+    e.waitUntil((async () => {
+      const fin = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const c of fin) { if ("focus" in c) { try { await c.focus(); } catch (err) {} try { c.postMessage({ tipo: "apriJarvis" }); } catch (err) {} return; } }
+      if (self.clients.openWindow) await self.clients.openWindow(new URL("./index.html?jarvis=apri", self.registration.scope).href);
+    })());
+    return;
+  }
   // 1.62.0: «✅ Fatto» sull'allarme «🔔 Da fare» (le cose che deve fare Michele in persona): l'app la segna fatta
   if (e.action === "fattoTu" && dd.rif) {
     e.waitUntil((async () => {
@@ -80,6 +89,7 @@ self.addEventListener("notificationclick", (e) => {
 // 1.17.0 GLI AVVISI DI SOFIA SUL TELEFONO (Web Push): li manda il giro sempre acceso (sofia-giro), qui si mostrano
 self.addEventListener("push", (e) => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { testo: e.data ? e.data.text() : "" }; }
+  if (d && d.sveglia) { e.waitUntil(mostraSveglia(d)); return; }   // 1.89.0: la sveglia di Jarvis ha la sua strada
   const titolo = String(d.titolo || "Sofia").slice(0, 80), testo = String(d.testo || "Apri l'app: Sofia ti ha scritto.").slice(0, 1800);
   // 1.18.0: l'avviso «ho letto le chat» apre l'app sulla lettura da controllare
   const url = typeof d.url === "string" && /^\.\/index\.html(\?[a-z=&0-9]*)?$/i.test(d.url) ? d.url : "./index.html";
@@ -99,6 +109,26 @@ self.addEventListener("push", (e) => {
     salvaAvviso({ id, titolo, testo, dove, rif, quando: new Date().toISOString() }),
   ]));   // 1.49.0: anche «la sintesi di oggi»; 1.51.0: e la lettura (Segreteria a tendina chiusa)
 });
+
+// 1.89.0 LA SVEGLIA DI JARVIS (Michele: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti prima»). Il giro
+// manda solo «sveglia <codice>» e l'ora: CHE COSA c'è da fare lo sa solo questo telefono (cache «ricci-jarvis», la scrive
+// l'app quando lui segna una cosa). La notifica si compone qui, con i minuti che mancano davvero. Non va tra gli avvisi di
+// Sofia. Toccata, apre Jarvis. Se il telefono non ha più quella cosa (tolta un attimo prima), dice solo che c'è un impegno.
+const CACHE_JARVIS = "ricci-jarvis";
+async function mostraSveglia(d) {
+  const codice = typeof d.sveglia === "string" && /^[A-Za-z0-9_-]{1,60}$/.test(d.sveglia) ? d.sveglia : "";
+  let cosa = null;
+  try {
+    const c = await caches.open(CACHE_JARVIS), r = await c.match(new URL("./jarvis/sveglie", self.registration.scope).href), m = r ? await r.json() : null;
+    cosa = m && codice && m[codice] && typeof m[codice].t === "string" && m[codice].t ? m[codice] : null;
+  } catch (err) { cosa = null; }
+  const T = Date.parse((cosa && cosa.q) || (typeof d.quando === "string" ? d.quando : "")), min = Number.isFinite(T) ? Math.round((T - Date.now()) / 60000) : null;
+  const tra = min === null ? "Tra poco" : min >= 2 ? `Tra ${min} minuti` : "Adesso";
+  const titolo = cosa ? `⏰ ${tra}: ${cosa.t}`.slice(0, 120) : `⏰ ${tra} hai un impegno`;
+  const testo = cosa ? `${cosa.o ? "alle " + String(cosa.o).slice(0, 5) + " · " : ""}tocca per aprire la tua lista` : "Tocca per aprire la tua lista.";
+  await self.registration.showNotification(titolo, { body: testo, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag: "sveglia-" + (codice || "x"), renotify: true,
+    vibrate: [300, 120, 300, 120, 300], requireInteraction: true, data: { url: "./index.html", push: true, jarvis: true } });
+}
 
 const CACHE_AVVISI = "ricci-avvisi";
 async function salvaAvviso(a) {
