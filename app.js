@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.87.0";
+export const VERSIONE = "1.88.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -550,7 +550,7 @@ function barraOra() {
     document.body.insertBefore(b, document.body.firstChild);
   }
   b.hidden = false; document.body.classList.add("con-ora");
-  jarvisCasetta(b);   // 1.87.0: la casetta del logo è il tasto di Jarvis (solo dove è acceso)
+  jarvisCasetta(b);   // 1.87.0: la casetta del logo è il tasto di Jarvis (solo dove è acceso) · 1.88.0: apre la sua pagina, qui dentro
   return b;
 }
 let orologioTimer = null;
@@ -18831,32 +18831,31 @@ $("#menuBtn").onclick = () => { S.vista = S.vista === "altro" ? "oggi" : "altro"
 avvia();
 
 // ============================================================================
-//  1.86.0 · JARVIS, L'APP PERSONALE DEL TITOLARE (Michele, 16/11 notte: «non vogliamo mettere una parte dove posso usare la
-//  mia app personale, Jarvis… clicco sopra l'icona nella prima pagina… Jarvis mi dice il mio master plan, i miei impegni, i
-//  miei traguardi, i miei obiettivi, le mie idee» · «solo sul mio telefono, e voglio il tasto di Jarvis appena sopra il
-//  microfono di Sofia, e come Sofia mi parla nella prima pagina, Jarvis mi deve parlare con la sua voce»).
+//  JARVIS · LA PAGINA PERSONALE DEL TITOLARE: LE SUE COSE DA FARE (1.86.0 → 1.88.0)
+//  1.86.0 (Michele, 16/11 notte): «non vogliamo mettere una parte dove posso usare la mia app personale, Jarvis… Jarvis mi dice
+//  il mio master plan, i miei impegni, i miei traguardi, i miei obiettivi, le mie idee» · «solo sul mio telefono… e come Sofia mi
+//  parla nella prima pagina, Jarvis mi deve parlare con la sua voce». Era una pagina scura con la galassia.
+//  1.87.0: la galassia accanto a Sofia «prende troppo occhio»: il tasto diventa la CASETTA del logo, in alto. Per un giorno ha
+//  aperto una chat di Gemini («il Jarvis che abbiamo non mi piace, devo trovare un Jarvis già funzionante»).
+//  1.88.0 (Michele, 16/11): «non lo trovo utile… che faccio, vado a chattare con Gemini? A me serviva che io aprivo, come ce
+//  l'ho adesso con Sofia, e c'avevo le interfacce» · «Sì, falla così, ma basato sulle app di produttività, to do list eccetera».
+//  Adesso la casetta apre QUESTA pagina, chiara come quelle di Sofia e fatta come un'app delle cose da fare:
+//  - in cima Jarvis (la galassia) con quello che dice e «🎤 Parla»;
+//  - «Da fare oggi»: la lista con il tondo da spuntare. Prima quello rimasto indietro, poi oggi (con l'ora, in ordine), poi le
+//    cose senza giorno, poi gli obiettivi di ogni giorno; in fondo, barrate, quelle già fatte oggi. «＋ Aggiungi una cosa»;
+//  - sotto: Impegni (i prossimi giorni), Obiettivi (le cose di ogni giorno, coi giorni di fila), Idee, Traguardi, Il mio piano.
+//  - A voce: «aggiungi palestra domani alle 9», «ho fatto la palestra», «cosa mi manca oggi?», «cosa ho domani?», «dimmi tutto».
+//    Le capisce con poche regole e col lettore dei promemoria di Sofia (lettura.js): senza IA.
 //  - SOLO SU QUESTO TELEFONO: tutto sta nel telefono (localStorage «ricci_jarvis»). Niente nel database dell'albergo, niente
 //    a Gemini, niente su GitHub: qui dentro non si chiama mai S.db né l'IA. Gratis: parla con la voce del telefono (più bassa
 //    e calma; se il telefono ha una voce da uomo usa quella) e ascolta col microfono del telefono.
 //  - Si accende telefono per telefono: il link …/?jarvis=1 (una volta) o l'interruttore in Altro. Spento non si vede niente.
-//  - Il tasto (1.86.0–1.86.2): la galassia che gira, sopra il microfono di Sofia, nella prima pagina. Apriva la pagina di Jarvis
-//    (scura, sopra a tutto), che si chiude con Indietro.
-//  - 1.87.0 (Michele, 16/11: «prende troppo occhio a Sofia… togli la galassia e metti un tasto nella casetta delle Stanze di
-//    Ricci, così premo lì e mi esce tutto» · «il Jarvis che abbiamo non mi piace, devo trovare un Jarvis già funzionante»):
-//    il tasto è la CASETTA del logo in alto (a.bo-casetta: non si vede, la casetta resta com'è) e apre Jarvis DENTRO GEMINI,
-//    col suo account Google: la sua chat fissa se questo telefono ne conosce il codice (ricci_jarvis_chat, dato una volta
-//    col link …/?jarvis=1#jv=…; sta solo nel telefono, mai nel codice), se no Gemini. La pagina di Jarvis fatta qui resta:
-//    si apre da Altro («Il Jarvis di prima»).
-//  - Dentro: la galassia che parla (aprendo ti dice la giornata; toccala e la ripete), Il mio piano, Impegni (il giorno e l'ora
-//    detti a voce: «palestra domani alle 9»), Obiettivi («✓ Fatto oggi», «🏁 Raggiunto» → diventa un traguardo), Traguardi,
-//    Idee («🎯 Diventa obiettivo»). «🎤 Dimmi una cosa nuova»: la dici e lui la mette al posto giusto; se non capisce dove,
-//    lo chiede.
 //  - La galassia è un disegno nostro, fatto dall'app coi numeri (1.86.1; prima cerchi d'oro): niente marchi né disegni di altri.
 // ============================================================================
-const JV_CHIAVE = "ricci_jarvis", JV_ACCESO = "ricci_jarvis_acceso", JV_MUTO = "ricci_jarvis_muto", JV_CHAT = "ricci_jarvis_chat", JV_GEMINI = "https://gemini.google.com/app";
+const JV_CHIAVE = "ricci_jarvis", JV_ACCESO = "ricci_jarvis_acceso", JV_MUTO = "ricci_jarvis_muto";
 const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, foglio: null, rec: null, giro: 0 };
-const JV_SEZ = { piano: ["🗺️", "Il mio piano"], impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], traguardi: ["🏁", "Traguardi"], idee: ["💡", "Idee"] };
-const JV_UNO = { impegni: "Impegno", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
+const JV_SEZ = { impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], idee: ["💡", "Idee"], traguardi: ["🏁", "Traguardi"], piano: ["🗺️", "Il mio piano"] };
+const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
 // 1.86.1 (Michele, 16/11 notte: «l'icona e l'immagine… la galassia che si muove e gira»): la faccia di Jarvis è una GALASSIA che
 // gira, disegnata dall'app su una tela (canvas.jv-gal): due bracci a spirale di stelle e il cuore che brilla.
 // 1.86.2 (Michele, 16/11: «senza sfondo, deve sembrare 3D»): via il tondo blu col bordo d'oro. La tela è trasparente e la
@@ -18892,7 +18891,7 @@ function jvGalDisegna(c, t) {
   const dpr = Math.min(2, window.devicePixelRatio || 1), lato = c.clientWidth || 76, alto = c.clientHeight || lato * 0.88, px = Math.round(lato * dpr), py = Math.round(alto * dpr);
   if (c.width !== px || c.height !== py) { c.width = px; c.height = py; }
   const cx = c.getContext("2d"); if (!cx) return;
-  const R = px / 2, Cx = px / 2, Cy = py / 2, piccola = lato <= 120, stelle = piccola ? JV_GAL.piccola : JV_GAL.grande, parla = !!c.closest(".jarvis.parla");
+  const R = px / 2, Cx = px / 2, Cy = py / 2, piccola = lato <= 140, stelle = piccola ? JV_GAL.piccola : JV_GAL.grande, parla = !!c.closest(".jarvis.parla");
   cx.globalCompositeOperation = "source-over"; cx.globalAlpha = 1; cx.clearRect(0, 0, px, py);
   // la vista: di sbieco, un po' girata, e dondola piano (ferma se il telefono chiede «movimento ridotto»)
   const don = JV_GAL.fermo ? 0 : 1, T = 0.93 + don * 0.075 * Math.sin(t / 2900), rot = -0.34 + don * 0.05 * Math.sin(t / 4300 + 1);
@@ -18957,72 +18956,120 @@ const jvId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,
 function jarvisAcceso() { try { return localStorage.getItem(JV_ACCESO) === "1"; } catch (e) { return false; } }
 function jarvisPuo() { try { return !!(S.pronto && S.utente && proprietario() && !S.utente.finta && jarvisAcceso()); } catch (e) { return false; } }
 function jvMuto() { try { return localStorage.getItem(JV_MUTO) === "1"; } catch (e) { return false; } }
+// Le sue cose. «impegni» sono le COSE DA FARE: { id, testo, entro: "" | "2026-11-17" | "2026-11-17T09:00", fatta: "" | il giorno }.
+// Senza giorno = da fare quando vuole (sta nella lista di oggi finché non la spunta). Gli obiettivi sono le cose di ogni giorno.
 function jarvisDati() {
   let d = null; try { d = JSON.parse(localStorage.getItem(JV_CHIAVE) || "null"); } catch (e) { d = null; }
   d = d && typeof d === "object" ? d : {};
   const lista = (x) => (Array.isArray(x) ? x : []).filter(y => y && y.id && String(y.testo || "").trim());
-  return { v: 1, piano: String(d.piano || ""), impegni: lista(d.impegni), obiettivi: lista(d.obiettivi), traguardi: lista(d.traguardi), idee: lista(d.idee) };
+  return { v: 2, piano: String(d.piano || ""), impegni: lista(d.impegni), obiettivi: lista(d.obiettivi), traguardi: lista(d.traguardi), idee: lista(d.idee) };
 }
-function jarvisSalva(d) { try { localStorage.setItem(JV_CHIAVE, JSON.stringify(d)); return true; } catch (e) { JV.dice = "Non riesco a salvare su questo telefono: la memoria è piena."; return false; } }
-// 1.87.0: dove porta la casetta. Il codice della chat di Jarvis in Gemini sta solo in questo telefono (solo lettere, numeri,
-// trattini: non può diventare un altro indirizzo); se non c'è, si apre Gemini.
-function jarvisChat() { try { const c = localStorage.getItem(JV_CHAT) || ""; return /^[A-Za-z0-9_-]{6,80}$/.test(c) ? c : ""; } catch (e) { return ""; } }
-function jarvisLink() { try { const c = jarvisChat(); return c ? `${JV_GEMINI}/${c}` : JV_GEMINI; } catch (e) { return "https://gemini.google.com/app"; } }
-// il tasto: la casetta del logo, nella barra in alto (solo dove Jarvis è acceso). È un collegamento vero, così il telefono
-// lo apre come ogni collegamento (nell'app di Gemini, se c'è, o nel browser).
+// le cose fatte restano un mese (servono per «questa settimana ne hai fatte…»), poi spariscono
+function jarvisSalva(d) {
+  try { const limite = L.aggiungiGiorni(L.oggiISO(), -30); d.impegni = (d.impegni || []).filter(x => !x.fatta || x.fatta >= limite); d.v = 2; localStorage.setItem(JV_CHIAVE, JSON.stringify(d)); return true; }
+  catch (e) { JV.dice = "Non riesco a salvare su questo telefono: la memoria è piena."; return false; }
+}
+// il tasto: la casetta del logo, nella barra in alto della prima pagina (solo dove Jarvis è acceso). Non si vede: la casetta
+// resta com'è («la galassia prendeva troppo occhio a Sofia»). 1.88.0: apre la pagina qui dentro, non più Gemini.
 function jarvisCasetta(b) {
   try {
     const m = b && b.querySelector(".bo-marca"); if (!m) return;
     let c = m.querySelector(".bo-casetta");
+    if (c && c.tagName !== "BUTTON") { c.remove(); c = null; }
     if (!jarvisPuo()) { if (c) c.remove(); return; }
-    if (!c) { c = document.createElement("a"); c.className = "bo-casetta"; c.target = "_blank"; c.rel = "noopener"; c.setAttribute("data-jarvis-casa", ""); c.setAttribute("aria-label", "Apri Jarvis"); m.appendChild(c); }
-    const l = jarvisLink(); if (c.getAttribute("href") !== l) c.setAttribute("href", l);
+    if (!c) { c = document.createElement("button"); c.type = "button"; c.className = "bo-casetta"; c.setAttribute("data-jarvis-apri", ""); c.setAttribute("aria-label", "Apri Jarvis, le tue cose da fare"); m.appendChild(c); }
   } catch (e) {}
 }
 // l'interruttore in Altro
 function cardJarvisAltro() {
   if (!proprietario() || (S.utente && S.utente.finta)) return "";
-  const on = jarvisAcceso(), chat = !!jarvisChat();
-  return `<section class="card jv-card"><h2>Jarvis · il tuo assistente personale</h2>
-    <p class="small" style="margin:0 0 8px">Jarvis sta dentro Gemini, col tuo account Google. Il suo tasto è <b>la casetta in alto nella prima pagina</b>, accanto a «Le Stanze di Ricci». Il tasto c'è <b>solo su questo telefono</b>: gli altri non lo vedono.</p>
+  const on = jarvisAcceso();
+  return `<section class="card jv-card"><h2>Jarvis · le tue cose da fare</h2>
+    <p class="small" style="margin:0 0 8px">La tua pagina personale: le cose da fare di oggi, gli impegni, gli obiettivi, le idee. Si apre dalla <b>casetta in alto nella prima pagina</b>, accanto a «Le Stanze di Ricci». Sta <b>solo su questo telefono</b>: non va nel database dell'albergo e gli altri non la vedono. È gratis.</p>
     <label class="giro-sw"><span>Jarvis su questo telefono</span><input type="checkbox" data-jarvis-sw ${on ? "checked" : ""}></label>
-    ${on ? `<p class="jv-altro-p">${chat ? "Tocca la casetta: si apre la tua chat «Jarvis»." : "Tocca la casetta: si apre Gemini. Lì scrivi <b>@jarvis</b>, poi parla."}</p>
-    <div class="jv-altro-t"><a class="jv-altro-b oro" href="${esc(jarvisLink())}" target="_blank" rel="noopener" data-jarvis-casa>Apri Jarvis ›</a><button type="button" class="jv-altro-b" data-jarvis-apri>Il Jarvis di prima</button></div>` : ""}</section>`;
+    ${on ? `<div class="jv-altro-t"><button type="button" class="jv-altro-b oro" data-jarvis-apri>Apri Jarvis ›</button></div>` : ""}</section>`;
 }
 // «09:00» → «9», «09:30» → «9:30» (così si legge e si dice bene)
 const jvOra = (hhmm) => { const h = Number(String(hhmm).slice(0, 2)), m = String(hhmm).slice(3, 5); return m === "00" ? String(h) : `${h}:${m}`; };
-function jvQuando(entro) {
+const jvGiorno = (x) => String((x && x.entro) || "").slice(0, 10);
+const jvOraDi = (x) => { const e = String((x && x.entro) || ""); return e.length > 10 ? e.slice(11, 16) : ""; };
+// «domani alle 9», «ieri», «gio 19 nov» · lungo (per le frasi dette a voce): «giovedì 19 novembre»
+function jvQuando(entro, lungo = false) {
   const e = String(entro || ""); if (!e) return "";
   const g = e.slice(0, 10), ora = e.length > 10 ? e.slice(11, 16) : "", oggi = L.oggiISO();
-  const giorno = g === oggi ? "oggi" : g === L.aggiungiGiorni(oggi, 1) ? "domani" : g === L.aggiungiGiorni(oggi, -1) ? "ieri" : L.dataMedia(g);
+  const giorno = g === oggi ? "oggi" : g === L.aggiungiGiorni(oggi, 1) ? "domani" : g === L.aggiungiGiorni(oggi, -1) ? "ieri" : lungo ? L.dataLunga(g) : L.dataMedia(g);
   return `${giorno}${ora ? " alle " + jvOra(ora) : ""}`;
 }
-// gli impegni in ordine: prima quelli col giorno (dal più vicino), poi quelli senza
-function jvImpegni(d) { return d.impegni.slice().sort((a, b) => (a.entro ? 0 : 1) - (b.entro ? 0 : 1) || String(a.entro || "").localeCompare(String(b.entro || ""))); }
-// quello che Jarvis dice quando lo apri: il piano, gli impegni, gli obiettivi, i traguardi, le idee
-function jvBriefing() {
-  const d = jarvisDati(), oggi = L.oggiISO(), ciao = `${saluto()} ${nomeMio()}.`;
-  if (!d.piano && !d.impegni.length && !d.obiettivi.length && !d.traguardi.length && !d.idee.length) return `${ciao} Sono Jarvis, il tuo assistente personale. Non so ancora niente di te. Tocca il microfono e dimmi il tuo primo obiettivo.`;
-  const parti = [ciao];
-  if (d.piano) { const p = d.piano.replace(/\s+/g, " ").trim(), f = (p.match(/[^.!?]+[.!?]*/) || [p])[0].trim(); parti.push(`Il tuo piano: ${f.length > 160 ? f.slice(0, 157).replace(/\s+\S*$/, "") + "…" : f}${/[.!?…]$/.test(f) ? "" : "."}`); }
-  const imp = jvImpegni(d), giorno = (x) => String(x.entro || "").slice(0, 10), diOggi = imp.filter(x => giorno(x) === oggi), indietro = imp.filter(x => giorno(x) && giorno(x) < oggi), prossimo = imp.find(x => giorno(x) > oggi);
-  if (diOggi.length) parti.push(`Oggi hai ${diOggi.length === 1 ? "un impegno" : diOggi.length + " impegni"}: ${diOggi.slice(0, 3).map(x => x.testo + (String(x.entro).length > 10 ? " alle " + jvOra(String(x.entro).slice(11, 16)) : "")).join("; ")}.`);
-  else if (prossimo) parti.push(`Oggi non hai impegni. Il prossimo: ${prossimo.testo}, ${jvQuando(prossimo.entro)}.`);
-  else if (imp.length) parti.push(`Hai ${imp.length === 1 ? "un impegno segnato" : imp.length + " impegni segnati"}, senza giorno.`);
-  else parti.push("Non hai impegni segnati.");
-  if (indietro.length) parti.push(indietro.length === 1 ? "Ne hai uno rimasto indietro." : `Ne hai ${indietro.length} rimasti indietro.`);
-  if (d.obiettivi.length) { const fatti = d.obiettivi.filter(o => (o.fatti || []).includes(oggi)).length, daFare = d.obiettivi.find(o => !(o.fatti || []).includes(oggi)); parti.push(`Obiettivi: ${d.obiettivi.length}. Oggi ne hai fatti ${fatti}.${daFare ? ` Da fare: ${daFare.testo}.` : " Bravo, li hai fatti tutti."}`); }
-  if (d.traguardi.length) parti.push(`Traguardi raggiunti: ${d.traguardi.length}. L'ultimo: ${d.traguardi[d.traguardi.length - 1].testo}.`);
-  if (d.idee.length) parti.push(`Idee salvate: ${d.idee.length}.`);
+// LA LISTA DI OGGI, come nelle app delle cose da fare: prima quello rimasto indietro, poi oggi (con l'ora, in ordine), poi
+// le cose senza giorno, poi gli obiettivi di ogni giorno; in fondo, barrate, quelle già fatte oggi.
+function jvOggi(d) {
+  const oggi = L.oggiISO(), righe = [];
+  for (const x of d.impegni) {
+    const g = jvGiorno(x);
+    if (x.fatta) { if (x.fatta === oggi) righe.push({ tipo: "cosa", x, fatta: true, ord: 9 }); continue; }
+    if (g && g > oggi) continue;                                    // è per un altro giorno: sta negli Impegni
+    const tardi = !!g && g < oggi;
+    righe.push({ tipo: "cosa", x, fatta: false, tardi, ord: tardi ? 0 : g ? (jvOraDi(x) ? 1 : 2) : 3 });
+  }
+  for (const o of d.obiettivi) { const si = (Array.isArray(o.fatti) ? o.fatti : []).includes(oggi); righe.push({ tipo: "obiettivo", x: o, fatta: si, ord: si ? 9 : 4 }); }
+  return righe.sort((a, b) => a.ord - b.ord || (a.ord < 2 ? String(a.x.entro || "").localeCompare(String(b.x.entro || "")) : 0));
+}
+// i prossimi giorni: le cose col giorno dopo oggi, dalla più vicina
+function jvProssimi(d) { const oggi = L.oggiISO(); return d.impegni.filter(x => !x.fatta && jvGiorno(x) > oggi).sort((a, b) => String(a.entro).localeCompare(String(b.entro))); }
+// da quanti giorni di fila fa una cosa di ogni giorno (oggi compreso, se l'ha già fatta)
+function jvFila(o, oggi) { const f = new Set(Array.isArray(o.fatti) ? o.fatti : []); let g = f.has(oggi) ? oggi : L.aggiungiGiorni(oggi, -1), n = 0; while (f.has(g) && n < 400) { n++; g = L.aggiungiGiorni(g, -1); } return n; }
+// quante cose ha fatto: oggi, e da lunedì
+function jvFatte(d) {
+  const oggi = L.oggiISO(), lun = L.lunediDi(oggi); let a = 0, b = 0;
+  for (const x of d.impegni) if (x.fatta) { if (x.fatta === oggi) a++; if (x.fatta >= lun && x.fatta <= oggi) b++; }
+  for (const o of d.obiettivi) for (const g of (Array.isArray(o.fatti) ? o.fatti : [])) { if (g === oggi) a++; if (g >= lun && g <= oggi) b++; }
+  return { oggi: a, settimana: b };
+}
+// la frase sulla giornata: quante cose restano e qual è la prossima
+function jvFraseOggi(d) {
+  const righe = jvOggi(d), daFare = righe.filter(r => !r.fatta), fatte = righe.length - daFare.length;
+  if (!righe.length) return "Per oggi non hai niente in lista.";
+  if (!daFare.length) return `Per oggi hai fatto tutto: ${fatte === 1 ? "una cosa" : fatte + " cose"}. Bravo.`;
+  const p = daFare[0], ora = p.tipo === "cosa" ? jvOraDi(p.x) : "", quante = daFare.length === 1 ? "una cosa" : `${daFare.length} cose`;
+  const tardi = daFare.filter(r => r.tardi).length;
+  return `${fatte ? (daFare.length === 1 ? "Ti resta" : "Ti restano") : "Oggi hai"} ${quante} da fare. ${fatte ? "La prossima" : "La prima"}: ${p.x.testo}${ora && !p.tardi ? " alle " + jvOra(ora) : ""}.${tardi ? (tardi === 1 ? " Una è rimasta indietro." : ` ${tardi} sono rimaste indietro.`) : ""}`;
+}
+// quello che Jarvis dice quando lo apri: corto. Con «tutto» (tocchi la galassia, o gli dici «dimmi tutto»): anche il piano,
+// gli obiettivi, i traguardi e le idee.
+function jvBriefing(tutto = false) {
+  const d = jarvisDati(), ciao = `${saluto()} ${nomeMio()}.`;
+  if (!d.piano && !d.impegni.length && !d.obiettivi.length && !d.traguardi.length && !d.idee.length) return `${ciao} Sono Jarvis. Qui tieni le tue cose da fare. Tocca «Aggiungi una cosa», oppure il microfono, e dimmi la prima.`;
+  const parti = [ciao, jvFraseOggi(d)], prossimi = jvProssimi(d);
+  if (prossimi.length) parti.push(`Poi: ${prossimi[0].testo}, ${jvQuando(prossimi[0].entro, true)}.`);
+  if (tutto) {
+    if (d.piano) { const p = d.piano.replace(/\s+/g, " ").trim(), f = (p.match(/[^.!?]+[.!?]*/) || [p])[0].trim(); parti.push(`Il tuo piano: ${f.length > 160 ? f.slice(0, 157).replace(/\s+\S*$/, "") + "…" : f}${/[.!?…]$/.test(f) ? "" : "."}`); }
+    if (prossimi.length > 1) parti.push(`Nei prossimi giorni hai ${prossimi.length} cose segnate.`);
+    if (d.obiettivi.length) parti.push(`Obiettivi di ogni giorno: ${d.obiettivi.length}.`);
+    if (d.traguardi.length) parti.push(`Traguardi raggiunti: ${d.traguardi.length}. L'ultimo: ${d.traguardi[d.traguardi.length - 1].testo}.`);
+    if (d.idee.length) parti.push(`Idee salvate: ${d.idee.length}.`);
+    const f = jvFatte(d); if (f.settimana) parti.push(`Questa settimana hai fatto ${f.settimana === 1 ? "una cosa" : f.settimana + " cose"}.`);
+  }
   return parti.join(" ");
+}
+// «cosa mi manca oggi?» (0) · «cosa ho domani?» (1)
+function jvDiciGiorno(quanti) {
+  const d = jarvisDati(), oggi = L.oggiISO();
+  if (!quanti) {
+    const righe = jvOggi(d), daFare = righe.filter(r => !r.fatta);
+    if (!daFare.length) return righe.length ? "Per oggi hai fatto tutto." : "Per oggi non hai niente in lista.";
+    return `Oggi ${daFare.length === 1 ? "ti resta una cosa" : `ti restano ${daFare.length} cose`}. ${daFare.slice(0, 8).map((r, i) => `${i + 1}: ${r.x.testo}${r.tipo === "cosa" && jvOraDi(r.x) && !r.tardi ? " alle " + jvOra(jvOraDi(r.x)) : ""}.`).join(" ")}`;
+  }
+  const g = L.aggiungiGiorni(oggi, quanti), righe = jvProssimi(d).filter(x => jvGiorno(x) === g);
+  if (!righe.length) return "Domani non hai niente segnato.";
+  return `Domani hai ${righe.length === 1 ? "una cosa" : righe.length + " cose"}. ${righe.slice(0, 8).map((x, i) => `${i + 1}: ${x.testo}${jvOraDi(x) ? " alle " + jvOra(jvOraDi(x)) : ""}.`).join(" ")}`;
 }
 // «🔊 Leggimeli»: una sezione letta per intero
 function jvLeggi(k) {
   const d = jarvisDati();
   if (k === "piano") return d.piano ? `Il tuo piano. ${d.piano}` : "Il piano è ancora da scrivere.";
-  const righe = k === "impegni" ? jvImpegni(d) : d[k] || [];
-  if (!righe.length) return `Qui non c'è ancora niente.`;
-  return `${JV_SEZ[k][1]}: ${righe.length}. ${righe.slice(0, 8).map((x, i) => `${i + 1}: ${x.testo}${k === "impegni" && x.entro ? ", " + jvQuando(x.entro) : ""}.`).join(" ")}`;
+  const righe = k === "impegni" ? jvProssimi(d) : d[k] || [];
+  if (!righe.length) return k === "impegni" ? "Nei prossimi giorni non hai niente segnato." : "Qui non c'è ancora niente.";
+  return `${JV_SEZ[k][1]}: ${righe.length}. ${righe.slice(0, 8).map((x, i) => `${i + 1}: ${x.testo}${k === "impegni" && x.entro ? ", " + jvQuando(x.entro, true) : ""}.`).join(" ")}`;
 }
 // la voce: quella del telefono, in italiano; se ce n'è una da uomo quella, se no la solita più bassa
 function jvVoce() {
@@ -19057,50 +19104,63 @@ function jvTesta(titolo, dentro) {
   const muto = jvMuto();
   return `<div class="jv-testa"><button type="button" class="jv-ind" ${dentro ? "data-jv-casa" : "data-jv-chiudi"}>‹ ${dentro ? "Jarvis" : "Indietro"}</button><b>${esc(titolo)}</b><button type="button" class="jv-muto" data-jv-muto aria-label="${muto ? "Voce spenta: tocca per accenderla" : "Voce accesa: tocca per spegnerla"}">${muto ? "🔇" : "🔊"}</button></div>`;
 }
+// una riga della lista: il tondo da spuntare, la cosa, sotto il quando, il disegnino, e «⋯» per cambiarla o toglierla
+function jvRigaCosa(x, oggi, r = {}) {
+  const id = esc(x.id), ob = r.tipo === "obiettivo", ora = ob ? "" : jvOraDi(x), fila = ob ? jvFila(x, oggi) : 0;
+  const sotto = ob ? `ogni giorno${fila > 1 ? ` · ${fila} giorni di fila` : ""}` : r.tardi ? `in ritardo · ${jvQuando(x.entro)}` : ora ? `alle ${jvOra(ora)}` : "";
+  return `<div class="jv-t${r.fatta ? " fatta" : ""}${r.tardi ? " tardi" : ""}"><button type="button" class="jv-spunta" ${ob ? `data-jv-oggi="${id}"` : `data-jv-fatto="${id}"`} role="checkbox" aria-checked="${r.fatta ? "true" : "false"}" aria-label="${esc(x.testo)}: ${r.fatta ? "fatta, tocca per rimetterla da fare" : "tocca quando l'hai fatta"}">${r.fatta ? "✓" : ""}</button><span class="jv-tt"><b>${esc(x.testo)}</b>${sotto ? `<small>${esc(sotto)}</small>` : ""}</span><span class="jv-ta" aria-hidden="true">${ob ? "🎯" : jvArea(x.testo)}</span>${ob ? `<button type="button" class="jv-altro" data-jv-sez="obiettivi" aria-label="Apri gli obiettivi">›</button>` : `<button type="button" class="jv-altro" data-jv-cambia="${id}" aria-label="Cambia o togli: ${esc(x.testo)}">⋯</button>`}</div>`;
+}
 function jvCasaHtml(d) {
-  const oggi = L.oggiISO(), imp = jvImpegni(d), diOggi = imp.filter(x => String(x.entro || "").slice(0, 10) === oggi).length, fatti = d.obiettivi.filter(o => (o.fatti || []).includes(oggi)).length;
-  const sotto = { piano: d.piano ? "tocca per leggerlo" : "ancora da scrivere", impegni: imp.length ? (diOggi ? `oggi ${diOggi}` : `${imp.length} ${imp.length === 1 ? "segnato" : "segnati"}`) : "nessuno",
-    obiettivi: d.obiettivi.length ? `oggi fatti ${fatti} su ${d.obiettivi.length}` : "nessuno", traguardi: d.traguardi.length ? `${d.traguardi.length} ${d.traguardi.length === 1 ? "raggiunto" : "raggiunti"}` : "ancora nessuno", idee: d.idee.length ? `${d.idee.length} ${d.idee.length === 1 ? "salvata" : "salvate"}` : "nessuna" };
+  const oggi = L.oggiISO(), righe = jvOggi(d), fatte = righe.filter(r => r.fatta).length, prossimi = jvProssimi(d), domani = prossimi.filter(x => jvGiorno(x) === L.aggiungiGiorni(oggi, 1)).length;
+  const sotto = { impegni: prossimi.length ? (domani ? `domani ${domani}` : `${prossimi.length} ${prossimi.length === 1 ? "segnato" : "segnati"}`) : "nessuno", obiettivi: d.obiettivi.length ? `${d.obiettivi.length} di ogni giorno` : "nessuno",
+    idee: d.idee.length ? `${d.idee.length} ${d.idee.length === 1 ? "salvata" : "salvate"}` : "nessuna", traguardi: d.traguardi.length ? `${d.traguardi.length} ${d.traguardi.length === 1 ? "raggiunto" : "raggiunti"}` : "ancora nessuno", piano: d.piano ? "tocca per leggerlo" : "ancora da scrivere" };
   return `${jvTesta("Jarvis", false)}
-    <button type="button" class="jv-sfera-b" data-jv-parla aria-label="Toccami: ti dico la giornata">${JV_SFERA()}</button>
-    <p class="jv-dice" aria-live="polite">${esc(JV.dice || "Toccami: ti dico la giornata.")}</p>
+    <div class="jv-eroe"><button type="button" class="jv-sfera-b" data-jv-parla aria-label="Toccami: ti dico tutto">${JV_SFERA("media")}</button><div class="jv-eroe-t"><small>Jarvis ti dice</small><p class="jv-dice" aria-live="polite">${esc(JV.dice || jvFraseOggi(d))}</p><button type="button" class="jv-mic" data-jv-mic><span aria-hidden="true">🎤</span> Parla</button></div></div>
+    <section class="jv-carta jv-oggi"><h2>Da fare oggi${righe.length ? `<span>${fatte === 1 ? "1 fatta" : fatte + " fatte"} su ${righe.length}</span>` : ""}</h2>
+      ${righe.length ? righe.map(r => jvRigaCosa(r.x, oggi, r)).join("") : `<p class="jv-vuoto">Per oggi la lista è vuota. Aggiungi la prima cosa.</p>`}
+      <button type="button" class="jv-piu" data-jv-scrivi="impegni"><span aria-hidden="true">＋</span> Aggiungi una cosa</button></section>
     <div class="jv-gr">${Object.entries(JV_SEZ).map(([k, [e, n]]) => `<button type="button" class="jv-c${k === "piano" ? " largo" : ""}" data-jv-sez="${k}"><span class="jv-e" aria-hidden="true">${e}</span><span><b>${n}</b><small>${esc(sotto[k])}</small></span></button>`).join("")}</div>
-    <div class="jv-due"><button type="button" class="jv-mic" data-jv-mic><span aria-hidden="true">🎤</span> Dimmi una cosa nuova</button><button type="button" class="jv-scrivi" data-jv-scrivi><span aria-hidden="true">✍️</span> Scrivila</button></div>
     <p class="jv-nota">🔒 Sta solo su questo telefono. Non lo vede nessun altro.</p>`;
 }
 function jvRiga(k, x, oggi) {
   const id = esc(x.id), t = esc(x.testo);
-  if (k === "impegni") {
-    const g = String(x.entro || "").slice(0, 10), passato = !!g && g < oggi;
-    return `<div class="jv-r${passato ? " passato" : g === oggi ? " oggi" : ""}"><span class="jv-re" aria-hidden="true">${jvArea(x.testo)}</span><span class="jv-rt"><b>${t}</b>${x.entro ? `<small>${esc(jvQuando(x.entro))}${passato ? " · rimasto indietro" : ""}</small>` : ""}</span><span class="jv-rb"><button type="button" class="jv-b verde" data-jv-fatto="${id}">✓ Fatto</button></span></div>`;
-  }
   if (k === "obiettivi") {
-    const f = Array.isArray(x.fatti) ? x.fatti : [], si = f.includes(oggi);
-    return `<div class="jv-r${si ? " fatto" : ""}"><span class="jv-re" aria-hidden="true">${jvArea(x.testo)}</span><span class="jv-rt"><b>${t}</b><small>${si ? "✓ oggi fatto" : "oggi ancora da fare"}${f.length ? ` · fatto ${f.length} ${f.length === 1 ? "giorno" : "giorni"}` : ""}</small></span><span class="jv-rb"><button type="button" class="jv-b verde" data-jv-oggi="${id}">${si ? "↩ Non fatto" : "✓ Fatto oggi"}</button><button type="button" class="jv-b oro" data-jv-raggiunto="${id}">🏁 Raggiunto</button><button type="button" class="jv-b via" data-jv-togli="obiettivi|${id}" aria-label="Togli">✕</button></span></div>`;
+    const f = Array.isArray(x.fatti) ? x.fatti : [], si = f.includes(oggi), fila = jvFila(x, oggi);
+    return `<div class="jv-r${si ? " fatto" : ""}"><span class="jv-re" aria-hidden="true">${jvArea(x.testo)}</span><span class="jv-rt"><b>${t}</b><small>${si ? "✓ oggi fatto" : "oggi ancora da fare"}${fila > 1 ? ` · ${fila} giorni di fila` : f.length ? ` · fatto ${f.length} ${f.length === 1 ? "giorno" : "giorni"}` : ""}</small></span><span class="jv-rb"><button type="button" class="jv-b verde" data-jv-oggi="${id}">${si ? "↩ Non fatto" : "✓ Fatto oggi"}</button><button type="button" class="jv-b oro" data-jv-raggiunto="${id}">🏁 Raggiunto</button><button type="button" class="jv-b via" data-jv-togli="obiettivi|${id}" aria-label="Togli">✕</button></span></div>`;
   }
   if (k === "traguardi") return `<div class="jv-r"><span class="jv-re" aria-hidden="true">🏁</span><span class="jv-rt"><b>${t}</b>${x.quando ? `<small>raggiunto ${esc(jvQuando(x.quando))}</small>` : ""}</span><span class="jv-rb"><button type="button" class="jv-b via" data-jv-togli="traguardi|${id}" aria-label="Togli">✕</button></span></div>`;
-  return `<div class="jv-r"><span class="jv-re" aria-hidden="true">💡</span><span class="jv-rt"><b>${t}</b></span><span class="jv-rb"><button type="button" class="jv-b oro" data-jv-promuovi="${id}">🎯 Diventa obiettivo</button><button type="button" class="jv-b via" data-jv-togli="idee|${id}" aria-label="Togli">✕</button></span></div>`;
+  return `<div class="jv-r"><span class="jv-re" aria-hidden="true">💡</span><span class="jv-rt"><b>${t}</b></span><span class="jv-rb"><button type="button" class="jv-b verde" data-jv-idea-cosa="${id}">☑ Da fare</button><button type="button" class="jv-b oro" data-jv-promuovi="${id}">🎯 Obiettivo</button><button type="button" class="jv-b via" data-jv-togli="idee|${id}" aria-label="Togli">✕</button></span></div>`;
 }
 function jvSezioneHtml(d, k) {
-  const [e, nome] = JV_SEZ[k], oggi = L.oggiISO();
+  const nome = JV_SEZ[k][1], oggi = L.oggiISO();
+  const dice = JV.dice ? `<div class="jv-eroe piccolo">${JV_SFERA("piccola")}<p class="jv-dice" aria-live="polite">${esc(JV.dice)}</p></div>` : "";
+  const tasti = (leggi) => `<div class="jv-due"><button type="button" class="jv-mic" data-jv-mic="${k}"><span aria-hidden="true">🎤</span> Dimmelo</button><button type="button" class="jv-scrivi" data-jv-scrivi="${k}"><span aria-hidden="true">✍️</span> Scrivilo</button>${leggi ? `<button type="button" class="jv-b" data-jv-leggi="${k}">🔊 Leggimeli</button>` : ""}</div>`;
   let corpo = "";
-  if (k === "piano") corpo = `<p class="jv-aiuto">Il tuo piano grande: dove vuoi arrivare. Scrivilo qui sotto, oppure dettalo: Jarvis te lo ricorda ogni volta.</p><textarea id="jvPiano" class="jv-piano" rows="8" placeholder="Per esempio: entro un anno voglio…">${esc(d.piano)}</textarea><div class="jv-due"><button type="button" class="jv-b oro" data-jv-piano-salva>💾 Salva</button><button type="button" class="jv-mic" data-jv-mic="piano"><span aria-hidden="true">🎤</span> Dettalo</button><button type="button" class="jv-b" data-jv-leggi="piano">🔊 Leggimelo</button></div>`;
-  else {
-    const righe = k === "impegni" ? jvImpegni(d) : k === "traguardi" ? d.traguardi.slice().reverse() : d[k];
-    const vuoto = { impegni: "Nessun impegno. Dimmene uno: «palestra domani alle 9».", obiettivi: "Nessun obiettivo. Dimmi il primo: «leggere dieci pagine al giorno».", traguardi: "Ancora nessun traguardo. Quando raggiungi un obiettivo tocca «🏁 Raggiunto»: arriva qui.", idee: "Nessuna idea salvata. Quando te ne viene una, dimmela." }[k];
-    corpo = (righe.length ? `<div class="jv-lista">${righe.map(x => jvRiga(k, x, oggi)).join("")}</div>` : `<p class="jv-vuoto">${vuoto}</p>`)
-      + `<div class="jv-due"><button type="button" class="jv-mic" data-jv-mic="${k}"><span aria-hidden="true">🎤</span> Dimmelo</button><button type="button" class="jv-scrivi" data-jv-scrivi="${k}"><span aria-hidden="true">✍️</span> Scrivilo</button>${righe.length ? `<button type="button" class="jv-b" data-jv-leggi="${k}">🔊 Leggimeli</button>` : ""}</div>`;
+  if (k === "piano") corpo = `<p class="jv-aiuto">Il tuo piano grande: dove vuoi arrivare. Scrivilo qui sotto, oppure dettalo: Jarvis te lo ricorda quando gli dici «dimmi tutto».</p><textarea id="jvPiano" class="jv-piano" rows="8" placeholder="Per esempio: entro un anno voglio…">${esc(d.piano)}</textarea><div class="jv-due"><button type="button" class="jv-b oro" data-jv-piano-salva>💾 Salva</button><button type="button" class="jv-mic" data-jv-mic="piano"><span aria-hidden="true">🎤</span> Dettalo</button><button type="button" class="jv-b" data-jv-leggi="piano">🔊 Leggimelo</button></div>`;
+  else if (k === "impegni") {
+    const pr = jvProssimi(d), giorni = [...new Set(pr.map(jvGiorno))], domani = L.aggiungiGiorni(oggi, 1);
+    corpo = (pr.length ? giorni.map(g => { const nomeG = L.dataLunga(g); return `<section class="jv-carta"><h2>${g === domani ? "Domani" : esc(nomeG.charAt(0).toUpperCase() + nomeG.slice(1))}</h2>${pr.filter(x => jvGiorno(x) === g).map(x => jvRigaCosa(x, oggi, { tipo: "cosa" })).join("")}</section>`; }).join("")
+      : `<p class="jv-vuoto">Nei prossimi giorni non hai niente segnato. Dimmene una: «dentista giovedì alle 10».</p>`) + tasti(pr.length > 0);
+  } else {
+    const righe = k === "traguardi" ? d.traguardi.slice().reverse() : d[k], f = k === "traguardi" ? jvFatte(d) : null;
+    const vuoto = { obiettivi: "Nessun obiettivo. Sono le cose di ogni giorno: «leggere dieci pagine». Le ritrovi ogni giorno nella lista.", traguardi: "Ancora nessun traguardo. Quando raggiungi un obiettivo tocca «🏁 Raggiunto»: arriva qui.", idee: "Nessuna idea salvata. Quando te ne viene una, dimmela." }[k];
+    corpo = (f ? `<div class="jv-numeri"><div><b>${f.oggi}</b><span>${f.oggi === 1 ? "cosa fatta" : "cose fatte"} oggi</span></div><div><b>${f.settimana}</b><span>${f.settimana === 1 ? "cosa fatta" : "cose fatte"} questa settimana</span></div></div>` : "")
+      + (righe.length ? `<div class="jv-lista">${righe.map(x => jvRiga(k, x, oggi)).join("")}</div>` : `<p class="jv-vuoto">${vuoto}</p>`) + (k === "traguardi" ? "" : tasti(righe.length > 0));
   }
-  return `${jvTesta(nome, true)}<div class="jv-sez-t"><span aria-hidden="true">${e}</span>${JV_SFERA("media")}</div>${JV.dice ? `<p class="jv-dice" aria-live="polite">${esc(JV.dice)}</p>` : ""}${corpo}`;
+  return `${jvTesta(nome, true)}${dice}${corpo}`;
 }
-// il foglio: scrivere una cosa nuova, scegliere dove va, oppure «la tolgo?»
+// il foglio: scrivere una cosa nuova, cambiarne una, oppure «la tolgo?»
 function jvFoglioHtml() {
-  const f = JV.foglio || {};
+  const f = JV.foglio || {}, oggi = L.oggiISO();
   if (f.togli) return `<div class="jv-velo" data-jv-foglio-via></div><div class="jv-foglio" role="dialog" aria-label="Tolgo?"><b class="jv-ft">La tolgo?</b><p class="jv-aiuto">«${esc(f.testo || "")}»</p><button type="button" class="jv-b oro grande" data-jv-togli-si>Sì, toglila</button><button type="button" class="jv-b" data-jv-foglio-via>No, lasciala</button></div>`;
-  const dove = f.dove || "";
-  const tasti = dove ? `<button type="button" class="jv-b oro grande" data-jv-metti="${dove}">Salva · ${JV_SEZ[dove][0]} ${JV_UNO[dove]}</button>`
-    : `<p class="jv-aiuto">Dove la metto?</p><div class="jv-dove">${["impegni", "obiettivi", "idee", "piano"].map(k => `<button type="button" class="jv-b oro" data-jv-metti="${k}">${JV_SEZ[k][0]} ${JV_UNO[k]}</button>`).join("")}</div>`;
-  return `<div class="jv-velo" data-jv-foglio-via></div><div class="jv-foglio" role="dialog" aria-label="Una cosa nuova"><b class="jv-ft">${f.sentita ? "Ho sentito:" : "Scrivi la cosa nuova"}</b><textarea id="jvTesto" rows="3" placeholder="${dove === "impegni" || !dove ? "per esempio: palestra domani alle 9" : "scrivi qui"}">${esc(f.testo || "")}</textarea>${tasti}<button type="button" class="jv-b" data-jv-foglio-via>Annulla</button></div>`;
+  if (f.cambia) return `<div class="jv-velo" data-jv-foglio-via></div><div class="jv-foglio" role="dialog" aria-label="Cambia"><b class="jv-ft">Cambia</b><textarea id="jvTesto" rows="2">${esc(f.testo || "")}</textarea>
+    <p class="jv-aiuto">Per quando?</p><div class="jv-quando"><button type="button" class="jv-b" data-jv-quando="${oggi}">Oggi</button><button type="button" class="jv-b" data-jv-quando="${L.aggiungiGiorni(oggi, 1)}">Domani</button><button type="button" class="jv-b" data-jv-quando="">Senza giorno</button></div>
+    <div class="jv-quando2"><label>Giorno<input type="date" id="jvData" value="${esc(f.giorno || "")}"></label><label>Ora<input type="time" id="jvOraIn" value="${esc(f.ora || "")}"></label></div>
+    <button type="button" class="jv-b oro grande" data-jv-cambia-salva>Salva</button><button type="button" class="jv-b" data-jv-cambia-togli>🗑 Toglila</button><button type="button" class="jv-b" data-jv-foglio-via>Annulla</button></div>`;
+  const dove = JV_SEZ[f.dove] ? f.dove : "impegni";
+  const tasti = dove === "impegni" ? `<button type="button" class="jv-b oro grande" data-jv-metti="impegni">Salva</button><p class="jv-aiuto">Oppure è un'altra cosa:</p><div class="jv-dove"><button type="button" class="jv-b" data-jv-metti="obiettivi">🎯 Di ogni giorno</button><button type="button" class="jv-b" data-jv-metti="idee">💡 Un'idea</button></div>`
+    : `<button type="button" class="jv-b oro grande" data-jv-metti="${dove}">Salva · ${JV_SEZ[dove][0]} ${JV_UNO[dove]}</button>`;
+  return `<div class="jv-velo" data-jv-foglio-via></div><div class="jv-foglio" role="dialog" aria-label="Una cosa nuova"><b class="jv-ft">${dove === "impegni" ? "Una cosa da fare" : "Scrivi"}</b><textarea id="jvTesto" rows="3" placeholder="${dove === "impegni" ? "per esempio: palestra domani alle 9" : "scrivi qui"}">${esc(f.testo || "")}</textarea>${tasti}<button type="button" class="jv-b" data-jv-foglio-via>Annulla</button></div>`;
 }
 function jvFuoco() { setTimeout(() => { try { const t = document.getElementById("jvTesto"); if (t) t.focus(); } catch (e) {} }, 60); }
 function jarvisDisegna() {
@@ -19135,45 +19195,91 @@ function jvSezione(k) {
   JV.sez = k || ""; JV.dice = ""; jarvisDisegna();
   const el = document.getElementById("jarvis"); if (el) el.scrollTop = 0;
 }
-// capire una frase: «impegno palestra domani alle 9», «obiettivo leggere dieci pagine al giorno», «idea …». Il giorno e l'ora
-// li trova lo stesso lettore dei promemoria di Sofia (lettura.js), senza IA.
+// capire una frase: «palestra domani alle 9» (una cosa da fare col giorno e l'ora), «leggere dieci pagine ogni giorno» (un
+// obiettivo), «idea …». Il giorno e l'ora li trova lo stesso lettore dei promemoria di Sofia (lettura.js), senza IA.
 function jvCapisci(frase) {
   let t = String(frase || "").replace(/\s+/g, " ").trim(); if (!t) return null;
-  t = t.replace(/^(?:ehi |hey |ok |allora |senti )?jarvis[,!.: ]+/i, "").replace(/^(?:segnami|segna|aggiungimi|aggiungi|mettimi|metti|scrivimi|scrivi|salvami|salva)[,: ]+/i, "").trim();
-  const m = /^(?:un nuovo |una nuova |un'|un |una |il mio |la mia |nuovo |nuova )?(impegno|appuntamento|obiettivo|idea|traguardo|piano|master plan)(?:[,:;.! ]+|$)(.*)$/i.exec(t);
+  t = t.replace(/^(?:ehi |hey |ok |allora |senti )?jarvis[,!.: ]+/i, "").replace(/^(?:segnami|segna|aggiungimi|aggiungi|mettimi|metti|scrivimi|scrivi|salvami|salva|ricordami|devo|dovrei)(?:[,: ]+|$)/i, "").replace(/^(?:di|che devo|che)\s+/i, "").trim();
+  const m = /^(?:un nuovo |una nuova |un'|un |una |il mio |la mia |nuovo |nuova )?(impegno|appuntamento|obiettivo|abitudine|idea|traguardo|piano|master plan)(?:[,:;.! ]+|$)(.*)$/i.exec(t);
   let dove = "", detto = false, resto = t;
-  if (m) { const k = m[1].toLowerCase(); dove = /impegno|appuntamento/.test(k) ? "impegni" : k === "obiettivo" ? "obiettivi" : k === "idea" ? "idee" : k === "traguardo" ? "traguardi" : "piano"; detto = true; resto = m[2].trim(); }
+  if (m) { const k = m[1].toLowerCase(); dove = /impegno|appuntamento/.test(k) ? "impegni" : /obiettivo|abitudine/.test(k) ? "obiettivi" : k === "idea" ? "idee" : k === "traguardo" ? "traguardi" : "piano"; detto = true; resto = m[2].trim(); }
+  if (!dove && /\b(ogni giorno|tutti i giorni|ogni sera|ogni mattina|tutte le sere|tutte le mattine)\b/i.test(resto)) dove = "obiettivi";
+  if (!dove && /^(voglio|vorrei|il mio obiettivo)/i.test(resto)) dove = "obiettivi";
   let entro = "", testo = resto;
   if (resto && (dove === "impegni" || !dove)) {
     let r = null; try { r = LET.promemoriaDa("ricordami " + resto, L.oggiISO(), minutiRoma()); } catch (e) { r = null; }
-    if (r && !r.vuoto && r.entro && r.testo) { entro = r.entro; testo = r.testo; if (!dove) dove = "impegni"; }
+    if (r && !r.vuoto && r.testo) { entro = r.entro || ""; testo = r.testo; if (!entro && /\b(oggi|stamattina)\b/i.test(resto)) entro = L.oggiISO(); if (!dove) dove = "impegni"; }
   }
-  if (!dove && /^(voglio|vorrei|il mio obiettivo)/i.test(resto)) dove = "obiettivi";
-  testo = testo.replace(/[\s,;:.!]+$/, "").trim();
+  testo = testo.replace(/[\s,;:.!?]+$/, "").trim();
   return { dove, detto, testo: testo.charAt(0).toUpperCase() + testo.slice(1), entro };
 }
 function jvMetti(dove, testo, entro = "") {
   const d = jarvisDati(), t = String(testo || "").replace(/\s+/g, " ").trim(), oggi = L.oggiISO(); if (!t) return "";
   if (dove === "piano") d.piano = (d.piano ? d.piano.replace(/\s+$/, "") + "\n" : "") + t;
-  else if (dove === "impegni") d.impegni.push({ id: jvId(), testo: t, entro: String(entro || "") });
+  else if (dove === "impegni") d.impegni.push({ id: jvId(), testo: t, entro: String(entro || ""), creata: oggi });
   else if (dove === "obiettivi") d.obiettivi.push({ id: jvId(), testo: t, da: oggi, fatti: [] });
   else if (dove === "traguardi") d.traguardi.push({ id: jvId(), testo: t, quando: oggi });
   else if (dove === "idee") d.idee.push({ id: jvId(), testo: t, quando: oggi });
   else return "";
   if (!jarvisSalva(d)) return JV.dice;
-  return dove === "impegni" ? `Segnato negli impegni: ${t}${entro ? ", " + jvQuando(entro) : ""}.` : dove === "obiettivi" ? `Nuovo obiettivo: ${t}.` : dove === "idee" ? `Idea salvata: ${t}.` : dove === "traguardi" ? `Bravo. Traguardo segnato: ${t}.` : "L'ho aggiunto al tuo piano.";
+  if (dove === "impegni") { const e = String(entro || ""), ora = e.length > 10 ? " alle " + jvOra(e.slice(11, 16)) : ""; return !e ? `Segnato tra le cose da fare: ${t}.` : e.slice(0, 10) === oggi ? `Segnato per oggi: ${t}${ora}.` : `Segnato: ${t}, ${jvQuando(e, true)}.`; }
+  return dove === "obiettivi" ? `Nuovo obiettivo di ogni giorno: ${t}.` : dove === "idee" ? `Idea salvata: ${t}.` : dove === "traguardi" ? `Bravo. Traguardo segnato: ${t}.` : "L'ho aggiunto al tuo piano.";
 }
-// quello che ha sentito dal microfono: se capisce dove va lo mette, se no lo chiede
+// trovare, tra le cose da fare, quella che somiglia di più a quello che ha detto («ho fatto la palestra» → «Palestra»)
+const jvNorma = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+function jvTrova(righe, detto) {
+  const parole = jvNorma(detto).split(" ").filter(p => p.length >= 3 && !/^(che|con|del|dei|della|delle|dello|per|una|uno|gli|mio|mia|miei|mie|oggi|domani|alle|sono|ora|gia)$/.test(p));
+  if (!parole.length) return null;
+  let meglio = null, punti = 0;
+  for (const r of righe) { const t = jvNorma(r.x.testo); let p = 0; for (const w of parole) if (t.includes(w.length > 5 ? w.slice(0, -1) : w)) p++; if (p > punti) { punti = p; meglio = r; } }
+  return meglio;
+}
+// la frase dopo una spunta: quante ne restano oggi
+function jvDopoSpunta(d, testo) { const n = jvOggi(d).filter(r => !r.fatta).length; return n ? `Fatto: ${testo}. ${n === 1 ? "Te ne resta una" : `Te ne restano ${n}`}.` : `Fatto: ${testo}. Per oggi hai finito tutto. Bravo ${nomeMio()}.`; }
+// le domande e i comandi detti a voce (dalla pagina principale): ritorna la frase da dire, true se ha già fatto lui, "" se non
+// è un comando (allora è una cosa nuova da segnare)
+function jvComando(frase) {
+  const t = jvNorma(String(frase || "").replace(/^(?:ehi |hey |ok |allora |senti )?jarvis\b[,!.: ]*/i, ""));
+  if (!t) return jvBriefing();
+  if (/^(dimmi|dici|raccontami|leggimi) tutto\b|^tutto$|^(la mia |la )?giornata$|^riassunto\b|^come sto messo\b/.test(t)) return jvBriefing(true);
+  const chiede = /^(cosa|che cosa|che|quali|quante|quanti|quale|dimmi|leggimi|fammi sentire)\b/.test(t);
+  if (chiede && /\bdomani\b/.test(t)) return jvDiciGiorno(1);
+  if (chiede && /\b(impegni|prossimi giorni|settimana)\b/.test(t)) return jvLeggi("impegni");
+  if (chiede && /\bobiettiv/.test(t)) return jvLeggi("obiettivi");
+  if (chiede && /\bide[ae]\b/.test(t)) return jvLeggi("idee");
+  if (chiede && /\btraguard/.test(t)) return jvLeggi("traguardi");
+  if (chiede && /\bpiano\b/.test(t)) return jvLeggi("piano");
+  if (chiede && /\b(oggi|manca|mancano|resta|restano|rimane|rimangono|da fare|devo fare|ho da fare|lista)\b/.test(t)) return jvDiciGiorno(0);
+  let m;
+  if ((m = /^(?:ho fatto|ho finito|ho gia fatto|fatto|fatta|finito|finita|spunta|segna fatto|segna fatta)\s+(.+)$/.exec(t))) {
+    const d = jarvisDati(), oggi = L.oggiISO(), aperte = jvOggi(d).filter(r => !r.fatta).concat(jvProssimi(d).map(x => ({ tipo: "cosa", x }))), r = jvTrova(aperte, m[1]);
+    if (!r) return `Non trovo «${m[1]}» tra le cose da fare.`;
+    if (r.tipo === "obiettivo") { const o = d.obiettivi.find(y => y.id === r.x.id); o.fatti = [...(Array.isArray(o.fatti) ? o.fatti : []), oggi].slice(-90); }
+    else d.impegni.find(y => y.id === r.x.id).fatta = oggi;
+    if (!jarvisSalva(d)) return JV.dice;
+    return jvDopoSpunta(d, r.x.testo);
+  }
+  if ((m = /^(?:togli|toglimi|cancella|cancellami|elimina|leva)\s+(.+)$/.exec(t))) {
+    const d = jarvisDati(), aperte = d.impegni.filter(x => !x.fatta).map(x => ({ tipo: "cosa", x })), r = jvTrova(aperte, m[1]);
+    if (!r) return `Non trovo «${m[1]}» tra le cose da fare.`;
+    JV.foglio = { togli: true, k: "impegni", id: r.x.id, testo: r.x.testo }; JV.dice = "La tolgo?"; jarvisDisegna(); jarvisDici("La tolgo?", false); return true;
+  }
+  if (/^(cosa|che|chi|quando|dove|come|quanto|quanta|quanti|quante|quale|quali|perche)\b/.test(t)) return "Questo non lo so. Prova a chiedermi: cosa mi manca oggi, oppure cosa ho domani.";
+  return "";
+}
+// quello che ha sentito dal microfono: una domanda, un comando, oppure una cosa nuova (che va tra le cose da fare)
 function jarvisSentito(frase, qui = "") {
-  const c = jvCapisci(frase); if (!c || !c.testo) { JV.dice = "Non ho capito. Riprova, oppure scrivila."; jarvisDisegna(); return; }
-  const dove = c.detto ? c.dove : (qui || c.dove);
-  if (!dove) { JV.foglio = { testo: c.testo, dove: "", sentita: true }; JV.dice = "Dove la metto?"; jarvisDisegna(); jarvisDici("Dove la metto?", false); return; }
+  const detto = String(frase || "").replace(/\s+/g, " ").trim();
+  if (!detto) { JV.dice = "Non ho capito. Riprova, oppure scrivila."; jarvisDisegna(); return; }
+  if (!qui) { const r = jvComando(detto); if (r === true) return; if (r) { jarvisDici(r); return; } }
+  const c = jvCapisci(detto); if (!c || !c.testo) { JV.dice = "Non ho capito. Riprova, oppure scrivila."; jarvisDisegna(); return; }
+  const dove = c.detto ? c.dove : (qui || c.dove || "impegni");
   jarvisDici(jvMetti(dove, c.testo, dove === "impegni" ? c.entro : ""));
 }
 function jarvisMic(qui = "") {
   if (JV.rec) { try { JV.rec.stop(); } catch (e) {} return; }
   const R = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!R) { JV.foglio = { testo: "", dove: qui }; jarvisDisegna(); jvFuoco(); return; }
+  if (!R) { JV.foglio = { testo: "", dove: qui || "impegni" }; jarvisDisegna(); jvFuoco(); return; }
   jarvisZitto();
   let finale = "", visto = "";
   const r = new R(); r.lang = "it-IT"; r.interimResults = true; r.maxAlternatives = 1; r.continuous = false;
@@ -19181,9 +19287,9 @@ function jarvisMic(qui = "") {
   r.onerror = (e) => { if (JV.rec !== r) return; if (e && (e.error === "not-allowed" || e.error === "service-not-allowed")) { JV.rec = null; JV.ascolta = false; JV.dice = "Il microfono è bloccato. Dammi il permesso, oppure scrivila."; jarvisDisegna(); } };
   r.onend = () => { if (JV.rec !== r) return; JV.rec = null; JV.ascolta = false; const t = String(finale || visto || "").trim(); if (!t) { JV.dice = "Non ho sentito. Tocca il microfono e riprova."; jarvisDisegna(); return; } jarvisSentito(t, qui); };
   try { r.start(); JV.rec = r; JV.ascolta = true; JV.dice = "🎤 Ti ascolto…"; jarvisDisegna(); }
-  catch (e) { JV.rec = null; JV.ascolta = false; JV.foglio = { testo: "", dove: qui }; jarvisDisegna(); jvFuoco(); }
+  catch (e) { JV.rec = null; JV.ascolta = false; JV.foglio = { testo: "", dove: qui || "impegni" }; jarvisDisegna(); jvFuoco(); }
 }
-// cambiare una riga (fatto, raggiunto, tolta…): si legge, si cambia, si salva, si ridisegna
+// cambiare una riga (fatta, raggiunto, tolta…): si legge, si cambia, si salva, si ridisegna
 function jvCambia(fn, detto) { const d = jarvisDati(); const r = fn(d); if (r === false) return; if (!jarvisSalva(d)) { jarvisDisegna(); return; } const frase = typeof r === "string" ? r : detto; if (frase) jarvisDici(frase); else { JV.dice = ""; jarvisDisegna(); } }
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t) return;
@@ -19192,6 +19298,16 @@ document.addEventListener("click", (e) => {
   const q = (s) => t.closest(s); let x;
   if (q("[data-jv-togli-si]")) { const f = JV.foglio || {}; JV.foglio = null; if (f.togli) jvCambia(d => { d[f.k] = d[f.k].filter(y => y.id !== f.id); }, "Tolta."); else jarvisDisegna(); return; }
   if (q("[data-jv-foglio-via]")) { JV.foglio = null; jarvisDisegna(); return; }
+  if ((x = q("[data-jv-quando]"))) { const g = document.getElementById("jvData"), o = document.getElementById("jvOraIn"); if (g) g.value = x.dataset.jvQuando || ""; if (o && !x.dataset.jvQuando) o.value = ""; return; }
+  if (q("[data-jv-cambia-salva]")) {
+    const f = JV.foglio || {}, testo = String((document.getElementById("jvTesto") || {}).value || "").replace(/\s+/g, " ").trim(), ora = String((document.getElementById("jvOraIn") || {}).value || "").slice(0, 5);
+    let g = String((document.getElementById("jvData") || {}).value || "").slice(0, 10);
+    if (!testo) { jvFuoco(); return; }
+    if (ora && !g) g = L.oggiISO();
+    JV.foglio = null; jvCambia(d => { const o = d.impegni.find(y => y.id === f.cambia); if (!o) return false; o.testo = testo.charAt(0).toUpperCase() + testo.slice(1); o.entro = g ? g + (/^\d\d:\d\d$/.test(ora) ? "T" + ora : "") : ""; return `Cambiata: ${o.testo}${o.entro ? ", " + jvQuando(o.entro, true) : ""}.`; });
+    return;
+  }
+  if (q("[data-jv-cambia-togli]")) { const f = JV.foglio || {}; JV.foglio = { togli: true, k: "impegni", id: f.cambia, testo: String((document.getElementById("jvTesto") || {}).value || f.testo || "") }; jarvisDisegna(); return; }
   if ((x = q("[data-jv-metti]"))) {
     const k = x.dataset.jvMetti, scritto = String((document.getElementById("jvTesto") || {}).value || "").trim();
     if (!scritto) { jvFuoco(); return; }
@@ -19203,16 +19319,19 @@ document.addEventListener("click", (e) => {
   if (q("[data-jv-chiudi]")) { jarvisChiudi(false); return; }
   if (q("[data-jv-casa]")) { jvSezione(""); return; }
   if (q("[data-jv-muto]")) { try { if (jvMuto()) localStorage.removeItem(JV_MUTO); else localStorage.setItem(JV_MUTO, "1"); } catch (er) {} if (jvMuto()) jarvisZitto(); jarvisDisegna(); return; }
-  if (q("[data-jv-parla]")) { if (JV.parla) jarvisZitto(); else jarvisDici(jvBriefing()); return; }
+  if (q("[data-jv-parla]")) { if (JV.parla) jarvisZitto(); else jarvisDici(jvBriefing(true)); return; }
   if ((x = q("[data-jv-sez]"))) { jvSezione(x.dataset.jvSez); return; }
   if ((x = q("[data-jv-mic]"))) { jarvisMic(x.dataset.jvMic || ""); return; }
-  if ((x = q("[data-jv-scrivi]"))) { jarvisZitto(); JV.foglio = { testo: "", dove: x.dataset.jvScrivi || "" }; jarvisDisegna(); jvFuoco(); return; }
+  if ((x = q("[data-jv-scrivi]"))) { jarvisZitto(); JV.foglio = { testo: "", dove: x.dataset.jvScrivi || "impegni" }; jarvisDisegna(); jvFuoco(); return; }
   if ((x = q("[data-jv-leggi]"))) { if (JV.parla) jarvisZitto(); else jarvisDici(jvLeggi(x.dataset.jvLeggi), false); return; }
   if (q("[data-jv-piano-salva]")) { const v = String((document.getElementById("jvPiano") || {}).value || "").trim(); jvCambia(d => { d.piano = v; }, "Piano salvato."); return; }
-  if ((x = q("[data-jv-fatto]"))) { const id = x.dataset.jvFatto; jvCambia(d => { d.impegni = d.impegni.filter(y => y.id !== id); }, "Fatto."); return; }
-  if ((x = q("[data-jv-oggi]"))) { const id = x.dataset.jvOggi, oggi = L.oggiISO(); jvCambia(d => { const o = d.obiettivi.find(y => y.id === id); if (!o) return false; const f = Array.isArray(o.fatti) ? o.fatti : []; const si = f.includes(oggi); o.fatti = (si ? f.filter(g => g !== oggi) : [...f, oggi]).slice(-90); return si ? "" : `Bene. Oggi fatto: ${o.testo}.`; }); return; }
+  if ((x = q("[data-jv-cambia]"))) { const id = x.dataset.jvCambia, o = jarvisDati().impegni.find(y => y.id === id); if (o) { jarvisZitto(); JV.foglio = { cambia: id, testo: o.testo, giorno: jvGiorno(o), ora: jvOraDi(o) }; jarvisDisegna(); } return; }
+  // il tondo: fatta (resta barrata in fondo alla lista di oggi) · toccato di nuovo: torna da fare
+  if ((x = q("[data-jv-fatto]"))) { const id = x.dataset.jvFatto, oggi = L.oggiISO(); jvCambia(d => { const o = d.impegni.find(y => y.id === id); if (!o) return false; if (o.fatta) { delete o.fatta; return ""; } o.fatta = oggi; return jvDopoSpunta(d, o.testo); }); return; }
+  if ((x = q("[data-jv-oggi]"))) { const id = x.dataset.jvOggi, oggi = L.oggiISO(); jvCambia(d => { const o = d.obiettivi.find(y => y.id === id); if (!o) return false; const f = Array.isArray(o.fatti) ? o.fatti : []; const si = f.includes(oggi); o.fatti = (si ? f.filter(g => g !== oggi) : [...f, oggi]).slice(-90); return si ? "" : jvDopoSpunta(d, o.testo); }); return; }
   if ((x = q("[data-jv-raggiunto]"))) { const id = x.dataset.jvRaggiunto; jvCambia(d => { const o = d.obiettivi.find(y => y.id === id); if (!o) return false; d.obiettivi = d.obiettivi.filter(y => y.id !== id); d.traguardi.push({ id: jvId(), testo: o.testo, quando: L.oggiISO() }); return `Bravo ${nomeMio()}. Traguardo raggiunto: ${o.testo}.`; }); return; }
-  if ((x = q("[data-jv-promuovi]"))) { const id = x.dataset.jvPromuovi; jvCambia(d => { const o = d.idee.find(y => y.id === id); if (!o) return false; d.idee = d.idee.filter(y => y.id !== id); d.obiettivi.push({ id: jvId(), testo: o.testo, da: L.oggiISO(), fatti: [] }); return `Adesso è un obiettivo: ${o.testo}.`; }); return; }
+  if ((x = q("[data-jv-promuovi]"))) { const id = x.dataset.jvPromuovi; jvCambia(d => { const o = d.idee.find(y => y.id === id); if (!o) return false; d.idee = d.idee.filter(y => y.id !== id); d.obiettivi.push({ id: jvId(), testo: o.testo, da: L.oggiISO(), fatti: [] }); return `Adesso è un obiettivo di ogni giorno: ${o.testo}.`; }); return; }
+  if ((x = q("[data-jv-idea-cosa]"))) { const id = x.dataset.jvIdeaCosa; jvCambia(d => { const o = d.idee.find(y => y.id === id); if (!o) return false; d.idee = d.idee.filter(y => y.id !== id); d.impegni.push({ id: jvId(), testo: o.testo, entro: "", creata: L.oggiISO() }); return `Adesso è tra le cose da fare: ${o.testo}.`; }); return; }
   if ((x = q("[data-jv-togli]"))) { const [k, id] = String(x.dataset.jvTogli).split("|"), o = (jarvisDati()[k] || []).find(y => y.id === id); if (o) { jarvisZitto(); JV.foglio = { togli: true, k, id, testo: o.testo }; jarvisDisegna(); } return; }
 }, true);
 document.addEventListener("change", (e) => {
@@ -19222,21 +19341,18 @@ document.addEventListener("change", (e) => {
   disegna();
 });
 // il link che lo accende (una volta, sul telefono): …/?jarvis=1 · lo spegne: …/?jarvis=0
-// 1.87.0: nello stesso link, dopo il cancelletto, il codice della sua chat di Jarvis in Gemini: …/?jarvis=1#jv=<codice>.
-// Quello che sta dopo il # non parte mai dal telefono (il sito non lo riceve): si salva qui e sparisce dall'indirizzo.
-// …#jv=no lo toglie.
+// (1.87.0: dopo il # c'era il codice di una chat di Gemini. Non serve più: se c'è, sparisce dall'indirizzo e basta.)
 function jarvisDalLink(aspetta) {
   try {
-    const uj = new URL(location.href), mj = /^#jv=([A-Za-z0-9_-]{2,80})$/.exec(uj.hash || "");
-    if (!uj.searchParams.has("jarvis") && !mj) return false;
-    if (mj) { try { if (mj[1] === "no") localStorage.removeItem(JV_CHAT); else if (mj[1].length >= 6) localStorage.setItem(JV_CHAT, mj[1]); } catch (e) {} uj.hash = ""; }
-    const c = uj.searchParams.has("jarvis"), v = uj.searchParams.get("jarvis");
+    const uj = new URL(location.href), vecchio = /^#jv=/.test(uj.hash || ""), c = uj.searchParams.has("jarvis"), v = uj.searchParams.get("jarvis");
+    if (!c && !vecchio) return false;
+    if (vecchio) uj.hash = "";
     if (c) { try { if (v === "0") localStorage.removeItem(JV_ACCESO); else localStorage.setItem(JV_ACCESO, "1"); } catch (e) {} }
     uj.searchParams.delete("jarvis"); history.replaceState(null, "", uj.pathname + uj.search + uj.hash);
-    setTimeout(() => { try { toast(c && v === "0" ? "Jarvis spento su questo telefono" : jarvisAcceso() ? "✓ Jarvis acceso su questo telefono: nella prima pagina tocca la casetta in alto" : "Fatto"); } catch (e) {} }, aspetta);
+    if (c) setTimeout(() => { try { toast(v === "0" ? "Jarvis spento su questo telefono" : "✓ Jarvis acceso su questo telefono: nella prima pagina tocca la casetta in alto"); } catch (e) {} }, aspetta);
     return true;
   } catch (e) { return false; }
 }
 jarvisDalLink(3500);
-// se l'app è già aperta e il link cambia solo quello che sta dopo il #, la pagina non si ricarica: lo leggo lo stesso
+try { localStorage.removeItem("ricci_jarvis_chat"); } catch (e) {}
 try { window.addEventListener("hashchange", () => { if (jarvisDalLink(400)) { try { disegna(); } catch (e) {} } }); } catch (e) {}

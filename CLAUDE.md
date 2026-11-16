@@ -108,15 +108,16 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   grande in mezzo, la nuvoletta con quello che dice, «🎤 Parlale» e «✍️ Scrivile». Il fantasmino (`segrFuori`) giù nella
   pagina c'è sempre: fermo il viso con «🎤 Parlale» (tocchi: torni su e ti ascolta), mentre parla è lei (tocchi: smette).
 
-- Jarvis è l'assistente personale del titolare. Dalla 1.87.0 quello vero sta DENTRO GEMINI, col suo account Google (una
-  «skill» che si chiama jarvis, il suo quaderno in Google Docs, gli impegni nel suo Calendar): qui c'è solo il tasto, la
-  casetta del logo in alto (`a.bo-casetta`, invisibile: «la galassia prendeva troppo occhio a Sofia»), che apre la sua chat
-  fissa. Il codice della chat sta solo nel telefono (`ricci_jarvis_chat`, dato una volta col link `…/?jarvis=1#jv=…`): mai
-  nel codice, mai nel repository. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro).
-  Il Jarvis fatto qui (1.86.0: la pagina scura con la galassia, `canvas.jv-gal`) resta, da Altro → «Il Jarvis di prima»: sta
-  SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`), il suo codice (in fondo ad `app.js`, `jarvis…` e `jv…`) non
-  chiama mai `S.db` né l'IA, e deve restare così. La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o
-  voci presi da altri.
+- Jarvis (1.88.0) è la pagina personale del titolare, fatta come un'app delle cose da fare (Michele: «basato sulle app di
+  produttività, to do list»): in cima Jarvis (la galassia, `canvas.jv-gal`) e quello che dice; «Da fare oggi» coi tondi da
+  spuntare (`jvOggi`: prima quello rimasto indietro, poi oggi, poi le cose senza giorno, poi gli obiettivi di ogni giorno);
+  sotto Impegni (i prossimi giorni), Obiettivi, Idee, Traguardi, Il mio piano. È chiara come le pagine di Sofia. Si apre dalla
+  casetta del logo in alto nella prima pagina (`button.bo-casetta`, invisibile: «la galassia prendeva troppo occhio a Sofia»).
+  Sta SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`): il suo codice (in fondo ad `app.js`, `jarvis…` e `jv…`) non
+  chiama mai `S.db` né l'IA, e deve restare così; le frasi le capisce con poche regole (`jvComando`, `jvCapisci`) e con
+  `LET.promemoriaDa`. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro). Il Jarvis dentro Gemini
+  (1.87.0) non gli è servito: «che faccio, vado a chattare con Gemini?». Vuole le interfacce dentro l'app, come con Sofia.
+  La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o voci presi da altri.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
