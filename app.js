@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.85.0";
+export const VERSIONE = "1.86.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -8686,7 +8686,7 @@ function casaOssatura(tre) {
         ${FILM_CONS("casa-fig", tre)}
       </div>
       <div class="casa-lato">
-        <button type="button" class="casa-lato-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
+        ${jarvisTastoHtml()}<button type="button" class="casa-lato-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
         <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio"><i class="cl-tondo">${CASA_ICO.onda}</i><span>Ascolta</span></button>
         <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
       </div>
@@ -16120,7 +16120,7 @@ document.addEventListener("change", (e) => {
 }, true);
 function vistaAltro() {
   const r = S.regole;
-  return cardFilmatiAltro() + cardDaFarePC() + cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
+  return cardJarvisAltro() + cardFilmatiAltro() + cardDaFarePC() + cardAlloggiati() + cardAvvisiTelefono() + cardStileCasa() + cardIA() + cardPonte() + cardRubrica() + cardTaccuino() + cardLezioni() + cardAutonomia() + cardSempreAccesa() + cardConti() + `<section class="card"><h2>Regole delle pulizie</h2>
     <div class="rows">
       <div class="row"><span>Camere: ripasso il <b>${L.GIORNI[(r.camera || [])[0]?.giorno ?? 3]}</b>, pulizia totale il <b>${L.GIORNI[(r.camera || [])[1]?.giorno ?? 5]}</b></span></div>
       <div class="row"><span>Case: pulizia il <b>${L.GIORNI[(r.casa || [])[0]?.giorno ?? 2]}</b>, totale il <b>${L.GIORNI[(r.casa || [])[1]?.giorno ?? 5]}</b></span></div>
@@ -18827,3 +18827,293 @@ if ("serviceWorker" in navigator && !window.VETRINA) {   // 1.83.0: nella vetrin
 $("#whoBtn").onclick = () => { S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); if (S.vista === "altro") S.vista = "oggi"; disegna(); };
 $("#menuBtn").onclick = () => { S.vista = S.vista === "altro" ? "oggi" : "altro"; disegna(); };
 avvia();
+
+// ============================================================================
+//  1.86.0 · JARVIS, L'APP PERSONALE DEL TITOLARE (Michele, 16/11 notte: «non vogliamo mettere una parte dove posso usare la
+//  mia app personale, Jarvis… clicco sopra l'icona nella prima pagina… Jarvis mi dice il mio master plan, i miei impegni, i
+//  miei traguardi, i miei obiettivi, le mie idee» · «solo sul mio telefono, e voglio il tasto di Jarvis appena sopra il
+//  microfono di Sofia, e come Sofia mi parla nella prima pagina, Jarvis mi deve parlare con la sua voce»).
+//  - SOLO SU QUESTO TELEFONO: tutto sta nel telefono (localStorage «ricci_jarvis»). Niente nel database dell'albergo, niente
+//    a Gemini, niente su GitHub: qui dentro non si chiama mai S.db né l'IA. Gratis: parla con la voce del telefono (più bassa
+//    e calma; se il telefono ha una voce da uomo usa quella) e ascolta col microfono del telefono.
+//  - Si accende telefono per telefono: il link …/?jarvis=1 (una volta) o l'interruttore in Altro. Spento non si vede niente.
+//  - Il tasto: la sfera di luce sopra il microfono di Sofia, nella prima pagina. Apre la pagina di Jarvis (scura, sopra a
+//    tutto), che si chiude con Indietro.
+//  - Dentro: la sfera che parla (aprendo ti dice la giornata; toccala e la ripete), Il mio piano, Impegni (il giorno e l'ora
+//    detti a voce: «palestra domani alle 9»), Obiettivi («✓ Fatto oggi», «🏁 Raggiunto» → diventa un traguardo), Traguardi,
+//    Idee («🎯 Diventa obiettivo»). «🎤 Dimmi una cosa nuova»: la dici e lui la mette al posto giusto; se non capisce dove,
+//    lo chiede.
+//  - La sfera è un disegno nostro (cerchi d'oro che si allargano sul blu della casa): niente marchi né disegni di altri.
+// ============================================================================
+const JV_CHIAVE = "ricci_jarvis", JV_ACCESO = "ricci_jarvis_acceso", JV_MUTO = "ricci_jarvis_muto";
+const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, foglio: null, rec: null, giro: 0 };
+const JV_SEZ = { piano: ["🗺️", "Il mio piano"], impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], traguardi: ["🏁", "Traguardi"], idee: ["💡", "Idee"] };
+const JV_UNO = { impegni: "Impegno", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
+const JV_SFERA = (cls = "") => `<span class="jv-sfera${cls ? " " + cls : ""}" aria-hidden="true"><i></i><i></i><i></i><b></b></span>`;
+// a che cosa somiglia (solo per il disegnino accanto): palestra, biliardo, letture, acquisti, persone
+const JV_AREE = [[/palestr|allenament|corsa|correre|pesi|addominali|camminat/i, "💪"], [/biliard|stecca|birilli|goriziana/i, "🎱"], [/legg|libro|libri|pagine|studi/i, "📚"], [/compr|acquist|spesa|ordinare|pagare/i, "🛒"], [/famiglia|amic|cena|regalo|chiamare|telefonare|uscire con/i, "❤️"]];
+const jvArea = (t) => { for (const [re, e] of JV_AREE) if (re.test(String(t || ""))) return e; return "⭐"; };
+const jvId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function jarvisAcceso() { try { return localStorage.getItem(JV_ACCESO) === "1"; } catch (e) { return false; } }
+function jarvisPuo() { try { return !!(S.pronto && S.utente && proprietario() && !S.utente.finta && jarvisAcceso()); } catch (e) { return false; } }
+function jvMuto() { try { return localStorage.getItem(JV_MUTO) === "1"; } catch (e) { return false; } }
+function jarvisDati() {
+  let d = null; try { d = JSON.parse(localStorage.getItem(JV_CHIAVE) || "null"); } catch (e) { d = null; }
+  d = d && typeof d === "object" ? d : {};
+  const lista = (x) => (Array.isArray(x) ? x : []).filter(y => y && y.id && String(y.testo || "").trim());
+  return { v: 1, piano: String(d.piano || ""), impegni: lista(d.impegni), obiettivi: lista(d.obiettivi), traguardi: lista(d.traguardi), idee: lista(d.idee) };
+}
+function jarvisSalva(d) { try { localStorage.setItem(JV_CHIAVE, JSON.stringify(d)); return true; } catch (e) { JV.dice = "Non riesco a salvare su questo telefono: la memoria è piena."; return false; } }
+// il tasto nella prima pagina, sopra il microfono di Sofia (solo dove Jarvis è acceso)
+function jarvisTastoHtml() { return jarvisPuo() ? `<button type="button" class="casa-jarvis" data-jarvis-apri aria-label="Apri Jarvis, la tua app personale">${JV_SFERA("piccola")}</button>` : ""; }
+// l'interruttore in Altro
+function cardJarvisAltro() {
+  if (!proprietario() || (S.utente && S.utente.finta)) return "";
+  const on = jarvisAcceso();
+  return `<section class="card jv-card"><h2>Jarvis · la tua app personale</h2>
+    <p class="small" style="margin:0 0 8px">Il tuo piano, gli impegni, gli obiettivi, i traguardi e le idee. Sta <b>solo su questo telefono</b>: non va nel database dell'albergo e non lo vede nessun altro. È gratis.</p>
+    <label class="giro-sw"><span>Jarvis su questo telefono</span><input type="checkbox" data-jarvis-sw ${on ? "checked" : ""}></label>
+    ${on ? `<p class="small muted" style="margin:8px 0 0">Lo trovi nella prima pagina, sopra il microfono di ${esc(nomeGov())}.</p>` : ""}</section>`;
+}
+// «09:00» → «9», «09:30» → «9:30» (così si legge e si dice bene)
+const jvOra = (hhmm) => { const h = Number(String(hhmm).slice(0, 2)), m = String(hhmm).slice(3, 5); return m === "00" ? String(h) : `${h}:${m}`; };
+function jvQuando(entro) {
+  const e = String(entro || ""); if (!e) return "";
+  const g = e.slice(0, 10), ora = e.length > 10 ? e.slice(11, 16) : "", oggi = L.oggiISO();
+  const giorno = g === oggi ? "oggi" : g === L.aggiungiGiorni(oggi, 1) ? "domani" : g === L.aggiungiGiorni(oggi, -1) ? "ieri" : L.dataMedia(g);
+  return `${giorno}${ora ? " alle " + jvOra(ora) : ""}`;
+}
+// gli impegni in ordine: prima quelli col giorno (dal più vicino), poi quelli senza
+function jvImpegni(d) { return d.impegni.slice().sort((a, b) => (a.entro ? 0 : 1) - (b.entro ? 0 : 1) || String(a.entro || "").localeCompare(String(b.entro || ""))); }
+// quello che Jarvis dice quando lo apri: il piano, gli impegni, gli obiettivi, i traguardi, le idee
+function jvBriefing() {
+  const d = jarvisDati(), oggi = L.oggiISO(), ciao = `${saluto()} ${nomeMio()}.`;
+  if (!d.piano && !d.impegni.length && !d.obiettivi.length && !d.traguardi.length && !d.idee.length) return `${ciao} Sono Jarvis, il tuo assistente personale. Non so ancora niente di te. Tocca il microfono e dimmi il tuo primo obiettivo.`;
+  const parti = [ciao];
+  if (d.piano) { const p = d.piano.replace(/\s+/g, " ").trim(), f = (p.match(/[^.!?]+[.!?]*/) || [p])[0].trim(); parti.push(`Il tuo piano: ${f.length > 160 ? f.slice(0, 157).replace(/\s+\S*$/, "") + "…" : f}${/[.!?…]$/.test(f) ? "" : "."}`); }
+  const imp = jvImpegni(d), giorno = (x) => String(x.entro || "").slice(0, 10), diOggi = imp.filter(x => giorno(x) === oggi), indietro = imp.filter(x => giorno(x) && giorno(x) < oggi), prossimo = imp.find(x => giorno(x) > oggi);
+  if (diOggi.length) parti.push(`Oggi hai ${diOggi.length === 1 ? "un impegno" : diOggi.length + " impegni"}: ${diOggi.slice(0, 3).map(x => x.testo + (String(x.entro).length > 10 ? " alle " + jvOra(String(x.entro).slice(11, 16)) : "")).join("; ")}.`);
+  else if (prossimo) parti.push(`Oggi non hai impegni. Il prossimo: ${prossimo.testo}, ${jvQuando(prossimo.entro)}.`);
+  else if (imp.length) parti.push(`Hai ${imp.length === 1 ? "un impegno segnato" : imp.length + " impegni segnati"}, senza giorno.`);
+  else parti.push("Non hai impegni segnati.");
+  if (indietro.length) parti.push(indietro.length === 1 ? "Ne hai uno rimasto indietro." : `Ne hai ${indietro.length} rimasti indietro.`);
+  if (d.obiettivi.length) { const fatti = d.obiettivi.filter(o => (o.fatti || []).includes(oggi)).length, daFare = d.obiettivi.find(o => !(o.fatti || []).includes(oggi)); parti.push(`Obiettivi: ${d.obiettivi.length}. Oggi ne hai fatti ${fatti}.${daFare ? ` Da fare: ${daFare.testo}.` : " Bravo, li hai fatti tutti."}`); }
+  if (d.traguardi.length) parti.push(`Traguardi raggiunti: ${d.traguardi.length}. L'ultimo: ${d.traguardi[d.traguardi.length - 1].testo}.`);
+  if (d.idee.length) parti.push(`Idee salvate: ${d.idee.length}.`);
+  return parti.join(" ");
+}
+// «🔊 Leggimeli»: una sezione letta per intero
+function jvLeggi(k) {
+  const d = jarvisDati();
+  if (k === "piano") return d.piano ? `Il tuo piano. ${d.piano}` : "Il piano è ancora da scrivere.";
+  const righe = k === "impegni" ? jvImpegni(d) : d[k] || [];
+  if (!righe.length) return `Qui non c'è ancora niente.`;
+  return `${JV_SEZ[k][1]}: ${righe.length}. ${righe.slice(0, 8).map((x, i) => `${i + 1}: ${x.testo}${k === "impegni" && x.entro ? ", " + jvQuando(x.entro) : ""}.`).join(" ")}`;
+}
+// la voce: quella del telefono, in italiano; se ce n'è una da uomo quella, se no la solita più bassa
+function jvVoce() {
+  let vs = []; try { vs = speechSynthesis.getVoices() || []; } catch (e) {}
+  const it = vs.filter(v => /^it([-_]|$)/i.test(v.lang || ""));
+  const uomo = it.find(v => /luca|cosimo|diego|giuseppe|masch|\bmale\b|uomo/i.test(v.name || ""));
+  return { voce: uomo || it[0] || null, uomo: !!uomo };
+}
+function jarvisZitto() { JV.giro++; try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} if (JV.parla) { JV.parla = false; jarvisStato(); } }
+function jarvisDici(testo, mostra = true) {
+  const t = String(testo || "").trim(); if (!t) return;
+  jarvisZitto();
+  if (mostra) JV.dice = t;
+  if (jvMuto() || !("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") { jarvisDisegna(); return; }
+  const giro = ++JV.giro, frasi = (t.match(/[^.!?…]+[.!?…]*/g) || [t]).map(f => f.trim()).filter(Boolean), { voce, uomo } = jvVoce();
+  const avanti = (i) => {
+    if (giro !== JV.giro) return;
+    if (i >= frasi.length) { JV.parla = false; jarvisStato(); return; }
+    const u = new SpeechSynthesisUtterance(frasi[i]); u.lang = "it-IT"; if (voce) u.voice = voce; u.pitch = uomo ? 0.9 : 0.7; u.rate = 0.96;
+    u.onend = () => avanti(i + 1); u.onerror = () => avanti(i + 1);
+    try { speechSynthesis.speak(u); } catch (e) { JV.parla = false; jarvisStato(); }
+  };
+  JV.parla = true; jarvisDisegna(); avanti(0);
+}
+// la sfera si muove di più quando parla, diventa verde quando ascolta (senza ridisegnare tutto: non si perde quello che scrivi)
+function jarvisStato() {
+  const el = document.getElementById("jarvis"); if (!el) return;
+  el.classList.toggle("parla", !!JV.parla); el.classList.toggle("ascolta", !!JV.ascolta);
+  el.querySelectorAll("[data-jv-mic]").forEach(m => m.classList.toggle("su", !!JV.ascolta));
+}
+function jvTesta(titolo, dentro) {
+  const muto = jvMuto();
+  return `<div class="jv-testa"><button type="button" class="jv-ind" ${dentro ? "data-jv-casa" : "data-jv-chiudi"}>‹ ${dentro ? "Jarvis" : "Indietro"}</button><b>${esc(titolo)}</b><button type="button" class="jv-muto" data-jv-muto aria-label="${muto ? "Voce spenta: tocca per accenderla" : "Voce accesa: tocca per spegnerla"}">${muto ? "🔇" : "🔊"}</button></div>`;
+}
+function jvCasaHtml(d) {
+  const oggi = L.oggiISO(), imp = jvImpegni(d), diOggi = imp.filter(x => String(x.entro || "").slice(0, 10) === oggi).length, fatti = d.obiettivi.filter(o => (o.fatti || []).includes(oggi)).length;
+  const sotto = { piano: d.piano ? "tocca per leggerlo" : "ancora da scrivere", impegni: imp.length ? (diOggi ? `oggi ${diOggi}` : `${imp.length} ${imp.length === 1 ? "segnato" : "segnati"}`) : "nessuno",
+    obiettivi: d.obiettivi.length ? `oggi fatti ${fatti} su ${d.obiettivi.length}` : "nessuno", traguardi: d.traguardi.length ? `${d.traguardi.length} ${d.traguardi.length === 1 ? "raggiunto" : "raggiunti"}` : "ancora nessuno", idee: d.idee.length ? `${d.idee.length} ${d.idee.length === 1 ? "salvata" : "salvate"}` : "nessuna" };
+  return `${jvTesta("Jarvis", false)}
+    <button type="button" class="jv-sfera-b" data-jv-parla aria-label="Toccami: ti dico la giornata">${JV_SFERA()}</button>
+    <p class="jv-dice" aria-live="polite">${esc(JV.dice || "Toccami: ti dico la giornata.")}</p>
+    <div class="jv-gr">${Object.entries(JV_SEZ).map(([k, [e, n]]) => `<button type="button" class="jv-c${k === "piano" ? " largo" : ""}" data-jv-sez="${k}"><span class="jv-e" aria-hidden="true">${e}</span><span><b>${n}</b><small>${esc(sotto[k])}</small></span></button>`).join("")}</div>
+    <div class="jv-due"><button type="button" class="jv-mic" data-jv-mic><span aria-hidden="true">🎤</span> Dimmi una cosa nuova</button><button type="button" class="jv-scrivi" data-jv-scrivi><span aria-hidden="true">✍️</span> Scrivila</button></div>
+    <p class="jv-nota">🔒 Sta solo su questo telefono. Non lo vede nessun altro.</p>`;
+}
+function jvRiga(k, x, oggi) {
+  const id = esc(x.id), t = esc(x.testo);
+  if (k === "impegni") {
+    const g = String(x.entro || "").slice(0, 10), passato = !!g && g < oggi;
+    return `<div class="jv-r${passato ? " passato" : g === oggi ? " oggi" : ""}"><span class="jv-re" aria-hidden="true">${jvArea(x.testo)}</span><span class="jv-rt"><b>${t}</b>${x.entro ? `<small>${esc(jvQuando(x.entro))}${passato ? " · rimasto indietro" : ""}</small>` : ""}</span><span class="jv-rb"><button type="button" class="jv-b verde" data-jv-fatto="${id}">✓ Fatto</button></span></div>`;
+  }
+  if (k === "obiettivi") {
+    const f = Array.isArray(x.fatti) ? x.fatti : [], si = f.includes(oggi);
+    return `<div class="jv-r${si ? " fatto" : ""}"><span class="jv-re" aria-hidden="true">${jvArea(x.testo)}</span><span class="jv-rt"><b>${t}</b><small>${si ? "✓ oggi fatto" : "oggi ancora da fare"}${f.length ? ` · fatto ${f.length} ${f.length === 1 ? "giorno" : "giorni"}` : ""}</small></span><span class="jv-rb"><button type="button" class="jv-b verde" data-jv-oggi="${id}">${si ? "↩ Non fatto" : "✓ Fatto oggi"}</button><button type="button" class="jv-b oro" data-jv-raggiunto="${id}">🏁 Raggiunto</button><button type="button" class="jv-b via" data-jv-togli="obiettivi|${id}" aria-label="Togli">✕</button></span></div>`;
+  }
+  if (k === "traguardi") return `<div class="jv-r"><span class="jv-re" aria-hidden="true">🏁</span><span class="jv-rt"><b>${t}</b>${x.quando ? `<small>raggiunto ${esc(jvQuando(x.quando))}</small>` : ""}</span><span class="jv-rb"><button type="button" class="jv-b via" data-jv-togli="traguardi|${id}" aria-label="Togli">✕</button></span></div>`;
+  return `<div class="jv-r"><span class="jv-re" aria-hidden="true">💡</span><span class="jv-rt"><b>${t}</b></span><span class="jv-rb"><button type="button" class="jv-b oro" data-jv-promuovi="${id}">🎯 Diventa obiettivo</button><button type="button" class="jv-b via" data-jv-togli="idee|${id}" aria-label="Togli">✕</button></span></div>`;
+}
+function jvSezioneHtml(d, k) {
+  const [e, nome] = JV_SEZ[k], oggi = L.oggiISO();
+  let corpo = "";
+  if (k === "piano") corpo = `<p class="jv-aiuto">Il tuo piano grande: dove vuoi arrivare. Scrivilo qui sotto, oppure dettalo: Jarvis te lo ricorda ogni volta.</p><textarea id="jvPiano" class="jv-piano" rows="8" placeholder="Per esempio: entro un anno voglio…">${esc(d.piano)}</textarea><div class="jv-due"><button type="button" class="jv-b oro" data-jv-piano-salva>💾 Salva</button><button type="button" class="jv-mic" data-jv-mic="piano"><span aria-hidden="true">🎤</span> Dettalo</button><button type="button" class="jv-b" data-jv-leggi="piano">🔊 Leggimelo</button></div>`;
+  else {
+    const righe = k === "impegni" ? jvImpegni(d) : k === "traguardi" ? d.traguardi.slice().reverse() : d[k];
+    const vuoto = { impegni: "Nessun impegno. Dimmene uno: «palestra domani alle 9».", obiettivi: "Nessun obiettivo. Dimmi il primo: «leggere dieci pagine al giorno».", traguardi: "Ancora nessun traguardo. Quando raggiungi un obiettivo tocca «🏁 Raggiunto»: arriva qui.", idee: "Nessuna idea salvata. Quando te ne viene una, dimmela." }[k];
+    corpo = (righe.length ? `<div class="jv-lista">${righe.map(x => jvRiga(k, x, oggi)).join("")}</div>` : `<p class="jv-vuoto">${vuoto}</p>`)
+      + `<div class="jv-due"><button type="button" class="jv-mic" data-jv-mic="${k}"><span aria-hidden="true">🎤</span> Dimmelo</button><button type="button" class="jv-scrivi" data-jv-scrivi="${k}"><span aria-hidden="true">✍️</span> Scrivilo</button>${righe.length ? `<button type="button" class="jv-b" data-jv-leggi="${k}">🔊 Leggimeli</button>` : ""}</div>`;
+  }
+  return `${jvTesta(nome, true)}<div class="jv-sez-t"><span aria-hidden="true">${e}</span>${JV_SFERA("media")}</div>${JV.dice ? `<p class="jv-dice" aria-live="polite">${esc(JV.dice)}</p>` : ""}${corpo}`;
+}
+// il foglio: scrivere una cosa nuova, scegliere dove va, oppure «la tolgo?»
+function jvFoglioHtml() {
+  const f = JV.foglio || {};
+  if (f.togli) return `<div class="jv-velo" data-jv-foglio-via></div><div class="jv-foglio" role="dialog" aria-label="Tolgo?"><b class="jv-ft">La tolgo?</b><p class="jv-aiuto">«${esc(f.testo || "")}»</p><button type="button" class="jv-b oro grande" data-jv-togli-si>Sì, toglila</button><button type="button" class="jv-b" data-jv-foglio-via>No, lasciala</button></div>`;
+  const dove = f.dove || "";
+  const tasti = dove ? `<button type="button" class="jv-b oro grande" data-jv-metti="${dove}">Salva · ${JV_SEZ[dove][0]} ${JV_UNO[dove]}</button>`
+    : `<p class="jv-aiuto">Dove la metto?</p><div class="jv-dove">${["impegni", "obiettivi", "idee", "piano"].map(k => `<button type="button" class="jv-b oro" data-jv-metti="${k}">${JV_SEZ[k][0]} ${JV_UNO[k]}</button>`).join("")}</div>`;
+  return `<div class="jv-velo" data-jv-foglio-via></div><div class="jv-foglio" role="dialog" aria-label="Una cosa nuova"><b class="jv-ft">${f.sentita ? "Ho sentito:" : "Scrivi la cosa nuova"}</b><textarea id="jvTesto" rows="3" placeholder="${dove === "impegni" || !dove ? "per esempio: palestra domani alle 9" : "scrivi qui"}">${esc(f.testo || "")}</textarea>${tasti}<button type="button" class="jv-b" data-jv-foglio-via>Annulla</button></div>`;
+}
+function jvFuoco() { setTimeout(() => { try { const t = document.getElementById("jvTesto"); if (t) t.focus(); } catch (e) {} }, 60); }
+function jarvisDisegna() {
+  let el = document.getElementById("jarvis");
+  if (!JV.aperto) { if (el) { el.hidden = true; el.innerHTML = ""; } document.body.classList.remove("con-jarvis"); return; }
+  if (!el) { el = document.createElement("div"); el.id = "jarvis"; el.className = "jarvis"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Jarvis"); document.body.appendChild(el); }
+  el.hidden = false; document.body.classList.add("con-jarvis");
+  const d = jarvisDati();
+  el.innerHTML = (JV.sez && JV_SEZ[JV.sez] ? jvSezioneHtml(d, JV.sez) : jvCasaHtml(d)) + (JV.foglio ? jvFoglioHtml() : "");
+  jarvisStato();
+}
+function jarvisApri() {
+  if (!jarvisPuo() || JV.aperto) return;
+  try { if (voceInCorso) zittisciVoce(); } catch (e) {}
+  JV.aperto = true; JV.sez = ""; JV.foglio = null; JV.dice = "";
+  indietroApri("jarvis", () => jarvisChiudi(true));
+  jarvisDisegna();
+  jarvisDici(jvBriefing());
+}
+function jarvisChiudi(daIndietro) {
+  if (!JV.aperto) return;
+  jarvisZitto(); if (JV.rec) { try { JV.rec.abort(); } catch (e) {} JV.rec = null; }
+  if (JV.sez) { JV.sez = ""; if (!daIndietro) indietroChiudi("jarvis-sez"); else { const i = INDIETRO.pila.map(x => x.nome).lastIndexOf("jarvis-sez"); if (i >= 0) INDIETRO.pila.splice(i, 1); } }
+  JV.aperto = false; JV.ascolta = false; JV.foglio = null; JV.dice = "";
+  if (!daIndietro) indietroChiudi("jarvis");
+  jarvisDisegna();
+}
+function jvSezione(k) {
+  jarvisZitto();
+  if (k && !JV.sez) indietroApri("jarvis-sez", () => { JV.sez = ""; JV.dice = ""; jarvisZitto(); jarvisDisegna(); });
+  else if (!k && JV.sez) { JV.sez = ""; indietroChiudi("jarvis-sez"); }
+  JV.sez = k || ""; JV.dice = ""; jarvisDisegna();
+  const el = document.getElementById("jarvis"); if (el) el.scrollTop = 0;
+}
+// capire una frase: «impegno palestra domani alle 9», «obiettivo leggere dieci pagine al giorno», «idea …». Il giorno e l'ora
+// li trova lo stesso lettore dei promemoria di Sofia (lettura.js), senza IA.
+function jvCapisci(frase) {
+  let t = String(frase || "").replace(/\s+/g, " ").trim(); if (!t) return null;
+  t = t.replace(/^(?:ehi |hey |ok |allora |senti )?jarvis[,!.: ]+/i, "").replace(/^(?:segnami|segna|aggiungimi|aggiungi|mettimi|metti|scrivimi|scrivi|salvami|salva)[,: ]+/i, "").trim();
+  const m = /^(?:un nuovo |una nuova |un'|un |una |il mio |la mia |nuovo |nuova )?(impegno|appuntamento|obiettivo|idea|traguardo|piano|master plan)(?:[,:;.! ]+|$)(.*)$/i.exec(t);
+  let dove = "", detto = false, resto = t;
+  if (m) { const k = m[1].toLowerCase(); dove = /impegno|appuntamento/.test(k) ? "impegni" : k === "obiettivo" ? "obiettivi" : k === "idea" ? "idee" : k === "traguardo" ? "traguardi" : "piano"; detto = true; resto = m[2].trim(); }
+  let entro = "", testo = resto;
+  if (resto && (dove === "impegni" || !dove)) {
+    let r = null; try { r = LET.promemoriaDa("ricordami " + resto, L.oggiISO(), minutiRoma()); } catch (e) { r = null; }
+    if (r && !r.vuoto && r.entro && r.testo) { entro = r.entro; testo = r.testo; if (!dove) dove = "impegni"; }
+  }
+  if (!dove && /^(voglio|vorrei|il mio obiettivo)/i.test(resto)) dove = "obiettivi";
+  testo = testo.replace(/[\s,;:.!]+$/, "").trim();
+  return { dove, detto, testo: testo.charAt(0).toUpperCase() + testo.slice(1), entro };
+}
+function jvMetti(dove, testo, entro = "") {
+  const d = jarvisDati(), t = String(testo || "").replace(/\s+/g, " ").trim(), oggi = L.oggiISO(); if (!t) return "";
+  if (dove === "piano") d.piano = (d.piano ? d.piano.replace(/\s+$/, "") + "\n" : "") + t;
+  else if (dove === "impegni") d.impegni.push({ id: jvId(), testo: t, entro: String(entro || "") });
+  else if (dove === "obiettivi") d.obiettivi.push({ id: jvId(), testo: t, da: oggi, fatti: [] });
+  else if (dove === "traguardi") d.traguardi.push({ id: jvId(), testo: t, quando: oggi });
+  else if (dove === "idee") d.idee.push({ id: jvId(), testo: t, quando: oggi });
+  else return "";
+  if (!jarvisSalva(d)) return JV.dice;
+  return dove === "impegni" ? `Segnato negli impegni: ${t}${entro ? ", " + jvQuando(entro) : ""}.` : dove === "obiettivi" ? `Nuovo obiettivo: ${t}.` : dove === "idee" ? `Idea salvata: ${t}.` : dove === "traguardi" ? `Bravo. Traguardo segnato: ${t}.` : "L'ho aggiunto al tuo piano.";
+}
+// quello che ha sentito dal microfono: se capisce dove va lo mette, se no lo chiede
+function jarvisSentito(frase, qui = "") {
+  const c = jvCapisci(frase); if (!c || !c.testo) { JV.dice = "Non ho capito. Riprova, oppure scrivila."; jarvisDisegna(); return; }
+  const dove = c.detto ? c.dove : (qui || c.dove);
+  if (!dove) { JV.foglio = { testo: c.testo, dove: "", sentita: true }; JV.dice = "Dove la metto?"; jarvisDisegna(); jarvisDici("Dove la metto?", false); return; }
+  jarvisDici(jvMetti(dove, c.testo, dove === "impegni" ? c.entro : ""));
+}
+function jarvisMic(qui = "") {
+  if (JV.rec) { try { JV.rec.stop(); } catch (e) {} return; }
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!R) { JV.foglio = { testo: "", dove: qui }; jarvisDisegna(); jvFuoco(); return; }
+  jarvisZitto();
+  let finale = "", visto = "";
+  const r = new R(); r.lang = "it-IT"; r.interimResults = true; r.maxAlternatives = 1; r.continuous = false;
+  r.onresult = (e) => { const x = testoDaRisultati(e); finale = x.finale; visto = x.visto; const p = document.querySelector("#jarvis .jv-dice"); if (p) p.textContent = "🎤 " + (visto || "Ti ascolto…"); };
+  r.onerror = (e) => { if (JV.rec !== r) return; if (e && (e.error === "not-allowed" || e.error === "service-not-allowed")) { JV.rec = null; JV.ascolta = false; JV.dice = "Il microfono è bloccato. Dammi il permesso, oppure scrivila."; jarvisDisegna(); } };
+  r.onend = () => { if (JV.rec !== r) return; JV.rec = null; JV.ascolta = false; const t = String(finale || visto || "").trim(); if (!t) { JV.dice = "Non ho sentito. Tocca il microfono e riprova."; jarvisDisegna(); return; } jarvisSentito(t, qui); };
+  try { r.start(); JV.rec = r; JV.ascolta = true; JV.dice = "🎤 Ti ascolto…"; jarvisDisegna(); }
+  catch (e) { JV.rec = null; JV.ascolta = false; JV.foglio = { testo: "", dove: qui }; jarvisDisegna(); jvFuoco(); }
+}
+// cambiare una riga (fatto, raggiunto, tolta…): si legge, si cambia, si salva, si ridisegna
+function jvCambia(fn, detto) { const d = jarvisDati(); const r = fn(d); if (r === false) return; if (!jarvisSalva(d)) { jarvisDisegna(); return; } const frase = typeof r === "string" ? r : detto; if (frase) jarvisDici(frase); else { JV.dice = ""; jarvisDisegna(); } }
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t) return;
+  if (t.closest("[data-jarvis-apri]")) { e.preventDefault(); e.stopPropagation(); jarvisApri(); return; }
+  if (!t.closest("#jarvis")) return;
+  const q = (s) => t.closest(s); let x;
+  if (q("[data-jv-togli-si]")) { const f = JV.foglio || {}; JV.foglio = null; if (f.togli) jvCambia(d => { d[f.k] = d[f.k].filter(y => y.id !== f.id); }, "Tolta."); else jarvisDisegna(); return; }
+  if (q("[data-jv-foglio-via]")) { JV.foglio = null; jarvisDisegna(); return; }
+  if ((x = q("[data-jv-metti]"))) {
+    const k = x.dataset.jvMetti, scritto = String((document.getElementById("jvTesto") || {}).value || "").trim();
+    if (!scritto) { jvFuoco(); return; }
+    const c = jvCapisci(scritto) || { testo: scritto, entro: "" };
+    JV.foglio = null; jarvisDici(jvMetti(k, c.testo || scritto, k === "impegni" ? c.entro : ""));
+    return;
+  }
+  if (q(".jv-foglio")) return;
+  if (q("[data-jv-chiudi]")) { jarvisChiudi(false); return; }
+  if (q("[data-jv-casa]")) { jvSezione(""); return; }
+  if (q("[data-jv-muto]")) { try { if (jvMuto()) localStorage.removeItem(JV_MUTO); else localStorage.setItem(JV_MUTO, "1"); } catch (er) {} if (jvMuto()) jarvisZitto(); jarvisDisegna(); return; }
+  if (q("[data-jv-parla]")) { if (JV.parla) jarvisZitto(); else jarvisDici(jvBriefing()); return; }
+  if ((x = q("[data-jv-sez]"))) { jvSezione(x.dataset.jvSez); return; }
+  if ((x = q("[data-jv-mic]"))) { jarvisMic(x.dataset.jvMic || ""); return; }
+  if ((x = q("[data-jv-scrivi]"))) { jarvisZitto(); JV.foglio = { testo: "", dove: x.dataset.jvScrivi || "" }; jarvisDisegna(); jvFuoco(); return; }
+  if ((x = q("[data-jv-leggi]"))) { if (JV.parla) jarvisZitto(); else jarvisDici(jvLeggi(x.dataset.jvLeggi), false); return; }
+  if (q("[data-jv-piano-salva]")) { const v = String((document.getElementById("jvPiano") || {}).value || "").trim(); jvCambia(d => { d.piano = v; }, "Piano salvato."); return; }
+  if ((x = q("[data-jv-fatto]"))) { const id = x.dataset.jvFatto; jvCambia(d => { d.impegni = d.impegni.filter(y => y.id !== id); }, "Fatto."); return; }
+  if ((x = q("[data-jv-oggi]"))) { const id = x.dataset.jvOggi, oggi = L.oggiISO(); jvCambia(d => { const o = d.obiettivi.find(y => y.id === id); if (!o) return false; const f = Array.isArray(o.fatti) ? o.fatti : []; const si = f.includes(oggi); o.fatti = (si ? f.filter(g => g !== oggi) : [...f, oggi]).slice(-90); return si ? "" : `Bene. Oggi fatto: ${o.testo}.`; }); return; }
+  if ((x = q("[data-jv-raggiunto]"))) { const id = x.dataset.jvRaggiunto; jvCambia(d => { const o = d.obiettivi.find(y => y.id === id); if (!o) return false; d.obiettivi = d.obiettivi.filter(y => y.id !== id); d.traguardi.push({ id: jvId(), testo: o.testo, quando: L.oggiISO() }); return `Bravo ${nomeMio()}. Traguardo raggiunto: ${o.testo}.`; }); return; }
+  if ((x = q("[data-jv-promuovi]"))) { const id = x.dataset.jvPromuovi; jvCambia(d => { const o = d.idee.find(y => y.id === id); if (!o) return false; d.idee = d.idee.filter(y => y.id !== id); d.obiettivi.push({ id: jvId(), testo: o.testo, da: L.oggiISO(), fatti: [] }); return `Adesso è un obiettivo: ${o.testo}.`; }); return; }
+  if ((x = q("[data-jv-togli]"))) { const [k, id] = String(x.dataset.jvTogli).split("|"), o = (jarvisDati()[k] || []).find(y => y.id === id); if (o) { jarvisZitto(); JV.foglio = { togli: true, k, id, testo: o.testo }; jarvisDisegna(); } return; }
+}, true);
+document.addEventListener("change", (e) => {
+  const c = e.target && e.target.matches && e.target.matches("[data-jarvis-sw]") ? e.target : null; if (!c) return;
+  try { if (c.checked) localStorage.setItem(JV_ACCESO, "1"); else localStorage.removeItem(JV_ACCESO); } catch (er) {}
+  toast(c.checked ? `✓ Jarvis acceso: lo trovi nella prima pagina, sopra il microfono di ${nomeGov()}` : "Jarvis spento su questo telefono (le tue cose restano)");
+  disegna();
+});
+// il link che lo accende (una volta, sul telefono): …/?jarvis=1 · lo spegne: …/?jarvis=0
+try {
+  const uj = new URL(location.href);
+  if (uj.searchParams.has("jarvis")) {
+    const v = uj.searchParams.get("jarvis");
+    try { if (v === "0") localStorage.removeItem(JV_ACCESO); else localStorage.setItem(JV_ACCESO, "1"); } catch (e) {}
+    uj.searchParams.delete("jarvis"); history.replaceState(null, "", uj.pathname + uj.search + uj.hash);
+    setTimeout(() => { try { toast(v === "0" ? "Jarvis spento su questo telefono" : `✓ Jarvis acceso su questo telefono: lo trovi sopra il microfono di ${nomeGov()}`); } catch (e) {} }, 3500);
+  }
+} catch (e) {}

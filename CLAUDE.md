@@ -108,6 +108,12 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   grande in mezzo, la nuvoletta con quello che dice, «🎤 Parlale» e «✍️ Scrivile». Il fantasmino (`segrFuori`) giù nella
   pagina c'è sempre: fermo il viso con «🎤 Parlale» (tocchi: torni su e ti ascolta), mentre parla è lei (tocchi: smette).
 
+- Jarvis (1.86.0) è l'app personale del titolare dentro questa: il piano, gli impegni, gli obiettivi, i traguardi, le idee.
+  Sta SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`): il suo codice (in fondo ad `app.js`, `jarvis…` e `jv…`) non
+  chiama mai `S.db` né l'IA, e deve restare così. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro);
+  il tasto è la sfera sopra il microfono di Sofia. Parla con la voce del telefono e capisce giorno e ora con
+  `LET.promemoriaDa`. La sfera è un disegno nostro: niente disegni, marchi o voci presi da altri.
+
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
    italiano, con la versione, la data e le parole di Michele.
