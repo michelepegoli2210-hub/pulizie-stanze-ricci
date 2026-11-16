@@ -3312,3 +3312,8 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Si porta dietro la sua nebbia blu notte lungo i bracci: così si vede bene sia sulla pagina chiara sia su quella scura, senza bisogno di uno sfondo.
   - Quando ascolta ha un alone verde attorno alle stelle (prima era il bordo verde del tondo). Col «movimento ridotto» resta ferma.
   - I colori e il disegno restano i nostri (stelle azzurre, cuore d'oro): l'immagine di altri non si copia.
+- **1.87.0** (16/11, Michele: «Sì, crea, ma dobbiamo trovare un altro posto per il tasto perché così prende troppo occhio a Sofia… magari togli la galassia e metti un tasto nella casetta delle Stanze di Ricci, così io premo lì e mi esce tutto»). **Il tasto di Jarvis è la casetta, e Jarvis sta in Gemini.**
+  - Via la galassia dalla prima pagina: la colonna di Sofia torna com'era (microfono, Ascolta, voce).
+  - Il tasto è la casetta del logo, in alto, in tutte le pagine dove c'è il logo. Non cambia faccia: è un tasto che non si vede, largo come un dito; mentre lo tocchi la casetta si accende d'oro. C'è solo dove Jarvis è acceso.
+  - Apre Jarvis dentro Gemini, col suo account Google (il Jarvis fatto qui non gli piaceva: «devo trovare un Jarvis già funzionante»): la sua chat fissa, se il telefono ne conosce il codice (dato una volta con un link; sta solo nel telefono), se no Gemini, dove si scrive @jarvis.
+  - In Altro: «Apri Jarvis ›» e «Il Jarvis di prima» (la pagina scura con la galassia, che resta, con le sue cose).

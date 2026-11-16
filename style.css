@@ -9996,9 +9996,6 @@ body.tastiera-su:has(.sofia-vista) #barraSotto{display:none}
 .jv-gal.piccola{--jv:78px}
 .jv-gal.media{--jv:100px}
 .jarvis.ascolta .jv-gal{filter:drop-shadow(0 0 10px #4ADE80) drop-shadow(0 0 24px rgba(74,222,128,.55))}   /* 1.86.2: quando ascolta, un alone verde attorno alle stelle */
-.casa-jarvis{position:relative;display:block;flex:0 0 auto;width:78px;height:50px;margin:0 -14px;padding:0;border:0;border-radius:16px;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}   /* 1.86.2: largo quanto la galassia, ma nella colonna occupa 50 px come prima */
-.casa-jarvis .jv-gal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
-.casa-jarvis:active{transform:scale(.94)}
 body.con-jarvis{overflow:hidden}
 .jarvis{position:fixed;inset:0;z-index:10050;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(10px + env(safe-area-inset-top,0px)) 16px calc(26px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#101C3A 0,#0B1430 100%);color:#EEF2FB;font-family:"Plus Jakarta Sans",system-ui,sans-serif;text-align:left}
 .jarvis[hidden]{display:none}
@@ -10055,3 +10052,18 @@ body.con-jarvis{overflow:hidden}
 .jv-dove{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media (max-width:400px){.jarvis{padding-left:12px;padding-right:12px}.jv-gr{gap:10px}.jv-c{grid-template-columns:36px minmax(0,1fr);padding:10px 8px}.jv-e{font-size:30px}.jv-c b{font-size:18px}.jv-c small{font-size:15px}.jv-testa b{font-size:24px}.jv-dice{font-size:19px}.jv-mic,.jv-scrivi{font-size:17px;padding:8px 10px}}
 @media (prefers-reduced-motion:reduce){.jv-mic.su{animation:none}}
+
+/* ---- 1.87.0 · Michele (16/11): «così prende troppo occhio a Sofia… togli la galassia e metti un tasto nella casetta delle
+   Stanze di Ricci, così premo lì e mi esce tutto». Il tasto di Jarvis è la casetta del logo, in alto: un tasto che non si
+   vede (la casetta resta com'è), largo come un dito, che non sposta niente. Solo dove Jarvis è acceso. Mentre lo tocchi
+   la casetta si accende d'oro. In Altro: i due tasti grandi («Apri Jarvis», «Il Jarvis di prima»). ---- */
+.bo-casetta{display:none}
+body.premium .bo-marca .bo-casetta{display:block;position:relative;z-index:2;flex:0 0 auto;width:48px;height:44px;margin:-5px 0 -12px -48px;border-radius:14px;-webkit-tap-highlight-color:transparent;cursor:pointer}
+body.premium .bo-marca .bo-casetta:active{background:radial-gradient(circle at 50% 46%,rgba(201,162,79,.45) 0,rgba(201,162,79,0) 70%)}
+body.premium .bo-marca .bo-casetta:focus-visible{outline:2px solid #C9A24F;outline-offset:-3px}
+@media (max-width:370px){body.premium .bo-marca .bo-casetta{width:44px;margin-left:-44px}}
+.jv-altro-p{margin:12px 0 10px;font-size:17px;line-height:1.35;font-weight:600}
+.jv-altro-t{display:flex;flex-wrap:wrap;gap:10px}
+.jv-altro-b{flex:1 1 150px;display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:8px 14px;border:0;border-radius:16px;background:var(--campo,#EEF1F7);color:inherit;font:800 17px/1.15 "Plus Jakarta Sans",system-ui,sans-serif;text-decoration:none;text-align:center;cursor:pointer}
+.jv-altro-b.oro{background:#16264A;color:#F2C14E}
+.jv-altro-b:active{transform:scale(.98)}

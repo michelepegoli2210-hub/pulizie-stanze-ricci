@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.86.2";
+export const VERSIONE = "1.87.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -550,6 +550,7 @@ function barraOra() {
     document.body.insertBefore(b, document.body.firstChild);
   }
   b.hidden = false; document.body.classList.add("con-ora");
+  jarvisCasetta(b);   // 1.87.0: la casetta del logo è il tasto di Jarvis (solo dove è acceso)
   return b;
 }
 let orologioTimer = null;
@@ -8687,7 +8688,7 @@ function casaOssatura(tre) {
         ${FILM_CONS("casa-fig", tre)}
       </div>
       <div class="casa-lato">
-        ${jarvisTastoHtml()}<button type="button" class="casa-lato-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
+        <button type="button" class="casa-lato-mic casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}</button>
         <button type="button" class="casa-ascolta casa-t-voce" data-casa-parla aria-label="Fammi sentire il messaggio"><i class="cl-tondo">${CASA_ICO.onda}</i><span>Ascolta</span></button>
         <button type="button" class="casa-tondo casa-voce" data-voce-tasto aria-label="Voce"></button>
       </div>
@@ -18838,15 +18839,21 @@ avvia();
 //    a Gemini, niente su GitHub: qui dentro non si chiama mai S.db né l'IA. Gratis: parla con la voce del telefono (più bassa
 //    e calma; se il telefono ha una voce da uomo usa quella) e ascolta col microfono del telefono.
 //  - Si accende telefono per telefono: il link …/?jarvis=1 (una volta) o l'interruttore in Altro. Spento non si vede niente.
-//  - Il tasto: la galassia che gira (1.86.1; dalla 1.86.2 senza tondo dietro e in 3D), sopra il microfono di Sofia, nella prima pagina. Apre la pagina di Jarvis (scura, sopra a
-//    tutto), che si chiude con Indietro.
+//  - Il tasto (1.86.0–1.86.2): la galassia che gira, sopra il microfono di Sofia, nella prima pagina. Apriva la pagina di Jarvis
+//    (scura, sopra a tutto), che si chiude con Indietro.
+//  - 1.87.0 (Michele, 16/11: «prende troppo occhio a Sofia… togli la galassia e metti un tasto nella casetta delle Stanze di
+//    Ricci, così premo lì e mi esce tutto» · «il Jarvis che abbiamo non mi piace, devo trovare un Jarvis già funzionante»):
+//    il tasto è la CASETTA del logo in alto (a.bo-casetta: non si vede, la casetta resta com'è) e apre Jarvis DENTRO GEMINI,
+//    col suo account Google: la sua chat fissa se questo telefono ne conosce il codice (ricci_jarvis_chat, dato una volta
+//    col link …/?jarvis=1#jv=…; sta solo nel telefono, mai nel codice), se no Gemini. La pagina di Jarvis fatta qui resta:
+//    si apre da Altro («Il Jarvis di prima»).
 //  - Dentro: la galassia che parla (aprendo ti dice la giornata; toccala e la ripete), Il mio piano, Impegni (il giorno e l'ora
 //    detti a voce: «palestra domani alle 9»), Obiettivi («✓ Fatto oggi», «🏁 Raggiunto» → diventa un traguardo), Traguardi,
 //    Idee («🎯 Diventa obiettivo»). «🎤 Dimmi una cosa nuova»: la dici e lui la mette al posto giusto; se non capisce dove,
 //    lo chiede.
 //  - La galassia è un disegno nostro, fatto dall'app coi numeri (1.86.1; prima cerchi d'oro): niente marchi né disegni di altri.
 // ============================================================================
-const JV_CHIAVE = "ricci_jarvis", JV_ACCESO = "ricci_jarvis_acceso", JV_MUTO = "ricci_jarvis_muto";
+const JV_CHIAVE = "ricci_jarvis", JV_ACCESO = "ricci_jarvis_acceso", JV_MUTO = "ricci_jarvis_muto", JV_CHAT = "ricci_jarvis_chat", JV_GEMINI = "https://gemini.google.com/app";
 const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, foglio: null, rec: null, giro: 0 };
 const JV_SEZ = { piano: ["🗺️", "Il mio piano"], impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], traguardi: ["🏁", "Traguardi"], idee: ["💡", "Idee"] };
 const JV_UNO = { impegni: "Impegno", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
@@ -18957,16 +18964,30 @@ function jarvisDati() {
   return { v: 1, piano: String(d.piano || ""), impegni: lista(d.impegni), obiettivi: lista(d.obiettivi), traguardi: lista(d.traguardi), idee: lista(d.idee) };
 }
 function jarvisSalva(d) { try { localStorage.setItem(JV_CHIAVE, JSON.stringify(d)); return true; } catch (e) { JV.dice = "Non riesco a salvare su questo telefono: la memoria è piena."; return false; } }
-// il tasto nella prima pagina, sopra il microfono di Sofia (solo dove Jarvis è acceso)
-function jarvisTastoHtml() { return jarvisPuo() ? `<button type="button" class="casa-jarvis" data-jarvis-apri aria-label="Apri Jarvis, la tua app personale">${JV_SFERA("piccola")}</button>` : ""; }
+// 1.87.0: dove porta la casetta. Il codice della chat di Jarvis in Gemini sta solo in questo telefono (solo lettere, numeri,
+// trattini: non può diventare un altro indirizzo); se non c'è, si apre Gemini.
+function jarvisChat() { try { const c = localStorage.getItem(JV_CHAT) || ""; return /^[A-Za-z0-9_-]{6,80}$/.test(c) ? c : ""; } catch (e) { return ""; } }
+function jarvisLink() { try { const c = jarvisChat(); return c ? `${JV_GEMINI}/${c}` : JV_GEMINI; } catch (e) { return "https://gemini.google.com/app"; } }
+// il tasto: la casetta del logo, nella barra in alto (solo dove Jarvis è acceso). È un collegamento vero, così il telefono
+// lo apre come ogni collegamento (nell'app di Gemini, se c'è, o nel browser).
+function jarvisCasetta(b) {
+  try {
+    const m = b && b.querySelector(".bo-marca"); if (!m) return;
+    let c = m.querySelector(".bo-casetta");
+    if (!jarvisPuo()) { if (c) c.remove(); return; }
+    if (!c) { c = document.createElement("a"); c.className = "bo-casetta"; c.target = "_blank"; c.rel = "noopener"; c.setAttribute("data-jarvis-casa", ""); c.setAttribute("aria-label", "Apri Jarvis"); m.appendChild(c); }
+    const l = jarvisLink(); if (c.getAttribute("href") !== l) c.setAttribute("href", l);
+  } catch (e) {}
+}
 // l'interruttore in Altro
 function cardJarvisAltro() {
   if (!proprietario() || (S.utente && S.utente.finta)) return "";
-  const on = jarvisAcceso();
-  return `<section class="card jv-card"><h2>Jarvis · la tua app personale</h2>
-    <p class="small" style="margin:0 0 8px">Il tuo piano, gli impegni, gli obiettivi, i traguardi e le idee. Sta <b>solo su questo telefono</b>: non va nel database dell'albergo e non lo vede nessun altro. È gratis.</p>
+  const on = jarvisAcceso(), chat = !!jarvisChat();
+  return `<section class="card jv-card"><h2>Jarvis · il tuo assistente personale</h2>
+    <p class="small" style="margin:0 0 8px">Jarvis sta dentro Gemini, col tuo account Google. Il suo tasto è <b>la casetta in alto nella prima pagina</b>, accanto a «Le Stanze di Ricci». Il tasto c'è <b>solo su questo telefono</b>: gli altri non lo vedono.</p>
     <label class="giro-sw"><span>Jarvis su questo telefono</span><input type="checkbox" data-jarvis-sw ${on ? "checked" : ""}></label>
-    ${on ? `<p class="small muted" style="margin:8px 0 0">Lo trovi nella prima pagina, sopra il microfono di ${esc(nomeGov())}.</p>` : ""}</section>`;
+    ${on ? `<p class="jv-altro-p">${chat ? "Tocca la casetta: si apre la tua chat «Jarvis»." : "Tocca la casetta: si apre Gemini. Lì scrivi <b>@jarvis</b>, poi parla."}</p>
+    <div class="jv-altro-t"><a class="jv-altro-b oro" href="${esc(jarvisLink())}" target="_blank" rel="noopener" data-jarvis-casa>Apri Jarvis ›</a><button type="button" class="jv-altro-b" data-jarvis-apri>Il Jarvis di prima</button></div>` : ""}</section>`;
 }
 // «09:00» → «9», «09:30» → «9:30» (così si legge e si dice bene)
 const jvOra = (hhmm) => { const h = Number(String(hhmm).slice(0, 2)), m = String(hhmm).slice(3, 5); return m === "00" ? String(h) : `${h}:${m}`; };
@@ -19197,16 +19218,25 @@ document.addEventListener("click", (e) => {
 document.addEventListener("change", (e) => {
   const c = e.target && e.target.matches && e.target.matches("[data-jarvis-sw]") ? e.target : null; if (!c) return;
   try { if (c.checked) localStorage.setItem(JV_ACCESO, "1"); else localStorage.removeItem(JV_ACCESO); } catch (er) {}
-  toast(c.checked ? `✓ Jarvis acceso: lo trovi nella prima pagina, sopra il microfono di ${nomeGov()}` : "Jarvis spento su questo telefono (le tue cose restano)");
+  toast(c.checked ? "✓ Jarvis acceso: nella prima pagina tocca la casetta in alto, accanto a «Le Stanze di Ricci»" : "Jarvis spento su questo telefono (le tue cose restano)");
   disegna();
 });
 // il link che lo accende (una volta, sul telefono): …/?jarvis=1 · lo spegne: …/?jarvis=0
-try {
-  const uj = new URL(location.href);
-  if (uj.searchParams.has("jarvis")) {
-    const v = uj.searchParams.get("jarvis");
-    try { if (v === "0") localStorage.removeItem(JV_ACCESO); else localStorage.setItem(JV_ACCESO, "1"); } catch (e) {}
+// 1.87.0: nello stesso link, dopo il cancelletto, il codice della sua chat di Jarvis in Gemini: …/?jarvis=1#jv=<codice>.
+// Quello che sta dopo il # non parte mai dal telefono (il sito non lo riceve): si salva qui e sparisce dall'indirizzo.
+// …#jv=no lo toglie.
+function jarvisDalLink(aspetta) {
+  try {
+    const uj = new URL(location.href), mj = /^#jv=([A-Za-z0-9_-]{2,80})$/.exec(uj.hash || "");
+    if (!uj.searchParams.has("jarvis") && !mj) return false;
+    if (mj) { try { if (mj[1] === "no") localStorage.removeItem(JV_CHAT); else if (mj[1].length >= 6) localStorage.setItem(JV_CHAT, mj[1]); } catch (e) {} uj.hash = ""; }
+    const c = uj.searchParams.has("jarvis"), v = uj.searchParams.get("jarvis");
+    if (c) { try { if (v === "0") localStorage.removeItem(JV_ACCESO); else localStorage.setItem(JV_ACCESO, "1"); } catch (e) {} }
     uj.searchParams.delete("jarvis"); history.replaceState(null, "", uj.pathname + uj.search + uj.hash);
-    setTimeout(() => { try { toast(v === "0" ? "Jarvis spento su questo telefono" : `✓ Jarvis acceso su questo telefono: lo trovi sopra il microfono di ${nomeGov()}`); } catch (e) {} }, 3500);
-  }
-} catch (e) {}
+    setTimeout(() => { try { toast(c && v === "0" ? "Jarvis spento su questo telefono" : jarvisAcceso() ? "✓ Jarvis acceso su questo telefono: nella prima pagina tocca la casetta in alto" : "Fatto"); } catch (e) {} }, aspetta);
+    return true;
+  } catch (e) { return false; }
+}
+jarvisDalLink(3500);
+// se l'app è già aperta e il link cambia solo quello che sta dopo il #, la pagina non si ricarica: lo leggo lo stesso
+try { window.addEventListener("hashchange", () => { if (jarvisDalLink(400)) { try { disegna(); } catch (e) {} } }); } catch (e) {}

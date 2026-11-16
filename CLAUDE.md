@@ -108,11 +108,15 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   grande in mezzo, la nuvoletta con quello che dice, «🎤 Parlale» e «✍️ Scrivile». Il fantasmino (`segrFuori`) giù nella
   pagina c'è sempre: fermo il viso con «🎤 Parlale» (tocchi: torni su e ti ascolta), mentre parla è lei (tocchi: smette).
 
-- Jarvis (1.86.0) è l'app personale del titolare dentro questa: il piano, gli impegni, gli obiettivi, i traguardi, le idee.
-  Sta SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`): il suo codice (in fondo ad `app.js`, `jarvis…` e `jv…`) non
-  chiama mai `S.db` né l'IA, e deve restare così. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro);
-  il tasto è la galassia che gira (`canvas.jv-gal`, 1.86.1; dalla 1.86.2 senza tondo dietro e in 3D: la tela è trasparente) sopra il microfono di Sofia. Parla con la voce del telefono e capisce giorno e ora con
-  `LET.promemoriaDa`. La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o voci presi da altri.
+- Jarvis è l'assistente personale del titolare. Dalla 1.87.0 quello vero sta DENTRO GEMINI, col suo account Google (una
+  «skill» che si chiama jarvis, il suo quaderno in Google Docs, gli impegni nel suo Calendar): qui c'è solo il tasto, la
+  casetta del logo in alto (`a.bo-casetta`, invisibile: «la galassia prendeva troppo occhio a Sofia»), che apre la sua chat
+  fissa. Il codice della chat sta solo nel telefono (`ricci_jarvis_chat`, dato una volta col link `…/?jarvis=1#jv=…`): mai
+  nel codice, mai nel repository. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro).
+  Il Jarvis fatto qui (1.86.0: la pagina scura con la galassia, `canvas.jv-gal`) resta, da Altro → «Il Jarvis di prima»: sta
+  SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`), il suo codice (in fondo ad `app.js`, `jarvis…` e `jv…`) non
+  chiama mai `S.db` né l'IA, e deve restare così. La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o
+  voci presi da altri.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
