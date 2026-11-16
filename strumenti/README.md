@@ -8,3 +8,11 @@
 - `fai-segr5.py` (1.85.0) — i filmati di Sofia segretaria segr5 dai fotogrammi dei segr4: la sfumatura di sotto uguale per tutti
   i fotogrammi (prima lampeggiava), il tremolio del bordo dei capelli calmato, il giro che finisce dove ricomincia (12 fotogrammi
   sfumati), il taglio attorno a lei (480x600). `fa-alfa.py` dalla 1.85.0 prende la misura dal webm.
+- `attacco.py` e `fai-fluido.py` (1.90.0) — i filmati di Sofia senza scatti. Dai fotogrammi di un filmato fatto di pezzi
+  (ritagliati con la trasparenza e piatti con la sala) fanno lo stesso filmato coi pezzi interi e, tra la fine di un pezzo e
+  l'inizio del pezzo dopo, meno di un secondo in cui Sofia passa da una posa all'altra. Niente è ridisegnato: ogni punto scivola
+  dal posto che ha nell'ultimo fotogramma di un pezzo al posto che ha nel primo del pezzo dopo (prima la testa tutta insieme,
+  poi il resto punto per punto), e il contorno si sposta netto. Serve python3 con numpy e opencv (con `optflow` e SIFT).
+  `python3 strumenti/fai-fluido.py calmo parla` (le cartelle dei fotogrammi sono scritte in cima al file); esce anche
+  `<gruppo>.json` coi numeri da mettere in `app.js` (`FILM_SPEZZONI`, `FILM_CODE`, `FILM_FINE`). Poi si codifica come sempre
+  e si rifà il gemello con `fa-alfa.py`.
