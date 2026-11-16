@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.89.0";
+export const VERSIONE = "1.90.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -87,7 +87,7 @@ const FACCE_PRONTE = { base: "sofia-viso.webp" };
 //  (il medaglione), che restano sul sito: Michele può tornare indietro quando vuole.
 const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
 function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
-const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla.mp4", riposo: "cons-riposo-spilla.mp4", poster: "cons-poster-spilla.webp" };   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-fluido.mp4", riposo: "cons-riposo-spilla-fluido.mp4", poster: "cons-poster-spilla.webp" };   // 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // ============================================================================
 //  1.80.0 I FILMATI CANCELLATI (Michele, 12/11: «i filmati di Sofia non mi piacciono per niente… fammi vedere tutti i filmati
 //  caricati nell'app così li cambiamo» → «sì, ma dammi la possibilità di cancellarne qualcuno»).
@@ -159,8 +159,19 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 // 1.74.0 (Michele: «quando non deve né rispondere né ascoltare Sofia si muove troppo, fa troppi gesti… meno gesti, ma non
 // cambiare assolutamente il soggetto»): ferma restano i due spezzoni calmi (ascolta 9,25 s e aspetta 8,5 s: misurati, le mani
 // non si muovono); posa e posa 2, quelli coi gesti, sono tolti (cons-riposo-calmo, 17,75 s)
-const FILM_SPEZZONI = {"riposo": [0, 222], "parla": [0, 240, 443, 683, 888]};
-const FILM_FINE = { riposo: 426, parla: 1110 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
+// 1.90.0 (Michele, 16/11, dopo la Sofia rifatta con Flow: «mi piace di più come adesso… queste movenze qui… l'unica cosa che
+// non mi piace è che sono dei video separati, quindi fa scatti… la mia Sofia… ha gli occhi molto più magnetici»): I FILMATI
+// DELLA SOFIA CON LA SPILLA SENZA SCATTI (cons-*-spilla-fluido). I pezzi sono gli stessi, interi, con gli stessi fotogrammi.
+// Tra la fine di un pezzo e l'inizio del pezzo dopo (e tra l'ultimo e il primo, dove il filmato ricomincia) c'è meno di un
+// secondo in più in cui Sofia passa da una posa all'altra: è fatto solo coi due fotogrammi veri (ogni punto scivola dal posto
+// che ha nel primo al posto che ha nel secondo, strumenti/attacco.py e fai-fluido.py), niente è ridisegnato da una macchina.
+//  - FILM_SPEZZONI: dove comincia ogni pezzo. FILM_CODE: dove finiscono i suoi fotogrammi veri (dopo c'è il passaggio al pezzo
+//    che segue). FILM_FINE: dove finisce il filmato (poi ricomincia da solo, senza stacco).
+//  - La Sofia «com'era» (il medaglione) resta coi tagli netti di prima: lì la coda di un pezzo è l'inizio del pezzo dopo.
+//  - Resta il cambio di colpo quando comincia o smette di parlare (si passa da un filmato all'altro).
+const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 238], parla: [0, 247, 457, 712, 932] };
+const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [222, 442], parla: [240, 450, 697, 917, 1154] };
+const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 455, parla: 1169 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
 // 1.80.0: i pezzi cancellati da «I filmati di Sofia» (FILMATI: «oggi-ferma-1», «oggi-parla-3»…) e quelli buoni
 function filmSpezzoneTolto(quale, i) { return filmatoTolto(`oggi-${quale === "parla" ? "parla" : "ferma"}-${i + 1}`); }
 function filmSpezzoniBuoni(quale) { return (FILM_SPEZZONI[quale] || []).map((f, i) => i).filter(i => !filmSpezzoneTolto(quale, i)); }
@@ -186,7 +197,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-3d.webm", riposo: "cons-riposo-spilla-3d.webm", poster: "cons-poster-spilla-3d.webp" };   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-fluido-3d.webm", riposo: "cons-riposo-spilla-fluido-3d.webm", poster: "cons-poster-spilla-3d.webp" };   // 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
@@ -796,7 +807,7 @@ function filmFoto(box) {
 function filmSaltaTolti(quale, v) {
   const l = FILM_SPEZZONI[quale]; if (!v || !l || !l.some((f, i) => filmSpezzoneTolto(quale, i))) return false;
   const t = Number(v.currentTime) || 0, i = filmSpezzoneDi(quale, t);
-  const fine = (i + 1 < l.length ? l[i + 1] : FILM_FINE[quale]) / 24;
+  const fine = FILM_CODE[quale][i] / 24;   // 1.90.0: dove finiscono i fotogrammi veri del pezzo (il passaggio a un pezzo cancellato non si guarda)
   if (!filmSpezzoneTolto(quale, i) && !(t >= fine - 0.2 && filmSpezzoneTolto(quale, (i + 1) % l.length))) return false;
   let j = (i + 1) % l.length;
   for (let k = 0; k < l.length && filmSpezzoneTolto(quale, j); k++) j = (j + 1) % l.length;
@@ -8040,7 +8051,7 @@ const FM_GRUPPI = [
 ];
 // quale file e quale pezzo (in secondi) fa vedere quel filmato; `a` = 0 vuol dire tutto il file
 function filmatoFile(f) {
-  if (f.g === "oggi") { const l = FILM_SPEZZONI[f.q]; return { file: FILM_PRONTO[f.q], da: l[f.i] / 24, a: (f.i + 1 < l.length ? l[f.i + 1] : FILM_FINE[f.q]) / 24 }; }
+  if (f.g === "oggi") { const l = FILM_SPEZZONI[f.q]; return { file: FILM_PRONTO[f.q], da: l[f.i] / 24, a: FILM_CODE[f.q][f.i] / 24 }; }   // 1.90.0: il pezzo finisce coi suoi fotogrammi veri
   return { file: (f.g === "segr" ? FILM_SEGR : f.g === "capo" ? FILM_CAPO : FILM_INFLU)[f.q], da: 0, a: 0 };
 }
 function filmatoSecondi(f) { const x = filmatoFile(f); return x.a ? Math.round(x.a - x.da) : f.s; }

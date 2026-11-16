@@ -67,6 +67,13 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   signore, l'influencer). Michele li cancella e li rimette da «Impostazioni → I filmati di Sofia» (`impostazioni/filmati`,
   campo `tolti`, scritto solo da quei tasti): cancellato = l'app non lo fa vedere, resta la foto. Un filmato nuovo va
   aggiunto a `FILMATI` e alla striscia delle anteprime `filmati-anteprime.webp`, nello stesso ordine.
+- I filmati senza scatti (1.90.0; Michele: «mi piace di più come adesso… queste movenze qui… l'unica cosa che non mi piace è
+  che sono dei video separati, quindi fa scatti»). La Sofia rifatta da capo con Google Flow non gli è piaciuta («la mia Sofia…
+  ha gli occhi molto più magnetici… lì gli occhi sono storti»): la Sofia e le movenze restano quelle dei filmati che ha già.
+  Per la prima pagina i pezzi sono gli stessi, interi; tra uno e l'altro (e dove il filmato ricomincia) c'è meno di un secondo
+  fatto solo coi due fotogrammi veri (`strumenti/attacco.py`, `fai-fluido.py`: niente ridisegnato da una macchina). In `app.js`:
+  `FILM_SPEZZONI` (dove comincia ogni pezzo), `FILM_CODE` (dove finiscono i suoi fotogrammi veri), `FILM_FINE`. Resta il
+  cambio di colpo quando comincia o smette di parlare (si passa da un filmato all'altro).
 
 - Le chat con Sofia (1.80.2): una risposta più lunga del riquadro si ferma al suo inizio, non in fondo (`chatUltima`), con
   «Continua ▾»; il riquadro di «Parla con Sofia» non si sposta a ogni disegno (`svChatPosto`). Lì la pagina si accorcia sopra
