@@ -68,6 +68,10 @@
 //  delle chat tiene solo le azioni nell'app (lettura.js senzaEco); se a una richiesta di un altro lui ha già scritto in quella
 //  chat, l'allarme «Da fare tu» non suona più; i promemoria li chiede lui («Sofia ricordamelo»): una scheda loro, che suona
 //  all'ora detta (perte-giro.mjs, lettura-giro.mjs).
+//  1.37.0 (app 1.89.0): LA SVEGLIA DI JARVIS (Michele, 16/11: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti
+//  prima di quell'impegno lì, perché altrimenti non ha senso»). A ogni giro, prima di tutto il resto, parte la sveglia degli
+//  impegni che cominciano entro un quarto d'ora (sveglia-giro.mjs). Dal database si leggono solo un codice e l'ora: che cosa
+//  c'è da fare lo sa solo il telefono. Nel registro (esiti) non si scrive niente: lo leggono tutti, e l'ora direbbe quando.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -80,9 +84,10 @@ import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGN
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
 import { portaPostaAlbergo, notificheEmail } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
 import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'orologio: «arrivata» / «finito» su WhatsApp e i tasti dell'app
+import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.36.0";
+export const VERSIONE_GIRO = "1.37.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -234,6 +239,10 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   const guastiDi = async () => guastiG || (guastiG = (await db.guastiAperti()) || {});
   const cameraDi = async () => { if (cameraG) return cameraG; const cd = await db.doc("impostazioni", "camere"); const cs = camereDi(cd); cameraG = (id) => cs.find(c => c.id === id) || LUOGHI_COMUNI.find(l => l.id === id) || { id, nome: id }; return cameraG; };
   const urgentiRiga = async () => { if (urgCache !== null) return urgCache; try { urgCache = rigaUrgenti(await guastiDi(), await cameraDi()); } catch (e) { console.warn("guasti urgenti:", e && e.message); urgCache = ""; } return urgCache; };
+  // 1.37.0 LA SVEGLIA DI JARVIS: a ogni giro, a qualunque ora, prima di tutto il resto (se il resto si inceppa, è già partita).
+  // Negli esiti non va niente: il registro di GitHub lo leggono tutti, e l'ora direbbe quando Michele ha un impegno.
+  try { await mandaSveglie({ db, push, adesso, caricaPs: async () => ps || (ps = await db.doc("importazioni", "push-sofia")) }); }
+  catch (e) { console.warn("giro: il primo passo non è riuscito", e && e.code ? e.code : ""); }
   const oraPiano = MIN(Number(a.oraPiano) || 7);
   const dentro = (da, a2) => t.minuti >= da && t.minuti < a2;
   const serve = {
@@ -555,7 +564,7 @@ export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
       // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
-      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.dove ? { dove: String(dati.dove) } : {}), ...(dati.rif ? { rif: String(dati.rif) } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}), ...(dati.azioni ? { azioni: String(dati.azioni).slice(0, 20) } : {}), ...(dati.vibra ? { vibra: true } : {}) }), { TTL: 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.dove ? { dove: String(dati.dove) } : {}), ...(dati.rif ? { rif: String(dati.rif) } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}), ...(dati.azioni ? { azioni: String(dati.azioni).slice(0, 20) } : {}), ...(dati.vibra ? { vibra: true } : {}), ...(dati.sveglia ? { sveglia: String(dati.sveglia).slice(0, 60), quando: String(dati.quando || "").slice(0, 40) } : {}) }), { TTL: Number(dati.ttl) > 0 ? Math.min(6 * 3600, Math.round(Number(dati.ttl))) : 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
       return { ok: true, stato: (r && r.statusCode) || null };
     } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };
