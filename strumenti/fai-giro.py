@@ -11,7 +11,7 @@
 #   - dove un video entra mentre lei si sta già muovendo (il pezzo in cui guarda di lato) i primi fotogrammi vanno più piano e
 #     prendono velocità un po' alla volta (e alla fine rallentano): sono fotogrammi a metà tra due fotogrammi veri vicini, che
 #     differiscono di meno di due puntini. Così non parte e non si ferma di colpo.
-# «ferma» = [il saluto: sorride, saluta da Miss, manda il bacio] [calma: ferma, guarda di lato, torna] e da capo.
+# «ferma» = [il saluto: sorride, saluta da Miss, manda il bacio] [calma: inclina la testa una volta e torna] e da capo.
 # «parla» = i 5 pezzi di prima, ognuno avanti e indietro; mentre parla l'app resta dentro un pezzo solo (FILM_GIRA in app.js),
 #           quindi tra un pezzo e l'altro non si passa mai: dopo ogni pezzo c'è una coda uguale al suo inizio, per quando
 #           l'app ci torna con un attimo di ritardo.
@@ -20,11 +20,19 @@
 import sys, os, json, time, numpy as np, cv2
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import attacco as at   # attacco.py sta qui accanto
 
-SORG = {'c': '/home/claude/dev/spilla/film/out/calmo',      # i due pezzi calmi di sempre (0..221 e 222..425), con la spilla
-        'p': '/home/claude/dev/spilla/film/out/parla',      # i cinque pezzi in cui parla
+SORG = {'c': '/home/claude/dev/video1910/nitido/calmo',     # il pezzo calmo di sempre (0..221), con la spilla, affilato (affila.py)
+        'p': '/home/claude/dev/video1910/nitido/parla',     # i cinque pezzi in cui parla, affilati
         's': '/home/claude/dev/video1910/out/saluto'}       # il video dei baci (fatto da Michele con Gemini), ritagliato come gli altri
 OUT = '/home/claude/dev/video1910/giro'
 CODA = 12   # fotogrammi di coda dopo ogni pezzo di «parla» (mezzo secondo): l'app guarda il filmato ogni 150 millesimi
+RIENTRO = 3   # quando un pezzo di «parla» ricomincia, l'app riparte da qui (3 fotogrammi dopo il suo inizio: prima c'è il giro)
+# 1.91.1 (Michele: «quando guarda laterale che fa avanti indietro è ancora troppo robotizzato… a volte c'è qualche micro lag nei
+# capelli»): dove si gira non c'è più il fotogramma fermo. Rallenta, gira e riparte piano: i fotogrammi sono a metà tra due veri vicini.
+GIRO = [2.1, 1.35, 0.75, 0.3, 0.05]   # quanto manca al punto dove si gira, fotogramma per fotogramma, mentre rallenta
+# I pezzi di una volta hanno qualche FOTOGRAMMA MANCANTE: tra questo fotogramma e quello dopo lei fa un passo doppio (un piccolo
+# scatto: è uno dei «micro lag»). Lì in mezzo si mette un fotogramma a metà tra i due. (Il video dei baci non si tocca.)
+# Si trovano così: quanto cambia l'immagine da un fotogramma all'altro; dove un passo è quasi il doppio dei due vicini ne manca uno.
+MANCA = {('c', 26), ('p', 348), ('p', 733), ('p', 764)}
 
 def firme(k):
     f = {'c': 'firme-calmo-vecchi.npy', 'p': 'firme-parla-vecchi.npy', 's': 'firme-saluto.npy'}[k]
@@ -40,14 +48,19 @@ RAMPA = [0.2, 0.3, 0.45, 0.6, 0.7, 0.85, 0.9]   # di quanto avanza a ogni fotogr
 def gruppi():
     ini = [piu_fermo('p', a, a + 10) for a in (0, 240, 443, 683, 888)]
     tp = [piu_fermo('p', b - 16, b - 3) for b in (240, 443, 683, 888, 1110)]
+    G2 = piu_fermo('c', 118, 121)   # dove tiene la testa inclinata (è quasi ferma dal 103 al 121; dopo comincia a tornare)
     return {
         # ogni passo: (da quale video, dal fotogramma, al fotogramma[, 'entra' | 'esce']) compresi; se il secondo numero è più
         # piccolo va all'indietro. 'entra': parte piano; 'esce': arriva piano.
+        # 1.91.1: via il pezzo in cui guarda di lato (andava avanti e indietro e si vedeva). Resta il pezzo calmo, con UN gesto
+        # solo: inclina la testa, la tiene un momento, torna (il ritorno è l'andata al contrario: per una testa che si inclina e
+        # torna è naturale). Mai lo stesso gesto due volte di fila: sembrerebbe di nuovo «avanti e indietro». Lo sguardo di lato
+        # torna con un video nuovo che parte e finisce nella posa della foto.
         'ferma': dict(passo=0.45, tinta=0.8, pezzi=[
             dict(nome='saluto', passi=[('c', 24, 0), ('s', 0, 239), ('c', 0, 24)]),
-            dict(nome='calma', passi=[('c', 24, 159), ('c', 358, 423, 'entra'), ('c', 423, 245), ('c', 245, 358, 'esce'), ('c', 159, 219), ('c', 219, 25)]),
+            dict(nome='calma', passi=[('c', 24, G2), ('c', G2, 25)]),
         ]),
-        'parla': dict(passo=0.45, tinta=0.8, pezzi=[dict(nome=f'parla {i + 1}', passi=[('p', a, f), ('p', f, a), ('p', a, a + CODA - 1)], coda=True) for i, (a, f) in enumerate(zip(ini, tp))]),
+        'parla': dict(passo=0.45, tinta=0.8, pezzi=[dict(nome=f'parla {i + 1}', passi=[('p', a, f), ('p', f, a), ('p', a, a + RIENTRO + CODA - 1)], coda=True) for i, (a, f) in enumerate(zip(ini, tp))]),
     }
 
 def numeri(da, a, come=None):
@@ -93,16 +106,27 @@ def fai(g, solo_misure=False):
             k, da, a = passo[:3]
             idx, verso = numeri(da, a, passo[3] if len(passo) > 3 else None)
             ecoda = bool(pz.get('coda')) and ips == len(pz['passi']) - 1
-            if ecoda: coda_da = len(fila)
-            primo = (k, idx[0])
+            primo = (k, idx[0]); girato = False
             if ultimo is not None:
                 if ultimo == primo:
                     if verso == verso_prima and not ecoda: idx = idx[1:]   # si continua nello stesso verso: niente doppione
-                    # se si gira (o è la coda) il fotogramma resta due volte: è la pausa
+                    else:
+                        # si gira (o è la coda di un pezzo di «parla»): rallenta, gira e riparte piano, senza fotogrammi fermi
+                        T, s = primo[1], verso_prima
+                        if len(fila) >= 4 and len(idx) >= 5 and all(fila[-1 - j]['r'] == (k, T - s * j) for j in range(3)):
+                            pez, cod = fila[-1]['pezzo'], fila[-1]['coda']
+                            del fila[-3:]
+                            for q in GIRO: fila.append(dict(r=(k, round(T - s * q, 3)), pezzo=pez, coda=cod))
+                            idx = [round(T - s * q, 3) for q in GIRO[-2::-1]] + idx[3:]; girato = True
                 elif not (pz.get('coda') and ips == 0):
                     attacchi.append(dict(dopo=len(fila) - 1))          # due fotogrammi diversi: serve l'attacco
                 # (il primo passo di un pezzo di «parla» comincia dopo la coda del pezzo prima: lì l'app non passa mai)
-            for i in idx: fila.append(dict(r=(k, i), pezzo=ip, coda=coda_da is not None))
+            if ecoda: coda_da = len(fila) + (len(GIRO) - 1 if girato else 0)   # dove l'app ricomincia il pezzo: il fotogramma «inizio + RIENTRO»
+            for i in idx:
+                # dove manca un fotogramma (MANCA) si mette quello a metà, in tutti e due i versi
+                if fila and fila[-1]['r'][0] == k and float(i).is_integer() and float(fila[-1]['r'][1]).is_integer() and abs(fila[-1]['r'][1] - i) == 1 and (k, int(min(fila[-1]['r'][1], i))) in MANCA:
+                    fila.append(dict(r=(k, min(fila[-1]['r'][1], i) + 0.5), pezzo=ip, coda=coda_da is not None))
+                fila.append(dict(r=(k, i), pezzo=ip, coda=coda_da is not None))
             ultimo = (k, idx[-1]) if idx else ultimo; verso_prima = verso
         segni.append(dict(nome=pz['nome'], da=inizio, coda=coda_da))
     # il giro si chiude: dall'ultimo fotogramma si torna al primo (senza doppione, senza attacco se sono vicini di numero)
@@ -144,7 +168,7 @@ def fai(g, solo_misure=False):
     for ip, pz in enumerate(info['pezzi']):
         pz['fine'] = info['pezzi'][ip + 1]['da'] if ip + 1 < len(info['pezzi']) else len(usc)
         if pz['coda'] is None: pz['coda'] = pz['fine']
-    info['fine'] = len(usc); info['inizi'] = [p['da'] for p in info['pezzi']]; info['code'] = [p['coda'] for p in info['pezzi']]
+    info['fine'] = len(usc); info['inizi'] = [p['da'] for p in info['pezzi']]; info['code'] = [p['coda'] for p in info['pezzi']]; info['rientro'] = RIENTRO if any(p.get('coda') for p in cfg['pezzi']) else 0
     info['fotogrammi'] = [(list(u['r']) if u['tipo'] != 'N' else None) for u in usc]; info['tipi'] = ''.join(dict(vero='v', M='m', N='n')[u['tipo']] for u in usc)
     print(f"{g}: {len(usc)} fotogrammi ({len(usc) / 24:.2f} s), di cui veri {sum(u['tipo'] == 'vero' for u in usc)}, a metà tra due veri vicini {sum(u['tipo'] == 'M' for u in usc)}, degli attacchi {sum(u['tipo'] == 'N' for u in usc)}. Inizi dei pezzi {info['inizi']}, dove finiscono {info['code']}", flush=True)
     if solo_misure: return info

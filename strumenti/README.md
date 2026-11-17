@@ -25,3 +25,9 @@
   fotogrammi di `attacco.py`. Le cartelle dei fotogrammi e la fila («ferma»: il saluto, poi calma; «parla»: i 5 pezzi, ognuno
   con la sua coda) sono scritte in cima al file. `python3 strumenti/fai-giro.py ferma parla`; esce `<gruppo>.json` coi numeri
   per `app.js`. Un video nuovo va bene se parte e finisce nella posa della foto (così lo fa Gemini quando glielo si chiede).
+  Dalla 1.91.1: dove un pezzo gira non c'è il fotogramma fermo (rallenta, gira, riparte piano: `GIRO`); i pezzi di una volta si
+  affilano e si intonano prima con `affila.py` (erano più sfocati del video del bacio e di un colore appena diverso, e messi in fila
+  si vedeva dove attaccavano; la curva dei colori la misura `misura-tinta.py` sui due fotogrammi dove si attaccano); via il pezzo in
+  cui guardava di lato (andava avanti e poi indietro); nel pezzo calmo un gesto solo (inclina la testa e torna), mai lo stesso gesto
+  due volte di fila; dove ai pezzi di una volta manca un fotogramma (`MANCA`) si mette quello a metà. Un pezzo nuovo si chiede a
+  Gemini che parta e finisca nella posa della foto.
