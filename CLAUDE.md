@@ -86,6 +86,18 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   (`strumenti/fai-giro.py`); un video nuovo si chiede a Gemini che parta e finisca nella posa della foto. Da ferma: il saluto,
   poi calma, poi da capo. Mentre parla resta dentro un pezzo solo (`FILM_GIRA`); finito di parlare torna al pezzo calmo
   (`FILM_RITORNO`). I file sono `cons-*-spilla-giro*`.
+  1.91.1 (Michele: «il video del bacio è davvero straordinario invece… quando guarda laterale che fa avanti indietro è ancora
+  troppo robotizzato… micro lag nei capelli… si percepisce quando attacca uno e quando attacca un altro»): un pezzo fatto andare
+  avanti e poi indietro SI VEDE quando lei si muove tanto (lo sguardo di lato): si usa solo per un gesto che torna da sé (la testa
+  che si inclina e torna), una volta sola per giro (mai lo stesso gesto due volte di fila: sembra di nuovo «avanti e indietro»),
+  e mai con un fotogramma fermo dove gira. Nei pezzi di una volta manca qualche fotogramma (un passo doppio = un piccolo scatto):
+  si cercano guardando quanto cambia l'immagine da un fotogramma all'altro e lì si mette quello a metà (`MANCA` in
+  `strumenti/fai-giro.py`). I pezzi di qualità diversa messi in fila si notano: si affilano e si intonano uguali
+  (`strumenti/affila.py`, la curva dei colori da `strumenti/misura-tinta.py`). La spilla dei video di Gemini è più chiara di quella
+  dorata dei pezzi di una volta: da pareggiare quando arrivano i video nuovi.
+  La strada giusta sono i video nuovi di Gemini che partono e finiscono nella posa della foto, come quello del bacio.
+  I due filmati in cui parla sono compressi un filo di più (crf 36 il ritagliato, 21,5 il piatto; gli altri 35 e 21): un file
+  deve stare sotto i 10 milioni di byte.
 - La copertina di Sofia influencer (1.90.1; Michele: «sofia si deve muovere già dalla copertina»): la sua stanza, quella larga in
   fondo alla prima pagina, ha sopra la foto il suo filmato (`stanzaFilmMonta`: parte quando entra nello schermo, si ferma
   quando esce; i due filmati sono quelli della sua pagina, `FILM_INFLU`). La parte di sotto della sua pagina e la Segreteria
