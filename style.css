@@ -10118,3 +10118,96 @@ body.con-jarvis{overflow:hidden}
 .stanza-film video{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:50% 7%}
 .stanza-film video.sf-ferma{opacity:0;transition:opacity .5s ease}
 .stanza-film.ferma video.sf-ferma{opacity:1}
+
+/* ============================================================================
+   1.92.0 · LA SEGRETERIA COME LA PRIMA PAGINA (Michele, 17/11, visto il disegno di Gemini: «la grafica e l'impaginazione di
+   sofia segretaria va benissimo così ma… la sua interfaccia deve essere uguale a quella di sofia governante che sta all'inizio
+   dell'app… metti qualcosa di rosa»). La testa (#segrHero) ha le stesse classi di quella della prima pagina e ne prende lo
+   stile; qui c'è solo quello che è suo: Sofia segretaria nella cornice (la stessa misura e lo stesso posto dell'altra Sofia) e
+   il contenuto del riquadro, col disegno di Gemini (le tessere col numero grande e il disegno a matita).
+   Michele legge male le scritte piccole: numeri da 44, parole da 19 in su, tasti alti almeno 52.
+   ---------------------------------------------------------------------------- */
+body.premium #segrHero{z-index:1}
+body.premium.ha-segr .barra-ora{z-index:0}
+body.premium #segrHero .casa-card.tre{z-index:32}
+body.premium #segrHero .casa-nuvola{z-index:34}
+body.premium #segrHero .casa-lato{z-index:35}
+body.ha-segr #app .sg2-su,body.ha-segr #app .sgr-spazio{display:none}
+/* lei: nello stesso posto e della stessa misura della Sofia della prima pagina, con le SUE regole: il tasto riempie la cornice e il
+   filmato si ingrandisce da sotto (--tre-scala) e si alza (--tre-alza), che sono le variabili della cornice della prima pagina.
+   Quando parla o ti ascolta si avvicina appena, come l'altra Sofia. La cornice della prima pagina non sente i tocchi: lei sì. */
+#segrHero .casa-card .sg2-sofia{display:block;position:absolute;inset:0;width:auto;height:auto;max-width:none;margin:0;padding:0;border:0;border-radius:0;background:none;overflow:visible;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;z-index:4;filter:drop-shadow(-2px 4px 4px rgba(28,20,10,.2)) drop-shadow(26px 14px 13px rgba(28,20,10,.22))}
+#segrHero .sg2-sofia-posto,#segrHero .sg2-sf{display:block;position:absolute;inset:0}
+#segrHero:has(.sg2-sf.parla) .casa-card.tre{--tre-scala:1.47}
+#segrHero:has(.sg2-sf.ascolta) .casa-card.tre{--tre-scala:1.46}
+#segrHero .sg2-sf video,#segrHero .sg2-sf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 22%;transform:none;transform-origin:50% 100%;scale:var(--tre-scala);translate:0 var(--tre-alza);transition:opacity .45s ease,scale .6s ease;
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,#000 85%,transparent 99%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent 0,#000 9%,#000 91%,transparent 100%),linear-gradient(to bottom,#000 85%,transparent 99%);mask-composite:intersect}
+@media (prefers-reduced-motion:reduce){#segrHero .sg2-sf video,#segrHero .sg2-sf img{transition:none}}
+:root[data-theme="dark"] #segrHero .casa-card .sg2-sofia{filter:drop-shadow(-2px 4px 4px rgba(0,0,0,.45)) drop-shadow(26px 14px 13px rgba(0,0,0,.45))}
+/* il riquadro: quello che c'è dentro */
+#segrHero .sgh{display:block;margin:0;padding:0}
+#segrHero .sgh .sgh-fumetto{margin:0}
+#segrHero .sgh .sg2-bolla{margin:2px 0 0}
+#segrHero .sgh .sg2-bolla::before{display:none}
+#segrHero .sgh .sg2-bolla p{font-size:18px;line-height:1.4;font-weight:600}
+#segrHero .sgh .sg2-bolla small{font-size:15px}
+#segrHero .sgh-tasti{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 0}
+#segrHero .sgh-tasti .sg2-mic{margin:0;justify-content:center;min-height:54px;font-size:18px;border-width:2px;border-radius:16px}
+#segrHero .sgh > .banner{margin:10px 0 0}
+#segrHero .sgh-tit{margin:18px 2px 8px;font-family:"Jakarta Grassetto","Plus Jakarta Sans",system-ui,sans-serif;font-size:21px;line-height:1.15;font-weight:800;letter-spacing:.2px;text-transform:uppercase;color:#1C1917}
+#segrHero .sgh-ascolta{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:62px;margin:0 0 10px;padding:8px 14px;border-radius:18px;background:#fff;border:2px solid #D6BC85;box-shadow:0 3px 10px -6px rgba(15,23,42,.22);color:#0F172A;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#segrHero .sgh-ascolta:active{background:#FAF2D3}
+#segrHero .sgh-alt{font-size:28px;line-height:1}
+#segrHero .sgh-at{display:flex;flex-direction:column;gap:2px}
+#segrHero .sgh-at b{font-family:"Jakarta Grassetto","Plus Jakarta Sans",system-ui,sans-serif;font-size:22px;line-height:1.1;font-weight:800}
+#segrHero .sgh-at small{font-size:15.5px;line-height:1.2;font-weight:600;color:#44403C}
+/* le tessere (il disegno di Gemini): numero grande in alto a sinistra, il disegno a matita, la parola */
+.sgt-griglia{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 4px}
+.sgt{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:188px;margin:0;padding:8px 6px 10px;border-radius:20px;border:2.5px solid #D6BC85;background:#fff;color:#0F172A;font:inherit;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 3px 8px -5px rgba(15,23,42,.3);overflow:hidden}
+button.sgt:active,.sgt .sgt-apri:active{filter:brightness(.95)}
+.sgt-n{position:absolute;left:12px;top:6px;font-family:"Jakarta Grassetto","Plus Jakarta Sans",system-ui,sans-serif;font-size:50px;line-height:1;font-weight:800;letter-spacing:-1.5px;color:#0F172A}
+.sgt-d{display:block;width:118px;height:118px;max-width:72%;object-fit:contain;margin:26px 0 2px}
+.sgt-p{display:block;font-family:"Jakarta Grassetto","Plus Jakarta Sans",system-ui,sans-serif;font-size:22px;line-height:1.1;font-weight:800;color:#0F172A}
+.sgt-s{display:block;margin-top:2px;font-size:16px;line-height:1.15;font-weight:700;color:#334155}
+:root[data-theme="dark"] .sgt-s{color:#334155}
+.sgt.arrivi{background:#DCEAF6;border-color:#2F6DA4}
+.sgt.partenze{background:#FBE2CF;border-color:#C8763A}
+.sgt.pulizie{background:#DDEFDB;border-color:#2E7D4F}
+.sgt.email{background:#FBEFCB;border-color:#B98A2E}
+.sgt.arrivi .sgt-d,.sgt.partenze .sgt-d{width:132px;height:124px;margin-top:22px;margin-left:26px}
+.sgt.pulizie .sgt-p{font-size:20px}
+/* i cassetti: il nome in alto, il numero, il disegno; «Da fare tu» ha il suo tasto */
+.sgt.cass{padding:0;cursor:default;justify-content:flex-start;min-height:216px}
+.sgt.cass .sgt-apri{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;margin:0;padding:8px 6px 8px;border:0;background:none;color:inherit;font:inherit;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sgt.cass .sgt-t{display:block;font-family:"Jakarta Grassetto","Plus Jakarta Sans",system-ui,sans-serif;font-size:21px;line-height:1.1;font-weight:800;color:#0F172A}
+.sgt.cass .sgt-n{position:static;align-self:flex-start;margin:4px 0 0 8px;font-size:48px}
+.sgt.cass .sgt-d{width:112px;height:112px;margin:-30px 0 0 34px}
+.sgt.cass.fare .sgt-d{width:96px;height:96px;margin-top:-34px}
+.sgt.cass.fare{background:#FADCDD;border-color:#A8414A}
+.sgt.cass.prop{background:#FBE4D0;border-color:#C8763A}
+.sgt.cass.fatto{background:#DDEFDC;border-color:#3C8A4E}
+.sgt.cass.sapere{background:#FBF1C8;border-color:#C9A227}
+.sgt.cass.zero .sgt-n{opacity:.55}
+.sgt.cass.aperto{box-shadow:0 0 0 3px rgba(15,23,42,.85),0 6px 14px -6px rgba(15,23,42,.5)}
+.sgt.cass.aperto::after{content:"";position:absolute;left:50%;bottom:-2px;width:18px;height:18px;margin-left:-9px;background:#0F172A;clip-path:polygon(50% 100%,0 0,100% 0);transform:translateY(100%)}
+.sgt-piu{display:block;width:calc(100% - 16px);min-height:52px;margin:0 8px 8px;padding:5px 6px;border-radius:14px;border:2px dashed #A8414A;background:rgba(255,255,255,.82);color:#0F172A;font:700 16px/1.15 inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sgt-piu:active{background:#fff}
+/* le righe del cassetto aperto: quelle di sempre, larghe quanto il riquadro */
+.sgt-aperto{margin:14px 0 4px}
+.sgt-aperto .sg2-c{margin:0}
+.sgt-aperto .sg2-nuovo{display:none}
+#segrHero .sgh .sg2-doc{margin:0 0 6px}
+:root[data-theme="dark"] #segrHero .sgh-tit{color:#F2F2F5}
+:root[data-theme="dark"] #segrHero .sgh-ascolta{background:#2A2A2E;border-color:#8C6D3F;color:#F2F2F5}
+:root[data-theme="dark"] #segrHero .sgh-at small{color:#C9C5BE}
+:root[data-theme="dark"] .sgt{box-shadow:none}
+:root[data-theme="dark"] .sgt.cass.aperto{box-shadow:0 0 0 3px #F3E3B8}
+:root[data-theme="dark"] .sgt.cass.aperto::after{background:#F3E3B8}
+/* la linguetta del riquadro: un tasto vero, sempre in vista. A riquadro aperto lo nasconde (si vede tutta Sofia, col bancone e il
+   computer); a riquadro nascosto (la striscia sottile in fondo, come nella prima pagina) lo rimette */
+body.premium #segrHero:not(.tenda-chiusa) .casa-nuvola .casa-nascondi{display:flex;position:absolute;top:0;left:50%;z-index:4;width:150px;height:34px;margin:-6px 0 0 -75px;padding:0;align-items:center;justify-content:center;border:0;background:none;color:#9A7432;cursor:pointer;-webkit-tap-highlight-color:transparent}
+body.premium #segrHero:not(.tenda-chiusa) .casa-nuvola .casa-nascondi svg{display:block;width:26px;height:14px}
+body.premium #segrHero:not(.tenda-chiusa) .casa-presa{display:none}
+:root[data-theme="dark"] body.premium #segrHero .casa-nuvola .casa-nascondi{color:#D4AF6A}
+body.ha-segr #app{padding-top:0;padding-bottom:0;min-height:0}   /* sotto la testa non c'è altro: la pagina non scorre a vuoto */

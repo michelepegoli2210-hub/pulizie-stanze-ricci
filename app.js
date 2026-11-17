@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.91.2";
+export const VERSIONE = "1.92.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -111,9 +111,9 @@ const FILMATI = [
   { id: "oggi-parla-3", g: "oggi", q: "parla", i: 2, nome: "Parla 3" },
   { id: "oggi-parla-4", g: "oggi", q: "parla", i: 3, nome: "Parla 4" },
   { id: "oggi-parla-5", g: "oggi", q: "parla", i: 4, nome: "Parla 5" },
-  { id: "segr-ferma", g: "segr", q: "riposo", nome: "Sta ferma", s: 9 },
-  { id: "segr-ascolta", g: "segr", q: "ascolta", nome: "Ti ascolta", s: 9 },
-  { id: "segr-parla", g: "segr", q: "parla", nome: "Parla", s: 5 },
+  { id: "segr-ferma", g: "segr", q: "riposo", nome: "Lavora: tablet e computer", s: 20 },   // 1.92.0 (prima: «Sta ferma», 9)
+  { id: "segr-ascolta", g: "segr", q: "ascolta", nome: "Ti ascolta", s: 4 },
+  { id: "segr-parla", g: "segr", q: "parla", nome: "Parla", s: 4 },
   { id: "capo-ferma", g: "capo", q: "riposo", nome: "Sta ferma", s: 6 },
   { id: "capo-parla", g: "capo", q: "parla", nome: "Parla", s: 15 },
   { id: "influ-muove", g: "influ", q: "video", nome: "Si muove", s: 10 },
@@ -241,7 +241,7 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr5-riposo-3d.webm", ascolta: "segr5-ascolta-3d.webm", parla: "segr5-parla-3d.webm", poster: "segr5-poster-3d.webp" };   // 1.85.0 (Michele: «il suo filmato salta troppo»): i segr5, 480x600, il bordo di sotto non lampeggia più, il giro senza salto (strumenti/fai-segr5.py)   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
+const FILM_SEGR = { riposo: "segr6-riposo-3d.webm", ascolta: "segr6-guarda-3d.webm", parla: "segr6-guarda-3d.webm", poster: "segr6-poster-3d.webp" };   // 1.92.0: i segr6 (la camicetta rosa; lavora al tablet e al computer; 540x960 come la Sofia della prima pagina). Prima: i segr5 ·   // 1.85.0 (Michele: «il suo filmato salta troppo»): i segr5, 480x600, il bordo di sotto non lampeggia più, il giro senza salto (strumenti/fai-segr5.py)   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -1830,6 +1830,7 @@ function disegna() {
   if (sx != null && $(".board-wrap")) { $(".board-wrap").scrollLeft = sx; $(".board-wrap").scrollTop = sy; }
   filmMontaTenuti();   // 1.43.0: i filmati di Sofia nelle pagine, al loro posto senza ripartire
   disegnaCasa();
+  disegnaSegrHero();   // 1.92.0: la testa della Segreteria, come quella della prima pagina
   disegnaStanze();   // 1.41.0: le stanze sotto Sofia, sopra la striscia dei giorni
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
   sofiaFuori();
@@ -6911,6 +6912,135 @@ function sg2NuovoRicordo() {
     setTimeout(() => { try { el.querySelector("[data-sg2-rtesto]").focus(); } catch (e) {} }, 50);
   });
 }
+// ============================================================================
+//  1.92.0 LA SEGRETERIA COME LA PRIMA PAGINA (Michele, 17/11, visto il disegno fatto da Gemini: «la grafica e l'impaginazione di
+//  sofia segretaria va benissimo così ma… la sua interfaccia deve essere uguale a quella di sofia governante che sta all'inizio
+//  dell'app… deve avere il suo vestito diverso, fallo come adesso ma metti qualcosa di rosa, fai fare dei nuovi filmati dove sofia
+//  segretaria mentre sta ferma passa dal tablet al pc ed è impegnata a fare le mansioni di segreteria»).
+//  - La testa (#segrHero) ha le stesse classi di quella della prima pagina (.sofia-hero, .casa-scena, .casa-card, .casa-lato,
+//    .casa-nuvola…): prende da sola lo stesso stile. È un altro pezzo, col suo nome: i tasti e i gesti della prima pagina
+//    (legati a #sofiaHero) qui non scattano. Dentro la cornice c'è Sofia segretaria coi suoi filmati di sempre (sg2SofiaMonta).
+//  - Nel riquadro (si scorre dentro, come le notizie della prima pagina) il disegno di Gemini: cosa dice Sofia, «Parlale» e
+//    «Scrivile»; 1) Oggi con «Ascolta» e quattro tessere col numero grande e il disegno a matita; 2) i quattro cassetti, quattro
+//    tessere: un tocco apre le righe di quel cassetto (le stesse di prima, coi loro tasti); 3) i documenti degli ospiti.
+//  - La linguetta del riquadro lo nasconde (si vede tutta Sofia, col bancone e il computer) e lo rimette; la scelta resta.
+//  - Negli altri stili la Segreteria resta com'era (il palco).
+// ============================================================================
+let sg2Pezzi = null;
+const CHIAVE_SEGR_TENDA = "ricci_segr_tenda";
+function segrHeroAttivo() { try { return !!(S.pronto && S.utente && S.utente.ruolo && proprietario() && S.vista === "segreteria" && premiumScelto()); } catch (e) { return false; } }
+function segrTendaGiu() { try { return localStorage.getItem(CHIAVE_SEGR_TENDA) === "giu"; } catch (e) { return false; } }
+function segrOssatura() {
+  const nome = nomeGov();
+  return `<div class="casa-scena">
+      <span class="casa-arco" aria-hidden="true"><i class="ca-ombra"></i></span>
+      <div class="casa-card tre"><span class="tre-luce" aria-hidden="true"></span>
+        <button type="button" class="sg2-sofia" data-sg2-sofia aria-label="${esc(nome)}: toccala e ti racconta la giornata" aria-pressed="false"><span class="sg2-sofia-posto"></span></button>
+      </div>
+      <div class="casa-lato">
+        <button type="button" class="casa-lato-mic casa-t-mic" data-sg2-mic aria-label="Parla con ${esc(nome)}">${CASA_ICO.mic}</button>
+        <button type="button" class="casa-ascolta casa-t-voce" data-sg2-ascolta aria-label="${esc(nome)} ti racconta la giornata a voce"><i class="cl-tondo">${CASA_ICO.onda}</i><span>Ascolta</span></button>
+      </div>
+    </div>
+    <span class="casa-velo" aria-hidden="true"></span>
+    <div class="casa-nuvola" id="segrNuvola">
+      <span class="casa-vene" aria-hidden="true"></span>
+      <span class="casa-presa" aria-hidden="true"></span>
+      <button type="button" class="casa-nascondi" data-segr-nascondi aria-expanded="true" aria-label="Nascondi il riquadro: si vede tutta ${esc(nome)}"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="casa-testo"><div class="of sg2 sgh"></div></div>
+    </div>`;
+}
+// cosa dice Sofia: mentre ti ascolta, ci pensa o ti ha risposto, la nuvoletta di sempre; se no il saluto e il riassunto di oggi
+function segrFumettoHtml(pz) {
+  if (S.sg2Bolla) return sg2BollaHtml();
+  const r = pz.riass || [], ultima = r.length > 1 ? r[r.length - 1] : "";
+  return `<div class="of-fumetto sgh-fumetto"><span class="of-chi"><b>${esc(pz.nome)}</b> ti dice</span><p class="of-dice"><b class="of-sal">${esc(saluto())}, ${esc(nomeMio())}!</b> <span class="of-testo">${(ultima ? r.slice(0, -1) : r).join(" ")}</span></p>${ultima ? `<p class="of-fai"><span class="of-fai-t">${ultima}</span></p>` : ""}</div>`;
+}
+function segrEmailOggi() { const oggi = L.oggiISO(); return Object.values(S.posta || {}).filter(p => p && p.chat === "Email albergo" && String(p.data || "") === oggi); }
+// 1) Oggi: le quattro tessere del disegno di Gemini (il numero grande, il disegno a matita, la parola)
+function segrOggiHtml() {
+  const oggi = L.oggiISO(), mv = movimentiDelGiorno(oggi);
+  const pul = pulizieDelGiorno(oggi).filter(p => p.tipo !== "stelle"), fatte = pul.filter(p => p.stato === "fatta").length;
+  const em = segrEmailOggi().length;
+  // il numero grande è quello delle PERSONE, come nella prima pagina («col numero delle persone ovviamente, ospiti»); sotto, piccolo,
+  // in quante camere (il riassunto di Sofia lì sopra conta le camere: così i due numeri si capiscono)
+  const cam = (l) => l.length ? `in ${l.length} ${l.length === 1 ? "camera" : "camere"}` : "";
+  const t = (cls, n, dis, parola, attr, dici, sotto) => `<button type="button" class="sgt ${cls}" ${attr} aria-label="${esc(dici)}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span>${sotto ? `<small class="sgt-s">${esc(sotto)}</small>` : ""}</button>`;
+  return `<div class="sgt-griglia">${
+    t("arrivi", mv.ospitiArr, "mat-arrivi.webp", mv.ospitiArr === 1 ? "Arrivo" : "Arrivi", `data-segr-vai="arriviOggi"`, mv.ospitiArr ? `Oggi ${mv.ospitiArr === 1 ? "arriva 1 ospite" : `arrivano ${mv.ospitiArr} ospiti`}, ${cam(mv.arr)}: tocca per vedere chi` : "Oggi non arriva nessuno", cam(mv.arr))}${
+    t("partenze", mv.ospitiPar, "mat-partenze.webp", mv.ospitiPar === 1 ? "Partenza" : "Partenze", `data-segr-vai="partenzeOggi"`, mv.ospitiPar ? `Oggi ${mv.ospitiPar === 1 ? "parte 1 ospite" : `partono ${mv.ospitiPar} ospiti`}, ${cam(mv.par)}: tocca per vedere chi` : "Oggi non parte nessuno", cam(mv.par))}${
+    t("pulizie", pul.length, "mat-secchio.webp", fatte ? `Pulizie · ${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : pul.length === 1 ? "Pulizia" : "Pulizie", `data-segr-vai="pulizie"`, pul.length ? `Oggi ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}, ${fatte} ${fatte === 1 ? "fatta" : "fatte"}: tocca per vederle` : "Oggi nessuna pulizia")}${
+    t("email", em, "mat-busta.webp", "Email", "data-segr-email", em ? `Oggi ${em === 1 ? "è arrivata 1 email" : `sono arrivate ${em} email`}: tocca per sapere da chi` : "Oggi non è arrivata nessuna email")}</div>`;
+}
+// 2) I quattro cassetti: quattro tessere col numero; un tocco apre le righe di quel cassetto (uno alla volta)
+const SEGR_CASSETTI = [["fare", "Da fare tu", "mat-sveglia.webp"], ["prop", "Ti propongo", "mat-scintilla.webp"], ["fatto", "Ho fatto io", "mat-spunte.webp"], ["sapere", "Da sapere", "mat-stella.webp"]];
+function segrCassettoAperto(pz) {
+  if (S.sg2Aperto !== undefined) return S.sg2Aperto;
+  const n = (pz && pz.n) || {};
+  return n.fare ? "fare" : n.prop ? "prop" : "";   // di partenza quello dove c'è qualcosa che aspetta lui
+}
+function segrCassettiHtml(pz) {
+  const ap = segrCassettoAperto(pz);
+  return `<div class="sgt-griglia sgt-cassetti">${SEGR_CASSETTI.map(([k, t, d]) => `<div class="sgt cass ${k}${ap === k ? " aperto" : ""}${pz.n[k] ? "" : " zero"}"><button type="button" class="sgt-apri" data-segr-cassetto="${k}" aria-expanded="${ap === k}" aria-label="${t}: ${pz.n[k]}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><span class="sgt-t">${t}</span><b class="sgt-n">${pz.n[k]}</b><img class="sgt-d" src="${d}" alt="" width="240" height="240"></button>${k === "fare" && pz.mod ? `<button type="button" class="sgt-piu" data-sg2-nuovo><span aria-hidden="true">＋</span> Ricordami una cosa</button>` : ""}</div>`).join("")}</div>${ap && pz.cass[ap] ? `<div class="sgt-aperto ${ap}">${pz.cass[ap]}</div>` : ""}`;
+}
+function segrDentroHtml(pz) {
+  return `${segrFumettoHtml(pz)}
+    <div class="sg2-tasti sgh-tasti"><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Parlale"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi><span aria-hidden="true">✍️</span> Scrivile</button></div>
+    ${pz.banner || ""}
+    <h3 class="sgh-tit">1) Oggi</h3>
+    <button type="button" class="sgh-ascolta" data-sg2-ascolta><span class="sgh-alt" aria-hidden="true">🔊</span><span class="sgh-at"><b>Ascolta</b><small>${esc(pz.nome)} me lo racconta a voce</small></span></button>
+    ${segrOggiHtml()}
+    <h3 class="sgh-tit">2) I quattro cassetti</h3>${segrCassettiHtml(pz)}
+    <h3 class="sgh-tit">3) Documenti degli ospiti</h3>${pz.doc || ""}`;
+}
+function disegnaSegrHero() {
+  let h = document.getElementById("segrHero");
+  if (!segrHeroAttivo() || !sg2Pezzi) {
+    if (h) { h.remove(); window.scrollTo(0, 0); }
+    document.body.classList.remove("ha-segr");
+    return;
+  }
+  if (!h) {
+    h = document.createElement("section");
+    h.id = "segrHero"; h.className = "sofia-hero segr-hero oggi-facile notizie-scorrono"; h.dataset.tre = "1"; h.dataset.salone = "no";
+    h.innerHTML = segrOssatura();
+    try { tendaMisuraApplica(h); } catch (e) {}   // la stessa misura del riquadro scelta col dito nella prima pagina
+    if (segrTendaGiu()) { h.classList.add("tenda-chiusa", "tenda-nascosta"); const n = h.querySelector(".casa-nascondi"); if (n) { n.setAttribute("aria-expanded", "false"); n.setAttribute("aria-label", "Rimetti il riquadro"); } }
+    const app = document.getElementById("app");
+    document.body.insertBefore(h, app || document.body.firstChild);
+    window.scrollTo(0, 0);
+  }
+  document.body.classList.add("ha-segr");
+  const dentro = h.querySelector(".sgh"), html = segrDentroHtml(sg2Pezzi);
+  if (dentro && dentro._hh !== html) { const sc = dentro.parentNode, y = sc.scrollTop; dentro._hh = html; dentro.innerHTML = html; sc.scrollTop = y; }
+  try { misuraBarre(); } catch (e) {}
+}
+function segrTendaCambia() {
+  const h = document.getElementById("segrHero"); if (!h) return;
+  const giu = !h.classList.contains("tenda-nascosta");
+  h.classList.toggle("tenda-chiusa", giu); h.classList.toggle("tenda-nascosta", giu);
+  try { if (giu) localStorage.setItem(CHIAVE_SEGR_TENDA, "giu"); else localStorage.removeItem(CHIAVE_SEGR_TENDA); } catch (e) {}
+  const n = h.querySelector(".casa-nascondi"); if (n) { n.setAttribute("aria-expanded", giu ? "false" : "true"); n.setAttribute("aria-label", giu ? "Rimetti il riquadro" : `Nascondi il riquadro: si vede tutta ${nomeGov()}`); }
+}
+// una tessera di «Oggi»: si va nella prima pagina, sul foglio di chi arriva, di chi parte o delle pulizie
+function segrVai(k) {
+  S.vista = "oggi"; S.giorno = L.oggiISO(); disegna(); window.scrollTo(0, 0);
+  setTimeout(() => { try { dettaglioApri(k); } catch (e) {} }, 350);
+}
+function segrEmailDici() {
+  const em = segrEmailOggi();
+  if (!em.length) { toast("Oggi non è arrivata nessuna email alla casella dell'albergo."); return; }
+  const chi = [...new Set(em.map(p => String(p.chi || "").trim()).filter(Boolean))].slice(0, 4);
+  toast(`Oggi ${em.length === 1 ? "è arrivata 1 email" : `sono arrivate ${em.length} email`}${chi.length ? ": " + chi.join(", ") : ""}. Quello che c'è da fare lo trovi nei cassetti.`.slice(0, 200));
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria" || !t.closest("#segrHero")) return;
+  let x;
+  if (t.closest("[data-segr-nascondi]") || (t.closest(".casa-nuvola") && document.getElementById("segrHero").classList.contains("tenda-nascosta"))) { e.preventDefault(); segrTendaCambia(); return; }
+  if ((x = t.closest("[data-segr-cassetto]"))) { const k = x.dataset.segrCassetto; S.sg2Aperto = segrCassettoAperto(sg2Pezzi) === k ? "" : k; disegna(); if (S.sg2Aperto) setTimeout(() => { const a = document.querySelector("#segrHero .sgt-aperto"); if (a && a.scrollIntoView) a.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, 80); return; }
+  if ((x = t.closest("[data-segr-vai]"))) { segrVai(x.dataset.segrVai); return; }
+  if (t.closest("[data-segr-email]")) { segrEmailDici(); return; }
+});
 function vistaSegreteria() {
   const nome = nomeGov(), mod = puoModificare();
   const riass = sg2Riassunto();
@@ -6952,6 +7082,13 @@ function vistaSegreteria() {
   const imparate = (Array.isArray(S.taccuino) ? S.taccuino : []).filter(v => v && v.testo).sort((a, b) => String(b.quando || "").localeCompare(String(a.quando || ""))).slice(0, 2);
   const imparato = imparate.length ? `<div class="sg2-imp"><b><span aria-hidden="true">🧠</span> Cosa ho imparato</b>${imparate.map(v => `<p>${esc(String(v.testo).replace(/^Correzione di Michele:\s*/i, ""))}</p>`).join("")}</div>` : "";
   const banner = mod ? bannerLettura() : "";
+  // 1.92.0: con la testa come la prima pagina (stile Premium) i pezzi vanno nel suo riquadro (disegnaSegrHero): qui resta solo il posto
+  if (segrHeroAttivo()) {
+    const sez = cassetti.split('<section class="sg2-c ').slice(1).map(x => '<section class="sg2-c ' + x.replace(/<\/div>\s*$/, ""));
+    sg2Pezzi = { nome, mod, riass, banner, doc, cass: { fare: sez[0] || "", prop: sez[1] || "", fatto: sez[2] || "", sapere: sez[3] || "" },
+      n: { fare: sg2PerTe().filter(y => !y.vista && sg2Adesso(y)).length, prop: prop.length, fatto: fatti.length, sapere: sapere.length } };
+    return `<section class="sg2 sg2-su" aria-hidden="true"></section>`;
+  }
   return `<section class="sg2"><div class="sg2-testa sg2-palco"><div class="sg2-tt"><h2>Segreteria</h2><p>${esc(nome)}, la tua assistente</p></div><button type="button" class="sg2-sofia" data-sg2-sofia aria-label="${esc(nome)}: toccala e ti racconta la giornata" aria-pressed="false"><span class="sg2-sofia-posto"></span></button><small class="sg2-tocca">👆 Toccala: ti racconta la giornata</small>${sg2BollaHtml()}<div class="sg2-tasti"><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Parlale"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi><span aria-hidden="true">✍️</span> Scrivile</button></div></div>
     ${banner}
     <h3 class="sg2-tit">1) Riassunto di oggi</h3>

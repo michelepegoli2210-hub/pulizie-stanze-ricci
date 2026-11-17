@@ -144,6 +144,14 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   uguale in tutti i fotogrammi, il giro che finisce dove ricomincia). In testa alla Segreteria il palco (`.sg2-palco`): lei
   grande in mezzo, la nuvoletta con quello che dice, «🎤 Parlale» e «✍️ Scrivile». Il fantasmino (`segrFuori`) giù nella
   pagina c'è sempre: fermo il viso con «🎤 Parlale» (tocchi: torni su e ti ascolta), mentre parla è lei (tocchi: smette).
+- La Segreteria come la prima pagina (1.92.0; Michele, visto il disegno di Gemini: «la grafica e l'impaginazione… va benissimo
+  così ma… la sua interfaccia deve essere uguale a quella di sofia governante che sta all'inizio dell'app… metti qualcosa di
+  rosa, fai fare dei nuovi filmati dove… passa dal tablet al pc»). Nello stile Premium la testa della Segreteria è `#segrHero`:
+  le stesse classi della testa della prima pagina (`.sofia-hero`…), quindi lo stesso stile, ma un pezzo a parte
+  (`disegnaSegrHero`). Nel riquadro il disegno di Gemini: tessere col numero grande e il disegno a matita (`.sgt`; i disegni
+  nuovi sono `mat-sveglia`, `mat-spunte`, `mat-busta`, `mat-arrivi`, `mat-partenze`), un tocco su un cassetto apre le sue righe.
+  I filmati sono i segr6 (camicetta rosa, 540x960, fatti da Gemini col verde dietro e ritagliati con `strumenti/verde.py`):
+  ogni video parte e finisce nella posa della foto. Negli altri stili resta il palco della 1.85.0.
 
 - Jarvis (1.88.0) è la pagina personale del titolare, fatta come un'app delle cose da fare (Michele: «basato sulle app di
   produttività, to do list»): in cima Jarvis (la galassia, `canvas.jv-gal`) e quello che dice; «Da fare oggi» coi tondi da
