@@ -3340,3 +3340,9 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Quando la copertina esce dallo schermo il filmato si ferma (non consuma batteria); se ci torni dopo un po' ricomincia dal saluto.
   - La copertina è un po' più alta, così si vedono la testa e le spalle. I filmati sono gli stessi due della sua pagina: se li hai cancellati da «I filmati di Sofia», resta la foto.
   - La parte di sotto della sua pagina e la Segreteria le ridisegna Gemini: le due richieste sono pronte sul PC, aspettano la freccia di Michele.
+- **1.90.2** (17/11, Michele: «è ancora poco armoniosa in alcuni frangenti sorride e torno di colpo seria sembra una pazza pero va gia molto meglio»). Sofia ferma non fa più il sorriso che va e viene.
+  - Dov'era: il primo pezzo del filmato «ferma» cominciava col sorriso grande coi denti (quello della foto) e in mezzo secondo lo perdeva. Succedeva ogni volta che il filmato ricominciava (ogni 19 secondi) e ogni volta che Sofia smetteva di parlare.
+  - Adesso il filmato comincia e ricomincia un secondo dopo, dove il sorriso è già quello tranquillo. Gli altri fotogrammi sono gli stessi; il passaggio dalla fine al nuovo inizio è rifatto come gli altri, solo coi due fotogrammi veri. Dura 18 secondi (erano 19).
+  - La foto di partenza (quella che si vede prima che il filmato parta, e quando i filmati sono cancellati) è il nuovo primo fotogramma: all'apertura non cambia faccia.
+  - Il sorriso grande resta quando comincia a parlare. Resta com'è il cambio di colpo tra «ferma» e «parla»: è il prossimo lavoro.
+  - File nuovi: cons-riposo-spilla-sereno (.mp4, -3d.webm, -alfa.mp4) e cons-poster-sereno (.webp, -3d.webp). I pezzi in «Impostazioni → I filmati di Sofia» sono gli stessi 7.

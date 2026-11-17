@@ -74,11 +74,17 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   fatto solo coi due fotogrammi veri (`strumenti/attacco.py`, `fai-fluido.py`: niente ridisegnato da una macchina). In `app.js`:
   `FILM_SPEZZONI` (dove comincia ogni pezzo), `FILM_CODE` (dove finiscono i suoi fotogrammi veri), `FILM_FINE`. Resta il
   cambio di colpo quando comincia o smette di parlare (si passa da un filmato all'altro).
+- Da ferma senza il sorriso che va e viene (1.90.2; Michele: «in alcuni frangenti sorride e torna di colpo seria, sembra una
+  pazza»). Il primo pezzo di «ferma» cominciava col sorriso grande coi denti della foto e in mezzo secondo lo perdeva: a ogni
+  giro del filmato e ogni volta che smetteva di parlare. Adesso comincia e ricomincia un secondo dopo, col sorriso tranquillo
+  (`tagli=[24, …]` in `strumenti/fai-fluido.py`; `cons-riposo-spilla-sereno*`), e la foto di partenza è quel fotogramma
+  (`cons-poster-sereno*.webp`). Quando si rifà un filmato di Sofia si guardano i visi di tutto il giro, non solo gli attacchi.
 - La copertina di Sofia influencer (1.90.1; Michele: «sofia si deve muovere già dalla copertina»): la sua stanza, quella larga in
   fondo alla prima pagina, ha sopra la foto il suo filmato (`stanzaFilmMonta`: parte quando entra nello schermo, si ferma
   quando esce; i due filmati sono quelli della sua pagina, `FILM_INFLU`). La parte di sotto della sua pagina e la Segreteria
   le ridisegna Gemini («fai ridisegnare… a gemini»): Claude prepara la richiesta con le foto della copia di prova (nomi di
   persona e di camera cambiati), Michele preme la freccia; la pagina si costruisce dal disegno, senza ridisegnare Sofia.
+  (Il 17/11 la richiesta della Segreteria l'ha mandata Claude, perché Michele ha chiesto di vedere le immagini: gliel'ha detto.)
 
 - Le chat con Sofia (1.80.2): una risposta più lunga del riquadro si ferma al suo inizio, non in fondo (`chatUltima`), con
   «Continua ▾»; il riquadro di «Parla con Sofia» non si sposta a ogni disegno (`svChatPosto`). Lì la pagina si accorcia sopra

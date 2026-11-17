@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.90.1";
+export const VERSIONE = "1.90.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -87,7 +87,7 @@ const FACCE_PRONTE = { base: "sofia-viso.webp" };
 //  (il medaglione), che restano sul sito: Michele può tornare indietro quando vuole.
 const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
 function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
-const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-fluido.mp4", riposo: "cons-riposo-spilla-fluido.mp4", poster: "cons-poster-spilla.webp" };   // 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-fluido.mp4", riposo: "cons-riposo-spilla-sereno.mp4", poster: "cons-poster-sereno.webp" };   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // ============================================================================
 //  1.80.0 I FILMATI CANCELLATI (Michele, 12/11: «i filmati di Sofia non mi piacciono per niente… fammi vedere tutti i filmati
 //  caricati nell'app così li cambiamo» → «sì, ma dammi la possibilità di cancellarne qualcuno»).
@@ -169,9 +169,15 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 //    che segue). FILM_FINE: dove finisce il filmato (poi ricomincia da solo, senza stacco).
 //  - La Sofia «com'era» (il medaglione) resta coi tagli netti di prima: lì la coda di un pezzo è l'inizio del pezzo dopo.
 //  - Resta il cambio di colpo quando comincia o smette di parlare (si passa da un filmato all'altro).
-const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 238], parla: [0, 247, 457, 712, 932] };
-const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [222, 442], parla: [240, 450, 697, 917, 1154] };
-const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 455, parla: 1169 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
+// 1.90.2 (Michele, 17/11: «è ancora poco armoniosa, in alcuni frangenti sorride e torna di colpo seria, sembra una pazza, però
+// va già molto meglio»): DA FERMA NON FA PIÙ IL SORRISO CHE VA E VIENE (cons-riposo-spilla-sereno). Il primo pezzo cominciava col
+// sorriso grande coi denti della foto e in mezzo secondo lo perdeva: succedeva ogni volta che il filmato ricominciava (ogni 19
+// secondi) e ogni volta che smetteva di parlare. Adesso il filmato comincia e ricomincia un secondo dopo, dove il sorriso è già
+// quello tranquillo (gli altri fotogrammi sono gli stessi); la foto di partenza è quel fotogramma (cons-poster-sereno), così
+// all'apertura non cambia faccia. Il sorriso grande resta quando comincia a parlare.
+const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 214], parla: [0, 247, 457, 712, 932] };
+const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [198, 418], parla: [240, 450, 697, 917, 1154] };
+const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 431, parla: 1169 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
 // 1.80.0: i pezzi cancellati da «I filmati di Sofia» (FILMATI: «oggi-ferma-1», «oggi-parla-3»…) e quelli buoni
 function filmSpezzoneTolto(quale, i) { return filmatoTolto(`oggi-${quale === "parla" ? "parla" : "ferma"}-${i + 1}`); }
 function filmSpezzoniBuoni(quale) { return (FILM_SPEZZONI[quale] || []).map((f, i) => i).filter(i => !filmSpezzoneTolto(quale, i)); }
@@ -197,7 +203,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-fluido-3d.webm", riposo: "cons-riposo-spilla-fluido-3d.webm", poster: "cons-poster-spilla-3d.webp" };   // 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-fluido-3d.webm", riposo: "cons-riposo-spilla-sereno-3d.webm", poster: "cons-poster-sereno-3d.webp" };   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
