@@ -31,3 +31,6 @@
   cui guardava di lato (andava avanti e poi indietro); nel pezzo calmo un gesto solo (inclina la testa e torna), mai lo stesso gesto
   due volte di fila; dove ai pezzi di una volta manca un fotogramma (`MANCA`) si mette quello a metà. Un pezzo nuovo si chiede a
   Gemini che parta e finisca nella posa della foto.
+  Dalla 1.91.2: i video che Gemini fa dalla foto hanno la spilla chiara, quasi bianca (nella foto è d'oro). `tingi-spilla.py` la
+  tinge d'oro lì dov'è, fotogramma per fotogramma (non la ridisegna: resta dietro la mano quando la mano le passa davanti). Si fa
+  su ogni video nuovo della governante, prima di `fai-giro.py`.

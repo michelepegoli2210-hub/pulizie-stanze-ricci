@@ -22,7 +22,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import attacco a
 
 SORG = {'c': '/home/claude/dev/video1910/nitido/calmo',     # il pezzo calmo di sempre (0..221), con la spilla, affilato (affila.py)
         'p': '/home/claude/dev/video1910/nitido/parla',     # i cinque pezzi in cui parla, affilati
-        's': '/home/claude/dev/video1910/out/saluto'}       # il video dei baci (fatto da Michele con Gemini), ritagliato come gli altri
+        's': '/home/claude/dev/spilla2/saluto-oro'}         # il video dei baci (fatto da Michele con Gemini), ritagliato come gli altri e con la
+                                                            # spilla tinta d'oro (tingi-spilla.py: Gemini l'aveva fatta chiara, quasi bianca)
 OUT = '/home/claude/dev/video1910/giro'
 CODA = 12   # fotogrammi di coda dopo ogni pezzo di «parla» (mezzo secondo): l'app guarda il filmato ogni 150 millesimi
 RIENTRO = 3   # quando un pezzo di «parla» ricomincia, l'app riparte da qui (3 fotogrammi dopo il suo inizio: prima c'è il giro)
