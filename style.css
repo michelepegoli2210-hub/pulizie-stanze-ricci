@@ -10211,3 +10211,223 @@ body.premium #segrHero:not(.tenda-chiusa) .casa-nuvola .casa-nascondi svg{displa
 body.premium #segrHero:not(.tenda-chiusa) .casa-presa{display:none}
 :root[data-theme="dark"] body.premium #segrHero .casa-nuvola .casa-nascondi{color:#D4AF6A}
 body.ha-segr #app{padding-top:0;padding-bottom:0;min-height:0}   /* sotto la testa non c'è altro: la pagina non scorre a vuoto */
+
+/* ============================================================================
+   1.94.0 · LA SEGRETERIA A MATITA, IN CORSIVO CHIARO (Michele, 17/11: «fai tutte le grafiche della segreteria fatte bene… stile
+   comprensibile al massimo, stile scuole elementari, tutte le icone e le scritte devono essere chiarissime e scritte a matita, i
+   colori ma fatti bene, falli fare a gemini, e in più le scritte devono essere in corsivo ma un corsivo veramente ultra
+   capibile»). Il disegno è di Gemini: una pagina di quaderno a righe, i riquadri col contorno a matita scura e il colore a
+   matite colorate, le scritte nel corsivo che si impara a scuola (Playwrite IT Moderna, carattere libero: OFL).
+   Michele legge male le scritte piccole: il corsivo sta da 18 in su, i nomi da 22, i numeri da 30 a 52.
+   Vale solo per la Segreteria (#segrHero) e per il foglio dell'email intera (.sge-foglio).
+   ---------------------------------------------------------------------------- */
+@font-face{font-family:"Playwrite IT Moderna";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/playwrite-it-moderna-latin-400-normal.woff2) format("woff2")}
+#segrHero,.sge-foglio{--mt-font:"Playwrite IT Moderna","Patrick Hand","Comic Sans MS",cursive;--mt-num:"Patrick Hand","Playwrite IT Moderna","Comic Sans MS",cursive;
+  --mt-carta:#FBF7EA;--mt-riga:rgba(110,165,205,.34);--mt-matita:#26262B;--mt-grigio:#55555E;--mt-blu:#2F6DA4;--mt-rosso:#BF473F;--mt-verde:#2E7D4F;--mt-oro:#B98A2E;
+  --mt-tratto:repeating-linear-gradient(118deg,rgba(255,255,255,.34) 0 2px,rgba(255,255,255,0) 2px 6px)}
+/* il foglio: carta color panna con le righe del quaderno (le righe scorrono con quello che c'è scritto) */
+body.premium #segrHero .casa-nuvola{background:var(--mt-carta);-webkit-backdrop-filter:none;backdrop-filter:none;border:2.5px solid var(--mt-matita);border-radius:22px 18px 24px 17px/18px 23px 17px 22px;box-shadow:3px 5px 0 -1px rgba(38,38,43,.16)}
+body.premium #segrHero .casa-nuvola::before{background:linear-gradient(var(--mt-carta) 25%,rgba(251,247,234,0))}
+body.premium #segrHero .casa-nuvola::after{background:linear-gradient(rgba(251,247,234,0),var(--mt-carta))}
+body.premium #segrHero .casa-nuvola .casa-vene{display:none}
+#segrHero .sgh{background-image:repeating-linear-gradient(to bottom,transparent 0 35px,var(--mt-riga) 35px 36px);background-position:0 8px;padding:0 0 10px;color:var(--mt-matita)}
+/* tutte le scritte in corsivo, a matita: niente grassetti finti, niente maiuscole, niente lettere distanziate */
+#segrHero .sgh,#segrHero .sgh *,.sge-foglio,.sge-foglio *{font-family:var(--mt-font) !important;font-weight:400 !important;font-synthesis:none;letter-spacing:0 !important;text-transform:none !important;font-style:normal !important}
+#segrHero .sgh b,#segrHero .sgh h3,#segrHero .sgh h4,#segrHero .sgh .sgt-p,#segrHero .sgh .sgt-t,.sge-foglio b,.sge-foglio h3{-webkit-text-stroke:.45px currentColor}
+#segrHero .sgh .sgt-n,#segrHero .sgh .sgo-pers b,#segrHero .sgh .sg2-n,#segrHero .sgh .sge-ora{font-family:var(--mt-num) !important;-webkit-text-stroke:.6px currentColor}
+#segrHero .sgh .mt-d{display:block;flex:none;object-fit:contain}
+/* quello che dice Sofia: il fumetto col contorno blu */
+#segrHero .sgh .sgh-fumetto{position:relative;margin:2px 0 0;padding:10px 14px 12px;background:#fff;border:2.5px solid var(--mt-blu);border-radius:20px 16px 22px 15px/16px 21px 15px 20px;box-shadow:none}
+#segrHero .sgh .sgh-fumetto .of-chi{display:block;margin:0 0 2px;font-size:17px;line-height:1.5;color:var(--mt-blu)}
+#segrHero .sgh .sgh-fumetto .of-dice{margin:0;font-size:21px;line-height:1.62;color:var(--mt-matita)}
+#segrHero .sgh .sgh-fumetto .of-sal{color:var(--mt-matita)}
+#segrHero .sgh .sgh-fumetto .of-fai{margin:8px 0 0;padding:6px 0 0;border-top:2px dashed rgba(47,109,164,.45);background:none;font-size:20px;line-height:1.6;color:var(--mt-rosso)}
+#segrHero .sgh .sg2-bolla{background:#fff;border:2.5px solid var(--mt-blu);border-radius:20px 16px 22px 15px/16px 21px 15px 20px;box-shadow:none}
+#segrHero .sgh .sg2-bolla p{font-size:21px;line-height:1.62;color:var(--mt-matita)}
+#segrHero .sgh .sg2-bolla small{font-size:17px;line-height:1.5;color:var(--mt-grigio)}
+/* «Parlale» e «Scrivile»: il disegno e la parola */
+#segrHero .sgh-tasti{gap:10px;margin:12px 0 0}
+#segrHero .sgh-tasti .sg2-mic{gap:6px;min-height:62px;padding:4px 8px;background:#fff;color:var(--mt-matita);border:2.5px solid var(--mt-matita);border-radius:18px 15px 19px 14px/15px 19px 14px 18px;box-shadow:2px 3px 0 -1px rgba(38,38,43,.18);font-size:22px;line-height:1.3}
+#segrHero .sgh-tasti .sg2-mic .mt-d{width:40px;height:40px}
+#segrHero .sgh-tasti .sg2-mic.ascolta{background:#FDE9E7;border-color:var(--mt-rosso)}
+#segrHero .sgh-tasti .sg2-mic:active{background:#FFF6D8}
+/* i titoli: grandi, come scritti in cima al foglio */
+#segrHero .sgh .sgh-tit{margin:20px 2px 8px;font-size:30px;line-height:1.3;color:var(--mt-matita)}
+/* «Ascolta» */
+#segrHero .sgh .sgh-ascolta{gap:12px;min-height:74px;margin:0 0 12px;padding:6px 14px;background:#fff;color:var(--mt-matita);border:2.5px solid var(--mt-matita);border-radius:19px 15px 20px 14px/15px 20px 14px 19px;box-shadow:2px 3px 0 -1px rgba(38,38,43,.18)}
+#segrHero .sgh .sgh-ascolta:active{background:#FFF6D8}
+#segrHero .sgh .sgh-ascolta .sgh-alt{width:54px;height:54px;font-size:0}
+#segrHero .sgh .sgh-at b{font-size:25px;line-height:1.25}
+#segrHero .sgh .sgh-at small{font-size:17px;line-height:1.45;color:var(--mt-grigio)}
+/* le tessere: il contorno a matita, il colore a matite colorate (il tratto), il numero grande */
+#segrHero .sgt-griglia{gap:10px;margin:0 0 6px}
+#segrHero .sgt{min-height:196px;padding:8px 6px 8px;color:var(--mt-matita);border:2.5px solid var(--mt-matita);border-radius:22px 17px 23px 16px/17px 23px 16px 22px;background-image:var(--mt-tratto);box-shadow:2px 3px 0 -1px rgba(38,38,43,.2)}
+#segrHero .sgt .sgt-n{left:12px;top:0;font-size:54px;line-height:1.05;color:var(--mt-matita)}
+#segrHero .sgt .sgt-p{font-size:24px;line-height:1.35;color:var(--mt-matita)}
+#segrHero .sgt .sgt-s{margin-top:0;font-size:17px;line-height:1.35;color:var(--mt-grigio)}
+#segrHero .sgt.arrivi{background-color:#D5E7F5}
+#segrHero .sgt.partenze{background-color:#FADDC6}
+#segrHero .sgt.pulizie{background-color:#D8EDD5}
+#segrHero .sgt.email{background-color:#FAECC3}
+#segrHero .sgt.pulizie .sgt-p{font-size:24px}
+/* una tessera di «Oggi» è aperta: le quattro diventano una fila di tessere piccole; quella aperta ha il contorno grosso e la freccina */
+#segrHero .sgt-griglia.stretta{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+#segrHero .sgt-griglia.stretta .sgt{min-height:118px;padding:4px 2px 5px;border-width:2px;border-radius:16px 13px 17px 12px/13px 17px 12px 16px;opacity:.9}
+#segrHero .sgt-griglia.stretta .sgt .sgt-n{left:7px;top:0;font-size:33px}
+#segrHero .sgt-griglia.stretta .sgt .sgt-d{width:56px;height:56px;max-width:none;margin:28px 0 0}
+#segrHero .sgt-griglia.stretta .sgt.arrivi .sgt-d,#segrHero .sgt-griglia.stretta .sgt.partenze .sgt-d{width:62px;height:58px;margin:26px 0 0 8px}
+#segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:15.5px;line-height:1.5;-webkit-text-stroke:.3px currentColor}
+#segrHero .sgt-griglia.stretta .sgt.aperta{opacity:1;box-shadow:inset 0 0 0 2.5px var(--mt-matita)}
+#segrHero .sgt-griglia.stretta .sgt.aperta::after{content:"";position:absolute;right:6px;top:7px;width:17px;height:20px;background:var(--mt-matita);clip-path:polygon(38% 0,62% 0,62% 58%,100% 58%,50% 100%,0 58%,38% 58%)}
+/* quello che si apre sotto: il titolo e le schede */
+#segrHero .sgo{margin:12px 0 4px}
+#segrHero .sgo .sgo-tit{margin:4px 2px 8px;font-size:27px;line-height:1.3;color:var(--mt-matita)}
+#segrHero .sgo .sgo-tit.due{margin-top:16px;font-size:23px;color:var(--mt-grigio)}
+#segrHero .sgo .sgo-vuoto{margin:0 0 8px;padding:12px 14px;background:#fff;border:2px dashed var(--mt-grigio);border-radius:16px 13px 17px 12px/13px 17px 12px 16px;font-size:21px;line-height:1.55;color:var(--mt-grigio)}
+#segrHero .sgo .sgo-poi{margin:10px 2px 0;font-size:19px;line-height:1.6;color:var(--mt-grigio)}
+/* chi arriva e chi parte: una scheda per camera */
+#segrHero .sgo-r{margin:0 0 10px;padding:8px 12px 12px;background:#fff;border:2.5px solid var(--mt-matita);border-radius:20px 16px 22px 15px/16px 21px 15px 20px;box-shadow:2px 3px 0 -1px rgba(38,38,43,.18)}
+#segrHero .sgo-r.arr{border-color:var(--mt-blu)}
+#segrHero .sgo-r.par{border-color:#C8763A}
+#segrHero .sgo-su{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#segrHero .sgo-chi{display:flex;flex-direction:column;min-width:0}
+#segrHero .sgo-cam{font-size:25px;line-height:1.4;color:var(--mt-matita);overflow-wrap:anywhere}
+#segrHero .sgo-nome{font-size:22px;line-height:1.45;color:var(--mt-matita);overflow-wrap:anywhere}
+#segrHero .sgo-fino{font-size:18px;line-height:1.5;color:var(--mt-grigio)}
+#segrHero .sgo-pers{display:flex;align-items:center;gap:2px;flex:none}
+#segrHero .sgo-pers .mt-d{width:74px;height:68px}
+#segrHero .sgo-pers b{font-size:40px;line-height:1;color:var(--mt-matita)}
+#segrHero .sgo-nota{margin:4px 0 0;font-size:18px;line-height:1.55;color:var(--mt-grigio)}
+#segrHero .sgo-fascia{display:flex;align-items:center;gap:8px;margin:8px 0 0;padding:5px 10px;border:2px solid var(--mt-matita);border-radius:14px 11px 15px 10px/11px 15px 10px 14px;background-image:var(--mt-tratto);font-size:21px;line-height:1.45;color:var(--mt-matita)}
+#segrHero .sgo-fascia .mt-d{width:38px;height:38px}
+#segrHero .sgo-fascia.ok{background-color:#A9D99C;border-color:var(--mt-verde)}
+#segrHero .sgo-fascia.corso{background-color:#F6E27A;border-color:var(--mt-oro)}
+#segrHero .sgo-fascia.da{background-color:#F9D9B8;border-color:#C8763A}
+#segrHero .sgo-fascia.prob{background-color:#F3B3AC;border-color:var(--mt-rosso)}
+#segrHero .sgo-dopo{display:flex;align-items:center;gap:6px;margin:8px 0 0;font-size:19px;line-height:1.5;color:var(--mt-matita)}
+#segrHero .sgo-dopo .mt-d{width:46px;height:44px}
+#segrHero .sgo-tasti{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 0}
+#segrHero .sgo-tasti.n3,#segrHero .sgo-tasti.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+#segrHero .sgo-tasti.n1{grid-template-columns:minmax(0,1fr)}
+#segrHero .sgo-tasti.n3 .sgo-b:last-child{grid-column:1 / -1}
+#segrHero .sgo-b{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;min-height:64px;margin:0;padding:4px 6px;border:2.5px solid var(--mt-matita);border-radius:16px 13px 17px 12px/13px 17px 12px 16px;background-image:var(--mt-tratto);box-shadow:2px 3px 0 -1px rgba(38,38,43,.18);color:var(--mt-matita);font-size:21px;line-height:1.45;text-align:center;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#segrHero .sgo-b .mt-d{width:46px;height:46px}
+#segrHero .sgo-b.chiama{background-color:#FADCDD}
+#segrHero .sgo-b.scrivi{background-color:#DDEFDB}
+#segrHero .sgo-b.doc{background-color:#DCEAF6}
+#segrHero .sgo-b.fatto{background-color:#EAF5E6;border-style:dashed;border-color:var(--mt-verde);box-shadow:none;cursor:default}
+#segrHero a.sgo-b:active,#segrHero label.sgo-b:active{filter:brightness(.94)}
+/* le pulizie: signora per signora, una tesserina per camera */
+#segrHero .sgo-sig{margin:0 0 10px;padding:8px 12px 12px;background:#fff;border:2.5px solid var(--mt-verde);border-radius:20px 16px 22px 15px/16px 21px 15px 20px}
+#segrHero .sgo-sig-t{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 6px}
+#segrHero .sgo-sig-t b{font-size:25px;line-height:1.4;color:var(--mt-matita)}
+#segrHero .sgo-sig-t span{font-size:19px;line-height:1.4;color:var(--mt-grigio)}
+#segrHero .sgo-ks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#segrHero .sgo-k{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:6px;min-height:62px;padding:3px 8px;border:2px solid var(--mt-matita);border-radius:14px 11px 15px 10px/11px 15px 10px 14px;background-color:#fff;background-image:var(--mt-tratto)}
+#segrHero .sgo-k .mt-d{grid-row:1 / span 2;width:36px;height:36px}
+#segrHero .sgo-k b{grid-column:2;font-size:20px;line-height:1.35;color:var(--mt-matita);overflow-wrap:anywhere}
+#segrHero .sgo-k small{grid-column:2;font-size:16.5px;line-height:1.3;color:var(--mt-grigio)}
+#segrHero .sgo-k.da b,#segrHero .sgo-k.da small{grid-column:1 / span 2}
+#segrHero .sgo-k.ok{background-color:#A9D99C;border-color:var(--mt-verde)}
+#segrHero .sgo-k.corso{background-color:#F6E27A;border-color:var(--mt-oro)}
+#segrHero .sgo-k.prob{background-color:#F3B3AC;border-color:var(--mt-rosso)}
+#segrHero .sgo-k.ok small,#segrHero .sgo-k.corso small,#segrHero .sgo-k.prob small{color:var(--mt-matita)}
+/* le email: un bigliettino per email (la busta, chi scrive, l'ora, l'oggetto sottolineato, le righe di Sofia, «Leggi tutta») */
+#segrHero .sge{display:grid;grid-template-columns:58px minmax(0,1fr);column-gap:8px;row-gap:2px;width:100%;margin:0 0 10px;padding:8px 12px 8px 8px;background:#fff;border:2.5px solid var(--mt-blu);border-radius:20px 16px 22px 15px/16px 21px 15px 20px;box-shadow:2px 3px 0 -1px rgba(38,38,43,.18);color:var(--mt-matita);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#segrHero .sge:nth-of-type(even){border-color:var(--mt-rosso)}
+#segrHero .sge:active{background:#FFFBEA}
+#segrHero .sge .sge-b{grid-column:1;grid-row:1 / span 2;width:56px;height:56px;align-self:start}
+#segrHero .sge .sge-testa{grid-column:2;display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+#segrHero .sge .sge-chi{min-width:0;font-size:23px;line-height:1.4;-webkit-text-stroke:.45px currentColor;overflow-wrap:anywhere}
+#segrHero .sge .sge-ora{flex:none;font-size:22px;line-height:1.2;color:var(--mt-grigio)}
+#segrHero .sge .sge-ogg{grid-column:2;justify-self:start;max-width:100%;font-size:20px;line-height:1.5;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:5px;overflow-wrap:anywhere}
+#segrHero .sge .sge-all{grid-column:1 / span 2;display:flex;align-items:center;gap:4px;margin-top:4px;font-size:18px;line-height:1.4;color:var(--mt-grigio)}
+#segrHero .sge .sge-all .mt-d{width:26px;height:26px}
+#segrHero .sge .sge-sofia,#segrHero .sge .sge-ante,#segrHero .sge .sge-poi{grid-column:1 / span 2;margin-top:6px;font-size:20px;line-height:1.6;overflow-wrap:anywhere}
+#segrHero .sge .sge-sofia b{color:var(--mt-rosso)}
+#segrHero .sge .sge-ante{color:var(--mt-grigio)}
+#segrHero .sge .sge-poi{font-size:18px;color:var(--mt-blu)}
+#segrHero .sge-dove,.sge-foglio .sge-dove{display:inline-block;margin-left:4px;padding:0 8px;border:1.5px solid var(--mt-matita);border-radius:11px 9px 12px 8px/9px 12px 8px 11px;background:#FBF1C8;font-size:16px;line-height:1.5;white-space:nowrap;vertical-align:baseline}
+#segrHero .sge-dove.fare,.sge-foglio .sge-dove.fare{background:#FADCDD}
+#segrHero .sge-dove.fatto,.sge-foglio .sge-dove.fatto{background:#DDEFDC}
+#segrHero .sge-dove.propongo,.sge-foglio .sge-dove.propongo{background:#FBE4D0}
+#segrHero .sge .sge-leggi{grid-column:1 / span 2;justify-self:end;margin-top:4px;font-size:21px;line-height:1.4;color:var(--mt-matita);-webkit-text-stroke:.45px currentColor}
+#segrHero .sgo-altre{display:block;width:100%;min-height:56px;margin:2px 0 8px;padding:4px 10px;background:#fff;border:2px dashed var(--mt-matita);border-radius:16px 13px 17px 12px/13px 17px 12px 16px;color:var(--mt-matita);font-size:19px;line-height:1.4;cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* i cassetti */
+#segrHero .sgt.cass{min-height:216px;background-image:var(--mt-tratto)}
+#segrHero .sgt.cass .sgt-t{font-size:22px;line-height:1.3;color:var(--mt-matita)}
+#segrHero .sgt.cass .sgt-n{position:static;margin:0 0 0 8px;font-size:52px}
+#segrHero .sgt.cass.fare{background-color:#F9D8D9;border-color:var(--mt-matita)}
+#segrHero .sgt.cass.prop{background-color:#FAE0CB;border-color:var(--mt-matita)}
+#segrHero .sgt.cass.fatto{background-color:#D8EDD6;border-color:var(--mt-matita)}
+#segrHero .sgt.cass.sapere{background-color:#FAEEC0;border-color:var(--mt-matita)}
+#segrHero .sgt.cass.aperto{box-shadow:0 0 0 2.5px var(--mt-matita)}
+#segrHero .sgt.cass.aperto::after{background:var(--mt-matita)}
+#segrHero .sgt-piu{min-height:56px;border:2px dashed var(--mt-matita);border-radius:14px 11px 15px 10px/11px 15px 10px 14px;background:rgba(255,255,255,.86);color:var(--mt-matita);font-size:17px;line-height:1.35}
+/* le righe di un cassetto aperto e i documenti: gli stessi pezzi di prima, scritti a matita; via le faccine, al loro posto i disegni */
+#segrHero .sgt-aperto .sg2-c{padding:8px 12px 12px;background:#fff;border:2.5px solid var(--mt-matita);border-radius:20px 16px 22px 15px/16px 21px 15px 20px;box-shadow:2px 3px 0 -1px rgba(38,38,43,.18)}
+#segrHero .sgt-aperto .sg2-c h4{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:25px;line-height:1.35;color:var(--mt-matita)}
+#segrHero .sgt-aperto .sg2-c h4 > span[aria-hidden]{display:none}
+#segrHero .sgt-aperto .sg2-c h4::before{content:"";flex:none;width:44px;height:44px;background:center/contain no-repeat}
+#segrHero .sgt-aperto.fare .sg2-c h4::before{background-image:url(mat-sveglia.webp)}
+#segrHero .sgt-aperto.prop .sg2-c h4::before{background-image:url(mat-scintilla.webp)}
+#segrHero .sgt-aperto.fatto .sg2-c h4::before{background-image:url(mat-spunte.webp)}
+#segrHero .sgt-aperto.sapere .sg2-c h4::before{background-image:url(mat-stella.webp)}
+#segrHero .sgt-aperto .sg2-n{margin-left:auto;min-width:34px;height:34px;padding:0 6px;border:2px solid var(--mt-matita);border-radius:50%;background:#fff;color:var(--mt-matita);font-size:22px;line-height:30px;text-align:center}
+#segrHero .sgt-aperto .sg2-r{padding:10px 0 12px;border:0;border-top:2px dashed rgba(38,38,43,.28);border-radius:0;background:none;box-shadow:none}
+#segrHero .sgt-aperto .sg2-r .sg2-t,#segrHero .sgt-aperto .sg2-r .sg2-x{display:block;font-size:21px;line-height:1.6;color:var(--mt-matita);overflow-wrap:anywhere}
+#segrHero .sgt-aperto .sg2-r small{display:block;font-size:17.5px;line-height:1.5;color:var(--mt-grigio)}
+#segrHero .sgt-aperto .sg2-vuoto,#segrHero .sgh .sg2-doc .sg2-vuoto{font-size:20px;line-height:1.6;color:var(--mt-grigio)}
+#segrHero .sgh .sg2-b{min-height:56px;padding:4px 12px;border:2.5px solid var(--mt-matita);border-radius:15px 12px 16px 11px/12px 16px 11px 15px;background-color:#fff;background-image:var(--mt-tratto);box-shadow:2px 3px 0 -1px rgba(38,38,43,.18);color:var(--mt-matita);font-size:20px;line-height:1.35}
+#segrHero .sgh .sg2-b.verde{background-color:#A9D99C;border-color:var(--mt-verde);color:var(--mt-matita)}
+#segrHero .sgh .sg2-b.rosso{background-color:#FBE6E4;border-color:var(--mt-rosso);color:var(--mt-matita)}
+#segrHero .sgh .sg2-b.oro{background-color:#FAEEC0;border-color:var(--mt-oro);color:var(--mt-matita)}
+#segrHero .sgh .sg2-b.piccolo{min-height:50px;font-size:18.5px}
+#segrHero .sgh .sg2-b.rosso[data-sg2-ricorda]{font-size:18px;line-height:1.3}
+#segrHero .sgh .sg2-b > span[aria-hidden]{display:none}
+#segrHero .sgh .sg2-b.rosso[data-sg2-ricorda]::before{content:"";display:inline-block;width:30px;height:30px;margin-right:6px;vertical-align:middle;background:url(mat-sveglia.webp) center/contain no-repeat}
+#segrHero .sgh .sg2-tutte{min-height:52px;border:2px dashed var(--mt-matita);border-radius:14px 11px 15px 10px/11px 15px 10px 14px;background:#fff;color:var(--mt-matita);font-size:19px;line-height:1.35}
+#segrHero .sgh .sg2-doc{padding:6px 12px 12px;background:#fff;border:2.5px solid var(--mt-matita);border-radius:20px 16px 22px 15px/16px 21px 15px 20px;box-shadow:2px 3px 0 -1px rgba(38,38,43,.18)}
+#segrHero .sgh .sg2-doc-r{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:10px 0;border-bottom:2px dashed rgba(38,38,43,.28)}
+#segrHero .sgh .sg2-doc-r > span b{font-size:23px}
+#segrHero .sgh .sg2-doc-r > span{font-size:20px;line-height:1.5;color:var(--mt-matita)}
+#segrHero .sgh .sg2-doc-r small{display:block;font-size:17px;line-height:1.45;color:var(--mt-grigio)}
+#segrHero .sgh .sg2-doc .sg2-b.oro-pieno{display:flex;align-items:center;justify-content:center;gap:8px;min-height:62px;background-color:#DCEAF6;border-color:var(--mt-matita);color:var(--mt-matita);font-size:18px;line-height:1.3;text-align:left}
+#segrHero .sgh .sg2-doc .sg2-b.oro-pieno::before{content:"";flex:none;width:42px;height:42px;background:url(mat-documento.webp) center/contain no-repeat}
+#segrHero .sgh .sg2-doc-apri{min-height:52px;margin-top:8px;background:none;border:0;color:var(--mt-blu);font-size:20px;line-height:1.4;text-decoration:underline;text-underline-offset:5px}
+#segrHero .sgh .cw-banner{background:#fff;border:2.5px solid var(--mt-oro);border-radius:19px 15px 20px 14px/15px 20px 14px 19px;box-shadow:2px 3px 0 -1px rgba(38,38,43,.18);color:var(--mt-matita)}
+#segrHero .sgh .cw-banner b{font-size:20px;line-height:1.5}
+#segrHero .sgh .cw-banner small{font-size:17px;line-height:1.5;color:var(--mt-grigio)}
+/* l'email intera (il foglio che si apre): la stessa carta, lo stesso corsivo */
+.sheet .panel:has(.sge-foglio){background:#FBF7EA}
+.sge-foglio{color:#26262B;background-image:repeating-linear-gradient(to bottom,transparent 0 35px,rgba(110,165,205,.34) 35px 36px);background-position:0 6px;padding:2px 2px 6px}
+.sge-foglio .sgf-da{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.sge-foglio .sgf-da .mt-d{display:block;flex:none;width:62px;height:62px;object-fit:contain}
+.sge-foglio .sgf-da span{display:flex;flex-direction:column;min-width:0}
+.sge-foglio .sgf-da b{font-size:25px;line-height:1.4;overflow-wrap:anywhere}
+.sge-foglio .sgf-da small{font-size:18px;line-height:1.5;color:#55555E}
+.sge-foglio .sgf-ogg{margin:4px 0 10px;font-size:24px;line-height:1.5;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px;overflow-wrap:anywhere}
+.sge-foglio .sgf-sofia{margin:0 0 12px;padding:8px 12px;background:#fff;border:2.5px solid #BF473F;border-radius:18px 15px 19px 14px/15px 19px 14px 18px}
+.sge-foglio .sgf-sofia p{margin:0;font-size:20px;line-height:1.65}
+.sge-foglio .sgf-sofia p + p{margin-top:4px}
+.sge-foglio .sgf-sofia b{color:#BF473F}
+.sge-foglio .sgf-testo{margin:0 0 12px;padding:10px 12px;background:#fff;border:2.5px solid #26262B;border-radius:18px 15px 19px 14px/15px 19px 14px 18px;font-size:19.5px;line-height:1.75;overflow-wrap:anywhere;-webkit-user-select:text;user-select:text}
+.sge-foglio .sgf-nota{margin:0 0 12px;font-size:18px;line-height:1.6;color:#55555E}
+.sge-foglio .sgf-b{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:68px;margin:0 0 10px;padding:4px 12px;border:2.5px solid #26262B;border-radius:18px 15px 19px 14px/15px 19px 14px 18px;background-color:#fff;background-image:repeating-linear-gradient(118deg,rgba(255,255,255,.34) 0 2px,rgba(255,255,255,0) 2px 6px);box-shadow:2px 3px 0 -1px rgba(38,38,43,.18);color:#26262B;font-size:23px;line-height:1.35;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+.sge-foglio .sgf-b .mt-d{display:block;flex:none;width:48px;height:48px;object-fit:contain}
+.sge-foglio .sgf-b.posta{background-color:#FADCDD}
+.sheet .panel:has(.sge-foglio) > .big.close{min-height:64px;border:2.5px dashed #26262B;border-radius:18px 15px 19px 14px/15px 19px 14px 18px;background:#fff;box-shadow:none;color:#26262B;font-family:"Playwrite IT Moderna","Patrick Hand",cursive;font-weight:400;font-size:22px;line-height:1.35;letter-spacing:0}
+.sge-foglio .sgf-b:active{filter:brightness(.94)}
+/* col buio la pagina del quaderno resta chiara (è un foglio di carta): le scritte restano a matita scura */
+:root[data-theme="dark"] body.premium #segrHero .casa-nuvola{background:var(--mt-carta);border-color:var(--mt-matita)}
+:root[data-theme="dark"] body.premium #segrHero .casa-nuvola::before{background:linear-gradient(var(--mt-carta) 25%,rgba(251,247,234,0))}
+:root[data-theme="dark"] body.premium #segrHero .casa-nuvola::after{background:linear-gradient(rgba(251,247,234,0),var(--mt-carta))}
+:root[data-theme="dark"] #segrHero .sgh .sgh-tit,:root[data-theme="dark"] #segrHero .sgh .sgh-at b{color:var(--mt-matita)}
+:root[data-theme="dark"] #segrHero .sgh .sgh-ascolta{background:#fff;border-color:var(--mt-matita);color:var(--mt-matita)}
+:root[data-theme="dark"] #segrHero .sgh .sgh-at small{color:var(--mt-grigio)}
+:root[data-theme="dark"] #segrHero .sgt{box-shadow:2px 3px 0 -1px rgba(38,38,43,.2)}
+:root[data-theme="dark"] #segrHero .sgt.cass.aperto{box-shadow:0 0 0 2.5px var(--mt-matita)}
+:root[data-theme="dark"] #segrHero .sgt.cass.aperto::after{background:var(--mt-matita)}
+:root[data-theme="dark"] #segrHero .sgt .sgt-s{color:var(--mt-grigio)}
+:root[data-theme="dark"] body.premium #segrHero .casa-nuvola .casa-nascondi{color:var(--mt-matita)}
+body.premium #segrHero:not(.tenda-chiusa) .casa-nuvola .casa-nascondi{color:var(--mt-matita)}

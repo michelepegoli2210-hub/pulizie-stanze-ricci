@@ -160,6 +160,26 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   nuovi sono `mat-sveglia`, `mat-spunte`, `mat-busta`, `mat-arrivi`, `mat-partenze`), un tocco su un cassetto apre le sue righe.
   I filmati sono i segr6 (camicetta rosa, 540x960, fatti da Gemini col verde dietro e ritagliati con `strumenti/verde.py`):
   ogni video parte e finisce nella posa della foto. Negli altri stili resta il palco della 1.85.0.
+- La Segreteria a matita, coi tasti che aprono cose utili (1.94.0; Michele: «se clicco sull'email ovviamente deve aprirmi le
+  email che mi sintetizza sofia segretaria e che se voglio leggerla nello specifico clicco sopra e mi collega con l'email
+  intera, e poi i tasti, esempio pulizie, mi riportano alla pagina iniziale e quindi molto senso non ne ha… devono essere
+  veramente utili e straordinari» · «stile scuole elementari… chiarissime e scritte a matita… falli fare a gemini… in corsivo
+  ma un corsivo veramente ultra capibile»). Nel riquadro di `#segrHero` le quattro tessere di «Oggi» (`segrOggiHtml`,
+  `S.segrOggi`) NON portano più in un'altra pagina: si aprono lì sotto, una alla volta (arrivi, partenze, pulizie, email).
+  Email: una scheda per email con le righe di Sofia (`segrEmailCapito`, dalle letture); un tocco apre l'email intera
+  (`foglioSegrEmail`: il testo che la casella ha preso, al massimo 1800 caratteri) e «Apri nella posta» (`segrEmailLink`:
+  la ricerca in Gmail per mittente e oggetto; NON è stato provato su una casella vera né sul telefono).
+  Un tasto della Segreteria non deve mai portare via dalla Segreteria.
+  Tutto a matita: carta a righe, tessere a pastello, disegni di Gemini (`mat-*.webp`, `strumenti/taglia-disegni.py`), scritte
+  in corsivo di scuola (Playwrite IT Moderna, `--mt-font`; i numeri in Patrick Hand). Le regole stanno in fondo a `style.css`
+  («1.94.0»), tutte sotto `#segrHero` e `.sge-foglio`. Niente faccine nella Segreteria: solo disegni.
+  I filmati sono i segr7 (da Flow): lavora (tre video in fila, 31 secondi), ti ascolta, parla: tre filmati veri
+  (`strumenti/fai-segr.py`). Mentre ascolta o parla, il filmato in cui lavora torna al suo inizio e aspetta (`segrFermaSotto`).
+- I filmati senza il «battito» (1.94.0; Michele: «micro lag nei capelli»): un fotogramma chiave ogni due secondi faceva cambiare
+  tutta la grana insieme. Adesso i fotogrammi chiave stanno solo dove l'app salta: all'inizio di ogni pezzo nei filmati della
+  Sofia di casa (`-giro5`), solo il primo in quelli di Sofia segretaria (`segr7`). Dentro un filmato si salta solo lì.
+  Spiegato in `strumenti/README.md` (`codifica-liscia.sh`, `misura-chiave.py`). Quelli delle signore (`capo-*`), «com'era» e
+  Sofia influencer sono ancora compressi alla vecchia maniera.
 
 - Jarvis (1.88.0) è la pagina personale del titolare, fatta come un'app delle cose da fare (Michele: «basato sulle app di
   produttività, to do list»): in cima Jarvis (la galassia, `canvas.jv-gal`) e quello che dice; «Da fare oggi» coi tondi da

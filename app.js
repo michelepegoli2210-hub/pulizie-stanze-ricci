@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.93.0";
+export const VERSIONE = "1.94.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -87,7 +87,7 @@ const FACCE_PRONTE = { base: "sofia-viso.webp" };
 //  (il medaglione), che restano sul sito: Michele può tornare indietro quando vuole.
 const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
 function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
-const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro2.mp4", riposo: "cons-riposo-spilla-giro4.mp4", poster: "cons-poster-foto.webp" };   // 1.93.0: da ferma solo video che partono e finiscono nella posa della foto (giro4); la foto di partenza è quella posa · 1.91.2: «ferma» con la spilla d'oro anche nel video del bacio (giro3) · 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro5.mp4", riposo: "cons-riposo-spilla-giro5.mp4", poster: "cons-poster-foto.webp" };   // 1.94.0: gli stessi fotogrammi, compressi senza il fotogramma chiave ogni due secondi (-giro5: «SENZA IL BATTITO», più giù) · 1.93.0: da ferma solo video che partono e finiscono nella posa della foto (giro4); la foto di partenza è quella posa · 1.91.2: «ferma» con la spilla d'oro anche nel video del bacio (giro3) · 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // ============================================================================
 //  1.80.0 I FILMATI CANCELLATI (Michele, 12/11: «i filmati di Sofia non mi piacciono per niente… fammi vedere tutti i filmati
 //  caricati nell'app così li cambiamo» → «sì, ma dammi la possibilità di cancellarne qualcuno»).
@@ -113,9 +113,9 @@ const FILMATI = [
   { id: "oggi-parla-3", g: "oggi", q: "parla", i: 2, nome: "Parla 3" },
   { id: "oggi-parla-4", g: "oggi", q: "parla", i: 3, nome: "Parla 4" },
   { id: "oggi-parla-5", g: "oggi", q: "parla", i: 4, nome: "Parla 5" },
-  { id: "segr-ferma", g: "segr", q: "riposo", nome: "Lavora: tablet e computer", s: 20 },   // 1.92.0 (prima: «Sta ferma», 9)
-  { id: "segr-ascolta", g: "segr", q: "ascolta", nome: "Ti ascolta", s: 4 },
-  { id: "segr-parla", g: "segr", q: "parla", nome: "Parla", s: 4 },
+  { id: "segr-ferma", g: "segr", q: "riposo", nome: "Lavora: tablet e computer", s: 31 },   // 1.94.0: tre video in fila (31 secondi) · 1.92.0 (prima: «Sta ferma», 9)
+  { id: "segr-ascolta", g: "segr", q: "ascolta", nome: "Ti ascolta", s: 10 },   // 1.94.0: il suo video vero
+  { id: "segr-parla", g: "segr", q: "parla", nome: "Parla", s: 8 },   // 1.94.0: il suo video vero
   { id: "capo-ferma", g: "capo", q: "riposo", nome: "Sta ferma", s: 6 },
   { id: "capo-parla", g: "capo", q: "parla", nome: "Parla", s: 15 },
   { id: "influ-muove", g: "influ", q: "video", nome: "Si muove", s: 10 },
@@ -210,6 +210,13 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 // bocca chiusa, e «ferma» comincia da dove ha anche lei la bocca chiusa: poi il sorriso lo riapre da sola. Finito di parlare
 // si riparte dal pezzo calmo (FILM_RITORNO). La foto di partenza (cons-poster-foto) è la posa della foto. Quando parla
 // resta com'era. I pezzi da ferma adesso hanno il nome scritto in FILMATI (filmSpezzoneTolto lo cerca lì).
+// 1.94.0 SENZA IL BATTITO (Michele vedeva un «micro lag nei capelli»: una causa era questa). I filmati avevano un fotogramma chiave
+// ogni due secondi. Un fotogramma chiave è rifatto tutto da capo: in quel momento la grana di tutta la figura cambiava insieme
+// (dove lei è ferma il cambio era 1,07 contro 0,09 dei fotogrammi vicini: strumenti/misura-chiave.py), un tremolio piccolo a ogni
+// due secondi che si vede soprattutto nei capelli. Adesso i fotogrammi chiave stanno SOLO all'inizio del filmato e dove comincia
+// ogni pezzo (FILM_SPEZZONI: l'app ci salta). I fotogrammi sono gli stessi di prima, cambia solo come sono compressi (-giro5,
+// strumenti/codifica-liscia.sh). Chi rifà un filmato NON rimetta «-g 48», e i salti dentro un filmato vanno solo all'inizio
+// di un pezzo: saltare in mezzo vorrebbe dire rifare a mente tutti i fotogrammi dal pezzo prima (lento).
 const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 242, 450, 656], parla: [0, 493, 886, 1357, 1764] };
 const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [242, 450, 656, 891], parla: [481, 874, 1345, 1752, 2193] };
 const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 891, parla: 2205 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
@@ -240,7 +247,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro2-3d.webm", riposo: "cons-riposo-spilla-giro4-3d.webm", poster: "cons-poster-foto-3d.webp" };   // 1.93.0 (giro4) · 1.91.2 (giro3) · 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro5-3d.webm", riposo: "cons-riposo-spilla-giro5-3d.webm", poster: "cons-poster-foto-3d.webp" };   // 1.94.0 (giro5: senza il battito) · 1.93.0 (giro4) · 1.91.2 (giro3) · 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
@@ -253,7 +260,16 @@ const FILM_CAPO = { parla: "capo-parla.mp4", riposo: "capo-riposo.mp4", poster: 
 const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.webm", poster: "capo-poster-3d.webp" };
 // 1.40.0: Sofia vestita da segretaria (con gli occhiali), per il fantasmino della Segreteria: i filmati li fa Michele in Gemini;
 // finché non ci sono, il fantasmino usa la capo-governante ritagliata (vedi fantasmaSegreteria)
-const FILM_SEGR = { riposo: "segr6-riposo-3d.webm", ascolta: "segr6-guarda-3d.webm", parla: "segr6-guarda-3d.webm", poster: "segr6-poster-3d.webp" };   // 1.92.0: i segr6 (la camicetta rosa; lavora al tablet e al computer; 540x960 come la Sofia della prima pagina). Prima: i segr5 ·   // 1.85.0 (Michele: «il suo filmato salta troppo»): i segr5, 480x600, il bordo di sotto non lampeggia più, il giro senza salto (strumenti/fai-segr5.py)   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
+// 1.94.0: i segr7 (Michele ha fatto fare a Flow tre video nuovi: lavora, ti ascolta, parla). Tre filmati veri: prima «ti ascolta»
+// e «parla» erano lo stesso pezzetto di due secondi, fatto andare avanti e indietro. Da ferma lavora (tre video in fila: il
+// tablet; il computer; il tablet e l'auricolare; 31 secondi). Ti ascolta: ti guarda, inclina la testa, annuisce (10 secondi).
+// Parla: 8 secondi; il video è tagliato dove ha finito di parlare ed è già tornata nella posa della foto (dopo chiudeva la
+// bocca: attaccato all'inizio, i denti sarebbero «spuntati» di colpo). Tutti partono e finiscono nella posa della foto, tutti
+// in avanti (strumenti/fai-segr.py). Ognuno ha UN SOLO fotogramma chiave, il primo (strumenti/codifica-liscia.sh): niente
+// «battito» in mezzo, e dove il filmato ricomincia non si vede niente (finisce nella stessa immagine da cui parte). Per questo
+// dentro questi filmati si salta solo all'inizio (currentTime = 0): saltare in mezzo sarebbe lento. La foto di partenza è
+// quella di prima (la stessa posa).
+const FILM_SEGR = { riposo: "segr7-riposo-3d.webm", ascolta: "segr7-ascolta-3d.webm", parla: "segr7-parla-3d.webm", poster: "segr6-poster-3d.webp" };   // 1.92.0: i segr6 (la camicetta rosa; lavora al tablet e al computer; 540x960 come la Sofia della prima pagina). Prima: i segr5 ·   // 1.85.0 (Michele: «il suo filmato salta troppo»): i segr5, 480x600, il bordo di sotto non lampeggia più, il giro senza salto (strumenti/fai-segr5.py)   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -6968,21 +6984,164 @@ function segrFumettoHtml(pz) {
   const r = pz.riass || [], ultima = r.length > 1 ? r[r.length - 1] : "";
   return `<div class="of-fumetto sgh-fumetto"><span class="of-chi"><b>${esc(pz.nome)}</b> ti dice</span><p class="of-dice"><b class="of-sal">${esc(saluto())}, ${esc(nomeMio())}!</b> <span class="of-testo">${(ultima ? r.slice(0, -1) : r).join(" ")}</span></p>${ultima ? `<p class="of-fai"><span class="of-fai-t">${ultima}</span></p>` : ""}</div>`;
 }
-function segrEmailOggi() { const oggi = L.oggiISO(); return Object.values(S.posta || {}).filter(p => p && p.chat === "Email albergo" && String(p.data || "") === oggi); }
-// 1) Oggi: le quattro tessere del disegno di Gemini (il numero grande, il disegno a matita, la parola)
+// ============================================================================
+//  1.94.0 I TASTI DELLA SEGRETERIA APRONO COSE UTILI, LÌ DENTRO · TUTTA A MATITA, IN CORSIVO CHIARO (Michele, 17/11: «se clicco
+//  sull'email ovviamente deve aprirmi le email che mi sintetizza sofia segretaria e che se voglio leggerla nello specifico
+//  clicco sopra e mi collega con l'email intera, e poi i tasti, esempio pulizie, mi riportano alla pagina iniziale e quindi molto
+//  senso non ne ha… devono essere veramente utili e straordinari» · «stile scuole elementari, tutte le icone e le scritte devono
+//  essere chiarissime e scritte a matita… falli fare a gemini… in corsivo ma un corsivo veramente ultra capibile»).
+//  - Le quattro tessere di «Oggi» si aprono lì sotto, una alla volta (S.segrOggi); quando una è aperta diventano una fila di
+//    tessere piccole, e quella aperta ha il bordo scuro e la freccina. Un altro tocco la richiude.
+//      Arrivi   → una scheda per camera: chi arriva, in quanti, fino a quando, se la camera è pronta; «Chiama» e «Scrivi» se c'è
+//                 il numero, «Documento» (lo stesso tasto dei documenti degli ospiti).
+//      Partenze → chi parte, a che punto è la camera, e se oggi lì arriva qualcun altro.
+//      Pulizie  → signora per signora, camera per camera (fatta, in corso, da fare, problema).
+//      Email    → le email dell'albergo (la casella, 1.75.0): chi scrive, l'ora, l'oggetto e le righe di Sofia (quello che ha
+//                 capito lei, dalle letture: segrEmailCapito). Un tocco apre l'email intera (foglioSegrEmail: il testo che la
+//                 casella ha preso, fino a 1800 lettere) e da lì «Apri nella posta» (Gmail, cercata per mittente e oggetto).
+//  - Niente più salti alla prima pagina e niente più avviso «sono arrivate 2 email»: le due funzioni di prima sono tolte.
+//  - Il disegno è di Gemini (quaderno a righe, matite colorate, corsivo di scuola: Playwrite IT Moderna). Le faccine sono
+//    sparite: al loro posto i disegni a matita di Gemini (mat-*.webp).
+// ============================================================================
+const SEGR_OGGI = ["arrivi", "partenze", "pulizie", "email"];
+function segrOggiAperto() { return SEGR_OGGI.includes(S.segrOggi) ? S.segrOggi : ""; }
+const segrDis = (nome, cls = "") => `<img class="mt-d${cls ? " " + cls : ""}" src="mat-${nome}.webp" alt="" width="240" height="240">`;
+// il numero per WhatsApp: solo cifre, col 39 davanti se è un cellulare italiano scritto senza
+function segrNumeroWa(tel) {
+  let d = String(tel || "").replace(/[^\d+]/g, "");
+  if (d.startsWith("+")) d = d.slice(1); else if (d.startsWith("00")) d = d.slice(2); else if (/^3\d{8,9}$/.test(d)) d = "39" + d;
+  return /^\d{8,15}$/.test(d) ? d : "";
+}
+// «Chiama» e «Scrivi» (se del soggiorno c'è il numero) e «Documento» (se è arrivato oggi o ieri e non è già registrato)
+function segrTastiOspite(s, conDoc) {
+  const tel = telefonoDi(s), wa = segrNumeroWa(tel), cm = camera(s.camera), chi = nomeCortoOspite(s);
+  let doc = "";
+  if (conDoc) { try { const st = alStato(); doc = st.inviati[s.id] ? `<span class="sgo-b fatto">${segrDis("spunta")}<span>Documenti fatti</span></span>` : `<label class="sgo-b doc">${segrDis("documento")}<span>Documento</span><input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(cm.nome)}"></label>`; } catch (e) { doc = ""; } }
+  const t = [tel ? `<a class="sgo-b chiama" href="${esc(telHref(tel))}" aria-label="Chiama ${esc(chi)}: ${esc(telBello(tel))}">${segrDis("telefono")}<span>Chiama</span></a>` : "",
+    wa ? `<a class="sgo-b scrivi" href="https://wa.me/${wa}" target="_blank" rel="noopener" aria-label="Scrivi a ${esc(chi)} su WhatsApp">${segrDis("fumetto")}<span>Scrivi</span></a>` : "", doc].filter(Boolean);
+  return t.length ? `<div class="sgo-tasti n${t.length}">${t.join("")}</div>` : "";
+}
+// la fascia colorata: a che punto è la camera (pronta, la stanno pulendo, da pulire, problema)
+function segrFasciaCamera(cid, arriva) {
+  const st = statoCameraGiorno(cid, L.oggiISO()); if (!st) return "";
+  const testo = st.k === "ok" ? (arriva ? "camera pronta" : "già pulita") : String(st.testo || "").replace(/^✓\s*/, "");
+  return `<div class="sgo-fascia ${st.k}">${segrDis(st.k === "ok" ? "spunta" : st.k === "prob" ? "attenzione" : "secchio")}<span>${esc(testo)}</span></div>`;
+}
+function segrSchedaOspite(s, tipo, extra = "") {
+  const cm = camera(s.camera), n = Math.max(1, Number(s.persone) || 1);
+  const sotto = tipo === "arr" && s.fine ? `fino a ${L.dataGiornoLungo(s.fine)}` : "";
+  return `<div class="sgo-r ${tipo}"><div class="sgo-su"><div class="sgo-chi"><b class="sgo-cam">${esc(cm.tipo === "casa" ? nomeBreveCamera(cm) : cm.nome)}</b><span class="sgo-nome">${esc(nomeCortoOspite(s))}</span>${sotto ? `<small class="sgo-fino">${esc(sotto)}</small>` : ""}</div>
+      <span class="sgo-pers" aria-label="${n} ${n === 1 ? "persona" : "persone"}">${segrDis(tipo === "arr" ? "arrivi" : "partenze")}<b>${n}</b></span></div>
+    ${s.nota ? `<p class="sgo-nota">${esc(String(s.nota).slice(0, 160))}</p>` : ""}${segrFasciaCamera(s.camera, tipo === "arr")}${extra}${segrTastiOspite(s, tipo === "arr")}</div>`;
+}
+function segrArriviHtml(mv) {
+  const domani = L.aggiungiGiorni(L.oggiISO(), 1), dm = movimentiDelGiorno(domani);
+  const poi = dm.arr.length ? `<p class="sgo-poi"><b>Domani</b> ${dm.arr.length === 1 ? "arriva" : "arrivano"}: ${esc(elencoParole(dm.arr.map(s => { const n = Math.max(1, Number(s.persone) || 1); return `${nomeCortoOspite(s)} (${n} ${n === 1 ? "persona" : "persone"}, ${camera(s.camera).nome})`; })))}.</p>` : `<p class="sgo-poi"><b>Domani</b> non arriva nessuno.</p>`;
+  return `<h4 class="sgo-tit">Chi arriva oggi</h4>${mv.arr.length ? mv.arr.map(s => segrSchedaOspite(s, "arr")).join("") : `<p class="sgo-vuoto">Oggi non arriva nessuno.</p>`}${poi}`;
+}
+function segrPartenzeHtml(mv) {
+  const dopo = (s) => { const x = mv.arr.find(y => y.camera === s.camera); return x ? `<p class="sgo-dopo">${segrDis("arrivi")}<span>Oggi qui arriva <b>${esc(nomeCortoOspite(x))}</b> (${Math.max(1, Number(x.persone) || 1)})</span></p>` : ""; };
+  return `<h4 class="sgo-tit">Chi parte oggi</h4>${mv.par.length ? mv.par.map(s => segrSchedaOspite(s, "par", dopo(s))).join("") : `<p class="sgo-vuoto">Oggi non parte nessuno.</p>`}`;
+}
+function segrPulizieHtml() {
+  const tutte = pulizieDelGiorno(L.oggiISO()), vere = tutte.filter(p => p.tipo !== "stelle");
+  if (!vere.length) return `<h4 class="sgo-tit">Le pulizie di oggi</h4><p class="sgo-vuoto">Oggi nessuna pulizia.</p>`;
+  const gruppi = new Map(); for (const p of vere) { const z = p.zona || "?"; if (!gruppi.has(z)) gruppi.set(z, []); gruppi.get(z).push(p); }
+  const ord = zoneOrdinate().map(z => z.id), pos = (z) => { const k = ord.indexOf(z); return k < 0 ? 99 : k; };
+  const tessera = (p) => {
+    const cm = camera(p.camera), st = p.stato === "fatta" ? "ok" : p.stato === "in_corso" ? "corso" : p.stato === "problema" || p.stato === "non_fatta" ? "prob" : "da";
+    const dice = st === "ok" ? "fatta" : st === "corso" ? "la sta facendo" : st === "prob" ? (p.stato === "problema" ? "problema" : "non fatta") : "da fare";
+    return `<span class="sgo-k ${st}">${st === "ok" ? segrDis("spunta") : st === "prob" ? segrDis("attenzione") : st === "corso" ? segrDis("secchio") : ""}<b>${esc(cm.tipo === "casa" ? nomeBreveCamera(cm) : cm.nome)}</b><small>${dice}</small></span>`;
+  };
+  const blocchi = [...gruppi.entries()].sort((x, y) => pos(x[0]) - pos(y[0])).map(([z, l]) => { const f = l.filter(p => p.stato === "fatta").length; return `<div class="sgo-sig"><p class="sgo-sig-t"><b>${esc(SIG(z))}</b><span>${f} ${f === 1 ? "fatta" : "fatte"} su ${l.length}</span></p><div class="sgo-ks">${l.map(tessera).join("")}</div></div>`; });
+  return `<h4 class="sgo-tit">Le pulizie di oggi</h4>${blocchi.join("")}`;
+}
+// ---- le email dell'albergo
+function segrEmailTutte() { return Object.values(S.posta || {}).filter(p => p && p.chat === "Email albergo").sort((x, y) => (Number(y.ts) || 0) - (Number(x.ts) || 0)); }
+function segrEmailOggi() { const oggi = L.oggiISO(); return segrEmailTutte().filter(p => String(p.data || "") === oggi); }
+// la prima riga è «✉️ oggetto · 📎 2 allegati» (posta-giro.mjs), il resto è il testo
+function segrEmailParti(p) {
+  const t = String((p && p.testo) || ""), k = t.indexOf("\n"), prima = (k < 0 ? t : t.slice(0, k)).replace(/^✉️\s*/, "");
+  const m = /\s·\s📎\s(\d+)\s(?:allegato|allegati)\s*$/.exec(prima);
+  return { oggetto: (m ? prima.slice(0, m.index) : prima).trim() || "(senza oggetto)", allegati: m ? Number(m[1]) : 0, corpo: k < 0 ? "" : t.slice(k + 1).trim() };
+}
+// per ogni email, le righe di «cosa ho capito» che Sofia ha scritto leggendola (il numero del messaggio da cui viene ogni riga
+// è in «n»; se manca, vale chi scrive, quando in quella lettura c'è una sola sua email)
+function segrEmailCapito() {
+  const per = new Map(), eEmail = (m) => !!(m && String(m.id || "").startsWith("email_"));
+  for (const x of sg2Letture(8)) {
+    const ms = Array.isArray(x.messaggi) ? x.messaggi : [], righe = x.capito && Array.isArray(x.capito.righe) ? x.capito.righe : [];
+    if (!righe.length || !ms.some(eEmail)) continue;
+    const scarto = Math.max(0, (Number(x.n) || ms.length) - ms.length), email = ms.filter(eEmail);
+    for (const r of righe) {
+      if (!r || !r.cosa || !SG2_DOVE[r.dove]) continue;
+      let m = null; const k = Number(r.n) - 1 - scarto;
+      if (Number(r.n) > 0) { if (Number.isInteger(k) && k >= 0 && k < ms.length && eEmail(ms[k])) m = ms[k]; }
+      else { const chi = PAROLE.norm(r.chi || ""), stesse = chi ? email.filter(e => PAROLE.norm(e.chi || "") === chi) : []; if (stesse.length === 1) m = stesse[0]; }
+      if (!m) continue;
+      if (!per.has(m.id)) per.set(m.id, []);
+      const l = per.get(m.id); if (!l.some(y => y.cosa === String(r.cosa))) l.push({ cosa: String(r.cosa), dove: r.dove });
+    }
+  }
+  return per;
+}
+const SEGR_DOVE = { fare: "Da fare tu", propongo: "Ti propongo", fatto: "Ho fatto io", sapere: "Da sapere" };
+function segrEmailGiorno(iso) { const oggi = L.oggiISO(); return iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, -1) ? "Ieri" : L.dataGiornoLungo(iso).replace(/^./, c => c.toUpperCase()); }
+function segrEmailRiga(p, cap) {
+  const x = segrEmailParti(p), righe = cap.get(p.id) || [];
+  const inizio = x.corpo.replace(/\s+/g, " ").trim(), anteprima = inizio.length > 150 ? inizio.slice(0, 150).replace(/\s+\S*$/, "") + "…" : inizio;
+  const sofia = righe.length ? righe.slice(0, 3).map(r => `<span class="sge-sofia"><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</span>`).join("")
+    : `${anteprima ? `<span class="sge-ante">${esc(anteprima)}</span>` : ""}${p.letto ? "" : `<span class="sge-poi">Sofia la legge tra poco.</span>`}`;
+  return `<button type="button" class="sge" data-segr-email-apri="${esc(p.id)}" aria-label="Email di ${esc(p.chi || "qualcuno")}: ${esc(x.oggetto)}. Tocca per leggerla tutta">${segrDis("busta", "sge-b")}<span class="sge-testa"><span class="sge-chi">${esc(p.chi || "?")}</span><span class="sge-ora">${esc(p.ora || "")}</span></span><span class="sge-ogg">${esc(x.oggetto)}</span>${x.allegati ? `<span class="sge-all">${segrDis("graffetta")}${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}</span>` : ""}${sofia}<span class="sge-leggi">Leggi tutta <span aria-hidden="true">→</span></span></button>`;
+}
+function segrEmailHtml() {
+  const tutte = segrEmailTutte(), oggi = L.oggiISO(), cap = segrEmailCapito();
+  const diOggi = tutte.filter(p => String(p.data || "") === oggi), prima = tutte.filter(p => String(p.data || "") !== oggi);
+  let html = `<h4 class="sgo-tit">Le email di oggi</h4>${diOggi.length ? diOggi.map(p => segrEmailRiga(p, cap)).join("") : `<p class="sgo-vuoto">${paPronta() ? "Oggi non è arrivata nessuna email." : "La posta dell'albergo non è collegata: si collega da Altro, «La posta dell'albergo»."}</p>`}`;
+  if (prima.length) {
+    const vedi = S.segrEmailPrima || !diOggi.length, giorni = new Map(); for (const p of prima) { const g = String(p.data || ""); if (!giorni.has(g)) giorni.set(g, []); giorni.get(g).push(p); }
+    html += vedi ? [...giorni.entries()].map(([g, l]) => `<h4 class="sgo-tit due">${esc(segrEmailGiorno(g))}</h4>${l.map(p => segrEmailRiga(p, cap)).join("")}`).join("") + (diOggi.length ? `<button type="button" class="sgo-altre" data-segr-email-prima>Nascondi quelle dei giorni scorsi</button>` : "")
+      : `<button type="button" class="sgo-altre" data-segr-email-prima>Vedi quelle dei giorni scorsi (${prima.length})</button>`;
+  }
+  return html;
+}
+// «Apri nella posta»: Gmail con la ricerca di quella email (chi scrive e l'oggetto). L'indirizzo dell'albergo è quello della casella.
+function segrEmailLink(p) {
+  const x = segrEmailParti(p), parole = x.oggetto === "(senza oggetto)" ? "" : x.oggetto.replace(/["“”«»()\[\]{}:]/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 8).join(" ");
+  const q = [p.dominio ? `from:${String(p.dominio).replace(/[^a-z0-9.-]/gi, "")}` : "", parole ? `subject:(${parole})` : ""].filter(Boolean).join(" ");
+  const ind = String((S.postaAlb && S.postaAlb.indirizzo) || "").trim();
+  return `https://mail.google.com/mail/${ind ? `?authuser=${encodeURIComponent(ind)}` : ""}#${q ? "search/" + encodeURIComponent(q) : "inbox"}`;
+}
+// l'email intera (il foglio): chi scrive, quando, l'oggetto, cosa ha capito Sofia, tutto il testo che la casella ha preso
+function foglioSegrEmail(f) {
+  const p = (S.posta || {})[f.id];
+  if (!p) return `<div class="sge-foglio"><h3 class="sgf-ogg">Email</h3><p class="sgf-nota">Questa email non c'è più: le tengo una settimana.</p></div>`;
+  const x = segrEmailParti(p), righe = segrEmailCapito().get(p.id) || [], g = String(p.data || "");
+  const quando = `${g ? segrEmailGiorno(g).toLowerCase() : ""}${p.ora ? ` alle ${p.ora}` : ""}`.trim();
+  const tagliata = x.corpo.length >= 1780;
+  return `<div class="sge-foglio">
+    <p class="sgf-da">${segrDis("lettera")}<span><b>${esc(p.chi || "?")}</b><small>${esc(quando)}${x.allegati ? ` · ${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}` : ""}</small></span></p>
+    <h3 class="sgf-ogg">${esc(x.oggetto)}</h3>
+    ${righe.length ? `<div class="sgf-sofia">${righe.map(r => `<p><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</p>`).join("")}</div>` : ""}
+    <div class="sgf-testo">${x.corpo ? escNl(x.corpo) : "<i>(l'email non ha testo)</i>"}</div>
+    ${tagliata ? `<p class="sgf-nota">L'email è più lunga: qui c'è l'inizio. Per leggerla tutta, o per vedere gli allegati, aprila nella posta.</p>` : x.allegati ? `<p class="sgf-nota">Gli allegati si vedono nella posta.</p>` : ""}
+    <a class="sgf-b posta" href="${esc(segrEmailLink(p))}" target="_blank" rel="noopener">${segrDis("cassetta")}<span>Apri nella posta</span></a></div>`;
+}
+// 1) Oggi: le quattro tessere (il numero grande, il disegno a matita, la parola); quella toccata si apre lì sotto
 function segrOggiHtml() {
-  const oggi = L.oggiISO(), mv = movimentiDelGiorno(oggi);
+  const oggi = L.oggiISO(), mv = movimentiDelGiorno(oggi), ap = segrOggiAperto();
   const pul = pulizieDelGiorno(oggi).filter(p => p.tipo !== "stelle"), fatte = pul.filter(p => p.stato === "fatta").length;
   const em = segrEmailOggi().length;
   // il numero grande è quello delle PERSONE, come nella prima pagina («col numero delle persone ovviamente, ospiti»); sotto, piccolo,
   // in quante camere (il riassunto di Sofia lì sopra conta le camere: così i due numeri si capiscono)
   const cam = (l) => l.length ? `in ${l.length} ${l.length === 1 ? "camera" : "camere"}` : "";
-  const t = (cls, n, dis, parola, attr, dici, sotto) => `<button type="button" class="sgt ${cls}" ${attr} aria-label="${esc(dici)}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span>${sotto ? `<small class="sgt-s">${esc(sotto)}</small>` : ""}</button>`;
-  return `<div class="sgt-griglia">${
-    t("arrivi", mv.ospitiArr, "mat-arrivi.webp", mv.ospitiArr === 1 ? "Arrivo" : "Arrivi", `data-segr-vai="arriviOggi"`, mv.ospitiArr ? `Oggi ${mv.ospitiArr === 1 ? "arriva 1 ospite" : `arrivano ${mv.ospitiArr} ospiti`}, ${cam(mv.arr)}: tocca per vedere chi` : "Oggi non arriva nessuno", cam(mv.arr))}${
-    t("partenze", mv.ospitiPar, "mat-partenze.webp", mv.ospitiPar === 1 ? "Partenza" : "Partenze", `data-segr-vai="partenzeOggi"`, mv.ospitiPar ? `Oggi ${mv.ospitiPar === 1 ? "parte 1 ospite" : `partono ${mv.ospitiPar} ospiti`}, ${cam(mv.par)}: tocca per vedere chi` : "Oggi non parte nessuno", cam(mv.par))}${
-    t("pulizie", pul.length, "mat-secchio.webp", fatte ? `Pulizie · ${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : pul.length === 1 ? "Pulizia" : "Pulizie", `data-segr-vai="pulizie"`, pul.length ? `Oggi ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}, ${fatte} ${fatte === 1 ? "fatta" : "fatte"}: tocca per vederle` : "Oggi nessuna pulizia")}${
-    t("email", em, "mat-busta.webp", "Email", "data-segr-email", em ? `Oggi ${em === 1 ? "è arrivata 1 email" : `sono arrivate ${em} email`}: tocca per sapere da chi` : "Oggi non è arrivata nessuna email")}</div>`;
+  const t = (k, n, dis, parola, dici, sotto) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}" data-segr-oggi="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span>${sotto && !ap ? `<small class="sgt-s">${esc(sotto)}</small>` : ""}</button>`;
+  const dentro = ap === "arrivi" ? segrArriviHtml(mv) : ap === "partenze" ? segrPartenzeHtml(mv) : ap === "pulizie" ? segrPulizieHtml() : ap === "email" ? segrEmailHtml() : "";
+  return `<div class="sgt-griglia sgt-oggi${ap ? " stretta" : ""}">${
+    t("arrivi", mv.ospitiArr, "mat-arrivi.webp", mv.ospitiArr === 1 ? "Arrivo" : "Arrivi", mv.ospitiArr ? `Oggi ${mv.ospitiArr === 1 ? "arriva 1 ospite" : `arrivano ${mv.ospitiArr} ospiti`}, ${cam(mv.arr)}` : "Oggi non arriva nessuno", cam(mv.arr))}${
+    t("partenze", mv.ospitiPar, "mat-partenze.webp", mv.ospitiPar === 1 ? "Partenza" : "Partenze", mv.ospitiPar ? `Oggi ${mv.ospitiPar === 1 ? "parte 1 ospite" : `partono ${mv.ospitiPar} ospiti`}, ${cam(mv.par)}` : "Oggi non parte nessuno", cam(mv.par))}${
+    t("pulizie", pul.length, "mat-secchio.webp", pul.length === 1 ? "Pulizia" : "Pulizie", pul.length ? `Oggi ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}, ${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "Oggi nessuna pulizia", pul.length ? `${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "")}${
+    t("email", em, "mat-busta.webp", "Email", em ? `Oggi ${em === 1 ? "è arrivata 1 email" : `sono arrivate ${em} email`}` : "Oggi non è arrivata nessuna email")}</div>${ap ? `<div class="sgo ${ap}" data-sgo="${ap}">${dentro}</div>` : ""}`;
 }
 // 2) I quattro cassetti: quattro tessere col numero; un tocco apre le righe di quel cassetto (uno alla volta)
 const SEGR_CASSETTI = [["fare", "Da fare tu", "mat-sveglia.webp"], ["prop", "Ti propongo", "mat-scintilla.webp"], ["fatto", "Ho fatto io", "mat-spunte.webp"], ["sapere", "Da sapere", "mat-stella.webp"]];
@@ -6997,13 +7156,13 @@ function segrCassettiHtml(pz) {
 }
 function segrDentroHtml(pz) {
   return `${segrFumettoHtml(pz)}
-    <div class="sg2-tasti sgh-tasti"><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}"><span aria-hidden="true">🎤</span> ${sg2Rec ? "Ti ascolto…" : "Parlale"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi><span aria-hidden="true">✍️</span> Scrivile</button></div>
+    <div class="sg2-tasti sgh-tasti"><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}">${segrDis("microfono")} ${sg2Rec ? "Ti ascolto…" : "Parlale"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi>${segrDis("matita")} Scrivile</button></div>
     ${pz.banner || ""}
-    <h3 class="sgh-tit">1) Oggi</h3>
-    <button type="button" class="sgh-ascolta" data-sg2-ascolta><span class="sgh-alt" aria-hidden="true">🔊</span><span class="sgh-at"><b>Ascolta</b><small>${esc(pz.nome)} me lo racconta a voce</small></span></button>
+    <h3 class="sgh-tit">Oggi</h3>
+    <button type="button" class="sgh-ascolta" data-sg2-ascolta>${segrDis("voce", "sgh-alt")}<span class="sgh-at"><b>Ascolta</b><small>${esc(pz.nome)} me lo racconta a voce</small></span></button>
     ${segrOggiHtml()}
-    <h3 class="sgh-tit">2) I quattro cassetti</h3>${segrCassettiHtml(pz)}
-    <h3 class="sgh-tit">3) Documenti degli ospiti</h3>${pz.doc || ""}`;
+    <h3 class="sgh-tit">I miei cassetti</h3>${segrCassettiHtml(pz)}
+    <h3 class="sgh-tit">Documenti degli ospiti</h3>${pz.doc || ""}`;
 }
 function disegnaSegrHero() {
   let h = document.getElementById("segrHero");
@@ -7034,24 +7193,20 @@ function segrTendaCambia() {
   try { if (giu) localStorage.setItem(CHIAVE_SEGR_TENDA, "giu"); else localStorage.removeItem(CHIAVE_SEGR_TENDA); } catch (e) {}
   const n = h.querySelector(".casa-nascondi"); if (n) { n.setAttribute("aria-expanded", giu ? "false" : "true"); n.setAttribute("aria-label", giu ? "Rimetti il riquadro" : `Nascondi il riquadro: si vede tutta ${nomeGov()}`); }
 }
-// una tessera di «Oggi»: si va nella prima pagina, sul foglio di chi arriva, di chi parte o delle pulizie
-function segrVai(k) {
-  S.vista = "oggi"; S.giorno = L.oggiISO(); disegna(); window.scrollTo(0, 0);
-  setTimeout(() => { try { dettaglioApri(k); } catch (e) {} }, 350);
-}
-function segrEmailDici() {
-  const em = segrEmailOggi();
-  if (!em.length) { toast("Oggi non è arrivata nessuna email alla casella dell'albergo."); return; }
-  const chi = [...new Set(em.map(p => String(p.chi || "").trim()).filter(Boolean))].slice(0, 4);
-  toast(`Oggi ${em.length === 1 ? "è arrivata 1 email" : `sono arrivate ${em.length} email`}${chi.length ? ": " + chi.join(", ") : ""}. Quello che c'è da fare lo trovi nei cassetti.`.slice(0, 200));
+// una tessera di «Oggi»: si apre lì sotto (un altro tocco la richiude); il riquadro scorre fin lì
+function segrOggiTocca(k) {
+  S.segrOggi = segrOggiAperto() === k ? "" : k; if (S.segrOggi !== "email") S.segrEmailPrima = false;
+  disegna();
+  if (S.segrOggi) setTimeout(() => { const g = document.querySelector("#segrHero .sgt-oggi"), sc = g && g.closest(".casa-testo"); if (g && sc) { const y = g.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 6; try { sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } catch (e) { sc.scrollTop = Math.max(0, y); } } }, 60);
 }
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria" || !t.closest("#segrHero")) return;
   let x;
   if (t.closest("[data-segr-nascondi]") || (t.closest(".casa-nuvola") && document.getElementById("segrHero").classList.contains("tenda-nascosta"))) { e.preventDefault(); segrTendaCambia(); return; }
   if ((x = t.closest("[data-segr-cassetto]"))) { const k = x.dataset.segrCassetto; S.sg2Aperto = segrCassettoAperto(sg2Pezzi) === k ? "" : k; disegna(); if (S.sg2Aperto) setTimeout(() => { const a = document.querySelector("#segrHero .sgt-aperto"); if (a && a.scrollIntoView) a.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, 80); return; }
-  if ((x = t.closest("[data-segr-vai]"))) { segrVai(x.dataset.segrVai); return; }
-  if (t.closest("[data-segr-email]")) { segrEmailDici(); return; }
+  if ((x = t.closest("[data-segr-email-apri]"))) { apriFoglio({ tipo: "segrEmail", id: x.dataset.segrEmailApri }); return; }
+  if (t.closest("[data-segr-email-prima]")) { S.segrEmailPrima = !S.segrEmailPrima; disegna(); return; }
+  if ((x = t.closest("[data-segr-oggi]"))) { segrOggiTocca(x.dataset.segrOggi); return; }
 });
 function vistaSegreteria() {
   const nome = nomeGov(), mod = puoModificare();
@@ -7081,7 +7236,7 @@ function vistaSegreteria() {
   let doc = "";
   try {
     const st = alStato(), da = alArrivi().filter(s => !st.inviati[s.id]);
-    doc = `<div class="sg2-doc">${da.length ? da.map(s => `<div class="sg2-doc-r"><span>Camera <b>${esc(camera(s.camera).nome.toUpperCase())}</b><small>${s.inizio === L.oggiISO() ? "arrivo oggi" : "arrivo ieri"}${(st.persone[s.id] || []).length ? ` · ${(st.persone[s.id] || []).length} già ${(st.persone[s.id] || []).length === 1 ? "messa" : "messe"}` : ""}</small></span><label class="sg2-b oro-pieno"><span aria-hidden="true">📸</span> Inquadra documento<input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(camera(s.camera).nome)}"></label></div>`).join("") : `<p class="sg2-vuoto">Oggi e ieri non è arrivato nessuno da registrare.</p>`}
+    doc = `<div class="sg2-doc">${da.length ? da.map(s => `<div class="sg2-doc-r"><span>Camera <b>${esc(segrHeroAttivo() ? camera(s.camera).nome : camera(s.camera).nome.toUpperCase())}</b><small>${s.inizio === L.oggiISO() ? "arrivo oggi" : "arrivo ieri"}${(st.persone[s.id] || []).length ? ` · ${(st.persone[s.id] || []).length} già ${(st.persone[s.id] || []).length === 1 ? "messa" : "messe"}` : ""}</small></span><label class="sg2-b oro-pieno"><span aria-hidden="true">📸</span> Inquadra documento<input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(camera(s.camera).nome)}"></label></div>`).join("") : `<p class="sg2-vuoto">Oggi e ieri non è arrivato nessuno da registrare.</p>`}
       <button type="button" class="sg2-doc-apri" data-al-vai data-al-da="segreteria">Apri i documenti ›</button></div>`;
   } catch (e) { doc = ""; }
   // cosa ho capito, persona per persona
@@ -7272,14 +7427,34 @@ function sg2SofiaMonta() {
   }
   if (sg2Sofia.parentNode !== posto) { posto.textContent = ""; posto.appendChild(sg2Sofia); }
   const parla = !!(voceInCorso || sg2ParlaTel), v = sg2Sofia.querySelector(".sg2-sf-riposo"), vp = sg2Sofia.querySelector(".sg2-sf-parla");
-  if (v && v.paused) { try { v.play().catch(() => {}); } catch (e) {} }
   if (vp) { if (parla && vp.paused) { try { vp.play().catch(() => {}); } catch (e) {} } else if (!parla && !vp.paused) { try { vp.pause(); } catch (e) {} } }
   sg2Sofia.classList.toggle("parla", parla && (!!vp || !!sg2Sofia.querySelector(".sg2-sf-img")));   // 1.80.0: senza il filmato «parla» resta quello fermo (prima la figura spariva)
   // 1.70.1: mentre il microfono ti ascolta (e mentre ci pensa) il filmato in cui ti ascolta
   const ascolta = !parla && !!(sg2Rec || ["ascolto", "pensa"].includes((S.sg2Bolla || {}).stato)), va = sg2Sofia.querySelector(".sg2-sf-ascolta");
   if (va) { if (ascolta && va.paused) { try { va.currentTime = 0; va.play().catch(() => {}); } catch (e) {} } else if (!ascolta && !va.paused) { try { va.pause(); } catch (e) {} } }
   sg2Sofia.classList.toggle("ascolta", ascolta && !!va);
+  segrFermaSotto(sg2Sofia, v, (parla && !!vp) || (ascolta && !!va));   // 1.94.0
   const b = document.querySelector(".sg2-sofia"); if (b) b.setAttribute("aria-pressed", parla ? "true" : "false");
+}
+// 1.94.0 IL FILMATO IN CUI LAVORA, MENTRE NON SI VEDE. Quando ti ascolta o parla c'è sopra un altro filmato, e quello in cui lavora
+// sta sotto, trasparente. Prima continuava ad andare: finito di parlare la ritrovavi a metà di un gesto (la mano all'auricolare,
+// la testa girata verso il computer) e le due figure si incrociavano. Adesso, appena è sparito (0,6 secondi: la dissolvenza
+// ne dura 0,45), torna al suo inizio (la posa della foto) e aspetta fermo. Quando torna a vedersi riparte da lì: dalla posa
+// in cui parlava alla posa della foto il passo è piccolo, e lei si rimette al lavoro da capo (guarda il tablet).
+function segrFermaSotto(el, v, coperta) {
+  if (!el || !v || v.tagName !== "VIDEO") return;   // (dove il filmato è cancellato c'è la foto)
+  if (!coperta) {
+    if (el._sotto) { clearTimeout(el._sotto); el._sotto = 0; }
+    delete v.dataset.aspetta;
+    if (v.paused) { try { v.play().catch(() => {}); } catch (e) {} }
+    return;
+  }
+  if (v.dataset.aspetta || el._sotto) return;
+  el._sotto = setTimeout(() => {
+    el._sotto = 0;
+    if (el !== sg2Sofia || !(el.classList.contains("parla") || el.classList.contains("ascolta"))) return;
+    try { v.pause(); v.currentTime = 0; v.dataset.aspetta = "1"; } catch (e) {}
+  }, 600);
 }
 // 1.70.0 (Michele: «parla anche quella di sopra, Sofia segretaria: è tutto un casino»): in Segreteria parla SOLO la segretaria.
 // Se la sua figura in cima si vede, parla lì; se sei sceso più giù, esce lei (la segretaria, non la governante) in basso a destra
@@ -16457,6 +16632,7 @@ function disegnaFoglio() {
   else if (f.tipo === "alWs") html = foglioAlWs(f);   // 1.56.1
   else if (f.tipo === "cassetta") html = foglioCassetta(f);   // 1.64.0
   else if (f.tipo === "postaAlb") html = foglioPostaAlbergo(f);   // 1.75.0
+  else if (f.tipo === "segrEmail") html = foglioSegrEmail(f);   // 1.94.0: l'email intera
   else if (f.tipo === "calendario") html = foglioCalendario(f);   // 1.65.0
   else if (f.tipo === "socialCome") html = foglioSocialCome(f);   // 1.66.0
   else if (f.tipo === "socialChiave") html = foglioSocialChiave(f);   // 1.67.0
