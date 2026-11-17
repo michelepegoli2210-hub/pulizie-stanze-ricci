@@ -13,7 +13,9 @@ SORG = '/home/claude/dev/spilla/film/out'
 OUT = '/home/claude/dev/video1900/out'
 GRUPPI = {
     # tagli: dove comincia ogni pezzo (più la fine); vmax: la velocità più alta ammessa nell'attacco (pixel per fotogramma)
-    'calmo': dict(tagli=[0, 222, 426], vmax=2.0, minimo=16, massimo=26),
+    # 1.90.2: «ferma» comincia e ricomincia dal fotogramma 24 del pezzo 1 (prima da 0: lì ha il sorriso grande coi denti della
+    # foto e in mezzo secondo lo perde; a ogni giro «sorride e torna di colpo seria»). I primi 24 fotogrammi non si usano più.
+    'calmo': dict(tagli=[24, 222, 426], vmax=2.0, minimo=16, massimo=26),
     'parla': dict(tagli=[0, 240, 443, 683, 888, 1110], vmax=3.0, minimo=12, massimo=24),
 }
 

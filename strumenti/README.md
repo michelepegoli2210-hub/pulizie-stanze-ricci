@@ -16,3 +16,6 @@
   `python3 strumenti/fai-fluido.py calmo parla` (le cartelle dei fotogrammi sono scritte in cima al file); esce anche
   `<gruppo>.json` coi numeri da mettere in `app.js` (`FILM_SPEZZONI`, `FILM_CODE`, `FILM_FINE`). Poi si codifica come sempre
   e si rifà il gemello con `fa-alfa.py`.
+  Dalla 1.90.2 il filmato «ferma» comincia dal fotogramma 24 del primo pezzo (`tagli=[24, 222, 426]`): prima cominciava e
+  ricominciava dal sorriso grande della foto, che in mezzo secondo perdeva. Quando si rifà un filmato si guardano i visi di
+  tutto il giro, anche dove ricomincia, non solo gli attacchi.
