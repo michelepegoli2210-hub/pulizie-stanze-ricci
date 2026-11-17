@@ -19,3 +19,9 @@
   Dalla 1.90.2 il filmato «ferma» comincia dal fotogramma 24 del primo pezzo (`tagli=[24, 222, 426]`): prima cominciava e
   ricominciava dal sorriso grande della foto, che in mezzo secondo perdeva. Quando si rifà un filmato si guardano i visi di
   tutto il giro, anche dove ricomincia, non solo gli attacchi.
+- `fai-giro.py` (1.91.0) — i filmati di Sofia senza i passaggi «da robot». Mette in fila i fotogrammi veri di più video in modo
+  che ogni pezzo parta e finisca nella stessa posa: un pezzo va avanti e poi all'indietro (gli stessi fotogrammi, al contrario)
+  e gira dove lei è quasi ferma; dove si passa da un video a un altro i due fotogrammi sono quasi uguali e bastano pochi
+  fotogrammi di `attacco.py`. Le cartelle dei fotogrammi e la fila («ferma»: il saluto, poi calma; «parla»: i 5 pezzi, ognuno
+  con la sua coda) sono scritte in cima al file. `python3 strumenti/fai-giro.py ferma parla`; esce `<gruppo>.json` coi numeri
+  per `app.js`. Un video nuovo va bene se parte e finisce nella posa della foto (così lo fa Gemini quando glielo si chiede).
