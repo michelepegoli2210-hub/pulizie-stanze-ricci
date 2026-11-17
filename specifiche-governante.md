@@ -3346,3 +3346,11 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - La foto di partenza (quella che si vede prima che il filmato parta, e quando i filmati sono cancellati) è il nuovo primo fotogramma: all'apertura non cambia faccia.
   - Il sorriso grande resta quando comincia a parlare. Resta com'è il cambio di colpo tra «ferma» e «parla»: è il prossimo lavoro.
   - File nuovi: cons-riposo-spilla-sereno (.mp4, -3d.webm, -alfa.mp4) e cons-poster-sereno (.webp, -3d.webp). I pezzi in «Impostazioni → I filmati di Sofia» sono gli stessi 7.
+- **1.91.0** (17/11, Michele, mandando il video che ha fatto lui con Gemini: «questo è il video di sofia che mi manda i baci ed è bellissimo»; e poi: «sofia governante fa ancora delle movenze che sembra un robot che si sposta togli quello poi c'era un video dove lei si toccava i capelli la collana vedi se riesci a sincronizzare anche quelli»). Sofia saluta e manda un bacio, e non si sposta più «come un robot».
+  - Il «robot» erano i passaggi tra un pezzo e l'altro fatti con la 1.90.0: per un secondo la testa girava e scivolava tutta insieme. Non ci sono più.
+  - Adesso ogni pezzo parte e finisce nella stessa posa coi suoi fotogrammi veri: va avanti e poi torna indietro (gli stessi fotogrammi, al contrario) e gira dove lei è quasi ferma. Dove si passa da un video a un altro i due fotogrammi sono quasi uguali (da 1 a 4 puntini): bastano pochi fotogrammi, che non si vedono.
+  - Da ferma (45 secondi, poi da capo): il saluto (sorride, saluta da Miss, mano sul petto, manda il bacio: il video di Michele, ritagliato come gli altri), poi resta tranquilla e guarda di lato. Quando si apre la pagina comincia dal saluto.
+  - Quando parla: gli stessi 5 pezzi, ognuno avanti e indietro. Mentre parla resta dentro un pezzo solo: tra un pezzo e l'altro non passa più. Finito di parlare torna al pezzo calmo, non al saluto.
+  - In «Impostazioni → I filmati di Sofia» i primi due si chiamano «Saluta e manda un bacio» e «Ferma: tranquilla»; i 5 in cui parla hanno gli stessi nomi.
+  - Resta com'è il cambio di colpo tra ferma e parla. La spilla nel video del saluto l'ha rifatta Gemini: è un po' più chiara.
+  - Il video dei capelli e della collana di una volta finiva in un'altra posa e aveva il medaglione: si rifà con Gemini (che parta e finisca nella posa della foto) e si aggiunge.

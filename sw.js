@@ -3,13 +3,13 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.90.2";
+const VERSIONE = "1.91.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
 // e restano; quando un filmato cambia gli si cambia nome. FILMATI = quelli che l'app usa: gli altri si tolgono.
 const CACHE_FILM = "ricci-filmati-1";
-const FILMATI = ["./cons-parla-spilla-fluido.mp4", "./cons-riposo-spilla-sereno.mp4", "./cons-parla-spilla-fluido-3d.webm", "./cons-riposo-spilla-sereno-3d.webm", "./cons-parla-intero.mp4", "./cons-riposo-calmo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr5-riposo-3d.webm", "./segr5-ascolta-3d.webm", "./segr5-parla-3d.webm", "./sofia-influencer.mp4", "./sofia-influencer-ferma.mp4", "./cons-parla-intero-3d.webm", "./cons-riposo-calmo-3d.webm", "./cons-parla-spilla-fluido-alfa.mp4", "./cons-riposo-spilla-sereno-alfa.mp4", "./cons-parla-intero-alfa.mp4", "./cons-riposo-calmo-alfa.mp4", "./capo-parla-alfa.mp4", "./capo-riposo-alfa.mp4", "./segr5-riposo-alfa.mp4", "./segr5-ascolta-alfa.mp4", "./segr5-parla-alfa.mp4"];   // 1.84.0: i gemelli per l'iPhone (si scaricano solo dove servono) · 1.90.0: i filmati con la spilla senza scatti (-fluido) · 1.90.2: da ferma senza il sorriso che va e viene (-sereno)
+const FILMATI = ["./cons-parla-spilla-giro.mp4", "./cons-riposo-spilla-giro.mp4", "./cons-parla-spilla-giro-3d.webm", "./cons-riposo-spilla-giro-3d.webm", "./cons-parla-intero.mp4", "./cons-riposo-calmo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr5-riposo-3d.webm", "./segr5-ascolta-3d.webm", "./segr5-parla-3d.webm", "./sofia-influencer.mp4", "./sofia-influencer-ferma.mp4", "./cons-parla-intero-3d.webm", "./cons-riposo-calmo-3d.webm", "./cons-parla-spilla-giro-alfa.mp4", "./cons-riposo-spilla-giro-alfa.mp4", "./cons-parla-intero-alfa.mp4", "./cons-riposo-calmo-alfa.mp4", "./capo-parla-alfa.mp4", "./capo-riposo-alfa.mp4", "./segr5-riposo-alfa.mp4", "./segr5-ascolta-alfa.mp4", "./segr5-parla-alfa.mp4"];   // 1.84.0: i gemelli per l'iPhone (si scaricano solo dove servono) · 1.90.0: i filmati con la spilla senza scatti (-fluido) · 1.91.0: il saluto, e senza i passaggi «da robot» (-giro)
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./lettura.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",

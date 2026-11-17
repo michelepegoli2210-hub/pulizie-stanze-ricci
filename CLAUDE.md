@@ -79,6 +79,13 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   giro del filmato e ogni volta che smetteva di parlare. Adesso comincia e ricomincia un secondo dopo, col sorriso tranquillo
   (`tagli=[24, …]` in `strumenti/fai-fluido.py`; `cons-riposo-spilla-sereno*`), e la foto di partenza è quel fotogramma
   (`cons-poster-sereno*.webp`). Quando si rifà un filmato di Sofia si guardano i visi di tutto il giro, non solo gli attacchi.
+- Il saluto, e via i passaggi «da robot» (1.91.0; Michele, del video fatto da lui con Gemini: «questo è il video di sofia che
+  mi manda i baci ed è bellissimo»; e: «fa ancora delle movenze che sembra un robot che si sposta, togli quello»). I «robot»
+  erano i passaggi lunghi della 1.90.0 (la testa che gira e scivola per un secondo): non si fanno più. Regola: **ogni pezzo
+  parte e finisce nella stessa posa coi suoi fotogrammi veri**. Un pezzo che finisce altrove va avanti e poi all'indietro
+  (`strumenti/fai-giro.py`); un video nuovo si chiede a Gemini che parta e finisca nella posa della foto. Da ferma: il saluto,
+  poi calma, poi da capo. Mentre parla resta dentro un pezzo solo (`FILM_GIRA`); finito di parlare torna al pezzo calmo
+  (`FILM_RITORNO`). I file sono `cons-*-spilla-giro*`.
 - La copertina di Sofia influencer (1.90.1; Michele: «sofia si deve muovere già dalla copertina»): la sua stanza, quella larga in
   fondo alla prima pagina, ha sopra la foto il suo filmato (`stanzaFilmMonta`: parte quando entra nello schermo, si ferma
   quando esce; i due filmati sono quelli della sua pagina, `FILM_INFLU`). La parte di sotto della sua pagina e la Segreteria
