@@ -34,3 +34,9 @@
   Dalla 1.91.2: i video che Gemini fa dalla foto hanno la spilla chiara, quasi bianca (nella foto è d'oro). `tingi-spilla.py` la
   tinge d'oro lì dov'è, fotogramma per fotogramma (non la ridisegna: resta dietro la mano quando la mano le passa davanti). Si fa
   su ogni video nuovo della governante, prima di `fai-giro.py`.
+- `verde.py`, `ritaglia-verde.py`, `fai-segr.py` (1.92.0) — i filmati di Sofia segretaria col rosa (segr6). I video li fa Gemini
+  dalla foto col verde dietro (chiesto apposta: «sfondo verde tinta unita»), che partono e finiscono nella posa della foto.
+  `python3 strumenti/ritaglia-verde.py video.mp4 out/v1` toglie il verde e tiene tutto il resto (lei, il tablet, il bancone, il
+  campanello, il computer): fotogrammi 540x960 con la trasparenza. `python3 strumenti/fai-segr.py` mette in fila i video (v1, v2,
+  v3…) con due o tre fotogrammi di `attacco.py` tra uno e l'altro e fa il pezzo in cui ti guarda. Poi si codifica come gli altri
+  (VP9 con la trasparenza) e si fa il gemello con `fa-alfa.py`.
