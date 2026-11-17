@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.90.0";
+export const VERSIONE = "1.90.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -7388,7 +7388,7 @@ function vistaStanze() {
 function disegnaStanze() {
   let s = document.getElementById("stanzeCasa");
   let vuoi = false; try { vuoi = !!(S.pronto && S.utente && S.utente.ruolo && proprietario() && !addetta() && S.vista === "oggi" && !(S.utente && S.utente.finta)); } catch (e) {}
-  if (!vuoi) { if (s) s.remove(); document.body.classList.remove("ha-stanze"); return; }
+  if (!vuoi) { if (s) s.remove(); document.body.classList.remove("ha-stanze"); try { stanzaFilmFerma(); } catch (e) {} return; }   // 1.90.1
   const header = document.querySelector("header"), app = document.getElementById("app");
   if (!s) {
     s = document.createElement("section"); s.id = "stanzeCasa"; s.className = "stanze"; s.setAttribute("aria-label", "Le stanze");
@@ -7399,7 +7399,57 @@ function disegnaStanze() {
     const prima = header || app; if (prima && s.nextElementSibling !== prima) prima.parentNode.insertBefore(s, prima);   // sempre subito sopra la striscia dei giorni (sotto la casa)
   }
   document.body.classList.add("ha-stanze");
+  try { stanzaFilmMonta(); } catch (e) {}   // 1.90.1: Sofia influencer che si muove nella sua copertina
 }
+// 1.90.1 (Michele, 17/11: «sofia si deve muovere già dalla copertina»): LA COPERTINA DI SOFIA INFLUENCER SI MUOVE. La sua stanza
+// (quella larga, in fondo alla prima pagina) non è più una foto ferma: appena entra nello schermo parte il filmato in cui si
+// muove (10 secondi: parla, si tocca gli occhiali, saluta), poi resta quello in cui sta lì, che gira da solo senza stacco.
+// Fuori dallo schermo si ferma (niente batteria); se torna dopo più di 20 secondi ricomincia dal saluto. Sono gli stessi due
+// filmati della sua pagina (FILM_INFLU): cancellati da «I filmati di Sofia», o col telefono che chiede meno movimento, resta la
+// foto di prima. Il filmato è tenuto da parte: le stanze si rifanno, lui no (non riparte a ogni disegno).
+let stanzaFilm = null, stanzaFilmOss = null;
+function stanzaFilmVai() {
+  const s = stanzaFilm; if (!s || s._gira || document.hidden || !s.isConnected) return;
+  const v = s.querySelector(".sf-intro"), f = s.querySelector(".sf-ferma");
+  if (v && !v.getAttribute("src")) { v.src = FILM_INFLU.video; v.preload = "auto"; }
+  if (f && !f.getAttribute("src")) { f.src = FILM_INFLU.ferma; f.preload = "auto"; }
+  const daCapo = !s._via || Date.now() - s._via > 20000;
+  s._gira = true;
+  if (v && (daCapo || !s.classList.contains("ferma"))) {
+    if (daCapo) { s.classList.remove("ferma"); if (f) { try { f.pause(); } catch (e) {} } try { if ((Number(v.currentTime) || 0) > 0.05) v.currentTime = 0; } catch (e) {} }
+    v.play().catch(() => {});
+  } else if (f && !f.dataset.via) { s.classList.add("ferma"); f.play().catch(() => {}); }
+}
+function stanzaFilmFerma() {
+  const s = stanzaFilm; if (!s || !s._gira) return;
+  s._gira = false; s._via = Date.now();
+  s.querySelectorAll("video").forEach(x => { if (!x.paused) { try { x.pause(); } catch (e) {} } });
+}
+function stanzaFilmMonta() {
+  const fig = document.querySelector('#stanzeCasa .stanza[data-stanza="influencer"] .stanza-fig');
+  const tM = filmatoTolto("influ-muove"), tF = filmatoTolto("influ-ferma");
+  const via = () => { if (stanzaFilm) { stanzaFilmFerma(); try { if (stanzaFilmOss) stanzaFilmOss.unobserve(stanzaFilm); } catch (e) {} if (stanzaFilm.parentNode) stanzaFilm.parentNode.classList.remove("con-film"); stanzaFilm.remove(); stanzaFilm = null; } };
+  if (!fig || motoRidotto() || (tM && tF)) { via(); return; }
+  if (stanzaFilm && (stanzaFilm.dataset.tolti || "") !== filmatiFirma("influ")) via();   // sono cambiati i filmati cancellati: si rifà
+  if (!stanzaFilm) {
+    const s = document.createElement("span"); s.className = "stanza-film"; s.dataset.tolti = filmatiFirma("influ"); s.setAttribute("aria-hidden", "true");
+    s.innerHTML = `${tM ? "" : `<video class="sf-intro" poster="${FILM_INFLU.poster}" muted playsinline preload="none"></video>`}${tF ? "" : `<video class="sf-ferma" muted playsinline loop preload="none"></video>`}`;
+    const v = s.querySelector(".sf-intro"), f = s.querySelector(".sf-ferma");
+    for (const x of [v, f]) if (x) { x.muted = true; x.defaultMuted = true; x.setAttribute("playsinline", ""); }
+    // finito il filmato in cui si muove resta lì ferma (quello «sta ferma» parte proprio dall'ultimo fotogramma)
+    if (v) v.addEventListener("ended", () => { if (!f || f.dataset.via || !s._gira) return; try { f.currentTime = 0; f.play().catch(() => {}); } catch (e) {} s.classList.add("ferma"); });
+    if (f) f.addEventListener("error", () => { f.dataset.via = "1"; s.classList.remove("ferma"); });
+    if (!v && f) s.classList.add("ferma");   // senza il filmato in cui si muove c'è subito quella ferma
+    stanzaFilm = s;
+  }
+  if (stanzaFilm.parentNode !== fig) { stanzaFilm._gira = false; fig.appendChild(stanzaFilm); }
+  fig.classList.add("con-film");   // col filmato la copertina è più alta (4:3); con la sola foto resta 2:1, come prima
+  if (!("IntersectionObserver" in window)) { stanzaFilmVai(); return; }
+  if (!stanzaFilmOss) stanzaFilmOss = new IntersectionObserver((voci) => { for (const x of voci) { if (x.target !== stanzaFilm) continue; if (x.isIntersecting && x.intersectionRatio >= 0.35) stanzaFilmVai(); else stanzaFilmFerma(); } }, { threshold: [0, 0.35, 0.7] });
+  try { stanzaFilmOss.unobserve(stanzaFilm); stanzaFilmOss.observe(stanzaFilm); } catch (e) {}   // rimesso: dice subito se si vede
+}
+// l'app va sullo sfondo: la copertina si ferma; torna: riparte se si vede
+document.addEventListener("visibilitychange", () => { try { if (document.hidden) stanzaFilmFerma(); else if (stanzaFilm && stanzaFilmOss) { stanzaFilmOss.unobserve(stanzaFilm); stanzaFilmOss.observe(stanzaFilm); } } catch (e) {} });
 // l'immagine di Gemini c'è? la si mostra; se manca (404) resta il disegnino a matita (l'evento error non risale: si prende in cattura)
 document.addEventListener("error", (e) => { const img = e.target; if (img && img.classList && img.classList.contains("stanza-img")) { img.remove(); } }, true);
 // 1.44.0: LE FIGURE DEL LAVORO PER LE SIGNORE (lavoro-<blocco>.webp): Sofia vestita da addetta mostra il gesto di quel blocco

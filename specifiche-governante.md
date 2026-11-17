@@ -3335,3 +3335,8 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Vale per la Sofia senza sfondo (anche sull'iPhone) e per quella con la sala dietro. I filmati durano un po' di più: da ferma 19 secondi (erano 17,75), quando parla 48,7 (erano 46,25).
   - Resta com'era il cambio quando comincia a parlare e quando smette: lì si passa da un filmato all'altro, di colpo.
   - In «Impostazioni → I filmati di Sofia» i pezzi sono gli stessi 7, con gli stessi nomi; un pezzo cancellato si salta come prima (lì il cambio resta di colpo).
+- **1.90.1** (17/11 notte, Michele: «fai ridisegnare innanzitutto la parte di sotto sofia influencer, sofia si deve muovere già dalla copertina, e poi fai ridisegnare la parte della segreteria a gemini»). Sofia influencer si muove già dalla copertina.
+  - In fondo alla prima pagina, nella stanza larga «Sofia influencer», non c'è più la foto ferma: c'è lei che si muove. Appena la copertina entra nello schermo parla, si tocca gli occhiali e saluta (10 secondi); poi resta lì, viva, senza stacco.
+  - Quando la copertina esce dallo schermo il filmato si ferma (non consuma batteria); se ci torni dopo un po' ricomincia dal saluto.
+  - La copertina è un po' più alta, così si vedono la testa e le spalle. I filmati sono gli stessi due della sua pagina: se li hai cancellati da «I filmati di Sofia», resta la foto.
+  - La parte di sotto della sua pagina e la Segreteria le ridisegna Gemini: le due richieste sono pronte sul PC, aspettano la freccia di Michele.

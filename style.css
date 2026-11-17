@@ -10108,3 +10108,13 @@ body.con-jarvis{overflow:hidden}
 .jv-sv-t small{display:block;margin-top:2px;font-size:16px;line-height:1.25;font-weight:600;color:var(--jv-tenue)}
 .jv-sv .jv-b{min-height:48px;padding:6px 14px}
 @media (max-width:400px){.jv-sv{grid-template-columns:36px minmax(0,1fr) auto;padding:10px 8px}.jv-sv-e{font-size:26px}.jv-sv .jv-b{padding:6px 10px}}
+
+/* ---- 1.90.1 · Sofia influencer si muove già dalla copertina (Michele, 17/11: «sofia si deve muovere già dalla copertina»).
+   Nella sua stanza, in fondo alla prima pagina, sopra la foto c'è il suo filmato (lo stesso della sua pagina). La figura è un
+   po' più alta (4:3 invece di 2:1): si vedono la testa e le spalle; con la sola foto (filmati cancellati, meno movimento) resta 2:1. Finché il filmato non arriva si vede il suo primo
+   fotogramma (stessa inquadratura: nessun salto quando parte). ---- */
+.stanza[data-stanza="influencer"] .stanza-fig.con-film{aspect-ratio:4/3}
+.stanza-film{position:absolute;inset:0;display:block;overflow:hidden;border-radius:inherit;pointer-events:none;background:#1C1917 url(sofia-influencer.webp) 50% 7%/cover no-repeat}
+.stanza-film video{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:50% 7%}
+.stanza-film video.sf-ferma{opacity:0;transition:opacity .5s ease}
+.stanza-film.ferma video.sf-ferma{opacity:1}
