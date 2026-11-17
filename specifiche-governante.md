@@ -3361,3 +3361,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - «Si percepisce quando attacca»: i pezzi di una volta erano più sfocati del video del bacio e di un colore appena diverso (la giacca più chiara, il viso più rosso). Li ho affilati e intonati quanto lui.
   - Da ferma adesso: il saluto e il bacio, poi il pezzo calmo (20 secondi, poi da capo).
   - Resta da fare: la spilla del video del bacio è più chiara di quella dorata; lo sguardo di lato e «capelli e collana» come video nuovi che partono e finiscono nella posa della foto.
+- **1.91.2** (17/11). La spilla d'oro anche nel video del bacio. Con la 1.91.1 avevo detto a Michele: «la spilla non è ancora uguale: nel video del bacio è più chiara, negli altri pezzi è dorata».
+  - Nella foto da cui Gemini ha fatto il video la spilla è d'oro; nel video era venuta chiara, quasi bianca. Adesso è tinta d'oro anche lì: quando dal pezzo calmo si passa al saluto (e ritorno) la spilla non cambia più colore.
+  - Non è ridisegnata: resta la sua forma e il suo posto, e quando la mano le passa davanti resta dietro la mano.
+  - Cambia solo il filmato in cui sta ferma. Tutto il resto è come nella 1.91.1.

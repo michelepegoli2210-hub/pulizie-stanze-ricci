@@ -93,8 +93,8 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   e mai con un fotogramma fermo dove gira. Nei pezzi di una volta manca qualche fotogramma (un passo doppio = un piccolo scatto):
   si cercano guardando quanto cambia l'immagine da un fotogramma all'altro e lì si mette quello a metà (`MANCA` in
   `strumenti/fai-giro.py`). I pezzi di qualità diversa messi in fila si notano: si affilano e si intonano uguali
-  (`strumenti/affila.py`, la curva dei colori da `strumenti/misura-tinta.py`). La spilla dei video di Gemini è più chiara di quella
-  dorata dei pezzi di una volta: da pareggiare quando arrivano i video nuovi.
+  (`strumenti/affila.py`, la curva dei colori da `strumenti/misura-tinta.py`). La spilla dei video di Gemini viene chiara, quasi
+  bianca (nella foto è d'oro): si tinge d'oro con `strumenti/tingi-spilla.py` (1.91.2), su ogni video nuovo della governante.
   La strada giusta sono i video nuovi di Gemini che partono e finiscono nella posa della foto, come quello del bacio.
   I due filmati in cui parla sono compressi un filo di più (crf 36 il ritagliato, 21,5 il piatto; gli altri 35 e 21): un file
   deve stare sotto i 10 milioni di byte.

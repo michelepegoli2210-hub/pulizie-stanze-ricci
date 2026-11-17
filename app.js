@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.91.1";
+export const VERSIONE = "1.91.2";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -87,7 +87,7 @@ const FACCE_PRONTE = { base: "sofia-viso.webp" };
 //  (il medaglione), che restano sul sito: Michele può tornare indietro quando vuole.
 const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
 function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
-const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro2.mp4", riposo: "cons-riposo-spilla-giro2.mp4", poster: "cons-poster-sereno.webp" };   // 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro2.mp4", riposo: "cons-riposo-spilla-giro3.mp4", poster: "cons-poster-sereno.webp" };   // 1.91.2: «ferma» con la spilla d'oro anche nel video del bacio (giro3) · 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // ============================================================================
 //  1.80.0 I FILMATI CANCELLATI (Michele, 12/11: «i filmati di Sofia non mi piacciono per niente… fammi vedere tutti i filmati
 //  caricati nell'app così li cambiamo» → «sì, ma dammi la possibilità di cancellarne qualcuno»).
@@ -196,6 +196,8 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 // passo doppio: un piccolo scatto) c'è quello a metà. I pezzi di una volta sono affilati e intonati come il video del bacio.
 // Da ferma il giro dura 20 secondi (il saluto, il pezzo calmo, e da capo).
 // FILM_GIRA adesso dice di quanti fotogrammi dopo il suo inizio riparte un pezzo quando ricomincia (prima c'è il giro).
+// 1.91.2: nel video del bacio la spilla era venuta chiara, quasi bianca (nella foto è d'oro, e nei pezzi di una volta è dorata):
+// adesso è tinta d'oro anche lì (strumenti/tingi-spilla.py). Cambia solo il filmato «ferma» (-giro3); i numeri sono gli stessi.
 const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 298], parla: [0, 493, 886, 1357, 1764] };
 const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [298, 493], parla: [481, 874, 1345, 1752, 2193] };
 const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 493, parla: 2205 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
@@ -226,7 +228,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro2-3d.webm", riposo: "cons-riposo-spilla-giro2-3d.webm", poster: "cons-poster-sereno-3d.webp" };   // 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro2-3d.webm", riposo: "cons-riposo-spilla-giro3-3d.webm", poster: "cons-poster-sereno-3d.webp" };   // 1.91.2 (giro3) · 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
