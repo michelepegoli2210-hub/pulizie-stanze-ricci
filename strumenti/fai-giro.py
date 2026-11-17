@@ -20,11 +20,23 @@
 import sys, os, json, time, numpy as np, cv2
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import attacco as at   # attacco.py sta qui accanto
 
-SORG = {'c': '/home/claude/dev/video1910/nitido/calmo',     # il pezzo calmo di sempre (0..221), con la spilla, affilato (affila.py)
-        'p': '/home/claude/dev/video1910/nitido/parla',     # i cinque pezzi in cui parla, affilati
-        's': '/home/claude/dev/spilla2/saluto-oro'}         # il video dei baci (fatto da Michele con Gemini), ritagliato come gli altri e con la
-                                                            # spilla tinta d'oro (tingi-spilla.py: Gemini l'aveva fatta chiara, quasi bianca)
-OUT = '/home/claude/dev/video1910/giro'
+B = '/home/claude/dev/flow1930'
+SORG = {'c': '/home/claude/dev/video1910/nitido/calmo',     # il pezzo calmo di una volta (non si usa più da ferma)
+        'p': '/home/claude/dev/video1910/nitido/parla',     # i cinque pezzi in cui parla, affilati e intonati
+        's': '/home/claude/dev/spilla2/saluto-oro',         # il video dei baci (fatto da Michele con Gemini), con la spilla tinta d'oro
+        # 1.93.0: i video nuovi (Flow, Omni 1.2 Flash, 10 secondi, dalla stessa foto: partono e finiscono nella posa della foto),
+        # ritagliati come gli altri (ritaglia-gemini.py) e con la spilla tinta d'oro (tingi-spilla.py)
+        'f': B + '/oro/ferma',       # ferma e tranquilla
+        'k': B + '/oro/capelli',     # sfiora la collana e si sistema i capelli
+        'l': B + '/oro/lato',        # guarda di lato, piano, e torna
+        # gli stessi tre col «rientro lento» (rientra.py): alla fine non tornavano proprio nella posa giusta (qualche puntino più in
+        # là); la coda è riportata lì un po' alla volta, mentre lei si sta ancora muovendo, fino a coincidere col fotogramma da cui
+        # parte il video che segue. I fotogrammi sono sempre i suoi.
+        'S': B + '/oro/saluto-rientra',     # il saluto: finisce (239) dove comincia «collana e capelli» (2); erano 2 puntini
+        'K': B + '/oro/capelli-rientra',    # finisce (206) dove «ferma» ha anche lei il sorriso a bocca chiusa (29); erano 9 puntini
+        'F': B + '/oro/ferma-rientra',      # finisce (232) dove comincia «guarda di lato» (10); erano 3 puntini
+        'L': B + '/oro/lato-rientra'}       # finisce (239) nella posa della foto, dove comincia il saluto (0); erano 7 puntini
+OUT = B + '/giro'
 CODA = 12   # fotogrammi di coda dopo ogni pezzo di «parla» (mezzo secondo): l'app guarda il filmato ogni 150 millesimi
 RIENTRO = 3   # quando un pezzo di «parla» ricomincia, l'app riparte da qui (3 fotogrammi dopo il suo inizio: prima c'è il giro)
 # 1.91.1 (Michele: «quando guarda laterale che fa avanti indietro è ancora troppo robotizzato… a volte c'è qualche micro lag nei
@@ -46,6 +58,20 @@ def piu_fermo(k, da, a):
 
 RAMPA = [0.2, 0.3, 0.45, 0.6, 0.7, 0.85, 0.9]   # di quanto avanza a ogni fotogramma quando prende velocità (in tutto 4 fotogrammi veri)
 
+# I PEZZI DA FERMA (si cambia qui): ogni voce è (nome, [(video, dal fotogramma, al fotogramma), …]), tutti in avanti.
+# Sono stati guardati fotogramma per fotogramma (17/11):
+#  - il saluto (s) parte e finisce nella posa della foto, col sorriso coi denti;
+#  - collana e capelli (k) parte dalla foto, alla fine resta ferma col sorriso a bocca chiusa (dal 196): per questo dopo viene
+#    «ferma» presa da dove ha anche lei la bocca chiusa (29), che poi riapre il sorriso DA SOLA, coi suoi fotogrammi veri, e al
+#    fotogramma 166 è tornata nella posa della foto precisa (mezzo puntino); poi resta lì tranquilla e sbatte gli occhi.
+#    Da k si esce al 206, prima che sbatta gli occhi (215): «ferma» li sbatte poco dopo (51) e due volte di fila sarebbe troppo;
+#  - guarda di lato (l) parte dalla foto (i primi 10 fotogrammi sono fermi: si entra dal 10) e torna col sorriso coi denti.
+# Così il sorriso non cambia mai «di colpo» dove due video si attaccano, e ogni gesto è seguito da un momento calmo.
+ORDINE = [('saluto', [('S', 1, 239)]),
+          ('collana e capelli', [('K', 2, 206)]),
+          ('ferma', [('F', 29, 232)]),
+          ('guarda di lato', [('L', 10, 239), ('S', 0, 0)])]   # il giro si chiude sul primo fotogramma del saluto (il filmato comincia dal secondo)
+PEZZI_FERMA = [dict(nome=nome, passi=list(passi)) for nome, passi in ORDINE]
 def gruppi():
     ini = [piu_fermo('p', a, a + 10) for a in (0, 240, 443, 683, 888)]
     tp = [piu_fermo('p', b - 16, b - 3) for b in (240, 443, 683, 888, 1110)]
@@ -57,10 +83,10 @@ def gruppi():
         # solo: inclina la testa, la tiene un momento, torna (il ritorno è l'andata al contrario: per una testa che si inclina e
         # torna è naturale). Mai lo stesso gesto due volte di fila: sembrerebbe di nuovo «avanti e indietro». Lo sguardo di lato
         # torna con un video nuovo che parte e finisce nella posa della foto.
-        'ferma': dict(passo=0.45, tinta=0.8, pezzi=[
-            dict(nome='saluto', passi=[('c', 24, 0), ('s', 0, 239), ('c', 0, 24)]),
-            dict(nome='calma', passi=[('c', 24, G2), ('c', G2, 25)]),
-        ]),
+        # 1.93.0: da ferma solo video che partono e finiscono nella posa della foto, uno dopo l'altro, tutti in avanti (niente pezzi
+        # fatti andare all'indietro). Il saluto col bacio; poi ferma e capelli-collana; poi ferma e lo sguardo di lato; e da capo.
+        # Il filmato comincia dal secondo fotogramma del saluto e finisce sul primo: così dove ricomincia non c'è un fotogramma doppio.
+        'ferma': dict(passo=0.45, tinta=0.8, pezzi=PEZZI_FERMA),
         'parla': dict(passo=0.45, tinta=0.8, pezzi=[dict(nome=f'parla {i + 1}', passi=[('p', a, f), ('p', f, a), ('p', a, a + RIENTRO + CODA - 1)], coda=True) for i, (a, f) in enumerate(zip(ini, tp))]),
     }
 

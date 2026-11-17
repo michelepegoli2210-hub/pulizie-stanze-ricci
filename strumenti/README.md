@@ -40,3 +40,14 @@
   campanello, il computer): fotogrammi 540x960 con la trasparenza. `python3 strumenti/fai-segr.py` mette in fila i video (v1, v2,
   v3…) con due o tre fotogrammi di `attacco.py` tra uno e l'altro e fa il pezzo in cui ti guarda. Poi si codifica come gli altri
   (VP9 con la trasparenza) e si fa il gemello con `fa-alfa.py`.
+  Dalla 1.93.0 il filmato in cui sta ferma è fatto solo di video nuovi (li fa Gemini / Flow dalla foto, 10 secondi, «parte e
+  finisce in questa posa»): `ritaglia-gemini.py <video> <cartella> <nome>` li ritaglia come gli altri, `tingi-spilla.py` tinge la
+  spilla, e in `fai-giro.py` l'elenco `ORDINE` dice quali video vanno in fila, da quale fotogramma a quale. Tutti in avanti: niente
+  più pezzi fatti andare all'indietro. Il giro comincia dal secondo fotogramma del primo video e finisce sul primo.
+  IL RIENTRO LENTO (`rientra.py <video> <ultimo fotogramma> <video seguente> <suo fotogramma> <da> <a> <nome>`): un video nuovo
+  alla fine non torna mai proprio nella posa giusta (il busto qualche puntino di lato, la testa girata di un grado). Attaccarci
+  un altro video vorrebbe dire farla «scivolare» tutta insieme: la mossa da robot. Il rientro lento sposta ogni fotogramma vero
+  della coda di pochissimo, un po' di più a ogni fotogramma, MENTRE LEI SI STA ANCORA MUOVENDO (`da`..`a`: quando rigira la
+  testa o abbassa il braccio), finché l'ultimo coincide col fotogramma da cui parte il video seguente (anche il colore, e nel
+  filmato con la sala lo sfondo). Prima di scegliere dove attaccare due video si guardano le bocche e gli occhi fotogramma per
+  fotogramma: mai un sorriso coi denti attaccato a una bocca chiusa, mai due battiti di ciglia di fila.
