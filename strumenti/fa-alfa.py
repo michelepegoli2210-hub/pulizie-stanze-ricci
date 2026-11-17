@@ -3,19 +3,25 @@
 # un mp4 H.264 «a piani», 540 x (960 + 16 + 960): sopra il colore già moltiplicato per la trasparenza (fuori da lei è nero),
 # una striscia nera, sotto la trasparenza in grigio (bianco = lei, nero = niente). Il lettore dell'app (la tela) li rimette
 # insieme. Si lavora in YUV, senza passare dall'RGB: i colori restano quelli del webm, fotogramma per fotogramma.
-# Uso: python3 fa-alfa.py entrata.webm uscita.mp4 [crf] [gop]   (1.85.0: qualsiasi misura, la prende dal webm)
+# Uso: python3 fa-alfa.py entrata.webm uscita.mp4 [crf] [gop] [chiavi]   (1.85.0: qualsiasi misura, la prende dal webm)
+# 1.94.0 · SENZA IL BATTITO: un fotogramma chiave è rifatto tutto da capo, e a ogni fotogramma chiave la grana di tutta la figura
+# (i capelli soprattutto) cambia insieme: un piccolo tremolio a ogni secondo. Adesso si chiede «gop» lunghissimo (9999) e si
+# passano i secondi in cui serve un fotogramma chiave (`chiavi`, separati da virgole: dove comincia ogni pezzo, perché l'app ci
+# salta); in mezzo non ce ne sono più, e nemmeno ai cambi di scena. Es.: fa-alfa.py a-3d.webm a-alfa.mp4 23 9999 0,10.29,20.58
 import sys, subprocess, numpy as np
 src, dst = sys.argv[1], sys.argv[2]
 crf = sys.argv[3] if len(sys.argv) > 3 else "23"
 gop = sys.argv[4] if len(sys.argv) > 4 else "24"
+chiavi = sys.argv[5] if len(sys.argv) > 5 else ""
 P = 16
 # 1.85.0: la misura la prende dal filmato (i segr5 sono 480x600; i primi erano tutti 540x960)
 _d = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", src], capture_output=True, text=True, check=True).stdout.strip().split(",")
 W, H = int(_d[0]), int(_d[1])
 dec = subprocess.Popen(["ffmpeg", "-v", "error", "-c:v", "libvpx-vp9", "-i", src, "-f", "rawvideo", "-pix_fmt", "yuva420p", "-"], stdout=subprocess.PIPE)
 enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "yuv420p", "-s", f"{W}x{2*H+P}", "-r", "24", "-i", "-",
-                        "-c:v", "libx264", "-preset", "slow", "-crf", crf, "-profile:v", "high", "-level:v", "4.0", "-g", gop,
-                        "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", dst], stdin=subprocess.PIPE)
+                        "-c:v", "libx264", "-preset", "slow", "-crf", crf, "-profile:v", "high", "-level:v", "4.0", "-g", gop]
+                       + (["-sc_threshold", "0", "-force_key_frames", chiavi] if chiavi else [])
+                       + ["-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", dst], stdin=subprocess.PIPE)
 fs, cs = W * H, (W // 2) * (H // 2)
 n, amin, amax = 0, 255, 0
 while True:
