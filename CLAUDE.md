@@ -96,6 +96,14 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   (`strumenti/affila.py`, la curva dei colori da `strumenti/misura-tinta.py`). La spilla dei video di Gemini viene chiara, quasi
   bianca (nella foto è d'oro): si tinge d'oro con `strumenti/tingi-spilla.py` (1.91.2), su ogni video nuovo della governante.
   La strada giusta sono i video nuovi di Gemini che partono e finiscono nella posa della foto, come quello del bacio.
+  1.93.0: fatto. Da ferma (`cons-riposo-spilla-giro4*`) ci sono solo video nuovi, uno dopo l'altro e tutti in avanti: il saluto
+  col bacio; collana e capelli; ferma tranquilla; guarda di lato. Li ha fatti Flow (Omni 1.2 Flash, la foto come PRIMO
+  fotogramma e basta: con anche l'ultimo fotogramma gli occhi venivano storti) perché Gemini quel giorno rifiutava i video. La foto
+  di partenza è la posa della foto (`cons-poster-foto*.webp`). Un video nuovo si aggiunge in `ORDINE` di `strumenti/fai-giro.py`.
+  I video nuovi non tornano mai proprio nella posa di partenza: prima di attaccarli si passa il «rientro lento»
+  (`strumenti/rientra.py`, spiegato in `strumenti/README.md`) e si guardano bocca e occhi fotogramma per fotogramma.
+  Michele: «quando sbatte gli occhi e sorride è un po' macchinosa»: nei video di Flow il battito dura mezzo secondo (in quello
+  del bacio un terzo). I pezzi da ferma hanno il nome in `FILMATI` (`oggi-ferma-1`, `oggi-capelli`, `oggi-calma`, `oggi-lato`).
   I due filmati in cui parla sono compressi un filo di più (crf 36 il ritagliato, 21,5 il piatto; gli altri 35 e 21): un file
   deve stare sotto i 10 milioni di byte.
 - La copertina di Sofia influencer (1.90.1; Michele: «sofia si deve muovere già dalla copertina»): la sua stanza, quella larga in

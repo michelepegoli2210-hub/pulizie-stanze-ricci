@@ -3372,3 +3372,11 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Sofia segretaria ha la camicetta rosa (la foto l'ha scelta Michele tra due prove di Gemini). Filmati nuovi: guarda il tablet, passa al computer e scrive, torna (20 secondi, poi da capo). I due video partono e finiscono nella stessa posa: stanno in fila senza passaggi. Il terzo video e quello in cui parla si aggiungono appena Gemini li fa (aveva finito i video del giorno): per ora, quando parla o ti ascolta, ti guarda e sorride.
   - I disegni a matita nuovi (sveglia, foglio con le spunte, busta, arrivi, partenze) li ha fatti Gemini nello stile degli altri.
   - Negli altri stili dell'app la Segreteria resta com'era.
+- **1.93.0** (17/11, Michele: «sofia governante fa ancora delle movenze che sembra un robot che si sposta togli quello poi c'era un video dove lei si toccava i capelli la collana vedi se riesci a sincronizzare anche quelli» · vista la 1.91.0: «il video del bacio è davvero straordinario invece… quando guarda laterale che fa avanti indietro è ancora troppo robotizzato»). Sofia della prima pagina, da ferma: solo video che partono e finiscono nella posa della foto.
+  - Da ferma non c'è più nessun pezzo di una volta, e nessun pezzo fatto andare avanti e poi all'indietro. Ci sono solo video nuovi, fatti come quello del bacio: partono dalla foto.
+  - Il giro (37 secondi): saluta e manda il bacio; si tocca la collana e si sistema i capelli; resta ferma e tranquilla; guarda di lato, piano; e da capo.
+  - Dove un video finisce e comincia il seguente Sofia non scivola più: la coda di ogni video è riportata nella posa giusta un po' alla volta, mentre lei si muove ancora. Il sorriso non cambia mai di colpo: dopo «collana e capelli», che finisce a bocca chiusa, viene il pezzo calmo preso da dove ha anche lei la bocca chiusa.
+  - I video nuovi li ha fatti Flow (Gemini quel giorno non faceva più video). La spilla è d'oro in tutti.
+  - La foto di partenza adesso è la posa della foto, col sorriso: è quella da cui partono tutti i video.
+  - In «I filmati di Sofia» i pezzi da ferma sono quattro: «Saluta e manda un bacio», «Collana e capelli», «Ferma: tranquilla», «Guarda di lato». Finito di parlare riparte da «Ferma: tranquilla».
+  - Quando parla resta com'era.

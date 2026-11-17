@@ -9793,7 +9793,7 @@ body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .cas
 /* ---- 1.80.0 · Michele (12/11): «fammi vedere tutti i filmati caricati nell'app così li cambiamo… dammi la possibilità di
    cancellarne qualcuno». La pagina «I filmati di Sofia» (Impostazioni, in cima): una scheda per filmato con l'anteprima
    (un tocco lo fa girare lì dentro), il numero, il nome, i secondi e il tasto «Cancella» / «Rimetti». Due per riga sul
-   telefono; scritte da 14 in su, tasti alti 48. Le anteprime sono una striscia sola (filmati-anteprime.webp, 14 da 200x356).
+   telefono; scritte da 14 in su, tasti alti 48. Le anteprime sono una striscia sola (filmati-anteprime.webp, 16 da 200x356 dalla 1.93.0).
    Dove il filmato «sta ferma» della segretaria è cancellato resta la sua foto ferma (.sg2-sf-foto: non respira per finta). ---- */
 .fm-entra{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit;padding:12px 14px}
 .fm-entra-img{width:58px;height:58px;flex:none;border-radius:50%;object-fit:cover;object-position:50% 8%;background:#EFE7DA;box-shadow:0 0 0 2px #D9BF8C}
@@ -9812,7 +9812,7 @@ body.premium .sofia-hero.oggi-facile.tenda-chiusa.csf-2:not(.nuvola-aperta) .cas
 @media (min-width:640px){.fm-griglia{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}}
 .fm-c{display:flex;flex-direction:column;gap:5px;min-width:0}
 .fm-ant{position:relative;display:block;width:100%;aspect-ratio:9/16;margin:0;padding:0;border:0;border-radius:14px;overflow:hidden;background:#EFE7DA;cursor:pointer;box-shadow:0 0 0 1.5px #D9BF8C,0 8px 16px -10px rgba(15,23,42,.5);-webkit-tap-highlight-color:transparent}
-.fm-img{position:absolute;inset:0;background:url(filmati-anteprime.webp) 0 0/1400% 100% no-repeat}
+.fm-img{position:absolute;inset:0;background:url(filmati-anteprime.webp) 0 0/1600% 100% no-repeat}
 .fm-posto{position:absolute;inset:0}
 .fm-posto video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#EFE7DA}
 .fm-n{position:absolute;z-index:2;left:7px;top:7px;min-width:28px;height:28px;padding:0 7px;border-radius:14px;box-sizing:border-box;background:#0F172A;color:#FFFFFF;font:800 15px/28px var(--f-lettura,system-ui);font-style:normal;text-align:center}

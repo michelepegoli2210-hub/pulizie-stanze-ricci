@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.92.0";
+export const VERSIONE = "1.93.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -87,7 +87,7 @@ const FACCE_PRONTE = { base: "sofia-viso.webp" };
 //  (il medaglione), che restano sul sito: Michele può tornare indietro quando vuole.
 const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
 function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
-const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro2.mp4", riposo: "cons-riposo-spilla-giro3.mp4", poster: "cons-poster-sereno.webp" };   // 1.91.2: «ferma» con la spilla d'oro anche nel video del bacio (giro3) · 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro2.mp4", riposo: "cons-riposo-spilla-giro4.mp4", poster: "cons-poster-foto.webp" };   // 1.93.0: da ferma solo video che partono e finiscono nella posa della foto (giro4); la foto di partenza è quella posa · 1.91.2: «ferma» con la spilla d'oro anche nel video del bacio (giro3) · 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // ============================================================================
 //  1.80.0 I FILMATI CANCELLATI (Michele, 12/11: «i filmati di Sofia non mi piacciono per niente… fammi vedere tutti i filmati
 //  caricati nell'app così li cambiamo» → «sì, ma dammi la possibilità di cancellarne qualcuno»).
@@ -96,7 +96,7 @@ const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "c
 //  L'elenco dei cancellati è in impostazioni/filmati (`tolti`): lo scrivono i tasti di quella pagina, lo leggono tutti i
 //  telefoni (anche quelli delle signore, per la loro Sofia). Una copia resta su questo telefono, così mentre l'app si accende
 //  non parte un filmato cancellato.
-//  - La Sofia di casa ha due filmati lunghi fatti di pezzi (FILM_SPEZZONI): da ferma 2 pezzi, quando parla 5. Si cancella il
+//  - La Sofia di casa ha due filmati lunghi fatti di pezzi (FILM_SPEZZONI): da ferma 4 pezzi (1.93.0), quando parla 5. Si cancella il
 //    pezzo: il filmato salta i pezzi cancellati (filmSaltaTolti) e riparte sempre da uno buono (filmInizioSpezzone).
 //  - Se sono cancellati tutti quelli in cui parla, mentre parla resta quello in cui sta ferma. Se per quel momento non resta
 //    nessun filmato, resta la sua foto (filmFoto: il video senza filmato fa vedere il poster).
@@ -105,7 +105,9 @@ const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "c
 // ============================================================================
 const FILMATI = [
   { id: "oggi-ferma-1", g: "oggi", q: "riposo", i: 0, nome: "Saluta e manda un bacio" },   // 1.91.0 (prima: «Ferma: ti ascolta»)
-  { id: "oggi-ferma-2", g: "oggi", q: "riposo", i: 1, nome: "Ferma: tranquilla" },   // 1.91.0 (prima: «Ferma: aspetta»)
+  { id: "oggi-capelli", g: "oggi", q: "riposo", i: 1, nome: "Collana e capelli" },   // 1.93.0: i video nuovi che partono dalla posa della foto (prima c'era «oggi-ferma-2», Ferma: tranquilla: un nome nuovo, così una cancellazione vecchia non lo tocca)
+  { id: "oggi-calma", g: "oggi", q: "riposo", i: 2, nome: "Ferma: tranquilla" },   // 1.93.0
+  { id: "oggi-lato", g: "oggi", q: "riposo", i: 3, nome: "Guarda di lato" },   // 1.93.0
   { id: "oggi-parla-1", g: "oggi", q: "parla", i: 0, nome: "Parla 1" },
   { id: "oggi-parla-2", g: "oggi", q: "parla", i: 1, nome: "Parla 2" },
   { id: "oggi-parla-3", g: "oggi", q: "parla", i: 2, nome: "Parla 3" },
@@ -198,13 +200,23 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 // FILM_GIRA adesso dice di quanti fotogrammi dopo il suo inizio riparte un pezzo quando ricomincia (prima c'è il giro).
 // 1.91.2: nel video del bacio la spilla era venuta chiara, quasi bianca (nella foto è d'oro, e nei pezzi di una volta è dorata):
 // adesso è tinta d'oro anche lì (strumenti/tingi-spilla.py). Cambia solo il filmato «ferma» (-giro3); i numeri sono gli stessi.
-const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 298], parla: [0, 493, 886, 1357, 1764] };
-const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [298, 493], parla: [481, 874, 1345, 1752, 2193] };
-const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 493, parla: 2205 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
+// 1.93.0 (Michele: «c'era un video dove lei si toccava i capelli la collana vedi se riesci a sincronizzare anche quelli» · «quando
+// guarda laterale che fa avanti indietro è ancora troppo robotizzato»): da ferma (-giro4) non c'è più nessun pezzo di una volta e
+// nessun pezzo fatto andare all'indietro. Solo video nuovi che partono dalla foto, come quello del bacio, uno dopo l'altro:
+// [il saluto col bacio] [collana e capelli] [ferma: tranquilla] [guarda di lato] e da capo (37 secondi). I video nuovi alla
+// fine non tornavano proprio nella posa giusta (qualche puntino più in là): la coda di ognuno è riportata lì un po' alla volta,
+// mentre lei si sta ancora muovendo (il «rientro lento», strumenti/rientra.py), fino a coincidere col fotogramma da cui parte
+// il video che segue. Dove si attaccano c'è meno di un puntino: non scivola più. «Collana e capelli» finisce col sorriso a
+// bocca chiusa, e «ferma» comincia da dove ha anche lei la bocca chiusa: poi il sorriso lo riapre da sola. Finito di parlare
+// si riparte dal pezzo calmo (FILM_RITORNO). La foto di partenza (cons-poster-foto) è la posa della foto. Quando parla
+// resta com'era. I pezzi da ferma adesso hanno il nome scritto in FILMATI (filmSpezzoneTolto lo cerca lì).
+const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 242, 450, 656], parla: [0, 493, 886, 1357, 1764] };
+const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [242, 450, 656, 891], parla: [481, 874, 1345, 1752, 2193] };
+const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 891, parla: 2205 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
 const FILM_GIRA = sofiaComEra() ? {} : { parla: 3 };   // 1.91.0: i filmati in cui si resta dentro un pezzo solo · 1.91.1: il numero è da quanti fotogrammi dopo l'inizio si riparte
-const FILM_RITORNO = sofiaComEra() ? {} : { riposo: 1 };   // 1.91.0: il pezzo da cui riparte quando ci si torna da un altro filmato
+const FILM_RITORNO = sofiaComEra() ? {} : { riposo: 2 };   // 1.91.0: il pezzo da cui riparte quando ci si torna da un altro filmato
 // 1.80.0: i pezzi cancellati da «I filmati di Sofia» (FILMATI: «oggi-ferma-1», «oggi-parla-3»…) e quelli buoni
-function filmSpezzoneTolto(quale, i) { return filmatoTolto(`oggi-${quale === "parla" ? "parla" : "ferma"}-${i + 1}`); }
+function filmSpezzoneTolto(quale, i) { const f = FILMATI.find(x => x.g === "oggi" && x.q === quale && x.i === i); return !!f && filmatoTolto(f.id); }   // 1.93.0: il nome del pezzo è scritto in FILMATI
 function filmSpezzoniBuoni(quale) { return (FILM_SPEZZONI[quale] || []).map((f, i) => i).filter(i => !filmSpezzoneTolto(quale, i)); }
 function filmSpezzoneDi(quale, t) { const l = FILM_SPEZZONI[quale] || [0]; let i = 0; for (let k = 0; k < l.length; k++) if ((Number(t) || 0) * 24 >= l[k] - 0.5) i = k; return i; }
 function filmInizioSpezzone(box, da, quale, t) {
@@ -228,7 +240,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro2-3d.webm", riposo: "cons-riposo-spilla-giro3-3d.webm", poster: "cons-poster-sereno-3d.webp" };   // 1.91.2 (giro3) · 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro2-3d.webm", riposo: "cons-riposo-spilla-giro4-3d.webm", poster: "cons-poster-foto-3d.webp" };   // 1.93.0 (giro4) · 1.91.2 (giro3) · 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
@@ -8277,6 +8289,8 @@ function filmatoFile(f) {
   return { file: (f.g === "segr" ? FILM_SEGR : f.g === "capo" ? FILM_CAPO : FILM_INFLU)[f.q], da: 0, a: 0 };
 }
 function filmatoSecondi(f) { const x = filmatoFile(f); return x.a ? Math.round(x.a - x.da) : f.s; }
+function filmatoEsiste(f) { return f.g !== "oggi" || f.i < (FILM_SPEZZONI[f.q] || []).length; }   // 1.93.0
+function filmatiVeri() { return FILMATI.filter(filmatoEsiste); }
 // cosa si vede dove i filmati mancano (una riga sotto il titolo del gruppo)
 function filmatiAvviso(g) {
   const via = filmatoTolto;
@@ -8287,7 +8301,7 @@ function filmatiAvviso(g) {
 }
 const FM_ICO = { vai: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.2v13.6L19.2 12z" fill="currentColor"/></svg>`, ferma: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5h3.6v13H7zM13.4 5.5H17v13h-3.6z" fill="currentColor"/></svg>` };
 function vistaFilmati() {
-  const tolti = FILMATI.filter(f => filmatoTolto(f.id)).length, puo = puoModificare();
+  const veri = filmatiVeri(), tolti = veri.filter(f => filmatoTolto(f.id)).length, puo = puoModificare();
   let n = 0;
   const carta = (f) => {
     const via = filmatoTolto(f.id), k = FILMATI.indexOf(f), num = ++n, gira = !!(fmGira && fmGira.id === f.id);
@@ -8300,15 +8314,15 @@ function vistaFilmati() {
   return `<section class="card fm-testa"><button type="button" class="btnsm ghost" data-fm-torna>‹ Impostazioni</button>
       <h2>🎬 I filmati di ${esc(nomeGov())}</h2>
       <p>Tocca un filmato per guardarlo. <b>Cancella</b>: l'app non lo fa più vedere. <b>Rimetti</b>: torna com'era. Vale su tutti i telefoni.</p>
-      <p class="fm-conta" role="status"><span>Sono <b>${FILMATI.length}</b> filmati. Cancellati: <b>${tolti}</b>.</span>${tolti && puo ? `<button type="button" class="btnsm ghost" data-fm-tutti>↩ Rimetti tutti</button>` : ""}</p></section>
-    ${FM_GRUPPI.map(([g, titolo, sotto]) => { const av = filmatiAvviso(g); return `<section class="card fm-gruppo" data-fm-gruppo="${g}"><h3>${titolo}</h3><p class="muted">${sotto}${av ? `<span class="fm-avviso">${av}</span>` : ""}</p><div class="fm-griglia">${FILMATI.filter(f => f.g === g).map(carta).join("")}</div></section>`; }).join("")}
+      <p class="fm-conta" role="status"><span>Sono <b>${veri.length}</b> filmati. Cancellati: <b>${tolti}</b>.</span>${tolti && puo ? `<button type="button" class="btnsm ghost" data-fm-tutti>↩ Rimetti tutti</button>` : ""}</p></section>
+    ${FM_GRUPPI.map(([g, titolo, sotto]) => { const av = filmatiAvviso(g); return `<section class="card fm-gruppo" data-fm-gruppo="${g}"><h3>${titolo}</h3><p class="muted">${sotto}${av ? `<span class="fm-avviso">${av}</span>` : ""}</p><div class="fm-griglia">${veri.filter(f => f.g === g).map(carta).join("")}</div></section>`; }).join("")}
     <p class="muted center fm-fondo">Dove non resta nessun filmato, ${esc(nomeGov())} si vede in foto, ferma. I filmati nuovi li fa Gemini.</p>`;
 }
 // la scheda in cima a Impostazioni
 function cardFilmatiAltro() {
   if (!proprietario()) return "";
-  const tolti = FILMATI.filter(f => filmatoTolto(f.id)).length;
-  return `<button type="button" class="card fm-entra" data-fm-vai><img src="sofia-viso.webp" alt="" class="fm-entra-img"><span><b>🎬 I filmati di ${esc(nomeGov())}</b><small>Guardali tutti e cancella quelli che non ti piacciono. Sono ${FILMATI.length}${tolti ? `, cancellati ${tolti}` : ""}.</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+  const veri = filmatiVeri(), tolti = veri.filter(f => filmatoTolto(f.id)).length;
+  return `<button type="button" class="card fm-entra" data-fm-vai><img src="sofia-viso.webp" alt="" class="fm-entra-img"><span><b>🎬 I filmati di ${esc(nomeGov())}</b><small>Guardali tutti e cancella quelli che non ti piacciono. Sono ${veri.length}${tolti ? `, cancellati ${tolti}` : ""}.</small></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
 // il filmato che sta girando nella pagina (uno solo) è fmGira = { id, el }, dichiarato in alto con FILMATI
 function filmatiFerma() {
