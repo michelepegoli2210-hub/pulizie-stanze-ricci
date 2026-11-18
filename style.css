@@ -10640,3 +10640,17 @@ body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-
 .jv-avviso{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .jv-avviso .jv-b{min-height:52px;padding:6px 8px;font-size:17px;font-weight:700;line-height:1.2;border:2px solid transparent}
 .jv-avviso .jv-b[aria-pressed="true"]{background:#16264A;color:#F2C14E;border-color:#F2C14E}
+
+/* ----------------------------------------------------------------------------
+   1.98.1 · I CARTONCINI DELLA SEGRETERIA CHIARISSIMI (Michele, 18/11: «rispetto al nero quei colori sono troppo accesi
+   secondo me, farli un po' più smorti in modo tale che il nero risalti di più… Io devo fare meno fatica a leggere»; viste
+   le prove: «ancora più chiari», poi «chiarissimi»).
+   - La faccia di ogni cartoncino è il suo colore (--cc) mescolato col bianco della carta: 28 parti di colore su 100.
+     Il contorno (--cb) e lo spessore (--cs) restano quelli di prima: si vede ancora che è un cartoncino, e di che colore.
+   - La matita è più nera (#141417, prima #26262B) e il grigio più scuro (#3F3F47, prima #55555E).
+   Vale per la Segreteria (#segrHero) e per il foglio dell'email intera (.sge-foglio), come i cartoncini.
+   ---------------------------------------------------------------------------- */
+#segrHero,.sge-foglio{--mt-matita:#141417;--mt-grigio:#3F3F47}
+#segrHero .sgh .sgh-fumetto,#segrHero .sgh .sg2-bolla,#segrHero .sgh-tasti .sg2-mic,#segrHero .sgh .sgh-ascolta,#segrHero .sgt,#segrHero .sgo-r,
+#segrHero .sgo-b:not(.fatto),#segrHero .sgo-sig,#segrHero .sge,#segrHero .sgt-aperto .sg2-c,#segrHero .sgh .sg2-b,#segrHero .sgh .sg2-doc,
+#segrHero .sgh .cw-banner,.sge-foglio .sgf-sofia,.sge-foglio .sgf-testo,.sge-foglio .sgf-b{background-color:color-mix(in srgb,var(--cc) 28%,#FFFDF8) !important}

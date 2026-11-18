@@ -212,6 +212,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   registri contabili tutto a mano» · «troppo tratteggiato sui cartoncini… l'occhio viene disperso»): il corsivo è Petit Formal
   Script (OFL, il corsivo inglese col pennino; la «x» più alta di quella di prima), scurito col tratto della penna; niente più
   tratteggio (`--mt-tratto` e `--mt-tratto2` sono `none`): i cartoncini hanno il colore pieno. Niente tratteggi nella Segreteria.
+  1.98.1, i cartoncini chiarissimi (Michele: «rispetto al nero quei colori sono troppo accesi… farli un po' più smorti in modo
+  tale che il nero risalti di più»; tra le prove ha scelto «chiarissimi»): la faccia è `color-mix(in srgb, var(--cc) 28%,
+  #FFFDF8)` (la regola in fondo a `style.css`, con la stessa lista di cartoncini della regola che li dipinge); il contorno e lo
+  spessore restano pieni. La matita è `#141417`, il grigio `#3F3F47`. Un cartoncino nuovo prende il suo `--cc` come prima e
+  diventa chiaro da solo, se sta nella lista.
   I filmati sono i segr7 (da Flow): lavora (tre video in fila, 31 secondi), ti ascolta, parla: tre filmati veri
   (`strumenti/fai-segr.py`). Mentre ascolta o parla, il filmato in cui lavora torna al suo inizio e aspetta (`segrFermaSotto`).
 - I filmati senza il «battito» (1.94.0; Michele: «micro lag nei capelli»): un fotogramma chiave ogni due secondi faceva cambiare
