@@ -202,6 +202,12 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   Tutto a matita: carta a righe, tessere a pastello, disegni di Gemini (`mat-*.webp`, `strumenti/taglia-disegni.py`), scritte
   in corsivo di scuola (Playwrite IT Moderna, `--mt-font`; i numeri in Patrick Hand). Le regole stanno in fondo a `style.css`
   («1.94.0»), tutte sotto `#segrHero` e `.sge-foglio`. Niente faccine nella Segreteria: solo disegni.
+  1.96.0, i cartoncini e il corsivo inclinato (Michele, scelte due proposte di Gemini: «Dei cartoncini, proposta 1, però la
+  scrittura assolutamente quella della 2… si può ancora migliorare»): ogni tessera, tasto e scheda è un cartoncino (il contorno
+  dello stesso colore più scuro, lo spessore a sinistra e sotto, l'ombra; toccato si abbassa, aperto resta abbassato), i
+  disegni piccoli dei tasti in un tondo in rilievo, i colori della proposta 1. Le variabili: `--cc` faccia, `--cb` contorno,
+  `--cs` spessore, `--sx`/`--sy` quanto sporge. Il corsivo è Playwrite HR (OFL), il più vicino alla proposta 2 tra i caratteri
+  liberi, marcato col tratto della penna (`-webkit-text-stroke`); anche i numeri. Le misure restano quelle grandi.
   I filmati sono i segr7 (da Flow): lavora (tre video in fila, 31 secondi), ti ascolta, parla: tre filmati veri
   (`strumenti/fai-segr.py`). Mentre ascolta o parla, il filmato in cui lavora torna al suo inizio e aspetta (`segrFermaSotto`).
 - I filmati senza il «battito» (1.94.0; Michele: «micro lag nei capelli»): un fotogramma chiave ogni due secondi faceva cambiare

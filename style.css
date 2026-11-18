@@ -10475,3 +10475,134 @@ body.premium #segrHero:not(.tenda-chiusa) .casa-nuvola .casa-nascondi{color:var(
 body.premium .bo-indietro{position:relative}
 body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-10px;top:-6px;bottom:-8px}
 .sg2-bolla-x::after{content:"";position:absolute;inset:-7px}
+
+/* ============================================================================
+   1.96.0 · LA SEGRETERIA A CARTONCINI, COL CORSIVO INCLINATO (Michele, 18/11, viste le due proposte di Gemini «più 3D ma
+   sempre a matita»: «Dei cartoncini, proposta 1, però la scrittura assolutamente quella della 2. Quella della 2 è perfetta,
+   quel stile… però si può ancora migliorare»).
+   - I CARTONCINI (proposta 1): ogni tessera, tasto e scheda è un cartoncino colorato incollato sul quaderno. Il contorno è lo
+     stesso colore, più scuro (non più nero); sotto e a sinistra si vede lo spessore (una striscia più scura, come nel disegno:
+     la luce viene da destra) e l'ombra sulla carta; in alto una luce sottile. Un tasto toccato si abbassa: lo spessore sparisce
+     e lui scende di quel tanto. Una tessera aperta resta abbassata (è «premuta»), con la freccina di prima.
+     I disegni piccoli dei tasti (microfono, matita, megafono, telefono, fumetto, documento, cassetta) stanno in un tondo in
+     rilievo, come nella proposta. I colori sono quelli della proposta (presi dal disegno): Parlale, Scrivile e «Sofia ti dice»
+     pesca; Ascolta giallo; Arrivi pesca, Partenze azzurro, Pulizie verde acqua, Email lilla; Arrivate giallo, Ciclovia rosa;
+     Da fare tu corallo, Ti propongo giallo, Ho fatto io verde, Da sapere azzurro. Le schede bianche (le email, chi arriva e chi
+     parte, le signore, le righe dei cassetti) sono cartoncini bianchi col contorno colorato di prima.
+     Lo spessore, l'ombra e il colore si danno con le variabili --cc (la faccia), --cb (il contorno), --cs (lo spessore),
+     --sx/--sy (quanto sporge lo spessore); le regole qui sotto hanno !important solo su ombra, contorno e colore, perché le
+     regole di prima (anche quelle del buio) non li rimettano piatti.
+   - LA SCRITTURA (proposta 2): il corsivo inclinato, attaccato, con le maiuscole a ricciolo. Il più vicino tra i caratteri
+     liberi è Playwrite HR (il corsivo che si impara a scuola in Croazia, della famiglia di quello di prima; carattere libero:
+     OFL, fonts/LICENSE-PlaywriteHR.txt). Confrontato parola per parola col disegno: la A a punta di «Arrivi», le maiuscole
+     di «Sofia», «Le», «Ho», «Da», «Ti». «Si può ancora migliorare»: più grande che nel disegno (restano le misure di adesso:
+     parole da 19 in su, numeri da 33 a 54) e più marcato, col tratto della penna (-webkit-text-stroke), perché Michele legge
+     male le scritte piccole e sottili. Anche i numeri sono nel corsivo, come nella proposta 2.
+   - Le tessere restano grandi come adesso: nel disegno i numeri erano piccoli, e Michele li vuole grandi.
+   Vale solo per la Segreteria (#segrHero) e per il foglio dell'email intera (.sge-foglio).
+   ---------------------------------------------------------------------------- */
+@font-face{font-family:"Playwrite HR";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/playwrite-hr-latin-400-normal.woff2) format("woff2")}
+#segrHero,.sge-foglio{--mt-font:"Playwrite HR","Playwrite IT Moderna","Patrick Hand","Comic Sans MS",cursive;--mt-num:"Playwrite HR","Patrick Hand","Comic Sans MS",cursive;
+  --mt-tratto2:repeating-linear-gradient(118deg,rgba(255,255,255,.26) 0 2px,rgba(255,255,255,0) 2px 7px)}
+/* il tratto della penna: un filo su tutte le scritte, di più sulle parole importanti e sui numeri */
+#segrHero .sgh,#segrHero .sgh *,.sge-foglio,.sge-foglio *{-webkit-text-stroke:.45px currentColor}
+#segrHero .sgh b,#segrHero .sgh h3,#segrHero .sgh h4,#segrHero .sgh .sgt-p,#segrHero .sgh .sgt-t,#segrHero .sge .sge-chi,#segrHero .sge .sge-leggi,.sge-foglio b,.sge-foglio h3{-webkit-text-stroke:.75px currentColor}
+#segrHero .sgh .sgt-n,#segrHero .sgh .sgo-pers b,#segrHero .sgh .sg2-n,#segrHero .sgh .sge-ora{-webkit-text-stroke:1px currentColor}
+#segrHero .sgh .sgt-griglia.stretta .sgt .sgt-p{-webkit-text-stroke:.5px currentColor}
+.sheet .panel:has(.sge-foglio) > .big.close{font-family:"Playwrite HR","Playwrite IT Moderna","Patrick Hand",cursive;-webkit-text-stroke:.45px currentColor}
+
+/* ---- il cartoncino: la faccia, il contorno, lo spessore (a sinistra e sotto), l'ombra sulla carta ---- */
+#segrHero .sgh .sgh-fumetto,#segrHero .sgh .sg2-bolla,#segrHero .sgh-tasti .sg2-mic,#segrHero .sgh .sgh-ascolta,#segrHero .sgt,#segrHero .sgo-r,
+#segrHero .sgo-b:not(.fatto),#segrHero .sgo-sig,#segrHero .sge,#segrHero .sgt-aperto .sg2-c,#segrHero .sgh .sg2-b,#segrHero .sgh .sg2-doc,
+#segrHero .sgh .cw-banner,.sge-foglio .sgf-sofia,.sge-foglio .sgf-testo,.sge-foglio .sgf-b{
+  --cc:#FFFFFF;--cb:#4A4A55;--cs:#9A9AA6;--sx:4px;--sy:5px;
+  border-width:2px;border-style:solid;border-color:var(--cb) !important;border-radius:14px;
+  background-color:var(--cc) !important;background-image:var(--tr,none) !important;
+  box-shadow:inset 2px 2px 0 rgba(255,255,255,.45),calc(-1 * var(--sx)) var(--sy) 0 -1px var(--cs),calc(-1 * var(--sx)) var(--sy) 0 1px var(--cb),calc(-1 * var(--sx) - 2px) calc(var(--sy) + 4px) 7px -2px rgba(60,40,25,.30) !important;
+  transition:transform .08s ease-out,box-shadow .08s ease-out}
+/* i tasti piccoli dentro le schede: lo spessore più sottile */
+#segrHero .sgo-b:not(.fatto),#segrHero .sgh .sg2-b,.sge-foglio .sgf-b{--sx:3px;--sy:4px;border-radius:12px}
+#segrHero .sgt-griglia.stretta .sgt{--sx:3px;--sy:4px;border-radius:12px}
+/* toccato: si abbassa (scende verso lo spessore, che sparisce) */
+#segrHero .sgh-tasti .sg2-mic:active,#segrHero .sgh .sgh-ascolta:active,#segrHero button.sgt:active,#segrHero a.sgt:active,#segrHero .sgt.cass:has(> .sgt-apri:active),
+#segrHero .sgt-griglia.stretta .sgt:active,#segrHero a.sgo-b:active,#segrHero label.sgo-b:active,#segrHero .sge:active,#segrHero .sgh .sg2-b:active,.sge-foglio .sgf-b:active{
+  --sx:1px;--sy:1px;transform:translate(-3px,4px)}
+#segrHero .sgo-b:not(.fatto):active,#segrHero .sgh .sg2-b:active,.sge-foglio .sgf-b:active{transform:translate(-2px,3px)}
+/* aperta: resta premuta, col contorno di matita scura e più grosso (la freccina c'è già) */
+#segrHero .sgt-griglia.stretta .sgt.aperta,#segrHero .sgt.pren.aperta,#segrHero .sgt.cass.aperto{--sx:1px;--sy:1px;transform:translate(-2px,3px);opacity:1;border-width:3px;border-color:#26262B !important}
+#segrHero .sgt-griglia.stretta .sgt:not(.aperta){opacity:.82}
+/* la codina della nuvoletta (bianca) non serve sul cartoncino */
+#segrHero .sgh .sgh-fumetto::before{display:none}
+/* le parole dei tasti vanno a capo pari («Ricordami tra / 1 ora», non «Ricordami tra 1 / ora») */
+#segrHero .sgh .sg2-b,#segrHero .sgo-b,#segrHero .sgt .sgt-p,#segrHero .sgt .sgt-t,#segrHero .sgh .sgh-at b,#segrHero .sgh .sgh-tit,#segrHero .sgo .sgo-tit,.sge-foglio .sgf-b{text-wrap:balance}
+/* un po' più di posto: lo spessore sporge a sinistra e sotto */
+#segrHero .sgh{padding-left:6px}
+#segrHero .sgt-griglia{gap:14px 12px;margin-bottom:12px}
+#segrHero .sgt-griglia.stretta{gap:10px 9px}
+#segrHero .sgh-tasti{gap:12px;margin-top:14px}
+#segrHero .sgh .sgh-ascolta{margin-bottom:16px}
+#segrHero .sgo-r,#segrHero .sgo-sig,#segrHero .sge{margin-bottom:14px}
+#segrHero .sgo-tasti{gap:10px}
+
+/* ---- i colori della proposta 1 (presi dal disegno): faccia, contorno, spessore ---- */
+#segrHero .sgh .sgh-fumetto,#segrHero .sgh-tasti .sg2-mic,#segrHero .sgt.arrivi{--cc:#FDC8AA;--cb:#7E4A36;--cs:#A86E58;--tr:var(--mt-tratto2)}
+#segrHero .sgh-tasti .sg2-mic.ascolta{--cc:#FA9592;--cb:#751A1A;--cs:#9C4044}
+#segrHero .sgh .sgh-ascolta,#segrHero .sgt.pren,#segrHero .sgt.cass.prop{--cc:#FDE882;--cb:#6F5410;--cs:#A88B3E;--tr:var(--mt-tratto2)}
+#segrHero .sgt.partenze{--cc:#ABDBF2;--cb:#2B5D7E;--cs:#4F81A2;--tr:var(--mt-tratto2)}
+#segrHero .sgt.cass.sapere{--cc:#A4D8F5;--cb:#1D4A6B;--cs:#5883A6;--tr:var(--mt-tratto2)}
+#segrHero .sgt.pulizie{--cc:#BBE9D1;--cb:#3B6B59;--cs:#568677;--tr:var(--mt-tratto2)}
+#segrHero .sgt.cass.fatto{--cc:#B2E0AF;--cb:#245530;--cs:#5E8E6A;--tr:var(--mt-tratto2)}
+#segrHero .sgt.email{--cc:#DEC1EB;--cb:#5B4570;--cs:#806A98;--tr:var(--mt-tratto2)}
+#segrHero .sgt.canale{--cc:#F7C6DB;--cb:#6A2A44;--cs:#B06480;--tr:var(--mt-tratto2)}
+#segrHero .sgt.cass.fare{--cc:#FA9592;--cb:#751A1A;--cs:#9C4044;--tr:var(--mt-tratto2)}
+/* le schede bianche: il contorno colorato di prima */
+#segrHero .sgh .sg2-bolla{--cb:#2F6DA4;--cs:#8FB3D3}
+#segrHero .sgo-r.arr{--cb:#2F6DA4;--cs:#8FB3D3}
+#segrHero .sgo-r.par{--cb:#A85F2A;--cs:#D9A47C}
+#segrHero .sgo-sig{--cb:#2E7D4F;--cs:#8DC2A2}
+#segrHero .sge{--cb:#2F6DA4;--cs:#8FB3D3}
+#segrHero .sge:nth-of-type(even){--cb:#B23F37;--cs:#DE9A93}
+#segrHero .sge.pren,#segrHero .sge.pren:nth-of-type(even){--cb:#6A4C99;--cs:#B4A0D2}
+#segrHero .sge.pren.annullata,#segrHero .sge.pren.annullata:nth-of-type(even){--cb:#55555E;--cs:#B4B4BC}
+#segrHero .sgt-aperto.fare .sg2-c{--cb:#751A1A;--cs:#D98A87}
+#segrHero .sgt-aperto.prop .sg2-c{--cb:#6F5410;--cs:#D9C26F}
+#segrHero .sgt-aperto.fatto .sg2-c{--cb:#245530;--cs:#93C291}
+#segrHero .sgt-aperto.sapere .sg2-c{--cb:#1D4A6B;--cs:#86B9D9}
+#segrHero .sgh .sg2-doc{--cb:#26262B;--cs:#A3A3AD}
+#segrHero .sgh .cw-banner{--cc:#FFF7D6;--cb:#8A6A16;--cs:#D2B868}
+.sge-foglio .sgf-sofia{--cb:#B23F37;--cs:#DE9A93}
+.sge-foglio .sgf-testo{--cb:#26262B;--cs:#A3A3AD}
+/* i tasti piccoli */
+#segrHero .sgo-b.chiama,.sge-foglio .sgf-b.posta{--cc:#F7C6DB;--cb:#6A2A44;--cs:#B06480;--tr:var(--mt-tratto2)}
+#segrHero .sgo-b.scrivi{--cc:#B2E0AF;--cb:#245530;--cs:#5E8E6A;--tr:var(--mt-tratto2)}
+#segrHero .sgo-b.doc{--cc:#ABDBF2;--cb:#2B5D7E;--cs:#4F81A2;--tr:var(--mt-tratto2)}
+.sge-foglio .sgf-b.canale{--cc:#BBE9D1;--cb:#3B6B59;--cs:#568677;--tr:var(--mt-tratto2)}
+#segrHero .sgh .sg2-b{--cc:#FFFFFF;--cb:#4A4A55;--cs:#A3A3AD}
+#segrHero .sgh .sg2-b.verde{--cc:#B2E0AF;--cb:#245530;--cs:#5E8E6A;--tr:var(--mt-tratto2)}
+#segrHero .sgh .sg2-b.rosso{--cc:#FBD3D2;--cb:#751A1A;--cs:#C46A69;--tr:var(--mt-tratto2)}
+#segrHero .sgh .sg2-b.oro{--cc:#FDE882;--cb:#6F5410;--cs:#A88B3E;--tr:var(--mt-tratto2)}
+#segrHero .sgh .sg2-doc .sg2-b.oro-pieno{--cc:#ABDBF2;--cb:#2B5D7E;--cs:#4F81A2;--tr:var(--mt-tratto2)}
+#segrHero .sgo-b.fatto{--cc:#EAF5E6;--cb:#2E7D4F;--cs:#A9D99C}
+/* le scritte sopra i colori: scure; «Sofia ti dice» blu scuro, «Per te» rosso scuro (si leggono bene sul pesca) */
+#segrHero .sgh .sgh-fumetto .of-chi{color:#24578A}
+#segrHero .sgh .sgh-fumetto .of-fai{color:#A42B25;border-top-color:rgba(126,74,54,.45)}
+#segrHero .sgt .sgt-s{color:#3F3F47}
+#segrHero .sgh .sgh-at small{color:#4A4A52}
+
+/* ---- i disegni piccoli dentro un tondo in rilievo (la «moneta» della proposta 1) ---- */
+#segrHero .sgh-tasti .sg2-mic .mt-d,#segrHero .sgh .sgh-ascolta .sgh-alt,#segrHero .sgo-b .mt-d,.sge-foglio .sgf-b .mt-d{
+  box-sizing:border-box;border-radius:50%;border:2px solid var(--cb);background:#fff;
+  background:radial-gradient(circle at 36% 30%,#fff 0 20%,color-mix(in srgb,var(--cc) 45%,#fff) 58%,var(--cc) 100%);
+  box-shadow:-2px 3px 0 -1px var(--cs),-2px 3px 0 .5px var(--cb),-3px 6px 6px -3px rgba(60,40,25,.35)}
+#segrHero .sgh-tasti .sg2-mic .mt-d{width:50px;height:50px;padding:6px}
+#segrHero .sgh .sgh-ascolta .sgh-alt{width:58px;height:58px;padding:7px}
+#segrHero .sgo-b .mt-d{width:48px;height:48px;padding:6px}
+.sge-foglio .sgf-b .mt-d{width:52px;height:52px;padding:6px}
+#segrHero .sgh-tasti .sg2-mic{min-height:66px}
+#segrHero .sgo-b{min-height:66px}
+/* col buio il foglio restava scuro (la regola di .sg2 del buio, dalla 1.94.0): i titoli scuri non si vedevano. Il foglio è carta */
+:root[data-theme="dark"] #segrHero .sgh{background-color:transparent}
+/* sui telefoni stretti (360) «Parlale» e «Scrivile» stanno ognuno nella sua metà */
+#segrHero .sgh-tasti{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:389px){#segrHero .sgh-tasti .sg2-mic{gap:4px;padding:4px 6px;font-size:20px}#segrHero .sgh-tasti .sg2-mic .mt-d{width:44px;height:44px;padding:5px}
+  #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:14.5px;letter-spacing:-.2px !important}#segrHero .sgt-griglia.stretta .sgt.arrivi .sgt-d,#segrHero .sgt-griglia.stretta .sgt.partenze .sgt-d{width:56px;height:54px;margin-left:4px}}

@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.95.0";
+export const VERSIONE = "1.96.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -7012,6 +7012,8 @@ function segrFumettoHtml(pz) {
 //  - Niente più salti alla prima pagina e niente più avviso «sono arrivate 2 email»: le due funzioni di prima sono tolte.
 //  - Il disegno è di Gemini (quaderno a righe, matite colorate, corsivo di scuola: Playwrite IT Moderna). Le faccine sono
 //    sparite: al loro posto i disegni a matita di Gemini (mat-*.webp).
+//  - 1.96.0 (Michele: «Dei cartoncini, proposta 1, però la scrittura assolutamente quella della 2»): le tessere, i tasti e le
+//    schede sono cartoncini in rilievo, il corsivo è quello inclinato (Playwrite HR). Solo style.css: l'HTML è lo stesso.
 // ============================================================================
 const SEGR_OGGI = ["arrivi", "partenze", "pulizie", "email"];
 function segrOggiAperto() { return SEGR_OGGI.includes(S.segrOggi) ? S.segrOggi : ""; }
