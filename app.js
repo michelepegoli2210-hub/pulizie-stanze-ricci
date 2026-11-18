@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.101.0";
+export const VERSIONE = "1.102.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -283,7 +283,8 @@ const FILM_SEGR = { riposo: "segr7-riposo-3d.webm", ascolta: "segr7-ascolta-3d.w
 // 1.99.0: Sofia personal trainer, la faccia di Jarvis: il saluto coi due bacini (10 secondi, parte e finisce nella posa della foto)
 // 1.101.0: la faccia di Jarvis è LEI (bionda, giacca blu notte, il tablet; una foto inventata, fatta con Gemini): ferma, UN bacio
 // solo, i capelli dietro l'orecchio, gesti tranquilli, torna ferma. La foto = il primo fotogramma del saluto (non si vede il cambio).
-const FILM_JV = { saluto: "jv-lei-saluto-3d.webm", poster: "jv-lei-3d.webp" };
+// 1.102.0 (Michele: «ok però poi falla parlare anche»): «parla», 10 s, parte e finisce ferma; gira in tondo finché la voce parla
+const FILM_JV = { saluto: "jv-lei-saluto-3d.webm", parla: "jv-lei-parla-3d.webm", poster: "jv-lei-3d.webp" };
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -19418,12 +19419,58 @@ const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Abitudine", idee: "Idea", 
 const JV_VISO = (cls = "") => `<img class="jv-viso${cls ? " " + cls : ""}" src="jv-lei-viso.webp" alt="" aria-hidden="true">`;   // 1.101.0: il viso di lei
 function jvFiguraHtml() {
   let film = false; try { film = sofia3d(); } catch (e) {}
-  return `<img class="jv-fig-foto" src="${FILM_JV.poster}" alt="">${film ? `<video class="jv-fig-v" muted playsinline preload="auto" disablepictureinpicture src="${FILM_JV.saluto}"></video>` : ""}`;
+  return `<img class="jv-fig-foto" src="${FILM_JV.poster}" alt="">${film ? `<video class="jv-fig-v" muted playsinline preload="auto" disablepictureinpicture src="${FILM_JV.saluto}"></video><video class="jv-fig-p" muted playsinline loop preload="auto" disablepictureinpicture src="${FILM_JV.parla}"></video>` : ""}`;
 }
 // il saluto: dall'inizio (quando apri Jarvis e quando la tocchi); finito, resta ferma sull'ultimo fotogramma (la posa della foto)
 function jvSaluta() {
   const v = document.querySelector("#jvFigura video.jv-fig-v"); if (!v) return;
-  try { v.muted = true; v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  jvFilmFerma(); jvFilmGuarda(); JV_FILM.gesti = true;   // 1.102.0
+  try { v.muted = true; v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => { JV_FILM.gesti = false; }); } catch (e) { JV_FILM.gesti = false; }
+  if (JV.parla) jvFilmParla(true);
+}
+// 1.102.0 · LEI PARLA (Michele, 18/11: «ok però poi falla parlare anche»). Quando la voce di Jarvis parla (JV.parla) si vede il
+// filmato «parla» (.jv-fig-p, sopra al saluto, nello stesso posto), che gira in tondo: parte e finisce nella posa ferma, quindi
+// il giro non si vede. Il saluto ha la precedenza: mentre manda il bacio e mette i capelli (i primi JV_SALUTO_GESTI secondi) si
+// aspetta, poi lei parla. Quando la voce smette, una dissolvenza corta la riporta ferma (il saluto, finito, è sulla posa ferma).
+const JV_SALUTO_GESTI = 5.4;
+const JV_FILM = { parla: false, attesa: false, gesti: false, rotto: false, t: 0 };
+function jvFilmVideo() { const f = document.getElementById("jvFigura"); if (!f) return null; return { f, s: f.querySelector("video.jv-fig-v"), p: f.querySelector("video.jv-fig-p") }; }
+// il saluto dice quando ha finito i gesti; il filmato «parla» che non c'è non si riprova
+function jvFilmGuarda() {
+  const x = jvFilmVideo(); if (!x || !x.s || x.s._jvGuarda) return;
+  x.s._jvGuarda = true;
+  const fine = () => { if (!JV_FILM.gesti || (x.s.currentTime < JV_SALUTO_GESTI && !x.s.ended)) return; JV_FILM.gesti = false; if (JV_FILM.attesa) { JV_FILM.attesa = false; if (JV.parla) jvFilmParla(true); } };
+  x.s.addEventListener("timeupdate", fine); x.s.addEventListener("ended", fine);
+  x.s.addEventListener("error", () => { JV_FILM.gesti = false; if (JV_FILM.attesa) { JV_FILM.attesa = false; if (JV.parla) jvFilmParla(true); } });
+  if (x.p) x.p.addEventListener("error", () => { JV_FILM.rotto = true; jvFilmFerma(); });
+}
+// via subito (si riparte col saluto, o si va in un riquadro)
+function jvFilmFerma() {
+  JV_FILM.parla = false; JV_FILM.attesa = false; clearTimeout(JV_FILM.t);
+  const x = jvFilmVideo(); if (!x || !x.p) return;
+  x.f.classList.remove("parla-film"); try { if (!x.p.paused) x.p.pause(); } catch (e) {}
+}
+function jvFilmParla(si) {
+  const x = jvFilmVideo(); if (!x || !x.p || !x.s) return;
+  const { f, s, p } = x;
+  if (si) {
+    if (JV_FILM.parla || JV_FILM.rotto || f.hidden) return;
+    jvFilmGuarda();
+    if (JV_FILM.gesti) { JV_FILM.attesa = true; return; }   // prima il bacio e i capelli
+    JV_FILM.parla = true; JV_FILM.attesa = false; clearTimeout(JV_FILM.t);
+    try { p.muted = true; if (p.paused) p.currentTime = 0; const pr = p.play();   // (se si era appena fermata e riparla, continua da dov'era: niente salto)
+      if (pr && pr.catch) pr.catch(() => { if (JV_FILM.parla) { JV_FILM.parla = false; f.classList.remove("parla-film"); } }); }
+    catch (e) { JV_FILM.parla = false; return; }
+    f.classList.add("parla-film");
+    return;
+  }
+  JV_FILM.attesa = false;
+  if (!JV_FILM.parla) return;
+  JV_FILM.parla = false;
+  // torna ferma: il saluto finito è già sulla posa ferma; se era rimasto fermo a metà, va all'ultimo fotogramma
+  try { if (s.paused && !s.ended && s.duration) s.currentTime = Math.max(0, s.duration - 0.05); } catch (e) {}
+  f.classList.remove("parla-film");
+  clearTimeout(JV_FILM.t); JV_FILM.t = setTimeout(() => { if (!JV_FILM.parla) try { p.pause(); } catch (e) {} }, 450);
 }
 // a che cosa somiglia (solo per il disegnino accanto): palestra, biliardo, letture, acquisti, persone
 const JV_AREE = [[/palestr|allenament|corsa|correre|pesi|addominali|camminat/i, "💪"], [/biliard|stecca|birilli|goriziana/i, "🎱"], [/legg|libro|libri|pagine|studi/i, "📚"], [/compr|acquist|spesa|ordinare|pagare/i, "🛒"], [/famiglia|amic|cena|regalo|chiamare|telefonare|uscire con/i, "❤️"]];
@@ -19686,6 +19733,7 @@ function jarvisStato() {
   const el = document.getElementById("jarvis"); if (!el) return;
   el.classList.toggle("parla", !!JV.parla); el.classList.toggle("ascolta", !!JV.ascolta);
   el.querySelectorAll("[data-jv-mic]").forEach(m => m.classList.toggle("su", !!JV.ascolta));
+  try { jvFilmParla(!!JV.parla); } catch (e) {}   // 1.102.0: lei parla quando la voce parla
 }
 function jvTesta(titolo, dentro) {
   const muto = jvMuto();
@@ -19888,6 +19936,7 @@ function jarvisDisegna() {
   let fig = document.getElementById("jvFigura"), nuova = false;
   if (!fig || fig.parentNode !== el) {
     fig = document.createElement("div"); fig.id = "jvFigura"; fig.className = "jv-scena"; fig.setAttribute("aria-hidden", "true"); fig.innerHTML = jvFiguraHtml(); nuova = true;
+    JV_FILM.parla = false; JV_FILM.attesa = false; JV_FILM.gesti = casa && !!fig.querySelector("video");   // 1.102.0: prima il saluto, poi parla
     // la foto sotto si toglie quando il filmato ha il suo primo fotogramma (se no, mentre si muove, si vedrebbe lei ferma sotto)
     const v = fig.querySelector("video");
     if (v) { const pronto = () => fig.classList.add("film-pronto"); v.addEventListener("loadeddata", pronto, { once: true }); v.addEventListener("playing", pronto, { once: true }); v.addEventListener("error", () => fig.classList.remove("film-pronto"), { once: true }); }
@@ -19896,7 +19945,8 @@ function jarvisDisegna() {
   [...el.children].forEach(c => { if (c !== fig) c.remove(); });
   if (fig.parentNode !== el) el.prepend(fig);
   fig.hidden = !casa; el.classList.toggle("jv-casa", casa);
-  if (!casa) { const v = fig.querySelector("video"); if (v && !v.paused) try { v.pause(); } catch (e) {} }
+  if (!casa) { const v = fig.querySelector("video"); if (v && !v.paused) try { v.pause(); } catch (e) {} jvFilmFerma(); }
+  else if (!nuova) { const v = fig.querySelector("video.jv-fig-v"); if (v && v.paused && !v.ended && v.currentTime > 0) try { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }   // 1.102.0: il saluto lasciato a metà riprende
   fig.insertAdjacentHTML("afterend", (casa ? jvCasaHtml(d) : jvSezioneHtml(d, JV.sez)) + jvTabHtml() + (JV.foglio ? jvFoglioHtml() : ""));
   const vn = document.getElementById("jvVeloce"); if (vn && vv) vn.value = vv; if (vn && vf) { try { vn.focus({ preventScroll: true }); if (vs) vn.setSelectionRange(vs[0], vs[1]); } catch (e) {} }
   jarvisStato();

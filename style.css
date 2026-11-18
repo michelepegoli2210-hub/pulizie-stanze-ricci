@@ -10804,3 +10804,12 @@ body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-
   .jv-data{font-size:20px}
   .jv-tab span{font-size:14px}
 }
+
+/* ----------------------------------------------------------------------------
+   1.102.0 · LEI PARLA (Michele, 18/11: «ok però poi falla parlare anche»): il filmato «parla» (.jv-fig-p) sta sopra al saluto,
+   nello stesso posto; si vede quando la voce parla (#jvFigura.parla-film) e si passa dall'uno all'altro con una dissolvenza corta.
+   ---------------------------------------------------------------------------- */
+#jvFigura video.jv-fig-p{position:absolute;left:50%;top:calc(54px + env(safe-area-inset-top,0px));height:var(--jv-alto);width:calc(var(--jv-alto) * .5625);max-width:none;margin:0;transform:translateX(-50%);object-fit:contain;pointer-events:none;background:transparent;opacity:0;transition:opacity .35s ease}
+#jvFigura video.jv-fig-v{transition:opacity .35s ease}
+#jvFigura.parla-film video.jv-fig-p{opacity:1}
+#jvFigura.parla-film video.jv-fig-v{opacity:0}

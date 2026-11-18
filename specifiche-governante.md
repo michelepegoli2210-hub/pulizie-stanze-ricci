@@ -3437,3 +3437,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - In cima a Jarvis adesso c'è lei: la ragazza bionda con la giacca blu e il tablet, senza sfondo (sotto si vede il marmo).
   - Quando apri Jarvis ti manda un bacio solo, si sistema i capelli dietro l'orecchio, fa gesti tranquilli e torna ferma. Toccandola ricomincia e ti dice tutto.
   - Nelle altre pagine di Jarvis c'è il suo viso piccolo, nel tondo.
+- **1.102.0** (18/11, Michele: «ok però poi falla parlare anche»):
+  - Quando Jarvis ti parla, lei parla davvero: muove la bocca e la mano mentre senti la voce. Quando la voce finisce, torna ferma.
+  - Quando apri Jarvis prima ti manda il bacio e si mette i capelli dietro l'orecchio, poi comincia a parlare.
+  - Se togli la voce (il tasto in alto a destra), lei non parla.

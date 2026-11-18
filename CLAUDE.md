@@ -258,6 +258,12 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   e rimette solo quello che c'è dopo): il filmato non riparte quando scrivi o spunti. Nelle pagine dei riquadri il suo viso
   piccolo nel tondo (`JV_VISO`, `jv-lei-viso.webp`, fondo avorio e oro: `strumenti/fai-viso-jarvis.py`). La voce di Jarvis è da donna (`jvVoce`), solo quella del telefono.
   I filmati di Jarvis NON sono in «I filmati di Sofia» (Impostazioni): sono solo per lui, su questa pagina.
+  1.102.0, LEI PARLA (Michele: «ok però poi falla parlare anche»): quando la voce di Jarvis parla (`JV.parla`) si vede il filmato
+  «parla» (`FILM_JV.parla`, `jv-lei-parla-3d.webm` + `-alfa.mp4`, 10 s di Gemini Neon: parte ferma, parla muovendo la mano destra,
+  torna ferma), il secondo video di `#jvFigura` (`.jv-fig-p`, sopra al saluto, classe `parla-film`), che gira in tondo finché la
+  voce va. Il saluto ha la precedenza (`JV_FILM.gesti`: i primi `JV_SALUTO_GESTI` secondi, il bacio e i capelli), poi parla; quando
+  la voce smette una dissolvenza corta (0,35 s) la riporta ferma. Nei riquadri il filmato si ferma (`jvFilmFerma`); tornando alla
+  pagina di Jarvis il saluto lasciato a metà riprende. Voce spenta (muto) = lei non parla.
   Prossimi filmati (Michele: «di attività che si fa in palestra… di crescita, che gioca a scacchi, che risolve un cubo…
   deve stare la continuità del video… non si deve capire»): ognuno parte e finisce nella posa della foto, e si mettono in
   fila come quelli della prima pagina (attacchi, rientro lento), così da ferma fa una cosa dopo l'altra senza scatti.
