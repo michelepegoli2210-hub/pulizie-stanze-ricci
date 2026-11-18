@@ -1,4 +1,4 @@
-/* Le Stanze di Ricci · LA CASSETTA DELLE COPIE DI SICUREZZA, DEI CALENDARI E DELL'OROLOGIO (versione 3, 8 novembre 2026)
+/* Le Stanze di Ricci · LA CASSETTA DELLE COPIE DI SICUREZZA, DEI CALENDARI E DELL'OROLOGIO (versione 4, 18 novembre 2026)
  *
  * Una volta a settimana Sofia (il giro automatico) fa una copia di TUTTI i dati dell'app e la manda qui. Questo piccolo
  * programma, nel tuo account Google, la mette nel tuo Google Drive, nella cartella «Copie di sicurezza - Le Stanze di
@@ -15,12 +15,17 @@
  * partire lei ogni 10 minuti (di notte una volta all'ora), anche a PC spento. La chiave resta qui, nelle proprietà di questo
  * programma: la cassetta non la rimanda mai indietro a nessuno.
  *
+ * LE SVEGLIE DI JARVIS (versione 4): il giro di Sofia manda qui SOLO gli orari delle sveglie di Jarvis (non che cosa, non di
+ * chi). La cassetta fa partire il giro 2 minuti prima di ognuna, così la notifica arriva al minuto giusto anche di notte e a
+ * PC spento («ricordami alle 18 di…» → alle 18). E l'app, per una sveglia tra pochi minuti, chiede «spingi»: il giro parte
+ * subito (al massimo una volta al minuto).
+ *
  * Come si mette (una volta sola): Esegui il deployment → Nuovo deployment → ⚙️ App web → Esegui come: Me →
  * Chi ha accesso: Chiunque → Esegui il deployment → Autorizza l'accesso → copia l'«URL app web» nell'app.
  */
 var CARTELLA = "Copie di sicurezza - Le Stanze di Ricci";
 var TIENI = 26;
-var VERSIONE = "3";
+var VERSIONE = "4";
 var GH_REPO = "michelepegoli2210-hub/pulizie-stanze-ricci", GH_GIRO = "sofia-giro.yml";
 var GH_CHIAVE = /^github_pat_[A-Za-z0-9_]{40,}$/;
 var NOME_GIUSTO = /^stanze-ricci-copia-\d{4}-\d{2}-\d{2}(-[a-z0-9]{1,12})?\.json\.gz$/;
@@ -113,7 +118,9 @@ function gestisci_(req) {
     return { ok: true, scade: pr.scade || "", acceso: true };
   }
   if (azione === "orologioStato") return { ok: true, acceso: !!P.getProperty("ghChiave") && haOrologio_(), ultimo: P.getProperty("orologioUltimo") || "", errore: P.getProperty("orologioErrore") || "", scade: P.getProperty("ghScade") || "" };
-  if (azione === "orologioSpegni") { spegniOrologio_(); P.deleteProperty("ghChiave"); P.deleteProperty("ghScade"); return { ok: true, acceso: false }; }
+  if (azione === "orologioSpegni") { spegniOrologio_(); togliSveglia_(); P.deleteProperty("ghChiave"); P.deleteProperty("ghScade"); return { ok: true, acceso: false }; }
+  if (azione === "sveglie") return sveglieSalva_(req);   // versione 4: gli orari delle sveglie di Jarvis (dal giro)
+  if (azione === "spingi") return spingiOra_();          // versione 4: il giro subito (dall'app, per una sveglia tra poco)
   if (azione === "togli") { P.deleteProperty("segreto"); return { ok: true }; }
   return { ok: false, errore: "Non so fare: " + azione };
 }
@@ -123,6 +130,7 @@ function gestisci_(req) {
 function orologio() {
   var P = PropertiesService.getScriptProperties(), gh = P.getProperty("ghChiave");
   if (!gh) { spegniOrologio_(); return; }
+  conLucchetto_(programmaSveglie_);   // versione 4: se il trigger della prossima sveglia si fosse perso, lo rimette
   var adesso = new Date(), ora = Number(Utilities.formatDate(adesso, "Europe/Rome", "H")), min = Number(Utilities.formatDate(adesso, "Europe/Rome", "m"));
   if ((ora >= 23 || ora < 6) && min >= 10) return;
   var r = spingi_(gh);
@@ -148,6 +156,63 @@ function spingi_(gh) {
   var msg = ""; try { msg = String(JSON.parse(r.getContentText()).message || ""); } catch (x) {}
   return { ok: false, errore: "GitHub non accetta (" + st + (msg ? ": " + msg.slice(0, 80) : "") + ")." };
 }
+// ---- le sveglie di Jarvis (versione 4) ----------------------------------------------------------------------------------
+// Il giro manda la lista degli orari (solo quelli, ISO, al massimo 80, entro 40 giorni). Qui si tiene, e c'è UN trigger solo:
+// 2 minuti prima della prossima sveglia fa partire il giro (il giro poi aspetta il minuto giusto). Le sveglie fino a 3 minuti
+// dopo quella le prende lo stesso giro. Se GitHub non risponde, riprova ogni minuto per 10 minuti.
+function sveglieSalva_(req) {
+  var adesso = Date.now(), lista = Array.isArray(req.orari) ? req.orari : [], orari = [];
+  for (var i = 0; i < lista.length && orari.length < 80; i++) {
+    var s = String(lista[i] || ""); if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?Z$/.test(s)) continue;
+    var t = Date.parse(s); if (!(t > adesso - 3600000 && t < adesso + 40 * 86400000)) continue;
+    orari.push(new Date(t).toISOString());
+  }
+  orari.sort();
+  var fatto = conLucchetto_(function () { PropertiesService.getScriptProperties().setProperty("sveglie", JSON.stringify(orari)); programmaSveglie_(); });
+  return fatto ? { ok: true, sveglie: orari.length } : { ok: false, errore: "La cassetta è occupata: riprova." };
+}
+function programmaSveglie_() {
+  var P = PropertiesService.getScriptProperties(), gh = P.getProperty("ghChiave");
+  if (!gh) { togliSveglia_(); return; }
+  for (var giri = 0; giri < 6; giri++) {
+    var orari = []; try { orari = JSON.parse(P.getProperty("sveglie") || "[]"); } catch (x) { orari = []; }
+    var adesso = Date.now(), fino = Number(P.getProperty("svegliaFino") || 0), prossima = 0;
+    for (var i = 0; i < orari.length; i++) { var t = Date.parse(orari[i]); if (t > fino && t > adesso - 600000 && (!prossima || t < prossima)) prossima = t; }   // fino a 10 minuti dopo: un trigger in ritardo fa partire il giro lo stesso
+    if (!prossima) { togliSveglia_(); return; }
+    var q = prossima - 120000;
+    if (q > adesso + 30000) {   // più avanti: il trigger (se c'è già quello giusto, resta)
+      if (Number(P.getProperty("svegliaAlle") || 0) !== q || !haSveglia_()) { togliSveglia_(); ScriptApp.newTrigger("sveglia").timeBased().at(new Date(q)).create(); P.setProperty("svegliaAlle", String(q)); }
+      return;
+    }
+    togliSveglia_();   // è ora: il giro parte adesso
+    var r = spingi_(gh);
+    if (!r.ok) {
+      P.setProperty("svegliaErrore", r.errore);
+      if (adesso < prossima + 600000) { ScriptApp.newTrigger("sveglia").timeBased().at(new Date(adesso + 60000)).create(); P.setProperty("svegliaAlle", String(adesso + 60000)); }
+      return;
+    }
+    P.deleteProperty("svegliaErrore"); P.setProperty("svegliaFino", String(prossima + 180000)); P.setProperty("svegliaUltima", new Date(adesso).toISOString());
+  }
+}
+// il trigger della sveglia (lo chiama Google all'ora messa)
+function sveglia() { conLucchetto_(function () { PropertiesService.getScriptProperties().deleteProperty("svegliaAlle"); programmaSveglie_(); }); }
+// «spingi» (dall'app): il giro subito, al massimo una volta al minuto
+function spingiOra_() {
+  var P = PropertiesService.getScriptProperties(), gh = P.getProperty("ghChiave"), adesso = Date.now();
+  if (!gh) return { ok: false, errore: "L'orologio non è acceso: manca la chiave di GitHub." };
+  if (adesso - Number(P.getProperty("spintaUltima") || 0) < 60000) return { ok: true, gia: true };
+  var r = spingi_(gh); if (!r.ok) return { ok: false, errore: r.errore };
+  P.setProperty("spintaUltima", String(adesso));
+  return { ok: true };
+}
+function haSveglia_() { var t = ScriptApp.getProjectTriggers(); for (var i = 0; i < t.length; i++) if (t[i].getHandlerFunction() === "sveglia") return true; return false; }
+function togliSveglia_() { var t = ScriptApp.getProjectTriggers(); for (var i = 0; i < t.length; i++) if (t[i].getHandlerFunction() === "sveglia") ScriptApp.deleteTrigger(t[i]); PropertiesService.getScriptProperties().deleteProperty("svegliaAlle"); }
+// una cosa alla volta (il giro, l'orologio e il trigger della sveglia possono arrivare insieme)
+function conLucchetto_(fn) {
+  var l = LockService.getScriptLock(); try { l.waitLock(20000); } catch (x) { return false; }
+  try { fn(); return true; } finally { l.releaseLock(); }
+}
+
 function haOrologio_() { var t = ScriptApp.getProjectTriggers(); for (var i = 0; i < t.length; i++) if (t[i].getHandlerFunction() === "orologio") return true; return false; }
 function spegniOrologio_() { var t = ScriptApp.getProjectTriggers(); for (var i = 0; i < t.length; i++) if (t[i].getHandlerFunction() === "orologio") ScriptApp.deleteTrigger(t[i]); }
 function accendiOrologio_() { spegniOrologio_(); ScriptApp.newTrigger("orologio").timeBased().everyMinutes(10).create(); }
