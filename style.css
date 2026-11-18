@@ -10431,3 +10431,47 @@ body.premium #segrHero .casa-nuvola .casa-vene{display:none}
 :root[data-theme="dark"] #segrHero .sgt .sgt-s{color:var(--mt-grigio)}
 :root[data-theme="dark"] body.premium #segrHero .casa-nuvola .casa-nascondi{color:var(--mt-matita)}
 body.premium #segrHero:not(.tenda-chiusa) .casa-nuvola .casa-nascondi{color:var(--mt-matita)}
+
+/* ============================================================================
+   1.95.0 · LE PRENOTAZIONI NELLA SEGRETERIA (Michele, 17/11 sera: «voglio che in segreteria ci sia un accesso diretto al
+   calendario… o di capire anche le prenotazioni quali sono… come ci stanno adesso le email»).
+   Sotto «Oggi» due tessere a matita: «Arrivate» (viola chiaro: si apre lì sotto, come le tessere di Oggi) e «Ciclovia» (verde
+   acqua: apre il loro sito, la freccina in alto dice che si esce). Le schede sono quelle delle email, col bordo viola; la
+   fascia gialla con la sveglia dice entro quando rispondere (rossa quando manca poco, grigia quando il tempo è finito).
+   ============================================================================ */
+#segrHero .sgt-griglia.sgt-pren .sgt{min-height:176px}
+#segrHero .sgt.pren{background-color:#E6DCF3}
+#segrHero .sgt.canale{background-color:#D0EBE4;text-decoration:none}
+#segrHero .sgt.pren .sgt-d,#segrHero .sgt.canale .sgt-d{width:96px;height:96px;margin:30px 0 0}
+#segrHero .sgt.pren.aperta{box-shadow:inset 0 0 0 2.5px var(--mt-matita)}
+#segrHero .sgt.pren.aperta::after{content:"";position:absolute;right:10px;top:10px;width:20px;height:24px;background:var(--mt-matita);clip-path:polygon(38% 0,62% 0,62% 58%,100% 58%,50% 100%,0 58%,38% 58%)}
+#segrHero .sgt.canale::after{content:"";position:absolute;right:10px;top:10px;width:22px;height:22px;background:var(--mt-matita);clip-path:polygon(30% 0,100% 0,100% 70%,82% 70%,82% 31%,16% 97%,3% 84%,69% 18%,30% 18%)}
+#segrHero .sgt.canale:active{filter:brightness(.95)}
+#segrHero .sge.pren,#segrHero .sge.pren:nth-of-type(even){border-color:#7758A5}
+#segrHero .sge.pren.annullata,#segrHero .sge.pren.annullata:nth-of-type(even){border-color:var(--mt-grigio)}
+#segrHero .sge .sgp-cosa{grid-column:2;font-size:18px;line-height:1.45;color:var(--mt-grigio)}
+#segrHero .sge .sge-ogg + .sgp-entro{margin-top:8px}
+#segrHero .sgp-entro,.sge-foglio .sgp-entro{grid-column:1 / span 2;display:flex;align-items:center;gap:8px;margin:6px 0 0;padding:4px 10px;border:2px solid var(--mt-oro);border-radius:14px 11px 15px 10px/11px 15px 10px 14px;background-color:#F6E27A;background-image:var(--mt-tratto);font-size:20px;line-height:1.45;color:var(--mt-matita)}
+#segrHero .sgp-entro .mt-d,.sge-foglio .sgp-entro .mt-d{display:block;flex:none;width:36px;height:36px;object-fit:contain}
+#segrHero .sgp-entro.poco,.sge-foglio .sgp-entro.poco{background-color:#F3B3AC;border-color:var(--mt-rosso)}
+#segrHero .sgp-entro.scaduta,.sge-foglio .sgp-entro.scaduta{background-color:#EAE6DA;border-color:var(--mt-grigio);color:var(--mt-grigio)}
+.sge-foglio .sgp-entro{margin:0 0 12px;font-size:21px}
+.sge-foglio .sgf-b.canale{background-color:#D0EBE4}
+
+/* ============================================================================
+   1.95.0 · IL FILMATO NON RUBA I TOCCHI (Michele, 17/11 sera: «non si riesce a tornare indietro, quando parla»).
+   Nella Segreteria il filmato di lei è ingrandito da sotto (--tre-scala: 1,44) e la sua cornice, che non si vede, arrivava fin
+   sopra la barra in alto: il dito su «Indietro» (e, sui telefoni stretti, sui tre puntini) toccava lei, e lei si metteva a
+   parlare. Adesso il filmato non sente i tocchi. Li sente il tasto, su una zona grande quanto LEI: dalla cima dei capelli (il
+   29% dell'altezza del tasto sopra il tasto) in giù, un po' più larga del tasto. Sta sempre sotto la barra.
+   ============================================================================ */
+#segrHero .sg2-sofia-posto,#segrHero .sg2-sf,#segrHero .sg2-sf video,#segrHero .sg2-sf img,#segrHero .sg2-sf canvas{pointer-events:none}
+#segrHero .casa-card .sg2-sofia::after{content:"";position:absolute;left:-8%;right:-8%;top:-29%;bottom:0}   /* ::after, non ::before: quello deve restare vuoto (la «cupola» tolta nella 1.70.0, le prove la guardano) */
+
+/* 1.95.0 · «Indietro» si prende meglio col dito, in tutte le pagine: la zona che sente il tocco è più grande del disegno (da
+   vedere non cambia niente: la pillola resta alta 32, la zona diventa 46). Lo stesso per la crocetta della nuvoletta di Sofia
+   segretaria (da 34 a 48). I tre puntini NO: nello stile di adesso non sono «posizionati», e la zona in più si prendeva tutta
+   la barra, «Indietro» compreso (visto col giro dei tasti coperti: t/esplora-coperti.cjs). */
+body.premium .bo-indietro{position:relative}
+body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-10px;top:-6px;bottom:-8px}
+.sg2-bolla-x::after{content:"";position:absolute;inset:-7px}

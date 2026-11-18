@@ -147,6 +147,35 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   dell'account dà errore 400). Ogni mail nuova ha la sua notifica (giro 1.36.0, `notificheEmail` in `posta-giro.mjs`):
   «📧 Email da …», l'oggetto e l'inizio; di notte aspetta le 6:30; più di 3 insieme una sola. Nel registro di GitHub
   (pubblico) solo «notifica di una email»: mai chi scrive né l'oggetto.
+- Le prenotazioni (1.95.0, giro 1.38.0; Michele: «il sito ciclovia io devo ricevere assolutamente… voglio che in segreteria
+  ci sia un accesso diretto al calendario… quando mi arriva una prenotazione a me il telefono deve proprio vibrare, suonare…
+  tutto quello che riguarda l'albergo arriva a mia consapevolezza»). Quali email sono prenotazioni lo dice UNA regola sola,
+  `L.emailPrenotazione` in `logica.js` (i `CANALI`: Ciclovia Adriatica, Booking, Expedia, Airbnb; parole larghe per loro,
+  strette nell'oggetto per tutti gli altri; niente IA): la usano l'app e il giro.
+  App: nella Segreteria, sotto «Oggi», «Prenotazioni» (`segrPrenotazioniHtml`, `S.segrPren`): la tessera «Arrivate» si apre
+  lì sotto (una scheda per email, `segrPrenRiga`), la tessera «Ciclovia» è un `<a target="_blank">` che apre il loro sito
+  (il calendario): l'app resta nella Segreteria. Nell'email intera la fascia «Rispondi entro…» (`segrPrenEntro`,
+  `L.scadenzaRisposta`: le 12 ore della Ciclovia contate dalle 7 alle 21, ora di Lesina) e il tasto del sito.
+  Giro: `notificheEmail` dà a ogni prenotazione la sua notifica («🛎️ Richiesta di prenotazione · …», `vibra: true`: vibra e
+  resta finché non la tocca); nel registro pubblico solo «notifica di una prenotazione».
+  La casella versione 2 prende anche le email dei siti di prenotazione fuori da «Principale» (mai «Promozioni»): va rimessa a
+  mano nel Google dell'albergo (Gestisci deployment → ✏️ → Nuova versione; l'indirizzo non cambia).
+  La Ciclovia (letto sul loro sito il 17/11/2026): le richieste arrivano per email, si accettano o si rifiutano entro 12 ore
+  lavorative, i giorni si chiudono nel loro calendario; niente iCal, niente collegamenti. Chiudere i giorni e dire sì o no
+  lo fa Michele sul loro sito: l'app mostra e porta lì, non lo fa al posto suo e non va automatizzato col mouse.
+  DA FARE alla prima email vera della Ciclovia: guardare chi la manda e com'è l'oggetto, e stringere le regole. Le email
+  restano una settimana in `posta/`; la prenotazione NON entra da sola nel prospetto.
+- «Indietro» nella Segreteria (1.95.0; Michele: «ci sono parecchi bug nella parte Sofia segretaria, non si riesce a tornare
+  indietro, quando parla»). Dalla 1.92.0 il filmato di lei, ingrandito (`--tre-scala`), aveva la cornice invisibile fin sopra
+  la barra in alto: il dito su «Indietro» toccava lei (`sg2Tocca`) e lei si metteva a parlare. Adesso in `#segrHero` il
+  filmato e le tele non sentono i tocchi (`pointer-events:none`); li sente il tasto `.sg2-sofia` con un `::after` grande
+  quanto lei, sotto la barra; `sg2ToccoBuono` scarta un tocco dentro la barra. «Indietro» (pillola o tasto del telefono) prima
+  richiude quello che Michele ha aperto nella Segreteria (`segrChiudiAperto`: è il `prima` della voce «vista» nella pila di
+  `INDIETRO`; una voce col `prima` resta nella pila se il `prima` ha chiuso qualcosa), poi esce. Uscendo, `segrEsci` la
+  zittisce e richiude tutto.
+  REGOLA PER LE PROVE: i tasti si premono COL DITO (`locator.tap()`, `touchscreen.tap(x, y)`), non con `el.click()` dentro
+  `evaluate`: un tasto coperto da qualcosa di invisibile con `el.click()` funziona, col dito no. Questo errore è passato per
+  tre versioni proprio così. `t/prova1950b.cjs` guarda anche che nessun tasto sia coperto da un filmato.
 
 - Sofia segretaria (1.85.0): i filmati sono i segr5 (480x600, fatti dai segr4 con `strumenti/fai-segr5.py`: il bordo di sotto
   uguale in tutti i fotogrammi, il giro che finisce dove ricomincia). In testa alla Segreteria il palco (`.sg2-palco`): lei
@@ -180,6 +209,12 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   Sofia di casa (`-giro5`), solo il primo in quelli di Sofia segretaria (`segr7`). Dentro un filmato si salta solo lì.
   Spiegato in `strumenti/README.md` (`codifica-liscia.sh`, `misura-chiave.py`). Quelli delle signore (`capo-*`), «com'era» e
   Sofia influencer sono ancora compressi alla vecchia maniera.
+- I lampi nel ritaglio (1.95.0; Michele: «trema leggermente quando c'è il video che si mette i capelli dietro l'orecchio…
+  si toglie le immagini»): per uno-tre fotogrammi il ritaglio apriva un buco dentro di lei. `strumenti/liscia-bordo.py` chiude
+  solo quelli sicuri (grossi, brevi, dove la sala non si vede mai); il filmato in cui sta ferma è il `-giro6` (13 fotogrammi
+  cambiati su 891, gli stessi pezzi). Prima di cambiare un ritaglio: `conta-lampi.py` e `striscia.py`, e guardare tutti i
+  fotogrammi toccati. I buchini tra i riccioli restano (spiegato in `strumenti/README.md`). Il video del bacio piace a
+  Michele così com'è: non «migliorarlo» oltre i lampi.
 
 - Jarvis (1.88.0) è la pagina personale del titolare, fatta come un'app delle cose da fare (Michele: «basato sulle app di
   produttività, to do list»): in cima Jarvis (la galassia, `canvas.jv-gal`) e quello che dice; «Da fare oggi» coi tondi da

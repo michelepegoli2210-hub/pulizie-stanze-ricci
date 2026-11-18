@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.94.0";
+export const VERSIONE = "1.95.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -87,7 +87,7 @@ const FACCE_PRONTE = { base: "sofia-viso.webp" };
 //  (il medaglione), che restano sul sito: Michele può tornare indietro quando vuole.
 const CHIAVE_SOFIA_VER = "ricci_sofia_versione";
 function sofiaComEra() { try { return localStorage.getItem(CHIAVE_SOFIA_VER) === "prima"; } catch (e) { return false; } }
-const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro5.mp4", riposo: "cons-riposo-spilla-giro5.mp4", poster: "cons-poster-foto.webp" };   // 1.94.0: gli stessi fotogrammi, compressi senza il fotogramma chiave ogni due secondi (-giro5: «SENZA IL BATTITO», più giù) · 1.93.0: da ferma solo video che partono e finiscono nella posa della foto (giro4); la foto di partenza è quella posa · 1.91.2: «ferma» con la spilla d'oro anche nel video del bacio (giro3) · 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
+const FILM_PRONTO = sofiaComEra() ? { parla: "cons-parla-intero.mp4", riposo: "cons-riposo-calmo.mp4", poster: "cons-poster-intero.webp" } : { parla: "cons-parla-spilla-giro5.mp4", riposo: "cons-riposo-spilla-giro6.mp4", poster: "cons-poster-foto.webp" };   // 1.95.0: da ferma il ritaglio senza i buchi sbagliati (-giro6: strumenti/liscia-bordo.py) · 1.94.0: gli stessi fotogrammi, compressi senza il fotogramma chiave ogni due secondi (-giro5: «SENZA IL BATTITO», più giù) · 1.93.0: da ferma solo video che partono e finiscono nella posa della foto (giro4); la foto di partenza è quella posa · 1.91.2: «ferma» con la spilla d'oro anche nel video del bacio (giro3) · 1.91.1 (giro2) ·   // 1.91.0: il saluto, e senza i passaggi «da robot» (prima: cons-parla-spilla-fluido, cons-riposo-spilla-sereno)   // 1.90.2: da ferma senza il sorriso che va e viene (prima: cons-riposo-spilla-fluido.mp4) · 1.90.0: senza scatti (prima: cons-*-spilla.mp4)   // 1.73.0: gli spezzoni interi (prima: cons-parla.mp4, cons-riposo.mp4 montati con le dissolvenze)
 // ============================================================================
 //  1.80.0 I FILMATI CANCELLATI (Michele, 12/11: «i filmati di Sofia non mi piacciono per niente… fammi vedere tutti i filmati
 //  caricati nell'app così li cambiamo» → «sì, ma dammi la possibilità di cancellarne qualcuno»).
@@ -217,6 +217,16 @@ let FILM_ABBINA = null;   // 1.73.0: i punti abbinati non servono più (cons-fil
 // ogni pezzo (FILM_SPEZZONI: l'app ci salta). I fotogrammi sono gli stessi di prima, cambia solo come sono compressi (-giro5,
 // strumenti/codifica-liscia.sh). Chi rifà un filmato NON rimetta «-g 48», e i salti dentro un filmato vanno solo all'inizio
 // di un pezzo: saltare in mezzo vorrebbe dire rifare a mente tutti i fotogrammi dal pezzo prima (lento).
+// 1.95.0 I LAMPI NEL RITAGLIO (Michele: «trema leggermente quando c'è il video che si mette i capelli dietro l'orecchio… lagga
+// nei capelli un pochettino… si toglie le immagini»). Il ritaglio (la sagoma di Sofia senza la sala) è fatto fotogramma per
+// fotogramma, ognuno per conto suo, e ogni tanto sbagliava: per uno, due o tre fotogrammi si apriva un buco dentro di lei
+// (accanto alla guancia mentre porta la mano all'orecchio; nel video del bacio tra le dita, sulla spalla e sul petto) e lì si
+// vedeva il fondo: un lampo. Adesso un buco che dura meno di 4 fotogrammi, in un posto dove la sala non si vede MAI in tutto
+// il video (lì c'è sempre lei), si chiude, coi suoi resti nei due fotogrammi vicini (strumenti/liscia-bordo.py; si contano
+// con strumenti/conta-lampi.py). Cambiano 13 fotogrammi su 891: tutti gli altri sono identici a prima. Cambia solo il filmato
+// in cui sta ferma (-giro6); i numeri dei pezzi sono gli stessi. Quando parla resta com'era (-giro5).
+// NON fatto, apposta: «mettere d'accordo» la sagoma coi fotogrammi vicini (toglieva il 7% del tremolio e tagliava a scalini
+// il bordo delle mani che corrono) e chiudere i buchini tra i riccioli (2-7 puntini, un fotogramma: restano com'erano).
 const FILM_SPEZZONI = sofiaComEra() ? { riposo: [0, 222], parla: [0, 240, 443, 683, 888] } : { riposo: [0, 242, 450, 656], parla: [0, 493, 886, 1357, 1764] };
 const FILM_CODE = sofiaComEra() ? { riposo: [222, 426], parla: [240, 443, 683, 888, 1110] } : { riposo: [242, 450, 656, 891], parla: [481, 874, 1345, 1752, 2193] };
 const FILM_FINE = sofiaComEra() ? { riposo: 426, parla: 1110 } : { riposo: 891, parla: 2205 };   // 1.80.0: dove finisce ogni filmato (fotogrammi, 24 al secondo)
@@ -247,7 +257,7 @@ function filmInizioSpezzone(box, da, quale, t) {
 //  - Si spegne in "Come si vede l'app" -> "5. Sofia in 3D" -> "Piatta" (torna esattamente come prima).
 // 1.0.4: rifatti senza l'ombra nera "cotta" intorno a lei (Gemini 4 Argon: "un bordo scuro sfocato che sullo sfondo
 // chiaro sembra un'ombra sporca"); l'ombra ora la fa lo stile, calda e leggera. Nomi nuovi: i telefoni li riscaricano.
-const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro5-3d.webm", riposo: "cons-riposo-spilla-giro5-3d.webm", poster: "cons-poster-foto-3d.webp" };   // 1.94.0 (giro5: senza il battito) · 1.93.0 (giro4) · 1.91.2 (giro3) · 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
+const FILM_TRE = sofiaComEra() ? { parla: "cons-parla-intero-3d.webm", riposo: "cons-riposo-calmo-3d.webm", poster: "cons-poster-intero-3d.webp" } : { parla: "cons-parla-spilla-giro5-3d.webm", riposo: "cons-riposo-spilla-giro6-3d.webm", poster: "cons-poster-foto-3d.webp" };   // 1.95.0 (giro6: senza i lampi nel ritaglio) · 1.94.0 (giro5: senza il battito) · 1.93.0 (giro4) · 1.91.2 (giro3) · 1.91.1 (giro2) ·   // 1.91.0   // 1.90.2 · 1.90.0: senza scatti   // 1.74.2   // 1.73.0: gli spezzoni interi, ritagliati (prima: cons-*-3d2.webm)
 // 1.25.0: LA SOFIA DELLE SIGNORE (Michele, 1 novembre: «sì, metti i filmati con la nuova Sofia»). Per le signore (e nella
 // prova della loro parte) Sofia è la CAPO-GOVERNANTE dello studio di Gemini (gilet verde laguna, chignon, cartellino col
 // nome, corridoio bianco con la pianta): autorevole ma vicina. Michele resta con la sua Sofia. I filmati li ha fatti Michele
@@ -7119,12 +7129,16 @@ function foglioSegrEmail(f) {
   const x = segrEmailParti(p), righe = segrEmailCapito().get(p.id) || [], g = String(p.data || "");
   const quando = `${g ? segrEmailGiorno(g).toLowerCase() : ""}${p.ora ? ` alle ${p.ora}` : ""}`.trim();
   const tagliata = x.corpo.length >= 1780;
+  // 1.95.0: un'email di prenotazione dice entro quando rispondere e ha il tasto per aprire il sito da cui viene
+  const pren = L.emailPrenotazione({ chi: p.chi, dominio: p.dominio, oggetto: x.oggetto, testo: x.corpo }), entro = pren ? segrPrenEntro({ p, x, c: pren }) : null, can = pren ? L.canale(pren.canale) : null;
   return `<div class="sge-foglio">
     <p class="sgf-da">${segrDis("lettera")}<span><b>${esc(p.chi || "?")}</b><small>${esc(quando)}${x.allegati ? ` · ${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}` : ""}</small></span></p>
     <h3 class="sgf-ogg">${esc(x.oggetto)}</h3>
+    ${entro ? `<p class="sgp-entro ${entro.classe}">${segrDis("sveglia")}<span>${esc(entro.testo)}</span></p>` : ""}
     ${righe.length ? `<div class="sgf-sofia">${righe.map(r => `<p><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</p>`).join("")}</div>` : ""}
     <div class="sgf-testo">${x.corpo ? escNl(x.corpo) : "<i>(l'email non ha testo)</i>"}</div>
     ${tagliata ? `<p class="sgf-nota">L'email è più lunga: qui c'è l'inizio. Per leggerla tutta, o per vedere gli allegati, aprila nella posta.</p>` : x.allegati ? `<p class="sgf-nota">Gli allegati si vedono nella posta.</p>` : ""}
+    ${can && can.sito ? `<a class="sgf-b canale" href="${esc(can.sito)}" target="_blank" rel="noopener">${segrDis("spunte")}<span>Apri il sito: ${esc(can.breve)}</span></a>` : ""}
     <a class="sgf-b posta" href="${esc(segrEmailLink(p))}" target="_blank" rel="noopener">${segrDis("cassetta")}<span>Apri nella posta</span></a></div>`;
 }
 // 1) Oggi: le quattro tessere (il numero grande, il disegno a matita, la parola); quella toccata si apre lì sotto
@@ -7142,6 +7156,79 @@ function segrOggiHtml() {
     t("partenze", mv.ospitiPar, "mat-partenze.webp", mv.ospitiPar === 1 ? "Partenza" : "Partenze", mv.ospitiPar ? `Oggi ${mv.ospitiPar === 1 ? "parte 1 ospite" : `partono ${mv.ospitiPar} ospiti`}, ${cam(mv.par)}` : "Oggi non parte nessuno", cam(mv.par))}${
     t("pulizie", pul.length, "mat-secchio.webp", pul.length === 1 ? "Pulizia" : "Pulizie", pul.length ? `Oggi ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}, ${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "Oggi nessuna pulizia", pul.length ? `${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "")}${
     t("email", em, "mat-busta.webp", "Email", em ? `Oggi ${em === 1 ? "è arrivata 1 email" : `sono arrivate ${em} email`}` : "Oggi non è arrivata nessuna email")}</div>${ap ? `<div class="sgo ${ap}" data-sgo="${ap}">${dentro}</div>` : ""}`;
+}
+// ============================================================================
+//  1.95.0 LE PRENOTAZIONI NELLA SEGRETERIA (Michele, 17/11 sera: «io ho fatto l'iscrizione alla ciclovia… voglio che in segreteria ci
+//  sia un accesso diretto al calendario… o di capire anche le prenotazioni quali sono. Quando mi arriva una prenotazione a me il
+//  telefono deve proprio vibrare, suonare… nella segreteria ci deve stare, come ci stanno adesso le email… tutto quello che
+//  riguarda l'albergo arriva a mia consapevolezza»).
+//  Sotto «Oggi» c'è «Prenotazioni», due tessere:
+//   - «Arrivate»: il numero è quante email di prenotazione ci sono nella posta (la posta tiene una settimana). Si apre lì sotto,
+//     come le tessere di Oggi: una scheda per email col sito da cui viene, quando è arrivata e, se è una richiesta che aspetta
+//     un sì o un no (la Ciclovia: 12 ore dalle 7 alle 21, L.scadenzaRisposta), «Rispondi entro…». Un tocco apre l'email intera.
+//   - «Ciclovia»: apre il loro sito (L.canale("ciclovia").sito), dove c'è il calendario: lì si chiudono i giorni e si risponde.
+//  Quali email sono prenotazioni lo dice L.emailPrenotazione (logica.js): la stessa regola del giro, che fa suonare il telefono.
+//  Qui non si scrive niente: la prenotazione nel prospetto la mette ancora Michele (o Sofia, quando legge l'email, la propone).
+// ============================================================================
+function segrPrenotazioni() {
+  return segrEmailTutte().map(p => { const x = segrEmailParti(p), c = L.emailPrenotazione({ chi: p.chi, dominio: p.dominio, oggetto: x.oggetto, testo: x.corpo }); return c ? { p, x, c } : null; }).filter(Boolean);
+}
+// «Rispondi entro oggi alle 21:00» (rossa se mancano meno di tre ore, grigia se il tempo è finito); null se non aspetta risposta
+function segrPrenEntro(e, adesso = Date.now()) {
+  if (!e || !e.c || !e.c.oreRisposta) return null;
+  const sc = L.scadenzaRisposta(Number(e.p.ts) || 0, e.c.oreRisposta); if (!sc) return null;
+  const g = L.giornoRoma(sc), oggi = L.oggiISO(), ora = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(sc));
+  const quando = g === oggi ? "oggi" : g === L.aggiungiGiorni(oggi, 1) ? "domani" : g === L.aggiungiGiorni(oggi, -1) ? "ieri" : L.dataGiornoLungo(g);
+  if (sc <= adesso) return { testo: `Il tempo per rispondere è finito ${quando} alle ${ora}`, classe: "scaduta", sc };
+  return { testo: `Rispondi entro ${quando} alle ${ora}`, classe: sc - adesso < 3 * 3600e3 ? "poco" : "", sc };
+}
+function segrPrenCosa(c) { return c.annullata ? "Annullata" : c.richiesta ? "Richiesta" : "Prenotazione"; }
+function segrPrenRiga(e, cap) {
+  const { p, x, c } = e, righe = cap.get(p.id) || [], entro = segrPrenEntro(e), g = String(p.data || "");
+  const quando = g ? segrEmailGiorno(g).toLowerCase() : "";   // solo il giorno: l'ora sta già in alto a destra (una cosa sola per riga)
+  const inizio = x.corpo.replace(/\s+/g, " ").trim(), anteprima = inizio.length > 150 ? inizio.slice(0, 150).replace(/\s+\S*$/, "") + "…" : inizio;
+  const sofia = righe.length ? righe.slice(0, 2).map(r => `<span class="sge-sofia"><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</span>`).join("")
+    : `${anteprima ? `<span class="sge-ante">${esc(anteprima)}</span>` : ""}`;
+  return `<button type="button" class="sge pren${c.annullata ? " annullata" : ""}" data-segr-email-apri="${esc(p.id)}" aria-label="${segrPrenCosa(c)} da ${esc(c.nome)}: ${esc(x.oggetto)}. ${entro ? esc(entro.testo) + ". " : ""}Tocca per leggerla tutta">${segrDis("chiave", "sge-b")}<span class="sge-testa"><span class="sge-chi">${esc(c.nome)}</span><span class="sge-ora">${esc(p.ora || "")}</span></span><span class="sgp-cosa">${segrPrenCosa(c)}${quando ? ` · arrivata ${esc(quando)}` : ""}</span><span class="sge-ogg">${esc(x.oggetto)}</span>${entro ? `<span class="sgp-entro ${entro.classe}">${segrDis("sveglia")}<span>${esc(entro.testo)}</span></span>` : ""}${sofia}<span class="sge-leggi">Leggi tutta <span aria-hidden="true">→</span></span></button>`;
+}
+function segrPrenotazioniHtml() {
+  const l = segrPrenotazioni(), ap = !!S.segrPren, cic = L.canale("ciclovia"), cap = ap ? segrEmailCapito() : null;
+  const aspettano = l.filter(e => { const x = segrPrenEntro(e); return x && x.classe !== "scaduta"; }).length;
+  const dici = l.length ? `${l.length === 1 ? "È arrivata 1 prenotazione" : `Sono arrivate ${l.length} prenotazioni`} in sette giorni${aspettano ? `, ${aspettano === 1 ? "una aspetta" : `${aspettano} aspettano`} la tua risposta` : ""}` : "In sette giorni non è arrivata nessuna prenotazione";
+  return `<div class="sgt-griglia sgt-pren"><button type="button" class="sgt pren${ap ? " aperta" : ""}" data-segr-pren aria-expanded="${ap}" aria-label="${esc(dici)}. Tocca per ${ap ? "chiudere" : "vedere"}"><b class="sgt-n">${l.length}</b><img class="sgt-d" src="mat-chiave.webp" alt="" width="240" height="240"><span class="sgt-p">${l.length === 1 ? "Arrivata" : "Arrivate"}</span><small class="sgt-s">${aspettano ? `${aspettano} da rispondere` : "in 7 giorni"}</small></button><a class="sgt canale" href="${esc(cic.sito)}" target="_blank" rel="noopener" data-segr-canale="ciclovia" aria-label="Apri il sito della Ciclovia Adriatica: lì ci sono il calendario e le richieste"><img class="sgt-d" src="mat-spunte.webp" alt="" width="240" height="240"><span class="sgt-p">${esc(cic.breve)}</span><small class="sgt-s">apri il calendario</small></a></div>${ap ? `<div class="sgo pren" data-sgo="pren"><h4 class="sgo-tit">Le prenotazioni arrivate</h4>${l.length ? l.map(e => segrPrenRiga(e, cap)).join("") : `<p class="sgo-vuoto">${paPronta() ? "In questi sette giorni non è arrivata nessuna prenotazione per email." : "La posta dell'albergo non è collegata: si collega da Altro, «La posta dell'albergo»."}</p>`}<p class="sgo-nota">Le richieste della Ciclovia arrivano per email. Per dire sì o no si va sul loro sito: è il tasto «Ciclovia» qui sopra.</p></div>` : ""}`;
+}
+// ============================================================================
+//  1.95.0 «NON SI RIESCE A TORNARE INDIETRO» (Michele, 17/11 sera, provando la 1.94.0: «ci sono parecchi bug nella parte Sofia
+//  segretaria, non si riesce a tornare indietro, quando parla») · 1.7.0: «ogni cosa che apro, devo poter tornare indietro».
+//  1) Il filmato di lei è ingrandito (--tre-scala) e la sua cornice, invisibile, arrivava sopra la barra in alto: il dito su
+//     «Indietro» toccava lei (sg2Tocca), e lei si metteva a parlare; se parlava, smetteva. Indietro non si tornava mai. Adesso
+//     il filmato non sente i tocchi (style.css): li sente il tasto, su una zona grande quanto lei, che sta sotto la barra; e
+//     un tocco dentro la barra in alto non è mai un tocco su di lei (sg2ToccoBuono).
+//  2) «Indietro» (la pillola o il tasto del telefono) prima richiude quello che Michele ha aperto nella Segreteria (una tessera
+//     di Oggi, «Arrivate», un cassetto): segrChiudiAperto, che è il «prima» della voce «vista» nella pila di INDIETRO. Solo se
+//     non c'è niente di aperto si torna alla prima pagina. Un cassetto aperto da solo (quello di partenza) non conta.
+//  3) Uscendo dalla Segreteria (Indietro, la barra in basso, un tasto che porta altrove) lei smette di parlare e di ascoltare
+//     (segrEsci): prima continuava a parlare nella prima pagina. La volta dopo la Segreteria si riapre pulita.
+//  LE PROVE DEI TASTI SI FANNO COL DITO (locator.tap), non con el.click(): è così che questo errore è passato per tre versioni.
+// ============================================================================
+function sg2ToccoBuono(e) {
+  try { const bo = document.getElementById("barraOra"); if (bo && e && e.clientY > 0 && e.clientY < bo.getBoundingClientRect().bottom) return false; } catch (err) {}
+  return true;
+}
+function segrChiudiAperto() {
+  if (!segrHeroAttivo()) return false;
+  const cassetto = typeof S.sg2Aperto === "string" && S.sg2Aperto !== "";
+  if (!segrOggiAperto() && !S.segrPren && !cassetto) return false;
+  S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; if (cassetto) S.sg2Aperto = "";
+  disegna();
+  return true;
+}
+function segrEsci() {
+  try { if (sg2Rec) { const r = sg2Rec; sg2Rec = null; r.onend = null; r.onresult = null; if (r.abort) r.abort(); else r.stop(); } } catch (e) {}
+  try { if (voceInCorso) zittisciVoce(); } catch (e) {}
+  try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+  sg2ParlaTel = false;
+  S.sg2Bolla = null; S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.sg2Aperto = undefined;   // i cassetti tornano come all'inizio (quello di partenza si riapre da solo)
 }
 // 2) I quattro cassetti: quattro tessere col numero; un tocco apre le righe di quel cassetto (uno alla volta)
 const SEGR_CASSETTI = [["fare", "Da fare tu", "mat-sveglia.webp"], ["prop", "Ti propongo", "mat-scintilla.webp"], ["fatto", "Ho fatto io", "mat-spunte.webp"], ["sapere", "Da sapere", "mat-stella.webp"]];
@@ -7161,6 +7248,7 @@ function segrDentroHtml(pz) {
     <h3 class="sgh-tit">Oggi</h3>
     <button type="button" class="sgh-ascolta" data-sg2-ascolta>${segrDis("voce", "sgh-alt")}<span class="sgh-at"><b>Ascolta</b><small>${esc(pz.nome)} me lo racconta a voce</small></span></button>
     ${segrOggiHtml()}
+    <h3 class="sgh-tit">Prenotazioni</h3>${segrPrenotazioniHtml()}
     <h3 class="sgh-tit">I miei cassetti</h3>${segrCassettiHtml(pz)}
     <h3 class="sgh-tit">Documenti degli ospiti</h3>${pz.doc || ""}`;
 }
@@ -7207,6 +7295,8 @@ document.addEventListener("click", (e) => {
   if ((x = t.closest("[data-segr-email-apri]"))) { apriFoglio({ tipo: "segrEmail", id: x.dataset.segrEmailApri }); return; }
   if (t.closest("[data-segr-email-prima]")) { S.segrEmailPrima = !S.segrEmailPrima; disegna(); return; }
   if ((x = t.closest("[data-segr-oggi]"))) { segrOggiTocca(x.dataset.segrOggi); return; }
+  // 1.95.0: «Arrivate» (le prenotazioni) si apre lì sotto; il riquadro scorre fin lì
+  if (t.closest("[data-segr-pren]")) { S.segrPren = !S.segrPren; disegna(); if (S.segrPren) setTimeout(() => { const g = document.querySelector("#segrHero .sgt-pren"), sc = g && g.closest(".casa-testo"); if (g && sc) { const y = g.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 52; try { sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } catch (e) { sc.scrollTop = Math.max(0, y); } } }, 60); return; }
 });
 function vistaSegreteria() {
   const nome = nomeGov(), mod = puoModificare();
@@ -7565,7 +7655,7 @@ function sg2Mic() {
 }
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria") return;
-  if (t.closest("[data-sg2-sofia]")) { sg2Tocca(); return; }
+  if (t.closest("[data-sg2-sofia]")) { if (sg2ToccoBuono(e)) sg2Tocca(); return; }   // 1.95.0: mai dalla barra in alto
   if (t.closest("[data-sg2-scrivi]")) { sg2Zitta(); sg2Scrivi(); return; }   // 1.80.2
   if (t.closest("[data-sg2-mic]")) { sg2Mic(); return; }
   if (t.closest("[data-sg2-bolla-via]")) { S.sg2Bolla = null; disegna(); return; }
@@ -9367,13 +9457,19 @@ function indietroChiudi(nome) {
   indietroTasto();
 }
 function indietro() {
-  const x = INDIETRO.pila.pop(); if (!x) return false;
+  const x = INDIETRO.pila[INDIETRO.pila.length - 1]; if (!x) return false;
+  // 1.95.0: se la voce in cima ha un «prima» e quello chiude qualcosa (una tessera aperta nella Segreteria), la voce resta
+  if (x.prima) { let fatto = false; try { fatto = !!x.prima(); } catch (e) {} if (fatto) { indietroTasto(); return true; } }
+  INDIETRO.pila.pop();
   if (history.state && history.state.ricci === x.nome) { INDIETRO.daPop = true; try { history.back(); } catch (e) { INDIETRO.daPop = false; } }
   try { x.chiudi(); } catch (e) {}
   indietroTasto(); return true;
 }
 window.addEventListener("popstate", () => {
   if (INDIETRO.daPop) { INDIETRO.daPop = false; indietroTasto(); return; }      // era il nostro history.back(): gia' chiuso
+  // 1.95.0: il «prima» (vedi indietro()). Il telefono è già tornato indietro di una pagina di storia: la si rimette, la voce resta
+  const cima = INDIETRO.pila[INDIETRO.pila.length - 1];
+  if (cima && cima.prima) { let fatto = false; try { fatto = !!cima.prima(); } catch (e) {} if (fatto) { try { history.pushState({ ricci: cima.nome, n: INDIETRO.pila.length }, ""); } catch (e) {} indietroTasto(); return; } }
   const x = INDIETRO.pila.pop(); if (x) { try { x.chiudi(); } catch (e) {} }
   indietroTasto();
 });
@@ -9387,13 +9483,16 @@ document.addEventListener("click", (e) => { const b = e.target && e.target.close
 let vistaPrima = null;
 function indietroVista() {
   const v = S.vista || "oggi"; if (v === vistaPrima) return;
+  const era = vistaPrima;
   vistaPrima = v;
+  if (era === "segreteria") { try { segrEsci(); } catch (e) {} }   // 1.95.0: uscendo dalla Segreteria lei smette di parlare
   let riusa = false;
   if (v !== "oggi") for (const n of ["messaggio", "chat"]) { const j = INDIETRO.pila.map(x => x.nome).lastIndexOf(n); if (j >= 0) { INDIETRO.pila.splice(j, 1); if (history.state && history.state.ricci === n) riusa = true; } }   // 1.7.1
   const k = INDIETRO.pila.map(x => x.nome).indexOf("vista");
   if (v === "oggi") { if (k >= 0) indietroChiudi("vista"); return; }
   const chiudi = () => { S.vista = "oggi"; S.giorno = L.oggiISO(); S.settimana = L.lunediDi(S.giorno); try { disegna(); } catch (e) {} window.scrollTo(0, 0); };   // 1.10.0: si torna a Sofia (oggi) anche dal prospetto di domani
-  if (k >= 0) INDIETRO.pila[k].chiudi = chiudi; else indietroApri("vista", chiudi, riusa);
+  const prima = () => S.vista === "segreteria" && segrChiudiAperto();   // 1.95.0: prima quello che è aperto nella Segreteria
+  if (k >= 0) { INDIETRO.pila[k].chiudi = chiudi; INDIETRO.pila[k].prima = prima; } else { indietroApri("vista", chiudi, riusa); INDIETRO.pila[INDIETRO.pila.length - 1].prima = prima; }
 }
 // 1.7.0: la tendina a misura (Michele: "devo poter scegliere piu' facilmente la tendina, quanto la voglio sopra a Sofia"):
 // trascinando la testata col dito il riquadro segue il dito; lasciato, resta li' (e la misura resta in memoria); un colpo

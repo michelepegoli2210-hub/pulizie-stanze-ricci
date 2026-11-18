@@ -1,4 +1,4 @@
-/* Le Stanze di Ricci · LA CASELLA DI SOFIA SEGRETARIA (versione 1, 10 novembre 2026)
+/* Le Stanze di Ricci · LA CASELLA DI SOFIA SEGRETARIA (versione 2, 17 novembre 2026)
  *
  * Michele, 10/11: «essendo dell'albergo questa email Sofia deve avere l'accesso h24 … anzi Sofia segretaria deve fare questo».
  * Questo piccolo programma sta nell'account Google DELL'ALBERGO e SOLO LEGGE la posta: non manda, non cancella, non sposta
@@ -7,6 +7,12 @@
  * a Michele cosa è arrivato e cosa c'è da fare. Le risposte le prepara Sofia, ma le manda sempre Michele.
  * Risponde solo a chi conosce il «segreto» scelto dall'app quando la colleghi. Al giro manda il nome di chi scrive, il
  * dominio (es. expediagroup.com, mai l'indirizzo intero), l'oggetto e il testo (senza le risposte citate), al massimo 3 giorni.
+ *
+ * VERSIONE 2 (Michele, 17/11: «il sito ciclovia io devo ricevere assolutamente»): le email dei siti di prenotazione (la
+ * Ciclovia Adriatica, Booking, Expedia, Airbnb) Gmail le mette spesso in «Aggiornamenti», non in «Principale»: adesso la casella
+ * prende anche quelle (non la pubblicità, che sta in «Promozioni»). Per passare dalla versione 1 alla 2: nell'editor incolla
+ * questo codice al posto di tutto → 💾 → Esegui il deployment → Gestisci deployment → ✏️ → Versione: «Nuova versione» → Esegui
+ * il deployment (l'indirizzo resta lo stesso: nell'app non si tocca niente).
  *
  * Come si mette (una volta sola, dal PC, nell'account Google dell'albergo):
  *  1. script.new → incolla questo codice al posto di tutto → 💾
@@ -18,7 +24,8 @@
  *     → Autorizza l'accesso (Google dice «app non verificata»: è la tua, Avanzate → Vai a … → Consenti)
  *  4. copia l'«URL app web» nell'app: Altro → 📬 La posta dell'albergo.
  */
-var VERSIONE = "1";
+var VERSIONE = "2";
+var SITI = ["cicloviaadriatica.eu", "booking.com", "expedia.com", "expediagroup.com", "expediapartnercentral.com", "airbnb.com", "airbnb.it"];   // i siti di prenotazione
 var MAX = 25, MAX_TESTO = 1800, GIORNI = 3;
 
 function doGet() {
@@ -62,6 +69,10 @@ function nuove_(da) {
   var dopo = Math.floor(Math.max(da - 3600 * 1000, Date.now() - GIORNI * 24 * 3600 * 1000) / 1000);
   var q = encodeURIComponent("in:inbox category:primary after:" + dopo);
   var lista = api_("messages?maxResults=" + MAX + "&q=" + q).messages || [];
+  // versione 2: anche le email dei siti di prenotazione che Gmail ha messo fuori da «Principale» (mai quelle in «Promozioni»)
+  var q2 = encodeURIComponent("in:inbox -category:primary -category:promotions after:" + dopo + " {" + SITI.map(function (s) { return "from:" + s; }).join(" ") + "}");
+  var gia = {}; lista.forEach(function (x) { gia[x.id] = true; });
+  (api_("messages?maxResults=" + MAX + "&q=" + q2).messages || []).forEach(function (x) { if (!gia[x.id]) { gia[x.id] = true; lista.push(x); } });
   var out = [];
   for (var i = 0; i < lista.length; i++) {
     var m = api_("messages/" + lista[i].id + "?format=full");

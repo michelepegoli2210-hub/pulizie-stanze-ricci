@@ -808,3 +808,57 @@ export function rettificheSettimana(rettifiche, zona, chiave) {
   const lista = (Array.isArray(rettifiche) ? rettifiche : Object.values(rettifiche || {})).filter(r => r && r.tipo === "rettifica" && r.zona === zona && r.settimana === chiave && Number(r.euro));
   return { lista, euro: Math.round(lista.reduce((s, r) => s + Number(r.euro), 0) * 100) / 100 };
 }
+
+// ============================================================================
+//  1.95.0 · LE PRENOTAZIONI CHE ARRIVANO PER EMAIL (Michele, 17/11: «quando mi arriva una prenotazione a me il telefono deve
+//  proprio vibrare, suonare… nella segreteria ci deve stare, come ci stanno adesso le email… tutto quello che riguarda
+//  l'albergo arriva a mia consapevolezza»).
+//  Da chi viene un'email che parla di una prenotazione, e se è una richiesta che aspetta una risposta. Lo usano l'app
+//  (Segreteria → Prenotazioni) e il giro (l'allarme sul telefono). Niente IA: poche regole su chi scrive e sull'oggetto.
+//  I CANALI: i siti da cui arrivano le prenotazioni. `sito` = dove si apre il loro calendario; `oreRisposta` = quante ore
+//  «di lavoro» (dalle 7 alle 21) ci sono per rispondere a una richiesta, se il canale lo dice.
+//  La Ciclovia Adriatica (Passaporto Adriatico, cicloviaadriatica.eu; letto sul loro sito il 17/11/2026): le richieste arrivano
+//  per email, si accettano o si rifiutano entro 12 ore lavorative (dalle 7 alle 21), altrimenti decadono.
+// ============================================================================
+export const CANALI = [
+  { id: "ciclovia", nome: "Ciclovia Adriatica", breve: "Ciclovia", chi: /ciclovia\s*adriatica|passaporto\s*adriatico/i, dominio: /(^|\.)cicloviaadriatica\.(eu|it)$/i, sito: "https://www.cicloviaadriatica.eu/it/accedi?per=struttura", oreRisposta: 12 },
+  { id: "booking", nome: "Booking", breve: "Booking", chi: /booking\.com/i, dominio: /(^|\.)booking\.com$/i },
+  { id: "expedia", nome: "Expedia", breve: "Expedia", chi: /expedia/i, dominio: /(^|\.)(expedia|expediagroup|expediapartnercentral)\.com$/i },
+  { id: "airbnb", nome: "Airbnb", breve: "Airbnb", chi: /airbnb/i, dominio: /(^|\.)airbnb\.(com|it)$/i },
+];
+export function canale(id) { return CANALI.find(c => c.id === id) || null; }
+// le parole che dicono «prenotazione»: larghe per chi è un canale, strette per tutti gli altri (solo nell'oggetto)
+const PRENOTA_LARGA = /prenotazion|prenotat|reservation|booking\s+(request|confirm|cancel)|richiesta|request|soggiorno|check-?in|cancellazion|cancellat|annullat|annullament|disdett/i;
+const PRENOTA_STRETTA = /(nuova|richiesta\s+di|conferma\s+(di\s+|della\s+)?|modifica\s+(di\s+|della\s+)?)\s*prenotazione|prenotazione\s+(confermata|cancellata|annullata|ricevuta|n\.|numero|#)|booking\s+(request|confirmation)|new\s+(reservation|booking)|reservation\s+(request|confirmed|cancell?ed)/i;
+const E_RICHIESTA = /richiesta|request|in\s+attesa|da\s+confermare|accett|rifiut/i;
+const E_ANNULLATA = /cancellazion|cancellat|annullat|annullament|disdett|cancell?ed|cancellation/i;
+const E_PUBBLICITA = /newsletter|offerta|promo|sconto|webinar|sondaggio|aggiorna(mento)?\s+dei\s+termini|fattura|invoice|commission/i;
+// un'email (chi scrive, il dominio, l'oggetto, l'inizio del testo) → null se non parla di una prenotazione; se no
+// { canale: "ciclovia" | … | "" (non si sa da quale sito), nome, richiesta: aspetta un sì o un no, annullata, oreRisposta }
+export function emailPrenotazione(m) {
+  if (!m) return null;
+  const chi = String(m.chi || ""), dom = String(m.dominio || "").toLowerCase().trim(), ogg = String(m.oggetto || ""), testo = String(m.testo || m.inizio || "").slice(0, 600);
+  const c = CANALI.find(x => (dom && x.dominio.test(dom)) || x.chi.test(chi)) || null;
+  if (c) {
+    if (!PRENOTA_LARGA.test(ogg) && !(PRENOTA_STRETTA.test(testo) || /richiesta\s+di\s+prenotazione|nuova\s+richiesta/i.test(testo))) return null;
+    if (E_PUBBLICITA.test(ogg) && !PRENOTA_STRETTA.test(ogg)) return null;
+  } else if (!PRENOTA_STRETTA.test(ogg)) return null;
+  const annullata = E_ANNULLATA.test(ogg);
+  const richiesta = !annullata && (E_RICHIESTA.test(ogg) || (!!c && c.oreRisposta > 0 && /richiesta\s+di\s+prenotazione|nuova\s+richiesta|accetta|rifiuta/i.test(testo)));
+  return { canale: c ? c.id : "", nome: c ? c.nome : (chi || "Prenotazione"), richiesta, annullata, oreRisposta: richiesta && c && c.oreRisposta ? c.oreRisposta : 0 };
+}
+// entro quando va data la risposta: `ore` ore «di lavoro» (dalle 7 alle 21, ora di Lesina) dopo l'arrivo. Torna i millisecondi.
+export function scadenzaRisposta(ts, ore = 12, dalle = 7, alle = 21) {
+  let t = Number(ts) || 0, restano = Math.max(0, Math.round(ore * 60));
+  if (!t) return 0;
+  const minutiDelGiorno = (x) => { const f = new Intl.DateTimeFormat("en-GB", { timeZone: FUSO, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(x)); return (+f.find(p => p.type === "hour").value % 24) * 60 + +f.find(p => p.type === "minute").value; };
+  for (let giro = 0; giro < 40; giro++) {
+    const m = minutiDelGiorno(t);
+    if (m < dalle * 60) { t += (dalle * 60 - m) * 60000; continue; }                 // prima delle 7: si aspetta le 7
+    if (m >= alle * 60) { t += (24 * 60 - m + dalle * 60) * 60000; continue; }       // dopo le 21: le 7 del giorno dopo
+    const oggi = alle * 60 - m;
+    if (restano <= oggi) return t + restano * 60000;
+    restano -= oggi; t += oggi * 60000;                                              // sono le 21: il resto domani
+  }
+  return t;
+}
