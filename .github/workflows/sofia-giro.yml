@@ -34,7 +34,7 @@ concurrency:
 jobs:
   giro:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20   # 1.39.0: il giro aspetta il minuto giusto delle sveglie di Jarvis (al massimo 14 minuti)
     env:
       HA_CHIAVE: ${{ secrets.FIREBASE_SA != '' }}
     steps:
