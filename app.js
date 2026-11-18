@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.100.0";
+export const VERSIONE = "1.101.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -281,7 +281,9 @@ const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.web
 // quella di prima (la stessa posa).
 const FILM_SEGR = { riposo: "segr7-riposo-3d.webm", ascolta: "segr7-ascolta-3d.webm", parla: "segr7-parla-3d.webm", poster: "segr6-poster-3d.webp" };   // 1.92.0: i segr6 (la camicetta rosa; lavora al tablet e al computer; 540x960 come la Sofia della prima pagina). Prima: i segr5 ·   // 1.85.0 (Michele: «il suo filmato salta troppo»): i segr5, 480x600, il bordo di sotto non lampeggia più, il giro senza salto (strumenti/fai-segr5.py)   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
 // 1.99.0: Sofia personal trainer, la faccia di Jarvis: il saluto coi due bacini (10 secondi, parte e finisce nella posa della foto)
-const FILM_JV = { saluto: "jv-saluto-3d.webm", poster: "jv-trainer-3d.webp" };
+// 1.101.0: la faccia di Jarvis è LEI (bionda, giacca blu notte, il tablet; una foto inventata, fatta con Gemini): ferma, UN bacio
+// solo, i capelli dietro l'orecchio, gesti tranquilli, torna ferma. La foto = il primo fotogramma del saluto (non si vede il cambio).
+const FILM_JV = { saluto: "jv-lei-saluto-3d.webm", poster: "jv-lei-3d.webp" };
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -19413,7 +19415,7 @@ const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Abitudine", idee: "Idea", 
 // Lei sta in #jvFigura, un pezzo della pagina che jarvisDisegna NON rifà: quando scrivi, spunti o lei parla, il filmato non
 // riparte. Dove il filmato trasparente non si può (niente webm trasparente e niente tela, o «movimento ridotto»): la foto.
 // Nelle pagine dei riquadri (Impegni, Obiettivi…) c'è il suo viso piccolo, nel tondo rosa (JV_VISO).
-const JV_VISO = (cls = "") => `<img class="jv-viso${cls ? " " + cls : ""}" src="jv-viso.webp" alt="" aria-hidden="true">`;
+const JV_VISO = (cls = "") => `<img class="jv-viso${cls ? " " + cls : ""}" src="jv-lei-viso.webp" alt="" aria-hidden="true">`;   // 1.101.0: il viso di lei
 function jvFiguraHtml() {
   let film = false; try { film = sofia3d(); } catch (e) {}
   return `<img class="jv-fig-foto" src="${FILM_JV.poster}" alt="">${film ? `<video class="jv-fig-v" muted playsinline preload="auto" disablepictureinpicture src="${FILM_JV.saluto}"></video>` : ""}`;

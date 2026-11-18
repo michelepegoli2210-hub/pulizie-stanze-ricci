@@ -3433,3 +3433,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - «Ogni giorno»: le abitudini. Un tocco quando l'hai fatta; la fiamma 🔥 dice da quanti giorni di fila.
   - «Concentrati 25 minuti»: il cronometro. Quando finisce, Sofia te lo dice, ti manda i bacini e il telefono vibra.
   - In basso ci sono i tasti: Oggi, Prossimi, Abitudini, Idee, Piano. I traguardi sono in fondo alle Abitudini.
+- **1.101.0** (18/11, Michele: «Devi fare il video di questa ragazza… soltanto un bacio e poi… i capelli dietro l'orecchio e poi gesti tranquilli»):
+  - In cima a Jarvis adesso c'è lei: la ragazza bionda con la giacca blu e il tablet, senza sfondo (sotto si vede il marmo).
+  - Quando apri Jarvis ti manda un bacio solo, si sistema i capelli dietro l'orecchio, fa gesti tranquilli e torna ferma. Toccandola ricomincia e ti dice tutto.
+  - Nelle altre pagine di Jarvis c'è il suo viso piccolo, nel tondo.

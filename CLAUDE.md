@@ -245,17 +245,18 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   1.99.0, SOFIA PERSONAL TRAINER AL POSTO DELLA GALASSIA (Michele: «un bel video di sofia personal treiner che mi saluta e mi
   manda bacini di affetto come fa la mia governante» · «caricala come… l'interfaccia che ho nella prima pagina… più di mezzo
   busto con la trasparenza… che si vede pure sotto, con la possibilità di andare pure giù, con le icone… le icone le facciamo
-  fare sempre a Gemini»). La pagina di Jarvis è fatta come la prima pagina: in cima Sofia trainer (bionda, il completo da
-  palestra rosa e nero; il viso è il suo, MAI una persona vera: «Orribile proprio. Toglila completamente»), grande, senza
+  fare sempre a Gemini»). La pagina di Jarvis è fatta come la prima pagina: in cima LEI (dalla 1.101.0: la ragazza bionda con la
+  giacca blu notte e il tablet, dalla foto che Michele ha mandato, «un'invenzione di Gemini»; prima c'era Sofia trainer disegnata.
+  Le persone che PROPONGO io restano MAI realistiche: «Orribile proprio. Toglila completamente»), grande, senza
   sfondo, più di mezzo busto, ferma mentre la pagina scorre (`#jvFigura`, `position:fixed` dentro `.jarvis`, sul marmo della
   prima pagina). Il riquadro (`.jv-pann`) sale sopra di lei ed è trasparente: lei si vede anche sotto. Dentro: «Sofia ti
   dice» col tasto Parla, le tessere coi disegni di Gemini (`jv-ico-*.webp`: 3D rosa, nero e oro come il suo completo;
   `strumenti/taglia-icone-jarvis.py` le taglia dal foglio 4x2 su fondo bianco), la sveglia, «Da fare oggi». A destra di lei
-  il microfono e «Ascolta». Quando apri Jarvis ti saluta e ti manda due bacini (`FILM_JV.saluto`, `jv-saluto-3d.webm`, 10 s,
+  il microfono e «Ascolta». Quando apri Jarvis ti manda UN bacio, si sistema i capelli dietro l'orecchio e fa gesti tranquilli (Michele: «troppi baci… soltanto un bacio»; `FILM_JV.saluto`, `jv-lei-saluto-3d.webm`, 10 s,
   dal video di Gemini col verde dietro, `ritaglia-verde.py`; il gemello `-alfa.mp4` per l'iPhone), poi resta nella posa della
-  foto. Toccandola (`.jv-tocca`) ti risaluta e ti dice tutto. `#jvFigura` NON si ridisegna con il resto (jarvisDisegna toglie
+  foto (`jv-lei-3d.webp` = il primo fotogramma del saluto). Toccandola (`.jv-tocca`) ti risaluta e ti dice tutto. `#jvFigura` NON si ridisegna con il resto (jarvisDisegna toglie
   e rimette solo quello che c'è dopo): il filmato non riparte quando scrivi o spunti. Nelle pagine dei riquadri il suo viso
-  piccolo nel tondo rosa (`JV_VISO`, `jv-viso.webp`). La voce di Jarvis è da donna (`jvVoce`), solo quella del telefono.
+  piccolo nel tondo (`JV_VISO`, `jv-lei-viso.webp`, fondo avorio e oro: `strumenti/fai-viso-jarvis.py`). La voce di Jarvis è da donna (`jvVoce`), solo quella del telefono.
   I filmati di Jarvis NON sono in «I filmati di Sofia» (Impostazioni): sono solo per lui, su questa pagina.
   Prossimi filmati (Michele: «di attività che si fa in palestra… di crescita, che gioca a scacchi, che risolve un cubo…
   deve stare la continuità del video… non si deve capire»): ognuno parte e finisce nella posa della foto, e si mettono in
