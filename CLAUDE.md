@@ -232,7 +232,7 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   Michele così com'è: non «migliorarlo» oltre i lampi.
 
 - Jarvis (1.88.0) è la pagina personale del titolare, fatta come un'app delle cose da fare (Michele: «basato sulle app di
-  produttività, to do list»): in cima Jarvis (la galassia, `canvas.jv-gal`) e quello che dice; «Da fare oggi» coi tondi da
+  produttività, to do list»): in cima Jarvis (dalla 1.99.0 Sofia personal trainer, sotto) e quello che dice; «Da fare oggi» coi tondi da
   spuntare (`jvOggi`: prima quello rimasto indietro, poi oggi, poi le cose senza giorno, poi gli obiettivi di ogni giorno);
   sotto Impegni (i prossimi giorni), Obiettivi, Idee, Traguardi, Il mio piano. È chiara come le pagine di Sofia. Si apre dalla
   casetta del logo in alto nella prima pagina (`button.bo-casetta`, invisibile: «la galassia prendeva troppo occhio a Sofia»).
@@ -241,7 +241,25 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   `jvCapisci`) e con `LET.promemoriaDa`. Fuori dal telefono va solo la sveglia (sotto): codici e orari nel database, e la
   «spinta» alla cassetta senza dati. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro). Il Jarvis
   dentro Gemini (1.87.0) non gli è servito: «che faccio, vado a chattare con Gemini?». Vuole le interfacce dentro l'app, come
-  con Sofia. La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o voci presi da altri.
+  con Sofia.
+  1.99.0, SOFIA PERSONAL TRAINER AL POSTO DELLA GALASSIA (Michele: «un bel video di sofia personal treiner che mi saluta e mi
+  manda bacini di affetto come fa la mia governante» · «caricala come… l'interfaccia che ho nella prima pagina… più di mezzo
+  busto con la trasparenza… che si vede pure sotto, con la possibilità di andare pure giù, con le icone… le icone le facciamo
+  fare sempre a Gemini»). La pagina di Jarvis è fatta come la prima pagina: in cima Sofia trainer (bionda, il completo da
+  palestra rosa e nero; il viso è il suo, MAI una persona vera: «Orribile proprio. Toglila completamente»), grande, senza
+  sfondo, più di mezzo busto, ferma mentre la pagina scorre (`#jvFigura`, `position:fixed` dentro `.jarvis`, sul marmo della
+  prima pagina). Il riquadro (`.jv-pann`) sale sopra di lei ed è trasparente: lei si vede anche sotto. Dentro: «Sofia ti
+  dice» col tasto Parla, le tessere coi disegni di Gemini (`jv-ico-*.webp`: 3D rosa, nero e oro come il suo completo;
+  `strumenti/taglia-icone-jarvis.py` le taglia dal foglio 4x2 su fondo bianco), la sveglia, «Da fare oggi». A destra di lei
+  il microfono e «Ascolta». Quando apri Jarvis ti saluta e ti manda due bacini (`FILM_JV.saluto`, `jv-saluto-3d.webm`, 10 s,
+  dal video di Gemini col verde dietro, `ritaglia-verde.py`; il gemello `-alfa.mp4` per l'iPhone), poi resta nella posa della
+  foto. Toccandola (`.jv-tocca`) ti risaluta e ti dice tutto. `#jvFigura` NON si ridisegna con il resto (jarvisDisegna toglie
+  e rimette solo quello che c'è dopo): il filmato non riparte quando scrivi o spunti. Nelle pagine dei riquadri il suo viso
+  piccolo nel tondo rosa (`JV_VISO`, `jv-viso.webp`). La voce di Jarvis è da donna (`jvVoce`), solo quella del telefono.
+  I filmati di Jarvis NON sono in «I filmati di Sofia» (Impostazioni): sono solo per lui, su questa pagina.
+  Prossimi filmati (Michele: «di attività che si fa in palestra… di crescita, che gioca a scacchi, che risolve un cubo…
+  deve stare la continuità del video… non si deve capire»): ognuno parte e finisce nella posa della foto, e si mettono in
+  fila come quelli della prima pagina (attacchi, rientro lento), così da ferma fa una cosa dopo l'altra senza scatti.
 - La sveglia di Jarvis (1.89.0, giro 1.37.0; Michele: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti prima…
   altrimenti non ha senso», e alla proposta «Sì»): circa 10 minuti prima di una cosa con l'ora arriva la notifica, anche ad
   app chiusa. È l'UNICA cosa di Jarvis che esce dal telefono, e Michele ha detto sì solo a questo: in

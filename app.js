@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.98.1";
+export const VERSIONE = "1.99.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -280,6 +280,8 @@ const FILM_CAPO_TRE = { parla: "capo-parla-3d.webm", riposo: "capo-riposo-3d.web
 // dentro questi filmati si salta solo all'inizio (currentTime = 0): saltare in mezzo sarebbe lento. La foto di partenza è
 // quella di prima (la stessa posa).
 const FILM_SEGR = { riposo: "segr7-riposo-3d.webm", ascolta: "segr7-ascolta-3d.webm", parla: "segr7-parla-3d.webm", poster: "segr6-poster-3d.webp" };   // 1.92.0: i segr6 (la camicetta rosa; lavora al tablet e al computer; 540x960 come la Sofia della prima pagina). Prima: i segr5 ·   // 1.85.0 (Michele: «il suo filmato salta troppo»): i segr5, 480x600, il bordo di sotto non lampeggia più, il giro senza salto (strumenti/fai-segr5.py)   // 1.71.0 (Michele: «si vede molto male, tipo un bug»): ritaglio pulito, sotto il petto sfuma; prima:    // 1.70.1 (Michele: «il video dove mi ascolta e il video dove sta ferma»): ferma = riposo, ascolta mentre il microfono ascolta e mentre ci pensa, parla   // 1.70.0: la segretaria nuova (Michele: «c'ha lo stesso gilet di Sofia delle pulizie, non va bene… più giovane, si deve capire che è una segretaria»): giacca grigia, camicetta bianca, la cuffietta; i nomi nuovi li riscaricano tutti   // 1.49.0: anche «parla» (se il file manca resta quello fermo); 1.51.1: il file c'è
+// 1.99.0: Sofia personal trainer, la faccia di Jarvis: il saluto coi due bacini (10 secondi, parte e finisce nella posa della foto)
+const FILM_JV = { saluto: "jv-saluto-3d.webm", poster: "jv-trainer-3d.webp" };
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -318,7 +320,7 @@ function alfaTela() { return ALFA_OK === "no" && telaPuo(); }
 function alfaSi() { return ALFA_OK === "si" || alfaTela(); }
 // i filmati trasparenti: i webm dove vanno, i gemelli «-alfa.mp4» dove c'è la tela
 function filmAlfaScegli() {
-  const liste = [FILM_TRE, FILM_CAPO_TRE, FILM_SEGR];
+  const liste = [FILM_TRE, FILM_CAPO_TRE, FILM_SEGR, FILM_JV];
   if (!TELA.originali) TELA.originali = liste.map(f => ({ ...f }));
   const tela = alfaTela();
   liste.forEach((f, i) => { for (const [k, s] of Object.entries(TELA.originali[i])) if (/-3d\.webm$/.test(s)) f[k] = tela ? s.replace(/-3d\.webm$/, "-alfa.mp4") : s; });
@@ -1889,7 +1891,6 @@ function disegna() {
   if (manFattoAtteso) guardaManFatto();   // 1.58.0
   if (tuFattoAtteso) guardaTuFatto();   // 1.62.0
   try { sg2SofiaMonta(); } catch (e) {}   // 1.62.1: Sofia segretaria in testa alla Segreteria
-  try { jvGalSveglia(); } catch (e) {}   // 1.86.1: la galassia di Jarvis (il suo tasto nella prima pagina)
   try { socFilmMonta(); } catch (e) {}   // 1.70.0: il filmato di Sofia influencer
   try { filmatiMonta(); } catch (e) {}   // 1.80.0: il filmato che gira nella pagina «I filmati di Sofia»
   if (condivisaInAttesa && S.caricati.avvisi && S.caricati.autonomia && S.caricati.pulizie) { condivisaInAttesa = false; setTimeout(guardaCondivisa, 0); }   // 1.51.0
@@ -19402,98 +19403,25 @@ const JV_VERBO_SVEGLIA = /(^|[\s,;:.!])(?:ricordamel[oaie]|ricordami|ricordarmel
 const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, foglio: null, rec: null, giro: 0, svOk: false, svPrimo: false };
 const JV_SEZ = { impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], idee: ["💡", "Idee"], traguardi: ["🏁", "Traguardi"], piano: ["🗺️", "Il mio piano"] };
 const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
-// 1.86.1 (Michele, 16/11 notte: «l'icona e l'immagine… la galassia che si muove e gira»): la faccia di Jarvis è una GALASSIA che
-// gira, disegnata dall'app su una tela (canvas.jv-gal): due bracci a spirale di stelle e il cuore che brilla.
-// 1.86.2 (Michele, 16/11: «senza sfondo, deve sembrare 3D»): via il tondo blu col bordo d'oro. La tela è trasparente e la
-// galassia è un oggetto nello spazio: un disco visto di sbieco (il lato vicino è più grande e più acceso del lato lontano),
-// il cuore è una palla di stelle che esce sopra e sotto il disco, e tutta la galassia dondola piano. Si porta dietro il suo
-// «buio» (una nebbia blu notte lungo i bracci), così si vede bene sulla pagina chiara e su quella scura, senza nessun tondo.
-// Gira piano quando sta zitto, svelta (e il cuore batte) quando parla. È un disegno nostro, fatto coi numeri: le stelle sono
-// sempre le stesse (stesso seme) e l'angolo viene dall'orologio, così quando la pagina si ridisegna non «salta».
-const JV_SFERA = (cls = "") => `<canvas class="jv-gal${cls ? " " + cls : ""}" aria-hidden="true"></canvas>`;
-const JV_GAL = { grande: null, piccola: null, angolo: 0, prima: 0, raf: 0, fermo: false, fiocchi: null };
-function jvGalStelle(n) {
-  let s = 0x2F6E2B1; const rnd = () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const st = [];
-  for (let i = 0; i < n; i++) {
-    const tipo = rnd(); let r, a, y, c, v;
-    if (tipo < 0.22) { const q = Math.pow(rnd(), 1.5) * 0.3, u = rnd() * 2 - 1; r = q * Math.sqrt(1 - u * u); y = q * u * 0.85; a = rnd() * 6.2832; c = 0; v = 2.2; }   // il cuore: una palla di stelle (gira più svelta)
-    else if (tipo < 0.9) { const b = rnd() < 0.5 ? 0 : 1; r = 0.12 + Math.pow(rnd(), 0.8) * 0.88; a = b * Math.PI + r * 5.4 + (rnd() - 0.5) * (0.42 + (1 - r) * 0.55); y = (rnd() - 0.5) * 0.09 * (1.15 - r); c = rnd() < 0.76 ? 1 : 2; v = 1; }   // i due bracci (girano insieme: la spirale resta)
-    else { r = 0.15 + rnd() * 0.85; a = rnd() * 6.2832; y = (rnd() - 0.5) * 0.1; c = 1; v = 0.7; }   // stelle sparse
-    st.push({ r, a, v, y, d: 0.6 + rnd() * 1.3, l: 0.4 + rnd() * 0.6, c, f: rnd() * 6.2832, n: tipo < 0.9 && rnd() < 0.36 });
-  }
-  st.sort((p, q) => p.c - q.c);
-  st.x = new Float32Array(n); st.yy = new Float32Array(n); st.k = new Float32Array(n);
-  return st;
+// 1.99.0 (Michele, 18/11: «al posto della galassia… un bel video di sofia personal treiner che mi saluta e mi manda bacini di
+// affetto come fa la mia governante» · «caricala come… l'interfaccia che ho nella prima pagina… più di mezzo busto con la
+// trasparenza… che si vede pure sotto, con la possibilità di andare pure giù, con le icone che posso parlare con lei»): la faccia
+// di Jarvis è SOFIA PERSONAL TRAINER (bionda, il completo da palestra rosa e nero: i disegni e il filmato li ha fatti Gemini).
+// Sta in cima alla pagina, grande come Sofia nella prima pagina e senza sfondo: si vede più di mezzo busto; il riquadro con le
+// cose sale sopra di lei ed è trasparente, e mentre la pagina scorre lei resta ferma lì sotto. Quando apri Jarvis ti saluta e
+// ti manda due bacini (FILM_JV.saluto), poi resta nella posa della foto. Toccandola ti risaluta e ti dice tutto.
+// Lei sta in #jvFigura, un pezzo della pagina che jarvisDisegna NON rifà: quando scrivi, spunti o lei parla, il filmato non
+// riparte. Dove il filmato trasparente non si può (niente webm trasparente e niente tela, o «movimento ridotto»): la foto.
+// Nelle pagine dei riquadri (Impegni, Obiettivi…) c'è il suo viso piccolo, nel tondo rosa (JV_VISO).
+const JV_VISO = (cls = "") => `<img class="jv-viso${cls ? " " + cls : ""}" src="jv-viso.webp" alt="" aria-hidden="true">`;
+function jvFiguraHtml() {
+  let film = false; try { film = sofia3d(); } catch (e) {}
+  return `<img class="jv-fig-foto" src="${FILM_JV.poster}" alt="">${film ? `<video class="jv-fig-v" muted playsinline preload="auto" disablepictureinpicture src="${FILM_JV.saluto}"></video>` : ""}`;
 }
-// i fiocchi morbidi, fatti una volta sola: [0] la nebbia blu notte, [1..3] le stelle (oro chiaro, azzurro, rosa)
-function jvGalFiocchi() {
-  if (JV_GAL.fiocchi) return JV_GAL.fiocchi;
-  const fa = (lato, fermate) => { const m = document.createElement("canvas"); m.width = m.height = lato; const x = m.getContext("2d"), h = lato / 2, g = x.createRadialGradient(h, h, 0, h, h, h); fermate.forEach(([p, c]) => g.addColorStop(p, c)); x.fillStyle = g; x.fillRect(0, 0, lato, lato); return m; };
-  const stella = (c) => fa(24, [[0, `rgba(${c},1)`], [0.3, `rgba(${c},.9)`], [0.55, `rgba(${c},.28)`], [1, `rgba(${c},0)`]]);
-  return (JV_GAL.fiocchi = [fa(48, [[0, "rgba(24,36,104,1)"], [0.5, "rgba(24,36,104,.55)"], [1, "rgba(24,36,104,0)"]]), stella("255,236,180"), stella("202,222,255"), stella("255,184,210")]);
-}
-function jvGalDisegna(c, t) {
-  const dpr = Math.min(2, window.devicePixelRatio || 1), lato = c.clientWidth || 76, alto = c.clientHeight || lato * 0.88, px = Math.round(lato * dpr), py = Math.round(alto * dpr);
-  if (c.width !== px || c.height !== py) { c.width = px; c.height = py; }
-  const cx = c.getContext("2d"); if (!cx) return;
-  const R = px / 2, Cx = px / 2, Cy = py / 2, piccola = lato <= 140, stelle = piccola ? JV_GAL.piccola : JV_GAL.grande, parla = !!c.closest(".jarvis.parla");
-  cx.globalCompositeOperation = "source-over"; cx.globalAlpha = 1; cx.clearRect(0, 0, px, py);
-  // la vista: di sbieco, un po' girata, e dondola piano (ferma se il telefono chiede «movimento ridotto»)
-  const don = JV_GAL.fermo ? 0 : 1, T = 0.93 + don * 0.075 * Math.sin(t / 2900), rot = -0.34 + don * 0.05 * Math.sin(t / 4300 + 1);
-  const cT = Math.cos(T), sT = Math.sin(T), cr = Math.cos(rot), sr = Math.sin(rot), giro = JV_GAL.angolo, F = 3.9, S = R * (piccola ? 0.92 : 0.87);
-  const X = stelle.x, Y = stelle.yy, K = stelle.k, n = stelle.length;
-  for (let i = 0; i < n; i++) {
-    const s = stelle[i], a = s.a + giro * s.v, gx = Math.cos(a) * s.r, gz = Math.sin(a) * s.r;
-    const sy = gz * cT - s.y * sT, prof = gz * sT + s.y * cT, k = F / (F - prof);   // prof > 0: verso chi guarda → più grande
-    X[i] = Cx + (gx * cr - sy * sr) * k * S; Y[i] = Cy + (gx * sr + sy * cr) * k * S; K[i] = k;
-  }
-  const fi = jvGalFiocchi();
-  // 1) il buio della galassia: la nebbia blu notte lungo i bracci e attorno al cuore
-  const rn = (piccola ? 0.225 : 0.125) * S, an = piccola ? 0.25 : 0.13;
-  for (let i = 0; i < n; i++) {
-    const s = stelle[i]; if (!s.n) continue;
-    const k = K[i], q = rn * k * (s.c === 0 ? 0.85 : 1.15 - 0.45 * s.r);
-    cx.globalAlpha = an * (0.3 + 0.7 * k);
-    cx.drawImage(fi[0], X[i] - q, Y[i] - q, q * 2, q * 2);
-  }
-  // 2) le stelle (luce che si somma): quelle vicine più grandi e più accese, quelle lontane più piccole e più spente
-  cx.globalCompositeOperation = "lighter";
-  const grana = piccola ? px / 88 : px / 190;
-  let col = -1;
-  for (let i = 0; i < n; i++) {
-    const s = stelle[i]; if (s.c !== col) { col = s.c; cx.fillStyle = ["rgb(255,236,180)", "rgb(202,222,255)", "rgb(255,184,210)"][col]; }
-    const k = K[i], d = s.d * grana * k * Math.sqrt(k);
-    cx.globalAlpha = Math.min(1, s.l * (0.72 + 0.28 * Math.sin(t / 650 + s.f)) * Math.max(0.3, Math.min(1.05, 1.5 * k - 0.62)) * (s.c === 0 ? 0.6 : 1));
-    if (d < 1.5) { const e = Math.max(0.8, d); cx.fillRect(X[i] - e / 2, Y[i] - e / 2, e, e); }
-    else { const e = d * 1.3; cx.drawImage(fi[col + 1], X[i] - e, Y[i] - e, e * 2, e * 2); }
-  }
-  // 3) il cuore che brilla: una palla di luce, col punto più chiaro un po' in alto (sembra tonda)
-  cx.globalCompositeOperation = "source-over"; cx.globalAlpha = 1;
-  const kc = (parla ? 0.27 + 0.06 * Math.sin(t / 120) : 0.215 + 0.016 * Math.sin(t / 900)) * (piccola ? 1.22 : 1), rc = R * kc;
-  const g = cx.createRadialGradient(Cx - rc * 0.13, Cy - rc * 0.17, 0, Cx, Cy, rc);
-  g.addColorStop(0, "rgba(255,250,226,1)"); g.addColorStop(0.2, "rgba(255,226,150,.96)"); g.addColorStop(0.46, "rgba(246,186,84,.62)"); g.addColorStop(0.74, "rgba(232,150,52,.2)"); g.addColorStop(1, "rgba(226,140,44,0)");
-  cx.fillStyle = g; cx.beginPath(); cx.arc(Cx, Cy, rc, 0, 6.2832); cx.fill();
-  // 4) i bordi della tela sfumano nel niente: la galassia non ha mai un taglio dritto
-  cx.globalCompositeOperation = "destination-out";
-  const b = px * 0.09, sf = (x0, y0, x1, y1, rx, ry, rw, rh) => { const m = cx.createLinearGradient(x0, y0, x1, y1); m.addColorStop(0, "rgba(0,0,0,0)"); m.addColorStop(1, "rgba(0,0,0,1)"); cx.fillStyle = m; cx.fillRect(rx, ry, rw, rh); };
-  sf(b, 0, 0, 0, 0, 0, b, py); sf(px - b, 0, px, 0, px - b, 0, b, py); sf(0, b, 0, 0, 0, 0, px, b); sf(0, py - b, 0, py, 0, py - b, px, b);
-  cx.globalCompositeOperation = "source-over";
-}
-function jvGalPasso(t) {
-  JV_GAL.raf = 0;
-  const cs = document.querySelectorAll("canvas.jv-gal"); if (!cs.length) return;
-  const dt = Math.min(80, JV_GAL.prima ? t - JV_GAL.prima : 16); JV_GAL.prima = t;
-  JV_GAL.angolo += dt / 1000 * (document.querySelector(".jarvis.parla") ? 1.1 : 0.32);
-  if (!document.hidden) { const aperto = !!document.querySelector(".jarvis:not([hidden])"); cs.forEach(c => { if (c.clientWidth && (!aperto || c.closest(".jarvis"))) jvGalDisegna(c, t); }); }
-  if (!JV_GAL.fermo) JV_GAL.raf = requestAnimationFrame(jvGalPasso);
-}
-// dopo ogni disegno: le tele nuove hanno subito la loro galassia, e il giro riparte se si era fermato
-function jvGalSveglia() {
-  const cs = document.querySelectorAll("canvas.jv-gal"); if (!cs.length) return;
-  if (!JV_GAL.grande) { JV_GAL.grande = jvGalStelle(1500); JV_GAL.piccola = jvGalStelle(560); try { JV_GAL.fermo = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {} }
-  const t = performance.now(); cs.forEach(c => { if (!c.dataset.su) { c.dataset.su = "1"; jvGalDisegna(c, t); } });
-  if (!JV_GAL.raf && !JV_GAL.fermo) { JV_GAL.prima = 0; JV_GAL.raf = requestAnimationFrame(jvGalPasso); }
+// il saluto: dall'inizio (quando apri Jarvis e quando la tocchi); finito, resta ferma sull'ultimo fotogramma (la posa della foto)
+function jvSaluta() {
+  const v = document.querySelector("#jvFigura video.jv-fig-v"); if (!v) return;
+  try { v.muted = true; v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
 }
 // a che cosa somiglia (solo per il disegnino accanto): palestra, biliardo, letture, acquisti, persone
 const JV_AREE = [[/palestr|allenament|corsa|correre|pesi|addominali|camminat/i, "💪"], [/biliard|stecca|birilli|goriziana/i, "🎱"], [/legg|libro|libri|pagine|studi/i, "📚"], [/compr|acquist|spesa|ordinare|pagare/i, "🛒"], [/famiglia|amic|cena|regalo|chiamare|telefonare|uscire con/i, "❤️"]];
@@ -19690,11 +19618,11 @@ function jvFraseOggi(d) {
   const tardi = daFare.filter(r => r.tardi).length;
   return `${fatte ? (daFare.length === 1 ? "Ti resta" : "Ti restano") : "Oggi hai"} ${quante} da fare. ${fatte ? "La prossima" : "La prima"}: ${p.x.testo}${ora && !p.tardi ? " alle " + jvOra(ora) : ""}.${tardi ? (tardi === 1 ? " Una è rimasta indietro." : ` ${tardi} sono rimaste indietro.`) : ""}`;
 }
-// quello che Jarvis dice quando lo apri: corto. Con «tutto» (tocchi la galassia, o gli dici «dimmi tutto»): anche il piano,
+// quello che Jarvis dice quando lo apri: corto. Con «tutto» (tocchi Sofia, o le dici «dimmi tutto»): anche il piano,
 // gli obiettivi, i traguardi e le idee.
 function jvBriefing(tutto = false) {
   const d = jarvisDati(), ciao = `${saluto()} ${nomeMio()}.`;
-  if (!d.piano && !d.impegni.length && !d.obiettivi.length && !d.traguardi.length && !d.idee.length) return `${ciao} Sono Jarvis. Qui tieni le tue cose da fare. Tocca «Aggiungi una cosa», oppure il microfono, e dimmi la prima.`;
+  if (!d.piano && !d.impegni.length && !d.obiettivi.length && !d.traguardi.length && !d.idee.length) return `${ciao} Sono Sofia, la tua personal trainer. Qui tieni le tue cose da fare. Tocca «Aggiungi una cosa», oppure il microfono, e dimmi la prima.`;
   const parti = [ciao, jvFraseOggi(d)], prossimi = jvProssimi(d);
   if (prossimi.length) parti.push(`Poi: ${prossimi[0].testo}, ${jvQuando(prossimi[0].entro, true)}.`);
   if (tutto) {
@@ -19727,12 +19655,13 @@ function jvLeggi(k) {
   if (!righe.length) return k === "impegni" ? "Nei prossimi giorni non hai niente segnato." : "Qui non c'è ancora niente.";
   return `${JV_SEZ[k][1]}: ${righe.length}. ${righe.slice(0, 8).map((x, i) => `${i + 1}: ${x.testo}${k === "impegni" && x.entro ? ", " + jvQuando(x.entro, true) : ""}.`).join(" ")}`;
 }
-// la voce: quella del telefono, in italiano; se ce n'è una da uomo quella, se no la solita più bassa
+// la voce: quella del telefono, in italiano. 1.99.0: la faccia di Jarvis è Sofia, quindi la voce è da donna (come Sofia quando
+// parla col telefono, voce.js parlaTelefono): una da donna se c'è, se no una che non sia da uomo, se no la prima
 function jvVoce() {
   let vs = []; try { vs = speechSynthesis.getVoices() || []; } catch (e) {}
-  const it = vs.filter(v => /^it([-_]|$)/i.test(v.lang || ""));
-  const uomo = it.find(v => /luca|cosimo|diego|giuseppe|masch|\bmale\b|uomo/i.test(v.name || ""));
-  return { voce: uomo || it[0] || null, uomo: !!uomo };
+  const it = vs.filter(v => /^it([-_]|$)/i.test(v.lang || "")), uomo = /luca|cosimo|diego|giuseppe|masch|\bmale\b|uomo/i;
+  const donna = it.find(v => /female|donna|alice|elsa|federica|isabella|bianca|paola|carla/i.test(v.name || ""));
+  return { voce: donna || it.find(v => !uomo.test(v.name || "")) || it[0] || null };
 }
 function jarvisZitto() { JV.giro++; try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} if (JV.parla) { JV.parla = false; jarvisStato(); } }
 function jarvisDici(testo, mostra = true) {
@@ -19740,11 +19669,11 @@ function jarvisDici(testo, mostra = true) {
   jarvisZitto();
   if (mostra) JV.dice = t;
   if (jvMuto() || !("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") { jarvisDisegna(); return; }
-  const giro = ++JV.giro, frasi = (t.match(/[^.!?…]+[.!?…]*/g) || [t]).map(f => f.trim()).filter(Boolean), { voce, uomo } = jvVoce();
+  const giro = ++JV.giro, frasi = (t.match(/[^.!?…]+[.!?…]*/g) || [t]).map(f => f.trim()).filter(Boolean), { voce } = jvVoce();
   const avanti = (i) => {
     if (giro !== JV.giro) return;
     if (i >= frasi.length) { JV.parla = false; jarvisStato(); return; }
-    const u = new SpeechSynthesisUtterance(frasi[i]); u.lang = "it-IT"; if (voce) u.voice = voce; u.pitch = uomo ? 0.9 : 0.7; u.rate = 0.96;
+    const u = new SpeechSynthesisUtterance(frasi[i]); u.lang = "it-IT"; if (voce) u.voice = voce; u.pitch = 1; u.rate = 1;
     u.onend = () => avanti(i + 1); u.onerror = () => avanti(i + 1);
     try { speechSynthesis.speak(u); } catch (e) { JV.parla = false; jarvisStato(); }
   };
@@ -19770,14 +19699,18 @@ function jvCasaHtml(d) {
   const oggi = L.oggiISO(), righe = jvOggi(d), fatte = righe.filter(r => r.fatta).length, prossimi = jvProssimi(d), domani = prossimi.filter(x => jvGiorno(x) === L.aggiungiGiorni(oggi, 1)).length;
   const sotto = { impegni: prossimi.length ? (domani ? `domani ${domani}` : `${prossimi.length} ${prossimi.length === 1 ? "segnato" : "segnati"}`) : "nessuno", obiettivi: d.obiettivi.length ? `${d.obiettivi.length} di ogni giorno` : "nessuno",
     idee: d.idee.length ? `${d.idee.length} ${d.idee.length === 1 ? "salvata" : "salvate"}` : "nessuna", traguardi: d.traguardi.length ? `${d.traguardi.length} ${d.traguardi.length === 1 ? "raggiunto" : "raggiunti"}` : "ancora nessuno", piano: d.piano ? "tocca per leggerlo" : "ancora da scrivere" };
+  const restano = righe.length - fatte;
   return `${jvTesta("Jarvis", false)}
-    <div class="jv-eroe"><button type="button" class="jv-sfera-b" data-jv-parla aria-label="Toccami: ti dico tutto">${JV_SFERA("media")}</button><div class="jv-eroe-t"><small>Jarvis ti dice</small><p class="jv-dice" aria-live="polite">${esc(JV.dice || jvFraseOggi(d))}</p><button type="button" class="jv-mic" data-jv-mic><span aria-hidden="true">🎤</span> Parla</button></div></div>
-    <section class="jv-carta jv-oggi"><h2>Da fare oggi${righe.length ? `<span>${fatte === 1 ? "1 fatta" : fatte + " fatte"} su ${righe.length}</span>` : ""}</h2>
-      ${righe.length ? righe.map(r => jvRigaCosa(r.x, oggi, r)).join("") : `<p class="jv-vuoto">Per oggi la lista è vuota. Aggiungi la prima cosa.</p>`}
-      <button type="button" class="jv-piu" data-jv-scrivi="impegni"><span aria-hidden="true">＋</span> Aggiungi una cosa</button></section>
-    <div class="jv-gr">${Object.entries(JV_SEZ).map(([k, [e, n]]) => `<button type="button" class="jv-c${k === "piano" ? " largo" : ""}" data-jv-sez="${k}"><span class="jv-e" aria-hidden="true">${e}</span><span><b>${n}</b><small>${esc(sotto[k])}</small></span></button>`).join("")}</div>
-    ${jvSvegliaHtml()}
-    <p class="jv-nota">🔒 ${JV.svOk ? "Le tue cose restano su questo telefono. Per la sveglia esce solo il giorno e l'ora." : "Sta solo su questo telefono. Non lo vede nessun altro."}</p>`;
+    <div class="jv-spazio"><button type="button" class="jv-tocca" data-jv-parla aria-label="Tocca Sofia: ti saluta e ti dice tutto"></button>
+      <div class="jv-lato"><button type="button" class="jv-lato-mic" data-jv-mic aria-label="Parla con Sofia"><img src="jv-ico-mic.webp" alt=""></button><button type="button" class="jv-lato-asc" data-jv-parla aria-label="Ascolta: Sofia ti dice tutto"><i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></i><span>Ascolta</span></button></div></div>
+    <div class="jv-pann"><span class="jv-presa" aria-hidden="true"></span>
+      <div class="jv-fum"><div class="jv-fum-t"><small>Sofia ti dice</small><p class="jv-dice" aria-live="polite">${esc(JV.dice || jvFraseOggi(d))}</p></div><button type="button" class="jv-mic" data-jv-mic><span aria-hidden="true">🎤</span> Parla</button></div>
+      <div class="jv-gr"><button type="button" class="jv-c jv-c-oggi" data-jv-vai-oggi><img class="jv-ico" src="jv-ico-oggi.webp" alt=""><span><b>Da fare oggi</b><small>${righe.length ? (restano ? `${restano === 1 ? "ne resta 1" : `ne restano ${restano}`} su ${righe.length}` : `fatte tutte e ${righe.length}`) : "la lista è vuota"}</small></span></button>${Object.entries(JV_SEZ).map(([k, [e, n]]) => `<button type="button" class="jv-c" data-jv-sez="${k}"><img class="jv-ico" src="jv-ico-${k}.webp" alt=""><span><b>${n}</b><small>${esc(sotto[k])}</small></span></button>`).join("")}</div>
+      ${jvSvegliaHtml()}
+      <section class="jv-carta jv-oggi" id="jvOggiCarta"><h2>Da fare oggi${righe.length ? `<span>${fatte === 1 ? "1 fatta" : fatte + " fatte"} su ${righe.length}</span>` : ""}</h2>
+        ${righe.length ? righe.map(r => jvRigaCosa(r.x, oggi, r)).join("") : `<p class="jv-vuoto">Per oggi la lista è vuota. Aggiungi la prima cosa.</p>`}
+        <button type="button" class="jv-piu" data-jv-scrivi="impegni"><span aria-hidden="true">＋</span> Aggiungi una cosa</button></section>
+      <p class="jv-nota">🔒 ${JV.svOk ? "Le tue cose restano su questo telefono. Per la sveglia esce solo il giorno e l'ora." : "Sta solo su questo telefono. Non lo vede nessun altro."}</p></div>`;
 }
 function jvRiga(k, x, oggi) {
   const id = esc(x.id), t = esc(x.testo);
@@ -19790,7 +19723,7 @@ function jvRiga(k, x, oggi) {
 }
 function jvSezioneHtml(d, k) {
   const nome = JV_SEZ[k][1], oggi = L.oggiISO();
-  const dice = JV.dice ? `<div class="jv-eroe piccolo">${JV_SFERA("piccola")}<p class="jv-dice" aria-live="polite">${esc(JV.dice)}</p></div>` : "";
+  const dice = JV.dice ? `<div class="jv-eroe piccolo">${JV_VISO("piccola")}<p class="jv-dice" aria-live="polite">${esc(JV.dice)}</p></div>` : "";
   const tasti = (leggi) => `<div class="jv-due"><button type="button" class="jv-mic" data-jv-mic="${k}"><span aria-hidden="true">🎤</span> Dimmelo</button><button type="button" class="jv-scrivi" data-jv-scrivi="${k}"><span aria-hidden="true">✍️</span> Scrivilo</button>${leggi ? `<button type="button" class="jv-b" data-jv-leggi="${k}">🔊 Leggimeli</button>` : ""}</div>`;
   let corpo = "";
   if (k === "piano") corpo = `<p class="jv-aiuto">Il tuo piano grande: dove vuoi arrivare. Scrivilo qui sotto, oppure dettalo: Jarvis te lo ricorda quando gli dici «dimmi tutto».</p><textarea id="jvPiano" class="jv-piano" rows="8" placeholder="Per esempio: entro un anno voglio…">${esc(d.piano)}</textarea><div class="jv-due"><button type="button" class="jv-b oro" data-jv-piano-salva>💾 Salva</button><button type="button" class="jv-mic" data-jv-mic="piano"><span aria-hidden="true">🎤</span> Dettalo</button><button type="button" class="jv-b" data-jv-leggi="piano">🔊 Leggimelo</button></div>`;
@@ -19823,13 +19756,26 @@ function jvFoglioHtml() {
 function jvFuoco() { setTimeout(() => { try { const t = document.getElementById("jvTesto"); if (t) t.focus(); } catch (e) {} }, 60); }
 function jarvisDisegna() {
   let el = document.getElementById("jarvis");
-  if (!JV.aperto) { if (el) { el.hidden = true; el.innerHTML = ""; } document.body.classList.remove("con-jarvis"); return; }
+  if (!JV.aperto) { if (el) { el.hidden = true; el.innerHTML = ""; el.classList.remove("jv-casa"); } document.body.classList.remove("con-jarvis"); return; }
   if (!el) { el = document.createElement("div"); el.id = "jarvis"; el.className = "jarvis"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Jarvis"); document.body.appendChild(el); }
   el.hidden = false; document.body.classList.add("con-jarvis");
-  const d = jarvisDati();
+  const d = jarvisDati(), casa = !(JV.sez && JV_SEZ[JV.sez]);
   JV.svOk = jvSvegliaStato() === "accesa";
-  el.innerHTML = (JV.sez && JV_SEZ[JV.sez] ? jvSezioneHtml(d, JV.sez) : jvCasaHtml(d)) + (JV.foglio ? jvFoglioHtml() : "");
-  jarvisStato(); jvGalSveglia();
+  // Sofia: un pezzo che resta (il filmato non riparte a ogni disegno); si vede solo nella pagina di Jarvis, non nei riquadri
+  let fig = document.getElementById("jvFigura"), nuova = false;
+  if (!fig || fig.parentNode !== el) {
+    fig = document.createElement("div"); fig.id = "jvFigura"; fig.className = "jv-scena"; fig.setAttribute("aria-hidden", "true"); fig.innerHTML = jvFiguraHtml(); nuova = true;
+    // la foto sotto si toglie quando il filmato ha il suo primo fotogramma (se no, mentre si muove, si vedrebbe lei ferma sotto)
+    const v = fig.querySelector("video");
+    if (v) { const pronto = () => fig.classList.add("film-pronto"); v.addEventListener("loadeddata", pronto, { once: true }); v.addEventListener("playing", pronto, { once: true }); v.addEventListener("error", () => fig.classList.remove("film-pronto"), { once: true }); }
+  }
+  [...el.children].forEach(c => { if (c !== fig) c.remove(); });
+  if (fig.parentNode !== el) el.prepend(fig);
+  fig.hidden = !casa; el.classList.toggle("jv-casa", casa);
+  if (!casa) { const v = fig.querySelector("video"); if (v && !v.paused) try { v.pause(); } catch (e) {} }
+  fig.insertAdjacentHTML("afterend", (casa ? jvCasaHtml(d) : jvSezioneHtml(d, JV.sez)) + (JV.foglio ? jvFoglioHtml() : ""));
+  jarvisStato();
+  if (nuova && casa) requestAnimationFrame(jvSaluta);
 }
 function jarvisApri() {
   if (!jarvisPuo() || JV.aperto) return;
@@ -20008,7 +19954,8 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (q("[data-jv-muto]")) { try { if (jvMuto()) localStorage.removeItem(JV_MUTO); else localStorage.setItem(JV_MUTO, "1"); } catch (er) {} if (jvMuto()) jarvisZitto(); jarvisDisegna(); return; }
-  if (q("[data-jv-parla]")) { if (JV.parla) jarvisZitto(); else jarvisDici(jvBriefing(true)); return; }
+  if (q("[data-jv-parla]")) { if (JV.parla) jarvisZitto(); else { jvSaluta(); jarvisDici(jvBriefing(true)); } return; }
+  if (q("[data-jv-vai-oggi]")) { const c = document.getElementById("jvOggiCarta"); if (c) try { c.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (er) { c.scrollIntoView(); } return; }   // 1.99.0
   if ((x = q("[data-jv-sez]"))) { jvSezione(x.dataset.jvSez); return; }
   if ((x = q("[data-jv-mic]"))) { jarvisMic(x.dataset.jvMic || ""); return; }
   if ((x = q("[data-jv-scrivi]"))) { jarvisZitto(); JV.foglio = { testo: "", dove: x.dataset.jvScrivi || "impegni" }; jarvisDisegna(); jvFuoco(); return; }

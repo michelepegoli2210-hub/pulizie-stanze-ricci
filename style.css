@@ -10654,3 +10654,68 @@ body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-
 #segrHero .sgh .sgh-fumetto,#segrHero .sgh .sg2-bolla,#segrHero .sgh-tasti .sg2-mic,#segrHero .sgh .sgh-ascolta,#segrHero .sgt,#segrHero .sgo-r,
 #segrHero .sgo-b:not(.fatto),#segrHero .sgo-sig,#segrHero .sge,#segrHero .sgt-aperto .sg2-c,#segrHero .sgh .sg2-b,#segrHero .sgh .sg2-doc,
 #segrHero .sgh .cw-banner,.sge-foglio .sgf-sofia,.sge-foglio .sgf-testo,.sge-foglio .sgf-b{background-color:color-mix(in srgb,var(--cc) 28%,#FFFDF8) !important}
+
+/* ----------------------------------------------------------------------------
+   1.99.0 · JARVIS CON SOFIA PERSONAL TRAINER, COME LA PRIMA PAGINA (Michele, 18/11: «un bel video di sofia personal treiner
+   che mi saluta e mi manda bacini di affetto come fa la mia governante» · «caricala come… l'interfaccia che ho nella prima
+   pagina… più di mezzo busto con la trasparenza… che si vede pure sotto, con la possibilità di andare pure giù, con le icone
+   che posso parlare con lei… le icone le facciamo fare sempre a Gemini»).
+   - #jvFigura: dietro a tutto e ferma mentre la pagina scorre: il marmo della prima pagina e Sofia (la foto finché il filmato
+     non è pronto, poi il filmato). Alta --jv-alto (due terzi dello schermo, al massimo 620): sopra il riquadro si vede più di
+     mezzo busto.
+   - .jv-spazio: il suo posto nella pagina. Toccarla (.jv-tocca) = ti risaluta e ti dice tutto. A destra (.jv-lato) il
+     microfono (il disegno di Gemini) e «Ascolta».
+   - .jv-pann: il riquadro che sale sopra di lei: trasparente, lei si vede anche sotto.
+   - Le tessere: il disegno di Gemini (jv-ico-*.webp, 3D rosa, nero e oro come il suo completo) al posto del disegnino.
+   ---------------------------------------------------------------------------- */
+.jarvis{--jv-alto:min(66vh,620px)}
+.jarvis.jv-casa{background:#FAF8F5}
+:root[data-theme="dark"] .jarvis.jv-casa{background:#161412}
+.jarvis>#jvFigura{position:fixed;inset:0;z-index:0;max-width:none;margin:0;pointer-events:none;overflow:hidden;
+  background-color:#FAF8F5;background-image:radial-gradient(circle 220px at 85% 280px,rgba(212,175,106,.26) 0%,transparent 70%),radial-gradient(circle 260px at 12% 540px,rgba(15,23,42,.08) 0%,transparent 70%),url(marmo-avorio.webp);background-size:100% 100%,100% 100%,360px 360px}
+:root[data-theme="dark"] .jarvis>#jvFigura{background-color:#161412;background-image:radial-gradient(circle 260px at 50% 34%,rgba(212,175,106,.16) 0%,transparent 70%)}
+.jarvis>#jvFigura[hidden]{display:none}
+#jvFigura .jv-fig-foto,#jvFigura video.jv-fig-v{position:absolute;left:50%;top:calc(54px + env(safe-area-inset-top,0px));height:var(--jv-alto);width:calc(var(--jv-alto) * .5625);max-width:none;margin:0;transform:translateX(-50%);object-fit:contain;pointer-events:none;background:transparent}
+/* la foto sotto il filmato si toglie appena il filmato ha il suo primo fotogramma: se no, mentre si muove, sotto resterebbe lei ferma */
+#jvFigura.film-pronto .jv-fig-foto{visibility:hidden}
+.jarvis.jv-casa>.jv-testa,.jarvis>.jv-spazio,.jarvis>.jv-pann{position:relative;z-index:1}
+/* il suo posto nella pagina e i tasti accanto a lei */
+.jv-spazio{height:calc(var(--jv-alto) * .7 - 4px)}
+.jv-tocca{position:absolute;left:16%;right:22%;top:0;bottom:0;margin:0;padding:0;border:0;background:none;border-radius:40px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.jv-tocca:focus-visible{outline:2px solid #C9A24F;outline-offset:-4px}
+.jv-lato{position:absolute;right:0;top:12px;display:grid;justify-items:center;gap:12px}
+.jv-lato button{display:grid;justify-items:center;gap:3px;margin:0;padding:0;border:0;background:none;color:var(--jv-testo);font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.jv-lato .jv-lato-mic{width:62px;height:62px;place-items:center;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #C9A24F,0 6px 14px rgba(15,23,42,.22)}
+.jv-lato .jv-lato-mic img{display:block;width:46px;height:46px}
+.jv-lato .jv-lato-mic.su{background:#22A35A;animation:consPulsa 1.1s ease-in-out infinite}
+.jv-lato .jv-lato-mic:active,.jv-lato-asc:active i{transform:scale(.94)}
+.jv-lato-asc i{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 0 0 1.5px rgba(212,175,106,.75),0 4px 10px rgba(15,23,42,.14);color:#16264A}
+.jv-lato-asc span{font-size:16px;font-weight:800;line-height:1.1;text-shadow:0 1px 0 rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.9)}
+:root[data-theme="dark"] .jv-lato .jv-lato-mic{background:#211E1A}
+:root[data-theme="dark"] .jv-lato-asc i{background:rgba(33,30,26,.94);color:#F2C14E}
+:root[data-theme="dark"] .jv-lato-asc span{text-shadow:0 0 6px rgba(0,0,0,.9)}
+/* il riquadro trasparente che sale sopra di lei */
+.jv-pann{padding:16px 10px 16px;border-radius:30px;background:rgba(250,247,242,.5);-webkit-backdrop-filter:blur(1.5px);backdrop-filter:blur(1.5px);border:1.5px solid rgba(212,175,106,.6);box-shadow:0 -8px 26px rgba(15,23,42,.10)}
+:root[data-theme="dark"] .jv-pann{background:rgba(22,20,18,.55);border-color:rgba(212,175,106,.4)}
+.jv-presa{display:block;width:44px;height:5px;margin:-6px auto 10px;border-radius:3px;background:#C9A24F;opacity:.85}
+/* «Sofia ti dice» */
+.jv-fum{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px;padding:12px 12px 14px 16px;border-radius:24px;background:var(--jv-carta);border:1.5px solid var(--jv-bordo);box-shadow:0 4px 14px rgba(15,23,42,.08)}
+.jv-fum small{display:block;font-size:17px;font-weight:700;color:var(--jv-marrone)}
+.jv-fum .jv-dice{font-size:20px;line-height:1.3}
+.jv-fum .jv-mic{padding-left:18px;padding-right:18px}
+/* le tessere coi disegni */
+.jv-pann .jv-gr{margin-top:12px}
+.jv-pann .jv-c{grid-template-columns:54px minmax(0,1fr);gap:8px;min-height:92px;padding:10px 8px 10px 6px;background:color-mix(in srgb,var(--jv-campo) 94%,transparent);box-shadow:0 3px 10px rgba(15,23,42,.06)}
+.jv-ico{display:block;width:54px;height:54px;object-fit:contain}
+.jv-pann .jv-c b{font-size:19px}
+/* il viso piccolo, nelle pagine dei riquadri */
+.jv-viso{display:block;width:78px;height:78px;border-radius:50%;box-shadow:0 0 0 2px #C9A24F}
+.jv-viso.piccola{width:70px;height:70px;margin:4px}
+@media (max-width:400px){
+  .jv-pann{padding-left:8px;padding-right:8px}
+  .jv-pann .jv-c{grid-template-columns:50px minmax(0,1fr);padding:10px 8px 10px 6px}
+  .jv-ico{width:48px;height:48px}
+  .jv-pann .jv-c b{font-size:18px}
+  .jv-fum{padding-left:12px}
+  .jv-fum .jv-dice{font-size:19px}
+}

@@ -3418,3 +3418,9 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Le chiavi nuove di GitHub si fanno da un anno (365 giorni): con 366 la pagina di GitHub metteva 30 giorni senza dirlo.
 - **1.98.1** (18/11, Michele: «rispetto al nero quei colori sono troppo accesi secondo me, farli un po' più smorti in modo tale che il nero risalti di più… Io devo fare meno fatica a leggere»; viste le prove: «ancora più chiari», poi «chiarissimi»):
   - Nella Segreteria i cartoncini sono chiarissimi (lo stesso colore, molto più leggero) e la scrittura è più nera: si legge con meno fatica. Il bordo e lo spessore restano colorati, come prima.
+- **1.99.0** (18/11, Michele: «al posto della galassia… un bel video di sofia personal treiner che mi saluta e mi manda bacini di affetto come fa la mia governante» · «caricala come… l'interfaccia che ho nella prima pagina… più di mezzo busto con la trasparenza… che si vede pure sotto, con la possibilità di andare pure giù, con le icone che posso parlare con lei… le icone le facciamo fare sempre a Gemini» · «inizia con il video»):
+  - Jarvis adesso è fatto come la prima pagina: in cima c'è Sofia personal trainer (bionda, col completo da palestra rosa e nero), grande e senza sfondo. Si vede più di mezzo busto.
+  - Quando apri Jarvis, Sofia ti saluta con la mano, ti manda due bacini e ti fa l'occhiolino. Se la tocchi, ti risaluta e ti dice tutto quello che hai da fare.
+  - Il riquadro con le tue cose è trasparente: lei si vede anche sotto. Scorrendo in giù trovi tutto: «Sofia ti dice» col tasto Parla, le tessere (Da fare oggi, Impegni, Obiettivi, Idee, Traguardi, Il mio piano) coi disegni nuovi di Gemini, la sveglia e la lista di oggi.
+  - A destra di Sofia ci sono il microfono (le parli) e «Ascolta» (ti dice tutto). La voce di Jarvis adesso è da donna.
+  - La galassia non c'è più.
