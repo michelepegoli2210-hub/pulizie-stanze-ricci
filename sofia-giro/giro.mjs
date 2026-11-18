@@ -75,6 +75,10 @@
 //  prima di quell'impegno lì, perché altrimenti non ha senso»). A ogni giro, prima di tutto il resto, parte la sveglia degli
 //  impegni che cominciano entro un quarto d'ora (sveglia-giro.mjs). Dal database si leggono solo un codice e l'ora: che cosa
 //  c'è da fare lo sa solo il telefono. Nel registro (esiti) non si scrive niente: lo leggono tutti, e l'ora direbbe quando.
+//  1.39.0 (app 1.98.0): LA SVEGLIA ALL'ORA GIUSTA (Michele, 18/11: «ricordami alle 18 di fare gli auguri a mio cognato, e alle
+//  18 mi arriva la notifica di Jarvis, capisci?»). Il passo della sveglia parte per primo e NON si aspetta: se una sveglia è fra
+//  pochi minuti la manda al minuto giusto, mentre il giro fa il resto; il giro finisce solo dopo (giro() → giroPassi()). Gli
+//  orari delle sveglie (solo quelli) vanno alla cassetta, che fa partire un giro 2 minuti prima di ognuna.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -90,7 +94,7 @@ import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'o
 import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.38.0";
+export const VERSIONE_GIRO = "1.39.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -214,7 +218,9 @@ export function frasiInRighe(testo) {
   return frasi.length > 1 ? frasi.slice(0, 8).map(f => `• ${f}`).join("\n") : t;
 }
 // ---- il giro ------------------------------------------------------------------------------------------
-export async function giro({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "", copia = null, calendari = null, social = null, postaAlbergo = {} }) {
+// 1.39.0: il giro finisce dopo le sveglie di Jarvis partite al suo inizio (al minuto giusto), qualunque strada prenda il resto
+export async function giro(arg) { const attese = []; try { return await giroPassi(arg, attese); } finally { await Promise.all(attese); } }
+async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "", copia = null, calendari = null, social = null, postaAlbergo = {}, sveglieTempo = null }, attese = []) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
   const esiti = [];
   const [stato0, avvisi] = await Promise.all([db.doc("importazioni", "giro-sofia"), db.doc("impostazioni", "avvisi")]);
@@ -244,8 +250,14 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
   const urgentiRiga = async () => { if (urgCache !== null) return urgCache; try { urgCache = rigaUrgenti(await guastiDi(), await cameraDi()); } catch (e) { console.warn("guasti urgenti:", e && e.message); urgCache = ""; } return urgCache; };
   // 1.37.0 LA SVEGLIA DI JARVIS: a ogni giro, a qualunque ora, prima di tutto il resto (se il resto si inceppa, è già partita).
   // Negli esiti non va niente: il registro di GitHub lo leggono tutti, e l'ora direbbe quando Michele ha un impegno.
-  try { await mandaSveglie({ db, push, adesso, caricaPs: async () => ps || (ps = await db.doc("importazioni", "push-sofia")) }); }
-  catch (e) { console.warn("giro: il primo passo non è riuscito", e && e.code ? e.code : ""); }
+  // 1.39.0: non si aspetta qui (aspetta il minuto giusto mentre il giro va avanti); la cassetta riceve gli orari (solo quelli).
+  const cassettaSveglie = async (orari) => {
+    if (!copia || !copia.manda) return null;
+    const cs = await db.doc("importazioni", "copia-sicurezza"); if (!cs || !cs.url || !cs.segreto) return null;
+    return copia.manda(cs.url, { azione: "sveglie", segreto: cs.segreto, orari }, 45000);
+  };
+  attese.push(mandaSveglie({ db, push, adesso, caricaPs: async () => ps || (ps = await db.doc("importazioni", "push-sofia")), cassetta: cassettaSveglie, ...(sveglieTempo || {}) })
+    .catch(e => { console.warn("giro: il primo passo non è riuscito", e && e.code ? e.code : ""); }));
   const oraPiano = MIN(Number(a.oraPiano) || 7);
   const dentro = (da, a2) => t.minuti >= da && t.minuti < a2;
   const serve = {
@@ -568,7 +580,7 @@ export function pushVero(webpush) {
   return async (chiavi, sub, dati) => {
     try {
       // 1.17.1: sempre "high": con "normal" Android, a telefono fermo, può tenere l'avviso da parte anche per ore
-      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.dove ? { dove: String(dati.dove) } : {}), ...(dati.rif ? { rif: String(dati.rif) } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}), ...(dati.azioni ? { azioni: String(dati.azioni).slice(0, 20) } : {}), ...(dati.vibra ? { vibra: true } : {}), ...(dati.sveglia ? { sveglia: String(dati.sveglia).slice(0, 60), quando: String(dati.quando || "").slice(0, 40) } : {}) }), { TTL: Number(dati.ttl) > 0 ? Math.min(6 * 3600, Math.round(Number(dati.ttl))) : 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
+      const r = await webpush.sendNotification(sub, JSON.stringify({ titolo: dati.titolo, testo: String(dati.testo || "").slice(0, 1800), ...(dati.url ? { url: dati.url } : {}), ...(dati.lettura ? { lettura: true } : {}), ...(dati.dove ? { dove: String(dati.dove) } : {}), ...(dati.rif ? { rif: String(dati.rif) } : {}), ...(dati.segreteria ? { segreteria: dati.segreteria === "lettura" ? "lettura" : true } : {}), ...(dati.tag ? { tag: dati.tag } : {}), ...(dati.azioni ? { azioni: String(dati.azioni).slice(0, 20) } : {}), ...(dati.vibra ? { vibra: true } : {}), ...(dati.sveglia ? { sveglia: String(dati.sveglia).slice(0, 60), quando: String(dati.quando || "").slice(0, 40), ...(dati.esatta ? { esatta: true } : {}) } : {}) }), { TTL: Number(dati.ttl) > 0 ? Math.min(6 * 3600, Math.round(Number(dati.ttl))) : 6 * 3600, urgency: "high", vapidDetails: { subject: "https://michelepegoli2210-hub.github.io/pulizie-stanze-ricci/", publicKey: chiavi.vapidPublic, privateKey: chiavi.vapidPrivato } });
       return { ok: true, stato: (r && r.statusCode) || null };
     } catch (e) { const s = e && e.statusCode; console.warn("avviso sul telefono:", s || (e && e.message), e && e.body ? String(e.body).slice(0, 200) : ""); return { ok: false, finita: s === 404 || s === 410, stato: s || null }; }
   };
