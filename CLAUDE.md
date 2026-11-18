@@ -208,6 +208,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   disegni piccoli dei tasti in un tondo in rilievo, i colori della proposta 1. Le variabili: `--cc` faccia, `--cb` contorno,
   `--cs` spessore, `--sx`/`--sy` quanto sporge. Il corsivo è Playwrite HR (OFL), il più vicino alla proposta 2 tra i caratteri
   liberi, marcato col tratto della penna (`-webkit-text-stroke`); anche i numeri. Le misure restano quelle grandi.
+  1.97.0 (Michele: «ancora più chiaro… da Presidente della Repubblica degli anni 40, degli anni 50… come quando si scrivevano i
+  registri contabili tutto a mano» · «troppo tratteggiato sui cartoncini… l'occhio viene disperso»): il corsivo è Petit Formal
+  Script (OFL, il corsivo inglese col pennino; la «x» più alta di quella di prima), scurito col tratto della penna; niente più
+  tratteggio (`--mt-tratto` e `--mt-tratto2` sono `none`): i cartoncini hanno il colore pieno. Niente tratteggi nella Segreteria.
   I filmati sono i segr7 (da Flow): lavora (tre video in fila, 31 secondi), ti ascolta, parla: tre filmati veri
   (`strumenti/fai-segr.py`). Mentre ascolta o parla, il filmato in cui lavora torna al suo inizio e aspetta (`segrFermaSotto`).
 - I filmati senza il «battito» (1.94.0; Michele: «micro lag nei capelli»): un fotogramma chiave ogni due secondi faceva cambiare

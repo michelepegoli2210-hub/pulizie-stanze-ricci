@@ -10606,3 +10606,28 @@ body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-
 #segrHero .sgh-tasti{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:389px){#segrHero .sgh-tasti .sg2-mic{gap:4px;padding:4px 6px;font-size:20px}#segrHero .sgh-tasti .sg2-mic .mt-d{width:44px;height:44px;padding:5px}
   #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:14.5px;letter-spacing:-.2px !important}#segrHero .sgt-griglia.stretta .sgt.arrivi .sgt-d,#segrHero .sgt-griglia.stretta .sgt.partenze .sgt-d{width:56px;height:54px;margin-left:4px}}
+
+/* ============================================================================
+   1.97.0 · LA SEGRETERIA: LA BELLA CALLIGRAFIA DI UNA VOLTA E I CARTONCINI LISCI (Michele, 18/11, vista la 1.96.0: «sia la
+   scrittura, sia lo stile di scrittura di corsivo va bene, però potrebbe essere ancora più chiaro… da Presidente della
+   Repubblica degli anni 40, degli anni 50… come quando si scrivevano i registri contabili tutto a mano, e sicuramente si
+   scriveva molto molto bene… voglio quel tipo di chiarezza lì» · «è troppo tratteggiato sui cartoncini… l'occhio viene
+   disperso rispetto a questo tratteggiato»).
+   - LA SCRITTURA: Petit Formal Script (carattere libero: OFL, fonts/LICENSE-PetitFormalScript.txt), il corsivo inglese col
+     pennino che si imparava a scuola e si usava nei registri: regolare, le lettere ben staccate, le maiuscole senza svolazzi.
+     Tra i corsivi «d'epoca» liberi provati sulla Segreteria vera (copperplate, la bella calligrafia delle lettere, i corsivi
+     anni '50) è il più chiaro: la «x» è alta più di quella di prima (58% contro 50%), quindi a parità di misura le lettere sono
+     più grandi. Il tratto della penna (-webkit-text-stroke) lo fa scuro come l'inchiostro. Anche i numeri.
+   - I CARTONCINI LISCI: via il tratteggio (le righine bianche in diagonale) da cartoncini, fasce e tesserine: il colore è
+     pieno. Restano lo spessore, l'ombra e il contorno.
+   ---------------------------------------------------------------------------- */
+@font-face{font-family:"Petit Formal Script";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/petit-formal-script-latin-400-normal.woff2) format("woff2")}
+#segrHero,.sge-foglio{--mt-font:"Petit Formal Script","Playwrite HR","Playwrite IT Moderna","Patrick Hand",cursive;--mt-num:"Petit Formal Script","Playwrite HR","Patrick Hand",cursive;
+  --mt-tratto:none;--mt-tratto2:none}
+#segrHero .sgh,#segrHero .sgh *,.sge-foglio,.sge-foglio *{-webkit-text-stroke:.7px currentColor}
+#segrHero .sgh b,#segrHero .sgh h3,#segrHero .sgh h4,#segrHero .sgh .sgt-p,#segrHero .sgh .sgt-t,#segrHero .sge .sge-chi,#segrHero .sge .sge-leggi,.sge-foglio b,.sge-foglio h3{-webkit-text-stroke:1px currentColor}
+#segrHero .sgh .sgt-n,#segrHero .sgh .sgo-pers b,#segrHero .sgh .sg2-n,#segrHero .sgh .sge-ora{-webkit-text-stroke:1.3px currentColor}
+#segrHero .sgh .sgt-griglia.stretta .sgt .sgt-p{-webkit-text-stroke:.7px currentColor}
+.sheet .panel:has(.sge-foglio) > .big.close{font-family:"Petit Formal Script","Playwrite HR",cursive;-webkit-text-stroke:.7px currentColor}
+/* il corsivo inglese è più largo: a 360 la parola sotto le tessere piccole un filo più piccola (la «x» resta alta come prima) */
+@media (max-width:389px){#segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:13.5px}}

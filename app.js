@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.96.0";
+export const VERSIONE = "1.97.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -7014,6 +7014,8 @@ function segrFumettoHtml(pz) {
 //    sparite: al loro posto i disegni a matita di Gemini (mat-*.webp).
 //  - 1.96.0 (Michele: «Dei cartoncini, proposta 1, però la scrittura assolutamente quella della 2»): le tessere, i tasti e le
 //    schede sono cartoncini in rilievo, il corsivo è quello inclinato (Playwrite HR). Solo style.css: l'HTML è lo stesso.
+//  - 1.97.0 (Michele: «ancora più chiaro… da Presidente della Repubblica degli anni 40, degli anni 50… come i registri contabili
+//    scritti a mano» · «troppo tratteggiato sui cartoncini»): il corsivo è Petit Formal Script, i cartoncini sono lisci.
 // ============================================================================
 const SEGR_OGGI = ["arrivi", "partenze", "pulizie", "email"];
 function segrOggiAperto() { return SEGR_OGGI.includes(S.segrOggi) ? S.segrOggi : ""; }
