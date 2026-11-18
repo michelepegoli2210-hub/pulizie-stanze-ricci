@@ -3424,3 +3424,12 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Il riquadro con le tue cose è trasparente: lei si vede anche sotto. Scorrendo in giù trovi tutto: «Sofia ti dice» col tasto Parla, le tessere (Da fare oggi, Impegni, Obiettivi, Idee, Traguardi, Il mio piano) coi disegni nuovi di Gemini, la sveglia e la lista di oggi.
   - A destra di Sofia ci sono il microfono (le parli) e «Ascolta» (ti dice tutto). La voce di Jarvis adesso è da donna.
   - La galassia non c'è più.
+- **1.100.0** (18/11, Michele: «per il momento vedi di ispirarti alle migliori app di produttività» · vista la prova disegnata: «Sì falle tutte»):
+  - Jarvis adesso è fatto come le app più brave per le cose da fare (Todoist, TickTick, Things, Microsoft To Do, Structured).
+  - In cima, accanto a quello che dice Sofia, c'è il giorno e l'anello delle cose fatte oggi (per esempio 2 su 5).
+  - Sotto c'è una riga sempre pronta per aggiungere: scrivi «palestra domani alle 18» e premi invio, oppure tocca il microfono. Puoi anche scrivere «cosa ho domani» o «ho fatto la palestra».
+  - Le cose dei giorni passati che non hai fatto: un tocco su «Portala a oggi» e passano a oggi.
+  - «La tua giornata»: le cose in ordine di ora, con la riga rossa dell'ora di adesso. La stella ⭐ segna le cose importanti.
+  - «Ogni giorno»: le abitudini. Un tocco quando l'hai fatta; la fiamma 🔥 dice da quanti giorni di fila.
+  - «Concentrati 25 minuti»: il cronometro. Quando finisce, Sofia te lo dice, ti manda i bacini e il telefono vibra.
+  - In basso ci sono i tasti: Oggi, Prossimi, Abitudini, Idee, Piano. I traguardi sono in fondo alle Abitudini.

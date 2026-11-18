@@ -260,6 +260,19 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   Prossimi filmati (Michele: «di attività che si fa in palestra… di crescita, che gioca a scacchi, che risolve un cubo…
   deve stare la continuità del video… non si deve capire»): ognuno parte e finisce nella posa della foto, e si mettono in
   fila come quelli della prima pagina (attacchi, rientro lento), così da ferma fa una cosa dopo l'altra senza scatti.
+  1.100.0, JARVIS COME LE APP MIGLIORI (Michele: «per il momento vedi di ispirarti alle migliori app di produttività» · vista
+  la prova disegnata: «Sì falle tutte»). Prese da Todoist, TickTick, Things, Microsoft To Do e Structured: nella pagina di
+  Jarvis «Sofia ti dice» ha il giorno e l'ANELLO delle cose fatte oggi (`jvOggi`, come prima); sotto, la RIGA PER AGGIUNGERE
+  (`#jvVeloce`: invio o ➜ = `jarvisSentito`, cioè come quando parli: aggiunge, oppure risponde a «cosa ho domani», «ho fatto
+  …»); le RIMASTE INDIETRO (giorni passati) con «Portala a oggi» (`jvPortaAOggi`: tengono l'ora se non è già passata, se no
+  diventano «oggi» senza ora e senza sveglia esatta); «La tua giornata» (`jvGiornataHtml`: rimaste indietro in rosso, poi le
+  cose con l'ora in ordine con la RIGA ROSSA DI ADESSO, poi quelle senza ora, prima le importanti; la STELLA ⭐ è
+  `importante` sulla cosa); «Ogni giorno» (gli obiettivi di prima, adesso «Abitudini»: un tocco = fatta oggi, la FIAMMA 🔥 coi
+  giorni di fila, `jvFila`); «Concentrati 25 minuti» (`JV_FOCUS` in localStorage: la fine resta sul telefono, riaprendo
+  continua; finito, Sofia lo dice, ti risaluta, vibra e manda la notifica se il permesso c'è; non esce niente); in tutte le
+  pagine i TASTI IN BASSO (`jvTabHtml`: Oggi, Prossimi = impegni, Abitudini = obiettivi, Idee, Piano; i Traguardi stanno in
+  fondo alle Abitudini). Le chiavi dei dati non cambiano (impegni, obiettivi, …): cambiano solo i nomi che si leggono.
+  Niente rosa nelle parti nuove: Michele non lo vuole («poi lo cambiamo»).
 - La sveglia di Jarvis (1.89.0, giro 1.37.0; Michele: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti prima…
   altrimenti non ha senso», e alla proposta «Sì»): circa 10 minuti prima di una cosa con l'ora arriva la notifica, anche ad
   app chiusa. È l'UNICA cosa di Jarvis che esce dal telefono, e Michele ha detto sì solo a questo: in
