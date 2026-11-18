@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.97.0";
+const VERSIONE = "1.98.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -13,7 +13,8 @@ const FILMATI = ["./cons-parla-spilla-giro5.mp4", "./cons-riposo-spilla-giro6.mp
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./lettura.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
-  "./icona-casa-192.png", "./icona-casa-512.png", "./icona-casa-maskable-512.png", "./apple-touch-icon.png", "./badge-casa-96.png", "./cons-poster-intero.webp", "./cons-poster-intero-3d.webp", "./cons-poster-foto.webp", "./cons-poster-foto-3d.webp", "./cons-poster.webp", "./capo-poster.webp", "./capo-viso.webp", "./capo-poster-3d.webp", "./sfondo-pulizie-wa2.webp", "./fonts/roboto-latin-400-normal.woff2", "./fonts/roboto-latin-500-normal.woff2", "./fonts/roboto-latin-700-normal.woff2", "./stanza-governante.webp", "./mappa-corridoio-m.webp", "./mappa-scale-m.webp", "./mappa-ingresso-m.webp", "./mappa-terrazzo-m.webp", "./mappa-lavanderia-m.webp", "./mappa-balcone-m.webp", "./disegno-salvatore-1-m.webp", "./disegno-salvatore-2-m.webp", "./disegno-salvatore-cucina-m.webp", "./disegno-salvatore-tavolo-m.webp", "./disegno-salvatore-armadio-m.webp", "./disegno-salvatore-ingresso-m.webp", "./disegno-salvatore-letto-m.webp", "./disegno-salvatore-balcone-m.webp", "./disegno-salvatore-bagno-1-m.webp", "./disegno-salvatore-bagno-2-m.webp", "./mappa-camera-m.webp", "./mappa-bagno-m.webp", "./mappa-cucina-m.webp", "./stanza-altro.webp", "./stanza-paghe.webp", "./lavoro-bagno-m.webp", "./lavoro-biancheria-m.webp", "./lavoro-camera-m.webp", "./lavoro-cucina-m.webp", "./lavoro-finale-m.webp", "./lavoro-letto-m.webp", "./lavoro-partenza-m.webp", "./lavoro-pavimenti-m.webp", "./stanza-manutenzione.webp", "./stanza-prospetto.webp", "./stanza-segreteria.webp", "./stanza-signore.webp", "./stanza-sofia.webp", "./segr6-poster-3d.webp", "./mat-sveglia.webp", "./mat-spunte.webp", "./mat-busta.webp", "./mat-arrivi.webp", "./mat-partenze.webp", "./mat-microfono.webp", "./mat-matita.webp", "./mat-voce.webp", "./mat-telefono.webp", "./mat-documento.webp", "./mat-fumetto.webp", "./mat-lettera.webp", "./mat-spunta.webp", "./mat-graffetta.webp", "./mat-cassetta.webp", "./mat-chiave.webp", "./mat-attenzione.webp", "./fonts/playwrite-it-moderna-latin-400-normal.woff2", "./fonts/playwrite-hr-latin-400-normal.woff2", "./fonts/petit-formal-script-latin-400-normal.woff2", "./segr2-viso.webp", "./segr-tasto4.webp", "./sofia-influencer.webp", "./sofia-influencer-viso.webp", "./stanza-influencer.webp", "./cons-poster-3d2.webp", "./cons-fondo-3d.webp", "./avorio-parete.webp", "./cornice-noce.webp", "./fonts/atkinson-hyperlegible-next-latin-400-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-600-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-800-normal.woff2",
+  "./icona-casa-192.png", "./icona-casa-512.png", "./notifica-arrivi.png", "./notifica-casa.png", "./notifica-dafare.png", "./notifica-email.png", "./notifica-foglio.png", "./notifica-lettura.png", "./notifica-messaggio.png", "./notifica-prenotazione.png", "./notifica-pulizie.png", "./notifica-sera.png", "./notifica-sintesi.png", "./notifica-social.png", "./notifica-sveglia.png", "./notifica-urgente.png",   // 1.98.0: le icone delle notifiche
+  "./icona-casa-maskable-512.png", "./apple-touch-icon.png", "./badge-casa-96.png", "./cons-poster-intero.webp", "./cons-poster-intero-3d.webp", "./cons-poster-foto.webp", "./cons-poster-foto-3d.webp", "./cons-poster.webp", "./capo-poster.webp", "./capo-viso.webp", "./capo-poster-3d.webp", "./sfondo-pulizie-wa2.webp", "./fonts/roboto-latin-400-normal.woff2", "./fonts/roboto-latin-500-normal.woff2", "./fonts/roboto-latin-700-normal.woff2", "./stanza-governante.webp", "./mappa-corridoio-m.webp", "./mappa-scale-m.webp", "./mappa-ingresso-m.webp", "./mappa-terrazzo-m.webp", "./mappa-lavanderia-m.webp", "./mappa-balcone-m.webp", "./disegno-salvatore-1-m.webp", "./disegno-salvatore-2-m.webp", "./disegno-salvatore-cucina-m.webp", "./disegno-salvatore-tavolo-m.webp", "./disegno-salvatore-armadio-m.webp", "./disegno-salvatore-ingresso-m.webp", "./disegno-salvatore-letto-m.webp", "./disegno-salvatore-balcone-m.webp", "./disegno-salvatore-bagno-1-m.webp", "./disegno-salvatore-bagno-2-m.webp", "./mappa-camera-m.webp", "./mappa-bagno-m.webp", "./mappa-cucina-m.webp", "./stanza-altro.webp", "./stanza-paghe.webp", "./lavoro-bagno-m.webp", "./lavoro-biancheria-m.webp", "./lavoro-camera-m.webp", "./lavoro-cucina-m.webp", "./lavoro-finale-m.webp", "./lavoro-letto-m.webp", "./lavoro-partenza-m.webp", "./lavoro-pavimenti-m.webp", "./stanza-manutenzione.webp", "./stanza-prospetto.webp", "./stanza-segreteria.webp", "./stanza-signore.webp", "./stanza-sofia.webp", "./segr6-poster-3d.webp", "./mat-sveglia.webp", "./mat-spunte.webp", "./mat-busta.webp", "./mat-arrivi.webp", "./mat-partenze.webp", "./mat-microfono.webp", "./mat-matita.webp", "./mat-voce.webp", "./mat-telefono.webp", "./mat-documento.webp", "./mat-fumetto.webp", "./mat-lettera.webp", "./mat-spunta.webp", "./mat-graffetta.webp", "./mat-cassetta.webp", "./mat-chiave.webp", "./mat-attenzione.webp", "./fonts/playwrite-it-moderna-latin-400-normal.woff2", "./fonts/playwrite-hr-latin-400-normal.woff2", "./fonts/petit-formal-script-latin-400-normal.woff2", "./segr2-viso.webp", "./segr-tasto4.webp", "./sofia-influencer.webp", "./sofia-influencer-viso.webp", "./stanza-influencer.webp", "./cons-poster-3d2.webp", "./cons-fondo-3d.webp", "./avorio-parete.webp", "./cornice-noce.webp", "./fonts/atkinson-hyperlegible-next-latin-400-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-600-normal.woff2", "./fonts/atkinson-hyperlegible-next-latin-800-normal.woff2",
   "./bocca.js", "./viso.js", "./documenti.js", "./alloggiati-codici.json", "./cons-scena.webp", "./sofia-viso.webp",   // 1.70.0: via le immagini della Consuela a pose: una Sofia sola
   "./marmo-blu.webp", "./marmo-avorio.webp", "./marmo-biglia.webp", "./fonts/dancing-script-latin-700-normal.woff2", "./fonts/cormorant-garamond-latin-600-normal.woff2", "./fonts/cormorant-garamond-latin-700-normal.woff2", "./fonts/cormorant-garamond-latin-600-italic.woff2", "./fonts/plus-jakarta-sans-latin-600-normal.woff2", "./fonts/plus-jakarta-sans-latin-700-normal.woff2", "./fonts/plus-jakarta-sans-latin-800-normal.woff2",   // 1.79.12: il grassetto vero delle scritte delle icone
   "./fonts/fredoka-latin-600-normal.woff2", "./fonts/fredoka-latin-700-normal.woff2",
@@ -86,6 +87,17 @@ self.addEventListener("notificationclick", (e) => {
   })());
 });
 
+// 1.98.0 (Michele, 18/11, visto l'avviso di prova sull'orologio: «più sono, diciamo, inerenti coi colori, con le immagini,
+// eccetera, eccetera, e meglio è»): ogni notifica ha il disegno della sua cosa (quelli di Gemini, a matita) nel tondo colorato
+// dei cartoncini della Segreteria (notifica-*.png). La cosa la dice il disegnino in testa al titolo, come sempre.
+const ICONE = [[/^⏰/, "sveglia"], [/^🔔 Da fare/, "dafare"], [/^📧/, "email"], [/^(🛎|❌ Prenotazione)/, "prenotazione"], [/^💬/, "messaggio"], [/^(🚨|⚠|📵)/, "urgente"],
+  [/^☀/, "pulizie"], [/^🧳/, "arrivi"], [/^🌙/, "sera"], [/^📊/, "foglio"], [/^📋/, "sintesi"], [/^(📣|📷)/, "social"], [/^✋|ho letto/i, "lettura"]];
+function iconaDi(titolo, d) {
+  const t = String(titolo || "");
+  for (const [re, k] of ICONE) if (re.test(t)) return `notifica-${k}.png`;
+  return d && (d.lettura || d.segreteria === "lettura") ? "notifica-lettura.png" : "notifica-casa.png";
+}
+
 // 1.17.0 GLI AVVISI DI SOFIA SUL TELEFONO (Web Push): li manda il giro sempre acceso (sofia-giro), qui si mostrano
 self.addEventListener("push", (e) => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { testo: e.data ? e.data.text() : "" }; }
@@ -101,7 +113,7 @@ self.addEventListener("push", (e) => {
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   e.waitUntil(Promise.all([
     // 1.58.0: il guasto urgentissimo ha i tasti «✅ Sistemato» e «Apri», vibra più forte e resta finché non lo tocchi
-    self.registration.showNotification(titolo, { body: testo, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag, renotify: true,
+    self.registration.showNotification(titolo, { body: testo, icon: iconaDi(titolo, d), badge: "badge-casa-96.png", tag, renotify: true,
       ...(d.azioni === "fatto" && rif ? { actions: [{ action: "fatto", title: "✅ Sistemato" }, { action: "apri", title: "Apri" }] } : {}),
       ...(d.azioni === "fattoTu" && rif ? { actions: [{ action: "fattoTu", title: "✅ Fatto" }, { action: "apri", title: "Apri" }] } : {}),   // 1.62.0
       ...(d.vibra ? { vibrate: [300, 120, 300, 120, 300], requireInteraction: true } : {}),
@@ -123,11 +135,27 @@ async function mostraSveglia(d) {
     cosa = m && codice && m[codice] && typeof m[codice].t === "string" && m[codice].t ? m[codice] : null;
   } catch (err) { cosa = null; }
   const T = Date.parse((cosa && cosa.q) || (typeof d.quando === "string" ? d.quando : "")), min = Number.isFinite(T) ? Math.round((T - Date.now()) / 60000) : null;
+  // 1.98.0 (Michele: «ricordami alle 18 di fare gli auguri a mio cognato, e alle 18 mi arriva la notifica di Jarvis»): la
+  // sveglia ALL'ORA GIUSTA dice la cosa e l'ora: «⏰ Fare gli auguri a mio cognato» · «Sono le 18: me l'hai chiesto tu.»
+  if ((cosa && cosa.x) || d.esatta === true) {
+    const ora = cosa && cosa.o ? String(cosa.o).slice(0, 5) : Number.isFinite(T) ? oraCorta(T) : "";
+    const sono = !ora ? "È l'ora" : ora === "0" ? "È mezzanotte" : /^1(:|$)/.test(ora) ? `È l'${ora === "1" ? "una" : ora}` : `Sono le ${ora}`;
+    const titolo = cosa ? `⏰ ${cosa.t}`.slice(0, 120) : "⏰ Il tuo promemoria";
+    const testo = min !== null && min >= 2 ? `Alle ${ora}: te lo dico un po' prima. Tocca per aprire Jarvis.` : min !== null && min <= -3 ? `Era per le ${ora}: me l'hai chiesto tu. Tocca per aprire Jarvis.` : `${sono}: me l'hai chiesto tu. Tocca per aprire Jarvis.`;
+    await self.registration.showNotification(titolo, { body: testo, icon: "notifica-sveglia.png", badge: "badge-casa-96.png", tag: "sveglia-" + (codice || "x"), renotify: true,
+      vibrate: [500, 200, 500, 200, 500, 200, 500], requireInteraction: true, data: { url: "./index.html", push: true, jarvis: true } });
+    return;
+  }
   const tra = min === null ? "Tra poco" : min >= 2 ? `Tra ${min} minuti` : "Adesso";
   const titolo = cosa ? `⏰ ${tra}: ${cosa.t}`.slice(0, 120) : `⏰ ${tra} hai un impegno`;
   const testo = cosa ? `${cosa.o ? "alle " + String(cosa.o).slice(0, 5) + " · " : ""}tocca per aprire la tua lista` : "Tocca per aprire la tua lista.";
-  await self.registration.showNotification(titolo, { body: testo, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag: "sveglia-" + (codice || "x"), renotify: true,
+  await self.registration.showNotification(titolo, { body: testo, icon: "notifica-sveglia.png", badge: "badge-casa-96.png", tag: "sveglia-" + (codice || "x"), renotify: true,
     vibrate: [300, 120, 300, 120, 300], requireInteraction: true, data: { url: "./index.html", push: true, jarvis: true } });
+}
+// «18:00» → «18», «18:30» → «18:30» (l'ora di Lesina), come la scrive Jarvis
+function oraCorta(T) {
+  try { const p = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(T)); const h = Number((p.find(x => x.type === "hour") || {}).value) % 24, m = (p.find(x => x.type === "minute") || {}).value || "00"; return m === "00" ? String(h) : `${h}:${m}`; }
+  catch (err) { return ""; }
 }
 
 const CACHE_AVVISI = "ricci-avvisi";

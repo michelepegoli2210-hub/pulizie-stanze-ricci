@@ -10631,3 +10631,12 @@ body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-
 .sheet .panel:has(.sge-foglio) > .big.close{font-family:"Petit Formal Script","Playwrite HR",cursive;-webkit-text-stroke:.7px currentColor}
 /* il corsivo inglese è più largo: a 360 la parola sotto le tessere piccole un filo più piccola (la «x» resta alta come prima) */
 @media (max-width:389px){#segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:13.5px}}
+
+/* ============================================================================
+   1.98.0 · JARVIS, LA SVEGLIA ALL'ORA GIUSTA (Michele, 18/11: «ricordami alle 18 di fare gli auguri a mio cognato, e alle 18
+   mi arriva la notifica di Jarvis, capisci?»). Nel foglio «Cambia» si sceglie quando arriva la notifica: «🔔 10 minuti prima»
+   oppure «⏰ All'ora giusta» (quella scelta è blu notte e oro, come «Salva»).
+   ---------------------------------------------------------------------------- */
+.jv-avviso{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.jv-avviso .jv-b{min-height:52px;padding:6px 8px;font-size:17px;font-weight:700;line-height:1.2;border:2px solid transparent}
+.jv-avviso .jv-b[aria-pressed="true"]{background:#16264A;color:#F2C14E;border-color:#F2C14E}

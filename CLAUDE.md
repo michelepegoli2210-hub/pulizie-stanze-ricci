@@ -232,8 +232,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   sotto Impegni (i prossimi giorni), Obiettivi, Idee, Traguardi, Il mio piano. È chiara come le pagine di Sofia. Si apre dalla
   casetta del logo in alto nella prima pagina (`button.bo-casetta`, invisibile: «la galassia prendeva troppo occhio a Sofia»).
   Le sue cose stanno SOLO nel telefono (`localStorage`, chiave `ricci_jarvis`): il suo codice (in fondo ad `app.js`, `jarvis…`
-  e `jv…`) non chiama mai l'IA né la rete, e deve restare così; le frasi le capisce con poche regole (`jvComando`,
-  `jvCapisci`) e con `LET.promemoriaDa`. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro). Il Jarvis
+  e `jv…`) non chiama mai l'IA, e deve restare così (lo controlla `fase1980.py`); le frasi le capisce con poche regole (`jvComando`,
+  `jvCapisci`) e con `LET.promemoriaDa`. Fuori dal telefono va solo la sveglia (sotto): codici e orari nel database, e la
+  «spinta» alla cassetta senza dati. Si accende telefono per telefono (`…/?jarvis=1` o l'interruttore in Altro). Il Jarvis
   dentro Gemini (1.87.0) non gli è servito: «che faccio, vado a chattare con Gemini?». Vuole le interfacce dentro l'app, come
   con Sofia. La galassia è un disegno nostro, fatto coi numeri: niente disegni, marchi o voci presi da altri.
 - La sveglia di Jarvis (1.89.0, giro 1.37.0; Michele: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti prima…
@@ -244,6 +245,21 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   «sveglia <codice>» (`sofia-giro/sveglia-giro.mjs`, a ogni giro, entro 15 minuti dall'ora; di notte 65) il lavoratore di
   sfondo compone la notifica (`mostraSveglia` in `sw.js`). Nel registro di GitHub della sveglia non si scrive niente: l'ora
   del registro direbbe quando ha un impegno. Funziona finché gira il giro: a PC spento serve «L'orologio di Sofia».
+  1.98.0 (giro 1.39.0, cassetta 4), LA SVEGLIA ALL'ORA GIUSTA (Michele: «Jarvis deve essere in pratica una sveglia… ricordami
+  alle 18 di fare gli auguri a mio cognato, e alle 18 mi arriva la notifica di Jarvis»): «ricordami / avvisami / svegliami …
+  alle 18» (anche col quando davanti, `JV_VERBO_SVEGLIA`) è una cosa `esatta`: la notifica arriva alle 18 («⏰ Fare gli auguri…
+  · Sono le 18: me l'hai chiesto tu»). Le altre cose con l'ora suonano 10 minuti prima. Fuori: `telefoni.<telefono>` (impegni)
+  ed `esatte.<telefono>` (all'ora), sempre solo codice → ora. Il giro (`sveglia-giro.mjs`) non manda più «quando passa»:
+  aspetta il minuto giusto mentre fa il resto, e finisce dopo (`giro()` → `giroPassi()`; il lavoro può durare 20 minuti). Gli
+  orari, e solo quelli, vanno alla cassetta (`copia-sicurezza.gs` versione 4, azione `sveglie`), che fa partire un giro 2
+  minuti prima di ognuno (un trigger `.at()` solo, alla prossima): così è giusta anche di notte. Senza cassetta il giro
+  aspetta fino a 11 minuti (di notte manda prima). Una sveglia tra pochi minuti: l'app chiede alla cassetta «spingi»
+  (`jvSpingiSePresto`, nessun dato). La cassetta 4 va rimessa a mano nel Google dell'albergo (come la casella: Gestisci
+  deployment → ✏️ → Nuova versione).
+- Le notifiche coi disegni (1.98.0; Michele: «più sono inerenti coi colori, con le immagini… e meglio è»): ogni notifica ha
+  l'icona della sua cosa, il disegno a matita di Gemini nel tondo colorato dei cartoncini (`notifica-*.png`, 14, fatti da
+  `strumenti/fai-icone-notifiche.py`). La sceglie `iconaDi` in `sw.js` dal disegnino in testa al titolo (⏰ sveglia, 📧 email,
+  🛎️ prenotazione, 💬 messaggio, 🚨 urgente…): una notifica nuova col suo disegnino in testa prende l'icona giusta da sola.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

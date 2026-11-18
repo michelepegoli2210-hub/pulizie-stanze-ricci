@@ -604,39 +604,73 @@ export function schedaRicordo({ testo, entro = "", da = "app", adesso = new Date
 // «ricordami di chiamare l'idraulico domani alle 9», detto o scritto a Sofia nell'app → { testo, entro } («entro» come sopra, o
 // vuoto); { vuoto: true } se non dice cosa; null se non è un promemoria per lui («ricordati che il sabato…» è il taccuino,
 // «ricordami cosa ha detto papà» è una domanda: le lascia a Sofia)
-const NUM_PAROLE = { un: 1, uno: 1, una: 1, "un'": 1, due: 2, tre: 3, quattro: 4, cinque: 5, sei: 6, sette: 7, otto: 8, nove: 9, dieci: 10, undici: 11, dodici: 12 };
+// 1.98.0 (Michele, 18/11: «Jarvis deve essere in pratica una sveglia che io devo scrivere, che so, ricordami alle 18 di fare
+// gli auguri a mio cognato, e alle 18 mi arriva la notifica»): capisce anche l'ora in lettere («alle sei e mezza», «alle sette
+// meno un quarto»), «del pomeriggio», «di notte», «a mezzanotte», il giorno col mese («il 25 novembre», «il 25/11») e il quando
+// DAVANTI («alle 18 ricordami di…», «domani alle 9, ricordami…»).
+const NUM_PAROLE = { un: 1, uno: 1, una: 1, "un'": 1, due: 2, tre: 3, quattro: 4, cinque: 5, sei: 6, sette: 7, otto: 8, nove: 9, dieci: 10, undici: 11, dodici: 12,
+  tredici: 13, quattordici: 14, quindici: 15, sedici: 16, diciassette: 17, diciotto: 18, diciannove: 19, venti: 20, ventuno: 21, ventidue: 22, ventitre: 23, "ventitré": 23,
+  venticinque: 25, trenta: 30, trentacinque: 35, quaranta: 40, quarantacinque: 45, cinquanta: 50, cinquantacinque: 55 };
+const ORA_PAROLA = "una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|undici|dodici|tredici|quattordici|quindici|sedici|diciassette|diciotto|diciannove|venti|ventuno|ventidue|ventitr[eé]";
+const MIN_PAROLA = "cinque|dieci|quindici|venti|venticinque|trenta|trentacinque|quaranta|quarantacinque|cinquanta|cinquantacinque";
+const MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+// il quando davanti al verbo: solo parole di giorni e di ore (e almeno una che dice davvero quando)
+const QUANDO_SOLO = new RegExp(`^(?:(?:oggi|domani|domattina|dopodomani|dopo|stasera|stamattina|stamani|stanotte|questa|sera|mattina|pomeriggio|notte|alle|all'una|a|al|ore|verso|le|per|entro|tra|fra|e|mezza|mezzo|mezz'ora|mezzora|un'ora|un'?|uno|una|quarto|quarti|minuti|minuto|min|ora|il|di|del|della|nel|meno|mezzogiorno|mezzanotte|prossim[oa]|luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica|primo|${MESI.join("|")}|${ORA_PAROLA}|${MIN_PAROLA}|\\d{1,4}(?:[:./]\\d{1,4}){0,2})(?:[\\s,]+|$))+$`, "i");
+const QUANDO_VERO = new RegExp(`\\d|oggi|domani|domattina|dopodomani|stasera|stamattina|stamani|stanotte|mezzogiorno|mezzanotte|luned|marted|mercoled|gioved|venerd|sabato|domenica|\\b(?:${ORA_PAROLA})\\b|\\bor[ae]\\b|un'ora|mezz'?ora|minut`, "i");
 export function promemoriaDa(frase, oggi, minutiOra = null, nomeGov = "") {
   let t = String(frase || "").replace(/[’`]/g, "'").replace(/\s+/g, " ").trim(); if (!t || /\?\s*$/.test(t)) return null;
   const nome = String(nomeGov || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   t = t.replace(new RegExp(`^(?:(?:ehi|hey|ciao|senti|allora|ok|okay|buongiorno|buonasera)[, ]+)*${nome ? `(?:${nome}[,!.: ]+)?` : ""}(?:per favore[, ]+|per piacere[, ]+|per cortesia[, ]+)?`, "i"), "");
+  // 1.98.0: il quando davanti («alle 18 ricordami di…»): lo porto dopo, così si legge come gli altri
+  const dav = /^(.{2,60}?)[,;:]?\s+((?:ricordam[ie](?:l[oaie])?|ricordarmi|ricordarmel[oaie])(?=$|[\s,:;.!]).*)$/i.exec(t);
+  if (dav && QUANDO_SOLO.test(dav[1].trim()) && QUANDO_VERO.test(dav[1])) t = `${dav[2]} ${dav[1].trim()}`;
   const m = /^(?:(domani|domattina|stasera|oggi|dopodomani)[, ]+)?(?:poi |dopo |puoi |potresti |devi |dovresti )?(ricordam[ie](?:l[oaie])?|ricordarmi|ricordarmel[oaie]|(?:mettimi|fammi|metti|fai|segnami|crea|creami) un promemoria|promemoria)(?=$|[\s,:;.!])[,:;.! ]*(.*)$/i.exec(t);
   if (!m) return null;
   if (/^(cosa|che cosa|chi|quando|dove|come|quant[oaie]|qual[ei]?|perch[eé]|se)(\s|$)/i.test(m[3].trim())) return null;   // una domanda sulle chat
-  let resto = ` ${m[1] || ""} ${m[3].trim()} `.replace(/\s+/g, " "), giorno = "", ore = -1, min = 0, delta = -1, fascia = "";
+  let resto = ` ${m[1] || ""} ${m[3].trim()} `.replace(/\s+/g, " "), giorno = "", ore = -1, min = 0, delta = -1, fascia = "", mezzanotte = false;
   const via = (src, fn) => { resto = resto.replace(new RegExp(" " + src + "(?=[\\s,.;:!?])", "i"), (...a) => { fn(...a); return ""; }); };
+  // come «via», ma toglie le parole solo se vanno bene (un 31 febbraio resta dov'è)
+  const viaSe = (src, fn) => { resto = resto.replace(new RegExp(" " + src + "(?=[\\s,.;:!?])", "i"), (...a) => fn(...a) ? "" : a[0]); };
   const numero = (s) => /^\d+$/.test(s) ? Number(s) : (NUM_PAROLE[String(s).toLowerCase()] || 0);
   // tra un'ora, tra 2 ore, tra mezz'ora, tra 10 minuti, tra un quarto d'ora
   via("(?:tra|fra) (?:un )?quarto d'ora", () => { delta = 15; });
   via("(?:tra|fra) mezz'? ?ora", () => { delta = 30; });
-  via("(?:tra|fra) (un'|un|una|\\d{1,3}|due|tre|quattro|cinque|sei|sette|otto|nove|dieci) ?(ore|ora|minuti|minuto|min)( e mezz[ao])?", (tutto, q, u, mezza) => { const k = numero(q); delta = /^or/i.test(u) ? k * 60 + (mezza ? 30 : 0) : k; });
+  via("(?:tra|fra) (un'|un|una|\\d{1,3}|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|venti|trenta|quaranta|cinquanta) ?(ore|ora|minuti|minuto|min)( e mezz[ao])?", (tutto, q, u, mezza) => { const k = numero(q); delta = /^or/i.test(u) ? k * 60 + (mezza ? 30 : 0) : k; });
   // il giorno
   via("(?:dopodomani|dopo domani)", () => { giorno = L.aggiungiGiorni(oggi, 2); });
   via("(domattina|domani mattina|domani sera|domani pomeriggio|domani)", (tutto, g) => { giorno = L.aggiungiGiorni(oggi, 1); if (/sera/i.test(g)) fascia = "sera"; else if (/pomeriggio/i.test(g)) fascia = "pomeriggio"; else if (/matt/i.test(g)) fascia = "mattina"; });
   via("(?:stasera|questa sera)", () => { giorno = giorno || oggi; fascia = "sera"; });
-  via("(?:stamattina|questa mattina)", () => { giorno = giorno || oggi; fascia = "mattina"; });
+  via("(?:stamattina|stamani|questa mattina)", () => { giorno = giorno || oggi; fascia = "mattina"; });
+  via("(?:stanotte|questa notte)", () => { fascia = "notte"; });   // 1.98.0: le ore piccole (alle 2 = le 2 di notte)
   via("(?:oggi pomeriggio|questo pomeriggio|nel pomeriggio)", () => { giorno = giorno || oggi; fascia = "pomeriggio"; });
   via("oggi", () => { giorno = giorno || oggi; });
+  // 1.98.0: il giorno col mese: «il 25 novembre», «25 novembre 2026», «il primo dicembre», «il 25/11», «il 25/11/2026».
+  // Senza l'anno, se quel giorno quest'anno è già passato, è l'anno prossimo.
+  const daMese = (gg, mm, aa) => {
+    const d = Number(gg), mo = Number(mm); if (!(d >= 1 && d <= 31 && mo >= 1 && mo <= 12)) return "";
+    const anno = aa ? Number(String(aa).length === 2 ? "20" + aa : aa) : Number(String(oggi).slice(0, 4));
+    const iso = (y) => `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    let g = iso(anno); if (L.aggiungiGiorni(g, 0) !== g) return "";   // il 31 febbraio non c'è
+    if (!aa && g < oggi) g = iso(anno + 1);
+    return g;
+  };
+  viaSe(`(?:il |per il |entro il |del |di )?(\\d{1,2}|primo)(?:°|º)? (${MESI.join("|")})(?: (\\d{4}))?`, (tutto, gg, mese, aa) => { const g = daMese(/^primo$/i.test(gg) ? 1 : gg, MESI.indexOf(mese.toLowerCase()) + 1, aa); if (!g) return false; giorno = giorno || g; return true; });
+  viaSe("(?:il |per il |entro il )(\\d{1,2})/(\\d{1,2})(?:/(\\d{4}|\\d{2}))?", (tutto, gg, mm, aa) => { const g = daMese(gg, mm, aa); if (!g) return false; giorno = giorno || g; return true; });
+  viaSe("(\\d{1,2})/(\\d{1,2})/(\\d{4}|\\d{2})", (tutto, gg, mm, aa) => { const g = daMese(gg, mm, aa); if (!g) return false; giorno = giorno || g; return true; });   // senza «il» solo con l'anno (2/3 di farina non è una data)
   via("(?:di |il |per |entro )?(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?: prossim[oa])?", (tutto, g) => {
     const i = ["do", "lu", "ma", "me", "gi", "ve", "sa"].indexOf(g.slice(0, 2).toLowerCase()); if (i < 0 || giorno) return;
     let d = (i - L.giornoSettimana(oggi) + 7) % 7; if (d === 0) d = 7; giorno = L.aggiungiGiorni(oggi, d);
   });
-  via("(?:di|la) (mattina|sera)", (tutto, f) => { fascia = fascia || f.toLowerCase(); });
-  via("(?:di|nel|il) pomeriggio", () => { fascia = fascia || "pomeriggio"; });
-  // l'ora: alle 15, alle 15:30, alle 9 e mezza, alle 9 e un quarto, all'una, a mezzogiorno
+  via("(?:di|la|della) (mattina|sera|notte)", (tutto, f) => { fascia = fascia || f.toLowerCase(); });
+  via("(?:di|nel|il|del) pomeriggio", () => { fascia = fascia || "pomeriggio"; });
+  // l'ora: alle 15, alle 15:30, alle 9 e mezza, alle 9 e un quarto, all'una, a mezzogiorno · 1.98.0: in lettere («alle sei e
+  // mezza», «alle diciotto»), «alle sette meno un quarto», «a mezzanotte»
   via("a mezzogiorno( e mezz[ao])?", (tutto, mezza) => { ore = 12; min = mezza ? 30 : 0; });
+  via("a mezzanotte", () => { mezzanotte = true; });
   via("all'una(?: e (mezza|mezzo|un quarto|\\d{1,2}))?", (tutto, e) => { ore = 13; min = !e ? 0 : /mezz/i.test(e) ? 30 : /quarto/i.test(e) ? 15 : Math.min(59, Number(e) || 0); });
-  via("(?:alle ore|alle|per le|verso le|entro le) (\\d{1,2})(?:[:.](\\d{2}))?(?: e (mezza|mezzo|un quarto|tre quarti|\\d{1,2}))?", (tutto, h, mm, e) => {
-    ore = Number(h); min = mm ? Number(mm) : !e ? 0 : /mezz/i.test(e) ? 30 : /tre quarti/i.test(e) ? 45 : /quarto/i.test(e) ? 15 : Number(e) || 0;
+  via(`(?:alle ore|alle|per le|verso le|entro le) (\\d{1,2}|${ORA_PAROLA})(?:[:.](\\d{2}))?(?: e (mezza|mezzo|un quarto|tre quarti|\\d{1,2}|${MIN_PAROLA})| meno (un quarto|\\d{1,2}|${MIN_PAROLA}))?`, (tutto, h, mm, e, meno) => {
+    ore = numero(h); min = mm ? Number(mm) : !e ? 0 : /mezz/i.test(e) ? 30 : /tre quarti/i.test(e) ? 45 : /quarto/i.test(e) ? 15 : numero(e);
+    if (meno) { const q = /quarto/i.test(meno) ? 15 : numero(meno); if (q > 0 && q < 60) { min = 60 - q; ore = (ore + 23) % 24; } }
   });
   if (ore > 23 || min > 59) { ore = -1; min = 0; }
   const adesso = minutiOra === null || minutiOra === undefined ? null : Number(minutiOra);
@@ -645,13 +679,15 @@ export function promemoriaDa(frase, oggi, minutiOra = null, nomeGov = "") {
   if (delta > 0 && adesso !== null) {
     const tot = adesso + delta;
     entro = `${L.aggiungiGiorni(oggi, Math.floor(tot / 1440))}T${hhmm(Math.floor((tot % 1440) / 60), tot % 60)}`;
-  } else if (ore >= 0) {
+  } else if (mezzanotte) entro = `${L.aggiungiGiorni(giorno || oggi, 1)}T00:00`;   // a mezzanotte = alla fine di quel giorno
+  else if (ore >= 0) {
     if (fascia === "sera" || fascia === "pomeriggio") { if (ore < 12) ore += 12; }
+    else if (fascia === "notte") { if (ore >= 8 && ore <= 11) ore += 12; }                 // «le 11 di notte» = le 23, «le 2 di notte» = le 2
     else if (fascia !== "mattina" && ore >= 1 && ore <= 6) ore += 12;                       // «alle 3» = le 15
     if (!giorno) {
       giorno = oggi;
       if (adesso !== null && ore * 60 + min <= adesso) {                                    // quell'ora oggi è già passata
-        if (fascia !== "mattina" && ore < 12 && (ore + 12) * 60 + min > adesso) ore += 12;  // «alle 8» detto alle 16 = le 20
+        if (fascia !== "mattina" && fascia !== "notte" && ore < 12 && (ore + 12) * 60 + min > adesso) ore += 12;  // «alle 8» detto alle 16 = le 20
         else giorno = L.aggiungiGiorni(oggi, 1);
       }
     }

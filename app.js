@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.97.0";
+export const VERSIONE = "1.98.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -5796,7 +5796,7 @@ async function guardaAvviso() {
 //  signora scrive a Michele. E se l'app sul PC (o sul telefono) è aperta ma nascosta, il messaggio nuovo lo dice subito lì.
 // ============================================================================
 const GH_REPO = "michelepegoli2210-hub/pulizie-stanze-ricci", GH_CHIAVE = "ricci_spinta_gh", GH_ULTIMA = "ricci_spinta_ultima";
-const GH_NUOVA = "https://github.com/settings/personal-access-tokens/new?name=Sofia%20dal%20PC&description=L%27app%20aperta%20sul%20PC%20fa%20partire%20il%20giro%20di%20Sofia%20(solo%20Actions%20di%20pulizie-stanze-ricci)&target_name=michelepegoli2210-hub&expires_in=366&actions=write";
+const GH_NUOVA = "https://github.com/settings/personal-access-tokens/new?name=Sofia%20dal%20PC&description=L%27app%20aperta%20sul%20PC%20fa%20partire%20il%20giro%20di%20Sofia%20(solo%20Actions%20di%20pulizie-stanze-ricci)&target_name=michelepegoli2210-hub&expires_in=365&actions=write";
 const SPINTA_OGNI = 10 * 60 * 1000;
 let spintaStato = { ultima: 0, errore: "", quandoErrore: 0, n: 0, perche: "" }, spintaSubitoT = null;
 function spintaConf() { try { const x = JSON.parse(localStorage.getItem(GH_CHIAVE) || "null"); return x && x.gettone ? x : null; } catch (e) { return null; } }
@@ -5872,7 +5872,7 @@ function messaggiArrivati(m) {
       if (!reg) return;
       for (const x of nuovi.slice(-3)) {
         const corpo = x.tipo === "foto" ? `📷 Ti ha mandato una foto${x.testo ? `: «${x.testo}»` : "."}` : x.tipo === "file" ? String(x.testo || "") : `«${x.testo || ""}»`;
-        reg.showNotification(`💬 ${x.nome || "Una signora"} ti scrive${x.prova ? " (prova)" : ""}`, { body: `${corpo} (alle ${L.oraBreve(x.ora)}) · Tocca per leggerlo nell'app.`, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag: ("sofia-msg-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), renotify: true, data: { push: true, id: "qui-" + Date.now().toString(36), dove: "messaggi", rif: x.id } });
+        reg.showNotification(`💬 ${x.nome || "Una signora"} ti scrive${x.prova ? " (prova)" : ""}`, { body: `${corpo} (alle ${L.oraBreve(x.ora)}) · Tocca per leggerlo nell'app.`, icon: "notifica-messaggio.png", badge: "badge-casa-96.png", tag: ("sofia-msg-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), renotify: true, data: { push: true, id: "qui-" + Date.now().toString(36), dove: "messaggi", rif: x.id } });
       }
     }).catch(() => {});
   } catch (e) {}
@@ -12577,14 +12577,14 @@ async function accendiAvvisiTelefono() {
     const id = idTelefono(), voce = { sub: JSON.parse(JSON.stringify(sub)), chi: "titolare", nome: nomeTelefono(), quando: S.db.adesso() };
     await S.db.salva("importazioni", "push-sofia", { iscrizioni: { [id]: voce } }, true);
     S.pushSofia = { ...(S.pushSofia || {}), iscrizioni: { ...((S.pushSofia || {}).iscrizioni || {}), [id]: voce } };
-    try { await reg.showNotification("Sofia", { body: "Fatto: da adesso ti scrivo anche qui, sul telefono.", icon: "icona-casa-192.png", tag: "sofia-prova", data: { push: true } }); } catch (e) {}
+    try { await reg.showNotification("Sofia", { body: "Fatto: da adesso ti scrivo anche qui, sul telefono.", icon: "notifica-casa.png", badge: "badge-casa-96.png", tag: "sofia-prova", data: { push: true } }); } catch (e) {}
     toast("Avvisi accesi su questo telefono ✓");
     disegna(); return true;
   } catch (e) { console.warn("avvisi telefono", e); toast("Non ci sono riuscita: " + String((e && e.message) || e).slice(0, 90)); return false; }
   finally { accendoAvvisi = false; }
 }
 async function provaAvvisoTelefono() {
-  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification("Sofia", { body: "Prova: gli avvisi su questo telefono funzionano.", icon: "icona-casa-192.png", tag: "sofia-prova", data: { push: true } }); toast("Guarda le notifiche del telefono"); }
+  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification("Sofia", { body: "Prova: gli avvisi su questo telefono funzionano.", icon: "notifica-casa.png", badge: "badge-casa-96.png", tag: "sofia-prova", data: { push: true } }); toast("Guarda le notifiche del telefono"); }
   catch (e) { toast("Non riesco a mostrare l'avviso: " + String((e && e.message) || e).slice(0, 80)); }
 }
 function cardAvvisiTelefono() {
@@ -14560,7 +14560,7 @@ document.addEventListener("input", (e) => {
 //  giro-sofia.orologio.ultima quando lo fa partire l'orologio, così l'app vede se l'orologio va.
 //  «🗓️ Da fare al PC», in cima ad «Altro»: le cose da fare una volta sola, in ordine, con lo stato vero e il tasto giusto.
 // ============================================================================
-const GH_OROLOGIO = "https://github.com/settings/personal-access-tokens/new?name=Orologio%20di%20Sofia&description=La%20cassetta%20su%20Google%20fa%20partire%20il%20giro%20di%20Sofia%20ogni%2010%20minuti%20(solo%20Actions%20di%20pulizie-stanze-ricci)&target_name=michelepegoli2210-hub&expires_in=366&actions=write";
+const GH_OROLOGIO = "https://github.com/settings/personal-access-tokens/new?name=Orologio%20di%20Sofia&description=La%20cassetta%20su%20Google%20fa%20partire%20il%20giro%20di%20Sofia%20ogni%2010%20minuti%20(solo%20Actions%20di%20pulizie-stanze-ricci)&target_name=michelepegoli2210-hub&expires_in=365&actions=write";
 const ORO_CHIAVE_RX = /^github_pat_[A-Za-z0-9_]{40,}$/;
 const oroAcceso = () => !!(S.copia && S.copia.orologio && S.copia.orologio.acceso);
 function oroUltimo() { const g = S.giroSofia || {}; return (g.orologio && g.orologio.ultima) || ""; }
@@ -18025,7 +18025,7 @@ async function avvisaSulTelefono(titolo, corpo, url = "./index.html?lettura=1") 
   try {
     if (document.hidden && "Notification" in window && Notification.permission === "granted") {
       const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) { await reg.showNotification(titolo, { body: corpo, icon: "icona-casa-192.png", badge: "badge-casa-96.png", tag: "sofia-lettura", renotify: true, data: { url, ...(/segreteria/.test(url) ? { segreteria: "lettura" } : {}) } }); fatto = true; }
+      if (reg) { await reg.showNotification(titolo, { body: corpo, icon: "notifica-lettura.png", badge: "badge-casa-96.png", tag: "sofia-lettura", renotify: true, data: { url, ...(/segreteria/.test(url) ? { segreteria: "lettura" } : {}) } }); fatto = true; }
     }
   } catch (e) { console.warn("notifica", e); }
   try { if (S.avvisi && S.avvisi.token && S.avvisi.chatMio) await inviaTelegram(`👩 ${titolo}\n${corpo}`, "sofiaLettura", { aMe: true }); } catch (e) {}
@@ -19384,10 +19384,21 @@ avvia();
 //  notifica, anche ad app chiusa. La manda il giro di Sofia (sofia-giro/sveglia-giro.mjs). Dal telefono escono SOLO un codice
 //  e il giorno e l'ora (importazioni/jarvis-sveglie, lo leggono solo i proprietari): che cosa c'è da fare resta nel telefono,
 //  e la notifica la compone il lavoratore di sfondo (sw.js, mostraSveglia) con quello che sa lui. Toccata, apre Jarvis.
+//  1.98.0 (Michele, 18/11: «Jarvis deve essere in pratica una sveglia che io devo scrivere, che so, ricordami alle 18 di fare
+//  gli auguri a mio cognato, e alle 18 mi arriva la notifica di Jarvis, capisci?»): LA SVEGLIA ALL'ORA GIUSTA. «Ricordami…»,
+//  «avvisami…», «svegliami…» con l'ora = una cosa «esatta»: la notifica arriva all'ora detta, non 10 minuti prima (le altre
+//  cose con l'ora restano 10 minuti prima). Nel foglio «Cambia» si sceglie «🔔 10 minuti prima» o «⏰ All'ora giusta». Esce
+//  sempre e solo un codice e l'ora (esatte.<telefono>, accanto a telefoni.<telefono>). Il giro aspetta il minuto giusto e la
+//  cassetta (nel Google dell'albergo) lo fa partire 2 minuti prima di ogni sveglia; per una sveglia tra pochi minuti il
+//  telefono chiede alla cassetta di farlo partire subito («spingi»: senza dati).
 // ============================================================================
 const JV_CHIAVE = "ricci_jarvis", JV_ACCESO = "ricci_jarvis_acceso", JV_MUTO = "ricci_jarvis_muto";
 // 1.89.0, la sveglia: «0» = spenta su questo telefono · l'ultima lista uscita dal telefono (solo codici e orari) · la cache per il lavoratore di sfondo
 const JV_SVEGLIA = "ricci_jarvis_sveglia", JV_SV_FUORI = "ricci_jarvis_sveglie_fuori", JV_SV_CACHE = "ricci-jarvis", JV_SV_CODICE = /^[A-Za-z0-9_-]{1,60}$/;
+// 1.98.0: la sveglia degli impegni parte 10 minuti prima; una sveglia entro 13 minuti fa partire il giro subito; i verbi della
+// sveglia all'ora giusta («ricordami», «avvisami», «svegliami», anche dopo il quando: «alle 18 ricordami di…»)
+const JV_PRIMA_MS = 10 * 60000, JV_PRESTO_MS = 13 * 60000;
+const JV_VERBO_SVEGLIA = /(^|[\s,;:.!])(?:ricordamel[oaie]|ricordami|ricordarmel[oaie]|ricordarmi|avvisami|svegliami|fammi ricordare)(?=$|[\s,;:.!])/i;
 const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, foglio: null, rec: null, giro: 0, svOk: false, svPrimo: false };
 const JV_SEZ = { impegni: ["⏰", "Impegni"], obiettivi: ["🎯", "Obiettivi"], idee: ["💡", "Idee"], traguardi: ["🏁", "Traguardi"], piano: ["🗺️", "Il mio piano"] };
 const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Obiettivo", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
@@ -19511,6 +19522,9 @@ function jarvisSalva(d) {
 //  i proprietari). CHE COSA c'è da fare resta qui: lo tengo da parte per il lavoratore di sfondo (cache «ricci-jarvis»), che
 //  quando arriva la sveglia compone la notifica («⏰ Tra 10 minuti: …»). jvSveglieFuori è L'UNICO punto di Jarvis che scrive
 //  nel database, e scrive solo codici e orari.
+//  1.98.0: gli impegni in telefoni.<telefono> (la sveglia 10 minuti prima), i «ricordami alle…» in esatte.<telefono> (all'ora
+//  giusta: «⏰ Sono le 18: …»). L'altra strada che esce da Jarvis è jvSpingiSePresto: dice alla cassetta «fai partire il giro
+//  adesso», senza nessun dato.
 // ---------------------------------------------------------------------------
 function jvSvegliaVoluta() { try { return localStorage.getItem(JV_SVEGLIA) !== "0"; } catch (e) { return true; } }
 // "accesa" · "spenta" (l'ha spenta lui) · "avvisi" (su questo telefono le notifiche dell'app non sono accese) · "no" (non le sa ricevere)
@@ -19525,24 +19539,25 @@ function jvSveglieDi(d, adesso = Date.now()) {
   for (const x of (d.impegni || [])) {
     const e = String(x.entro || ""); if (x.fatta || e.length < 16 || !JV_SV_CODICE.test(String(x.id))) continue;
     const T = new Date(e).getTime(); if (!Number.isFinite(T) || T <= adesso) continue;
-    out.push({ id: String(x.id), T, testo: String(x.testo || ""), ora: jvOra(e.slice(11, 16)) });
+    out.push({ id: String(x.id), T, testo: String(x.testo || ""), ora: jvOra(e.slice(11, 16)), esatta: !!x.esatta, A: x.esatta ? T : T - JV_PRIMA_MS });   // 1.98.0
   }
   return out.sort((a, b) => a.T - b.T).slice(0, 40);
 }
 const jvHaSveglia = (x) => { const e = String((x && x.entro) || ""); return !!x && !x.fatta && e.length >= 16 && new Date(e).getTime() > Date.now(); };
-// la frase in coda a «Segnato…» quando la cosa ha l'ora (se manca meno di un quarto d'ora la sveglia parte col prossimo giro:
-// «tra poco», non «10 minuti prima»)
-function jvSvegliaFrase(entro) {
+// la frase in coda a «Segnato…» quando la cosa ha l'ora (se mancano meno di 10 minuti la sveglia parte subito: «tra poco», non
+// «10 minuti prima») · 1.98.0: con «ricordami alle…» la notifica arriva ALL'ORA
+function jvSvegliaFrase(entro, esatta = false) {
   const e = String(entro || ""), manca = e.length < 16 ? 0 : new Date(e).getTime() - Date.now(); if (!(manca > 0)) return "";
   const s = jvSvegliaStato();
-  return s === "accesa" ? (manca >= 15 * 60000 ? " Ti avviso 10 minuti prima." : " Ti avviso tra poco.") : s === "avvisi" ? " Per la sveglia tocca «Accendi», qui sotto." : "";
+  if (s === "accesa") return esatta ? ` Alle ${jvOra(e.slice(11, 16))} ti arriva la notifica.` : manca > JV_PRIMA_MS + 30000 ? " Ti avviso 10 minuti prima." : " Ti avviso tra poco.";
+  return s === "avvisi" ? " Per la sveglia tocca «Accendi», qui sotto." : "";
 }
 // nel telefono, per il lavoratore di sfondo: codice → che cosa, a che ora
 async function jvSveglieInTelefono(lista) {
   try {
     if (!("caches" in window)) return;
     const cache = await caches.open(JV_SV_CACHE);
-    const m = Object.fromEntries(lista.map(s => [s.id, { t: s.testo.slice(0, 120), q: new Date(s.T).toISOString(), o: s.ora }]));
+    const m = Object.fromEntries(lista.map(s => [s.id, { t: s.testo.slice(0, 120), q: new Date(s.T).toISOString(), o: s.ora, ...(s.esatta ? { x: 1 } : {}) }]));   // 1.98.0: x = all'ora giusta
     await cache.put(new Request(new URL("./jarvis/sveglie", location.href).href), new Response(JSON.stringify(m), { headers: { "Content-Type": "application/json" } }));
   } catch (e) {}
 }
@@ -19562,25 +19577,44 @@ async function jvSveglieFuori() {
     const tel = idTelefono(), lista = jarvisAcceso() && jvSvegliaStato() === "accesa" ? jvSveglieDi(jarvisDati()) : [];
     await jvSveglieInTelefono(lista);
     if (corsa !== jvSvCorsa) return;                                           // nel frattempo è cambiato qualcosa: vale l'ultima
-    const fuori = Object.fromEntries(lista.map(s => [s.id, new Date(s.T).toISOString()]));   // SOLO codice → giorno e ora
-    const firma = JSON.stringify([tel, fuori]);
+    // SOLO codice → giorno e ora: gli impegni (la sveglia 10 minuti prima) e, 1.98.0, i «ricordami alle…» (all'ora giusta)
+    const fuori = Object.fromEntries(lista.filter(s => !s.esatta).map(s => [s.id, new Date(s.T).toISOString()]));
+    const esatte = Object.fromEntries(lista.filter(s => s.esatta).map(s => [s.id, new Date(s.T).toISOString()]));
+    const firma = JSON.stringify([tel, fuori, esatte]);
     let prima = ""; try { prima = localStorage.getItem(JV_SV_FUORI) || ""; } catch (e) {}
-    if (firma === prima || (!lista.length && !prima)) return;                  // niente di nuovo da dire
+    if (firma === prima || (!lista.length && !prima)) { jvSpingiSePresto(lista); return; }   // niente di nuovo da dire
     const scritto = (async () => {
-      try { await S.db.aggiorna("importazioni", "jarvis-sveglie", { ["telefoni." + tel]: fuori, aggiornato: S.db.adesso() }); }
-      catch (e) { if (e && e.code && e.code !== "not-found") throw e; await S.db.salva("importazioni", "jarvis-sveglie", { telefoni: { [tel]: fuori }, aggiornato: S.db.adesso() }, true); }
+      try { await S.db.aggiorna("importazioni", "jarvis-sveglie", { ["telefoni." + tel]: fuori, ["esatte." + tel]: esatte, aggiornato: S.db.adesso() }); }
+      catch (e) { if (e && e.code && e.code !== "not-found") throw e; await S.db.salva("importazioni", "jarvis-sveglie", { telefoni: { [tel]: fuori }, esatte: { [tel]: esatte }, aggiornato: S.db.adesso() }, true); }
       return true;
     })();
     scritto.catch(() => {});                                                   // se fallisce dopo che ho smesso di aspettarla, niente errori a vuoto
     // senza rete la scrittura resta in attesa: non blocco niente, e la volta dopo ci riprovo
     const fatto = await Promise.race([scritto, new Promise(r => setTimeout(() => r(false), 12000))]);
-    if (fatto && corsa === jvSvCorsa) { try { localStorage.setItem(JV_SV_FUORI, firma); } catch (e) {} }
+    if (fatto && corsa === jvSvCorsa) { try { localStorage.setItem(JV_SV_FUORI, firma); } catch (e) {} jvSpingiSePresto(lista); }
   } catch (e) { console.warn("la sveglia di Jarvis non è partita:", e && e.code ? e.code : e); }
+}
+// 1.98.0 · UNA SVEGLIA TRA POCHI MINUTI: il giro deve partire SUBITO (i giri sono ogni 10 minuti, arriverebbe tardi). Lo fa
+// partire la cassetta: le si dice solo «spingi», col suo segreto; da qui non esce niente, nemmeno l'ora (l'ora la cassetta la
+// sa dal giro). Sul PC con la chiave di GitHub, se la cassetta non risponde, anche da qui. Una volta per sveglia, e non più di
+// una spinta ogni 50 secondi.
+const JV_SPINTE = new Set(); let jvSpintaUltima = 0;
+async function jvSpingiSePresto(lista) {
+  try {
+    const cassetta = !!(S.copia && S.copia.url && S.copia.segreto), pc = !!spintaConf(); if (!cassetta && !pc) return false;
+    const adesso = Date.now(), presto = (lista || []).filter(s => s.A - adesso <= JV_PRESTO_MS && !JV_SPINTE.has(s.id + "|" + s.A));
+    if (!presto.length || adesso - jvSpintaUltima < 50 * 1000) return false;
+    jvSpintaUltima = adesso; let fatto = false;
+    if (cassetta) { const r = await alWsChiama(S.copia.url, { azione: "spingi", segreto: S.copia.segreto }, 30000); fatto = !!(r && r.ok); }
+    if (!fatto && pc) fatto = !!(await spingiGiro("sveglia di Jarvis")).ok;
+    if (fatto) presto.forEach(s => JV_SPINTE.add(s.id + "|" + s.A));   // non riuscita: ci riprova al prossimo cambio
+    return fatto;
+  } catch (e) { return false; }
 }
 // la riga in fondo alla pagina: com'è la sveglia, e il tasto per accenderla o spegnerla
 function jvSvegliaHtml() {
   const s = jvSvegliaStato();
-  if (s === "accesa") return `<div class="jv-sv accesa"><span class="jv-sv-e" aria-hidden="true">🔔</span><span class="jv-sv-t"><b>Sveglia accesa</b><small>Ti avviso circa 10 minuti prima delle cose con l'ora.</small></span><button type="button" class="jv-b" data-jv-sveglia="spegni">Spegni</button></div>`;
+  if (s === "accesa") return `<div class="jv-sv accesa"><span class="jv-sv-e" aria-hidden="true">🔔</span><span class="jv-sv-t"><b>Sveglia accesa</b><small>Ti avviso 10 minuti prima delle cose con l'ora 🔔. Se mi dici «ricordami alle…», all'ora giusta ⏰.</small></span><button type="button" class="jv-b" data-jv-sveglia="spegni">Spegni</button></div>`;
   if (s === "spenta") return `<div class="jv-sv"><span class="jv-sv-e" aria-hidden="true">🔕</span><span class="jv-sv-t"><b>Sveglia spenta</b><small>Non ti avviso prima delle cose con l'ora.</small></span><button type="button" class="jv-b oro" data-jv-sveglia="accendi">Accendi</button></div>`;
   if (s === "avvisi") return `<div class="jv-sv"><span class="jv-sv-e" aria-hidden="true">🔔</span><span class="jv-sv-t"><b>Sveglia</b><small>Per avvisarti 10 minuti prima mi serve il permesso delle notifiche su questo telefono.</small></span><button type="button" class="jv-b oro" data-jv-sveglia="permesso">Accendi</button></div>`;
   return `<div class="jv-sv"><span class="jv-sv-e" aria-hidden="true">🔕</span><span class="jv-sv-t"><b>Sveglia</b><small>Questo telefono non sa ricevere gli avvisi dell'app. Aprila con Chrome.</small></span></div>`;
@@ -19730,7 +19764,7 @@ function jvTesta(titolo, dentro) {
 function jvRigaCosa(x, oggi, r = {}) {
   const id = esc(x.id), ob = r.tipo === "obiettivo", ora = ob ? "" : jvOraDi(x), fila = ob ? jvFila(x, oggi) : 0;
   const sotto = ob ? `ogni giorno${fila > 1 ? ` · ${fila} giorni di fila` : ""}` : r.tardi ? `in ritardo · ${jvQuando(x.entro)}` : ora ? `alle ${jvOra(ora)}` : "";
-  return `<div class="jv-t${r.fatta ? " fatta" : ""}${r.tardi ? " tardi" : ""}"><button type="button" class="jv-spunta" ${ob ? `data-jv-oggi="${id}"` : `data-jv-fatto="${id}"`} role="checkbox" aria-checked="${r.fatta ? "true" : "false"}" aria-label="${esc(x.testo)}: ${r.fatta ? "fatta, tocca per rimetterla da fare" : "tocca quando l'hai fatta"}">${r.fatta ? "✓" : ""}</button><span class="jv-tt"><b>${esc(x.testo)}</b>${sotto ? `<small>${esc(sotto)}${!ob && !r.fatta && JV.svOk && jvHaSveglia(x) ? ` <span class="jv-camp" role="img" aria-label="ti avviso 10 minuti prima">🔔</span>` : ""}</small>` : ""}</span><span class="jv-ta" aria-hidden="true">${ob ? "🎯" : jvArea(x.testo)}</span>${ob ? `<button type="button" class="jv-altro" data-jv-sez="obiettivi" aria-label="Apri gli obiettivi">›</button>` : `<button type="button" class="jv-altro" data-jv-cambia="${id}" aria-label="Cambia o togli: ${esc(x.testo)}">⋯</button>`}</div>`;
+  return `<div class="jv-t${r.fatta ? " fatta" : ""}${r.tardi ? " tardi" : ""}"><button type="button" class="jv-spunta" ${ob ? `data-jv-oggi="${id}"` : `data-jv-fatto="${id}"`} role="checkbox" aria-checked="${r.fatta ? "true" : "false"}" aria-label="${esc(x.testo)}: ${r.fatta ? "fatta, tocca per rimetterla da fare" : "tocca quando l'hai fatta"}">${r.fatta ? "✓" : ""}</button><span class="jv-tt"><b>${esc(x.testo)}</b>${sotto ? `<small>${esc(sotto)}${!ob && !r.fatta && JV.svOk && jvHaSveglia(x) ? (x.esatta ? ` <span class="jv-camp" role="img" aria-label="ti avviso all'ora giusta">⏰</span>` : ` <span class="jv-camp" role="img" aria-label="ti avviso 10 minuti prima">🔔</span>`) : ""}</small>` : ""}</span><span class="jv-ta" aria-hidden="true">${ob ? "🎯" : jvArea(x.testo)}</span>${ob ? `<button type="button" class="jv-altro" data-jv-sez="obiettivi" aria-label="Apri gli obiettivi">›</button>` : `<button type="button" class="jv-altro" data-jv-cambia="${id}" aria-label="Cambia o togli: ${esc(x.testo)}">⋯</button>`}</div>`;
 }
 function jvCasaHtml(d) {
   const oggi = L.oggiISO(), righe = jvOggi(d), fatte = righe.filter(r => r.fatta).length, prossimi = jvProssimi(d), domani = prossimi.filter(x => jvGiorno(x) === L.aggiungiGiorni(oggi, 1)).length;
@@ -19779,6 +19813,7 @@ function jvFoglioHtml() {
   if (f.cambia) return `<div class="jv-velo" data-jv-foglio-via></div><div class="jv-foglio" role="dialog" aria-label="Cambia"><b class="jv-ft">Cambia</b><textarea id="jvTesto" rows="2">${esc(f.testo || "")}</textarea>
     <p class="jv-aiuto">Per quando?</p><div class="jv-quando"><button type="button" class="jv-b" data-jv-quando="${oggi}">Oggi</button><button type="button" class="jv-b" data-jv-quando="${L.aggiungiGiorni(oggi, 1)}">Domani</button><button type="button" class="jv-b" data-jv-quando="">Senza giorno</button></div>
     <div class="jv-quando2"><label>Giorno<input type="date" id="jvData" value="${esc(f.giorno || "")}"></label><label>Ora<input type="time" id="jvOraIn" value="${esc(f.ora || "")}"></label></div>
+    <p class="jv-aiuto">La notifica</p><div class="jv-avviso" role="group" aria-label="Quando ti avviso"><button type="button" class="jv-b" data-jv-avviso="prima" aria-pressed="${f.esatta ? "false" : "true"}">🔔 10 minuti prima</button><button type="button" class="jv-b" data-jv-avviso="ora" aria-pressed="${f.esatta ? "true" : "false"}">⏰ All'ora giusta</button></div>
     <button type="button" class="jv-b oro grande" data-jv-cambia-salva>Salva</button><button type="button" class="jv-b" data-jv-cambia-togli>🗑 Toglila</button><button type="button" class="jv-b" data-jv-foglio-via>Annulla</button></div>`;
   const dove = JV_SEZ[f.dove] ? f.dove : "impegni";
   const tasti = dove === "impegni" ? `<button type="button" class="jv-b oro grande" data-jv-metti="impegni">Salva</button><p class="jv-aiuto">Oppure è un'altra cosa:</p><div class="jv-dove"><button type="button" class="jv-b" data-jv-metti="obiettivi">🎯 Di ogni giorno</button><button type="button" class="jv-b" data-jv-metti="idee">💡 Un'idea</button></div>`
@@ -19824,7 +19859,11 @@ function jvSezione(k) {
 // obiettivo), «idea …». Il giorno e l'ora li trova lo stesso lettore dei promemoria di Sofia (lettura.js), senza IA.
 function jvCapisci(frase) {
   let t = String(frase || "").replace(/\s+/g, " ").trim(); if (!t) return null;
-  t = t.replace(/^(?:ehi |hey |ok |allora |senti )?jarvis[,!.: ]+/i, "").replace(/^(?:segnami|segna|aggiungimi|aggiungi|mettimi|metti|scrivimi|scrivi|salvami|salva|ricordami|devo|dovrei)(?:[,: ]+|$)/i, "").replace(/^(?:di|che devo|che)\s+/i, "").trim();
+  t = t.replace(/^(?:ehi |hey |ok |allora |senti )?jarvis[,!.: ]+/i, "");
+  // 1.98.0: «ricordami…», «avvisami…», «svegliami…» (anche dopo il quando: «alle 18 ricordami di…») = la sveglia all'ora giusta
+  const esatta = JV_VERBO_SVEGLIA.test(t), sveglia = /(^|[\s,;:.!])svegliami(?=$|[\s,;:.!])/i.test(t);
+  if (esatta) t = t.replace(new RegExp(JV_VERBO_SVEGLIA.source + "(?:[,:]?\\s+(?:di|che devo|che)(?=\\s))?", "i"), "$1").replace(/\s+/g, " ").replace(/^[\s,;:.!]+/, "").trim();
+  t = t.replace(/^(?:segnami|segna|aggiungimi|aggiungi|mettimi|metti|scrivimi|scrivi|salvami|salva|ricordami|devo|dovrei)(?:[,: ]+|$)/i, "").replace(/^(?:di|che devo|che)\s+/i, "").trim();
   const m = /^(?:un nuovo |una nuova |un'|un |una |il mio |la mia |nuovo |nuova )?(impegno|appuntamento|obiettivo|abitudine|idea|traguardo|piano|master plan)(?:[,:;.! ]+|$)(.*)$/i.exec(t);
   let dove = "", detto = false, resto = t;
   if (m) { const k = m[1].toLowerCase(); dove = /impegno|appuntamento/.test(k) ? "impegni" : /obiettivo|abitudine/.test(k) ? "obiettivi" : k === "idea" ? "idee" : k === "traguardo" ? "traguardi" : "piano"; detto = true; resto = m[2].trim(); }
@@ -19834,20 +19873,31 @@ function jvCapisci(frase) {
   if (resto && (dove === "impegni" || !dove)) {
     let r = null; try { r = LET.promemoriaDa("ricordami " + resto, L.oggiISO(), minutiRoma()); } catch (e) { r = null; }
     if (r && !r.vuoto && r.testo) { entro = r.entro || ""; testo = r.testo; if (!entro && /\b(oggi|stamattina)\b/i.test(resto)) entro = L.oggiISO(); if (!dove) dove = "impegni"; }
+    else if (r && r.vuoto && esatta && r.entro) { entro = r.entro; testo = sveglia ? "Sveglia" : "Promemoria"; if (!dove) dove = "impegni"; }   // 1.98.0: «svegliami alle 7»
   }
+  if (esatta && entro.length >= 16) {
+    // 1.98.0: «svegliami alle 7» è la mattina (non le 19), se non dice «sera» o «pomeriggio»
+    const h = /\balle (\d{1,2})\b/i.exec(resto), ora = Number(entro.slice(11, 13));
+    if (sveglia && h && Number(h[1]) <= 12 && ora >= 13 && ora - 12 === Number(h[1]) && !/sera|pomeriggio|notte/i.test(resto)) {
+      const am = `${String(ora - 12).padStart(2, "0")}${entro.slice(13, 16)}`, oggi = L.oggiISO();
+      entro = (new Date(`${oggi}T${am}`).getTime() > Date.now() ? oggi : L.aggiungiGiorni(oggi, 1)) + "T" + am;
+    }
+  }
+  // 1.98.0: «ricordami domani di…» (il giorno senza l'ora): alle 9 di quel giorno, se non sono già passate
+  if (esatta && /^\d{4}-\d{2}-\d{2}$/.test(entro) && new Date(entro + "T09:00").getTime() > Date.now()) entro += "T09:00";
   testo = testo.replace(/[\s,;:.!?]+$/, "").trim();
-  return { dove, detto, testo: testo.charAt(0).toUpperCase() + testo.slice(1), entro };
+  return { dove, detto, testo: testo.charAt(0).toUpperCase() + testo.slice(1), entro, esatta: esatta && entro.length >= 16, ricorda: esatta };
 }
-function jvMetti(dove, testo, entro = "") {
+function jvMetti(dove, testo, entro = "", esatta = false, ricorda = false) {
   const d = jarvisDati(), t = String(testo || "").replace(/\s+/g, " ").trim(), oggi = L.oggiISO(); if (!t) return "";
   if (dove === "piano") d.piano = (d.piano ? d.piano.replace(/\s+$/, "") + "\n" : "") + t;
-  else if (dove === "impegni") d.impegni.push({ id: jvId(), testo: t, entro: String(entro || ""), creata: oggi });
+  else if (dove === "impegni") d.impegni.push({ id: jvId(), testo: t, entro: String(entro || ""), creata: oggi, ...(esatta && String(entro || "").length >= 16 ? { esatta: true } : {}) });   // 1.98.0
   else if (dove === "obiettivi") d.obiettivi.push({ id: jvId(), testo: t, da: oggi, fatti: [] });
   else if (dove === "traguardi") d.traguardi.push({ id: jvId(), testo: t, quando: oggi });
   else if (dove === "idee") d.idee.push({ id: jvId(), testo: t, quando: oggi });
   else return "";
   if (!jarvisSalva(d)) return JV.dice;
-  if (dove === "impegni") { const e = String(entro || ""), ora = e.length > 10 ? " alle " + jvOra(e.slice(11, 16)) : ""; return (!e ? `Segnato tra le cose da fare: ${t}.` : e.slice(0, 10) === oggi ? `Segnato per oggi: ${t}${ora}.` : `Segnato: ${t}, ${jvQuando(e, true)}.`) + jvSvegliaFrase(e); }
+  if (dove === "impegni") { const e = String(entro || ""), ora = e.length > 10 ? " alle " + jvOra(e.slice(11, 16)) : ""; return (!e ? `Segnato tra le cose da fare: ${t}.` : e.slice(0, 10) === oggi ? `Segnato per oggi: ${t}${ora}.` : `Segnato: ${t}, ${jvQuando(e, true)}.`) + jvSvegliaFrase(e, esatta && e.length >= 16) + (ricorda && e.length < 16 ? " Se vuoi che ti avvisi, dimmi anche l'ora: «ricordami alle 18 di…»." : ""); }
   return dove === "obiettivi" ? `Nuovo obiettivo di ogni giorno: ${t}.` : dove === "idee" ? `Idea salvata: ${t}.` : dove === "traguardi" ? `Bravo. Traguardo segnato: ${t}.` : "L'ho aggiunto al tuo piano.";
 }
 // trovare, tra le cose da fare, quella che somiglia di più a quello che ha detto («ho fatto la palestra» → «Palestra»)
@@ -19899,7 +19949,7 @@ function jarvisSentito(frase, qui = "") {
   if (!qui) { const r = jvComando(detto); if (r === true) return; if (r) { jarvisDici(r); return; } }
   const c = jvCapisci(detto); if (!c || !c.testo) { JV.dice = "Non ho capito. Riprova, oppure scrivila."; jarvisDisegna(); return; }
   const dove = c.detto ? c.dove : (qui || c.dove || "impegni");
-  jarvisDici(jvMetti(dove, c.testo, dove === "impegni" ? c.entro : ""));
+  jarvisDici(jvMetti(dove, c.testo, dove === "impegni" ? c.entro : "", dove === "impegni" && !!c.esatta, dove === "impegni" && !!c.ricorda));
 }
 function jarvisMic(qui = "") {
   if (JV.rec) { try { JV.rec.stop(); } catch (e) {} return; }
@@ -19923,13 +19973,14 @@ document.addEventListener("click", (e) => {
   const q = (s) => t.closest(s); let x;
   if (q("[data-jv-togli-si]")) { const f = JV.foglio || {}; JV.foglio = null; if (f.togli) jvCambia(d => { d[f.k] = d[f.k].filter(y => y.id !== f.id); }, "Tolta."); else jarvisDisegna(); return; }
   if (q("[data-jv-foglio-via]")) { JV.foglio = null; jarvisDisegna(); return; }
+  if ((x = q("[data-jv-avviso]"))) { const f = JV.foglio || {}; f.esatta = x.dataset.jvAvviso === "ora"; x.parentElement.querySelectorAll("[data-jv-avviso]").forEach(b => b.setAttribute("aria-pressed", b === x ? "true" : "false")); return; }   // 1.98.0
   if ((x = q("[data-jv-quando]"))) { const g = document.getElementById("jvData"), o = document.getElementById("jvOraIn"); if (g) g.value = x.dataset.jvQuando || ""; if (o && !x.dataset.jvQuando) o.value = ""; return; }
   if (q("[data-jv-cambia-salva]")) {
     const f = JV.foglio || {}, testo = String((document.getElementById("jvTesto") || {}).value || "").replace(/\s+/g, " ").trim(), ora = String((document.getElementById("jvOraIn") || {}).value || "").slice(0, 5);
     let g = String((document.getElementById("jvData") || {}).value || "").slice(0, 10);
     if (!testo) { jvFuoco(); return; }
     if (ora && !g) g = L.oggiISO();
-    JV.foglio = null; jvCambia(d => { const o = d.impegni.find(y => y.id === f.cambia); if (!o) return false; o.testo = testo.charAt(0).toUpperCase() + testo.slice(1); o.entro = g ? g + (/^\d\d:\d\d$/.test(ora) ? "T" + ora : "") : ""; return `Cambiata: ${o.testo}${o.entro ? ", " + jvQuando(o.entro, true) : ""}.` + jvSvegliaFrase(o.entro); });
+    JV.foglio = null; jvCambia(d => { const o = d.impegni.find(y => y.id === f.cambia); if (!o) return false; o.testo = testo.charAt(0).toUpperCase() + testo.slice(1); o.entro = g ? g + (/^\d\d:\d\d$/.test(ora) ? "T" + ora : "") : ""; if (f.esatta && o.entro.length >= 16) o.esatta = true; else delete o.esatta; return `Cambiata: ${o.testo}${o.entro ? ", " + jvQuando(o.entro, true) : ""}.` + jvSvegliaFrase(o.entro, !!o.esatta); });
     return;
   }
   if (q("[data-jv-cambia-togli]")) { const f = JV.foglio || {}; JV.foglio = { togli: true, k: "impegni", id: f.cambia, testo: String((document.getElementById("jvTesto") || {}).value || f.testo || "") }; jarvisDisegna(); return; }
@@ -19937,7 +19988,7 @@ document.addEventListener("click", (e) => {
     const k = x.dataset.jvMetti, scritto = String((document.getElementById("jvTesto") || {}).value || "").trim();
     if (!scritto) { jvFuoco(); return; }
     const c = jvCapisci(scritto) || { testo: scritto, entro: "" };
-    JV.foglio = null; jarvisDici(jvMetti(k, c.testo || scritto, k === "impegni" ? c.entro : ""));
+    JV.foglio = null; jarvisDici(jvMetti(k, c.testo || scritto, k === "impegni" ? c.entro : "", k === "impegni" && !!c.esatta, k === "impegni" && !!c.ricorda));
     return;
   }
   if (q(".jv-foglio")) return;
@@ -19949,11 +20000,11 @@ document.addEventListener("click", (e) => {
     try { localStorage.removeItem(JV_SVEGLIA); } catch (er) {}
     if (cosa === "permesso") {
       // il permesso delle notifiche e l'iscrizione agli avvisi: la stessa strada degli avvisi di Sofia (Altro)
-      accendiAvvisiTelefono().then(() => { jvSveglieAggiorna(0); if (!JV.aperto) return; const ok = jvSvegliaStato() === "accesa"; jarvisDici(ok ? "Sveglia accesa. Ti avviso circa 10 minuti prima." : "Senza il permesso delle notifiche non ti posso avvisare."); });
+      accendiAvvisiTelefono().then(() => { jvSveglieAggiorna(0); if (!JV.aperto) return; const ok = jvSvegliaStato() === "accesa"; jarvisDici(ok ? "Sveglia accesa. Ti avviso 10 minuti prima delle cose con l'ora; se mi dici «ricordami alle…», all'ora giusta." : "Senza il permesso delle notifiche non ti posso avvisare."); });
       return;
     }
     jvSveglieAggiorna(0);
-    jarvisDici(jvSvegliaStato() === "accesa" ? "Sveglia accesa. Ti avviso circa 10 minuti prima." : "Per la sveglia mi serve il permesso delle notifiche.");
+    jarvisDici(jvSvegliaStato() === "accesa" ? "Sveglia accesa. Ti avviso 10 minuti prima delle cose con l'ora; se mi dici «ricordami alle…», all'ora giusta." : "Per la sveglia mi serve il permesso delle notifiche.");
     return;
   }
   if (q("[data-jv-muto]")) { try { if (jvMuto()) localStorage.removeItem(JV_MUTO); else localStorage.setItem(JV_MUTO, "1"); } catch (er) {} if (jvMuto()) jarvisZitto(); jarvisDisegna(); return; }
@@ -19963,7 +20014,7 @@ document.addEventListener("click", (e) => {
   if ((x = q("[data-jv-scrivi]"))) { jarvisZitto(); JV.foglio = { testo: "", dove: x.dataset.jvScrivi || "impegni" }; jarvisDisegna(); jvFuoco(); return; }
   if ((x = q("[data-jv-leggi]"))) { if (JV.parla) jarvisZitto(); else jarvisDici(jvLeggi(x.dataset.jvLeggi), false); return; }
   if (q("[data-jv-piano-salva]")) { const v = String((document.getElementById("jvPiano") || {}).value || "").trim(); jvCambia(d => { d.piano = v; }, "Piano salvato."); return; }
-  if ((x = q("[data-jv-cambia]"))) { const id = x.dataset.jvCambia, o = jarvisDati().impegni.find(y => y.id === id); if (o) { jarvisZitto(); JV.foglio = { cambia: id, testo: o.testo, giorno: jvGiorno(o), ora: jvOraDi(o) }; jarvisDisegna(); } return; }
+  if ((x = q("[data-jv-cambia]"))) { const id = x.dataset.jvCambia, o = jarvisDati().impegni.find(y => y.id === id); if (o) { jarvisZitto(); JV.foglio = { cambia: id, testo: o.testo, giorno: jvGiorno(o), ora: jvOraDi(o), esatta: !!o.esatta }; jarvisDisegna(); } return; }
   // il tondo: fatta (resta barrata in fondo alla lista di oggi) · toccato di nuovo: torna da fare
   if ((x = q("[data-jv-fatto]"))) { const id = x.dataset.jvFatto, oggi = L.oggiISO(); jvCambia(d => { const o = d.impegni.find(y => y.id === id); if (!o) return false; if (o.fatta) { delete o.fatta; return ""; } o.fatta = oggi; return jvDopoSpunta(d, o.testo); }); return; }
   if ((x = q("[data-jv-oggi]"))) { const id = x.dataset.jvOggi, oggi = L.oggiISO(); jvCambia(d => { const o = d.obiettivi.find(y => y.id === id); if (!o) return false; const f = Array.isArray(o.fatti) ? o.fatti : []; const si = f.includes(oggi); o.fatti = (si ? f.filter(g => g !== oggi) : [...f, oggi]).slice(-90); return si ? "" : jvDopoSpunta(d, o.testo); }); return; }
