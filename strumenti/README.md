@@ -74,3 +74,18 @@
 - `taglia-disegni.py` (1.94.0) — i disegnini a matita della Segreteria. Gemini fa un foglio solo con tutti i disegni su fondo
   bianco (12, quattro per riga); il foglio si riprende dallo schermo a strisce e questo lo rimette insieme, trova i disegni,
   toglie il bianco di fuori (non quello dentro: il foglio della lettera, i denti) e scrive i `mat-<nome>.webp`, 240x240.
+- I LAMPI NEL RITAGLIO (1.95.0): `liscia-bordo.py`, `conta-lampi.py`, `striscia.py`, `rifai-giro6.sh`. Michele: «trema
+  leggermente quando c'è il video che si mette i capelli dietro l'orecchio… lagga nei capelli… si toglie le immagini».
+  Il ritaglio (`ritaglia-gemini.py`) lavora un fotogramma alla volta e ogni tanto, per uno-tre fotogrammi, apre un buco dentro
+  di lei: lì si vede il fondo, un lampo chiaro (accanto alla guancia nel video dei capelli; tra le dita, sulla spalla e sul
+  petto nel video del bacio). `liscia-bordo.py <ritagli> <piatti> <uscita>` chiude SOLO i buchi sbagliati di sicuro: grossi
+  (150 puntini), brevi (meno di 4 fotogrammi) e in un posto dove la sala non si vede mai in tutto il video (lì c'è sempre
+  lei); più i loro resti nei due fotogrammi vicini. I fotogrammi che non cambiano restano lo stesso file. `conta-lampi.py
+  <piatti> <ritagli prima> <ritagli dopo>` conta i puntini che spariscono o compaiono per uno o due fotogrammi mentre
+  l'immagine lì resta uguale (bacio: da 899 a 31; capelli: da 1003 a 62; nessun lampo nuovo). `striscia.py <piatti> <ritagli>
+  x0,y0,x1,y1 f1,f2,… uscita.png [<altri ritagli>]` mette in fila, fotogramma per fotogramma, il video e le sagome (il
+  trasparente in verde): i fotogrammi toccati e i loro vicini si guardano TUTTI prima di rifare il filmato. Poi il filmato
+  si confronta con quello di prima fotogramma per fotogramma: devono cambiare solo quelli (13 su 891).
+  Provato e scartato (sta scritto in testa a `liscia-bordo.py`): la «trasparenza di mezzo» tra cinque fotogrammi (toglie il 7%
+  del tremolio, che è quasi tutto movimento vero, e taglia a scalini il bordo delle mani che corrono) e chiudere i buchini tra
+  i riccioli (fanno vedere la sala in mezzo ai capelli). `rifai-giro6.sh` è tutta la fila: ritagli, rientri, giro, codifica.
