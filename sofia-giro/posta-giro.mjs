@@ -11,7 +11,13 @@
 //  1.36.0 (app 1.84.2) · Michele, 15/11: «mi raccomando le email devono avere una notifica più specifica». Ogni mail nuova
 //  va anche in «avvisare» (importazioni/posta-albergo): il giro manda a Michele una notifica per mail, con chi scrive,
 //  l'oggetto e l'inizio del testo (notificheEmail); di notte aspettano le 6:30; più vecchie di 2 giorni non si avvisano più.
+//  1.38.0 (app 1.95.0) · Michele, 17/11: «quando mi arriva una prenotazione a me il telefono deve proprio vibrare, suonare».
+//  Un'email di prenotazione (L.emailPrenotazione, logica.js: la Ciclovia Adriatica, Booking, Expedia, Airbnb, o chiunque scriva
+//  «richiesta di prenotazione» nell'oggetto) ha la sua notifica, sempre una per email: «🛎️ Richiesta di prenotazione · Ciclovia
+//  Adriatica», che vibra e resta sul telefono finché non la tocca (vibra: true, come «Da fare tu»), con «⏳ Rispondi entro…»
+//  quando il sito dà un tempo per rispondere (la Ciclovia: 12 ore dalle 7 alle 21). Di notte aspetta le 6:30 come le altre.
 // ============================================================================
+import * as L from "../logica.js";
 export const URL_CASELLA = /^https:\/\/script\.google\.com\/(?:a\/[^/]+\/)?macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/;
 const SEGRETO = /^[A-Za-z0-9_-]{24,80}$/;
 export const CHAT_EMAIL = "Email albergo";
@@ -60,7 +66,7 @@ function taglia(s, n) {
 }
 export function perAvviso(m) {
   return { id: String(m.id), ts: Number(m.ts) || 0, chi: String(m.chi || m.dominio || "").replace(/[<>]/g, "").trim().slice(0, 60),
-    oggetto: taglia(m.oggetto, 140), inizio: taglia(m.testo, 220), allegati: Number(m.allegati) || 0 };
+    oggetto: taglia(m.oggetto, 140), inizio: taglia(m.testo, 220), allegati: Number(m.allegati) || 0, dominio: String(m.dominio || "").toLowerCase().slice(0, 80) };   // 1.38.0: il dominio, per riconoscere il sito di prenotazione
 }
 // quelle che aspettavano più le nuove (senza doppioni), in ordine, al massimo 20, non più vecchie di 2 giorni
 export function daAvvisare(c, mail, ora) {
@@ -82,6 +88,22 @@ export function notificheEmail(lista, adesso = new Date()) {
     return `🕐 È arrivata il ${data.slice(8)}/${data.slice(5, 7)} alle ${ora}`;
   };
   const chi = (x) => unaRiga(x.chi) || "qualcuno";
+  // 1.38.0: le prenotazioni, una notifica per ognuna, che vibra e resta; le altre email come prima
+  const pren = l.map(x => ({ x, c: L.emailPrenotazione(x) })).filter(y => y.c);
+  if (pren.length) {
+    const entro = (y) => {
+      if (!y.c.oreRisposta) return "";
+      const sc = L.scadenzaRisposta(Number(y.x.ts) || adesso.getTime(), y.c.oreRisposta); if (!sc || sc <= adesso.getTime()) return "";
+      const d = dataOraRoma(sc), domani = dataOraRoma(adesso.getTime() + 24 * 3600 * 1000).data;
+      return `⏳ Rispondi entro ${d.data === oggi ? "oggi" : d.data === domani ? "domani" : `il ${d.data.slice(8)}/${d.data.slice(5, 7)}`} alle ${d.ora}`;
+    };
+    const mie = pren.map(y => ({
+      titolo: `${y.c.annullata ? "❌ Prenotazione annullata" : y.c.richiesta ? "🛎️ Richiesta di prenotazione" : "🛎️ Prenotazione"} · ${unaRiga(y.c.nome)}`.slice(0, 80),
+      testo: [`«${unaRiga(y.x.oggetto) || "senza oggetto"}»`, unaRiga(y.x.inizio), entro(y), quando(y.x)].filter(Boolean).join("\n"),
+      tag: ("sofia-pren-" + String(y.x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), vibra: true, prenotazione: true }));
+    const visti = new Set(pren.map(y => String(y.x.id)));
+    return [...mie, ...notificheEmail(l.filter(x => !visti.has(String(x.id))), adesso)];
+  }
   if (l.length <= 3) return l.map(x => ({
     titolo: `📧 Email da ${chi(x)}`.slice(0, 80),
     testo: [`«${unaRiga(x.oggetto) || "senza oggetto"}»`, unaRiga(x.inizio), x.allegati ? `📎 ${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}` : "", quando(x)].filter(Boolean).join("\n"),

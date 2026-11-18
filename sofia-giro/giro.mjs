@@ -68,6 +68,9 @@
 //  delle chat tiene solo le azioni nell'app (lettura.js senzaEco); se a una richiesta di un altro lui ha già scritto in quella
 //  chat, l'allarme «Da fare tu» non suona più; i promemoria li chiede lui («Sofia ricordamelo»): una scheda loro, che suona
 //  all'ora detta (perte-giro.mjs, lettura-giro.mjs).
+//  1.38.0 (app 1.95.0): LE PRENOTAZIONI SUONANO (Michele, 17/11: «quando mi arriva una prenotazione a me il telefono deve proprio
+//  vibrare, suonare»): un'email di prenotazione (la Ciclovia Adriatica, Booking, Expedia, Airbnb…) ha la sua notifica che vibra
+//  e resta, con «Rispondi entro…» (posta-giro.mjs, notificheEmail; le regole stanno in logica.js, le stesse dell'app).
 //  1.37.0 (app 1.89.0): LA SVEGLIA DI JARVIS (Michele, 16/11: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti
 //  prima di quell'impegno lì, perché altrimenti non ha senso»). A ogni giro, prima di tutto il resto, parte la sveglia degli
 //  impegni che cominciano entro un quarto d'ora (sveglia-giro.mjs). Dal database si leggono solo un codice e l'ora: che cosa
@@ -87,7 +90,7 @@ import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'o
 import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.37.0";
+export const VERSIONE_GIRO = "1.38.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -351,7 +354,8 @@ export async function giro({ db, telegram, push = null, adesso = new Date(), gem
         if (!puoMe5) esiti.push("email dell'albergo: nessun telefono con le notifiche accese");
         else {
           let partite = 0;
-          for (const n of notificheEmail(pa.avvisare, adesso)) if (await mandaMe(n.testo, "notifica di una email dell'albergo", n.titolo, true, { dove: "segreteria", tag: n.tag })) partite++;
+          // 1.38.0: una prenotazione vibra e resta sul telefono finché non la tocca (nel registro pubblico solo «notifica di una prenotazione»)
+          for (const n of notificheEmail(pa.avvisare, adesso)) if (await mandaMe(n.testo, n.prenotazione ? "notifica di una prenotazione" : "notifica di una email dell'albergo", n.titolo, true, { dove: "segreteria", tag: n.tag, ...(n.vibra ? { vibra: true } : {}) })) partite++;
           if (partite) await db.merge("importazioni", "posta-albergo", { avvisare: [] });   // se non è arrivata nessuna, si riprova al giro dopo
         }
       }
