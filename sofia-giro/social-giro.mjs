@@ -17,8 +17,13 @@
 // ============================================================================
 import { chiediGemini } from "./lettura-giro.mjs";
 
-export const VERSIONE_SOCIAL = "1.0.0";
+export const VERSIONE_SOCIAL = "1.1.0";
 export const IG = "https://graph.instagram.com";
+// giro 1.40.0 (19/11/2026): le app nuove di Meta hanno solo «API setup with Unified login». La chiave (di un «utente di
+// sistema») non comincia con IG, non scade mai e va su graph.facebook.com; l'account Instagram che le è stato dato si trova
+// con me/assigned_instagram_accounts. Le chiavi vecchie (IG…) restano sulla strada di prima.
+export const FB = "https://graph.facebook.com";
+export const unificata = (t) => !!String(t || "").trim() && !/^IG/.test(String(t || "").trim());
 const GIORNO = 86400000;
 export const RINNOVA_OGNI_MS = 10 * GIORNO;
 export const ORA_POST = 18 * 60 + 30, ORA_FINE_POST = 22 * 60;   // minuti, ora di Roma
@@ -110,37 +115,45 @@ const regole = `REGOLE: scrivi solo cose vere, prese da questi FATTI; mai prezzi
 
 // ---- Instagram (la strada ufficiale: «Instagram API with Instagram Login», graph.instagram.com) ----------------------
 function erroreIG(e, st) { const x = new Error(pulito((e && e.message) || ("HTTP " + st))); x.codice = Number((e && e.code) || st) || 0; x.sotto = Number(e && e.error_subcode) || 0; x.ig = true; return x; }
-async function chiama(rete, metodo, percorso, parametri, chiave) {
+async function chiama(rete, metodo, percorso, parametri, chiave, host = IG) {   // 1.40.0: host = FB con la chiave nuova
   const p = new URLSearchParams({ ...(parametri || {}), access_token: chiave });
-  const r = metodo === "GET" ? await rete(`${IG}/${percorso}?${p}`, { method: "GET" })
-    : await rete(`${IG}/${percorso}`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: p.toString() });
+  const r = metodo === "GET" ? await rete(`${host}/${percorso}?${p}`, { method: "GET" })
+    : await rete(`${host}/${percorso}`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: p.toString() });
   const j = (r && r.json) || {};
   if (j.error) throw erroreIG(j.error, r.status);
   if (!r || r.status >= 400) throw erroreIG(null, r ? r.status : 0);
   return j;
 }
-export const chiaveMorta = (e) => e && e.ig && (e.codice === 190 || e.codice === 102 || e.codice === 463 || e.codice === 467);
+export const chiaveMorta = (e) => e && e.ig && (e.codice === 190 || e.codice === 102 || e.codice === 463 || e.codice === 467 || e.nessuno === true);
 export async function controllaChiave(rete, chiave) {
+  if (unificata(chiave)) {   // 1.40.0: l'account Instagram dato a questa chiave (l'accesso unificato c'è solo per gli account professionali)
+    const j = await chiama(rete, "GET", "me/assigned_instagram_accounts", {}, chiave, FB);
+    const a = (Array.isArray(j.data) ? j.data : []).find(x => x && x.id);
+    if (!a) { const x = erroreIG({ message: "la chiave non vede nessun account Instagram" }, 0); x.nessuno = true; throw x; }
+    let nome = String(a.username || "");
+    if (!nome) { try { nome = String((await chiama(rete, "GET", String(a.id), { fields: "username" }, chiave, FB)).username || ""); } catch (e) { if (chiaveMorta(e)) throw e; } }
+    return { utente: String(a.id), nome, tipo: "BUSINESS", via: "fb" };
+  }
   const j = await chiama(rete, "GET", "me", { fields: "user_id,username,account_type" }, chiave);
-  return { utente: String(j.user_id || j.id || ""), nome: String(j.username || ""), tipo: String(j.account_type || "") };
+  return { utente: String(j.user_id || j.id || ""), nome: String(j.username || ""), tipo: String(j.account_type || ""), via: "ig" };
 }
 export async function rinnovaChiave(rete, chiave) {
   const j = await chiama(rete, "GET", "refresh_access_token", { grant_type: "ig_refresh_token" }, chiave);
   if (!j.access_token) throw erroreIG({ message: "rinnovo senza chiave" }, 0);
   return { token: String(j.access_token), secondi: Number(j.expires_in) || 60 * 86400 };
 }
-export async function pubblicaFoto({ rete, chiave, utente, url, testo, aspetta = async () => {} }) {
-  const c = await chiama(rete, "POST", `${utente}/media`, { image_url: url, caption: testo }, chiave);
+export async function pubblicaFoto({ rete, chiave, utente, url, testo, aspetta = async () => {}, host = IG }) {
+  const c = await chiama(rete, "POST", `${utente}/media`, { image_url: url, caption: testo }, chiave, host);
   for (let i = 0; i < 6; i++) {
-    const st = await chiama(rete, "GET", String(c.id), { fields: "status_code" }, chiave);
+    const st = await chiama(rete, "GET", String(c.id), { fields: "status_code" }, chiave, host);
     if (st.status_code === "FINISHED") break;
     if (st.status_code === "ERROR" || st.status_code === "EXPIRED") throw erroreIG({ message: "Instagram non ha preso la foto (" + st.status_code + ")" }, 0);
     if (i === 5) throw erroreIG({ message: "Instagram ci mette troppo a preparare la foto" }, 0);
     await aspetta(3000);
   }
-  const m = await chiama(rete, "POST", `${utente}/media_publish`, { creation_id: String(c.id) }, chiave);
+  const m = await chiama(rete, "POST", `${utente}/media_publish`, { creation_id: String(c.id) }, chiave, host);
   let link = "";
-  try { link = String((await chiama(rete, "GET", String(m.id), { fields: "permalink" }, chiave)).permalink || ""); } catch (e) {}
+  try { link = String((await chiama(rete, "GET", String(m.id), { fields: "permalink" }, chiave, host)).permalink || ""); } catch (e) {}
   return { id: String(m.id), link };
 }
 
@@ -191,7 +204,7 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
   const morta = async () => {   // la chiave non va più (scaduta, tolta, password cambiata)
     ok = false; m.stato = "chiave"; m.chiaveControllata = ora;
     await db.segnaSe("importazioni", "social-chiave", "token", chiave, { stato: "scaduta", controllata: ora });
-    await avvisaUnaVolta("chiave", { titolo: "📣 Instagram: la chiave non va più", testo: "La chiave di Instagram è scaduta o è stata tolta: non posso pubblicare né rispondere. Rifalla dal PC (2 minuti): Altro → Sofia social manager → Il collegamento.", urgente: true, tag: "sofia-social-chiave" }, 3 * GIORNO);
+    await avvisaUnaVolta("chiave", { titolo: "📣 Instagram: la chiave non va più", testo: "La chiave di Instagram è scaduta o è stata tolta (o non vede l'Instagram dell'albergo): non posso pubblicare né rispondere. Rifalla dal PC (2 minuti): Altro → Sofia social manager → Il collegamento.", urgente: true, tag: "sofia-social-chiave" }, 3 * GIORNO);
   };
 
   // 1) la chiave: nuova o da ricontrollare (una volta al giorno); il rinnovo ogni 10 giorni (anche se Sofia è ferma)
@@ -202,15 +215,15 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
         const io = await controllaChiave(rete, chiave);
         m.chiaveControllata = ora;   // l'app sa che la chiave nuova l'ho guardata
         const professionale = /^(BUSINESS|MEDIA_CREATOR|CREATOR)$/i.test(io.tipo);
-        const scade = ch.scade || new Date(Date.parse(ch.messa || ora) + 60 * GIORNO).toISOString();
-        const dati = { stato: professionale ? "ok" : "personale", controllata: ora, utente: io.utente, nome: io.nome, tipo: io.tipo, scade };
+        const scade = io.via === "fb" ? "" : (ch.scade || new Date(Date.parse(ch.messa || ora) + 60 * GIORNO).toISOString());   // 1.40.0: la nuova non scade
+        const dati = { stato: professionale ? "ok" : "personale", controllata: ora, utente: io.utente, nome: io.nome, tipo: io.tipo, scade, via: io.via || "" };
         await db.segnaSe("importazioni", "social-chiave", "token", chiave, dati);
         Object.assign(ch, dati);
         if (!professionale) await avvisaUnaVolta("personale", { titolo: "📣 Instagram: serve l'account professionale", testo: "Il tuo Instagram è ancora «personale»: così Instagram non mi fa pubblicare. Sul telefono: Impostazioni → Tipo di account → Passa all'account professionale → Azienda. Poi faccio io.", tag: "sofia-social-chiave" }, GIORNO);
       }
       ok = ch.stato === "ok";
     } catch (e) { if (chiaveMorta(e)) await morta(); else { m.errore = { quando: ora, testo: "chiave: " + pulito(e) }; fatto.push("chiave: Instagram non risponde"); } }
-    if (ok && adesso.getTime() - (Date.parse(ch.rinnovata || ch.messa || "") || 0) >= RINNOVA_OGNI_MS) {
+    if (ok && !unificata(chiave) && adesso.getTime() - (Date.parse(ch.rinnovata || ch.messa || "") || 0) >= RINNOVA_OGNI_MS) {   // 1.40.0: la nuova non si rinnova
       try {
         const n = await rinnovaChiave(rete, chiave);
         const scade = new Date(adesso.getTime() + n.secondi * 1000).toISOString();
@@ -220,8 +233,9 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
         else if (Date.parse(ch.scade || "") - adesso.getTime() < 5 * GIORNO) await avvisaUnaVolta("rinnovo", { titolo: "📣 Instagram: la chiave sta per scadere", testo: `Non riesco a rinnovare la chiave di Instagram («${pulito(e)}») e scade fra pochi giorni. Se non ci riesco entro domani, rifalla dal PC (2 minuti).`, tag: "sofia-social-chiave" }, GIORNO);
       }
     }
-    if (ok) m.ig = { nome: ch.nome || "", tipo: ch.tipo || "", scade: ch.scade || "", controllata: ch.controllata || "" };
+    if (ok) m.ig = { nome: ch.nome || "", tipo: ch.tipo || "", scade: ch.scade || "", controllata: ch.controllata || "", via: unificata(chiave) ? "fb" : "ig" };
   }
+  const H = unificata(chiave) ? FB : IG;   // 1.40.0: dove si parla con Instagram, secondo la chiave
   if (s.fermo) { m.stato = "ferma"; m.prossimo = null; return await chiudi(); }
 
   // 2) le bozze: pronte prima (anche senza collegamento: è «la prova» che vede Michele), una per giro
@@ -262,7 +276,7 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
     } else {
       try {
         // se oggi su Instagram c'è già un post (uscito ma non segnato, o messo a mano), non ne faccio un altro
-        const ult = await chiama(rete, "GET", `${ch.utente || "me"}/media`, { fields: "id,timestamp,permalink", limit: "1" }, chiave);
+        const ult = await chiama(rete, "GET", `${ch.utente || "me"}/media`, { fields: "id,timestamp,permalink", limit: "1" }, chiave, H);
         const u = Array.isArray(ult.data) && ult.data[0];
         if (u && adesso.getTime() - (Date.parse(u.timestamp || "") || 0) < 6 * 3600000) {
           pub.push({ quando: u.timestamp, giorno: oggi, k: "", id: String(u.id), link: String(u.permalink || ""), tipo: "già" }); scritte.pubblicati = pub.slice(-40);
@@ -271,7 +285,7 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
           if (!f.dati) throw new Error("la foto non si legge");
           const percorso = `social/${b.k}-${String(b.fotoQuando).replace(/[^0-9]/g, "").slice(0, 14)}.jpg`;
           const { url } = await carica({ percorso, base64: f.dati });
-          const r = await pubblicaFoto({ rete, chiave, utente: ch.utente || "me", url, testo: b.testo || didascalia(b), aspetta });
+          const r = await pubblicaFoto({ rete, chiave, utente: ch.utente || "me", url, testo: b.testo || didascalia(b), aspetta, host: H });
           pub.push({ quando: ora, giorno: oggi, k: b.k, id: r.id, link: r.link, tipo: "foto" });
           scritte.pubblicati = pub.slice(-40);
           bozze.splice(bozze.indexOf(b), 1); bozzeCambiate = true;
@@ -295,12 +309,12 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
     try {
       const vc = (await db.doc("importazioni", "social-commenti")) || {};
       const visti = { ...(vc.visti || {}) };
-      const media = await chiama(rete, "GET", `${ch.utente || "me"}/media`, { fields: "id,caption,timestamp,comments_count", limit: "12" }, chiave);
+      const media = await chiama(rete, "GET", `${ch.utente || "me"}/media`, { fields: "id,caption,timestamp,comments_count", limit: "12" }, chiave, H);
       const nuovi = [], io = String(ch.nome || "").toLowerCase();
       const di = (x) => String((x && (x.username || (x.from && x.from.username))) || "").toLowerCase();
       for (const md of (Array.isArray(media.data) ? media.data : [])) {
         if (!md || !md.id || !(Number(md.comments_count) > 0) || adesso.getTime() - (Date.parse(md.timestamp || "") || 0) > 30 * GIORNO) continue;
-        const cc = await chiama(rete, "GET", `${md.id}/comments`, { fields: "id,text,timestamp,username,from,replies{id,username,from}", limit: "50" }, chiave);
+        const cc = await chiama(rete, "GET", `${md.id}/comments`, { fields: "id,text,timestamp,username,from,replies{id,username,from}", limit: "50" }, chiave, H);
         for (const c of (Array.isArray(cc.data) ? cc.data : [])) {
           if (!c || !c.id || visti[c.id]) continue;
           if (io && di(c) === io) { visti[c.id] = "mio"; continue; }
@@ -318,13 +332,13 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
           if (!d) { visti[c.id] = "s"; continue; }
           if (d.azione === "rispondi" || d.azione === "passa") {
             const msg = conFirma(d.risposta, d.lingua);
-            if (msg) { await chiama(rete, "POST", `${c.id}/replies`, { message: msg }, chiave); risposte++; }
+            if (msg) { await chiama(rete, "POST", `${c.id}/replies`, { message: msg }, chiave, H); risposte++; }
             if (d.azione === "passa") {
               passati++;
               try { await avvisa({ titolo: "📣 Un commento da guardare", testo: `Su Instagram: «${String(c.testo).replace(/\s+/g, " ").slice(0, 160)}». ${String(d.perMichele || "").replace(/\s+/g, " ").slice(0, 160)} Ho risposto con gentilezza che lo ricontatti tu.`.replace(/\s+/g, " ").trim(), tag: "sofia-social-commento" }); } catch (e) {}
             }
           } else if (d.azione === "nascondi") {
-            try { await chiama(rete, "POST", c.id, { hide: "true" }, chiave); nascosti++; } catch (e) { if (chiaveMorta(e)) throw e; }
+            try { await chiama(rete, "POST", c.id, { hide: "true" }, chiave, H); nascosti++; } catch (e) { if (chiaveMorta(e)) throw e; }
           }
           visti[c.id] = d.azione[0];
         }

@@ -79,6 +79,9 @@
 //  18 mi arriva la notifica di Jarvis, capisci?»). Il passo della sveglia parte per primo e NON si aspetta: se una sveglia è fra
 //  pochi minuti la manda al minuto giusto, mentre il giro fa il resto; il giro finisce solo dopo (giro() → giroPassi()). Gli
 //  orari delle sveglie (solo quelli) vanno alla cassetta, che fa partire un giro 2 minuti prima di ognuna.
+//  1.40.0 (app 1.107.0): LA CHIAVE NUOVA DI META PER INSTAGRAM (19/11, Michele al PC: «dai oggi finiamo sofia influenzer»). Le
+//  app nuove hanno solo «API setup with Unified login»: la chiave non comincia con IG, non scade, va su graph.facebook.com
+//  (social-giro.mjs: FB, unificata, me/assigned_instagram_accounts). La strada vecchia resta per le chiavi IG….
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -94,7 +97,7 @@ import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'o
 import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.39.0";
+export const VERSIONE_GIRO = "1.40.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
