@@ -278,6 +278,8 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   «OBIETTIVI FISICI» (Michele: «metti questo video in una parte più nascosta di karen esempio obbiettivi fisici»): in fondo alle
   Abitudini un tasto discreto (`jvVaiFisici`); la pagina (`JV.sez = "fisici"`, `jvFisiciHtml`) ha il video o la foto che sceglie
   lui dalla galleria (`karenFisiciMetti`, nella cache «ricci-karen», MAI nel repository) e i suoi obiettivi scritti (`d.fisici`).
+  1.105.0: se non ne ha scelto uno, si vede il video di serie `fisici-estate.mp4` (ragazza bionda in costume intero che corre sulla
+  riva, di Gemini; Michele: «questo lo puoi mettere anche tu.. perché non è osceno»): è un file dell'app, tra i FILMATI.
   Prossimi filmati (Michele: «di attività che si fa in palestra… di crescita, che gioca a scacchi, che risolve un cubo…
   deve stare la continuità del video… non si deve capire»): ognuno parte e finisce nella posa della foto, e si mettono in
   fila come quelli della prima pagina (attacchi, rientro lento), così da ferma fa una cosa dopo l'altra senza scatti.

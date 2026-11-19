@@ -3450,3 +3450,6 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - La prima volta, sul telefono: Impostazioni → Altro → «Carica il file di Karen» e scegli «karen.zip». Una volta sola.
   - Sul PC (o su un altro telefono) Karen non c'è.
   - Nelle Abitudini, in fondo, c'è «Obiettivi fisici»: il video o la foto che ti dà la carica (lo scegli dalla galleria) e i tuoi obiettivi per l'estate. Anche questo resta solo sul telefono.
+- **1.105.0** (19/11, Michele: «questo lo puoi mettere anche tu.. perché non è osceno»):
+  - In «Obiettivi fisici» c'è già il video della ragazza bionda che corre sulla spiaggia al tramonto: non devi sceglierlo tu.
+  - Se vuoi metterne un altro: «Metti il tuo» e lo scegli dalla galleria (resta solo sul telefono). «Rimetti quello di prima» torna a quello della spiaggia.

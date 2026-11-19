@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.104.0";
+export const VERSIONE = "1.105.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -19946,11 +19946,14 @@ function jvVeloce() {
 // fondo alle Abitudini un tasto discreto; nella pagina il video (o la foto) che sceglie lui dalla galleria (solo nel telefono,
 // KAREN_URL.fisici) e i suoi obiettivi scritti (d.fisici, come il piano).
 function jvVaiFisici() { return `<button type="button" class="jv-fis-link" data-jv-sez="fisici">Obiettivi fisici ›</button>`; }
+// 1.105.0 (Michele: «questo lo puoi mettere anche tu.. perché non è osceno»): il video di serie, nell'app (non nella parte
+// privata); se lui ne sceglie uno dalla galleria si vede il suo, «Toglilo» torna a questo
+const JV_FISICI_VIDEO = "fisici-estate.mp4";
 function jvFisiciHtml(d) {
   const m = KAREN_URL.fisici, video = /^video\//.test(KAREN_URL.fisiciTipo || "");
   const media = m ? (video ? `<video class="jv-fis-m" src="${m}" autoplay muted loop playsinline disablepictureinpicture></video>` : `<img class="jv-fis-m" src="${m}" alt="">`)
-    : `<p class="jv-vuoto">Qui metti il video (o la foto) che ti dà la carica per l'estate. Resta solo su questo telefono.</p>`;
-  return `<div class="jv-fis">${media}<div class="jv-fis-t"><label class="jv-b oro jv-fis-sc">📷 ${m ? "Cambia" : "Scegli dalla galleria"}<input type="file" accept="video/*,image/*" data-jv-fisici-file hidden></label>${m ? `<button type="button" class="jv-b" data-jv-fisici-togli>Toglilo</button>` : ""}</div></div>
+    : `<video class="jv-fis-m" src="${JV_FISICI_VIDEO}" autoplay muted loop playsinline disablepictureinpicture></video>`;
+  return `<div class="jv-fis">${media}<div class="jv-fis-t"><label class="jv-b oro jv-fis-sc">📷 ${m ? "Cambia" : "Metti il tuo"}<input type="file" accept="video/*,image/*" data-jv-fisici-file hidden></label>${m ? `<button type="button" class="jv-b" data-jv-fisici-togli>Rimetti quello di prima</button>` : ""}</div></div>
     <p class="jv-aiuto">I tuoi obiettivi fisici: dove vuoi arrivare per l'estate.</p><textarea id="jvFisici" class="jv-piano" rows="5" placeholder="Per esempio: meno 5 chili entro giugno, palestra 3 volte a settimana">${esc(d.fisici)}</textarea><div class="jv-fis-t"><button type="button" class="jv-b oro" data-jv-fisici-salva>💾 Salva</button></div>`;
 }
 function jvVaiTraguardi(d) { const n = d.traguardi.length; return `<button type="button" class="jv-c largo jv-c-trag" data-jv-sez="traguardi"><span class="jv-e" aria-hidden="true">🏁</span><span><b>Traguardi</b><small>${n ? `${n} ${n === 1 ? "raggiunto" : "raggiunti"}` : "ancora nessuno"}</small></span></button>`; }
@@ -20235,7 +20238,7 @@ document.addEventListener("click", (e) => {
   if ((x = q("[data-jv-scrivi]"))) { jarvisZitto(); JV.foglio = { testo: "", dove: x.dataset.jvScrivi || "impegni" }; jarvisDisegna(); jvFuoco(); return; }
   if ((x = q("[data-jv-leggi]"))) { if (JV.parla) jarvisZitto(); else jarvisDici(jvLeggi(x.dataset.jvLeggi), false); return; }
   if (q("[data-jv-fisici-salva]")) { const v = String((document.getElementById("jvFisici") || {}).value || "").trim(); jvCambia(d => { d.fisici = v; }, "Obiettivi salvati. Forza!"); return; }   // 1.104.0
-  if (q("[data-jv-fisici-togli]")) { karenFisiciTogli().then(() => { JV.dice = "Tolto."; jarvisDisegna(); }); return; }
+  if (q("[data-jv-fisici-togli]")) { karenFisiciTogli().then(() => { JV.dice = "Fatto: c'è di nuovo quello di prima."; jarvisDisegna(); }); return; }
   if (q("[data-jv-piano-salva]")) { const v = String((document.getElementById("jvPiano") || {}).value || "").trim(); jvCambia(d => { d.piano = v; }, "Piano salvato."); return; }
   if ((x = q("[data-jv-cambia]"))) { const id = x.dataset.jvCambia, o = jarvisDati().impegni.find(y => y.id === id); if (o) { jarvisZitto(); JV.foglio = { cambia: id, testo: o.testo, giorno: jvGiorno(o), ora: jvOraDi(o), esatta: !!o.esatta }; jarvisDisegna(); } return; }
   // il tondo: fatta (resta barrata in fondo alla lista di oggi) · toccato di nuovo: torna da fare
