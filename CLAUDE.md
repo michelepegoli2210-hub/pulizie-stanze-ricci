@@ -245,9 +245,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   1.99.0, SOFIA PERSONAL TRAINER AL POSTO DELLA GALASSIA (Michele: «un bel video di sofia personal treiner che mi saluta e mi
   manda bacini di affetto come fa la mia governante» · «caricala come… l'interfaccia che ho nella prima pagina… più di mezzo
   busto con la trasparenza… che si vede pure sotto, con la possibilità di andare pure giù, con le icone… le icone le facciamo
-  fare sempre a Gemini»). La pagina di Jarvis è fatta come la prima pagina: in cima LEI (dalla 1.101.0: la ragazza bionda con la
-  giacca blu notte e il tablet, dalla foto che Michele ha mandato, «un'invenzione di Gemini»; prima c'era Sofia trainer disegnata.
-  Le persone che PROPONGO io restano MAI realistiche: «Orribile proprio. Toglila completamente»), grande, senza
+  fare sempre a Gemini»). La pagina di Jarvis è fatta come la prima pagina: in cima LEI, Karen (dalla 1.101.0; le sue foto e i suoi
+  filmati dalla 1.104.0 NON sono nel repository: vedi sotto; prima c'era Sofia trainer disegnata. Le persone che PROPONGO io
+  restano MAI realistiche: «Orribile proprio. Toglila completamente»), grande, senza
   sfondo, più di mezzo busto, ferma mentre la pagina scorre (`#jvFigura`, `position:fixed` dentro `.jarvis`, sul marmo della
   prima pagina). Il riquadro (`.jv-pann`) sale sopra di lei ed è trasparente: lei si vede anche sotto. Dentro: «Sofia ti
   dice» col tasto Parla, le tessere coi disegni di Gemini (`jv-ico-*.webp`: 3D rosa, nero e oro come il suo completo;
@@ -258,12 +258,26 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   e rimette solo quello che c'è dopo): il filmato non riparte quando scrivi o spunti. Nelle pagine dei riquadri il suo viso
   piccolo nel tondo (`JV_VISO`, `jv-lei-viso.webp`, fondo avorio e oro: `strumenti/fai-viso-jarvis.py`). La voce di Jarvis è da donna (`jvVoce`), solo quella del telefono.
   I filmati di Jarvis NON sono in «I filmati di Sofia» (Impostazioni): sono solo per lui, su questa pagina.
+  1.103.0, IL NOME: si chiama «KAREN» (Michele: «dobbiamo chiamarla Lady Costume…» → «no va bene karen»; «probabilmente poi lo
+  cambieremo il nome»; è la voce del costume di Spider-Man in Homecoming, come Jarvis è quella di Iron Man). Il nome che
+  si legge e si sente è solo `JV_NOME` in app.js (più `JV_NOME_SW` in sw.js per la notifica della sveglia): titolo, «… ti dice»,
+  come si presenta, i tasti, le Impostazioni, gli avvisi, al femminile. Dentro tutto resta «jarvis»/«jv» (funzioni, classi,
+  chiavi dei dati, ?jarvis=…): per cambiare nome si cambiano solo quelle due righe.
   1.102.0, LEI PARLA (Michele: «ok però poi falla parlare anche»): quando la voce di Jarvis parla (`JV.parla`) si vede il filmato
-  «parla» (`FILM_JV.parla`, `jv-lei-parla-3d.webm` + `-alfa.mp4`, 10 s di Gemini Neon: parte ferma, parla muovendo la mano destra,
-  torna ferma), il secondo video di `#jvFigura` (`.jv-fig-p`, sopra al saluto, classe `parla-film`), che gira in tondo finché la
+  «parla» (`FILM_JV.parla`, dal 1.104.0 nel pacco: parte ferma, parla muovendo la mano destra, torna ferma), il secondo video di `#jvFigura` (`.jv-fig-p`, sopra al saluto, classe `parla-film`), che gira in tondo finché la
   voce va. Il saluto ha la precedenza (`JV_FILM.gesti`: i primi `JV_SALUTO_GESTI` secondi, il bacio e i capelli), poi parla; quando
   la voce smette una dissolvenza corta (0,35 s) la riporta ferma. Nei riquadri il filmato si ferma (`jvFilmFerma`); tornando alla
   pagina di Jarvis il saluto lasciato a metà riprende. Voce spenta (muto) = lei non parla.
+  1.104.0, KAREN SOLO SUL SUO TELEFONO (Michele: «assolutamente tutta la parte di karen deve stare solo sul mio telefono»): le
+  foto e i filmati di Karen (`KAREN_FILE`: jv-lei-3d.webp, jv-lei-viso.webp, jv-lei-saluto-3d.webm, jv-lei-parla-3d.webm) NON
+  stanno nel repository né nel sito: MAI caricarli su GitHub. Stanno nel «pacco» karen.zip (zip senza compressione) che Michele
+  carica una volta in Impostazioni → Altro («Carica il file di Karen», `karenCarica`): la cache «ricci-karen» di quel telefono,
+  indirizzi blob: (`KAREN_URL`, `karenPrepara` all'apertura). Senza il pacco Karen non c'è (`jarvisPuo` vuole `karenPacco()`):
+  niente casetta, non si apre (così sul PC sparisce). «Togli Karen da questo telefono» cancella la cache (le cose da fare
+  restano). I filmati solo dove il webm trasparente va da sé (`ALFA_OK === "si"`): sull'iPhone la foto ferma.
+  «OBIETTIVI FISICI» (Michele: «metti questo video in una parte più nascosta di karen esempio obbiettivi fisici»): in fondo alle
+  Abitudini un tasto discreto (`jvVaiFisici`); la pagina (`JV.sez = "fisici"`, `jvFisiciHtml`) ha il video o la foto che sceglie
+  lui dalla galleria (`karenFisiciMetti`, nella cache «ricci-karen», MAI nel repository) e i suoi obiettivi scritti (`d.fisici`).
   Prossimi filmati (Michele: «di attività che si fa in palestra… di crescita, che gioca a scacchi, che risolve un cubo…
   deve stare la continuità del video… non si deve capire»): ognuno parte e finisce nella posa della foto, e si mettono in
   fila come quelli della prima pagina (attacchi, rientro lento), così da ferma fa una cosa dopo l'altra senza scatti.

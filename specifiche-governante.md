@@ -3434,10 +3434,19 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - «Concentrati 25 minuti»: il cronometro. Quando finisce, Sofia te lo dice, ti manda i bacini e il telefono vibra.
   - In basso ci sono i tasti: Oggi, Prossimi, Abitudini, Idee, Piano. I traguardi sono in fondo alle Abitudini.
 - **1.101.0** (18/11, Michele: «Devi fare il video di questa ragazza… soltanto un bacio e poi… i capelli dietro l'orecchio e poi gesti tranquilli»):
-  - In cima a Jarvis adesso c'è lei: la ragazza bionda con la giacca blu e il tablet, senza sfondo (sotto si vede il marmo).
+  - In cima a Jarvis adesso c'è lei, senza sfondo (sotto si vede il marmo).
   - Quando apri Jarvis ti manda un bacio solo, si sistema i capelli dietro l'orecchio, fa gesti tranquilli e torna ferma. Toccandola ricomincia e ti dice tutto.
   - Nelle altre pagine di Jarvis c'è il suo viso piccolo, nel tondo.
 - **1.102.0** (18/11, Michele: «ok però poi falla parlare anche»):
   - Quando Jarvis ti parla, lei parla davvero: muove la bocca e la mano mentre senti la voce. Quando la voce finisce, torna ferma.
   - Quando apri Jarvis prima ti manda il bacio e si mette i capelli dietro l'orecchio, poi comincia a parlare.
   - Se togli la voce (il tasto in alto a destra), lei non parla.
+- **1.103.0** (19/11, Michele: «dobbiamo chiamarla Lady Costume…» → «no va bene karen»):
+  - Jarvis adesso si chiama Karen (come la voce del costume di Spider-Man): è scritto in alto nella sua pagina, in «Karen ti dice» e nelle Impostazioni.
+  - Quando si presenta dice «Sono Karen». Anche la notifica della sveglia dice «Tocca per aprire Karen».
+  - Il nome si potrà cambiare quando vuoi.
+- **1.104.0** (19/11, Michele: «assolutamente tutta la parte di karen deve stare solo sul mio telefono» · «metti questo video in una parte più nascosta di karen esempio obbiettivi fisici»):
+  - Karen sta solo sul tuo telefono: le sue foto e i suoi video non sono più su internet.
+  - La prima volta, sul telefono: Impostazioni → Altro → «Carica il file di Karen» e scegli «karen.zip». Una volta sola.
+  - Sul PC (o su un altro telefono) Karen non c'è.
+  - Nelle Abitudini, in fondo, c'è «Obiettivi fisici»: il video o la foto che ti dà la carica (lo scegli dalla galleria) e i tuoi obiettivi per l'estate. Anche questo resta solo sul telefono.

@@ -10813,3 +10813,24 @@ body.premium .bo-indietro::after{content:"";position:absolute;left:-10px;right:-
 #jvFigura video.jv-fig-v{transition:opacity .35s ease}
 #jvFigura.parla-film video.jv-fig-p{opacity:1}
 #jvFigura.parla-film video.jv-fig-v{opacity:0}
+
+/* ----------------------------------------------------------------------------
+   1.103.0 · SI CHIAMA «KAREN»: un titolo lungo (se il nome cambia) va a capo invece di uscire, un po' più piccolo sui telefoni stretti
+   ---------------------------------------------------------------------------- */
+.jv-testa b{min-width:0;font-size:clamp(21px,6.4vw,26px);line-height:1.05;overflow-wrap:anywhere}
+.jv-testa .jv-ind{white-space:nowrap}
+
+/* ----------------------------------------------------------------------------
+   1.104.0 · KAREN SOLO SUL TELEFONO: il viso senza il pacco (una K), il tasto per caricare il pacco e quello per toglierla,
+   «Obiettivi fisici» (il tasto discreto in fondo alle Abitudini, il video o la foto, i tasti)
+   ---------------------------------------------------------------------------- */
+.jv-viso-k{display:grid;place-items:center;background:linear-gradient(145deg,#16264A,#2C3E6B);color:#F2C14E;font-size:32px;font-weight:800;line-height:1}
+.jv-viso-k.piccola{font-size:28px}
+.karen-carica{display:inline-flex;align-items:center;gap:8px;min-height:56px;padding:0 20px;font-size:19px;cursor:pointer}
+.karen-togli{display:block;margin-top:14px;min-height:52px;padding:0 16px;border-radius:14px;border:1.5px solid #E2B4AE;background:#FFF8F6;color:#9A2B1E;font:700 17px/1.2 inherit;cursor:pointer}
+.jv-fis-link{display:block;margin:20px auto 6px;min-height:52px;padding:0 14px;border:0;background:none;color:var(--jv-tenue);font-family:inherit;font-size:17px;font-weight:700;opacity:.75;cursor:pointer}
+.jv-fis{display:grid;gap:12px;margin-top:8px}
+.jv-fis-m{display:block;width:100%;max-height:64vh;object-fit:cover;border-radius:22px;background:#0F172A}
+.jv-fis-t{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.jv-fis-t .jv-b{min-height:56px;font-size:19px}
+.jv-fis-sc{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}

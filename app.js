@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.102.0";
+export const VERSIONE = "1.104.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -284,7 +284,11 @@ const FILM_SEGR = { riposo: "segr7-riposo-3d.webm", ascolta: "segr7-ascolta-3d.w
 // 1.101.0: la faccia di Jarvis è LEI (bionda, giacca blu notte, il tablet; una foto inventata, fatta con Gemini): ferma, UN bacio
 // solo, i capelli dietro l'orecchio, gesti tranquilli, torna ferma. La foto = il primo fotogramma del saluto (non si vede il cambio).
 // 1.102.0 (Michele: «ok però poi falla parlare anche»): «parla», 10 s, parte e finisce ferma; gira in tondo finché la voce parla
+// 1.104.0: questi file NON sono nel sito: stanno nel pacco karen.zip, solo nel telefono di Michele (KAREN_FILE, KAREN_URL)
 const FILM_JV = { saluto: "jv-lei-saluto-3d.webm", parla: "jv-lei-parla-3d.webm", poster: "jv-lei-3d.webp" };
+// 1.103.0 (Michele: «dobbiamo chiamarla Lady Costume…» → «no va bene karen»; «probabilmente poi lo cambieremo»): il nome che si legge e si
+// sente è solo questo (dentro resta «jarvis»/«jv»). Per cambiarlo: qui e JV_NOME_SW in sw.js (la notifica della sveglia).
+const JV_NOME = "Karen";
 function sofiaCapo() { try { return addetta(); } catch (e) { return false; } }
 const CHIAVE_3D = "ricci_sofia3d", CHIAVE_ALFA = "ricci_alfa";
 let ALFA_OK = (() => { try { return localStorage.getItem(CHIAVE_ALFA) || ""; } catch (e) { return ""; } })();
@@ -323,7 +327,7 @@ function alfaTela() { return ALFA_OK === "no" && telaPuo(); }
 function alfaSi() { return ALFA_OK === "si" || alfaTela(); }
 // i filmati trasparenti: i webm dove vanno, i gemelli «-alfa.mp4» dove c'è la tela
 function filmAlfaScegli() {
-  const liste = [FILM_TRE, FILM_CAPO_TRE, FILM_SEGR, FILM_JV];
+  const liste = [FILM_TRE, FILM_CAPO_TRE, FILM_SEGR];   // 1.104.0: Karen sta solo nel telefono (KAREN_URL)
   if (!TELA.originali) TELA.originali = liste.map(f => ({ ...f }));
   const tela = alfaTela();
   liste.forEach((f, i) => { for (const [k, s] of Object.entries(TELA.originali[i])) if (/-3d\.webm$/.test(s)) f[k] = tela ? s.replace(/-3d\.webm$/, "-alfa.mp4") : s; });
@@ -19404,8 +19408,8 @@ const JV_SVEGLIA = "ricci_jarvis_sveglia", JV_SV_FUORI = "ricci_jarvis_sveglie_f
 const JV_PRIMA_MS = 10 * 60000, JV_PRESTO_MS = 13 * 60000;
 const JV_VERBO_SVEGLIA = /(^|[\s,;:.!])(?:ricordamel[oaie]|ricordami|ricordarmel[oaie]|ricordarmi|avvisami|svegliami|fammi ricordare)(?=$|[\s,;:.!])/i;
 const JV = { aperto: false, sez: "", dice: "", parla: false, ascolta: false, foglio: null, rec: null, giro: 0, svOk: false, svPrimo: false };
-const JV_SEZ = { impegni: ["🗓️", "Prossimi"], obiettivi: ["🔥", "Abitudini"], idee: ["💡", "Idee"], traguardi: ["🏁", "Traguardi"], piano: ["🗺️", "Il mio piano"] };   // 1.100.0: i nomi dei tasti in basso
-const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Abitudine", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo" };
+const JV_SEZ = { impegni: ["🗓️", "Prossimi"], obiettivi: ["🔥", "Abitudini"], idee: ["💡", "Idee"], traguardi: ["🏁", "Traguardi"], piano: ["🗺️", "Il mio piano"], fisici: ["🏝️", "Obiettivi fisici"] };   // 1.100.0: i nomi dei tasti in basso · 1.104.0: «Obiettivi fisici» (nascosta)
+const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Abitudine", idee: "Idea", piano: "Nel mio piano", traguardi: "Traguardo", fisici: "Obiettivo fisico" };
 // 1.99.0 (Michele, 18/11: «al posto della galassia… un bel video di sofia personal treiner che mi saluta e mi manda bacini di
 // affetto come fa la mia governante» · «caricala come… l'interfaccia che ho nella prima pagina… più di mezzo busto con la
 // trasparenza… che si vede pure sotto, con la possibilità di andare pure giù, con le icone che posso parlare con lei»): la faccia
@@ -19416,10 +19420,81 @@ const JV_UNO = { impegni: "Cosa da fare", obiettivi: "Abitudine", idee: "Idea", 
 // Lei sta in #jvFigura, un pezzo della pagina che jarvisDisegna NON rifà: quando scrivi, spunti o lei parla, il filmato non
 // riparte. Dove il filmato trasparente non si può (niente webm trasparente e niente tela, o «movimento ridotto»): la foto.
 // Nelle pagine dei riquadri (Impegni, Obiettivi…) c'è il suo viso piccolo, nel tondo rosa (JV_VISO).
-const JV_VISO = (cls = "") => `<img class="jv-viso${cls ? " " + cls : ""}" src="jv-lei-viso.webp" alt="" aria-hidden="true">`;   // 1.101.0: il viso di lei
+// ---------------------------------------------------------------------------
+//  1.104.0 · KAREN SOLO SUL SUO TELEFONO (Michele, 19/11: «assolutamente tutta la parte di karen deve stare solo sul mio
+//  telefono»). Le foto e i filmati di Karen NON sono nel sito né su GitHub: stanno nel «pacco» karen.zip (uno zip senza
+//  compressione coi quattro file di KAREN_FILE) che lui carica una volta (Impostazioni → Altro). L'app li tiene nella cache
+//  «ricci-karen» di quel telefono e li mostra con indirizzi «blob:» (valgono solo dentro l'app aperta). Senza il pacco Karen lì
+//  non c'è (jarvisPuo). Anche il video (o la foto) di «Obiettivi fisici» lo sceglie lui dalla galleria e resta solo lì.
+// ---------------------------------------------------------------------------
+const KAREN_CACHE = "ricci-karen", KAREN_PACCO = "ricci_karen_pacco";
+const KAREN_FILE = { poster: ["jv-lei-3d.webp", "image/webp"], viso: ["jv-lei-viso.webp", "image/webp"], saluto: ["jv-lei-saluto-3d.webm", "video/webm"], parla: ["jv-lei-parla-3d.webm", "video/webm"] };
+const KAREN_URL = { pronto: false, manca: false };
+const karenIndirizzo = (n) => new URL("karen-locale/" + n, location.href).href;
+function karenPacco() { try { return localStorage.getItem(KAREN_PACCO) === "1"; } catch (e) { return false; } }
+// legge dalla cache i suoi file (e il video di «Obiettivi fisici»), una volta sola finché l'app resta aperta
+async function karenPrepara() {
+  if (KAREN_URL.pronto) return !KAREN_URL.manca;
+  let c = null; try { c = await caches.open(KAREN_CACHE); } catch (e) { c = null; }
+  let manca = !c;
+  for (const [k, [n]] of Object.entries(KAREN_FILE)) {
+    if (KAREN_URL[k]) continue;
+    try { const r = c ? await c.match(karenIndirizzo(n)) : null; if (r) KAREN_URL[k] = URL.createObjectURL(await r.blob()); else manca = true; } catch (e) { manca = true; }
+  }
+  try { const r = c ? await c.match(karenIndirizzo("fisici")) : null; if (r && !KAREN_URL.fisici) { const b = await r.blob(); KAREN_URL.fisici = URL.createObjectURL(b); KAREN_URL.fisiciTipo = r.headers.get("Content-Type") || b.type || ""; } } catch (e) {}
+  KAREN_URL.pronto = true; KAREN_URL.manca = manca;
+  return !manca;
+}
+function karenLibera() {
+  for (const k of [...Object.keys(KAREN_FILE), "fisici"]) if (KAREN_URL[k]) { try { URL.revokeObjectURL(KAREN_URL[k]); } catch (e) {} delete KAREN_URL[k]; }
+  delete KAREN_URL.fisiciTipo; KAREN_URL.pronto = false; KAREN_URL.manca = false;
+}
+// lo zip del pacco: senza compressione (strumento fuori dal sito); i nomi sono quelli di KAREN_FILE
+function karenZip(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), td = new TextDecoder(), out = {}; let p = 0;
+  while (p + 30 <= u8.length && dv.getUint32(p, true) === 0x04034b50) {
+    const metodo = dv.getUint16(p + 8, true), lungo = dv.getUint32(p + 18, true), n = dv.getUint16(p + 26, true), x = dv.getUint16(p + 28, true);
+    const nome = td.decode(u8.subarray(p + 30, p + 30 + n)).split("/").pop(), ini = p + 30 + n + x;
+    if (metodo !== 0 || ini + lungo > u8.length) throw new Error("zip");
+    out[nome] = u8.subarray(ini, ini + lungo); p = ini + lungo;
+  }
+  return out;
+}
+async function karenCarica(file) {
+  const f = karenZip(new Uint8Array(await file.arrayBuffer()));
+  if (Object.values(KAREN_FILE).some(([n]) => !f[n] || !f[n].length)) throw new Error("mancano");
+  const c = await caches.open(KAREN_CACHE);
+  for (const [n, tipo] of Object.values(KAREN_FILE)) await c.put(karenIndirizzo(n), new Response(new Blob([f[n]], { type: tipo }), { headers: { "Content-Type": tipo } }));
+  try { localStorage.setItem(KAREN_PACCO, "1"); localStorage.setItem(JV_ACCESO, "1"); } catch (e) {}
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}   // che il telefono non la butti via per fare spazio
+  karenLibera();
+  return true;
+}
+async function karenTogli() {
+  try { await caches.delete(KAREN_CACHE); } catch (e) {}
+  try { localStorage.removeItem(KAREN_PACCO); } catch (e) {}
+  karenLibera();
+}
+// «Obiettivi fisici»: il video (o la foto) scelto dalla galleria, solo in questo telefono
+async function karenFisiciMetti(file) {
+  const tipo = file.type || (/\.(mp4|m4v|mov|webm)$/i.test(file.name || "") ? "video/mp4" : "image/jpeg");
+  const c = await caches.open(KAREN_CACHE);
+  await c.put(karenIndirizzo("fisici"), new Response(file, { headers: { "Content-Type": tipo } }));
+  if (KAREN_URL.fisici) { try { URL.revokeObjectURL(KAREN_URL.fisici); } catch (e) {} }
+  KAREN_URL.fisici = URL.createObjectURL(file); KAREN_URL.fisiciTipo = tipo;
+}
+async function karenFisiciTogli() {
+  try { const c = await caches.open(KAREN_CACHE); await c.delete(karenIndirizzo("fisici")); } catch (e) {}
+  if (KAREN_URL.fisici) { try { URL.revokeObjectURL(KAREN_URL.fisici); } catch (e) {} }
+  delete KAREN_URL.fisici; delete KAREN_URL.fisiciTipo;
+}
+// il suo viso piccolo (dal pacco); senza il pacco una «K» nel tondo
+const JV_VISO = (cls = "") => KAREN_URL.viso ? `<img class="jv-viso${cls ? " " + cls : ""}" src="${KAREN_URL.viso}" alt="" aria-hidden="true">` : `<span class="jv-viso jv-viso-k${cls ? " " + cls : ""}" aria-hidden="true">K</span>`;
 function jvFiguraHtml() {
-  let film = false; try { film = sofia3d(); } catch (e) {}
-  return `<img class="jv-fig-foto" src="${FILM_JV.poster}" alt="">${film ? `<video class="jv-fig-v" muted playsinline preload="auto" disablepictureinpicture src="${FILM_JV.saluto}"></video><video class="jv-fig-p" muted playsinline loop preload="auto" disablepictureinpicture src="${FILM_JV.parla}"></video>` : ""}`;
+  // 1.104.0: dal pacco nel telefono (blob:); i filmati solo dove il webm trasparente va da sé (il telefono di Michele)
+  if (!KAREN_URL.poster) return "";
+  let film = false; try { film = sofia3d() && ALFA_OK === "si" && !!KAREN_URL.saluto; } catch (e) {}
+  return `<img class="jv-fig-foto" src="${KAREN_URL.poster}" alt="">${film ? `<video class="jv-fig-v" muted playsinline preload="auto" disablepictureinpicture src="${KAREN_URL.saluto}"></video>${KAREN_URL.parla ? `<video class="jv-fig-p" muted playsinline loop preload="auto" disablepictureinpicture src="${KAREN_URL.parla}"></video>` : ""}` : ""}`;
 }
 // il saluto: dall'inizio (quando apri Jarvis e quando la tocchi); finito, resta ferma sull'ultimo fotogramma (la posa della foto)
 function jvSaluta() {
@@ -19477,7 +19552,7 @@ const JV_AREE = [[/palestr|allenament|corsa|correre|pesi|addominali|camminat/i, 
 const jvArea = (t) => { for (const [re, e] of JV_AREE) if (re.test(String(t || ""))) return e; return "⭐"; };
 const jvId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 function jarvisAcceso() { try { return localStorage.getItem(JV_ACCESO) === "1"; } catch (e) { return false; } }
-function jarvisPuo() { try { return !!(S.pronto && S.utente && proprietario() && !S.utente.finta && jarvisAcceso()); } catch (e) { return false; } }
+function jarvisPuo() { try { return !!(S.pronto && S.utente && proprietario() && !S.utente.finta && jarvisAcceso() && karenPacco()); } catch (e) { return false; } }   // 1.104.0: e il pacco di Karen
 function jvMuto() { try { return localStorage.getItem(JV_MUTO) === "1"; } catch (e) { return false; } }
 // Le sue cose. «impegni» sono le COSE DA FARE: { id, testo, entro: "" | "2026-11-17" | "2026-11-17T09:00", fatta: "" | il giorno }.
 // Senza giorno = da fare quando vuole (sta nella lista di oggi finché non la spunta). Gli obiettivi sono le cose di ogni giorno.
@@ -19485,7 +19560,7 @@ function jarvisDati() {
   let d = null; try { d = JSON.parse(localStorage.getItem(JV_CHIAVE) || "null"); } catch (e) { d = null; }
   d = d && typeof d === "object" ? d : {};
   const lista = (x) => (Array.isArray(x) ? x : []).filter(y => y && y.id && String(y.testo || "").trim());
-  return { v: 2, piano: String(d.piano || ""), impegni: lista(d.impegni), obiettivi: lista(d.obiettivi), traguardi: lista(d.traguardi), idee: lista(d.idee) };
+  return { v: 2, piano: String(d.piano || ""), fisici: String(d.fisici || ""), impegni: lista(d.impegni), obiettivi: lista(d.obiettivi), traguardi: lista(d.traguardi), idee: lista(d.idee) };   // 1.104.0: fisici
 }
 // le cose fatte restano un mese (servono per «questa settimana ne hai fatte…»), poi spariscono
 function jarvisSalva(d) {
@@ -19610,17 +19685,21 @@ function jarvisCasetta(b) {
     let c = m.querySelector(".bo-casetta");
     if (c && c.tagName !== "BUTTON") { c.remove(); c = null; }
     if (!jarvisPuo()) { if (c) c.remove(); return; }
-    if (!c) { c = document.createElement("button"); c.type = "button"; c.className = "bo-casetta"; c.setAttribute("data-jarvis-apri", ""); c.setAttribute("aria-label", "Apri Jarvis, le tue cose da fare"); m.appendChild(c); }
+    if (!c) { c = document.createElement("button"); c.type = "button"; c.className = "bo-casetta"; c.setAttribute("data-jarvis-apri", ""); c.setAttribute("aria-label", `Apri ${JV_NOME}, le tue cose da fare`); m.appendChild(c); }
   } catch (e) {}
 }
 // l'interruttore in Altro
 function cardJarvisAltro() {
   if (!proprietario() || (S.utente && S.utente.finta)) return "";
-  const on = jarvisAcceso();
-  return `<section class="card jv-card"><h2>Jarvis · le tue cose da fare</h2>
-    <p class="small" style="margin:0 0 8px">La tua pagina personale: le cose da fare di oggi, gli impegni, gli obiettivi, le idee. Si apre dalla <b>casetta in alto nella prima pagina</b>, accanto a «Le Stanze di Ricci». Le tue cose stanno <b>solo su questo telefono</b>: gli altri non le vedono. Per la sveglia esce solo il giorno e l'ora, non che cosa devi fare. È gratis.</p>
-    <label class="giro-sw"><span>Jarvis su questo telefono</span><input type="checkbox" data-jarvis-sw ${on ? "checked" : ""}></label>
-    ${on ? `<div class="jv-altro-t"><button type="button" class="jv-altro-b oro" data-jarvis-apri>Apri Jarvis ›</button></div>` : ""}</section>`;
+  const on = jarvisAcceso(), nome = esc(JV_NOME);
+  if (!karenPacco()) return `<section class="card jv-card"><h2>${nome} · le tue cose da fare</h2>
+    <p class="small" style="margin:0 0 8px">${nome} sta <b>solo sul tuo telefono</b>: le sue foto e i suoi video non sono su internet. Per averla su questo telefono carica il file <b>karen.zip</b>, una volta sola.</p>
+    <label class="jv-altro-b oro karen-carica">📂 Carica il file di ${nome}<input type="file" data-karen-file hidden></label></section>`;
+  return `<section class="card jv-card"><h2>${nome} · le tue cose da fare</h2>
+    <p class="small" style="margin:0 0 8px">La tua pagina personale: le cose da fare di oggi, gli impegni, gli obiettivi, le idee. Si apre dalla <b>casetta in alto nella prima pagina</b>, accanto a «Le Stanze di Ricci». ${nome} e le tue cose stanno <b>solo su questo telefono</b>: gli altri non le vedono. Per la sveglia esce solo il giorno e l'ora, non che cosa devi fare. È gratis.</p>
+    <label class="giro-sw"><span>${nome} su questo telefono</span><input type="checkbox" data-jarvis-sw ${on ? "checked" : ""}></label>
+    ${on ? `<div class="jv-altro-t"><button type="button" class="jv-altro-b oro" data-jarvis-apri>Apri ${nome} ›</button></div>` : ""}
+    <button type="button" class="karen-togli" data-karen-togli>Togli ${nome} da questo telefono</button></section>`;
 }
 // «09:00» → «9», «09:30» → «9:30» (così si legge e si dice bene)
 const jvOra = (hhmm) => { const h = Number(String(hhmm).slice(0, 2)), m = String(hhmm).slice(3, 5); return m === "00" ? String(h) : `${h}:${m}`; };
@@ -19671,7 +19750,7 @@ function jvFraseOggi(d) {
 // gli obiettivi, i traguardi e le idee.
 function jvBriefing(tutto = false) {
   const d = jarvisDati(), ciao = `${saluto()} ${nomeMio()}.`;
-  if (!d.piano && !d.impegni.length && !d.obiettivi.length && !d.traguardi.length && !d.idee.length) return `${ciao} Sono Sofia, la tua personal trainer. Qui tieni le tue cose da fare. Tocca «Aggiungi una cosa», oppure il microfono, e dimmi la prima.`;
+  if (!d.piano && !d.impegni.length && !d.obiettivi.length && !d.traguardi.length && !d.idee.length) return `${ciao} Sono ${JV_NOME}, la tua personal trainer. Qui tieni le tue cose da fare. Tocca «Aggiungi una cosa», oppure il microfono, e dimmi la prima.`;
   const parti = [ciao, jvFraseOggi(d)], prossimi = jvProssimi(d);
   if (prossimi.length) parti.push(`Poi: ${prossimi[0].testo}, ${jvQuando(prossimi[0].entro, true)}.`);
   if (tutto) {
@@ -19737,7 +19816,7 @@ function jarvisStato() {
 }
 function jvTesta(titolo, dentro) {
   const muto = jvMuto();
-  return `<div class="jv-testa"><button type="button" class="jv-ind" ${dentro ? "data-jv-casa" : "data-jv-chiudi"}>‹ ${dentro ? "Jarvis" : "Indietro"}</button><b>${esc(titolo)}</b><button type="button" class="jv-muto" data-jv-muto aria-label="${muto ? "Voce spenta: tocca per accenderla" : "Voce accesa: tocca per spegnerla"}">${muto ? "🔇" : "🔊"}</button></div>`;
+  return `<div class="jv-testa"><button type="button" class="jv-ind" ${dentro ? "data-jv-casa" : "data-jv-chiudi"} aria-label="${dentro ? `Torna a ${esc(JV_NOME)}` : "Indietro"}">‹ Indietro</button><b>${esc(titolo)}</b><button type="button" class="jv-muto" data-jv-muto aria-label="${muto ? "Voce spenta: tocca per accenderla" : "Voce accesa: tocca per spegnerla"}">${muto ? "🔇" : "🔊"}</button></div>`;
 }
 // una riga della lista: il tondo da spuntare, la cosa, sotto il quando, il disegnino, e «⋯» per cambiarla o toglierla
 function jvRigaCosa(x, oggi, r = {}) {
@@ -19764,8 +19843,8 @@ const JV_FOCUS = "ricci_jarvis_focus", JV_FOCUS_MIN = 25;
 const JV_TAB = [["", "☀️", "Oggi"], ["impegni", "🗓️", "Prossimi"], ["obiettivi", "🔥", "Abitudini"], ["idee", "💡", "Idee"], ["piano", "🗺️", "Piano"]];
 const JV_MIC_SVG = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>`;
 function jvTabHtml() {
-  const qui = JV.sez && JV_SEZ[JV.sez] ? (JV.sez === "traguardi" ? "obiettivi" : JV.sez) : "";
-  return `<nav class="jv-tab" aria-label="Le pagine di Jarvis">${JV_TAB.map(([k, e, n]) => `<button type="button" ${k ? `data-jv-sez="${k}"` : "data-jv-casa"}${k === qui ? ' aria-current="page"' : ""}><i aria-hidden="true">${e}</i><span>${n}</span></button>`).join("")}</nav>`;
+  const qui = JV.sez && JV_SEZ[JV.sez] ? (JV.sez === "traguardi" || JV.sez === "fisici" ? "obiettivi" : JV.sez) : "";
+  return `<nav class="jv-tab" aria-label="Le pagine di ${esc(JV_NOME)}">${JV_TAB.map(([k, e, n]) => `<button type="button" ${k ? `data-jv-sez="${k}"` : "data-jv-casa"}${k === qui ? ' aria-current="page"' : ""}><i aria-hidden="true">${e}</i><span>${n}</span></button>`).join("")}</nav>`;
 }
 const jvOraAdesso = () => { const m = minutiRoma(); return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };
 const jvOraLunga = (hhmm) => `${Number(String(hhmm).slice(0, 2))}:${String(hhmm).slice(3, 5)}`;
@@ -19863,16 +19942,27 @@ function jvVeloce() {
   jarvisZitto(); jarvisSentito(t);
 }
 // i Traguardi, in fondo alle Abitudini
+// 1.104.0 · «OBIETTIVI FISICI» (Michele: «metti questo video in una parte più nascosta di karen esempio obbiettivi fisici»): in
+// fondo alle Abitudini un tasto discreto; nella pagina il video (o la foto) che sceglie lui dalla galleria (solo nel telefono,
+// KAREN_URL.fisici) e i suoi obiettivi scritti (d.fisici, come il piano).
+function jvVaiFisici() { return `<button type="button" class="jv-fis-link" data-jv-sez="fisici">Obiettivi fisici ›</button>`; }
+function jvFisiciHtml(d) {
+  const m = KAREN_URL.fisici, video = /^video\//.test(KAREN_URL.fisiciTipo || "");
+  const media = m ? (video ? `<video class="jv-fis-m" src="${m}" autoplay muted loop playsinline disablepictureinpicture></video>` : `<img class="jv-fis-m" src="${m}" alt="">`)
+    : `<p class="jv-vuoto">Qui metti il video (o la foto) che ti dà la carica per l'estate. Resta solo su questo telefono.</p>`;
+  return `<div class="jv-fis">${media}<div class="jv-fis-t"><label class="jv-b oro jv-fis-sc">📷 ${m ? "Cambia" : "Scegli dalla galleria"}<input type="file" accept="video/*,image/*" data-jv-fisici-file hidden></label>${m ? `<button type="button" class="jv-b" data-jv-fisici-togli>Toglilo</button>` : ""}</div></div>
+    <p class="jv-aiuto">I tuoi obiettivi fisici: dove vuoi arrivare per l'estate.</p><textarea id="jvFisici" class="jv-piano" rows="5" placeholder="Per esempio: meno 5 chili entro giugno, palestra 3 volte a settimana">${esc(d.fisici)}</textarea><div class="jv-fis-t"><button type="button" class="jv-b oro" data-jv-fisici-salva>💾 Salva</button></div>`;
+}
 function jvVaiTraguardi(d) { const n = d.traguardi.length; return `<button type="button" class="jv-c largo jv-c-trag" data-jv-sez="traguardi"><span class="jv-e" aria-hidden="true">🏁</span><span><b>Traguardi</b><small>${n ? `${n} ${n === 1 ? "raggiunto" : "raggiunti"}` : "ancora nessuno"}</small></span></button>`; }
 function jvCasaHtml(d) {
   const oggi = L.oggiISO(), ieri = L.aggiungiGiorni(oggi, -1), righe = jvOggi(d), fatte = righe.filter(r => r.fatta).length, tot = righe.length, p = tot ? Math.round(100 * fatte / tot) : 0;
   const indietro = jvIndietro(d), tuttiIeri = indietro.every(x => jvGiorno(x) === ieri), quali = tuttiIeri ? "di ieri" : "dei giorni scorsi";
   const gi = d.impegni.filter(x => x.fatta ? x.fatta === oggi : (!jvGiorno(x) || jvGiorno(x) <= oggi)), giF = gi.filter(x => x.fatta).length, giornata = jvGiornataHtml(d);
-  return `${jvTesta("Jarvis", false)}
-    <div class="jv-spazio"><button type="button" class="jv-tocca" data-jv-parla aria-label="Tocca Sofia: ti saluta e ti dice tutto"></button>
-      <div class="jv-lato"><button type="button" class="jv-lato-mic" data-jv-mic aria-label="Parla con Sofia">${JV_MIC_SVG}</button><button type="button" class="jv-lato-asc" data-jv-parla aria-label="Ascolta: Sofia ti dice tutto"><i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></i><span>Ascolta</span></button></div></div>
+  return `${jvTesta(JV_NOME, false)}
+    <div class="jv-spazio"><button type="button" class="jv-tocca" data-jv-parla aria-label="Tocca ${esc(JV_NOME)}: ti saluta e ti dice tutto"></button>
+      <div class="jv-lato"><button type="button" class="jv-lato-mic" data-jv-mic aria-label="Parla con ${esc(JV_NOME)}">${JV_MIC_SVG}</button><button type="button" class="jv-lato-asc" data-jv-parla aria-label="Ascolta: ${esc(JV_NOME)} ti dice tutto"><i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></i><span>Ascolta</span></button></div></div>
     <div class="jv-pann"><span class="jv-presa" aria-hidden="true"></span>
-      <div class="jv-fum jv-fum2"><div class="jv-fum-t"><small>Sofia ti dice</small><b class="jv-data">${esc(jvOggiTitolo())}</b><p class="jv-dice" aria-live="polite">${esc(JV.dice || jvFraseOggi(d))}</p></div><div class="jv-anello${tot && fatte === tot ? " pieno" : ""}" style="--p:${p}" role="img" aria-label="${tot ? `Oggi: ${fatte} fatte su ${tot}` : "Oggi niente in lista"}"><span><b>${tot ? `${fatte}/${tot}` : "0"}</b><small>${tot ? "fatte" : "in lista"}</small></span></div></div>
+      <div class="jv-fum jv-fum2"><div class="jv-fum-t"><small>${esc(JV_NOME)} ti dice</small><b class="jv-data">${esc(jvOggiTitolo())}</b><p class="jv-dice" aria-live="polite">${esc(JV.dice || jvFraseOggi(d))}</p></div><div class="jv-anello${tot && fatte === tot ? " pieno" : ""}" style="--p:${p}" role="img" aria-label="${tot ? `Oggi: ${fatte} fatte su ${tot}` : "Oggi niente in lista"}"><span><b>${tot ? `${fatte}/${tot}` : "0"}</b><small>${tot ? "fatte" : "in lista"}</small></span></div></div>
       <div class="jv-agg"><label class="jv-agg-c"><span aria-hidden="true">＋</span><input id="jvVeloce" type="text" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="Aggiungi una cosa" aria-label="Aggiungi una cosa: scrivila e premi invio. Per esempio: palestra domani alle 18"><button type="button" class="jv-agg-ok" data-jv-veloce aria-label="Aggiungi">➜</button></label><button type="button" class="jv-agg-mic" data-jv-mic aria-label="Dillo a voce">${JV_MIC_SVG}</button></div>
       ${indietro.length ? `<div class="jv-dietro"><span>${indietro.length === 1 ? `1 cosa ${quali} non è fatta` : `${indietro.length} cose ${quali} non sono fatte`}</span><button type="button" class="jv-b oro" data-jv-porta-oggi>${indietro.length === 1 ? "Portala" : "Portale"} a oggi</button></div>` : ""}
       <section class="jv-carta jv-oggi" id="jvOggiCarta"><h2>La tua giornata${gi.length ? `<span>${giF === 1 ? "1 fatta" : giF + " fatte"} su ${gi.length}</span>` : ""}</h2>
@@ -19897,18 +19987,19 @@ function jvSezioneHtml(d, k) {
   const dice = JV.dice ? `<div class="jv-eroe piccolo">${JV_VISO("piccola")}<p class="jv-dice" aria-live="polite">${esc(JV.dice)}</p></div>` : "";
   const tasti = (leggi) => `<div class="jv-due"><button type="button" class="jv-mic" data-jv-mic="${k}"><span aria-hidden="true">🎤</span> Dimmelo</button><button type="button" class="jv-scrivi" data-jv-scrivi="${k}"><span aria-hidden="true">✍️</span> Scrivilo</button>${leggi ? `<button type="button" class="jv-b" data-jv-leggi="${k}">🔊 Leggimeli</button>` : ""}</div>`;
   let corpo = "";
-  if (k === "piano") corpo = `<p class="jv-aiuto">Il tuo piano grande: dove vuoi arrivare. Scrivilo qui sotto, oppure dettalo: Jarvis te lo ricorda quando gli dici «dimmi tutto».</p><textarea id="jvPiano" class="jv-piano" rows="8" placeholder="Per esempio: entro un anno voglio…">${esc(d.piano)}</textarea><div class="jv-due"><button type="button" class="jv-b oro" data-jv-piano-salva>💾 Salva</button><button type="button" class="jv-mic" data-jv-mic="piano"><span aria-hidden="true">🎤</span> Dettalo</button><button type="button" class="jv-b" data-jv-leggi="piano">🔊 Leggimelo</button></div>`;
+  if (k === "fisici") corpo = jvFisiciHtml(d);   // 1.104.0
+  else if (k === "piano") corpo = `<p class="jv-aiuto">Il tuo piano grande: dove vuoi arrivare. Scrivilo qui sotto, oppure dettalo: ${esc(JV_NOME)} te lo ricorda quando le dici «dimmi tutto».</p><textarea id="jvPiano" class="jv-piano" rows="8" placeholder="Per esempio: entro un anno voglio…">${esc(d.piano)}</textarea><div class="jv-due"><button type="button" class="jv-b oro" data-jv-piano-salva>💾 Salva</button><button type="button" class="jv-mic" data-jv-mic="piano"><span aria-hidden="true">🎤</span> Dettalo</button><button type="button" class="jv-b" data-jv-leggi="piano">🔊 Leggimelo</button></div>`;
   else if (k === "impegni") {
     const pr = jvProssimi(d), giorni = [...new Set(pr.map(jvGiorno))], domani = L.aggiungiGiorni(oggi, 1);
     corpo = (pr.length ? giorni.map(g => { const nomeG = L.dataLunga(g); return `<section class="jv-carta"><h2>${g === domani ? "Domani" : esc(nomeG.charAt(0).toUpperCase() + nomeG.slice(1))}</h2>${pr.filter(x => jvGiorno(x) === g).map(x => jvRigaCosa(x, oggi, { tipo: "cosa" })).join("")}</section>`; }).join("")
       : `<p class="jv-vuoto">Nei prossimi giorni non hai niente segnato. Dimmene una: «dentista giovedì alle 10».</p>`) + tasti(pr.length > 0);
   } else {
     const righe = k === "traguardi" ? d.traguardi.slice().reverse() : d[k], f = k === "traguardi" ? jvFatte(d) : null;
-    const vuoto = { obiettivi: "Nessuna abitudine. Sono le cose di ogni giorno: «leggere dieci pagine ogni giorno». Le ritrovi ogni giorno nella pagina di Jarvis, con la fiamma dei giorni di fila.", traguardi: "Ancora nessun traguardo. Quando raggiungi un obiettivo tocca «🏁 Raggiunto»: arriva qui.", idee: "Nessuna idea salvata. Quando te ne viene una, dimmela." }[k];
+    const vuoto = { obiettivi: "Nessuna abitudine. Sono le cose di ogni giorno: «leggere dieci pagine ogni giorno». Le ritrovi ogni giorno nella pagina di " + JV_NOME + ", con la fiamma dei giorni di fila.", traguardi: "Ancora nessun traguardo. Quando raggiungi un obiettivo tocca «🏁 Raggiunto»: arriva qui.", idee: "Nessuna idea salvata. Quando te ne viene una, dimmela." }[k];
     corpo = (f ? `<div class="jv-numeri"><div><b>${f.oggi}</b><span>${f.oggi === 1 ? "cosa fatta" : "cose fatte"} oggi</span></div><div><b>${f.settimana}</b><span>${f.settimana === 1 ? "cosa fatta" : "cose fatte"} questa settimana</span></div></div>` : "")
       + (righe.length ? `<div class="jv-lista">${righe.map(x => jvRiga(k, x, oggi)).join("")}</div>` : `<p class="jv-vuoto">${vuoto}</p>`) + (k === "traguardi" ? "" : tasti(righe.length > 0));
   }
-  return `${jvTesta(nome, true)}${dice}${corpo}${k === "obiettivi" ? jvVaiTraguardi(d) : ""}`;
+  return `${jvTesta(nome, true)}${dice}${corpo}${k === "obiettivi" ? jvVaiTraguardi(d) + jvVaiFisici() : ""}`;
 }
 // il foglio: scrivere una cosa nuova, cambiarne una, oppure «la tolgo?»
 function jvFoglioHtml() {
@@ -19928,7 +20019,7 @@ function jvFuoco() { setTimeout(() => { try { const t = document.getElementById(
 function jarvisDisegna() {
   let el = document.getElementById("jarvis");
   if (!JV.aperto) { if (el) { el.hidden = true; el.innerHTML = ""; el.classList.remove("jv-casa"); } document.body.classList.remove("con-jarvis"); return; }
-  if (!el) { el = document.createElement("div"); el.id = "jarvis"; el.className = "jarvis"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Jarvis"); document.body.appendChild(el); }
+  if (!el) { el = document.createElement("div"); el.id = "jarvis"; el.className = "jarvis"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", JV_NOME); document.body.appendChild(el); }
   el.hidden = false; document.body.classList.add("con-jarvis");
   const d = jarvisDati(), casa = !(JV.sez && JV_SEZ[JV.sez]);
   JV.svOk = jvSvegliaStato() === "accesa";
@@ -19954,6 +20045,7 @@ function jarvisDisegna() {
 }
 function jarvisApri() {
   if (!jarvisPuo() || JV.aperto) return;
+  if (!KAREN_URL.pronto) { if (JV.prepara) return; JV.prepara = true; karenPrepara().catch(() => false).then(() => { JV.prepara = false; jarvisApri(); }); return; }   // 1.104.0
   try { if (voceInCorso) zittisciVoce(); } catch (e) {}
   JV.aperto = true; JV.sez = ""; JV.foglio = null; JV.dice = "";
   indietroApri("jarvis", () => jarvisChiudi(true));
@@ -20091,6 +20183,8 @@ function jvCambia(fn, detto) { const d = jarvisDati(); const r = fn(d); if (r ==
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t) return;
   if (t.closest("[data-jarvis-apri]")) { e.preventDefault(); e.stopPropagation(); jarvisApri(); return; }
+  // 1.104.0: togliere Karen da questo telefono (le foto e i video; le sue cose da fare restano)
+  if (t.closest("[data-karen-togli]")) { e.preventDefault(); if (confirm(`Tolgo ${JV_NOME} da questo telefono? Le sue foto e i suoi video si cancellano da qui: per rimetterla serve di nuovo il file karen.zip. Le tue cose da fare restano.`)) { if (JV.aperto) jarvisChiudi(); karenTogli().then(() => { toast(`${JV_NOME} tolta da questo telefono`); jvSveglieAggiorna(0); disegna(); }); } return; }
   if (!t.closest("#jarvis")) return;
   const q = (s) => t.closest(s); let x;
   if (q("[data-jv-togli-si]")) { const f = JV.foglio || {}; JV.foglio = null; if (f.togli) jvCambia(d => { d[f.k] = d[f.k].filter(y => y.id !== f.id); }, "Tolta."); else jarvisDisegna(); return; }
@@ -20140,6 +20234,8 @@ document.addEventListener("click", (e) => {
   if ((x = q("[data-jv-mic]"))) { jarvisMic(x.dataset.jvMic || ""); return; }
   if ((x = q("[data-jv-scrivi]"))) { jarvisZitto(); JV.foglio = { testo: "", dove: x.dataset.jvScrivi || "impegni" }; jarvisDisegna(); jvFuoco(); return; }
   if ((x = q("[data-jv-leggi]"))) { if (JV.parla) jarvisZitto(); else jarvisDici(jvLeggi(x.dataset.jvLeggi), false); return; }
+  if (q("[data-jv-fisici-salva]")) { const v = String((document.getElementById("jvFisici") || {}).value || "").trim(); jvCambia(d => { d.fisici = v; }, "Obiettivi salvati. Forza!"); return; }   // 1.104.0
+  if (q("[data-jv-fisici-togli]")) { karenFisiciTogli().then(() => { JV.dice = "Tolto."; jarvisDisegna(); }); return; }
   if (q("[data-jv-piano-salva]")) { const v = String((document.getElementById("jvPiano") || {}).value || "").trim(); jvCambia(d => { d.piano = v; }, "Piano salvato."); return; }
   if ((x = q("[data-jv-cambia]"))) { const id = x.dataset.jvCambia, o = jarvisDati().impegni.find(y => y.id === id); if (o) { jarvisZitto(); JV.foglio = { cambia: id, testo: o.testo, giorno: jvGiorno(o), ora: jvOraDi(o), esatta: !!o.esatta }; jarvisDisegna(); } return; }
   // il tondo: fatta (resta barrata in fondo alla lista di oggi) · toccato di nuovo: torna da fare
@@ -20152,10 +20248,25 @@ document.addEventListener("click", (e) => {
 }, true);
 // 1.100.0: nella riga per aggiungere, invio = aggiungi
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing && e.target && e.target.id === "jvVeloce") { e.preventDefault(); jvVeloce(); } });
+// 1.104.0: il pacco di Karen (Impostazioni → Altro) e il video di «Obiettivi fisici» (dalla galleria): restano solo qui
+document.addEventListener("change", (e) => {
+  const t = e.target; if (!t || !t.matches) return;
+  if (t.matches("[data-karen-file]")) {
+    const f = t.files && t.files[0]; t.value = ""; if (!f) return;
+    karenCarica(f).then(() => { toast(`✓ ${JV_NOME} è su questo telefono: tocca la casetta in alto nella prima pagina`); jvSveglieAggiorna(0); disegna(); })
+      .catch(() => toast(`Questo non è il file di ${JV_NOME}: scegli «karen.zip».`));
+    return;
+  }
+  if (t.matches("[data-jv-fisici-file]")) {
+    const f = t.files && t.files[0]; if (!f) return;
+    karenFisiciMetti(f).then(() => { t.value = ""; JV.dice = "Fatto: è il tuo obiettivo per l'estate. Forza!"; jarvisDisegna(); })
+      .catch(() => { t.value = ""; JV.dice = "Non riesco a tenerlo: forse il telefono ha la memoria piena."; jarvisDisegna(); });
+  }
+});
 document.addEventListener("change", (e) => {
   const c = e.target && e.target.matches && e.target.matches("[data-jarvis-sw]") ? e.target : null; if (!c) return;
   try { if (c.checked) localStorage.setItem(JV_ACCESO, "1"); else localStorage.removeItem(JV_ACCESO); } catch (er) {}
-  toast(c.checked ? "✓ Jarvis acceso: nella prima pagina tocca la casetta in alto, accanto a «Le Stanze di Ricci»" : "Jarvis spento su questo telefono (le tue cose restano)");
+  toast(c.checked ? `✓ ${JV_NOME} accesa: nella prima pagina tocca la casetta in alto, accanto a «Le Stanze di Ricci»` : `${JV_NOME} spenta su questo telefono (le tue cose restano)`);
   jvSveglieAggiorna(0);
   disegna();
 });
@@ -20171,7 +20282,7 @@ function jarvisDalLink(aspetta) {
     if (c && !apri) { try { if (v === "0") localStorage.removeItem(JV_ACCESO); else localStorage.setItem(JV_ACCESO, "1"); } catch (e) {} }
     uj.searchParams.delete("jarvis"); history.replaceState(null, "", uj.pathname + uj.search + uj.hash);
     if (apri) jvApriAppenaPuoi();
-    else if (c) setTimeout(() => { try { toast(v === "0" ? "Jarvis spento su questo telefono" : "✓ Jarvis acceso su questo telefono: nella prima pagina tocca la casetta in alto"); } catch (e) {} }, aspetta);
+    else if (c) setTimeout(() => { try { toast(v === "0" ? `${JV_NOME} spenta su questo telefono` : `✓ ${JV_NOME} accesa su questo telefono: nella prima pagina tocca la casetta in alto`); } catch (e) {} }, aspetta);
     return true;
   } catch (e) { return false; }
 }
