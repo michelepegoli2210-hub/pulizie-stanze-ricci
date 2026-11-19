@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.105.0";
+export const VERSIONE = "1.106.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -19432,6 +19432,17 @@ const KAREN_FILE = { poster: ["jv-lei-3d.webp", "image/webp"], viso: ["jv-lei-vi
 const KAREN_URL = { pronto: false, manca: false };
 const karenIndirizzo = (n) => new URL("karen-locale/" + n, location.href).href;
 function karenPacco() { try { return localStorage.getItem(KAREN_PACCO) === "1"; } catch (e) { return false; } }
+// 1.106.0 (Michele: «premo la casetta ma non va»): Karen accesa ma il suo file non ancora su questo telefono. Allora la casetta
+// non resta muta: porta in Altro, al tasto «Carica il file di Karen» evidenziato in giallo (KAREN_GUIDA), finché non lo carica.
+let KAREN_GUIDA = false;
+function jarvisSenzaPacco() { try { return !!(S.pronto && S.utente && proprietario() && !S.utente.finta && jarvisAcceso() && !karenPacco()); } catch (e) { return false; } }
+function karenGuida() {
+  KAREN_GUIDA = true;
+  try { chiudiFoglio(); } catch (e) {}
+  S.vista = "altro"; disegna(); window.scrollTo(0, 0);
+  setTimeout(() => { const b = document.querySelector(".jv-card .karen-carica"); if (b) b.scrollIntoView({ block: "center" }); }, 120);
+  toast(`Per aprire ${JV_NOME} su questo telefono carica una volta il suo file: tocca il tasto giallo.`);
+}
 // legge dalla cache i suoi file (e il video di «Obiettivi fisici»), una volta sola finché l'app resta aperta
 async function karenPrepara() {
   if (KAREN_URL.pronto) return !KAREN_URL.manca;
@@ -19684,17 +19695,20 @@ function jarvisCasetta(b) {
     const m = b && b.querySelector(".bo-marca"); if (!m) return;
     let c = m.querySelector(".bo-casetta");
     if (c && c.tagName !== "BUTTON") { c.remove(); c = null; }
-    if (!jarvisPuo()) { if (c) c.remove(); return; }
-    if (!c) { c = document.createElement("button"); c.type = "button"; c.className = "bo-casetta"; c.setAttribute("data-jarvis-apri", ""); c.setAttribute("aria-label", `Apri ${JV_NOME}, le tue cose da fare`); m.appendChild(c); }
+    const manca = !jarvisPuo() && jarvisSenzaPacco();   // 1.106.0: senza il file la casetta porta al tasto per caricarlo
+    if (!jarvisPuo() && !manca) { if (c) c.remove(); return; }
+    if (!c) { c = document.createElement("button"); c.type = "button"; c.className = "bo-casetta"; c.setAttribute("data-jarvis-apri", ""); m.appendChild(c); }
+    c.setAttribute("aria-label", manca ? `${JV_NOME}: carica il suo file su questo telefono` : `Apri ${JV_NOME}, le tue cose da fare`);
   } catch (e) {}
 }
 // l'interruttore in Altro
 function cardJarvisAltro() {
   if (!proprietario() || (S.utente && S.utente.finta)) return "";
   const on = jarvisAcceso(), nome = esc(JV_NOME);
-  if (!karenPacco()) return `<section class="card jv-card"><h2>${nome} · le tue cose da fare</h2>
+  if (!karenPacco()) return `<section class="card jv-card${KAREN_GUIDA ? " karen-guida-card" : ""}"><h2>${nome} · le tue cose da fare</h2>
     <p class="small" style="margin:0 0 8px">${nome} sta <b>solo sul tuo telefono</b>: le sue foto e i suoi video non sono su internet. Per averla su questo telefono carica il file <b>karen.zip</b>, una volta sola.</p>
-    <label class="jv-altro-b oro karen-carica">📂 Carica il file di ${nome}<input type="file" data-karen-file hidden></label></section>`;
+    ${KAREN_GUIDA ? `<p class="karen-guida-t">👇 Tocca il tasto giallo e scegli <b>karen.zip</b> (cartella <b>Download</b>).</p>` : ""}
+    <label class="jv-altro-b oro karen-carica${KAREN_GUIDA ? " karen-guida" : ""}">📂 Carica il file di ${nome}<input type="file" data-karen-file hidden></label></section>`;
   return `<section class="card jv-card"><h2>${nome} · le tue cose da fare</h2>
     <p class="small" style="margin:0 0 8px">La tua pagina personale: le cose da fare di oggi, gli impegni, gli obiettivi, le idee. Si apre dalla <b>casetta in alto nella prima pagina</b>, accanto a «Le Stanze di Ricci». ${nome} e le tue cose stanno <b>solo su questo telefono</b>: gli altri non le vedono. Per la sveglia esce solo il giorno e l'ora, non che cosa devi fare. È gratis.</p>
     <label class="giro-sw"><span>${nome} su questo telefono</span><input type="checkbox" data-jarvis-sw ${on ? "checked" : ""}></label>
@@ -20047,12 +20061,17 @@ function jarvisDisegna() {
   if (nuova && casa) requestAnimationFrame(jvSaluta);
 }
 function jarvisApri() {
-  if (!jarvisPuo() || JV.aperto) return;
-  if (!KAREN_URL.pronto) { if (JV.prepara) return; JV.prepara = true; karenPrepara().catch(() => false).then(() => { JV.prepara = false; jarvisApri(); }); return; }   // 1.104.0
+  if (!jarvisPuo()) { if (!JV.aperto && jarvisSenzaPacco()) karenGuida(); return; }   // 1.106.0: senza il file, al tasto per caricarlo
+  if (JV.aperto) return;
+  // 1.104.0: prima i suoi file dal telefono · 1.106.0: una lettura che non finisce non blocca i tocchi dopo (8 secondi)
+  if (!KAREN_URL.pronto) { if (JV.prepara && Date.now() - JV.prepara < 8000) return; JV.prepara = Date.now(); karenPrepara().catch(() => false).then(() => { JV.prepara = 0; if (KAREN_URL.pronto) jarvisApri(); }); return; }
+  // 1.106.0: il segno «caricato» c'è ma i suoi file nel telefono non ci sono più: si toglie il segno e si ricarica il file
+  if (KAREN_URL.manca && !KAREN_URL.poster) { try { localStorage.removeItem(KAREN_PACCO); } catch (e) {} karenLibera(); karenGuida(); return; }
   try { if (voceInCorso) zittisciVoce(); } catch (e) {}
   JV.aperto = true; JV.sez = ""; JV.foglio = null; JV.dice = "";
   indietroApri("jarvis", () => jarvisChiudi(true));
-  jarvisDisegna();
+  try { jarvisDisegna(); }
+  catch (err) { console.warn("Karen non si apre", err); try { jarvisChiudi(); } catch (e) { JV.aperto = false; } toast(`${JV_NOME} non si è aperta: tocca di nuovo la casetta.`); return; }   // 1.106.0: mai a metà
   jvSveglieAggiorna(1500);
   jarvisDici(jvBriefing());
 }
@@ -20256,7 +20275,7 @@ document.addEventListener("change", (e) => {
   const t = e.target; if (!t || !t.matches) return;
   if (t.matches("[data-karen-file]")) {
     const f = t.files && t.files[0]; t.value = ""; if (!f) return;
-    karenCarica(f).then(() => { toast(`✓ ${JV_NOME} è su questo telefono: tocca la casetta in alto nella prima pagina`); jvSveglieAggiorna(0); disegna(); })
+    karenCarica(f).then(() => { KAREN_GUIDA = false; toast(`✓ ${JV_NOME} è su questo telefono`); jvSveglieAggiorna(0); disegna(); setTimeout(jarvisApri, 300); })   // 1.106.0: e si apre da sola
       .catch(() => toast(`Questo non è il file di ${JV_NOME}: scegli «karen.zip».`));
     return;
   }

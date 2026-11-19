@@ -3453,3 +3453,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
 - **1.105.0** (19/11, Michele: «questo lo puoi mettere anche tu.. perché non è osceno»):
   - In «Obiettivi fisici» c'è già il video della ragazza bionda che corre sulla spiaggia al tramonto: non devi sceglierlo tu.
   - Se vuoi metterne un altro: «Metti il tuo» e lo scegli dalla galleria (resta solo sul telefono). «Rimetti quello di prima» torna a quello della spiaggia.
+- **1.106.0** (19/11, Michele: «non riesco più ad aprire Karen sul mio telefono, premo la casetta ma non va»):
+  - Il motivo: il telefono si era aggiornato da solo, ma il file di Karen (karen.zip) non era ancora stato caricato. Senza il file la casetta non faceva niente.
+  - Adesso, se il file manca, la casetta ti porta da sola al tasto «Carica il file di Karen», colorato di giallo, con scritto cosa scegliere.
+  - Appena caricato il file, Karen si apre da sola.

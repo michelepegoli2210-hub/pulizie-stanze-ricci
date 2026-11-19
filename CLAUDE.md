@@ -280,6 +280,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   lui dalla galleria (`karenFisiciMetti`, nella cache «ricci-karen», MAI nel repository) e i suoi obiettivi scritti (`d.fisici`).
   1.105.0: se non ne ha scelto uno, si vede il video di serie `fisici-estate.mp4` (ragazza bionda in costume intero che corre sulla
   riva, di Gemini; Michele: «questo lo puoi mettere anche tu.. perché non è osceno»): è un file dell'app, tra i FILMATI.
+  1.106.0 (Michele: «premo la casetta ma non va»): la casetta del logo si vede SEMPRE (è disegnata nel logo); il tasto
+  invisibile sopra non deve mai sparire mentre Karen è accesa. Senza il file (`jarvisSenzaPacco`) porta in Altro al tasto
+  «Carica il file di Karen» in giallo (`karenGuida`, `KAREN_GUIDA`); caricato il file, Karen si apre da sola; segno «caricato»
+  senza i file nel telefono → si toglie il segno e si torna lì. `jarvisApri` non resta mai a metà (disegno rotto → chiude).
   Prossimi filmati (Michele: «di attività che si fa in palestra… di crescita, che gioca a scacchi, che risolve un cubo…
   deve stare la continuità del video… non si deve capire»): ognuno parte e finisce nella posa della foto, e si mettono in
   fila come quelli della prima pagina (attacchi, rientro lento), così da ferma fa una cosa dopo l'altra senza scatti.
