@@ -3457,3 +3457,8 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Il motivo: il telefono si era aggiornato da solo, ma il file di Karen (karen.zip) non era ancora stato caricato. Senza il file la casetta non faceva niente.
   - Adesso, se il file manca, la casetta ti porta da sola al tasto «Carica il file di Karen», colorato di giallo, con scritto cosa scegliere.
   - Appena caricato il file, Karen si apre da sola.
+- **1.107.0 + giro 1.40.0** (19/11, Michele al PC: «dai oggi finiamo sofia influenzer»):
+  - Collegando Instagram a Sofia, Meta per le app nuove dà una chiave di tipo nuovo: non comincia con «IG» e non scade mai. L'app la scartava («deve cominciare con IG»).
+  - Adesso la casella gialla accetta anche la chiave nuova e la controlla con Meta (trova da sola l'Instagram collegato e il suo nome).
+  - Il giro di Sofia con la chiave nuova parla con Meta dalla strada giusta (pubblica, legge e risponde ai commenti) e non deve più rinnovarla.
+  - I passi del foglio «Collega Instagram» sono quelli di adesso (portfolio business, configurazione, tester di Instagram, «Continua con Instagram»).

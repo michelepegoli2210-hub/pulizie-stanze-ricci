@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.106.0";
+export const VERSIONE = "1.107.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -15331,7 +15331,7 @@ function vistaSocial() {
   const coll = st === "controllo" ? `<p class="note info" style="margin:0 0 8px">⏳ Ho la chiave nuova: entro 10 minuti la controllo e qui compare «✓ Collegata».</p><button type="button" class="btnsm ghost" data-soc-chiave>Rifai la chiave</button>`
     : st === "chiave" ? `<p class="note warn" style="margin:0 0 8px">⚠ La chiave di Instagram non va più (scaduta o tolta): rifalla, 2 minuti.</p><button type="button" class="big main" data-soc-chiave>🔑 Rifai la chiave di Instagram</button>`
     : st === "personale" ? `<p class="note warn" style="margin:0 0 8px">⚠ L'Instagram collegato è ancora «personale»: Instagram non mi fa pubblicare. Sul telefono: <b>Impostazioni → Tipo di account → Passa all'account professionale → Azienda</b>. Poi faccio io, da sola.</p>`
-    : collegata ? `<p class="note ok" style="margin:0 0 8px">✓ Collegata: <b>@${esc(m.ig.nome)}</b>${m.ig.scade ? ` · la chiave dura fino a ${esc(L.dataLunga(String(m.ig.scade).slice(0, 10)))} e la rinnovo da sola` : ""}.</p><button type="button" class="btnsm ghost" data-soc-chiave>Rifai la chiave</button>`
+    : collegata ? `<p class="note ok" style="margin:0 0 8px">✓ Collegata: <b>@${esc(m.ig.nome)}</b>${m.ig.scade ? ` · la chiave dura fino a ${esc(L.dataLunga(String(m.ig.scade).slice(0, 10)))} e la rinnovo da sola` : m.ig.via === "fb" ? " · la chiave non scade" : ""}.</p><button type="button" class="btnsm ghost" data-soc-chiave>Rifai la chiave</button>`
     : `<p style="margin:0 0 8px">${socPronta("instagram") ? "Instagram c'è: adesso mi colleghi, dal PC (10 minuti, se vuoi lo facciamo insieme)." : "Prima apri Instagram (passo 1); poi, dal PC, mi colleghi: 10 minuti, se vuoi lo facciamo insieme."} Uso la strada ufficiale di Meta per le attività: l'account non rischia niente e funziona anche a PC spento.</p><button type="button" class="big main" data-soc-chiave>🔑 Collega Instagram</button>`;
   const no = m.fotoNo || {};
   const ultimo = (Array.isArray(s.pubblicati) ? s.pubblicati : []).filter(p => p && p.link).slice(-1)[0];
@@ -15393,24 +15393,40 @@ function foglioSocialCome(f) {
 }
 // 1.67.0: il collegamento. La chiave la incolla Michele (mai l'app per lui); l'app la controlla e la salva per il giro
 function foglioSocialChiave(f = {}) {
+  // 1.107.0 (19/11): i passi di Meta di adesso («API setup with Unified login»: la strada col login di Instagram non c'è più per le app nuove)
   return `<h3>🔑 Collega Instagram</h3>
     <p class="small" style="margin:0 0 8px">Dal PC, col profilo Facebook che hai aperto. Ci vogliono 10 minuti; se vuoi lo facciamo insieme. (I nomi dei tasti di Meta possono cambiare un po'.)</p>
     <ol class="soc-come">
-      <li>Vai su <b>developers.facebook.com</b> ed entra col tuo Facebook. La prima volta ti chiede di registrarti come sviluppatore: conferma il telefono e l'email.</li>
-      <li><b>Le mie app → Crea app</b>. Come uso scegli quello per <b>gestire messaggi e contenuti su Instagram</b>. Nome: <b>Sofia social</b>.</li>
-      <li>Nella app: <b>Instagram → Configurazione dell'API con login di Instagram</b> → <b>Genera token di accesso</b> → <b>Aggiungi account</b> → entra con l'Instagram dell'albergo e accetta.</li>
-      <li>Accanto all'account tocca <b>Genera token</b>, poi <b>Copia</b>: è una scritta lunga che comincia con <b>IG</b>.</li>
+      <li>Vai su <b>developers.facebook.com</b> ed entra col tuo Facebook. La prima volta ti chiede di registrarti come sviluppatore.</li>
+      <li><b>Le mie app → Crea un'app</b>. Come uso scegli <b>Gestisci i messaggi e i contenuti su Instagram</b>. Nome: <b>Sofia social</b>.</li>
+      <li>Nella app: <b>API setup with Unified login</b> → collega il <b>portfolio business</b> (Le Stanze di Ricci) → <b>Crea nuova configurazione</b>.</li>
+      <li><b>Aggiungi account</b> → <b>Tester di Instagram</b> → l'Instagram dell'albergo. Poi su Instagram: <b>App e siti web → Inviti relativi a test → Accetta</b>.</li>
+      <li>Accanto all'account tocca <b>Genera token</b> → <b>Continua con Instagram</b> → <b>Copia</b>: è una scritta lunga.</li>
       <li>Incollala qui sotto, nella casella gialla, e tocca <b>Controlla e salva</b>.</li>
     </ol>
-    <label class="campo soc-chiave"><span>La chiave di Instagram</span><textarea id="socChiave" rows="3" placeholder="Incolla qui (comincia con IG…)" spellcheck="false" autocomplete="off" autocapitalize="off" data-keep></textarea></label>
+    <label class="campo soc-chiave"><span>La chiave di Instagram</span><textarea id="socChiave" rows="3" placeholder="Incolla qui la chiave lunga" spellcheck="false" autocomplete="off" autocapitalize="off" data-keep></textarea></label>
     <div id="socEsito" class="note ${esc((f.esito && f.esito.cls) || "")}"${f.esito ? "" : " hidden"}>${f.esito ? f.esito.html : ""}</div>
     <button type="button" class="big main" data-soc-chiave-salva>Controlla e salva</button>
     <button type="button" class="big undo" data-chiudi>Lo faccio dopo</button>
-    <p class="muted small" style="margin:8px 0 0">La chiave resta solo nel tuo database (la leggono solo i proprietari) e non va nella copia di sicurezza. Instagram la tiene buona 60 giorni: io la rinnovo da sola.</p>`;
+    <p class="muted small" style="margin:8px 0 0">La chiave resta solo nel tuo database (la leggono solo i proprietari) e non va nella copia di sicurezza. Quella nuova di Meta non scade; quelle vecchie (cominciano con IG) le rinnovo io.</p>`;
 }
-const SOC_CHIAVE_RX = /^IG[A-Za-z0-9_\-]{40,}$/;
+// 1.107.0: anche la chiave «unificata» delle app nuove di Meta (utente di sistema): non comincia con IG, non scade, va su
+// graph.facebook.com; l'account Instagram che le è stato dato si trova con me/assigned_instagram_accounts
+const SOC_CHIAVE_RX = /^[A-Za-z0-9_\-|.]{40,}$/;
+const socUnificata = (t) => !/^IG/.test(String(t || ""));
 async function socProvaChiave(chiave) {   // {ok, nome, tipo} · {ok:false, errore} · {ok:null} se Instagram non risponde da qui
   try {
+    if (socUnificata(chiave)) {
+      const r = await fetch(`https://graph.facebook.com/me/assigned_instagram_accounts?access_token=${encodeURIComponent(chiave)}`, { cache: "no-store" });
+      const j = await r.json().catch(() => ({}));
+      if (j && j.error) return { ok: false, errore: Number(j.error.code) === 190 ? "Meta dice che la chiave non è giusta o è scaduta: rifalla («Genera token») e incollala di nuovo." : "Meta non la accetta: rifalla («Genera token») e incollala di nuovo." };
+      if (!(j && Array.isArray(j.data))) return { ok: null };
+      const ac = j.data.find(x => x && x.id);
+      if (!ac) return { ok: false, errore: "La chiave è giusta, ma non vede nessun Instagram: rifalla con «Genera token» accanto all'Instagram dell'albergo." };
+      let nome = String(ac.username || "");
+      if (!nome) { try { const r2 = await fetch(`https://graph.facebook.com/${encodeURIComponent(ac.id)}?fields=username&access_token=${encodeURIComponent(chiave)}`, { cache: "no-store" }); const j2 = await r2.json().catch(() => ({})); nome = String((j2 && j2.username) || ""); } catch (e) {} }
+      return { ok: true, nome: nome || "Instagram", tipo: "BUSINESS" };   // l'accesso unificato c'è solo per gli account professionali
+    }
     const r = await fetch(`https://graph.instagram.com/me?fields=user_id,username,account_type&access_token=${encodeURIComponent(chiave)}`, { cache: "no-store" });
     const j = await r.json().catch(() => ({}));
     if (j && j.error) return { ok: false, errore: Number(j.error.code) === 190 ? "Instagram dice che la chiave non è giusta o è scaduta: rifalla (passo 4) e incollala di nuovo." : "Instagram non la accetta: rifalla (passo 4)." };
@@ -15425,7 +15441,7 @@ async function socSalvaChiave() {
     if (S.foglio && S.foglio.tipo === "socialChiave") S.foglio.esito = { cls, html };
     const o = document.getElementById("socEsito") || out; if (o) { o.className = "note " + cls; o.innerHTML = html; o.hidden = false; }
   };
-  if (!SOC_CHIAVE_RX.test(chiave)) { mostra("warn", chiave.length < 40 ? "Incolla la chiave intera: è lunga e comincia con <b>IG</b>." : "Questa non sembra la chiave di Instagram: deve cominciare con <b>IG</b>."); return; }
+  if (!SOC_CHIAVE_RX.test(chiave)) { mostra("warn", chiave.length < 40 ? "Incolla la chiave intera: è una scritta lunga (usa «Copia» di Meta)." : "Questa non sembra la chiave: copiala di nuovo con «Copia» di Meta e incollala qui."); return; }
   mostra("info", "Controllo con Instagram…");
   const p = await socProvaChiave(chiave);
   if (p.ok === false) { mostra("warn", esc(p.errore)); return; }

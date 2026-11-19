@@ -32,6 +32,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   sanno). La loro parte dell'app resta gratis, senza IA a pagamento.
 - Negli esempi (dati della prova, aiuti, commenti, registro delle versioni) solo nomi di fantasia: Rossi, Bruno, Greco…
 - Sofia sui social: solo le API ufficiali di Meta, mai il mouse del PC; dice sempre che è un'assistente virtuale (AI Act).
+  Dal 19/11/2026 (app 1.107.0, giro 1.40.0) la chiave di Instagram è quella «Unified login» delle app nuove di Meta (app
+  «Sofia social», portfolio business «Le Stanze di Ricci», Instagram sofialestanzediricci come Tester di Instagram): non
+  comincia con IG, non scade, va su graph.facebook.com (`FB`, `unificata`, `me/assigned_instagram_accounts`). La genera e
+  la incolla solo Michele.
 - Niente foto finte dell'albergo fatte con l'IA; niente loghi o marchi di altri nell'app; la Sofia di prima (il viso
   vecchio) non deve più comparire.
 
