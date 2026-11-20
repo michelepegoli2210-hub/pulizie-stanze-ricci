@@ -54,16 +54,19 @@ export const allegatoFirma = (f) => {
   if (!(/^image\//.test(t) || /\.(png|gif|jpe?g|bmp|webp)$/i.test(n))) return false;
   return kb <= 6 || (kb <= 60 && /^(image\d{1,4}|outlook-[\w-]+|logo[\w .-]*|firma[\w .-]*|signature[\w .-]*)\.(png|gif|jpe?g|bmp|webp)$/i.test(n));
 };
+// 1.42.0 (Michele, 20/11: «mi deve aprire qualsiasi allegato sul telefono»): con la casella 4 nell'elenco ci sono anche le
+// immagini dentro il testo («in»: i loghi della firma, le foto incollate) e l'app le apre tutte. Gli allegati «veri» (quelli da
+// contare e da far leggere a Gemini) restano quelli di prima: non i loghi della firma, non le immagini piccole dentro il testo.
+export const allegatoVero = (f) => !allegatoFirma(f) && !(f && f.in && (Number(f.kb) || 0) < 60);
 export function filesDi(l) {
-  return (Array.isArray(l) ? l : []).filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && String(f.n || "").trim())
-    .map(f => ({ p: String(f.p), n: String(f.n).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 120), t: String(f.t || "").toLowerCase().slice(0, 80), kb: Math.max(0, Math.round(Number(f.kb) || 0)) }))
-    .filter(f => !allegatoFirma(f)).slice(0, 10);
+  const ok = (Array.isArray(l) ? l : []).filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && String(f.n || "").trim())
+    .map(f => ({ p: String(f.p), n: String(f.n).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 120), t: String(f.t || "").toLowerCase().slice(0, 80), kb: Math.max(0, Math.round(Number(f.kb) || 0)), ...(f.in ? { in: 1 } : {}) }));
+  return [...ok.filter(allegatoVero), ...ok.filter(f => !allegatoVero(f))].slice(0, 20);   // prima quelli veri
 }
-// quanti allegati ha una mail: la casella 3 dà l'elenco (senza le immagini piccole dentro il testo, come i loghi delle firme);
-// la casella di prima solo il numero di tutti i file
-export const quantiAllegati = (m) => (Array.isArray(m && m.files) ? filesDi(m.files).length : Number(m && m.allegati) || 0);
+// quanti allegati ha una mail: quelli veri dell'elenco (la casella 3 e la 4 lo danno); la casella di prima solo il numero di tutti i file
+export const quantiAllegati = (m) => (Array.isArray(m && m.files) ? filesDi(m.files).filter(allegatoVero).length : Number(m && m.allegati) || 0);
 // una mail della casella → un messaggio della posta di Sofia
-export function mailInPosta(m) {
+export function mailInPosta(m, casella) {
   const ts = Number(m && m.ts) || 0;
   if (!m || !ID.test(String(m.id || "")) || !ts) return null;
   const { data, ora } = dataOraRoma(ts);
@@ -73,7 +76,8 @@ export function mailInPosta(m) {
   const corpo = String(m.testo || "").trim();
   const testo = `✉️ ${oggetto || "(senza oggetto)"}${all ? ` · 📎 ${all} ${all === 1 ? "allegato" : "allegati"}` : ""}${corpo ? "\n" + corpo : ""}`.slice(0, MAX_TESTO + 260);
   const files = filesDi(m.files);   // 1.41.0
-  return { id: "email_" + String(m.id), dati: { chat: CHAT_EMAIL, gruppo: true, chi, mio: false, ts, data, ora, tipo: "testo", testo, da: "email", dominio: String(m.dominio || "").slice(0, 80), ...(files.length ? { files, allegatiStato: "da-leggere" } : {}) } };
+  const v = Number(casella) || 0;   // 1.42.0: con la casella 4 l'elenco è intero (l'app non lo richiede)
+  return { id: "email_" + String(m.id), dati: { chat: CHAT_EMAIL, gruppo: true, chi, mio: false, ts, data, ora, tipo: "testo", testo, da: "email", dominio: String(m.dominio || "").slice(0, 80), ...(Array.isArray(m.files) && v ? { filesV: v } : {}), ...(files.length ? { files, ...(files.some(allegatoVero) ? { allegatiStato: "da-leggere" } : {}) } : {}) } };
 }
 
 // 1.36.0: le mail da avvisare a Michele, in una riga sola e corte (la notifica non è il posto per tutta la mail)
@@ -148,7 +152,7 @@ export async function portaPostaAlbergo({ db, adesso = new Date(), fetchFn = fet
     return { esito: "posta albergo: la casella non ha risposto", n: 0, errore: true, avvisare: daAvvisare(c, [], ora) };   // 1.36.0: quelle che aspettavano
   }
   const mail = (Array.isArray(j.mail) ? j.mail : []).filter(m => m && Number(m.ts) > da);
-  const ops = mail.map(mailInPosta).filter(Boolean).map(x => ({ coll: "posta", id: x.id, dati: x.dati, merge: true }));
+  const ops = mail.map(m => mailInPosta(m, j.casella)).filter(Boolean).map(x => ({ coll: "posta", id: x.id, dati: x.dati, merge: true }));
   if (ops.length) await db.scrivi(ops);
   const ultimo = Math.max(da, ...mail.map(m => Number(m.ts) || 0));
   const avvisare = daAvvisare(c, ops.length ? mail : [], ora);   // 1.36.0

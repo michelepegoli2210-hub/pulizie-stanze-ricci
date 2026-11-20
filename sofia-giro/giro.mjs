@@ -101,7 +101,7 @@ import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'o
 import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.41.1";
+export const VERSIONE_GIRO = "1.42.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
