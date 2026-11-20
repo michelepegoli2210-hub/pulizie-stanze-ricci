@@ -197,6 +197,15 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   elenco vuoto = «Nessun allegato da aprire» (era il logo della firma). Le immagini piccole della firma (`allegatoFirma`:
   image001.png, Outlook-….png, logo…, ≤ 60 KB; o qualunque immagine ≤ 6 KB) non si mostrano, non si contano, non vanno a
   Gemini. Sofia piccola sopra l'email è la segretaria intera (100×166, il nome sotto); il foglio lascia 160 px.
+- Allegati (1.109.0, casella 4, giro 1.42.0; sua: «mi deve aprire qualsiasi allegato sul telefono»): si apre tutto dentro
+  l'app (Word/PowerPoint/LibreOffice leggendo l'XML, zip col DecompressionStream, email .eml, RTF, audio, video, SVG come
+  <img> data:, firma digitale .p7m aperta a mano, fattura elettronica FatturaPA leggibile); HTML ed email solo in un iframe
+  sandbox="" con CSP, dopo DOMParser; il resto «⬇ Apri col telefono» col tipo giusto (mai html/svg/xml/message come tipo
+  del blob). Nell'elenco anche le immagini dentro il testo (`in`), sotto «Le immagini dentro l'email»; contati e letti da
+  Gemini solo gli `allegatoVero` (come prima). Indietro: una voce sola, `prima` torna dal file dentro all'elenco.
+- Sofia sopra l'email (1.109.0; sua: «deve muoversi… soprattutto mi deve rispondere»): i 3 filmati della Segreteria; toccata
+  o «🎤 Chiedimi una cosa» ascolta e risponde a voce sull'email e gli allegati (`segretariaSullEmail`: senza effetti
+  nell'app, email e allegati a Gemini con `aCodici`); domande e risposte in memoria (`S.segrDomande`), non salvate.
   La Ciclovia (letto sul loro sito il 17/11/2026): le richieste arrivano per email, si accettano o si rifiutano entro 12 ore
   lavorative, i giorni si chiudono nel loro calendario; niente iCal, niente collegamenti. Chiudere i giorni e dire sì o no
   lo fa Michele sul loro sito: l'app mostra e porta lì, non lo fa al posto suo e non va automatizzato col mouse.

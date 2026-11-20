@@ -1,4 +1,4 @@
-/* Le Stanze di Ricci · LA CASELLA DI SOFIA SEGRETARIA (versione 3, 20 novembre 2026)
+/* Le Stanze di Ricci · LA CASELLA DI SOFIA SEGRETARIA (versione 4, 20 novembre 2026)
  *
  * Michele, 10/11: «essendo dell'albergo questa email Sofia deve avere l'accesso h24 … anzi Sofia segretaria deve fare questo».
  * Questo piccolo programma sta nell'account Google DELL'ALBERGO e SOLO LEGGE la posta: non manda, non cancella, non sposta
@@ -21,6 +21,10 @@
  * ultimi 30 giorni, al massimo 10 MB. L'aggiornamento si fa come per la versione 2 (incolla, 💾, Gestisci deployment → ✏️ →
  * «Nuova versione»): l'indirizzo resta lo stesso.
  *
+ * VERSIONE 4 (Michele, 20/11: «mi deve aprire qualsiasi allegato sul telefono»): nell'elenco ci sono anche le immagini dentro
+ * il testo della mail (i loghi della firma, le foto incollate: «in»), anche quelle senza nome, fino a 20 file; un allegato può
+ * arrivare fino a 25 MB (il massimo di Gmail). Sempre SOLO LETTURA. L'aggiornamento si fa come per la versione 3.
+ *
  * Come si mette (una volta sola, dal PC, nell'account Google dell'albergo):
  *  1. script.new → incolla questo codice al posto di tutto → 💾
  *  2. ⚙️ Impostazioni progetto → spunta «Mostra il file manifest "appsscript.json" nell'editor» → nell'editor apri
@@ -31,10 +35,10 @@
  *     → Autorizza l'accesso (Google dice «app non verificata»: è la tua, Avanzate → Vai a … → Consenti)
  *  4. copia l'«URL app web» nell'app: Altro → 📬 La posta dell'albergo.
  */
-var VERSIONE = "3";
+var VERSIONE = "4";
 var SITI = ["cicloviaadriatica.eu", "booking.com", "expedia.com", "expediagroup.com", "expediapartnercentral.com", "airbnb.com", "airbnb.it"];   // i siti di prenotazione
 var MAX = 25, MAX_TESTO = 1800, GIORNI = 3;
-var MAX_FILE = 10 * 1024 * 1024, GIORNI_FILE = 30, MAX_ELENCO = 10;   // versione 3: gli allegati
+var MAX_FILE = 25 * 1024 * 1024, GIORNI_FILE = 30, MAX_ELENCO = 20;   // versione 3: gli allegati; versione 4: 25 MB, 20 file
 
 function doGet() {
   return json_({ ok: true, casella: VERSIONE, collegata: !!PropertiesService.getScriptProperties().getProperty("segreto") });
@@ -136,18 +140,30 @@ function allegati_(p) {
   (function giro(x) { if (!x) return; if (x.filename) n++; (x.parts || []).forEach(giro); })(p);
   return n;
 }
-// versione 3: gli allegati (nome, tipo, quanto pesa, e la «parte» che serve per chiederlo); le immagini dentro il testo no
+// versione 3: gli allegati (nome, tipo, quanto pesa, e la «parte» che serve per chiederlo)
+// versione 4: anche le immagini dentro il testo della mail («in»: i loghi della firma, le foto incollate), anche senza nome
 function files_(p) {
   var out = [];
   (function giro(x) {
     if (!x || out.length >= MAX_ELENCO) return;
-    if (x.filename && x.body && (x.body.attachmentId || x.body.data)) {
-      var dentro = /^inline/i.test(intestazione_(x, "content-disposition")) && /^image\//i.test(String(x.mimeType || "")) && Number(x.body.size || 0) < 60 * 1024;
-      if (!dentro) out.push({ p: String(x.partId || ""), n: String(x.filename).slice(0, 120), t: String(x.mimeType || "").slice(0, 80), kb: Math.ceil(Number(x.body.size || 0) / 1024) });
+    var nome = nomeParte_(x);
+    if (nome && x.body && (x.body.attachmentId || x.body.data)) {
+      var f = { p: String(x.partId || ""), n: nome.slice(0, 120), t: String(x.mimeType || "").slice(0, 80), kb: Math.ceil(Number(x.body.size || 0) / 1024) };
+      if (/^image\//i.test(String(x.mimeType || "")) && (/^inline/i.test(intestazione_(x, "content-disposition")) || intestazione_(x, "content-id"))) f["in"] = 1;
+      out.push(f);
     }
     (x.parts || []).forEach(giro);
   })(p);
   return out;
+}
+// il nome di una parte: quello del file; un'immagine dentro il testo senza nome si chiama «immagine-<parte>.png»
+function nomeParte_(x) {
+  if (!x) return "";
+  if (x.filename) return String(x.filename);
+  var mt = String(x.mimeType || "").toLowerCase();
+  if (!/^image\//.test(mt)) return "";
+  var est = { jpeg: "jpg", jpg: "jpg", png: "png", gif: "gif", webp: "webp", bmp: "bmp", "svg+xml": "svg", heic: "heic", tiff: "tif" }[mt.split("/")[1]] || "img";
+  return "immagine-" + String(x.partId || "") + "." + est;
 }
 function intestazione_(x, nome) {
   var v = ""; ((x && x.headers) || []).forEach(function (h) { if (String(h.name).toLowerCase() === nome) v = String(h.value || ""); });
@@ -169,11 +185,11 @@ function allegato_(id, parte) {
   var x = mailRecente_(id); if (x.errore) return { ok: false, errore: x.errore };
   var trovata = null;
   (function giro(y) { if (!y || trovata) return; if (String(y.partId || "") === parte) { trovata = y; return; } (y.parts || []).forEach(giro); })(x.m.payload);
-  if (!trovata || !trovata.filename || !trovata.body) return { ok: false, errore: "Allegato sconosciuto." };
-  if (Number(trovata.body.size || 0) > MAX_FILE) return { ok: false, errore: "L'allegato è troppo grande per l'app (più di 10 MB): aprilo nella posta.", grande: true };
+  if (!trovata || !nomeParte_(trovata) || !trovata.body) return { ok: false, errore: "Allegato sconosciuto." };
+  if (Number(trovata.body.size || 0) > MAX_FILE) return { ok: false, errore: "L'allegato è troppo grande per l'app (più di 25 MB): aprilo nella posta.", grande: true };
   var dati = trovata.body.data || (trovata.body.attachmentId ? api_("messages/" + id + "/attachments/" + trovata.body.attachmentId).data : "");
   if (!dati) return { ok: false, errore: "L'allegato è vuoto." };
   dati = String(dati).replace(/-/g, "+").replace(/_/g, "/"); while (dati.length % 4) dati += "=";
-  return { ok: true, casella: VERSIONE, nome: String(trovata.filename).slice(0, 120), tipo: String(trovata.mimeType || ""), kb: Math.ceil(Number(trovata.body.size || 0) / 1024), dati: dati };
+  return { ok: true, casella: VERSIONE, nome: nomeParte_(trovata).slice(0, 120), tipo: String(trovata.mimeType || ""), kb: Math.ceil(Number(trovata.body.size || 0) / 1024), dati: dati };
 }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }

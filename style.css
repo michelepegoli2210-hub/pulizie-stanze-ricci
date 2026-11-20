@@ -10946,3 +10946,64 @@ body.con-vista{overflow:hidden}
   background:rgba(255,250,240,.96);border-top:2px solid #26262B;color:#26262B;font-family:"Andika","Atkinson Hyperlegible Next",sans-serif;
   font-weight:700;font-size:19px;line-height:1;pointer-events:none}
 .segr-mini .sgm-nome span{font-size:16px}
+
+/* ----------------------------------------------------------------------------
+   1.109.0 · OGNI ALLEGATO SI APRE, E SOFIA TI RISPONDE (Michele, 20/11: «mi deve aprire qualsiasi allegato sul telefono»;
+   «Sofia in quella immagine deve muoversi come nei filmati normali di segreteria ma soprattutto mi deve rispondere»)
+   ---------------------------------------------------------------------------- */
+/* Sofia in alto a destra: i tre filmati uno sopra l'altro, si vede solo quello di adesso (lavora, ti ascolta, parla) */
+.segr-mini .sgm-fig .sgm-v{opacity:0;transition:opacity .45s ease}
+.segr-mini .sgm-fig .sgm-v.su{opacity:1}
+.segr-mini.ascolta{box-shadow:0 0 0 4px #5FAF64,2px 3px 0 -1px rgba(38,38,43,.25);animation:segrMiniAscolta 1.4s ease-in-out infinite}
+@keyframes segrMiniAscolta{50%{box-shadow:0 0 0 8px rgba(95,175,100,.45),2px 3px 0 -1px rgba(38,38,43,.25)}}
+@media (prefers-reduced-motion:reduce){.segr-mini.ascolta{animation:none}}
+/* nell'email: chiedile una cosa; le domande e le risposte */
+.sge-foglio .sgf-dom{margin:0 0 14px}
+.sge-foglio .sgf-chiedi{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:60px;margin:0 0 8px;padding:6px 14px;border:2.5px solid #26262B;border-radius:15px 18px 14px 19px/19px 14px 18px 15px;background:#E6DEF7;color:#000;font-size:22px;line-height:1.3;cursor:pointer}
+.sge-foglio .sgf-chiedi.ascolta{background:#D9F0D6;animation:sgfAscolta 1.4s ease-in-out infinite}
+@keyframes sgfAscolta{50%{box-shadow:0 0 0 6px rgba(95,175,100,.35)}}
+@media (prefers-reduced-motion:reduce){.sge-foglio .sgf-chiedi.ascolta{animation:none}}
+.sge-foglio .sgf-dom-nota{margin:0 4px 4px;font-size:19px;line-height:1.5;color:#3A3A42}
+.sge-foglio .sgf-chat{margin:0 0 10px;padding:10px 14px;border-radius:16px 14px 17px 13px/14px 17px 13px 16px;font-size:20px;line-height:1.6}
+.sge-foglio .sgf-chat small{display:block;margin:0 0 2px;font-size:19px;line-height:1.3;color:#3A3A42}
+.sge-foglio .sgf-chat-t{display:block;overflow-wrap:anywhere}
+.sge-foglio .sgf-chat.io{margin-left:34px;background:#EAF1FB;border:2px solid #8FA9D6}
+.sge-foglio .sgf-chat.lei{margin-right:20px;background:#FFF4D6;border:2px solid #E3AD3A}
+.sge-foglio .sgf-chat.ascolto{background:#EAF6E8;border:2px dashed #3E8E41}
+.sge-foglio .sgf-chat.pensa{margin-right:20px;background:#FFF8E6;border:2px dashed #E3AD3A}
+.sge-foglio .sgf-gov{display:block;width:100%;min-height:52px;margin:8px 0 0;border:2px solid #26262B;border-radius:14px;background:#fff;color:#000;font-size:19px;cursor:pointer}
+/* gli allegati: prima quelli veri, poi le immagini dentro il testo dell'email */
+.sge-foglio .sgf-all h4.sga-imm{margin-top:14px}
+/* il visore: i tipi nuovi */
+.av-doc{background:#fff;border:1px solid #DDD6C8;border-radius:10px;padding:12px 14px;font-size:19px;line-height:1.6;overflow-wrap:anywhere;-webkit-user-select:text;user-select:text}
+.av-doc p{margin:0 0 10px;white-space:pre-wrap}
+.av-doc h4{margin:14px 0 8px;font-size:22px;line-height:1.35}
+.av-doc h4:first-child{margin-top:0}
+.av-doc .av-tab{margin:8px 0 14px}
+.av-doc .av-tab td{white-space:pre-wrap;overflow-wrap:normal;word-break:normal;min-width:4em;vertical-align:top}
+.av-righe{margin:8px 0 12px;border-bottom:1px solid #E6E0D4}
+.av-riga{padding:8px 0;border-top:1px solid #E6E0D4}
+.av-riga b,.av-riga span{display:block}
+.av-riga span{color:#3A3A42}
+.av-doc.av-slides{background:transparent;border:0;padding:0}
+.av-slide{margin:0 0 12px;padding:12px 14px;background:#fff;border:1px solid #DDD6C8;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.av-slide h4{margin:0 0 8px;font-size:19px;color:#55555E}
+.av-fattura h4{font-size:23px}
+.av-fattura strong{font-size:22px}
+.av-web{display:block;width:100%;height:72vh;min-height:360px;border:1px solid #DDD6C8;border-radius:10px;background:#fff}
+.av-mail{margin:0 0 10px;padding:10px 14px;background:#fff;border:1px solid #DDD6C8;border-radius:10px;font-size:19px;line-height:1.5}
+.av-mail p{margin:0 0 4px;overflow-wrap:anywhere}
+.av-media{display:block;width:100%;max-height:70vh;margin:8px 0;border-radius:10px}
+video.av-media{background:#000}
+audio.av-media{min-height:56px}
+.av-zip{display:flex;flex-direction:column;gap:10px;margin:0 0 10px}
+.av-zip .av-pagine{margin:4px 2px 0}
+.av-figlio{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;margin:0;padding:8px 12px;border:2px solid #26262B;border-radius:16px;background:#fff;color:#1C2533;font-family:inherit;text-align:left;cursor:pointer}
+.av-figlio:active{filter:brightness(.94)}
+.av-figlio-ico{flex:none;font-size:30px;line-height:1}
+.av-figlio-n{display:flex;flex-direction:column;min-width:0}
+.av-figlio-n b{font-size:19px;line-height:1.4;overflow-wrap:anywhere}
+.av-figlio-n small{font-size:19px;line-height:1.4;color:#55555E}
+.av-b.av-telefono{min-height:64px;background:#2E6B34;color:#fff;font-size:21px}
+.av-b.av-posta{background:#fff;color:#16264A;border:2px solid #16264A}
+.av-dove{margin:0;padding:7px 14px;background:#EEF3FB;border-bottom:1px solid #C9D6EA;font-size:19px;line-height:1.4;overflow-wrap:anywhere}
