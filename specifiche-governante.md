@@ -3462,3 +3462,9 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Adesso la casella gialla accetta anche la chiave nuova e la controlla con Meta (trova da sola l'Instagram collegato e il suo nome).
   - Il giro di Sofia con la chiave nuova parla con Meta dalla strada giusta (pubblica, legge e risponde ai commenti) e non deve più rinnovarla.
   - I passi del foglio «Collega Instagram» sono quelli di adesso (portfolio business, configurazione, tester di Instagram, «Continua con Instagram»).
+- **1.108.0 + giro 1.41.0 + casella 3** (20/11, Michele: «appena apro la notifica ci sia… Sofia segretaria… in alto a destra… che mi propone di leggerlo… leggo e lei me lo legge per me»; «essenziale è che io possa leggere anche tutti gli allegati dall'applicazione… e l'applicazione debba leggere anche gli allegati»):
+  - Toccando la notifica di un'email si apre proprio quell'email (anche ad app chiusa; se l'email non è ancora arrivata nel telefono: «Un attimo…»).
+  - In alto a destra, sopra il foglio, c'è Sofia segretaria piccola; il tasto «🔊 Te la leggo io?» (o un tocco su di lei) e lei legge chi scrive, l'oggetto, il testo e cosa c'è negli allegati, mentre lui legge lo stesso testo. Toccata mentre legge, smette.
+  - Sotto il testo, gli allegati: nome, quanto pesa, cosa ci ha letto Sofia. Un tocco e si aprono dentro l'app: i PDF pagina per pagina (con ＋ e －), le foto, gli Excel come tabelle, il testo; Word e gli altri con quello che Sofia ci ha letto e «⬇ Scarica».
+  - Gli allegati li legge Sofia (Gemini) appena arriva l'email: per scelta di Michele («Tutto com'è») Gemini li riceve interi, anche le scansioni e le foto.
+  - La casella della posta va aggiornata una volta alla versione 3 (dal PC, 2 minuti): nella pagina «📬 La posta dell'albergo» ci sono i passi e «Prova» dice la versione.

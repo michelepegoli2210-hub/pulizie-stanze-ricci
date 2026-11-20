@@ -164,6 +164,25 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   resta finché non la tocca); nel registro pubblico solo «notifica di una prenotazione».
   La casella versione 2 prende anche le email dei siti di prenotazione fuori da «Principale» (mai «Promozioni»): va rimessa a
   mano nel Google dell'albergo (Gestisci deployment → ✏️ → Nuova versione; l'indirizzo non cambia).
+- Gli allegati delle email (app 1.108.0, giro 1.41.0, casella 3; Michele, 20/11: «essenziale è che io possa leggere anche
+  tutti gli allegati dall'applicazione… e l'applicazione debba leggere anche gli allegati… negli allegati c'è proprio il
+  succo del discorso»). La casella 3 (sempre e solo lettura) dà con le mail nuove l'elenco dei file (`files`: parte, nome,
+  tipo, KB) e due azioni: `elenco` (le email di prima) e `allegato` (il file, base64; solo email nella Posta in arrivo, al
+  massimo 30 giorni, 10 MB). Il giro (`allegati-giro.mjs`) fa leggere gli allegati a Gemini: Michele ha scelto «Tutto
+  com'è», cioè PDF e foto interi (anche scansioni, coi nomi dentro); Excel, Word e testo come testo. Riassunto e testo vanno
+  in `posta/<id>.allegatiLetti` e Sofia li legge insieme all'email (`L.allegatiPerLettura`). Al massimo 3 email e 5 file a
+  giro, tre tentativi; nel registro pubblico solo quanti. Una casella di prima risponde «Azione sconosciuta»: il giro segna
+  `casellaDaAggiornare` e la versione (`casella` in `importazioni/posta-albergo`), l'app mostra i passi per aggiornarla.
+  Gli Excel di fuori li apre SEMPRE un lavoratore a parte (`excel-isolato.mjs` nel giro, `xlsx-lettore.js` nell'app): la
+  libreria degli Excel del progetto (SheetJS 0.18.5) con un file fatto apposta può sporcare gli oggetti del programma
+  (CVE-2023-30533). Nell'app un allegato si apre in `#allegatoVista`: PDF disegnati da PDF.js (`pdfjs/`, Apache 2.0,
+  `isEvalSupported:false`), foto, tabelle, testo; tutto il resto (anche HTML e SVG) mai come pagina: resta un file da
+  scaricare (`mimeSicuro`, «application/octet-stream»).
+  La notifica di un'email porta `rif: "email_<id>"` e apre quell'email (`guardaAvviso`); nell'email Sofia piccola
+  (`#segrMini`, fuori dal foglio come `segrFuori`) sta sopra il foglio in alto a destra (il foglio dell'email lascia il posto:
+  `height: calc(100dvh - 122px)`) e legge con «Te la leggo io?» (`segrLeggiEmail`, `segrTestoDaLeggere`: chi, oggetto,
+  testo senza link e indirizzi, gli allegati). `apriFoglio`/`chiudiFoglio` non ridisegnano tutto: `segrMini` e `segrFuori`
+  si guardano anche lì.
   La Ciclovia (letto sul loro sito il 17/11/2026): le richieste arrivano per email, si accettano o si rifiutano entro 12 ore
   lavorative, i giorni si chiudono nel loro calendario; niente iCal, niente collegamenti. Chiudere i giorni e dire sì o no
   lo fa Michele sul loro sito: l'app mostra e porta lì, non lo fa al posto suo e non va automatizzato col mouse.

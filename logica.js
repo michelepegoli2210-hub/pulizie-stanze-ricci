@@ -862,3 +862,17 @@ export function scadenzaRisposta(ts, ore = 12, dalle = 7, alle = 21) {
   }
   return t;
 }
+
+// 1.108.0 (giro 1.41.0) · GLI ALLEGATI DELLE EMAIL PER LA LETTURA DI SOFIA (Michele, 20/11: «negli allegati c'è proprio il succo
+// del discorso»). Quello che Gemini ha letto in ogni allegato (posta/<id>.allegatiLetti: riassunto e testo) va in fondo
+// all'email, così Sofia lo legge insieme (l'app e il giro, la stessa riga). Al massimo «max» caratteri.
+export function allegatiPerLettura(p, max = 5000) {
+  const l = Array.isArray(p && p.allegatiLetti) ? p.allegatiLetti.filter(a => a && a.letto && (a.riassunto || a.testo)) : [];
+  let s = "";
+  for (const a of l) {
+    const pezzo = `\n📎 Allegato «${String(a.n || "").slice(0, 120)}»: ${String(a.riassunto || "").trim()}${a.testo ? `\nDentro l'allegato c'è scritto: ${String(a.testo).trim()}` : ""}`;
+    if (s.length + pezzo.length > max) { s += pezzo.slice(0, Math.max(0, max - s.length)) + "…"; break; }
+    s += pezzo;
+  }
+  return s;
+}

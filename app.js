@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.107.0";
+export const VERSIONE = "1.108.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1882,6 +1882,7 @@ function disegna() {
   guidaFilmMonta();   // 1.24.0: il filmato di Sofia delle signore al suo posto (prima di decidere se esce in fantasmino)
   sofiaFuori();
   guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito(); fantasmaSegreteria(); segrFuori();   // 1.40.0; 1.70.0
+  try { segrMini(); } catch (e) { console.warn("segrMini", e); }   // 1.108.0: Sofia piccola nell'email
   sofiaMini();
   voceBarra();   // 1.11.0
   orologioAvvia();
@@ -5791,6 +5792,8 @@ async function guardaAvviso() {
   if (S.veroUtente) esciComeSignora();   // stava provando la parte delle signore: torna alla sua
   if (a.dove === "messaggi") { S.vista = "oggi"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "postaSig", rif: String(a.rif || ""), avviso: a }); return; }
   if (a.dove === "manutenzione" && a.rif && S.manutenzione[a.rif]) { S.vista = "manutenzione"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "manutenzione", id: String(a.rif), avviso: a }); return; }   // 1.58.0
+  // 1.108.0 (Michele, 20/11: «appena apro la notifica… Sofia segretaria… che mi propone di leggerlo»): la notifica di un'email apre quell'email
+  if (a.dove === "segreteria" && /^email_[A-Za-z0-9_-]{4,64}$/.test(String(a.rif || ""))) { S.vista = "segreteria"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "segrEmail", id: String(a.rif), daAvviso: Date.now() }); return; }
   S.vista = VISTA_AVVISO[a.dove] || S.vista || "oggi"; disegna(); window.scrollTo(0, 0);
   apriFoglio({ tipo: "avviso", titolo: a.titolo || "", testo: a.testo || "", dove: a.dove || "", quando: a.quando || "" });
 }
@@ -7137,19 +7140,23 @@ function segrEmailLink(p) {
 // l'email intera (il foglio): chi scrive, quando, l'oggetto, cosa ha capito Sofia, tutto il testo che la casella ha preso
 function foglioSegrEmail(f) {
   const p = (S.posta || {})[f.id];
+  if (!p && f.daAvviso && Date.now() - f.daAvviso < 25000) { segrEmailAttendi(); return `<div class="sge-foglio"><h3 class="sgf-ogg">Un attimo…</h3><p class="sgf-nota">Sto prendendo l'email.</p></div>`; }   // 1.108.0: aperta dalla notifica
   if (!p) return `<div class="sge-foglio"><h3 class="sgf-ogg">Email</h3><p class="sgf-nota">Questa email non c'è più: le tengo una settimana.</p></div>`;
   const x = segrEmailParti(p), righe = segrEmailCapito().get(p.id) || [], g = String(p.data || "");
   const quando = `${g ? segrEmailGiorno(g).toLowerCase() : ""}${p.ora ? ` alle ${p.ora}` : ""}`.trim();
   const tagliata = x.corpo.length >= 1780;
   // 1.95.0: un'email di prenotazione dice entro quando rispondere e ha il tasto per aprire il sito da cui viene
   const pren = L.emailPrenotazione({ chi: p.chi, dominio: p.dominio, oggetto: x.oggetto, testo: x.corpo }), entro = pren ? segrPrenEntro({ p, x, c: pren }) : null, can = pren ? L.canale(pren.canale) : null;
-  return `<div class="sge-foglio">
-    <p class="sgf-da">${segrDis("lettera")}<span><b>${esc(p.chi || "?")}</b><small>${esc(quando)}${x.allegati ? ` · ${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}` : ""}</small></span></p>
+  const legge = segrLegge === p.id && (voceInCorso || sg2ParlaTel), letta = !!(S.segrLette || {})[p.id], nAll = segrFilesDi(p).length || x.allegati;   // 1.108.0
+  return `<div class="sge-foglio con-sofia">
+    <p class="sgf-da">${segrDis("lettera")}<span><b>${esc(p.chi || "?")}</b><small>${esc(quando)}${nAll ? ` · ${nAll} ${nAll === 1 ? "allegato" : "allegati"}` : ""}</small></span></p>
     <h3 class="sgf-ogg">${esc(x.oggetto)}</h3>
+    <button type="button" class="sgf-leggi${legge ? " parla" : ""}" data-segr-leggi>${legge ? "⏸️ Sto leggendo… tocca per fermarmi" : letta ? "🔁 Te la rileggo?" : "🔊 Te la leggo io?"}</button>
     ${entro ? `<p class="sgp-entro ${entro.classe}">${segrDis("sveglia")}<span>${esc(entro.testo)}</span></p>` : ""}
     ${righe.length ? `<div class="sgf-sofia">${righe.map(r => `<p><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</p>`).join("")}</div>` : ""}
     <div class="sgf-testo">${x.corpo ? escNl(x.corpo) : "<i>(l'email non ha testo)</i>"}</div>
-    ${tagliata ? `<p class="sgf-nota">L'email è più lunga: qui c'è l'inizio. Per leggerla tutta, o per vedere gli allegati, aprila nella posta.</p>` : x.allegati ? `<p class="sgf-nota">Gli allegati si vedono nella posta.</p>` : ""}
+    ${tagliata ? `<p class="sgf-nota">L'email è più lunga: qui c'è l'inizio. Per leggerla tutta, aprila nella posta.</p>` : ""}
+    ${segrAllegatiHtml(p, x)}
     ${can && can.sito ? `<a class="sgf-b canale" href="${esc(can.sito)}" target="_blank" rel="noopener">${segrDis("spunte")}<span>Apri il sito: ${esc(can.breve)}</span></a>` : ""}
     <a class="sgf-b posta" href="${esc(segrEmailLink(p))}" target="_blank" rel="noopener">${segrDis("cassetta")}<span>Apri nella posta</span></a></div>`;
 }
@@ -15708,6 +15715,7 @@ function cardPostaAlbergo() {
 function foglioPostaAlbergo(f) {
   if (paPronta() && !f.rifai) return `<h3>📬 La posta dell'albergo</h3>
     <p class="note info">✓ Collegata${S.postaAlb.indirizzo ? `: <b>${esc(S.postaAlb.indirizzo)}</b>` : ""}${S.postaAlb.quando ? `, dal ${esc(L.dataLunga(String(S.postaAlb.quando).slice(0, 10)))}` : ""}. ${esc(nomeGov())} legge le mail nuove ogni 10 minuti.${(S.avvisi || {}).giroEmail === false ? " Le notifiche delle mail sono spente." : " Per ogni mail nuova ti arriva una notifica: chi scrive e l'oggetto (di notte aspetta le 6:30)."}</p>
+    ${S.postaAlb.casella === "3" ? "" : paAggiornaHtml()}
     <ol class="rg-passi"><li><button type="button" class="rg-b" data-pa-prova><b>✓</b>Prova il collegamento</button></li>
       <li><button type="button" class="rg-b" data-pa-rifai><b>↺</b>Collegala di nuovo</button></li>
       <li><button type="button" class="rg-b" data-pa-togli><b>✕</b>Scollega (Sofia smette di leggerla)</button></li></ol>
@@ -15774,7 +15782,7 @@ document.addEventListener("click", (e) => {
   if (t.hasAttribute("data-pa-rifai")) { S.foglio = { tipo: "postaAlb", rifai: true }; disegnaFoglio(); return; }
   if (t.hasAttribute("data-pa-togli")) { paTogli(); return; }
   if (t.hasAttribute("data-pa-prova")) {
-    (async () => { S.foglio = { tipo: "postaAlb", provo: true }; disegnaFoglio(); const r = await alWsChiama(S.postaAlb.url, { azione: "prova", segreto: S.postaAlb.segreto }, 60000); if (!S.foglio || S.foglio.tipo !== "postaAlb") return; S.foglio = { tipo: "postaAlb", esito: r.ok ? `✓ La casella risponde${r.indirizzo ? ": " + r.indirizzo : ""}${r.messaggi ? ` (${r.messaggi} mail in tutto)` : ""}.` : "", errore: r.ok ? "" : (r.errore || "Non risponde.") }; disegnaFoglio(); })();
+    (async () => { S.foglio = { tipo: "postaAlb", provo: true }; disegnaFoglio(); const r = await alWsChiama(S.postaAlb.url, { azione: "prova", segreto: S.postaAlb.segreto }, 60000); if (!S.foglio || S.foglio.tipo !== "postaAlb") return; if (r.ok && r.casella && S.postaAlb && S.postaAlb.casella !== String(r.casella)) { S.postaAlb = { ...S.postaAlb, casella: String(r.casella) }; S.db.aggiorna("importazioni", "posta-albergo", { casella: String(r.casella) }).catch(() => {}); }   /* 1.108.0: la versione della casella */ S.foglio = { tipo: "postaAlb", esito: r.ok ? `✓ La casella risponde${r.indirizzo ? ": " + r.indirizzo : ""}${r.messaggi ? ` (${r.messaggi} mail in tutto)` : ""}${r.casella ? ` · versione ${r.casella}${String(r.casella) === "3" ? ": gli allegati si aprono" : ": va aggiornata"}` : ""}.` : "", errore: r.ok ? "" : (r.errore || "Non risponde.") }; disegnaFoglio(); })();
   }
 }, true);
 document.addEventListener("input", (e) => {
@@ -16734,7 +16742,7 @@ function vistaAvvisi() {
 //  Fogli (pannelli dal basso)
 // ---------------------------------------------------------------------------
 function elFoglio() { let s = $(".sheet"); if (!s) { s = document.createElement("div"); s.className = "sheet"; document.body.appendChild(s); s.onclick = e => { if (e.target === s) chiudiFoglio(); }; } return s; }
-function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; try { if (voceP) { const v = voceP; voceP = null; v.attivo = false; if (v.rec) { v.rec.onend = null; v.rec.stop(); } } } catch (e) {} if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); try { guidaCompagna(); guidaNuvola(); guidaFinito(); } catch (e) {} }
+function chiudiFoglio() { const era = S.foglio && S.foglio.tipo; try { if (voceP) { const v = voceP; voceP = null; v.attivo = false; if (v.rec) { v.rec.onend = null; v.rec.stop(); } } } catch (e) {} if (S.foglio) indietroChiudi("foglio"); S.foglio = null; fotoPending = null; const s = $(".sheet"); if (s) s.remove(); if (era === "dettatura" && (letturaDaControllare() || letturaInCorso())) setTimeout(disegna, 0); try { guidaCompagna(); guidaNuvola(); guidaFinito(); } catch (e) {} try { segrMini(); segrFuori(); } catch (e) {} }
 function apriFoglio(f) { const era = !!S.foglio; S.foglio = f; disegnaFoglio(); if (!era) indietroApri("foglio", () => chiudiFoglio()); if (f && f.tipo === "dettatura") segnaVista(); try { guidaFinito(); } catch (e) {} }   // 1.55.12: via HO FINITO fisso
 // 1.18.1: il foglio di una lettura condivisa (fatta dal giro, da questo o da un altro telefono) l'hai aperto: lo segno, così il
 // giro non ti manda l'avviso «ho letto» per una lettura che hai già visto. Una volta sola per lettura.
@@ -16806,6 +16814,7 @@ function disegnaFoglio() {
   if (idAttivo) { const e = s.querySelector("#" + CSS.escape(idAttivo)); if (e) { try { e.focus({ preventScroll: true }); if (valori[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(valori[idAttivo].s, valori[idAttivo].e); } catch (err) {} } }
   if (scroll) { const pn = s.querySelector(".panel"); if (pn) pn.scrollTop = scroll; }
   collegaFoglio();
+  try { segrMini(); segrFuori(); } catch (e) {}   // 1.108.0: Sofia piccola sopra l'email; quella grande giù si toglie quando c'è un foglio
 }
 
 // Messaggio del giorno alle signore (lo scrivono i proprietari dalla schermata "Oggi")
@@ -20332,3 +20341,290 @@ try { window.addEventListener("hashchange", () => { if (jarvisDalLink(400)) { tr
 try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.tipo === "apriJarvis") jvApriAppenaPuoi(); }); } catch (e) {}
 try { document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && jarvisAcceso()) jvSveglieAggiorna(2000); }); } catch (e) {}
 jvSveglieAggiorna(9000);
+
+// ============================================================================
+//  1.108.0 · L'EMAIL CON SOFIA CHE TE LA LEGGE, E GLI ALLEGATI DENTRO L'APP
+//  Michele, 20/11: «appena apro la notifica ci sia… Sofia segretaria… in alto a destra, un piccolo fantasmino… che mi propone
+//  di leggerlo… che mi dia anche lo spazio per poter leggere l'email… leggo e lei me lo legge per me». E: «essenziale è che io
+//  possa leggere anche tutti gli allegati dall'applicazione… e l'applicazione debba leggere anche gli allegati… negli allegati
+//  c'è proprio il succo del discorso». Per Gemini ha scelto «Tutto com'è» (gli allegati li legge il giro: allegati-giro.mjs).
+//  - La notifica di un'email (rif «email_<id>») apre quell'email (guardaAvviso).
+//  - In alto a destra del foglio Sofia segretaria piccola (#segrMini): sta FUORI dal foglio, che si ridisegna a ogni cambio (lei
+//    no: il filmato non riparte). Toccata, o col tasto «Te la leggo io?», legge chi scrive, l'oggetto, il testo e cosa c'è negli
+//    allegati; toccata mentre legge, smette. Il testo resta lì sotto: lui legge e lei legge.
+//  - Gli allegati nell'email: nome, quanto pesa, cosa ci ha trovato Sofia, «tocca per aprirlo». Si aprono dentro l'app
+//    (#allegatoVista): la casella (solo lettura) dà il file; PDF (le pagine le disegna PDF.js, cartella pdfjs/), foto, Excel
+//    (tabelle), testo; gli altri (Word, zip…) si scaricano, con quello che Sofia ci ha letto. Niente si apre in un'altra
+//    scheda: un file di fuori non gira mai dentro l'app (niente HTML o SVG mostrati come pagine).
+// ============================================================================
+var segrLegge = "", segrGiro = 0, segrAttesaT = null, AV = null;
+const AL_ICO = { pdf: "📄", foto: "🖼️", excel: "📊", word: "📝", testo: "📃" };
+function tipoAllegatoApp(f) {
+  const t = String((f && f.t) || "").toLowerCase(), n = String((f && f.n) || "").toLowerCase(), ext = (n.match(/\.([a-z0-9]{1,5})$/) || [])[1] || "";
+  if (t === "application/pdf" || ext === "pdf") return "pdf";
+  if (/^image\/(jpeg|jpg|pjpeg|png|webp|gif|bmp)$/.test(t) || /^(jpe?g|png|webp|gif|bmp)$/.test(ext)) return "foto";
+  if (/csv/.test(t) || ext === "csv") return "testo";
+  if (/spreadsheetml|ms-excel|opendocument\.spreadsheet/.test(t) || /^(xlsx|xlsm|xls|ods)$/.test(ext)) return "excel";
+  if (/wordprocessingml|opendocument\.text/.test(t) || /^(docx|odt)$/.test(ext)) return "word";
+  if (/^text\/plain$/.test(t) || /^(txt|ics)$/.test(ext)) return "testo";
+  return "";
+}
+// il tipo con cui il file resta nel telefono: solo quelli che si guardano (PDF, foto, testo) col loro tipo; tutto il resto
+// (una pagina HTML, un SVG, un file che non si sa) come «file da scaricare», così non si può mai aprire come pagina dell'app
+function mimeSicuro(tipo, mime) {
+  const m = String(mime || "").toLowerCase().split(";")[0].trim();
+  if (tipo === "pdf") return "application/pdf";
+  if (tipo === "foto") return /^image\/(jpeg|png|webp|gif|bmp)$/.test(m) ? m : "image/jpeg";
+  if (tipo === "testo") return "text/plain;charset=utf-8";
+  if (tipo === "excel" || tipo === "word") return /^application\/(vnd\.[a-z0-9.+-]+|msword)$/.test(m) ? m : "application/octet-stream";
+  return "application/octet-stream";
+}
+const primaMaiuscola = (s) => { const x = String(s || "").trim(); return x ? x.charAt(0).toUpperCase() + x.slice(1) : ""; };
+const pesoFile = (kb) => { const k = Math.max(1, Math.round(Number(kb) || 0)); return k < 1024 ? `${k} KB` : `${(k / 1024).toFixed(1).replace(".", ",")} MB`; };
+function segrFilesDi(p) {
+  const l = Array.isArray(p && p.files) && p.files.length ? p.files : ((S.segrElenco || {})[p && p.id] || []);
+  return l.filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && f.n);
+}
+function segrAllegatiHtml(p, x) {
+  const files = segrFilesDi(p), n = files.length || x.allegati;
+  if (!n) return "";
+  if (!files.length) {   // le email di prima: l'elenco lo dà la casella quando lo chiedi
+    const st = (S.segrElencoStato || {})[p.id] || {};
+    return `<div class="sgf-all"><h4>📎 ${n === 1 ? "C'è un allegato" : `Ci sono ${n} allegati`}</h4>${st.errore ? `<p class="sga-nota">${esc(st.errore)}</p>` : ""}
+      <button type="button" class="sgf-b allegati" data-segr-elenco="${esc(p.id)}"${st.carica ? " disabled" : ""}>${segrDis("busta")}<span>${st.carica ? "Li sto prendendo…" : "Vedi gli allegati"}</span></button></div>`;
+  }
+  const letti = new Map((Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).filter(a => a && a.p != null).map(a => [String(a.p), a]));
+  return `<div class="sgf-all"><h4>📎 ${files.length === 1 ? "L'allegato" : `Gli allegati (${files.length})`}</h4>${files.map(f => {
+    const a = letti.get(String(f.p)), tipo = tipoAllegatoApp(f);
+    const sofia = a && a.letto && a.riassunto ? `<p class="sga-sofia"><b>Sofia:</b> ${esc(a.riassunto)}</p>`
+      : a && !a.letto ? `<p class="sga-nota">${esc(primaMaiuscola(a.perche))}</p>` : p.allegatiStato === "da-leggere" ? `<p class="sga-nota">${esc(nomeGov())} lo sta leggendo…</p>` : "";
+    return `<div class="sga"><button type="button" class="sga-b" data-segr-allegato="${esc(p.id)}|${esc(f.p)}" aria-label="Apri l'allegato ${esc(f.n)}"><span class="sga-ico" aria-hidden="true">${AL_ICO[tipo] || "📎"}</span><span class="sga-n"><b>${esc(f.n)}</b><small>${esc(pesoFile(f.kb))} · tocca per aprirlo</small></span></button>${sofia}</div>`;
+  }).join("")}</div>`;
+}
+// quello che legge Sofia: chi scrive, l'oggetto, il testo (senza indirizzi e link), cosa c'è negli allegati
+function segrTestoDaLeggere(p) {
+  const x = segrEmailParti(p);
+  const pulisci = (s) => String(s || "").replace(/https?:\/\/\S+/g, " un collegamento ").replace(/\bwww\.\S+/g, " un sito ").replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, " un indirizzo email ")
+    .replace(/[*_#>|~=\-]{3,}/g, " ").replace(/\s+/g, " ").trim();
+  let t = `Email da ${p.chi || "qualcuno"}. ${x.oggetto === "(senza oggetto)" ? "Senza oggetto." : `Oggetto: ${x.oggetto}.`} ${pulisci(x.corpo)}`;
+  const files = segrFilesDi(p), n = files.length || x.allegati, letti = Array.isArray(p.allegatiLetti) ? p.allegatiLetti : [];
+  if (n) t += ` ${n === 1 ? "C'è un allegato." : `Ci sono ${n} allegati.`}`;
+  const nome = (s) => String(s || "").replace(/\.[a-z0-9]{1,5}$/i, "").replace(/[_-]+/g, " ").trim();
+  for (const a of letti) t += a.letto && a.riassunto ? ` Nell'allegato ${nome(a.n)}: ${a.riassunto}` : a.n ? ` L'allegato ${nome(a.n)} non l'ho letto: ${String(a.perche || "").replace(/:.*$/, "")}.` : "";
+  if (n && !letti.length && p.allegatiStato === "da-leggere") t += " Gli allegati li sto ancora leggendo.";
+  return t.replace(/\s+/g, " ").trim();
+}
+// frasi corte per la voce del telefono (una frase lunga, su alcuni telefoni, si ferma a metà)
+function frasiCorte(t, max = 200) {
+  const out = [];
+  for (const f of String(t || "").split(/(?<=[.!?;:])\s+/)) {
+    let s = f.trim();
+    while (s.length > max) { let k = s.lastIndexOf(", ", max); if (k < max * 0.5) k = s.lastIndexOf(" ", max); if (k < 20) k = max; out.push(s.slice(0, k + 1).trim()); s = s.slice(k + 1).trim(); }
+    if (s) out.push(s);
+  }
+  return out;
+}
+function segrLeggiEmail(id) {
+  const p = (S.posta || {})[id]; if (!p) return;
+  if (segrLegge === id && (voceInCorso || sg2ParlaTel)) { segrGiro++; sg2Zitta(); segrLegge = ""; disegna(); return; }
+  const t = segrTestoDaLeggere(p), giro = ++segrGiro;   // «giro»: la fine di una lettura fermata non tocca quella dopo
+  S.segrLette = { ...(S.segrLette || {}), [id]: true };
+  segrLegge = id;
+  if (voceAccesa()) { (async () => { try { await sg2Dici(t); } catch (e) {} finally { if (giro === segrGiro && segrLegge === id) { segrLegge = ""; disegna(); } } })(); return; }   // la voce vera di Sofia: le frasi le spezza lei
+  sg2Zitta(); segrLegge = id;
+  try {
+    const pezzi = frasiCorte(t); if (!pezzi.length) return;
+    const it = VOCE.vociTelefono(), voce = it.find(v => /female|donna|alice|elsa|federica/i.test(v.name)) || it[0];
+    sg2ParlaTel = true; disegna();
+    pezzi.forEach((s, i) => {
+      const u = new SpeechSynthesisUtterance(s); u.lang = "it-IT"; if (voce) u.voice = voce;
+      if (i === pezzi.length - 1) { const fine = () => { if (giro !== segrGiro) return; if (segrLegge === id) segrLegge = ""; if (!sg2ParlaTel) return; sg2ParlaTel = false; disegna(); }; u.onend = fine; u.onerror = fine; }
+      speechSynthesis.speak(u);
+    });
+  } catch (e) { sg2ParlaTel = false; segrLegge = ""; toast("Su questo telefono non riesco a parlare."); disegna(); }
+}
+// la figura piccola in alto a destra del foglio dell'email
+function segrMini() {
+  let el = document.getElementById("segrMini");
+  const f = S.foglio, p = f && f.tipo === "segrEmail" ? (S.posta || {})[f.id] : null;
+  let vuoi = false; try { vuoi = !!(p && S.pronto && proprietario()); } catch (e) {}
+  const parla = !!(vuoi && segrLegge === f.id && (voceInCorso || sg2ParlaTel));
+  if (!vuoi) {
+    if (segrLegge) { try { sg2Zitta(); } catch (e) {} segrLegge = ""; }   // chiusa l'email mentre leggeva: smette
+    if (el && !el.hidden) { el.hidden = true; el.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); }
+    return;
+  }
+  const rit = ritaglioOK() && !segrParlaManca && !filmatoTolto("segr-parla");
+  if (el && (el.dataset.rit || "") !== (rit ? "1" : "")) { el.remove(); el = null; }
+  if (!el) {
+    el = document.createElement("button"); el.type = "button"; el.id = "segrMini"; el.className = "segr-mini"; el.dataset.rit = rit ? "1" : ""; el.setAttribute("data-segr-leggi", "");
+    el.innerHTML = `<span class="sgm-fig">${rit ? `<video src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`}</span><span class="sgm-onda" aria-hidden="true">🔊</span>`;
+    const v = el.querySelector("video");
+    if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.removeAttribute("src"); try { v.load(); } catch (e) {} }, { once: true });
+    document.body.appendChild(el);
+  }
+  el.hidden = false; el.classList.toggle("parla", parla);
+  el.setAttribute("aria-label", parla ? `${nomeGov()} sta leggendo l'email: tocca per farla smettere` : `${nomeGov()} ti legge l'email: tocca`);
+  const v = el.querySelector("video");
+  if (v) { if (parla && v.paused) { try { v.play().catch(() => {}); } catch (e) {} } else if (!parla && !v.paused) { try { v.pause(); v.currentTime = 0; } catch (e) {} } }
+  // in alto a destra, appoggiata sopra il foglio: il foglio dell'email lascia lì il posto per lei, così non copre le parole
+  const pn = document.querySelector(".sheet .panel");
+  if (pn) { const r = pn.getBoundingClientRect(), alto = el.offsetHeight || 112, largo = document.documentElement.clientWidth || window.innerWidth; el.style.top = Math.max(6, Math.round(r.top - alto + 14)) + "px"; el.style.right = Math.max(8, Math.round(largo - r.right + 12)) + "px"; } else { el.style.top = "12px"; el.style.right = "12px"; }
+}
+// un'email aperta dalla notifica e non ancora arrivata nel telefono: si aspetta un po' (al massimo 25 secondi)
+function segrEmailAttendi() {
+  clearTimeout(segrAttesaT);
+  segrAttesaT = setTimeout(() => { const f = S.foglio; if (!f || f.tipo !== "segrEmail" || !f.daAvviso) return; if ((S.posta || {})[f.id] || Date.now() - f.daAvviso > 25000) { S.foglio = { ...f, daAvviso: 0 }; disegnaFoglio(); disegna(); } else segrEmailAttendi(); }, 1500);
+}
+// l'elenco degli allegati di un'email di prima (chiesto alla casella)
+async function segrElenco(id) {
+  if (!paPronta()) { toast("Per vedere gli allegati la posta dell'albergo va collegata: Altro → 📬 La posta dell'albergo."); return; }
+  S.segrElencoStato = { ...(S.segrElencoStato || {}), [id]: { carica: true } }; disegnaFoglio();
+  const r = await alWsChiama(S.postaAlb.url, { azione: "elenco", segreto: S.postaAlb.segreto, id: String(id).replace(/^email_/, "") }, 60000);
+  const l = r && r.ok && Array.isArray(r.files) ? r.files.filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && f.n).slice(0, 10) : null;
+  if (l) S.segrElenco = { ...(S.segrElenco || {}), [id]: l };
+  const vecchia = !l && /^Azione sconosciuta/.test(String((r && r.errore) || "")); if (vecchia) casellaVecchia();
+  S.segrElencoStato = { ...(S.segrElencoStato || {}), [id]: l ? {} : { errore: vecchia ? "Per vedere gli allegati qui va aggiornata la casella dell'albergo: Altro → 📬 La posta dell'albergo (2 minuti, dal PC)." : String((r && r.errore) || "La casella non risponde: riprova.") } };
+  if (S.foglio && S.foglio.tipo === "segrEmail") disegnaFoglio();
+}
+// la casella ha risposto «Azione sconosciuta»: è quella di prima (versione 2): nella pagina della posta compaiono i passi per aggiornarla
+function casellaVecchia() { if (S.postaAlb && S.postaAlb.casella === "3") S.postaAlb = { ...S.postaAlb, casella: "2" }; }
+// ---- il visore degli allegati ---------------------------------------------------------------------------------------
+async function apriAllegato(id, parte) {
+  const p = (S.posta || {})[id], f = p ? segrFilesDi(p).find(x => String(x.p) === String(parte)) : null;
+  if (!f) return;
+  if (!paPronta()) { toast("Per aprire gli allegati la posta dell'albergo va collegata: Altro → 📬 La posta dell'albergo."); return; }
+  const gia = !!AV; chiudiVista(true);   // «Riprova»: la voce per «Indietro» c'è già
+  AV = { id, parte: String(parte), f, tipo: tipoAllegatoApp(f), stato: "carica", zoom: 1, n: 0 };
+  const mio = AV;
+  disegnaVista(); if (!gia) indietroApri("allegato", () => chiudiVista(true));
+  const r = await alWsChiama(S.postaAlb.url, { azione: "allegato", segreto: S.postaAlb.segreto, id: String(id).replace(/^email_/, ""), parte: String(parte) }, 120000);
+  if (AV !== mio) return;
+  if (!r || !r.ok || !r.dati) {
+    AV.stato = "errore";
+    AV.errore = /^Azione sconosciuta/.test(String((r && r.errore) || "")) ? "casella" : r && r.grande ? "grande" : String((r && r.errore) || "La casella non risponde: riprova.");
+    if (AV.errore === "casella") casellaVecchia();
+    disegnaVista(); return;
+  }
+  try {
+    AV.bytes = b64InByte(r.dati);
+    AV.mime = mimeSicuro(AV.tipo, r.tipo || f.t);   // mai una pagina: un HTML o un SVG resta un file da scaricare
+    AV.url = URL.createObjectURL(new Blob([AV.bytes], { type: AV.mime }));
+    AV.stato = "pronto";
+  } catch (e) { AV.stato = "errore"; AV.errore = "Il file è arrivato rotto: riprova."; }
+  disegnaVista();
+}
+function chiudiVista(daIndietro) {
+  if (!AV) return;
+  const v = AV; AV = null;
+  if (v.url) { try { URL.revokeObjectURL(v.url); } catch (e) {} }
+  if (v.oss) { try { v.oss.disconnect(); } catch (e) {} }
+  if (v.pdf) { try { v.pdf.destroy(); } catch (e) {} }
+  const el = document.getElementById("allegatoVista"); if (el) el.remove();
+  document.body.classList.remove("con-vista");
+  if (!daIndietro) indietroChiudi("allegato");
+}
+function disegnaVista() {
+  if (!AV) return;
+  let el = document.getElementById("allegatoVista");
+  if (!el) { el = document.createElement("div"); el.id = "allegatoVista"; el.className = "av"; el.setAttribute("role", "dialog"); document.body.appendChild(el); }
+  document.body.classList.add("con-vista");
+  const a = AV, p = (S.posta || {})[a.id] || {}, letto = (Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).find(x => x && String(x.p) === a.parte && x.letto);
+  el.setAttribute("aria-label", "Allegato: " + a.f.n);
+  const zoom = a.stato === "pronto" && (a.tipo === "pdf" || a.tipo === "foto") ? `<span class="av-zoom"><button type="button" data-av-zoom="-1" aria-label="Più piccolo"${a.zoom <= 1 ? " disabled" : ""}>－</button><button type="button" data-av-zoom="1" aria-label="Più grande"${a.zoom >= 3 ? " disabled" : ""}>＋</button></span>` : "";
+  const scarica = a.stato === "pronto" ? `<a class="av-scarica" href="${a.url}" download="${esc(a.f.n)}">⬇ Scarica</a>` : "";
+  const sofia = letto && letto.riassunto ? `<p class="av-sofia"><b>${esc(nomeGov())}:</b> ${esc(letto.riassunto)}</p>` : "";
+  let corpo = "";
+  if (a.stato === "carica") corpo = `<p class="av-attesa">Lo sto prendendo dalla posta…</p>`;
+  else if (a.stato === "errore") corpo = a.errore === "casella" ? `<p class="av-errore">Per aprire gli allegati qui dentro va aggiornata la casella dell'albergo (una volta sola, 2 minuti, dal PC).</p><button type="button" class="av-b" data-av-casella>📬 Come si aggiorna</button>`
+    : a.errore === "grande" ? `<p class="av-errore">L'allegato è troppo grande per l'app (più di 10 MB).</p><a class="av-b" href="${esc(segrEmailLink(p))}" target="_blank" rel="noopener">Aprilo nella posta</a>`
+    : `<p class="av-errore">${esc(a.errore)}</p><button type="button" class="av-b" data-segr-allegato="${esc(a.id)}|${esc(a.parte)}">↻ Riprova</button>`;
+  else if (a.tipo === "foto") corpo = `<div class="av-foto"><img src="${a.url}" alt="${esc(a.f.n)}" style="width:${a.zoom * 100}%"></div>`;
+  else if (a.tipo === "pdf" || a.tipo === "excel" || a.tipo === "testo") corpo = `<div class="av-dentro" data-av-dentro><p class="av-attesa">Un attimo…</p></div>`;
+  else corpo = `${letto && letto.testo ? `<div class="av-letto"><h4>Quello che c'è scritto (l'ha letto ${esc(nomeGov())})</h4><div class="av-testo">${escNl(letto.testo)}</div></div>` : ""}<p class="av-nota">Questo tipo di file l'app non lo apre: <b>⬇ Scarica</b> e lo apre il telefono.</p>`;
+  el.innerHTML = `<div class="av-testa"><button type="button" class="av-chiudi" data-av-chiudi aria-label="Chiudi l'allegato">‹ Indietro</button><span class="av-spazio"></span>${zoom}${scarica}</div><p class="av-nome">${AL_ICO[a.tipo] || "📎"} ${esc(a.f.n)}</p>${sofia}<div class="av-corpo">${corpo}</div>`;
+  const d = el.querySelector("[data-av-dentro]");
+  if (d && a.stato === "pronto") { const n = ++a.n; (a.tipo === "pdf" ? vistaPdf(d, a, n) : a.tipo === "excel" ? vistaExcel(d, a) : vistaTesto(d, a)).catch(e => { if (AV === a) d.innerHTML = `<p class="av-errore">Non riesco a mostrarlo (${esc(String((e && e.message) || e).slice(0, 120))}). Prova con ⬇ Scarica.</p>`; }); }
+}
+var PDFJS = null;
+// le pagine del PDF: ogni pagina ha il suo posto (della misura giusta) e si disegna solo quando è vicina allo schermo; quelle
+// lontane si cancellano (un PDF di 60 pagine disegnato tutto insieme, ingrandito, riempirebbe la memoria del telefono)
+async function vistaPdf(d, a, n) {
+  if (!PDFJS) { PDFJS = await import("./pdfjs/pdf.min.mjs"); PDFJS.GlobalWorkerOptions.workerSrc = new URL("./pdfjs/pdf.worker.min.mjs", import.meta.url).href; }
+  if (!a.pdf) a.pdf = await PDFJS.getDocument({ data: a.bytes.slice(), isEvalSupported: false }).promise;
+  if (AV !== a || a.n !== n) return;
+  const tot = a.pdf.numPages, quante = Math.min(tot, 100), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const largo = Math.round(Math.min(d.clientWidth || window.innerWidth, 900) * a.zoom);
+  const p1 = await a.pdf.getPage(1); if (AV !== a || a.n !== n) return;
+  const v1 = p1.getViewport({ scale: 1 }), alto1 = Math.round(largo * v1.height / v1.width);
+  d.innerHTML = `<p class="av-pagine">${tot === 1 ? "1 pagina" : `${tot} pagine`}${tot > quante ? ` (qui le prime ${quante})` : ""}</p>`;
+  if (a.oss) { try { a.oss.disconnect(); } catch (e) {} a.oss = null; }
+  const posti = [];
+  for (let i = 1; i <= quante; i++) { const s = document.createElement("div"); s.className = "av-pagina"; s.dataset.i = String(i); s.style.width = largo + "px"; s.style.height = alto1 + "px"; s.setAttribute("aria-label", `Pagina ${i}`); d.appendChild(s); posti.push(s); }
+  const disegnaPagina = async (s) => {
+    if (s.dataset.fatta || s.dataset.inCorso) return;
+    s.dataset.inCorso = "1";
+    try {
+      const pg = await a.pdf.getPage(Number(s.dataset.i)); if (AV !== a || a.n !== n) return;
+      const v = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: (largo / v.width) * dpr });
+      const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      s.style.height = Math.round(vp.height / dpr) + "px";
+      await pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+      if (AV !== a || a.n !== n || !s.isConnected) { c.width = 0; c.height = 0; return; }
+      s.textContent = ""; s.appendChild(c); s.dataset.fatta = "1";
+    } catch (e) { console.warn("pagina del PDF", e && e.message); }
+    finally { delete s.dataset.inCorso; }
+  };
+  const togli = (s) => { if (!s.dataset.fatta) return; const c = s.querySelector("canvas"); if (c) { c.width = 0; c.height = 0; c.remove(); } delete s.dataset.fatta; };
+  const radice = d.closest(".av-corpo");
+  if (typeof IntersectionObserver === "function") {
+    a.oss = new IntersectionObserver((voci) => { for (const v of voci) { if (v.isIntersecting) disegnaPagina(v.target); else togli(v.target); } }, { root: radice, rootMargin: "1400px 0px" });
+    posti.forEach(s => a.oss.observe(s));
+  } else { for (const s of posti.slice(0, 10)) await disegnaPagina(s); }
+}
+// l'Excel di fuori lo apre un lavoratore a parte (xlsx-lettore.js): la libreria degli Excel non tocca niente dell'app
+function excelNelLavoratore(bytes, ms = 20000) {
+  return new Promise((ok, ko) => {
+    let w; try { w = new Worker("xlsx-lettore.js"); } catch (e) { ko(e); return; }
+    let finito = false;
+    const fine = (f) => { if (finito) return; finito = true; clearTimeout(t); try { w.terminate(); } catch (e) {} f(); };
+    const t = setTimeout(() => fine(() => ko(new Error("ci mette troppo"))), ms);
+    w.onmessage = (e) => { const d = e.data || {}; fine(() => (d.ok ? ok(Array.isArray(d.fogli) ? d.fogli : []) : ko(new Error(d.errore || "file illeggibile")))); };
+    w.onerror = (e) => { try { e.preventDefault(); } catch (er) {} fine(() => ko(new Error((e && e.message) || "file illeggibile"))); };
+    const copia = bytes.slice().buffer; w.postMessage(copia, [copia]);
+  });
+}
+async function vistaExcel(d, a) {
+  const fogli = await excelNelLavoratore(a.bytes);
+  if (AV !== a) return;
+  d.innerHTML = fogli.map(f => `<h4 class="av-foglio">${esc(f.nome)}</h4>${f.righe.length ? `<div class="av-tab"><table>${f.righe.map((r, i) => `<tr>${r.slice(0, 30).map(c => i === 0 ? `<th>${esc(String(c))}</th>` : `<td>${esc(String(c))}</td>`).join("")}</tr>`).join("")}</table></div>` : `<p class="av-nota">(vuoto)</p>`}`).join("");
+}
+async function vistaTesto(d, a) {
+  let s = new TextDecoder("utf-8").decode(a.bytes);
+  if ((s.match(/\uFFFD/g) || []).length > 3) { try { s = new TextDecoder("windows-1252").decode(a.bytes); } catch (e) {} }   // i file fatti con Excel vecchio
+  d.innerHTML = `<div class="av-testo">${escNl(s.replace(/\r/g, "").slice(0, 60000))}</div>`;
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-segr-leggi],[data-segr-allegato],[data-segr-elenco],[data-av-chiudi],[data-av-zoom],[data-av-casella]") : null;
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  if (t.hasAttribute("data-segr-leggi")) { const f = S.foglio; if (f && f.tipo === "segrEmail") segrLeggiEmail(f.id); return; }
+  if (t.hasAttribute("data-segr-allegato")) { const [id, parte] = String(t.getAttribute("data-segr-allegato")).split("|"); apriAllegato(id, parte); return; }
+  if (t.hasAttribute("data-segr-elenco")) { if (!t.disabled) segrElenco(t.getAttribute("data-segr-elenco")); return; }
+  if (t.hasAttribute("data-av-chiudi")) { chiudiVista(false); return; }
+  if (t.hasAttribute("data-av-zoom")) { if (!AV || t.disabled) return; AV.zoom = Math.max(1, Math.min(3, AV.zoom + (Number(t.getAttribute("data-av-zoom")) > 0 ? 0.75 : -0.75))); disegnaVista(); return; }
+  if (t.hasAttribute("data-av-casella")) { chiudiVista(false); apriFoglio({ tipo: "postaAlb" }); return; }
+}, true);
+try { window.addEventListener("resize", () => { try { segrMini(); } catch (e) {} }); } catch (e) {}
+// la casella da aggiornare alla versione 3 (gli allegati): i passi, come quando l'hai collegata
+function paAggiornaHtml() {
+  return `<div class="pa-nuova"><h4>🆕 Aggiorna la casella: gli allegati</h4>
+    <p>Per aprire gli allegati nell'app e farli leggere a ${esc(nomeGov())}, la casella va aggiornata <b>una volta sola</b> (2 minuti, dal PC, con l'account Google dell'albergo). L'indirizzo resta lo stesso: nell'app non cambia niente.</p>
+    <ol class="rg-passi">
+      <li><button type="button" class="rg-b" data-pa-copia="codice"><b>1</b>Copia il codice nuovo</button></li>
+      <li><a class="rg-b" href="https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fscript.google.com%2Fhome" target="_blank" rel="noopener"><b>2</b>Apri Google con l'account dell'albergo</a></li>
+      <li><span class="rg-t"><b>3</b><span>Su Google apri il progetto della casella (quello che hai fatto la prima volta): clic nel testo, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, poi 💾.</span></span></li>
+      <li><span class="rg-t"><b>4</b><span><b>Esegui il deployment → Gestisci deployment → ✏️ → Versione: «Nuova versione» → Esegui il deployment</b>.</span></span></li>
+      <li><button type="button" class="rg-b verde" data-pa-prova><b>5</b>Prova: deve dire «versione 3»</button></li>
+    </ol></div>`;
+}

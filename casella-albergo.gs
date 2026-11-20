@@ -1,4 +1,4 @@
-/* Le Stanze di Ricci · LA CASELLA DI SOFIA SEGRETARIA (versione 2, 17 novembre 2026)
+/* Le Stanze di Ricci · LA CASELLA DI SOFIA SEGRETARIA (versione 3, 20 novembre 2026)
  *
  * Michele, 10/11: «essendo dell'albergo questa email Sofia deve avere l'accesso h24 … anzi Sofia segretaria deve fare questo».
  * Questo piccolo programma sta nell'account Google DELL'ALBERGO e SOLO LEGGE la posta: non manda, non cancella, non sposta
@@ -14,6 +14,13 @@
  * questo codice al posto di tutto → 💾 → Esegui il deployment → Gestisci deployment → ✏️ → Versione: «Nuova versione» → Esegui
  * il deployment (l'indirizzo resta lo stesso: nell'app non si tocca niente).
  *
+ * VERSIONE 3 (Michele, 20/11: «essenziale è che io possa leggere anche tutti gli allegati dall'applicazione… e l'applicazione
+ * debba leggere anche gli allegati… negli allegati c'è proprio il succo del discorso»): per ogni mail l'elenco degli allegati
+ * (nome, tipo, quanto pesa) e l'azione «allegato», che dà un allegato all'app (per farlo vedere a Michele) e al giro di Sofia
+ * (per farlo leggere a Gemini: Michele ha scelto «tutto com'è»). Sempre SOLO LETTURA, solo mail della posta in arrivo degli
+ * ultimi 30 giorni, al massimo 10 MB. L'aggiornamento si fa come per la versione 2 (incolla, 💾, Gestisci deployment → ✏️ →
+ * «Nuova versione»): l'indirizzo resta lo stesso.
+ *
  * Come si mette (una volta sola, dal PC, nell'account Google dell'albergo):
  *  1. script.new → incolla questo codice al posto di tutto → 💾
  *  2. ⚙️ Impostazioni progetto → spunta «Mostra il file manifest "appsscript.json" nell'editor» → nell'editor apri
@@ -24,9 +31,10 @@
  *     → Autorizza l'accesso (Google dice «app non verificata»: è la tua, Avanzate → Vai a … → Consenti)
  *  4. copia l'«URL app web» nell'app: Altro → 📬 La posta dell'albergo.
  */
-var VERSIONE = "2";
+var VERSIONE = "3";
 var SITI = ["cicloviaadriatica.eu", "booking.com", "expedia.com", "expediagroup.com", "expediapartnercentral.com", "airbnb.com", "airbnb.it"];   // i siti di prenotazione
 var MAX = 25, MAX_TESTO = 1800, GIORNI = 3;
+var MAX_FILE = 10 * 1024 * 1024, GIORNI_FILE = 30, MAX_ELENCO = 10;   // versione 3: gli allegati
 
 function doGet() {
   return json_({ ok: true, casella: VERSIONE, collegata: !!PropertiesService.getScriptProperties().getProperty("segreto") });
@@ -51,6 +59,8 @@ function gestisci_(req) {
   if (req.segreto !== segreto) return { ok: false, errore: "Segreto sbagliato." };
   if (azione === "prova") { var p = api_("profile"); return { ok: true, casella: VERSIONE, indirizzo: String(p.emailAddress || ""), messaggi: Number(p.messagesTotal) || 0 }; }
   if (azione === "nuove") return nuove_(Number(req.da) || 0);
+  if (azione === "elenco") return elenco_(String(req.id || ""));            // versione 3: gli allegati di una mail
+  if (azione === "allegato") return allegato_(String(req.id || ""), String(req.parte || ""));
   if (azione === "scollega") { P.deleteProperty("segreto"); return { ok: true }; }
   return { ok: false, errore: "Azione sconosciuta." };
 }
@@ -85,7 +95,7 @@ function nuove_(da) {
     var dom = (mitt.match(/@([A-Za-z0-9.-]+)/) || [])[1] || "";
     if (/@/.test(nome)) nome = "";                       // niente indirizzi interi: al loro posto il dominio
     out.push({ id: String(m.id), ts: ts, chi: (nome || dom).slice(0, 80), dominio: dom.toLowerCase().slice(0, 80),
-      oggetto: (h.subject || "").slice(0, 200), testo: pulisci_(testo_(m.payload)).slice(0, MAX_TESTO), allegati: allegati_(m.payload) });
+      oggetto: (h.subject || "").slice(0, 200), testo: pulisci_(testo_(m.payload)).slice(0, MAX_TESTO), allegati: allegati_(m.payload), files: files_(m.payload) });
   }
   out.sort(function (a, b) { return a.ts - b.ts; });
   return { ok: true, casella: VERSIONE, mail: out };
@@ -125,5 +135,45 @@ function allegati_(p) {
   var n = 0;
   (function giro(x) { if (!x) return; if (x.filename) n++; (x.parts || []).forEach(giro); })(p);
   return n;
+}
+// versione 3: gli allegati (nome, tipo, quanto pesa, e la «parte» che serve per chiederlo); le immagini dentro il testo no
+function files_(p) {
+  var out = [];
+  (function giro(x) {
+    if (!x || out.length >= MAX_ELENCO) return;
+    if (x.filename && x.body && (x.body.attachmentId || x.body.data)) {
+      var dentro = /^inline/i.test(intestazione_(x, "content-disposition")) && /^image\//i.test(String(x.mimeType || "")) && Number(x.body.size || 0) < 60 * 1024;
+      if (!dentro) out.push({ p: String(x.partId || ""), n: String(x.filename).slice(0, 120), t: String(x.mimeType || "").slice(0, 80), kb: Math.ceil(Number(x.body.size || 0) / 1024) });
+    }
+    (x.parts || []).forEach(giro);
+  })(p);
+  return out;
+}
+function intestazione_(x, nome) {
+  var v = ""; ((x && x.headers) || []).forEach(function (h) { if (String(h.name).toLowerCase() === nome) v = String(h.value || ""); });
+  return v;
+}
+function mailRecente_(id) {
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(id)) return { errore: "Mail sconosciuta." };
+  var m = api_("messages/" + id + "?format=full");
+  if ((m.labelIds || []).indexOf("INBOX") < 0) return { errore: "Questa mail non è nella posta in arrivo." };
+  if ((Number(m.internalDate) || 0) < Date.now() - GIORNI_FILE * 24 * 3600 * 1000) return { errore: "La mail è più vecchia di " + GIORNI_FILE + " giorni: aprila nella posta." };
+  return { m: m };
+}
+function elenco_(id) {
+  var x = mailRecente_(id); if (x.errore) return { ok: false, errore: x.errore };
+  return { ok: true, casella: VERSIONE, files: files_(x.m.payload) };
+}
+function allegato_(id, parte) {
+  if (!/^[0-9.]{1,20}$/.test(parte)) return { ok: false, errore: "Allegato sconosciuto." };
+  var x = mailRecente_(id); if (x.errore) return { ok: false, errore: x.errore };
+  var trovata = null;
+  (function giro(y) { if (!y || trovata) return; if (String(y.partId || "") === parte) { trovata = y; return; } (y.parts || []).forEach(giro); })(x.m.payload);
+  if (!trovata || !trovata.filename || !trovata.body) return { ok: false, errore: "Allegato sconosciuto." };
+  if (Number(trovata.body.size || 0) > MAX_FILE) return { ok: false, errore: "L'allegato è troppo grande per l'app (più di 10 MB): aprilo nella posta.", grande: true };
+  var dati = trovata.body.data || (trovata.body.attachmentId ? api_("messages/" + id + "/attachments/" + trovata.body.attachmentId).data : "");
+  if (!dati) return { ok: false, errore: "L'allegato è vuoto." };
+  dati = String(dati).replace(/-/g, "+").replace(/_/g, "/"); while (dati.length % 4) dati += "=";
+  return { ok: true, casella: VERSIONE, nome: String(trovata.filename).slice(0, 120), tipo: String(trovata.mimeType || ""), kb: Math.ceil(Number(trovata.body.size || 0) / 1024), dati: dati };
 }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
