@@ -11188,3 +11188,80 @@ body.premium #segrHero.notizie-piene .segr-piena-via .spv-su{display:grid;place-
 #segrHero .sgt-aperto .ig-bozza .soc-bozza-testa b{font-size:17px}
 #segrHero .sgt-aperto .ig-bozza .soc-bozza-testa small{font-size:15px}
 #segrHero .sgt-aperto .ig-bozza p{font-size:19px;line-height:1.55;color:var(--mt-matita)}
+
+/* ----------------------------------------------------------------------------
+   1.112.0 · LE ICONE LUCIDE DI GEMINI SUI TASTI DELLA SEGRETERIA (Michele, 20/11: «ma i tasti dove sono?» · «quelli che abbiamo
+   fatto con gemini quelli lucidi» · «Anche in Segreteria»; viste le foto: «Sì, ma più grandi», «Ancora più grandi», «Sì, mettile
+   così»; e «comunque dammi la possibilità di tornare indietro anche»). Sui tasti, al posto del disegno a matita nel tondo, la
+   tessera lucida con la cornice d'oro (icoAll, come negli allegati), GRANDE: nei tasti a metà riga (Parlale e Scrivile, Chiama e
+   Scrivi) l'icona sta sopra e la parola sotto; nei tasti larghi accanto alla parola. Tutto vale solo con body.segr-lucidi: con
+   «A matita, come prima» (Come si vede l'app → 8) la Segreteria è quella di prima. Le tessere grandi restano a matita.
+   ---------------------------------------------------------------------------- */
+/* in cima: Parlale e Scrivile (l'icona sopra, la parola sotto), Ascolta */
+body.segr-lucidi #segrHero .sgh-tasti .sg2-mic{flex-direction:column;justify-content:center;gap:2px;padding:8px 6px;text-align:center}
+body.segr-lucidi #segrHero .sgh-tasti .sg2-mic .ico3d{width:80px;height:80px}
+body.segr-lucidi #segrHero .sgh .sgh-ascolta{min-height:100px}
+body.segr-lucidi #segrHero .sgh .sgh-ascolta .sgh-ico{width:88px;height:88px}
+/* arrivi: Chiama e Scrivi (a metà riga: l'icona sopra), Documento, Documenti fatti */
+body.segr-lucidi #segrHero .sgo-b .ico3d{width:72px;height:72px}
+body.segr-lucidi #segrHero .sgo-tasti.n2 .sgo-b,body.segr-lucidi #segrHero .sgo-tasti.n3 .sgo-b:not(:last-child){flex-direction:column;gap:2px;padding:8px 4px}
+/* le email: il bigliettino, la graffetta, «Rispondi entro», i giorni scorsi */
+body.segr-lucidi #segrHero .sge{grid-template-columns:88px minmax(0,1fr)}
+body.segr-lucidi #segrHero .sge .sge-b{width:84px;height:84px}
+body.segr-lucidi #segrHero .sge .sge-all .ico3d{width:48px;height:48px}
+body.segr-lucidi #segrHero .sgp-entro .ico3d,body.segr-lucidi .sge-foglio .sgp-entro .ico3d{width:60px;height:60px}
+body.segr-lucidi #segrHero .sgo-altre{display:flex;align-items:center;justify-content:center;gap:10px}
+body.segr-lucidi #segrHero .sgo-altre .ico3d{width:64px;height:64px}
+/* l'email intera */
+body.segr-lucidi .sge-foglio .sgf-da .ico3d{width:88px;height:88px}
+body.segr-lucidi .sge-foglio .sgf-b .ico3d,body.segr-lucidi .sge-foglio .sgf-leggi .ico3d,body.segr-lucidi .sge-foglio .sgf-chiedi .ico3d{width:80px;height:80px}
+body.segr-lucidi .sge-foglio .sgf-gov{display:flex;align-items:center;justify-content:center;gap:10px;min-height:72px}
+body.segr-lucidi .sge-foglio .sgf-gov .ico3d{width:60px;height:60px}
+/* «＋ Ricordami una cosa»: l'icona sopra e la scritta sotto (nella tessera non ci stanno in fila) */
+body.segr-lucidi #segrHero .sgt-piu{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px}
+body.segr-lucidi #segrHero .sgt-piu .ico3d{width:60px;height:60px}
+/* i tasti dei cassetti, dei documenti e della nuvoletta (.sgi): l'icona e la parola */
+body.segr-lucidi #segrHero .sgh .sg2-b{gap:10px}
+body.segr-lucidi #segrHero .sgh .sg2-b .sgi{width:72px;height:72px}
+body.segr-lucidi #segrHero .sgh .sg2-b.piccolo .sgi{width:64px;height:64px}
+body.segr-lucidi #segrHero .sgh .sg2-b.rosso[data-sg2-ricorda]::before,body.segr-lucidi #segrHero .sgh .sg2-doc .sg2-b.oro-pieno::before{content:none;display:none}
+body.segr-lucidi #segrHero .sgh .sg2-doc .sg2-b.oro-pieno .sgi{width:76px;height:76px}
+.ico3d.specchio{transform:scaleX(-1)}
+/* (con le icone e senza) i tasti di una riga che non ci stanno vanno sotto, larghi: «Fatto» non è più schiacciato */
+#segrHero .sgh .sg2-bt .sg2-b{min-width:auto}
+#segrHero .sgh .sg2-bt .sg2-b.verde,#segrHero .sgh .sg2-bt .sg2-b.piccolo{flex:1 0 auto}
+/* la nuvoletta: la ✕ è la tessera rossa */
+body.segr-lucidi #segrHero .sgh .sg2-bolla-x:has(.ico3d){display:grid;place-items:center;width:64px;height:64px;top:4px;right:4px;padding:0;border:0;border-radius:12px;background:none}
+body.segr-lucidi #segrHero .sgh .sg2-bolla-x .ico3d{width:60px;height:60px}
+body.segr-lucidi #segrHero .sgh .sg2-bolla:has(.sg2-bolla-x .ico3d) p,body.segr-lucidi #segrHero .sgh .sg2-bolla:has(.sg2-bolla-x .ico3d) small{padding-right:66px}
+body.segr-lucidi .pip-bolla .sg2-bolla:has(.sg2-bolla-x .ico3d){padding-right:66px}
+body.segr-lucidi .pip-bolla .sg2-bolla-x:has(.ico3d){display:grid;place-items:center;width:58px;height:58px;padding:0;border:0;border-radius:12px;background:none}
+body.segr-lucidi .pip-bolla .sg2-bolla-x .ico3d{width:56px;height:56px}
+body.segr-lucidi .pip-bolla .sg2-b{gap:10px}
+body.segr-lucidi .pip-bolla .sg2-b .sgi{width:56px;height:56px}
+/* Instagram: Fotografa, dalla galleria, la chiave, Fai ripartire, Guardalo */
+body.segr-lucidi #segrHero .sgt-aperto .sg2-b.ig-b{gap:12px;padding-left:10px;padding-right:10px}
+body.segr-lucidi #segrHero .sgt-aperto .sg2-b.ig-b .ico3d{width:72px;height:72px}
+/* le otto foto: «Fotografa» largo quanto la riga, «dalla galleria» sotto */
+body.segr-lucidi #segrHero .sgt-aperto .ig-tasti{flex-wrap:wrap;row-gap:4px}
+body.segr-lucidi #segrHero .sgt-aperto .ig-tasti .sg2-b.ig-b{flex:1 1 100%}
+body.segr-lucidi #segrHero .sgt-aperto .ig-galleria{gap:10px}
+body.segr-lucidi #segrHero .sgt-aperto .ig-galleria .ico3d{width:56px;height:56px}
+/* «Sofia grande» */
+body.premium.segr-lucidi #segrHero.notizie-piene .segr-piena-via .spv-ico{width:56px;height:56px}
+/* sui telefoni stretti (360): un po' meno, così le parole restano grandi e intere */
+@media (max-width:389px){
+  body.segr-lucidi #segrHero .sgh-tasti .sg2-mic .ico3d{width:68px;height:68px}
+  body.segr-lucidi #segrHero .sgh .sgh-ascolta .sgh-ico{width:76px;height:76px}
+  body.segr-lucidi #segrHero .sgo-b .ico3d{width:62px;height:62px}
+  body.segr-lucidi #segrHero .sge{grid-template-columns:76px minmax(0,1fr)}
+  body.segr-lucidi #segrHero .sge .sge-b{width:72px;height:72px}
+  body.segr-lucidi #segrHero .sgt-piu .ico3d{width:50px;height:50px}
+  body.segr-lucidi #segrHero .sgh .sg2-b .sgi{width:62px;height:62px}
+  body.segr-lucidi #segrHero .sgh .sg2-b.piccolo .sgi{width:56px;height:56px}
+  body.segr-lucidi #segrHero .sgh .sg2-doc .sg2-b.oro-pieno .sgi{width:64px;height:64px}
+  body.segr-lucidi #segrHero .sgt-aperto .sg2-b.ig-b .ico3d{width:62px;height:62px}
+  body.segr-lucidi .sge-foglio .sgf-b .ico3d,body.segr-lucidi .sge-foglio .sgf-leggi .ico3d,body.segr-lucidi .sge-foglio .sgf-chiedi .ico3d{width:68px;height:68px}
+}
+/* Come si vede l'app → «8. I tasti della Segreteria»: i disegni a matita nella scelta */
+.ico-opt .ico-mat{width:44px;height:44px;object-fit:contain}

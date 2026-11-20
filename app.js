@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.111.0";
+export const VERSIONE = "1.112.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1591,7 +1591,7 @@ function applicaTema() {
   const col = coloreAttivo();
   if (col !== "blu") document.documentElement.setAttribute("data-colore", col); else document.documentElement.removeAttribute("data-colore");
   const lusso = sfondoLusso(), premium = premiumVisto();
-  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; document.body.classList.toggle("premium", premium); }
+  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; document.body.classList.toggle("premium", premium); document.body.classList.toggle("segr-lucidi", !segrTastiMatita()); }   // 1.112.0
   if (S.pronto) { try { localStorage.setItem("ricci_era_premium", premium ? "1" : "0"); } catch (e) {} }
   const parete = document.querySelector(".laguna");
   if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
@@ -6997,7 +6997,7 @@ function segrOssatura() {
       <span class="casa-vene" aria-hidden="true"></span>
       <span class="casa-presa" aria-hidden="true"></span>
       <button type="button" class="casa-nascondi" data-segr-nascondi aria-expanded="true" aria-label="Nascondi il riquadro: si vede tutta ${esc(nome)}"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="casa-testo"><button type="button" class="segr-piena-via" data-segr-piena-via aria-label="Torna a ${esc(nome)} grande"><span class="spv-su" aria-hidden="true"><svg viewBox="0 0 24 16" width="22" height="15"><path d="M3 13l9-9 9 9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${esc(nome)} grande</span></button><div class="of sg2 sgh"></div></div>
+      <div class="casa-testo"><button type="button" class="segr-piena-via" data-segr-piena-via aria-label="Torna a ${esc(nome)} grande">${segrTasto(icoAll("su", "spv-ico"), '<span class="spv-su" aria-hidden="true"><svg viewBox="0 0 24 16" width="22" height="15"><path d="M3 13l9-9 9 9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>')}<span>${esc(nome)} grande</span></button><div class="of sg2 sgh"></div></div>
     </div>`;
 }
 // cosa dice Sofia: mentre ti ascolta, ci pensa o ti ha risposto, la nuvoletta di sempre; se no il saluto e il riassunto di oggi
@@ -7032,6 +7032,15 @@ function segrFumettoHtml(pz) {
 const SEGR_OGGI = ["arrivi", "partenze", "pulizie", "email"];
 function segrOggiAperto() { return SEGR_OGGI.includes(S.segrOggi) ? S.segrOggi : ""; }
 const segrDis = (nome, cls = "") => `<img class="mt-d${cls ? " " + cls : ""}" src="mat-${nome}.webp" alt="" width="240" height="240">`;
+// 1.112.0 (Michele, 20/11: «ma i tasti dove sono?» · «quelli che abbiamo fatto con gemini quelli lucidi» · «Anche in Segreteria»;
+// viste le foto: «Ancora più grandi»): sui TASTI della Segreteria le icone lucide di Gemini (icoAll), grandi, al posto dei disegni
+// a matita nel tondo. E «comunque dammi la possibilità di tornare indietro anche»: in Altro → Come si vede l'app → «8. I tasti della
+// Segreteria» si torna ai disegni a matita di prima, identici (segrTastiMatita; il CSS nuovo vale solo con body.segr-lucidi).
+// Nei pezzi che usano anche gli altri stili (i cassetti, i documenti, la nuvoletta) l'icona c'è solo nella testa Premium (segrIco).
+// Le tessere grandi e le figure che raccontano (persone, strisce delle camere) restano a matita.
+function segrTastiMatita() { try { return localStorage.getItem("ricci_segr_tasti") === "matita"; } catch (e) { return false; } }
+const segrTasto = (nuovo, vecchio = "") => segrTastiMatita() ? vecchio : nuovo;
+const segrIco = (nome, prima = "", cls = "") => segrHeroAttivo() && !segrTastiMatita() ? icoAll(nome, "sgi" + (cls ? " " + cls : "")) : prima;
 // il numero per WhatsApp: solo cifre, col 39 davanti se è un cellulare italiano scritto senza
 function segrNumeroWa(tel) {
   let d = String(tel || "").replace(/[^\d+]/g, "");
@@ -7042,9 +7051,9 @@ function segrNumeroWa(tel) {
 function segrTastiOspite(s, conDoc) {
   const tel = telefonoDi(s), wa = segrNumeroWa(tel), cm = camera(s.camera), chi = nomeCortoOspite(s);
   let doc = "";
-  if (conDoc) { try { const st = alStato(); doc = st.inviati[s.id] ? `<span class="sgo-b fatto">${segrDis("spunta")}<span>Documenti fatti</span></span>` : `<label class="sgo-b doc">${segrDis("documento")}<span>Documento</span><input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(cm.nome)}"></label>`; } catch (e) { doc = ""; } }
-  const t = [tel ? `<a class="sgo-b chiama" href="${esc(telHref(tel))}" aria-label="Chiama ${esc(chi)}: ${esc(telBello(tel))}">${segrDis("telefono")}<span>Chiama</span></a>` : "",
-    wa ? `<a class="sgo-b scrivi" href="https://wa.me/${wa}" target="_blank" rel="noopener" aria-label="Scrivi a ${esc(chi)} su WhatsApp">${segrDis("fumetto")}<span>Scrivi</span></a>` : "", doc].filter(Boolean);
+  if (conDoc) { try { const st = alStato(); doc = st.inviati[s.id] ? `<span class="sgo-b fatto">${segrTasto(icoAll("spunta"), segrDis("spunta"))}<span>Documenti fatti</span></span>` : `<label class="sgo-b doc">${segrTasto(icoAll("documento"), segrDis("documento"))}<span>Documento</span><input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(cm.nome)}"></label>`; } catch (e) { doc = ""; } }
+  const t = [tel ? `<a class="sgo-b chiama" href="${esc(telHref(tel))}" aria-label="Chiama ${esc(chi)}: ${esc(telBello(tel))}">${segrTasto(icoAll("cornetta"), segrDis("telefono"))}<span>Chiama</span></a>` : "",
+    wa ? `<a class="sgo-b scrivi" href="https://wa.me/${wa}" target="_blank" rel="noopener" aria-label="Scrivi a ${esc(chi)} su WhatsApp">${segrTasto(icoAll("fumetto"), segrDis("fumetto"))}<span>Scrivi</span></a>` : "", doc].filter(Boolean);
   return t.length ? `<div class="sgo-tasti n${t.length}">${t.join("")}</div>` : "";
 }
 // la fascia colorata: a che punto è la camera (pronta, la stanno pulendo, da pulire, problema)
@@ -7118,7 +7127,7 @@ function segrEmailRiga(p, cap) {
   const inizio = x.corpo.replace(/\s+/g, " ").trim(), anteprima = inizio.length > 150 ? inizio.slice(0, 150).replace(/\s+\S*$/, "") + "…" : inizio;
   const sofia = righe.length ? righe.slice(0, 3).map(r => `<span class="sge-sofia"><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</span>`).join("")
     : `${anteprima ? `<span class="sge-ante">${esc(anteprima)}</span>` : ""}${p.letto ? "" : `<span class="sge-poi">Sofia la legge tra poco.</span>`}`;
-  return `<button type="button" class="sge" data-segr-email-apri="${esc(p.id)}" aria-label="Email di ${esc(p.chi || "qualcuno")}: ${esc(x.oggetto)}. Tocca per leggerla tutta">${segrDis("busta", "sge-b")}<span class="sge-testa"><span class="sge-chi">${esc(p.chi || "?")}</span><span class="sge-ora">${esc(p.ora || "")}</span></span><span class="sge-ogg">${esc(x.oggetto)}</span>${x.allegati ? `<span class="sge-all">${segrDis("graffetta")}${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}</span>` : ""}${sofia}<span class="sge-leggi">Leggi tutta <span aria-hidden="true">→</span></span></button>`;
+  return `<button type="button" class="sge" data-segr-email-apri="${esc(p.id)}" aria-label="Email di ${esc(p.chi || "qualcuno")}: ${esc(x.oggetto)}. Tocca per leggerla tutta">${segrTasto(icoAll("email", "sge-b"), segrDis("busta", "sge-b"))}<span class="sge-testa"><span class="sge-chi">${esc(p.chi || "?")}</span><span class="sge-ora">${esc(p.ora || "")}</span></span><span class="sge-ogg">${esc(x.oggetto)}</span>${x.allegati ? `<span class="sge-all">${segrTasto(icoAll("file"), segrDis("graffetta"))}${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}</span>` : ""}${sofia}<span class="sge-leggi">Leggi tutta <span aria-hidden="true">→</span></span></button>`;
 }
 function segrEmailHtml() {
   const tutte = segrEmailTutte(), oggi = L.oggiISO(), cap = segrEmailCapito();
@@ -7126,8 +7135,8 @@ function segrEmailHtml() {
   let html = `<h4 class="sgo-tit">Le email di oggi</h4>${diOggi.length ? diOggi.map(p => segrEmailRiga(p, cap)).join("") : `<p class="sgo-vuoto">${paPronta() ? "Oggi non è arrivata nessuna email." : "La posta dell'albergo non è collegata: si collega da Altro, «La posta dell'albergo»."}</p>`}`;
   if (prima.length) {
     const vedi = S.segrEmailPrima || !diOggi.length, giorni = new Map(); for (const p of prima) { const g = String(p.data || ""); if (!giorni.has(g)) giorni.set(g, []); giorni.get(g).push(p); }
-    html += vedi ? [...giorni.entries()].map(([g, l]) => `<h4 class="sgo-tit due">${esc(segrEmailGiorno(g))}</h4>${l.map(p => segrEmailRiga(p, cap)).join("")}`).join("") + (diOggi.length ? `<button type="button" class="sgo-altre" data-segr-email-prima>Nascondi quelle dei giorni scorsi</button>` : "")
-      : `<button type="button" class="sgo-altre" data-segr-email-prima>Vedi quelle dei giorni scorsi (${prima.length})</button>`;
+    html += vedi ? [...giorni.entries()].map(([g, l]) => `<h4 class="sgo-tit due">${esc(segrEmailGiorno(g))}</h4>${l.map(p => segrEmailRiga(p, cap)).join("")}`).join("") + (diOggi.length ? `<button type="button" class="sgo-altre" data-segr-email-prima>${segrTasto(icoAll("calendario"))}<span>Nascondi quelle dei giorni scorsi</span></button>` : "")
+      : `<button type="button" class="sgo-altre" data-segr-email-prima>${segrTasto(icoAll("calendario"))}<span>Vedi quelle dei giorni scorsi (${prima.length})</span></button>`;
   }
   return html;
 }
@@ -7151,17 +7160,17 @@ function foglioSegrEmail(f) {
   const pren = L.emailPrenotazione({ chi: p.chi, dominio: p.dominio, oggetto: x.oggetto, testo: x.corpo }), entro = pren ? segrPrenEntro({ p, x, c: pren }) : null, can = pren ? L.canale(pren.canale) : null;
   const legge = segrLegge === p.id && (voceInCorso || sg2ParlaTel), letta = !!(S.segrLette || {})[p.id], nAll = segrElencoNoto(p) ? segrFilesDi(p).length : x.allegati;   // 1.108.0
   return `<div class="sge-foglio con-sofia">
-    <p class="sgf-da">${segrDis("lettera")}<span><b>${esc(p.chi || "?")}</b><small>${esc(quando)}${nAll ? ` · ${nAll} ${nAll === 1 ? "allegato" : "allegati"}` : ""}</small></span></p>
+    <p class="sgf-da">${segrTasto(icoAll("email"), segrDis("lettera"))}<span><b>${esc(p.chi || "?")}</b><small>${esc(quando)}${nAll ? ` · ${nAll} ${nAll === 1 ? "allegato" : "allegati"}` : ""}</small></span></p>
     <h3 class="sgf-ogg">${esc(x.oggetto)}</h3>
     <button type="button" class="sgf-leggi${legge ? " parla" : ""}" data-segr-leggi>${icoAll(legge ? "pausa" : letta ? "rileggi" : "leggi")}<span>${legge ? "Sto leggendo… tocca per fermarmi" : letta ? "Te la rileggo?" : "Te la leggo io?"}</span></button>
     ${segrDomandaHtml(p)}
-    ${entro ? `<p class="sgp-entro ${entro.classe}">${segrDis("sveglia")}<span>${esc(entro.testo)}</span></p>` : ""}
+    ${entro ? `<p class="sgp-entro ${entro.classe}">${segrTasto(icoAll("sveglia"), segrDis("sveglia"))}<span>${esc(entro.testo)}</span></p>` : ""}
     ${righe.length ? `<div class="sgf-sofia">${righe.map(r => `<p><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</p>`).join("")}</div>` : ""}
     <div class="sgf-testo">${x.corpo ? escNl(x.corpo) : "<i>(l'email non ha testo)</i>"}</div>
     ${tagliata ? `<p class="sgf-nota">L'email è più lunga: qui c'è l'inizio. Per leggerla tutta, aprila nella posta.</p>` : ""}
     ${segrAllegatiHtml(p, x)}
-    ${can && can.sito ? `<a class="sgf-b canale" href="${esc(can.sito)}" target="_blank" rel="noopener">${segrDis("spunte")}<span>Apri il sito: ${esc(can.breve)}</span></a>` : ""}
-    <a class="sgf-b posta" href="${esc(segrEmailLink(p))}" target="_blank" rel="noopener">${segrDis("cassetta")}<span>Apri nella posta</span></a></div>`;
+    ${can && can.sito ? `<a class="sgf-b canale" href="${esc(can.sito)}" target="_blank" rel="noopener">${segrTasto(icoAll("web"), segrDis("spunte"))}<span>Apri il sito: ${esc(can.breve)}</span></a>` : ""}
+    <a class="sgf-b posta" href="${esc(segrEmailLink(p))}" target="_blank" rel="noopener">${segrTasto(icoAll("email"), segrDis("cassetta"))}<span>Apri nella posta</span></a></div>`;
 }
 // 1) Oggi: le quattro tessere (il numero grande, il disegno a matita, la parola); quella toccata si apre lì sotto
 function segrOggiHtml() {
@@ -7211,7 +7220,7 @@ function segrPrenRiga(e, cap) {
   const inizio = x.corpo.replace(/\s+/g, " ").trim(), anteprima = inizio.length > 150 ? inizio.slice(0, 150).replace(/\s+\S*$/, "") + "…" : inizio;
   const sofia = righe.length ? righe.slice(0, 2).map(r => `<span class="sge-sofia"><b>Sofia:</b> ${esc(r.cosa)}${SEGR_DOVE[r.dove] ? ` <i class="sge-dove ${r.dove}">${SEGR_DOVE[r.dove]}</i>` : ""}</span>`).join("")
     : `${anteprima ? `<span class="sge-ante">${esc(anteprima)}</span>` : ""}`;
-  return `<button type="button" class="sge pren${c.annullata ? " annullata" : ""}" data-segr-email-apri="${esc(p.id)}" aria-label="${segrPrenCosa(c)} da ${esc(c.nome)}: ${esc(x.oggetto)}. ${entro ? esc(entro.testo) + ". " : ""}Tocca per leggerla tutta">${segrDis("chiave", "sge-b")}<span class="sge-testa"><span class="sge-chi">${esc(c.nome)}</span><span class="sge-ora">${esc(p.ora || "")}</span></span><span class="sgp-cosa">${segrPrenCosa(c)}${quando ? ` · arrivata ${esc(quando)}` : ""}</span><span class="sge-ogg">${esc(x.oggetto)}</span>${entro ? `<span class="sgp-entro ${entro.classe}">${segrDis("sveglia")}<span>${esc(entro.testo)}</span></span>` : ""}${sofia}<span class="sge-leggi">Leggi tutta <span aria-hidden="true">→</span></span></button>`;
+  return `<button type="button" class="sge pren${c.annullata ? " annullata" : ""}" data-segr-email-apri="${esc(p.id)}" aria-label="${segrPrenCosa(c)} da ${esc(c.nome)}: ${esc(x.oggetto)}. ${entro ? esc(entro.testo) + ". " : ""}Tocca per leggerla tutta">${segrTasto(icoAll("chiave", "sge-b"), segrDis("chiave", "sge-b"))}<span class="sge-testa"><span class="sge-chi">${esc(c.nome)}</span><span class="sge-ora">${esc(p.ora || "")}</span></span><span class="sgp-cosa">${segrPrenCosa(c)}${quando ? ` · arrivata ${esc(quando)}` : ""}</span><span class="sge-ogg">${esc(x.oggetto)}</span>${entro ? `<span class="sgp-entro ${entro.classe}">${segrTasto(icoAll("sveglia"), segrDis("sveglia"))}<span>${esc(entro.testo)}</span></span>` : ""}${sofia}<span class="sge-leggi">Leggi tutta <span aria-hidden="true">→</span></span></button>`;
 }
 function segrPrenotazioniHtml() {
   const l = segrPrenotazioni(), ap = !!S.segrPren, cic = L.canale("ciclovia"), cap = ap ? segrEmailCapito() : null;
@@ -7263,14 +7272,14 @@ function segrCassettoAperto(pz) {
 }
 function segrCassettiHtml(pz) {
   const ap = segrCassettoAperto(pz);
-  return `<div class="sgt-griglia sgt-cassetti">${SEGR_CASSETTI.map(([k, t, d]) => `<div class="sgt cass ${k}${ap === k ? " aperto" : ""}${pz.n[k] ? "" : " zero"}"><button type="button" class="sgt-apri" data-segr-cassetto="${k}" aria-expanded="${ap === k}" aria-label="${t}: ${pz.n[k]}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><span class="sgt-t">${t}</span><b class="sgt-n">${pz.n[k]}</b><img class="sgt-d" src="${d}" alt="" width="240" height="240"></button>${k === "fare" && pz.mod ? `<button type="button" class="sgt-piu" data-sg2-nuovo><span aria-hidden="true">＋</span> Ricordami una cosa</button>` : ""}</div>`).join("")}</div>${ap && pz.cass[ap] ? `<div class="sgt-aperto ${ap}">${pz.cass[ap]}</div>` : ""}`;
+  return `<div class="sgt-griglia sgt-cassetti">${SEGR_CASSETTI.map(([k, t, d]) => `<div class="sgt cass ${k}${ap === k ? " aperto" : ""}${pz.n[k] ? "" : " zero"}"><button type="button" class="sgt-apri" data-segr-cassetto="${k}" aria-expanded="${ap === k}" aria-label="${t}: ${pz.n[k]}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><span class="sgt-t">${t}</span><b class="sgt-n">${pz.n[k]}</b><img class="sgt-d" src="${d}" alt="" width="240" height="240"></button>${k === "fare" && pz.mod ? `<button type="button" class="sgt-piu" data-sg2-nuovo>${segrTasto(icoAll("piu") + "<span>Ricordami una cosa</span>", '<span aria-hidden="true">＋</span> Ricordami una cosa')}</button>` : ""}</div>`).join("")}</div>${ap && pz.cass[ap] ? `<div class="sgt-aperto ${ap}">${pz.cass[ap]}</div>` : ""}`;
 }
 function segrDentroHtml(pz) {
   return `${segrFumettoHtml(pz)}
-    <div class="sg2-tasti sgh-tasti"><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}">${segrDis("microfono")} ${sg2Rec ? "Ti ascolto…" : "Parlale"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi>${segrDis("matita")} Scrivile</button></div>
+    <div class="sg2-tasti sgh-tasti"><button type="button" class="sg2-mic${sg2Rec ? " ascolta" : ""}" data-sg2-mic aria-pressed="${sg2Rec ? "true" : "false"}">${segrTasto(icoAll(sg2Rec ? "ascolta" : "chiedi"), segrDis("microfono"))} ${sg2Rec ? "Ti ascolto…" : "Parlale"}</button><button type="button" class="sg2-mic sg2-scrivi" data-sg2-scrivi>${segrTasto(icoAll("matita"), segrDis("matita"))} Scrivile</button></div>
     ${pz.banner || ""}
     <h3 class="sgh-tit">Oggi</h3>
-    <button type="button" class="sgh-ascolta" data-sg2-ascolta>${segrDis("voce", "sgh-alt")}<span class="sgh-at"><b>Ascolta</b><small>${esc(pz.nome)} me lo racconta a voce</small></span></button>
+    <button type="button" class="sgh-ascolta" data-sg2-ascolta>${segrTasto(icoAll("leggi", "sgh-ico"), segrDis("voce", "sgh-alt"))}<span class="sgh-at"><b>Ascolta</b><small>${esc(pz.nome)} me lo racconta a voce</small></span></button>
     ${segrOggiHtml()}
     <h3 class="sgh-tit">Prenotazioni</h3>${segrPrenotazioniHtml()}
     <h3 class="sgh-tit">I miei cassetti</h3>${segrCassettiHtml(pz)}
@@ -7311,17 +7320,17 @@ function segrIgDentro(x) {
   const quando = (g, o) => `${L.dataGiornoLungo(g)}${o ? ` alle ${esc(o)}` : ""}`;
   const righe = [];
   const r = (testo, sotto = "", cls = "") => `<div class="sg2-r ig-r${cls ? " " + cls : ""}"><b class="sg2-t">${testo}</b>${sotto ? `<small>${sotto}</small>` : ""}</div>`;
-  if (st === "ferma") righe.push(r("Sono ferma: non pubblico e non rispondo ai commenti.", "La fai ripartire qui sotto, quando vuoi.") + `<button type="button" class="sg2-b ig-b" data-soc-fermo="0">Fai ripartire ${nome}</button>`);
-  else if (st === "chiave") righe.push(r("La chiave di Instagram non va più (scaduta o tolta).", "Si rifà dal PC, in 2 minuti: ti guido io.") + `<button type="button" class="sg2-b ig-b" data-soc-chiave>Rifai la chiave di Instagram</button>`);
+  if (st === "ferma") righe.push(r("Sono ferma: non pubblico e non rispondo ai commenti.", "La fai ripartire qui sotto, quando vuoi.") + `<button type="button" class="sg2-b ig-b" data-soc-fermo="0">${segrTasto(icoAll("rileggi"))}<span>Fai ripartire ${nome}</span></button>`);
+  else if (st === "chiave") righe.push(r("La chiave di Instagram non va più (scaduta o tolta).", "Si rifà dal PC, in 2 minuti: ti guido io.") + `<button type="button" class="sg2-b ig-b" data-soc-chiave>${segrTasto(icoAll("chiave"))}<span>Rifai la chiave di Instagram</span></button>`);
   else if (st === "personale") righe.push(r("L'Instagram collegato è ancora «personale»: così Instagram non mi fa pubblicare.", "Sul telefono: Impostazioni → Tipo di account → Passa all'account professionale → Azienda. Poi faccio io."));
   else if (st === "controllo") righe.push(r("Ho la chiave nuova di Instagram: la sto controllando.", "Entro 10 minuti qui compare «collegata»."));
-  else if (st === "aspetta-chiave") righe.push(r("Ho le foto, ma Instagram non è ancora collegato.", "Si collega dal PC, una volta sola: 10 minuti.") + `<button type="button" class="sg2-b ig-b" data-soc-chiave>Collega Instagram</button>`);
+  else if (st === "aspetta-chiave") righe.push(r("Ho le foto, ma Instagram non è ancora collegato.", "Si collega dal PC, una volta sola: 10 minuti.") + `<button type="button" class="sg2-b ig-b" data-soc-chiave>${segrTasto(icoAll("chiave"))}<span>Collega Instagram</span></button>`);
   else if (st === "aspetta-foto") righe.push(r(`${x.collegata ? "Sono collegata a Instagram. " : ""}Per partire mi servono le foto dell'albergo.`, "Tocca «Foto da fare»: le fai col telefono, una alla volta. Appena ce n'è una, preparo il primo post."));
   else if (st === "foto") righe.push(r("Ho usato tutte le foto: me ne servono di nuove.", "Tocca «Foto da fare» e rifanne qualcuna (anche le stesse cose, da un altro lato)."));
   if (st === "al-lavoro" || st === "foto") righe.unshift(r(`Sono al lavoro: questa settimana ${c.post} ${c.post === 1 ? "post" : "post"} e ${c.risposte} ${c.risposte === 1 ? "risposta" : "risposte"} ai commenti.`, x.collegata && m.ig && m.ig.nome ? `Su Instagram: @${esc(m.ig.nome)}` : ""));
   if (m.prossimo && m.prossimo.giorno && st !== "ferma") righe.push(r(`Il prossimo post: ${quando(m.prossimo.giorno, m.prossimo.ora)}.`, "I post escono la sera, dalle 18:30."));
   const ultimo = (Array.isArray(s.pubblicati) ? s.pubblicati : []).filter(p => p && p.link).slice(-1)[0];
-  if (ultimo) righe.push(`<div class="sg2-r ig-r"><b class="sg2-t">L'ultimo post: ${esc(csQuando(ultimo.quando) || "")}.</b><a class="sg2-b ig-b chiaro" href="${esc(ultimo.link)}" target="_blank" rel="noopener">Guardalo su Instagram</a></div>`);
+  if (ultimo) righe.push(`<div class="sg2-r ig-r"><b class="sg2-t">L'ultimo post: ${esc(csQuando(ultimo.quando) || "")}.</b><a class="sg2-b ig-b chiaro" href="${esc(ultimo.link)}" target="_blank" rel="noopener">${segrTasto(icoAll("web"))}<span>Guardalo su Instagram</span></a></div>`);
   if (m.errore && m.errore.testo && Date.now() - (Date.parse(m.errore.quando || "") || 0) < 2 * 86400000) righe.push(r("L'ultima volta qualcosa non è andato: riprovo io.", esc(m.errore.testo), "ko"));
   const bozze = (Array.isArray(s.bozze) ? s.bozze : []).filter(b => b && b.k && b.testo).slice(0, 3);
   const prova = bozze.length ? `<section class="sg2-c ig-bozze"><h4>I prossimi post, come li vedrà la gente</h4>${bozze.map(b => `<article class="soc-bozza ig-bozza"><div class="soc-bozza-testa"><i aria-hidden="true">LR</i><b>${esc((m.ig && m.ig.nome) || "lestanzediricci")}</b><small>prova</small></div><img alt="" data-soc-bozza-foto="${esc(b.k)}"><p>${esc(b.testo).replace(/\n/g, "<br>")}</p></article>`).join("")}<p class="ig-nota">Escono da soli nei giorni dei post. Se uno non ti piace, rifai quella foto e lo riscrivo.</p></section>` : "";
@@ -7333,7 +7342,7 @@ function segrIgFoto(x) {
   const { s, m } = x, foto = s.foto || {}, no = m.fotoNo || {};
   const righe = SOC_FOTO.map(f => {
     const sc = !!(foto[f.k] && no[f.k] && no[f.k].quando === foto[f.k].quando), ok = !!foto[f.k] && !sc;
-    const tasti = `<div class="ig-tasti"><label class="sg2-b ig-b${ok ? " chiaro" : ""}">${ok ? "Rifalla" : "Fotografa"}<input type="file" accept="image/*" capture="environment" hidden data-soc-foto="${f.k}"></label><label class="ig-galleria">dalla galleria<input type="file" accept="image/*" hidden data-soc-foto="${f.k}"></label></div>`;
+    const tasti = `<div class="ig-tasti"><label class="sg2-b ig-b${ok ? " chiaro" : ""}">${segrTasto(icoAll("fotocamera"))}<span>${ok ? "Rifalla" : "Fotografa"}</span><input type="file" accept="image/*" capture="environment" hidden data-soc-foto="${f.k}"></label><label class="ig-galleria">${segrTasto(icoAll("foto"))}<span>dalla galleria</span><input type="file" accept="image/*" hidden data-soc-foto="${f.k}"></label></div>`;
     return `<div class="sg2-r ig-f${ok ? " fatta" : sc ? " no" : ""}"><b class="sg2-t">${ok ? '<i class="ig-ok" aria-label="fatta">✓</i> ' : sc ? '<i class="ig-no" aria-label="da rifare">!</i> ' : ""}${esc(f.t)}</b><small>${sc ? `Da rifare: ${esc(no[f.k].motivo || "")}` : esc(f.c)}</small>${tasti}</div>`;
   }).join("");
   return `<section class="sg2-c igf-c"><h4>Le foto che mi servono</h4><p class="ig-nota">Una alla volta, quando capita: tocca «Fotografa» e scatta lì, sul posto. In orizzontale, con tanta luce, senza persone e senza cose degli ospiti. Prima di pubblicarla la guardo io.</p>${righe}</section>`;
@@ -7401,17 +7410,17 @@ function vistaSegreteria() {
   // 1.76.0: un promemoria chiesto da lui dice quando suona; una richiesta che ha già visto (ha risposto su WhatsApp) è più chiara e non suona
   const sottoPerTe = (t) => t.richiesto ? `⏰ Me l'hai chiesto tu · ${sg2Alle(t)}` : [sg2Entro(t), t.chi ? `l'ha chiesto ${t.chi}` : ""].filter(Boolean).join(" · ");
   const perTe = sg2PerTe().map(t => `<div class="sg2-r fare${t.vista ? " vista" : ""}${t.richiesto ? " chiesto" : ""}"><b class="sg2-t">${esc(t.testo)}</b>${sottoPerTe(t) ? `<small>${esc(sottoPerTe(t))}</small>` : ""}${t.vista ? `<small class="sg2-vista">✓ Hai già risposto su WhatsApp: non suono più</small>` : ""}${t.rimanda && Date.parse(t.rimanda) > Date.now() ? `<small class="sg2-rim">⏰ te lo ricordo alle ${esc(L.oraBreve(t.rimanda))}</small>` : ""}
-    ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde" data-sg2-fatto="${esc(t.lid)}|${esc(t.k)}">Fatto</button><button type="button" class="sg2-b rosso" data-sg2-ricorda="${esc(t.lid)}|${esc(t.k)}${t.vista ? "|v" : ""}"><span aria-hidden="true">⏰</span> Ricordami tra 1 ora</button></div>` : ""}</div>`);
+    ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde" data-sg2-fatto="${esc(t.lid)}|${esc(t.k)}">${segrIco("spunta")}Fatto</button><button type="button" class="sg2-b rosso" data-sg2-ricorda="${esc(t.lid)}|${esc(t.k)}${t.vista ? "|v" : ""}">${segrIco("sveglia")}<span aria-hidden="true">⏰</span> Ricordami tra 1 ora</button></div>` : ""}</div>`);
   // 1.78.0: una proposta di ore dice da dove viene, cosa cambia col Sì e il lavoro che c'era quel giorno (il controllo)
   // (in grassetto il turno, non la domanda: «Selena oggi: 9:07 → 10:52 = 1 ora e 45 min»)
   const prop = sg2Proposte().map(p => { const r = p.ore ? oreRighe(p) : null; return `<div class="sg2-r prop${r ? " ore" : ""}${r && r.troppe ? " troppe" : ""}">${r ? `<b class="sg2-t">${esc(oreTitolo(p))}</b>` : `${p.perche ? `<b class="sg2-t">${esc(p.perche)}</b>` : ""}<span class="sg2-x">${esc(p.testo)}</span>`}${r && r.righe.length ? `<small class="sg2-ore">${r.righe.map(esc).join("<br>")}</small>` : ""}${r && r.avviso ? `<small class="sg2-ore ore-avviso">${esc(r.avviso)}</small>` : ""}
-    ${mod ? `<button type="button" class="sg2-b verde pieno" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">Sì, fallo</button><div class="sg2-bt"><button type="button" class="sg2-b oro" data-sg2-cambia="${esc(p.lid)}|${esc(p.k)}">Cambia</button><button type="button" class="sg2-b rosso" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">No</button></div>` : ""}</div>`; });
+    ${mod ? `<button type="button" class="sg2-b verde pieno" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">${segrIco("spunta")}Sì, fallo</button><div class="sg2-bt"><button type="button" class="sg2-b oro" data-sg2-cambia="${esc(p.lid)}|${esc(p.k)}">${segrIco("matita")}Cambia</button><button type="button" class="sg2-b rosso" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">${segrIco("x")}No</button></div>` : ""}</div>`; });
   prop.unshift(...presProposte().map(x => presPropRiga(x, mod)));   // 1.69.0: le ore che non tornano
   const fatti = sg2Fatti().map((f, i) => `<div class="sg2-r fatto"><span class="sg2-x"><b>${i + 1}.</b> ${esc(f.testo)}</span><small>${esc([sg2Quando(f.quando), f.sotto].filter(Boolean).join(" · "))}</small>
-    <div class="sg2-bt">${mod ? `<button type="button" class="sg2-b piccolo" data-sg2-annulla="${esc(f.lid)}|${esc(f.ks.join(","))}">Annulla</button>` : ""}<button type="button" class="sg2-b piccolo" data-sg2-perche="${esc(f.lid)}|${esc(f.ks.join(","))}">Perché?</button></div></div>`);
+    <div class="sg2-bt">${mod ? `<button type="button" class="sg2-b piccolo" data-sg2-annulla="${esc(f.lid)}|${esc(f.ks.join(","))}">${segrIco("annulla")}Annulla</button>` : ""}<button type="button" class="sg2-b piccolo" data-sg2-perche="${esc(f.lid)}|${esc(f.ks.join(","))}">${segrIco("domanda")}Perché?</button></div></div>`);
   // 1.70.2: i cambi annullati (oggi e ieri) col tasto «↪ Rimetti», sopra gli altri
   const annullati = sg2Annullati().map(f => `<div class="sg2-r fatto annullato"><span class="sg2-x">${esc(f.testo)}</span><small>${esc([`annullato ${sg2Quando(f.quando)}`, f.sotto].filter(Boolean).join(" · "))}</small>
-    ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde rimetti" data-sg2-rimetti="${esc(f.lid)}|${esc(f.ks.join(","))}">↪ Rimetti</button></div>` : ""}</div>`);
+    ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde rimetti" data-sg2-rimetti="${esc(f.lid)}|${esc(f.ks.join(","))}">${segrIco("annulla", "↪ ", "specchio")}Rimetti</button></div>` : ""}</div>`);
   fatti.unshift(...annullati);
   const sapere = sg2Sapere().map(s => `<div class="sg2-r sapere"><span class="sg2-x">${esc(s.testo)}</span><small>${esc(sg2Quando(s.quando))}</small></div>`);
   const cassetti = `<div class="sg2-cassetti">
@@ -7423,7 +7432,7 @@ function vistaSegreteria() {
   let doc = "";
   try {
     const st = alStato(), da = alArrivi().filter(s => !st.inviati[s.id]);
-    doc = `<div class="sg2-doc">${da.length ? da.map(s => `<div class="sg2-doc-r"><span>Camera <b>${esc(segrHeroAttivo() ? camera(s.camera).nome : camera(s.camera).nome.toUpperCase())}</b><small>${s.inizio === L.oggiISO() ? "arrivo oggi" : "arrivo ieri"}${(st.persone[s.id] || []).length ? ` · ${(st.persone[s.id] || []).length} già ${(st.persone[s.id] || []).length === 1 ? "messa" : "messe"}` : ""}</small></span><label class="sg2-b oro-pieno"><span aria-hidden="true">📸</span> Inquadra documento<input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(camera(s.camera).nome)}"></label></div>`).join("") : `<p class="sg2-vuoto">Oggi e ieri non è arrivato nessuno da registrare.</p>`}
+    doc = `<div class="sg2-doc">${da.length ? da.map(s => `<div class="sg2-doc-r"><span>Camera <b>${esc(segrHeroAttivo() ? camera(s.camera).nome : camera(s.camera).nome.toUpperCase())}</b><small>${s.inizio === L.oggiISO() ? "arrivo oggi" : "arrivo ieri"}${(st.persone[s.id] || []).length ? ` · ${(st.persone[s.id] || []).length} già ${(st.persone[s.id] || []).length === 1 ? "messa" : "messe"}` : ""}</small></span><label class="sg2-b oro-pieno">${segrIco("documento")}<span aria-hidden="true">📸</span> Inquadra documento<input type="file" accept="image/*" capture="environment" hidden data-al-foto="${esc(s.id)}" aria-label="Inquadra il documento per ${esc(camera(s.camera).nome)}"></label></div>`).join("") : `<p class="sg2-vuoto">Oggi e ieri non è arrivato nessuno da registrare.</p>`}
       <button type="button" class="sg2-doc-apri" data-al-vai data-al-da="segreteria">Apri i documenti ›</button></div>`;
   } catch (e) { doc = ""; }
   // cosa ho capito, persona per persona
@@ -7683,7 +7692,7 @@ function segrFuori() {
 function sg2BollaHtml() {
   const bo = S.sg2Bolla; if (!bo) return "";
   const testo = bo.stato === "ascolto" ? esc(bo.testo || "🎤 Ti ascolto…") : bo.stato === "pensa" ? "…ci penso" : escNl(bo.testo || "");
-  return `<div class="sg2-bolla ${esc(bo.stato || "")}" role="status" aria-live="polite">${bo.domanda ? `<small>Tu: «${esc(bo.domanda)}»</small>` : ""}<p>${testo}</p>${bo.vai ? `<button type="button" class="sg2-b piccolo" data-sgr-vai-gov="${esc(bo.vai)}">Chiedilo alla governante</button>` : ""}${bo.stato === "detto" ? `<button type="button" class="sg2-bolla-x" data-sg2-bolla-via aria-label="Chiudi">✕</button>` : ""}</div>`;
+  return `<div class="sg2-bolla ${esc(bo.stato || "")}" role="status" aria-live="polite">${bo.domanda ? `<small>Tu: «${esc(bo.domanda)}»</small>` : ""}<p>${testo}</p>${bo.vai ? `<button type="button" class="sg2-b piccolo" data-sgr-vai-gov="${esc(bo.vai)}">${segrIco("chiedi")}Chiedilo alla governante</button>` : ""}${bo.stato === "detto" ? `<button type="button" class="sg2-bolla-x" data-sg2-bolla-via aria-label="Chiudi">${segrIco("x", "✕")}</button>` : ""}</div>`;
 }
 // parla: con la voce di Sofia se è accesa, se no con la voce del telefono (e il filmato «parla» intanto)
 function sg2Zitta() {
@@ -10580,7 +10589,7 @@ function cardStileCasa() {
   if (!proprietario()) return "";
   return `<section class="card come-si-vede">
     <h2>Come si vede l'app</h2>
-    <p class="muted small" style="margin:0 0 6px">Sette cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
+    <p class="muted small" style="margin:0 0 6px">Otto cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
     <h3>1. Il colore</h3>
     <div class="col-scelte">${COLORI_APP.map(k => `<button type="button" class="col-opt" aria-pressed="${coloreAttivo() === k.id}" data-colore-app="${k.id}"><i style="background:${k.g}"></i>${esc(k.nome)}</button>`).join("")}</div>
     <span class="small muted">Cambia il colore dei tasti e dei collegamenti. Tutto il resto resta com'è.</span>
@@ -10610,7 +10619,10 @@ function cardStileCasa() {
     <span class="small muted">Se parla mentre sei in un'altra schermata, esce grande in basso a destra finché parla. Un tocco su di lei la fa smettere.</span>
     <h3>7. Le icone dell'email</h3>
     <div class="ico-scelte">${[["l", "Lucide"], ["o", "Meno lucide"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${iconeSerie() === k}" data-icone-serie="${k}"><span class="ico-tre">${["pdf", "word", "foto"].map(n => `<img class="ico3d" src="all3d-${k}/${n}.webp" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
-    <span class="small muted">Le icone degli allegati e dei tasti nell'email. Lucide: bombate e brillanti. Meno lucide: più opache. Si cambiano quando vuoi.</span>
+    <span class="small muted">Le icone degli allegati e dei tasti (nell'email e nella Segreteria). Lucide: bombate e brillanti. Meno lucide: più opache. Si cambiano quando vuoi.</span>
+    <h3>8. I tasti della Segreteria</h3>
+    <div class="ico-scelte">${[["lucide", "Icone lucide"], ["matita", "A matita, come prima"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${segrTastiMatita() === (k === "matita")}" data-segr-tasti="${k}"><span class="ico-tre">${k === "matita" ? ["microfono", "matita", "telefono"].map(n => `<img class="ico-mat" src="mat-${n}.webp" alt="" width="240" height="240" decoding="async">`).join("") : ["chiedi", "matita", "cornetta"].map(n => `<img class="ico3d" src="${icoSrc(n)}" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
+    <span class="small muted">Parlale, Chiama, Fatto, Fotografa e gli altri tasti. Icone lucide: quelle di Gemini, grandi. A matita: i disegni di prima, nel tondo. Si cambia quando vuoi.</span>
   </section>`;
 }
 // L'umore della governante: guarda come sta la casa e lo dice in una riga (e si vede in faccia)
@@ -15149,7 +15161,7 @@ function presProposte() {
 function presGiorno(iso) { return `${L.GIORNI[L.giornoSettimana(iso)]} ${L.giornoDelMese(iso)}`; }
 function presPropRiga(x, mod = true) {
   return `<div class="sg2-r prop pres-prop"><b class="sg2-t">⏱️ ${esc(SIG(x.z))} · ${esc(presGiorno(x.iso))}: ${esc(testoOreTurno(x.M))} → ${esc(testoOreTurno(x.P))}</b><span class="sg2-x">${esc(presCap(x.perche.join("; ")))}. Conto ${esc(testoOreTurno(x.P))} (${eur(euroOre(x.P))} invece di ${eur(euroOre(x.M))})?</span>
-    ${mod ? `<button type="button" class="sg2-b verde pieno" data-pres-si="${esc(x.k)}">Sì, conto ${esc(testoOreTurno(x.P))}</button><div class="sg2-bt"><button type="button" class="sg2-b rosso" data-pres-no="${esc(x.k)}">No, lascio ${esc(testoOreTurno(x.M))}</button></div>` : ""}</div>`;
+    ${mod ? `<button type="button" class="sg2-b verde pieno" data-pres-si="${esc(x.k)}">${segrIco("spunta")}Sì, conto ${esc(testoOreTurno(x.P))}</button><div class="sg2-bt"><button type="button" class="sg2-b rosso" data-pres-no="${esc(x.k)}">${segrIco("x")}No, lascio ${esc(testoOreTurno(x.M))}</button></div>` : ""}</div>`;
 }
 function presPropPaghe(x) {
   return `<div class="pres-prop-paghe"><b>⚠ ${esc(presCap(x.perche.join("; ")))}.</b> Sofia propone di contare ${esc(testoOreTurno(x.P))} invece di ${esc(testoOreTurno(x.M))}.<span><button type="button" class="btnsm" data-pres-si="${esc(x.k)}">Sì, ${esc(testoOreTurno(x.P))}</button><button type="button" class="btnsm ghost" data-pres-no="${esc(x.k)}">No, lascio</button></span></div>`;
@@ -18747,7 +18759,9 @@ function collega() {
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile4", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
   document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
   document.querySelectorAll("button[data-salone]").forEach(b => b.onclick = () => { /* 1.0.4: solo i tasti (la casa ha anche lei data-salone) */ try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
-  document.querySelectorAll("[data-icone-serie]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_ICONE, b.dataset.iconeSerie); } catch (e) {} disegna(); toast(b.dataset.iconeSerie === "o" ? "Icone meno lucide" : "Icone lucide"); });   // 1.110.0
+  document.querySelectorAll("[data-icone-serie]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_ICONE, b.dataset.iconeSerie); } catch (e) {} disegna(); toast(b.dataset.iconeSerie === "o" ? "Icone meno lucide" : "Icone lucide"); });
+  // 1.112.0: i tasti della Segreteria, lucidi o a matita come prima (Michele: «dammi la possibilità di tornare indietro anche»)
+  document.querySelectorAll("[data-segr-tasti]").forEach(b => b.onclick = () => { try { if (b.dataset.segrTasti === "matita") localStorage.setItem("ricci_segr_tasti", "matita"); else localStorage.removeItem("ricci_segr_tasti"); } catch (e) {} applicaTema(); disegna(); toast(b.dataset.segrTasti === "matita" ? "Tasti della Segreteria: a matita, come prima" : "Tasti della Segreteria: icone lucide"); });   // 1.110.0
   document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
   document.querySelectorAll("[data-sofia-ver]").forEach(b => b.onclick = () => { if ((b.dataset.sofiaVer === "prima") === sofiaComEra()) return; try { localStorage.setItem(CHIAVE_SOFIA_VER, b.dataset.sofiaVer); } catch (e) {} toast(b.dataset.sofiaVer === "prima" ? nomeGov() + " com'era: un momento…" : nomeGov() + " con la spilla nuova: un momento…"); setTimeout(() => location.reload(), 700); });   // 1.74.2
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" && !alfaTela() ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
@@ -20585,7 +20599,7 @@ function segrAllegatiHtml(p, x) {
     if (!x.allegati || noto) return "";
     if (!paPronta()) return `<div class="sgf-all"><h4>${icoAll("file")}<span>${x.allegati === 1 ? "C'è un allegato" : `Ci sono ${x.allegati} allegati`}</span></h4><p class="sga-nota">Per vederli qui la posta dell'albergo va collegata: Altro → 📬 La posta dell'albergo.</p></div>`;
     return `<div class="sgf-all"><h4>${icoAll("file")}<span>${x.allegati === 1 ? "C'è un allegato" : `Ci sono ${x.allegati} allegati`}</span></h4>${st.errore ? `<p class="sga-nota">${esc(st.errore)}</p>
-      <button type="button" class="sgf-b allegati" data-segr-elenco="${esc(p.id)}">${segrDis("busta")}<span>↻ Riprova</span></button>` : `<p class="sga-nota">Prendo l'elenco dalla posta…</p>`}</div>`;
+      <button type="button" class="sgf-b allegati" data-segr-elenco="${esc(p.id)}">${segrTasto(icoAll("rileggi") + "<span>Riprova</span>", segrDis("busta") + "<span>↻ Riprova</span>")}</button>` : `<p class="sga-nota">Prendo l'elenco dalla posta…</p>`}</div>`;
   }
   const veri = tutti.filter(allegatoVero), immagini = tutti.filter(f => !allegatoVero(f));
   const letti = new Map((Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).filter(a => a && a.p != null).map(a => [String(a.p), a]));
@@ -20773,7 +20787,7 @@ function segrDomandaInVista() { setTimeout(() => { const d = document.getElement
 function segrDomandaHtml(p) {
   const id = p.id, righe = segrDomandeDi(id).slice(-8), ascolta = !!(segrRec && segrRec.id === id), pensa = S.segrPensa === id;
   const bolle = righe.map(m => m.chi === "io" ? `<div class="sgf-chat io"><small>Tu</small><span class="sgf-chat-t">${esc(m.testo)}</span></div>`
-    : `<div class="sgf-chat lei"><small>${esc(nomeGov())}</small><span class="sgf-chat-t">${escNl(m.testo)}</span>${m.vai ? `<button type="button" class="sgf-gov" data-sgf-gov="${esc(m.vai)}">Chiedilo alla governante</button>` : ""}</div>`).join("");
+    : `<div class="sgf-chat lei"><small>${esc(nomeGov())}</small><span class="sgf-chat-t">${escNl(m.testo)}</span>${m.vai ? `<button type="button" class="sgf-gov" data-sgf-gov="${esc(m.vai)}">${segrTasto(icoAll("chiedi"))}<span>Chiedilo alla governante</span></button>` : ""}</div>`).join("");
   const ora = ascolta ? `<div class="sgf-chat ascolto" role="status" aria-live="polite"><small>Ti ascolto… parla pure</small><span class="sgf-chat-t">${esc((S.segrAscolto && S.segrAscolto.testo) || "…")}</span></div>`
     : pensa ? `<div class="sgf-chat pensa" role="status"><small>${esc(nomeGov())}</small><span class="sgf-chat-t">…ci penso</span></div>` : "";
   const tasto = ascolta ? `<button type="button" class="sgf-chiedi ascolta" data-segr-chiedi="subito">${icoAll("mano")}<span>Ho finito di parlare</span></button>` : pensa ? "" : `<button type="button" class="sgf-chiedi" data-segr-chiedi="subito">${icoAll("chiedi")}<span>${righe.length ? "Chiedimi altro" : "Chiedimi una cosa"}</span></button>`;
