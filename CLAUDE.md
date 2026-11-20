@@ -219,9 +219,14 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
   quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
   nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da
-  #app come segrMini): i tre filmati, col dito si sposta, con due dita o l'angolino si allarga (88–300 px; posto e misura in
+  #app come segrMini): i tre filmati, col dito si sposta, con due dita o l'angolino si allarga (da 88 px fin quasi a tutto lo schermo, 1.111.0; posto e misura in
   `ricci_segr_pip`), un tocco = `sg2Mic` (se parla smette); la nuvoletta `#segrPipBolla`. «Sofia grande» e Indietro
   (`segrChiudiAperto`) la rimettono com'era. La Sofia grande coi filmati fermi intanto; il fantasmino `segrFuori` no.
+- Instagram nella Segreteria (1.111.0; sua: «metti nella segreteria quello che si può e il resto lo facciamo dopo ma finisci la
+  segreteria»): due tessere dopo i cassetti, «Instagram» (`S.segrIg = "ig"`: come sta Sofia influencer, il prossimo post, le
+  bozze con la foto) e «Foto da fare» (`"igf"`: le otto `SOC_FOTO` con «Fotografa», `capture`, o «dalla galleria»; salvano
+  con `socFoto`). Niente porta via dalla Segreteria; le impostazioni restano in Altro → Sofia influencer. Ancora fuori (dopo):
+  la Pagina Facebook, i messaggi privati di Instagram, Booking/Airbnb/Expedia.
   La Ciclovia (letto sul loro sito il 17/11/2026): le richieste arrivano per email, si accettano o si rifiutano entro 12 ore
   lavorative, i giorni si chiudono nel loro calendario; niente iCal, niente collegamenti. Chiudere i giorni e dire sì o no
   lo fa Michele sul loro sito: l'app mostra e porta lì, non lo fa al posto suo e non va automatizzato col mouse.
