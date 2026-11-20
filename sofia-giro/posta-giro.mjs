@@ -48,9 +48,16 @@ export function dataOraRoma(ts) {
 }
 
 // 1.41.0: l'elenco degli allegati (dalla casella 3): la «parte» per chiederlo, il nome, il tipo, quanto pesa
+// 1.41.1: le immagini piccole della firma (image001.png, Outlook-….png, i loghi, le iconcine) non sono allegati da leggere
+export const allegatoFirma = (f) => {
+  const n = String((f && f.n) || ""), t = String((f && f.t) || "").toLowerCase(), kb = Number(f && f.kb) || 0;
+  if (!(/^image\//.test(t) || /\.(png|gif|jpe?g|bmp|webp)$/i.test(n))) return false;
+  return kb <= 6 || (kb <= 60 && /^(image\d{1,4}|outlook-[\w-]+|logo[\w .-]*|firma[\w .-]*|signature[\w .-]*)\.(png|gif|jpe?g|bmp|webp)$/i.test(n));
+};
 export function filesDi(l) {
-  return (Array.isArray(l) ? l : []).filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && String(f.n || "").trim()).slice(0, 10)
-    .map(f => ({ p: String(f.p), n: String(f.n).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 120), t: String(f.t || "").toLowerCase().slice(0, 80), kb: Math.max(0, Math.round(Number(f.kb) || 0)) }));
+  return (Array.isArray(l) ? l : []).filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && String(f.n || "").trim())
+    .map(f => ({ p: String(f.p), n: String(f.n).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 120), t: String(f.t || "").toLowerCase().slice(0, 80), kb: Math.max(0, Math.round(Number(f.kb) || 0)) }))
+    .filter(f => !allegatoFirma(f)).slice(0, 10);
 }
 // quanti allegati ha una mail: la casella 3 dà l'elenco (senza le immagini piccole dentro il testo, come i loghi delle firme);
 // la casella di prima solo il numero di tutti i file

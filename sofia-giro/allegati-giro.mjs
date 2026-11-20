@@ -15,7 +15,7 @@
 import { inflateRawSync } from "node:zlib";
 import { chiediGemini } from "./lettura-giro.mjs";
 import { fogliExcelIsolati } from "./excel-isolato.mjs";   // l'Excel di fuori si apre in un lavoratore a parte
-import { CHAT_EMAIL, casellaPronta, chiediCasella } from "./posta-giro.mjs";
+import { CHAT_EMAIL, casellaPronta, chiediCasella, allegatoFirma } from "./posta-giro.mjs";
 
 export const MAX_MAIL = 3, MAX_FILE_MAIL = 5, MAX_KB = 10 * 1024, MAX_TENTATIVI = 3, MAX_TESTO = 6000;
 const GIORNO = 24 * 3600 * 1000;
@@ -126,7 +126,7 @@ export async function leggiAllegati({ db, gemini, adesso = new Date(), fetchFn =
     const gid = p.id.slice(6), prima = new Map((Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).filter(a => a && a.letto).map(a => [String(a.p), a]));
     const lista = []; let sbagli = 0;
     const oggetto = String(p.testo || "").split("\n")[0].replace(/^✉️\s*/, "").replace(/\s·\s📎.*$/, "");
-    for (const f of p.files.slice(0, MAX_FILE_MAIL)) {
+    for (const f of p.files.filter(x => !allegatoFirma(x)).slice(0, MAX_FILE_MAIL)) {   // 1.41.1: i loghi della firma no
       if (prima.has(String(f.p))) { lista.push(prima.get(String(f.p))); continue; }
       const base = { p: String(f.p), n: String(f.n || "").slice(0, 120), t: String(f.t || "").slice(0, 80), kb: Number(f.kb) || 0 };
       const tipo = tipoAllegato(f);
