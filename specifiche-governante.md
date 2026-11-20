@@ -3499,3 +3499,8 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - I tastoni della Segreteria (Arrivi, Partenze, Pulizie, Email, Arrivate, Ciclovia, Da fare tu, Ti propongo, Ho fatto io, Da sapere, e anche Instagram e Foto da fare) sono lucidi, ognuno col suo colore e la cornice d'oro, come le icone dei tasti. Delle 4 proposte di Gemini ha scelto la 1; viste le foto nella prova: «Sì, mettili».
   - I disegni sono nuovi, di Gemini, color avorio: si capiscono al primo sguardo (Arrivi e Partenze con la porta e la freccia che entra o esce).
   - Si torna ai disegni a matita quando vuoi: Altro → Come si vede l'app → «8. I tasti della Segreteria» → «A matita, come prima».
+- **1.113.1** (20/11, Michele, con la foto del telefono: «Però vedi c'è anche sotto una faccia di Sofia che non c'entra niente»):
+  - Nella Segreteria (stile Premium) giù a destra restava accesa la faccina di Sofia con «🎤 Parlale», anche con Sofia grande in cima o nel riquadrino. Adesso lì non c'è più: Sofia c'è già.
+  - Il perché: entrando dalla barra in basso la faccina partiva un attimo prima che la pagina nuova ci fosse, e poi non si spegneva più.
+  - Negli altri stili resta com'era: compare solo quando scendi giù nella pagina e Sofia non si vede.
+  - Viste le foto nella prova (prima e adesso): «Sì, mettila».

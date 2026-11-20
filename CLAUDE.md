@@ -266,6 +266,12 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   uguale in tutti i fotogrammi, il giro che finisce dove ricomincia). In testa alla Segreteria il palco (`.sg2-palco`): lei
   grande in mezzo, la nuvoletta con quello che dice, «🎤 Parlale» e «✍️ Scrivile». Il fantasmino (`segrFuori`) giù nella
   pagina c'è sempre: fermo il viso con «🎤 Parlale» (tocchi: torni su e ti ascolta), mentre parla è lei (tocchi: smette).
+  Solo negli altri stili: nello stile Premium (`#segrHero`) mai, Sofia c'è già, grande o nel riquadrino (1.113.1; sua: «c'è
+  anche sotto una faccia di Sofia che non c'entra niente»). Il perché: entrando dalla barra in basso `vai` fa
+  `S.vista = k; chiudiFoglio(); disegna();` e `chiudiFoglio` chiama `segrFuori` prima che la pagina nuova ci sia (niente
+  `.sg2-sofia`): la faccina partiva; `disegna` la toglieva, ma il doppio `requestAnimationFrame` le rimetteva «su» dopo e
+  il timer non la nascondeva più. Adesso conta l'ultima decisione (`f._vuoi`). Una figura nuova che entra e esce allo
+  stesso modo: la stessa cosa.
 - La Segreteria come la prima pagina (1.92.0; Michele, visto il disegno di Gemini: «la grafica e l'impaginazione… va benissimo
   così ma… la sua interfaccia deve essere uguale a quella di sofia governante che sta all'inizio dell'app… metti qualcosa di
   rosa, fai fare dei nuovi filmati dove… passa dal tablet al pc»). Nello stile Premium la testa della Segreteria è `#segrHero`:
