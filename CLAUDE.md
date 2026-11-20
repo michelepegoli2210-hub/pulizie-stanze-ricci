@@ -206,6 +206,22 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - Sofia sopra l'email (1.109.0; sua: «deve muoversi… soprattutto mi deve rispondere»): i 3 filmati della Segreteria; toccata
   o «🎤 Chiedimi una cosa» ascolta e risponde a voce sull'email e gli allegati (`segretariaSullEmail`: senza effetti
   nell'app, email e allegati a Gemini con `aCodici`); domande e risposte in memoria (`S.segrDomande`), non salvate.
+- Allegati più veloci e più chiari (1.110.0; sua: «troppo lenti», «non si aprono», «vedo male»): appena apri un'email i suoi
+  allegati si prendono in sottofondo (`segrPrendiPrima`, uno alla volta, prima i piccoli; coi dati del telefono meno) e restano
+  nel telefono (IndexedDB «ricci-allegati», `prendiAllegato`: mai chiesto due volte; 10 giorni, 150 MB); la casella si riprova
+  da sola due volte (`casellaAllegato`), la barra si riempie mentre arriva. Il registro `importazioni/diagnosi-allegati`
+  (ultime 30 righe: tipo, KB, secondi, errore, telefono; MAI nomi di file o contenuti) si vede in La posta dell'albergo.
+  PDF.js e le icone stanno nella cache `ricci-librerie-1` di sw.js, che resta tra le versioni. Nel visore «Scritto grande»
+  (il testo nero, 30 px; del PDF lo legge PDF.js) e «Leggimelo» (`segrParla(…, "allegato")`, `segrLeggeAll`).
+- Le icone 3D (1.110.0): disegnate da Gemini (la richiesta l'ha mandata Claude, e gliel'ha detto), avorio su un colore
+  profondo con la cornice d'oro; due serie di 24, `all3d-l/` lucide (bombate) e `all3d-o/` meno lucide, scelte in Come si vede
+  l'app (`CHIAVE_ICONE`). `icoAll(nome)`, `icoNomeFile`, `nomeTipoFile`. Tagliate dal foglio 4x2 con `taglia3d.py` (fuori dal repo).
+- La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
+  quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
+  nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da
+  #app come segrMini): i tre filmati, col dito si sposta, con due dita o l'angolino si allarga (88–300 px; posto e misura in
+  `ricci_segr_pip`), un tocco = `sg2Mic` (se parla smette); la nuvoletta `#segrPipBolla`. «Sofia grande» e Indietro
+  (`segrChiudiAperto`) la rimettono com'era. La Sofia grande coi filmati fermi intanto; il fantasmino `segrFuori` no.
   La Ciclovia (letto sul loro sito il 17/11/2026): le richieste arrivano per email, si accettano o si rifiutano entro 12 ore
   lavorative, i giorni si chiudono nel loro calendario; niente iCal, niente collegamenti. Chiudere i giorni e dire sì o no
   lo fa Michele sul loro sito: l'app mostra e porta lì, non lo fa al posto suo e non va automatizzato col mouse.
