@@ -3,12 +3,16 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.109.0";
+const VERSIONE = "1.110.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
 // e restano; quando un filmato cambia gli si cambia nome. FILMATI = quelli che l'app usa: gli altri si tolgono.
 const CACHE_FILM = "ricci-filmati-1";
+// 1.110.0: PDF.js e le icone degli allegati in una cache che resta da una versione all'altra (prima a ogni aggiornamento si
+// riscaricava PDF.js, quasi 1,5 MB, al primo PDF aperto: «troppo lenti»). Si prende dalla cache e si ricontrolla in sottofondo.
+const CACHE_LIB = "ricci-librerie-1";
+const LIB = /\/(pdfjs|all3d-[lo])\//;
 const FILMATI = ["./fisici-estate.mp4", "./cons-parla-spilla-giro5.mp4", "./cons-riposo-spilla-giro6.mp4", "./cons-parla-spilla-giro5-3d.webm", "./cons-riposo-spilla-giro6-3d.webm", "./cons-parla-intero.mp4", "./cons-riposo-calmo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr7-riposo-3d.webm", "./segr7-ascolta-3d.webm", "./segr7-parla-3d.webm", "./sofia-influencer.mp4", "./sofia-influencer-ferma.mp4", "./cons-parla-intero-3d.webm", "./cons-riposo-calmo-3d.webm", "./cons-parla-spilla-giro5-alfa.mp4", "./cons-riposo-spilla-giro6-alfa.mp4", "./cons-parla-intero-alfa.mp4", "./cons-riposo-calmo-alfa.mp4", "./capo-parla-alfa.mp4", "./capo-riposo-alfa.mp4", "./segr7-riposo-alfa.mp4", "./segr7-ascolta-alfa.mp4", "./segr7-parla-alfa.mp4"];   // 1.84.0: i gemelli per l'iPhone (si scaricano solo dove servono) · 1.90.0: i filmati con la spilla senza scatti (-fluido) · 1.91.0: il saluto, e senza i passaggi «da robot» (-giro) · 1.91.1: via lo sguardo di lato avanti e indietro e i fotogrammi fermi (-giro2) · 1.91.2: la spilla d'oro anche nel video del bacio (ferma: -giro3) · 1.92.0: Sofia segretaria col rosa (segr6) · 1.93.0: da ferma solo video che partono e finiscono nella posa della foto (ferma: -giro4) · 1.94.0: Sofia segretaria coi tre video veri (segr7); la Sofia di casa compressa senza il fotogramma chiave ogni due secondi (-giro5) · 1.95.0: da ferma il ritaglio senza i buchi sbagliati (-giro6) · 1.101.0: il saluto di Jarvis con lei · 1.102.0: lei che parla · 1.104.0: i filmati di Karen escono dal sito (solo nel suo telefono) · 1.105.0: il video di «Obiettivi fisici»
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
@@ -279,6 +283,16 @@ self.addEventListener("fetch", (e) => {
     // 0.82: i FILMATI di Sofia hanno una strada a parte (vedi rispostaVideo): si servono dalla cache
     // a pezzi (richieste "Range" del lettore video) e NON si riscaricano dalla rete a ogni giro.
     if (VIDEO.test(url.pathname)) { e.respondWith(rispostaVideo(req)); return; }
+    if (LIB.test(url.pathname)) {
+      e.respondWith((async () => {
+        const cache = await caches.open(CACHE_LIB);
+        const inCache = await cache.match(req, { ignoreSearch: true });
+        const dallaRete = fetch(req).then((r) => { if (r && r.ok) cache.put(req, r.clone()); return r; }).catch(() => null);
+        if (inCache) { e.waitUntil(dallaRete); return inCache; }
+        return (await dallaRete) || Response.error();
+      })());
+      return;
+    }
     // File dell'app: prima la cache (veloce e offline), poi la rete; la rete aggiorna la cache
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);

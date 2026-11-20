@@ -11007,3 +11007,146 @@ audio.av-media{min-height:56px}
 .av-b.av-telefono{min-height:64px;background:#2E6B34;color:#fff;font-size:21px}
 .av-b.av-posta{background:#fff;color:#16264A;border:2px solid #16264A}
 .av-dove{margin:0;padding:7px 14px;background:#EEF3FB;border-bottom:1px solid #C9D6EA;font-size:19px;line-height:1.4;overflow-wrap:anywhere}
+
+/* ----------------------------------------------------------------------------
+   1.110.0 · GLI ALLEGATI PIÙ CHIARI E PIÙ VELOCI, LE ICONE 3D DI GEMINI, SOFIA NEL RIQUADRINO (Michele, 20/11: «gli allegati
+   ho ancora troppa difficoltà ad aprirli» → «troppo lenti», «non si aprono», «vedo male»; «falle ancora ridisegnare da Gemini…
+   per i colori fai in maniera tale che sia chiarissimo tutto»; «quando poi dopo vado giù… tutta la pagina tutta riempita di
+   notifiche… il quadratino in alto a destra… movibile… che si può restringere, che si può allargare»)
+   ---------------------------------------------------------------------------- */
+/* le icone 3D: avorio su un colore profondo, la cornice d'oro */
+.ico3d{display:block;flex:none;width:48px;height:48px;object-fit:contain;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
+/* il foglio dell'email: carta chiara senza righe, lettere nere, i tasti col bordo blu scuro (si vedono anche senza occhiali) */
+.sheet .panel:has(.sge-foglio){background:#FFFDF8}
+.sge-foglio{background:#FFFDF8;background-image:none}
+.sge-foglio .sgf-leggi,.sge-foglio .sgf-chiedi{gap:12px;min-height:72px;padding:6px 16px 6px 10px;border:3px solid #16264A;border-radius:18px;color:#000;font-size:23px;line-height:1.25;box-shadow:0 3px 0 #16264A}
+.sge-foglio .sgf-leggi{background:#FFF3C4}
+.sge-foglio .sgf-chiedi{background:#E4ECFA}
+.sge-foglio .sgf-leggi.parla{background:#FADCDD}
+.sge-foglio .sgf-chiedi.ascolta{background:#D9F0D6}
+.sge-foglio .sgf-leggi:active,.sge-foglio .sgf-chiedi:active,.sge-foglio .sga-b:active{transform:translateY(3px);box-shadow:0 0 0 #16264A}
+.sge-foglio .sgf-leggi .ico3d,.sge-foglio .sgf-chiedi .ico3d{width:52px;height:52px}
+.sge-foglio .sgf-leggi span,.sge-foglio .sgf-chiedi span{flex:1 1 auto;text-align:left}
+.sge-foglio .sgf-all h4{display:flex;align-items:center;gap:10px;margin:10px 0 10px;font-size:23px;line-height:1.3;color:#000}
+.sge-foglio .sgf-all h4 .ico3d{width:44px;height:44px}
+.sge-foglio .sga{margin:0 0 14px}
+.sge-foglio .sga-b{gap:14px;min-height:88px;padding:10px 10px 10px 10px;border:3px solid #16264A;border-radius:18px;background:#fff;color:#000;box-shadow:0 3px 0 #16264A}
+.sge-foglio .sga-ico{display:block;font-size:0;line-height:0}
+.sge-foglio .sga-ico .ico3d{width:64px;height:64px}
+.sge-foglio .sga-n{flex:1 1 auto}
+.sge-foglio .sga-n b{font-size:21px;line-height:1.35;color:#000}
+.sge-foglio .sga-n small{font-size:19px;line-height:1.35;color:#1F2A44}
+.sge-foglio .sga-n small.sga-kb{color:#3A3A42}
+.sge-foglio .sga-vai{flex:none;margin:0 2px 0 auto;font-size:40px;line-height:1;font-weight:800;color:#16264A}
+.sge-foglio .sga-sofia,.sge-foglio .sga-nota{margin:8px 6px 0}
+@media (max-width:380px){.sge-foglio .sga-b{gap:10px;padding:8px}.sge-foglio .sga-ico .ico3d{width:52px;height:52px}.sge-foglio .sga-vai{font-size:34px}}
+/* Sofia piccola sopra l'email: nel nome la sua icona */
+.segr-mini .sgm-nome .ico3d{width:26px;height:26px}
+
+/* il visore: carta chiara, i tasti grandi col bordo blu scuro */
+.av{background:#FFFDF8;color:#000}
+.av-testa{gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px}
+.av-chiudi,.av-scarica{display:inline-flex;align-items:center;gap:8px;min-height:60px;padding:0 18px 0 6px;border:3px solid #16264A;border-radius:30px;font-family:inherit;font-size:21px;font-weight:800;text-decoration:none;cursor:pointer;box-shadow:0 3px 0 #16264A}
+.av-chiudi{background:#fff;color:#000}
+.av-scarica{background:#16264A;color:#fff}
+.av-chiudi:active,.av-scarica:active,.av-st:active,.av-b:active{transform:translateY(3px);box-shadow:none}
+.av-chiudi .ico3d,.av-scarica .ico3d{width:46px;height:46px}
+.av-nome{display:flex;align-items:center;gap:12px;padding:10px 14px;font-size:21px;line-height:1.3;color:#000}
+.av-nome .ico3d{width:54px;height:54px}
+.av-nome span{min-width:0;overflow-wrap:anywhere}
+.av-strumenti{display:flex;gap:10px;padding:10px 12px 12px;background:#fff;border-bottom:1px solid #E2DED5}
+.av-st{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:68px;padding:4px 10px 4px 6px;border:3px solid #16264A;border-radius:18px;background:#FFF3C4;color:#000;font-family:inherit;font-size:20px;font-weight:800;line-height:1.15;cursor:pointer;box-shadow:0 3px 0 #16264A;-webkit-tap-highlight-color:transparent}
+.av-st.voce{background:#E4ECFA}
+.av-st.su{background:#16264A;color:#fff}
+.av-st.parla{background:#FADCDD}
+.av-st:disabled{opacity:.6}
+.av-st .ico3d{width:48px;height:48px}
+.av-st span{text-align:left}
+.av-sofia{color:#000}
+/* nel visore le lettere di scuola dell'email (Andika), in grassetto e nere */
+.av-doc,.av-testo,.av-mail,.av-slide,.av-tab,.av-riga,.av-zip,.av-nota,.av-errore,.av-attesa,.av-pagine,.av-dove,.av-sofia,.av-letto,.av-arrivo,.avg-testo,.avg-sofia,.avg-niente,.av-nome,.av-strumenti,.av-testa{font-family:"Andika","Atkinson Hyperlegible Next",system-ui,sans-serif}
+.av-doc,.av-doc *,.av-testo,.av-mail,.av-mail *,.av-slide,.av-slide *,.av-riga *,.av-tab td,.av-tab th,.av-figlio-n b{color:#000;font-weight:700}
+.av-doc,.av-testo,.av-mail{font-size:20px}
+.av-corpo{padding:12px 12px 96px}
+/* lo scritto grande: le lettere enormi, nere su bianco */
+.av-grande{display:block}
+.avg-sofia{margin:0 0 14px;padding:12px 14px;border:3px solid #E3AD3A;border-radius:14px;background:#FFF4D6;font-size:24px;line-height:1.5;color:#000}
+.avg-testo{padding:16px 16px 20px;border:3px solid #16264A;border-radius:14px;background:#fff;color:#000;font-size:30px;line-height:1.55;font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere;-webkit-user-select:text;user-select:text}
+.avg-niente{margin:10px 4px;font-size:24px;line-height:1.5;color:#000}
+/* ＋ e － per ingrandire: in basso a destra, sopra al foglio, sempre a portata di dito */
+.av-zoom{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:41;display:flex;flex-direction:column;gap:12px}
+.av-zoom button{width:66px;height:66px;border:3px solid #16264A;border-radius:50%;background:#fff;color:#000;font-size:36px;font-weight:800;line-height:1;box-shadow:0 4px 14px rgba(0,0,0,.28);cursor:pointer}
+.av-zoom button:disabled{opacity:.35}
+/* mentre arriva: la barra che si riempie */
+.av-arrivo{padding:28px 8px 10px}
+.av-arrivo .av-attesa{margin:0 0 14px;font-size:22px;font-weight:700;text-align:center}
+.av-barra{height:26px;border:3px solid #16264A;border-radius:14px;background:#EFE9DD;overflow:hidden}
+.av-barra i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#2E6B34,#4FA35A);transition:width .35s ease}
+.av-arrivo-q{margin:12px 0 0;font-size:21px;font-weight:700;text-align:center;color:#2E6B34}
+/* i tasti nel visore, con l'icona */
+.av-b{gap:10px;min-height:64px;font-size:21px}
+.av-b .ico3d{width:46px;height:46px}
+.av-b.av-telefono{background:#2E6B34;color:#fff}
+.av-b.av-posta{background:#fff;color:#16264A;border:3px solid #16264A}
+.av-errore{font-size:21px;font-weight:700}
+.av-nota{font-size:20px}
+.av-figlio{min-height:76px;border:3px solid #16264A}
+.av-figlio-ico{font-size:0;line-height:0}
+.av-figlio-ico .ico3d{width:56px;height:56px}
+
+/* Altro → Come si vede l'app → 7. Le icone dell'email: le due serie, con tre icone di prova */
+.ico-scelte{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 6px}
+.ico-opt{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:52px;padding:10px 6px 10px;border:2px solid var(--line,#DCD5C7);border-radius:16px;background:#fff;color:#1C1917;font:inherit;font-size:19px;font-weight:700;cursor:pointer}
+.ico-opt[aria-pressed="true"]{border:3px solid #16264A;background:#FFF8E6;box-shadow:0 3px 0 #16264A}
+.ico-opt .ico-tre{display:flex;gap:4px}
+.ico-opt .ico3d{width:44px;height:44px}
+
+/* La posta dell'albergo → «Come sono andati gli allegati» (chiusa) */
+.diag-all{margin:14px 0 0;border:2px solid #DCD5C7;border-radius:14px;background:#fff}
+.diag-all summary{min-height:52px;padding:12px 14px;font-size:19px;font-weight:700;cursor:pointer}
+.diag-all ol{margin:0;padding:0 14px 12px 34px}
+.diag-all li{margin:0 0 8px;font-size:18px;line-height:1.45}
+.diag-all li.ko{color:#9A2B1E}
+.diag-all .diag-nota{margin:0;padding:0 14px 12px;font-size:17px;color:#55555E}
+
+/* ----------------------------------------------------------------------------
+   la Segreteria: scendendo, le notifiche a pagina intera; Sofia nel riquadrino che si sposta e si allarga col dito
+   ---------------------------------------------------------------------------- */
+body.premium #segrHero.notizie-piene:not(.nuvola-aperta):not(.msg-aperto){--nv-top:10px;--nv-alto:calc(var(--h-casa) - 27px)}
+body.premium #segrHero.notizie-piene .casa-card,body.premium #segrHero.notizie-piene .casa-lato,body.premium #segrHero.notizie-piene .casa-arco,
+body.premium #segrHero.notizie-piene .casa-velo{visibility:hidden}
+body.premium #segrHero.notizie-piene .casa-nuvola .casa-nascondi{display:none !important}
+#segrHero .segr-piena-via{display:none}
+body.premium #segrHero.notizie-piene .segr-piena-via{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:5;width:max-content;min-height:56px;margin:0 0 6px;padding:0 18px 0 8px;
+  border:3px solid #16264A;border-radius:28px;background:#fff;color:#000;font-family:"Andika","Atkinson Hyperlegible Next",system-ui,sans-serif;font-size:20px;font-weight:700;
+  box-shadow:0 3px 0 #16264A,0 8px 18px -8px rgba(15,23,42,.4);cursor:pointer;-webkit-tap-highlight-color:transparent}
+body.premium #segrHero.notizie-piene.pip-a-sinistra .segr-piena-via{margin-left:auto}
+body.premium #segrHero.notizie-piene .segr-piena-via .spv-su{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#16264A;color:#fff;font-size:24px;line-height:1}
+/* il riquadrino: come nelle videochiamate */
+.segr-pip{position:fixed;z-index:18;left:0;top:0;width:118px;margin:0;padding:0;border:3px solid #16264A;border-radius:22px;background:radial-gradient(circle at 50% 28%,#FFF8EE 0,#F6DCDD 100%);
+  overflow:hidden;box-shadow:0 10px 24px -8px rgba(15,23,42,.5);touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;-webkit-tap-highlight-color:transparent}
+.segr-pip[hidden]{display:none}
+.segr-pip:focus-visible{outline:4px solid #F2C14E;outline-offset:2px}
+.segr-pip .pip-fig{position:relative;display:block;width:100%;aspect-ratio:3/5;overflow:hidden;pointer-events:none}
+.segr-pip .pip-v{position:absolute;left:0;top:-6%;width:100%;height:auto;max-width:none;opacity:0;transition:opacity .45s ease}
+.segr-pip .pip-v.su{opacity:1}
+.segr-pip .pip-nome{display:flex;align-items:center;justify-content:center;gap:4px;height:34px;padding:0 4px 0 24px;background:rgba(255,250,240,.97);border-top:2px solid #16264A;color:#000;
+  font-family:"Andika","Atkinson Hyperlegible Next",system-ui,sans-serif;font-size:18px;font-weight:700;line-height:1;white-space:nowrap;overflow:hidden;pointer-events:none}
+.segr-pip .pip-ico{width:26px;height:26px}
+.segr-pip .pip-tira{position:absolute;left:0;bottom:0;width:40px;height:40px;pointer-events:auto;cursor:nesw-resize;
+  background:linear-gradient(225deg,transparent 0 46%,#16264A 46% 54%,transparent 54% 62%,#16264A 62% 70%,transparent 70%)}
+.segr-pip.parla{box-shadow:0 0 0 5px #F2C14E,0 10px 24px -8px rgba(15,23,42,.5);animation:segrPipParla 1.2s ease-in-out infinite}
+.segr-pip.ascolta{box-shadow:0 0 0 5px #5FAF64,0 10px 24px -8px rgba(15,23,42,.5);animation:segrPipAscolta 1.4s ease-in-out infinite}
+@keyframes segrPipParla{50%{box-shadow:0 0 0 9px rgba(242,193,78,.5),0 10px 24px -8px rgba(15,23,42,.5)}}
+@keyframes segrPipAscolta{50%{box-shadow:0 0 0 9px rgba(95,175,100,.5),0 10px 24px -8px rgba(15,23,42,.5)}}
+@media (prefers-reduced-motion:reduce){.segr-pip.parla,.segr-pip.ascolta{animation:none}}
+/* la sua nuvoletta: quello che sente, «…ci penso», quello che risponde */
+.pip-bolla{position:fixed;z-index:18;overflow:auto;overscroll-behavior:contain;padding:0;border:3px solid #16264A;border-radius:18px;background:#FFFDF8;box-shadow:0 10px 24px -8px rgba(15,23,42,.45);
+  font-family:"Andika","Atkinson Hyperlegible Next",system-ui,sans-serif;color:#000}
+.pip-bolla[hidden]{display:none}
+.pip-bolla .sg2-bolla{position:relative;margin:0;padding:12px 44px 12px 14px;border:0;border-radius:0;background:none;box-shadow:none}
+.pip-bolla .sg2-bolla::before,.pip-bolla .sg2-bolla::after{display:none}
+.pip-bolla .sg2-bolla small{display:block;margin:0 0 4px;font-size:18px;line-height:1.4;color:#3A3A42}
+.pip-bolla .sg2-bolla p{margin:0;font-size:21px;line-height:1.5;font-weight:700;color:#000}
+.pip-bolla .sg2-bolla-x{position:absolute;top:6px;right:6px;width:40px;height:40px;border:2px solid #16264A;border-radius:50%;background:#fff;color:#000;font-size:20px;line-height:1;cursor:pointer}
+.pip-bolla .sg2-b{margin:10px 0 0;min-height:52px;font-size:19px}
