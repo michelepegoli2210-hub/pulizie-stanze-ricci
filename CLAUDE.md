@@ -225,6 +225,9 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   GRANDI (sue, viste le foto: «Sì, ma più grandi» → «Ancora più grandi» → «Sì, mettile così»): 72-88 px sui telefoni, 62-76
   sotto i 390 px; nei tasti a metà riga l'icona sopra e la parola sotto. Non rimpicciolirle. Nelle icone tagliate dalla
   riga di sotto del foglio di Gemini può restare in cima l'ombra della tessera di sopra: `ripulisci-sopra.py` (fuori dal repo).
+  Si torna ai disegni a matita di prima (sua: «comunque dammi la possibilità di tornare indietro anche»): Altro → Come si vede
+  l'app → «8. I tasti della Segreteria» → «A matita, come prima» (`ricci_segr_tasti` = "matita" nel telefono, `segrTastiMatita`,
+  `segrTasto(nuovo, vecchio)`; il CSS nuovo vale solo con `body.segr-lucidi`). Un tasto nuovo della Segreteria: tutte e due.
 - La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
   quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
   nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da

@@ -3494,3 +3494,4 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Nella Segreteria i tasti hanno le icone lucide di Gemini, come gli allegati: Parlale, Scrivile, Ascolta, Chiama, Scrivi, Documento, Fatto, Ricordami, Sì, Cambia, No, Annulla, Perché?, Fotografa, Inquadra documento, le email. Gemini ne ha fatte 14 nuove, lucide e meno lucide (si sceglie in Come si vede l'app).
   - Grandi: viste le foto, «Sì, ma più grandi», poi «Ancora più grandi», poi «Sì, mettile così». In Parlale, Scrivile, Chiama e Scrivi l'icona sta sopra e la parola sotto.
   - Le tessere grandi (Oggi, Prenotazioni, i cassetti, Instagram) restano a matita.
+  - Si torna indietro quando vuoi (Michele: «comunque dammi la possibilità di tornare indietro anche»): Altro → Come si vede l'app → «8. I tasti della Segreteria» → «A matita, come prima». Per rimettere le icone: «Icone lucide».
