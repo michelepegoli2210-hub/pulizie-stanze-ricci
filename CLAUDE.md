@@ -36,6 +36,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   «Sofia social», portfolio business «Le Stanze di Ricci», Instagram sofialestanzediricci come Tester di Instagram): non
   comincia con IG, non scade, va su graph.facebook.com (`FB`, `unificata`, `me/assigned_instagram_accounts`). La genera e
   la incolla solo Michele.
+  Il 20/11/2026 Meta ha limitato il portfolio business (niente inserzioni né gruppi di pubblico) perché «creato o usato con
+  un'automazione»: il giorno prima molti clic sui siti di Meta li aveva fatti Claude dal Chrome di Michele. Da allora sui siti
+  di Meta (Facebook, Instagram, Meta for Developers, Business) clicca SOLO Michele, guidato con le figure; niente account o
+  portfolio nuovi per aggirare il blocco. La revisione, se un giorno serve la pubblicità, la chiede lui («Stato dell'account»).
 - Niente foto finte dell'albergo fatte con l'IA; niente loghi o marchi di altri nell'app; la Sofia di prima (il viso
   vecchio) non deve più comparire.
 
