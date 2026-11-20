@@ -3495,3 +3495,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Grandi: viste le foto, «Sì, ma più grandi», poi «Ancora più grandi», poi «Sì, mettile così». In Parlale, Scrivile, Chiama e Scrivi l'icona sta sopra e la parola sotto.
   - Le tessere grandi (Oggi, Prenotazioni, i cassetti, Instagram) restano a matita.
   - Si torna indietro quando vuoi (Michele: «comunque dammi la possibilità di tornare indietro anche»): Altro → Come si vede l'app → «8. I tasti della Segreteria» → «A matita, come prima». Per rimettere le icone: «Icone lucide».
+- **1.113.0** (20/11, Michele: «concentriamoci… su quei tastoni, quelli più importanti… fammi fare delle proposte da Gemini e vediamo che riusciamo a ricavarci sopra»):
+  - I tastoni della Segreteria (Arrivi, Partenze, Pulizie, Email, Arrivate, Ciclovia, Da fare tu, Ti propongo, Ho fatto io, Da sapere, e anche Instagram e Foto da fare) sono lucidi, ognuno col suo colore e la cornice d'oro, come le icone dei tasti. Delle 4 proposte di Gemini ha scelto la 1; viste le foto nella prova: «Sì, mettili».
+  - I disegni sono nuovi, di Gemini, color avorio: si capiscono al primo sguardo (Arrivi e Partenze con la porta e la freccia che entra o esce).
+  - Si torna ai disegni a matita quando vuoi: Altro → Come si vede l'app → «8. I tasti della Segreteria» → «A matita, come prima».

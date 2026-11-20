@@ -228,6 +228,12 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   Si torna ai disegni a matita di prima (sua: «comunque dammi la possibilità di tornare indietro anche»): Altro → Come si vede
   l'app → «8. I tasti della Segreteria» → «A matita, come prima» (`ricci_segr_tasti` = "matita" nel telefono, `segrTastiMatita`,
   `segrTasto(nuovo, vecchio)`; il CSS nuovo vale solo con `body.segr-lucidi`). Un tasto nuovo della Segreteria: tutte e due.
+- I tastoni della Segreteria lucidi con l'oro (1.113.0; sua: «concentriamoci… su quei tastoni… fammi fare delle proposte da
+  Gemini»; delle 4 proposte di Gemini ha scelto la «1»): ogni tastone (Oggi, Prenotazioni, I miei cassetti, Instagram) è una
+  tessera lucida del suo colore profondo con la cornice d'oro, fatta col CSS (`--l1`/`--l2`, `body.segr-lucidi`; con le icone
+  «meno lucide» anche i tastoni sono più satinati, `body.icone-opache`). Il disegno avorio è una sagoma di Gemini
+  (`tastoni/*.webp`, 600 px; `segrTessera(k, mat)`; tagliate con `taglia-pitto.py`, fuori dal repo). Numeri e parole
+  restano quelli veri, color avorio. «A matita, come prima» rimette anche i tastoni com'erano.
 - La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
   quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
   nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da
