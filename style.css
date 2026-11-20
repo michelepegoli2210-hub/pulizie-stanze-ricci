@@ -10933,3 +10933,16 @@ body.con-vista{overflow:hidden}
 .sge-foglio .sgf-testo,.sge-foglio .sgf-sofia p,.sge-foglio .sga-sofia,.sge-foglio .sgf-da b,.sge-foglio .sgf-ogg,.sge-foglio .sga-n b,.sge-foglio .sgf-leggi,
 #segrHero .sge .sge-ante,#segrHero .sg2-r .sg2-t,#segrHero .sgh .of-testo,#segrHero .sgh .of-fai-t{color:#000}
 .sge-foglio .sgf-da small,.sge-foglio .sgf-nota,.sge-foglio .sga-n small,.sge-foglio .sga-nota{color:#3A3A42}
+
+/* ----------------------------------------------------------------------------
+   1.108.3 · SOFIA SEGRETARIA PIÙ LUNGA (Michele, 20/11: «Sofia fantasmino deve essere più lunghetto e si deve vedere che è
+   Sofia segretaria»): sopra l'email, in alto a destra, la segretaria intera, dalla testa alla scrivania (la giacca, la cuffia, il
+   tablet, il campanello), e sotto il suo nome. Il foglio dell'email lascia in alto un po' più di posto per lei (160 px).
+   ---------------------------------------------------------------------------- */
+.sheet .panel:has(.sge-foglio.con-sofia){height:calc(100dvh - 160px);max-height:calc(100dvh - 160px)}
+.segr-mini{width:100px;height:166px;border-radius:20px 16px 22px 15px/16px 22px 15px 20px}
+.segr-mini .sgm-fig video,.segr-mini .sgm-fig img{left:0;top:-12px;width:100%;height:auto;transform:none}
+.segr-mini .sgm-nome{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:4px;height:32px;
+  background:rgba(255,250,240,.96);border-top:2px solid #26262B;color:#26262B;font-family:"Andika","Atkinson Hyperlegible Next",sans-serif;
+  font-weight:700;font-size:19px;line-height:1;pointer-events:none}
+.segr-mini .sgm-nome span{font-size:16px}

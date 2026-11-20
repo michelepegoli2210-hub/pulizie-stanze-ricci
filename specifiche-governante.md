@@ -3473,3 +3473,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Dove c'è tanto da leggere (l'email intera, le righe di Sofia, le email e i cassetti della Segreteria) le lettere sono più grandi.
   - I nomi, gli oggetti e i titoli sono in grassetto.
 - **1.108.2** (20/11): nella Segreteria e nelle email le lettere di scuola sono anche più nere (in grassetto, inchiostro nero) dove c'è tanto da leggere.
+- **1.108.3 + giro 1.41.1** (20/11, Michele: «gli allegati ancora non si aprono… Sofia fantasmino deve essere più lunghetto e si deve vedere che è Sofia segretaria»):
+  - Nelle email arrivate prima, l'elenco degli allegati arriva da solo appena apri l'email (niente più tasto «Vedi gli allegati»).
+  - Se l'«allegato» era solo il logo della firma, lo dice: «Nessun allegato da aprire». Le immagini piccole della firma non compaiono più tra gli allegati e Sofia non le legge.
+  - In alto a destra c'è Sofia segretaria intera (con la giacca, la cuffia, il tablet e il campanello) e sotto il suo nome.

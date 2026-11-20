@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.108.2";
+export const VERSIONE = "1.108.3";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -7147,7 +7147,7 @@ function foglioSegrEmail(f) {
   const tagliata = x.corpo.length >= 1780;
   // 1.95.0: un'email di prenotazione dice entro quando rispondere e ha il tasto per aprire il sito da cui viene
   const pren = L.emailPrenotazione({ chi: p.chi, dominio: p.dominio, oggetto: x.oggetto, testo: x.corpo }), entro = pren ? segrPrenEntro({ p, x, c: pren }) : null, can = pren ? L.canale(pren.canale) : null;
-  const legge = segrLegge === p.id && (voceInCorso || sg2ParlaTel), letta = !!(S.segrLette || {})[p.id], nAll = segrFilesDi(p).length || x.allegati;   // 1.108.0
+  const legge = segrLegge === p.id && (voceInCorso || sg2ParlaTel), letta = !!(S.segrLette || {})[p.id], nAll = segrElencoNoto(p) ? segrFilesDi(p).length : x.allegati;   // 1.108.0
   return `<div class="sge-foglio con-sofia">
     <p class="sgf-da">${segrDis("lettera")}<span><b>${esc(p.chi || "?")}</b><small>${esc(quando)}${nAll ? ` · ${nAll} ${nAll === 1 ? "allegato" : "allegati"}` : ""}</small></span></p>
     <h3 class="sgf-ogg">${esc(x.oggetto)}</h3>
@@ -20381,25 +20381,37 @@ function mimeSicuro(tipo, mime) {
 }
 const primaMaiuscola = (s) => { const x = String(s || "").trim(); return x ? x.charAt(0).toUpperCase() + x.slice(1) : ""; };
 const pesoFile = (kb) => { const k = Math.max(1, Math.round(Number(kb) || 0)); return k < 1024 ? `${k} KB` : `${(k / 1024).toFixed(1).replace(".", ",")} MB`; };
-function segrFilesDi(p) {
+// 1.108.3: le immagini piccole della firma (image001.png, Outlook-….png, i loghi, le iconcine) non sono allegati da aprire
+const allegatoFirma = (f) => {
+  const n = String((f && f.n) || ""), t = String((f && f.t) || "").toLowerCase(), kb = Number(f && f.kb) || 0;
+  if (!(/^image\//.test(t) || /\.(png|gif|jpe?g|bmp|webp)$/i.test(n))) return false;
+  return kb <= 6 || (kb <= 60 && /^(image\d{1,4}|outlook-[\w-]+|logo[\w .-]*|firma[\w .-]*|signature[\w .-]*)\.(png|gif|jpe?g|bmp|webp)$/i.test(n));
+};
+function segrTuttiFiles(p) {
   const l = Array.isArray(p && p.files) && p.files.length ? p.files : ((S.segrElenco || {})[p && p.id] || []);
   return l.filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && f.n);
 }
+function segrFilesDi(p) { return segrTuttiFiles(p).filter(f => !allegatoFirma(f)); }
+// l'elenco vero degli allegati c'è (dal giro o chiesto alla casella), anche se è vuoto
+const segrElencoNoto = (p) => !!((Array.isArray(p && p.files) && p.files.length) || Array.isArray((S.segrElenco || {})[p && p.id]));
 function segrAllegatiHtml(p, x) {
-  const files = segrFilesDi(p), n = files.length || x.allegati;
-  if (!n) return "";
-  if (!files.length) {   // le email di prima: l'elenco lo dà la casella quando lo chiedi
+  const noto = segrElencoNoto(p), tutti = segrTuttiFiles(p), files = tutti.filter(f => !allegatoFirma(f)), firme = tutti.length - files.length;
+  if (!noto) {   // 1.108.3: le email di prima: l'elenco lo chiedo da sola alla casella, appena apri l'email
+    if (!x.allegati) return "";
     const st = (S.segrElencoStato || {})[p.id] || {};
-    return `<div class="sgf-all"><h4>📎 ${n === 1 ? "C'è un allegato" : `Ci sono ${n} allegati`}</h4>${st.errore ? `<p class="sga-nota">${esc(st.errore)}</p>` : ""}
-      <button type="button" class="sgf-b allegati" data-segr-elenco="${esc(p.id)}"${st.carica ? " disabled" : ""}>${segrDis("busta")}<span>${st.carica ? "Li sto prendendo…" : "Vedi gli allegati"}</span></button></div>`;
+    if (!paPronta()) return `<div class="sgf-all"><h4>📎 ${x.allegati === 1 ? "C'è un allegato" : `Ci sono ${x.allegati} allegati`}</h4><p class="sga-nota">Per vederli qui la posta dell'albergo va collegata: Altro → 📬 La posta dell'albergo.</p></div>`;
+    if (!st.carica && !st.errore) setTimeout(() => { const s2 = (S.segrElencoStato || {})[p.id] || {}; if (!s2.carica && !s2.errore && !segrElencoNoto(p)) segrElenco(p.id); }, 0);
+    return `<div class="sgf-all"><h4>📎 ${x.allegati === 1 ? "C'è un allegato" : `Ci sono ${x.allegati} allegati`}</h4>${st.errore ? `<p class="sga-nota">${esc(st.errore)}</p>
+      <button type="button" class="sgf-b allegati" data-segr-elenco="${esc(p.id)}">${segrDis("busta")}<span>↻ Riprova</span></button>` : `<p class="sga-nota">Prendo l'elenco dalla posta…</p>`}</div>`;
   }
+  if (!files.length) return x.allegati || firme ? `<div class="sgf-all"><h4>📎 Nessun allegato da aprire</h4><p class="sga-nota">C'era solo ${firme > 1 || x.allegati > 1 ? "qualche immagine" : "un'immagine"} dentro l'email (per esempio il logo della firma).</p></div>` : "";
   const letti = new Map((Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).filter(a => a && a.p != null).map(a => [String(a.p), a]));
   return `<div class="sgf-all"><h4>📎 ${files.length === 1 ? "L'allegato" : `Gli allegati (${files.length})`}</h4>${files.map(f => {
     const a = letti.get(String(f.p)), tipo = tipoAllegatoApp(f);
     const sofia = a && a.letto && a.riassunto ? `<p class="sga-sofia"><b>Sofia:</b> ${esc(a.riassunto)}</p>`
       : a && !a.letto ? `<p class="sga-nota">${esc(primaMaiuscola(a.perche))}</p>` : p.allegatiStato === "da-leggere" ? `<p class="sga-nota">${esc(nomeGov())} lo sta leggendo…</p>` : "";
     return `<div class="sga"><button type="button" class="sga-b" data-segr-allegato="${esc(p.id)}|${esc(f.p)}" aria-label="Apri l'allegato ${esc(f.n)}"><span class="sga-ico" aria-hidden="true">${AL_ICO[tipo] || "📎"}</span><span class="sga-n"><b>${esc(f.n)}</b><small>${esc(pesoFile(f.kb))} · tocca per aprirlo</small></span></button>${sofia}</div>`;
-  }).join("")}</div>`;
+  }).join("")}${firme ? `<p class="sga-nota">Nell'email c'${firme === 1 ? "è anche un'immagine piccola" : `erano anche ${firme} immagini piccole`} della firma: non le metto qui.</p>` : ""}</div>`;
 }
 // quello che legge Sofia: chi scrive, l'oggetto, il testo (senza indirizzi e link), cosa c'è negli allegati
 function segrTestoDaLeggere(p) {
@@ -20407,7 +20419,7 @@ function segrTestoDaLeggere(p) {
   const pulisci = (s) => String(s || "").replace(/https?:\/\/\S+/g, " un collegamento ").replace(/\bwww\.\S+/g, " un sito ").replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, " un indirizzo email ")
     .replace(/[*_#>|~=\-]{3,}/g, " ").replace(/\s+/g, " ").trim();
   let t = `Email da ${p.chi || "qualcuno"}. ${x.oggetto === "(senza oggetto)" ? "Senza oggetto." : `Oggetto: ${x.oggetto}.`} ${pulisci(x.corpo)}`;
-  const files = segrFilesDi(p), n = files.length || x.allegati, letti = Array.isArray(p.allegatiLetti) ? p.allegatiLetti : [];
+  const files = segrFilesDi(p), n = segrElencoNoto(p) ? files.length : x.allegati, letti = (Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).filter(f => f && !allegatoFirma(f));
   if (n) t += ` ${n === 1 ? "C'è un allegato." : `Ci sono ${n} allegati.`}`;
   const nome = (s) => String(s || "").replace(/\.[a-z0-9]{1,5}$/i, "").replace(/[_-]+/g, " ").trim();
   for (const a of letti) t += a.letto && a.riassunto ? ` Nell'allegato ${nome(a.n)}: ${a.riassunto}` : a.n ? ` L'allegato ${nome(a.n)} non l'ho letto: ${String(a.perche || "").replace(/:.*$/, "")}.` : "";
@@ -20458,7 +20470,7 @@ function segrMini() {
   if (el && (el.dataset.rit || "") !== (rit ? "1" : "")) { el.remove(); el = null; }
   if (!el) {
     el = document.createElement("button"); el.type = "button"; el.id = "segrMini"; el.className = "segr-mini"; el.dataset.rit = rit ? "1" : ""; el.setAttribute("data-segr-leggi", "");
-    el.innerHTML = `<span class="sgm-fig">${rit ? `<video src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`}</span><span class="sgm-onda" aria-hidden="true">🔊</span>`;
+    el.innerHTML = `<span class="sgm-fig">${rit ? `<video src="${FILM_SEGR.parla}" poster="${FILM_SEGR.poster}" muted playsinline loop preload="auto"></video>` : `<img src="${FILM_SEGR.poster}" alt="">`}</span><span class="sgm-nome"><span aria-hidden="true">🔊</span> Sofia</span>`;
     const v = el.querySelector("video");
     if (v) v.addEventListener("error", () => { if (v.dataset.ripiego) return; v.dataset.ripiego = "1"; v.removeAttribute("src"); try { v.load(); } catch (e) {} }, { once: true });
     document.body.appendChild(el);
