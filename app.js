@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.113.0";
+export const VERSIONE = "1.113.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -7668,8 +7668,12 @@ function segrFuori() {
   let f = document.getElementById("segrFuori");
   let vuoi = false;
   const parla = !!(voceInCorso || sg2ParlaTel);
-  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && !segrPiena && !sg2TestaInVista() && !document.querySelector(".sheet")); } catch (e) {}   // 1.110.0: col riquadrino no
-  if (!vuoi) { if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (f.classList.contains("su")) return; f.hidden = true; f.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); }, 360); } return; }
+  // 1.113.1 (Michele, 20/11: «c'è anche sotto una faccia di Sofia che non c'entra niente»): nello stile Premium mai, Sofia c'è
+  // già (grande in cima o nel riquadrino); e conta l'ultima decisione (f._vuoi): entrando dalla barra in basso chiudiFoglio la
+  // chiamava prima che la pagina nuova ci fosse, la faccina partiva, disegna la toglieva ma il doppio requestAnimationFrame le
+  // rimetteva «su» dopo, e restava lì
+  try { vuoi = !!(S.pronto && proprietario() && S.vista === "segreteria" && !segrPiena && !segrHeroAttivo() && !sg2TestaInVista() && !document.querySelector(".sheet")); } catch (e) {}   // 1.110.0: col riquadrino no
+  if (!vuoi) { if (f) f._vuoi = false; if (f && !f.hidden) { f.classList.remove("su"); clearTimeout(f._via); f._via = setTimeout(() => { if (f._vuoi) return; f.hidden = true; f.classList.remove("su"); f.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (e) {} }); }, 360); } return; }
   const rit = ritaglioOK() && !segrParlaManca && !filmatoTolto("segr-parla");   // 1.80.0: «parla» cancellato: la figura ferma
   if (f && (f.dataset.rit || "") !== (rit ? "1" : "")) { f.remove(); f = null; }
   if (!f) {
@@ -7689,8 +7693,9 @@ function segrFuori() {
   f.setAttribute("aria-label", parla ? `${nomeGov()} sta parlando: tocca per farla smettere` : `Parla con ${nomeGov()}: torni su da lei e ti ascolta`);
   const v = f.querySelector(".sgf-fig video");
   if (v) { if (parla && v.paused) { try { v.play().catch(() => {}); } catch (e) {} } else if (!parla && !v.paused) { try { v.pause(); } catch (e) {} } }
+  f._vuoi = true;
   clearTimeout(f._via);
-  if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add("su"))); } else f.classList.add("su");
+  if (f.hidden) { f.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => { if (f._vuoi) f.classList.add("su"); })); } else f.classList.add("su");
 }
 // la nuvoletta sotto Sofia: «ti ascolto», «ci penso», o quello che dice
 function sg2BollaHtml() {
@@ -21669,6 +21674,7 @@ function segrPienaMetti(si) {
   if (h) h.classList.toggle("notizie-piene", si);
   try { sg2SofiaMonta(); } catch (e) {}
   segrPip();
+  try { segrFuori(); } catch (e) {}   // 1.113.1
 }
 // lo scorrimento del riquadro: sceso di 40 px, la pagina intera
 function segrPienaScorre(sc, h) { if (!segrPiena && sc.scrollTop > 40 && h.isConnected && !h.classList.contains("tenda-nascosta") && Date.now() - segrPienaFine > 700) segrPienaMetti(true); }
