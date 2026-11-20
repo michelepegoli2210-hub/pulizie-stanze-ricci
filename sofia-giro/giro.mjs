@@ -82,6 +82,9 @@
 //  1.40.0 (app 1.107.0): LA CHIAVE NUOVA DI META PER INSTAGRAM (19/11, Michele al PC: «dai oggi finiamo sofia influenzer»). Le
 //  app nuove hanno solo «API setup with Unified login»: la chiave non comincia con IG, non scade, va su graph.facebook.com
 //  (social-giro.mjs: FB, unificata, me/assigned_instagram_accounts). La strada vecchia resta per le chiavi IG….
+//  1.41.0 (app 1.108.0, casella 3): GLI ALLEGATI DELLE EMAIL (Michele, 20/11: «negli allegati c'è proprio il succo del discorso»;
+//  per Gemini «Tutto com'è»). Dopo le notifiche delle email nuove, Sofia legge gli allegati (allegati-giro.mjs) e quello che ci
+//  trova va nell'email e nella sua lettura. La notifica di una mail, toccata, apre quella mail (rif).
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -93,11 +96,12 @@ import { copiaDovuta, faiCopia, mandaCassetta, pulito as pulitoCopia } from "./c
 import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGNI_MS as OGNI_CAL_MS } from "./calendari-giro.mjs";   // 1.30.0: il channel manager gratis
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
 import { portaPostaAlbergo, notificheEmail } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
+import { leggiAllegati } from "./allegati-giro.mjs";   // 1.41.0 (app 1.108.0): gli allegati delle email, li legge Sofia
 import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'orologio: «arrivata» / «finito» su WhatsApp e i tasti dell'app
 import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.40.0";
+export const VERSIONE_GIRO = "1.41.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -370,11 +374,16 @@ async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemin
         else {
           let partite = 0;
           // 1.38.0: una prenotazione vibra e resta sul telefono finché non la tocca (nel registro pubblico solo «notifica di una prenotazione»)
-          for (const n of notificheEmail(pa.avvisare, adesso)) if (await mandaMe(n.testo, n.prenotazione ? "notifica di una prenotazione" : "notifica di una email dell'albergo", n.titolo, true, { dove: "segreteria", tag: n.tag, ...(n.vibra ? { vibra: true } : {}) })) partite++;
+          for (const n of notificheEmail(pa.avvisare, adesso)) if (await mandaMe(n.testo, n.prenotazione ? "notifica di una prenotazione" : "notifica di una email dell'albergo", n.titolo, true, { dove: "segreteria", tag: n.tag, ...(n.rif ? { rif: n.rif } : {}), ...(n.vibra ? { vibra: true } : {}) })) partite++;
           if (partite) await db.merge("importazioni", "posta-albergo", { avvisare: [] });   // se non è arrivata nessuna, si riprova al giro dopo
         }
       }
     } catch (e) { console.warn("notifiche delle email:", e && e.message); esiti.push("notifiche delle email: errore"); }
+  }
+  // 1.41.0 (app 1.108.0): gli allegati delle email nuove li legge Sofia (dopo le notifiche: quelle non aspettano Gemini)
+  if (gemini && pa) {
+    try { const ra = await leggiAllegati({ db, gemini, adesso, ...(postaAlbergo && postaAlbergo.fetchFn ? { fetchFn: postaAlbergo.fetchFn } : {}) }); if (ra && ra.esito) esiti.push(ra.esito); }
+    catch (e) { esiti.push("allegati: errore"); console.warn("allegati:", e && e.message); }
   }
   // 1.18.0: Sofia legge le chat anche ad app chiusa (a ogni giro, se il ponte ha portato posta nuova)
   let lettura = null;

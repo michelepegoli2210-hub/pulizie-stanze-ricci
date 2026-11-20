@@ -173,7 +173,7 @@ export function messaggiDa(lista, oggi) {
   const chats = new Map();
   for (const p of lista) { const nome = p.chat || "Albergo"; if (!chats.has(nome)) chats.set(nome, p.gruppo !== false); }
   const piu = chats.size > 1;
-  const msgs = lista.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: p.testo || "", tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "", chatNome: chats.get(nome) ? nome : "chat con " + nome, mio: !!p.mio, ts: Number(p.ts) || 0 }; })
+  const msgs = lista.map(p => { const nome = p.chat || "Albergo"; return { id: p.id, data: p.data || oggi, ora: p.ora || "", chi: p.chi || "", testo: (p.testo || "") + L.allegatiPerLettura(p) /* 1.41.0: e quello che c'è negli allegati */, tipo: p.tipo, media: !!p.media, didascalia: p.didascalia || "", trascrizione: p.trascrizione || "", chat: piu ? (chats.get(nome) ? nome : "chat con " + nome) : "", chatNome: chats.get(nome) ? nome : "chat con " + nome, mio: !!p.mio, ts: Number(p.ts) || 0 }; })
     .sort((x, y) => ((x.data || "") + (x.ora || "")).localeCompare((y.data || "") + (y.ora || "")));
   return { msgs, chats };
 }

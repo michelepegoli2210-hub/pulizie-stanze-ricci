@@ -16,6 +16,9 @@
 //  «richiesta di prenotazione» nell'oggetto) ha la sua notifica, sempre una per email: «🛎️ Richiesta di prenotazione · Ciclovia
 //  Adriatica», che vibra e resta sul telefono finché non la tocca (vibra: true, come «Da fare tu»), con «⏳ Rispondi entro…»
 //  quando il sito dà un tempo per rispondere (la Ciclovia: 12 ore dalle 7 alle 21). Di notte aspetta le 6:30 come le altre.
+//  1.41.0 (app 1.108.0, casella 3) · Michele, 20/11: «appena apro la notifica… Sofia segretaria… che mi propone di leggerlo» e
+//  «essenziale è che io possa leggere anche tutti gli allegati dall'applicazione». Ogni mail porta l'elenco dei suoi allegati
+//  (files: parte, nome, tipo, KB; li legge allegati-giro.mjs) e la notifica di una mail porta a quella mail (rif «email_<id>»).
 // ============================================================================
 import * as L from "../logica.js";
 export const URL_CASELLA = /^https:\/\/script\.google\.com\/(?:a\/[^/]+\/)?macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/;
@@ -26,6 +29,7 @@ const MAX_TESTO = 1800, PRIMA_VOLTA_MS = 24 * 3600 * 1000, MAX_AVVISARE = 20, AV
 
 export const casellaPronta = (c) => !!(c && c.pronta && URL_CASELLA.test(String(c.url || "")) && SEGRETO.test(String(c.segreto || "")));
 
+export async function chiediCasella(url, corpo, ms, fetchFn) { return chiedi(url, corpo, ms, fetchFn); }   // 1.41.0: anche per gli allegati
 async function chiedi(url, corpo, ms, fetchFn) {
   const ac = new AbortController(), tm = setTimeout(() => ac.abort(), ms);
   try {
@@ -43,6 +47,14 @@ export function dataOraRoma(ts) {
   return { data: `${p.year}-${p.month}-${p.day}`, ora: `${p.hour === "24" ? "00" : p.hour}:${p.minute}` };
 }
 
+// 1.41.0: l'elenco degli allegati (dalla casella 3): la «parte» per chiederlo, il nome, il tipo, quanto pesa
+export function filesDi(l) {
+  return (Array.isArray(l) ? l : []).filter(f => f && /^[0-9.]{1,20}$/.test(String(f.p || "")) && String(f.n || "").trim()).slice(0, 10)
+    .map(f => ({ p: String(f.p), n: String(f.n).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 120), t: String(f.t || "").toLowerCase().slice(0, 80), kb: Math.max(0, Math.round(Number(f.kb) || 0)) }));
+}
+// quanti allegati ha una mail: la casella 3 dà l'elenco (senza le immagini piccole dentro il testo, come i loghi delle firme);
+// la casella di prima solo il numero di tutti i file
+export const quantiAllegati = (m) => (Array.isArray(m && m.files) ? filesDi(m.files).length : Number(m && m.allegati) || 0);
 // una mail della casella → un messaggio della posta di Sofia
 export function mailInPosta(m) {
   const ts = Number(m && m.ts) || 0;
@@ -50,10 +62,11 @@ export function mailInPosta(m) {
   const { data, ora } = dataOraRoma(ts);
   const chi = String(m.chi || m.dominio || "?").replace(/[<>]/g, "").slice(0, 80);
   const oggetto = String(m.oggetto || "").replace(/\s+/g, " ").trim().slice(0, 200);
-  const all = Number(m.allegati) || 0;
+  const all = quantiAllegati(m);   // 1.41.0: con la casella 3 gli allegati veri (non le immagini dentro il testo)
   const corpo = String(m.testo || "").trim();
   const testo = `✉️ ${oggetto || "(senza oggetto)"}${all ? ` · 📎 ${all} ${all === 1 ? "allegato" : "allegati"}` : ""}${corpo ? "\n" + corpo : ""}`.slice(0, MAX_TESTO + 260);
-  return { id: "email_" + String(m.id), dati: { chat: CHAT_EMAIL, gruppo: true, chi, mio: false, ts, data, ora, tipo: "testo", testo, da: "email", dominio: String(m.dominio || "").slice(0, 80) } };
+  const files = filesDi(m.files);   // 1.41.0
+  return { id: "email_" + String(m.id), dati: { chat: CHAT_EMAIL, gruppo: true, chi, mio: false, ts, data, ora, tipo: "testo", testo, da: "email", dominio: String(m.dominio || "").slice(0, 80), ...(files.length ? { files, allegatiStato: "da-leggere" } : {}) } };
 }
 
 // 1.36.0: le mail da avvisare a Michele, in una riga sola e corte (la notifica non è il posto per tutta la mail)
@@ -66,7 +79,7 @@ function taglia(s, n) {
 }
 export function perAvviso(m) {
   return { id: String(m.id), ts: Number(m.ts) || 0, chi: String(m.chi || m.dominio || "").replace(/[<>]/g, "").trim().slice(0, 60),
-    oggetto: taglia(m.oggetto, 140), inizio: taglia(m.testo, 220), allegati: Number(m.allegati) || 0, dominio: String(m.dominio || "").toLowerCase().slice(0, 80) };   // 1.38.0: il dominio, per riconoscere il sito di prenotazione
+    oggetto: taglia(m.oggetto, 140), inizio: taglia(m.testo, 220), allegati: quantiAllegati(m), dominio: String(m.dominio || "").toLowerCase().slice(0, 80) };   // 1.38.0: il dominio, per riconoscere il sito di prenotazione
 }
 // quelle che aspettavano più le nuove (senza doppioni), in ordine, al massimo 20, non più vecchie di 2 giorni
 export function daAvvisare(c, mail, ora) {
@@ -100,14 +113,14 @@ export function notificheEmail(lista, adesso = new Date()) {
     const mie = pren.map(y => ({
       titolo: `${y.c.annullata ? "❌ Prenotazione annullata" : y.c.richiesta ? "🛎️ Richiesta di prenotazione" : "🛎️ Prenotazione"} · ${unaRiga(y.c.nome)}`.slice(0, 80),
       testo: [`«${unaRiga(y.x.oggetto) || "senza oggetto"}»`, unaRiga(y.x.inizio), entro(y), quando(y.x)].filter(Boolean).join("\n"),
-      tag: ("sofia-pren-" + String(y.x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), vibra: true, prenotazione: true }));
+      tag: ("sofia-pren-" + String(y.x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), vibra: true, prenotazione: true, rif: "email_" + String(y.x.id) }));   // 1.41.0: toccata, apre quell'email
     const visti = new Set(pren.map(y => String(y.x.id)));
     return [...mie, ...notificheEmail(l.filter(x => !visti.has(String(x.id))), adesso)];
   }
   if (l.length <= 3) return l.map(x => ({
     titolo: `📧 Email da ${chi(x)}`.slice(0, 80),
     testo: [`«${unaRiga(x.oggetto) || "senza oggetto"}»`, unaRiga(x.inizio), x.allegati ? `📎 ${x.allegati} ${x.allegati === 1 ? "allegato" : "allegati"}` : "", quando(x)].filter(Boolean).join("\n"),
-    tag: ("sofia-email-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40) }));
+    tag: ("sofia-email-" + String(x.id).replace(/[^a-z0-9-]/gi, "-")).slice(0, 40), rif: "email_" + String(x.id) }));   // 1.41.0: toccata, apre quell'email
   const notte = l.every(x => quando(x).startsWith("🌙"));
   return [{ titolo: `📧 ${l.length} email nuove all'albergo`,
     testo: [...l.slice(0, 6).map(x => `• ${chi(x)}: «${taglia(x.oggetto || "senza oggetto", 60)}»`), l.length > 6 ? `…e altre ${l.length - 6}` : "", notte ? "🌙 Sono arrivate stanotte" : ""].filter(Boolean).join("\n"),
@@ -132,6 +145,6 @@ export async function portaPostaAlbergo({ db, adesso = new Date(), fetchFn = fet
   if (ops.length) await db.scrivi(ops);
   const ultimo = Math.max(da, ...mail.map(m => Number(m.ts) || 0));
   const avvisare = daAvvisare(c, ops.length ? mail : [], ora);   // 1.36.0
-  await db.merge("importazioni", "posta-albergo", { ultimoTs: ultimo, ultimoGiro: adesso.toISOString(), errore: "", quante: (Number(c.quante) || 0) + ops.length, ...(ops.length ? { ultimaMail: adesso.toISOString(), avvisare } : {}) });
+  await db.merge("importazioni", "posta-albergo", { ultimoTs: ultimo, ultimoGiro: adesso.toISOString(), errore: "", quante: (Number(c.quante) || 0) + ops.length, casella: String(j.casella || "").slice(0, 8), ...(ops.length ? { ultimaMail: adesso.toISOString(), avvisare } : {}) });   // 1.41.0: la versione della casella (l'app sa se va aggiornata)
   return { esito: ops.length ? `posta albergo: ${ops.length} ${ops.length === 1 ? "mail nuova" : "mail nuove"}` : null, n: ops.length, avvisare };
 }
