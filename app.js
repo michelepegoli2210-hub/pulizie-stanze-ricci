@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.112.0";
+export const VERSIONE = "1.113.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1591,7 +1591,7 @@ function applicaTema() {
   const col = coloreAttivo();
   if (col !== "blu") document.documentElement.setAttribute("data-colore", col); else document.documentElement.removeAttribute("data-colore");
   const lusso = sfondoLusso(), premium = premiumVisto();
-  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; document.body.classList.toggle("premium", premium); document.body.classList.toggle("segr-lucidi", !segrTastiMatita()); }   // 1.112.0
+  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; document.body.classList.toggle("premium", premium); document.body.classList.toggle("segr-lucidi", !segrTastiMatita()); document.body.classList.toggle("icone-opache", (() => { try { return localStorage.getItem("ricci_icone_all") === "o"; } catch (e) { return false; } })()); }   // 1.112.0; 1.113.0: icone-opache
   if (S.pronto) { try { localStorage.setItem("ricci_era_premium", premium ? "1" : "0"); } catch (e) {} }
   const parete = document.querySelector(".laguna");
   if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
@@ -7041,6 +7041,10 @@ const segrDis = (nome, cls = "") => `<img class="mt-d${cls ? " " + cls : ""}" sr
 function segrTastiMatita() { try { return localStorage.getItem("ricci_segr_tasti") === "matita"; } catch (e) { return false; } }
 const segrTasto = (nuovo, vecchio = "") => segrTastiMatita() ? vecchio : nuovo;
 const segrIco = (nome, prima = "", cls = "") => segrHeroAttivo() && !segrTastiMatita() ? icoAll(nome, "sgi" + (cls ? " " + cls : "")) : prima;
+// 1.113.0 (Michele, 20/11: «concentriamoci… su quei tastoni… fammi fare delle proposte da Gemini»; delle 4 ha scelto «1», lucidi con
+// l'oro): i tastoni sono tessere lucide colorate con la cornice d'oro (il CSS, con body.segr-lucidi) e il disegno avorio di Gemini;
+// con «A matita, come prima» tornano i disegni a matita di prima.
+const segrTessera = (k, mat) => segrTastiMatita() ? mat : `tastoni/${k}.webp`;
 // il numero per WhatsApp: solo cifre, col 39 davanti se è un cellulare italiano scritto senza
 function segrNumeroWa(tel) {
   let d = String(tel || "").replace(/[^\d+]/g, "");
@@ -7183,10 +7187,10 @@ function segrOggiHtml() {
   const t = (k, n, dis, parola, dici, sotto) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}" data-segr-oggi="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span>${sotto && !ap ? `<small class="sgt-s">${esc(sotto)}</small>` : ""}</button>`;
   const dentro = ap === "arrivi" ? segrArriviHtml(mv) : ap === "partenze" ? segrPartenzeHtml(mv) : ap === "pulizie" ? segrPulizieHtml() : ap === "email" ? segrEmailHtml() : "";
   return `<div class="sgt-griglia sgt-oggi${ap ? " stretta" : ""}">${
-    t("arrivi", mv.ospitiArr, "mat-arrivi.webp", mv.ospitiArr === 1 ? "Arrivo" : "Arrivi", mv.ospitiArr ? `Oggi ${mv.ospitiArr === 1 ? "arriva 1 ospite" : `arrivano ${mv.ospitiArr} ospiti`}, ${cam(mv.arr)}` : "Oggi non arriva nessuno", cam(mv.arr))}${
-    t("partenze", mv.ospitiPar, "mat-partenze.webp", mv.ospitiPar === 1 ? "Partenza" : "Partenze", mv.ospitiPar ? `Oggi ${mv.ospitiPar === 1 ? "parte 1 ospite" : `partono ${mv.ospitiPar} ospiti`}, ${cam(mv.par)}` : "Oggi non parte nessuno", cam(mv.par))}${
-    t("pulizie", pul.length, "mat-secchio.webp", pul.length === 1 ? "Pulizia" : "Pulizie", pul.length ? `Oggi ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}, ${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "Oggi nessuna pulizia", pul.length ? `${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "")}${
-    t("email", em, "mat-busta.webp", "Email", em ? `Oggi ${em === 1 ? "è arrivata 1 email" : `sono arrivate ${em} email`}` : "Oggi non è arrivata nessuna email")}</div>${ap ? `<div class="sgo ${ap}" data-sgo="${ap}">${dentro}</div>` : ""}`;
+    t("arrivi", mv.ospitiArr, segrTessera("arrivi", "mat-arrivi.webp"), mv.ospitiArr === 1 ? "Arrivo" : "Arrivi", mv.ospitiArr ? `Oggi ${mv.ospitiArr === 1 ? "arriva 1 ospite" : `arrivano ${mv.ospitiArr} ospiti`}, ${cam(mv.arr)}` : "Oggi non arriva nessuno", cam(mv.arr))}${
+    t("partenze", mv.ospitiPar, segrTessera("partenze", "mat-partenze.webp"), mv.ospitiPar === 1 ? "Partenza" : "Partenze", mv.ospitiPar ? `Oggi ${mv.ospitiPar === 1 ? "parte 1 ospite" : `partono ${mv.ospitiPar} ospiti`}, ${cam(mv.par)}` : "Oggi non parte nessuno", cam(mv.par))}${
+    t("pulizie", pul.length, segrTessera("pulizie", "mat-secchio.webp"), pul.length === 1 ? "Pulizia" : "Pulizie", pul.length ? `Oggi ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}, ${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "Oggi nessuna pulizia", pul.length ? `${fatte} ${fatte === 1 ? "fatta" : "fatte"}` : "")}${
+    t("email", em, segrTessera("email", "mat-busta.webp"), "Email", em ? `Oggi ${em === 1 ? "è arrivata 1 email" : `sono arrivate ${em} email`}` : "Oggi non è arrivata nessuna email")}</div>${ap ? `<div class="sgo ${ap}" data-sgo="${ap}">${dentro}</div>` : ""}`;
 }
 // ============================================================================
 //  1.95.0 LE PRENOTAZIONI NELLA SEGRETERIA (Michele, 17/11 sera: «io ho fatto l'iscrizione alla ciclovia… voglio che in segreteria ci
@@ -7226,7 +7230,7 @@ function segrPrenotazioniHtml() {
   const l = segrPrenotazioni(), ap = !!S.segrPren, cic = L.canale("ciclovia"), cap = ap ? segrEmailCapito() : null;
   const aspettano = l.filter(e => { const x = segrPrenEntro(e); return x && x.classe !== "scaduta"; }).length;
   const dici = l.length ? `${l.length === 1 ? "È arrivata 1 prenotazione" : `Sono arrivate ${l.length} prenotazioni`} in sette giorni${aspettano ? `, ${aspettano === 1 ? "una aspetta" : `${aspettano} aspettano`} la tua risposta` : ""}` : "In sette giorni non è arrivata nessuna prenotazione";
-  return `<div class="sgt-griglia sgt-pren"><button type="button" class="sgt pren${ap ? " aperta" : ""}" data-segr-pren aria-expanded="${ap}" aria-label="${esc(dici)}. Tocca per ${ap ? "chiudere" : "vedere"}"><b class="sgt-n">${l.length}</b><img class="sgt-d" src="mat-chiave.webp" alt="" width="240" height="240"><span class="sgt-p">${l.length === 1 ? "Arrivata" : "Arrivate"}</span><small class="sgt-s">${aspettano ? `${aspettano} da rispondere` : "in 7 giorni"}</small></button><a class="sgt canale" href="${esc(cic.sito)}" target="_blank" rel="noopener" data-segr-canale="ciclovia" aria-label="Apri il sito della Ciclovia Adriatica: lì ci sono il calendario e le richieste"><img class="sgt-d" src="mat-spunte.webp" alt="" width="240" height="240"><span class="sgt-p">${esc(cic.breve)}</span><small class="sgt-s">apri il calendario</small></a></div>${ap ? `<div class="sgo pren" data-sgo="pren"><h4 class="sgo-tit">Le prenotazioni arrivate</h4>${l.length ? l.map(e => segrPrenRiga(e, cap)).join("") : `<p class="sgo-vuoto">${paPronta() ? "In questi sette giorni non è arrivata nessuna prenotazione per email." : "La posta dell'albergo non è collegata: si collega da Altro, «La posta dell'albergo»."}</p>`}<p class="sgo-nota">Le richieste della Ciclovia arrivano per email. Per dire sì o no si va sul loro sito: è il tasto «Ciclovia» qui sopra.</p></div>` : ""}`;
+  return `<div class="sgt-griglia sgt-pren"><button type="button" class="sgt pren${ap ? " aperta" : ""}" data-segr-pren aria-expanded="${ap}" aria-label="${esc(dici)}. Tocca per ${ap ? "chiudere" : "vedere"}"><b class="sgt-n">${l.length}</b><img class="sgt-d" src="${segrTessera("arrivate", "mat-chiave.webp")}" alt="" width="240" height="240"><span class="sgt-p">${l.length === 1 ? "Arrivata" : "Arrivate"}</span><small class="sgt-s">${aspettano ? `${aspettano} da rispondere` : "in 7 giorni"}</small></button><a class="sgt canale" href="${esc(cic.sito)}" target="_blank" rel="noopener" data-segr-canale="ciclovia" aria-label="Apri il sito della Ciclovia Adriatica: lì ci sono il calendario e le richieste"><img class="sgt-d" src="${segrTessera("ciclovia", "mat-spunte.webp")}" alt="" width="240" height="240"><span class="sgt-p">${esc(cic.breve)}</span><small class="sgt-s">apri il calendario</small></a></div>${ap ? `<div class="sgo pren" data-sgo="pren"><h4 class="sgo-tit">Le prenotazioni arrivate</h4>${l.length ? l.map(e => segrPrenRiga(e, cap)).join("") : `<p class="sgo-vuoto">${paPronta() ? "In questi sette giorni non è arrivata nessuna prenotazione per email." : "La posta dell'albergo non è collegata: si collega da Altro, «La posta dell'albergo»."}</p>`}<p class="sgo-nota">Le richieste della Ciclovia arrivano per email. Per dire sì o no si va sul loro sito: è il tasto «Ciclovia» qui sopra.</p></div>` : ""}`;
 }
 // ============================================================================
 //  1.95.0 «NON SI RIESCE A TORNARE INDIETRO» (Michele, 17/11 sera, provando la 1.94.0: «ci sono parecchi bug nella parte Sofia
@@ -7272,7 +7276,7 @@ function segrCassettoAperto(pz) {
 }
 function segrCassettiHtml(pz) {
   const ap = segrCassettoAperto(pz);
-  return `<div class="sgt-griglia sgt-cassetti">${SEGR_CASSETTI.map(([k, t, d]) => `<div class="sgt cass ${k}${ap === k ? " aperto" : ""}${pz.n[k] ? "" : " zero"}"><button type="button" class="sgt-apri" data-segr-cassetto="${k}" aria-expanded="${ap === k}" aria-label="${t}: ${pz.n[k]}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><span class="sgt-t">${t}</span><b class="sgt-n">${pz.n[k]}</b><img class="sgt-d" src="${d}" alt="" width="240" height="240"></button>${k === "fare" && pz.mod ? `<button type="button" class="sgt-piu" data-sg2-nuovo>${segrTasto(icoAll("piu") + "<span>Ricordami una cosa</span>", '<span aria-hidden="true">＋</span> Ricordami una cosa')}</button>` : ""}</div>`).join("")}</div>${ap && pz.cass[ap] ? `<div class="sgt-aperto ${ap}">${pz.cass[ap]}</div>` : ""}`;
+  return `<div class="sgt-griglia sgt-cassetti">${SEGR_CASSETTI.map(([k, t, d]) => `<div class="sgt cass ${k}${ap === k ? " aperto" : ""}${pz.n[k] ? "" : " zero"}"><button type="button" class="sgt-apri" data-segr-cassetto="${k}" aria-expanded="${ap === k}" aria-label="${t}: ${pz.n[k]}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><span class="sgt-t">${t}</span><b class="sgt-n">${pz.n[k]}</b><img class="sgt-d" src="${segrTessera(k, d)}" alt="" width="240" height="240"></button>${k === "fare" && pz.mod ? `<button type="button" class="sgt-piu" data-sg2-nuovo>${segrTasto(icoAll("piu") + "<span>Ricordami una cosa</span>", '<span aria-hidden="true">＋</span> Ricordami una cosa')}</button>` : ""}</div>`).join("")}</div>${ap && pz.cass[ap] ? `<div class="sgt-aperto ${ap}">${pz.cass[ap]}</div>` : ""}`;
 }
 function segrDentroHtml(pz) {
   return `${segrFumettoHtml(pz)}
@@ -7310,8 +7314,8 @@ function segrIgHtml() {
   const t = (k, n, dis, parola, sotto, dici) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}" data-segr-ig="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span><small class="sgt-s">${esc(sotto)}</small></button>`;
   const breve = SEGR_IG_BREVE[x.st] || "";
   return `<div class="sgt-griglia sgt-ig">${
-    t("ig", x.c.post, "mat-megafono.webp", "Instagram", x.st === "al-lavoro" ? (x.c.post === 1 ? "post questa settimana" : "post questa settimana") : breve, `Instagram: ${x.c.post} ${x.c.post === 1 ? "post" : "post"} questa settimana, ${breve}`)}${
-    t("igf", x.mancano, "mat-casa.webp", "Foto da fare", x.mancano ? `su ${SOC_FOTO.length}` : "tutte fatte", x.mancano ? `Mancano ${x.mancano} foto su ${SOC_FOTO.length}` : "Le foto sono tutte fatte")}</div>${
+    t("ig", x.c.post, segrTessera("instagram", "mat-megafono.webp"), "Instagram", x.st === "al-lavoro" ? (x.c.post === 1 ? "post questa settimana" : "post questa settimana") : breve, `Instagram: ${x.c.post} ${x.c.post === 1 ? "post" : "post"} questa settimana, ${breve}`)}${
+    t("igf", x.mancano, segrTessera("foto", "mat-casa.webp"), "Foto da fare", x.mancano ? `su ${SOC_FOTO.length}` : "tutte fatte", x.mancano ? `Mancano ${x.mancano} foto su ${SOC_FOTO.length}` : "Le foto sono tutte fatte")}</div>${
     ap === "ig" ? `<div class="sgt-aperto ig">${segrIgDentro(x)}</div>` : ap === "igf" ? `<div class="sgt-aperto igf">${segrIgFoto(x)}</div>` : ""}`;
 }
 // «Instagram» aperta: come sta Sofia, il prossimo post, i prossimi post con la foto
@@ -10621,8 +10625,8 @@ function cardStileCasa() {
     <div class="ico-scelte">${[["l", "Lucide"], ["o", "Meno lucide"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${iconeSerie() === k}" data-icone-serie="${k}"><span class="ico-tre">${["pdf", "word", "foto"].map(n => `<img class="ico3d" src="all3d-${k}/${n}.webp" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
     <span class="small muted">Le icone degli allegati e dei tasti (nell'email e nella Segreteria). Lucide: bombate e brillanti. Meno lucide: più opache. Si cambiano quando vuoi.</span>
     <h3>8. I tasti della Segreteria</h3>
-    <div class="ico-scelte">${[["lucide", "Icone lucide"], ["matita", "A matita, come prima"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${segrTastiMatita() === (k === "matita")}" data-segr-tasti="${k}"><span class="ico-tre">${k === "matita" ? ["microfono", "matita", "telefono"].map(n => `<img class="ico-mat" src="mat-${n}.webp" alt="" width="240" height="240" decoding="async">`).join("") : ["chiedi", "matita", "cornetta"].map(n => `<img class="ico3d" src="${icoSrc(n)}" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
-    <span class="small muted">Parlale, Chiama, Fatto, Fotografa e gli altri tasti. Icone lucide: quelle di Gemini, grandi. A matita: i disegni di prima, nel tondo. Si cambia quando vuoi.</span>
+    <div class="ico-scelte">${[["lucide", "Lucidi"], ["matita", "A matita, come prima"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${segrTastiMatita() === (k === "matita")}" data-segr-tasti="${k}"><span class="ico-tre">${k === "matita" ? ["microfono", "matita", "telefono"].map(n => `<img class="ico-mat" src="mat-${n}.webp" alt="" width="240" height="240" decoding="async">`).join("") : ["chiedi", "matita", "cornetta"].map(n => `<img class="ico3d" src="${icoSrc(n)}" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
+    <span class="small muted">I tastoni (Arrivi, Partenze, Pulizie…) e i tasti (Parlale, Chiama, Fatto…). Lucidi: con l'oro e le icone di Gemini, grandi. A matita: i disegni di prima. Si cambia quando vuoi.</span>
   </section>`;
 }
 // L'umore della governante: guarda come sta la casa e lo dice in una riga (e si vede in faccia)
@@ -18759,7 +18763,7 @@ function collega() {
   document.querySelectorAll("[data-sfondo-app]").forEach(b => b.onclick = () => { S.sfondo = b.dataset.sfondoApp; try { localStorage.setItem("ricci_stile4", S.sfondo); } catch (e) {} applicaTema(); disegna(); toast("Stile: " + ((SFONDI_APP.find(f => f.id === S.sfondo) || {}).nome || S.sfondo)); });
   document.querySelectorAll("[data-orologio-scelta]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_OROLOGIO, b.dataset.orologioScelta); } catch (e) {} disegna(); toast(b.dataset.orologioScelta === "no" ? "Orologio e data tolti" : "Orologio e data in cima, in ogni schermata"); });
   document.querySelectorAll("button[data-salone]").forEach(b => b.onclick = () => { /* 1.0.4: solo i tasti (la casa ha anche lei data-salone) */ try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
-  document.querySelectorAll("[data-icone-serie]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_ICONE, b.dataset.iconeSerie); } catch (e) {} disegna(); toast(b.dataset.iconeSerie === "o" ? "Icone meno lucide" : "Icone lucide"); });
+  document.querySelectorAll("[data-icone-serie]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_ICONE, b.dataset.iconeSerie); } catch (e) {} applicaTema(); disegna(); toast(b.dataset.iconeSerie === "o" ? "Icone meno lucide" : "Icone lucide"); });
   // 1.112.0: i tasti della Segreteria, lucidi o a matita come prima (Michele: «dammi la possibilità di tornare indietro anche»)
   document.querySelectorAll("[data-segr-tasti]").forEach(b => b.onclick = () => { try { if (b.dataset.segrTasti === "matita") localStorage.setItem("ricci_segr_tasti", "matita"); else localStorage.removeItem("ricci_segr_tasti"); } catch (e) {} applicaTema(); disegna(); toast(b.dataset.segrTasti === "matita" ? "Tasti della Segreteria: a matita, come prima" : "Tasti della Segreteria: icone lucide"); });   // 1.110.0
   document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
