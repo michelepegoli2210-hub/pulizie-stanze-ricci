@@ -183,6 +183,11 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   `height: calc(100dvh - 122px)`) e legge con «Te la leggo io?» (`segrLeggiEmail`, `segrTestoDaLeggere`: chi, oggetto,
   testo senza link e indirizzi, gli allegati). `apriFoglio`/`chiudiFoglio` non ridisegnano tutto: `segrMini` e `segrFuori`
   si guardano anche lì.
+- La scrittura della Segreteria e delle email (1.108.1, scelta da Michele il 20/11 tra 16 prove: senza occhiali il corsivo
+  inglese si leggeva male) è Andika, le «lettere di scuola», più grandi dove c'è tanto da leggere: `font-size-adjust` .6
+  (alte come prima) e .7 (un quinto più grandi), grassetti veri, niente `-webkit-text-stroke`. Per cambiarla: `--mt-font`/
+  `--mt-num` su `#segrHero,.sge-foglio` e il font nella lista di sw.js. Attenzione: certi caratteri hanno la «x» dichiarata
+  sbagliata (Delius: 0,085) e con `font-size-adjust` diventano giganti: misurarla prima (fontTools, il glifo «x»).
   La Ciclovia (letto sul loro sito il 17/11/2026): le richieste arrivano per email, si accettano o si rifiutano entro 12 ore
   lavorative, i giorni si chiudono nel loro calendario; niente iCal, niente collegamenti. Chiudere i giorni e dire sì o no
   lo fa Michele sul loro sito: l'app mostra e porta lì, non lo fa al posto suo e non va automatizzato col mouse.

@@ -3468,3 +3468,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Sotto il testo, gli allegati: nome, quanto pesa, cosa ci ha letto Sofia. Un tocco e si aprono dentro l'app: i PDF pagina per pagina (con ＋ e －), le foto, gli Excel come tabelle, il testo; Word e gli altri con quello che Sofia ci ha letto e «⬇ Scarica».
   - Gli allegati li legge Sofia (Gemini) appena arriva l'email: per scelta di Michele («Tutto com'è») Gemini li riceve interi, anche le scansioni e le foto.
   - La casella della posta va aggiornata una volta alla versione 3 (dal PC, 2 minuti): nella pagina «📬 La posta dell'albergo» ci sono i passi e «Prova» dice la versione.
+- **1.108.1** (20/11, Michele: «quando non ho gli occhiali mi mancano gradi… stili di scrittura… ancora più capibili quando ci sono scritte tante cose»):
+  - La Segreteria e le email sono scritte con le «lettere di scuola» (Andika), scelte da lui tra le prove.
+  - Dove c'è tanto da leggere (l'email intera, le righe di Sofia, le email e i cassetti della Segreteria) le lettere sono più grandi.
+  - I nomi, gli oggetti e i titoli sono in grassetto.

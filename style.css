@@ -10900,3 +10900,24 @@ body.con-vista{overflow:hidden}
 .av-errore{color:#9A2B1E}
 .av-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;margin:10px 0;padding:0 16px;border:0;border-radius:16px;background:#16264A;color:#F2C14E;font-family:inherit;font-size:19px;font-weight:800;text-decoration:none;cursor:pointer}
 .av-letto h4{margin:4px 0 8px;font-size:20px}
+
+/* ----------------------------------------------------------------------------
+   1.108.1 · LE SCRITTE PIÙ CHIARE (Michele, 20/11: «per leggere l'email nell'app ho fatto un po' fatica, essendo che quando
+   non ho gli occhiali mi mancano gradi… ancora più capibili quando ci sono scritte tante cose»; viste le prove ha scelto le
+   «lettere di scuola», e tra le loro varianti «la 2»: più grandi).
+   - LA SCRITTURA: Andika (SIL, carattere libero: OFL, fonts/LICENSE-Andika.txt), le lettere di scuola fatte per chi impara a
+     leggere, nella Segreteria e nel foglio dell'email. font-size-adjust tiene la «x» al 60% della misura (alta come col corsivo
+     di prima, che era il 58,8%) e al 70% dove c'è tanto da leggere: le lettere un quinto più grandi.
+   - Niente «tratto della penna»: i nomi, gli oggetti, i titoli e i numeri in grassetto vero (Andika 700).
+   ---------------------------------------------------------------------------- */
+@font-face{font-family:"Andika";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/andika-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Andika";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/andika-latin-700-normal.woff2) format("woff2")}
+#segrHero,.sge-foglio{--mt-font:"Andika","Atkinson Hyperlegible Next",system-ui,sans-serif;--mt-num:"Andika","Atkinson Hyperlegible Next",system-ui,sans-serif}
+#segrHero .sgh,#segrHero .sgh *,.sge-foglio,.sge-foglio *{-webkit-text-stroke:0 !important;font-size-adjust:.6}
+/* dove c'è tanto da leggere: un quinto più grandi (tutta l'email; nella Segreteria le righe di Sofia, le email e i cassetti) */
+.sge-foglio,.sge-foglio *,#segrHero .sgh .of-testo,#segrHero .sgh .of-fai-t,#segrHero .sge .sge-chi,#segrHero .sge .sge-ogg,#segrHero .sge .sge-ante,
+#segrHero .sge .sge-poi,#segrHero .sge .sge-sofia,#segrHero .sge .sge-sofia *,#segrHero .sg2-r .sg2-t,#segrHero .sgh .sgt-aperto .sg2-r *{font-size-adjust:.7}
+#segrHero .sgh b,#segrHero .sgh h3,#segrHero .sgh h4,#segrHero .sgh .sgt-p,#segrHero .sgh .sgt-t,#segrHero .sge .sge-chi,#segrHero .sge .sge-ogg,#segrHero .sge .sge-leggi,
+#segrHero .sgh .sgt-n,#segrHero .sgh .sgo-pers b,#segrHero .sgh .sg2-n,#segrHero .sgh .sge-ora,
+.sge-foglio b,.sge-foglio h3,.sge-foglio h4,.sge-foglio .sgf-ogg,.sge-foglio .sga-n b{font-weight:700 !important}
+.sheet .panel:has(.sge-foglio) > .big.close{font-family:"Andika","Atkinson Hyperlegible Next",sans-serif;font-weight:700;-webkit-text-stroke:0;font-size-adjust:.6}
