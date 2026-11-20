@@ -3490,3 +3490,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
 - **1.111.0** (20/11, Michele: «Adesso finiamo il finibile» · «metti nella segreteria quello che si può e il resto lo facciamo dopo ma finisci la segreteria»):
   - Nella Segreteria, sotto «I miei cassetti», c'è Instagram: due tessere. «Instagram» ti dice come sta Sofia influencer (aspetta le foto, al lavoro, ferma…), quando esce il prossimo post e ti fa vedere i prossimi post con la loro foto. «Foto da fare» ha le otto foto che le servono: tocca «Fotografa» e scatti lì, sul posto (o «dalla galleria»). Le fatte hanno la ✓; quelle da rifare dicono perché.
   - Dopo, a parte: la Pagina Facebook, i messaggi privati di Instagram, Booking, Airbnb ed Expedia.
+- **1.112.0** (20/11, Michele: «ma i tasti dove sono?» · «quelli che abbiamo fatto con gemini quelli lucidi» · «Anche in Segreteria»):
+  - Nella Segreteria i tasti hanno le icone lucide di Gemini, come gli allegati: Parlale, Scrivile, Ascolta, Chiama, Scrivi, Documento, Fatto, Ricordami, Sì, Cambia, No, Annulla, Perché?, Fotografa, Inquadra documento, le email. Gemini ne ha fatte 14 nuove, lucide e meno lucide (si sceglie in Come si vede l'app).
+  - Grandi: viste le foto, «Sì, ma più grandi», poi «Ancora più grandi», poi «Sì, mettile così». In Parlale, Scrivile, Chiama e Scrivi l'icona sta sopra e la parola sotto.
+  - Le tessere grandi (Oggi, Prenotazioni, i cassetti, Instagram) restano a matita.

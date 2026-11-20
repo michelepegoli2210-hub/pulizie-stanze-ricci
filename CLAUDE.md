@@ -216,6 +216,15 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
 - Le icone 3D (1.110.0): disegnate da Gemini (la richiesta l'ha mandata Claude, e gliel'ha detto), avorio su un colore
   profondo con la cornice d'oro; due serie di 24, `all3d-l/` lucide (bombate) e `all3d-o/` meno lucide, scelte in Come si vede
   l'app (`CHIAVE_ICONE`). `icoAll(nome)`, `icoNomeFile`, `nomeTipoFile`. Tagliate dal foglio 4x2 con `taglia3d.py` (fuori dal repo).
+  1.112.0 (sua: «ma i tasti dove sono?» · «quelli che abbiamo fatto con gemini» · «Anche in Segreteria»): le icone lucide sono
+  anche sui TASTI della Segreteria (Parlale, Scrivile, Ascolta, Chiama, Scrivi, Documento, i tasti dei cassetti, Instagram,
+  Inquadra documento, l'email, la nuvoletta): 14 icone nuove nelle due serie (matita, documento, fotocamera, piu, spunta,
+  sveglia, chiave, x, fumetto, cornetta, domanda, su, annulla, calendario; «Rimetti» è «annulla» girata, `.specchio`).
+  Nei pezzi che usano anche gli altri stili `segrIco(nome, prima)`: l'icona solo nella testa Premium. Restano a matita le
+  tessere grandi e le figure che raccontano (persone, strisce delle camere). Un tasto nuovo della Segreteria: icona lucida.
+  GRANDI (sue, viste le foto: «Sì, ma più grandi» → «Ancora più grandi» → «Sì, mettile così»): 72-88 px sui telefoni, 62-76
+  sotto i 390 px; nei tasti a metà riga l'icona sopra e la parola sotto. Non rimpicciolirle. Nelle icone tagliate dalla
+  riga di sotto del foglio di Gemini può restare in cima l'ombra della tessera di sopra: `ripulisci-sopra.py` (fuori dal repo).
 - La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
   quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
   nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da
