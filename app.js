@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.110.0";
+export const VERSIONE = "1.111.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1748,7 +1748,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(ascoltaMessaggiSig());   // 1.55.13: i messaggi delle signore per Michele
   if (proprietario()) S.stop.push(db.ascolta("ruoli", {}, (m) => { S.ruoli = m || {}; S.caricati.ruoli = true; if (S.vista === "piantine" || S.vista === "altro" || (S.foglio && /^rg/.test(S.foglio.tipo || ""))) disegna(); }, (e) => console.warn("ruoli", e)));   // 1.57.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
-  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "social", d => { S.social = d ? { ...d } : null; if (S.vista === "social" || S.vista === "altro") disegna(); }));   // 1.66.0
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "social", d => { S.social = d ? { ...d } : null; if (S.vista === "social" || S.vista === "altro" || S.vista === "segreteria") disegna(); }));   // 1.66.0; 1.111.0: anche la Segreteria
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "canali", d => { S.canaliCal = d ? { ...d } : null; if (S.vista === "prospetto" || (S.foglio && S.foglio.tipo === "calendario")) disegna(); }));   // 1.65.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "posta-albergo", d => { S.postaAlb = d ? { ...d } : null; if (S.vista === "altro" || (S.foglio && S.foglio.tipo === "postaAlb")) disegna(); }));   // 1.75.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "copia-sicurezza", d => { S.copia = d ? { ...d } : null; if (S.vista === "altro" || S.vista === "oggi" || (S.foglio && S.foglio.tipo === "cassetta")) disegna(); }));   // 1.64.0
@@ -7241,9 +7241,9 @@ function segrChiudiAperto() {
   if (!segrHeroAttivo()) return false;
   const cassetto = typeof S.sg2Aperto === "string" && S.sg2Aperto !== "";
   // 1.110.0: dalle notifiche a pagina intera Indietro torna alla pagina iniziale (Sofia grande, tutto chiuso)
-  if (segrPiena) { S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; if (cassetto) S.sg2Aperto = ""; segrPienaMetti(false); disegna(); return true; }
-  if (!segrOggiAperto() && !S.segrPren && !cassetto) return false;
-  S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; if (cassetto) S.sg2Aperto = "";
+  if (segrPiena) { S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; if (cassetto) S.sg2Aperto = ""; segrPienaMetti(false); disegna(); return true; }
+  if (!segrOggiAperto() && !S.segrPren && !S.segrIg && !cassetto) return false;   // 1.111.0: anche Instagram
+  S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; if (cassetto) S.sg2Aperto = "";
   disegna();
   return true;
 }
@@ -7252,7 +7252,7 @@ function segrEsci() {
   try { if (voceInCorso) zittisciVoce(); } catch (e) {}
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
   sg2ParlaTel = false; segrPiena = false;   // 1.110.0: la volta dopo si riapre con Sofia grande
-  S.sg2Bolla = null; S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.sg2Aperto = undefined;   // i cassetti tornano come all'inizio (quello di partenza si riapre da solo)
+  S.sg2Bolla = null; S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; S.sg2Aperto = undefined;   // i cassetti tornano come all'inizio (quello di partenza si riapre da solo)
 }
 // 2) I quattro cassetti: quattro tessere col numero; un tocco apre le righe di quel cassetto (uno alla volta)
 const SEGR_CASSETTI = [["fare", "Da fare tu", "mat-sveglia.webp"], ["prop", "Ti propongo", "mat-scintilla.webp"], ["fatto", "Ho fatto io", "mat-spunte.webp"], ["sapere", "Da sapere", "mat-stella.webp"]];
@@ -7274,8 +7274,76 @@ function segrDentroHtml(pz) {
     ${segrOggiHtml()}
     <h3 class="sgh-tit">Prenotazioni</h3>${segrPrenotazioniHtml()}
     <h3 class="sgh-tit">I miei cassetti</h3>${segrCassettiHtml(pz)}
+    <h3 class="sgh-tit">Instagram</h3>${segrIgHtml()}
     <h3 class="sgh-tit">Documenti degli ospiti</h3>${pz.doc || ""}`;
 }
+// ============================================================================
+//  1.111.0 · INSTAGRAM NELLA SEGRETERIA (Michele, 20/11: «metti nella segreteria quello che si può e il resto lo facciamo dopo
+//  ma finisci la segreteria»; il 7/11: «nella Segreteria andrà anche il collegamento con l'app dei social»). Sofia influencer si
+//  vede e si usa da qui, senza passare da Altro (un tasto della Segreteria non porta mai via dalla Segreteria):
+//  - «Instagram» (il megafono): il numero sono i post di questa settimana; aperta dice come sta Sofia (aspetta le foto, al
+//    lavoro, ferma, la chiave da rifare…), il prossimo post, l'ultimo, e mostra i prossimi post con la loro foto (le bozze).
+//  - «Foto da fare» (la casa): il numero sono le foto che mancano; aperta, le otto foto, ognuna con «Fotografa» (si apre la
+//    fotocamera: si scatta lì, sul posto) e, più piccolo, «dalla galleria». Fatta: ✓ e «Rifalla»; scartata da Sofia: il perché.
+//  Le foto si salvano come dalla pagina di Sofia influencer (socFoto). Le impostazioni (le pagine, il collegamento, «Ferma»)
+//  restano in Altro → Sofia influencer.
+// ============================================================================
+function segrIgStato() {
+  const s = socStato(), m = s.motore || {}, st = socStatoMotore(), c = socConti();
+  const collegata = !!(m.ig && m.ig.nome) && !["chiave", "controllo", "personale"].includes(st);
+  const fatte = SOC_FOTO.filter(f => socFotoOk(s, f.k)).length;
+  return { s, m, st, c, collegata, fatte, mancano: SOC_FOTO.length - fatte };
+}
+const SEGR_IG_BREVE = { "aspetta-foto": "aspetta le foto", "aspetta-chiave": "da collegare", controllo: "sto controllando", "al-lavoro": "al lavoro", foto: "foto nuove", chiave: "chiave da rifare", personale: "account da cambiare", ferma: "ferma" };
+function segrIgHtml() {
+  if (!proprietario()) return "";
+  const x = segrIgStato(), ap = S.segrIg || "";
+  const t = (k, n, dis, parola, sotto, dici) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}" data-segr-ig="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span><small class="sgt-s">${esc(sotto)}</small></button>`;
+  const breve = SEGR_IG_BREVE[x.st] || "";
+  return `<div class="sgt-griglia sgt-ig">${
+    t("ig", x.c.post, "mat-megafono.webp", "Instagram", x.st === "al-lavoro" ? (x.c.post === 1 ? "post questa settimana" : "post questa settimana") : breve, `Instagram: ${x.c.post} ${x.c.post === 1 ? "post" : "post"} questa settimana, ${breve}`)}${
+    t("igf", x.mancano, "mat-casa.webp", "Foto da fare", x.mancano ? `su ${SOC_FOTO.length}` : "tutte fatte", x.mancano ? `Mancano ${x.mancano} foto su ${SOC_FOTO.length}` : "Le foto sono tutte fatte")}</div>${
+    ap === "ig" ? `<div class="sgt-aperto ig">${segrIgDentro(x)}</div>` : ap === "igf" ? `<div class="sgt-aperto igf">${segrIgFoto(x)}</div>` : ""}`;
+}
+// «Instagram» aperta: come sta Sofia, il prossimo post, i prossimi post con la foto
+function segrIgDentro(x) {
+  const { s, m, st, c } = x, nome = esc(nomeGov());
+  const quando = (g, o) => `${L.dataGiornoLungo(g)}${o ? ` alle ${esc(o)}` : ""}`;
+  const righe = [];
+  const r = (testo, sotto = "", cls = "") => `<div class="sg2-r ig-r${cls ? " " + cls : ""}"><b class="sg2-t">${testo}</b>${sotto ? `<small>${sotto}</small>` : ""}</div>`;
+  if (st === "ferma") righe.push(r("Sono ferma: non pubblico e non rispondo ai commenti.", "La fai ripartire qui sotto, quando vuoi.") + `<button type="button" class="sg2-b ig-b" data-soc-fermo="0">Fai ripartire ${nome}</button>`);
+  else if (st === "chiave") righe.push(r("La chiave di Instagram non va più (scaduta o tolta).", "Si rifà dal PC, in 2 minuti: ti guido io.") + `<button type="button" class="sg2-b ig-b" data-soc-chiave>Rifai la chiave di Instagram</button>`);
+  else if (st === "personale") righe.push(r("L'Instagram collegato è ancora «personale»: così Instagram non mi fa pubblicare.", "Sul telefono: Impostazioni → Tipo di account → Passa all'account professionale → Azienda. Poi faccio io."));
+  else if (st === "controllo") righe.push(r("Ho la chiave nuova di Instagram: la sto controllando.", "Entro 10 minuti qui compare «collegata»."));
+  else if (st === "aspetta-chiave") righe.push(r("Ho le foto, ma Instagram non è ancora collegato.", "Si collega dal PC, una volta sola: 10 minuti.") + `<button type="button" class="sg2-b ig-b" data-soc-chiave>Collega Instagram</button>`);
+  else if (st === "aspetta-foto") righe.push(r(`${x.collegata ? "Sono collegata a Instagram. " : ""}Per partire mi servono le foto dell'albergo.`, "Tocca «Foto da fare»: le fai col telefono, una alla volta. Appena ce n'è una, preparo il primo post."));
+  else if (st === "foto") righe.push(r("Ho usato tutte le foto: me ne servono di nuove.", "Tocca «Foto da fare» e rifanne qualcuna (anche le stesse cose, da un altro lato)."));
+  if (st === "al-lavoro" || st === "foto") righe.unshift(r(`Sono al lavoro: questa settimana ${c.post} ${c.post === 1 ? "post" : "post"} e ${c.risposte} ${c.risposte === 1 ? "risposta" : "risposte"} ai commenti.`, x.collegata && m.ig && m.ig.nome ? `Su Instagram: @${esc(m.ig.nome)}` : ""));
+  if (m.prossimo && m.prossimo.giorno && st !== "ferma") righe.push(r(`Il prossimo post: ${quando(m.prossimo.giorno, m.prossimo.ora)}.`, "I post escono la sera, dalle 18:30."));
+  const ultimo = (Array.isArray(s.pubblicati) ? s.pubblicati : []).filter(p => p && p.link).slice(-1)[0];
+  if (ultimo) righe.push(`<div class="sg2-r ig-r"><b class="sg2-t">L'ultimo post: ${esc(csQuando(ultimo.quando) || "")}.</b><a class="sg2-b ig-b chiaro" href="${esc(ultimo.link)}" target="_blank" rel="noopener">Guardalo su Instagram</a></div>`);
+  if (m.errore && m.errore.testo && Date.now() - (Date.parse(m.errore.quando || "") || 0) < 2 * 86400000) righe.push(r("L'ultima volta qualcosa non è andato: riprovo io.", esc(m.errore.testo), "ko"));
+  const bozze = (Array.isArray(s.bozze) ? s.bozze : []).filter(b => b && b.k && b.testo).slice(0, 3);
+  const prova = bozze.length ? `<section class="sg2-c ig-bozze"><h4>I prossimi post, come li vedrà la gente</h4>${bozze.map(b => `<article class="soc-bozza ig-bozza"><div class="soc-bozza-testa"><i aria-hidden="true">LR</i><b>${esc((m.ig && m.ig.nome) || "lestanzediricci")}</b><small>prova</small></div><img alt="" data-soc-bozza-foto="${esc(b.k)}"><p>${esc(b.testo).replace(/\n/g, "<br>")}</p></article>`).join("")}<p class="ig-nota">Escono da soli nei giorni dei post. Se uno non ti piace, rifai quella foto e lo riscrivo.</p></section>` : "";
+  if (bozze.length) setTimeout(() => { try { socFotoBozze(); } catch (e) {} }, 0);
+  return `<section class="sg2-c ig-c"><h4>${nome} su Instagram</h4>${righe.join("")}</section>${prova}`;
+}
+// «Foto da fare» aperta: le otto foto, ognuna da fotografare lì (o dalla galleria)
+function segrIgFoto(x) {
+  const { s, m } = x, foto = s.foto || {}, no = m.fotoNo || {};
+  const righe = SOC_FOTO.map(f => {
+    const sc = !!(foto[f.k] && no[f.k] && no[f.k].quando === foto[f.k].quando), ok = !!foto[f.k] && !sc;
+    const tasti = `<div class="ig-tasti"><label class="sg2-b ig-b${ok ? " chiaro" : ""}">${ok ? "Rifalla" : "Fotografa"}<input type="file" accept="image/*" capture="environment" hidden data-soc-foto="${f.k}"></label><label class="ig-galleria">dalla galleria<input type="file" accept="image/*" hidden data-soc-foto="${f.k}"></label></div>`;
+    return `<div class="sg2-r ig-f${ok ? " fatta" : sc ? " no" : ""}"><b class="sg2-t">${ok ? '<i class="ig-ok" aria-label="fatta">✓</i> ' : sc ? '<i class="ig-no" aria-label="da rifare">!</i> ' : ""}${esc(f.t)}</b><small>${sc ? `Da rifare: ${esc(no[f.k].motivo || "")}` : esc(f.c)}</small>${tasti}</div>`;
+  }).join("");
+  return `<section class="sg2-c igf-c"><h4>Le foto che mi servono</h4><p class="ig-nota">Una alla volta, quando capita: tocca «Fotografa» e scatta lì, sul posto. In orizzontale, con tanta luce, senza persone e senza cose degli ospiti. Prima di pubblicarla la guardo io.</p>${righe}</section>`;
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-segr-ig]") : null; if (!t || S.vista !== "segreteria") return;
+  e.preventDefault();
+  const k = t.dataset.segrIg; S.segrIg = S.segrIg === k ? "" : k; disegna();
+  if (S.segrIg) setTimeout(() => { const g = document.querySelector("#segrHero .sgt-ig"), sc = g && g.closest(".casa-testo"); if (g && sc) { const y = g.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 52; try { sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } catch (er) { sc.scrollTop = Math.max(0, y); } } }, 60);
+});
 function disegnaSegrHero() {
   let h = document.getElementById("segrHero");
   if (!segrHeroAttivo() || !sg2Pezzi) {
@@ -21592,7 +21660,8 @@ function pipLimiti() {   // tra la barra in cima e quella in basso
 }
 function pipMetti(el, w, left, top) {
   const vw = document.documentElement.clientWidth || innerWidth, vh = innerHeight, lim = pipLimiti();
-  const W = Math.round(Math.max(88, Math.min(Math.min(300, vw * 0.8), w))), H = Math.round(W / PIP_RAPP) + 34;
+  const maxW = Math.max(88, Math.min(vw - 8, (vh - lim.su - lim.giu - 40) * PIP_RAPP));   // 1.111.0: grande quanto vuoi
+  const W = Math.round(Math.max(88, Math.min(maxW, w))), H = Math.round(W / PIP_RAPP) + 34;
   const L = Math.round(Math.max(4, Math.min(vw - W - 4, left))), T = Math.round(Math.max(lim.su, Math.min(vh - lim.giu - H, top)));
   el.style.width = W + "px"; el.style.left = L + "px"; el.style.top = T + "px";
   // «Sofia grande» sta dall'altra parte: col riquadrino a sinistra va a destra (così il riquadrino non lo copre)

@@ -11150,3 +11150,41 @@ body.premium #segrHero.notizie-piene .segr-piena-via .spv-su{display:grid;place-
 .pip-bolla .sg2-bolla p{margin:0;font-size:21px;line-height:1.5;font-weight:700;color:#000}
 .pip-bolla .sg2-bolla-x{position:absolute;top:6px;right:6px;width:40px;height:40px;border:2px solid #16264A;border-radius:50%;background:#fff;color:#000;font-size:20px;line-height:1;cursor:pointer}
 .pip-bolla .sg2-b{margin:10px 0 0;min-height:52px;font-size:19px}
+
+/* ----------------------------------------------------------------------------
+   1.111.0 · INSTAGRAM NELLA SEGRETERIA (Michele, 20/11: «metti nella segreteria quello che si può e il resto lo facciamo dopo ma
+   finisci la segreteria»): due cartoncini come gli altri, «Instagram» (il megafono) e «Foto da fare» (la casa); aperti, lì
+   sotto, come sta Sofia, i prossimi post con la foto, e le otto foto con «Fotografa».
+   ---------------------------------------------------------------------------- */
+#segrHero .sgt.ig{--cc:#F2B6D3;--cb:#7A2850;--cs:#B0587E;--tr:var(--mt-tratto2)}
+#segrHero .sgt.igf{--cc:#FCCF9E;--cb:#7A4A12;--cs:#B07A3E;--tr:var(--mt-tratto2)}
+#segrHero .sgt.ig .sgt-d,#segrHero .sgt.igf .sgt-d{width:96px;height:96px;margin:30px 0 0}
+#segrHero .sgt.ig.aperta,#segrHero .sgt.igf.aperta{--sx:1px;--sy:1px;transform:translate(-2px,3px);border-width:3px;border-color:#26262B !important}
+#segrHero .sgt.ig.aperta::after,#segrHero .sgt.igf.aperta::after{content:"";position:absolute;right:10px;top:10px;width:20px;height:24px;background:var(--mt-matita);clip-path:polygon(38% 0,62% 0,62% 58%,100% 58%,50% 100%,0 58%,38% 58%)}
+#segrHero .sgt-aperto.ig .sg2-c{--cc:#F2B6D3;--cb:#7A2850;--cs:#D79AB8}
+#segrHero .sgt-aperto.igf .sg2-c{--cc:#FCCF9E;--cb:#7A4A12;--cs:#D9AE7E}
+#segrHero .sgt-aperto.ig .sg2-c h4::before{background-image:url(mat-megafono.webp)}
+#segrHero .sgt-aperto.igf .sg2-c h4::before{background-image:url(mat-casa.webp)}
+#segrHero .sgt-aperto .sg2-c + .sg2-c{margin-top:14px}
+#segrHero .sgt-aperto .ig-r.ko .sg2-t{color:#8A1F17}
+#segrHero .sgt-aperto .ig-nota{margin:2px 0 10px;font-size:19px;line-height:1.55;color:var(--mt-grigio)}
+/* i tasti: grandi, a cartoncino, come gli altri della Segreteria */
+#segrHero .sgt-aperto .sg2-b.ig-b{display:flex;align-items:center;justify-content:center;width:100%;min-height:60px;margin:10px 0 0;padding:6px 14px;
+  background-color:color-mix(in srgb,#FDE882 45%,#FFFDF8) !important;border:2.5px solid var(--mt-matita);border-radius:18px 15px 19px 14px/15px 19px 14px 18px;
+  box-shadow:2px 3px 0 -1px rgba(38,38,43,.25);color:var(--mt-matita);font-family:var(--mt-font);font-size:21px;font-weight:700;line-height:1.25;text-align:center;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#segrHero .sgt-aperto .sg2-b.ig-b.chiaro{background-color:#FFFFFF !important}
+#segrHero .sgt-aperto .sg2-b.ig-b:active{transform:translate(1px,2px);box-shadow:none}
+/* le otto foto */
+#segrHero .sgt-aperto .ig-f .sg2-t{display:flex;align-items:center;gap:8px}
+#segrHero .sgt-aperto .ig-ok,#segrHero .sgt-aperto .ig-no{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;font-style:normal;font-size:20px;line-height:1;color:#fff}
+#segrHero .sgt-aperto .ig-ok{background:#2E7D4F}
+#segrHero .sgt-aperto .ig-no{background:#B23F37}
+#segrHero .sgt-aperto .ig-f.no small{color:#8A1F17}
+#segrHero .sgt-aperto .ig-tasti{display:flex;align-items:center;gap:12px;margin-top:8px}
+#segrHero .sgt-aperto .ig-tasti .sg2-b.ig-b{flex:1 1 auto;width:auto;margin:0}
+#segrHero .sgt-aperto .ig-galleria{flex:none;display:flex;align-items:center;min-height:52px;padding:0 4px;color:#2F6DA4;font-family:var(--mt-font);font-size:18px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+/* i prossimi post, con la loro foto */
+#segrHero .sgt-aperto .ig-bozza{margin:0 0 12px;border:2px solid var(--mt-matita);border-radius:16px;background:#fff}
+#segrHero .sgt-aperto .ig-bozza .soc-bozza-testa b{font-size:17px}
+#segrHero .sgt-aperto .ig-bozza .soc-bozza-testa small{font-size:15px}
+#segrHero .sgt-aperto .ig-bozza p{font-size:19px;line-height:1.55;color:var(--mt-matita)}
