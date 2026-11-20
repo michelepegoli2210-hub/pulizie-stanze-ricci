@@ -10921,3 +10921,15 @@ body.con-vista{overflow:hidden}
 #segrHero .sgh .sgt-n,#segrHero .sgh .sgo-pers b,#segrHero .sgh .sg2-n,#segrHero .sgh .sge-ora,
 .sge-foglio b,.sge-foglio h3,.sge-foglio h4,.sge-foglio .sgf-ogg,.sge-foglio .sga-n b{font-weight:700 !important}
 .sheet .panel:has(.sge-foglio) > .big.close{font-family:"Andika","Atkinson Hyperlegible Next",sans-serif;font-weight:700;-webkit-text-stroke:0;font-size-adjust:.6}
+
+/* ----------------------------------------------------------------------------
+   1.108.2 · LE LETTERE DI SCUOLA PIÙ NERE (Michele, 20/11, vista la 1.108.1: alla proposta «posso farla ancora più grande o più
+   nera»: «vai»). Come la variante 4 delle prove («più grande e più nera»): dove c'è tanto da leggere le lettere sono in
+   grassetto vero (Andika 700) e d'inchiostro nero; le note grigie più scure. La misura resta quella della 1.108.1.
+   ---------------------------------------------------------------------------- */
+.sge-foglio,.sge-foglio *,#segrHero .sgh .of-testo,#segrHero .sgh .of-fai-t,#segrHero .sge .sge-ante,#segrHero .sge .sge-poi,
+#segrHero .sge .sge-sofia,#segrHero .sge .sge-sofia *,#segrHero .sg2-r .sg2-t,#segrHero .sgh .sgt-aperto .sg2-r *{font-weight:700 !important}
+.sge-foglio{color:#000}
+.sge-foglio .sgf-testo,.sge-foglio .sgf-sofia p,.sge-foglio .sga-sofia,.sge-foglio .sgf-da b,.sge-foglio .sgf-ogg,.sge-foglio .sga-n b,.sge-foglio .sgf-leggi,
+#segrHero .sge .sge-ante,#segrHero .sg2-r .sg2-t,#segrHero .sgh .of-testo,#segrHero .sgh .of-fai-t{color:#000}
+.sge-foglio .sgf-da small,.sge-foglio .sgf-nota,.sge-foglio .sga-n small,.sge-foglio .sga-nota{color:#3A3A42}

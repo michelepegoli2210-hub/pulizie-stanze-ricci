@@ -3472,3 +3472,4 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - La Segreteria e le email sono scritte con le «lettere di scuola» (Andika), scelte da lui tra le prove.
   - Dove c'è tanto da leggere (l'email intera, le righe di Sofia, le email e i cassetti della Segreteria) le lettere sono più grandi.
   - I nomi, gli oggetti e i titoli sono in grassetto.
+- **1.108.2** (20/11): nella Segreteria e nelle email le lettere di scuola sono anche più nere (in grassetto, inchiostro nero) dove c'è tanto da leggere.

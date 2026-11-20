@@ -192,6 +192,7 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   (alte come prima) e .7 (un quinto più grandi), grassetti veri, niente `-webkit-text-stroke`. Per cambiarla: `--mt-font`/
   `--mt-num` su `#segrHero,.sge-foglio` e il font nella lista di sw.js. Attenzione: certi caratteri hanno la «x» dichiarata
   sbagliata (Delius: 0,085) e con `font-size-adjust` diventano giganti: misurarla prima (fontTools, il glifo «x»).
+  1.108.2 (sua: «vai» a «più grande o più nera»): nei testi lunghi grassetto vero (Andika 700) e inchiostro nero.
   La Ciclovia (letto sul loro sito il 17/11/2026): le richieste arrivano per email, si accettano o si rifiutano entro 12 ore
   lavorative, i giorni si chiudono nel loro calendario; niente iCal, niente collegamenti. Chiudere i giorni e dire sì o no
   lo fa Michele sul loro sito: l'app mostra e porta lì, non lo fa al posto suo e non va automatizzato col mouse.
