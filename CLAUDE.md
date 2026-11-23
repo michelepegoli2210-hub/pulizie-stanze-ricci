@@ -250,11 +250,13 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   dappertutto no: «troppo allarmanti… non voglio che mi mettano ansia»; la regola è sua: «Bianco è poco intenso… Azzurro è
   normale… rosso è urgente»). Il numero che c'è sta in un tondo: BIANCO (Pulizie, Ho fatto io), AZZURRO (tutti gli altri),
   ROSSO = la classe `rosso` sul tastone: la Ciclovia con una email nuova (`segrCicloviaNuove`: non ancora aperta su questo
-  telefono, `ricci_segr_viste`; aprire l'email o toccare «Ciclovia» la toglie), «Da fare tu» con una cosa che scade oggi o
+  telefono, `ricci_segr_viste`; aprire l'email o toccare «Ciclovia» la toglie; 1.115.1: le email arrivate prima che il
+  telefono avesse questa versione, `ricci_segr_viste_da`, sono rosse solo se aspettano ancora la risposta), «Da fare tu» con una cosa che scade oggi o
   che Sofia ha segnato importante (`segrUrgenteFare`; `importante` lo mette la lettura, `lettura.js`), «Ti propongo» con un
   guasto urgente (`segrUrgenteProp`). Lo zero ha la classe `zero`: piccolo e spento. Il numerino della Segreteria nella barra
   in basso è azzurro, rosso se c'è qualcosa di rosso (`segrUrgenti`), e conta anche la Ciclovia nuova. Un tastone nuovo col
-  numero: `zero` quando è a zero, `rosso` solo se è davvero urgente (il rosso gli mette ansia: poco).
+  numero: `zero` quando è a zero, `rosso` solo se è davvero urgente (il rosso gli mette ansia: poco). Un «visto» nuovo
+  tenuto nel telefono parte da adesso: quello che c'era già non deve uscire come nuovo la prima volta.
 - La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
   quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
   nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da
