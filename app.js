@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.115.0";
+export const VERSIONE = "1.115.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -7069,8 +7069,25 @@ function segrVistaMetti(ids) {
   try { localStorage.setItem(CHIAVE_SEGR_VISTE, JSON.stringify(v)); } catch (e) {}
   return true;
 }
-// le email della Ciclovia (richieste, prenotazioni, annullate) di questi sette giorni non ancora aperte su questo telefono
-function segrCicloviaNuove() { const v = segrVisteLeggi(); return segrPrenotazioni().filter(e => e.c.canale === "ciclovia" && !v[e.p.id]); }
+// le email della Ciclovia (richieste, prenotazioni, annullate) di questi sette giorni non ancora aperte su questo telefono.
+// 1.115.1: «aperta» il telefono lo sa solo da quando ha questa versione: la prima volta le email di prima, che Michele aveva
+// già letto, uscivano tutte rosse (un rosso non vero: «non voglio che mi mettano ansia»). Il telefono segna quel momento
+// (`ricci_segr_viste_da`): un'email arrivata DOPO è nuova finché non la apre; una arrivata PRIMA è rossa solo se aspetta ancora
+// la sua risposta (la richiesta col tempo per rispondere non ancora finito, `segrPrenEntro`). Mezz'ora di margine: l'email
+// porta l'ora in cui è stata spedita, e il giro la porta qualche minuto dopo.
+const CHIAVE_SEGR_VISTE_DA = "ricci_segr_viste_da";
+function segrVisteDa() {
+  try { let d = Number(localStorage.getItem(CHIAVE_SEGR_VISTE_DA)) || 0; if (!d) { d = Date.now(); localStorage.setItem(CHIAVE_SEGR_VISTE_DA, String(d)); } return d; } catch (e) { return 0; }
+}
+function segrCicloviaNuove() {
+  const v = segrVisteLeggi(), da = segrVisteDa() - 30 * 60000;
+  return segrPrenotazioni().filter(e => {
+    if (e.c.canale !== "ciclovia" || v[e.p.id]) return false;
+    const t = Number(e.p.ts) || 0;
+    if (!t || t >= da) return true;                                      // arrivata dopo (o senza ora): nuova
+    const x = segrPrenEntro(e); return !!(x && x.classe !== "scaduta");   // arrivata prima: solo se aspetta ancora la risposta
+  });
+}
 // una cosa da fare è urgente se Sofia l'ha segnata importante, o se gliela chiedono gli altri e scade oggi (o è già scaduta)
 function segrUrgenteFare(t) { if (!t) return false; if (t.importante === true) return true; const g = String(t.entro || "").slice(0, 10); return !t.richiesto && !!g && g <= L.oggiISO(); }
 // una proposta è urgente se è un guasto urgente (o urgentissimo), o se è segnata importante
