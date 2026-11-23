@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.115.1";
+export const VERSIONE = "1.116.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -791,7 +791,9 @@ function barraSotto() {
     // lui: proposte o domande delle ultime letture; il numerino dice quante. «Parla con Sofia» resta nel «Parla» della
     // tendina e tra le stanze sotto Sofia.
     // 1.74.0: niente più tasto da sala giochi: l'agenda d'oro, col numerino di quello che la segretaria ha per te
-    if (k === "sofia") return `<button type="button" class="bs-t bs-ico2 bs-seg${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare" + (uSeg.tutte ? ", " + (uSeg.tutte === 1 ? "una urgente" : uSeg.tutte + " urgenti") : "") + ")" : ""}"><span class="bs-fig" aria-hidden="true">${icoNavSegreteria()}${nSeg ? `<i class="nav-conta${uSeg.tutte ? " rosso" : ""}">${nSeg > 99 ? "99+" : nSeg}</i>` : ""}</span><span class="bs-n">Segreteria</span></button>`;
+    // 1.116.0 (Michele: «a fianco a quello azzurro… uno rosso… si dovrebbe leggere non 21, sono distinti e separati, però più
+    // piccolo»): il numero azzurro sono tutte le cose da guardare; accanto, staccato e più piccolo, il rosso: quante sono urgenti
+    if (k === "sofia") { const urg = Math.min(nSeg, uSeg.tutte || 0); return `<button type="button" class="bs-t bs-ico2 bs-seg${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare" + (urg ? ", " + (urg === 1 ? "una urgente" : urg + " urgenti") : "") + ")" : ""}"><span class="bs-fig${urg ? " due" : ""}" aria-hidden="true">${icoNavSegreteria()}${nSeg ? `<i class="nav-conta">${nSeg > 99 ? "99+" : nSeg}</i>${urg ? `<i class="nav-conta nc-urg">${urg > 99 ? "99+" : urg}</i>` : ""}` : ""}</span><span class="bs-n">Segreteria</span></button>`; }
     const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
     // 1.63.0 (Michele, 8/11: «gli altri, Prospetto, Piantine, Paghe e Oggi, devi far fare dei pulsanti molto simili a
     // questi ma di un blu bello mare scuro, ma di alluminio satinato»): anche loro sono tasti da sala giochi, un po' più
@@ -9409,6 +9411,7 @@ function casaOssatura(tre) {
     <button type="button" class="casa-mic-grande casa-t-mic" data-cons-mic aria-label="Parla con ${esc(nomeGov())}">${CASA_ICO.mic}<span>Parla con ${esc(nomeGov())}</span></button>
     ${NAV_HTML("oggi", true)}
     <span class="casa-velo" aria-hidden="true"></span>
+    <button type="button" class="casa-su" data-tenda aria-label="Apri le notizie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div class="casa-nuvola" id="casaNuvola">
       <span class="casa-vene" aria-hidden="true"></span>
       <span class="casa-presa" aria-hidden="true"></span>
@@ -9730,7 +9733,7 @@ function tendaMisura(h, top) {
 }
 document.addEventListener("touchstart", (e) => {
   const h = document.getElementById("sofiaHero");
-  const x = e.target && e.target.closest && (e.target.closest("#sofiaHero .casa-schede, #sofiaHero .casa-saluto, #sofiaHero .casa-presa, #sofiaHero .casa-nascondi") || (h && h.classList.contains("tenda-nascosta") ? e.target.closest("#sofiaHero .casa-nuvola") : null));   // 1.74.0
+  const x = e.target && e.target.closest && (e.target.closest("#sofiaHero .casa-schede, #sofiaHero .casa-saluto, #sofiaHero .casa-su, #sofiaHero .casa-presa, #sofiaHero .casa-nascondi") || (h && h.classList.contains("tenda-nascosta") ? e.target.closest("#sofiaHero .casa-nuvola") : null));   // 1.74.0
   if (!x || !h || h.classList.contains("nuvola-aperta") || !e.touches || !e.touches[0]) { tendaDito = null; return; }
   const hr = h.getBoundingClientRect(), r = h.querySelector(".casa-nuvola").getBoundingClientRect();
   tendaDito = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), top0: r.top - hr.top, chiusa: h.classList.contains("tenda-chiusa"), nascosta: h.classList.contains("tenda-nascosta"), mosso: false };
@@ -10248,6 +10251,12 @@ function statoCameraGiorno(cid, iso) {
   if (l.some(p => p.stato === "non_fatta")) return { k: "prob", testo: "non pulita" };
   return { k: "da", testo: `da pulire · ${chi}` };
 }
+// 1.116.0: chi arriva da un sito di prenotazione (non «Diretto»): quanti ospiti, e da dove («da Booking», «dai siti»)
+function sitoDi(s) { const k = canaleDi(s); return k === "diretto" ? "" : CANALI[k].nome; }
+function arriviDaiSiti(lista) {
+  const l = (lista || []).filter(s => sitoDi(s)), nomi = [...new Set(l.map(sitoDi))];
+  return { ospiti: l.reduce((t, s) => t + (Number(s.persone) || 1), 0), camere: l.length, da: nomi.length === 1 ? `da ${nomi[0]}` : "dai siti" };
+}
 function notizieFacili(ls, fatte, man, dom) {
   const oggi = L.oggiISO(), domani = L.aggiungiGiorni(oggi, 1), sog = soggiorniLista();
   const mv = movimentiDelGiorno(oggi);
@@ -10261,13 +10270,16 @@ function notizieFacili(ls, fatte, man, dom) {
   // numero e sotto ARRIVI / PARTENZE (ARRIVO / PARTENZA per una persona), senza «ospiti»; il numero resta quello delle persone.
   // Per chi non vede resta la frase intera («Oggi arrivano 3 ospiti, in 3 camere»). (Prima un commento in mezzo alla riga si
   // mangiava «parole» e «corto»: adesso ci sono.)
-  const porta = (k, ico, lista, ospiti, verbo, verbi, nome, nomi) => {
-    const cam = lista.length, uno = ospiti === 1, in_ = `in ${cam} ${cam === 1 ? "camera" : "camere"}`, parola = uno ? nome : nomi;
-    return { k, vai: k, ico, porta: true, n: String(ospiti), uno: "", verbo: parola, due: `${parola} oggi`, parole: `${parola} oggi`, corto: parola,
-      sotto: cam ? `<small class="of-s2">${in_}</small>` : "", tono: cam ? "att" : "",
-      dici: cam ? `Oggi ${uno ? verbo : verbi} ${ospiti} ${uno ? "ospite" : "ospiti"}, ${in_}` : `Oggi non ${verbo} nessuno` };
+  // 1.116.0 (Michele: «quando ci fosse un Booking, oppure un Expedia, oppure un Airbnb, oppure [la Ciclovia], deve essere scritto
+  // rosso, perché la camera poi va preparata un po' meglio»): `rossi` = quanti ospiti di quel tasto vanno guardati per primi
+  // (gli arrivi dai siti, i guasti urgenti); sul tasto è il tondino rosso piccolo accanto al numero azzurro
+  const porta = (k, ico, lista, ospiti, verbo, verbi, nome, nomi, siti = null) => {
+    const cam = lista.length, uno = ospiti === 1, in_ = `in ${cam} ${cam === 1 ? "camera" : "camere"}`, parola = uno ? nome : nomi, ns = siti ? siti.ospiti : 0;
+    return { k, vai: k, ico, porta: true, n: String(ospiti), rossi: ns, uno: "", verbo: parola, due: `${parola} oggi`, parole: `${parola} oggi`, corto: parola,
+      sotto: cam ? `<small class="of-s2">${in_}${ns ? ` · <b class="of-siti">${ns} ${esc(siti.da)}</b>` : ""}</small>` : "", tono: cam ? "att" : "",
+      dici: cam ? `Oggi ${uno ? verbo : verbi} ${ospiti} ${uno ? "ospite" : "ospiti"}, ${in_}${ns ? `. ${ns === 1 ? "Uno arriva" : ns + " arrivano"} ${siti.da}: camera da preparare meglio` : ""}` : `Oggi non ${verbo} nessuno` };
   };
-  out.push(porta("arriviOggi", icoArrivi(), mv.arr, mv.ospitiArr, "arriva", "arrivano", "arrivo", "arrivi"));
+  out.push(porta("arriviOggi", icoArrivi(), mv.arr, mv.ospitiArr, "arriva", "arrivano", "arrivo", "arrivi", arriviDaiSiti(mv.arr)));
   out.push(porta("partenzeOggi", icoPartenze(), mv.par, mv.ospitiPar, "parte", "partono", "partenza", "partenze"));
   out.push({ k: "pulizie", vai: "pulizie", ico: icoSecchio(), n: n ? `${fatte} su ${n}` : "0", parole: n ? `${n === 1 ? "pulizia fatta" : "pulizie fatte"}${resta ? "" : " ✓"}` : "pulizie oggi", corto: "pulizie oggi",
     sotto: n ? `<span class="of-barra" aria-hidden="true"><i style="width:${Math.round(fatte / n * 100)}%"></i></span>` : "", tono: resta > 0 ? "att" : n ? "ok" : "",
@@ -10280,8 +10292,9 @@ function notizieFacili(ls, fatte, man, dom) {
     sotto: `<small class="of-s of-vuote">${icoLettoCasa(false)}<span>${libere} ${libere === 1 ? "vuota" : "vuote"}</span></small>`,
     dici: `Stanotte ${piene} ${piene === 1 ? "camera piena" : "camere piene"} e ${libere} ${libere === 1 ? "vuota" : "vuote"}` });
   // 1.79.11 (Michele: «al posto di da aggiustare metti GUASTI»): la figurina e la scheda dicono «guasti» («guasto» per uno)
-  out.push({ k: "manutenzione", vai: "manutenzione", ico: icoChiave(), n: String(man), parole: man === 1 ? "guasto" : "guasti", corto: man === 1 ? "guasto" : "guasti", tono: man > 0 ? "att" : "",
-    dici: man ? `${man} ${man === 1 ? "guasto" : "guasti"} da aggiustare` : "Nessun guasto" });
+  const manUrg = lavoriAperti().filter(m => urgenza(m) > 0).length;   // 1.116.0: i guasti urgenti, nel tondino rosso
+  out.push({ k: "manutenzione", vai: "manutenzione", ico: icoChiave(), n: String(man), rossi: manUrg, parole: man === 1 ? "guasto" : "guasti", corto: man === 1 ? "guasto" : "guasti", tono: man > 0 ? "att" : "",
+    dici: man ? `${man} ${man === 1 ? "guasto" : "guasti"} da aggiustare${manUrg ? `, ${manUrg === 1 ? "uno urgente" : manUrg + " urgenti"}` : ""}` : "Nessun guasto" });
   const nm = messaggiSigNuovi();   // 1.55.13: i messaggi delle signore per Michele
   if (nm.length) out.push({ k: "messaggi", vai: "messaggi", ico: icoBusta(), n: String(nm.length), parole: nm.length === 1 ? `messaggio di ${nm[0].nome || "una signora"}` : "messaggi dalle signore", corto: nm.length === 1 ? "messaggio" : "messaggi", tono: "att", larga: true, dici: nm.length === 1 ? `${nm[0].nome || "Una signora"} ti ha scritto: ${nm[0].testo || "una foto"}` : `${nm.length} messaggi dalle signore` });
   if (spintaDaProporre()) out.push({ k: "spintaGh", vai: "spintaGh", ico: icoNuvola(), n: "⚡", mn: "⚡", parole: "un passo per te: le notifiche subito", corto: "notifiche", tono: "att", larga: true, dici: "Un passo per te: con una chiave di GitHub le notifiche partono subito da questo PC" });   // 1.55.14
@@ -10293,13 +10306,20 @@ function notizieFacili(ls, fatte, man, dom) {
 }
 // le schede a figure del riquadro aperto: arrivi e partenze di oggi, pulizie di oggi e di domani, camere, manutenzione; poi le larghe
 function schedeFacili(ls, fatte, man, dom) {
-  const scheda = (o) => `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}${o.porta ? " of-porta" : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><b class="of-n${o.testo ? " of-n-t" : ""}">${esc(o.n)}${o.uno ? `<i class="of-u">${esc(o.uno)}</i>` : ""}</b><span class="of-p">${o.porta ? `<b class="of-v">${esc(o.verbo)}</b> oggi` : esc(o.uno ? o.due : o.parole)}</span>${o.sotto || ""}</span></button>`;   // 1.79.4: «arrivano» / «partono» in grassetto
+  // 1.116.0 (Michele: «il numero… sopra la scritta arrivi… deve essere a fianco alla scritta arrivi… più centrato il tutto…
+  // cerchiate come qui in azzurro»): ARRIVI e PARTENZE sono schede larghe: il cartello, la parola e ACCANTO il numero nel tondo
+  // (azzurro; lo zero spento; il rosso piccolo = dai siti); le altre schede tengono il numero dov'era, nel tondo
+  const tondo = (o, dopo = "") => `<span class="of-nn"><b class="of-n${o.testo ? " of-n-t" : ""}${o.k === "pulizie" ? " bianco" : ""}${o.k === "camere" ? " piano" : ""}${String(o.n) === "0" ? " zero" : ""}">${esc(o.n)}</b>${o.rossi ? `<b class="of-r">${o.rossi}</b>` : ""}${dopo}</span>`;
+  const scheda = (o) => o.porta
+    ? `<button type="button" class="of-c larga of-porta${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t"><span class="of-p"><b class="of-v">${esc(o.verbo)}</b> oggi</span>${tondo(o)}${o.sotto || ""}</span></button>`
+    : `<button type="button" class="of-c${o.tono ? " " + o.tono : ""}${o.larga ? " larga" : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="of-ico" aria-hidden="true">${o.ico}</span><span class="of-t">${tondo(o, o.uno ? `<i class="of-u">${esc(o.uno)}</i>` : "")}<span class="of-p">${esc(o.uno ? o.due : o.parole)}</span>${o.sotto || ""}</span></button>`;
   return notizieFacili(ls, fatte, man, dom).map(scheda).join("");
 }
 // 1.79.0: a tendina chiusa, in alto, i due tasti grandi: «3 ospiti arrivano oggi» (la porta, gli omini che entrano) e «7 ospiti
 // partono oggi» (gli omini che se ne vanno). Un tocco apre chi arriva e dove va, oppure chi parte.
 function porteFacili(ls, fatte, man, dom) {
-  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-1"><b class="csp-n">${esc(o.n)}</b>${o.uno ? " " + esc(o.uno) : ""}</span><span class="csp-2"><b class="csp-v">${esc(o.verbo)}</b></span><span class="csp-3">oggi</span></span></button>`).join("");   // 1.79.13 (Michele: «devi scrivere arrivi oggi e partenze oggi»): sotto la parola, «oggi»; 1.79.4: «arrivano» / «partono» in grassetto; 1.79.5 (Michele: «ARRIVANO, senza oggi»): solo la parola, in maiuscolo e in rilievo (lo stile)
+  // 1.116.0: il numero non sta più sopra la parola: sta accanto, nel tondo azzurro (lo zero spento; il rosso piccolo = dai siti)
+  return notizieFacili(ls, fatte, man, dom).filter(o => o.porta).map(o => `<button type="button" class="csp${o.tono ? " " + o.tono : ""}${o.n === "0" ? " zero" : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}"><span class="csp-ico" aria-hidden="true">${o.ico}</span><span class="csp-t"><span class="csp-2"><b class="csp-v">${esc(o.verbo)}</b></span><span class="csp-3">oggi</span></span><span class="csp-nn"><b class="csp-n">${esc(o.n)}</b>${o.rossi ? `<b class="csp-r">${o.rossi}</b>` : ""}</span></button>`).join("");
 }
 // 1.21.2: le figurine della tendina chiusa: tutte le notizie della giornata. 1.79.0: senza i due tasti grandi, che stanno sopra;
 // le camere hanno due metà (il letto pieno e il letto vuoto, ognuno col suo numero)
@@ -10308,7 +10328,7 @@ function figurineFacili(ls, fatte, man, dom) {
   const meta = (ico, n, p) => `<span class="csf-m"><span class="csf-ico" aria-hidden="true">${ico}</span><b class="csf-n">${esc(n)}</b><span class="csf-p">${esc(p)}</span></span>`;
   return { n: l.length, html: l.map(o => o.doppia
     ? `<button type="button" class="csf-c csf-due${o.tono ? " " + o.tono : ""}" data-casa-vai="${o.vai}" aria-label="${esc(o.dici)}">${meta(o.ico, o.n, o.corto)}${meta(o.doppia.ico, o.doppia.n, o.doppia.corto)}</button>`
-    : `<button type="button" class="csf-c${o.tono ? " " + o.tono : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="csf-ico" aria-hidden="true">${o.ico}</span><b class="csf-n">${esc(o.mn || o.n)}</b><span class="csf-p">${esc(o.corto)}</span></button>`).join("") };
+    : `<button type="button" class="csf-c${o.tono ? " " + o.tono : ""}" ${o.attr || `data-casa-vai="${o.vai}"`} aria-label="${esc(o.dici)}"><span class="csf-ico" aria-hidden="true">${o.ico}</span><span class="csf-nn"><b class="csf-n${o.k === "pulizie" ? " bianco" : ""}${String(o.mn || o.n) === "0" ? " zero" : ""}">${esc(o.mn || o.n)}</b>${o.rossi ? `<b class="csf-r">${o.rossi}</b>` : ""}</span><span class="csf-p">${esc(o.corto)}</span></button>`).join("") };   // 1.116.0: il numero nel tondo
 }
 // la busta (le chat lette da Sofia: dalla 1.53 non si usa più in Oggi) e il triangolo (un problema in una camera)
 function icoBusta() {
@@ -10426,7 +10446,8 @@ function dettaglioFacile(k, ls, fatte) {
       const s = lista.find(x => x.camera === c.id);
       if (!s) return `<span class="dpm-c ${L.ospiteIl(sog, c.id, oggi) ? "piena" : "vuota"}"><b>${nomeCam(c)}</b></span>`;
       const n = Number(s.persone) || 1;
-      return `<button type="button" class="dpm-c ${arriva ? "arr" : "par"}" data-dtf-sog="${esc(s.id)}" aria-label="${nomeCam(c)}: ${arriva ? "arriva" : "parte"} ${esc(nomeOspite(s))}, ${pers(n)}"><b>${nomeCam(c)}</b><span class="dpm-chi">${esc(nomeCortoOspite(s))}</span><span class="dpm-per">${icoOmino().repeat(Math.min(4, n))}<i>${pers(n)}</i></span></button>`;
+      const sito = arriva ? sitoDi(s) : "";   // 1.116.0: arriva da un sito → in rosso
+      return `<button type="button" class="dpm-c ${arriva ? "arr" : "par"}${sito ? " sito" : ""}" data-dtf-sog="${esc(s.id)}" aria-label="${nomeCam(c)}: ${arriva ? "arriva" : "parte"} ${esc(nomeOspite(s))}, ${pers(n)}${sito ? `, da ${esc(sito)}: camera da preparare meglio` : ""}"><b>${nomeCam(c)}</b>${sito ? `<i class="dpm-sito">${esc(sito)}</i>` : ""}<span class="dpm-chi">${esc(nomeCortoOspite(s))}</span><span class="dpm-per">${icoOmino().repeat(Math.min(4, n))}<i>${pers(n)}</i></span></button>`;
     };
     const inZona = new Set();
     const piani = zoneOrdinate().map(z => {
@@ -10454,12 +10475,14 @@ function dettaglioFacile(k, ls, fatte) {
       if (gu.length) righe.push(`<span class="dtf-mv-2"><span class="dtf-pl guasto">🔧 ${esc(gu.length === 1 ? String(gu[0].titolo || "una cosa da aggiustare") : `${gu.length} cose da aggiustare`)}</span></span>`);
       if (s.nota) righe.push(`<span class="dtf-nota2">${esc(String(s.nota).slice(0, 160))}</span>`);
       if (proprietario() && s.notaPrivata) righe.push(`<span class="dtf-nota2">🔒 ${esc(String(s.notaPrivata).slice(0, 160))}</span>`);
-      return `<button type="button" class="dtf-mv ${arriva ? "arr" : "par"}" data-dtf-sog="${esc(s.id)}"><span class="dtf-mv-1"><b class="dtf-nome">${esc(nomeOspite(s))}</b><span class="dtf-k">${icoPorta()}${nomeCam(c)}</span></span>${righe.join("")}</button>`;
+      const sito = arriva ? sitoDi(s) : "";   // 1.116.0
+      if (sito) righe.unshift(`<span class="dtf-mv-2"><span class="dtf-pl sito">Arriva da ${esc(sito)}: camera da preparare meglio</span></span>`);
+      return `<button type="button" class="dtf-mv ${arriva ? "arr" : "par"}${sito ? " sito" : ""}" data-dtf-sog="${esc(s.id)}"><span class="dtf-mv-1"><b class="dtf-nome">${esc(nomeOspite(s))}</b><span class="dtf-k">${icoPorta()}${nomeCam(c)}</span></span>${righe.join("")}</button>`;
     };
     const dm = arriva ? md.arr : md.par, nd = arriva ? md.ospitiArr : md.ospitiPar;
     const domaniHtml = dm.length ? `<span class="dtf-blocco"><span class="dtf-bt">${arriva ? "Domani arrivano" : "Domani partono"}: ${nd} ${nd === 1 ? "ospite" : "ospiti"}</span><span class="dtf-cam">${dm.map(s => `<button type="button" class="dtf-k via" data-dtf-sog="${esc(s.id)}">${esc(nomeCortoOspite(s))} <small>${nomeCam(camera(s.camera))}</small></button>`).join("")}</span></span>` : "";
     corpo = (lista.length
-      ? `<span class="dtf-conta"><span class="dtf-n ${arriva ? "arr" : "par"}"><b>${ospiti}</b> ${ospiti === 1 ? "ospite" : "ospiti"}</span><span class="dtf-n da"><b>${lista.length}</b> ${lista.length === 1 ? "camera" : "camere"}</span></span>${pianta}${lista.map(scheda).join("")}<span class="dtf-nota mgd-aiuto">Tocca un ospite: si apre la sua scheda.</span>`
+      ? `<span class="dtf-conta"><span class="dtf-n ${arriva ? "arr" : "par"}"><b>${ospiti}</b> ${ospiti === 1 ? "ospite" : "ospiti"}</span><span class="dtf-n da"><b>${lista.length}</b> ${lista.length === 1 ? "camera" : "camere"}</span>${arriva && arriviDaiSiti(lista).ospiti ? `<span class="dtf-n sito"><b>${arriviDaiSiti(lista).ospiti}</b> ${esc(arriviDaiSiti(lista).da)}</span>` : ""}</span>${pianta}${lista.map(scheda).join("")}<span class="dtf-nota mgd-aiuto">Tocca un ospite: si apre la sua scheda.</span>`
       : vuoto(arriva ? "Oggi nessun arrivo." : "Oggi nessuna partenza.")) + domaniHtml;
     tasto = pagina("prospetto", "Apri il prospetto");
   } else if (k === "arrivi") {
@@ -15730,6 +15753,7 @@ const CANALI = {
   booking: { nome: "Booking", breve: "B", colore: "#2F6FDB", testo: "#FFFFFF" },
   airbnb: { nome: "Airbnb", breve: "A", colore: "#E0525E", testo: "#FFFFFF" },
   expedia: { nome: "Expedia", breve: "E", colore: "#E3B11B", testo: "#3D2C00" },
+  ciclovia: { nome: "Ciclovia", breve: "C", colore: "#7C4DCC", testo: "#FFFFFF" },   // 1.116.0 (Michele la nomina coi siti: l'arrivo va in rosso)
 };
 const CANALI_SITI = ["booking", "airbnb", "expedia"];
 function canaleDi(s) { const c = s && s.canale; return CANALI[c] ? c : "diretto"; }
@@ -15748,7 +15772,7 @@ function vistaAnno() {
 }
 function anMese(p, camere, sog, oggi) {
   const fine = L.aggiungiGiorni(L.ultimoDelMese(p), 1), N = L.giorniTra(p, fine);
-  const notti = { diretto: 0, booking: 0, airbnb: 0, expedia: 0 }; let piene = 0, righe = "";
+  const notti = { diretto: 0, booking: 0, airbnb: 0, expedia: 0, ciclovia: 0 }; let piene = 0, righe = "";
   for (const c of camere) {
     let barre = ""; const notte = new Array(N).fill("");   // 1.66.1: ogni camera conta una volta per notte (anche con due ospiti dentro)
     for (const s of sog) {
