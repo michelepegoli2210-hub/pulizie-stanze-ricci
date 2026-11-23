@@ -233,13 +233,33 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   tessera lucida del suo colore profondo con la cornice d'oro, fatta col CSS (`--l1`/`--l2`, `body.segr-lucidi`; con le icone
   «meno lucide» anche i tastoni sono più satinati, `body.icone-opache`). Il disegno avorio è una sagoma di Gemini
   (`tastoni/*.webp`, 600 px; `segrTessera(k, mat)`; tagliate con `taglia-pitto.py`, fuori dal repo). Numeri e parole
-  restano quelli veri, color avorio. «A matita, come prima» rimette anche i tastoni com'erano.
+  restano quelli veri, color avorio.
+- La Segreteria più calma (1.114.0; sua: «c'è troppo rumore visivo… I tasti che abbiamo fatto fare a Gemini… non vanno bene…
+  il tastone sopra Sofia grande… non c'è bisogno… Sofia… più leggera, più sfumata… quando legge le email… si fa fatica a
+  fermarla… gli allegati… troppi colori»; viste le foto: «togliere… i tasti, quelli rotondi, dorati, però i tastoni… mi
+  piacciono… forse sono un po' troppo scuri», poi «Tastoni ancora più chiari»). I TASTI tornano a matita: `segrTastiMatita()`
+  è vero se `ricci_segr_tasti` non è «lucide» (i lucidi di Gemini solo se scelti, Come si vede l'app → 8). I TASTONI lucidi
+  con l'oro restano, più chiari, scelti a parte: `segrTastoniMatita()` (`ricci_segr_tastoni` = «matita»), `segrTessera`,
+  `body.segr-tastoni` (il CSS della 1.113.0 era sotto `segr-lucidi`, adesso sotto `segr-tastoni`), Come si vede l'app → 9.
+  A pagina intera niente «Sofia grande» (Sofia si allarga con due dita, «Indietro» rimette la pagina con lei grande); Sofia
+  nel riquadrino senza cornice né striscia col nome, i bordi sfumati (maschera su `.pip-fig`), un po' trasparente.
+  «Ferma» (`segrFerma`, `#segrFerma`, `segrFermaOra`): mentre Sofia della Segreteria parla (vista Segreteria o foglio
+  dell'email) un tasto grande in basso la zittisce. Gli allegati: un riquadro ciascuno col numero, i disegni semplici
+  (`SGA_DIS`, `sgaDis`), «tipo · peso» su una riga, quello che ha capito Sofia dentro il riquadro, «Apri l'allegato».
 - La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
   quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
   nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da
   #app come segrMini): i tre filmati, col dito si sposta, con due dita o l'angolino si allarga (da 88 px fin quasi a tutto lo schermo, 1.111.0; posto e misura in
   `ricci_segr_pip`), un tocco = `sg2Mic` (se parla smette); la nuvoletta `#segrPipBolla`. «Sofia grande» e Indietro
   (`segrChiudiAperto`) la rimettono com'era. La Sofia grande coi filmati fermi intanto; il fantasmino `segrFuori` no.
+  Toccando un tastone (Oggi, Prenotazioni, Instagram) si scorre con `segrScorriA(g, sopra)` (1.113.2): se serve si passa
+  PRIMA a pagina intera, si aspetta il riquadro grande (340 ms) e ci si ferma sotto «Sofia grande» e il riquadrino
+  (`segrSopraCoperto`); prima a metà strada comparivano loro e quello aperto finiva sotto. La pagina della Segreteria non
+  scorre: la testa è alta `--h-casa + --alto-sotto` (non +80 come la prima pagina), il velo `height:100%`, il riquadro
+  `overscroll-behavior:contain`.
+  La proposta del 21/11, mai pubblicata (la striscia ferma in cima con «Sofia grande» e Sofia piccola, i tasti larghi a tastone aperto, le
+  scritte tutte a 19 px, via il microfono e «Ascolta» piccoli accanto a Sofia): viste le foto ha scelto «Quella di adesso».
+  Non rifarla senza che la chieda lui (fase19115.py e le foto restano fuori dal repo).
 - Instagram nella Segreteria (1.111.0; sua: «metti nella segreteria quello che si può e il resto lo facciamo dopo ma finisci la
   segreteria»): due tessere dopo i cassetti, «Instagram» (`S.segrIg = "ig"`: come sta Sofia influencer, il prossimo post, le
   bozze con la foto) e «Foto da fare» (`"igf"`: le otto `SOC_FOTO` con «Fotografa», `capture`, o «dalla galleria»; salvano

@@ -3504,3 +3504,13 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Il perché: entrando dalla barra in basso la faccina partiva un attimo prima che la pagina nuova ci fosse, e poi non si spegneva più.
   - Negli altri stili resta com'era: compare solo quando scendi giù nella pagina e Sofia non si vede.
   - Viste le foto nella prova (prima e adesso): «Sì, mettila».
+- **1.113.2** (21/11, Michele: «Cerca di migliorare un po' quella parte lì, perché mi sembra un po' affollata… e vedi di controllare anche se ci siano dei bug»):
+  - Gli ho fatto vedere una Segreteria più in ordine (Sofia e «Sofia grande» in una striscia ferma in cima, i tasti larghi, le scritte più grandi). Ha scelto di lasciarla com'è («Quella di adesso»).
+  - Sistemati solo due guasti, senza cambiare niente di come si vede («Sì, sistemali»): la pagina non si muove più da sola (prima scorreva un po' e la barra in cima spariva sotto il riquadro); toccando un tastone, quello che apri si vede subito, non finisce più sotto Sofia.
+- **1.114.0** (21/11, Michele: «a me non mi piace adesso com'è, perché c'è troppo rumore visivo… Sofia… deve essere più leggera, più sfumata… quando legge le email… si fa fatica a fermarla… gli allegati… troppi colori… Andava bene come prima»):
+  - I tasti (Parlale, Scrivile, Chiama, Fatto…) tornano a matita come prima: via le icone tonde dorate di Gemini.
+  - I tastoni lucidi con l'oro restano (viste le foto: «i tastoni, quelli grossi… mi piacciono… molto chiare, molto visibili… forse sono un po' troppo scuri»), più chiari («Tastoni ancora più chiari»).
+  - A pagina intera via il tasto «Sofia grande»: Sofia la allarghi con due dita, «Indietro» rimette la pagina con lei grande. Sofia in alto è più leggera: niente cornice, i bordi sfumati.
+  - Mentre Sofia legge un'email (o parla nella Segreteria) in basso c'è sempre il tasto grande «Ferma»: un tocco e smette.
+  - Gli allegati: ognuno nel suo riquadro col numero, quello che ha capito Sofia dentro il riquadro, e il tasto «Apri l'allegato». Meno colori.
+  - Si cambia quando vuoi: Altro → Come si vede l'app → 8 (i tasti) e 9 (i tastoni).
