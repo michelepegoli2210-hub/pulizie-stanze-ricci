@@ -257,6 +257,26 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   in basso è azzurro, rosso se c'è qualcosa di rosso (`segrUrgenti`), e conta anche la Ciclovia nuova. Un tastone nuovo col
   numero: `zero` quando è a zero, `rosso` solo se è davvero urgente (il rosso gli mette ansia: poco). Un «visto» nuovo
   tenuto nel telefono parte da adesso: quello che c'era già non deve uscire come nuovo la prima volta.
+- Il rosso piccolo accanto all'azzurro (1.116.0; sua, vista la 1.115.0: «a fianco a quello azzurro… uno rosso… si dovrebbe
+  leggere non 21, sono distinti e separati, però più piccolo»): dove un numero conta delle cose e alcune sono urgenti, il
+  numero grande azzurro sono TUTTE, e accanto, staccato e più piccolo, il tondino rosso dice quante sono urgenti. Così nella
+  barra in basso sul tasto Segreteria (`nav-conta` + `nav-conta nc-urg`, `segrUrgenti`) e nella prima pagina (campo `rossi`
+  di `notizieFacili`: su ARRIVI gli ospiti che arrivano dai siti, su «guasti» quelli urgenti). I tastoni dentro la
+  Segreteria restano come li ha approvati lui (il tondo intero rosso).
+- I numeri della prima pagina (1.116.0; sua: «non mi piace il numero dove si trova… sopra la scritta arrivi… deve essere a
+  fianco alla scritta arrivi, e la scritta arrivi deve essere più sopra… più centrato il tutto… cerchiate come qui in
+  azzurro»): ARRIVI e PARTENZE (tendina chiusa `porteFacili`, riquadro aperto `schedeFacili`) hanno il cartello, la parola
+  con «oggi», e ACCANTO il numero nel tondo azzurro (`csp-nn`, `of-nn`); lo zero accanto, piccolo e spento. Nel tasto il
+  cartello è l'unico pezzo che cede (`flex:0 1 auto`): la parola e i tondi non si tagliano mai. Per fare posto la freccia
+  che apre il riquadro non sta più nella riga: è il bottone tondo `.casa-su` sull'angolo in alto a destra del riquadro
+  (fuori da `#casaNuvola`, che taglia quello che esce; stesso `data-tenda`); l'altezza della tendina chiusa sta in
+  `--tc-alto` (la usano la tendina e la freccia). Le figurine hanno il numero nel tondo (azzurro; «0 su 8» bianco; le
+  camere piene e vuote come prima). Non rimettere il numero sopra la parola.
+- Gli arrivi dai siti in rosso (1.116.0; sua: «quando… ci fosse un Booking, oppure un Expedia, oppure un Airbnb, oppure [la
+  Ciclovia], deve essere scritto rosso, perché la camera poi va preparata un po' meglio»): un soggiorno con «Da dove
+  arriva» diverso da Diretto (`canaleDi`, `sitoDi`; la Ciclovia è tra i `CANALI` dalla 1.116.0) è rosso: il tondino su
+  ARRIVI (`arriviDaiSiti`: ospiti), «N da Booking» nella scheda, e dentro «Chi arriva oggi?» la camera e la scheda col nome
+  del sito in rosso e «camera da preparare meglio». Vale per quello che vede lui; le signore non lo vedono ancora.
 - La Segreteria a pagina intera (1.110.0; sua: «quando poi dopo vado giù… tutta la pagina tutta riempita di notifiche… il
   quadratino… movibile come… per alcune videochiamate… che si può restringere, che si può allargare»): scendendo più di 40 px
   nel riquadro (`segrPiena`, `#segrHero.notizie-piene`) il riquadro prende tutta la pagina e Sofia va in `#segrPip` (fuori da
