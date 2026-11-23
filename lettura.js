@@ -154,7 +154,7 @@ export function perTeDa(j, oggi) {
     k: "t" + i, testo: String(x.cosa).replace(/\s+/g, " ").trim().slice(0, 160), entro: entroDa(x.entro, oggi), chi: String(x.chi || "").replace(/\s+/g, " ").trim().slice(0, 40),
     msg: String(x.messaggio || "").replace(/\s+/g, " ").trim().slice(0, 200), fatto: "", rimanda: "",
     // 1.76.0: se l'ha chiesta lui a Sofia, se l'ha già vista (ha scritto dopo in quella chat), e da dove viene (chat e ora del messaggio)
-    ...(x.richiesto === true ? { richiesto: true } : {}), ...(x.visto === true ? { visto: true } : {}),
+    ...(x.richiesto === true ? { richiesto: true } : {}), ...(x.visto === true ? { visto: true } : {}), ...(x.importante === true || /^(si|sì|true|1)$/i.test(String(x.importante || "")) ? { importante: true } : {}),   // 1.115.0 (app): importante = rosso
     ...(x.chat ? { chat: String(x.chat).slice(0, 60) } : {}), ...(x.mdata ? { mdata: String(x.mdata).slice(0, 10) } : {}), ...(x.mora ? { mora: String(x.mora).slice(0, 5) } : {}), ...(Number(x.mts) ? { mts: Number(x.mts) } : {}) }));
 }
 // rileggendo (con una correzione) le cose già fatte restano fatte
@@ -459,7 +459,7 @@ REGOLE DELLE AZIONI:
 - I soldi (paghe, buste, prezzi) non si toccano con le azioni.
 - In ogni azione e in ogni proposta aggiungi "chi" (chi l'ha detto: «Papà», «Lucia», «Michele»…) e "messaggio" (le sue parole, corte)${ctx.numeri ? ` e "n" (il numero del messaggio)` : ""}: servono a Michele per capire perché l'hai fatta.
 
-LE COSE CHE DEVE FARE MICHELE IN PERSONA ("perTe"): solo quello che gli chiedono GLI ALTRI (il papà, una signora, il socio, un ospite, un'email) e che nessuno può fare al posto suo, né le signore né l'app: prendere, portare o lasciare le CHIAVI, chiamare o rispondere a qualcuno, andare in albergo o da un ospite a un'ora, comprare o pagare una cosa urgente, decidere una cosa che gli chiedono. Una riga per cosa, corta, dando del tu («Metti le chiavi in Aurora»). In "entro" il giorno e l'ora entro cui farla, se detti («entro le 15» = oggi alle 15:00), altrimenti vuoto. Solo le cose ancora da fare: se nelle chat risulta già fatta, non metterla. MAI una cosa che ha detto o deciso Michele (la sa già), a meno che te la chieda lui per nome (allora "richiesto": true, vedi sopra). Un guasto NON va qui (va nelle azioni): qui solo se chiedono a Michele di fare lui una cosa precisa. Il telefono suona finché Michele non risponde in quella chat o non la segna fatta: niente cose inutili.
+LE COSE CHE DEVE FARE MICHELE IN PERSONA ("perTe"): solo quello che gli chiedono GLI ALTRI (il papà, una signora, il socio, un ospite, un'email) e che nessuno può fare al posto suo, né le signore né l'app: prendere, portare o lasciare le CHIAVI, chiamare o rispondere a qualcuno, andare in albergo o da un ospite a un'ora, comprare o pagare una cosa urgente, decidere una cosa che gli chiedono. Una riga per cosa, corta, dando del tu («Metti le chiavi in Aurora»). In "entro" il giorno e l'ora entro cui farla, se detti («entro le 15» = oggi alle 15:00), altrimenti vuoto. In "importante" metti true SOLO se è una cosa grave che non può aspettare (un ospite che non riesce a entrare, soldi da dare o da incassare oggi, una cosa che se salta fa un danno): quasi tutte sono false, nel dubbio false. Solo le cose ancora da fare: se nelle chat risulta già fatta, non metterla. MAI una cosa che ha detto o deciso Michele (la sa già), a meno che te la chieda lui per nome (allora "richiesto": true, vedi sopra). Un guasto NON va qui (va nelle azioni): qui solo se chiedono a Michele di fare lui una cosa precisa. Il telefono suona finché Michele non risponde in quella chat o non la segna fatta: niente cose inutili.
 
 COSA HAI CAPITO ("capito"): per ogni persona che ha scritto (MAI Michele: di quello che ha scritto lui non si fanno righe), una riga per ogni cosa che hai capito, con parole TUE e corte (non copiare il messaggio): «vuole che metti le chiavi in Aurora entro le 15», «domani non viene». In "dove" scrivi dove l'hai messa: "fare" (in perTe), "propongo" (nelle proposte o nei dubbi), "fatto" (nelle azioni, nelle assenze, nella spesa, nei telefoni), "sapere" (nelle note). I saluti e le chiacchiere non metterli.
 
@@ -468,7 +468,7 @@ RISPONDI SOLO con questo JSON:
  "azioni":[{"tipo":"…","n":3}],
  "proposte":[{"tipo":"…","perche":"la domanda corta per Michele"}],
  "dubbi":[],
- "perTe":[{"cosa":"Metti le chiavi in Aurora","entro":"AAAA-MM-GG HH:MM oppure vuoto","chi":"chi te l'ha chiesto","messaggio":"le sue parole","n":7,"richiesto":false}],
+ "perTe":[{"cosa":"Metti le chiavi in Aurora","entro":"AAAA-MM-GG HH:MM oppure vuoto","chi":"chi te l'ha chiesto","messaggio":"le sue parole","n":7,"richiesto":false,"importante":false}],
  "capito":[{"chi":"Papà","cosa":"vuole che metti le chiavi in Aurora entro le 15","dove":"fare","n":7}],
  "assenze":[{"signora":"p2","dal":"AAAA-MM-GG","al":"AAAA-MM-GG (uguale a dal se è un giorno solo)","testo":"corto, per Michele (es. Selena sabato non viene)","messaggio":"le sue parole","sicurezza":"alta"}],
  "spesa":[{"prodotto":"il prodotto che manca, corto","signora":"p1 oppure vuoto","chi":"chi l'ha detto","messaggio":"le sue parole"}],

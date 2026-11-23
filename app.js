@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.114.0";
+export const VERSIONE = "1.115.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -767,6 +767,8 @@ function barraSotto() {
   if (!b) { b = document.createElement("nav"); b.id = "barraSotto"; b.className = "barra-sotto"; b.setAttribute("aria-label", "Sezioni"); document.body.appendChild(b); }
   const v = S.vista, dom = domandeSofia();
   let nSeg = 0; try { nSeg = proprietario() ? domandeSegreteria() : 0; } catch (e) {}   // 1.60.0: quello che la segretaria ha per te
+  let uSeg = { tutte: 0, cic: 0 }; try { if (proprietario()) uSeg = segrUrgenti(); } catch (e) {}   // 1.115.0: le cose urgenti (rosse)
+  nSeg += uSeg.cic;
   const html = BS_VOCI.map(([k, n, ic]) => {
     const att = v === k || (k === "sofia" && v === "governante") || (k === "oggi" && (v === "manutenzione" || v === "signora"));
     const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
@@ -789,7 +791,7 @@ function barraSotto() {
     // lui: proposte o domande delle ultime letture; il numerino dice quante. «Parla con Sofia» resta nel «Parla» della
     // tendina e tra le stanze sotto Sofia.
     // 1.74.0: niente più tasto da sala giochi: l'agenda d'oro, col numerino di quello che la segretaria ha per te
-    if (k === "sofia") return `<button type="button" class="bs-t bs-ico2 bs-seg${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare)" : ""}"><span class="bs-fig" aria-hidden="true">${icoNavSegreteria()}${nSeg ? `<i class="nav-conta">${nSeg > 99 ? "99+" : nSeg}</i>` : ""}</span><span class="bs-n">Segreteria</span></button>`;
+    if (k === "sofia") return `<button type="button" class="bs-t bs-ico2 bs-seg${nSeg ? " acceso" : ""}" data-bs="segreteria" aria-pressed="${v === "segreteria"}" aria-label="Segreteria${nSeg ? " (" + nSeg + " da guardare" + (uSeg.tutte ? ", " + (uSeg.tutte === 1 ? "una urgente" : uSeg.tutte + " urgenti") : "") + ")" : ""}"><span class="bs-fig" aria-hidden="true">${icoNavSegreteria()}${nSeg ? `<i class="nav-conta${uSeg.tutte ? " rosso" : ""}">${nSeg > 99 ? "99+" : nSeg}</i>` : ""}</span><span class="bs-n">Segreteria</span></button>`;
     const ic2 = { cal: "oggi", lista: "prospetto", mappa: "piantine", euro: "paghe" }[ic];
     // 1.63.0 (Michele, 8/11: «gli altri, Prospetto, Piantine, Paghe e Oggi, devi far fare dei pulsanti molto simili a
     // questi ma di un blu bello mare scuro, ma di alluminio satinato»): anche loro sono tasti da sala giochi, un po' più
@@ -7051,6 +7053,35 @@ const segrIco = (nome, prima = "", cls = "") => segrHeroAttivo() && !segrTastiMa
 // molto chiare, molto visibili… forse sono un po' troppo scuri»): i tastoni lucidi restano (più chiari, nel CSS), i tasti tornano a
 // matita. Si scelgono a parte: Come si vede l'app → 8 (i tasti) e 9 (i tastoni).
 function segrTastoniMatita() { try { return localStorage.getItem("ricci_segr_tastoni") === "matita"; } catch (e) { return false; } }
+// 1.115.0 (Michele, 23/11: «i numeri… devono essere più risaltati rispetto al semplice 0»; poi: «Bianco è poco intenso… Azzurro è
+// normale… rosso è urgente… quando mi arriva una notifica da Ciclovia deve essere rossa… se c'è una notifica che Sofia ritiene
+// molto importante, me la deve mettere rossa anche quella»). I numeri dei tastoni hanno tre forze (il colore è nel CSS): BIANCO
+// poco importante (Pulizie, Ho fatto io), AZZURRO normale (tutti gli altri), ROSSO urgente (la classe «rosso» sul tastone). Lo
+// zero resta piccolo e spento (la classe «zero»).
+const CHIAVE_SEGR_VISTE = "ricci_segr_viste";
+function segrVisteLeggi() { try { const v = JSON.parse(localStorage.getItem(CHIAVE_SEGR_VISTE) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
+// un'email aperta su questo telefono è «vista» (resta scritto 30 giorni). Torna true se è cambiato qualcosa.
+function segrVistaMetti(ids) {
+  const v = segrVisteLeggi(), ora = Date.now(); let nuovo = false;
+  for (const id of [].concat(ids || [])) { if (id && !v[id]) { v[id] = ora; nuovo = true; } }
+  if (!nuovo) return false;
+  for (const k of Object.keys(v)) if (ora - Number(v[k]) > 30 * 864e5) delete v[k];
+  try { localStorage.setItem(CHIAVE_SEGR_VISTE, JSON.stringify(v)); } catch (e) {}
+  return true;
+}
+// le email della Ciclovia (richieste, prenotazioni, annullate) di questi sette giorni non ancora aperte su questo telefono
+function segrCicloviaNuove() { const v = segrVisteLeggi(); return segrPrenotazioni().filter(e => e.c.canale === "ciclovia" && !v[e.p.id]); }
+// una cosa da fare è urgente se Sofia l'ha segnata importante, o se gliela chiedono gli altri e scade oggi (o è già scaduta)
+function segrUrgenteFare(t) { if (!t) return false; if (t.importante === true) return true; const g = String(t.entro || "").slice(0, 10); return !t.richiesto && !!g && g <= L.oggiISO(); }
+// una proposta è urgente se è un guasto urgente (o urgentissimo), o se è segnata importante
+function segrUrgenteProp(p) { if (!p) return false; if (p.importante === true) return true; try { const z = p.azione ? JSON.parse(p.azione) : null; return !!(z && (z.urgente || z.urgentissimo)); } catch (e) { return false; } }
+function segrUrgenti() {   // quante cose rosse ci sono adesso nella Segreteria
+  let fare = 0, prop = 0, cic = 0;
+  try { fare = sg2PerTe().filter(y => !y.vista && sg2Adesso(y) && segrUrgenteFare(y)).length; } catch (e) {}
+  try { prop = sg2Proposte().filter(segrUrgenteProp).length; } catch (e) {}
+  try { cic = segrCicloviaNuove().length; } catch (e) {}
+  return { fare, prop, cic, tutte: fare + prop + cic };
+}
 const segrTessera = (k, mat) => segrTastoniMatita() ? mat : `tastoni/${k}.webp`;
 // il numero per WhatsApp: solo cifre, col 39 davanti se è un cellulare italiano scritto senza
 function segrNumeroWa(tel) {
@@ -7164,6 +7195,7 @@ function foglioSegrEmail(f) {
   if (!p && f.daAvviso && Date.now() - f.daAvviso < 25000) { segrEmailAttendi(); return `<div class="sge-foglio"><h3 class="sgf-ogg">Un attimo…</h3><p class="sgf-nota">Sto prendendo l'email.</p></div>`; }   // 1.108.0: aperta dalla notifica
   if (!p) return `<div class="sge-foglio"><h3 class="sgf-ogg">Email</h3><p class="sgf-nota">Questa email non c'è più: le tengo una settimana.</p></div>`;
   try { segrPrendiPrima(p); } catch (e) {}   // 1.110.0: gli allegati in sottofondo, così quando li tocchi sono già pronti
+  try { if (segrVistaMetti(p.id)) setTimeout(() => { try { disegnaSegrHero(); barraSotto(); } catch (e) {} }, 0); } catch (e) {}   // 1.115.0
   const x = segrEmailParti(p), righe = segrEmailCapito().get(p.id) || [], g = String(p.data || "");
   const quando = `${g ? segrEmailGiorno(g).toLowerCase() : ""}${p.ora ? ` alle ${p.ora}` : ""}`.trim();
   const tagliata = x.corpo.length >= 1780;
@@ -7191,7 +7223,7 @@ function segrOggiHtml() {
   // il numero grande è quello delle PERSONE, come nella prima pagina («col numero delle persone ovviamente, ospiti»); sotto, piccolo,
   // in quante camere (il riassunto di Sofia lì sopra conta le camere: così i due numeri si capiscono)
   const cam = (l) => l.length ? `in ${l.length} ${l.length === 1 ? "camera" : "camere"}` : "";
-  const t = (k, n, dis, parola, dici, sotto) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}" data-segr-oggi="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span>${sotto && !ap ? `<small class="sgt-s">${esc(sotto)}</small>` : ""}</button>`;
+  const t = (k, n, dis, parola, dici, sotto) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}${Number(n) > 0 ? "" : " zero"}" data-segr-oggi="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span>${sotto && !ap ? `<small class="sgt-s">${esc(sotto)}</small>` : ""}</button>`;
   const dentro = ap === "arrivi" ? segrArriviHtml(mv) : ap === "partenze" ? segrPartenzeHtml(mv) : ap === "pulizie" ? segrPulizieHtml() : ap === "email" ? segrEmailHtml() : "";
   return `<div class="sgt-griglia sgt-oggi${ap ? " stretta" : ""}">${
     t("arrivi", mv.ospitiArr, segrTessera("arrivi", "mat-arrivi.webp"), mv.ospitiArr === 1 ? "Arrivo" : "Arrivi", mv.ospitiArr ? `Oggi ${mv.ospitiArr === 1 ? "arriva 1 ospite" : `arrivano ${mv.ospitiArr} ospiti`}, ${cam(mv.arr)}` : "Oggi non arriva nessuno", cam(mv.arr))}${
@@ -7235,9 +7267,10 @@ function segrPrenRiga(e, cap) {
 }
 function segrPrenotazioniHtml() {
   const l = segrPrenotazioni(), ap = !!S.segrPren, cic = L.canale("ciclovia"), cap = ap ? segrEmailCapito() : null;
+  let nuove = 0; try { nuove = segrCicloviaNuove().length; } catch (e) {}   // 1.115.0: le email nuove della Ciclovia, in rosso
   const aspettano = l.filter(e => { const x = segrPrenEntro(e); return x && x.classe !== "scaduta"; }).length;
   const dici = l.length ? `${l.length === 1 ? "È arrivata 1 prenotazione" : `Sono arrivate ${l.length} prenotazioni`} in sette giorni${aspettano ? `, ${aspettano === 1 ? "una aspetta" : `${aspettano} aspettano`} la tua risposta` : ""}` : "In sette giorni non è arrivata nessuna prenotazione";
-  return `<div class="sgt-griglia sgt-pren"><button type="button" class="sgt pren${ap ? " aperta" : ""}" data-segr-pren aria-expanded="${ap}" aria-label="${esc(dici)}. Tocca per ${ap ? "chiudere" : "vedere"}"><b class="sgt-n">${l.length}</b><img class="sgt-d" src="${segrTessera("arrivate", "mat-chiave.webp")}" alt="" width="240" height="240"><span class="sgt-p">${l.length === 1 ? "Arrivata" : "Arrivate"}</span><small class="sgt-s">${aspettano ? `${aspettano} da rispondere` : "in 7 giorni"}</small></button><a class="sgt canale" href="${esc(cic.sito)}" target="_blank" rel="noopener" data-segr-canale="ciclovia" aria-label="Apri il sito della Ciclovia Adriatica: lì ci sono il calendario e le richieste"><img class="sgt-d" src="${segrTessera("ciclovia", "mat-spunte.webp")}" alt="" width="240" height="240"><span class="sgt-p">${esc(cic.breve)}</span><small class="sgt-s">apri il calendario</small></a></div>${ap ? `<div class="sgo pren" data-sgo="pren"><h4 class="sgo-tit">Le prenotazioni arrivate</h4>${l.length ? l.map(e => segrPrenRiga(e, cap)).join("") : `<p class="sgo-vuoto">${paPronta() ? "In questi sette giorni non è arrivata nessuna prenotazione per email." : "La posta dell'albergo non è collegata: si collega da Altro, «La posta dell'albergo»."}</p>`}<p class="sgo-nota">Le richieste della Ciclovia arrivano per email. Per dire sì o no si va sul loro sito: è il tasto «Ciclovia» qui sopra.</p></div>` : ""}`;
+  return `<div class="sgt-griglia sgt-pren"><button type="button" class="sgt pren${ap ? " aperta" : ""}${l.length ? "" : " zero"}" data-segr-pren aria-expanded="${ap}" aria-label="${esc(dici)}. Tocca per ${ap ? "chiudere" : "vedere"}"><b class="sgt-n">${l.length}</b><img class="sgt-d" src="${segrTessera("arrivate", "mat-chiave.webp")}" alt="" width="240" height="240"><span class="sgt-p">${l.length === 1 ? "Arrivata" : "Arrivate"}</span><small class="sgt-s">${aspettano ? `${aspettano} da rispondere` : "in 7 giorni"}</small></button><a class="sgt canale${nuove ? " rosso" : ""}" href="${esc(cic.sito)}" target="_blank" rel="noopener" data-segr-canale="ciclovia" aria-label="${nuove ? `${nuove === 1 ? "È arrivata una email nuova" : `Sono arrivate ${nuove} email nuove`} dalla Ciclovia Adriatica. ` : ""}Apri il sito della Ciclovia Adriatica: lì ci sono il calendario e le richieste">${nuove ? `<b class="sgt-n">${nuove}</b>` : ""}<img class="sgt-d" src="${segrTessera("ciclovia", "mat-spunte.webp")}" alt="" width="240" height="240"><span class="sgt-p">${esc(cic.breve)}</span><small class="sgt-s">${nuove ? (nuove === 1 ? "1 nuova" : `${nuove} nuove`) : "apri il calendario"}</small></a></div>${ap ? `<div class="sgo pren" data-sgo="pren"><h4 class="sgo-tit">Le prenotazioni arrivate</h4>${l.length ? l.map(e => segrPrenRiga(e, cap)).join("") : `<p class="sgo-vuoto">${paPronta() ? "In questi sette giorni non è arrivata nessuna prenotazione per email." : "La posta dell'albergo non è collegata: si collega da Altro, «La posta dell'albergo»."}</p>`}<p class="sgo-nota">Le richieste della Ciclovia arrivano per email. Per dire sì o no si va sul loro sito: è il tasto «Ciclovia» qui sopra.</p></div>` : ""}`;
 }
 // ============================================================================
 //  1.95.0 «NON SI RIESCE A TORNARE INDIETRO» (Michele, 17/11 sera, provando la 1.94.0: «ci sono parecchi bug nella parte Sofia
@@ -7282,8 +7315,8 @@ function segrCassettoAperto(pz) {
   return n.fare ? "fare" : n.prop ? "prop" : "";   // di partenza quello dove c'è qualcosa che aspetta lui
 }
 function segrCassettiHtml(pz) {
-  const ap = segrCassettoAperto(pz);
-  return `<div class="sgt-griglia sgt-cassetti">${SEGR_CASSETTI.map(([k, t, d]) => `<div class="sgt cass ${k}${ap === k ? " aperto" : ""}${pz.n[k] ? "" : " zero"}"><button type="button" class="sgt-apri" data-segr-cassetto="${k}" aria-expanded="${ap === k}" aria-label="${t}: ${pz.n[k]}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><span class="sgt-t">${t}</span><b class="sgt-n">${pz.n[k]}</b><img class="sgt-d" src="${segrTessera(k, d)}" alt="" width="240" height="240"></button>${k === "fare" && pz.mod ? `<button type="button" class="sgt-piu" data-sg2-nuovo>${segrTasto(icoAll("piu") + "<span>Ricordami una cosa</span>", '<span aria-hidden="true">＋</span> Ricordami una cosa')}</button>` : ""}</div>`).join("")}</div>${ap && pz.cass[ap] ? `<div class="sgt-aperto ${ap}">${pz.cass[ap]}</div>` : ""}`;
+  const ap = segrCassettoAperto(pz), urg = segrUrgenti();   // 1.115.0
+  return `<div class="sgt-griglia sgt-cassetti">${SEGR_CASSETTI.map(([k, t, d]) => `<div class="sgt cass ${k}${ap === k ? " aperto" : ""}${pz.n[k] ? "" : " zero"}${pz.n[k] && ((k === "fare" && urg.fare) || (k === "prop" && urg.prop)) ? " rosso" : ""}"><button type="button" class="sgt-apri" data-segr-cassetto="${k}" aria-expanded="${ap === k}" aria-label="${t}: ${pz.n[k]}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><span class="sgt-t">${t}</span><b class="sgt-n">${pz.n[k]}</b><img class="sgt-d" src="${segrTessera(k, d)}" alt="" width="240" height="240"></button>${k === "fare" && pz.mod ? `<button type="button" class="sgt-piu" data-sg2-nuovo>${segrTasto(icoAll("piu") + "<span>Ricordami una cosa</span>", '<span aria-hidden="true">＋</span> Ricordami una cosa')}</button>` : ""}</div>`).join("")}</div>${ap && pz.cass[ap] ? `<div class="sgt-aperto ${ap}">${pz.cass[ap]}</div>` : ""}`;
 }
 function segrDentroHtml(pz) {
   return `${segrFumettoHtml(pz)}
@@ -7318,7 +7351,7 @@ const SEGR_IG_BREVE = { "aspetta-foto": "aspetta le foto", "aspetta-chiave": "da
 function segrIgHtml() {
   if (!proprietario()) return "";
   const x = segrIgStato(), ap = S.segrIg || "";
-  const t = (k, n, dis, parola, sotto, dici) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}" data-segr-ig="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span><small class="sgt-s">${esc(sotto)}</small></button>`;
+  const t = (k, n, dis, parola, sotto, dici) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}${Number(n) > 0 ? "" : " zero"}" data-segr-ig="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span><small class="sgt-s">${esc(sotto)}</small></button>`;
   const breve = SEGR_IG_BREVE[x.st] || "";
   return `<div class="sgt-griglia sgt-ig">${
     t("ig", x.c.post, segrTessera("instagram", "mat-megafono.webp"), "Instagram", x.st === "al-lavoro" ? (x.c.post === 1 ? "post questa settimana" : "post questa settimana") : breve, `Instagram: ${x.c.post} ${x.c.post === 1 ? "post" : "post"} questa settimana, ${breve}`)}${
@@ -7448,11 +7481,11 @@ function vistaSegreteria() {
   const riass = sg2Riassunto();
   // 1.76.0: un promemoria chiesto da lui dice quando suona; una richiesta che ha già visto (ha risposto su WhatsApp) è più chiara e non suona
   const sottoPerTe = (t) => t.richiesto ? `⏰ Me l'hai chiesto tu · ${sg2Alle(t)}` : [sg2Entro(t), t.chi ? `l'ha chiesto ${t.chi}` : ""].filter(Boolean).join(" · ");
-  const perTe = sg2PerTe().map(t => `<div class="sg2-r fare${t.vista ? " vista" : ""}${t.richiesto ? " chiesto" : ""}"><b class="sg2-t">${esc(t.testo)}</b>${sottoPerTe(t) ? `<small>${esc(sottoPerTe(t))}</small>` : ""}${t.vista ? `<small class="sg2-vista">✓ Hai già risposto su WhatsApp: non suono più</small>` : ""}${t.rimanda && Date.parse(t.rimanda) > Date.now() ? `<small class="sg2-rim">⏰ te lo ricordo alle ${esc(L.oraBreve(t.rimanda))}</small>` : ""}
+  const perTe = sg2PerTe().map(t => `<div class="sg2-r fare${t.vista ? " vista" : ""}${t.richiesto ? " chiesto" : ""}${!t.vista && segrUrgenteFare(t) ? " urgente" : ""}"><b class="sg2-t">${!t.vista && segrUrgenteFare(t) ? '<i class="sg2-urg">Urgente</i> ' : ""}${esc(t.testo)}</b>${sottoPerTe(t) ? `<small>${esc(sottoPerTe(t))}</small>` : ""}${t.vista ? `<small class="sg2-vista">✓ Hai già risposto su WhatsApp: non suono più</small>` : ""}${t.rimanda && Date.parse(t.rimanda) > Date.now() ? `<small class="sg2-rim">⏰ te lo ricordo alle ${esc(L.oraBreve(t.rimanda))}</small>` : ""}
     ${mod ? `<div class="sg2-bt"><button type="button" class="sg2-b verde" data-sg2-fatto="${esc(t.lid)}|${esc(t.k)}">${segrIco("spunta")}Fatto</button><button type="button" class="sg2-b rosso" data-sg2-ricorda="${esc(t.lid)}|${esc(t.k)}${t.vista ? "|v" : ""}">${segrIco("sveglia")}<span aria-hidden="true">⏰</span> Ricordami tra 1 ora</button></div>` : ""}</div>`);
   // 1.78.0: una proposta di ore dice da dove viene, cosa cambia col Sì e il lavoro che c'era quel giorno (il controllo)
   // (in grassetto il turno, non la domanda: «Selena oggi: 9:07 → 10:52 = 1 ora e 45 min»)
-  const prop = sg2Proposte().map(p => { const r = p.ore ? oreRighe(p) : null; return `<div class="sg2-r prop${r ? " ore" : ""}${r && r.troppe ? " troppe" : ""}">${r ? `<b class="sg2-t">${esc(oreTitolo(p))}</b>` : `${p.perche ? `<b class="sg2-t">${esc(p.perche)}</b>` : ""}<span class="sg2-x">${esc(p.testo)}</span>`}${r && r.righe.length ? `<small class="sg2-ore">${r.righe.map(esc).join("<br>")}</small>` : ""}${r && r.avviso ? `<small class="sg2-ore ore-avviso">${esc(r.avviso)}</small>` : ""}
+  const prop = sg2Proposte().map(p => { const r = p.ore ? oreRighe(p) : null; return `<div class="sg2-r prop${r ? " ore" : ""}${r && r.troppe ? " troppe" : ""}${segrUrgenteProp(p) ? " urgente" : ""}">${segrUrgenteProp(p) ? '<i class="sg2-urg">Urgente</i> ' : ""}${r ? `<b class="sg2-t">${esc(oreTitolo(p))}</b>` : `${p.perche ? `<b class="sg2-t">${esc(p.perche)}</b>` : ""}<span class="sg2-x">${esc(p.testo)}</span>`}${r && r.righe.length ? `<small class="sg2-ore">${r.righe.map(esc).join("<br>")}</small>` : ""}${r && r.avviso ? `<small class="sg2-ore ore-avviso">${esc(r.avviso)}</small>` : ""}
     ${mod ? `<button type="button" class="sg2-b verde pieno" data-sgr-si="${esc(p.lid)}|${esc(p.k)}">${segrIco("spunta")}Sì, fallo</button><div class="sg2-bt"><button type="button" class="sg2-b oro" data-sg2-cambia="${esc(p.lid)}|${esc(p.k)}">${segrIco("matita")}Cambia</button><button type="button" class="sg2-b rosso" data-sgr-no="${esc(p.lid)}|${esc(p.k)}">${segrIco("x")}No</button></div>` : ""}</div>`; });
   prop.unshift(...presProposte().map(x => presPropRiga(x, mod)));   // 1.69.0: le ore che non tornano
   const fatti = sg2Fatti().map((f, i) => `<div class="sg2-r fatto"><span class="sg2-x"><b>${i + 1}.</b> ${esc(f.testo)}</span><small>${esc([sg2Quando(f.quando), f.sotto].filter(Boolean).join(" · "))}</small>
@@ -21887,6 +21920,10 @@ function segrPip() {
   pipBollaPosto(el, bo);
 }
 try { window.addEventListener("resize", () => { try { const el = document.getElementById("segrPip"); if (el && !el.hidden) { const r = el.getBoundingClientRect(); pipMetti(el, r.width, r.left, r.top); } } catch (e) {} }); } catch (e) {}
+document.addEventListener("click", (e) => {   // 1.115.0
+  const t = e.target && e.target.closest ? e.target.closest("[data-segr-canale]") : null; if (!t) return;
+  try { if (segrVistaMetti(segrCicloviaNuove().map(x => x.p.id))) setTimeout(() => { try { disegnaSegrHero(); barraSotto(); } catch (er) {} }, 400); } catch (er) {}
+});
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target.closest("[data-segr-piena-via]") : null; if (!t) return;
   e.preventDefault(); e.stopPropagation(); segrPienaMetti(false);

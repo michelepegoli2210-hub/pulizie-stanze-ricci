@@ -11396,3 +11396,37 @@ body.segr-tastoni #segrHero .sgt .sgt-t,body.segr-tastoni #segrHero .sgt .sgt-n,
 /* nelle impostazioni (Come si vede l'app → 9): tre tastoni piccoli */
 .ico-opt .tm{display:inline-grid;place-items:center;width:44px;height:44px;border:2px solid #D9B45C;border-radius:10px}
 .ico-opt .tm img{width:32px;height:32px;object-fit:contain}
+
+/* ----------------------------------------------------------------------------
+   1.115.0 · I NUMERI DEI TASTONI: BIANCO, AZZURRO, ROSSO (Michele, 23/11: «i numeri… devono essere più risaltati rispetto al
+   semplice 0»; il rosso dappertutto no: «troppo allarmanti… non voglio che mi mettano ansia»; la regola è sua: «Bianco è poco
+   intenso… Azzurro è normale… rosso è urgente»). Il numero che c'è sta in un tondo, sopra il disegno; lo zero resta piccolo e
+   spento. Vale per i tastoni lucidi e per quelli a matita.
+   ---------------------------------------------------------------------------- */
+/* AZZURRO, il normale: Arrivi, Partenze, Email, Arrivate, Da fare tu, Ti propongo, Da sapere, Instagram, Foto da fare */
+body #segrHero .sgt.sgt:not(.zero) .sgt-n{display:grid;place-items:center;box-sizing:border-box;z-index:2;min-width:68px;height:68px;padding:0 10px;border-radius:34px;opacity:1;
+  font-size:45px !important;line-height:1 !important;letter-spacing:-1px;
+  background:#1E88E5 !important;color:#FFFFFF !important;text-shadow:0 1px 0 rgba(0,0,0,.28) !important;box-shadow:0 0 0 3.5px #FFFFFF,0 5px 10px rgba(0,0,0,.45) !important}
+body #segrHero .sgt.sgt:not(.cass):not(.zero) .sgt-n{left:11px;top:11px}
+body #segrHero .sgt.sgt.cass:not(.zero) .sgt-n{position:relative;margin:5px 0 0 10px}
+/* BIANCO, poco importante: Pulizie, Ho fatto io */
+body #segrHero .sgt.sgt.pulizie:not(.zero) .sgt-n,body #segrHero .sgt.sgt.cass.fatto:not(.zero) .sgt-n{min-width:60px;height:60px;border-radius:30px;font-size:40px !important;
+  background:#FFFFFF !important;color:var(--l2,#26262B) !important;text-shadow:none !important;box-shadow:0 0 0 2px rgba(0,0,0,.22),0 3px 6px rgba(0,0,0,.30) !important}
+/* ROSSO, urgente: la Ciclovia con una email nuova; «Da fare tu» e «Ti propongo» quando dentro c'è una cosa urgente */
+body #segrHero .sgt.sgt.rosso:not(.zero) .sgt-n{background:#E0202E !important;color:#FFFFFF !important;text-shadow:0 1px 0 rgba(0,0,0,.35) !important}
+/* lo zero: piccolo e spento */
+body.segr-tastoni #segrHero .sgt.zero .sgt-n{opacity:.5 !important;font-size:40px}
+body:not(.segr-tastoni) #segrHero .sgt.zero .sgt-n{opacity:.4 !important}
+/* a matita: il tondo col contorno scuro (come gli altri disegni) */
+body:not(.segr-tastoni) #segrHero .sgt.sgt:not(.zero) .sgt-n{box-shadow:0 0 0 2.5px #26262B !important}
+/* nei cassetti il disegno si fa un po' più in là, così il tondo non gli sta sopra */
+#segrHero .sgt.cass:not(.zero) .sgt-d{width:100px;height:100px;margin:-26px 0 0 54px}
+/* la fila stretta (un tastone di «Oggi» aperto): il tondo piccolo */
+body #segrHero .sgt-griglia.stretta .sgt.sgt:not(.zero) .sgt-n{min-width:34px !important;height:34px !important;padding:0 5px !important;border-radius:17px !important;font-size:23px !important;
+  left:3px !important;top:3px !important;letter-spacing:-.5px;box-shadow:0 0 0 2px #FFFFFF,0 2px 4px rgba(0,0,0,.4) !important}
+#segrHero .sgt-griglia.stretta .sgt.zero .sgt-n{font-size:26px !important}
+/* dentro i cassetti: la riga urgente */
+#segrHero .sg2-r .sg2-urg{display:inline-block;margin:0 8px 3px 0;padding:2px 10px;border-radius:10px;background:#E0202E;color:#FFFFFF;font-style:normal;font-size:19px;line-height:1.35;font-weight:700;vertical-align:middle}
+/* il numerino della Segreteria nella barra in basso: azzurro, rosso se c'è qualcosa di urgente; un po' più grande */
+body.premium .bs-t.bs-seg .nav-conta{top:-7px;right:-7px;min-width:22px;height:21px;padding:0 5px;background:#1E88E5;border:1.5px solid #FFFFFF;color:#FFFFFF;font-size:13px;line-height:18px;box-shadow:0 2px 4px rgba(0,0,0,.35)}
+body.premium .bs-t.bs-seg .nav-conta.rosso{background:#E0202E}
