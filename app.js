@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.113.1";
+export const VERSIONE = "1.114.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1591,7 +1591,7 @@ function applicaTema() {
   const col = coloreAttivo();
   if (col !== "blu") document.documentElement.setAttribute("data-colore", col); else document.documentElement.removeAttribute("data-colore");
   const lusso = sfondoLusso(), premium = premiumVisto();
-  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; document.body.classList.toggle("premium", premium); document.body.classList.toggle("segr-lucidi", !segrTastiMatita()); document.body.classList.toggle("icone-opache", (() => { try { return localStorage.getItem("ricci_icone_all") === "o"; } catch (e) { return false; } })()); }   // 1.112.0; 1.113.0: icone-opache
+  if (document.body) { document.body.classList.toggle("lusso", lusso); if (lusso) document.body.dataset.legno = legnoScelto(); else delete document.body.dataset.legno; document.body.classList.toggle("premium", premium); document.body.classList.toggle("segr-lucidi", !segrTastiMatita()); document.body.classList.toggle("segr-tastoni", !segrTastoniMatita()); document.body.classList.toggle("icone-opache", (() => { try { return localStorage.getItem("ricci_icone_all") === "o"; } catch (e) { return false; } })()); }   // 1.112.0; 1.113.0: icone-opache
   if (S.pronto) { try { localStorage.setItem("ricci_era_premium", premium ? "1" : "0"); } catch (e) {} }
   const parete = document.querySelector(".laguna");
   if (parete && !parete.querySelector(".cornice")) { const c = document.createElement("i"); c.className = "cornice"; parete.appendChild(c); }
@@ -1884,6 +1884,7 @@ function disegna() {
   guidaTondo(); guidaCompagna(); guidaNuvola(); guidaFinito(); fantasmaSegreteria(); segrFuori();   // 1.40.0; 1.70.0
   try { segrMini(); } catch (e) { console.warn("segrMini", e); }   // 1.108.0: Sofia piccola nell'email
   try { segrPip(); vistaVoceAggiorna(); } catch (e) { console.warn("segrPip", e); }   // 1.110.0: Sofia nel riquadrino; «Leggimelo»
+  try { segrFerma(); } catch (e) {}   // 1.114.0: «Ferma» mentre parla
   sofiaMini();
   voceBarra();   // 1.11.0
   orologioAvvia();
@@ -7038,13 +7039,19 @@ const segrDis = (nome, cls = "") => `<img class="mt-d${cls ? " " + cls : ""}" sr
 // Segreteria» si torna ai disegni a matita di prima, identici (segrTastiMatita; il CSS nuovo vale solo con body.segr-lucidi).
 // Nei pezzi che usano anche gli altri stili (i cassetti, i documenti, la nuvoletta) l'icona c'è solo nella testa Premium (segrIco).
 // Le tessere grandi e le figure che raccontano (persone, strisce delle camere) restano a matita.
-function segrTastiMatita() { try { return localStorage.getItem("ricci_segr_tasti") === "matita"; } catch (e) { return false; } }
+// 1.114.0 (Michele, 21/11: «I tasti che abbiamo fatto fare a Gemini purtroppo non vanno bene… troppo rumorosamente visibili…
+// Andava bene come prima»): a matita è quello normale; i lucidi solo se li scegli (Come si vede l'app → 8)
+function segrTastiMatita() { try { return localStorage.getItem("ricci_segr_tasti") !== "lucide"; } catch (e) { return true; } }
 const segrTasto = (nuovo, vecchio = "") => segrTastiMatita() ? vecchio : nuovo;
 const segrIco = (nome, prima = "", cls = "") => segrHeroAttivo() && !segrTastiMatita() ? icoAll(nome, "sgi" + (cls ? " " + cls : "")) : prima;
 // 1.113.0 (Michele, 20/11: «concentriamoci… su quei tastoni… fammi fare delle proposte da Gemini»; delle 4 ha scelto «1», lucidi con
 // l'oro): i tastoni sono tessere lucide colorate con la cornice d'oro (il CSS, con body.segr-lucidi) e il disegno avorio di Gemini;
 // con «A matita, come prima» tornano i disegni a matita di prima.
-const segrTessera = (k, mat) => segrTastiMatita() ? mat : `tastoni/${k}.webp`;
+// 1.114.0 (Michele, 21/11: «togliere… la parte dei tasti, quelli rotondi, dorati, però i tastoni, quelli grossi… mi piacciono…
+// molto chiare, molto visibili… forse sono un po' troppo scuri»): i tastoni lucidi restano (più chiari, nel CSS), i tasti tornano a
+// matita. Si scelgono a parte: Come si vede l'app → 8 (i tasti) e 9 (i tastoni).
+function segrTastoniMatita() { try { return localStorage.getItem("ricci_segr_tastoni") === "matita"; } catch (e) { return false; } }
+const segrTessera = (k, mat) => segrTastoniMatita() ? mat : `tastoni/${k}.webp`;
 // il numero per WhatsApp: solo cifre, col 39 davanti se è un cellulare italiano scritto senza
 function segrNumeroWa(tel) {
   let d = String(tel || "").replace(/[^\d+]/g, "");
@@ -7355,7 +7362,7 @@ document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target.closest("[data-segr-ig]") : null; if (!t || S.vista !== "segreteria") return;
   e.preventDefault();
   const k = t.dataset.segrIg; S.segrIg = S.segrIg === k ? "" : k; disegna();
-  if (S.segrIg) setTimeout(() => { const g = document.querySelector("#segrHero .sgt-ig"), sc = g && g.closest(".casa-testo"); if (g && sc) { const y = g.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 52; try { sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } catch (er) { sc.scrollTop = Math.max(0, y); } } }, 60);
+  if (S.segrIg) setTimeout(() => segrScorriA(document.querySelector("#segrHero .sgt-ig"), 52), 60);   // 1.113.2
 });
 function disegnaSegrHero() {
   let h = document.getElementById("segrHero");
@@ -7391,11 +7398,39 @@ function segrTendaCambia() {
   try { if (giu) localStorage.setItem(CHIAVE_SEGR_TENDA, "giu"); else localStorage.removeItem(CHIAVE_SEGR_TENDA); } catch (e) {}
   const n = h.querySelector(".casa-nascondi"); if (n) { n.setAttribute("aria-expanded", giu ? "false" : "true"); n.setAttribute("aria-label", giu ? "Rimetti il riquadro" : `Nascondi il riquadro: si vede tutta ${nomeGov()}`); }
 }
+// 1.113.2 (Michele, 21/11: «vedi di controllare anche se ci siano dei bug»; poi «Sì, sistemali»): toccando un tastone il riquadro
+// scorreva fin lì e a metà strada passava a pagina intera: «Sofia grande» e il riquadrino comparivano e quello che avevi aperto
+// finiva sotto di loro. Adesso si passa prima a pagina intera, si aspetta che il riquadro sia grande (340 ms), e ci si ferma
+// con quello che hai aperto sotto «Sofia grande» e il riquadrino.
+function segrSopraCoperto(sc) {   // quanto della cima del riquadro è coperto da «Sofia grande» e dal riquadrino
+  const r = sc.getBoundingClientRect(); let giu = 0;
+  for (const el of [document.querySelector("#segrHero .segr-piena-via"), document.getElementById("segrPip")]) {
+    if (!el || el.hidden) continue;
+    const q = el.getBoundingClientRect();
+    if (q.width < 2 || q.height < 2 || q.right <= r.left || q.left >= r.right) continue;   // non sta sopra il riquadro
+    if (q.top > r.top + r.height / 2) continue;   // il riquadrino spostato giù: non conta
+    giu = Math.max(giu, q.bottom - r.top);
+  }
+  return Math.max(0, Math.min(giu, r.height * 0.6));
+}
+function segrScorriA(g, sopra) {
+  const sc = g && g.closest(".casa-testo"), h = document.getElementById("segrHero"); if (!sc || !h) return;
+  const dove = () => g.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - sopra;
+  const vai = () => {
+    if (!g.isConnected) return;
+    let y = dove(); if (segrPiena) y -= segrSopraCoperto(sc);
+    try { sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } catch (e) { sc.scrollTop = Math.max(0, y); }
+  };
+  if (dove() > 40 && !segrPiena && !h.classList.contains("tenda-nascosta")) segrPienaMetti(true);
+  // il riquadro si sta ancora allargando (si è appena passati a pagina intera, anche scorrendo col dito): si aspetta che sia grande
+  const resta = segrPiena ? 380 - (Date.now() - segrPienaDa) : 0;
+  if (resta > 0) setTimeout(vai, resta); else vai();
+}
 // una tessera di «Oggi»: si apre lì sotto (un altro tocco la richiude); il riquadro scorre fin lì
 function segrOggiTocca(k) {
   S.segrOggi = segrOggiAperto() === k ? "" : k; if (S.segrOggi !== "email") S.segrEmailPrima = false;
   disegna();
-  if (S.segrOggi) setTimeout(() => { const g = document.querySelector("#segrHero .sgt-oggi"), sc = g && g.closest(".casa-testo"); if (g && sc) { const y = g.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 6; try { sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } catch (e) { sc.scrollTop = Math.max(0, y); } } }, 60);
+  if (S.segrOggi) setTimeout(() => segrScorriA(document.querySelector("#segrHero .sgt-oggi"), 6), 60);   // 1.113.2
 }
 document.addEventListener("click", (e) => {
   const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria" || !t.closest("#segrHero")) return;
@@ -7406,7 +7441,7 @@ document.addEventListener("click", (e) => {
   if (t.closest("[data-segr-email-prima]")) { S.segrEmailPrima = !S.segrEmailPrima; disegna(); return; }
   if ((x = t.closest("[data-segr-oggi]"))) { segrOggiTocca(x.dataset.segrOggi); return; }
   // 1.95.0: «Arrivate» (le prenotazioni) si apre lì sotto; il riquadro scorre fin lì
-  if (t.closest("[data-segr-pren]")) { S.segrPren = !S.segrPren; disegna(); if (S.segrPren) setTimeout(() => { const g = document.querySelector("#segrHero .sgt-pren"), sc = g && g.closest(".casa-testo"); if (g && sc) { const y = g.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 52; try { sc.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } catch (e) { sc.scrollTop = Math.max(0, y); } } }, 60); return; }
+  if (t.closest("[data-segr-pren]")) { S.segrPren = !S.segrPren; disegna(); if (S.segrPren) setTimeout(() => segrScorriA(document.querySelector("#segrHero .sgt-pren"), 52), 60); return; }   // 1.113.2
 });
 function vistaSegreteria() {
   const nome = nomeGov(), mod = puoModificare();
@@ -10598,7 +10633,7 @@ function cardStileCasa() {
   if (!proprietario()) return "";
   return `<section class="card come-si-vede">
     <h2>Come si vede l'app</h2>
-    <p class="muted small" style="margin:0 0 6px">Otto cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
+    <p class="muted small" style="margin:0 0 6px">Nove cose che puoi cambiare da solo, quando vuoi: si vede subito e puoi sempre tornare indietro.</p>
     <h3>1. Il colore</h3>
     <div class="col-scelte">${COLORI_APP.map(k => `<button type="button" class="col-opt" aria-pressed="${coloreAttivo() === k.id}" data-colore-app="${k.id}"><i style="background:${k.g}"></i>${esc(k.nome)}</button>`).join("")}</div>
     <span class="small muted">Cambia il colore dei tasti e dei collegamenti. Tutto il resto resta com'è.</span>
@@ -10630,8 +10665,11 @@ function cardStileCasa() {
     <div class="ico-scelte">${[["l", "Lucide"], ["o", "Meno lucide"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${iconeSerie() === k}" data-icone-serie="${k}"><span class="ico-tre">${["pdf", "word", "foto"].map(n => `<img class="ico3d" src="all3d-${k}/${n}.webp" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
     <span class="small muted">Le icone degli allegati e dei tasti (nell'email e nella Segreteria). Lucide: bombate e brillanti. Meno lucide: più opache. Si cambiano quando vuoi.</span>
     <h3>8. I tasti della Segreteria</h3>
-    <div class="ico-scelte">${[["lucide", "Lucidi"], ["matita", "A matita, come prima"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${segrTastiMatita() === (k === "matita")}" data-segr-tasti="${k}"><span class="ico-tre">${k === "matita" ? ["microfono", "matita", "telefono"].map(n => `<img class="ico-mat" src="mat-${n}.webp" alt="" width="240" height="240" decoding="async">`).join("") : ["chiedi", "matita", "cornetta"].map(n => `<img class="ico3d" src="${icoSrc(n)}" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
-    <span class="small muted">I tastoni (Arrivi, Partenze, Pulizie…) e i tasti (Parlale, Chiama, Fatto…). Lucidi: con l'oro e le icone di Gemini, grandi. A matita: i disegni di prima. Si cambia quando vuoi.</span>
+    <div class="ico-scelte">${[["matita", "A matita"], ["lucide", "Lucidi (di Gemini)"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${segrTastiMatita() === (k === "matita")}" data-segr-tasti="${k}"><span class="ico-tre">${k === "matita" ? ["microfono", "matita", "telefono"].map(n => `<img class="ico-mat" src="mat-${n}.webp" alt="" width="240" height="240" decoding="async">`).join("") : ["chiedi", "matita", "cornetta"].map(n => `<img class="ico3d" src="${icoSrc(n)}" alt="" width="192" height="192" decoding="async">`).join("")}</span>${nome}</button>`).join("")}</div>
+    <span class="small muted">I tasti (Parlale, Scrivile, Chiama, Fatto…). A matita: i disegni di sempre. Lucidi: le icone tonde di Gemini. Si cambia quando vuoi.</span>
+    <h3>9. I tastoni della Segreteria</h3>
+    <div class="ico-scelte">${[["lucidi", "Lucidi con l'oro"], ["matita", "A matita"]].map(([k, nome]) => `<button type="button" class="ico-opt" aria-pressed="${segrTastoniMatita() === (k === "matita")}" data-segr-tastoni="${k}"><span class="ico-tre">${k === "matita" ? ["arrivi", "busta", "sveglia"].map(n => `<img class="ico-mat" src="mat-${n}.webp" alt="" width="240" height="240" decoding="async">`).join("") : [["arrivi", "#D37A8C", "#A53F55"], ["email", "#B488C7", "#774391"], ["fare", "#72B985", "#377D4F"]].map(([n, c1, c2]) => `<span class="tm" style="background:linear-gradient(${c1},${c2})"><img src="tastoni/${n}.webp" alt="" width="240" height="240" decoding="async"></span>`).join("")}</span>${nome}</button>`).join("")}</div>
+    <span class="small muted">Arrivi, Partenze, Pulizie, Email, i cassetti, Instagram. Lucidi: colorati con la cornice d'oro. A matita: i disegni di prima. Si cambia quando vuoi.</span>
   </section>`;
 }
 // L'umore della governante: guarda come sta la casa e lo dice in una riga (e si vede in faccia)
@@ -16934,7 +16972,7 @@ function disegnaFoglio() {
   if (idAttivo) { const e = s.querySelector("#" + CSS.escape(idAttivo)); if (e) { try { e.focus({ preventScroll: true }); if (valori[idAttivo] && e.setSelectionRange && /^(text|search|tel|url|password|textarea)$/i.test(e.type || "")) e.setSelectionRange(valori[idAttivo].s, valori[idAttivo].e); } catch (err) {} } }
   if (scroll) { const pn = s.querySelector(".panel"); if (pn) pn.scrollTop = scroll; }
   collegaFoglio();
-  try { segrMini(); segrFuori(); segrPip(); } catch (e) {}   // 1.108.0: Sofia piccola sopra l'email; quella grande giù si toglie quando c'è un foglio
+  try { segrMini(); segrFuori(); segrPip(); segrFerma(); } catch (e) {}   // 1.108.0; 1.114.0: segrFerma: Sofia piccola sopra l'email; quella grande giù si toglie quando c'è un foglio
 }
 
 // Messaggio del giorno alle signore (lo scrivono i proprietari dalla schermata "Oggi")
@@ -18770,7 +18808,8 @@ function collega() {
   document.querySelectorAll("button[data-salone]").forEach(b => b.onclick = () => { /* 1.0.4: solo i tasti (la casa ha anche lei data-salone) */ try { localStorage.setItem(CHIAVE_SALONE, b.dataset.salone); } catch (e) {} disegna(); toast(b.dataset.salone === "si" ? "Il salone torna dietro di lei" : "Niente più sfondo dietro di lei"); });
   document.querySelectorAll("[data-icone-serie]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_ICONE, b.dataset.iconeSerie); } catch (e) {} applicaTema(); disegna(); toast(b.dataset.iconeSerie === "o" ? "Icone meno lucide" : "Icone lucide"); });
   // 1.112.0: i tasti della Segreteria, lucidi o a matita come prima (Michele: «dammi la possibilità di tornare indietro anche»)
-  document.querySelectorAll("[data-segr-tasti]").forEach(b => b.onclick = () => { try { if (b.dataset.segrTasti === "matita") localStorage.setItem("ricci_segr_tasti", "matita"); else localStorage.removeItem("ricci_segr_tasti"); } catch (e) {} applicaTema(); disegna(); toast(b.dataset.segrTasti === "matita" ? "Tasti della Segreteria: a matita, come prima" : "Tasti della Segreteria: icone lucide"); });   // 1.110.0
+  document.querySelectorAll("[data-segr-tasti]").forEach(b => b.onclick = () => { try { if (b.dataset.segrTasti === "lucide") localStorage.setItem("ricci_segr_tasti", "lucide"); else localStorage.removeItem("ricci_segr_tasti"); } catch (e) {} applicaTema(); disegna(); toast(b.dataset.segrTasti === "matita" ? "Tasti della Segreteria: a matita" : "Tasti della Segreteria: lucidi di Gemini"); });
+  document.querySelectorAll("[data-segr-tastoni]").forEach(b => b.onclick = () => { try { if (b.dataset.segrTastoni === "matita") localStorage.setItem("ricci_segr_tastoni", "matita"); else localStorage.removeItem("ricci_segr_tastoni"); } catch (e) {} applicaTema(); disegna(); toast(b.dataset.segrTastoni === "matita" ? "Tastoni della Segreteria: a matita" : "Tastoni della Segreteria: lucidi con l'oro"); });   // 1.114.0   // 1.110.0
   document.querySelectorAll("[data-sofia-fuori]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_FUORI, b.dataset.sofiaFuori); } catch (e) {} disegna(); toast(b.dataset.sofiaFuori === "no" ? nomeGov() + " resta al suo posto" : "Quando parla, " + nomeGov() + " esce sullo schermo"); });
   document.querySelectorAll("[data-sofia-ver]").forEach(b => b.onclick = () => { if ((b.dataset.sofiaVer === "prima") === sofiaComEra()) return; try { localStorage.setItem(CHIAVE_SOFIA_VER, b.dataset.sofiaVer); } catch (e) {} toast(b.dataset.sofiaVer === "prima" ? nomeGov() + " com'era: un momento…" : nomeGov() + " con la spilla nuova: un momento…"); setTimeout(() => location.reload(), 700); });   // 1.74.2
   document.querySelectorAll("[data-sofia3d]").forEach(b => b.onclick = () => { try { localStorage.setItem(CHIAVE_3D, b.dataset.sofia3d); } catch (e) {} disegna(); toast(b.dataset.sofia3d === "no" ? nomeGov() + " piatta, come prima" : (ALFA_OK === "no" && !alfaTela() ? "Su questo telefono il 3D non si può fare" : nomeGov() + " in 3D")); });
@@ -20600,6 +20639,18 @@ function segrTuttiFiles(p) {
 function segrFilesDi(p) { return segrTuttiFiles(p).filter(allegatoVero); }
 // l'elenco intero c'è: chiesto alla casella, o portato dal giro con la casella 4 (prima la casella non dava le immagini dentro il testo)
 const segrElencoNoto = (p) => !!(Array.isArray((S.segrElenco || {})[p && p.id]) || Number(p && p.filesV) >= 4);
+// 1.114.0 (Michele, 21/11: «non si capisce bene gli allegati… troppi colori, troppi. C'è bisogno di più distinzioni»): i disegni
+// degli allegati semplici, a tratto scuro (prima le icone lucide rosse, viola, verdi)
+const SGA_DIS = {
+  doc: '<path d="M14 4h13l9 9v27a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/><path d="M27 4v9h9"/><path d="M17 22h14M17 28h14M17 34h9"/>',
+  foto: '<rect x="5" y="9" width="38" height="30" rx="4"/><circle cx="16" cy="19" r="4"/><path d="M7 36l11-11 8 8 6-6 9 9"/>',
+  foglio: '<path d="M14 4h13l9 9v27a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/><path d="M27 4v9h9"/><path d="M15 21h18v15H15zM15 28.5h18M24 21v15"/>',
+  audio: '<path d="M19 34V12l18-4v22"/><circle cx="14" cy="34" r="5"/><circle cx="32" cy="30" r="5"/>',
+  video: '<rect x="5" y="10" width="38" height="28" rx="4"/><path d="M20 18l10 6-10 6z"/>',
+  pacco: '<path d="M6 15l18-8 18 8v19l-18 8-18-8z"/><path d="M6 15l18 8 18-8M24 23v19"/>',
+  graffetta: '<path d="M31 14L17 28a4 4 0 0 0 6 6l15-15a7 7 0 0 0-10-10L12 25a10 10 0 0 0 14 14l11-11"/>' };
+const sgaDis = (k) => `<svg class="sga-dis" viewBox="0 0 48 48" aria-hidden="true">${SGA_DIS[k] || SGA_DIS.doc}</svg>`;
+const sgaDisTipo = (tipo) => tipo === "foto" || tipo === "heic" || tipo === "svg" ? "foto" : tipo === "excel" ? "foglio" : tipo === "audio" ? "audio" : tipo === "video" ? "video" : tipo === "zip" ? "pacco" : "doc";
 function segrAllegatiHtml(p, x) {
   const noto = segrElencoNoto(p), tutti = segrTuttiFiles(p), st = (S.segrElencoStato || {})[p.id] || {};
   // le email di prima: l'elenco intero lo chiedo da sola alla casella, appena apri l'email (intanto quello che c'è già)
@@ -20612,13 +20663,15 @@ function segrAllegatiHtml(p, x) {
   }
   const veri = tutti.filter(allegatoVero), immagini = tutti.filter(f => !allegatoVero(f));
   const letti = new Map((Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).filter(a => a && a.p != null).map(a => [String(a.p), a]));
-  const voce = (f, vero) => {
+  const voce = (f, vero, i) => {
     const a = letti.get(String(f.p)), tipo = tipoAllegatoApp(f);
     const sofia = !vero ? "" : a && a.letto && a.riassunto ? `<p class="sga-sofia"><b>${esc(nomeGov())}:</b> ${esc(a.riassunto)}</p>`
       : a && !a.letto ? `<p class="sga-nota">${esc(primaMaiuscola(a.perche))}</p>` : p.allegatiStato === "da-leggere" ? `<p class="sga-nota">${esc(nomeGov())} lo sta leggendo…</p>` : "";
-    return `<div class="sga"><button type="button" class="sga-b" data-segr-allegato="${esc(p.id)}|${esc(f.p)}" aria-label="Apri ${vero ? "l'allegato" : "l'immagine"} ${esc(f.n)}"><span class="sga-ico" aria-hidden="true">${icoAll(icoNomeFile(f, tipo))}</span><span class="sga-n"><b>${esc(f.n).replace(/\.(?=[^.]*$)/, "<wbr>.")}</b><small>${esc(nomeTipoFile(f, tipo))}</small><small class="sga-kb">${esc(pesoFile(f.kb))}</small></span><span class="sga-vai" aria-hidden="true">›</span></button>${sofia}</div>`;
+    // 1.114.0: un riquadro per allegato: il numero, il disegno, il nome, tipo e peso su una riga; sotto, dentro, cosa ha capito Sofia;
+    // in fondo il tasto largo «Apri l'allegato» (anche la riga col nome lo apre)
+    return `<div class="sga${vero ? "" : " sga-img"}"><button type="button" class="sga-b" data-segr-allegato="${esc(p.id)}|${esc(f.p)}" aria-label="Apri ${vero ? "l'allegato" : "l'immagine"} ${esc(f.n)}">${vero ? `<b class="sga-num" aria-hidden="true">${i + 1}</b>` : ""}<span class="sga-ico" aria-hidden="true">${sgaDis(sgaDisTipo(tipo))}</span><span class="sga-n"><b>${esc(f.n).replace(/([_-])/g, "$1<wbr>").replace(/\.(?=[^.]*$)/, "<wbr>.")}</b><small>${esc(nomeTipoFile(f, tipo))} · ${esc(pesoFile(f.kb))}</small></span></button>${sofia}<button type="button" class="sga-apri" data-segr-allegato="${esc(p.id)}|${esc(f.p)}">${vero ? "Apri l'allegato" : "Apri l'immagine"}</button></div>`;
   };
-  return `<div class="sgf-all">${veri.length ? `<h4>${icoAll("file")}<span>${veri.length === 1 ? "L'allegato: toccalo per aprirlo" : `Gli allegati (${veri.length}): toccali per aprirli`}</span></h4>${veri.map(f => voce(f, true)).join("")}` : ""}${immagini.length ? `<h4 class="sga-imm">${icoAll("foto")}<span>${immagini.length === 1 ? "L'immagine dentro l'email" : `Le immagini dentro l'email (${immagini.length})`}</span></h4><p class="sga-nota">Sono nel testo dell'email (per esempio il logo della firma).</p>${immagini.map(f => voce(f, false)).join("")}` : ""}</div>`;
+  return `<div class="sgf-all">${veri.length ? `<h4>${sgaDis("graffetta")}<span>${veri.length === 1 ? "L'allegato: toccalo per aprirlo" : `Gli allegati (${veri.length}): toccali per aprirli`}</span></h4>${veri.map((f, i) => voce(f, true, i)).join("")}` : ""}${immagini.length ? `<h4 class="sga-imm">${sgaDis("foto")}<span>${immagini.length === 1 ? "L'immagine dentro l'email" : `Le immagini dentro l'email (${immagini.length})`}</span></h4><p class="sga-nota">Sono nel testo dell'email (per esempio il logo della firma).</p>${immagini.map(f => voce(f, false)).join("")}` : ""}</div>`;
 }
 // quello che legge Sofia: chi scrive, l'oggetto, il testo (senza indirizzi e link), cosa c'è negli allegati
 function segrTestoDaLeggere(p) {
@@ -20782,6 +20835,27 @@ function segrParla(id, t, chi) {
       speechSynthesis.speak(u);
     });
   } catch (e) { sg2ParlaTel = false; finito(); toast("Su questo telefono non riesco a parlare."); disegna(); }
+}
+// 1.114.0 (Michele, 21/11: «quando legge le email è un casino, perché non si può fermare… si fa fatica a fermarla»): mentre Sofia
+// della Segreteria parla (legge un'email o un allegato, ti risponde) in basso c'è sempre un tasto grande «Ferma»: un tocco e smette.
+// Prima per fermarla c'era solo il tasto in cima all'email (che scorrendo se ne andava) o toccare lei.
+function segrFermaOra() {
+  segrGiro++; segrLegge = ""; segrRisponde = ""; segrLeggeAll = "";
+  sg2Zitta(); try { if (voceInCorso) zittisciVoce(); } catch (e) {}
+  disegna(); try { if (S.foglio && S.foglio.tipo === "segrEmail") disegnaFoglio(); } catch (e) {}
+}
+function segrFerma() {
+  let b = document.getElementById("segrFerma"), vuoi = false;
+  try { vuoi = !!((voceInCorso || sg2ParlaTel) && S.pronto && proprietario() && (S.vista === "segreteria" || (S.foglio && S.foglio.tipo === "segrEmail"))); } catch (e) {}
+  if (!vuoi) { if (b && !b.hidden) b.hidden = true; return; }
+  if (!b) {
+    b = document.createElement("button"); b.type = "button"; b.id = "segrFerma"; b.className = "segr-ferma";
+    b.innerHTML = `<span class="sfm-q" aria-hidden="true"></span><span>Ferma</span>`;
+    b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); segrFermaOra(); };
+    document.body.appendChild(b);
+  }
+  b.setAttribute("aria-label", `Ferma ${nomeGov()}: smette di parlare`);
+  b.hidden = false;
 }
 function segrLeggiEmail(id) {
   const p = (S.posta || {})[id]; if (!p) return;
@@ -21662,7 +21736,7 @@ try { window.addEventListener("resize", () => { try { segrMini(); } catch (e) {}
 //    restano su questo telefono (CHIAVE_PIP). Un tocco: se parla smette, se ti ascolta hai finito, se no ti ascolta (come
 //    «Parlale»). Sotto di lei la nuvoletta con quello che sente, «…ci penso» e quello che risponde.
 // ============================================================================
-var CHIAVE_PIP = "ricci_segr_pip", PIP_RAPP = 0.6, segrPiena = false, segrPienaFine = 0;   // PIP_RAPP: largo / alto della figura
+var CHIAVE_PIP = "ricci_segr_pip", PIP_RAPP = 0.6, segrPiena = false, segrPienaFine = 0, segrPienaDa = 0;   // 1.113.2: segrPienaDa   // PIP_RAPP: largo / alto della figura
 function segrPienaMetti(si) {
   si = !!si;
   if (segrPiena === si) return;
@@ -21670,7 +21744,7 @@ function segrPienaMetti(si) {
   // tornando su, il riquadro va subito in cima (e per un attimo lo scorrimento non lo riapre: prima, mentre tornava su piano
   // piano, passava dai 40 px e si rimetteva a pagina intera)
   if (!si) { segrPienaFine = Date.now(); const sc = h && h.querySelector(".casa-testo"); if (sc) sc.scrollTop = 0; }
-  segrPiena = si;
+  segrPiena = si; if (si) segrPienaDa = Date.now();   // 1.113.2
   if (h) h.classList.toggle("notizie-piene", si);
   try { sg2SofiaMonta(); } catch (e) {}
   segrPip();

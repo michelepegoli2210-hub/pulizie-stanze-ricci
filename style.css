@@ -11271,9 +11271,9 @@ body.premium.segr-lucidi #segrHero.notizie-piene .segr-piena-via .spv-ico{width:
    proposte da Gemini»; delle 4 proposte ha scelto la «1»). Ogni tastone è una tessera lucida del suo colore profondo con la
    cornice d'oro, come le icone dei tasti: il colore va dal chiaro in alto (--l1) allo scuro in basso (--l2), il riflesso in alto
    (--lucido, meno con le icone «meno lucide»), l'ombra sotto. Il disegno avorio è di Gemini (tastoni/*.webp); il numero e la
-   parola avorio. Tutto solo con body.segr-lucidi: con «A matita, come prima» restano i cartoncini a matita di prima.
+   parola avorio. Tutto solo con body.segr-tastoni: con «A matita, come prima» restano i cartoncini a matita di prima.
    ---------------------------------------------------------------------------- */
-body.segr-lucidi #segrHero .sgt{--l1:#963245;--l2:#4B0F1D;--lucido:.30;
+body.segr-tastoni #segrHero .sgt{--l1:#963245;--l2:#4B0F1D;--lucido:.30;
   border:5px solid transparent !important;border-radius:22px !important;
   background:linear-gradient(180deg,rgba(255,255,255,var(--lucido)) 0%,rgba(255,255,255,calc(var(--lucido) * .35)) 26%,rgba(255,255,255,0) 44%) padding-box,
     radial-gradient(130% 80% at 50% 108%,rgba(0,0,0,.30),rgba(0,0,0,0) 62%) padding-box,
@@ -11281,40 +11281,118 @@ body.segr-lucidi #segrHero .sgt{--l1:#963245;--l2:#4B0F1D;--lucido:.30;
     linear-gradient(140deg,#FCF0C8 0%,#E4BC62 16%,#A9792C 40%,#F4D886 60%,#8B6221 80%,#DDB45C 100%) border-box !important;
   box-shadow:inset 0 2px 1px rgba(255,255,255,.34),inset 0 0 0 1.5px rgba(0,0,0,.42),0 8px 14px -6px rgba(45,28,10,.62) !important;
   color:#F7EDD4}
-body.segr-lucidi.icone-opache #segrHero .sgt{--lucido:.12}
+body.segr-tastoni.icone-opache #segrHero .sgt{--lucido:.12}
 /* i colori, come nella proposta di Gemini: in ogni gruppo tutti diversi */
-body.segr-lucidi #segrHero .sgt.arrivi,body.segr-lucidi #segrHero .sgt.cass.fare{--l1:#963245;--l2:#4B0F1D}
-body.segr-lucidi #segrHero .sgt.partenze,body.segr-lucidi #segrHero .sgt.cass.fatto{--l1:#2C4C8A;--l2:#0F1D3E}
-body.segr-lucidi #segrHero .sgt.pulizie,body.segr-lucidi #segrHero .sgt.cass.prop{--l1:#347A45;--l2:#123620}
-body.segr-lucidi #segrHero .sgt.email{--l1:#74408A;--l2:#30133D}
-body.segr-lucidi #segrHero .sgt.pren,body.segr-lucidi #segrHero .sgt.cass.sapere{--l1:#62646B;--l2:#25262B}
-body.segr-lucidi #segrHero .sgt.canale{--l1:#BE8E32;--l2:#6B4510}
-body.segr-lucidi #segrHero .sgt.ig{--l1:#93396D;--l2:#40102F}
-body.segr-lucidi #segrHero .sgt.igf{--l1:#2E7478;--l2:#0D3638}
+body.segr-tastoni #segrHero .sgt.arrivi,body.segr-tastoni #segrHero .sgt.cass.fare{--l1:#963245;--l2:#4B0F1D}
+body.segr-tastoni #segrHero .sgt.partenze,body.segr-tastoni #segrHero .sgt.cass.fatto{--l1:#2C4C8A;--l2:#0F1D3E}
+body.segr-tastoni #segrHero .sgt.pulizie,body.segr-tastoni #segrHero .sgt.cass.prop{--l1:#347A45;--l2:#123620}
+body.segr-tastoni #segrHero .sgt.email{--l1:#74408A;--l2:#30133D}
+body.segr-tastoni #segrHero .sgt.pren,body.segr-tastoni #segrHero .sgt.cass.sapere{--l1:#62646B;--l2:#25262B}
+body.segr-tastoni #segrHero .sgt.canale{--l1:#BE8E32;--l2:#6B4510}
+body.segr-tastoni #segrHero .sgt.ig{--l1:#93396D;--l2:#40102F}
+body.segr-tastoni #segrHero .sgt.igf{--l1:#2E7478;--l2:#0D3638}
 /* il numero, la parola, la riga sotto: avorio, con un'ombra che li stacca dal colore */
-body.segr-lucidi #segrHero .sgt .sgt-n,body.segr-lucidi #segrHero .sgt .sgt-p,body.segr-lucidi #segrHero .sgt .sgt-t{color:#F7EDD4 !important;text-shadow:0 2px 3px rgba(0,0,0,.5)}
-body.segr-lucidi #segrHero .sgt .sgt-s{color:#EEE0BE !important;text-shadow:0 1px 2px rgba(0,0,0,.45)}
-body.segr-lucidi #segrHero .sgt.cass.zero .sgt-n{opacity:.62}
+body.segr-tastoni #segrHero .sgt .sgt-n,body.segr-tastoni #segrHero .sgt .sgt-p,body.segr-tastoni #segrHero .sgt .sgt-t{color:#F7EDD4 !important;text-shadow:0 2px 3px rgba(0,0,0,.5)}
+body.segr-tastoni #segrHero .sgt .sgt-s{color:#EEE0BE !important;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+body.segr-tastoni #segrHero .sgt.cass.zero .sgt-n{opacity:.62}
 /* il disegno avorio, staccato con un'ombra */
-body.segr-lucidi #segrHero .sgt .sgt-d{filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+body.segr-tastoni #segrHero .sgt .sgt-d{filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
 /* toccato: un po' più scuro; aperto: la cornice d'oro si accende */
-body.segr-lucidi #segrHero button.sgt:active,body.segr-lucidi #segrHero a.sgt:active,body.segr-lucidi #segrHero .sgt.cass:has(> .sgt-apri:active){filter:brightness(.88)}
-body.segr-lucidi #segrHero .sgt.aperta,body.segr-lucidi #segrHero .sgt.cass.aperto{
+body.segr-tastoni #segrHero button.sgt:active,body.segr-tastoni #segrHero a.sgt:active,body.segr-tastoni #segrHero .sgt.cass:has(> .sgt-apri:active){filter:brightness(.88)}
+body.segr-tastoni #segrHero .sgt.aperta,body.segr-tastoni #segrHero .sgt.cass.aperto{
   box-shadow:inset 0 2px 1px rgba(255,255,255,.34),inset 0 0 0 1.5px rgba(0,0,0,.42),0 0 0 3px #FFF1C2,0 0 18px 5px rgba(240,198,84,.8) !important}
 /* (aperto: la regola dei cartoncini mette il contorno di matita scuro; qui resta la cornice d'oro) */
-body.segr-lucidi #segrHero .sgt-griglia.stretta .sgt.aperta,body.segr-lucidi #segrHero .sgt.pren.aperta,body.segr-lucidi #segrHero .sgt.cass.aperto,
-body.segr-lucidi #segrHero .sgt.ig.aperta,body.segr-lucidi #segrHero .sgt.igf.aperta{border-color:transparent !important;border-width:5px !important}
+body.segr-tastoni #segrHero .sgt-griglia.stretta .sgt.aperta,body.segr-tastoni #segrHero .sgt.pren.aperta,body.segr-tastoni #segrHero .sgt.cass.aperto,
+body.segr-tastoni #segrHero .sgt.ig.aperta,body.segr-tastoni #segrHero .sgt.igf.aperta{border-color:transparent !important;border-width:5px !important}
 /* la freccina: dentro la tessera avorio; quella del cassetto aperto sta sotto, sulla carta: del colore del cassetto */
-body.segr-lucidi #segrHero .sgt.aperta::after,body.segr-lucidi #segrHero .sgt.canale::after{background:#F7EDD4 !important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
-body.segr-lucidi #segrHero .sgt.cass.aperto::after{background:var(--l2) !important}
+body.segr-tastoni #segrHero .sgt.aperta::after,body.segr-tastoni #segrHero .sgt.canale::after{background:#F7EDD4 !important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+body.segr-tastoni #segrHero .sgt.cass.aperto::after{background:var(--l2) !important}
 /* quando una di «Oggi» è aperta: quattro tessere piccole in fila */
-body.segr-lucidi #segrHero .sgt-griglia.stretta .sgt,body.segr-lucidi #segrHero .sgt-griglia.stretta .sgt.aperta{border-width:2px !important;border-radius:14px !important;padding-left:0;padding-right:0}
-body.segr-lucidi #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:15px;letter-spacing:-.2px !important}
-@media (max-width:419px){body.segr-lucidi #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:14px}}
-@media (max-width:389px){body.segr-lucidi #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:13px;letter-spacing:-.3px !important}}
+body.segr-tastoni #segrHero .sgt-griglia.stretta .sgt,body.segr-tastoni #segrHero .sgt-griglia.stretta .sgt.aperta{border-width:2px !important;border-radius:14px !important;padding-left:0;padding-right:0}
+body.segr-tastoni #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:15px;letter-spacing:-.2px !important}
+@media (max-width:419px){body.segr-tastoni #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:14px}}
+@media (max-width:389px){body.segr-tastoni #segrHero .sgt-griglia.stretta .sgt .sgt-p{font-size:13px;letter-spacing:-.3px !important}}
 /* la cornice d'oro è più grossa del contorno a matita: un filo meno di margine dentro, così le parole lunghe ci stanno */
-body.segr-lucidi #segrHero .sgt:not(.cass){padding-left:3px;padding-right:3px}
-@media (max-width:389px){body.segr-lucidi #segrHero .sgt.ig .sgt-p,body.segr-lucidi #segrHero .sgt.igf .sgt-p{font-size:21px}}
+body.segr-tastoni #segrHero .sgt:not(.cass){padding-left:3px;padding-right:3px}
+@media (max-width:389px){body.segr-tastoni #segrHero .sgt.ig .sgt-p,body.segr-tastoni #segrHero .sgt.igf .sgt-p{font-size:21px}}
 /* «Ricordami una cosa» dentro «Da fare tu» */
-body.segr-lucidi #segrHero .sgt.cass .sgt-piu{background:rgba(255,246,222,.14) !important;border:2px dashed rgba(246,227,161,.85) !important;color:#F7EDD4 !important;text-shadow:0 1px 2px rgba(0,0,0,.45)}
-body.segr-lucidi #segrHero .sgt.cass .sgt-piu:active{background:rgba(255,246,222,.24) !important}
+body.segr-tastoni #segrHero .sgt.cass .sgt-piu{background:rgba(255,246,222,.14) !important;border:2px dashed rgba(246,227,161,.85) !important;color:#F7EDD4 !important;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+body.segr-tastoni #segrHero .sgt.cass .sgt-piu:active{background:rgba(255,246,222,.24) !important}
+
+/* ----------------------------------------------------------------------------
+   1.113.2 · la pagina della Segreteria non si muove più da sola (Michele, 21/11: «vedi di controllare anche se ci siano dei bug»;
+   poi «Sì, sistemali», senza cambiare come si vede). La testa era alta come quella della prima pagina (che sotto la piega ha la
+   casella nascosta) e il velo usciva sotto di 22 px: la pagina scorreva di 22 px, e scorrendo il riquadro la barra in cima
+   finiva sotto il riquadro. Adesso la testa arriva giusta fino in fondo (la barra in basso ci sta sopra), il velo resta
+   dentro, e lo scorrimento del riquadro resta nel riquadro.
+   ---------------------------------------------------------------------------- */
+body.premium.ha-segr #segrHero{height:calc(var(--h-casa) + var(--alto-sotto,58px))}
+body.premium.ha-segr #segrHero .casa-velo{height:100%}
+body.premium #segrHero .casa-testo{overscroll-behavior:contain}
+
+/* ----------------------------------------------------------------------------
+   1.114.0 · LA SEGRETERIA COME PRIMA, PIÙ CALMA (Michele, 21/11: «c'è troppo rumore visivo… Sofia… deve essere più leggera, più
+   sfumata, non si deve tanto vedere… quando legge le email… si fa fatica a fermarla… gli allegati… troppi colori… Andava bene
+   come prima»). I tasti tornano a matita (nell'app.js: segrTastiMatita); qui il resto.
+   ---------------------------------------------------------------------------- */
+/* a pagina intera via «Sofia grande»: Sofia si allarga con due dita, «Indietro» rimette la pagina con lei grande */
+body.premium #segrHero.notizie-piene .segr-piena-via{display:none !important}
+/* Sofia nel riquadrino: niente cornice e niente striscia col nome, i bordi sfumati, un po' trasparente; mentre parla o ti ascolta
+   solo un alone leggero. Si sposta e si allarga col dito come prima (l'angolino c'è ancora, ma non si vede) */
+.segr-pip{border:0 !important;border-radius:0 !important;background:none !important;box-shadow:none !important;overflow:visible !important;opacity:.88}
+.segr-pip .pip-fig{-webkit-mask-image:radial-gradient(ellipse 68% 60% at 50% 42%,#000 50%,rgba(0,0,0,.6) 72%,transparent 100%);
+  mask-image:radial-gradient(ellipse 68% 60% at 50% 42%,#000 50%,rgba(0,0,0,.6) 72%,transparent 100%)}
+.segr-pip .pip-nome{display:none}
+.segr-pip .pip-tira{opacity:0}
+.segr-pip.parla,.segr-pip.ascolta{animation:none !important;box-shadow:none !important}
+.segr-pip.parla{filter:drop-shadow(0 0 7px rgba(242,193,78,.95))}
+.segr-pip.ascolta{filter:drop-shadow(0 0 7px rgba(95,175,100,.95))}
+
+/* «Ferma»: mentre Sofia della Segreteria parla, in basso, grande; un tocco e smette */
+.segr-ferma{position:fixed;left:50%;bottom:calc(var(--alto-sotto,58px) + 16px + env(safe-area-inset-bottom,0px));z-index:60;transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;gap:12px;min-width:180px;min-height:62px;margin:0;padding:0 30px 0 24px;border:3px solid #FFFFFF;border-radius:34px;
+  background:#16264A;color:#FFFFFF;font-family:"Andika","Atkinson Hyperlegible Next",system-ui,sans-serif;font-size:24px;font-weight:700;line-height:1;
+  box-shadow:0 10px 24px -8px rgba(15,23,42,.65),0 0 0 2px rgba(22,38,74,.25);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.segr-ferma[hidden]{display:none}
+.segr-ferma .sfm-q{flex:none;width:20px;height:20px;border-radius:4px;background:#FFFFFF}
+.segr-ferma:active{transform:translateX(-50%) translateY(2px);filter:brightness(1.15)}
+body:has(.sheet) .segr-ferma{bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+
+/* gli allegati: un riquadro per allegato, col numero; dentro, sotto, cosa ha capito Sofia; pochi colori, disegni scuri */
+.sge-foglio .sgf-all h4{gap:10px}
+.sge-foglio .sgf-all h4 .sga-dis{flex:none;width:34px;height:34px}
+.sge-foglio .sga-dis{display:block;width:100%;height:100%;fill:none;stroke:#26262B;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.sge-foglio .sga{margin:0 0 16px;padding:0;border:2.5px solid #26262B;border-radius:18px;background:#FFFFFF;overflow:hidden}
+.sge-foglio .sga-b{gap:12px;min-height:76px;padding:10px 12px;border:0 !important;border-radius:0 !important;background:#FFFFFF;box-shadow:none !important}
+.sge-foglio .sga-b:active{transform:none !important;background:#F3F1EC}
+.sge-foglio .sga-num{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#26262B;color:#FFFFFF;font-size:20px;line-height:1;font-weight:700 !important}
+.sge-foglio .sga-ico{display:block;flex:none;width:44px;height:44px;font-size:0;line-height:0}
+.sge-foglio .sga-n b{color:#000}
+.sge-foglio .sga-n small{color:#55555E}
+.sge-foglio .sga-sofia,.sge-foglio .sga-nota{margin:0;padding:10px 14px 4px;border-top:1.5px dashed #BDB6A8;background:#FAF8F3}
+.sge-foglio .sga-apri{display:flex;align-items:center;justify-content:center;width:calc(100% - 24px);min-height:54px;margin:10px 12px 12px;padding:0 12px;border:0;border-radius:14px;
+  background:#16264A;color:#FFFFFF;font-family:inherit;font-size:20px;line-height:1.2;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sge-foglio .sga-apri:active{filter:brightness(1.2)}
+.sge-foglio .sga-sofia + .sga-apri,.sge-foglio .sga-nota + .sga-apri{margin-top:6px}
+.sge-foglio .sga:has(.sga-sofia),.sge-foglio .sga:has(.sga-nota){background:#FAF8F3}
+.sge-foglio .sga:has(.sga-sofia) .sga-b,.sge-foglio .sga:has(.sga-nota) .sga-b{background:#FFFFFF}
+.sge-foglio .sga-sofia b{color:#000 !important}
+.sge-foglio .sga.sga-img{border-width:2px;border-color:#8A857B}
+@media (max-width:380px){.sge-foglio .sga-b{gap:8px;padding:8px 10px}.sge-foglio .sga-ico{width:36px;height:36px}.sge-foglio .sga-num{width:30px;height:30px;font-size:18px}}
+
+/* i tastoni lucidi restano, più chiari (Michele, 21/11: «quelli là sono molto chiare, molto visibili… forse sono un po' troppo
+   scuri»; viste le foto: «Tastoni ancora più chiari»): il colore di ciascuno più chiaro, il riflesso più leggero */
+body.segr-tastoni #segrHero .sgt{--lucido:.18}
+body.segr-tastoni #segrHero .sgt.arrivi,body.segr-tastoni #segrHero .sgt.cass.fare{--l1:#D37A8C;--l2:#A53F55}
+body.segr-tastoni #segrHero .sgt.partenze,body.segr-tastoni #segrHero .sgt.cass.fatto{--l1:#6F95D2;--l2:#3A5C9E}
+body.segr-tastoni #segrHero .sgt.pulizie,body.segr-tastoni #segrHero .sgt.cass.prop{--l1:#72B985;--l2:#377D4F}
+body.segr-tastoni #segrHero .sgt.email{--l1:#B488C7;--l2:#774391}
+body.segr-tastoni #segrHero .sgt.pren,body.segr-tastoni #segrHero .sgt.cass.sapere{--l1:#A8ABB3;--l2:#6A6D76}
+body.segr-tastoni #segrHero .sgt.canale{--l1:#E7C26E;--l2:#B58430}
+body.segr-tastoni #segrHero .sgt.ig{--l1:#D07DAB;--l2:#974274}
+body.segr-tastoni #segrHero .sgt.igf{--l1:#6FB8BC;--l2:#2F7D82}
+body.segr-tastoni.icone-opache #segrHero .sgt{--lucido:.08}
+body.segr-tastoni #segrHero .sgt .sgt-t,body.segr-tastoni #segrHero .sgt .sgt-n,body.segr-tastoni #segrHero .sgt .sgt-p{text-shadow:0 1px 0 rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.6) !important}
+/* nelle impostazioni (Come si vede l'app → 9): tre tastoni piccoli */
+.ico-opt .tm{display:inline-grid;place-items:center;width:44px;height:44px;border:2px solid #D9B45C;border-radius:10px}
+.ico-opt .tm img{width:32px;height:32px;object-fit:contain}
