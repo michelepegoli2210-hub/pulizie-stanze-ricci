@@ -96,6 +96,10 @@
 // 1.44.0 (app 1.118.0, 27/11/2026; Michele: «nell'allegato io ho trovato soltanto le presenze addirittura del 2022»): di un Excel
 //  con tanti fogli Sofia legge quello di adesso e i vicini (excel-isolato.mjs + ../fogli-excel.js), non più i primi 6; gli
 //  Excel letti in questi tre giorni col lettore di prima li rilegge una volta (allegati-giro.mjs, VERSIONE_EXCEL).
+// 1.44.1 (app 1.118.1, 27/11/2026; Michele: «fin quando non le tolgo io non si tolgono, cioè che le devo vedere proprio per
+//  forza» → «5 di fila, e di nuovo ogni 10 minuti finché non apri l'email»): IL RICHIAMO DELLE PRENOTAZIONI. La notifica di
+//  una prenotazione riparte a ogni giro (almeno 9 minuti dopo l'ultima, di giorno, per un giorno al massimo) finché l'email
+//  non è stata aperta nell'app; solo ai telefoni che sanno fermarla (posta-giro.mjs: richiami…; qui chi la manda).
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -106,14 +110,14 @@ import { allarmiPerTe } from "./perte-giro.mjs";   // 1.28.0
 import { copiaDovuta, faiCopia, mandaCassetta, pulito as pulitoCopia } from "./copia-giro.mjs";   // 1.29.0: la copia di sicurezza
 import { calendariDovuti, leggiCalendari, mandaCalendari, scaricaCalendario, OGNI_MS as OGNI_CAL_MS } from "./calendari-giro.mjs";   // 1.30.0: il channel manager gratis
 import { giroSocial, reteVera, caricaGithub, pulito as pulitoSocial } from "./social-giro.mjs";   // 1.31.0: Sofia social manager, il motore
-import { portaPostaAlbergo, notificheEmail } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
+import { portaPostaAlbergo, notificheEmail, richiamiDi, richiamiAggiungi, richiamiDaFare } from "./posta-giro.mjs";   // 1.33.0 (app 1.75.0): la posta dell'albergo per Sofia segretaria
 import { leggiAllegati } from "./allegati-giro.mjs";   // 1.41.0 (app 1.108.0): gli allegati delle email, li legge Sofia
 import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'orologio: «arrivata» / «finito» su WhatsApp e i tasti dell'app
 import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
 import { giroTerritorio, scaricaPagina } from "./territorio-giro.mjs";   // 1.43.0 (app 1.117.0): «In zona», cosa succede nel territorio
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.44.0";
+export const VERSIONE_GIRO = "1.44.1";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -252,12 +256,12 @@ async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemin
   const iscrizioni = () => Object.entries((ps && ps.iscrizioni) || {}).filter(([, v]) => v && v.sub && v.sub.endpoint && (v.chi || "titolare") === "titolare");
   const mandaMe = async (testo, cosa, titolo = "Sofia", urgente = false, extra0 = {}) => {
     let okk = false;
-    const { conUrgenti, ...extra } = extra0 || {};
+    const { conUrgenti, soloPronti, ...extra } = extra0 || {};   // 1.44.1: soloPronti = solo ai telefoni che sanno fermare il richiamo, e niente Telegram
     if (conUrgenti) { const r = await urgentiRiga(); if (r) testo = `${testo}\n${r}`; }   // 1.25.0
-    if (tgMe) okk = (await telegram(a.token, a.chatMio, testo)) || okk;
+    if (tgMe && !soloPronti) okk = (await telegram(a.token, a.chatMio, testo)) || okk;
     if (push && ps && ps.vapidPublic && ps.vapidPrivato) {
       const finite = [];
-      for (const [id, v] of iscrizioni()) { const r = await push(ps, v.sub, { titolo, testo, urgente, ...extra }); if (r && r.ok) okk = true; else if (r && r.finita) finite.push(id); }
+      for (const [id, v] of iscrizioni().filter(([, w]) => !soloPronti || Number(w.richiamo) >= 1)) { const r = await push(ps, v.sub, { titolo, testo, urgente, ...extra }); if (r && r.ok) okk = true; else if (r && r.finita) finite.push(id); }
       if (finite.length) { const resto = Object.fromEntries(Object.entries(ps.iscrizioni || {}).filter(([id]) => !finite.includes(id))); await db.sostituisci("importazioni", "push-sofia", "iscrizioni", resto); ps.iscrizioni = resto; esiti.push(`tolte ${finite.length} iscrizioni scadute`); }
     }
     esiti.push(`${cosa}${okk ? "" : " (non è arrivato)"}`); return okk;
@@ -376,6 +380,7 @@ async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemin
   // una notifica subito, con chi scrive, l'oggetto e l'inizio del testo (tocca → la Segreteria). Di notte (22:30–6:30)
   // aspettano il primo giro dopo le 6:30; più di 3 insieme, una sola con l'elenco. Spente dall'interruttore (giroEmail).
   // Nel registro pubblico di GitHub solo «notifica di una email»: mai chi scrive né l'oggetto.
+  let avvisateOra = [], riusciteOra = new Set();   // 1.44.1: le email avvisate in questo giro (per il richiamo delle prenotazioni)
   if (pa && Array.isArray(pa.avvisare) && pa.avvisare.length) {
     try {
       if (a.giroEmail === false) await db.merge("importazioni", "posta-albergo", { avvisare: [] });
@@ -386,11 +391,44 @@ async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemin
         else {
           let partite = 0;
           // 1.38.0: una prenotazione vibra e resta sul telefono finché non la tocca (nel registro pubblico solo «notifica di una prenotazione»)
-          for (const n of notificheEmail(pa.avvisare, adesso)) if (await mandaMe(n.testo, n.prenotazione ? "notifica di una prenotazione" : "notifica di una email dell'albergo", n.titolo, true, { dove: "segreteria", tag: n.tag, ...(n.rif ? { rif: n.rif } : {}), ...(n.vibra ? { vibra: true } : {}) })) partite++;
-          if (partite) await db.merge("importazioni", "posta-albergo", { avvisare: [] });   // se non è arrivata nessuna, si riprova al giro dopo
+          for (const n of notificheEmail(pa.avvisare, adesso)) if (await mandaMe(n.testo, n.prenotazione ? "notifica di una prenotazione" : "notifica di una email dell'albergo", n.titolo, true, { dove: "segreteria", tag: n.tag, ...(n.rif ? { rif: n.rif } : {}), ...(n.vibra ? { vibra: true } : {}) })) { partite++; if (n.prenotazione && n.rif) riusciteOra.add(String(n.rif).replace(/^email_/, "")); }
+          if (partite) { await db.merge("importazioni", "posta-albergo", { avvisare: [] }); avvisateOra = pa.avvisare; }   // se non è arrivata nessuna, si riprova al giro dopo
         }
       }
     } catch (e) { console.warn("notifiche delle email:", e && e.message); esiti.push("notifiche delle email: errore"); }
+  }
+  // 1.44.1 (app 1.118.1) · IL RICHIAMO DELLE PRENOTAZIONI. Michele, 27/11/2026: «fin quando non le tolgo io non si tolgono, cioè
+  // che le devo vedere proprio per forza» → ha scelto «5 di fila, e di nuovo ogni 10 minuti finché non apri l'email».
+  // Una prenotazione avvisata (non le annullate) resta in importazioni/posta-albergo.richiami finché l'email non viene aperta
+  // nell'app (posta/email_<id>.aperta: lo scrive l'app) o passa un giorno dal primo avviso. Finché sta lì, di giorno
+  // (6:30–22:30) la STESSA notifica riparte a ogni giro, se dall'ultima sono passati almeno 9 minuti: sul telefono suona di
+  // nuovo 5 volte (sw.js). Va SOLO ai telefoni che hanno detto di saperla fermare (iscrizioni.<telefono>.richiamo, lo scrive
+  // l'app dalla 1.118.1): a un telefono con l'app di prima arriva solo la prima, come sempre, se no suonerebbe senza potersi
+  // fermare. Se nessun telefono è pronto non si comincia nemmeno. Niente Telegram. Spente con le email (giroEmail).
+  // Nel registro pubblico solo «richiamo di una prenotazione»: mai chi scrive né l'oggetto.
+  if (pa && (avvisateOra.length || (Array.isArray(pa.richiami) && pa.richiami.length))) {
+    try {
+      const ora = adesso.getTime(), prima = Array.isArray(pa.richiami) ? pa.richiami : [];
+      let lista = richiamiDi(prima, ora);
+      if (a.giroEmail === false) lista = [];
+      else {
+        if (!ps) ps = await db.doc("importazioni", "push-sofia");
+        const pronti = !!push && !!ps && !!ps.vapidPublic && !!ps.vapidPrivato && iscrizioni().some(([, w]) => Number(w.richiamo) >= 1);
+        if (pronti && avvisateOra.length) lista = richiamiAggiungi(lista, avvisateOra, ora, riusciteOra);
+        if (pronti && t.minuti >= MIN(6, 30) && t.minuti < MIN(22, 30)) {
+          for (const v of richiamiDaFare(lista, ora)) {
+            const via = () => { lista = lista.filter(x => x.id !== v.id); };
+            const p = await db.doc("posta", "email_" + v.id);
+            if (!p || p.aperta) { via(); continue; }   // aperta nell'app (o cancellata): basta
+            const n = notificheEmail([v], adesso).find(x => x.prenotazione);
+            if (!n) { via(); continue; }
+            if (await mandaMe(n.testo, "richiamo di una prenotazione", n.titolo, true, { dove: "segreteria", tag: n.tag, rif: n.rif, vibra: true, soloPronti: true }))
+              lista = lista.map(x => (x.id === v.id ? { ...x, volte: (Number(x.volte) || 0) + 1, ultimo: ora } : x));
+          }
+        }
+      }
+      if (JSON.stringify(lista) !== JSON.stringify(prima)) await db.merge("importazioni", "posta-albergo", { richiami: lista });
+    } catch (e) { console.warn("richiamo delle prenotazioni:", e && e.message); esiti.push("richiamo delle prenotazioni: errore"); }
   }
   // 1.41.0 (app 1.108.0): gli allegati delle email nuove li legge Sofia (dopo le notifiche: quelle non aspettano Gemini)
   if (gemini && pa) {

@@ -19,6 +19,13 @@
 //  1.41.0 (app 1.108.0, casella 3) · Michele, 20/11: «appena apro la notifica… Sofia segretaria… che mi propone di leggerlo» e
 //  «essenziale è che io possa leggere anche tutti gli allegati dall'applicazione». Ogni mail porta l'elenco dei suoi allegati
 //  (files: parte, nome, tipo, KB; li legge allegati-giro.mjs) e la notifica di una mail porta a quella mail (rif «email_<id>»).
+//  1.44.1 (app 1.118.1) · IL RICHIAMO DELLE PRENOTAZIONI. Michele, 27/11/2026: «la notifica mi deve arrivare immediatamente…
+//  non posso rischiare» · «fin quando non le tolgo io non si tolgono, cioè che le devo vedere proprio per forza»; alla
+//  domanda ha scelto «5 di fila, e di nuovo ogni 10 minuti finché non apri l'email». Una prenotazione avvisata (non le
+//  annullate) resta in `richiami` (importazioni/posta-albergo) con quello che serve per rifare la stessa notifica; il giro
+//  la rimanda se dall'ultima sono passati almeno 9 minuti (il giro passa ogni 10), di giorno, finché l'app non scrive
+//  posta/email_<id>.aperta. Dopo un giorno dal primo avviso smette da sola. Le regole sono qui (richiamiDi, richiamiAggiungi,
+//  richiamiDaFare); chi manda è giro.mjs.
 // ============================================================================
 import * as L from "../logica.js";
 export const URL_CASELLA = /^https:\/\/script\.google\.com\/(?:a\/[^/]+\/)?macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/;
@@ -99,6 +106,35 @@ export function daAvvisare(c, mail, ora) {
   const nuove = (Array.isArray(mail) ? mail : []).filter(m => m && ID.test(String(m.id || "")) && Number(m.ts) > 0 && !visti.has(String(m.id))).map(perAvviso);
   return [...prima, ...nuove].filter(x => ora - Number(x.ts) <= AVVISARE_MS).sort((x, y) => Number(x.ts) - Number(y.ts)).slice(-MAX_AVVISARE);
 }
+// 1.44.1 · il richiamo delle prenotazioni: ogni quanto, per quanto, quante al massimo
+export const RICHIAMO_OGNI_MS = 9 * 60000, RICHIAMO_FINO_MS = 24 * 3600 * 1000, MAX_RICHIAMI = 10;
+// la lista com'è nel documento, ripulita: via le voci rotte, i doppioni e quelle con più di un giorno dal primo avviso
+export function richiamiDi(lista, ora) {
+  const visti = new Set(), l = [];
+  for (const x of Array.isArray(lista) ? lista : []) {
+    if (!x || !ID.test(String(x.id || "")) || !(Number(x.ts) > 0) || !(Number(x.da) > 0) || visti.has(String(x.id))) continue;
+    if (ora - Number(x.da) > RICHIAMO_FINO_MS) continue;
+    visti.add(String(x.id)); l.push(x);
+  }
+  return l.slice(-MAX_RICHIAMI);
+}
+// le prenotazioni appena avvisate entrano tra quelle da ricordare (non le annullate, non le altre email). `riuscite` = gli id
+// la cui notifica è arrivata ad almeno un telefono: le altre (l'elenco da avvisare si svuota lo stesso) partono subito da qui.
+export function richiamiAggiungi(lista, avvisate, ora, riuscite = null) {
+  const l = richiamiDi(lista, ora), visti = new Set(l.map(x => String(x.id)));
+  for (const x of Array.isArray(avvisate) ? avvisate : []) {
+    if (!x || !ID.test(String(x.id || "")) || !(Number(x.ts) > 0) || visti.has(String(x.id))) continue;
+    const c = L.emailPrenotazione(x); if (!c || c.annullata) continue;
+    const ok = !riuscite || riuscite.has(String(x.id));
+    visti.add(String(x.id));
+    l.push({ id: String(x.id), ts: Number(x.ts), chi: String(x.chi || "").slice(0, 60), oggetto: String(x.oggetto || "").slice(0, 141), inizio: String(x.inizio || "").slice(0, 221),
+      allegati: Number(x.allegati) || 0, dominio: String(x.dominio || "").slice(0, 80), da: ora, volte: ok ? 1 : 0, ultimo: ok ? ora : 0 });
+  }
+  return l.slice(-MAX_RICHIAMI);
+}
+// quelle da ricordare adesso: dall'ultima notifica sono passati almeno 9 minuti (o la prima non era arrivata)
+export const richiamiDaFare = (lista, ora) => richiamiDi(lista, ora).filter(x => ora - (Number(x.ultimo) || 0) >= RICHIAMO_OGNI_MS);
+
 // le notifiche: fino a 3 mail una per mail («📧 Email da …»), di più una sola con l'elenco
 export function notificheEmail(lista, adesso = new Date()) {
   const l = (Array.isArray(lista) ? lista : []).filter(x => x && ID.test(String(x.id || ""))).sort((x, y) => (Number(x.ts) || 0) - (Number(y.ts) || 0));
@@ -149,7 +185,7 @@ export async function portaPostaAlbergo({ db, adesso = new Date(), fetchFn = fet
   if (!j || !j.ok) {
     const errore = String((j && j.errore) || "la casella non risponde").slice(0, 160);
     try { await db.merge("importazioni", "posta-albergo", { ultimoGiro: adesso.toISOString(), errore, erroreQuando: adesso.toISOString() }); } catch (e) {}
-    return { esito: "posta albergo: la casella non ha risposto", n: 0, errore: true, avvisare: daAvvisare(c, [], ora) };   // 1.36.0: quelle che aspettavano
+    return { esito: "posta albergo: la casella non ha risposto", n: 0, errore: true, avvisare: daAvvisare(c, [], ora), richiami: Array.isArray(c.richiami) ? c.richiami : [] };   // 1.36.0: quelle che aspettavano; 1.44.1: e quelle da ricordare
   }
   const mail = (Array.isArray(j.mail) ? j.mail : []).filter(m => m && Number(m.ts) > da);
   const ops = mail.map(m => mailInPosta(m, j.casella)).filter(Boolean).map(x => ({ coll: "posta", id: x.id, dati: x.dati, merge: true }));
@@ -157,5 +193,5 @@ export async function portaPostaAlbergo({ db, adesso = new Date(), fetchFn = fet
   const ultimo = Math.max(da, ...mail.map(m => Number(m.ts) || 0));
   const avvisare = daAvvisare(c, ops.length ? mail : [], ora);   // 1.36.0
   await db.merge("importazioni", "posta-albergo", { ultimoTs: ultimo, ultimoGiro: adesso.toISOString(), errore: "", quante: (Number(c.quante) || 0) + ops.length, casella: String(j.casella || "").slice(0, 8), ...(ops.length ? { ultimaMail: adesso.toISOString(), avvisare } : {}) });   // 1.41.0: la versione della casella (l'app sa se va aggiornata)
-  return { esito: ops.length ? `posta albergo: ${ops.length} ${ops.length === 1 ? "mail nuova" : "mail nuove"}` : null, n: ops.length, avvisare };
+  return { esito: ops.length ? `posta albergo: ${ops.length} ${ops.length === 1 ? "mail nuova" : "mail nuove"}` : null, n: ops.length, avvisare, richiami: Array.isArray(c.richiami) ? c.richiami : [] };   // 1.44.1
 }
