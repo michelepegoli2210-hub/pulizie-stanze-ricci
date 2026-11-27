@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.116.0";
+export const VERSIONE = "1.117.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -769,6 +769,7 @@ function barraSotto() {
   let nSeg = 0; try { nSeg = proprietario() ? domandeSegreteria() : 0; } catch (e) {}   // 1.60.0: quello che la segretaria ha per te
   let uSeg = { tutte: 0, cic: 0 }; try { if (proprietario()) uSeg = segrUrgenti(); } catch (e) {}   // 1.115.0: le cose urgenti (rosse)
   nSeg += uSeg.cic;
+  try { if (proprietario()) nSeg += terrConti().nuovi; } catch (e) {}   // 1.117.0: gli eventi nuovi di «In zona»
   const html = BS_VOCI.map(([k, n, ic]) => {
     const att = v === k || (k === "sofia" && v === "governante") || (k === "oggi" && (v === "manutenzione" || v === "signora"));
     const conta = k === "sofia" && dom ? `<i class="nav-conta">${dom > 99 ? "99+" : dom}</i>` : "";
@@ -1753,6 +1754,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(db.ascolta("ruoli", {}, (m) => { S.ruoli = m || {}; S.caricati.ruoli = true; if (S.vista === "piantine" || S.vista === "altro" || (S.foglio && /^rg/.test(S.foglio.tipo || ""))) disegna(); }, (e) => console.warn("ruoli", e)));   // 1.57.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "alloggiati-web", d => { S.alWs = d ? { ...d } : null; if (S.vista === "alloggiati" || (S.foglio && S.foglio.tipo === "alWs")) disegna(); }));   // 1.56.1
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "social", d => { S.social = d ? { ...d } : null; if (S.vista === "social" || S.vista === "altro" || S.vista === "segreteria") disegna(); }));   // 1.66.0; 1.111.0: anche la Segreteria
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "in-zona", d => { S.territorio = d ? { ...d } : null; if (S.vista === "segreteria") disegna(); else { try { barraSotto(); } catch (e) {} } }));   // 1.117.0: «In zona»
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "canali", d => { S.canaliCal = d ? { ...d } : null; if (S.vista === "prospetto" || (S.foglio && S.foglio.tipo === "calendario")) disegna(); }));   // 1.65.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "posta-albergo", d => { S.postaAlb = d ? { ...d } : null; if (S.vista === "altro" || (S.foglio && S.foglio.tipo === "postaAlb")) disegna(); }));   // 1.75.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "copia-sicurezza", d => { S.copia = d ? { ...d } : null; if (S.vista === "altro" || S.vista === "oggi" || (S.foglio && S.foglio.tipo === "cassetta")) disegna(); }));   // 1.64.0
@@ -5800,6 +5802,8 @@ async function guardaAvviso() {
   if (a.dove === "manutenzione" && a.rif && S.manutenzione[a.rif]) { S.vista = "manutenzione"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "manutenzione", id: String(a.rif), avviso: a }); return; }   // 1.58.0
   // 1.108.0 (Michele, 20/11: «appena apro la notifica… Sofia segretaria… che mi propone di leggerlo»): la notifica di un'email apre quell'email
   if (a.dove === "segreteria" && /^email_[A-Za-z0-9_-]{4,64}$/.test(String(a.rif || ""))) { S.vista = "segreteria"; disegna(); window.scrollTo(0, 0); apriFoglio({ tipo: "segrEmail", id: String(a.rif), daAvviso: Date.now() }); return; }
+  // 1.117.0: la notifica di un evento della zona («📍 In zona · …») apre la Segreteria su «Eventi», senza foglio sopra
+  if (a.dove === "segreteria" && /^zona_[A-Za-z0-9_]{1,40}$/.test(String(a.rif || ""))) { S.vista = "segreteria"; S.segrTerr = "zev"; terrVistiTutti(); disegna(); window.scrollTo(0, 0); setTimeout(() => { try { segrScorriA(document.querySelector("#segrHero .sgt-zona"), 52); } catch (e) {} }, 700); return; }
   S.vista = VISTA_AVVISO[a.dove] || S.vista || "oggi"; disegna(); window.scrollTo(0, 0);
   apriFoglio({ tipo: "avviso", titolo: a.titolo || "", testo: a.testo || "", dove: a.dove || "", quando: a.quando || "" });
 }
@@ -6823,7 +6827,7 @@ function sg2Domande() {
   }
   return out;
 }
-const SG2_DOVE = { fare: ["giallo", "Messo in «Da fare tu»"], propongo: ["giallo", "Messo in «Ti propongo»"], fatto: ["verde", "Messo in «Ho fatto io»"], sapere: ["grigio", "Messo in «Da sapere»"] };
+const SG2_DOVE = { fare: ["giallo", "Messo in «Da fare tu»"], propongo: ["giallo", "Messo in «Ti propongo»"], fatto: ["verde", "Messo in «Ho fatto io»"], sapere: ["grigio", "Messo in «Da sapere»"], territorio: ["azzurro", "Messo in «In zona»"] };   // 1.117.0
 function sg2NomePersona(chi) {
   const n = String(chi || "").replace(/^chat con /i, "").trim(); if (!n) return "";
   if (/^michele$/i.test(n)) return "Tu";
@@ -6856,6 +6860,8 @@ function sg2Riassunto() {
   if (pul.length) frasi.push(`Le signore: ${pul.length} ${pul.length === 1 ? "pulizia" : "pulizie"}${fatte ? `, ${fatte} già ${fatte === 1 ? "fatta" : "fatte"}` : ""}.`);
   const g = Object.values(S.manutenzione || {}).filter(m => urgenza(m) >= 1);
   if (g.length) frasi.push(`${g.length === 1 ? "Un guasto da riparare subito" : `${g.length} guasti da riparare subito`}: ${g.slice(0, 2).map(m => `${esc(m.titolo || "guasto")}${m.camera ? " in " + camera(m.camera).nome : ""}`).join(", ")}.`);
+  // 1.117.0 (Michele, 27/11: «Come mai la segretaria non me l'ha proposto?»): un evento della zona di oggi o di domani lo dice lei
+  try { const ez = terrEventi().filter(x => x.giorno <= L.aggiungiGiorni(oggi, 1)); if (ez.length) frasi.push(ez.length === 1 ? `In zona ${esc(terrQuando(ez[0]))}: ${esc(String(ez[0].semplice || ez[0].titolo).replace(/[.!\s]+$/, ""))}.` : `In zona tra oggi e domani ci sono ${ez.length} eventi.`); } catch (e) {}
   const t = sg2PerTe().filter(y => !y.vista && sg2Adesso(y)).length, p = sg2Proposte().length + presProposte().length, d = sg2Domande().length;   // 1.76.0
   frasi.push(t || p || d ? `Per te: ${[t ? `${t} ${t === 1 ? "cosa da fare" : "cose da fare"}` : "", p ? `${p} ${p === 1 ? "proposta" : "proposte"}` : "", d ? `${d} ${d === 1 ? "domanda" : "domande"}` : ""].filter(Boolean).join(", ")}.` : "Per te non c'è niente che aspetta.");
   return frasi;
@@ -7181,7 +7187,7 @@ function segrEmailCapito() {
   }
   return per;
 }
-const SEGR_DOVE = { fare: "Da fare tu", propongo: "Ti propongo", fatto: "Ho fatto io", sapere: "Da sapere" };
+const SEGR_DOVE = { fare: "Da fare tu", propongo: "Ti propongo", fatto: "Ho fatto io", sapere: "Da sapere", territorio: "In zona" };   // 1.117.0
 function segrEmailGiorno(iso) { const oggi = L.oggiISO(); return iso === oggi ? "Oggi" : iso === L.aggiungiGiorni(oggi, -1) ? "Ieri" : L.dataGiornoLungo(iso).replace(/^./, c => c.toUpperCase()); }
 function segrEmailRiga(p, cap) {
   const x = segrEmailParti(p), righe = cap.get(p.id) || [];
@@ -7313,9 +7319,9 @@ function segrChiudiAperto() {
   if (!segrHeroAttivo()) return false;
   const cassetto = typeof S.sg2Aperto === "string" && S.sg2Aperto !== "";
   // 1.110.0: dalle notifiche a pagina intera Indietro torna alla pagina iniziale (Sofia grande, tutto chiuso)
-  if (segrPiena) { S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; if (cassetto) S.sg2Aperto = ""; segrPienaMetti(false); disegna(); return true; }
-  if (!segrOggiAperto() && !S.segrPren && !S.segrIg && !cassetto) return false;   // 1.111.0: anche Instagram
-  S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; if (cassetto) S.sg2Aperto = "";
+  if (segrPiena) { S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; S.segrTerr = ""; if (cassetto) S.sg2Aperto = ""; segrPienaMetti(false); disegna(); return true; }
+  if (!segrOggiAperto() && !S.segrPren && !S.segrIg && !S.segrTerr && !cassetto) return false;   // 1.111.0: anche Instagram; 1.117.0: anche «In zona»
+  S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; S.segrTerr = ""; if (cassetto) S.sg2Aperto = "";
   disegna();
   return true;
 }
@@ -7324,7 +7330,7 @@ function segrEsci() {
   try { if (voceInCorso) zittisciVoce(); } catch (e) {}
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
   sg2ParlaTel = false; segrPiena = false;   // 1.110.0: la volta dopo si riapre con Sofia grande
-  S.sg2Bolla = null; S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; S.sg2Aperto = undefined;   // i cassetti tornano come all'inizio (quello di partenza si riapre da solo)
+  S.sg2Bolla = null; S.segrOggi = ""; S.segrEmailPrima = false; S.segrPren = false; S.segrIg = ""; S.segrTerr = ""; S.sg2Aperto = undefined;   // i cassetti tornano come all'inizio (quello di partenza si riapre da solo)
 }
 // 2) I quattro cassetti: quattro tessere col numero; un tocco apre le righe di quel cassetto (uno alla volta)
 const SEGR_CASSETTI = [["fare", "Da fare tu", "mat-sveglia.webp"], ["prop", "Ti propongo", "mat-scintilla.webp"], ["fatto", "Ho fatto io", "mat-spunte.webp"], ["sapere", "Da sapere", "mat-stella.webp"]];
@@ -7346,6 +7352,7 @@ function segrDentroHtml(pz) {
     ${segrOggiHtml()}
     <h3 class="sgh-tit">Prenotazioni</h3>${segrPrenotazioniHtml()}
     <h3 class="sgh-tit">I miei cassetti</h3>${segrCassettiHtml(pz)}
+    <h3 class="sgh-tit">In zona</h3>${segrTerrHtml()}
     <h3 class="sgh-tit">Instagram</h3>${segrIgHtml()}
     <h3 class="sgh-tit">Documenti degli ospiti</h3>${pz.doc || ""}`;
 }
@@ -7415,6 +7422,179 @@ document.addEventListener("click", (e) => {
   e.preventDefault();
   const k = t.dataset.segrIg; S.segrIg = S.segrIg === k ? "" : k; disegna();
   if (S.segrIg) setTimeout(() => segrScorriA(document.querySelector("#segrHero .sgt-ig"), 52), 60);   // 1.113.2
+});
+// ============================================================================
+//  1.117.0 · «IN ZONA»: COSA SUCCEDE NEL TERRITORIO (Michele, 27/11/2026: il papà gli aveva mandato su WhatsApp il volantino di
+//  un incontro sul turismo dei laghi, quel giorno stesso a Lesina: «Come mai la segretaria non me l'ha proposto?… doveva
+//  arrivarmi prima di papà… tutti questi forum qua io li devo vedere nella segreteria, se no ci deve stare una sezione dove c'è
+//  scritto, che so, pubblicità, c'è scritto informazione… devo capire cosa succede nel territorio»).
+//  Sotto «I miei cassetti» c'è «In zona», due tastoni:
+//   - «Eventi» (il calendario con la stella): le cose con un giorno a cui si può andare (un incontro, un convegno, una sagra), da
+//     oggi in poi, le più vicine prima. Ognuna dice quando, cosa, dove e da dove arriva; «Ricordamelo» ne fa un promemoria in
+//     «Da fare tu» (creaRicordo: suona all'ora scelta, come gli altri); «Apri la pagina» porta al sito; «Non mi interessa» la
+//     toglie da questo telefono.
+//   - «Avvisi» (il municipio): il resto (ordinanze, strade, bandi, allerte, i giornali) degli ultimi 30 giorni: prima quelli che
+//     servono all'albergo; sotto, chiuse, «Le altre notizie del paese». Il numero sono gli avvisi per l'albergo di sette giorni.
+//  I dati li scrive solo il giro (sofia-giro/territorio-giro.mjs) in importazioni/in-zona: li prende dai siti (il Comune, il
+//  Parco, un giornale) e dalle chat di WhatsApp (un volantino mandato da qualcuno: lo tira fuori la lettura, "territorio" in
+//  lettura.js). Facebook e Instagram no: per leggere le pagine degli altri Meta vuole un permesso suo. Qui l'app non scrive
+//  niente nel database: «visto» e «non mi interessa» restano nel telefono (ricci_zona_viste, ricci_zona_via).
+//  Un evento nuovo conta nel numerino azzurro della Segreteria finché non apre «Eventi»; quello di oggi o di domani lo dice
+//  anche Sofia nel riassunto. Rosso mai: non è una cosa urgente. Nel codice si chiama «territorio» (terr…): «zona» sono già
+//  le zone delle signore.
+// ============================================================================
+const TERR_TIPO = { evento: "Evento", bando: "Bando", strade: "Strade", meteo: "Meteo", cronaca: "Dai giornali", avviso: "Avviso" };
+const CHIAVE_ZONA_VIA = "ricci_zona_via", CHIAVE_ZONA_VISTE = "ricci_zona_viste";
+function terrSegni(chiave) { try { const v = JSON.parse(localStorage.getItem(chiave) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
+function terrSegniMetti(chiave, ids, giorni) {
+  const v = terrSegni(chiave), ora = Date.now(); let nuovo = false;
+  for (const id of [].concat(ids || [])) if (id && !v[id]) { v[id] = ora; nuovo = true; }
+  if (!nuovo) return false;
+  for (const k of Object.keys(v)) if (ora - Number(v[k]) > giorni * 864e5) delete v[k];
+  try { localStorage.setItem(chiave, JSON.stringify(v)); } catch (e) {}
+  return true;
+}
+const terrIso = (g) => /^\d{4}-\d{2}-\d{2}$/.test(String(g || ""));
+const terrFine = (x) => (terrIso(x.fino) && x.fino > x.giorno ? x.fino : x.giorno);
+const terrOra = (o) => String(o || "").replace(/^0(\d)/, "$1");   // «9:30», non «09:30»
+function terrVoci() {
+  const v = (S.territorio && S.territorio.voci) || {}, via = terrSegni(CHIAVE_ZONA_VIA);
+  return Object.entries(v).filter(([k, x]) => x && typeof x === "object" && x.titolo && !via[k]).map(([k, x]) => ({ ...x, id: k }));
+}
+// gli eventi che devono ancora venire (o che durano ancora) e che servono all'albergo: i più vicini prima
+function terrEventi() {
+  const oggi = L.oggiISO();
+  return terrVoci().filter(x => x.tipo === "evento" && terrIso(x.giorno) && terrFine(x) >= oggi && x.albergo !== false)
+    .sort((a, b) => `${a.giorno}${a.ora || "99"}`.localeCompare(`${b.giorno}${b.ora || "99"}`));
+}
+// gli avvisi: tutto il resto, degli ultimi 30 giorni, i più nuovi prima; delle allerte del tempo solo l'ultima
+function terrAvvisi() {
+  const oggi = L.oggiISO(), da = L.aggiungiGiorni(oggi, -30), ev = new Set(terrEventi().map(x => x.id));
+  let meteo = false;
+  return terrVoci().filter(x => !ev.has(x.id) && !(x.tipo === "evento" && terrIso(x.giorno) && terrFine(x) < oggi) && giornoLocale(x.uscito || x.visto || "") >= da)
+    .sort((a, b) => String(b.uscito || "").localeCompare(String(a.uscito || "")))
+    .filter(x => { if (x.tipo !== "meteo") return true; if (meteo) return false; meteo = true; return true; });
+}
+function terrConti() {
+  const ev = terrEventi(), av = terrAvvisi(), sette = L.aggiungiGiorni(L.oggiISO(), -6), viste = terrSegni(CHIAVE_ZONA_VISTE);
+  const utili = av.filter(x => x.albergo !== false);
+  return { ev, av, utili, altre: av.filter(x => x.albergo === false), sett: utili.filter(x => giornoLocale(x.uscito || x.visto || "") >= sette).length, nuovi: ev.filter(x => !viste[x.id]).length };
+}
+// «oggi alle 14:00», «domani», «sabato 5 dicembre alle 18:00», «fino a domenica 8 dicembre»
+function terrQuando(x) {
+  const oggi = L.oggiISO(), g = x.giorno, dura = terrIso(x.fino) && x.fino > g;
+  if (dura && g < oggi) return x.fino === oggi ? "fino a oggi" : `fino a ${L.dataLunga(x.fino)}`;
+  const giorno = g === oggi ? "oggi" : g === L.aggiungiGiorni(oggi, 1) ? "domani" : L.dataLunga(g);
+  return `${giorno}${x.ora ? ` alle ${terrOra(x.ora)}` : ""}${dura ? `, fino a ${L.dataLunga(x.fino)}` : ""}`;
+}
+function terrDaDove(x) {
+  if (x.fonte === "chat") return x.da ? `Me l'ha fatto sapere ${x.da}, su WhatsApp` : "Arriva da WhatsApp";
+  const f = ((S.territorio && S.territorio.fonti) || {})[x.fonte];
+  return f && f.nome ? `Dal sito: ${f.nome}` : "Da un sito della zona";
+}
+const terrLink = (x) => (/^https:\/\/[^\s"'<>]{4,500}$/.test(String(x.link || "")) ? String(x.link) : "");
+// il promemoria che ha già chiesto per questa cosa (ancora da suonare o non ancora «Fatto»)
+function terrRicordo(x) {
+  const pre = "segreteria_tu_zona_" + x.id;
+  for (const [k, c] of Object.entries(S.segreteria || {})) { if (!k.startsWith(pre)) continue; const t = c && Array.isArray(c.perTe) ? c.perTe[0] : null; if (t && !t.fatto) return t; }
+  return null;
+}
+// quando glielo si può ancora ricordare: un'ora prima (o un quarto d'ora, se manca poco), la mattina alle 8, la sera prima alle 18
+function terrQuandoRicordare(x) {
+  const oggi = L.oggiISO(), adesso = minutiRoma(), g = x.giorno, out = [];
+  if (!terrIso(g) || g < oggi) return out;
+  const hm = (n) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+  const dopo = (giorno, min) => giorno > oggi || (giorno === oggi && min > adesso + 5);
+  if (/^\d\d:\d\d$/.test(String(x.ora || ""))) {
+    const min = Number(x.ora.slice(0, 2)) * 60 + Number(x.ora.slice(3, 5));
+    if (min >= 60 && dopo(g, min - 60)) out.push({ k: "ora", testo: `Un'ora prima, alle ${terrOra(hm(min - 60))}`, entro: `${g}T${hm(min - 60)}` });
+    else if (min >= 15 && dopo(g, min - 15)) out.push({ k: "poco", testo: `Un quarto d'ora prima, alle ${terrOra(hm(min - 15))}`, entro: `${g}T${hm(min - 15)}` });
+  }
+  if (dopo(g, 8 * 60) && !out.some(s => s.entro === `${g}T08:00`)) out.push({ k: "mattina", testo: g === oggi ? "Stamattina alle 8" : "Quella mattina, alle 8", entro: `${g}T08:00` });
+  const ieri = L.aggiungiGiorni(g, -1);
+  if (dopo(ieri, 18 * 60)) out.push({ k: "sera", testo: ieri === oggi ? "Stasera alle 18" : "La sera prima, alle 18", entro: `${ieri}T18:00` });
+  return out;
+}
+// una riga: quando (o di che tipo è), cosa, da dove arriva, i tasti
+function terrRiga(x, mod) {
+  const oggi = L.oggiISO(), vivo = x.tipo === "evento" && terrIso(x.giorno) && terrFine(x) >= oggi;
+  const ric = vivo ? terrRicordo(x) : null, puo = vivo && !ric && mod && terrQuandoRicordare(x).length > 0;
+  const g = giornoLocale(x.uscito || x.visto || ""), q = vivo ? terrQuando(x) : "";
+  const testa = vivo ? `<span class="zn-q${x.giorno <= oggi ? "" : " poi"}">${esc(q.charAt(0).toUpperCase() + q.slice(1))}</span>`
+    : `<span class="zn-q tipo">${esc(TERR_TIPO[x.tipo] || "Avviso")}${g ? ` · ${esc(g === oggi ? "oggi" : g === L.aggiungiGiorni(oggi, -1) ? "ieri" : L.dataMedia(g))}` : ""}</span>`;
+  const link = terrLink(x);
+  return `<div class="sg2-r zn-r${vivo ? " ev" : ""}" data-terr-voce="${esc(x.id)}">${testa}<b class="sg2-t">${esc(x.semplice || x.titolo)}</b>${x.dove ? `<small>Dove: ${esc(x.dove)}</small>` : ""}<small>${esc(terrDaDove(x))}</small>${
+    ric ? `<p class="zn-ric"><span aria-hidden="true">✓</span><span>Te lo ricordo ${esc(sg2Alle(ric))}</span></p>` : puo ? `<button type="button" class="sg2-b ig-b" data-terr-ricorda="${esc(x.id)}">${segrTasto(icoAll("sveglia"))}<span>Ricordamelo</span></button>` : ""}${
+    link ? `<a class="sg2-b ig-b chiaro" href="${esc(link)}" target="_blank" rel="noopener">${segrTasto(icoAll("web"))}<span>Apri la pagina</span></a>` : ""}${
+    mod && vivo ? `<button type="button" class="zn-via" data-terr-via="${esc(x.id)}">Non mi interessa</button>` : ""}</div>`;
+}
+// un tastone aperto: le righe, e sotto da dove guarda Sofia
+function segrTerrDentro(k, c, mod) {
+  const z = S.territorio || {}, fonti = Object.values(z.fonti || {}).filter(f => f && f.nome);
+  const nomi = [...new Set(fonti.map(f => String(f.nome)))];
+  const muti = [...new Set(fonti.filter(f => f.ko && (!f.ok || f.ko > f.ok) && Date.now() - (Date.parse(f.ko) || 0) > 2 * 864e5).map(f => String(f.nome)))];
+  const tolte = Object.keys(terrSegni(CHIAVE_ZONA_VIA)).filter(id => (z.voci || {})[id]).length;
+  const elenco = nomi.length > 1 ? `${nomi.slice(0, -1).join(", ")} e ${nomi[nomi.length - 1]}` : nomi[0] || "";
+  const nota = `<p class="zn-nota">${z.controllato ? `Guardo da sola, più volte al giorno${elenco ? `: <b>${esc(elenco)}</b>` : " i siti della zona"}. Ultimo controllo: ${esc(csQuando(z.controllato))}.` : "Non ho ancora guardato i siti della zona: comincio al prossimo giro (dalle 7 alle 22)."}${muti.length ? ` Da qualche giorno non ${muti.length === 1 ? "risponde" : "rispondono"}: ${esc(muti.join(", "))}.` : ""}</p>${
+    k === "zev" ? `<p class="zn-nota"><b>Facebook e Instagram non li posso leggere.</b> Se lì vedi una cosa che ti interessa, manda la foto nella chat «Albergo»: la metto qui.</p>` : ""}${
+    tolte && mod ? `<button type="button" class="zn-via" data-terr-rimetti>${tolte === 1 ? "Rimetti quella che hai tolto" : `Rimetti le ${tolte} che hai tolto`}</button>` : ""}`;
+  if (k === "zev") return sg2Cassetto("zn-c", "Eventi in zona", c.ev.map(x => terrRiga(x, mod)), "Nessun evento in vista. Appena ne esce uno te lo dico.", "zev", 6) + nota;
+  return sg2Cassetto("zn-c", "Avvisi per l'albergo", c.utili.map(x => terrRiga(x, mod)), "In questi giorni nessun avviso che serve all'albergo.", "zav", 6)
+    + (c.altre.length ? sg2Cassetto("zn-c zal", "Le altre notizie del paese", c.altre.map(x => terrRiga(x, mod)), "", "zal", 0) : "") + nota;
+}
+function segrTerrAperto() { return S.segrTerr === "zev" || S.segrTerr === "zav" ? S.segrTerr : ""; }
+function segrTerrHtml() {
+  if (!proprietario()) return "";
+  const c = terrConti(), ap = segrTerrAperto(), mod = puoModificare(), p = c.ev[0], oggi = L.oggiISO();
+  const t = (k, n, dis, parola, sotto, dici) => `<button type="button" class="sgt ${k}${ap === k ? " aperta" : ""}${Number(n) > 0 ? "" : " zero"}" data-segr-terr="${k}" aria-expanded="${ap === k}" aria-label="${esc(dici)}. Tocca per ${ap === k ? "chiudere" : "vedere"}"><b class="sgt-n">${n}</b><img class="sgt-d" src="${dis}" alt="" width="240" height="240"><span class="sgt-p">${esc(parola)}</span><small class="sgt-s">${esc(sotto)}</small></button>`;
+  const primo = !p ? "nessuno in vista" : p.giorno <= oggi ? (p.giorno === oggi && p.ora ? `oggi alle ${terrOra(p.ora)}` : "oggi") : p.giorno === L.aggiungiGiorni(oggi, 1) ? (p.ora ? `domani alle ${terrOra(p.ora)}` : "domani") : `il primo ${L.dataMedia(p.giorno)}`;
+  return `<div class="sgt-griglia sgt-zona">${
+    t("zev", c.ev.length, segrTessera("eventi", "mat-persone.webp"), c.ev.length === 1 ? "Evento" : "Eventi", primo, c.ev.length ? `In zona ${c.ev.length === 1 ? "c'è 1 evento" : `ci sono ${c.ev.length} eventi`}: il primo ${terrQuando(p)}` : "In zona nessun evento in vista")}${
+    t("zav", c.sett, segrTessera("avvisi", "mat-attenzione.webp"), c.sett === 1 ? "Avviso" : "Avvisi", "in 7 giorni", c.sett ? `${c.sett === 1 ? "1 avviso" : `${c.sett} avvisi`} per l'albergo in sette giorni` : "Nessun avviso per l'albergo in sette giorni")}</div>${
+    ap ? `<div class="sgt-aperto ${ap}">${segrTerrDentro(ap, c, mod)}</div>` : ""}`;
+}
+// negli altri stili (senza la testa come la prima pagina): due cassetti come gli altri
+function terrSemplice(mod) {
+  if (!proprietario()) return "";
+  const c = terrConti();
+  return `<h3 class="sg2-tit">4) <span aria-hidden="true">📍</span> In zona</h3><div class="sg2-cassetti">${
+    sg2Cassetto("sapere zn-c", `<span aria-hidden="true">📅</span> Eventi in zona`, c.ev.map(x => terrRiga(x, mod)), "Nessun evento in vista.", "zev", 3)}${
+    sg2Cassetto("sapere zn-c", `<span aria-hidden="true">📌</span> Avvisi per l'albergo`, c.utili.map(x => terrRiga(x, mod)), "In questi giorni nessun avviso che serve all'albergo.", "zav", 3)}</div>`;
+}
+// aprire «Eventi» vuol dire averli visti: non contano più nel numerino della barra in basso
+function terrVistiTutti() { try { return terrSegniMetti(CHIAVE_ZONA_VISTE, terrEventi().map(y => y.id), 400); } catch (e) { return false; } }
+// «Ricordamelo»: quando, e poi è un promemoria come gli altri («Da fare tu»; il giro lo fa suonare)
+function terrRicordaChiedi(id) {
+  const x = terrVoci().find(y => y.id === id); if (!x) return;
+  const scelte = terrQuandoRicordare(x);
+  if (!scelte.length) { toast("È tra pochissimo: non faccio in tempo a ricordartelo."); return; }
+  const cosa = String(x.semplice || x.titolo), quando = terrQuando(x);
+  sg2Dialogo(`<div class="zn-dlg"><div class="chiusura-t"><span aria-hidden="true">⏰</span><span>Quando te lo ricordo?</span></div>
+    <p class="zn-cosa"><b>${esc(cosa)}</b>${esc(quando.charAt(0).toUpperCase() + quando.slice(1))}${x.dove ? ` · ${esc(x.dove)}` : ""}</p>
+    ${scelte.map((s, i) => `<button type="button" class="big main" data-terr-quando="${i}">${esc(s.testo)}</button>`).join("")}
+    <button type="button" class="big undo" data-chiudi>Lascia stare</button></div>`, (el, chiudi) => {
+    el.querySelectorAll("[data-terr-quando]").forEach(b => b.onclick = async () => {
+      const s = scelte[Number(b.dataset.terrQuando)]; chiudi(); if (!s) return;
+      const coda = ` (${quando}${x.dove ? ", " + x.dove : ""})`.slice(0, 60);
+      const p = await creaRicordo({ testo: `In zona: ${cosa}`.slice(0, 158 - coda.length) + coda, entro: s.entro, da: "app", lid: `tu_zona_${id}_${s.k}` });
+      if (p) toast(`Va bene: te lo ricordo ${sg2Alle(p)}. Lo trovi anche in «Da fare tu».`);
+    });
+  });
+}
+document.addEventListener("click", (e) => {
+  const t = e.target && e.target.closest ? e.target : null; if (!t || S.vista !== "segreteria") return;
+  let x;
+  if ((x = t.closest("[data-segr-terr]"))) {
+    e.preventDefault();
+    const k = x.dataset.segrTerr; S.segrTerr = segrTerrAperto() === k ? "" : k;
+    if (S.segrTerr === "zev") terrVistiTutti();
+    disegna();
+    if (S.segrTerr) setTimeout(() => segrScorriA(document.querySelector("#segrHero .sgt-zona"), 52), 60);
+    return;
+  }
+  if ((x = t.closest("[data-terr-ricorda]"))) { e.preventDefault(); terrRicordaChiedi(x.dataset.terrRicorda); return; }
+  if ((x = t.closest("[data-terr-via]"))) { e.preventDefault(); if (terrSegniMetti(CHIAVE_ZONA_VIA, [x.dataset.terrVia], 90)) { disegna(); toast("Tolta. Se era uno sbaglio, in fondo c'è «Rimetti»."); } return; }
+  if (t.closest("[data-terr-rimetti]")) { e.preventDefault(); try { localStorage.removeItem(CHIAVE_ZONA_VIA); } catch (err) {} disegna(); return; }
 });
 function disegnaSegrHero() {
   let h = document.getElementById("segrHero");
@@ -7549,6 +7729,7 @@ function vistaSegreteria() {
     <div class="sg2-riass"><p>${riass.join("<br>")}</p><button type="button" class="sg2-ascolta" data-sg2-ascolta><span class="sg2-alt" aria-hidden="true">🔊</span><span>Ascolta il riassunto</span></button></div>
     <h3 class="sg2-tit">2) I quattro cassetti</h3>${cassetti}
     <h3 class="sg2-tit">3) <span aria-hidden="true">🪪</span> Documenti degli ospiti</h3>${doc}
+    ${terrSemplice(mod)}
   </section><div class="sgr-spazio" aria-hidden="true"></div>`;
 }
 // il testo da leggere a voce: il riassunto e le cose che aspettano Michele
@@ -12863,7 +13044,7 @@ function cardSempreAccesa() {
     <p class="small muted" style="margin:0 0 4px">Oggi:</p>
     <ul class="giro-oggi">${voce("piano", a.token && a.chat ? "Piano del giorno alle signore (dalle 7)" : "Il piano del giorno a te (dalle 7)")}${voce("arrivi", "Priorità alle camere con un arrivo (12:30)")}${voce("allarme", "Avviso a te se una camera non è pronta (13:30)")}${voce("chiusura", "Promemoria delle pulizie da segnare (15:00)")}${voce("bollettino", "Bollettino della sera a te (20:00)")}</ul>
     ${rigaLetturaGiro(g, a)}
-    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}${sw("giroSintesi", "La sintesi della segretaria, con l'avviso")}${sw("giroEmail", "📧 Una notifica per ogni email dell'albergo")}</div>${a.giroSintesi === false ? "" : orariSintesiHtml(a)}
+    <div class="giro-sws">${sw("giroLettura", "Leggere le chat anche ad app chiusa")}${sw("giroSolleciti", "Promemoria gentili alle signore")}${sw("giroBollettino", "Bollettino della sera a me")}${sw("giroSintesi", "La sintesi della segretaria, con l'avviso")}${sw("giroEmail", "📧 Una notifica per ogni email dell'albergo")}${sw("giroZona", "📍 Le notizie della zona, con l'avviso degli eventi")}</div>${a.giroSintesi === false ? "" : orariSintesiHtml(a)}
   </section>`;
 }
 // 1.18.1: LA SPINTA DAL PC. L'orario di GitHub è «quando può» (il 31/10 nessun giro dalle 12:29 alle 17:14): il ponte sul

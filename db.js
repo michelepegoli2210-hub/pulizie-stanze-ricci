@@ -258,7 +258,21 @@ function dbProva(vetrina = false) {
       man_es2: { pulizia: null, camera: "zarapt", zona: "ap", data: aggiungiGiorni(isoOggi, -5), titolo: "Tapparella della cucina bloccata", nota: "Chiamato il fabbro, viene giovedì", da: "Michele", fonte: "mano", foto: false, stato: "aperto", creato: new Date().toISOString(), fatto: null, fattoDa: "" },
       man_es3: { pulizia: null, camera: "salvatore", zona: "p1", data: aggiungiGiorni(isoOggi, -9), titolo: "Doccia che perde", nota: "Cambiata la guarnizione", da: "Signora 1° piano", fonte: "signora", foto: false, stato: "fatto", creato: new Date().toISOString(), fatto: aggiungiGiorni(isoOggi, -7) + "T10:00:00.000Z", fattoDa: "Michele" },
     };
-    return { soggiorni, pulizie, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {}, manutenzione };
+    // 1.117.0: «In zona» (Segreteria): qualche esempio inventato, così nella prova la sezione non è vuota
+    const adessoIso = new Date().toISOString(), fa = (g, h = 9) => new Date(Date.now() - g * 864e5 - h * 36e5).toISOString();
+    const inZona = { versione: "prova", controllato: adessoIso, aggiornato: adessoIso,
+      fonti: { comune: { nome: "Il Comune", cosa: "gli avvisi", ok: adessoIso, n: 10 }, parco: { nome: "Il Parco", cosa: "le notizie", ok: adessoIso, n: 10 }, giornale: { nome: "Un giornale della zona", cosa: "le notizie", ok: adessoIso, n: 10 } },
+      voci: {
+        es1: { fonte: "chat", da: "Papà", tipo: "evento", titolo: "Incontro sul turismo dei laghi: come far venire più gente", giorno: isoDomani, ora: "18:00", dove: "sala del Comune", albergo: true, uscito: fa(0, 2), visto: fa(0, 2) },
+        es2: { fonte: "parco", tipo: "evento", titolo: "Giornata degli uccelli della laguna: passeggiata con la guida", giorno: aggiungiGiorni(isoOggi, 9), ora: "09:30", dove: "sul lungolago", link: "https://example.org/giornata-della-laguna", albergo: true, uscito: fa(2), visto: fa(2) },
+        es3: { fonte: "comune", tipo: "strade", titolo: "Ordinanza n. 12: obbligo di catene o gomme invernali", semplice: "Da adesso ad aprile in macchina servono le gomme invernali o le catene", link: "https://example.org/ordinanza-gomme", albergo: true, uscito: fa(1), visto: fa(1) },
+        es4: { fonte: "parco", tipo: "bando", titolo: "Contributi alle piccole imprese del turismo: domande entro il 15 gennaio", link: "https://example.org/contributi-turismo", albergo: true, uscito: fa(4), visto: fa(4) },
+        es5: { fonte: "comune", tipo: "avviso", titolo: "Raccolta dei rifiuti: da lunedì cambia il giorno dell'umido", link: "https://example.org/rifiuti", albergo: true, uscito: fa(5), visto: fa(5) },
+        es6: { fonte: "comune", tipo: "meteo", titolo: "Allerta gialla per pioggia e vento", link: "https://example.org/allerta", albergo: false, uscito: fa(0, 5), visto: fa(0, 5) },
+        es7: { fonte: "comune", tipo: "evento", titolo: "Convocato il consiglio comunale", giorno: aggiungiGiorni(isoOggi, 3), ora: "17:30", link: "https://example.org/consiglio", albergo: false, uscito: fa(2, 3), visto: fa(2, 3) },
+        es8: { fonte: "giornale", tipo: "cronaca", titolo: "Lavori al porticciolo: finiranno entro la primavera", link: "https://example.org/porticciolo", albergo: false, uscito: fa(6), visto: fa(6) },
+      } };
+    return { soggiorni, pulizie, pagamenti: {}, impostazioni: {}, note: {}, ruoli: {}, manutenzione, importazioni: { "in-zona": inZona } };
   }
 }
 

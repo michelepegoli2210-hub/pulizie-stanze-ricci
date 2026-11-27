@@ -11541,3 +11541,48 @@ body.premium .sofia-hero .casa-nuvola .dtf-n.sito b{color:#C4161F}
 /* --- la Ciclovia tra i posti da dove arriva un ospite (prospetto dell'anno, scheda del soggiorno) --- */
 .an-ciclovia>i{background:#7C4DCC}
 .an-b.an-ciclovia{background:#7C4DCC}
+
+/* ----------------------------------------------------------------------------
+   1.117.0 · «IN ZONA»: COSA SUCCEDE NEL TERRITORIO (Michele, 27/11: «tutti questi forum qua io li devo vedere nella
+   segreteria… una sezione… devo capire cosa succede nel territorio»). Due tastoni come gli altri: «Eventi» (il calendario con
+   la stella) e «Avvisi» (il municipio); aperti, lì sotto, una riga per cosa: quando, cosa, da dove arriva, «Ricordamelo»,
+   «Apri la pagina». Le scritte nuove da 19 px in su, i tasti da 52 px in su. Niente rosso: non sono cose urgenti.
+   ---------------------------------------------------------------------------- */
+/* i due tastoni, a matita */
+#segrHero .sgt.zev{--cc:#FFD3A1;--cb:#7A4A12;--cs:#B07A3E;--tr:var(--mt-tratto2)}
+#segrHero .sgt.zav{--cc:#C6D0F6;--cb:#2C3A7A;--cs:#6E7BC0;--tr:var(--mt-tratto2)}
+#segrHero .sgt.zev .sgt-d,#segrHero .sgt.zav .sgt-d{width:96px;height:96px;margin:30px 0 0}
+#segrHero .sgt.zev.aperta,#segrHero .sgt.zav.aperta{--sx:1px;--sy:1px;transform:translate(-2px,3px);border-width:3px;border-color:#26262B !important}
+#segrHero .sgt.zev.aperta::after,#segrHero .sgt.zav.aperta::after{content:"";position:absolute;right:10px;top:10px;width:20px;height:24px;background:var(--mt-matita);clip-path:polygon(38% 0,62% 0,62% 58%,100% 58%,50% 100%,0 58%,38% 58%)}
+/* lucidi con l'oro: arancio e indaco (diversi tra loro e dai due di Instagram, che stanno sotto) */
+body.segr-tastoni #segrHero .sgt.zev{--l1:#EBA36C;--l2:#B95F26}
+body.segr-tastoni #segrHero .sgt.zav{--l1:#8E9AD6;--l2:#48539E}
+body.segr-tastoni #segrHero .sgt.zev.aperta,body.segr-tastoni #segrHero .sgt.zav.aperta{border-color:transparent !important;border-width:5px !important}
+@media (max-width:389px){body.segr-tastoni #segrHero .sgt.zev .sgt-p,body.segr-tastoni #segrHero .sgt.zav .sgt-p{font-size:21px}}
+#segrHero .sgt.zev .sgt-s,#segrHero .sgt.zav .sgt-s{font-size:19px;line-height:1.25}
+/* aperti: il cartoncino con le righe */
+#segrHero .sgt-aperto.zev .sg2-c{--cc:#FFD3A1;--cb:#7A4A12;--cs:#D9AE7E}
+#segrHero .sgt-aperto.zav .sg2-c{--cc:#C6D0F6;--cb:#2C3A7A;--cs:#9AA5DC}
+#segrHero .sgt-aperto.zav .sg2-c.zal{--cc:#E4E2DA;--cb:#4A4A52;--cs:#B9B6AB}
+#segrHero .sgt-aperto.zev .sg2-c h4::before{background-image:url(mat-stella.webp)}
+#segrHero .sgt-aperto.zav .sg2-c h4::before{background-image:url(mat-attenzione.webp)}
+#segrHero .sgt-aperto.zav .sg2-c.zal h4::before{background-image:url(mat-lettera.webp)}
+#segrHero .sgt-aperto .zn-c .sg2-tutte{min-height:52px;font-size:19px}
+/* una riga: quando (o di che tipo è), cosa, da dove arriva, i tasti */
+.zn-r .zn-q{display:inline-block;margin:0 0 4px;padding:2px 12px;border-radius:12px;background:#1E88E5;color:#FFFFFF;font-size:19px;line-height:1.5;font-weight:700}
+.zn-r .zn-q.poi{background:#FFFFFF;color:#141417;box-shadow:inset 0 0 0 2px #141417}
+.zn-r .zn-q.tipo{background:#ECE9E0;color:#141417;box-shadow:inset 0 0 0 1.5px #8A857B;font-weight:600}
+#segrHero .sgt-aperto .zn-r small{font-size:19px;line-height:1.45}
+.zn-r .zn-ric{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:8px 12px;border-radius:14px;background:#DDEFDC;color:#143D22;font-size:19px;line-height:1.4;font-weight:700}
+.zn-via{display:block;width:100%;min-height:52px;margin:6px 0 0;padding:0 4px;border:0;background:none;color:#3F3F47;font-family:inherit;font-size:19px;line-height:1.3;font-weight:600;text-align:center;text-decoration:underline;text-underline-offset:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.zn-via:active{color:#000}
+#segrHero .sgt-aperto .zn-nota{margin:12px 2px 0;font-size:19px;line-height:1.55;color:var(--mt-grigio)}
+#segrHero .sgt-aperto .zn-nota b{color:var(--mt-matita)}
+/* il foglietto «Quando te lo ricordo?» */
+.zn-dlg .zn-cosa{margin:0 0 12px;font-size:19px;line-height:1.45;font-weight:600;text-align:left}
+.zn-dlg .zn-cosa b{display:block;margin:0 0 2px;font-size:21px;line-height:1.35}
+.conferma-box .zn-dlg .big.main,.conferma-box .zn-dlg .big.undo{min-height:58px;font-size:19px !important;line-height:1.25;letter-spacing:.01em !important;text-transform:none !important}
+.conferma-box .zn-dlg .big.undo{min-height:52px;padding:12px}
+/* «Cosa ho capito»: il pallino e l'etichetta di «In zona» */
+.sg2-pall.azzurro{background:#1E88E5}
+#segrHero .sge-dove.territorio,.sge-foglio .sge-dove.territorio{background:#D6E8FB}
