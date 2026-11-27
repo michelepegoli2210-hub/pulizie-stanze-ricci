@@ -465,6 +465,23 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   l'icona della sua cosa, il disegno a matita di Gemini nel tondo colorato dei cartoncini (`notifica-*.png`, 14, fatti da
   `strumenti/fai-icone-notifiche.py`). La sceglie `iconaDi` in `sw.js` dal disegnino in testa al titolo (⏰ sveglia, 📧 email,
   🛎️ prenotazione, 💬 messaggio, 🚨 urgente…): una notifica nuova col suo disegnino in testa prende l'icona giusta da sola.
+- «In zona» (1.117.0, giro 1.43.0; Michele, 27/11, col volantino di un incontro sul turismo mandato dal papà: «doveva arrivarmi
+  prima di papà… tutti questi forum qua io li devo vedere nella segreteria… devo capire cosa succede nel territorio» · «fai
+  dovunque tu riesca a prendere notizie, Facebook, Instagram, sito, blog»). Nel codice è «territorio» (`terr…`, `S.territorio`,
+  `sofia-giro/territorio-giro.mjs`): «zona» sono già le zone delle signore. Il giro legge ogni tre ore (7-22) i feed pubblici
+  in `FONTI` (Comune di Lesina: avvisi, comunicati, notizie; Parco del Gargano; Telenorba «Lesina»), fa guardare le notizie
+  nuove UNA volta al modello economico (serve all'albergo? che tipo? in parole semplici; per un evento giorno e ora; se non
+  risponde restano le regole fisse) e tiene tutto in `importazioni/in-zona` (lo scrive SOLO il giro). Dalle chat: la lettura
+  mette un volantino o una notizia della zona in `"territorio"` (lettura.js; vale anche se lo manda Michele: è il modo per le
+  cose viste su Facebook), e il giro lo porta lì. Avviso sul telefono solo per un EVENTO nuovo che deve ancora venire
+  («📍 In zona · …», mai per gli avvisi di tutti i giorni; la prima volta niente). Nell'app, in Segreteria dopo i cassetti:
+  «Eventi» e «Avvisi» (`segrTerrHtml`); «Ricordamelo» = un promemoria suo (`creaRicordo`, `tu_zona_…`); «visto» e «non mi
+  interessa» restano nel telefono. Mai rosso.
+  Un sito nuovo = una riga in `FONTI` (un feed RSS o Atom in https; guardare prima il suo robots.txt). NO Facebook e
+  Instagram col mouse; le pagine degli altri si leggono solo col permesso di Meta («Page Public Content Access» per
+  Facebook, «Business Discovery» per Instagram: da provare quando la chiave torna buona; il 27/11 dava «API access blocked»).
+  NO ricerche con Google dentro Gemini fatte da sole e tenute da parte (i loro termini: solo a chi le chiede, coi loro
+  suggerimenti di ricerca).
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in
