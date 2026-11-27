@@ -17,7 +17,7 @@
 // ============================================================================
 import { chiediGemini } from "./lettura-giro.mjs";
 
-export const VERSIONE_SOCIAL = "1.1.0";
+export const VERSIONE_SOCIAL = "1.1.1";
 export const IG = "https://graph.instagram.com";
 // giro 1.40.0 (19/11/2026): le app nuove di Meta hanno solo «API setup with Unified login». La chiave (di un «utente di
 // sistema») non comincia con IG, non scade mai e va su graph.facebook.com; l'account Instagram che le è stato dato si trova
@@ -26,6 +26,11 @@ export const FB = "https://graph.facebook.com";
 export const unificata = (t) => !!String(t || "").trim() && !/^IG/.test(String(t || "").trim());
 const GIORNO = 86400000;
 export const RINNOVA_OGNI_MS = 10 * GIORNO;
+// 1.1.1 (giro 1.43.2, 27/11/2026): dopo una risposta storta la stessa chiave NON si riprova a ogni giro (prima: ogni 10
+// minuti, per giorni). Se Meta dice «API access blocked» (il blocco del 20/11) o la chiave è morta: ogni 6 ore; per un altro
+// guasto (non risponde, errore del loro server): ogni mezz'ora. Una chiave nuova, o rimessa, si prova subito.
+export const BLOCCATA_OGNI_MS = 6 * 3600000, STORTA_OGNI_MS = 30 * 60000;
+export const bloccataDaMeta = (e) => !!(e && e.ig && /access blocked/i.test(String(e.message || "")));
 export const ORA_POST = 18 * 60 + 30, ORA_FINE_POST = 22 * 60;   // minuti, ora di Roma
 const STESSA_FOTO_MS = 12 * GIORNO;                              // la stessa foto non torna prima di 12 giorni
 const MAX_RISPOSTE = 10;                                         // risposte ai commenti per giro
@@ -209,11 +214,18 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
 
   // 1) la chiave: nuova o da ricontrollare (una volta al giorno); il rinnovo ogni 10 giorni (anche se Sofia è ferma)
   if (chiave) {
+    // 1.1.1: l'ultima prova andata storta con QUESTA chiave (la riconosco da quando è stata messa): si aspetta prima di ribussare
+    const pv = m.chiaveProva && typeof m.chiaveProva === "object" && String(m.chiaveProva.messa || "") === String(ch.messa || "") ? m.chiaveProva : null;
+    const daProva = pv ? adesso.getTime() - (Date.parse(pv.quando || "") || 0) : Infinity;
+    const aspetto = !!pv && daProva >= 0 && daProva < (pv.perche === "storta" ? STORTA_OGNI_MS : BLOCCATA_OGNI_MS);
+    const storta = (perche) => { m.chiaveProva = { quando: ora, messa: String(ch.messa || ""), perche, dal: (pv && pv.perche === perche && pv.dal) || ora }; };
     try {
       const giaVista = ch.stato === "ok" && adesso.getTime() - (Date.parse(ch.controllata || "") || 0) < GIORNO;
-      if (!giaVista) {
+      if (!giaVista && !aspetto) {
         const io = await controllaChiave(rete, chiave);
         m.chiaveControllata = ora;   // l'app sa che la chiave nuova l'ho guardata
+        if (m.chiaveProva) m.chiaveProva = null;   // ha risposto (null e non delete: in Firestore il merge non toglie i campi)
+        if (m.errore && /^chiave:/.test(String(m.errore.testo || ""))) m.errore = null;   // l'errore vecchio della chiave non vale più
         const professionale = /^(BUSINESS|MEDIA_CREATOR|CREATOR)$/i.test(io.tipo);
         const scade = io.via === "fb" ? "" : (ch.scade || new Date(Date.parse(ch.messa || ora) + 60 * GIORNO).toISOString());   // 1.40.0: la nuova non scade
         const dati = { stato: professionale ? "ok" : "personale", controllata: ora, utente: io.utente, nome: io.nome, tipo: io.tipo, scade, via: io.via || "" };
@@ -221,8 +233,11 @@ export async function giroSocial({ db, adesso = new Date(), oggi, minuti, gemini
         Object.assign(ch, dati);
         if (!professionale) await avvisaUnaVolta("personale", { titolo: "📣 Instagram: serve l'account professionale", testo: "Il tuo Instagram è ancora «personale»: così Instagram non mi fa pubblicare. Sul telefono: Impostazioni → Tipo di account → Passa all'account professionale → Azienda. Poi faccio io.", tag: "sofia-social-chiave" }, GIORNO);
       }
-      ok = ch.stato === "ok";
-    } catch (e) { if (chiaveMorta(e)) await morta(); else { m.errore = { quando: ora, testo: "chiave: " + pulito(e) }; fatto.push("chiave: Instagram non risponde"); } }
+      ok = !aspetto && ch.stato === "ok";   // mentre aspetto di ribussare non pubblico e non leggo i commenti
+    } catch (e) {
+      if (chiaveMorta(e)) { await morta(); storta("morta"); }
+      else { const bl = bloccataDaMeta(e); storta(bl ? "bloccata" : "storta"); m.errore = { quando: ora, testo: "chiave: " + pulito(e) }; fatto.push(bl ? "chiave: Meta ha bloccato l'accesso" : "chiave: Instagram non risponde"); }
+    }
     if (ok && !unificata(chiave) && adesso.getTime() - (Date.parse(ch.rinnovata || ch.messa || "") || 0) >= RINNOVA_OGNI_MS) {   // 1.40.0: la nuova non si rinnova
       try {
         const n = await rinnovaChiave(rete, chiave);
