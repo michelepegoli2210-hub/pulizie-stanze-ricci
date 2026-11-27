@@ -492,6 +492,23 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   Facebook, «Business Discovery» per Instagram: da provare quando la chiave torna buona; il 27/11 dava «API access blocked»).
   NO ricerche con Google dentro Gemini fatte da sole e tenute da parte (i loro termini: solo a chi le chiede, coi loro
   suggerimenti di ricerca).
+- Un Excel con tanti fogli (1.118.0, giro 1.44.0; Michele, 27/11: «nell'email mi diceva che erano le presenze di questa
+  settimana, mentre invece nell'allegato io ho trovato soltanto le presenze addirittura del 2022… a me serve assolutamente
+  che l'allegato sia quello aggiornato»). Il file delle presenze ha un foglio per mese da marzo 2022: l'app mostrava i primi
+  8 fogli, Sofia leggeva i primi 6. QUALE foglio lo decide `fogli-excel.js` (lo usano il lavoratore dell'app,
+  `xlsx-lettore.js`, e quello del giro, `sofia-giro/excel-isolato.mjs`): 1) il foglio che nel nome ha il periodo in cui cade
+  oggi («NOVEMBRE 2026», «nov 26», «11-2026», «23-27 nov», «settimana 48»; se il file era aperto su uno che comincia entro
+  10 giorni, quello); 2) se dai nomi non si capisce, quello su cui il file era aperto quando è stato salvato; 3) il primo.
+  I fogli nascosti non contano. Nell'app si vede UN foglio alla volta (`vistaExcel`): sopra, quanti fogli ha il file e quale
+  ho aperto, e la riga coi nomi di tutti (`data-av-foglio`); «Scritto grande» e «Leggimelo» prendono il foglio che si vede
+  (`a.testoVista`). Nel giro Sofia legge quello e tre vicini (fino a 6 fogli li legge tutti, come prima); gli Excel letti in
+  questi tre giorni col lettore di prima li rilegge una volta (`VERSIONE_EXCEL`, `allegatiRiletti`).
+  Mai più «i primi N» di qualcosa che cresce nel tempo senza dire che è tagliato: quando si taglia, si dice.
+- La prenotazione arrivata da un sito suona 5 volte di fila (1.118.0; Michele, 27/11: «una notifica particolarmente
+  intensa… 5 vibrazioni di fila»): in `sw.js` la notifica col titolo che comincia con 🛎 e `vibra` si rimostra 5 volte, una
+  ogni 2 secondi e mezzo (`VOLTE_FORTE`, `PAUSA_FORTE_MS`), e smette se intanto è stata toccata. Quanto è forte ogni
+  vibrazione lo decide il telefono (il disegno `vibrate` sui telefoni di adesso non conta): da qui si può solo ripeterla.
+  Le altre notifiche come prima.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

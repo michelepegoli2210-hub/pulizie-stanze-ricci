@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.117.0";
+const VERSIONE = "1.118.0";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -16,6 +16,7 @@ const LIB = /\/(pdfjs|all3d-[lo]|tastoni)\//;   // 1.113.0: anche i disegni dei 
 const FILMATI = ["./fisici-estate.mp4", "./cons-parla-spilla-giro5.mp4", "./cons-riposo-spilla-giro6.mp4", "./cons-parla-spilla-giro5-3d.webm", "./cons-riposo-spilla-giro6-3d.webm", "./cons-parla-intero.mp4", "./cons-riposo-calmo.mp4", "./capo-parla.mp4", "./capo-riposo.mp4", "./capo-parla-3d.webm", "./capo-riposo-3d.webm", "./segr7-riposo-3d.webm", "./segr7-ascolta-3d.webm", "./segr7-parla-3d.webm", "./sofia-influencer.mp4", "./sofia-influencer-ferma.mp4", "./cons-parla-intero-3d.webm", "./cons-riposo-calmo-3d.webm", "./cons-parla-spilla-giro5-alfa.mp4", "./cons-riposo-spilla-giro6-alfa.mp4", "./cons-parla-intero-alfa.mp4", "./cons-riposo-calmo-alfa.mp4", "./capo-parla-alfa.mp4", "./capo-riposo-alfa.mp4", "./segr7-riposo-alfa.mp4", "./segr7-ascolta-alfa.mp4", "./segr7-parla-alfa.mp4"];   // 1.84.0: i gemelli per l'iPhone (si scaricano solo dove servono) · 1.90.0: i filmati con la spilla senza scatti (-fluido) · 1.91.0: il saluto, e senza i passaggi «da robot» (-giro) · 1.91.1: via lo sguardo di lato avanti e indietro e i fotogrammi fermi (-giro2) · 1.91.2: la spilla d'oro anche nel video del bacio (ferma: -giro3) · 1.92.0: Sofia segretaria col rosa (segr6) · 1.93.0: da ferma solo video che partono e finiscono nella posa della foto (ferma: -giro4) · 1.94.0: Sofia segretaria coi tre video veri (segr7); la Sofia di casa compressa senza il fotogramma chiave ogni due secondi (-giro5) · 1.95.0: da ferma il ritaglio senza i buchi sbagliati (-giro6) · 1.101.0: il saluto di Jarvis con lei · 1.102.0: lei che parla · 1.104.0: i filmati di Karen escono dal sito (solo nel suo telefono) · 1.105.0: il video di «Obiettivi fisici»
 const FILE_BASE = [
   "./", "./index.html", "./style.css", "./app.js", "./db.js", "./logica.js", "./regole.js",
+  "./fogli-excel.js", "./xlsx-lettore.js",   // 1.118.0: quale foglio di un Excel far vedere, e il lavoratore che lo apre (devono essere della stessa versione)
   "./excel.js", "./dettatura.js", "./governante.js", "./chat.js", "./parole.js", "./ia.js", "./lettura.js", "./voce.js", "./gesti.js", "./catalogo.js", "./firebase-config.js", "./firebase-bundle.js", "./manifest.json", "./sfondo-laguna.svg", "./sfondo-manutenzione.svg", "./sfondo-bolle.svg",
   "./icona-casa-192.png", "./icona-casa-512.png", "./notifica-arrivi.png", "./notifica-casa.png", "./notifica-dafare.png", "./notifica-email.png", "./notifica-foglio.png", "./notifica-lettura.png", "./notifica-messaggio.png", "./notifica-prenotazione.png", "./notifica-pulizie.png", "./notifica-sera.png", "./notifica-sintesi.png", "./notifica-social.png", "./notifica-sveglia.png", "./notifica-urgente.png", "./notifica-zona.png",   // 1.98.0: le icone delle notifiche
   "./jv-ico-oggi.webp", "./jv-ico-impegni.webp", "./jv-ico-obiettivi.webp", "./jv-ico-idee.webp", "./jv-ico-traguardi.webp", "./jv-ico-piano.webp", "./jv-ico-sveglia.webp", "./jv-ico-mic.webp",   // 1.99.0: Jarvis con Sofia personal trainer · 1.104.0: le immagini di Karen non sono più nel sito
@@ -116,16 +117,30 @@ self.addEventListener("push", (e) => {
   const dove = ["casa", "signore", "segreteria", "prospetto", "manutenzione", "altro", "sofia", "messaggi"].includes(d.dove) ? d.dove : "";
   const rif = typeof d.rif === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(d.rif) ? d.rif : "";
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  // 1.118.0 (Michele, 27/11/2026: «una notifica particolarmente intensa… 5 vibrazioni di fila»): la prenotazione arrivata da un
+  // sito (il titolo comincia con 🛎) suona e vibra 5 VOLTE DI FILA, una ogni 2 secondi e mezzo. Quanto è forte ogni vibrazione
+  // lo decide il telefono (sui telefoni di adesso il disegno «vibrate» della pagina non conta): quello che si può fare da qui
+  // è ripeterla. Se intanto la tocca o la toglie, smette.
+  const forte = !!d.vibra && /^🛎/.test(titolo);
+  const opzioni = { body: testo, icon: iconaDi(titolo, d), badge: "badge-casa-96.png", tag, renotify: true,
+    ...(d.azioni === "fatto" && rif ? { actions: [{ action: "fatto", title: "✅ Sistemato" }, { action: "apri", title: "Apri" }] } : {}),   // 1.58.0: il guasto urgentissimo
+    ...(d.azioni === "fattoTu" && rif ? { actions: [{ action: "fattoTu", title: "✅ Fatto" }, { action: "apri", title: "Apri" }] } : {}),   // 1.62.0
+    ...(d.vibra ? { vibrate: forte ? [600, 150, 600, 150, 600] : [300, 120, 300, 120, 300], requireInteraction: true } : {}),
+    data: { url, push: true, lettura: !!d.lettura, segreteria: d.segreteria === "lettura" ? "lettura" : !!d.segreteria, id, dove, rif } };
+  const diFila = async () => {
+    for (let k = 1; k < VOLTE_FORTE; k++) {
+      await new Promise((r) => setTimeout(r, PAUSA_FORTE_MS));
+      let cisono = true; try { cisono = (await self.registration.getNotifications({ tag })).length > 0; } catch (err) { cisono = true; }
+      if (!cisono) return;   // l'ha toccata o tolta: basta
+      await self.registration.showNotification(titolo, opzioni);
+    }
+  };
   e.waitUntil(Promise.all([
-    // 1.58.0: il guasto urgentissimo ha i tasti «✅ Sistemato» e «Apri», vibra più forte e resta finché non lo tocchi
-    self.registration.showNotification(titolo, { body: testo, icon: iconaDi(titolo, d), badge: "badge-casa-96.png", tag, renotify: true,
-      ...(d.azioni === "fatto" && rif ? { actions: [{ action: "fatto", title: "✅ Sistemato" }, { action: "apri", title: "Apri" }] } : {}),
-      ...(d.azioni === "fattoTu" && rif ? { actions: [{ action: "fattoTu", title: "✅ Fatto" }, { action: "apri", title: "Apri" }] } : {}),   // 1.62.0
-      ...(d.vibra ? { vibrate: [300, 120, 300, 120, 300], requireInteraction: true } : {}),
-      data: { url, push: true, lettura: !!d.lettura, segreteria: d.segreteria === "lettura" ? "lettura" : !!d.segreteria, id, dove, rif } }),
+    self.registration.showNotification(titolo, opzioni).then(() => (forte ? diFila() : null)),
     salvaAvviso({ id, titolo, testo, dove, rif, quando: new Date().toISOString() }),
   ]));   // 1.49.0: anche «la sintesi di oggi»; 1.51.0: e la lettura (Segreteria a tendina chiusa)
 });
+const VOLTE_FORTE = 5, PAUSA_FORTE_MS = 2500;
 
 // 1.89.0 LA SVEGLIA DI JARVIS (Michele: «mi deve arrivare una sorta di notifica, una sveglia… 5-10 minuti prima»). Il giro
 // manda solo «sveglia <codice>» e l'ora: CHE COSA c'è da fare lo sa solo questo telefono (cache «ricci-jarvis», la scrive

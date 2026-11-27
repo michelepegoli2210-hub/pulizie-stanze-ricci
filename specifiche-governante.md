@@ -3544,3 +3544,10 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Sofia riprovava la chiave a ogni giro: un paio di centinaia di chiamate al giorno a Meta con una chiave bloccata. Adesso, se Meta dice «bloccato» o la chiave è morta, riprova ogni 6 ore; per un altro guasto ogni mezz'ora; una chiave nuova (o rimessa dall'app) la prova subito.
   - Mentre aspetta non pubblica e non legge i commenti. Se Meta toglie il blocco riparte da sola, entro 6 ore.
   - Nel registro: «chiave: Meta ha bloccato l'accesso», una volta per prova. Nell'app non cambia niente (la frase giusta si fa vedere prima a Michele).
+- **1.118.0 + giro 1.44.0** (27/11 sera, Michele: «nell'email mi diceva che erano le presenze di questa settimana, mentre invece nell'allegato io ho trovato soltanto le presenze addirittura del 2022… a me serve assolutamente che l'allegato sia quello aggiornato» · «mi piacerebbe 5 vibrazioni di fila»):
+  - Il file delle presenze ha un foglio per ogni mese, da marzo 2022. L'app ne faceva vedere solo i primi 8 (tutti del 2022), e Sofia leggeva i primi 6. Adesso un Excel con più fogli si apre sul **foglio di adesso** (il mese o la settimana in cui siamo, letti dal nome del foglio; se no quello su cui il file era aperto).
+  - Sopra la tabella c'è scritto quanti fogli ha il file e quale è aperto, e c'è la riga coi nomi di tutti i fogli: si scorre col dito e si tocca quello che si vuole vedere.
+  - Anche Sofia legge il foglio di adesso (e i vicini). Gli Excel arrivati in questi tre giorni li rilegge una volta, così il suo riassunto sotto l'allegato è quello giusto.
+  - Se un foglio è troppo grande per starci tutto, adesso c'è scritto («qui c'è l'inizio»).
+  - La notifica di una prenotazione arrivata da un sito (Booking, Airbnb, Expedia, Ciclovia) suona e vibra **5 volte di fila**, una ogni 2 secondi e mezzo, e smette appena la tocchi. Quanto è forte la vibrazione lo decide il telefono.
+  - Viste le figure della copia di prova: «Sì, mettila».

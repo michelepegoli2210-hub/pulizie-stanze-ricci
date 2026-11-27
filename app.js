@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.117.0";
+export const VERSIONE = "1.118.0";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -21397,7 +21397,7 @@ function suDalFiglio() {
   liberaVista(v); AV = v.padre; AV.n++; disegnaVista();
 }
 const inB64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return btoa(s); };
-const VISTE = { pdf: (d, a, n) => vistaPdf(d, a, n), excel: (d, a) => vistaExcel(d, a), testo: (d, a) => vistaTestoOFattura(d, a), word: (d, a) => vistaWord(d, a), slide: (d, a) => vistaSlide(d, a),
+const VISTE = { pdf: (d, a, n) => vistaPdf(d, a, n), excel: (d, a, n) => vistaExcel(d, a, n), testo: (d, a) => vistaTestoOFattura(d, a), word: (d, a) => vistaWord(d, a), slide: (d, a) => vistaSlide(d, a),
   html: (d, a) => vistaHtml(d, a), email: (d, a) => vistaEmail(d, a), zip: (d, a) => vistaZip(d, a), rtf: (d, a) => vistaRtf(d, a), firmato: (d, a) => vistaFirmato(d, a) };
 const casellaMb = () => (Number((S.postaAlb || {}).casella) >= 4 ? 25 : 10);
 function vistaTelefono(a, perche) {
@@ -21579,21 +21579,38 @@ async function vistaPdf(d, a, n) {
   } else { for (const s of posti.slice(0, 10)) await disegnaPagina(s); }
 }
 // l'Excel di fuori lo apre un lavoratore a parte (xlsx-lettore.js): la libreria degli Excel non tocca niente dell'app
-function excelNelLavoratore(bytes, ms = 20000) {
+// 1.118.0: risponde { fogli: [il foglio da vedere], elenco: [i nomi di tutti], quanti, scelto, perche } (xlsx-lettore.js)
+function excelNelLavoratore(bytes, opz = {}, ms = 20000) {
   return new Promise((ok, ko) => {
     let w; try { w = new Worker("xlsx-lettore.js"); } catch (e) { ko(e); return; }
     let finito = false;
     const fine = (f) => { if (finito) return; finito = true; clearTimeout(t); try { w.terminate(); } catch (e) {} f(); };
     const t = setTimeout(() => fine(() => ko(new Error("ci mette troppo"))), ms);
-    w.onmessage = (e) => { const d = e.data || {}; fine(() => (d.ok ? ok(Array.isArray(d.fogli) ? d.fogli : []) : ko(new Error(d.errore || "file illeggibile")))); };
+    w.onmessage = (e) => { const d = e.data || {}; fine(() => (d.ok ? ok({ fogli: Array.isArray(d.fogli) ? d.fogli : [], elenco: Array.isArray(d.elenco) ? d.elenco : [], quanti: Number(d.quanti) || 0, scelto: Number.isInteger(d.scelto) ? d.scelto : -1, perche: String(d.perche || "") }) : ko(new Error(d.errore || "file illeggibile")))); };
     w.onerror = (e) => { try { e.preventDefault(); } catch (er) {} fine(() => ko(new Error((e && e.message) || "file illeggibile"))); };
-    const copia = bytes.slice().buffer; w.postMessage(copia, [copia]);
+    const copia = bytes.slice().buffer; w.postMessage({ buf: copia, ...(Number.isInteger(opz.quale) ? { quale: opz.quale } : {}), oggi: String(opz.oggi || "") }, [copia]);
   });
 }
-async function vistaExcel(d, a) {
-  const fogli = await excelNelLavoratore(a.bytes);
-  if (AV !== a) return;
-  d.innerHTML = fogli.map(f => `<h4 class="av-foglio">${esc(f.nome)}</h4>${f.righe.length ? `<div class="av-tab"><table>${f.righe.map((r, i) => `<tr>${r.slice(0, 30).map(c => i === 0 ? `<th>${esc(String(c))}</th>` : `<td>${esc(String(c))}</td>`).join("")}</tr>`).join("")}</table></div>` : `<p class="av-nota">(vuoto)</p>`}`).join("");
+// 1.118.0 (Michele, 27/11/2026: «nell'allegato io ho trovato soltanto le presenze addirittura del 2022»): prima si vedevano i
+// primi 8 fogli uno sotto l'altro, e il file delle presenze ne ha uno per mese dal 2022. Adesso UN foglio alla volta: si apre
+// quello «di adesso» (lo sceglie il lavoratore: fogli-excel.js) e sopra c'è la riga coi nomi di tutti i fogli, da toccare.
+// Il foglio scelto col dito resta quello anche dopo «Scritto grande» e ritorno (a.foglioScelto).
+const AV_FOGLIO_PERCHE = { adesso: "Ti ho aperto quello di adesso", prossimo: "Ti ho aperto quello dei prossimi giorni", ultimo: "Ti ho aperto il più recente", aperto: "Ti ho aperto quello su cui era aperto il file", primo: "Ti ho aperto il primo" };
+async function vistaExcel(d, a, n, quale) {
+  const voluto = Number.isInteger(quale) ? quale : Number.isInteger(a.foglioScelto) ? a.foglioScelto : undefined;
+  const r = await excelNelLavoratore(a.bytes, { quale: voluto, oggi: L.oggiISO() });
+  if (AV !== a || (n !== undefined && a.n !== n)) return;
+  const f = r.fogli[0] || null, tanti = r.quanti > 1;
+  if (Number.isInteger(quale)) a.foglioScelto = quale;
+  // il testo per «Scritto grande» e «Leggimelo»: solo il foglio che si vede (non la riga dei nomi)
+  a.testoVista = f ? `${tanti ? `Foglio «${f.nome}».\n` : ""}${f.righe.map(x => x.filter(c => String(c).trim()).join(" · ")).filter(Boolean).join("\n")}` : ""; a.testo = undefined;
+  const perche = AV_FOGLIO_PERCHE[r.perche] || "";
+  const riga = tanti ? `<div class="av-fogli"><p class="av-fogli-t">Questo file ha <b>${r.quanti} fogli</b>.${f && perche ? ` ${perche}: <b>${esc(f.nome)}</b>.` : ""} Per vederne un altro, toccalo qui sotto.</p><div class="av-fogli-riga" role="tablist" aria-label="I fogli del file">${r.elenco.map(x => `<button type="button" class="av-fg" role="tab" aria-selected="${x.i === r.scelto}" data-av-foglio="${Number(x.i)}">${esc(x.nome)}</button>`).join("")}</div></div>` : "";
+  d.classList.remove("av-cambia");
+  d.innerHTML = riga + (f ? `<h4 class="av-foglio">${esc(f.nome)}</h4>${f.righe.length ? `<div class="av-tab"><table>${f.righe.map((r2, i) => `<tr>${r2.slice(0, 30).map(c => i === 0 ? `<th>${esc(String(c))}</th>` : `<td>${esc(String(c))}</td>`).join("")}</tr>`).join("")}</table></div>` : `<p class="av-nota">(vuoto)</p>`}${f.tagliato ? `<p class="av-nota">Il foglio è più grande di così: qui c'è l'inizio. Per vederlo tutto tocca «Scarica», in alto: lo apre il telefono.</p>` : ""}`
+    : `<p class="av-nota">In questo file non ci sono fogli da vedere.</p>`);
+  const scelto = d.querySelector('.av-fg[aria-selected="true"]'), fila = d.querySelector(".av-fogli-riga");   // il foglio aperto in mezzo alla riga dei nomi
+  if (scelto && fila) fila.scrollLeft = Math.max(0, scelto.offsetLeft - fila.offsetLeft - (fila.clientWidth - scelto.offsetWidth) / 2);
 }
 async function vistaTesto(d, a) {
   let s = new TextDecoder("utf-8").decode(a.bytes);
@@ -21962,7 +21979,7 @@ async function vistaFattura(d, a, s) {
   if (allegati.length) { a.figli = allegati; const sotto = document.createElement("div"); d.appendChild(sotto); listaFigli(sotto, a, `Dentro la fattura ${allegati.length === 1 ? "c'è un file" : `ci sono ${allegati.length} file`}: tocca per aprirlo.`); }
 }
 document.addEventListener("click", (e) => {
-  const t = e.target && e.target.closest ? e.target.closest("[data-segr-leggi],[data-segr-chiedi],[data-sgf-gov],[data-segr-allegato],[data-segr-elenco],[data-av-chiudi],[data-av-zoom],[data-av-casella],[data-av-figlio],[data-av-grande],[data-av-leggi]") : null;
+  const t = e.target && e.target.closest ? e.target.closest("[data-segr-leggi],[data-segr-chiedi],[data-sgf-gov],[data-segr-allegato],[data-segr-elenco],[data-av-chiudi],[data-av-zoom],[data-av-casella],[data-av-figlio],[data-av-grande],[data-av-leggi],[data-av-foglio]") : null;
   if (!t) return;
   e.preventDefault(); e.stopPropagation();
   if (t.hasAttribute("data-segr-leggi")) { const f = S.foglio; if (f && f.tipo === "segrEmail") segrLeggiEmail(f.id); return; }
@@ -21974,6 +21991,14 @@ document.addEventListener("click", (e) => {
   if (t.hasAttribute("data-av-chiudi")) { if (AV && AV.grande) { AV.grande = false; AV.n++; disegnaVista(); } else if (AV && AV.padre) suDalFiglio(); else chiudiVista(false); return; }
   if (t.hasAttribute("data-av-zoom")) { if (!AV || t.disabled) return; AV.zoom = Math.max(1, Math.min(4, AV.zoom + (Number(t.getAttribute("data-av-zoom")) > 0 ? 0.75 : -0.75))); disegnaVista(); return; }
   if (t.hasAttribute("data-av-grande")) { vistaGrandeTocca(); return; }   // 1.110.0
+  if (t.hasAttribute("data-av-foglio")) {   // 1.118.0: un altro foglio dell'Excel
+    const av = AV, dd = document.querySelector("#allegatoVista [data-av-dentro]"), q = Number(t.getAttribute("data-av-foglio"));
+    if (av && av.tipo === "excel" && dd && Number.isInteger(q) && !dd.classList.contains("av-cambia") && t.getAttribute("aria-selected") !== "true") {
+      dd.classList.add("av-cambia"); const nn = ++av.n;
+      vistaExcel(dd, av, nn, q).catch(() => { dd.classList.remove("av-cambia"); toast("Non riesco ad aprire quel foglio: riprova"); });
+    }
+    return;
+  }
   if (t.hasAttribute("data-av-leggi")) { if (!t.disabled) vistaLeggi(); return; }
   if (t.hasAttribute("data-av-casella")) { chiudiVista(false); apriFoglio({ tipo: "postaAlb" }); return; }
 }, true);
