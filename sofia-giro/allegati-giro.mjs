@@ -18,6 +18,12 @@ import { fogliExcelIsolati } from "./excel-isolato.mjs";   // l'Excel di fuori s
 import { CHAT_EMAIL, casellaPronta, chiediCasella, allegatoVero } from "./posta-giro.mjs";
 
 export const MAX_MAIL = 3, MAX_FILE_MAIL = 5, MAX_KB = 10 * 1024, MAX_TENTATIVI = 3, MAX_TESTO = 6000;
+// giro 1.44.0: il lettore degli Excel è cambiato (il foglio di adesso, non i primi 6). Un Excel letto col lettore di prima
+// (senza «v», o più basso) nelle email di questi tre giorni si rilegge UNA volta (allegatiRiletti sull'email).
+export const VERSIONE_EXCEL = 2;
+const giornoDiRoma = (d) => { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(d); } catch (e) { return new Date(d).toISOString().slice(0, 10); } };
+const excelVecchio = (a) => !!(a && a.letto && tipoAllegato(a) === "excel" && !(Number(a.v) >= VERSIONE_EXCEL));
+export const daRileggere = (p) => !!p && p.allegatiStato === "letti" && !(Number(p.allegatiRiletti) >= VERSIONE_EXCEL) && (Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).some(excelVecchio);
 const GIORNO = 24 * 3600 * 1000;
 // gli ordini dei modelli: prima quello svelto e bravo coi documenti, poi il più bravo, poi l'economico
 const ORDINE = ["sveglia", "argon", "svelta"];
@@ -67,12 +73,14 @@ export function testoWord(buf) {
     : s.replace(/<text:tab\/>/g, "\t").replace(/<text:line-break\/>/g, "\n").replace(/<\/text:(p|h)>/g, "\n");
   return entita(s.replace(/<[^>]+>/g, "")).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
-export async function testoExcel(buf) {
-  const fogli = await fogliExcelIsolati(buf);   // excel-isolato.mjs: la libreria degli Excel non tocca niente del giro
-  let s = "";
-  for (const { nome, csv: tutto } of fogli) {
-    const csv = String(tutto || "").split("\n").filter(r => r.replace(/,/g, "").trim()).join("\n");
-    if (csv) s += `--- Foglio «${nome}» ---\n${csv}\n`;
+export async function testoExcel(buf, oggi = "") {
+  const fogli = await fogliExcelIsolati(buf, 20000, oggi);   // excel-isolato.mjs: la libreria degli Excel non tocca niente del giro
+  const r = { quanti: Number(fogli.quanti) || fogli.length }, scelto = fogli.find(f => f.scelto);
+  // 1.44.0: se il file ha tanti fogli qui ci sono solo quello di adesso e i vicini: lo dico a chi legge
+  let s = r.quanti > fogli.length && scelto ? `(Il file Excel ha ${r.quanti} fogli. Qui sotto c'è quello da guardare, «${scelto.nome}», e quelli vicini; gli altri sono di altri periodi e qui non ci sono.)\n` : "";
+  for (const { nome, csv: tutto, scelto: lui } of fogli) {
+    const csv = String(tutto || "").split("\n").filter(r2 => r2.replace(/,/g, "").trim()).join("\n");
+    if (csv) s += `--- Foglio «${nome}»${lui && fogli.length > 1 && r.quanti > fogli.length ? " (QUELLO DA GUARDARE)" : ""} ---\n${csv}\n`;
     if (s.length > 20000) break;
   }
   return s.slice(0, 20000).trim();
@@ -93,7 +101,7 @@ export function rispostaAllegato(grezzo) {
 }
 
 // un allegato → Gemini (interi PDF e foto; il testo per Excel, Word e testo)
-export async function leggiUnAllegato({ gemini, f, tipo, mime, dati, mail }) {
+export async function leggiUnAllegato({ gemini, f, tipo, mime, dati, mail, oggi = "" }) {
   const sistema = "Sei la segretaria delle Stanze di Ricci, un piccolo albergo a Lesina (Puglia). Leggi tutto l'allegato di un'email arrivata all'albergo e dì a Michele, il titolare, cosa c'è dentro. Scrivi in italiano semplice, senza parole tecniche.";
   const chiedi = `L'email è di ${String((mail && mail.chi) || "qualcuno").slice(0, 80)}, oggetto «${String((mail && mail.oggetto) || "").slice(0, 160)}». L'allegato si chiama «${f.n}».\n` +
     `Rispondi SOLO con JSON: {"riassunto": "1-3 frasi: che cos'è e cosa dice di importante (date, nomi, camere, cifre, scadenze, cosa chiedono di fare)", "testo": "quello che c'è scritto, completo ma al massimo ${MAX_TESTO} caratteri; le tabelle una riga per riga"}`;
@@ -101,7 +109,7 @@ export async function leggiUnAllegato({ gemini, f, tipo, mime, dati, mail }) {
   if (tipo === "pdf" || tipo === "foto") dom = { sistema, testo: chiedi, immagine: [{ dati, mime: tipo === "pdf" ? "application/pdf" : mime }], secondi: 120, maxToken: 8000 };
   else {
     const buf = Buffer.from(dati, "base64");
-    const dentro = tipo === "excel" ? await testoExcel(buf) : tipo === "word" ? testoWord(buf) : testoSemplice(buf, f);
+    const dentro = tipo === "excel" ? await testoExcel(buf, oggi) : tipo === "word" ? testoWord(buf) : testoSemplice(buf, f);
     if (!dentro) return { riassunto: "L'allegato è vuoto (o non riesco a leggerne il testo).", testo: "" };
     dom = { sistema, testo: `${chiedi}\n\nIL CONTENUTO DELL'ALLEGATO:\n${dentro}`, secondi: 90, maxToken: 8000 };
   }
@@ -118,21 +126,26 @@ export async function leggiAllegati({ db, gemini, adesso = new Date(), fetchFn =
   if (!casellaPronta(c)) return null;
   const posta = await db.postaDa(adesso.getTime() - 3 * GIORNO);
   const mail = Object.entries(posta || {}).map(([id, p]) => ({ ...(p || {}), id: String((p && p.id) || id) }))
-    .filter(p => p.chat === CHAT_EMAIL && p.allegatiStato === "da-leggere" && Array.isArray(p.files) && p.files.length && /^email_[A-Za-z0-9_-]{4,64}$/.test(p.id))
+    .filter(p => p.chat === CHAT_EMAIL && (p.allegatiStato === "da-leggere" || daRileggere(p)) && Array.isArray(p.files) && p.files.length && /^email_[A-Za-z0-9_-]{4,64}$/.test(p.id))
     .sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0)).slice(0, MAX_MAIL);
   if (!mail.length) return null;
   let letti = 0, saltati = 0, errori = 0;
+  const oggi = giornoDiRoma(adesso);
   for (const p of mail) {
+    const rifare = daRileggere(p);   // 1.44.0: un Excel letto col lettore di prima
+    let rilettaMale = false;
     const gid = p.id.slice(6), prima = new Map((Array.isArray(p.allegatiLetti) ? p.allegatiLetti : []).filter(a => a && a.letto).map(a => [String(a.p), a]));
     const lista = []; let sbagli = 0;
     const oggetto = String(p.testo || "").split("\n")[0].replace(/^✉️\s*/, "").replace(/\s·\s📎.*$/, "");
     for (const f of p.files.filter(allegatoVero).slice(0, MAX_FILE_MAIL)) {   // 1.41.1: i loghi della firma no; 1.42.0: né le immagini piccole dentro il testo
-      if (prima.has(String(f.p))) { lista.push(prima.get(String(f.p))); continue; }
+      const gia = prima.get(String(f.p));
+      if (gia && !(rifare && excelVecchio(gia))) { lista.push(gia); continue; }
       const base = { p: String(f.p), n: String(f.n || "").slice(0, 120), t: String(f.t || "").slice(0, 80), kb: Number(f.kb) || 0 };
       const tipo = tipoAllegato(f);
       if (!tipo) { lista.push({ ...base, letto: false, perche: "questo tipo di file non lo so leggere: aprilo tu" }); saltati++; continue; }
       if ((Number(f.kb) || 0) > MAX_KB) { lista.push({ ...base, letto: false, perche: "è troppo grande perché lo legga io (più di 10 MB): aprilo tu, toccandolo" }); saltati++; continue; }
       const j = await chiediCasella(c.url, { azione: "allegato", segreto: c.segreto, id: gid, parte: String(f.p) }, ms, fetchFn);
+      if ((!j || !j.ok) && gia) { lista.push(gia); rilettaMale = true; continue; }   // 1.44.0: la casella non dà il file da rileggere: resta la lettura di prima
       if (!j || !j.ok) {
         if (/^Azione sconosciuta/i.test(String((j && j.errore) || ""))) {   // la casella è ancora la 2: non sa dare gli allegati
           try { await db.merge("importazioni", "posta-albergo", { casellaDaAggiornare: adesso.toISOString() }); } catch (e) {}
@@ -142,14 +155,16 @@ export async function leggiAllegati({ db, gemini, adesso = new Date(), fetchFn =
         sbagli++; continue;
       }
       try {
-        const x = await leggiUnAllegato({ gemini, f: base, tipo, mime: tipo === "foto" ? mimeFoto({ t: j.tipo || f.t, n: f.n }) : "", dati: String(j.dati || ""), mail: { chi: p.chi, oggetto } });
-        lista.push({ ...base, letto: true, riassunto: x.riassunto, testo: x.testo, quando: adesso.toISOString() }); letti++;
-      } catch (e) { console.warn("allegato:", e && e.message); sbagli++; }
+        const x = await leggiUnAllegato({ gemini, f: base, tipo, mime: tipo === "foto" ? mimeFoto({ t: j.tipo || f.t, n: f.n }) : "", dati: String(j.dati || ""), mail: { chi: p.chi, oggetto }, oggi });
+        lista.push({ ...base, letto: true, riassunto: x.riassunto, testo: x.testo, quando: adesso.toISOString(), ...(tipo === "excel" ? { v: VERSIONE_EXCEL } : {}) }); letti++;
+      } catch (e) { console.warn("allegato:", e && e.message); if (gia) { lista.push(gia); rilettaMale = true; } else sbagli++; }   // la rilettura non riesce: resta quella di prima
     }
     const tentativi = (Number(p.allegatiTentativi) || 0) + (sbagli ? 1 : 0);
     const stato = sbagli && tentativi < MAX_TENTATIVI ? "da-leggere" : "letti";
     errori += sbagli;
-    await db.merge("posta", p.id, { allegatiLetti: lista, allegatiStato: stato, allegatiTentativi: tentativi, allegatiQuando: adesso.toISOString() });
+    await db.merge("posta", p.id, { allegatiLetti: lista, allegatiStato: stato, allegatiTentativi: tentativi, allegatiQuando: adesso.toISOString(),
+      // la rilettura: fatta (o provata tre volte senza riuscirci) non si rifà più
+      ...(rifare ? (!rilettaMale || (Number(p.allegatiRilettiProve) || 0) + 1 >= MAX_TENTATIVI ? { allegatiRiletti: VERSIONE_EXCEL } : { allegatiRilettiProve: (Number(p.allegatiRilettiProve) || 0) + 1 }) : {}) });
   }
   const pezzi = [letti ? `${letti} ${letti === 1 ? "letto" : "letti"}` : "", saltati ? `${saltati} non ${saltati === 1 ? "leggibile" : "leggibili"}` : "", errori ? `${errori} da riprovare` : ""].filter(Boolean);
   return { esito: pezzi.length ? "allegati: " + pezzi.join(", ") : null, letti };
