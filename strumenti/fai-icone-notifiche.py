@@ -14,6 +14,7 @@ ICONE = {  # nome → (disegno, colore)
   "messaggio": ("fumetto", "verdeacqua"), "urgente": ("attenzione", "corallo"), "pulizie": ("secchio", "verde"), "arrivi": ("arrivi", "salmone"),
   "sera": ("casa", "azzurro"), "foglio": ("spunte", "azzurro"), "sintesi": ("lettera", "sapere"), "social": ("megafono", "rosa"),
   "lettura": ("fumetto", "giallo"), "casa": ("casa", "salmone"),
+  "zona": ("stella", "verdeacqua"),   # 1.117.0: «📍 In zona»
 }
 def hexrgb(h): h = h.lstrip("#"); return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 S = 4; L = 192 * S
