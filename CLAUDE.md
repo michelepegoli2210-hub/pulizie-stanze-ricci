@@ -40,6 +40,12 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   un'automazione»: il giorno prima molti clic sui siti di Meta li aveva fatti Claude dal Chrome di Michele. Da allora sui siti
   di Meta (Facebook, Instagram, Meta for Developers, Business) clicca SOLO Michele, guidato con le figure; niente account o
   portfolio nuovi per aggirare il blocco. La revisione, se un giorno serve la pubblicità, la chiede lui («Stato dell'account»).
+  Il 27/11/2026 la chiave rispondeva «API access blocked»: Sofia influencer è FERMA (non pubblica, non risponde ai commenti).
+  Per farla ripartire serve che Meta tolga il blocco: la richiesta la fa Michele, guidato con le figure. Giro 1.43.2
+  (`social-giro.mjs` 1.1.1): quando la chiave non va NON si ribussa a ogni giro (prima: ogni 10 minuti, per giorni) —
+  bloccata o morta ogni 6 ore, un guasto ogni mezz'ora, una chiave nuova o rimessa subito (`chiaveProva` nel motore).
+  Nell'app lo stato resta «controllo» («la sto controllando… entro 10 minuti»): per un blocco la frase è sbagliata, va
+  cambiata facendogliela vedere prima.
 - Niente foto finte dell'albergo fatte con l'IA; niente loghi o marchi di altri nell'app; la Sofia di prima (il viso
   vecchio) non deve più comparire.
 

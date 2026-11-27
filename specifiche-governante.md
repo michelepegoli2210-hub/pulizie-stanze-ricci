@@ -3540,3 +3540,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Un sito che non risponde Sofia lo riprova dopo 10 minuti, poi dopo 30, poi dopo 60; poi torna al giro di ogni tre ore. Alla prima riprova (13:10) il Comune ha risposto: 18 notizie.
   - Nel registro adesso c'è scritto quale sito non risponde e perché.
   - La prima volta che un sito risponde le sue notizie c'erano già: finiscono in «In zona» senza notifica. La notifica è solo per un evento uscito dopo.
+- **giro 1.43.2** (27/11, Michele: «Quindi mi stai dicendo che Sofia non riesce a pubblicare niente… Sofia influencer non è attiva adesso»; sì: Meta rifiuta la chiave, «API access blocked», il blocco del 20/11):
+  - Sofia riprovava la chiave a ogni giro: un paio di centinaia di chiamate al giorno a Meta con una chiave bloccata. Adesso, se Meta dice «bloccato» o la chiave è morta, riprova ogni 6 ore; per un altro guasto ogni mezz'ora; una chiave nuova (o rimessa dall'app) la prova subito.
+  - Mentre aspetta non pubblica e non legge i commenti. Se Meta toglie il blocco riparte da sola, entro 6 ore.
+  - Nel registro: «chiave: Meta ha bloccato l'accesso», una volta per prova. Nell'app non cambia niente (la frase giusta si fa vedere prima a Michele).
