@@ -25,8 +25,12 @@ import * as L from "../logica.js";
 import * as LET from "../lettura.js";
 import { chiediGemini, ORDINE_ECONOMICO, oraDiAvvisi } from "./lettura-giro.mjs";
 
-export const VERSIONE_TERRITORIO = "1.0.0";
+export const VERSIONE_TERRITORIO = "1.0.1";
 export const OGNI_MS = 175 * 60 * 1000;          // i siti si guardano ogni tre ore circa
+// 1.0.1 (27/11, il primo giro vero: i tre feed del Comune non hanno risposto ai computer di GitHub): un sito muto si riprova
+// dopo 10 minuti, poi dopo 30, poi dopo 60; poi torna al giro di ogni tre ore. E si segna PERCHÉ non ha risposto.
+// La prima volta che un sito risponde, le sue notizie c'erano già: si mettono in «In zona» ma senza avviso (come al primo giro).
+export const RIPROVA_MS = [10, 30, 60].map(m => m * 60 * 1000);
 export const ORE_TERRITORIO = [7 * 60, 22 * 60];       // dalle 7 alle 22, ora di Lesina
 export const TIENI_GIORNI = 45, MAX_VOCI = 160, MAX_PER_FONTE = 12, MAX_IA = 14, MAX_GRUPPI = 3, MAX_AVVISI = 2;
 export const TIPI = ["evento", "bando", "strade", "meteo", "cronaca", "avviso"];
@@ -205,9 +209,19 @@ export function vociDalleChat(carte, oggi) {
 }
 
 // ---- il passo del giro ---------------------------------------------------------------------------------------------------
+const nellOrario = (minuti) => minuti === undefined || minuti === null || (minuti >= ORE_TERRITORIO[0] && minuti < ORE_TERRITORIO[1]);
 export function territorioDovuto(st, adesso, minuti) {
-  if (minuti !== undefined && minuti !== null && (minuti < ORE_TERRITORIO[0] || minuti >= ORE_TERRITORIO[1])) return false;
+  if (!nellOrario(minuti)) return false;
   return adesso.getTime() - (Date.parse((st && st.controllato) || "") || 0) >= OGNI_MS;
+}
+// i siti che l'ultima volta non hanno risposto e che è ora di riprovare
+export function daRiprovare(st, adesso, minuti, fonti = FONTI) {
+  if (!nellOrario(minuti)) return [];
+  return fonti.filter(f => {
+    const s = ((st && st.fonti) || {})[f.id]; if (!s || !s.ko || (s.ok && s.ok > s.ko)) return false;
+    const n = Math.max(1, Number(s.prove) || 1); if (n > RIPROVA_MS.length) return false;
+    return adesso.getTime() - (Date.parse(s.provato || s.ko) || 0) >= RIPROVA_MS[n - 1];
+  });
 }
 export function quandoParole(v, oggi) {
   const g = v.giorno < oggi && v.fino ? oggi : v.giorno;
@@ -220,24 +234,32 @@ function voceSalvata(x) {
   return { id: x.id, fonte: String(x.fonte || ""), tipo: TIPI.includes(x.tipo) ? x.tipo : "avviso", titolo: String(x.titolo || "").slice(0, 160), ...s("semplice", 140), ...s("link", 500), ...s("da", 24),
     uscito: String(x.uscito || ""), ...s("giorno", 10), ...s("ora", 5), ...s("fino", 10), ...s("dove", 60), albergo: x.albergo !== false, visto: String(x.visto || ""), ...s("avvisato", 30), ...(x.sua ? { sua: true } : {}) };
 }
-// scarica: (url) → il testo del feed ("" se non risponde); avvisa: ({ titolo, testo, rif, tag }) → true se è partito
+// scarica: (url) → il testo del feed, oppure { testo, perche } (perche = perché non ha risposto); avvisa: ({ titolo, testo, rif, tag }) → true se è partito
 // appenaLetto: in questo giro Sofia ha appena letto le chat (allora si guarda subito se c'è qualcosa per «In zona»)
 export async function giroTerritorio({ db, adesso = new Date(), oggi, minuti, gemini = null, scarica = null, avvisa = null, appenaLetto = false, fonti = FONTI }) {
   const st = (await db.doc("importazioni", "in-zona")) || {};
   const dovuta = typeof scarica === "function" && territorioDovuto(st, adesso, minuti);
-  if (!dovuta && !appenaLetto) return null;
+  const riprova = !dovuta && typeof scarica === "function" ? daRiprovare(st, adesso, minuti, fonti) : [];
+  if (!dovuta && !appenaLetto && !riprova.length) return null;
   const ora = adesso.toISOString(), primaVolta = !st.controllato;
   const voci = {}; for (const [k, v] of Object.entries(st.voci || {})) if (v && typeof v === "object" && v.titolo) voci[k] = { ...v, id: k };
-  const statoFonti = { ...(st.fonti || {}) }, nuoveWeb = [], nuoveChat = [];
+  const statoFonti = { ...(st.fonti || {}) }, nuoveWeb = [], nuoveChat = [], perche = [], giaSulSito = new Set();
   let letti = 0, muti = 0, cambiato = false;
-  if (dovuta) {
+  if (dovuta || riprova.length) {
     cambiato = true;
     const limite = adesso.getTime() - TIENI_GIORNI * 864e5;
-    for (const f of fonti) {
-      let lista = [];
-      try { lista = leggiRss(await scarica(f.url), f); } catch (e) { lista = []; console.warn("in zona, un sito:", via(e)); }
-      const prima = statoFonti[f.id] || {};
-      if (!lista.length) { muti++; statoFonti[f.id] = { nome: f.nome, cosa: f.cosa, ok: String(prima.ok || ""), ko: String(prima.ko || ora) }; continue; }
+    for (const f of (dovuta ? fonti : riprova)) {
+      let x = ""; try { x = await scarica(f.url); } catch (e) { x = { testo: "", perche: "errore" }; console.warn("in zona, un sito:", via(e)); }
+      const testo = typeof x === "string" ? x : String((x && x.testo) || "");
+      const lista = leggiRss(testo, f), prima = statoFonti[f.id] || {};
+      if (!lista.length) {
+        const p = String((x && typeof x === "object" && x.perche) || (testo ? "la pagina non è un feed" : "non risponde")).replace(/https?:\/\/\S+/g, "").replace(/[^\p{L}\p{N} ._-]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+        const mutoGia = !!prima.ko && !(prima.ok && prima.ok > prima.ko);
+        muti++; statoFonti[f.id] = { nome: f.nome, cosa: f.cosa, ok: String(prima.ok || ""), ko: mutoGia ? String(prima.ko) : ora, perche: p, prove: mutoGia ? Math.max(1, Number(prima.prove) || 1) + 1 : 1, provato: ora };
+        let sito = ""; try { sito = new URL(f.url).hostname.replace(/^www\./, ""); } catch (e) { sito = f.id; }
+        if (!perche.includes(`${sito}: ${p}`)) perche.push(`${sito}: ${p}`);
+        continue;
+      }
       letti++; statoFonti[f.id] = { nome: f.nome, cosa: f.cosa, ok: ora, n: lista.length };
       let presi = 0;
       for (const v of lista) {
@@ -245,6 +267,7 @@ export async function giroTerritorio({ db, adesso = new Date(), oggi, minuti, ge
         const id = "w" + corto(v.link);
         if (voci[id] || nuoveWeb.some(y => y.id === id)) continue;
         if (++presi > MAX_PER_FONTE) break;
+        if (!prima.ok) giaSulSito.add(id);   // un sito letto per la prima volta: quello che c'è non è una novità
         const tipo = tipoDa(v.titolo, v.testo, f), q = tipo === "evento" ? quandoDa(`${v.titolo}. ${v.testo}`, oggi) : { giorno: "", ora: "", fino: "" };
         nuoveWeb.push({ id, fonte: f.id, nomeFonte: f.nome, tipo, titolo: v.titolo, testo: v.testo, link: v.link, uscito: new Date(t).toISOString(), giorno: q.giorno, ora: q.giorno ? q.ora : "", fino: q.fino, albergo: albergoDa(tipo, v.titolo, v.testo), visto: ora });
       }
@@ -284,7 +307,7 @@ export async function giroTerritorio({ db, adesso = new Date(), oggi, minuti, ge
   const daDire = Object.values(voci).filter(v => eventoVivo(v, oggi) && v.albergo !== false && !v.avvisato);
   for (const v of daDire) {
     if (v.sua) { v.avvisato = "sua"; cambiato = true; }                                   // l'ha mandata lui: la sa
-    else if (primaVolta && v.fonte !== "chat") { v.avvisato = "prima"; cambiato = true; }   // c'era già sui siti: non è una novità
+    else if ((primaVolta || giaSulSito.has(v.id)) && v.fonte !== "chat") { v.avvisato = "prima"; cambiato = true; }   // c'era già sui siti: non è una novità
   }
   const vere = daDire.filter(v => !v.avvisato).sort((a, b) => `${a.giorno}${a.ora || ""}`.localeCompare(`${b.giorno}${b.ora || ""}`));
   if (vere.length && typeof avvisa === "function" && oraDiAvvisi(minuti)) {
@@ -301,20 +324,24 @@ export async function giroTerritorio({ db, adesso = new Date(), oggi, minuti, ge
   for (const v of Object.values(voci)) if (v.prove !== undefined && v.avvisato) delete v.prove;
   await db.salva("importazioni", "in-zona", { versione: VERSIONE_TERRITORIO, controllato: dovuta ? ora : String(st.controllato || ""), aggiornato: ora, fonti: statoFonti, voci });
   const n = nuoveWeb.length + nuoveChat.length;
-  const pezzi = [dovuta ? `${letti} ${letti === 1 ? "sito letto" : "siti letti"}` : "", dovuta && muti ? `${muti} ${muti === 1 ? "non risponde" : "non rispondono"}` : "", nuoveWeb.length ? `${nuoveWeb.length} ${nuoveWeb.length === 1 ? "notizia nuova" : "notizie nuove"}` : "",
+  const guardati = dovuta || riprova.length > 0;
+  const pezzi = [!dovuta && riprova.length ? `${riprova.length === 1 ? "riprovato un sito" : `riprovati ${riprova.length} siti`}` : "", guardati ? `${letti} ${letti === 1 ? "sito letto" : "siti letti"}` : "", guardati && muti ? `${muti} ${muti === 1 ? "non risponde" : "non rispondono"} (${perche.slice(0, 2).join("; ")})` : "", nuoveWeb.length ? `${nuoveWeb.length} ${nuoveWeb.length === 1 ? "notizia nuova" : "notizie nuove"}` : "",
     nuoveChat.length ? `${nuoveChat.length} dalle chat` : "", nuoveWeb.length && gemini ? (guardate ? "guardate da Gemini" : "Gemini non ha risposto") : "", partiti ? `${partiti} ${partiti === 1 ? "avviso" : "avvisi"}` : ""].filter(Boolean);
   return { esito: `in zona: ${pezzi.join(", ") || "niente di nuovo"}`, nuove: n, avvisi: partiti };
 }
 
-// il feed vero, scaricato da internet (testo; al massimo 2 MB, 15 secondi)
+// il feed vero, scaricato da internet (al massimo 2 MB, 15 secondi): { testo, perche } (perche = perché non ha risposto, in due parole)
 export async function scaricaPagina(url, ms = 15000) {
   const ac = new AbortController(), tm = setTimeout(() => ac.abort(), ms);
   try {
-    if (!/^https:\/\//.test(String(url))) return "";
+    if (!/^https:\/\//.test(String(url))) return { testo: "", perche: "indirizzo non https" };
     const r = await fetch(url, { redirect: "follow", signal: ac.signal, headers: { "User-Agent": "LeStanzeDiRicci-InZona/1.0 (lettore di feed; una lettura ogni tre ore)", "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*" } });
-    if (!r.ok) return "";
+    if (!r.ok) return { testo: "", perche: `risposta ${r.status}` };
     const t = await r.text();
-    return t.length > 2 * 1024 * 1024 ? t.slice(0, 2 * 1024 * 1024) : t;
-  } catch (e) { return ""; }
+    return { testo: t.length > 2 * 1024 * 1024 ? t.slice(0, 2 * 1024 * 1024) : t, perche: "" };
+  } catch (e) {
+    const codice = String((e && e.cause && (e.cause.code || e.cause.name)) || (e && e.code) || "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 36);
+    return { testo: "", perche: e && e.name === "AbortError" ? "tempo scaduto" : codice ? `non si collega ${codice}` : "non si collega" };
+  }
   finally { clearTimeout(tm); }
 }

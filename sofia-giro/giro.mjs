@@ -90,6 +90,7 @@
 //  della zona (il Comune, il Parco, un giornale) e quello che la lettura delle chat ha messo in "territorio" (un volantino
 //  mandato su WhatsApp); una notifica solo per un evento nuovo che deve ancora venire (territorio-giro.mjs). Il vaglio non
 //  butta più tra i saluti un volantino della zona. Si spegne con avvisi.giroZona = false. Nel registro solo quanti.
+//  1.43.1: un sito che non risponde si riprova dopo 10, 30 e 60 minuti, e nel registro c'è scritto quale sito e perché.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -107,7 +108,7 @@ import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la 
 import { giroTerritorio, scaricaPagina } from "./territorio-giro.mjs";   // 1.43.0 (app 1.117.0): «In zona», cosa succede nel territorio
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.43.0";
+export const VERSIONE_GIRO = "1.43.1";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
