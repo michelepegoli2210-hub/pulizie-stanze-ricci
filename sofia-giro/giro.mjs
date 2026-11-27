@@ -85,6 +85,11 @@
 //  1.41.0 (app 1.108.0, casella 3): GLI ALLEGATI DELLE EMAIL (Michele, 20/11: «negli allegati c'è proprio il succo del discorso»;
 //  per Gemini «Tutto com'è»). Dopo le notifiche delle email nuove, Sofia legge gli allegati (allegati-giro.mjs) e quello che ci
 //  trova va nell'email e nella sua lettura. La notifica di una mail, toccata, apre quella mail (rif).
+//  1.43.0 (app 1.117.0): «IN ZONA» (Michele, 27/11: «doveva arrivarmi prima di papà… tutti questi forum qua io li devo vedere
+//  nella segreteria… devo capire cosa succede nel territorio»). Ogni tre ore, dalle 7 alle 22, si leggono i feed pubblici
+//  della zona (il Comune, il Parco, un giornale) e quello che la lettura delle chat ha messo in "territorio" (un volantino
+//  mandato su WhatsApp); una notifica solo per un evento nuovo che deve ancora venire (territorio-giro.mjs). Il vaglio non
+//  butta più tra i saluti un volantino della zona. Si spegne con avvisi.giroZona = false. Nel registro solo quanti.
 // ============================================================================
 import { ZONE, CAMERE, CAMERE_TOLTE, SQUADRA_BASE } from "../regole.js";
 import * as L from "../logica.js";
@@ -99,9 +104,10 @@ import { portaPostaAlbergo, notificheEmail } from "./posta-giro.mjs";   // 1.33.
 import { leggiAllegati } from "./allegati-giro.mjs";   // 1.41.0 (app 1.108.0): gli allegati delle email, li legge Sofia
 import { orarioSignore } from "./orario-giro.mjs";   // 1.35.0 (app 1.78.0): l'orologio: «arrivata» / «finito» su WhatsApp e i tasti dell'app
 import { mandaSveglie } from "./sveglia-giro.mjs";   // 1.37.0 (app 1.89.0): la sveglia di Jarvis, circa 10 minuti prima di un impegno
+import { giroTerritorio, scaricaPagina } from "./territorio-giro.mjs";   // 1.43.0 (app 1.117.0): «In zona», cosa succede nel territorio
 import { pathToFileURL } from "node:url";
 
-export const VERSIONE_GIRO = "1.42.0";
+export const VERSIONE_GIRO = "1.43.0";
 const MIN = (h, m = 0) => h * 60 + m;
 
 export function oraRoma(d) {
@@ -227,7 +233,7 @@ export function frasiInRighe(testo) {
 // ---- il giro ------------------------------------------------------------------------------------------
 // 1.39.0: il giro finisce dopo le sveglie di Jarvis partite al suo inizio (al minuto giusto), qualunque strada prenda il resto
 export async function giro(arg) { const attese = []; try { return await giroPassi(arg, attese); } finally { await Promise.all(attese); } }
-async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "", copia = null, calendari = null, social = null, postaAlbergo = {}, sveglieTempo = null }, attese = []) {
+async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemini = null, da = "", scade = "", copia = null, calendari = null, social = null, postaAlbergo = {}, sveglieTempo = null, territorio = null }, attese = []) {
   const t = oraRoma(adesso), oggi = t.iso, domani = L.aggiungiGiorni(oggi, 1);
   const esiti = [];
   const [stato0, avvisi] = await Promise.all([db.doc("importazioni", "giro-sofia"), db.doc("impostazioni", "avvisi")]);
@@ -539,6 +545,17 @@ async function giroPassi({ db, telegram, push = null, adesso = new Date(), gemin
       if (r) esiti.push(r.esito);
     } catch (e) { console.warn("social:", pulitoSocial(e)); esiti.push("social: errore " + pulitoSocial(e)); }
   }
+  // 1.43.0 (app 1.117.0): «IN ZONA» (territorio-giro.mjs): i feed pubblici della zona ogni tre ore, e subito quello che la
+  // lettura delle chat di questo giro ha messo in "territorio". Nel registro solo quanti: mai i titoli.
+  if (territorio && territorio.scarica && a.giroZona !== false) {
+    try {
+      const r = await giroTerritorio({ db, adesso, oggi, minuti: t.minuti, gemini, scarica: territorio.scarica, appenaLetto: !!(lettura && /^letto/.test(String(lettura.esito || ""))), avvisa: async (x) => {
+        if (!ps) ps = await db.doc("importazioni", "push-sofia");
+        return mandaMe(x.testo, "in zona: avviso di un evento", x.titolo, false, { dove: "segreteria", rif: x.rif, tag: x.tag });
+      } });
+      if (r && r.esito) esiti.push(r.esito);
+    } catch (e) { console.warn("in zona:", String((e && e.message) || e).replace(/https?:\/\/\S+/g, "(indirizzo)").slice(0, 100)); esiti.push("in zona: errore"); }
+  }
   // 1.29.0: la copia di sicurezza di ogni settimana, nel Google Drive di Michele (copia-giro.mjs). Nel registro pubblico
   // di GitHub solo com'è andata, mai dati né l'indirizzo della cassetta.
   if (copia && copia.fs && copia.manda) {
@@ -639,7 +656,7 @@ async function main() {
   // 1.18.1: chi lo fa partire: il ponte sul PC (input "da"), l'orario di GitHub, o Michele col tasto «Run workflow»
   const ev = String(process.env.GITHUB_EVENT_NAME || "");
   const da = String(process.env.GIRO_DA || "").trim().toLowerCase() || (ev === "schedule" ? "orario" : ev === "workflow_dispatch" ? "a mano" : "");
-  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null, da, scade: String(process.env.GIRO_SCADE || "").trim(), copia: { fs: getFirestore(), manda: mandaCassetta }, calendari: { scarica: scaricaCalendario }, social: { rete: reteVera, carica: caricaGithub(), aspetta: (ms) => new Promise(r => setTimeout(r, ms)) } });
+  const esito = await giro({ db: dbAdmin(getFirestore()), telegram: telegramVero, push: pushVero(webpush), adesso: new Date(), gemini: chiave ? { chiave } : null, da, scade: String(process.env.GIRO_SCADE || "").trim(), copia: { fs: getFirestore(), manda: mandaCassetta }, calendari: { scarica: scaricaCalendario }, social: { rete: reteVera, carica: caricaGithub(), aspetta: (ms) => new Promise(r => setTimeout(r, ms)) }, territorio: { scarica: scaricaPagina } });
   console.log("Sofia sempre accesa:", JSON.stringify(esito));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(e => { console.error("Sofia sempre accesa: errore", e && e.message); process.exitCode = 1; });
