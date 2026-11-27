@@ -18,7 +18,7 @@ import * as GESTI from "./gesti.js";
 import * as BOCCA from "./bocca.js";
 import * as DOC from "./documenti.js";   // 1.56.0: la foto del documento → Alloggiati Web
 
-export const VERSIONE = "1.118.0";
+export const VERSIONE = "1.118.1";
 
 // Icone (SVG semplici, tratto 2px). Si usano con ICONA("nome").
 const ICONE_SVG = {
@@ -1758,7 +1758,7 @@ function avviaAscolto() {
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "canali", d => { S.canaliCal = d ? { ...d } : null; if (S.vista === "prospetto" || (S.foglio && S.foglio.tipo === "calendario")) disegna(); }));   // 1.65.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "posta-albergo", d => { S.postaAlb = d ? { ...d } : null; if (S.vista === "altro" || (S.foglio && S.foglio.tipo === "postaAlb")) disegna(); }));   // 1.75.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "copia-sicurezza", d => { S.copia = d ? { ...d } : null; if (S.vista === "altro" || S.vista === "oggi" || (S.foglio && S.foglio.tipo === "cassetta")) disegna(); }));   // 1.64.0
-  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.17.0
+  if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "push-sofia", d => { S.pushSofia = d ? { ...d } : null; richiamoDichiara(); if (S.vista === "altro") disegna(); }));   // 1.17.0; 1.118.1: il telefono dice che sa fermare il richiamo
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "giro-sofia", d => { S.giroSofia = d ? { ...d } : null; if (S.vista === "altro") disegna(); }));   // 1.16.0
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "lettura-sofia", d => { S.letturaCondivisa = d ? { ...d } : null; S.caricati.letturaCondivisa = true; guardaCondivisa(); disegna(); if (lettorePosta() && !letturaCondivisaOccupata()) guardaPosta(); }));   // 1.18.0; 1.53.1: appena la lettura condivisa si libera, la posta che aspettava riparte (prima ripartiva solo al messaggio dopo)
   if (proprietario()) S.stop.push(db.ascoltaDoc("importazioni", "sofia-autonomia", d => { S.autonomia = d ? { livello: d.livello } : null; S.caricati.autonomia = true; if (S.vista === "altro") disegna(); }));   // 1.15.0; 1.51.0: caricati.autonomia
@@ -7215,12 +7215,54 @@ function segrEmailLink(p) {
   return `https://mail.google.com/mail/${ind ? `?authuser=${encodeURIComponent(ind)}` : ""}#${q ? "search/" + encodeURIComponent(q) : "inbox"}`;
 }
 // l'email intera (il foglio): chi scrive, quando, l'oggetto, cosa ha capito Sofia, tutto il testo che la casella ha preso
+// 1.118.1 (giro 1.44.1) · IL RICHIAMO DELLE PRENOTAZIONI. Michele, 27/11/2026: «la notifica mi deve arrivare immediatamente…
+// non posso rischiare» · «fin quando non le tolgo io non si tolgono, cioè che le devo vedere proprio per forza»; alla domanda
+// ha scelto «5 di fila, e di nuovo ogni 10 minuti finché non apri l'email». Il giro rimanda la notifica di una prenotazione
+// ogni 10 minuti (di giorno, per un giorno al massimo) finché l'email non è stata APERTA nell'app. Aprirla lo scrive nel
+// database: posta/<id>.aperta = quando, una volta sola, da qualunque telefono del titolare. Si segnano le email di
+// prenotazione (la stessa regola del giro, L.emailPrenotazione) e quelle che il giro sta ricordando
+// (importazioni/posta-albergo.richiami): così, se un giorno le due regole non andassero d'accordo, il richiamo si ferma lo
+// stesso. Se la scrittura non riesce si riprova alla prossima apertura, al massimo tre volte per email.
+function segrEmailEPren(p) {
+  try {
+    if (!p || p.chat !== "Email albergo") return false;
+    const x = segrEmailParti(p);
+    if (L.emailPrenotazione({ chi: p.chi, dominio: p.dominio, oggetto: x.oggetto, testo: x.corpo })) return true;
+    return ((S.postaAlb && Array.isArray(S.postaAlb.richiami)) ? S.postaAlb.richiami : []).some(r => r && "email_" + String(r.id) === p.id);
+  } catch (e) { return false; }
+}
+function segrApertaSegna(p, quando) {
+  try {
+    if (!p || !p.id || p.aperta || !proprietario() || !S.db || typeof S.db.aggiorna !== "function") return false;
+    const dette = (S.aperteDette = S.aperteDette || new Map());
+    if ((dette.get(p.id) || 0) >= 3 || (S.aperteInCorso || (S.aperteInCorso = new Set())).has(p.id)) return false;
+    if (!segrEmailEPren(p)) return false;
+    dette.set(p.id, (dette.get(p.id) || 0) + 1); S.aperteInCorso.add(p.id);
+    const q = new Date(Number(quando) > 0 ? Number(quando) : Date.now()).toISOString(), id = p.id;
+    Promise.resolve().then(() => S.db.aggiorna("posta", id, { aperta: q })).then(() => { dette.set(id, 3); }, (e) => { console.warn("email aperta:", e && e.message); }).then(() => { S.aperteInCorso.delete(id); });
+    return true;
+  } catch (e) { return false; }
+}
+// La prima volta che questo telefono ha questa versione: le prenotazioni degli ultimi tre giorni che qui erano già state
+// aperte (ricci_segr_viste) risultano aperte anche per il giro, se no le ricorderebbe da capo. Una volta sola per telefono.
+const CHIAVE_APERTE_RECUPERO = "ricci_aperte_recupero";
+function segrAperteRecupera() {
+  try {
+    if (!proprietario() || localStorage.getItem(CHIAVE_APERTE_RECUPERO)) return 0;
+    const tutte = Object.values(S.posta || {}).filter(p => p && p.chat === "Email albergo"); if (!tutte.length) return 0;
+    const v = segrVisteLeggi(), da = Date.now() - 3 * 864e5; let n = 0;
+    for (const p of tutte) if (p.id && v[p.id] && !p.aperta && (Number(p.ts) || 0) >= da && segrApertaSegna(p, v[p.id])) n++;
+    localStorage.setItem(CHIAVE_APERTE_RECUPERO, "1");
+    return n;
+  } catch (e) { return 0; }
+}
 function foglioSegrEmail(f) {
   const p = (S.posta || {})[f.id];
   if (!p && f.daAvviso && Date.now() - f.daAvviso < 25000) { segrEmailAttendi(); return `<div class="sge-foglio"><h3 class="sgf-ogg">Un attimo…</h3><p class="sgf-nota">Sto prendendo l'email.</p></div>`; }   // 1.108.0: aperta dalla notifica
   if (!p) return `<div class="sge-foglio"><h3 class="sgf-ogg">Email</h3><p class="sgf-nota">Questa email non c'è più: le tengo una settimana.</p></div>`;
   try { segrPrendiPrima(p); } catch (e) {}   // 1.110.0: gli allegati in sottofondo, così quando li tocchi sono già pronti
   try { if (segrVistaMetti(p.id)) setTimeout(() => { try { disegnaSegrHero(); barraSotto(); } catch (e) {} }, 0); } catch (e) {}   // 1.115.0
+  segrApertaSegna(p);   // 1.118.1: una prenotazione aperta qui ferma il richiamo del giro (posta/<id>.aperta)
   const x = segrEmailParti(p), righe = segrEmailCapito().get(p.id) || [], g = String(p.data || "");
   const quando = `${g ? segrEmailGiorno(g).toLowerCase() : ""}${p.ora ? ` alle ${p.ora}` : ""}`.trim();
   const tagliata = x.corpo.length >= 1780;
@@ -12962,6 +13004,43 @@ function idTelefono() { try { let v = localStorage.getItem("ricci_id_telefono");
 function nomeTelefono() { const u = navigator.userAgent || ""; const m = /Android[^;)]*;\s*([^;)]+)/.exec(u); if (m) return m[1].replace(/\s*Build.*$/, "").trim() || "Telefono Android"; return /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Windows/.test(u) ? "Computer Windows" : /Mac/.test(u) ? "Mac" : "Telefono"; }
 function avvisiTelefonoPossibili() { return "serviceWorker" in navigator && "PushManager" in window && typeof Notification !== "undefined"; }
 function avvisiTelefonoAttivi() { const p = S.pushSofia; return !!(avvisiTelefonoPossibili() && Notification.permission === "granted" && p && p.iscrizioni && p.iscrizioni[idTelefono()]); }
+// 1.118.1 (giro 1.44.1): il richiamo delle prenotazioni (la notifica che riparte ogni 10 minuti finché l'email non viene
+// aperta) il giro lo manda SOLO ai telefoni che hanno detto di saperlo fermare: `iscrizioni.<telefono>.richiamo = 1`. Lo
+// scrive qui l'app, che da questa versione segna l'email aperta (segrApertaSegna). Un telefono con l'app di prima non lo
+// dice, e riceve solo la prima notifica: se no suonerebbe ogni 10 minuti senza potersi fermare.
+// Si scrive solo quando anche il lavoratore di sfondo che comanda questa pagina è della versione nuova (swVersione): vuol
+// dire che l'aggiornamento è finito e che tutte le schede aperte su questo telefono o PC sono state ricaricate (una scheda
+// rimasta col codice di prima, toccando la notifica, aprirebbe l'email senza segnarla). Finché l'aggiornamento non è
+// finito non si scrive: al prossimo avvio. Si riscrive se sparisce (il giro riscrive l'elenco quando toglie un'iscrizione
+// scaduta), al massimo tre volte per apertura dell'app.
+const RICHIAMO_DA = "1.118.1";
+const verNum = (v) => String(v || "0").split(".").map(Number).reduce((s, x) => s * 1000 + (x || 0), 0);
+function swVersione(ms = 2000) {
+  return new Promise((ok) => {
+    try {
+      const c = navigator.serviceWorker && navigator.serviceWorker.controller; if (!c) { ok(""); return; }
+      const mc = new MessageChannel(), tm = setTimeout(() => ok(""), ms);
+      mc.port1.onmessage = (e) => { clearTimeout(tm); ok(String((e.data && e.data.versione) || "")); };
+      c.postMessage({ tipo: "versione" }, [mc.port2]);
+    } catch (e) { ok(""); }
+  });
+}
+function richiamoDichiara() {
+  try {
+    const st = (S.richiamoDetto = S.richiamoDetto || { n: 0, inCorso: false });
+    const daDire = () => { const v = ((S.pushSofia && S.pushSofia.iscrizioni) || {})[idTelefono()]; return v && v.sub && v.sub.endpoint && !(Number(v.richiamo) >= 1) ? v : null; };
+    if (st.inCorso || st.n >= 3 || !proprietario() || !S.db || !daDire()) return false;
+    st.inCorso = true;
+    swVersione().then((ver) => {
+      const v = daDire();
+      if (v && !ver && !st.riprovato && navigator.serviceWorker && navigator.serviceWorker.controller) { st.riprovato = true; setTimeout(() => { try { richiamoDichiara(); } catch (e) {} }, 15000); }   // non ha risposto in tempo: una volta si richiede
+      if (!v || !ver || verNum(ver) < verNum(RICHIAMO_DA)) return null;   // il lavoratore di sfondo è ancora quello di prima (o non c'è): si aspetta
+      st.n++;
+      return S.db.salva("importazioni", "push-sofia", { iscrizioni: { [idTelefono()]: { ...v, richiamo: 1 } } }, true);
+    }).catch((e) => { console.warn("richiamo:", e && e.message); }).then(() => { st.inCorso = false; });
+    return true;
+  } catch (e) { return false; }
+}
 async function chiaviPush() {
   let p = S.pushSofia; if (!p) { try { p = await S.db.leggi("importazioni", "push-sofia"); } catch (e) { p = null; } }
   if (p && p.vapidPublic && p.vapidPrivato) return p;
@@ -12984,7 +13063,7 @@ async function accendiAvvisiTelefono() {
     let sub = await reg.pushManager.getSubscription();
     if (sub) { let k = ""; try { k = sub.options && sub.options.applicationServerKey ? B64U.da(sub.options.applicationServerKey) : ""; } catch (e) {} if (k && k !== p.vapidPublic) { try { await sub.unsubscribe(); } catch (e) {} sub = null; } }
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: B64U.a(p.vapidPublic) });
-    const id = idTelefono(), voce = { sub: JSON.parse(JSON.stringify(sub)), chi: "titolare", nome: nomeTelefono(), quando: S.db.adesso() };
+    const id = idTelefono(), voce = { sub: JSON.parse(JSON.stringify(sub)), chi: "titolare", nome: nomeTelefono(), quando: S.db.adesso(), ...(verNum(await swVersione()) >= verNum(RICHIAMO_DA) ? { richiamo: 1 } : {}) };   // 1.118.1: sa fermare il richiamo delle prenotazioni (se l'aggiornamento è finito; se no lo dice dopo richiamoDichiara)
     await S.db.salva("importazioni", "push-sofia", { iscrizioni: { [id]: voce } }, true);
     S.pushSofia = { ...(S.pushSofia || {}), iscrizioni: { ...((S.pushSofia || {}).iscrizioni || {}), [id]: voce } };
     try { await reg.showNotification("Sofia", { body: "Fatto: da adesso ti scrivo anche qui, sul telefono.", icon: "notifica-casa.png", badge: "badge-casa-96.png", tag: "sofia-prova", data: { push: true } }); } catch (e) {}
@@ -18679,6 +18758,7 @@ function scartaLettura() {
 }
 function postaRicevuta(m) {
   S.posta = m || {};
+  try { segrAperteRecupera(); } catch (e) {}   // 1.118.1: una volta per telefono
   for (const id of Object.keys(S.posta)) if (!postaArrivo.has(id)) { postaArrivo.set(id, Date.now()); ultimoArrivoPosta = Date.now(); }
   guardaPosta();
 }

@@ -509,6 +509,21 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   ogni 2 secondi e mezzo (`VOLTE_FORTE`, `PAUSA_FORTE_MS`), e smette se intanto è stata toccata. Quanto è forte ogni
   vibrazione lo decide il telefono (il disegno `vibrate` sui telefoni di adesso non conta): da qui si può solo ripeterla.
   Le altre notifiche come prima.
+- Il richiamo delle prenotazioni (1.118.1, giro 1.44.1; Michele, 27/11: «la notifica mi deve arrivare immediatamente… non
+  posso rischiare» · «fin quando non le tolgo io non si tolgono, cioè che le devo vedere proprio per forza»; alla domanda ha
+  scelto «5 di fila, e di nuovo ogni 10 minuti finché non apri l'email»). Il giro tiene le prenotazioni avvisate (non le
+  annullate) in `importazioni/posta-albergo.richiami` e rimanda la STESSA notifica a ogni giro se dall'ultima sono passati
+  almeno 9 minuti (`RICHIAMO_OGNI_MS`), di giorno (6:30–22:30), per un giorno al massimo dal primo avviso
+  (`RICHIAMO_FINO_MS`). Smette quando l'email viene aperta nell'app: `foglioSegrEmail` → `segrApertaSegna` scrive
+  `posta/<id>.aperta` (una volta; le prenotazioni per `L.emailPrenotazione` e quelle che il giro sta ricordando). Il richiamo
+  va SOLO ai telefoni che hanno detto di saperlo fermare (`iscrizioni.<telefono>.richiamo` in `importazioni/push-sofia`, lo
+  scrive l'app con `richiamoDichiara`; `soloPronti` in `mandaMe`): un telefono con l'app di prima riceve solo la prima
+  notifica, se no suonerebbe ogni 10 minuti senza potersi fermare. L'app lo dice solo quando anche il lavoratore di sfondo
+  è della versione nuova (`swVersione`: la pagina glielo chiede; vuol dire che l'aggiornamento è finito e tutte le schede
+  sono state ricaricate). Niente Telegram. Nel registro pubblico solo «richiamo di
+  una prenotazione». Il testo è quello della prima notifica: niente di nuovo da vedere.
+  REGOLA: una cosa che si ripete finché lui non fa qualcosa deve avere sempre un modo per fermarla che esiste già sul
+  telefono a cui arriva (se no a quel telefono non si manda) e una fine da sola.
 
 ## Una versione nuova
 1. Le modifiche con uno script che sostituisce pezzi esatti e si ferma se il pezzo manca o c'è due volte. Commenti in

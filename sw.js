@@ -3,7 +3,7 @@
 //  Quando si pubblica una versione nuova bisogna cambiare il numero qui sotto:
 //  così i telefoni si accorgono dell'aggiornamento.
 // ============================================================================
-const VERSIONE = "1.118.0";
+const VERSIONE = "1.118.1";
 const CACHE = "ricci-pulizie-" + VERSIONE;
 // 1.43.0: I FILMATI STANNO IN UNA CACHE A PARTE CHE RESTA DA UNA VERSIONE ALL'ALTRA (prima ogni aggiornamento li
 // riscaricava tutti: 16 MB a telefono a ogni versione). Si scaricano la prima volta che servono (la strada dei filmati)
@@ -49,7 +49,12 @@ self.addEventListener("activate", (e) => {
   })());
 });
 
-self.addEventListener("message", (e) => { if (e.data?.tipo === "attiva") self.skipWaiting(); });
+self.addEventListener("message", (e) => {
+  if (e.data?.tipo === "attiva") self.skipWaiting();
+  // 1.118.1: la pagina chiede che versione è il lavoratore che la comanda (app.js, richiamoDichiara: il telefono dice al giro
+  // che sa fermare il richiamo delle prenotazioni solo quando l'aggiornamento è finito, lavoratore compreso)
+  if (e.data?.tipo === "versione" && e.ports && e.ports[0]) { try { e.ports[0].postMessage({ versione: VERSIONE }); } catch (err) {} }
+});
 
 // 0.99: la notifica di Sofia ("ha letto le chat"): toccandola si apre l'app sull'anteprima da controllare
 self.addEventListener("notificationclick", (e) => {

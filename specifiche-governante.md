@@ -3551,3 +3551,10 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Se un foglio è troppo grande per starci tutto, adesso c'è scritto («qui c'è l'inizio»).
   - La notifica di una prenotazione arrivata da un sito (Booking, Airbnb, Expedia, Ciclovia) suona e vibra **5 volte di fila**, una ogni 2 secondi e mezzo, e smette appena la tocchi. Quanto è forte la vibrazione lo decide il telefono.
   - Viste le figure della copia di prova: «Sì, mettila».
+- **1.118.1 + giro 1.44.1** (27/11 sera, Michele: «anche 15 consecutive… oppure addirittura… fin quando non le tolgo io non si tolgono, cioè che le devo vedere proprio per forza»; alla domanda con le quattro scelte ha risposto «La A2.», la 2: «5 di fila, e di nuovo ogni 10 minuti finché non apri l'email»):
+  - La notifica di una prenotazione arrivata da un sito suona 5 volte di fila, come prima. Se quell'email non viene aperta nell'app, **dopo 10 minuti riparte**, e così ogni 10 minuti.
+  - Per fermarla si apre l'email: toccando la notifica, oppure dalla Segreteria. Basta aprirla su un telefono solo.
+  - Di notte (dalle 22:30 alle 6:30) sta zitta e riparte la mattina. Dopo un giorno smette da sola.
+  - Riparte solo sui telefoni con l'app aggiornata: un telefono con l'app di prima riceve solo la prima notifica (non saprebbe fermare le altre).
+  - Le prenotazioni annullate e le altre email: una notifica sola, come prima.
+  - Nell'app non cambia niente da vedere. Non è stata provata su un telefono vero: solo con telefono e giro finti.
