@@ -3536,3 +3536,7 @@ Michele: «un piccolo codice QR vicino il portone… attraverso la telecamera no
   - Un evento di oggi o di domani lo dice anche Sofia nel riassunto. Un evento nuovo conta nel numerino azzurro della Segreteria finché non apri «Eventi».
   - Facebook e Instagram no: per leggere le pagine degli altri serve un permesso di Meta. Il 27/11 la chiave di Instagram dava «API access blocked» (il blocco del 20/11).
   - Si spegne da Altro → Sofia sempre accesa → «Le notizie della zona».
+- **giro 1.43.1** (27/11, trovato da Claude guardando il primo giro vero di «In zona»: i tre feed del Comune di Lesina non avevano risposto e nel registro non c'era scritto perché):
+  - Un sito che non risponde Sofia lo riprova dopo 10 minuti, poi dopo 30, poi dopo 60; poi torna al giro di ogni tre ore. Alla prima riprova (13:10) il Comune ha risposto: 18 notizie.
+  - Nel registro adesso c'è scritto quale sito non risponde e perché.
+  - La prima volta che un sito risponde le sue notizie c'erano già: finiscono in «In zona» senza notifica. La notifica è solo per un evento uscito dopo.

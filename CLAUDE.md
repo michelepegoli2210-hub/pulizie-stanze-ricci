@@ -477,6 +477,10 @@ Claude per farla andare meglio»). Il repository è pubblico: qui dentro, come n
   («📍 In zona · …», mai per gli avvisi di tutti i giorni; la prima volta niente). Nell'app, in Segreteria dopo i cassetti:
   «Eventi» e «Avvisi» (`segrTerrHtml`); «Ricordamelo» = un promemoria suo (`creaRicordo`, `tu_zona_…`); «visto» e «non mi
   interessa» restano nel telefono. Mai rosso.
+  Giro 1.43.1 (27/11, il primo giro vero: i tre feed del Comune non avevano risposto, venti minuti dopo sì): un sito che
+  non risponde si riprova dopo 10, 30 e 60 minuti (`daRiprovare`), e nel registro c'è scritto QUALE sito e PERCHÉ
+  (`fonti.<sito>.perche`: «risposta 403», «tempo scaduto», «non si collega …»; i nomi dei siti sono pubblici, i titoli no).
+  La PRIMA volta che un sito risponde (anche uno aggiunto dopo) le sue notizie c'erano già: niente avvisi.
   Un sito nuovo = una riga in `FONTI` (un feed RSS o Atom in https; guardare prima il suo robots.txt). NO Facebook e
   Instagram col mouse; le pagine degli altri si leggono solo col permesso di Meta («Page Public Content Access» per
   Facebook, «Business Discovery» per Instagram: da provare quando la chiave torna buona; il 27/11 dava «API access blocked»).
